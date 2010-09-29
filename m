@@ -1,114 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab0I2VpO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 17:45:14 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:60607 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab0I2VpM (ORCPT
+	id S1755611Ab0I2Vp3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 17:45:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62710 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755362Ab0I2Vp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 17:45:12 -0400
-From: Dima Zavin <dima@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH 1/2] sched: normalize sleeper's vruntime during group change
-Date: Wed, 29 Sep 2010 14:44:21 -0700
-Message-Id: <1285796661-29007-1-git-send-email-dima@android.com>
-X-Mailer: git-send-email 1.6.6
-In-Reply-To: <1285747995.7844.42.camel@marge.simson.net>
-References: <1285747995.7844.42.camel@marge.simson.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Wed, 29 Sep 2010 17:45:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hlAoIS6q5q+fDQhBm0wNX9k3Jl+VcFeRXEvvxB5sk59JgRYT1ZHwzu1ycYbjLAUMH8
+         rLEDBdYW3PD40CK1PlOPJrdgQaGho5JV3Cgny91atVS18WFIPQ01ZL+cpMLUwpYMxutT
+         aFHncc0UXwIkijo5eH7UaW9lBhBkh+qMvxLcw=
+Subject: Re: Packet time delays on multi-core systems
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexey Vlasov <renton@renton.name>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <20100929191851.GC86786@beaver.vrungel.ru>
+References: <20100929191851.GC86786@beaver.vrungel.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Sep 2010 23:45:21 +0200
+Message-ID: <1285796721.5211.156.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 8bit
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you switch the cgroup of a sleeping thread, its vruntime does
-not get adjusted correctly for the difference between the
-min_vruntime values of the two groups.
+Le mercredi 29 septembre 2010 à 23:18 +0400, Alexey Vlasov a écrit : 
+> Hi.
+> 
+> I'm not sure actually that I should write here, may be I should ask in
+> netfilter maillist, but if is something wrong please correct me.
+> 
 
-This patch adds a new callback, prep_move_task, to struct sched_class
-to give sched_fair the opportunity to adjust the task's vruntime
-just before setting its new group. This allows us to properly normalize
-a sleeping task's vruntime when moving it between different cgroups.
+CC netdev
 
-More details about the problem:
-  http://lkml.org/lkml/2010/9/28/24
 
-Cc: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Dima Zavin <dima@android.com>
----
- include/linux/sched.h |    1 +
- kernel/sched.c        |    5 +++++
- kernel/sched_fair.c   |   14 +++++++++++++-
- 3 files changed, 19 insertions(+), 1 deletions(-)
+> I've got rather large linux shared hosting, and on my new servers I
+> noticed some strange singularity, that this simple rule:
+> 
+> # iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags
+> FIN,SYN,RST,ACK SYN -j LOG --log-prefix "ipsec:SYN-OUTPUT "
+> --log-uid
+> 
+> gives essential time delays simply at ping from the adjacent server
+> on a local area network. I don't know precisely what's wrong whether the
+> reason is in the bad support by a kernel of new hardware, or it concerns
+> generally the new kernel, but now it leads to the situation that even at simple
+> DDOS attacks to client sites, it becomes difficult to make something, and in
+> general all works only worse.
+> 
+> It seems to me that with the increase of CPU cores' amount, it only becomes
+> worse and worse, and, obviously, iptables uses resources of only one processor,
+> which resources to it for any reason doesn't suffice.
+> 
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..ba3494e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1073,6 +1073,7 @@ struct sched_class {
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	void (*moved_group) (struct task_struct *p, int on_rq);
-+	void (*prep_move_group) (struct task_struct *p, int on_rq);
- #endif
- };
- 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..fe4bb20 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -8297,6 +8297,11 @@ void sched_move_task(struct task_struct *tsk)
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
- 
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	if (tsk->sched_class->prep_move_group)
-+		tsk->sched_class->prep_move_group(tsk, on_rq);
-+#endif
-+
- 	set_task_rq(tsk, task_cpu(tsk));
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index db3f674..6ded59f 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3827,10 +3827,21 @@ static void set_curr_task_fair(struct rq *rq)
- static void moved_group_fair(struct task_struct *p, int on_rq)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct sched_entity *se = &p->se;
- 
- 	update_curr(cfs_rq);
- 	if (!on_rq)
--		place_entity(cfs_rq, &p->se, 1);
-+		se->vruntime += cfs_rq->min_vruntime;
-+}
-+
-+static void prep_move_group_fair(struct task_struct *p, int on_rq)
-+{
-+	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct sched_entity *se = &p->se;
-+
-+	/* normalize the runtime of a sleeping task before moving it */
-+	if (!on_rq)
-+		se->vruntime -= cfs_rq->min_vruntime;
- }
- #endif
- 
-@@ -3883,6 +3894,7 @@ static const struct sched_class fair_sched_class = {
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	.moved_group		= moved_group_fair,
-+	.prep_move_group	= prep_move_group_fair,
- #endif
- };
- 
--- 
-1.6.6
+Its not true. iptables can run on all cpus in //
+
+> newbox # iptables -F
+> otherbox # ping -c 100 newbox
+> ...
+> 100 packets transmitted, 100 received, 0% packet loss, time 100044ms
+> rtt min/avg/max/mdev = 0.133/2.637/17.172/3.736 ms
+> 
+> OK.
+> 
+> newbox # iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+> -j LOG --log-prefix "ipsec:SYN-OUTPUT " --log-uid
+> otherbox # ping -c 100 newbox
+> ...
+> 64 bytes from (newbox): icmp_seq=3 ttl=64 time=1.58 ms
+> 64 bytes from (newbox): icmp_seq=4 ttl=64 time=98.7 ms
+> 64 bytes from (newbox): icmp_seq=5 ttl=64 time=18.2 ms
+> 64 bytes from (newbox): icmp_seq=6 ttl=64 time=6.13 ms
+> 64 bytes from (newbox): icmp_seq=7 ttl=64 time=108 ms
+> ...
+> 64 bytes from (newbox): icmp_seq=55 ttl=64 time=2.30 ms
+> 64 bytes from (newbox): icmp_seq=56 ttl=64 time=59.9 ms
+> 64 bytes from (newbox): icmp_seq=57 ttl=64 time=0.155 ms
+> ...
+> 64 bytes from (newbox): icmp_seq=61 ttl=64 time=13.4 ms
+> 64 bytes from (newbox): icmp_seq=62 ttl=64 time=55.0 ms
+> 64 bytes from (newbox): icmp_seq=63 ttl=64 time=0.233 ms
+> ...
+> 100 packets transmitted, 100 received, 0% packet loss, time 99957ms
+> rtt min/avg/max/mdev = 0.111/7.519/108.061/18.478 ms
+> 
+> newbox # iptables -L -v -n
+> Chain INPUT (policy ACCEPT 346K packets, 213M bytes)
+>  pkts bytes target     prot opt in     out     source               destination
+> 
+> Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+>  pkts bytes target     prot opt in     out     source               destination
+> 
+> Chain OUTPUT (policy ACCEPT 296K packets, 290M bytes)
+>  pkts bytes target     prot opt in     out     source               destination
+>   234 14040 LOG        tcp  --  *      *       0.0.0.0/0            0.0.0.0/0    
+> tcp dpt:80 flags:0x17/0x02 LOG flags 8 level 4 prefix `ipsec:SYN-OUTPUT- '
+> 
+> My old server: Intel SR1500, Xeon 5430, kernel 2.6.24 - 2.6.28
+> Newbox: SR1620UR, 5650, kernel 2.6.32
+> 
+> Thanks in advance.
+> 
+
+Seems strange indeed, since the LOG you add should not slowdown icmp
+trafic that much.
+
+But if you send SYN packets in the same time, (logged), this might slow
+down the reception (and answers) of ICMP frames. LOG target can be quite
+expensive... 
+
+Is using other rules gives same problem ?
+
+iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+
+
+
+
 
