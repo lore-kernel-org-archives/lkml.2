@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab0I2Ayx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:54:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53995 "EHLO mx1.redhat.com"
+	id S1754780Ab0I2A5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 20:57:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1631 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753420Ab0I2Ayw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 20:54:52 -0400
+	id S1754651Ab0I2A5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 20:57:17 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] MN10300: Handle missing sys_cacheflush() when caching disabled
+Subject: [PATCH] MN10300: Handle missing sys_cacheflush() when caching
+	disabled [ver #2]
 To: torvalds@osdl.org, akpm@linux-foundation.org, msalter@redhat.com
 Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
         David Howells <dhowells@redhat.com>
-Date: Wed, 29 Sep 2010 01:54:36 +0100
-Message-ID: <20100929005435.20399.6395.stgit@warthog.procyon.org.uk>
+Date: Wed, 29 Sep 2010 01:57:02 +0100
+Message-ID: <20100929005702.24338.15662.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -42,7 +43,7 @@ Signed-off-by: David Howells <dhowells@redhat.com>
 
 
 diff --git a/arch/mn10300/mm/Makefile b/arch/mn10300/mm/Makefile
-index 28b9d98..f076a95 100644
+index 28b9d98..1557277 100644
 --- a/arch/mn10300/mm/Makefile
 +++ b/arch/mn10300/mm/Makefile
 @@ -2,13 +2,11 @@
@@ -50,7 +51,7 @@ index 28b9d98..f076a95 100644
  #
  
 +cacheflush-y	:= cache.o cache-mn10300.o
-+cacheflush-$(CONFIG_MN10300_CACHE_WBACK) := cache-flush-mn10300.o
++cacheflush-$(CONFIG_MN10300_CACHE_WBACK) += cache-flush-mn10300.o
 +
 +cacheflush-$(CONFIG_MN10300_CACHE_DISABLED) := cache-disabled.o
 +
