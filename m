@@ -1,124 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab0I2TBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 15:01:19 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:41477 "EHLO relay.sgi.com"
+	id S1755395Ab0I2TBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 15:01:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49409 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754217Ab0I2TBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 15:01:17 -0400
-Message-Id: <20100929190115.494540024@gulag1.americas.sgi.com>
-User-Agent: quilt/0.47-1
-Date: Wed, 29 Sep 2010 14:00:54 -0500
-From: Robin Holt <holt@sgi.com>
-To: lkml <linux-kernel@vger.kernel.org>,
-        "Robert P. J. Day" <rpjday@crashcourse.ca>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Badari Pulavarty <pbadari@us.ibm.com>, Dave Hansen <haveblue@us.ibm.com>,
-        Gary Hade <garyhade@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Matt Tolentino <matthew.e.tolentino@intel.com>
-Subject: [Patch 1/3] Introduce kset_find_obj_hinted.
-References: <20100929190053.992911934@gulag1.americas.sgi.com>
-Content-Disposition: inline; filename=add-kset_find_obj_hinted
+	id S1755054Ab0I2TBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 15:01:45 -0400
+Date: Wed, 29 Sep 2010 15:01:14 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        Stephane Eranian <eranian@google.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+ disabling counters
+Message-ID: <20100929190114.GZ26290@redhat.com>
+References: <20100915162034.GO13563@erda.amd.com>
+ <tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org>
+ <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com>
+ <20100929125301.GG13563@erda.amd.com>
+ <20100929125453.GH13563@erda.amd.com>
+ <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
+ <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com>
+ <20100929150140.GK13563@erda.amd.com>
+ <20100929151253.GL13563@erda.amd.com>
+ <20100929152745.GC9440@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100929152745.GC9440@lenovo>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One call chain getting to kset_find_obj is:
-  link_mem_sections()
-    find_mem_section()
-      kset_find_obj()
+On Wed, Sep 29, 2010 at 07:27:45PM +0400, Cyrill Gorcunov wrote:
+> 
+>   Cyrill
+> ---
+> Subject: [PATCH -tip] perf, x86: Handle in flight IRQs on P4 platform
+> 
+> Stephane reported we've missed to guard P4 platform
+> against spurious in-flight performance IRQs. Fix it.
+> 
+> [ the patch is a complement to commit 63e6be6d98e1 ]
+> 
+> Reported-by: Stephane Eranian <eranian@google.com>
+> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+> CC: Robert Richter <robert.richter@amd.com>
+> CC: Lin Ming <ming.m.lin@intel.com>
 
-This is done during boot.  The memory sections were added in a linearly
-increasing order and link_mem_sections tends to utilize them in that
-same linear order.
+Thanks Cyrill,
 
-Introduce a kset_find_obj_hinted which is passed the result of the
-previous kset_find_obj which it uses for a quick "is the next object
-our desired object" check before falling back to the old behavior.
+I'll test it quickly and try to send it to Ingo.
 
-Signed-off-by: Robin Holt <holt@sgi.com>
-To: Robert P. J. Day <rpjday@crashcourse.ca>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: lkml <linux-kernel@vger.kernel.org>
-
----
-
- include/linux/kobject.h |    2 +
- lib/kobject.c           |   39 ++++++++++++++++++++++++++++++++++++++
- 2 files changed, 41 insertions(+)
-
-Index: pv1010359/include/linux/kobject.h
-===================================================================
---- pv1010359.orig/include/linux/kobject.h	2010-09-29 11:03:42.000000000 -0500
-+++ pv1010359/include/linux/kobject.h	2010-09-29 11:20:09.903825173 -0500
-@@ -191,6 +191,8 @@ static inline struct kobj_type *get_ktyp
- }
- 
- extern struct kobject *kset_find_obj(struct kset *, const char *);
-+extern struct kobject *kset_find_obj_hinted(struct kset *, const char *,
-+						struct kobject *);
- 
- /* The global /sys/kernel/ kobject for people to chain off of */
- extern struct kobject *kernel_kobj;
-Index: pv1010359/lib/kobject.c
-===================================================================
---- pv1010359.orig/lib/kobject.c	2010-09-29 11:03:42.000000000 -0500
-+++ pv1010359/lib/kobject.c	2010-09-29 11:21:14.343956075 -0500
-@@ -746,17 +746,56 @@ void kset_unregister(struct kset *k)
-  */
- struct kobject *kset_find_obj(struct kset *kset, const char *name)
- {
-+	return kset_find_obj_hinted(kset, name, NULL);
-+}
-+
-+/**
-+ * kset_find_obj_hinted - search for object in kset given a predecessor hint.
-+ * @kset: kset we're looking in.
-+ * @name: object's name.
-+ * @hint: hint to possible object's predecessor.
-+ *
-+ * Check the hint's next object and if it is a match return it directly,
-+ * otherwise, fall back to the behavior of kset_find_obj().  Either way
-+ * a reference for the returned object is held and the reference on the
-+ * hinted object is released.
-+ */
-+struct kobject *kset_find_obj_hinted(struct kset *kset, const char *name,
-+				     struct kobject *hint)
-+{
- 	struct kobject *k;
- 	struct kobject *ret = NULL;
- 
- 	spin_lock(&kset->list_lock);
-+
-+	if (!hint)
-+		goto slow_search;
-+
-+	/* end of list detection */
-+	if (hint->entry.next == kset->list.next)
-+		goto slow_search;
-+
-+	k = container_of(hint->entry.next, struct kobject, entry);
-+	if (!kobject_name(k) || strcmp(kobject_name(k), name))
-+		goto slow_search;
-+
-+	ret = kobject_get(k);
-+	goto unlock_exit;
-+
-+slow_search:
- 	list_for_each_entry(k, &kset->list, entry) {
- 		if (kobject_name(k) && !strcmp(kobject_name(k), name)) {
- 			ret = kobject_get(k);
- 			break;
- 		}
- 	}
-+
-+unlock_exit:
- 	spin_unlock(&kset->list_lock);
-+
-+	if (hint)
-+		kobject_put(hint);
-+
- 	return ret;
- }
- 
-
+Cheers,
+Don
+> ---
+>  arch/x86/kernel/cpu/perf_event_p4.c |    6 +++++-
+>  1 file changed, 5 insertions(+), 1 deletion(-)
+> 
+> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> =====================================================================
+> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
+> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> @@ -904,8 +904,12 @@ static int p4_pmu_handle_irq(struct pt_r
+>  	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+>  		int overflow;
+>  
+> -		if (!test_bit(idx, cpuc->active_mask))
+> +		if (!test_bit(idx, cpuc->active_mask)) {
+> +			/* catch in-flight IRQs */
+> +			if (__test_and_clear_bit(idx, cpuc->running))
+> +				handled++;
+>  			continue;
+> +		}
+>  
+>  		event = cpuc->events[idx];
+>  		hwc = &event->hw;
