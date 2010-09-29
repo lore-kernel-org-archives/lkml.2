@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab0I2Am4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:42:56 -0400
-Received: from winter.teisprint.net ([209.183.176.75]:4414 "EHLO
-	winter.teisprint.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751243Ab0I2Amy (ORCPT
+	id S1753992Ab0I2Ao3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 20:44:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38853 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751243Ab0I2Ao2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 20:42:54 -0400
-X-Greylist: delayed 26916 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Sep 2010 20:42:54 EDT
-Message-ID: <6346c8912bfe43a81b3a8a5970fdfd9d.squirrel@webmail.ezaccess.net>
-Date: Tue, 28 Sep 2010 13:11:35 -0400
-Subject: Account Upgrade
-From: "SYSTEM ADMINISTRATOR" <helpdesk@helpdesk.com>
-Reply-To: web_account.upgrades2010@alumni.com
-User-Agent: SquirrelMail/1.4.19
-MIME-Version: 1.0
+	Tue, 28 Sep 2010 20:44:28 -0400
+Date: Tue, 28 Sep 2010 17:44:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: mmotm 2010-09-28-16-13 uploaded
+Message-Id: <20100928174459.53c5a865.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTimFbxc7MGdirSzdJ-YZbFFHBVn4JJhHcP46W1_4@mail.gmail.com>
+References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
+	<AANLkTimFbxc7MGdirSzdJ-YZbFFHBVn4JJhHcP46W1_4@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 29 Sep 2010 02:27:55 +0200 "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com> wrote:
 
+> Hi,
+> 
+> 2010/9/29  <akpm@linux-foundation.org>:
+> > The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
+> 
+> I wonder why are these two functions in include/linux/fs.h
+> static inline void lock_flocks()
+> {
+> }
+> 
+> static inline void unlock_flocks()
+> {
+> }
+> 
+> Was there any contest for function, which will cause many warnings?
+> 
+> I'm getting an awful lot of
+>   CC      kernel/trace/trace_sched_switch.o
+> In file included from kernel/trace/trace_sched_switch.c:8:
+> include/linux/fs.h:1278: warning: function declaration isn___t a prototype
+> include/linux/fs.h:1282: warning: function declaration isn___t a prototype
+>   CC      kernel/trace/trace_functions.o
+> In file included from include/linux/debugfs.h:18,
+>                  from kernel/trace/trace_functions.c:13:
+> include/linux/fs.h:1278: warning: function declaration isn___t a prototype
+> include/linux/fs.h:1282: warning: function declaration isn___t a prototype
 
+Arnd has been bad.
 
-REACTIVATE YOUR MAIL ACCOUNT.
-Your email account has been suspended (reason: violation of terms of
-service). To reactivate your email account, please reply to this mail
-immediately for reactivation of your mail account with your
+commit 0a4de5980db88de75b798b291524ba9af8553e7c
+Author:     Arnd Bergmann <arnd@arndb.de>
+AuthorDate: Sat Sep 18 15:09:31 2010 +0200
+Commit:     Arnd Bergmann <arnd@arndb.de>
+CommitDate: Sat Sep 25 18:07:47 2010 +0200
 
-Email Username:
-Confirm Username;
-Password:
-Confirm Password;
-
-These mail is sent to you from our secured IT service Center. Please
-respond to this message for the reactivation of your account with your
-current mail account user name and password.
-We sincerely apologise for these unusual problem.
-
-WEBMAIL REACTIVATION SERVICE
-For IT Service.
+    fs/locks.c: prepare for BKL removal
 
