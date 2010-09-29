@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab0I2IVA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:21:00 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:63457 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753178Ab0I2IU7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:20:59 -0400
-Date: Wed, 29 Sep 2010 17:20:55 +0900
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org, yuanyabin1978@sina.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] SPI: add PrimeCell generic DMA to PL022 v12
-Message-ID: <20100929082055.GC4703@angua.secretlab.ca>
-References: <1285684441-21700-1-git-send-email-linus.walleij@stericsson.com>
- <1285684441-21700-2-git-send-email-linus.walleij@stericsson.com>
+	id S1754951Ab0I2IXE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:23:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29463 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752602Ab0I2IXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 04:23:02 -0400
+Date: Wed, 29 Sep 2010 10:16:45 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Shirley Ma <mashirle@us.ibm.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+Message-ID: <20100929081645.GA21195@redhat.com>
+References: <1284483745.13351.71.camel@localhost.localdomain>
+ <20100914182707.GB15549@redhat.com>
+ <1284490143.13351.82.camel@localhost.localdomain>
+ <20100914190156.GA16037@redhat.com>
+ <1284492983.13351.95.camel@localhost.localdomain>
+ <20100915051241.GA25340@redhat.com>
+ <1284531675.24603.259.camel@localhost.localdomain>
+ <20100915101000.GB28016@redhat.com>
+ <1284562354.2573.12.camel@localhost.localdomain>
+ <1285730669.31343.7.camel@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285684441-21700-2-git-send-email-linus.walleij@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1285730669.31343.7.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 04:33:55PM +0200, Linus Walleij wrote:
-> This extends the PL022 SSP/SPI driver with generic DMA engine
-> support using the PrimeCell DMA engine interface. Also fix up the
-> test code for the U300 platform.
+On Tue, Sep 28, 2010 at 08:24:29PM -0700, Shirley Ma wrote:
+> Hello Michael,
 > 
-> Acked-by: Grant Likely <grant.likely@secretlab.ca>
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> ---
-> Changes:
-> - Switch CONFIG_DMADEVICES for CONFIG_DMA_ENGINE to counter
->   a compilation error spotted by Grant.
-> ---
->  arch/arm/mach-u300/dummyspichip.c |    1 +
->  drivers/spi/amba-pl022.c          |  516 ++++++++++++++++++++++++++++++-------
->  include/linux/amba/pl022.h        |    6 +
->  3 files changed, 435 insertions(+), 88 deletions(-)
+> On Wed, 2010-09-15 at 07:52 -0700, Shirley Ma wrote:
+> > > >  Don't you think once I address vhost_add_used_and_signal update
+> > > > issue, it is a simple and complete patch for macvtap TX zero copy?
+> > > > 
+> > > > Thanks
+> > > > Shirley
+> > > 
+> > > I like the fact that the patch is simple. Unfortunately
+> > > I suspect it'll stop being simple by the time it's complete :) 
+> > 
+> > I can make a try. :)
 > 
-> diff --git a/arch/arm/mach-u300/dummyspichip.c b/arch/arm/mach-u300/dummyspichip.c
-> index 03f7936..b86e944 100644
-> --- a/arch/arm/mach-u300/dummyspichip.c
-> +++ b/arch/arm/mach-u300/dummyspichip.c
-> @@ -267,6 +267,7 @@ static struct spi_driver pl022_dummy_driver = {
->  	.driver = {
->  		.name	= "spi-dummy",
->  		.owner	= THIS_MODULE,
-> +		.bus = &spi_bus_type,
+> I compared several approaches for addressing the issue being raised here
+> on how/when to update vhost_add_used_and_signal. The simple approach I
+> have found is:
+> 
+> 1. Adding completion field in struct virtqueue;
+> 2. when it is a zero copy packet, put vhost thread wait for completion
+> to update vhost_add_used_and_signal;
+> 3. passing vq from vhost to macvtap as skb destruct_arg;
+> 4. when skb is freed for the last reference, signal vq completion
+> The test results show same performance as the original patch. How do you
+> think? If it sounds good to you. I will resubmit this reversion patch.
+> The patch still keeps as simple as it was before. :)
+> 
+> Thanks
+> Shirley
 
-This shouldn't be necessary.  spi_register_driver already sets the bus
-type field.
+If you look at dev_hard_start_xmit you will see a call
+to skb_orphan_try which often calls the skb destructor.
+So I suspect this is almost equivalent to your original patch,
+and has the same correctness issue.
 
-Otherwise, this patch looks good.  If you're okay with me dropping
-this hunk, then I'll pick up this patch into my next-spi branch.
-
-g.
+-- 
+MST
