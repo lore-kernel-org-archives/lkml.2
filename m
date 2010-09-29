@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab0I2UTD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:19:03 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45983 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab0I2UTB (ORCPT
+	id S1755362Ab0I2UZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 16:25:34 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:7766 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754054Ab0I2UZd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:19:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=j3KJN+FywYqZjm902PUajYcYpEkMOMWuq+7YMufcYfGP+zzwbuecHJT4BEmTOPPyYs
-         Ovs0jTeyEOB3cWKd+A8vRjz9OqbzTenewru4R0uBDcifug27dKkenluC6zFDaW+n9YnL
-         HhaEie6k5Phn1y6C4wzPZki8zneo2zyryfikI=
-Message-ID: <4CA3BBAD.8080207@gmail.com>
-Date: Thu, 30 Sep 2010 00:20:29 +0200
-From: Roel Kluin <roel.kluin@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	Wed, 29 Sep 2010 16:25:33 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=R5dOdOPBvlukxvZKEFhNc3Fw1Vbko81An5Me+FnMSckWrNz+W7Gy65+11R5X4ejIw
+	G+E0+HBM0Xymn22gvmVVQ==
+Date: Wed, 29 Sep 2010 13:25:03 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Namhyung Kim <namhyung@gmail.com>
+cc: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] slub: Move NUMA-related functions under
+ CONFIG_NUMA
+In-Reply-To: <1285761735-31499-3-git-send-email-namhyung@gmail.com>
+Message-ID: <alpine.DEB.2.00.1009291324500.9797@chino.kir.corp.google.com>
+References: <1285761735-31499-1-git-send-email-namhyung@gmail.com> <1285761735-31499-3-git-send-email-namhyung@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] Btrfs: Don't dereference extent_mapping if NULL
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't dereference em if it's NULL or an error pointer.
+On Wed, 29 Sep 2010, Namhyung Kim wrote:
 
-Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
----
-I just noticed this by code analysis. It wasn't tested in any way.
+> Make kmalloc_cache_alloc_node_notrace(), kmalloc_large_node()
+> and __kmalloc_node_track_caller() to be compiled only when
+> CONFIG_NUMA is selected.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 
- fs/btrfs/inode.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
-index c038644..d4a37f8 100644
---- a/fs/btrfs/inode.c
-+++ b/fs/btrfs/inode.c
-@@ -1787,7 +1787,8 @@ static int btrfs_io_failed_hook(struct bio *failed_bio,
- 
- 		read_lock(&em_tree->lock);
- 		em = lookup_extent_mapping(em_tree, start, failrec->len);
--		if (em->start > start || em->start + em->len < start) {
-+		if (em && !IS_ERR(em) && (em->start > start ||
-+					em->start + em->len < start)) {
- 			free_extent_map(em);
- 			em = NULL;
- 		}
+Acked-by: David Rientjes <rientjes@google.com>
