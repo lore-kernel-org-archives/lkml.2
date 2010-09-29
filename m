@@ -1,96 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab0I2A5S (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:57:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754651Ab0I2A5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 20:57:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] MN10300: Handle missing sys_cacheflush() when caching
-	disabled [ver #2]
-To: torvalds@osdl.org, akpm@linux-foundation.org, msalter@redhat.com
-Cc: linux-am33-list@redhat.com, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>
-Date: Wed, 29 Sep 2010 01:57:02 +0100
-Message-ID: <20100929005702.24338.15662.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1754826Ab0I2A5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 20:57:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35246 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725Ab0I2A5a convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 20:57:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UdYs9ykBubOMBCjB4BRo4ofLC8g78XrU2hr4rOh5VlgkMBoFT3HyrqDkEKhKdN5JHu
+         +fkSeWbLrXFmTLyKlryLL8lkGOym/0kvg1glXigy6sO17bwa++AYksblGJ50m+rHOE03
+         UCTzNmMLpb8kzOjjpAXOPWfjccG0FqxoIUtus=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <89k77n$p2kgat@fmsmga001.fm.intel.com>
+References: <AANLkTi=dqiY+kxfW4k+ke6M5J45WbM8j2Vi=y9VxYOY0@mail.gmail.com>
+	<89k77n$p2kgat@fmsmga001.fm.intel.com>
+Date: Wed, 29 Sep 2010 08:57:29 +0800
+Message-ID: <AANLkTima2Rc=b199oL_f0375kXtnimgn-Laq=7QU+xy9@mail.gmail.com>
+Subject: Re: drivers/gpu/drm/i915/i915_suspend.c:792: error: const struct
+ intel_device_info has no member named gen
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When caching is disabled on the MN10300 arch, the sys_cacheflush() function is
-removed by conditional stuff in the makefiles, but is still referred to by the
-syscall table.
+On Tue, Sep 28, 2010 at 9:46 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
+> On Tue, 28 Sep 2010 21:36:09 +0800, Jeff Chua <jeff.chua.linux@gmail.com> wrote:
+>>   CC      drivers/gpu/drm/i915/i915_suspend.o
+>> drivers/gpu/drm/i915/i915_suspend.c: In function 'i915_save_state':
+>> drivers/gpu/drm/i915/i915_suspend.c:792: error: 'const struct
+>> intel_device_info' has no member named 'gen'
+>> drivers/gpu/drm/i915/i915_suspend.c: In function 'i915_restore_state':
+>> drivers/gpu/drm/i915/i915_suspend.c:827: error: 'const struct
+>> intel_device_info' has no member named 'gen'
+>> make[4]: *** [drivers/gpu/drm/i915/i915_suspend.o] Error 1
+>> make[3]: *** [drivers/gpu/drm/i915] Error 2
+>> make[2]: *** [drivers/gpu/drm] Error 2
+>> make[1]: *** [drivers/gpu] Error 2
+>> make: *** [drivers] Error 2
+>
+> Which tree are you compiling? As it is missing:
+>
+> commit c96c3a8cb7fadcb33d9a5ebe35fcee8b7d0a7946
+> Author: Chris Wilson <chris@chris-wilson.co.uk>
+> Date:   Wed Aug 11 09:59:24 2010 +0100
+>
+>    drm/i915: Include a generation number in the device info
+>
+>    To simplify the IS_GEN[234] macros and to enable switching.
 
-Provide a null version that just returns 0 when caching is disabled (or -EINVAL
-if the arguments are silly).
+Chris,
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+I must have done something wrong. I rebuild from scratch and now it's ok.
 
- arch/mn10300/mm/Makefile         |   14 ++++++--------
- arch/mn10300/mm/cache-disabled.c |   21 +++++++++++++++++++++
- 2 files changed, 27 insertions(+), 8 deletions(-)
- create mode 100644 arch/mn10300/mm/cache-disabled.c
-
-
-diff --git a/arch/mn10300/mm/Makefile b/arch/mn10300/mm/Makefile
-index 28b9d98..1557277 100644
---- a/arch/mn10300/mm/Makefile
-+++ b/arch/mn10300/mm/Makefile
-@@ -2,13 +2,11 @@
- # Makefile for the MN10300-specific memory management code
- #
- 
-+cacheflush-y	:= cache.o cache-mn10300.o
-+cacheflush-$(CONFIG_MN10300_CACHE_WBACK) += cache-flush-mn10300.o
-+
-+cacheflush-$(CONFIG_MN10300_CACHE_DISABLED) := cache-disabled.o
-+
- obj-y := \
- 	init.o fault.o pgtable.o extable.o tlb-mn10300.o mmu-context.o \
--	misalignment.o dma-alloc.o
--
--ifneq ($(CONFIG_MN10300_CACHE_DISABLED),y)
--obj-y	+= cache.o cache-mn10300.o
--ifeq ($(CONFIG_MN10300_CACHE_WBACK),y)
--obj-y	+= cache-flush-mn10300.o
--endif
--endif
-+	misalignment.o dma-alloc.o $(cacheflush-y)
-diff --git a/arch/mn10300/mm/cache-disabled.c b/arch/mn10300/mm/cache-disabled.c
-new file mode 100644
-index 0000000..f669ea4
---- /dev/null
-+++ b/arch/mn10300/mm/cache-disabled.c
-@@ -0,0 +1,21 @@
-+/* Handle the cache being disabled
-+ *
-+ * Copyright (C) 2010 Red Hat, Inc. All Rights Reserved.
-+ * Written by David Howells (dhowells@redhat.com)
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public Licence
-+ * as published by the Free Software Foundation; either version
-+ * 2 of the Licence, or (at your option) any later version.
-+ */
-+#include <linux/mm.h>
-+
-+/*
-+ * allow userspace to flush the instruction cache
-+ */
-+asmlinkage long sys_cacheflush(unsigned long start, unsigned long end)
-+{
-+	if (end < start)
-+		return -EINVAL;
-+	return 0;
-+}
-
+Thanks,
+Jeff
