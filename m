@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0I2NkD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 09:40:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:53632 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756151Ab0I2NkA convert rfc822-to-8bit (ORCPT
+	id S1756231Ab0I2NkS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 09:40:18 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:36787 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756220Ab0I2NkO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 09:40:00 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,253,1283756400"; 
-   d="scan'208";a="559024965"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Wed, 29 Sep 2010 21:39:54 +0800
-Subject: RE: [PATCH v11 12/17] Add a kconfig entry and make entry for mp
- device.
-Thread-Topic: [PATCH v11 12/17] Add a kconfig entry and make entry for mp
- device.
-Thread-Index: ActeS9fI+rkt428QTcambTJUPSO8PQBj9xaw
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792EC64F8155@shsmsx502.ccr.corp.intel.com>
-References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
-	 <0eed02838e581f2ef2247be8e69bc34cdecce6b2.1285385607.git.xiaohui.xin@intel.com>
- <1285595805.2263.13.camel@achroite.uk.solarflarecom.com>
-In-Reply-To: <1285595805.2263.13.camel@achroite.uk.solarflarecom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Sep 2010 09:40:14 -0400
 MIME-Version: 1.0
+In-Reply-To: <20100929123752.GA18865@kroah.com>
+References: <4CA0EBEB.1030204@austin.ibm.com> <4CA1E338.6070201@redhat.com>
+ <20100928151218.GJ14068@sgi.com> <20100929025035.GA13096@kroah.com>
+ <4CA2F9A2.3090202@redhat.com> <20100929123752.GA18865@kroah.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Wed, 29 Sep 2010 15:39:58 +0200
+Message-ID: <AANLkTi=uqVA5XGNKLg8=saXzWM5FA6KNP9fsAj80si_q@mail.gmail.com>
+Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory sections
+To: Greg KH <greg@kroah.com>
+Cc: Avi Kivity <avi@redhat.com>, Robin Holt <holt@sgi.com>,
+        Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks, I will move this in order next version.
-
-Thanks
-Xiaohui
-
->-----Original Message-----
->From: Ben Hutchings [mailto:bhutchings@solarflare.com]
->Sent: Monday, September 27, 2010 9:57 PM
->To: Xin, Xiaohui
->Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
->mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
->jdike@linux.intel.com
->Subject: Re: [PATCH v11 12/17] Add a kconfig entry and make entry for mp device.
+On Wed, Sep 29, 2010 at 14:37, Greg KH <greg@kroah.com> wrote:
+> On Wed, Sep 29, 2010 at 10:32:34AM +0200, Avi Kivity wrote:
+>>  On 09/29/2010 04:50 AM, Greg KH wrote:
+>>> >
+>>> >  Because the old ABI creates 129,000+ entries inside
+>>> >  /sys/devices/system/memory with their associated links from
+>>> >  /sys/devices/system/node/node*/ back to those directory entries.
+>>> >
+>>> >  Thankfully things like rpm, hald, and other miscellaneous commands scan
+>>> >  that information.
+>>>
+>>> Really?  Why?  Why would rpm care about this?  hald is dead now so we
+>>> don't need to worry about that anymore,
+>>
+>> That's not what compatiblity means.  We can't just support
+>> latest-and-greatest userspace on latest-and-greatest kernels.
 >
->This patch is in the wrong position in the sequence.  It needs to be
->applied after mpassthru.c is created, not before.
+> Oh, I know that, that's not what I was getting at at all here, sorry if
+> it came across that way.
 >
->Ben.
+> I wanted to know so we could go fix programs that are mucking around in
+> these files, as odds are, the shouldn't be doing that in the first
+> place.
 >
->--
->Ben Hutchings, Senior Software Engineer, Solarflare Communications
->Not speaking for my employer; that's the marketing department's job.
->They asked us to note that Solarflare product names are trademarked.
+> Like rpm, why would it matter what the memory in the system looks like?
 
+HAL does many inefficient things, but I don't think it's using
+/sys/system/, besides that it may check the cpufreq govenors state
+there.
+
+Kay
