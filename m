@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab0I2CxJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 22:53:09 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:43116 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752170Ab0I2CxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 22:53:08 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX183kZYz5OE31VbWiaEgIEYapP5q2sukP8nc0+Czbo
-	00BrigScqnj5r3
-Subject: Re: broken behavior in cfs when moving threads between cgroups
-From: Mike Galbraith <efault@gmx.de>
-To: Dima Zavin <dmitriyz@google.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTikjH1J_nCxZympo9v_VZbptWHBNJ8xh=pFXLRrQ@mail.gmail.com>
-References: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
-	 <1285661878.2795.70.camel@marge.simson.net>
-	 <AANLkTikjH1J_nCxZympo9v_VZbptWHBNJ8xh=pFXLRrQ@mail.gmail.com>
-Content-Type: text/plain
-Date: Wed, 29 Sep 2010 04:53:32 +0200
-Message-Id: <1285728812.7440.141.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753211Ab0I2Cyb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 22:54:31 -0400
+Received: from kroah.org ([198.145.64.141]:37052 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751832Ab0I2Cya (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 22:54:30 -0400
+Date: Tue, 28 Sep 2010 19:50:35 -0700
+From: Greg KH <greg@kroah.com>
+To: Robin Holt <holt@sgi.com>
+Cc: Avi Kivity <avi@redhat.com>, Nathan Fontenot <nfont@austin.ibm.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@ozlabs.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
+	sections
+Message-ID: <20100929025035.GA13096@kroah.com>
+References: <4CA0EBEB.1030204@austin.ibm.com> <4CA1E338.6070201@redhat.com> <20100928151218.GJ14068@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100928151218.GJ14068@sgi.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-28 at 15:57 -0700, Dima Zavin wrote:
-
-> Hmm. Would we really want to give the sleeping task such a bump in the
-> new group? Why not just start it off at min_vruntime and let
-> place_entity do it's thing? Something like...
-
-No, I wouldn't want to give it anything, just enter at zero lag..
-
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index a7be83c..4656231 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -3622,10 +3622,15 @@ static void set_curr_task_fair(struct rq *rq)
->  static void moved_group_fair(struct task_struct *p, int on_rq)
->  {
->         struct cfs_rq *cfs_rq = task_cfs_rq(p);
-> +       struct sched_entity *se = &p->se;
+On Tue, Sep 28, 2010 at 10:12:18AM -0500, Robin Holt wrote:
+> On Tue, Sep 28, 2010 at 02:44:40PM +0200, Avi Kivity wrote:
+> >  On 09/27/2010 09:09 PM, Nathan Fontenot wrote:
+> > >This set of patches decouples the concept that a single memory
+> > >section corresponds to a single directory in
+> > >/sys/devices/system/memory/.  On systems
+> > >with large amounts of memory (1+ TB) there are perfomance issues
+> > >related to creating the large number of sysfs directories.  For
+> > >a powerpc machine with 1 TB of memory we are creating 63,000+
+> > >directories.  This is resulting in boot times of around 45-50
+> > >minutes for systems with 1 TB of memory and 8 hours for systems
+> > >with 2 TB of memory.  With this patch set applied I am now seeing
+> > >boot times of 5 minutes or less.
+> > >
+> > >The root of this issue is in sysfs directory creation. Every time
+> > >a directory is created a string compare is done against all sibling
+> > >directories to ensure we do not create duplicates.  The list of
+> > >directory nodes in sysfs is kept as an unsorted list which results
+> > >in this being an exponentially longer operation as the number of
+> > >directories are created.
+> > >
+> > >The solution solved by this patch set is to allow a single
+> > >directory in sysfs to span multiple memory sections.  This is
+> > >controlled by an optional architecturally defined function
+> > >memory_block_size_bytes().  The default definition of this
+> > >routine returns a memory block size equal to the memory section
+> > >size. This maintains the current layout of sysfs memory
+> > >directories as it appears to userspace to remain the same as it
+> > >is today.
+> > >
+> > 
+> > Why not update sysfs directory creation to be fast, for example by
+> > using an rbtree instead of a linked list.  This fixes an
+> > implementation problem in the kernel instead of working around it
+> > and creating a new ABI.
 > 
->         update_curr(cfs_rq);
-> -       if (!on_rq)
-> +       if (on_rq) {
-> +               se->vruntime = 0;
-> +       } else {
-> +               se->vruntime = cfs_rq->min_vruntime;
->                 place_entity(cfs_rq, &p->se, 1);
-> +       }
->  }
->  #endif
+> Because the old ABI creates 129,000+ entries inside
+> /sys/devices/system/memory with their associated links from
+> /sys/devices/system/node/node*/ back to those directory entries.
+> 
+> Thankfully things like rpm, hald, and other miscellaneous commands scan
+> that information.
 
-(Why penalize the sleeper?)
+Really?  Why?  Why would rpm care about this?  hald is dead now so we
+don't need to worry about that anymore, but what other commands/programs
+read this information?
 
-..but, as you noted, moving out then _back_ at forced 0 lag would result
-in bogus vruntime deltas, so lag must be preserved.  The sleeper's
-vruntime has to be set to relative before it's cfs_rq is changed, then
-back to absolute in moved_group_fair() I suppose.
+thanks,
 
-	-Mike
-
+greg k-h
