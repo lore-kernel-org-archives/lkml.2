@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753244Ab0I2OLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 10:11:16 -0400
-Received: from smtp.opengridcomputing.com ([209.198.142.2]:36543 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752822Ab0I2OLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 10:11:13 -0400
-From: Steve Wise <swise@opengridcomputing.com>
-Subject: [PATCH] RDMA/cxgb4: Add default_llseek to debugfs files.
-To: rdreier@cisco.com, stable@kernel.org
-Cc: linux-rdma@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Sep 2010 09:11:12 -0500
-Message-ID: <20100929141112.26944.21931.stgit@build.ogc.int>
-User-Agent: StGIT/0.14.3
+	id S1752392Ab0I2OTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 10:19:34 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56655 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751037Ab0I2OTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 10:19:33 -0400
+Date: Wed, 29 Sep 2010 16:19:31 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Jean Sacren <sakiwit@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] scripts: Enable error messages while hush up
+ unnecessary warnings
+Message-ID: <20100929141931.GA2055@sepie.suse.cz>
+References: <20100911051053.GA18094@mail.gmail.com>
+ <20100911051333.GA18189@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100911051333.GA18189@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This resolves a linux-next merge issue.
+On Fri, Sep 10, 2010 at 11:13:33PM -0600, Jean Sacren wrote:
+> As no error was handled, we wouldn't be able to know when an error does
+> occur. The fix preserves error messages while it doesn't let unnecessary
+> compiling warnings show up.
+> 
+> Signed-off-by: Jean Sacren <sakiwit@gmail.com>
+> ---
+>  scripts/kallsyms.c |    8 ++------
+>  1 files changed, 2 insertions(+), 6 deletions(-)
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
----
+Thanks, applied.
 
- drivers/infiniband/hw/cxgb4/device.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/infiniband/hw/cxgb4/device.c b/drivers/infiniband/hw/cxgb4/device.c
-index 986cfd7..b254357 100644
---- a/drivers/infiniband/hw/cxgb4/device.c
-+++ b/drivers/infiniband/hw/cxgb4/device.c
-@@ -182,6 +182,7 @@ static const struct file_operations qp_debugfs_fops = {
- 	.open    = qp_open,
- 	.release = qp_release,
- 	.read    = debugfs_read,
-+	.llseek  = default_llseek,
- };
- 
- static int dump_stag(int id, void *p, void *data)
-@@ -255,6 +256,7 @@ static const struct file_operations stag_debugfs_fops = {
- 	.open    = stag_open,
- 	.release = stag_release,
- 	.read    = debugfs_read,
-+	.llseek  = default_llseek,
- };
- 
- static int setup_debugfs(struct c4iw_dev *devp)
-
+Michal
