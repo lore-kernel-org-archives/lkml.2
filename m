@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab0I2A16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:27:58 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:43226 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750861Ab0I2A14 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 20:27:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=S3/u1RyntiixNUN36pY4PT0h0hYH3d6NSd0E9eYD3ju0UJry3ELDH0Q5vW+mln1n3g
-         Afcyu7TIIGvD3m3aXYaQTcDbHkKhY1J4gEJsVWFJrPS9IZ4fUIUVoAc6lhJ7eyl6VrAm
-         8b/YpZmoTbggs31gsPSBwy1nKLpaPPvtTDITQ=
+	id S1753877Ab0I2Ad0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 20:33:26 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:43436 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751832Ab0I2AdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 20:33:25 -0400
+Date: Tue, 28 Sep 2010 17:33:20 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
+        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
+        dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: [PATCH RFC tip/core/rcu 0/3] v1 RCU priority boosting
+Message-ID: <20100929003320.GA15904@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
 MIME-Version: 1.0
-In-Reply-To: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
-References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
-Date: Wed, 29 Sep 2010 02:27:55 +0200
-Message-ID: <AANLkTimFbxc7MGdirSzdJ-YZbFFHBVn4JJhHcP46W1_4@mail.gmail.com>
-Subject: Re: mmotm 2010-09-28-16-13 uploaded
-From: "N.P.S. N.P.S." <napohybelskurwysynom2010@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello!
 
-2010/9/29  <akpm@linux-foundation.org>:
-> The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
+This patch set is the first version of RCU priority boosting, consisting
+of the following:
 
-I wonder why are these two functions in include/linux/fs.h
-static inline void lock_flocks()
-{
-}
+1.	Add RCU priority inversion testing to rcutorture.
+2.	Move TINY_RCU grace-period processing from softirq to kthread
+	to allow boosting.
+3.	Implement RCU priority boosting for TINY_RCU.
 
-static inline void unlock_flocks()
-{
-}
+This patch has the following shortcomings, and thus is not yet ready for
+inclusion:
 
-Was there any contest for function, which will cause many warnings?
+o	It does not yet include some restructuring of TREE_RCU that
+	is required to make boosting practical.
 
-I'm getting an awful lot of
-  CC      kernel/trace/trace_sched_switch.o
-In file included from kernel/trace/trace_sched_switch.c:8:
-include/linux/fs.h:1278: warning: function declaration isn’t a prototype
-include/linux/fs.h:1282: warning: function declaration isn’t a prototype
-  CC      kernel/trace/trace_functions.o
-In file included from include/linux/debugfs.h:18,
-                 from kernel/trace/trace_functions.c:13:
-include/linux/fs.h:1278: warning: function declaration isn’t a prototype
-include/linux/fs.h:1282: warning: function declaration isn’t a prototype
+o	It does not yet include boosting for TREE_RCU.
 
+o	Documentation has not yet been updated.  In the meantime, it is
+	important to note that the "rcu_kthread" process must have its
+	priority set to at least SCHED_FIFO:2, given that rcutorture
+	uses SCHED_FIFO:1 to do the testing.  This priority can be set
+	using the new RCU_BOOST_PRIO kernel configuration parameter
+	or by using the "chrt" command, for example, "chrt -p 2 6".
 
--- 
-Slawa!
-N.P.S.
+o	A great deal more testing is required.
+
+o	There are probably quite a few bugs remaining, even in the parts
+	done thus far.
+
+							Thanx, Paul
+
+ b/include/linux/init_task.h |    9 +
+ b/include/linux/rcupdate.h  |    1 
+ b/include/linux/rcutiny.h   |    8 -
+ b/include/linux/rcutree.h   |    1 
+ b/include/linux/sched.h     |   11 +
+ b/init/Kconfig              |   39 ++++++
+ b/kernel/rcutiny.c          |   71 +++++++++--
+ b/kernel/rcutiny_plugin.h   |   15 +-
+ b/kernel/rcutorture.c       |  270 ++++++++++++++++++++++++++++++++++++++++++--
+ kernel/rcutiny.c            |   66 ++++------
+ kernel/rcutiny_plugin.h     |  206 ++++++++++++++++++++++++++++++++-
+ 11 files changed, 608 insertions(+), 89 deletions(-)
