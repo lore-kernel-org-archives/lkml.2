@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753074Ab0I2GkS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 02:40:18 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63277 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751357Ab0I2GkR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 02:40:17 -0400
-Message-ID: <4CA2E0BA.50908@windriver.com>
-Date: Wed, 29 Sep 2010 14:46:18 +0800
-From: DDD <dongdong.deng@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: dipankar@in.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] rcu: using ACCESS_ONCE() to observe the jiffies_stall/rnp->qsmask
- value
-References: <1285662763-16748-1-git-send-email-dongdong.deng@windriver.com> <20100928232831.GC2419@linux.vnet.ibm.com>
-In-Reply-To: <20100928232831.GC2419@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1753049Ab0I2Gln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 02:41:43 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45739 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751907Ab0I2Glm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 02:41:42 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1+B1IYsaT2BpPEGv5NELoVwUC+uq8O9K0K8//cCc6
+	PBRmfXEq9qLXGe
+Subject: Re: broken behavior in cfs when moving threads between cgroups
+From: Mike Galbraith <efault@gmx.de>
+To: Dima Zavin <dmitriyz@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@google.com>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1285728812.7440.141.camel@marge.simson.net>
+References: <AANLkTinmQOYQAOPkQsZNhJBJtCss3ZtHN_a6h4fpamtz@mail.gmail.com>
+	 <1285661878.2795.70.camel@marge.simson.net>
+	 <AANLkTikjH1J_nCxZympo9v_VZbptWHBNJ8xh=pFXLRrQ@mail.gmail.com>
+	 <1285728812.7440.141.camel@marge.simson.net>
+Content-Type: text/plain
+Date: Wed, 29 Sep 2010 08:42:07 +0200
+Message-Id: <1285742527.7440.295.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Sep 2010 06:40:12.0490 (UTC) FILETIME=[2AEF72A0:01CB5FA1]
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney wrote:
-> On Tue, Sep 28, 2010 at 04:32:43PM +0800, Dongdong Deng wrote:
->> Using ACCESS_ONCE() to observe the jiffies_stall/rnp->qsmask value
->> due to the caller didn't hold the root_rcu/rnp node's lock.
-> 
-> Given that the quantities are only used once, ACCESS_ONCE() is strictly
-> speaking not necessary.  I am tempted to queue your patch regardless
-> for the documentation benefits.
-> 
-> Or is this patch necessary to fix a failure that you have been seeing?
+On Wed, 2010-09-29 at 04:53 +0200, Mike Galbraith wrote:
 
-Hello Pual,
+> ..but, as you noted, moving out then _back_ at forced 0 lag would result
+> in bogus vruntime deltas, so lag must be preserved.  The sleeper's
+> vruntime has to be set to relative before it's cfs_rq is changed, then
+> back to absolute in moved_group_fair() I suppose.
 
-No, I didn't see a failure about it.
-I got this patch from code review.  :-)
+I bent it up like so.
 
-Thanks,
-Dongdong
-
-> In any case, thank you for taking a look at RCU!
-> 
-> 							Thanx, Paul
-> 
->> Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
->> CC: Dipankar Sarma <dipankar@in.ibm.com>
->> CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->> ---
->>  kernel/rcutree.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
->> index d5bc439..07a7063 100644
->> --- a/kernel/rcutree.c
->> +++ b/kernel/rcutree.c
->> @@ -532,9 +532,9 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
->>
->>  	if (rcu_cpu_stall_panicking)
->>  		return;
->> -	delta = jiffies - rsp->jiffies_stall;
->> +	delta = jiffies - ACCESS_ONCE(rsp->jiffies_stall);
->>  	rnp = rdp->mynode;
->> -	if ((rnp->qsmask & rdp->grpmask) && delta >= 0) {
->> +	if ((ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && delta >= 0) {
->>
->>  		/* We haven't checked in, so go dump stack. */
->>  		print_cpu_stall(rsp);
->> -- 
->> 1.6.0.4
->>
-> 
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 53eb33c..d2b06a9 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1073,7 +1073,7 @@ struct sched_class {
+ 					 struct task_struct *task);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-	void (*moved_group) (struct task_struct *p, int on_rq);
++	void (*moved_group) (struct task_struct *p, int on_rq, int leaving);
+ #endif
+ };
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 1ab8394..7001d5a 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -8358,11 +8358,16 @@ void sched_move_task(struct task_struct *tsk)
+ 	if (unlikely(running))
+ 		tsk->sched_class->put_prev_task(rq, tsk);
+ 
++#ifdef CONFIG_FAIR_GROUP_SCHED
++	if (tsk->sched_class->moved_group)
++		tsk->sched_class->moved_group(tsk, on_rq, 1);
++#endif
++
+ 	set_task_rq(tsk, task_cpu(tsk));
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+ 	if (tsk->sched_class->moved_group)
+-		tsk->sched_class->moved_group(tsk, on_rq);
++		tsk->sched_class->moved_group(tsk, on_rq, 0);
+ #endif
+ 
+ 	if (unlikely(running))
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 9b5b4f8..81885ae 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3824,13 +3824,23 @@ static void set_curr_task_fair(struct rq *rq)
+ }
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+-static void moved_group_fair(struct task_struct *p, int on_rq)
++static void moved_group_fair(struct task_struct *p, int on_rq, int leaving)
+ {
+ 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+ 
+ 	update_curr(cfs_rq);
+-	if (!on_rq)
+-		place_entity(cfs_rq, &p->se, 1);
++
++	/*
++	 * For runnable tasks, vruntime normalization is handled globally by
++	 * dequeue_entity().  task_waking_fair() normalizes sleepers in the
++	 * wakeup path (to allow lag to grow while sleeping), so we have to
++	 * normalize before the task exits it's old cfs_rq, and prepare for
++	 * the impending normalization before that happens.
++	 */
++	if (!on_rq && leaving)
++		p->se.vruntime -= cfs_rq->min_vruntime;
++	else if (!on_rq)
++		p->se.vruntime += cfs_rq->min_vruntime;
+ }
+ #endif
+ 
 
 
