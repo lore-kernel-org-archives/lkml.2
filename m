@@ -1,70 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab0I2SVf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 14:21:35 -0400
-Received: from smtp.opengridcomputing.com ([209.198.142.2]:45728 "EHLO
-	smtp.opengridcomputing.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754966Ab0I2SVe (ORCPT
+	id S1755195Ab0I2SVs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 14:21:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:38776 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755152Ab0I2SVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 14:21:34 -0400
-From: Steve Wise <swise@opengridcomputing.com>
-Subject: [PATCH] RDMA/cxgb4: use simple_read_from_buffer() for debugfs
-	handlers.
-To: rdreier@cisco.com, stable@kernel.org
-Cc: linux-rdma@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Sep 2010 13:21:33 -0500
-Message-ID: <20100929182133.30260.84058.stgit@build.ogc.int>
-User-Agent: StGIT/0.14.3
+	Wed, 29 Sep 2010 14:21:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=fJRLSTdm7G9GZGW7bea50rOScOHmX28BSztWPbL9KrW71krtTn+TEwOmD9okG7Y4kt
+         Reb/yR/jqIf2T7Y/jzc/G1iR0XTWkge2oFUkZOuq6AiEe+qJc+3erP3BeROPpXxt+nnS
+         DQrxhpZY+5CeTN7Jvssw/BtLEk7nINTJjCVHM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100927165737.GJ2560@sortiz-mobl>
+References: <20100919172301.91EEA9D401B@zog.reactivated.net>
+	<20100927165737.GJ2560@sortiz-mobl>
+Date: Wed, 29 Sep 2010 19:21:45 +0100
+X-Google-Sender-Auth: vhrLvNIuMJcEOQZnMFDdrvP7KV8
+Message-ID: <AANLkTi=95qyBwvUamCqPsR_Yox5ybcK3k2NNNZjDqAKy@mail.gmail.com>
+Subject: Re: [PATCH] Add VIA VX855 multi-function device support
+From: Daniel Drake <dsd@laptop.org>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, laforge@gnumonks.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Steve Wise <swise@opengridcomputing.com>
----
+On 27 September 2010 17:57, Samuel Ortiz <sameo@linux.intel.com> wrote:
+> We do have an MFD API for registering sub devices as platform devices. See
+> mfd_add_devices(). You'd have to define cells (statically or not) and set the
+> cell->platform_data pointer properly. I'd prefer to see this driver using this
+> API.
 
- drivers/infiniband/hw/cxgb4/device.c |   26 +-------------------------
- 1 files changed, 1 insertions(+), 25 deletions(-)
+Thanks. I've made the change locally but have run into a problem.
 
-diff --git a/drivers/infiniband/hw/cxgb4/device.c b/drivers/infiniband/hw/cxgb4/device.c
-index b254357..22a290d 100644
---- a/drivers/infiniband/hw/cxgb4/device.c
-+++ b/drivers/infiniband/hw/cxgb4/device.c
-@@ -68,32 +68,8 @@ static ssize_t debugfs_read(struct file *file, char __user *buf, size_t count,
- 			    loff_t *ppos)
- {
- 	struct c4iw_debugfs_data *d = file->private_data;
--	loff_t pos = *ppos;
--	loff_t avail = d->pos;
- 
--	if (pos < 0)
--		return -EINVAL;
--	if (pos >= avail)
--		return 0;
--	if (count > avail - pos)
--		count = avail - pos;
--
--	while (count) {
--		size_t len = 0;
--
--		len = min((int)count, (int)d->pos - (int)pos);
--		if (copy_to_user(buf, d->buf + pos, len))
--			return -EFAULT;
--		if (len == 0)
--			return -EINVAL;
--
--		buf += len;
--		pos += len;
--		count -= len;
--	}
--	count = pos - *ppos;
--	*ppos = pos;
--	return count;
-+	return simple_read_from_buffer(buf, count, ppos, d->buf, d->pos);
- }
- 
- static int dump_qp(int id, void *p, void *data)
+mfd_add_devices calls acpi_check_resource_conflict() on each resource.
+And as noted in the earlier patch, ACPI also has a region reserved.
+Because acpi_check_resource_conflict() says there is a conflict,
+mfd_add_devices() bails out before registering the devices.
 
+So I've researched the conflict.
+The GPIO driver is trying to reserve region 0x420 - 0x452
+ACPI reports a conflict on "PRIE" 0x434
+
+Indeed, 0x434 is something ACPI-specific, so ACPI is right to say "get
+off my turf", and actually there are a whole host of non-GPIO things
+intermixed with GPIO things within the region 0x420 - 0x452.
+
+So, I thought about making the driver only reserve the 2 ports that it
+uses: 0x448,  0x44c
+
+However, ACPI has also reserved 0x448. This is because the XO-1.5 also
+uses GPIOs for the lid switch and ebook switch, which are basically
+presented to the OS as normal ACPI buttons. This particular byte
+includes a range of GPIOs including the ones that ACPI uses internally
+(the switches) plus the ones that we want to make available through
+the gpio driver.
+
+So, we're running into a limitation with Linux's model that
