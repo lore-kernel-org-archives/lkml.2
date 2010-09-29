@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab0I2Ik7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:40:59 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:62086 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab0I2Ik5 (ORCPT
+	id S1755341Ab0I2Ilg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:41:36 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:57791 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755275Ab0I2Ilf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:40:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=s5L+VmlVblTMNfJ5aeGwsNaum6zll/62x4UxbL5ABXLLc2ahmTVS3qU1QweDfpXLz6
-         XWCGMkZN/LUDl1wylmOdq735j0/YLl+CgbWo1LhqOnr1LJ9iBu9aNxB8kAhUGPIqEISU
-         LHFhW/qmvf1B/6ZMhNllflghvRS/a1Yhq/pS4=
-Date: Wed, 29 Sep 2010 10:41:05 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Cliff Wickman <cpw@sgi.com>, Jack Steiner <steiner@sgi.com>,
-        Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch v2] tlb_uv: use allocated buffer in tunables_read()
-Message-ID: <20100929083118.GA6376@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, Cliff Wickman <cpw@sgi.com>,
-	Jack Steiner <steiner@sgi.com>, Robin Holt <holt@sgi.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <20100816105502.GC645@bicker> <20100927161203.732833b0.akpm@linux-foundation.org>
+	Wed, 29 Sep 2010 04:41:35 -0400
+Message-ID: <4CA2FBBB.3040004@panasas.com>
+Date: Wed, 29 Sep 2010 10:41:31 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927161203.732833b0.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Julia Lawall <julia@diku.dk>,
+        "David S. Miller" <davem@davemloft.net>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: {painfully BISECTED} Please revert f25c80a4b2: arch/um/drivers:
+ remove duplicate structure field initialization
+References: <4CA09977.80506@panasas.com> <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com> <20100928134721.f79a5955.akpm@linux-foundation.org> <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
+In-Reply-To: <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Sep 2010 08:41:34.0462 (UTC) FILETIME=[1F5431E0:01CB5FB2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original code didn't check that the value returned from snprintf()
-was less than the size of the buffer.  Although it didn't cause a
-runtime bug in this case, it makes the static checkers complain.
+On 09/28/2010 10:57 PM, Linus Torvalds wrote:
+> On Tue, Sep 28, 2010 at 1:47 PM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+>>
+>> And I misread that, assuming that it's just a wrapper around
+>> eth_mac_addr().  Only it isn't, because it passes eth_mac_addr() the
+>> MAC address's address directly (with ->sa_data).  But eth_mac_addr()
+>> expects a `struct sockaddr *'.
+>>
+>> And for some wtf reason, eth_mac_addr() passes that `struct
+>> sockaddr *' in a `void *', thus cunningly hiding the bug.
+>>
+>> Yeah, please revert it.
+> 
+> Well, the alternative would be to just fix uml_net_set_mac(). The code
+> before the patch was clearly crap too, so reverting may make it work,
+> but gets us back to a stupid situation with two different initializers
+> for one field.
+> 
+> So perhaps something like the attached patch would make it work, and
+> have the locking in place that apparently people think it should have?
+> 
+> Boaz?
+> 
 
-Andrew Morton suggested a dynamically sized buffer would be cleaner.
+OK I get the picture. We should attempt a proper fixing. Well since
+I get to test it, then I get to fix it as well, right ;-)?
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
----
-I don't have an x86_64 system so I haven't been able to compile this
-code.  Sorry for that.
+With this I'm now back to my usual: boots fine but half of the times
+not halting. But I think that's a Fedora12 problem with interaction
+with uml. (Which I do not have time to investigate)
 
-V2:  The first version was yuk.
+>                      Linus
 
-diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-index 312ef02..33e77e4 100644
---- a/arch/x86/kernel/tlb_uv.c
-+++ b/arch/x86/kernel/tlb_uv.c
-@@ -1001,10 +1001,10 @@ static int uv_ptc_seq_show(struct seq_file *file, void *data)
- static ssize_t tunables_read(struct file *file, char __user *userbuf,
- 						size_t count, loff_t *ppos)
- {
--	char buf[300];
-+	char *buf;
- 	int ret;
- 
--	ret = snprintf(buf, 300, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
-+	buf = kasprintf(GFP_KERNEL, "%s %s %s\n%d %d %d %d %d %d %d %d %d\n",
- 		"max_bau_concurrent plugged_delay plugsb4reset",
- 		"timeoutsb4reset ipi_reset_limit complete_threshold",
- 		"congested_response_us congested_reps congested_period",
-@@ -1012,7 +1012,12 @@ static ssize_t tunables_read(struct file *file, char __user *userbuf,
- 		timeoutsb4reset, ipi_reset_limit, complete_threshold,
- 		congested_response_us, congested_reps, congested_period);
- 
--	return simple_read_from_buffer(userbuf, count, ppos, buf, ret);
-+	if (!buf)
-+		return -ENOMEM;
-+
-+	ret = simple_read_from_buffer(userbuf, count, ppos, buf, strlen(buf));
-+	kfree(buf);
-+	return ret;
- }
- 
- /*
+Thanks, have a good day
+Boaz
