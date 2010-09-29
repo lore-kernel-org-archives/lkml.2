@@ -1,169 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755629Ab0I2JSx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 05:18:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49828 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755008Ab0I2JSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 05:18:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,252,1283756400"; 
-   d="scan'208";a="662226846"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, davem@davemloft.net, herbert@gondor.hengli.com.au,
-        jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: Re: [PATCH v11 17/17]add two new ioctls for mp device. 
-Date: Wed, 29 Sep 2010 17:36:28 +0800
-Message-Id: <1285752988-5219-1-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <20100928094800.GG12472@redhat.com>
-References: <20100928094800.GG12472@redhat.com>
+	id S1755724Ab0I2JTV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 05:19:21 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40852 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755669Ab0I2JTT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 05:19:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=RJPmOQMX+GclDb1v6pEIjhCYbhTtstLqhhk4nwRllG6nxaDEgnOzVgFaAXGRx0dhom
+         9oJppI7IYjleg7rROBJjOYG0P457Ew5ADrd+mTdAbvtHh8595jQPyukjCkKh3iJGz11/
+         JIwLU6eZpv2rkuy24FT1tDI0zs/eI7kRMGVgg=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTi=s4HJepGa32mKfCYn2sHWems09mH0DRKXqAt9R@mail.gmail.com>
+References: <AANLkTi=PTp7YW_eYxtF-H2QSxgei3whWH59wU0C9oCkz@mail.gmail.com>
+	<1285693648.14518.7.camel@voyager>
+	<AANLkTi=NiB4hoA5Y8kbR7R8B+J-jJXAHGSu5JdOLSQsj@mail.gmail.com>
+	<1285704762.14518.19.camel@voyager>
+	<AANLkTikquMSnLFW2dcDEWW=Jtez5zzYSuRPFwbyVnk+y@mail.gmail.com>
+	<AANLkTi=s4HJepGa32mKfCYn2sHWems09mH0DRKXqAt9R@mail.gmail.com>
+Date: Wed, 29 Sep 2010 11:19:18 +0200
+X-Google-Sender-Auth: jU1fVJcW1gSZ9kytbql0YUq9-hg
+Message-ID: <AANLkTi=U+Am_nWkXrKrxXkFjhGGpxyUA_KRZB=-m+UU8@mail.gmail.com>
+Subject: Re: [uml-devel] [REGRESSION] um: ubd: block layer issue (Was: ext3
+ filesystem corruption in user mode linux)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+Cc: Janjaap Bos <janjaap@bos.nl>, tj@kernel.org, axboe@kernel.dk,
+        mike.miller@hp.com, user-mode-linux-devel@lists.sourceforge.net,
+        adrian@mcmen.demon.co.uk, jdike@addtoit.com,
+        LKML <linux-kernel@vger.kernel.org>, grant.likely@secretlab.ca,
+        Geert.Uytterhoeven@sonycom.com, Chris Frey <cdfrey@foursquare.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
-
-Michael,
->So here, current might be different from mp->user:
->many processes might share an fd. The result
->will be that you will subtract locked_vm from A but add it to B.
+On Tue, Sep 28, 2010 at 23:19, richard -rw- weinberger
+<richard.weinberger@gmail.com> wrote:
+> On Tue, Sep 28, 2010 at 10:37 PM, Geert Uytterhoeven
+> <geert@linux-m68k.org> wrote:
+>>
+>> This changeset from 2007 indeed moved the update of req->sector.
+>>
+>> However, in the new code, before or after applying your patch, there's no update
+>> of req->sector anymore. Everything is done in local variables.
+>>
+>> Is it possible that we only need the hunk below to fix the corruption?
 >
->The right thing to do IMO is to store mm on SET_MEM_LOCKED.
->Also be careful about multiple callers etc.
->
->
->> +		locked = limit + current->mm->locked_vm;
->> +		lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
->> +
->> +		if ((locked > lock_limit) && !capable(CAP_IPC_LOCK)) {
->> +			up_write(&current->mm->mmap_sem);
->> +			mp_put(mfile);
->> +			return -ENOMEM;
->> +		}
->> +		current->mm->locked_vm = locked;
->> +		up_write(&current->mm->mmap_sem);
->> +
->> +		mutex_lock(&mp_mutex);
->> +		mp->ctor->locked_pages = limit;
->
->What if a process calls SET_MEM_LOCKED multiple times
->(or many processes do)? 
+> Yes, it seems so. So far all my test cases work fine.
+> I'll submit a patch in a few minutes.
 
-How about the patch followed to fix this?
+Thanks, good to know!
 
->What if it is called when
->some pages are already locked?
+>> | diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+>> | index 5ff5546..655ed9e 100644
+>> | --- a/arch/um/drivers/ubd_kern.c
+>> | +++ b/arch/um/drivers/ubd_kern.c
+>> | @@ -746,8 +746,12 @@ static int ubd_open_dev(struct ubd *ubd_dev)
+>> |       }
+>> |       ubd_dev->fd = fd;
+>> |
+>> | +     /* A setting higher than 1 sector currently (v2.6.33) generates
+>> | +     data loss, both for raw and cow ubd. */
+>> | +     blk_queue_max_sectors(ubd_dev->queue, 1 * sizeof(long));
+>> | +     blk_queue_max_phys_segments(ubd_dev->queue, 1 * sizeof(long));
+>> | +
+>> |       if(ubd_dev->cow.file != NULL){
+>> | -             blk_queue_max_sectors(ubd_dev->queue, 8 * sizeof(long));
+>> |
+>> |               err = -ENOMEM;
+>> |               ubd_dev->cow.bitmap = vmalloc(ubd_dev->cow.bitmap_len);
 
-Though some pages are already locked, when the ioctl is called,
-But I think it's not so critical, as we still can set the limit as wanted to
-ctor->locked_pages, and check with the new limit with ctor->cur_pages.
-maybe there are several pages more locked, but not too much, the rlimit
-is still useful after that.
-Or something I have missed here?
+So we can no longer process more than one sector? Why?
 
----
- drivers/vhost/mpassthru.c |   34 ++++++++++++++++++++--------------
- include/linux/mpassthru.h |    4 ++--
- 2 files changed, 22 insertions(+), 16 deletions(-)
+Could it be 4d6c84d91d1a539ebc47d1a36a35e9390ba11fdc (ubd: cleanup
+completion path),
+which is one of the three commits you pointed out?
 
-diff --git a/drivers/vhost/mpassthru.c b/drivers/vhost/mpassthru.c
-index fc2a073..0965804 100644
---- a/drivers/vhost/mpassthru.c
-+++ b/drivers/vhost/mpassthru.c
-@@ -101,6 +101,7 @@ struct page_ctor {
- 	/* record the locked pages */
- 	int			locked_pages;
- 	int			cur_pages;
-+	unsigned long		orig_locked_vm;	
- 	struct net_device	*dev;
- 	struct mpassthru_port	port;
- 	struct page_info	**hash_table;
-@@ -111,7 +112,7 @@ struct mp_struct {
- 	struct net_device       *dev;
- 	struct page_ctor	*ctor;
- 	struct socket           socket;
--	struct task_struct	*user;
-+	struct mm_struct	*mm;
- };
- 
- struct mp_file {
-@@ -222,7 +223,7 @@ static int page_ctor_attach(struct mp_struct *mp)
- 	ctor->port.hash = mp_lookup;
- 	ctor->locked_pages = 0;
- 	ctor->cur_pages = 0;
--
-+	ctor->orig_locked_vm = 0;
- 	/* locked by mp_mutex */
- 	dev->mp_port = &ctor->port;
- 	mp->ctor = ctor;
-@@ -316,7 +317,6 @@ static int page_ctor_detach(struct mp_struct *mp)
- {
- 	struct page_ctor *ctor;
- 	struct page_info *info;
--	struct task_struct *tsk = mp->user;
- 	int i;
- 
- 	/* locked by mp_mutex */
-@@ -335,9 +335,9 @@ static int page_ctor_detach(struct mp_struct *mp)
- 
- 	relinquish_resource(ctor);
- 
--	down_write(&tsk->mm->mmap_sem);
--	tsk->mm->locked_vm -= ctor->locked_pages;
--	up_write(&tsk->mm->mmap_sem);
-+	down_write(&mp->mm->mmap_sem);
-+	mp->mm->locked_vm = ctor->orig_locked_vm;
-+	up_write(&mp->mm->mmap_sem);
- 
- 	/* locked by mp_mutex */
- 	ctor->dev->mp_port = NULL;
-@@ -1104,7 +1104,7 @@ static long mp_chr_ioctl(struct file *file, unsigned int cmd,
- 			goto err_dev_put;
- 		}
- 		mp->dev = dev;
--		mp->user = current;
-+		mp->mm = get_task_mm(current);
- 		ret = -ENOMEM;
- 
- 		sk = sk_alloc(mfile->net, AF_UNSPEC, GFP_KERNEL, &mp_proto);
-@@ -1154,21 +1154,27 @@ err_dev_put:
- 		mp = mp_get(mfile);
- 		if (!mp)
- 			return -ENODEV;
--
-+		mutex_lock(&mp_mutex);
-+		if (mp->mm != current->mm) {
-+			mutex_unlock(&mp_mutex);
-+			return -EPERM;
-+		}
- 		limit = PAGE_ALIGN(limit) >> PAGE_SHIFT;
--		down_write(&current->mm->mmap_sem);
--		locked = limit + current->mm->locked_vm;
-+		down_write(&mp->mm->mmap_sem);
-+		if (!mp->ctor->locked_pages)
-+			mp->ctor->orig_locked_vm = mp->mm->locked_vm;
-+		locked = limit + mp->ctor->orig_locked_vm;
- 		lock_limit = rlimit(RLIMIT_MEMLOCK) >> PAGE_SHIFT;
- 
- 		if ((locked > lock_limit) && !capable(CAP_IPC_LOCK)) {
--			up_write(&current->mm->mmap_sem);
-+			up_write(&mp->mm->mmap_sem);
-+			mutex_unlock(&mp_mutex);
- 			mp_put(mfile);
- 			return -ENOMEM;
- 		}
--		current->mm->locked_vm = locked;
--		up_write(&current->mm->mmap_sem);
-+		mp->mm->locked_vm = locked;
-+		up_write(&mp->mm->mmap_sem);
- 
--		mutex_lock(&mp_mutex);
- 		mp->ctor->locked_pages = limit;
- 		mutex_unlock(&mp_mutex);
- 
--- 
-1.7.3
+Before 4d6c84d91d1a539ebc47d1a36a35e9390ba11fdc, blk_end_request() was
+only called when
+rq->nr_sectors reached zero.
+Now it's called for each part.
 
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
