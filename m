@@ -1,75 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754951Ab0I2IXE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:23:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29463 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752602Ab0I2IXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:23:02 -0400
-Date: Wed, 29 Sep 2010 10:16:45 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Shirley Ma <mashirle@us.ibm.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
-        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
- kernel
-Message-ID: <20100929081645.GA21195@redhat.com>
-References: <1284483745.13351.71.camel@localhost.localdomain>
- <20100914182707.GB15549@redhat.com>
- <1284490143.13351.82.camel@localhost.localdomain>
- <20100914190156.GA16037@redhat.com>
- <1284492983.13351.95.camel@localhost.localdomain>
- <20100915051241.GA25340@redhat.com>
- <1284531675.24603.259.camel@localhost.localdomain>
- <20100915101000.GB28016@redhat.com>
- <1284562354.2573.12.camel@localhost.localdomain>
- <1285730669.31343.7.camel@localhost.localdomain>
+	id S1755083Ab0I2IaG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:30:06 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47061 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754970Ab0I2IaC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 04:30:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=XTbrqFCv/pZQk/skqSa30xG6dZ5zDZ5aTeIvE9Bj9uidOO1WTAANTi+SpuCBicKTQ3
+         vQ4Nl6rwBqGSMx1+mlKvrxzi+ADuLIAlT0RPGIho9bT/H+/cDAndxdtBO00YOJ1HrA4r
+         nySyeaBDrUaDKyv83N5g2eJehwXr7p1j/rGgw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285730669.31343.7.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20100928155609.GA5354@nowhere>
+References: <1285663908.20791.286.camel@yhuang-dev>
+	<20100928155609.GA5354@nowhere>
+Date: Wed, 29 Sep 2010 16:29:52 +0800
+Message-ID: <AANLkTinO6rOmKhQGP9jqN_qaA5bweeXy3bwdDwt9FToG@mail.gmail.com>
+Subject: Re: [PATCH -tip -v6] irq_work: generic hard-irq context callbacks
+From: huang ying <huang.ying.caritas@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, paulus <paulus@samba.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, dhowells <dhowells@redhat.com>,
+        Russell King <rmk@arm.linux.org.uk>, Kyle McMartin <kyle@mcmartin.ca>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        davem <davem@davemloft.net>, Linux-Arch <linux-arch@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 08:24:29PM -0700, Shirley Ma wrote:
-> Hello Michael,
-> 
-> On Wed, 2010-09-15 at 07:52 -0700, Shirley Ma wrote:
-> > > >  Don't you think once I address vhost_add_used_and_signal update
-> > > > issue, it is a simple and complete patch for macvtap TX zero copy?
-> > > > 
-> > > > Thanks
-> > > > Shirley
-> > > 
-> > > I like the fact that the patch is simple. Unfortunately
-> > > I suspect it'll stop being simple by the time it's complete :) 
-> > 
-> > I can make a try. :)
-> 
-> I compared several approaches for addressing the issue being raised here
-> on how/when to update vhost_add_used_and_signal. The simple approach I
-> have found is:
-> 
-> 1. Adding completion field in struct virtqueue;
-> 2. when it is a zero copy packet, put vhost thread wait for completion
-> to update vhost_add_used_and_signal;
-> 3. passing vq from vhost to macvtap as skb destruct_arg;
-> 4. when skb is freed for the last reference, signal vq completion
-> The test results show same performance as the original patch. How do you
-> think? If it sounds good to you. I will resubmit this reversion patch.
-> The patch still keeps as simple as it was before. :)
-> 
-> Thanks
-> Shirley
+Hi, Frederic,
 
-If you look at dev_hard_start_xmit you will see a call
-to skb_orphan_try which often calls the skb destructor.
-So I suspect this is almost equivalent to your original patch,
-and has the same correctness issue.
+On Tue, Sep 28, 2010 at 11:56 PM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+> On Tue, Sep 28, 2010 at 04:51:48PM +0800, Huang Ying wrote:
+>> +++ b/arch/x86/kernel/irq_work.c
+>> @@ -0,0 +1,30 @@
+>> +/*
+>> + * x86 specific code for irq_work
+>> + *
+>> + * Copyright (C) 2010 Red Hat, Inc., Peter Zijlstra <pzijlstr@redhat.com>
+>> + */
+>> +
+>> +#include <linux/kernel.h>
+>> +#include <linux/irq_work.h>
+>> +#include <linux/hardirq.h>
+>> +#include <asm/apic.h>
+>> +
+>> +void smp_irq_work_interrupt(struct pt_regs *regs)
+>> +{
+>> +     irq_enter();
+>> +     ack_APIC_irq();
+>> +     inc_irq_stat(apic_irq_work_irqs);
+>> +     irq_work_run();
+>> +     irq_exit();
+>> +}
+>> +
+>> +void arch_irq_work_raise(void)
+>> +{
+>> +#ifdef CONFIG_X86_LOCAL_APIC
+>> +     if (!cpu_has_apic)
+>> +             return;
+>> +
+>> +     apic->send_IPI_self(IRQ_WORK_VECTOR);
+>> +     apic_wait_icr_idle();
+>> +#endif
+>> +}
+>
+>
+>
+> So basically, CONFIG_X86_LOCAL_APIC == !HAVE_IRQ_WORK ?
+>
+> But IIUC, this will fallback to the timer interrupt:
 
--- 
-MST
+If !CONFIG_X86_LOCAL_APIC or !cpu_has_apic, this will fallback to the
+timer interrupt.
+
+>> @@ -1279,7 +1279,10 @@ void update_process_times(int user_tick)
+>>       run_local_timers();
+>>       rcu_check_callbacks(cpu, user_tick);
+>>       printk_tick();
+>> -     perf_event_do_pending();
+>> +#ifdef CONFIG_IRQ_WORK
+>> +     if (in_irq())
+>> +             irq_work_run();
+>> +#endif
+>>       scheduler_tick();
+>>       run_posix_cpu_timers(p);
+>>  }
+>
+> Then HAVE_IRQ_WORK just means that the arch supports self IPIs.
+
+HAVE_IRQ_WORK means IRQ_WORK is supported on the architecture, it has
+nothing to do with self IPIs.
+
+Best Regards,
+Huang Ying
