@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab0I2UMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:12:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39739 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753728Ab0I2UMk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:12:40 -0400
-Date: Wed, 29 Sep 2010 13:11:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Sven Joachim <svenjoac@gmx.de>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        torvalds@linux-foundation.org, stable@kernel.org
-Subject: Re: Linux 2.6.35.7
-Message-ID: <20100929201126.GA21624@suse.de>
-References: <20100929011355.GA25515@kroah.com> <87zkv0a9mb.fsf@turtle.gmx.de>
+	id S1755748Ab0I2UPo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 16:15:44 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27219 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754900Ab0I2UPn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 16:15:43 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=SQ7PkbCBXAvgq7itTkaJ/SZLUTTsRIuNxOHxNPInIaN+k4UpCkQ1vuutFR6+6kXMh
+	2ZK1mScRd0dcW8TxYE+RQ==
+Date: Wed, 29 Sep 2010 13:15:30 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Namhyung Kim <namhyung@gmail.com>
+cc: Christoph Lameter <cl@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] slub: Add lock release annotation
+In-Reply-To: <1285761735-31499-2-git-send-email-namhyung@gmail.com>
+Message-ID: <alpine.DEB.2.00.1009291314570.9797@chino.kir.corp.google.com>
+References: <1285761735-31499-1-git-send-email-namhyung@gmail.com> <1285761735-31499-2-git-send-email-namhyung@gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87zkv0a9mb.fsf@turtle.gmx.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 04:48:44PM +0200, Sven Joachim wrote:
-> Am 29.09.2010 um 03:13 schrieb Greg KH:
-> 
-> > I'm announcing the release of the 2.6.35.7 kernel.
-> > This is only needed if you run Xen, there was a typo that caused
-> > problems.  My fault, sorry.
-> 
-> This typo is also in 2.6.32.2[23], could you make a 2.6.32.24 release as
-> well?
+On Wed, 29 Sep 2010, Namhyung Kim wrote:
 
-I will be doing so in a few hours.  Sorry, I am at LinuxCon Tokyo so my
-time available to do this was limited yesterday.
+> The unfreeze_slab() releases page's PG_locked bit but was missing
+> proper annotation. The deactivate_slab() needs to be marked also
+> since it calls unfreeze_slab() without grabbing the lock.
 
-thanks,
+unfreeze_slab() needs it because it calls deactivate_slab() 
+unconditionally, rather.
 
-greg k-h
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+
+Acked-by: David Rientjes <rientjes@google.com>
