@@ -1,47 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751674Ab0I2FQg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 01:16:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49915 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab0I2FQf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 01:16:35 -0400
-Date: Wed, 29 Sep 2010 01:16:31 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linasvepstas@gmail.com,
-        GLIBC Devel <libc-alpha@sourceware.org>, linux-kernel@vger.kernel.org,
-        libc-ports@sourceware.org
-Subject: Re: asm-generic/unistd.h and glibc use of NR_ipc
-Message-ID: <20100929051631.GA8116@infradead.org>
-References: <AANLkTi=33kimswSJ1tYsnG-PVs6Z4dVBtnqq65GN8Vxw@mail.gmail.com>
- <201009281040.09728.arnd@arndb.de>
- <4CA1E809.5010103@tilera.com>
+	id S1751857Ab0I2FVR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 01:21:17 -0400
+Received: from mx1.fusionio.com ([64.244.102.30]:34114 "EHLO mx1.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751769Ab0I2FVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 01:21:16 -0400
+X-ASG-Debug-ID: 1285737673-695939fd0001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CA2CCC3.8010307@fusionio.com>
+Date: Wed, 29 Sep 2010 14:21:07 +0900
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA1E809.5010103@tilera.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Chris Frey <cdfrey@foursquare.net>
+CC: Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jdike@addtoit.com" <jdike@addtoit.com>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        "janjaap@bos.nl" <janjaap@bos.nl>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
+        "adobriyan@gmail.com" <adobriyan@gmail.com>,
+        "syzop@vulnscan.org" <syzop@vulnscan.org>
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at> <20100928225202.GA30352@foursquare.net> <4CA275CE.6060401@fusionio.com> <20100929012945.GA3324@foursquare.net>
+X-ASG-Orig-Subj: Re: [PATCH 1/1] um: ubd: Fix data corruption
+In-Reply-To: <20100929012945.GA3324@foursquare.net>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1285737673
+X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
+X-Barracuda-Bayes: INNOCENT GLOBAL 0.0000 1.0000 -2.0210
+X-Barracuda-Spam-Score: -2.02
+X-Barracuda-Spam-Status: No, SCORE=-2.02 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.42202
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 09:05:13AM -0400, Chris Metcalf wrote:
-> Another point where I'd appreciate guidance from libc-alpha is the sysctl()
-> and ustat() APIs.  The corresponding system calls are missing from
-> <asm-generic/unistd.h>, since they are deprecated and their functionality
-> is better provided by other means (/proc/sys, fstat).  So I've simply had
-> them return -1 with errno == ENOSYS.  Is there any reason to think they
-> merit more substantial work?  One could imagine baking in some horrible
-> mapping of "integer names" into path components for a sysctl()
-> implementation and reading /proc/sys to provide results, or walking all of
-> the mount points looking for a matching device number to pass a name to
-> fstat(), but I'm not sure it's worth the bloat to the library.
+On 2010-09-29 10:29, Chris Frey wrote:
+> On Wed, Sep 29, 2010 at 08:10:06AM +0900, Jens Axboe wrote:
+>> It looks like that if we need to restart the requeue, then
+>> we use the initial position and not the current index. Does
+>> this help?
+>>
+>> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+>> index 1bcd208..81ee063 100644
+>> --- a/arch/um/drivers/ubd_kern.c
+>> +++ b/arch/um/drivers/ubd_kern.c
+>> @@ -162,7 +162,7 @@ struct ubd {
+>>  	spinlock_t lock;
+>>  	struct scatterlist sg[MAX_SG];
+>>  	struct request *request;
+>> -	int start_sg, end_sg;
+>> +	int start_sg, end_sg, rq_off;
+>>  };
+>>  
+>>  #define DEFAULT_COW { \
+>> @@ -187,6 +187,7 @@ struct ubd {
+>>  	.request =		NULL, \
+>>  	.start_sg =		0, \
+>>  	.end_sg =		0, \
+>> +	.rq_off =		0, \
+>>  }
+>>  
+>>  /* Protected by ubd_lock */
+>> @@ -1241,10 +1242,11 @@ static void do_ubd_request(struct request_queue *q)
+>>  			dev->request = req;
+>>  			dev->start_sg = 0;
+>>  			dev->end_sg = blk_rq_map_sg(q, req, dev->sg);
+>> +			dev->rq_off = 0;
+>>  		}
+>>  
+>>  		req = dev->request;
+>> -		sector = blk_rq_pos(req);
+>> +		sector = blk_rq_pos(req) + dev->rq_off;
+>>  		while(dev->start_sg < dev->end_sg){
+>>  			struct scatterlist *sg = &dev->sg[dev->start_sg];
+>>  
+>> @@ -1273,6 +1275,7 @@ static void do_ubd_request(struct request_queue *q)
+>>  			}
+>>  
+>>  			dev->start_sg++;
+>> +			dev->rq_off += sg->length >> 9;
+>>  		}
+>>  		dev->end_sg = 0;
+>>  		dev->request = NULL;
+>>
+>> -- 
+> 
+> This patch does not fix the corruption issue for me.  I applied the patch
+> to 2.6.35.5, and reproduced the "deleted inode referenced" errors
+> in both a gentoo and ubuntu guest OS.  It does take longer to reproduce
+> though, with this patch.
 
-fstat does not replace ustat.  ustat is a statf-subsystem by dev_t and
-is not replaced by anything.  xfsprogs for example uses it to check if
-a given dev_t is currently mounted.  Please add it to the generic code.
+This seems to imply that the original commit pin pointed is not
+the only issue we have in that code atm.
+
+I think we need to find the real fix here, just disabling merging
+is not a fix (it's just a nasty work-around for the real bug).
+
+-- 
+Jens Axboe
 
