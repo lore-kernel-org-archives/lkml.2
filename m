@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755408Ab0I2M1s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 08:27:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33477 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752020Ab0I2M1q (ORCPT
+	id S1755399Ab0I2McD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 08:32:03 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:54008 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab0I2McB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 08:27:46 -0400
-From: "Kirill A. Shutsemov" <kirill@shutemov.name>
-To: linux-mm@kvack.org
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        "Kirill A. Shutemov" <kirill@shutemov.name>
-Subject: [BUGFIX][PATCH] memcg: fix thresholds with use_hierarchy == 1
-Date: Wed, 29 Sep 2010 15:27:25 +0300
-Message-Id: <1285763245-19408-1-git-send-email-kirill@shutemov.name>
-X-Mailer: git-send-email 1.7.2.3
+	Wed, 29 Sep 2010 08:32:01 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Petr Vandrovec <petr@vandrovec.name>
+Subject: Re: [PATCH] Remove BKL usage from ncpfs
+Date: Wed, 29 Sep 2010 14:31:54 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-fsdevel@vger.kernel.org, aia21@cam.ac.uk,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk
+References: <20100926234733.GA31884@vana.vc.cvut.cz> <201009271616.42190.arnd@arndb.de> <AANLkTinhD+P8y3BwNxro9fVr62MmASTubrefP9=Z8ce4@mail.gmail.com>
+In-Reply-To: <AANLkTinhD+P8y3BwNxro9fVr62MmASTubrefP9=Z8ce4@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009291431.54709.arnd@arndb.de>
+X-Provags-ID: V02:K0:LvftJzusCHtxGsr42PXoZ6AMwKbQG7TTM3IJ0cGbAmO
+ 7e7NIMDFZgV8LApp5EwgA7SpIF+5T22DUtmJQQNhj3AY+1ZQ/2
+ i8ssgjNIQYeenL/GKhRix/sfN7PcFdezb4vFDqdhozQ+mK9c4E
+ C2Fa4w0hb8+R3KFHcIMfXE8ZbGqFv6U+5hM2op2Yah0yeSsbcE
+ zuSkj9ordJuA5g1opCkYA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kirill A. Shutemov <kirill@shutemov.name>
+On Monday 27 September 2010, Petr Vandrovec wrote:
+> Yes, I believe it is not necessary.  fill_super(sb) should not run
+> concurrently with anything else because MS_BORN and MS_ACTIVE are not
+> set yet so nobody else should use this sb from VFS.  One thing which
+> seems to be missing is doing lock_sock() around code which sets
+> sk->sk_{error_report,data_ready,write_space} - there does not seem to
+> be anything else to protect ipv4/ipv6/ipx from seeing partially
+> updated pointers on systems where these writes are not atomic - that's
+> ncpfs2.patch.
+> 
+> Also I found some whitespace problems, and one missing const, so if
+> you could merge ncpfs3.patch & ncpfs4.patch with original BKL removal,
+> it would be cool.  Or I can resend all 4 patches as one bigger diff if
+> you prefer.
 
-We need to check parent's thresholds if parent has use_hierarchy == 1 to
-be sure that parent's threshold events will be triggered even if parent
-itself is not active (no MEM_CGROUP_EVENTS).
+Generally I prefer separate patches for changes that make sense to be
+split, so I left ncpfs2.patch separately.
 
-Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
----
- mm/memcontrol.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+I think it would be nice to do the first patch in smaller steps, but
+since you are the maintainer, I'm not going to complain ;-)
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3eed583..196f710 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -3587,9 +3587,20 @@ unlock:
- 
- static void mem_cgroup_threshold(struct mem_cgroup *memcg)
- {
--	__mem_cgroup_threshold(memcg, false);
--	if (do_swap_account)
--		__mem_cgroup_threshold(memcg, true);
-+	struct cgroup *parent;
-+
-+	while (1) {
-+		__mem_cgroup_threshold(memcg, false);
-+		if (do_swap_account)
-+			__mem_cgroup_threshold(memcg, true);
-+
-+		parent = memcg->css.cgroup->parent;
-+		if (!parent)
-+			break;
-+		memcg = mem_cgroup_from_cont(parent);
-+		if (!memcg->use_hierarchy)
-+			break;
-+	}
- }
- 
- static int compare_thresholds(const void *a, const void *b)
--- 
-1.7.2.3
+Applied both patches to my bkl/vfs series now.
 
+	Arnd
