@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755405Ab0I2Izp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:55:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36210 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752429Ab0I2Izo (ORCPT
+	id S1755401Ab0I2I6D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:58:03 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:35506 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751600Ab0I2I6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:55:44 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Jean Delvare <khali@linux-fr.org>, Wolfram Sang <w.sang@pengutronix.de>,
-        Ben Dooks <ben-linux@fluff.org>
-Subject: [PATCH] MAINTAINERS: add i2c branch for embedded platforms
-Date: Wed, 29 Sep 2010 10:55:15 +0200
-Message-Id: <1285750515-12252-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1267441936-4432-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1267441936-4432-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	Wed, 29 Sep 2010 04:58:00 -0400
+Message-ID: <4CA2FF94.8020800@panasas.com>
+Date: Wed, 29 Sep 2010 10:57:56 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Douglas Gilbert <dgilbert@interlog.com>, Jens Axboe <axboe@kernel.dk>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Konrad Rzeszutek Wilk <konrad@darnok.org>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+Subject: Re: [PATCH 3/3] tcm/fileio: Add UNMAP / Block DISCARD support
+References: <1285627910-6492-1-git-send-email-nab@linux-iscsi.org>	 <4CA18F28.3070608@panasas.com> <1285747739.18417.49.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1285747739.18417.49.camel@haakon2.linux-iscsi.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Sep 2010 08:57:59.0859 (UTC) FILETIME=[6AABD830:01CB5FB4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When I suggested the patch that resulted in
+On 09/29/2010 10:08 AM, Nicholas A. Bellinger wrote:
+> On Tue, 2010-09-28 at 08:46 +0200, Boaz Harrosh wrote:
+>>> +			printk(KERN_WARNING "Ignoring UNMAP for non BD"
+>>> +					" backend for struct file\n");
+>>
+>> TODO: Lots of extent based filesystems could enjoy if you punch an hole
+>>       in the file. (Which will also send a proper discard).
+>>       So how to punch an hole in a file via vfs?
+> 
+> Good question, as all of the current block discard support assumes a
+> struct block_device * pointer currently.
+> 
+> I know that hch has mentioned that accesing a struct block_device from
+> struct file is very dangerous, but I am assuming for the TCM/FILEIO case
+> that this code will be protected by igrab() and iput().
+> 
+> hch and jaxboe, any comments here..?
+> 
 
-	0e53300 (MAINTAINERS: add i2c tree for embedded platforms)
+No you did not understand. FILEIO (working on a filesystem's real file),
+should *never* attempt a discard on the blocks even if it was
+to read the file's map and figure out these blocks. It should always
+call a filesystem specific API that puntches-an-hole in the file.
+Fore stupid filesystem that means fill with zero's. For a smart
+extent-based file system it means splitting up the extents the range
+belongs to and freeing up the block that where allocated for that
+range. But it is an heavy meta-data operation that only the filesystem
+can do. With really smart FS like xfs the unallocated blocks also
+get discarded, for when working with SANs with over provisioning.
 
-Russell correctly objected that this needs a branch name as there are
-different branches intended for upstream.  Somehow my initial patch was
-picked up instead of the updated one.
+> Thanks!
+> 
+> --nab
 
-Cc: Jean Delvare <khali@linux-fr.org>
-Cc: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Ben Dooks <ben-linux@fluff.org>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- MAINTAINERS |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 668682d..057fe60 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2843,7 +2843,7 @@ M:	"Ben Dooks (embedded platforms)" <ben-linux@fluff.org>
- L:	linux-i2c@vger.kernel.org
- W:	http://i2c.wiki.kernel.org/
- T:	quilt kernel.org/pub/linux/kernel/people/jdelvare/linux-2.6/jdelvare-i2c/
--T:	git git://git.fluff.org/bjdooks/linux.git
-+T:	git git://git.fluff.org/bjdooks/linux.git next-i2c
- S:	Maintained
- F:	Documentation/i2c/
- F:	drivers/i2c/
--- 
-1.7.2.3
-
+Boaz
