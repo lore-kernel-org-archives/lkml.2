@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab0I2PEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:04:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56779 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab0I2PEf convert rfc822-to-8bit (ORCPT
+	id S1753219Ab0I2PFe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:05:34 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60219 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751829Ab0I2PFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:04:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=vy8Dea6bWfKhHXcng0IYC2xrGQ2T6JkR2eoAywTC2qayHT+kKAenaijqHAFid54o2x
-         cZq4KQs0j9ivOrh4sHWzfwXeZsaAnDkYiNds/JERWKHdfnSUKAOq6L/wPlNInMUJUoJL
-         2NaF1huqPbmPAgQDPXK24K4DBG564v2OtEdBM=
+	Wed, 29 Sep 2010 11:05:33 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100929080052.ceaf6727.rdunlap@xenotime.net>
-References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
-	<AANLkTikXgtFtBE_EM3izNR5H-ug4hhfa19PMvQLftD8s@mail.gmail.com>
-	<20100929080052.ceaf6727.rdunlap@xenotime.net>
-Date: Wed, 29 Sep 2010 17:04:34 +0200
-Message-ID: <AANLkTimE1dU3k9f1v_Zv82Dk=u6xVFf+c_vAxR-zq-Yu@mail.gmail.com>
-Subject: Re: mmotm 2010-09-28-16-13 uploaded
-From: Na Pohybel <napohybelskurwysynom2010@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: akpm@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <4CA2FA13.8050405@panasas.com>
+References: <4CA09977.80506@panasas.com> <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com>
+ <20100928134721.f79a5955.akpm@linux-foundation.org> <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
+ <4CA2FA13.8050405@panasas.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 29 Sep 2010 08:05:04 -0700
+Message-ID: <AANLkTikX1xWiZ+XROF=CEvkE+BVpv6vk5vzW2BGt-bxq@mail.gmail.com>
+Subject: Re: [PATCH] um: Proper Fix for f25c80a4: remove duplicate structure
+ field initialization
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Julia Lawall <julia@diku.dk>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Al Viro <viro@zeniv.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/29 Randy Dunlap <rdunlap@xenotime.net>:
-> On Wed, 29 Sep 2010 11:15:32 +0200 N.P.S. N.P.S. wrote:
+On Wed, Sep 29, 2010 at 1:34 AM, Boaz Harrosh <bharrosh@panasas.com> wrote:
 >
->> 2010/9/29  <akpm@linux-foundation.org>:
->> > The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
->> >
->>
->>
->> drivers/base/core.c: In function 'get_device_parent':
->> drivers/base/core.c:634: error: 'block_class' undeclared (first use in
->> this function)
->> drivers/base/core.c:634: error: (Each undeclared identifier is
->> reported only once
->> drivers/base/core.c:634: error: for each function it appears in.)
->> drivers/base/core.c: In function 'device_add_class_symlinks':
->> drivers/base/core.c:723: error: 'block_class' undeclared (first use in
->> this function)
->> drivers/base/core.c: In function 'device_remove_class_symlinks':
->> drivers/base/core.c:751: error: 'block_class' undeclared (first use in
->> this function)
->> make[2]: *** [drivers/base/core.o] B³±d 1
->> make[1]: *** [drivers/base] B³±d 2
->> make: *** [drivers] B³±d 2
->
-> Patch has been sent to GregKH for this one.
->
+> On the other hand patch [f25c80a4] was trying to use eth_mac_addr()
+> in eth_configure(), *which was the real fallout*. Because of state
+> checks done inside eth_mac_addr() the address was never set. I have
+> not reintroduced the memcpy wrapper, but I've put a comment for future
+> cats.
 
-Thanks!
+Ahh. Ok, this looks fine. David, please use this instead of my broken
+one that didn't do the whole thing.
 
-
--- 
-Slawa!
-N.P.S.
+                           Linus
