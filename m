@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab0I2UB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:01:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47651 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755136Ab0I2UB4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:01:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=JArULpp3QBQBTb5xJYt0vSyQYBX9cGFn1UyQqrBqXwzUAd08ErKx63LLerMPDR0QC8
-         TCGZfSSrRMwjRnZ/Y/uXygPNtyi+p2Jr3272zYkgnqanzCyhbeON1usYZN3TTpBgd3r4
-         l/9sCUSdfGI63K+7wFiR6f9PpgaCqd8gQX8+A=
+	id S1755528Ab0I2UDv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 16:03:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32847 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755136Ab0I2UDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 16:03:50 -0400
+Date: Wed, 29 Sep 2010 16:03:23 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Robert Richter <robert.richter@amd.com>,
+        Cyrill Gorcunov <gorcunov@gmail.com>,
+        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+ disabling counters
+Message-ID: <20100929200323.GC26290@redhat.com>
+References: <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com>
+ <20100929150140.GK13563@erda.amd.com>
+ <20100929151253.GL13563@erda.amd.com>
+ <20100929152745.GC9440@lenovo>
+ <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
+ <20100929154528.GD9440@lenovo>
+ <AANLkTinkqTXXD5fMUYTT4zrRD6YoTi_G+uOA5CsOgxtT@mail.gmail.com>
+ <20100929170924.GR13563@erda.amd.com>
+ <20100929181207.GW26290@redhat.com>
+ <AANLkTimp=+1GzBOYaUZWtDF6teGt6FZe+RTpb9fAyOyd@mail.gmail.com>
 MIME-Version: 1.0
-Date: Wed, 29 Sep 2010 21:01:55 +0100
-Message-ID: <AANLkTime3uHvcrRLnJcM_L81QuQ-38SgL8xOfxK6wOTr@mail.gmail.com>
-Subject: [2.6.36-rc6] fix OMAP2 MTD build failure
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimp=+1GzBOYaUZWtDF6teGt6FZe+RTpb9fAyOyd@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus; here is a build failure one-liner:
+On Wed, Sep 29, 2010 at 09:42:26PM +0200, Stephane Eranian wrote:
+> On Wed, Sep 29, 2010 at 8:12 PM, Don Zickus <dzickus@redhat.com> wrote:
+> > Robert,
+> >
+> > I think you missed Stephane's point.  Say for example, kgdb is being used
+> > while we are doing stuff with the perf counter (and say kgdb's handler is
+> > a lower priority than perf; which isn't true I know, but let's say):
+> >
+> Yes, exactly my point. The reality is you cannot afford to have false positive
+> because you may starve another subsystem from an important notification.
+> 
+> I think it boils down to whether or not we need an error message (Dazed) in
+> case no subsystem claimed the NMI. If you were to just silently consume the
+> NMI when no subsystem claims it, then you would not have these issues.
+> 
+> What Don has done is use a heuristic which gets activated when a PMU
+> interrupt handler signals that more than one counter have overflowed. His
+> claim is that this situation is likely to trigger back-to-back.
 
-Fix build failure from recent interface change and merge. Tested on OMAP3430.
+Actually its Robert's heuristic. :-)
 
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> 
+> The reason this heuristic works is because it waits until ALL the subsystems
+> have seen the notification before it declares that the NMI was PMU spurious.
+> To do that is uses the DIE_NMI_UNKNOWN callchain. Handler on this chain
+> get call last, after all subsystems have seen the notification once. I believe
+> that is the only way to safely "consume" a "spurious" NMI and avoid
+> the 'Dazed' message. Anything else runs the risks of starving the other
+> subsystems.
 
-diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
-index 133d515..513e0a7 100644
---- a/drivers/mtd/nand/omap2.c
-+++ b/drivers/mtd/nand/omap2.c
-@@ -413,7 +413,7 @@ static inline int omap_nand_dma_transfer(struct
-mtd_info *mtd, void *addr,
- 		prefetch_status = gpmc_read_status(GPMC_PREFETCH_COUNT);
- 	} while (prefetch_status);
- 	/* disable and stop the PFPW engine */
--	gpmc_prefetch_reset();
-+	gpmc_prefetch_reset(info->gpmc_cs);
+I agree.
 
- 	dma_unmap_single(&info->pdev->dev, dma_addr, len, dir);
- 	return 0;
--- 
-Daniel J Blueman
+Cheers,
+Don
