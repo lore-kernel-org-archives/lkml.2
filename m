@@ -1,175 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751318Ab0I2Eix (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 00:38:53 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56756 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750801Ab0I2Eix (ORCPT
+	id S1751423Ab0I2EmI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 00:42:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48530 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab0I2EmG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 00:38:53 -0400
+	Wed, 29 Sep 2010 00:42:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KLy8lX2Pa4nxHdGEz1anYBwEvv9JbV72fFGC/UlEABBibJPTkpO3uH2mRJ3oeUiYYb
-         r2DxPOEIu+p4dgWhh6NcaYs6xd23H1ibhxYs0GKLiTaLEauukbr+X49FPlMCj/hzYUW+
-         HoAY+v3cCkIB02N1O21RkPa4wOcERMahnY+74=
-Date: Wed, 29 Sep 2010 12:43:22 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] namespace.pl : update file exclusion list
-Message-ID: <20100929044322.GC5169@cr0.nay.redhat.com>
-References: <20100928084400.997539242@vyatta.com>
- <20100928084528.970713277@vyatta.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100928084528.970713277@vyatta.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=tG5eBfMOj0/cu5BJBetDvMo0aRdodoK63CdnAymJgGZOmX+8aEzNAoliRihcA4T1zx
+         qioACqHgu/X9jU9ybjaduEK7UJB+vTrwZIgzP02SWRcvCgHRVzh8HMGxl9/czxklKdwH
+         4v2kaIWNQXkjjMFBuEEMveWYkNv4igL6HqRpo=
+From: Rahul Ruikar <rahul.ruikar@gmail.com>
+To: Pat Gefre <pfg@sgi.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Cox <alan@linux.intel.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Cc: linux-mips@linux-mips.org, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rahul Ruikar <rahul.ruikar@gmail.com>
+Subject: [PATCH] serial: ioc3_serial: release resources in error return path
+Date: Wed, 29 Sep 2010 10:11:19 +0530
+Message-Id: <1285735279-2952-1-git-send-email-rahul.ruikar@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 28, 2010 at 05:44:03PM +0900, Stephen Hemminger wrote:
->The list of exceptions in kernel tree was out of date. Convert
->the long list of if clauses to a hashes which is more efficient
->and more common in perl.
->
->Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
->
->--- a/scripts/namespace.pl	2010-09-28 09:28:52.251563058 +0900
->+++ b/scripts/namespace.pl	2010-09-28 15:13:38.092073114 +0900
->@@ -84,6 +84,58 @@ my %ksymtab = ();	# names that appear in
-> my %ref = ();		# $ref{$name} exists if there is a true external reference to $name
-> my %export = ();	# $export{$name} exists if there is an EXPORT_... of $name
-> 
->+my %nmexception = (
->+    'fs/ext3/bitmap'			=> 1,
->+    'fs/ext4/bitmap'			=> 1,
->+    'arch/x86/lib/thunk_32'		=> 1,
->+    'arch/x86/lib/cmpxchg'		=> 1,
->+    'arch/x86/vdso/vdso32/note'		=> 1,
->+    'lib/irq_regs'			=> 1,
->+    'usr/initramfs_data'		=> 1,
->+    'drivers/scsi/aic94xx/aic94xx_dump'	=> 1,
->+    'drivers/scsi/libsas/sas_dump'	=> 1,
->+    'lib/dec_and_lock'			=> 1,
->+    'drivers/ide/ide-probe-mini'	=> 1,
->+    'usr/initramfs_data'		=> 1,
->+    'drivers/acpi/acpia/exdump'		=> 1,
->+    'drivers/acpi/acpia/rsdump'		=> 1,
->+    'drivers/acpi/acpia/nsdumpdv'	=> 1,
->+    'drivers/acpi/acpia/nsdump'		=> 1,
->+    'arch/ia64/sn/kernel/sn2/io'	=> 1,
->+    'arch/ia64/kernel/gate-data'	=> 1,
->+    'security/capability'		=> 1,
->+    'fs/ntfs/sysctl'			=> 1,
->+    'fs/jfs/jfs_debug'			=> 1,
->+);
->+
->+my %nameexception = (
->+    'mod_use_count_'	 => 1,
->+    '__initramfs_end'	=> 1,
->+    '__initramfs_start'	=> 1,
->+    '_einittext'	=> 1,
->+    '_sinittext'	=> 1,
->+    'kallsyms_names'	=> 1,
->+    'kallsyms_num_syms'	=> 1,
->+    'kallsyms_addresses'=> 1,
->+    '__this_module'	=> 1,
->+    '_etext'		=> 1,
->+    '_edata'		=> 1,
->+    '_end'		=> 1,
->+    '__bss_start'	=> 1,
->+    '_text'		=> 1,
->+    '_stext'		=> 1,
->+    '__gp'		=> 1,
->+    'ia64_unw_start'	=> 1,
->+    'ia64_unw_end'	=> 1,
->+    '__init_begin'	=> 1,
->+    '__init_end'	=> 1,
->+    '__bss_stop'	=> 1,
->+    '__nosave_begin'	=> 1,
->+    '__nosave_end'	=> 1,
->+    'pg0'		=> 1,
->+);
->+
->+
-> &find(\&linux_objects, '.');	# find the objects and do_nm on them
-> &list_multiply_defined();
-> &resolve_external_references();
->@@ -272,27 +324,9 @@ sub do_nm
-> 	close($nmdata);
-> 
-> 	if ($#nmdata < 0) {
->-		if (
->-			$fullname ne "lib/brlock.o"
->-			&& $fullname ne "lib/dec_and_lock.o"
->-			&& $fullname ne "fs/xfs/xfs_macros.o"
->-			&& $fullname ne "drivers/ide/ide-probe-mini.o"
->-			&& $fullname ne "usr/initramfs_data.o"
->-			&& $fullname ne "drivers/acpi/executer/exdump.o"
->-			&& $fullname ne "drivers/acpi/resources/rsdump.o"
->-			&& $fullname ne "drivers/acpi/namespace/nsdumpdv.o"
->-			&& $fullname ne "drivers/acpi/namespace/nsdump.o"
->-			&& $fullname ne "arch/ia64/sn/kernel/sn2/io.o"
->-			&& $fullname ne "arch/ia64/kernel/gate-data.o"
->-			&& $fullname ne "drivers/ieee1394/oui.o"
->-			&& $fullname ne "security/capability.o"
->-			&& $fullname ne "sound/core/wrappers.o"
->-			&& $fullname ne "fs/ntfs/sysctl.o"
->-			&& $fullname ne "fs/jfs/jfs_debug.o"
->-		) {
->-			printf "No nm data for $fullname\n";
->-		}
->-		return;
->+	    printf "No nm data for $fullname\n"
->+		unless $nmexception{$fullname};
->+	    return;
-> 	}
-> 	$nmdata{$fullname} = \@nmdata;
-> }
->@@ -374,31 +408,7 @@ sub resolve_external_references
-> 						$ref{$name} = ""
-> 					}
-> 				}
->-				elsif (    $name ne "mod_use_count_"
->-					&& $name ne "__initramfs_end"
->-					&& $name ne "__initramfs_start"
->-					&& $name ne "_einittext"
->-					&& $name ne "_sinittext"
->-					&& $name ne "kallsyms_names"
->-					&& $name ne "kallsyms_num_syms"
->-					&& $name ne "kallsyms_addresses"
->-					&& $name ne "__this_module"
->-					&& $name ne "_etext"
->-					&& $name ne "_edata"
->-					&& $name ne "_end"
->-					&& $name ne "__bss_start"
->-					&& $name ne "_text"
->-					&& $name ne "_stext"
->-					&& $name ne "__gp"
->-					&& $name ne "ia64_unw_start"
->-					&& $name ne "ia64_unw_end"
->-					&& $name ne "__init_begin"
->-					&& $name ne "__init_end"
->-					&& $name ne "__bss_stop"
->-					&& $name ne "__nosave_begin"
->-					&& $name ne "__nosave_end"
->-					&& $name ne "pg0"
->-					&& $name ne "__module_text_address"
->+				elsif ( ! $nameexception{$name}
-> 					&& $name !~ /^__sched_text_/
-> 					&& $name !~ /^__start_/
-> 					&& $name !~ /^__end_/
->@@ -409,7 +419,6 @@ sub resolve_external_references
-> 					&& $name !~ /^__.*per_cpu_end/
-> 					&& $name !~ /^__alt_instructions/
-> 					&& $name !~ /^__setup_/
->-					&& $name !~ /^jiffies/
+In ioc3uart_probe()
+resources were not released during error return path
+- ports[phys_port]
 
+Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+---
+ drivers/serial/ioc3_serial.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-I don't check all the symbols you updated, but why did you remove 'jiffies'?
-It is defined externally by the linker too.
+diff --git a/drivers/serial/ioc3_serial.c b/drivers/serial/ioc3_serial.c
+index 93de907..1a182cf 100644
+--- a/drivers/serial/ioc3_serial.c
++++ b/drivers/serial/ioc3_serial.c
+@@ -2017,6 +2017,7 @@ ioc3uart_probe(struct ioc3_submodule *is, struct ioc3_driver_data *idd)
+ 	struct ioc3_port *port;
+ 	struct ioc3_port *ports[PORTS_PER_CARD];
+ 	int phys_port;
++	int cnt;
+ 
+ 	DPRINT_CONFIG(("%s (0x%p, 0x%p)\n", __func__, is, idd));
+ 
+@@ -2044,7 +2045,7 @@ ioc3uart_probe(struct ioc3_submodule *is, struct ioc3_driver_data *idd)
+ 		if (!port) {
+ 			printk(KERN_WARNING
+ 			       "IOC3 serial memory not available for port\n");
+-			goto out4;
++			goto out3;
+ 		}
+ 		spin_lock_init(&port->ip_lock);
+ 
+@@ -2138,13 +2139,16 @@ ioc3uart_probe(struct ioc3_submodule *is, struct ioc3_driver_data *idd)
+ 	/* register port with the serial core */
+ 
+ 	if ((ret = ioc3_serial_core_attach(is, idd)))
+-		goto out4;
++		goto out3;
+ 
+ 	Num_of_ioc3_cards++;
+ 
+ 	return ret;
+ 
+ 	/* error exits that give back resources */
++out3:
++	for (cnt = 0; cnt < phys_port; cnt++)
++		kfree(ports[cnt]);
+ out4:
+ 	kfree(card_ptr);
+ 	return ret;
+-- 
+1.7.2.3
+
