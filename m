@@ -1,81 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab0I2GaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 02:30:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53451 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab0I2GaO (ORCPT
+	id S1753632Ab0I2GaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 02:30:10 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59034
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752980Ab0I2GaI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 02:30:14 -0400
-Date: Wed, 29 Sep 2010 15:30:11 +0900
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Michal Simek <monstr@monstr.eu>
-Cc: linux-kernel@vger.kernel.org, john.williams@petalogix.com,
-        edgar.iglesias@gmail.com, duyl@xilinx.com, linnj@xilinx.com,
-        microblaze-uclinux@itee.uq.edu.au, Tejun Heo <tj@kernel.org>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/7] of: GPIO: Fix OF probing on little-endian systems
-Message-ID: <20100929063011.GF2439@angua.secretlab.ca>
-References: <1285739538-29058-1-git-send-email-monstr@monstr.eu>
- <1285739538-29058-2-git-send-email-monstr@monstr.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285739538-29058-2-git-send-email-monstr@monstr.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 29 Sep 2010 02:30:08 -0400
+Date: Tue, 28 Sep 2010 23:30:28 -0700 (PDT)
+Message-Id: <20100928.233028.112599117.davem@davemloft.net>
+To: gwurster@scs.carleton.ca
+Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
+        yoshfuji@linux-ipv6.org, kaber@trash.net, shemminger@vyatta.com,
+        eric.dumazet@gmail.com, herbert@gondor.hengli.com.au,
+        ebiederm@xmission.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH linux-2.6 v2] IPv6: Temp addresses are immediately
+ deleted.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100927171010.GB7106@adams.ccsl.carleton.ca>
+References: <20100927171010.GB7106@adams.ccsl.carleton.ca>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 03:52:12PM +1000, Michal Simek wrote:
-> DTB is always big-endian that's why is necessary
-> to convert it.
-> 
-> Signed-off-by: Michal Simek <monstr@monstr.eu>
-> CC: Grant Likely <grant.likely@secretlab.ca>
-> CC: Tejun Heo <tj@kernel.org>
-> CC: Anton Vorontsov <avorontsov@ru.mvista.com>
-> CC: linux-kernel@vger.kernel.org
-> CC: devicetree-discuss@lists.ozlabs.org
+From: Glenn Wurster <gwurster@scs.carleton.ca>
+Date: Mon, 27 Sep 2010 13:10:10 -0400
 
-Applied, thanks.
-
-g.
-
-> ---
->  drivers/gpio/xilinx_gpio.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+> There is a bug in the interaction between ipv6_create_tempaddr and 
+> addrconf_verify.  Because ipv6_create_tempaddr uses the cstamp and tstamp 
+> from the public address in creating a private address, if we have not 
+> received a router advertisement in a while, tstamp + temp_valid_lft might be 
+> < now.  If this happens, the new address is created inside 
+> ipv6_create_tempaddr, then the loop within addrconf_verify starts again and 
+> the address is immediately deleted.  We are left with no temporary addresses 
+> on the interface, and no more will be created until the public IP address is 
+> updated.  To avoid this, set the expiry time to be the minimum of the time 
+> left on the public address or the config option PLUS the current age of the 
+> public interface.
 > 
-> diff --git a/drivers/gpio/xilinx_gpio.c b/drivers/gpio/xilinx_gpio.c
-> index 7096909..846fbd5 100644
-> --- a/drivers/gpio/xilinx_gpio.c
-> +++ b/drivers/gpio/xilinx_gpio.c
-> @@ -171,13 +171,13 @@ static int __devinit xgpio_of_probe(struct device_node *np)
->  	/* Update GPIO state shadow register with default value */
->  	tree_info = of_get_property(np, "xlnx,dout-default", NULL);
->  	if (tree_info)
-> -		chip->gpio_state = *tree_info;
-> +		chip->gpio_state = be32_to_cpup(tree_info);
->  
->  	/* Update GPIO direction shadow register with default value */
->  	chip->gpio_dir = 0xFFFFFFFF; /* By default, all pins are inputs */
->  	tree_info = of_get_property(np, "xlnx,tri-default", NULL);
->  	if (tree_info)
-> -		chip->gpio_dir = *tree_info;
-> +		chip->gpio_dir = be32_to_cpup(tree_info);
->  
->  	/* Check device node and parent device node for device width */
->  	chip->mmchip.gc.ngpio = 32; /* By default assume full GPIO controller */
-> @@ -186,7 +186,7 @@ static int __devinit xgpio_of_probe(struct device_node *np)
->  		tree_info = of_get_property(np->parent,
->  					    "xlnx,gpio-width", NULL);
->  	if (tree_info)
-> -		chip->mmchip.gc.ngpio = *tree_info;
-> +		chip->mmchip.gc.ngpio = be32_to_cpup(tree_info);
->  
->  	spin_lock_init(&chip->gpio_lock);
->  
-> -- 
-> 1.5.5.1
+> Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
+> pointing out the line wrapping issue.
 > 
+> Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
+
+This can only happen if we apply your other patch, which I showed
+was incorrect as per RFCs.
+
+We only create temporary address when public addresses are created,
+and this is the point where we are handling a router advertisement
+with non-zero Valid Lifetime.
+
+Therefore I'm not applying this patch either.
+
