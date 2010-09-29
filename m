@@ -1,93 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab0I2RTq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 13:19:46 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:49528 "EHLO relay.sgi.com"
+	id S1754528Ab0I2RWT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 13:22:19 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:33520 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754560Ab0I2RTp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 13:19:45 -0400
-Date: Wed, 29 Sep 2010 10:19:41 -0700
-From: Arthur Kepner <akepner@sgi.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
-        x86@kernel.org
-Subject: Re: [RFC/PATCHv2] x86/irq: round-robin distribution of irqs to
-	cpus w/in node
-Message-ID: <20100929171941.GH3096@sgi.com>
-References: <20100927203448.GC30050@sgi.com> <alpine.LFD.2.00.1009272236430.2416@localhost6.localdomain6> <20100927220113.GD30050@sgi.com> <alpine.LFD.2.00.1009280003300.2416@localhost6.localdomain6> <m1hbhalo1o.fsf@fess.ebiederm.org> <alpine.LFD.2.00.1009280957150.2416@localhost6.localdomain6> <m1eicennfu.fsf@fess.ebiederm.org>
+	id S1751089Ab0I2RWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 13:22:18 -0400
+Date: Wed, 29 Sep 2010 07:22:06 -0500
+From: Jack Steiner <steiner@sgi.com>
+To: yinghai@kernel.org, mingo@elte.hu, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Problem: scaling of /proc/stat on large systems
+Message-ID: <20100929122206.GA30317@sgi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1eicennfu.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I'm looking for suggestions on how to fix a scaling problem with access to
+/proc/stat.
 
-(Compendium reply to 2 emails.)
+On a large x86_64 system (4096p, 256 nodes, 5530 IRQs), access to
+/proc/stat takes too long -  more than 12 sec:
 
-On Mon, Sep 27, 2010 at 05:17:07PM -0700, Eric W. Biederman wrote:
-> Thomas Gleixner <tglx@linutronix.de> writes:
-> 
-> > On Mon, 27 Sep 2010, Arthur Kepner wrote:
-> >
-> ......
-> The deep bug is that create_irq_nr allocates a vector (which it does
-> because at the time there was no better way to mark an irq in use on
-> x86).  In the case of msi-x we really don't know the node that irq is
-> going to be used on until we get a request irq.  We simply know which
-> node the device is on.
-> 
-> If you want to see what is going follow the call trace looks like.
-> pci_enable_msix 
->   arch_setup_msi_irqs
->     create_irq_nr
-> 
-> After pci_enable_msix is finished then the driver goes and makes all
-> of the irqs per cpu irqs.
-> 
-> There are goofy things that happen when hardware asks for 1 irq per cpu.
-> But since msi can ask for up to 4096 irqs (assuming the hardware
-> supports it) I can totally see putting all 256 of those irqs on a single
-> cpu, before you go to user space and let user space or something
-> reassign all of those irqs in a per cpu way.
-> 
+	# time cat /proc/stat >/dev/null
+	real	12.630s
+	user	 0.000s
+	sys	12.629s
 
-Yes, that's exactly the problem. All of the vectors on the lowest 
-numbered CPUs get used. Any subsequent request for an interrupt on 
-one of the low numbered CPUs will fail.
+This affects top, ps (some variants), w, glibc (sysconf) and much more.
 
-> .....
 
-On Tue, Sep 28, 2010 at 03:59:33AM -0700, Eric W. Biederman wrote:
-> Thomas Gleixner <tglx@linutronix.de> writes:
-> 
-> > On Mon, 27 Sep 2010, Eric W. Biederman wrote:
-> >> > On Mon, 27 Sep 2010, Arthur Kepner wrote:
-> >> The deep bug is that create_irq_nr allocates a vector (which it does
-> >> because at the time there was no better way to mark an irq in use on
-> >> x86).  In the case of msi-x we really don't know the node that irq is
-> >> going to be used on until we get a request irq.  We simply know which
-> >> node the device is on.
-> >
-> > Bah. So the whole per node allocation business is completely useless
-> > at this point.
-> 
-> Probably.
+One of the items reported in /proc/stat is a total count of interrupts that
+have been received. This calculation requires summation of the interrupts
+received on each cpu (kstat_irqs_cpu()).
 
-Huh? No, the patch that started this thread spreads the irqs around 
-and avoids the problem of a single CPU's vectors all being consumed.
+The data is kept in per-cpu arrays linked to each irq_desc. On a
+4096p/5530IRQ system summing this data requires accessing ~90MB.
 
-> ...
-> 
-> Understood.  It has taken a couple of years before this bug finally
-> bit anyone waiting a release or two to get it fixed properly seems
-> reasonable.
-> ....
 
-And so what are we to do in the meantime? At the moment we're 
-disabling MSIX, which is a pretty unattractive workaround.
+Deleting the summation of the kstat_irqs_cpu data eliminates the high
+access time but is an API breakage that I assume is unacceptible.
 
--- 
-Arthur
+Another possibility would be using delayed work (similar to vmstat_update)
+that periodically sums the data into a single array. The disadvantage in
+this approach is that there would be a delay between receipt of an
+interrupt & it's count appearing /proc/stat. Is this an issue for anyone?
+Another disadvantage is that it adds to the overall "noise" introduced by
+kernel threads.
+
+Is there a better approach to take?
+
+
+--- jack
