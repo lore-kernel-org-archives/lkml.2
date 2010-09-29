@@ -1,65 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab0I2Ppd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:45:33 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:56453 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751249Ab0I2Ppc (ORCPT
+	id S1753924Ab0I2Pq0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:46:26 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:28023 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753049Ab0I2PqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:45:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hlBoe2fGkLzk9hK/TMEFAOoxRPEpa3MrrJKwLleYXMlvWcfqHr4GkPSTf8U9L3ceK3
-         8eHRayzk5yAH+4aooMb23len8Q038oLoDVq5cmhbBpAbJQkfv8faoaoSB1bUUHpdwVdb
-         L2BTUaZE7XAxGfBW+oqoksKhbI/T7YrSkeUiY=
-Date: Wed, 29 Sep 2010 19:45:28 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "dzickus@redhat.com" <dzickus@redhat.com>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
-	disabling counters
-Message-ID: <20100929154528.GD9440@lenovo>
-References: <tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org> <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com> <20100929125301.GG13563@erda.amd.com> <20100929125453.GH13563@erda.amd.com> <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com> <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com> <20100929150140.GK13563@erda.amd.com> <20100929151253.GL13563@erda.amd.com> <20100929152745.GC9440@lenovo> <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 29 Sep 2010 11:46:24 -0400
+Date: Wed, 29 Sep 2010 17:46:06 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 7/8] drivers/i2c/busses/i2c-amd8111.c: Fix unsigned
+ return   type
+Message-ID: <20100929174606.616e564c@endymion.delvare>
+In-Reply-To: <Pine.LNX.4.64.1009081148040.3297@ask.diku.dk>
+References: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
+	<20100908093449.0adef429@hyperion.delvare>
+	<Pine.LNX.4.64.1009081148040.3297@ask.diku.dk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 05:33:07PM +0200, Stephane Eranian wrote:
-> Robert,
-> 
-> There is something else bothering me with cpuc->running.
-> 
-> It is not reset outside of the interrupt handler. So what if
-> event scheduling shuffles things around and an event is
-> moved somewhere else. Don't you need to clear the
-> cpuc->running[idx] for the old counter index?
-> 
-> 
+Hi Julia,
 
-Both bitmasks are set and test with same index though it might
-be a bit obscure scheme (we could be clearing this bit in
-x86_pmu_stop but it just a wasting cycles).
+On Wed, 8 Sep 2010 11:48:17 +0200 (CEST), Julia Lawall wrote:
+> OK, thanks. I will look at the code again.
 
-Btw, since x86 architectural and p4 are using same tests for
-running I presume better to have some helper rather then
-open coded pile?
+Any update on this patch?
 
-Cyrill
+> On Wed, 8 Sep 2010, Jean Delvare wrote:
+> 
+> > Hi Julia,
+> > 
+> > On Wed, 8 Sep 2010 07:58:45 +0200 (CEST), Julia Lawall wrote:
+> > > From: Julia Lawall <julia@diku.dk>
+> > > 
+> > > In each case, the function has an unsigned return type, but returns a
+> > > negative constant to indicate an error condition.  The result of calling
+> > > the function is always stored in a variable of type (signed) int, and thus
+> > > unsigned can be dropped from the return type.
+> > > 
+> > > A sematic match that finds this problem is as follows:
+> > > (http://coccinelle.lip6.fr/)
+> > > 
+> > > // <smpl>
+> > > @exists@
+> > > identifier f;
+> > > constant C;
+> > > @@
+> > > 
+> > >  unsigned f(...)
+> > >  { <+...
+> > > *  return -C;
+> > >  ...+> }
+> > > // </smpl>
+> > > 
+> > > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > > 
+> > > ---
+> > >  drivers/i2c/busses/i2c-amd8111.c |    4 ++--
+> > >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
+> > > index af1e5e2..02a3726 100644
+> > > --- a/drivers/i2c/busses/i2c-amd8111.c
+> > > +++ b/drivers/i2c/busses/i2c-amd8111.c
+> > > @@ -69,7 +69,7 @@ static struct pci_driver amd8111_driver;
+> > >   * ACPI 2.0 chapter 13 access of registers of the EC
+> > >   */
+> > >  
+> > > -static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
+> > > +static int amd_ec_wait_write(struct amd_smbus *smbus)
+> > >  {
+> > >  	int timeout = 500;
+> > >  
+> > > @@ -85,7 +85,7 @@ static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
+> > >  	return 0;
+> > >  }
+> > >  
+> > > -static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
+> > > +static int amd_ec_wait_read(struct amd_smbus *smbus)
+> > >  {
+> > >  	int timeout = 500;
+> > >  
+> > > 
+> > 
+> > Thanks for reporting. Unfortunately the fix above is incomplete.
+> > amd_ec_wait_write() and amd_ec_wait_read() are called by amd_ec_read()
+> > and amd_ec_write(), which will now attempt to return negative error
+> > codes as unsigned ints. So amd_ec_read() and amd_ec_write() must have
+> > their return type fixed too.
+> > 
+> > Note that the driver code never checks for errors returned by
+> > amd_ec_read() or amd_ec_write() anyway, so the fix alone is a no-op. A
+> > real fix would have to also update the caller sites to properly deal
+> > with errors if then happen.
+> > 
+> > -- 
+> > Jean Delvare
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+-- 
+Jean Delvare
