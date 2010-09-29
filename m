@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754281Ab0I2QYD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 12:24:03 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41368 "EHLO
+	id S1754369Ab0I2QYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 12:24:07 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41388 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754115Ab0I2QX5 (ORCPT
+	with ESMTP id S1754290Ab0I2QYE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 12:23:57 -0400
+	Wed, 29 Sep 2010 12:24:04 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
@@ -15,9 +15,9 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Richard Purdie <rpurdie@linux.intel.com>,
         Alberto Panizzo <maramaopercheseimorto@gmail.com>,
         Valentin Longchamp <valentin.longchamp@epfl.ch>
-Subject: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
-Date: Wed, 29 Sep 2010 18:23:46 +0200
-Message-Id: <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 4/4] rtc/mc13xxx: add support for the rtc found in the MC13892 PMIC
+Date: Wed, 29 Sep 2010 18:23:47 +0200
+Message-Id: <1285777427-2887-4-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.2.3
 In-Reply-To: <20100929162315.GG29811@pengutronix.de>
 References: <20100929162315.GG29811@pengutronix.de>
@@ -32,2113 +32,932 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mc13892 is the companion PMIC for Freescale's i.MX51.  It's similar enough
-to mc13782 to support it in a single driver.
+The mfd driver for MC13783 recently got support for MC13892 and was
+renamed accordingly from mc13783-core to mc13xxx-core.  Do the same for
+rtc-mc13783.
 
-This patch introduces enough compatibility cruft to keep all users of the
-superseded mc13783 driver unchanged.
+The only relevant change is to use platform id's to tell the platform bus
+that this driver is responsible for mc13892-rtc devices, too.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- drivers/mfd/Kconfig         |    9 +-
- drivers/mfd/Makefile        |    2 +-
- drivers/mfd/mc13783-core.c  |  743 --------------------------------------
- drivers/mfd/mc13xxx-core.c  |  840 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/mc13783.h |  247 ++++++-------
- include/linux/mfd/mc13xxx.h |  154 ++++++++
- 6 files changed, 1113 insertions(+), 882 deletions(-)
- delete mode 100644 drivers/mfd/mc13783-core.c
- create mode 100644 drivers/mfd/mc13xxx-core.c
- create mode 100644 include/linux/mfd/mc13xxx.h
+ drivers/rtc/Kconfig       |    7 +-
+ drivers/rtc/Makefile      |    2 +-
+ drivers/rtc/rtc-mc13783.c |  428 --------------------------------------------
+ drivers/rtc/rtc-mc13xxx.c |  437 +++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 442 insertions(+), 432 deletions(-)
+ delete mode 100644 drivers/rtc/rtc-mc13783.c
+ create mode 100644 drivers/rtc/rtc-mc13xxx.c
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index db51ea1..1868d9b 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -408,11 +408,16 @@ config MFD_PCF50633
- 	  so that function-specific drivers can bind to them.
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 48ca713..6ac83c2 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -926,10 +926,11 @@ config RTC_DRV_PCAP
+ 	  the PCAP2 ASIC used on some Motorola phones.
  
- config MFD_MC13783
--	tristate "Support Freescale MC13783"
-+	tristate
-+
-+config MFD_MC13XXX
-+	tristate "Support Freescale MC13783 and MC13892"
- 	depends on SPI_MASTER
- 	select MFD_CORE
-+	select MFD_MC13783
+ config RTC_DRV_MC13783
+-	depends on MFD_MC13783
+-	tristate "Freescale MC13783 RTC"
++	depends on MFD_MC13XXX
++	tristate "Freescale MC13xxx RTC"
  	help
--	  Support for the Freescale (Atlas) MC13783 PMIC and audio CODEC.
-+	  Support for the Freescale (Atlas) PMIC and audio CODECs
+-	  This enables support for the Freescale MC13783 PMIC RTC
++	  This enables support for the RTCs found on Freescale's PMICs
 +	  MC13783 and MC13892.
- 	  This driver provides common support for accessing  the device,
- 	  additional drivers must be enabled in order to use the
- 	  functionality of the device.
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index feaeeae..56965c9 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -39,7 +39,7 @@ obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
- obj-$(CONFIG_TWL4030_CODEC)	+= twl4030-codec.o
- obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
  
--obj-$(CONFIG_MFD_MC13783)	+= mc13783-core.o
-+obj-$(CONFIG_MFD_MC13XXX)	+= mc13xxx-core.o
- 
- obj-$(CONFIG_MFD_CORE)		+= mfd-core.o
- 
-diff --git a/drivers/mfd/mc13783-core.c b/drivers/mfd/mc13783-core.c
+ config RTC_DRV_MPC5121
+ 	tristate "Freescale MPC5121 built-in RTC"
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 0f207b3..61d8848 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -60,7 +60,7 @@ obj-$(CONFIG_RTC_MXC)		+= rtc-mxc.o
+ obj-$(CONFIG_RTC_DRV_MAX6900)	+= rtc-max6900.o
+ obj-$(CONFIG_RTC_DRV_MAX8925)	+= rtc-max8925.o
+ obj-$(CONFIG_RTC_DRV_MAX6902)	+= rtc-max6902.o
+-obj-$(CONFIG_RTC_DRV_MC13783)	+= rtc-mc13783.o
++obj-$(CONFIG_RTC_DRV_MC13XXX)	+= rtc-mc13xxx.o
+ obj-$(CONFIG_RTC_DRV_MSM6242)	+= rtc-msm6242.o
+ obj-$(CONFIG_RTC_DRV_MPC5121)	+= rtc-mpc5121.o
+ obj-$(CONFIG_RTC_DRV_MV)	+= rtc-mv.o
+diff --git a/drivers/rtc/rtc-mc13783.c b/drivers/rtc/rtc-mc13783.c
 deleted file mode 100644
-index 2506e68..0000000
---- a/drivers/mfd/mc13783-core.c
+index 675bfb5..0000000
+--- a/drivers/rtc/rtc-mc13783.c
 +++ /dev/null
-@@ -1,743 +0,0 @@
+@@ -1,428 +0,0 @@
 -/*
-- * Copyright 2009 Pengutronix
-- * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+- * Real Time Clock driver for Freescale MC13783 PMIC
 - *
-- * loosely based on an earlier driver that has
-- * Copyright 2009 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
+- * (C) 2009 Sascha Hauer, Pengutronix
+- * (C) 2009 Uwe Kleine-Koenig, Pengutronix
 - *
-- * This program is free software; you can redistribute it and/or modify it under
-- * the terms of the GNU General Public License version 2 as published by the
-- * Free Software Foundation.
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
 - */
--#include <linux/slab.h>
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/mutex.h>
--#include <linux/interrupt.h>
--#include <linux/spi/spi.h>
--#include <linux/mfd/core.h>
+-
 -#include <linux/mfd/mc13783.h>
--
--struct mc13783 {
--	struct spi_device *spidev;
--	struct mutex lock;
--	int irq;
--	int adcflags;
--
--	irq_handler_t irqhandler[MC13783_NUM_IRQ];
--	void *irqdata[MC13783_NUM_IRQ];
--};
--
--#define MC13783_REG_REVISION			 7
--#define MC13783_REG_ADC_0			43
--#define MC13783_REG_ADC_1			44
--#define MC13783_REG_ADC_2			45
--
--#define MC13783_IRQSTAT0	0
--#define MC13783_IRQSTAT0_ADCDONEI	(1 << 0)
--#define MC13783_IRQSTAT0_ADCBISDONEI	(1 << 1)
--#define MC13783_IRQSTAT0_TSI		(1 << 2)
--#define MC13783_IRQSTAT0_WHIGHI		(1 << 3)
--#define MC13783_IRQSTAT0_WLOWI		(1 << 4)
--#define MC13783_IRQSTAT0_CHGDETI	(1 << 6)
--#define MC13783_IRQSTAT0_CHGOVI		(1 << 7)
--#define MC13783_IRQSTAT0_CHGREVI	(1 << 8)
--#define MC13783_IRQSTAT0_CHGSHORTI	(1 << 9)
--#define MC13783_IRQSTAT0_CCCVI		(1 << 10)
--#define MC13783_IRQSTAT0_CHGCURRI	(1 << 11)
--#define MC13783_IRQSTAT0_BPONI		(1 << 12)
--#define MC13783_IRQSTAT0_LOBATLI	(1 << 13)
--#define MC13783_IRQSTAT0_LOBATHI	(1 << 14)
--#define MC13783_IRQSTAT0_UDPI		(1 << 15)
--#define MC13783_IRQSTAT0_USBI		(1 << 16)
--#define MC13783_IRQSTAT0_IDI		(1 << 19)
--#define MC13783_IRQSTAT0_SE1I		(1 << 21)
--#define MC13783_IRQSTAT0_CKDETI		(1 << 22)
--#define MC13783_IRQSTAT0_UDMI		(1 << 23)
--
--#define MC13783_IRQMASK0	1
--#define MC13783_IRQMASK0_ADCDONEM	MC13783_IRQSTAT0_ADCDONEI
--#define MC13783_IRQMASK0_ADCBISDONEM	MC13783_IRQSTAT0_ADCBISDONEI
--#define MC13783_IRQMASK0_TSM		MC13783_IRQSTAT0_TSI
--#define MC13783_IRQMASK0_WHIGHM		MC13783_IRQSTAT0_WHIGHI
--#define MC13783_IRQMASK0_WLOWM		MC13783_IRQSTAT0_WLOWI
--#define MC13783_IRQMASK0_CHGDETM	MC13783_IRQSTAT0_CHGDETI
--#define MC13783_IRQMASK0_CHGOVM		MC13783_IRQSTAT0_CHGOVI
--#define MC13783_IRQMASK0_CHGREVM	MC13783_IRQSTAT0_CHGREVI
--#define MC13783_IRQMASK0_CHGSHORTM	MC13783_IRQSTAT0_CHGSHORTI
--#define MC13783_IRQMASK0_CCCVM		MC13783_IRQSTAT0_CCCVI
--#define MC13783_IRQMASK0_CHGCURRM	MC13783_IRQSTAT0_CHGCURRI
--#define MC13783_IRQMASK0_BPONM		MC13783_IRQSTAT0_BPONI
--#define MC13783_IRQMASK0_LOBATLM	MC13783_IRQSTAT0_LOBATLI
--#define MC13783_IRQMASK0_LOBATHM	MC13783_IRQSTAT0_LOBATHI
--#define MC13783_IRQMASK0_UDPM		MC13783_IRQSTAT0_UDPI
--#define MC13783_IRQMASK0_USBM		MC13783_IRQSTAT0_USBI
--#define MC13783_IRQMASK0_IDM		MC13783_IRQSTAT0_IDI
--#define MC13783_IRQMASK0_SE1M		MC13783_IRQSTAT0_SE1I
--#define MC13783_IRQMASK0_CKDETM		MC13783_IRQSTAT0_CKDETI
--#define MC13783_IRQMASK0_UDMM		MC13783_IRQSTAT0_UDMI
--
--#define MC13783_IRQSTAT1	3
--#define MC13783_IRQSTAT1_1HZI		(1 << 0)
--#define MC13783_IRQSTAT1_TODAI		(1 << 1)
--#define MC13783_IRQSTAT1_ONOFD1I	(1 << 3)
--#define MC13783_IRQSTAT1_ONOFD2I	(1 << 4)
--#define MC13783_IRQSTAT1_ONOFD3I	(1 << 5)
--#define MC13783_IRQSTAT1_SYSRSTI	(1 << 6)
--#define MC13783_IRQSTAT1_RTCRSTI	(1 << 7)
--#define MC13783_IRQSTAT1_PCI		(1 << 8)
--#define MC13783_IRQSTAT1_WARMI		(1 << 9)
--#define MC13783_IRQSTAT1_MEMHLDI	(1 << 10)
--#define MC13783_IRQSTAT1_PWRRDYI	(1 << 11)
--#define MC13783_IRQSTAT1_THWARNLI	(1 << 12)
--#define MC13783_IRQSTAT1_THWARNHI	(1 << 13)
--#define MC13783_IRQSTAT1_CLKI		(1 << 14)
--#define MC13783_IRQSTAT1_SEMAFI		(1 << 15)
--#define MC13783_IRQSTAT1_MC2BI		(1 << 17)
--#define MC13783_IRQSTAT1_HSDETI		(1 << 18)
--#define MC13783_IRQSTAT1_HSLI		(1 << 19)
--#define MC13783_IRQSTAT1_ALSPTHI	(1 << 20)
--#define MC13783_IRQSTAT1_AHSSHORTI	(1 << 21)
--
--#define MC13783_IRQMASK1	4
--#define MC13783_IRQMASK1_1HZM		MC13783_IRQSTAT1_1HZI
--#define MC13783_IRQMASK1_TODAM		MC13783_IRQSTAT1_TODAI
--#define MC13783_IRQMASK1_ONOFD1M	MC13783_IRQSTAT1_ONOFD1I
--#define MC13783_IRQMASK1_ONOFD2M	MC13783_IRQSTAT1_ONOFD2I
--#define MC13783_IRQMASK1_ONOFD3M	MC13783_IRQSTAT1_ONOFD3I
--#define MC13783_IRQMASK1_SYSRSTM	MC13783_IRQSTAT1_SYSRSTI
--#define MC13783_IRQMASK1_RTCRSTM	MC13783_IRQSTAT1_RTCRSTI
--#define MC13783_IRQMASK1_PCM		MC13783_IRQSTAT1_PCI
--#define MC13783_IRQMASK1_WARMM		MC13783_IRQSTAT1_WARMI
--#define MC13783_IRQMASK1_MEMHLDM	MC13783_IRQSTAT1_MEMHLDI
--#define MC13783_IRQMASK1_PWRRDYM	MC13783_IRQSTAT1_PWRRDYI
--#define MC13783_IRQMASK1_THWARNLM	MC13783_IRQSTAT1_THWARNLI
--#define MC13783_IRQMASK1_THWARNHM	MC13783_IRQSTAT1_THWARNHI
--#define MC13783_IRQMASK1_CLKM		MC13783_IRQSTAT1_CLKI
--#define MC13783_IRQMASK1_SEMAFM		MC13783_IRQSTAT1_SEMAFI
--#define MC13783_IRQMASK1_MC2BM		MC13783_IRQSTAT1_MC2BI
--#define MC13783_IRQMASK1_HSDETM		MC13783_IRQSTAT1_HSDETI
--#define MC13783_IRQMASK1_HSLM		MC13783_IRQSTAT1_HSLI
--#define MC13783_IRQMASK1_ALSPTHM	MC13783_IRQSTAT1_ALSPTHI
--#define MC13783_IRQMASK1_AHSSHORTM	MC13783_IRQSTAT1_AHSSHORTI
--
--#define MC13783_ADC1		44
--#define MC13783_ADC1_ADEN		(1 << 0)
--#define MC13783_ADC1_RAND		(1 << 1)
--#define MC13783_ADC1_ADSEL		(1 << 3)
--#define MC13783_ADC1_ASC		(1 << 20)
--#define MC13783_ADC1_ADTRIGIGN		(1 << 21)
--
--#define MC13783_NUMREGS 0x3f
--
--void mc13783_lock(struct mc13783 *mc13783)
--{
--	if (!mutex_trylock(&mc13783->lock)) {
--		dev_dbg(&mc13783->spidev->dev, "wait for %s from %pf\n",
--				__func__, __builtin_return_address(0));
--
--		mutex_lock(&mc13783->lock);
--	}
--	dev_dbg(&mc13783->spidev->dev, "%s from %pf\n",
--			__func__, __builtin_return_address(0));
--}
--EXPORT_SYMBOL(mc13783_lock);
--
--void mc13783_unlock(struct mc13783 *mc13783)
--{
--	dev_dbg(&mc13783->spidev->dev, "%s from %pf\n",
--			__func__, __builtin_return_address(0));
--	mutex_unlock(&mc13783->lock);
--}
--EXPORT_SYMBOL(mc13783_unlock);
--
--#define MC13783_REGOFFSET_SHIFT 25
--int mc13783_reg_read(struct mc13783 *mc13783, unsigned int offset, u32 *val)
--{
--	struct spi_transfer t;
--	struct spi_message m;
--	int ret;
--
--	BUG_ON(!mutex_is_locked(&mc13783->lock));
--
--	if (offset > MC13783_NUMREGS)
--		return -EINVAL;
--
--	*val = offset << MC13783_REGOFFSET_SHIFT;
--
--	memset(&t, 0, sizeof(t));
--
--	t.tx_buf = val;
--	t.rx_buf = val;
--	t.len = sizeof(u32);
--
--	spi_message_init(&m);
--	spi_message_add_tail(&t, &m);
--
--	ret = spi_sync(mc13783->spidev, &m);
--
--	/* error in message.status implies error return from spi_sync */
--	BUG_ON(!ret && m.status);
--
--	if (ret)
--		return ret;
--
--	*val &= 0xffffff;
--
--	dev_vdbg(&mc13783->spidev->dev, "[0x%02x] -> 0x%06x\n", offset, *val);
--
--	return 0;
--}
--EXPORT_SYMBOL(mc13783_reg_read);
--
--int mc13783_reg_write(struct mc13783 *mc13783, unsigned int offset, u32 val)
--{
--	u32 buf;
--	struct spi_transfer t;
--	struct spi_message m;
--	int ret;
--
--	BUG_ON(!mutex_is_locked(&mc13783->lock));
--
--	dev_vdbg(&mc13783->spidev->dev, "[0x%02x] <- 0x%06x\n", offset, val);
--
--	if (offset > MC13783_NUMREGS || val > 0xffffff)
--		return -EINVAL;
--
--	buf = 1 << 31 | offset << MC13783_REGOFFSET_SHIFT | val;
--
--	memset(&t, 0, sizeof(t));
--
--	t.tx_buf = &buf;
--	t.rx_buf = &buf;
--	t.len = sizeof(u32);
--
--	spi_message_init(&m);
--	spi_message_add_tail(&t, &m);
--
--	ret = spi_sync(mc13783->spidev, &m);
--
--	BUG_ON(!ret && m.status);
--
--	if (ret)
--		return ret;
--
--	return 0;
--}
--EXPORT_SYMBOL(mc13783_reg_write);
--
--int mc13783_reg_rmw(struct mc13783 *mc13783, unsigned int offset,
--		u32 mask, u32 val)
--{
--	int ret;
--	u32 valread;
--
--	BUG_ON(val & ~mask);
--
--	ret = mc13783_reg_read(mc13783, offset, &valread);
--	if (ret)
--		return ret;
--
--	valread = (valread & ~mask) | val;
--
--	return mc13783_reg_write(mc13783, offset, valread);
--}
--EXPORT_SYMBOL(mc13783_reg_rmw);
--
--int mc13783_get_flags(struct mc13783 *mc13783)
--{
--	struct mc13783_platform_data *pdata =
--		dev_get_platdata(&mc13783->spidev->dev);
--
--	return pdata->flags;
--}
--EXPORT_SYMBOL(mc13783_get_flags);
--
--int mc13783_irq_mask(struct mc13783 *mc13783, int irq)
--{
--	int ret;
--	unsigned int offmask = irq < 24 ? MC13783_IRQMASK0 : MC13783_IRQMASK1;
--	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
--	u32 mask;
--
--	if (irq < 0 || irq >= MC13783_NUM_IRQ)
--		return -EINVAL;
--
--	ret = mc13783_reg_read(mc13783, offmask, &mask);
--	if (ret)
--		return ret;
--
--	if (mask & irqbit)
--		/* already masked */
--		return 0;
--
--	return mc13783_reg_write(mc13783, offmask, mask | irqbit);
--}
--EXPORT_SYMBOL(mc13783_irq_mask);
--
--int mc13783_irq_unmask(struct mc13783 *mc13783, int irq)
--{
--	int ret;
--	unsigned int offmask = irq < 24 ? MC13783_IRQMASK0 : MC13783_IRQMASK1;
--	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
--	u32 mask;
--
--	if (irq < 0 || irq >= MC13783_NUM_IRQ)
--		return -EINVAL;
--
--	ret = mc13783_reg_read(mc13783, offmask, &mask);
--	if (ret)
--		return ret;
--
--	if (!(mask & irqbit))
--		/* already unmasked */
--		return 0;
--
--	return mc13783_reg_write(mc13783, offmask, mask & ~irqbit);
--}
--EXPORT_SYMBOL(mc13783_irq_unmask);
--
--int mc13783_irq_status(struct mc13783 *mc13783, int irq,
--		int *enabled, int *pending)
--{
--	int ret;
--	unsigned int offmask = irq < 24 ? MC13783_IRQMASK0 : MC13783_IRQMASK1;
--	unsigned int offstat = irq < 24 ? MC13783_IRQSTAT0 : MC13783_IRQSTAT1;
--	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
--
--	if (irq < 0 || irq >= MC13783_NUM_IRQ)
--		return -EINVAL;
--
--	if (enabled) {
--		u32 mask;
--
--		ret = mc13783_reg_read(mc13783, offmask, &mask);
--		if (ret)
--			return ret;
--
--		*enabled = mask & irqbit;
--	}
--
--	if (pending) {
--		u32 stat;
--
--		ret = mc13783_reg_read(mc13783, offstat, &stat);
--		if (ret)
--			return ret;
--
--		*pending = stat & irqbit;
--	}
--
--	return 0;
--}
--EXPORT_SYMBOL(mc13783_irq_status);
--
--int mc13783_irq_ack(struct mc13783 *mc13783, int irq)
--{
--	unsigned int offstat = irq < 24 ? MC13783_IRQSTAT0 : MC13783_IRQSTAT1;
--	unsigned int val = 1 << (irq < 24 ? irq : irq - 24);
--
--	BUG_ON(irq < 0 || irq >= MC13783_NUM_IRQ);
--
--	return mc13783_reg_write(mc13783, offstat, val);
--}
--EXPORT_SYMBOL(mc13783_irq_ack);
--
--int mc13783_irq_request_nounmask(struct mc13783 *mc13783, int irq,
--		irq_handler_t handler, const char *name, void *dev)
--{
--	BUG_ON(!mutex_is_locked(&mc13783->lock));
--	BUG_ON(!handler);
--
--	if (irq < 0 || irq >= MC13783_NUM_IRQ)
--		return -EINVAL;
--
--	if (mc13783->irqhandler[irq])
--		return -EBUSY;
--
--	mc13783->irqhandler[irq] = handler;
--	mc13783->irqdata[irq] = dev;
--
--	return 0;
--}
--EXPORT_SYMBOL(mc13783_irq_request_nounmask);
--
--int mc13783_irq_request(struct mc13783 *mc13783, int irq,
--		irq_handler_t handler, const char *name, void *dev)
--{
--	int ret;
--
--	ret = mc13783_irq_request_nounmask(mc13783, irq, handler, name, dev);
--	if (ret)
--		return ret;
--
--	ret = mc13783_irq_unmask(mc13783, irq);
--	if (ret) {
--		mc13783->irqhandler[irq] = NULL;
--		mc13783->irqdata[irq] = NULL;
--		return ret;
--	}
--
--	return 0;
--}
--EXPORT_SYMBOL(mc13783_irq_request);
--
--int mc13783_irq_free(struct mc13783 *mc13783, int irq, void *dev)
--{
--	int ret;
--	BUG_ON(!mutex_is_locked(&mc13783->lock));
--
--	if (irq < 0 || irq >= MC13783_NUM_IRQ || !mc13783->irqhandler[irq] ||
--			mc13783->irqdata[irq] != dev)
--		return -EINVAL;
--
--	ret = mc13783_irq_mask(mc13783, irq);
--	if (ret)
--		return ret;
--
--	mc13783->irqhandler[irq] = NULL;
--	mc13783->irqdata[irq] = NULL;
--
--	return 0;
--}
--EXPORT_SYMBOL(mc13783_irq_free);
--
--static inline irqreturn_t mc13783_irqhandler(struct mc13783 *mc13783, int irq)
--{
--	return mc13783->irqhandler[irq](irq, mc13783->irqdata[irq]);
--}
--
--/*
-- * returns: number of handled irqs or negative error
-- * locking: holds mc13783->lock
-- */
--static int mc13783_irq_handle(struct mc13783 *mc13783,
--		unsigned int offstat, unsigned int offmask, int baseirq)
--{
--	u32 stat, mask;
--	int ret = mc13783_reg_read(mc13783, offstat, &stat);
--	int num_handled = 0;
--
--	if (ret)
--		return ret;
--
--	ret = mc13783_reg_read(mc13783, offmask, &mask);
--	if (ret)
--		return ret;
--
--	while (stat & ~mask) {
--		int irq = __ffs(stat & ~mask);
--
--		stat &= ~(1 << irq);
--
--		if (likely(mc13783->irqhandler[baseirq + irq])) {
--			irqreturn_t handled;
--
--			handled = mc13783_irqhandler(mc13783, baseirq + irq);
--			if (handled == IRQ_HANDLED)
--				num_handled++;
--		} else {
--			dev_err(&mc13783->spidev->dev,
--					"BUG: irq %u but no handler\n",
--					baseirq + irq);
--
--			mask |= 1 << irq;
--
--			ret = mc13783_reg_write(mc13783, offmask, mask);
--		}
--	}
--
--	return num_handled;
--}
--
--static irqreturn_t mc13783_irq_thread(int irq, void *data)
--{
--	struct mc13783 *mc13783 = data;
--	irqreturn_t ret;
--	int handled = 0;
--
--	mc13783_lock(mc13783);
--
--	ret = mc13783_irq_handle(mc13783, MC13783_IRQSTAT0,
--			MC13783_IRQMASK0, MC13783_IRQ_ADCDONE);
--	if (ret > 0)
--		handled = 1;
--
--	ret = mc13783_irq_handle(mc13783, MC13783_IRQSTAT1,
--			MC13783_IRQMASK1, MC13783_IRQ_1HZ);
--	if (ret > 0)
--		handled = 1;
--
--	mc13783_unlock(mc13783);
--
--	return IRQ_RETVAL(handled);
--}
--
--#define MC13783_ADC1_CHAN0_SHIFT	5
--#define MC13783_ADC1_CHAN1_SHIFT	8
--
--struct mc13783_adcdone_data {
+-#include <linux/platform_device.h>
+-#include <linux/kernel.h>
+-#include <linux/module.h>
+-#include <linux/slab.h>
+-#include <linux/rtc.h>
+-
+-#define DRIVER_NAME "mc13783-rtc"
+-
+-#define MC13783_RTCTOD	20
+-#define MC13783_RTCTODA	21
+-#define MC13783_RTCDAY	22
+-#define MC13783_RTCDAYA	23
+-
+-struct mc13783_rtc {
+-	struct rtc_device *rtc;
 -	struct mc13783 *mc13783;
--	struct completion done;
+-	int valid;
 -};
 -
--static irqreturn_t mc13783_handler_adcdone(int irq, void *data)
+-static int mc13783_rtc_irq_enable_unlocked(struct device *dev,
+-		unsigned int enabled, int irq)
 -{
--	struct mc13783_adcdone_data *adcdone_data = data;
+-	struct mc13783_rtc *priv = dev_get_drvdata(dev);
+-	int (*func)(struct mc13783 *mc13783, int irq);
 -
--	mc13783_irq_ack(adcdone_data->mc13783, irq);
+-	if (!priv->valid)
+-		return -ENODATA;
 -
--	complete_all(&adcdone_data->done);
+-	func = enabled ? mc13783_irq_unmask : mc13783_irq_mask;
+-	return func(priv->mc13783, irq);
+-}
+-
+-static int mc13783_rtc_irq_enable(struct device *dev,
+-		unsigned int enabled, int irq)
+-{
+-	struct mc13783_rtc *priv = dev_get_drvdata(dev);
+-	int ret;
+-
+-	mc13783_lock(priv->mc13783);
+-
+-	ret = mc13783_rtc_irq_enable_unlocked(dev, enabled, irq);
+-
+-	mc13783_unlock(priv->mc13783);
+-
+-	return ret;
+-}
+-
+-static int mc13783_rtc_read_time(struct device *dev, struct rtc_time *tm)
+-{
+-	struct mc13783_rtc *priv = dev_get_drvdata(dev);
+-	unsigned int seconds, days1, days2;
+-	unsigned long s1970;
+-	int ret;
+-
+-	mc13783_lock(priv->mc13783);
+-
+-	if (!priv->valid) {
+-		ret = -ENODATA;
+-		goto out;
+-	}
+-
+-	ret = mc13783_reg_read(priv->mc13783, MC13783_RTCDAY, &days1);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_reg_read(priv->mc13783, MC13783_RTCTOD, &seconds);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_reg_read(priv->mc13783, MC13783_RTCDAY, &days2);
+-out:
+-	mc13783_unlock(priv->mc13783);
+-
+-	if (ret)
+-		return ret;
+-
+-	if (days2 == days1 + 1) {
+-		if (seconds >= 86400 / 2)
+-			days2 = days1;
+-		else
+-			days1 = days2;
+-	}
+-
+-	if (days1 != days2)
+-		return -EIO;
+-
+-	s1970 = days1 * 86400 + seconds;
+-
+-	rtc_time_to_tm(s1970, tm);
+-
+-	return rtc_valid_tm(tm);
+-}
+-
+-static int mc13783_rtc_set_mmss(struct device *dev, unsigned long secs)
+-{
+-	struct mc13783_rtc *priv = dev_get_drvdata(dev);
+-	unsigned int seconds, days;
+-	unsigned int alarmseconds;
+-	int ret;
+-
+-	seconds = secs % 86400;
+-	days = secs / 86400;
+-
+-	mc13783_lock(priv->mc13783);
+-
+-	/*
+-	 * temporarily invalidate alarm to prevent triggering it when the day is
+-	 * already updated while the time isn't yet.
+-	 */
+-	ret = mc13783_reg_read(priv->mc13783, MC13783_RTCTODA, &alarmseconds);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	if (alarmseconds < 86400) {
+-		ret = mc13783_reg_write(priv->mc13783,
+-				MC13783_RTCTODA, 0x1ffff);
+-		if (unlikely(ret))
+-			goto out;
+-	}
+-
+-	/*
+-	 * write seconds=0 to prevent a day switch between writing days
+-	 * and seconds below
+-	 */
+-	ret = mc13783_reg_write(priv->mc13783, MC13783_RTCTOD, 0);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_reg_write(priv->mc13783, MC13783_RTCDAY, days);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_reg_write(priv->mc13783, MC13783_RTCTOD, seconds);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	/* restore alarm */
+-	if (alarmseconds < 86400) {
+-		ret = mc13783_reg_write(priv->mc13783,
+-				MC13783_RTCTODA, alarmseconds);
+-		if (unlikely(ret))
+-			goto out;
+-	}
+-
+-	ret = mc13783_irq_ack(priv->mc13783, MC13783_IRQ_RTCRST);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_irq_unmask(priv->mc13783, MC13783_IRQ_RTCRST);
+-out:
+-	priv->valid = !ret;
+-
+-	mc13783_unlock(priv->mc13783);
+-
+-	return ret;
+-}
+-
+-static int mc13783_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+-{
+-	struct mc13783_rtc *priv = dev_get_drvdata(dev);
+-	unsigned seconds, days;
+-	unsigned long s1970;
+-	int enabled, pending;
+-	int ret;
+-
+-	mc13783_lock(priv->mc13783);
+-
+-	ret = mc13783_reg_read(priv->mc13783, MC13783_RTCTODA, &seconds);
+-	if (unlikely(ret))
+-		goto out;
+-	if (seconds >= 86400) {
+-		ret = -ENODATA;
+-		goto out;
+-	}
+-
+-	ret = mc13783_reg_read(priv->mc13783, MC13783_RTCDAY, &days);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_irq_status(priv->mc13783, MC13783_IRQ_TODA,
+-			&enabled, &pending);
+-
+-out:
+-	mc13783_unlock(priv->mc13783);
+-
+-	if (ret)
+-		return ret;
+-
+-	alarm->enabled = enabled;
+-	alarm->pending = pending;
+-
+-	s1970 = days * 86400 + seconds;
+-
+-	rtc_time_to_tm(s1970, &alarm->time);
+-	dev_dbg(dev, "%s: %lu\n", __func__, s1970);
+-
+-	return 0;
+-}
+-
+-static int mc13783_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
+-{
+-	struct mc13783_rtc *priv = dev_get_drvdata(dev);
+-	unsigned long s1970;
+-	unsigned seconds, days;
+-	int ret;
+-
+-	mc13783_lock(priv->mc13783);
+-
+-	/* disable alarm to prevent false triggering */
+-	ret = mc13783_reg_write(priv->mc13783, MC13783_RTCTODA, 0x1ffff);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_irq_ack(priv->mc13783, MC13783_IRQ_TODA);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = rtc_tm_to_time(&alarm->time, &s1970);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	dev_dbg(dev, "%s: o%2.s %lu\n", __func__, alarm->enabled ? "n" : "ff",
+-			s1970);
+-
+-	ret = mc13783_rtc_irq_enable_unlocked(dev, alarm->enabled,
+-			MC13783_IRQ_TODA);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	seconds = s1970 % 86400;
+-	days = s1970 / 86400;
+-
+-	ret = mc13783_reg_write(priv->mc13783, MC13783_RTCDAYA, days);
+-	if (unlikely(ret))
+-		goto out;
+-
+-	ret = mc13783_reg_write(priv->mc13783, MC13783_RTCTODA, seconds);
+-
+-out:
+-	mc13783_unlock(priv->mc13783);
+-
+-	return ret;
+-}
+-
+-static irqreturn_t mc13783_rtc_alarm_handler(int irq, void *dev)
+-{
+-	struct mc13783_rtc *priv = dev;
+-	struct mc13783 *mc13783 = priv->mc13783;
+-
+-	dev_dbg(&priv->rtc->dev, "Alarm\n");
+-
+-	rtc_update_irq(priv->rtc, 1, RTC_IRQF | RTC_AF);
+-
+-	mc13783_irq_ack(mc13783, irq);
 -
 -	return IRQ_HANDLED;
 -}
 -
--#define MC13783_ADC_WORKING (1 << 0)
--
--int mc13783_adc_do_conversion(struct mc13783 *mc13783, unsigned int mode,
--		unsigned int channel, unsigned int *sample)
+-static irqreturn_t mc13783_rtc_update_handler(int irq, void *dev)
 -{
--	u32 adc0, adc1, old_adc0;
--	int i, ret;
--	struct mc13783_adcdone_data adcdone_data = {
--		.mc13783 = mc13783,
--	};
--	init_completion(&adcdone_data.done);
+-	struct mc13783_rtc *priv = dev;
+-	struct mc13783 *mc13783 = priv->mc13783;
 -
--	dev_dbg(&mc13783->spidev->dev, "%s\n", __func__);
+-	dev_dbg(&priv->rtc->dev, "1HZ\n");
 -
--	mc13783_lock(mc13783);
+-	rtc_update_irq(priv->rtc, 1, RTC_IRQF | RTC_UF);
 -
--	if (mc13783->adcflags & MC13783_ADC_WORKING) {
--		ret = -EBUSY;
--		goto out;
--	}
+-	mc13783_irq_ack(mc13783, irq);
 -
--	mc13783->adcflags |= MC13783_ADC_WORKING;
+-	return IRQ_HANDLED;
+-}
 -
--	mc13783_reg_read(mc13783, MC13783_ADC0, &old_adc0);
+-static int mc13783_rtc_update_irq_enable(struct device *dev,
+-		unsigned int enabled)
+-{
+-	return mc13783_rtc_irq_enable(dev, enabled, MC13783_IRQ_1HZ);
+-}
 -
--	adc0 = MC13783_ADC0_ADINC1 | MC13783_ADC0_ADINC2;
--	adc1 = MC13783_ADC1_ADEN | MC13783_ADC1_ADTRIGIGN | MC13783_ADC1_ASC;
+-static int mc13783_rtc_alarm_irq_enable(struct device *dev,
+-		unsigned int enabled)
+-{
+-	return mc13783_rtc_irq_enable(dev, enabled, MC13783_IRQ_TODA);
+-}
 -
--	if (channel > 7)
--		adc1 |= MC13783_ADC1_ADSEL;
+-static const struct rtc_class_ops mc13783_rtc_ops = {
+-	.read_time = mc13783_rtc_read_time,
+-	.set_mmss = mc13783_rtc_set_mmss,
+-	.read_alarm = mc13783_rtc_read_alarm,
+-	.set_alarm = mc13783_rtc_set_alarm,
+-	.alarm_irq_enable = mc13783_rtc_alarm_irq_enable,
+-	.update_irq_enable = mc13783_rtc_update_irq_enable,
+-};
 -
--	switch (mode) {
--	case MC13783_ADC_MODE_TS:
--		adc0 |= MC13783_ADC0_ADREFEN | MC13783_ADC0_TSMOD0 |
--			MC13783_ADC0_TSMOD1;
--		adc1 |= 4 << MC13783_ADC1_CHAN1_SHIFT;
--		break;
+-static irqreturn_t mc13783_rtc_reset_handler(int irq, void *dev)
+-{
+-	struct mc13783_rtc *priv = dev;
+-	struct mc13783 *mc13783 = priv->mc13783;
 -
--	case MC13783_ADC_MODE_SINGLE_CHAN:
--		adc0 |= old_adc0 & MC13783_ADC0_TSMOD_MASK;
--		adc1 |= (channel & 0x7) << MC13783_ADC1_CHAN0_SHIFT;
--		adc1 |= MC13783_ADC1_RAND;
--		break;
+-	dev_dbg(&priv->rtc->dev, "RTCRST\n");
+-	priv->valid = 0;
 -
--	case MC13783_ADC_MODE_MULT_CHAN:
--		adc0 |= old_adc0 & MC13783_ADC0_TSMOD_MASK;
--		adc1 |= 4 << MC13783_ADC1_CHAN1_SHIFT;
--		break;
+-	mc13783_irq_mask(mc13783, irq);
 -
--	default:
--		mc13783_unlock(mc13783);
--		return -EINVAL;
--	}
+-	return IRQ_HANDLED;
+-}
 -
--	dev_dbg(&mc13783->spidev->dev, "%s: request irq\n", __func__);
--	mc13783_irq_request(mc13783, MC13783_IRQ_ADCDONE,
--			mc13783_handler_adcdone, __func__, &adcdone_data);
--	mc13783_irq_ack(mc13783, MC13783_IRQ_ADCDONE);
+-static int __devinit mc13783_rtc_probe(struct platform_device *pdev)
+-{
+-	int ret;
+-	struct mc13783_rtc *priv;
+-	struct mc13783 *mc13783;
+-	int rtcrst_pending;
 -
--	mc13783_reg_write(mc13783, MC13783_REG_ADC_0, adc0);
--	mc13783_reg_write(mc13783, MC13783_REG_ADC_1, adc1);
+-	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+-	if (!priv)
+-		return -ENOMEM;
 -
--	mc13783_unlock(mc13783);
+-	mc13783 = dev_get_drvdata(pdev->dev.parent);
+-	priv->mc13783 = mc13783;
 -
--	ret = wait_for_completion_interruptible_timeout(&adcdone_data.done, HZ);
--
--	if (!ret)
--		ret = -ETIMEDOUT;
+-	platform_set_drvdata(pdev, priv);
 -
 -	mc13783_lock(mc13783);
 -
--	mc13783_irq_free(mc13783, MC13783_IRQ_ADCDONE, &adcdone_data);
+-	ret = mc13783_irq_request(mc13783, MC13783_IRQ_RTCRST,
+-			mc13783_rtc_reset_handler, DRIVER_NAME, priv);
+-	if (ret)
+-		goto err_reset_irq_request;
 -
--	if (ret > 0)
--		for (i = 0; i < 4; ++i) {
--			ret = mc13783_reg_read(mc13783,
--					MC13783_REG_ADC_2, &sample[i]);
--			if (ret)
--				break;
--		}
+-	ret = mc13783_irq_status(mc13783, MC13783_IRQ_RTCRST,
+-			NULL, &rtcrst_pending);
+-	if (ret)
+-		goto err_reset_irq_status;
 -
--	if (mode == MC13783_ADC_MODE_TS)
--		/* restore TSMOD */
--		mc13783_reg_write(mc13783, MC13783_REG_ADC_0, old_adc0);
+-	priv->valid = !rtcrst_pending;
 -
--	mc13783->adcflags &= ~MC13783_ADC_WORKING;
--out:
+-	ret = mc13783_irq_request_nounmask(mc13783, MC13783_IRQ_1HZ,
+-			mc13783_rtc_update_handler, DRIVER_NAME, priv);
+-	if (ret)
+-		goto err_update_irq_request;
+-
+-	ret = mc13783_irq_request_nounmask(mc13783, MC13783_IRQ_TODA,
+-			mc13783_rtc_alarm_handler, DRIVER_NAME, priv);
+-	if (ret)
+-		goto err_alarm_irq_request;
+-
+-	priv->rtc = rtc_device_register(pdev->name,
+-			&pdev->dev, &mc13783_rtc_ops, THIS_MODULE);
+-	if (IS_ERR(priv->rtc)) {
+-		ret = PTR_ERR(priv->rtc);
+-
+-		mc13783_irq_free(mc13783, MC13783_IRQ_TODA, priv);
+-err_alarm_irq_request:
+-
+-		mc13783_irq_free(mc13783, MC13783_IRQ_1HZ, priv);
+-err_update_irq_request:
+-
+-err_reset_irq_status:
+-
+-		mc13783_irq_free(mc13783, MC13783_IRQ_RTCRST, priv);
+-err_reset_irq_request:
+-
+-		platform_set_drvdata(pdev, NULL);
+-		kfree(priv);
+-	}
+-
 -	mc13783_unlock(mc13783);
 -
 -	return ret;
 -}
--EXPORT_SYMBOL_GPL(mc13783_adc_do_conversion);
 -
--static int mc13783_add_subdevice_pdata(struct mc13783 *mc13783,
--		const char *name, void *pdata, size_t pdata_size)
+-static int __devexit mc13783_rtc_remove(struct platform_device *pdev)
 -{
--	struct mfd_cell cell = {
--		.name = name,
--		.platform_data = pdata,
--		.data_size = pdata_size,
--	};
+-	struct mc13783_rtc *priv = platform_get_drvdata(pdev);
 -
--	return mfd_add_devices(&mc13783->spidev->dev, -1, &cell, 1, NULL, 0);
--}
+-	mc13783_lock(priv->mc13783);
 -
--static int mc13783_add_subdevice(struct mc13783 *mc13783, const char *name)
--{
--	return mc13783_add_subdevice_pdata(mc13783, name, NULL, 0);
--}
+-	rtc_device_unregister(priv->rtc);
 -
--static int mc13783_check_revision(struct mc13783 *mc13783)
--{
--	u32 rev_id, rev1, rev2, finid, icid;
+-	mc13783_irq_free(priv->mc13783, MC13783_IRQ_TODA, priv);
+-	mc13783_irq_free(priv->mc13783, MC13783_IRQ_1HZ, priv);
+-	mc13783_irq_free(priv->mc13783, MC13783_IRQ_RTCRST, priv);
 -
--	mc13783_reg_read(mc13783, MC13783_REG_REVISION, &rev_id);
+-	mc13783_unlock(priv->mc13783);
 -
--	rev1 = (rev_id & 0x018) >> 3;
--	rev2 = (rev_id & 0x007);
--	icid = (rev_id & 0x01C0) >> 6;
--	finid = (rev_id & 0x01E00) >> 9;
+-	platform_set_drvdata(pdev, NULL);
 -
--	/* Ver 0.2 is actually 3.2a.  Report as 3.2 */
--	if ((rev1 == 0) && (rev2 == 2))
--		rev1 = 3;
--
--	if (rev1 == 0 || icid != 2) {
--		dev_err(&mc13783->spidev->dev, "No MC13783 detected.\n");
--		return -ENODEV;
--	}
--
--	dev_info(&mc13783->spidev->dev,
--			"MC13783 Rev %d.%d FinVer %x detected\n",
--			rev1, rev2, finid);
+-	kfree(priv);
 -
 -	return 0;
 -}
 -
--static int mc13783_probe(struct spi_device *spi)
--{
--	struct mc13783 *mc13783;
--	struct mc13783_platform_data *pdata = dev_get_platdata(&spi->dev);
--	int ret;
--
--	mc13783 = kzalloc(sizeof(*mc13783), GFP_KERNEL);
--	if (!mc13783)
--		return -ENOMEM;
--
--	dev_set_drvdata(&spi->dev, mc13783);
--	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
--	spi->bits_per_word = 32;
--	spi_setup(spi);
--
--	mc13783->spidev = spi;
--
--	mutex_init(&mc13783->lock);
--	mc13783_lock(mc13783);
--
--	ret = mc13783_check_revision(mc13783);
--	if (ret)
--		goto err_revision;
--
--	/* mask all irqs */
--	ret = mc13783_reg_write(mc13783, MC13783_IRQMASK0, 0x00ffffff);
--	if (ret)
--		goto err_mask;
--
--	ret = mc13783_reg_write(mc13783, MC13783_IRQMASK1, 0x00ffffff);
--	if (ret)
--		goto err_mask;
--
--	ret = request_threaded_irq(spi->irq, NULL, mc13783_irq_thread,
--			IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc13783", mc13783);
--
--	if (ret) {
--err_mask:
--err_revision:
--		mutex_unlock(&mc13783->lock);
--		dev_set_drvdata(&spi->dev, NULL);
--		kfree(mc13783);
--		return ret;
--	}
--
--	mc13783_unlock(mc13783);
--
--	if (pdata->flags & MC13783_USE_ADC)
--		mc13783_add_subdevice(mc13783, "mc13783-adc");
--
--	if (pdata->flags & MC13783_USE_CODEC)
--		mc13783_add_subdevice(mc13783, "mc13783-codec");
--
--	if (pdata->flags & MC13783_USE_REGULATOR) {
--		struct mc13783_regulator_platform_data regulator_pdata = {
--			.num_regulators = pdata->num_regulators,
--			.regulators = pdata->regulators,
--		};
--
--		mc13783_add_subdevice_pdata(mc13783, "mc13783-regulator",
--				&regulator_pdata, sizeof(regulator_pdata));
--	}
--
--	if (pdata->flags & MC13783_USE_RTC)
--		mc13783_add_subdevice(mc13783, "mc13783-rtc");
--
--	if (pdata->flags & MC13783_USE_TOUCHSCREEN)
--		mc13783_add_subdevice(mc13783, "mc13783-ts");
--
--	if (pdata->flags & MC13783_USE_LED)
--		mc13783_add_subdevice_pdata(mc13783, "mc13783-led",
--					pdata->leds, sizeof(*pdata->leds));
--
--	return 0;
--}
--
--static int __devexit mc13783_remove(struct spi_device *spi)
--{
--	struct mc13783 *mc13783 = dev_get_drvdata(&spi->dev);
--
--	free_irq(mc13783->spidev->irq, mc13783);
--
--	mfd_remove_devices(&spi->dev);
--
--	return 0;
--}
--
--static struct spi_driver mc13783_driver = {
+-static struct platform_driver mc13783_rtc_driver = {
+-	.remove = __devexit_p(mc13783_rtc_remove),
 -	.driver = {
--		.name = "mc13783",
--		.bus = &spi_bus_type,
+-		.name = DRIVER_NAME,
 -		.owner = THIS_MODULE,
 -	},
--	.probe = mc13783_probe,
--	.remove = __devexit_p(mc13783_remove),
 -};
 -
--static int __init mc13783_init(void)
+-static int __init mc13783_rtc_init(void)
 -{
--	return spi_register_driver(&mc13783_driver);
+-	return platform_driver_probe(&mc13783_rtc_driver, &mc13783_rtc_probe);
 -}
--subsys_initcall(mc13783_init);
+-module_init(mc13783_rtc_init);
 -
--static void __exit mc13783_exit(void)
+-static void __exit mc13783_rtc_exit(void)
 -{
--	spi_unregister_driver(&mc13783_driver);
+-	platform_driver_unregister(&mc13783_rtc_driver);
 -}
--module_exit(mc13783_exit);
+-module_exit(mc13783_rtc_exit);
 -
--MODULE_DESCRIPTION("Core driver for Freescale MC13783 PMIC");
--MODULE_AUTHOR("Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>");
+-MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
+-MODULE_DESCRIPTION("RTC driver for Freescale MC13783 PMIC");
 -MODULE_LICENSE("GPL v2");
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+-MODULE_ALIAS("platform:" DRIVER_NAME);
+diff --git a/drivers/rtc/rtc-mc13xxx.c b/drivers/rtc/rtc-mc13xxx.c
 new file mode 100644
-index 0000000..93258ad
+index 0000000..5314b15
 --- /dev/null
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -0,0 +1,840 @@
++++ b/drivers/rtc/rtc-mc13xxx.c
+@@ -0,0 +1,437 @@
 +/*
-+ * Copyright 2009-2010 Pengutronix
-+ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
++ * Real Time Clock driver for Freescale MC13XXX PMIC
 + *
-+ * loosely based on an earlier driver that has
-+ * Copyright 2009 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
++ * (C) 2009 Sascha Hauer, Pengutronix
++ * (C) 2009 Uwe Kleine-Koenig, Pengutronix
 + *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + */
-+#define DEBUG
-+#define VERBOSE_DEBUG
 +
-+#include <linux/slab.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/mutex.h>
-+#include <linux/interrupt.h>
-+#include <linux/spi/spi.h>
-+#include <linux/mfd/core.h>
 +#include <linux/mfd/mc13xxx.h>
-+
-+struct mc13xxx {
-+	struct spi_device *spidev;
-+	struct mutex lock;
-+	int irq;
-+
-+	irq_handler_t irqhandler[MC13XXX_NUM_IRQ];
-+	void *irqdata[MC13XXX_NUM_IRQ];
-+};
-+
-+struct mc13783 {
-+	struct mc13xxx mc13xxx;
-+
-+	int adcflags;
-+};
-+
-+struct mc13xxx *mc13783_to_mc13xxx(struct mc13783 *mc13783)
-+{
-+	return &mc13783->mc13xxx;
-+}
-+EXPORT_SYMBOL(mc13783_to_mc13xxx);
-+
-+#define MC13XXX_IRQSTAT0	0
-+#define MC13XXX_IRQSTAT0_ADCDONEI	(1 << 0)
-+#define MC13XXX_IRQSTAT0_ADCBISDONEI	(1 << 1)
-+#define MC13XXX_IRQSTAT0_TSI		(1 << 2)
-+#define MC13783_IRQSTAT0_WHIGHI		(1 << 3)
-+#define MC13783_IRQSTAT0_WLOWI		(1 << 4)
-+#define MC13XXX_IRQSTAT0_CHGDETI	(1 << 6)
-+#define MC13783_IRQSTAT0_CHGOVI		(1 << 7)
-+#define MC13XXX_IRQSTAT0_CHGREVI	(1 << 8)
-+#define MC13XXX_IRQSTAT0_CHGSHORTI	(1 << 9)
-+#define MC13XXX_IRQSTAT0_CCCVI		(1 << 10)
-+#define MC13XXX_IRQSTAT0_CHGCURRI	(1 << 11)
-+#define MC13XXX_IRQSTAT0_BPONI		(1 << 12)
-+#define MC13XXX_IRQSTAT0_LOBATLI	(1 << 13)
-+#define MC13XXX_IRQSTAT0_LOBATHI	(1 << 14)
-+#define MC13783_IRQSTAT0_UDPI		(1 << 15)
-+#define MC13783_IRQSTAT0_USBI		(1 << 16)
-+#define MC13783_IRQSTAT0_IDI		(1 << 19)
-+#define MC13783_IRQSTAT0_SE1I		(1 << 21)
-+#define MC13783_IRQSTAT0_CKDETI		(1 << 22)
-+#define MC13783_IRQSTAT0_UDMI		(1 << 23)
-+
-+#define MC13XXX_IRQMASK0	1
-+#define MC13XXX_IRQMASK0_ADCDONEM	MC13XXX_IRQSTAT0_ADCDONEI
-+#define MC13XXX_IRQMASK0_ADCBISDONEM	MC13XXX_IRQSTAT0_ADCBISDONEI
-+#define MC13XXX_IRQMASK0_TSM		MC13XXX_IRQSTAT0_TSI
-+#define MC13783_IRQMASK0_WHIGHM		MC13783_IRQSTAT0_WHIGHI
-+#define MC13783_IRQMASK0_WLOWM		MC13783_IRQSTAT0_WLOWI
-+#define MC13XXX_IRQMASK0_CHGDETM	MC13XXX_IRQSTAT0_CHGDETI
-+#define MC13783_IRQMASK0_CHGOVM		MC13783_IRQSTAT0_CHGOVI
-+#define MC13XXX_IRQMASK0_CHGREVM	MC13XXX_IRQSTAT0_CHGREVI
-+#define MC13XXX_IRQMASK0_CHGSHORTM	MC13XXX_IRQSTAT0_CHGSHORTI
-+#define MC13XXX_IRQMASK0_CCCVM		MC13XXX_IRQSTAT0_CCCVI
-+#define MC13XXX_IRQMASK0_CHGCURRM	MC13XXX_IRQSTAT0_CHGCURRI
-+#define MC13XXX_IRQMASK0_BPONM		MC13XXX_IRQSTAT0_BPONI
-+#define MC13XXX_IRQMASK0_LOBATLM	MC13XXX_IRQSTAT0_LOBATLI
-+#define MC13XXX_IRQMASK0_LOBATHM	MC13XXX_IRQSTAT0_LOBATHI
-+#define MC13783_IRQMASK0_UDPM		MC13783_IRQSTAT0_UDPI
-+#define MC13783_IRQMASK0_USBM		MC13783_IRQSTAT0_USBI
-+#define MC13783_IRQMASK0_IDM		MC13783_IRQSTAT0_IDI
-+#define MC13783_IRQMASK0_SE1M		MC13783_IRQSTAT0_SE1I
-+#define MC13783_IRQMASK0_CKDETM		MC13783_IRQSTAT0_CKDETI
-+#define MC13783_IRQMASK0_UDMM		MC13783_IRQSTAT0_UDMI
-+
-+#define MC13XXX_IRQSTAT1	3
-+#define MC13XXX_IRQSTAT1_1HZI		(1 << 0)
-+#define MC13XXX_IRQSTAT1_TODAI		(1 << 1)
-+#define MC13783_IRQSTAT1_ONOFD1I	(1 << 3)
-+#define MC13783_IRQSTAT1_ONOFD2I	(1 << 4)
-+#define MC13783_IRQSTAT1_ONOFD3I	(1 << 5)
-+#define MC13XXX_IRQSTAT1_SYSRSTI	(1 << 6)
-+#define MC13XXX_IRQSTAT1_RTCRSTI	(1 << 7)
-+#define MC13XXX_IRQSTAT1_PCI		(1 << 8)
-+#define MC13XXX_IRQSTAT1_WARMI		(1 << 9)
-+#define MC13XXX_IRQSTAT1_MEMHLDI	(1 << 10)
-+#define MC13783_IRQSTAT1_PWRRDYI	(1 << 11)
-+#define MC13XXX_IRQSTAT1_THWARNLI	(1 << 12)
-+#define MC13XXX_IRQSTAT1_THWARNHI	(1 << 13)
-+#define MC13XXX_IRQSTAT1_CLKI		(1 << 14)
-+#define MC13783_IRQSTAT1_SEMAFI		(1 << 15)
-+#define MC13783_IRQSTAT1_MC2BI		(1 << 17)
-+#define MC13783_IRQSTAT1_HSDETI		(1 << 18)
-+#define MC13783_IRQSTAT1_HSLI		(1 << 19)
-+#define MC13783_IRQSTAT1_ALSPTHI	(1 << 20)
-+#define MC13783_IRQSTAT1_AHSSHORTI	(1 << 21)
-+
-+#define MC13XXX_IRQMASK1	4
-+#define MC13XXX_IRQMASK1_1HZM		MC13XXX_IRQSTAT1_1HZI
-+#define MC13XXX_IRQMASK1_TODAM		MC13XXX_IRQSTAT1_TODAI
-+#define MC13783_IRQMASK1_ONOFD1M	MC13783_IRQSTAT1_ONOFD1I
-+#define MC13783_IRQMASK1_ONOFD2M	MC13783_IRQSTAT1_ONOFD2I
-+#define MC13783_IRQMASK1_ONOFD3M	MC13783_IRQSTAT1_ONOFD3I
-+#define MC13XXX_IRQMASK1_SYSRSTM	MC13XXX_IRQSTAT1_SYSRSTI
-+#define MC13XXX_IRQMASK1_RTCRSTM	MC13XXX_IRQSTAT1_RTCRSTI
-+#define MC13XXX_IRQMASK1_PCM		MC13XXX_IRQSTAT1_PCI
-+#define MC13XXX_IRQMASK1_WARMM		MC13XXX_IRQSTAT1_WARMI
-+#define MC13XXX_IRQMASK1_MEMHLDM	MC13XXX_IRQSTAT1_MEMHLDI
-+#define MC13783_IRQMASK1_PWRRDYM	MC13783_IRQSTAT1_PWRRDYI
-+#define MC13XXX_IRQMASK1_THWARNLM	MC13XXX_IRQSTAT1_THWARNLI
-+#define MC13XXX_IRQMASK1_THWARNHM	MC13XXX_IRQSTAT1_THWARNHI
-+#define MC13XXX_IRQMASK1_CLKM		MC13XXX_IRQSTAT1_CLKI
-+#define MC13783_IRQMASK1_SEMAFM		MC13783_IRQSTAT1_SEMAFI
-+#define MC13783_IRQMASK1_MC2BM		MC13783_IRQSTAT1_MC2BI
-+#define MC13783_IRQMASK1_HSDETM		MC13783_IRQSTAT1_HSDETI
-+#define MC13783_IRQMASK1_HSLM		MC13783_IRQSTAT1_HSLI
-+#define MC13783_IRQMASK1_ALSPTHM	MC13783_IRQSTAT1_ALSPTHI
-+#define MC13783_IRQMASK1_AHSSHORTM	MC13783_IRQSTAT1_AHSSHORTI
-+
-+#define MC13XXX_REVISION	7
-+#define MC13XXX_REVISION_REVMETAL	(0x07 <<  0)
-+#define MC13XXX_REVISION_REVFULL	(0x03 <<  3)
-+#define MC13XXX_REVISION_ICID		(0x07 <<  6)
-+#define MC13XXX_REVISION_FIN		(0x03 <<  9)
-+#define MC13XXX_REVISION_FAB		(0x03 << 11)
-+#define MC13XXX_REVISION_ICIDCODE	(0x3f << 13)
-+
-+#define MC13783_ADC1		44
-+#define MC13783_ADC1_ADEN		(1 << 0)
-+#define MC13783_ADC1_RAND		(1 << 1)
-+#define MC13783_ADC1_ADSEL		(1 << 3)
-+#define MC13783_ADC1_ASC		(1 << 20)
-+#define MC13783_ADC1_ADTRIGIGN		(1 << 21)
-+
-+#define MC13783_ADC2		45
-+
-+#define MC13XXX_NUMREGS 0x3f
-+
-+void mc13xxx_lock(struct mc13xxx *mc13xxx)
-+{
-+	if (!mutex_trylock(&mc13xxx->lock)) {
-+		dev_dbg(&mc13xxx->spidev->dev, "wait for %s from %pf\n",
-+				__func__, __builtin_return_address(0));
-+
-+		mutex_lock(&mc13xxx->lock);
-+	}
-+	dev_dbg(&mc13xxx->spidev->dev, "%s from %pf\n",
-+			__func__, __builtin_return_address(0));
-+}
-+EXPORT_SYMBOL(mc13xxx_lock);
-+
-+void mc13xxx_unlock(struct mc13xxx *mc13xxx)
-+{
-+	dev_dbg(&mc13xxx->spidev->dev, "%s from %pf\n",
-+			__func__, __builtin_return_address(0));
-+	mutex_unlock(&mc13xxx->lock);
-+}
-+EXPORT_SYMBOL(mc13xxx_unlock);
-+
-+#define MC13XXX_REGOFFSET_SHIFT 25
-+int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val)
-+{
-+	struct spi_transfer t;
-+	struct spi_message m;
-+	int ret;
-+
-+	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
-+
-+	if (offset > MC13XXX_NUMREGS)
-+		return -EINVAL;
-+
-+	*val = offset << MC13XXX_REGOFFSET_SHIFT;
-+
-+	memset(&t, 0, sizeof(t));
-+
-+	t.tx_buf = val;
-+	t.rx_buf = val;
-+	t.len = sizeof(u32);
-+
-+	spi_message_init(&m);
-+	spi_message_add_tail(&t, &m);
-+
-+	ret = spi_sync(mc13xxx->spidev, &m);
-+
-+	/* error in message.status implies error return from spi_sync */
-+	BUG_ON(!ret && m.status);
-+
-+	if (ret)
-+		return ret;
-+
-+	*val &= 0xffffff;
-+
-+	dev_vdbg(&mc13xxx->spidev->dev, "[0x%02x] -> 0x%06x\n", offset, *val);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc13xxx_reg_read);
-+
-+int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val)
-+{
-+	u32 buf;
-+	struct spi_transfer t;
-+	struct spi_message m;
-+	int ret;
-+
-+	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
-+
-+	dev_vdbg(&mc13xxx->spidev->dev, "[0x%02x] <- 0x%06x\n", offset, val);
-+
-+	if (offset > MC13XXX_NUMREGS || val > 0xffffff)
-+		return -EINVAL;
-+
-+	buf = 1 << 31 | offset << MC13XXX_REGOFFSET_SHIFT | val;
-+
-+	memset(&t, 0, sizeof(t));
-+
-+	t.tx_buf = &buf;
-+	t.rx_buf = &buf;
-+	t.len = sizeof(u32);
-+
-+	spi_message_init(&m);
-+	spi_message_add_tail(&t, &m);
-+
-+	ret = spi_sync(mc13xxx->spidev, &m);
-+
-+	BUG_ON(!ret && m.status);
-+
-+	if (ret)
-+		return ret;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc13xxx_reg_write);
-+
-+int mc13xxx_reg_rmw(struct mc13xxx *mc13xxx, unsigned int offset,
-+		u32 mask, u32 val)
-+{
-+	int ret;
-+	u32 valread;
-+
-+	BUG_ON(val & ~mask);
-+
-+	ret = mc13xxx_reg_read(mc13xxx, offset, &valread);
-+	if (ret)
-+		return ret;
-+
-+	valread = (valread & ~mask) | val;
-+
-+	return mc13xxx_reg_write(mc13xxx, offset, valread);
-+}
-+EXPORT_SYMBOL(mc13xxx_reg_rmw);
-+
-+int mc13xxx_irq_mask(struct mc13xxx *mc13xxx, int irq)
-+{
-+	int ret;
-+	unsigned int offmask = irq < 24 ? MC13XXX_IRQMASK0 : MC13XXX_IRQMASK1;
-+	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
-+	u32 mask;
-+
-+	if (irq < 0 || irq >= MC13XXX_NUM_IRQ)
-+		return -EINVAL;
-+
-+	ret = mc13xxx_reg_read(mc13xxx, offmask, &mask);
-+	if (ret)
-+		return ret;
-+
-+	if (mask & irqbit)
-+		/* already masked */
-+		return 0;
-+
-+	return mc13xxx_reg_write(mc13xxx, offmask, mask | irqbit);
-+}
-+EXPORT_SYMBOL(mc13xxx_irq_mask);
-+
-+int mc13xxx_irq_unmask(struct mc13xxx *mc13xxx, int irq)
-+{
-+	int ret;
-+	unsigned int offmask = irq < 24 ? MC13XXX_IRQMASK0 : MC13XXX_IRQMASK1;
-+	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
-+	u32 mask;
-+
-+	if (irq < 0 || irq >= MC13XXX_NUM_IRQ)
-+		return -EINVAL;
-+
-+	ret = mc13xxx_reg_read(mc13xxx, offmask, &mask);
-+	if (ret)
-+		return ret;
-+
-+	if (!(mask & irqbit))
-+		/* already unmasked */
-+		return 0;
-+
-+	return mc13xxx_reg_write(mc13xxx, offmask, mask & ~irqbit);
-+}
-+EXPORT_SYMBOL(mc13xxx_irq_unmask);
-+
-+int mc13xxx_irq_status(struct mc13xxx *mc13xxx, int irq,
-+		int *enabled, int *pending)
-+{
-+	int ret;
-+	unsigned int offmask = irq < 24 ? MC13XXX_IRQMASK0 : MC13XXX_IRQMASK1;
-+	unsigned int offstat = irq < 24 ? MC13XXX_IRQSTAT0 : MC13XXX_IRQSTAT1;
-+	u32 irqbit = 1 << (irq < 24 ? irq : irq - 24);
-+
-+	if (irq < 0 || irq >= MC13XXX_NUM_IRQ)
-+		return -EINVAL;
-+
-+	if (enabled) {
-+		u32 mask;
-+
-+		ret = mc13xxx_reg_read(mc13xxx, offmask, &mask);
-+		if (ret)
-+			return ret;
-+
-+		*enabled = mask & irqbit;
-+	}
-+
-+	if (pending) {
-+		u32 stat;
-+
-+		ret = mc13xxx_reg_read(mc13xxx, offstat, &stat);
-+		if (ret)
-+			return ret;
-+
-+		*pending = stat & irqbit;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc13xxx_irq_status);
-+
-+int mc13xxx_irq_ack(struct mc13xxx *mc13xxx, int irq)
-+{
-+	unsigned int offstat = irq < 24 ? MC13XXX_IRQSTAT0 : MC13XXX_IRQSTAT1;
-+	unsigned int val = 1 << (irq < 24 ? irq : irq - 24);
-+
-+	BUG_ON(irq < 0 || irq >= MC13XXX_NUM_IRQ);
-+
-+	return mc13xxx_reg_write(mc13xxx, offstat, val);
-+}
-+EXPORT_SYMBOL(mc13xxx_irq_ack);
-+
-+int mc13xxx_irq_request_nounmask(struct mc13xxx *mc13xxx, int irq,
-+		irq_handler_t handler, const char *name, void *dev)
-+{
-+	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
-+	BUG_ON(!handler);
-+
-+	if (irq < 0 || irq >= MC13XXX_NUM_IRQ)
-+		return -EINVAL;
-+
-+	if (mc13xxx->irqhandler[irq])
-+		return -EBUSY;
-+
-+	mc13xxx->irqhandler[irq] = handler;
-+	mc13xxx->irqdata[irq] = dev;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc13xxx_irq_request_nounmask);
-+
-+int mc13xxx_irq_request(struct mc13xxx *mc13xxx, int irq,
-+		irq_handler_t handler, const char *name, void *dev)
-+{
-+	int ret;
-+
-+	ret = mc13xxx_irq_request_nounmask(mc13xxx, irq, handler, name, dev);
-+	if (ret)
-+		return ret;
-+
-+	ret = mc13xxx_irq_unmask(mc13xxx, irq);
-+	if (ret) {
-+		mc13xxx->irqhandler[irq] = NULL;
-+		mc13xxx->irqdata[irq] = NULL;
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc13xxx_irq_request);
-+
-+int mc13xxx_irq_free(struct mc13xxx *mc13xxx, int irq, void *dev)
-+{
-+	int ret;
-+	BUG_ON(!mutex_is_locked(&mc13xxx->lock));
-+
-+	if (irq < 0 || irq >= MC13XXX_NUM_IRQ || !mc13xxx->irqhandler[irq] ||
-+			mc13xxx->irqdata[irq] != dev)
-+		return -EINVAL;
-+
-+	ret = mc13xxx_irq_mask(mc13xxx, irq);
-+	if (ret)
-+		return ret;
-+
-+	mc13xxx->irqhandler[irq] = NULL;
-+	mc13xxx->irqdata[irq] = NULL;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(mc13xxx_irq_free);
-+
-+static inline irqreturn_t mc13xxx_irqhandler(struct mc13xxx *mc13xxx, int irq)
-+{
-+	return mc13xxx->irqhandler[irq](irq, mc13xxx->irqdata[irq]);
-+}
-+
-+/*
-+ * returns: number of handled irqs or negative error
-+ * locking: holds mc13xxx->lock
-+ */
-+static int mc13xxx_irq_handle(struct mc13xxx *mc13xxx,
-+		unsigned int offstat, unsigned int offmask, int baseirq)
-+{
-+	u32 stat, mask;
-+	int ret = mc13xxx_reg_read(mc13xxx, offstat, &stat);
-+	int num_handled = 0;
-+
-+	if (ret)
-+		return ret;
-+
-+	ret = mc13xxx_reg_read(mc13xxx, offmask, &mask);
-+	if (ret)
-+		return ret;
-+
-+	while (stat & ~mask) {
-+		int irq = __ffs(stat & ~mask);
-+
-+		stat &= ~(1 << irq);
-+
-+		if (likely(mc13xxx->irqhandler[baseirq + irq])) {
-+			irqreturn_t handled;
-+
-+			handled = mc13xxx_irqhandler(mc13xxx, baseirq + irq);
-+			if (handled == IRQ_HANDLED)
-+				num_handled++;
-+		} else {
-+			dev_err(&mc13xxx->spidev->dev,
-+					"BUG: irq %u but no handler\n",
-+					baseirq + irq);
-+
-+			mask |= 1 << irq;
-+
-+			ret = mc13xxx_reg_write(mc13xxx, offmask, mask);
-+		}
-+	}
-+
-+	return num_handled;
-+}
-+
-+static irqreturn_t mc13xxx_irq_thread(int irq, void *data)
-+{
-+	struct mc13xxx *mc13xxx = data;
-+	irqreturn_t ret;
-+	int handled = 0;
-+
-+	mc13xxx_lock(mc13xxx);
-+
-+	ret = mc13xxx_irq_handle(mc13xxx, MC13XXX_IRQSTAT0,
-+			MC13XXX_IRQMASK0, 0);
-+	if (ret > 0)
-+		handled = 1;
-+
-+	ret = mc13xxx_irq_handle(mc13xxx, MC13XXX_IRQSTAT1,
-+			MC13XXX_IRQMASK1, 24);
-+	if (ret > 0)
-+		handled = 1;
-+
-+	mc13xxx_unlock(mc13xxx);
-+
-+	return IRQ_RETVAL(handled);
-+}
-+
-+enum mc13xxx_id {
-+	MC13XXX_ID_MC13783,
-+	MC13XXX_ID_MC13892,
-+	MC13XXX_ID_INVALID,
-+};
-+
-+const char *mc13xxx_chipname[] = {
-+	[MC13XXX_ID_MC13783] = "mc13783",
-+	[MC13XXX_ID_MC13892] = "mc13892",
-+};
-+
-+#define maskval(reg, mask)	(((reg) & (mask)) >> __ffs(mask))
-+static int mc13xxx_identify(struct mc13xxx *mc13xxx, enum mc13xxx_id *id)
-+{
-+	u32 icid;
-+	u32 revision;
-+	const char *name;
-+	int ret;
-+
-+	ret = mc13xxx_reg_read(mc13xxx, 46, &icid);
-+	if (ret)
-+		return ret;
-+
-+	icid = (icid >> 6) & 0x7;
-+
-+	switch (icid) {
-+	case 2:
-+		*id = MC13XXX_ID_MC13783;
-+		name = "mc13783";
-+		break;
-+	case 7:
-+		*id = MC13XXX_ID_MC13892;
-+		name = "mc13892";
-+		break;
-+	default:
-+		*id = MC13XXX_ID_INVALID;
-+		break;
-+	}
-+
-+	if (*id == MC13XXX_ID_MC13783 || *id == MC13XXX_ID_MC13892) {
-+		ret = mc13xxx_reg_read(mc13xxx, MC13XXX_REVISION, &revision);
-+		if (ret)
-+			return ret;
-+
-+		dev_info(&mc13xxx->spidev->dev, "%s: rev: %d.%d, "
-+				"fin: %d, fab: %d, icid: %d/%d\n",
-+				mc13xxx_chipname[*id],
-+				maskval(revision, MC13XXX_REVISION_REVFULL),
-+				maskval(revision, MC13XXX_REVISION_REVMETAL),
-+				maskval(revision, MC13XXX_REVISION_FIN),
-+				maskval(revision, MC13XXX_REVISION_FAB),
-+				maskval(revision, MC13XXX_REVISION_ICID),
-+				maskval(revision, MC13XXX_REVISION_ICIDCODE));
-+	}
-+
-+	if (*id != MC13XXX_ID_INVALID) {
-+		const struct spi_device_id *devid =
-+			spi_get_device_id(mc13xxx->spidev);
-+		if (!devid || devid->driver_data != *id)
-+			dev_warn(&mc13xxx->spidev->dev, "device id doesn't "
-+					"match auto detection!\n");
-+	}
-+
-+	return 0;
-+}
-+
-+static const char *mc13xxx_get_chipname(struct mc13xxx *mc13xxx)
-+{
-+	const struct spi_device_id *devid =
-+		spi_get_device_id(mc13xxx->spidev);
-+
-+	if (!devid)
-+		return NULL;
-+
-+	return mc13xxx_chipname[devid->driver_data];
-+}
-+
-+#include <linux/mfd/mc13783.h>
-+
-+int mc13xxx_get_flags(struct mc13xxx *mc13xxx)
-+{
-+	struct mc13xxx_platform_data *pdata =
-+		dev_get_platdata(&mc13xxx->spidev->dev);
-+
-+	return pdata->flags;
-+}
-+EXPORT_SYMBOL(mc13xxx_get_flags);
-+
-+#define MC13783_ADC1_CHAN0_SHIFT	5
-+#define MC13783_ADC1_CHAN1_SHIFT	8
-+
-+struct mc13xxx_adcdone_data {
++#include <linux/platform_device.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/rtc.h>
++
++#define DRIVER_NAME "mc13xxx-rtc"
++
++#define MC13XXX_RTCTOD	20
++#define MC13XXX_RTCTODA	21
++#define MC13XXX_RTCDAY	22
++#define MC13XXX_RTCDAYA	23
++
++struct mc13xxx_rtc {
++	struct rtc_device *rtc;
 +	struct mc13xxx *mc13xxx;
-+	struct completion done;
++	int valid;
 +};
 +
-+static irqreturn_t mc13783_handler_adcdone(int irq, void *data)
++static int mc13xxx_rtc_irq_enable_unlocked(struct device *dev,
++		unsigned int enabled, int irq)
 +{
-+	struct mc13xxx_adcdone_data *adcdone_data = data;
++	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
++	int (*func)(struct mc13xxx *mc13xxx, int irq);
 +
-+	mc13xxx_irq_ack(adcdone_data->mc13xxx, irq);
++	if (!priv->valid)
++		return -ENODATA;
 +
-+	complete_all(&adcdone_data->done);
++	func = enabled ? mc13xxx_irq_unmask : mc13xxx_irq_mask;
++	return func(priv->mc13xxx, irq);
++}
++
++static int mc13xxx_rtc_irq_enable(struct device *dev,
++		unsigned int enabled, int irq)
++{
++	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
++	int ret;
++
++	mc13xxx_lock(priv->mc13xxx);
++
++	ret = mc13xxx_rtc_irq_enable_unlocked(dev, enabled, irq);
++
++	mc13xxx_unlock(priv->mc13xxx);
++
++	return ret;
++}
++
++static int mc13xxx_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
++	unsigned int seconds, days1, days2;
++	unsigned long s1970;
++	int ret;
++
++	mc13xxx_lock(priv->mc13xxx);
++
++	if (!priv->valid) {
++		ret = -ENODATA;
++		goto out;
++	}
++
++	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCDAY, &days1);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCTOD, &seconds);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCDAY, &days2);
++out:
++	mc13xxx_unlock(priv->mc13xxx);
++
++	if (ret)
++		return ret;
++
++	if (days2 == days1 + 1) {
++		if (seconds >= 86400 / 2)
++			days2 = days1;
++		else
++			days1 = days2;
++	}
++
++	if (days1 != days2)
++		return -EIO;
++
++	s1970 = days1 * 86400 + seconds;
++
++	rtc_time_to_tm(s1970, tm);
++
++	return rtc_valid_tm(tm);
++}
++
++static int mc13xxx_rtc_set_mmss(struct device *dev, unsigned long secs)
++{
++	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
++	unsigned int seconds, days;
++	unsigned int alarmseconds;
++	int ret;
++
++	seconds = secs % 86400;
++	days = secs / 86400;
++
++	mc13xxx_lock(priv->mc13xxx);
++
++	/*
++	 * temporarily invalidate alarm to prevent triggering it when the day is
++	 * already updated while the time isn't yet.
++	 */
++	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCTODA, &alarmseconds);
++	if (unlikely(ret))
++		goto out;
++
++	if (alarmseconds < 86400) {
++		ret = mc13xxx_reg_write(priv->mc13xxx,
++				MC13XXX_RTCTODA, 0x1ffff);
++		if (unlikely(ret))
++			goto out;
++	}
++
++	/*
++	 * write seconds=0 to prevent a day switch between writing days
++	 * and seconds below
++	 */
++	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCTOD, 0);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCDAY, days);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCTOD, seconds);
++	if (unlikely(ret))
++		goto out;
++
++	/* restore alarm */
++	if (alarmseconds < 86400) {
++		ret = mc13xxx_reg_write(priv->mc13xxx,
++				MC13XXX_RTCTODA, alarmseconds);
++		if (unlikely(ret))
++			goto out;
++	}
++
++	ret = mc13xxx_irq_ack(priv->mc13xxx, MC13XXX_IRQ_RTCRST);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_irq_unmask(priv->mc13xxx, MC13XXX_IRQ_RTCRST);
++out:
++	priv->valid = !ret;
++
++	mc13xxx_unlock(priv->mc13xxx);
++
++	return ret;
++}
++
++static int mc13xxx_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
++	unsigned seconds, days;
++	unsigned long s1970;
++	int enabled, pending;
++	int ret;
++
++	mc13xxx_lock(priv->mc13xxx);
++
++	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCTODA, &seconds);
++	if (unlikely(ret))
++		goto out;
++	if (seconds >= 86400) {
++		ret = -ENODATA;
++		goto out;
++	}
++
++	ret = mc13xxx_reg_read(priv->mc13xxx, MC13XXX_RTCDAY, &days);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_irq_status(priv->mc13xxx, MC13XXX_IRQ_TODA,
++			&enabled, &pending);
++
++out:
++	mc13xxx_unlock(priv->mc13xxx);
++
++	if (ret)
++		return ret;
++
++	alarm->enabled = enabled;
++	alarm->pending = pending;
++
++	s1970 = days * 86400 + seconds;
++
++	rtc_time_to_tm(s1970, &alarm->time);
++	dev_dbg(dev, "%s: %lu\n", __func__, s1970);
++
++	return 0;
++}
++
++static int mc13xxx_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct mc13xxx_rtc *priv = dev_get_drvdata(dev);
++	unsigned long s1970;
++	unsigned seconds, days;
++	int ret;
++
++	mc13xxx_lock(priv->mc13xxx);
++
++	/* disable alarm to prevent false triggering */
++	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCTODA, 0x1ffff);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_irq_ack(priv->mc13xxx, MC13XXX_IRQ_TODA);
++	if (unlikely(ret))
++		goto out;
++
++	ret = rtc_tm_to_time(&alarm->time, &s1970);
++	if (unlikely(ret))
++		goto out;
++
++	dev_dbg(dev, "%s: o%2.s %lu\n", __func__, alarm->enabled ? "n" : "ff",
++			s1970);
++
++	ret = mc13xxx_rtc_irq_enable_unlocked(dev, alarm->enabled,
++			MC13XXX_IRQ_TODA);
++	if (unlikely(ret))
++		goto out;
++
++	seconds = s1970 % 86400;
++	days = s1970 / 86400;
++
++	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCDAYA, days);
++	if (unlikely(ret))
++		goto out;
++
++	ret = mc13xxx_reg_write(priv->mc13xxx, MC13XXX_RTCTODA, seconds);
++
++out:
++	mc13xxx_unlock(priv->mc13xxx);
++
++	return ret;
++}
++
++static irqreturn_t mc13xxx_rtc_alarm_handler(int irq, void *dev)
++{
++	struct mc13xxx_rtc *priv = dev;
++	struct mc13xxx *mc13xxx = priv->mc13xxx;
++
++	dev_dbg(&priv->rtc->dev, "Alarm\n");
++
++	rtc_update_irq(priv->rtc, 1, RTC_IRQF | RTC_AF);
++
++	mc13xxx_irq_ack(mc13xxx, irq);
 +
 +	return IRQ_HANDLED;
 +}
 +
-+#define MC13783_ADC_WORKING (1 << 0)
-+
-+int mc13783_adc_do_conversion(struct mc13783 *mc13783, unsigned int mode,
-+		unsigned int channel, unsigned int *sample)
++static irqreturn_t mc13xxx_rtc_update_handler(int irq, void *dev)
 +{
-+	struct mc13xxx *mc13xxx = &mc13783->mc13xxx;
-+	u32 adc0, adc1, old_adc0;
-+	int i, ret;
-+	struct mc13xxx_adcdone_data adcdone_data = {
-+		.mc13xxx = mc13xxx,
-+	};
-+	init_completion(&adcdone_data.done);
++	struct mc13xxx_rtc *priv = dev;
++	struct mc13xxx *mc13xxx = priv->mc13xxx;
 +
-+	dev_dbg(&mc13xxx->spidev->dev, "%s\n", __func__);
++	dev_dbg(&priv->rtc->dev, "1HZ\n");
 +
-+	mc13xxx_lock(mc13xxx);
++	rtc_update_irq(priv->rtc, 1, RTC_IRQF | RTC_UF);
 +
-+	if (mc13783->adcflags & MC13783_ADC_WORKING) {
-+		ret = -EBUSY;
-+		goto out;
-+	}
++	mc13xxx_irq_ack(mc13xxx, irq);
 +
-+	mc13783->adcflags |= MC13783_ADC_WORKING;
++	return IRQ_HANDLED;
++}
 +
-+	mc13xxx_reg_read(mc13xxx, MC13783_ADC0, &old_adc0);
++static int mc13xxx_rtc_update_irq_enable(struct device *dev,
++		unsigned int enabled)
++{
++	return mc13xxx_rtc_irq_enable(dev, enabled, MC13XXX_IRQ_1HZ);
++}
 +
-+	adc0 = MC13783_ADC0_ADINC1 | MC13783_ADC0_ADINC2;
-+	adc1 = MC13783_ADC1_ADEN | MC13783_ADC1_ADTRIGIGN | MC13783_ADC1_ASC;
++static int mc13xxx_rtc_alarm_irq_enable(struct device *dev,
++		unsigned int enabled)
++{
++	return mc13xxx_rtc_irq_enable(dev, enabled, MC13XXX_IRQ_TODA);
++}
 +
-+	if (channel > 7)
-+		adc1 |= MC13783_ADC1_ADSEL;
++static const struct rtc_class_ops mc13xxx_rtc_ops = {
++	.read_time = mc13xxx_rtc_read_time,
++	.set_mmss = mc13xxx_rtc_set_mmss,
++	.read_alarm = mc13xxx_rtc_read_alarm,
++	.set_alarm = mc13xxx_rtc_set_alarm,
++	.alarm_irq_enable = mc13xxx_rtc_alarm_irq_enable,
++	.update_irq_enable = mc13xxx_rtc_update_irq_enable,
++};
 +
-+	switch (mode) {
-+	case MC13783_ADC_MODE_TS:
-+		adc0 |= MC13783_ADC0_ADREFEN | MC13783_ADC0_TSMOD0 |
-+			MC13783_ADC0_TSMOD1;
-+		adc1 |= 4 << MC13783_ADC1_CHAN1_SHIFT;
-+		break;
++static irqreturn_t mc13xxx_rtc_reset_handler(int irq, void *dev)
++{
++	struct mc13xxx_rtc *priv = dev;
++	struct mc13xxx *mc13xxx = priv->mc13xxx;
 +
-+	case MC13783_ADC_MODE_SINGLE_CHAN:
-+		adc0 |= old_adc0 & MC13783_ADC0_TSMOD_MASK;
-+		adc1 |= (channel & 0x7) << MC13783_ADC1_CHAN0_SHIFT;
-+		adc1 |= MC13783_ADC1_RAND;
-+		break;
++	dev_dbg(&priv->rtc->dev, "RTCRST\n");
++	priv->valid = 0;
 +
-+	case MC13783_ADC_MODE_MULT_CHAN:
-+		adc0 |= old_adc0 & MC13783_ADC0_TSMOD_MASK;
-+		adc1 |= 4 << MC13783_ADC1_CHAN1_SHIFT;
-+		break;
++	mc13xxx_irq_mask(mc13xxx, irq);
 +
-+	default:
-+		mc13783_unlock(mc13783);
-+		return -EINVAL;
-+	}
++	return IRQ_HANDLED;
++}
 +
-+	dev_dbg(&mc13783->mc13xxx.spidev->dev, "%s: request irq\n", __func__);
-+	mc13xxx_irq_request(mc13xxx, MC13783_IRQ_ADCDONE,
-+			mc13783_handler_adcdone, __func__, &adcdone_data);
-+	mc13xxx_irq_ack(mc13xxx, MC13783_IRQ_ADCDONE);
++static int __devinit mc13xxx_rtc_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct mc13xxx_rtc *priv;
++	struct mc13xxx *mc13xxx;
++	int rtcrst_pending;
 +
-+	mc13xxx_reg_write(mc13xxx, MC13783_ADC0, adc0);
-+	mc13xxx_reg_write(mc13xxx, MC13783_ADC1, adc1);
++	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
++	if (!priv)
++		return -ENOMEM;
 +
-+	mc13xxx_unlock(mc13xxx);
++	mc13xxx = dev_get_drvdata(pdev->dev.parent);
++	priv->mc13xxx = mc13xxx;
 +
-+	ret = wait_for_completion_interruptible_timeout(&adcdone_data.done, HZ);
-+
-+	if (!ret)
-+		ret = -ETIMEDOUT;
++	platform_set_drvdata(pdev, priv);
 +
 +	mc13xxx_lock(mc13xxx);
 +
-+	mc13xxx_irq_free(mc13xxx, MC13783_IRQ_ADCDONE, &adcdone_data);
++	ret = mc13xxx_irq_request(mc13xxx, MC13XXX_IRQ_RTCRST,
++			mc13xxx_rtc_reset_handler, DRIVER_NAME, priv);
++	if (ret)
++		goto err_reset_irq_request;
 +
-+	if (ret > 0)
-+		for (i = 0; i < 4; ++i) {
-+			ret = mc13xxx_reg_read(mc13xxx,
-+					MC13783_ADC2, &sample[i]);
-+			if (ret)
-+				break;
-+		}
++	ret = mc13xxx_irq_status(mc13xxx, MC13XXX_IRQ_RTCRST,
++			NULL, &rtcrst_pending);
++	if (ret)
++		goto err_reset_irq_status;
 +
-+	if (mode == MC13783_ADC_MODE_TS)
-+		/* restore TSMOD */
-+		mc13xxx_reg_write(mc13xxx, MC13783_ADC0, old_adc0);
++	priv->valid = !rtcrst_pending;
 +
-+	mc13783->adcflags &= ~MC13783_ADC_WORKING;
-+out:
++	ret = mc13xxx_irq_request_nounmask(mc13xxx, MC13XXX_IRQ_1HZ,
++			mc13xxx_rtc_update_handler, DRIVER_NAME, priv);
++	if (ret)
++		goto err_update_irq_request;
++
++	ret = mc13xxx_irq_request_nounmask(mc13xxx, MC13XXX_IRQ_TODA,
++			mc13xxx_rtc_alarm_handler, DRIVER_NAME, priv);
++	if (ret)
++		goto err_alarm_irq_request;
++
++	priv->rtc = rtc_device_register(pdev->name,
++			&pdev->dev, &mc13xxx_rtc_ops, THIS_MODULE);
++	if (IS_ERR(priv->rtc)) {
++		ret = PTR_ERR(priv->rtc);
++
++		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_TODA, priv);
++err_alarm_irq_request:
++
++		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_1HZ, priv);
++err_update_irq_request:
++
++err_reset_irq_status:
++
++		mc13xxx_irq_free(mc13xxx, MC13XXX_IRQ_RTCRST, priv);
++err_reset_irq_request:
++
++		platform_set_drvdata(pdev, NULL);
++		kfree(priv);
++	}
++
 +	mc13xxx_unlock(mc13xxx);
 +
 +	return ret;
 +}
-+EXPORT_SYMBOL_GPL(mc13783_adc_do_conversion);
 +
-+static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
-+		const char *format, void *pdata, size_t pdata_size)
++static int __devexit mc13xxx_rtc_remove(struct platform_device *pdev)
 +{
-+	char buf[30];
-+	const char *name = mc13xxx_get_chipname(mc13xxx);
++	struct mc13xxx_rtc *priv = platform_get_drvdata(pdev);
 +
-+	struct mfd_cell cell = {
-+		.platform_data = pdata,
-+		.data_size = pdata_size,
-+	};
++	mc13xxx_lock(priv->mc13xxx);
 +
-+	/* there is no asnprintf in the kernel :-( */
-+	if (snprintf(buf, sizeof(buf), format, name) > sizeof(buf))
-+		return -E2BIG;
++	rtc_device_unregister(priv->rtc);
 +
-+	cell.name = kmemdup(buf, strlen(buf) + 1, GFP_KERNEL);
-+	if (!cell.name)
-+		return -ENOMEM;
++	mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_TODA, priv);
++	mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_1HZ, priv);
++	mc13xxx_irq_free(priv->mc13xxx, MC13XXX_IRQ_RTCRST, priv);
 +
-+	return mfd_add_devices(&mc13xxx->spidev->dev, -1, &cell, 1, NULL, 0);
-+}
++	mc13xxx_unlock(priv->mc13xxx);
 +
-+static int mc13xxx_add_subdevice(struct mc13xxx *mc13xxx, const char *format)
-+{
-+	return mc13xxx_add_subdevice_pdata(mc13xxx, format, NULL, 0);
-+}
++	platform_set_drvdata(pdev, NULL);
 +
-+static int mc13xxx_probe(struct spi_device *spi)
-+{
-+	struct mc13xxx *mc13xxx;
-+	struct mc13xxx_platform_data *pdata = dev_get_platdata(&spi->dev);
-+	enum mc13xxx_id id;
-+	int ret;
-+
-+	mc13xxx = kzalloc(sizeof(*mc13xxx), GFP_KERNEL);
-+	if (!mc13xxx)
-+		return -ENOMEM;
-+
-+	dev_set_drvdata(&spi->dev, mc13xxx);
-+	spi->mode = SPI_MODE_0 | SPI_CS_HIGH;
-+	spi->bits_per_word = 32;
-+	spi_setup(spi);
-+
-+	mc13xxx->spidev = spi;
-+
-+	mutex_init(&mc13xxx->lock);
-+	mc13xxx_lock(mc13xxx);
-+
-+	ret = mc13xxx_identify(mc13xxx, &id);
-+	if (ret || id == MC13XXX_ID_INVALID)
-+		goto err_revision;
-+
-+	/* mask all irqs */
-+	ret = mc13xxx_reg_write(mc13xxx, MC13XXX_IRQMASK0, 0x00ffffff);
-+	if (ret)
-+		goto err_mask;
-+
-+	ret = mc13xxx_reg_write(mc13xxx, MC13XXX_IRQMASK1, 0x00ffffff);
-+	if (ret)
-+		goto err_mask;
-+
-+	ret = request_threaded_irq(spi->irq, NULL, mc13xxx_irq_thread,
-+			IRQF_ONESHOT | IRQF_TRIGGER_HIGH, "mc13xxx", mc13xxx);
-+
-+	if (ret) {
-+err_mask:
-+err_revision:
-+		mutex_unlock(&mc13xxx->lock);
-+		dev_set_drvdata(&spi->dev, NULL);
-+		kfree(mc13xxx);
-+		return ret;
-+	}
-+
-+	mc13xxx_unlock(mc13xxx);
-+
-+	if (pdata->flags & MC13XXX_USE_ADC)
-+		mc13xxx_add_subdevice(mc13xxx, "%s-adc");
-+
-+	if (pdata->flags & MC13XXX_USE_CODEC)
-+		mc13xxx_add_subdevice(mc13xxx, "%s-codec");
-+
-+	if (pdata->flags & MC13XXX_USE_REGULATOR) {
-+		struct mc13xxx_regulator_platform_data regulator_pdata = {
-+			.num_regulators = pdata->num_regulators,
-+			.regulators = pdata->regulators,
-+		};
-+
-+		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-regulator",
-+				&regulator_pdata, sizeof(regulator_pdata));
-+	}
-+
-+	if (pdata->flags & MC13XXX_USE_RTC)
-+		mc13xxx_add_subdevice(mc13xxx, "%s-rtc");
-+
-+	if (pdata->flags & MC13XXX_USE_TOUCHSCREEN)
-+		mc13xxx_add_subdevice(mc13xxx, "%s-ts");
-+
-+	if (pdata->flags & MC13XXX_USE_LED) {
-+		mc13xxx_add_subdevice_pdata(mc13xxx, "%s-led",
-+					pdata->leds, sizeof(*pdata->leds));
-+	}
++	kfree(priv);
 +
 +	return 0;
 +}
 +
-+static int __devexit mc13xxx_remove(struct spi_device *spi)
-+{
-+	struct mc13xxx *mc13xxx = dev_get_drvdata(&spi->dev);
-+
-+	free_irq(mc13xxx->spidev->irq, mc13xxx);
-+
-+	mfd_remove_devices(&spi->dev);
-+
-+	return 0;
-+}
-+
-+static const struct spi_device_id mc13xxx_device_id[] = {
++const struct platform_device_id mc13xxx_rtc_idtable[] = {
 +	{
-+		.name = "mc13783",
-+		.driver_data = MC13XXX_ID_MC13783,
++		.name = "mc13783-rtc",
 +	}, {
-+		.name = "mc13892",
-+		.driver_data = MC13XXX_ID_MC13892,
-+	}, {
-+		/* sentinel */
-+	}
++		.name = "mc13892-rtc",
++	},
 +};
 +
-+static struct spi_driver mc13xxx_driver = {
-+	.id_table = mc13xxx_device_id,
++static struct platform_driver mc13xxx_rtc_driver = {
++	.id_table = mc13xxx_rtc_idtable,
++	.remove = __devexit_p(mc13xxx_rtc_remove),
 +	.driver = {
-+		.name = "mc13xxx",
-+		.bus = &spi_bus_type,
++		.name = DRIVER_NAME,
 +		.owner = THIS_MODULE,
 +	},
-+	.probe = mc13xxx_probe,
-+	.remove = __devexit_p(mc13xxx_remove),
 +};
 +
-+static int __init mc13xxx_init(void)
++static int __init mc13xxx_rtc_init(void)
 +{
-+	return spi_register_driver(&mc13xxx_driver);
++	return platform_driver_probe(&mc13xxx_rtc_driver, &mc13xxx_rtc_probe);
 +}
-+subsys_initcall(mc13xxx_init);
++module_init(mc13xxx_rtc_init);
 +
-+static void __exit mc13xxx_exit(void)
++static void __exit mc13xxx_rtc_exit(void)
 +{
-+	spi_unregister_driver(&mc13xxx_driver);
++	platform_driver_unregister(&mc13xxx_rtc_driver);
 +}
-+module_exit(mc13xxx_exit);
++module_exit(mc13xxx_rtc_exit);
 +
-+MODULE_DESCRIPTION("Core driver for Freescale MC13XXX PMIC");
-+MODULE_AUTHOR("Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>");
++MODULE_AUTHOR("Sascha Hauer <s.hauer@pengutronix.de>");
++MODULE_DESCRIPTION("RTC driver for Freescale MC13XXX PMIC");
 +MODULE_LICENSE("GPL v2");
-diff --git a/include/linux/mfd/mc13783.h b/include/linux/mfd/mc13783.h
-index 5f6aff5..b4c741e 100644
---- a/include/linux/mfd/mc13783.h
-+++ b/include/linux/mfd/mc13783.h
-@@ -1,5 +1,5 @@
- /*
-- * Copyright 2009 Pengutronix
-+ * Copyright 2009-2010 Pengutronix
-  * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-  *
-  * This program is free software; you can redistribute it and/or modify it under
-@@ -9,31 +9,84 @@
- #ifndef __LINUX_MFD_MC13783_H
- #define __LINUX_MFD_MC13783_H
- 
--#include <linux/interrupt.h>
-+#include <linux/mfd/mc13xxx.h>
- 
- struct mc13783;
- 
--void mc13783_lock(struct mc13783 *mc13783);
--void mc13783_unlock(struct mc13783 *mc13783);
--
--int mc13783_reg_read(struct mc13783 *mc13783, unsigned int offset, u32 *val);
--int mc13783_reg_write(struct mc13783 *mc13783, unsigned int offset, u32 val);
--int mc13783_reg_rmw(struct mc13783 *mc13783, unsigned int offset,
--		u32 mask, u32 val);
--
--int mc13783_get_flags(struct mc13783 *mc13783);
--
--int mc13783_irq_request(struct mc13783 *mc13783, int irq,
--		irq_handler_t handler, const char *name, void *dev);
--int mc13783_irq_request_nounmask(struct mc13783 *mc13783, int irq,
--		irq_handler_t handler, const char *name, void *dev);
--int mc13783_irq_free(struct mc13783 *mc13783, int irq, void *dev);
--
--int mc13783_irq_mask(struct mc13783 *mc13783, int irq);
--int mc13783_irq_unmask(struct mc13783 *mc13783, int irq);
--int mc13783_irq_status(struct mc13783 *mc13783, int irq,
--		int *enabled, int *pending);
--int mc13783_irq_ack(struct mc13783 *mc13783, int irq);
-+struct mc13xxx *mc13783_to_mc13xxx(struct mc13783 *mc13783);
-+
-+static inline void mc13783_lock(struct mc13783 *mc13783)
-+{
-+	mc13xxx_lock(mc13783_to_mc13xxx(mc13783));
-+}
-+
-+static inline void mc13783_unlock(struct mc13783 *mc13783)
-+{
-+	mc13xxx_unlock(mc13783_to_mc13xxx(mc13783));
-+}
-+
-+static inline int mc13783_reg_read(struct mc13783 *mc13783,
-+		unsigned int offset, u32 *val)
-+{
-+	return mc13xxx_reg_read(mc13783_to_mc13xxx(mc13783), offset, val);
-+}
-+
-+static inline int mc13783_reg_write(struct mc13783 *mc13783,
-+		unsigned int offset, u32 val)
-+{
-+	return mc13xxx_reg_write(mc13783_to_mc13xxx(mc13783), offset, val);
-+}
-+
-+static inline int mc13783_reg_rmw(struct mc13783 *mc13783,
-+		unsigned int offset, u32 mask, u32 val)
-+{
-+	return mc13xxx_reg_rmw(mc13783_to_mc13xxx(mc13783), offset, mask, val);
-+}
-+
-+static inline int mc13783_get_flags(struct mc13783 *mc13783)
-+{
-+	return mc13xxx_get_flags(mc13783_to_mc13xxx(mc13783));
-+}
-+
-+static inline int mc13783_irq_request(struct mc13783 *mc13783, int irq,
-+		irq_handler_t handler, const char *name, void *dev)
-+{
-+	return mc13xxx_irq_request(mc13783_to_mc13xxx(mc13783), irq,
-+			handler, name, dev);
-+}
-+
-+static inline int mc13783_irq_request_nounmask(struct mc13783 *mc13783, int irq,
-+		irq_handler_t handler, const char *name, void *dev)
-+{
-+	return mc13xxx_irq_request_nounmask(mc13783_to_mc13xxx(mc13783), irq,
-+			handler, name, dev);
-+}
-+
-+static inline int mc13783_irq_free(struct mc13783 *mc13783, int irq, void *dev)
-+{
-+	return mc13xxx_irq_free(mc13783_to_mc13xxx(mc13783), irq, dev);
-+}
-+
-+static inline int mc13783_irq_mask(struct mc13783 *mc13783, int irq)
-+{
-+	return mc13xxx_irq_mask(mc13783_to_mc13xxx(mc13783), irq);
-+}
-+
-+static inline int mc13783_irq_unmask(struct mc13783 *mc13783, int irq)
-+{
-+	return mc13xxx_irq_unmask(mc13783_to_mc13xxx(mc13783), irq);
-+}
-+static inline int mc13783_irq_status(struct mc13783 *mc13783, int irq,
-+		int *enabled, int *pending)
-+{
-+	return mc13xxx_irq_status(mc13783_to_mc13xxx(mc13783),
-+			irq, enabled, pending);
-+}
-+
-+static inline int mc13783_irq_ack(struct mc13783 *mc13783, int irq)
-+{
-+	return mc13xxx_irq_ack(mc13783_to_mc13xxx(mc13783), irq);
-+}
- 
- #define MC13783_ADC0		43
- #define MC13783_ADC0_ADREFEN		(1 << 10)
-@@ -48,96 +101,18 @@ int mc13783_irq_ack(struct mc13783 *mc13783, int irq);
- 					MC13783_ADC0_TSMOD1 | \
- 					MC13783_ADC0_TSMOD2)
- 
--struct mc13783_led_platform_data {
--#define MC13783_LED_MD		0
--#define MC13783_LED_AD		1
--#define MC13783_LED_KP		2
--#define MC13783_LED_R1		3
--#define MC13783_LED_G1		4
--#define MC13783_LED_B1		5
--#define MC13783_LED_R2		6
--#define MC13783_LED_G2		7
--#define MC13783_LED_B2		8
--#define MC13783_LED_R3		9
--#define MC13783_LED_G3		10
--#define MC13783_LED_B3		11
--#define MC13783_LED_MAX MC13783_LED_B3
--	int id;
--	const char *name;
--	const char *default_trigger;
--
--/* Three or two bits current selection depending on the led */
--	char max_current;
--};
--
--struct mc13783_leds_platform_data {
--	int num_leds;
--	struct mc13783_led_platform_data *led;
--
--#define MC13783_LED_TRIODE_MD	(1 << 0)
--#define MC13783_LED_TRIODE_AD	(1 << 1)
--#define MC13783_LED_TRIODE_KP	(1 << 2)
--#define MC13783_LED_BOOST_EN	(1 << 3)
--#define MC13783_LED_TC1HALF	(1 << 4)
--#define MC13783_LED_SLEWLIMTC	(1 << 5)
--#define MC13783_LED_SLEWLIMBL	(1 << 6)
--#define MC13783_LED_TRIODE_TC1	(1 << 7)
--#define MC13783_LED_TRIODE_TC2	(1 << 8)
--#define MC13783_LED_TRIODE_TC3	(1 << 9)
--	int flags;
--
--#define MC13783_LED_AB_DISABLED		0
--#define MC13783_LED_AB_MD1		1
--#define MC13783_LED_AB_MD12		2
--#define MC13783_LED_AB_MD123		3
--#define MC13783_LED_AB_MD1234		4
--#define MC13783_LED_AB_MD1234_AD1	5
--#define MC13783_LED_AB_MD1234_AD12	6
--#define MC13783_LED_AB_MD1_AD		7
--	char abmode;
--
--#define MC13783_LED_ABREF_200MV	0
--#define MC13783_LED_ABREF_400MV	1
--#define MC13783_LED_ABREF_600MV	2
--#define MC13783_LED_ABREF_800MV	3
--	char abref;
--
--#define MC13783_LED_PERIOD_10MS		0
--#define MC13783_LED_PERIOD_100MS	1
--#define MC13783_LED_PERIOD_500MS	2
--#define MC13783_LED_PERIOD_2S		3
--	char bl_period;
--	char tc1_period;
--	char tc2_period;
--	char tc3_period;
--};
--
--/* to be cleaned up */
--struct regulator_init_data;
--
--struct mc13783_regulator_init_data {
--	int id;
--	struct regulator_init_data *init_data;
--};
--
--struct mc13783_regulator_platform_data {
--	int num_regulators;
--	struct mc13783_regulator_init_data *regulators;
--};
--
--struct mc13783_platform_data {
--	int num_regulators;
--	struct mc13783_regulator_init_data *regulators;
--	struct mc13783_leds_platform_data *leds;
--
--#define MC13783_USE_TOUCHSCREEN (1 << 0)
--#define MC13783_USE_CODEC	(1 << 1)
--#define MC13783_USE_ADC		(1 << 2)
--#define MC13783_USE_RTC		(1 << 3)
--#define MC13783_USE_REGULATOR	(1 << 4)
--#define MC13783_USE_LED		(1 << 5)
--	unsigned int flags;
--};
-+#define mc13783_regulator_init_data mc13xxx_regulator_init_data
-+#define mc13783_regulator_platform_data mc13xxx_regulator_platform_data
-+#define mc13783_led_platform_data mc13xxx_led_platform_data
-+#define mc13783_leds_platform_data mc13xxx_leds_platform_data
-+
-+#define mc13783_platform_data mc13xxx_platform_data
-+#define MC13783_USE_TOUCHSCREEN	MC13XXX_USE_TOUCHSCREEN
-+#define MC13783_USE_CODEC	MC13XXX_USE_CODEC
-+#define MC13783_USE_ADC		MC13XXX_USE_ADC
-+#define MC13783_USE_RTC		MC13XXX_USE_RTC
-+#define MC13783_USE_REGULATOR	MC13XXX_USE_REGULATOR
-+#define MC13783_USE_LED		MC13XXX_USE_LED
- 
- #define MC13783_ADC_MODE_TS		1
- #define MC13783_ADC_MODE_SINGLE_CHAN	2
-@@ -181,46 +156,46 @@ int mc13783_adc_do_conversion(struct mc13783 *mc13783, unsigned int mode,
- #define	MC13783_REGU_PWGT1SPI	31
- #define	MC13783_REGU_PWGT2SPI	32
- 
--#define MC13783_IRQ_ADCDONE	0
--#define MC13783_IRQ_ADCBISDONE	1
--#define MC13783_IRQ_TS		2
-+#define MC13783_IRQ_ADCDONE	MC13XXX_IRQ_ADCDONE
-+#define MC13783_IRQ_ADCBISDONE	MC13XXX_IRQ_ADCBISDONE
-+#define MC13783_IRQ_TS		MC13XXX_IRQ_TS
- #define MC13783_IRQ_WHIGH	3
- #define MC13783_IRQ_WLOW	4
--#define MC13783_IRQ_CHGDET	6
-+#define MC13783_IRQ_CHGDET	MC13XXX_IRQ_CHGDET
- #define MC13783_IRQ_CHGOV	7
--#define MC13783_IRQ_CHGREV	8
--#define MC13783_IRQ_CHGSHORT	9
--#define MC13783_IRQ_CCCV	10
--#define MC13783_IRQ_CHGCURR	11
--#define MC13783_IRQ_BPON	12
--#define MC13783_IRQ_LOBATL	13
--#define MC13783_IRQ_LOBATH	14
-+#define MC13783_IRQ_CHGREV	MC13XXX_IRQ_CHGREV
-+#define MC13783_IRQ_CHGSHORT	MC13XXX_IRQ_CHGSHORT
-+#define MC13783_IRQ_CCCV	MC13XXX_IRQ_CCCV
-+#define MC13783_IRQ_CHGCURR	MC13XXX_IRQ_CHGCURR
-+#define MC13783_IRQ_BPON	MC13XXX_IRQ_BPON
-+#define MC13783_IRQ_LOBATL	MC13XXX_IRQ_LOBATL
-+#define MC13783_IRQ_LOBATH	MC13XXX_IRQ_LOBATH
- #define MC13783_IRQ_UDP		15
- #define MC13783_IRQ_USB		16
- #define MC13783_IRQ_ID		19
- #define MC13783_IRQ_SE1		21
- #define MC13783_IRQ_CKDET	22
- #define MC13783_IRQ_UDM		23
--#define MC13783_IRQ_1HZ		24
--#define MC13783_IRQ_TODA	25
-+#define MC13783_IRQ_1HZ		MC13XXX_IRQ_1HZ
-+#define MC13783_IRQ_TODA	MC13XXX_IRQ_TODA
- #define MC13783_IRQ_ONOFD1	27
- #define MC13783_IRQ_ONOFD2	28
- #define MC13783_IRQ_ONOFD3	29
--#define MC13783_IRQ_SYSRST	30
--#define MC13783_IRQ_RTCRST	31
--#define MC13783_IRQ_PC		32
--#define MC13783_IRQ_WARM	33
--#define MC13783_IRQ_MEMHLD	34
-+#define MC13783_IRQ_SYSRST	MC13XXX_IRQ_SYSRST
-+#define MC13783_IRQ_RTCRST	MC13XXX_IRQ_RTCRST
-+#define MC13783_IRQ_PC		MC13XXX_IRQ_PC
-+#define MC13783_IRQ_WARM	MC13XXX_IRQ_WARM
-+#define MC13783_IRQ_MEMHLD	MC13XXX_IRQ_MEMHLD
- #define MC13783_IRQ_PWRRDY	35
--#define MC13783_IRQ_THWARNL	36
--#define MC13783_IRQ_THWARNH	37
--#define MC13783_IRQ_CLK		38
-+#define MC13783_IRQ_THWARNL	MC13XXX_IRQ_THWARNL
-+#define MC13783_IRQ_THWARNH	MC13XXX_IRQ_THWARNH
-+#define MC13783_IRQ_CLK		MC13XXX_IRQ_CLK
- #define MC13783_IRQ_SEMAF	39
- #define MC13783_IRQ_MC2B	41
- #define MC13783_IRQ_HSDET	42
- #define MC13783_IRQ_HSL		43
- #define MC13783_IRQ_ALSPTH	44
- #define MC13783_IRQ_AHSSHORT	45
--#define MC13783_NUM_IRQ		46
-+#define MC13783_NUM_IRQ		MC13XXX_NUM_IRQ
- 
--#endif /* __LINUX_MFD_MC13783_H */
-+#endif /* ifndef __LINUX_MFD_MC13783_H */
-diff --git a/include/linux/mfd/mc13xxx.h b/include/linux/mfd/mc13xxx.h
-new file mode 100644
-index 0000000..a1d391b
---- /dev/null
-+++ b/include/linux/mfd/mc13xxx.h
-@@ -0,0 +1,154 @@
-+/*
-+ * Copyright 2009-2010 Pengutronix
-+ * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it under
-+ * the terms of the GNU General Public License version 2 as published by the
-+ * Free Software Foundation.
-+ */
-+#ifndef __LINUX_MFD_MC13XXX_H
-+#define __LINUX_MFD_MC13XXX_H
-+
-+#include <linux/interrupt.h>
-+
-+struct mc13xxx;
-+
-+void mc13xxx_lock(struct mc13xxx *mc13xxx);
-+void mc13xxx_unlock(struct mc13xxx *mc13xxx);
-+
-+int mc13xxx_reg_read(struct mc13xxx *mc13xxx, unsigned int offset, u32 *val);
-+int mc13xxx_reg_write(struct mc13xxx *mc13xxx, unsigned int offset, u32 val);
-+int mc13xxx_reg_rmw(struct mc13xxx *mc13xxx, unsigned int offset,
-+		u32 mask, u32 val);
-+
-+int mc13xxx_get_flags(struct mc13xxx *mc13xxx);
-+
-+int mc13xxx_irq_request(struct mc13xxx *mc13xxx, int irq,
-+		irq_handler_t handler, const char *name, void *dev);
-+int mc13xxx_irq_request_nounmask(struct mc13xxx *mc13xxx, int irq,
-+		irq_handler_t handler, const char *name, void *dev);
-+int mc13xxx_irq_free(struct mc13xxx *mc13xxx, int irq, void *dev);
-+
-+int mc13xxx_irq_mask(struct mc13xxx *mc13xxx, int irq);
-+int mc13xxx_irq_unmask(struct mc13xxx *mc13xxx, int irq);
-+int mc13xxx_irq_status(struct mc13xxx *mc13xxx, int irq,
-+		int *enabled, int *pending);
-+int mc13xxx_irq_ack(struct mc13xxx *mc13xxx, int irq);
-+
-+int mc13xxx_get_flags(struct mc13xxx *mc13xxx);
-+
-+#define MC13XXX_IRQ_ADCDONE	0
-+#define MC13XXX_IRQ_ADCBISDONE	1
-+#define MC13XXX_IRQ_TS		2
-+#define MC13XXX_IRQ_CHGDET	6
-+#define MC13XXX_IRQ_CHGREV	8
-+#define MC13XXX_IRQ_CHGSHORT	9
-+#define MC13XXX_IRQ_CCCV	10
-+#define MC13XXX_IRQ_CHGCURR	11
-+#define MC13XXX_IRQ_BPON	12
-+#define MC13XXX_IRQ_LOBATL	13
-+#define MC13XXX_IRQ_LOBATH	14
-+#define MC13XXX_IRQ_1HZ		24
-+#define MC13XXX_IRQ_TODA	25
-+#define MC13XXX_IRQ_SYSRST	30
-+#define MC13XXX_IRQ_RTCRST	31
-+#define MC13XXX_IRQ_PC		32
-+#define MC13XXX_IRQ_WARM	33
-+#define MC13XXX_IRQ_MEMHLD	34
-+#define MC13XXX_IRQ_THWARNL	36
-+#define MC13XXX_IRQ_THWARNH	37
-+#define MC13XXX_IRQ_CLK		38
-+
-+#define MC13XXX_NUM_IRQ		46
-+
-+struct regulator_init_data;
-+
-+struct mc13xxx_regulator_init_data {
-+	int id;
-+	struct regulator_init_data *init_data;
-+};
-+
-+struct mc13xxx_regulator_platform_data {
-+	int num_regulators;
-+	struct mc13xxx_regulator_init_data *regulators;
-+};
-+
-+struct mc13xxx_led_platform_data {
-+#define MC13783_LED_MD		0
-+#define MC13783_LED_AD		1
-+#define MC13783_LED_KP		2
-+#define MC13783_LED_R1		3
-+#define MC13783_LED_G1		4
-+#define MC13783_LED_B1		5
-+#define MC13783_LED_R2		6
-+#define MC13783_LED_G2		7
-+#define MC13783_LED_B2		8
-+#define MC13783_LED_R3		9
-+#define MC13783_LED_G3		10
-+#define MC13783_LED_B3		11
-+#define MC13783_LED_MAX MC13783_LED_B3
-+	int id;
-+	const char *name;
-+	const char *default_trigger;
-+
-+/* Three or two bits current selection depending on the led */
-+	char max_current;
-+};
-+
-+struct mc13xxx_leds_platform_data {
-+	int num_leds;
-+	struct mc13xxx_led_platform_data *led;
-+
-+#define MC13783_LED_TRIODE_MD	(1 << 0)
-+#define MC13783_LED_TRIODE_AD	(1 << 1)
-+#define MC13783_LED_TRIODE_KP	(1 << 2)
-+#define MC13783_LED_BOOST_EN	(1 << 3)
-+#define MC13783_LED_TC1HALF	(1 << 4)
-+#define MC13783_LED_SLEWLIMTC	(1 << 5)
-+#define MC13783_LED_SLEWLIMBL	(1 << 6)
-+#define MC13783_LED_TRIODE_TC1	(1 << 7)
-+#define MC13783_LED_TRIODE_TC2	(1 << 8)
-+#define MC13783_LED_TRIODE_TC3	(1 << 9)
-+	int flags;
-+
-+#define MC13783_LED_AB_DISABLED		0
-+#define MC13783_LED_AB_MD1		1
-+#define MC13783_LED_AB_MD12		2
-+#define MC13783_LED_AB_MD123		3
-+#define MC13783_LED_AB_MD1234		4
-+#define MC13783_LED_AB_MD1234_AD1	5
-+#define MC13783_LED_AB_MD1234_AD12	6
-+#define MC13783_LED_AB_MD1_AD		7
-+	char abmode;
-+
-+#define MC13783_LED_ABREF_200MV	0
-+#define MC13783_LED_ABREF_400MV	1
-+#define MC13783_LED_ABREF_600MV	2
-+#define MC13783_LED_ABREF_800MV	3
-+	char abref;
-+
-+#define MC13783_LED_PERIOD_10MS		0
-+#define MC13783_LED_PERIOD_100MS	1
-+#define MC13783_LED_PERIOD_500MS	2
-+#define MC13783_LED_PERIOD_2S		3
-+	char bl_period;
-+	char tc1_period;
-+	char tc2_period;
-+	char tc3_period;
-+};
-+
-+struct mc13xxx_platform_data {
-+#define MC13XXX_USE_TOUCHSCREEN (1 << 0)
-+#define MC13XXX_USE_CODEC	(1 << 1)
-+#define MC13XXX_USE_ADC		(1 << 2)
-+#define MC13XXX_USE_RTC		(1 << 3)
-+#define MC13XXX_USE_REGULATOR	(1 << 4)
-+#define MC13XXX_USE_LED		(1 << 5)
-+	unsigned int flags;
-+
-+	int num_regulators;
-+	struct mc13xxx_regulator_init_data *regulators;
-+	struct mc13xxx_leds_platform_data *leds;
-+};
-+
-+#endif /* ifndef __LINUX_MFD_MC13XXX_H */
++MODULE_ALIAS("platform:" DRIVER_NAME);
 -- 
 1.7.2.3
 
