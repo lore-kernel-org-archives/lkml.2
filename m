@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754003Ab0I2PsL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 11:48:11 -0400
-Received: from claw.goop.org ([74.207.240.146]:44771 "EHLO claw.goop.org"
+	id S1754039Ab0I2PtV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 11:49:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6209 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753056Ab0I2PsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 11:48:10 -0400
-Message-ID: <4CA35FB7.10600@goop.org>
-Date: Wed, 29 Sep 2010 08:48:07 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100907 Fedora/3.1.3-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Kyle McMartin <kyle@redhat.com>,
-        James Dingwall <james.dingwall@amdocs.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+	id S1753056Ab0I2PtT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 11:49:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,253,1283756400"; 
+   d="scan'208";a="842032110"
+From: "Chen, Tim C" <tim.c.chen@intel.com>
+To: Norbert Preining <preining@logic.at>, "Shi, Alex" <alex.shi@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        "arjan@infradead.org" <arjan@infradead.org>,
+        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
+        tglx <tglx@linutronix.de>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        stable@kernel.org
-Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just	after
- the boot
-References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com> <20100927024044.GQ13116@bombadil.infradead.org> <20100927061336.GA22721@kroah.com> <4CA0DDAB.9090507@goop.org> <20100928182910.GA32464@kroah.com>
-In-Reply-To: <20100928182910.GA32464@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        "Zhao, Yakui" <yakui.zhao@intel.com>
+Date: Wed, 29 Sep 2010 09:48:54 -0600
+Subject: RE: high power consumption in recent kernels
+Thread-Topic: high power consumption in recent kernels
+Thread-Index: Actf5Dd7WdE4iWjiQ1WuqORSXER0CQACPgIg
+Message-ID: <EA929A9653AAE14F841771FB1DE5A136602222979F@rrsmsx501.amr.corp.intel.com>
+References: <1284355277.26157.8109.camel@debian>
+	 <1284689374.17745.89.camel@debian> <1283840425.26157.6486.camel@debian>
+	 <20100909093140.GC29648@gamma.logic.tuwien.ac.at>
+	 <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com>
+	 <20100909205115.GD11053@gamma.logic.tuwien.ac.at>
+	 <1284107099.402.30.camel@laptop>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>
+	 <20100910145451.GB21450@gamma.logic.tuwien.ac.at>
+	 <1284355277.26157.8109.camel@debian>
+	 <20100922154452.GA9080@gamma.logic.tuwien.ac.at>
+ <1285670426.21962.43.camel@debian> <4CA34F95.30400@logic.at>
+In-Reply-To: <4CA34F95.30400@logic.at>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/28/2010 11:29 AM, Greg KH wrote:
-> On Mon, Sep 27, 2010 at 11:08:43AM -0700, Jeremy Fitzhardinge wrote:
->>  On 09/26/2010 11:13 PM, Greg KH wrote:
->>> On Sun, Sep 26, 2010 at 10:40:44PM -0400, Kyle McMartin wrote:
->>>> On Thu, Sep 23, 2010 at 04:23:55PM +0100, James Dingwall wrote:
->>>>>> I was experiencing the same immediate crash with a null pointer
->>>>>> dereference (log below) on boot with 2.6.35.5.  Reverting
->>>>>> fb412a178502dc498430723b082a932f797e4763 also resolved the problem for
->>>>>> me.
->>>>> Checking the diff from this commit it looks like there is a typo in the patch.  With the following (probably mangled by my client) I get 2.6.35.5 to boot.  Suggest it should be a candidate for .32 and .35 stable trees.
->>>>>
->>>> Greg, a spelling mistake cropped into this patch during 2.6.35.5 that
->>>> James here points out. Adding you to CC since it seems to have missed
->>>> stable 2.6.35.6...
->>>>
->>>> Was in xen-use-percpu-interrupts-for-ipis-and-virqs.patch.
->>> I don't understand, where did the error come from?  Was it in a patch I
->>> applied, or did I mess up some patch?  Is the same problem upstream, and
->>> if not, why not?
->> I don't know.  It looks like an 'x' was deleted due to an editor
->> fat-finger or something.  The original upstream patches were cc:d to
->> stable, so I think you would have got them that way (ie, I don't think I
->> sent them to you specifically).  Is there an opportunity in your
->> workflow where this error could have crept in?  The patches should have
->> been a pretty clean 'git cherry-pick' with no conflicts.
-> Sorry, I don't know what happened, using my scripts, it does drop to an
-> editor so I can add the "signed-off-by" line, so perhaps I accidentally
-> did this in there.
->
-> It's now in the -stable queue and I'll push out new releases in a few
-> hours.
->
+Norbert,
 
-I should have pointed out it is the same in the stable-2.6.32 tree as well.
+Can you try with the no-hz ratelimit now code REMOVED, and see if 
+that will reduce your system power and cpu wakeups further.
+Your last testing has the no-hz ratelimit code and we will like
+to compare the effect with and without the code.
 
-    J
+Sorry for the confusion.
+
+Tim
+
+>-----Original Message-----
+>From: Norbert Preining [mailto:preining@logic.at] 
+>Sent: Wednesday, September 29, 2010 7:39 AM
+>To: Shi, Alex
+>Cc: Peter Zijlstra; Chen, Tim C; arjan@infradead.org; 
+>efault@gmx.de; Li, Shaohua; tglx; 
+>linux-kernel@vger.kernel.org; Zhao, Yakui
+>Subject: Re: high power consumption in recent kernels
+>
+>Hi Alex,
+>
+>> Could you like to try the following patch on your system and see how
+>> many power it consumption now?
+>
+>But this patch is excately what you send me already and what I tried
+>and I answered in the last email?
+>
+>Do I miss something here?
+>
+>All the best
+>
+>Norbert
+>
