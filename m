@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0I2B3M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 21:29:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37025 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752208Ab0I2B3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Sep 2010 21:29:11 -0400
-Date: Wed, 29 Sep 2010 11:29:04 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: linux-next: build failure after merge of the v4l-dvb tree
-Message-Id: <20100929112904.3fd117e0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1755328Ab0I2Bam (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 21:30:42 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:36205 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab0I2Bam (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Sep 2010 21:30:42 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Tue, 28 Sep 2010 21:29:45 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jdike@addtoit.com" <jdike@addtoit.com>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        "janjaap@bos.nl" <janjaap@bos.nl>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
+        "adobriyan@gmail.com" <adobriyan@gmail.com>,
+        "syzop@vulnscan.org" <syzop@vulnscan.org>
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+Message-ID: <20100929012945.GA3324@foursquare.net>
+References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at> <20100928225202.GA30352@foursquare.net> <4CA275CE.6060401@fusionio.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__29_Sep_2010_11_29_04_+1000_qHqZR7X1cx8wn0ZF"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA275CE.6060401@fusionio.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__29_Sep_2010_11_29_04_+1000_qHqZR7X1cx8wn0ZF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Sep 29, 2010 at 08:10:06AM +0900, Jens Axboe wrote:
+> It looks like that if we need to restart the requeue, then
+> we use the initial position and not the current index. Does
+> this help?
+> 
+> diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
+> index 1bcd208..81ee063 100644
+> --- a/arch/um/drivers/ubd_kern.c
+> +++ b/arch/um/drivers/ubd_kern.c
+> @@ -162,7 +162,7 @@ struct ubd {
+>  	spinlock_t lock;
+>  	struct scatterlist sg[MAX_SG];
+>  	struct request *request;
+> -	int start_sg, end_sg;
+> +	int start_sg, end_sg, rq_off;
+>  };
+>  
+>  #define DEFAULT_COW { \
+> @@ -187,6 +187,7 @@ struct ubd {
+>  	.request =		NULL, \
+>  	.start_sg =		0, \
+>  	.end_sg =		0, \
+> +	.rq_off =		0, \
+>  }
+>  
+>  /* Protected by ubd_lock */
+> @@ -1241,10 +1242,11 @@ static void do_ubd_request(struct request_queue *q)
+>  			dev->request = req;
+>  			dev->start_sg = 0;
+>  			dev->end_sg = blk_rq_map_sg(q, req, dev->sg);
+> +			dev->rq_off = 0;
+>  		}
+>  
+>  		req = dev->request;
+> -		sector = blk_rq_pos(req);
+> +		sector = blk_rq_pos(req) + dev->rq_off;
+>  		while(dev->start_sg < dev->end_sg){
+>  			struct scatterlist *sg = &dev->sg[dev->start_sg];
+>  
+> @@ -1273,6 +1275,7 @@ static void do_ubd_request(struct request_queue *q)
+>  			}
+>  
+>  			dev->start_sg++;
+> +			dev->rq_off += sg->length >> 9;
+>  		}
+>  		dev->end_sg = 0;
+>  		dev->request = NULL;
+> 
+> -- 
 
-Hi Mauro,
+This patch does not fix the corruption issue for me.  I applied the patch
+to 2.6.35.5, and reproduced the "deleted inode referenced" errors
+in both a gentoo and ubuntu guest OS.  It does take longer to reproduce
+though, with this patch.
 
-After merging the v4l-dvb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+- Chris
 
-drivers/media/video/bt8xx/bttv-input.c: In function 'init_bttv_i2c_ir':
-drivers/media/video/bt8xx/bttv-input.c:306: error: too few arguments to fun=
-ction 'i2c_new_probed_device'
-
-Caused by commit 3c81f945a74224d6e3017596297ee9903929b1a7 ("V4L/DVB:
-bttv: Move PV951 IR to the right driver") interacting with commit
-9a94241afcc9a481691a9c29b7460217925b59b8 ("i2c: Add support for custom
-probe function") that entered Linus' tree in v2.6.36-rc1.  I guess that
-the v4l-dvb commit moved that code to a driver that is now being built.
-
-I have used the v4l-dvb tree from next-20100928 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__29_Sep_2010_11_29_04_+1000_qHqZR7X1cx8wn0ZF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMopZgAAoJEDMEi1NhKgbst10H/RM5c7pRguuuZz25+rOpRpLK
-kMPovEaWsaF6wOaHfR2CAUyeHvkOrlpzhHXXdupZxjawYNmI3XJkmvtmVtMMq7Wq
-rB3x730YIjhySoyke/MZfLphMRbaMir/kHSzpAF1F9FliDGEyEaCAW8mPqXOqg2p
-PVlV/VY0NYQpbLmtPAEuWd4z2YahIUR/aI3L0GWWnhnvE7asDDMqazI3gqI3ktqj
-nvqyCritDUCtCB8kOrDr81ZHm+BTxmrPdwUEkkBYsYnYlq6iLliAXE8kofR0g0mi
-43OoNjCH12S4ZMFWjZAaA6b4XvvPuAf9KRzQMtU5MuQn08eCkagtAZQWGDi3LlY=
-=6XlD
------END PGP SIGNATURE-----
-
---Signature=_Wed__29_Sep_2010_11_29_04_+1000_qHqZR7X1cx8wn0ZF--
