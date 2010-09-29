@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751680Ab0I2OrB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 10:47:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17191 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab0I2OrA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 10:47:00 -0400
-From: Jiri Olsa <jolsa@redhat.com>
-To: robert.richter@amd.com
-Cc: linux-kernel@vger.kernel.org, oprofile-list@lists.sourceforge.net,
-        oleg@redhat.com, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCHv2 1/2] oprofile, x86: using struct stack_frame for 64bit processes dump
-Date: Wed, 29 Sep 2010 16:46:46 +0200
-Message-Id: <1285771607-12089-2-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1285771607-12089-1-git-send-email-jolsa@redhat.com>
-References: <1285771607-12089-1-git-send-email-jolsa@redhat.com>
+	id S1751618Ab0I2Osu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 10:48:50 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:53351 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750962Ab0I2Ost (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 10:48:49 -0400
+X-Authenticated: #28250155
+X-Provags-ID: V01U2FsdGVkX1+kNBQZOgOkOAZoHHBt6mPtrGDdgDPxmkk3bI1F3s
+	V7GTW4CAg113w8
+From: Sven Joachim <svenjoac@gmx.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Subject: Re: Linux 2.6.35.7
+References: <20100929011355.GA25515@kroah.com>
+Date: Wed, 29 Sep 2010 16:48:44 +0200
+In-Reply-To: <20100929011355.GA25515@kroah.com> (Greg KH's message of "Tue, 28
+	Sep 2010 18:13:55 -0700")
+Message-ID: <87zkv0a9mb.fsf@turtle.gmx.de>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing unnecessary struct frame_head and replacing it with
-struct stack_frame.
+Am 29.09.2010 um 03:13 schrieb Greg KH:
 
-The struct stack_frame is already defined and used in other places
-in kernel, so there's no reason to define new structure.
+> I'm announcing the release of the 2.6.35.7 kernel.
+> This is only needed if you run Xen, there was a typo that caused
+> problems.  My fault, sorry.
 
-wbr,
-jirka
+This typo is also in 2.6.32.2[23], could you make a 2.6.32.24 release as
+well?
 
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- arch/x86/oprofile/backtrace.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-index 3855096..d640a86 100644
---- a/arch/x86/oprofile/backtrace.c
-+++ b/arch/x86/oprofile/backtrace.c
-@@ -48,35 +48,30 @@ static struct stacktrace_ops backtrace_ops = {
- 	.walk_stack	= print_context_stack,
- };
- 
--struct frame_head {
--	struct frame_head *bp;
--	unsigned long ret;
--} __attribute__((packed));
--
--static struct frame_head *dump_user_backtrace(struct frame_head *head)
-+static struct stack_frame *dump_user_backtrace(struct stack_frame *head)
- {
--	struct frame_head bufhead[2];
-+	struct stack_frame bufhead[2];
- 
--	/* Also check accessibility of one struct frame_head beyond */
-+	/* Also check accessibility of one struct stack_frame beyond */
- 	if (!access_ok(VERIFY_READ, head, sizeof(bufhead)))
- 		return NULL;
- 	if (__copy_from_user_inatomic(bufhead, head, sizeof(bufhead)))
- 		return NULL;
- 
--	oprofile_add_trace(bufhead[0].ret);
-+	oprofile_add_trace(bufhead[0].return_address);
- 
- 	/* frame pointers should strictly progress back up the stack
- 	 * (towards higher addresses) */
--	if (head >= bufhead[0].bp)
-+	if (head >= bufhead[0].next_frame)
- 		return NULL;
- 
--	return bufhead[0].bp;
-+	return bufhead[0].next_frame;
- }
- 
- void
- x86_backtrace(struct pt_regs * const regs, unsigned int depth)
- {
--	struct frame_head *head = (struct frame_head *)frame_pointer(regs);
-+	struct stack_frame *head = (struct stack_frame *)frame_pointer(regs);
- 
- 	if (!user_mode_vm(regs)) {
- 		unsigned long stack = kernel_stack_pointer(regs);
--- 
-1.7.1
+Cheers,
+       Sven
 
