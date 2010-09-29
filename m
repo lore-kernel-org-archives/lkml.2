@@ -1,60 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753187Ab0I2OaD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 10:30:03 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51984 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752767Ab0I2OaB (ORCPT
+	id S1751719Ab0I2Obm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 10:31:42 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:40602 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab0I2Obk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 10:30:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=H11hgeS8+rei6SKs8qLCCCw/vf8/rrPRro8cQhm+DZTKiCYlUAEIPoP3VHUxJzWAwJ
-         jVm68msAYoiM2TgBJ3BW6uoDptd1D5Dg9bYc9IY1HpT808nUhQW1HdrYYNVOjJdV0Ov+
-         wbBTRiuxq35yXdVmVavtZrjYtZV1qNs2pk1Cw=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: Fix __PHYSICAL_MASK calculation
-Date: Wed, 29 Sep 2010 23:29:48 +0900
-Message-Id: <1285770588-14065-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.2.2
+	Wed, 29 Sep 2010 10:31:40 -0400
+Subject: Re: [RFC PATCH 2/2] macvtap: TX zero copy between guest and host
+ kernel
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, Avi Kivity <avi@redhat.com>,
+        "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100929081645.GA21195@redhat.com>
+References: <1284483745.13351.71.camel@localhost.localdomain>
+	 <20100914182707.GB15549@redhat.com>
+	 <1284490143.13351.82.camel@localhost.localdomain>
+	 <20100914190156.GA16037@redhat.com>
+	 <1284492983.13351.95.camel@localhost.localdomain>
+	 <20100915051241.GA25340@redhat.com>
+	 <1284531675.24603.259.camel@localhost.localdomain>
+	 <20100915101000.GB28016@redhat.com>
+	 <1284562354.2573.12.camel@localhost.localdomain>
+	 <1285730669.31343.7.camel@localhost.localdomain>
+	 <20100929081645.GA21195@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Sep 2010 07:31:29 -0700
+Message-ID: <1285770689.31343.9.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 32-bit non-PAE system, cast to 'phys_addr_t' truncates value
-before subtraction. Subtracting before cast produce same result
-but remove following warnings from sparse:
+On Wed, 2010-09-29 at 10:16 +0200, Michael S. Tsirkin wrote:
+> If you look at dev_hard_start_xmit you will see a call
+> to skb_orphan_try which often calls the skb destructor.
+> So I suspect this is almost equivalent to your original patch,
+> and has the same correctness issue.
 
- arch/x86/include/asm/pgtable_types.h:255:38: warning: cast truncates bits from constant value (100000000 becomes 0)
- arch/x86/include/asm/pgtable_types.h:270:38: warning: cast truncates bits from constant value (100000000 becomes 0)
- arch/x86/include/asm/pgtable.h:127:32: warning: cast truncates bits from constant value (100000000 becomes 0)
- arch/x86/include/asm/pgtable.h:132:32: warning: cast truncates bits from constant value (100000000 becomes 0)
- arch/x86/include/asm/pgtable.h:344:31: warning: cast truncates bits from constant value (100000000 becomes 0)
+I forgot to mention, in skb_orphan_try, I still kept the skb->sk
+reference to sk, I assign skb->sk to NULL when the DMA done.
 
-64-bit or PAE machines will not be affected by this change.
-
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- arch/x86/include/asm/page_types.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/include/asm/page_types.h b/arch/x86/include/asm/page_types.h
-index a667f24..1df6621 100644
---- a/arch/x86/include/asm/page_types.h
-+++ b/arch/x86/include/asm/page_types.h
-@@ -8,7 +8,7 @@
- #define PAGE_SIZE	(_AC(1,UL) << PAGE_SHIFT)
- #define PAGE_MASK	(~(PAGE_SIZE-1))
- 
--#define __PHYSICAL_MASK		((phys_addr_t)(1ULL << __PHYSICAL_MASK_SHIFT) - 1)
-+#define __PHYSICAL_MASK		((phys_addr_t)((1ULL << __PHYSICAL_MASK_SHIFT) - 1))
- #define __VIRTUAL_MASK		((1UL << __VIRTUAL_MASK_SHIFT) - 1)
- 
- /* Cast PAGE_MASK to a signed type so that it is sign-extended if
--- 
-1.7.2.2
+Thanks
+Shirley
 
