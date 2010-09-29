@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754480Ab0I2Adu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Sep 2010 20:33:50 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:54154 "EHLO e3.ny.us.ibm.com"
+	id S1754613Ab0I2AeF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Sep 2010 20:34:05 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:47106 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754179Ab0I2Ads (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754193Ab0I2Ads (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Sep 2010 20:33:48 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
         dhowells@redhat.com, eric.dumazet@gmail.com,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 1/3] rcu: add priority-inversion testing to rcutorture
-Date: Tue, 28 Sep 2010 17:33:39 -0700
-Message-Id: <1285720421-17600-1-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 2/3] rcu: move TINY_RCU from softirq to kthread
+Date: Tue, 28 Sep 2010 17:33:40 -0700
+Message-Id: <1285720421-17600-2-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100929003320.GA15904@linux.vnet.ibm.com>
 References: <20100929003320.GA15904@linux.vnet.ibm.com>
@@ -24,444 +24,274 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an optional test to force long-term preemption of RCU read-side
-critical sections, controlled by new test_boost, test_boost_interval,
-and test_boost_duration module parameters.  This is to be used to
-test RCU priority boosting.
+If RCU priority boosting is to be meaningful, callback invocation must
+be boosted in addition to preempted RCU readers.  Otherwise, in presence
+of CPU real-time threads, the grace period ends, but the callbacks don't
+get invoked.  If the callbacks don't get invoked, the associated memory
+doesn't get freed, so the system is still subject to OOM.
+
+But it is not reasonable to priority-boost RCU_SOFTIRQ, so this commit
+moves the callback invocations to a kthread, which can be boosted easily.
 
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutorture.c |  270 ++++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 259 insertions(+), 11 deletions(-)
+ include/linux/rcupdate.h |    1 -
+ include/linux/rcutiny.h  |    8 ++---
+ include/linux/rcutree.h  |    1 +
+ kernel/rcutiny.c         |   71 +++++++++++++++++++++++++++++++++++++--------
+ kernel/rcutiny_plugin.h  |   15 +++++----
+ 5 files changed, 70 insertions(+), 26 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 9d8e8fb..9ea6050 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -47,6 +47,7 @@
- #include <linux/srcu.h>
- #include <linux/slab.h>
- #include <asm/byteorder.h>
-+#include <linux/sched.h>
+diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
+index 03cda7b..7142ee3 100644
+--- a/include/linux/rcupdate.h
++++ b/include/linux/rcupdate.h
+@@ -118,7 +118,6 @@ static inline int rcu_preempt_depth(void)
+ #endif /* #else #ifdef CONFIG_PREEMPT_RCU */
  
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Paul E. McKenney <paulmck@us.ibm.com> and "
-@@ -64,6 +65,9 @@ static int irqreader = 1;	/* RCU readers from irq (timers). */
- static int fqs_duration = 0;	/* Duration of bursts (us), 0 to disable. */
- static int fqs_holdoff = 0;	/* Hold time within burst (us). */
- static int fqs_stutter = 3;	/* Wait time between bursts (s). */
-+static int test_boost = 1;	/* Test RCU prio boost: 0=no, 1=maybe, 2=yes. */
-+static int test_boost_interval = 7; /* Interval between boost tests, seconds. */
-+static int test_boost_duration = 4; /* Duration of each boost test, seconds. */
- static char *torture_type = "rcu"; /* What RCU implementation to torture. */
+ /* Internal to kernel */
+-extern void rcu_init(void);
+ extern void rcu_sched_qs(int cpu);
+ extern void rcu_bh_qs(int cpu);
+ extern void rcu_check_callbacks(int cpu, int user);
+diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
+index 13877cb..ea025a6 100644
+--- a/include/linux/rcutiny.h
++++ b/include/linux/rcutiny.h
+@@ -27,7 +27,9 @@
  
- module_param(nreaders, int, 0444);
-@@ -88,6 +92,12 @@ module_param(fqs_holdoff, int, 0444);
- MODULE_PARM_DESC(fqs_holdoff, "Holdoff time within fqs bursts (us)");
- module_param(fqs_stutter, int, 0444);
- MODULE_PARM_DESC(fqs_stutter, "Wait time between fqs bursts (s)");
-+module_param(test_boost, int, 0444);
-+MODULE_PARM_DESC(test_boost, "Test RCU prio boost: 0=no, 1=maybe, 2=yes.");
-+module_param(test_boost_interval, int, 0444);
-+MODULE_PARM_DESC(test_boost_interval, "Interval between boost tests, seconds.");
-+module_param(test_boost_duration, int, 0444);
-+MODULE_PARM_DESC(test_boost_duration, "Duration of each boost test, seconds.");
- module_param(torture_type, charp, 0444);
- MODULE_PARM_DESC(torture_type, "Type of RCU to torture (rcu, rcu_bh, srcu)");
+ #include <linux/cache.h>
  
-@@ -109,6 +119,7 @@ static struct task_struct *stats_task;
- static struct task_struct *shuffler_task;
- static struct task_struct *stutter_task;
- static struct task_struct *fqs_task;
-+static struct task_struct *boost_tasks[NR_CPUS];
+-#define rcu_init_sched()	do { } while (0)
++static inline void rcu_init(void)
++{
++}
  
- #define RCU_TORTURE_PIPE_LEN 10
+ #ifdef CONFIG_TINY_RCU
  
-@@ -134,6 +145,12 @@ static atomic_t n_rcu_torture_alloc_fail;
- static atomic_t n_rcu_torture_free;
- static atomic_t n_rcu_torture_mberror;
- static atomic_t n_rcu_torture_error;
-+static long n_rcu_torture_boost_ktrerror;
-+static long n_rcu_torture_boost_rterror;
-+static long n_rcu_torture_boost_allocerror;
-+static long n_rcu_torture_boost_afferror;
-+static long n_rcu_torture_boost_failure;
-+static long n_rcu_torture_boosts;
- static long n_rcu_torture_timers;
- static struct list_head rcu_torture_removed;
- static cpumask_var_t shuffle_tmp_mask;
-@@ -147,6 +164,16 @@ static int stutter_pause_test;
- #endif
- int rcutorture_runnable = RCUTORTURE_RUNNABLE_INIT;
+@@ -125,16 +127,12 @@ static inline void rcu_cpu_stall_reset(void)
+ }
  
-+#ifdef CONFIG_BOOST_RCU
-+#define rcu_can_boost() 1
-+#else /* #ifdef CONFIG_BOOST_RCU */
-+#define rcu_can_boost() 0
-+#endif /* #else #ifdef CONFIG_BOOST_RCU */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-
+ extern int rcu_scheduler_active __read_mostly;
+ extern void rcu_scheduler_starting(void);
+-
+ #else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+-
+ static inline void rcu_scheduler_starting(void)
+ {
+ }
+-
+ #endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
+ #endif /* __LINUX_RCUTINY_H */
+diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
+index 95518e6..c0e9683 100644
+--- a/include/linux/rcutree.h
++++ b/include/linux/rcutree.h
+@@ -30,6 +30,7 @@
+ #ifndef __LINUX_RCUTREE_H
+ #define __LINUX_RCUTREE_H
+ 
++extern void rcu_init(void);
+ extern void rcu_note_context_switch(int cpu);
+ extern int rcu_needs_cpu(int cpu);
+ extern void rcu_cpu_stall_reset(void);
+diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
+index d806735..86eef29 100644
+--- a/kernel/rcutiny.c
++++ b/kernel/rcutiny.c
+@@ -59,8 +59,15 @@ int rcu_scheduler_active __read_mostly;
+ EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+ #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
+ 
++/* Controls for rcu_cbs() kthread, replacing RCU_SOFTIRQ used previously. */
++static struct task_struct *rcu_cbs_task;
++static DECLARE_WAIT_QUEUE_HEAD(rcu_cbs_wq);
++static unsigned long have_rcu_cbs;
++static void invoke_rcu_cbs(void);
 +
-+static unsigned long boost_starttime;	/* jiffies of next boost test start. */
-+DEFINE_MUTEX(boost_mutex);		/* protect setting boost_starttime */
-+					/*  and boost task create/destroy. */
-+
- /* Mediate rmmod and system shutdown.  Concurrent rmmod & shutdown illegal! */
- 
- #define FULLSTOP_DONTSTOP 0	/* Normal operation. */
-@@ -277,6 +304,7 @@ struct rcu_torture_ops {
- 	void (*fqs)(void);
- 	int (*stats)(char *page);
- 	int irq_capable;
-+	int can_boost;
- 	char *name;
- };
- 
-@@ -366,6 +394,7 @@ static struct rcu_torture_ops rcu_ops = {
- 	.fqs		= rcu_force_quiescent_state,
- 	.stats		= NULL,
- 	.irq_capable	= 1,
-+	.can_boost	= rcu_can_boost(),
- 	.name		= "rcu"
- };
- 
-@@ -408,6 +437,7 @@ static struct rcu_torture_ops rcu_sync_ops = {
- 	.fqs		= rcu_force_quiescent_state,
- 	.stats		= NULL,
- 	.irq_capable	= 1,
-+	.can_boost	= rcu_can_boost(),
- 	.name		= "rcu_sync"
- };
- 
-@@ -424,6 +454,7 @@ static struct rcu_torture_ops rcu_expedited_ops = {
- 	.fqs		= rcu_force_quiescent_state,
- 	.stats		= NULL,
- 	.irq_capable	= 1,
-+	.can_boost	= rcu_can_boost(),
- 	.name		= "rcu_expedited"
- };
- 
-@@ -684,6 +715,110 @@ static struct rcu_torture_ops sched_expedited_ops = {
- };
+ /* Forward declarations for rcutiny_plugin.h. */
+-static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp);
++static void rcu_process_callbacks(struct rcu_ctrlblk *rcp);
++static int rcu_cbs(void *arg);
+ static void __call_rcu(struct rcu_head *head,
+ 		       void (*func)(struct rcu_head *rcu),
+ 		       struct rcu_ctrlblk *rcp);
+@@ -123,7 +130,7 @@ void rcu_sched_qs(int cpu)
+ {
+ 	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
+ 	    rcu_qsctr_help(&rcu_bh_ctrlblk))
+-		raise_softirq(RCU_SOFTIRQ);
++		invoke_rcu_cbs();
+ }
  
  /*
-+ * RCU torture priority-boost testing.  Runs one real-time thread per
-+ * CPU for moderate bursts, repeatedly registering RCU callbacks and
-+ * spinning waiting for them to be invoked.  If a given callback takes
-+ * too long to be invoked, we assume that priority inversion has occurred.
+@@ -132,7 +139,7 @@ void rcu_sched_qs(int cpu)
+ void rcu_bh_qs(int cpu)
+ {
+ 	if (rcu_qsctr_help(&rcu_bh_ctrlblk))
+-		raise_softirq(RCU_SOFTIRQ);
++		invoke_rcu_cbs();
+ }
+ 
+ /*
+@@ -152,10 +159,10 @@ void rcu_check_callbacks(int cpu, int user)
+ }
+ 
+ /*
+- * Helper function for rcu_process_callbacks() that operates on the
+- * specified rcu_ctrlkblk structure.
++ * Invoke the RCU callbacks on the specified rcu_ctrlkblk structure
++ * whose grace period has elapsed.
+  */
+-static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
++static void rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ {
+ 	struct rcu_head *next, *list;
+ 	unsigned long flags;
+@@ -180,19 +187,52 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
+ 		next = list->next;
+ 		prefetch(next);
+ 		debug_rcu_head_unqueue(list);
++		local_bh_disable();
+ 		list->func(list);
++		local_bh_enable();
+ 		list = next;
+ 	}
+ }
+ 
+ /*
+- * Invoke any callbacks whose grace period has completed.
++ * This kthread invokes RCU callbacks whose grace periods have
++ * elapsed.  It is awakened as needed, and takes the place of the
++ * RCU_SOFTIRQ that was used previously for this purpose.
++ * This is a kthread, but it is never stopped, at least not until
++ * the system goes down.
 + */
-+
-+struct rcu_boost_inflight {
-+	struct rcu_head rcu;
-+	int inflight;
-+};
-+
-+static void rcu_torture_boost_cb(struct rcu_head *head)
++static int rcu_cbs(void *arg)
 +{
-+	struct rcu_boost_inflight *rbip =
-+		container_of(head, struct rcu_boost_inflight, rcu);
++	unsigned long work;
++	unsigned long flags;
 +
-+	smp_mb(); /* Ensure RCU-core accesses precede clearing ->inflight */
-+	rbip->inflight = 0;
-+}
-+
-+static int rcu_torture_boost(void *arg)
-+{
-+	unsigned long call_rcu_time;
-+	unsigned long endtime;
-+	unsigned long oldstarttime;
-+	struct rcu_boost_inflight rbi = { .inflight = 0 };
-+	struct sched_param sp;
-+
-+	VERBOSE_PRINTK_STRING("rcu_torture_boost started");
-+
-+	/* Set real-time priority. */
-+	sp.sched_priority = 1;
-+	if (sched_setscheduler(current, SCHED_FIFO, &sp) < 0) {
-+		VERBOSE_PRINTK_STRING("rcu_torture_boost RT prio failed!");
-+		n_rcu_torture_boost_rterror++;
++	for (;;) {
++		wait_event(rcu_cbs_wq, have_rcu_cbs != 0);
++		local_irq_save(flags);
++		work = have_rcu_cbs;
++		have_rcu_cbs = 0;
++		local_irq_restore(flags);
++		if (work) {
++			rcu_process_callbacks(&rcu_sched_ctrlblk);
++			rcu_process_callbacks(&rcu_bh_ctrlblk);
++			rcu_preempt_process_callbacks();
++		}
 +	}
 +
-+	/* Each pass through the following loop does one boost-test cycle. */
-+	do {
-+		/* Wait for the next test interval. */
-+		oldstarttime = boost_starttime;
-+		while (jiffies - oldstarttime > ULONG_MAX / 2) {
-+			schedule_timeout_uninterruptible(1);
-+			rcu_stutter_wait("rcu_torture_boost");
-+			if (kthread_should_stop() ||
-+			    fullstop != FULLSTOP_DONTSTOP)
-+				goto checkwait;
-+		}
-+
-+		/* Do one boost-test interval. */
-+		endtime = oldstarttime + test_boost_duration * HZ;
-+		call_rcu_time = jiffies;
-+		while (jiffies - endtime > ULONG_MAX / 2) {
-+			/* If we don't have a callback in flight, post one. */
-+			if (!rbi.inflight) {
-+				smp_mb(); /* RCU core before ->inflight = 1. */
-+				rbi.inflight = 1;
-+				call_rcu(&rbi.rcu, rcu_torture_boost_cb);
-+				if (jiffies - call_rcu_time >
-+					 test_boost_duration * HZ - HZ / 2) {
-+					VERBOSE_PRINTK_STRING("rcu_torture_boost boosting failed");
-+					n_rcu_torture_boost_failure++;
-+				}
-+				call_rcu_time = jiffies;
-+			}
-+			cond_resched();
-+			rcu_stutter_wait("rcu_torture_boost");
-+			if (kthread_should_stop() ||
-+			    fullstop != FULLSTOP_DONTSTOP)
-+				goto checkwait;
-+		}
-+
-+		/*
-+		 * Set the start time of the next test interval.
-+		 * Yes, this is vulnerable to long delays, but such
-+		 * delays simply cause a false negative for the next
-+		 * interval.  Besides, we are running at RT priority,
-+		 * so delays should be relatively rare.
-+		 */
-+		while (oldstarttime == boost_starttime) {
-+			if (mutex_trylock(&boost_mutex)) {
-+				boost_starttime = jiffies +
-+						  test_boost_interval * HZ;
-+				n_rcu_torture_boosts++;
-+				mutex_unlock(&boost_mutex);
-+				break;
-+			}
-+			schedule_timeout_uninterruptible(1);
-+		}
-+
-+		/* Go do the stutter. */
-+checkwait:	rcu_stutter_wait("rcu_torture_boost");
-+	} while (!kthread_should_stop() && fullstop  == FULLSTOP_DONTSTOP);
-+
-+	/* Clean up and exit. */
-+	VERBOSE_PRINTK_STRING("rcu_torture_boost task stopping");
-+	rcutorture_shutdown_absorb("rcu_torture_boost");
-+	while (!kthread_should_stop() || rbi.inflight)
-+		schedule_timeout_uninterruptible(1);
-+	smp_mb(); /* order accesses to ->inflight before stack-frame death. */
-+	return 0;
++	return 0;  /* Not reached, but needed to shut gcc up. */
 +}
 +
 +/*
-  * RCU torture force-quiescent-state kthread.  Repeatedly induces
-  * bursts of calls to force_quiescent_state(), increasing the probability
-  * of occurrence of some important types of race conditions.
-@@ -933,7 +1068,8 @@ rcu_torture_printk(char *page)
- 	cnt += sprintf(&page[cnt], "%s%s ", torture_type, TORTURE_FLAG);
- 	cnt += sprintf(&page[cnt],
- 		       "rtc: %p ver: %ld tfle: %d rta: %d rtaf: %d rtf: %d "
--		       "rtmbe: %d nt: %ld",
-+		       "rtmbe: %d rtbke: %ld rtbre: %ld rtbae: %ld rtbafe: %ld "
-+		       "rtbf: %ld rtb: %ld nt: %ld",
- 		       rcu_torture_current,
- 		       rcu_torture_current_version,
- 		       list_empty(&rcu_torture_freelist),
-@@ -941,8 +1077,19 @@ rcu_torture_printk(char *page)
- 		       atomic_read(&n_rcu_torture_alloc_fail),
- 		       atomic_read(&n_rcu_torture_free),
- 		       atomic_read(&n_rcu_torture_mberror),
-+		       n_rcu_torture_boost_ktrerror,
-+		       n_rcu_torture_boost_rterror,
-+		       n_rcu_torture_boost_allocerror,
-+		       n_rcu_torture_boost_afferror,
-+		       n_rcu_torture_boost_failure,
-+		       n_rcu_torture_boosts,
- 		       n_rcu_torture_timers);
--	if (atomic_read(&n_rcu_torture_mberror) != 0)
-+	if (atomic_read(&n_rcu_torture_mberror) != 0 ||
-+	    n_rcu_torture_boost_ktrerror != 0 ||
-+	    n_rcu_torture_boost_rterror != 0 ||
-+	    n_rcu_torture_boost_allocerror != 0 ||
-+	    n_rcu_torture_boost_afferror != 0 ||
-+	    n_rcu_torture_boost_failure != 0)
- 		cnt += sprintf(&page[cnt], " !!!");
- 	cnt += sprintf(&page[cnt], "\n%s%s ", torture_type, TORTURE_FLAG);
- 	if (i > 1) {
-@@ -1094,22 +1241,91 @@ rcu_torture_stutter(void *arg)
- }
- 
- static inline void
--rcu_torture_print_module_parms(char *tag)
-+rcu_torture_print_module_parms(struct rcu_torture_ops *cur_ops, char *tag)
++ * Wake up rcu_cbs() to process callbacks now eligible for invocation.
+  */
+-static void rcu_process_callbacks(struct softirq_action *unused)
++static void invoke_rcu_cbs(void)
  {
- 	printk(KERN_ALERT "%s" TORTURE_FLAG
- 		"--- %s: nreaders=%d nfakewriters=%d "
- 		"stat_interval=%d verbose=%d test_no_idle_hz=%d "
- 		"shuffle_interval=%d stutter=%d irqreader=%d "
--		"fqs_duration=%d fqs_holdoff=%d fqs_stutter=%d\n",
-+		"fqs_duration=%d fqs_holdoff=%d fqs_stutter=%d "
-+		"test_boost=%d/%d test_boost_interval=%d "
-+		"test_boost_duration=%d\n",
- 		torture_type, tag, nrealreaders, nfakewriters,
- 		stat_interval, verbose, test_no_idle_hz, shuffle_interval,
--		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter);
-+		stutter, irqreader, fqs_duration, fqs_holdoff, fqs_stutter,
-+		test_boost, cur_ops->can_boost,
-+		test_boost_interval, test_boost_duration);
+-	__rcu_process_callbacks(&rcu_sched_ctrlblk);
+-	__rcu_process_callbacks(&rcu_bh_ctrlblk);
+-	rcu_preempt_process_callbacks();
++	unsigned long flags;
++
++	local_irq_save(flags);
++	have_rcu_cbs = 1;
++	wake_up(&rcu_cbs_wq);
++	local_irq_restore(flags);
  }
  
--static struct notifier_block rcutorture_nb = {
-+static struct notifier_block rcutorture_shutdown_nb = {
- 	.notifier_call = rcutorture_shutdown_notify,
- };
+ /*
+@@ -282,7 +322,12 @@ void rcu_barrier_sched(void)
+ }
+ EXPORT_SYMBOL_GPL(rcu_barrier_sched);
  
-+static void rcutorture_booster_cleanup(int cpu)
-+{
-+	struct task_struct *t;
-+
-+	if (boost_tasks[cpu] == NULL)
-+		return;
-+	mutex_lock(&boost_mutex);
-+	VERBOSE_PRINTK_STRING("Stopping rcu_torture_boost task");
-+	t = boost_tasks[cpu];
-+	boost_tasks[cpu] = NULL;
-+	mutex_unlock(&boost_mutex);
-+
-+	/* This must be outside of the mutex, otherwise deadlock! */
-+	kthread_stop(t);
-+}
-+
-+static int rcutorture_booster_init(int cpu)
-+{
-+	int retval;
-+
-+	if (boost_tasks[cpu] != NULL)
-+		return 0;  /* Already created, nothing more to do. */
-+
-+	/* Don't allow time recalculation while creating a new task. */
-+	mutex_lock(&boost_mutex);
-+	VERBOSE_PRINTK_STRING("Creating rcu_torture_boost task");
-+	boost_tasks[cpu] = kthread_create(rcu_torture_boost, NULL,
-+					  "rcu_torture_boost");
-+	if (IS_ERR(boost_tasks[cpu])) {
-+		retval = PTR_ERR(boost_tasks[cpu]);
-+		VERBOSE_PRINTK_STRING("rcu_torture_boost task create failed");
-+		n_rcu_torture_boost_ktrerror++;
-+		boost_tasks[cpu] = NULL;
-+		mutex_unlock(&boost_mutex);
-+		return retval;
-+	}
-+	kthread_bind(boost_tasks[cpu], cpu);
-+	wake_up_process(boost_tasks[cpu]);
-+	mutex_unlock(&boost_mutex);
+-void __init rcu_init(void)
++/*
++ * Spawn the kthread that invokes RCU callbacks.
++ */
++static int __init rcu_spawn_kthreads(void)
+ {
+-	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
++	rcu_cbs_task = kthread_run(rcu_cbs, NULL, "rcu_cbs");
 +	return 0;
-+}
-+
-+static int rcutorture_cpu_notify(struct notifier_block *self,
-+				 unsigned long action, void *hcpu)
-+{
-+	long cpu = (long)hcpu;
-+
-+	switch (action) {
-+	case CPU_ONLINE:
-+	case CPU_DOWN_FAILED:
-+		(void)rcutorture_booster_init(cpu);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+		rcutorture_booster_cleanup(cpu);
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block rcutorture_cpu_nb = {
-+	.notifier_call = rcutorture_cpu_notify,
-+};
-+
- static void
- rcu_torture_cleanup(void)
- {
-@@ -1127,7 +1343,7 @@ rcu_torture_cleanup(void)
- 	}
- 	fullstop = FULLSTOP_RMMOD;
- 	mutex_unlock(&fullstop_mutex);
--	unregister_reboot_notifier(&rcutorture_nb);
-+	unregister_reboot_notifier(&rcutorture_shutdown_nb);
- 	if (stutter_task) {
- 		VERBOSE_PRINTK_STRING("Stopping rcu_torture_stutter task");
- 		kthread_stop(stutter_task);
-@@ -1184,6 +1400,12 @@ rcu_torture_cleanup(void)
- 		kthread_stop(fqs_task);
- 	}
- 	fqs_task = NULL;
-+	if ((test_boost == 1 && cur_ops->can_boost) ||
-+	    test_boost == 2) {
-+		unregister_cpu_notifier(&rcutorture_cpu_nb);
-+		for_each_possible_cpu(i)
-+			rcutorture_booster_cleanup(i);
-+	}
+ }
++early_initcall(rcu_spawn_kthreads);
+diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
+index 6ceca4f..95f9239 100644
+--- a/kernel/rcutiny_plugin.h
++++ b/kernel/rcutiny_plugin.h
+@@ -22,6 +22,8 @@
+  * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+  */
  
- 	/* Wait for all RCU callbacks to fire.  */
++#include <linux/kthread.h>
++
+ #ifdef CONFIG_TINY_PREEMPT_RCU
  
-@@ -1195,9 +1417,9 @@ rcu_torture_cleanup(void)
- 	if (cur_ops->cleanup)
- 		cur_ops->cleanup();
- 	if (atomic_read(&n_rcu_torture_error))
--		rcu_torture_print_module_parms("End of test: FAILURE");
-+		rcu_torture_print_module_parms(cur_ops, "End of test: FAILURE");
- 	else
--		rcu_torture_print_module_parms("End of test: SUCCESS");
-+		rcu_torture_print_module_parms(cur_ops, "End of test: SUCCESS");
+ #include <linux/delay.h>
+@@ -164,9 +166,9 @@ static void rcu_preempt_cpu_qs(void)
+ 	if (!rcu_preempt_blocked_readers_any())
+ 		rcu_preempt_ctrlblk.rcb.donetail = rcu_preempt_ctrlblk.nexttail;
+ 
+-	/* If there are done callbacks, make RCU_SOFTIRQ process them. */
++	/* If there are done callbacks, cause them to be invoked. */
+ 	if (*rcu_preempt_ctrlblk.rcb.donetail != NULL)
+-		raise_softirq(RCU_SOFTIRQ);
++		invoke_rcu_cbs();
  }
  
- static int __init
-@@ -1242,7 +1464,7 @@ rcu_torture_init(void)
- 		nrealreaders = nreaders;
- 	else
- 		nrealreaders = 2 * num_online_cpus();
--	rcu_torture_print_module_parms("Start of test");
-+	rcu_torture_print_module_parms(cur_ops, "Start of test");
- 	fullstop = FULLSTOP_DONTSTOP;
+ /*
+@@ -374,7 +376,7 @@ static void rcu_preempt_check_callbacks(void)
+ 		rcu_preempt_cpu_qs();
+ 	if (&rcu_preempt_ctrlblk.rcb.rcucblist !=
+ 	    rcu_preempt_ctrlblk.rcb.donetail)
+-		raise_softirq(RCU_SOFTIRQ);
++		invoke_rcu_cbs();
+ 	if (rcu_preempt_gp_in_progress() &&
+ 	    rcu_cpu_blocking_cur_gp() &&
+ 	    rcu_preempt_running_reader())
+@@ -383,7 +385,7 @@ static void rcu_preempt_check_callbacks(void)
  
- 	/* Set up the freelist. */
-@@ -1263,6 +1485,12 @@ rcu_torture_init(void)
- 	atomic_set(&n_rcu_torture_free, 0);
- 	atomic_set(&n_rcu_torture_mberror, 0);
- 	atomic_set(&n_rcu_torture_error, 0);
-+	n_rcu_torture_boost_ktrerror = 0;
-+	n_rcu_torture_boost_rterror = 0;
-+	n_rcu_torture_boost_allocerror = 0;
-+	n_rcu_torture_boost_afferror = 0;
-+	n_rcu_torture_boost_failure = 0;
-+	n_rcu_torture_boosts = 0;
- 	for (i = 0; i < RCU_TORTURE_PIPE_LEN + 1; i++)
- 		atomic_set(&rcu_torture_wcount[i], 0);
- 	for_each_possible_cpu(cpu) {
-@@ -1376,7 +1604,27 @@ rcu_torture_init(void)
- 			goto unwind;
- 		}
- 	}
--	register_reboot_notifier(&rcutorture_nb);
-+	if (test_boost_interval < 1)
-+		test_boost_interval = 1;
-+	if (test_boost_duration < 2)
-+		test_boost_duration = 2;
-+	if ((test_boost == 1 && cur_ops->can_boost) ||
-+	    test_boost == 2) {
-+		int retval;
-+
-+		boost_starttime = jiffies + test_boost_interval * HZ;
-+		register_cpu_notifier(&rcutorture_cpu_nb);
-+		for_each_possible_cpu(i) {
-+			if (cpu_is_offline(i))
-+				continue;  /* Heuristic: CPU can go offline. */
-+			retval = rcutorture_booster_init(i);
-+			if (retval < 0) {
-+				firsterr = retval;
-+				goto unwind;
-+			}
-+		}
-+	}
-+	register_reboot_notifier(&rcutorture_shutdown_nb);
- 	mutex_unlock(&fullstop_mutex);
- 	return 0;
+ /*
+  * TINY_PREEMPT_RCU has an extra callback-list tail pointer to
+- * update, so this is invoked from __rcu_process_callbacks() to
++ * update, so this is invoked from rcu_process_callbacks() to
+  * handle that case.  Of course, it is invoked for all flavors of
+  * RCU, but RCU callbacks can appear only on one of the lists, and
+  * neither ->nexttail nor ->donetail can possibly be NULL, so there
+@@ -400,7 +402,7 @@ static void rcu_preempt_remove_callbacks(struct rcu_ctrlblk *rcp)
+  */
+ static void rcu_preempt_process_callbacks(void)
+ {
+-	__rcu_process_callbacks(&rcu_preempt_ctrlblk.rcb);
++	rcu_process_callbacks(&rcu_preempt_ctrlblk.rcb);
+ }
  
+ /*
+@@ -599,14 +601,13 @@ static void rcu_preempt_process_callbacks(void)
+ #endif /* #else #ifdef CONFIG_TINY_PREEMPT_RCU */
+ 
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+-
+ #include <linux/kernel_stat.h>
+ 
+ /*
+  * During boot, we forgive RCU lockdep issues.  After this function is
+  * invoked, we start taking RCU lockdep issues seriously.
+  */
+-void rcu_scheduler_starting(void)
++void __init rcu_scheduler_starting(void)
+ {
+ 	WARN_ON(nr_context_switches() > 0);
+ 	rcu_scheduler_active = 1;
 -- 
 1.7.0.6
 
