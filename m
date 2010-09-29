@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab0I2Id3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 04:33:29 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64448 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755173Ab0I2Id1 (ORCPT
+	id S1755196Ab0I2Ied (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 04:34:33 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:27521 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755001Ab0I2Iec (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 04:33:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=PVZkO+KFXNWuheI4NxjTUHw6zOb+vMOiw8cbR701FImfDcR2sdF2CSD0ajd5tJWYbq
-         0mkqeTfttpsVfWtsjLs1vqhZaksLYIU02fLHkwXxivokJUm2m4GcLtyhSR5gawMs4an5
-         pg57TmLwGEN9dyaeWsBuFLWOFh5BY4y52QxCo=
-Message-ID: <4CA2F9D2.7020006@gmail.com>
-Date: Wed, 29 Sep 2010 10:33:22 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
+	Wed, 29 Sep 2010 04:34:32 -0400
+Message-ID: <4CA2FA13.8050405@panasas.com>
+Date: Wed, 29 Sep 2010 10:34:27 +0200
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-To: Chris Wilson <chris@chris-wilson.co.uk>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        dri-devel@lists.freedesktop.org, daniel.vetter@ffwll.ch
-Subject: Re: i915: glxgears causes GPU hang [was: mmotm 2010-09-22-16-11 uploaded]
-References: <201009222343.o8MNh9Mp023931@imap1.linux-foundation.org> <4CA065B8.1060206@gmail.com> <89k83a$9pqvca@azsmga001.ch.intel.com>
-In-Reply-To: <89k83a$9pqvca@azsmga001.ch.intel.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>
+CC: Andrew Morton <akpm@linux-foundation.org>, Julia Lawall <julia@diku.dk>,
+        uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>
+Subject: [PATCH] um: Proper Fix for f25c80a4: remove duplicate structure field
+ initialization
+References: <4CA09977.80506@panasas.com> <AANLkTim85sH_2o=xCiDuoQrHq_7ZL96Y91xQMGxUP5Fy@mail.gmail.com> <20100928134721.f79a5955.akpm@linux-foundation.org> <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
+In-Reply-To: <AANLkTi=E7+CpJZE3XC7O1LvJu6LWfmvSxonskH4CYg25@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 29 Sep 2010 08:34:31.0069 (UTC) FILETIME=[22F78CD0:01CB5FB1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/27/2010 11:51 AM, Chris Wilson wrote:
-> On Mon, 27 Sep 2010 11:36:56 +0200, Jiri Slaby <jirislaby@gmail.com> wrote:
->> On 09/23/2010 01:12 AM, akpm@linux-foundation.org wrote:
->>> The mm-of-the-moment snapshot 2010-09-22-16-11 has been uploaded to
->>
->> Hi, when I run glxgears in this kernel, X crashes. It happens also with
->> older releases and I don't know what is the first defunct.
->>
->> In the log there is:
->> [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
->> [drm:i915_do_wait_request] *ERROR* i915_do_wait_request returns -5
->> (awaiting 2 at 0)
-> 
-> Hmm, that's a serious error as it appears the chip wasn't initialised
-> correctly and failed to start. G33, this is likely to be
-> https://bugzilla.kernel.org/show_bug.cgi?id=16891
 
-Well, it's gone with mmotm 2010-09-28-16-13...
+uml_net_set_mac() was broken and luckily it was never used, before.
+What it was trying to do is spin_lock before memcopy the mac address.
+Linus attempted to fix it in assumption that someone decided the
+lock was needed. But since it was never ever used at all, and was
+just dead code, I think we can assume that it is not needed, after
+all.
 
-thanks,
+On the other hand patch [f25c80a4] was trying to use eth_mac_addr()
+in eth_configure(), *which was the real fallout*. Because of state
+checks done inside eth_mac_addr() the address was never set. I have
+not reintroduced the memcpy wrapper, but I've put a comment for future
+cats.
+
+The code now is back to exactly as it was before [f25c80a4]. With
+the cleanup applied. If the spin_lock is indeed needed then a contender
+should supply a test case that fails, then fix it with the proper
+locking, as a separate unrelated patch.
+
+CC: Julia Lawall <julia@diku.dk>
+CC: David S. Miller <davem@davemloft.net>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Al Viro <viro@ZenIV.linux.org.uk>
+Tested-by: Boaz Harrosh <bharrosh@panasas.com>
+Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+---
+ arch/um/drivers/net_kern.c |   17 +++--------------
+ 1 files changed, 3 insertions(+), 14 deletions(-)
+
+diff --git a/arch/um/drivers/net_kern.c b/arch/um/drivers/net_kern.c
+index 2ab233b..47d0c37 100644
+--- a/arch/um/drivers/net_kern.c
++++ b/arch/um/drivers/net_kern.c
+@@ -255,18 +255,6 @@ static void uml_net_tx_timeout(struct net_device *dev)
+ 	netif_wake_queue(dev);
+ }
+ 
+-static int uml_net_set_mac(struct net_device *dev, void *addr)
+-{
+-	struct uml_net_private *lp = netdev_priv(dev);
+-	struct sockaddr *hwaddr = addr;
+-
+-	spin_lock_irq(&lp->lock);
+-	eth_mac_addr(dev, hwaddr->sa_data);
+-	spin_unlock_irq(&lp->lock);
+-
+-	return 0;
+-}
+-
+ static int uml_net_change_mtu(struct net_device *dev, int new_mtu)
+ {
+ 	dev->mtu = new_mtu;
+@@ -373,7 +361,7 @@ static const struct net_device_ops uml_netdev_ops = {
+ 	.ndo_start_xmit 	= uml_net_start_xmit,
+ 	.ndo_set_multicast_list = uml_net_set_multicast_list,
+ 	.ndo_tx_timeout 	= uml_net_tx_timeout,
+-	.ndo_set_mac_address	= uml_net_set_mac,
++	.ndo_set_mac_address	= eth_mac_addr,
+ 	.ndo_change_mtu 	= uml_net_change_mtu,
+ 	.ndo_validate_addr	= eth_validate_addr,
+ };
+@@ -472,7 +460,8 @@ static void eth_configure(int n, void *init, char *mac,
+ 	    ((*transport->user->init)(&lp->user, dev) != 0))
+ 		goto out_unregister;
+ 
+-	eth_mac_addr(dev, device->mac);
++	/* don't use eth_mac_addr, it will not work here */
++	memcpy(dev->dev_addr, device->mac, ETH_ALEN);
+ 	dev->mtu = transport->user->mtu;
+ 	dev->netdev_ops = &uml_netdev_ops;
+ 	dev->ethtool_ops = &uml_net_ethtool_ops;
 -- 
-js
+1.7.2.3
+
+
