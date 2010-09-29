@@ -1,90 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756388Ab0I2NoD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 09:44:03 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:44947 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756337Ab0I2NoA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 09:44:00 -0400
-X-Authenticated: #31060655
-X-Provags-ID: V01U2FsdGVkX18CE55cSgYCw8hB1u5rrtK5X5kKZDWBCs7cnqBoWt
-	I86CKqZH53s498
-Message-ID: <4CA3429E.4070104@gmx.net>
-Date: Wed, 29 Sep 2010 15:43:58 +0200
-From: Carl-Daniel Hailfinger <c-d.hailfinger.devel.2006@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.23) Gecko/20090410 SUSE/1.1.18-0.1 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: netdev <netdev@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-mtd <linux-mtd@lists.infradead.org>,
-        sf-linux-drivers <linux-net-drivers@solarflare.com>,
-        flashrom <flashrom@flashrom.org>
-Subject: Re: [RFC] Online firmware upgrade in non-embedded systems
-References: <1285696787.2282.45.camel@achroite.uk.solarflarecom.com>	 <4CA26F35.6060408@gmx.net>	 <1285763700.2283.6.camel@achroite.uk.solarflarecom.com>	 <4CA334FA.2080707@gmx.net> <1285765850.2283.15.camel@achroite.uk.solarflarecom.com>
-In-Reply-To: <1285765850.2283.15.camel@achroite.uk.solarflarecom.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753587Ab0I2Nu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 09:50:58 -0400
+Received: from cdptpa-omtalb.mail.rr.com ([75.180.132.121]:64060 "EHLO
+	cdptpa-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751076Ab0I2Nu5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 09:50:57 -0400
+X-Authority-Analysis: v=1.1 cv=/wPbbLlNx4yf8SUm0NWu5W7XZrQwS6yDV9JD17FB+as= c=1 sm=0 a=a2eR-iwVXoQA:10 a=ld/erqUjW76FpBUqCqkKeA==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=RW-AWHYDIFcDzE9YRTgA:9 a=7Q8Y-J1wJtzBmwdj_PxKDRX6V7QA:4 a=LI9Vle30uBYA:10 a=jEp0ucaQiEUA:10 a=ld/erqUjW76FpBUqCqkKeA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 71.70.153.3
+From: Jeff Layton <jlayton@redhat.com>
+To: smfrench@gmail.com
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-cifs@vger.kernel.org, stable@kernel.org
+Subject: [PATCH] cifs: set backing_dev_info on new S_ISREG inodes
+Date: Wed, 29 Sep 2010 09:49:54 -0400
+Message-Id: <1285768194-29595-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.09.2010 15:10, Ben Hutchings wrote:
-> On Wed, 2010-09-29 at 14:45 +0200, Carl-Daniel Hailfinger wrote:
->   
->> On 29.09.2010 14:35, Ben Hutchings wrote:
->>     
->>> On Wed, 2010-09-29 at 00:41 +0200, Carl-Daniel Hailfinger wrote:
->>>   
->>>       
->>>> [adding flashrom@flashrom.org to CC, senders will be whitelisted after a
->>>> short delay]
->>>>
->>>> On 28.09.2010 19:59, Ben Hutchings wrote:
->>>>     
->>>>         
->>>>> Network and disk controllers normally have at least some firmware in
->>>>> flash to support their use as boot devices. [...]
->>>>>   
->>>>>       
->>>>>           
->>>> Given that the flashrom utility <http://www.flashrom.org/> (GPLv2)
->>>> supports flashing many network cards, SATA/PATA controllers, graphics
->>>> cards, and of course the main system firmware/BIOS/EFI, and it does that
->>>> from userspace without any kernel support,
->>>>     
->>>>         
->>> [...]
->>>
->>> I'm looking for a clean solution, not a hack.
->>>   
->>>       
->> What would qualify as a clean solution?
->>     
->
-> One where hardware access is mediated by the kernel, and doesn't involve
-> unloading or potentially conflicting with the driver for that hardware.
->   
+Testing on very recent kernel (2.6.36-rc6) made this warning pop:
 
-flashrom can ask the kernel driver to "please stop accessing flash". No
-unloading needed, no conflict in place.
+    WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x65/0x70()
+    Hardware name:
+    Dirtiable inode bdi default != sb bdi cifs
 
+...the following patch fixes it and seems to be the obviously correct
+thing to do for cifs.
 
->> And is cross-platform code one of your goals?
->>     
->
-> Not at this level.  At the application level, yes, but we already have a
-> working application so I'm not interested in using flashrom for that.
->   
+Cc: stable@kernel.org
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/cifs/inode.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-I see. Just because I'm interested in how other flashing applications
-solve this: Does that application work on *BSD as well? And could you
-tell me the name of the app so I can take a look at it? Thanks.
-
-Regards,
-Carl-Daniel
-
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 2256124..d6db805 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -853,6 +853,8 @@ retry_iget5_locked:
+ 			inode->i_flags |= S_NOATIME | S_NOCMTIME;
+ 		if (inode->i_state & I_NEW) {
+ 			inode->i_ino = hash;
++			if (S_ISREG(inode->i_mode))
++				inode->i_data.backing_dev_info = sb->s_bdi;
+ #ifdef CONFIG_CIFS_FSCACHE
+ 			/* initialize per-inode cache cookie pointer */
+ 			CIFS_I(inode)->fscache = NULL;
 -- 
-http://www.hailfinger.org/
+1.7.2.3
 
