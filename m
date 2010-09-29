@@ -1,61 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab0I2NC0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 09:02:26 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54726 "EHLO mx1.suse.de"
+	id S1756090Ab0I2NE1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 09:04:27 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:46078 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752218Ab0I2NCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 09:02:25 -0400
-Date: Wed, 29 Sep 2010 15:01:31 +0200
-From: Jan Kara <jack@suse.cz>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, stable@kernel.org,
-        Jens Axboe <axboe@kernel.dk>,
-        =?utf-8?Q?Micha=C5=82?= Piotrowski <mkkp4x4@gmail.com>,
-        Chuck Ebbert <cebbert@redhat.com>, kernel@lists.fedoraproject.org
-Subject: Re: Dirtiable inode bdi default != sb bdi btrfs
-Message-ID: <20100929130131.GH3290@quack.suse.cz>
-References: <4C9AA546.6050201@cesarb.net>
- <20100923123849.8975fe47.akpm@linux-foundation.org>
- <20100927222548.GG3610@quack.suse.cz>
- <4CA12F01.2@cesarb.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA12F01.2@cesarb.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752218Ab0I2NE0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 09:04:26 -0400
+Date: Wed, 29 Sep 2010 22:04:20 +0900
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: =?ISO-8859-1?B?QW3pcmljbw==?= Wang <xiyou.wangcong@gmail.com>
+Cc: Stephen Hemminger <stephen.hemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] namespace.pl: fix source tree name mangling
+Message-ID: <20100929220420.60d799b1@s6510>
+In-Reply-To: <20100929093411.GF5169@cr0.nay.redhat.com>
+References: <20100929070631.GE5169@cr0.nay.redhat.com>
+	<635705110.22841.1285744498655.JavaMail.root@tahiti.vyatta.com>
+	<20100929093411.GF5169@cr0.nay.redhat.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 27-09-10 20:55:45, Cesar Eduardo Barros wrote:
-> Em 27-09-2010 19:25, Jan Kara escreveu:
-> >[Added CCs for similar ecryptfs warning]
-> >On Thu 23-09-10 12:38:49, Andrew Morton wrote:
-> >>>[...]
-> >>>device fsid 44d595920ddedfa-3ece6b56e80f689e devid 1 transid 22342
-> >>>/dev/mapper/vg_cesarbinspiro-lv_home
-> >>>SELinux: initialized (dev dm-3, type btrfs), uses xattr
-> >>>------------[ cut here ]------------
-> >>>WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x62/0x6d()
-> >>>Hardware name: Inspiron N4010
-> >>>Dirtiable inode bdi default != sb bdi btrfs
-> >   That suggests that we should probably handle such cases in a more generic
-> >way by changing the code in inode_init_always(). The patch below makes at
-> >least btrfs happy for me... Could you maybe test it? Thanks.
-> 
-> Applied on top of v2.6.36-rc5-151-g32163f4, running it right now.
-> The warning messages no longer happen, and everything seems to be
-> working fine.
-> 
-> Tested-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-  Great, thanks for testing.
+On Wed, 29 Sep 2010 17:34:11 +0800
+Américo Wang <xiyou.wangcong@gmail.com> wrote:
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> On Wed, Sep 29, 2010 at 12:14:58AM -0700, Stephen Hemminger wrote:
+> >
+> >
+> >----- Original Message -----
+> >> On Wed, Sep 29, 2010 at 03:06:45PM +0900, Stephen Hemminger wrote:
+> >> >On Wed, 29 Sep 2010 14:04:27 +0800
+> >> >Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> >> >
+> >> >> On Wed, Sep 29, 2010 at 02:11:53PM +0900, Stephen Hemminger wrote:
+> >> >> >On Wed, 29 Sep 2010 12:31:12 +0800
+> >> >> >Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> >> >> >
+> >> >> >> On Tue, Sep 28, 2010 at 05:44:02PM +0900, Stephen Hemminger
+> >> >> >> wrote:
+> >> >> >> >The current namespace.pl script does not find source files
+> >> >> >> >correctly. The problem is that the current directory is not the
+> >> >> >> >base of the kernel
+> >> >> >> >tree at the point where it calls objdump.
+> >> >> >> >
+> >> >> >> >Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> >> >> >> >
+> >> >> >> >--- a/scripts/namespace.pl 2010-09-27 17:53:29.919433444 +0900
+> >> >> >> >+++ b/scripts/namespace.pl 2010-09-28 09:24:36.891552993 +0900
+> >> >> >> >@@ -167,8 +167,10 @@ sub do_nm
+> >> >> >> > 		printf STDERR "$fullname is not an object file\n";
+> >> >> >> > 		return;
+> >> >> >> > 	}
+> >> >> >> >- ($source = $fullname) =~ s/\.o$//;
+> >> >> >> >- if (-e "$objtree$source.c" || -e "$objtree$source.S") {
+> >> >> >> >+ $fullname =~ s/\.o$//;
+> >> >> >> >+ $source = $basename;
+> >> >> >> >+ $source =~ s/\.o$//;
+> >> >> >>
+> >> >> >> With your patch applied, $source will be the basename of
+> >> >> >> an obj path with .o stripped.
+> >> >> >>
+> >> >> >> >+ if (-e "$objtree$fullname.c" || -e "$objtree$fullname.S") {
+> >> >> >> > 		$source = "$objtree$source";
+> >> >> >> > 	} else {
+> >> >> >> > 		$source = "$srctree$source";
+> >> >> >> >
+> >> >> >>
+> >> >> >> So here we will get a non-exist path stored in $source.
+> >> >> >>
+> >> ...
+> >> >>
+> >> >> I see, the docs of Find module said it will do chdir. :)
+> >> >> But I think your patch is still not right, how about the
+> >> >> one below?
+> >> >
+> >> >Please be more precise about "not right"? It makes the code
+> >> >work.
+> >> >
+> >> 
+> >> Hmm? $srctree is the path of top source code, and $source
+> >> is the basename of an object, so dirname is missed, no?
+> >
+> >No. it works, please stop speculating and use a debugger or demonstrate
+> >what you think the problem is.
+> >
+> 
+> Just add a print to see what $source is, after you patch applied,
+> I got something like:
+> 
+> ===>/home/wangcong/linux-2.6/btusb
+> 
+> I can't see any reason that this is correct. Maybe it works, but
+> probably by accident.
+
+What matters is the output of the script, not the value of some internal
+variable.
+
