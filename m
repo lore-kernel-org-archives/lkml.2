@@ -1,59 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753632Ab0I2GaK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 02:30:10 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59034
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752980Ab0I2GaI (ORCPT
+	id S1752768Ab0I2Gg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 02:36:29 -0400
+Received: from nic.NetDirect.CA ([216.16.235.2]:42744 "EHLO
+	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab0I2Gg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 02:30:08 -0400
-Date: Tue, 28 Sep 2010 23:30:28 -0700 (PDT)
-Message-Id: <20100928.233028.112599117.davem@davemloft.net>
-To: gwurster@scs.carleton.ca
-Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, shemminger@vyatta.com,
-        eric.dumazet@gmail.com, herbert@gondor.hengli.com.au,
-        ebiederm@xmission.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH linux-2.6 v2] IPv6: Temp addresses are immediately
- deleted.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100927171010.GB7106@adams.ccsl.carleton.ca>
-References: <20100927171010.GB7106@adams.ccsl.carleton.ca>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Wed, 29 Sep 2010 02:36:28 -0400
+X-Originating-Ip: 216.16.235.2
+Date: Wed, 29 Sep 2010 02:34:52 -0400
+From: Chris Frey <cdfrey@foursquare.net>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jdike@addtoit.com" <jdike@addtoit.com>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        "janjaap@bos.nl" <janjaap@bos.nl>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
+        "adobriyan@gmail.com" <adobriyan@gmail.com>,
+        "syzop@vulnscan.org" <syzop@vulnscan.org>
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+Message-ID: <20100929063452.GA13290@foursquare.net>
+References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at> <20100928225202.GA30352@foursquare.net> <4CA275CE.6060401@fusionio.com> <20100929012945.GA3324@foursquare.net> <4CA2CCC3.8010307@fusionio.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA2CCC3.8010307@fusionio.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Glenn Wurster <gwurster@scs.carleton.ca>
-Date: Mon, 27 Sep 2010 13:10:10 -0400
-
-> There is a bug in the interaction between ipv6_create_tempaddr and 
-> addrconf_verify.  Because ipv6_create_tempaddr uses the cstamp and tstamp 
-> from the public address in creating a private address, if we have not 
-> received a router advertisement in a while, tstamp + temp_valid_lft might be 
-> < now.  If this happens, the new address is created inside 
-> ipv6_create_tempaddr, then the loop within addrconf_verify starts again and 
-> the address is immediately deleted.  We are left with no temporary addresses 
-> on the interface, and no more will be created until the public IP address is 
-> updated.  To avoid this, set the expiry time to be the minimum of the time 
-> left on the public address or the config option PLUS the current age of the 
-> public interface.
+On Wed, Sep 29, 2010 at 02:21:07PM +0900, Jens Axboe wrote:
+> This seems to imply that the original commit pin pointed is not
+> the only issue we have in that code atm.
 > 
-> Version 2, now with 100% fewer line wraps.  Thanks to David Miller for
-> pointing out the line wrapping issue.
-> 
-> Signed-off-by: Glenn Wurster <gwurster@scs.carleton.ca>
+> I think we need to find the real fix here, just disabling merging
+> is not a fix (it's just a nasty work-around for the real bug).
 
-This can only happen if we apply your other patch, which I showed
-was incorrect as per RFCs.
+You're probably right, and I'm quite willing to help test further patches
+to help get to the bottom of this.
 
-We only create temporary address when public addresses are created,
-and this is the point where we are handling a router advertisement
-with non-zero Valid Lifetime.
-
-Therefore I'm not applying this patch either.
+- Chris
 
