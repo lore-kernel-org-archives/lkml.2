@@ -1,103 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751345Ab0I2JZs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 05:25:48 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:64213 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750718Ab0I2JZq convert rfc822-to-8bit (ORCPT
+	id S1751163Ab0I2J3m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 05:29:42 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:41387 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750951Ab0I2J3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 05:25:46 -0400
+	Wed, 29 Sep 2010 05:29:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=wTVs2xLVX91dEnxV8vc1nVI2BcCwnX9zxPNTIE2THSAOQ4MFMdO5pSXWC19Nls6YR9
+         am5BwRH6ILPirrKrJQYQjLv9aFBiHFMREOlWmIOP/ve23RTDBuP5M5G2XMcdjAJLwYnV
+         N1nu48z9Nv6AR05QUPKzNv4rHw6XSQb83eSi0=
+Date: Wed, 29 Sep 2010 17:34:11 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Stephen Hemminger <stephen.hemminger@vyatta.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] namespace.pl: fix source tree name mangling
+Message-ID: <20100929093411.GF5169@cr0.nay.redhat.com>
+References: <20100929070631.GE5169@cr0.nay.redhat.com>
+ <635705110.22841.1285744498655.JavaMail.root@tahiti.vyatta.com>
 MIME-Version: 1.0
-X-Originating-IP: [87.66.147.230]
-In-Reply-To: <201009290949.34245.trenn@suse.de>
-References: <AANLkTinUmbSUUuxUzc8++pcb9gd1CZFdyTQFrveTBXyV@mail.gmail.com>
-	<201009282322.16291.rjw@sisk.pl>
-	<4CA261F4.5070803@linux.intel.com>
-	<201009290949.34245.trenn@suse.de>
-Date: Wed, 29 Sep 2010 11:25:43 +0200
-Message-ID: <AANLkTikmcMZhJh348vcVkPwWRyXot8m+==484tY=cEkD@mail.gmail.com>
-Subject: Re: [PATCH] tracing, perf: add more power related events
-From: Jean Pihet <jean.pihet@newoldbits.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>, Len Brown <len.brown@intel.com>,
-        arjan@infradead.org, Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        linux-omap@vger.kernel.org, linux-perf-users@vger.kernel.org,
-        linux-trace-users@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <635705110.22841.1285744498655.JavaMail.root@tahiti.vyatta.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, Sep 29, 2010 at 9:49 AM, Thomas Renninger <trenn@suse.de> wrote:
-> On Tuesday 28 September 2010 23:45:24 Arjan van de Ven wrote:
->> † On 9/28/2010 2:22 PM, Rafael J. Wysocki wrote:
->> > On Tuesday, September 28, 2010, Jean Pihet wrote:
->> >> Hi,
->> > Hi,
+On Wed, Sep 29, 2010 at 12:14:58AM -0700, Stephen Hemminger wrote:
+>
+>
+>----- Original Message -----
+>> On Wed, Sep 29, 2010 at 03:06:45PM +0900, Stephen Hemminger wrote:
+>> >On Wed, 29 Sep 2010 14:04:27 +0800
+>> >Am√©rico Wang <xiyou.wangcong@gmail.com> wrote:
 >> >
->> >> Here is what I am proposing, in reply to all your comments:
+>> >> On Wed, Sep 29, 2010 at 02:11:53PM +0900, Stephen Hemminger wrote:
+>> >> >On Wed, 29 Sep 2010 12:31:12 +0800
+>> >> >Am√©rico Wang <xiyou.wangcong@gmail.com> wrote:
+>> >> >
+>> >> >> On Tue, Sep 28, 2010 at 05:44:02PM +0900, Stephen Hemminger
+>> >> >> wrote:
+>> >> >> >The current namespace.pl script does not find source files
+>> >> >> >correctly. The problem is that the current directory is not the
+>> >> >> >base of the kernel
+>> >> >> >tree at the point where it calls objdump.
+>> >> >> >
+>> >> >> >Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+>> >> >> >
+>> >> >> >--- a/scripts/namespace.pl 2010-09-27 17:53:29.919433444 +0900
+>> >> >> >+++ b/scripts/namespace.pl 2010-09-28 09:24:36.891552993 +0900
+>> >> >> >@@ -167,8 +167,10 @@ sub do_nm
+>> >> >> > 		printf STDERR "$fullname is not an object file\n";
+>> >> >> > 		return;
+>> >> >> > 	}
+>> >> >> >- ($source = $fullname) =~ s/\.o$//;
+>> >> >> >- if (-e "$objtree$source.c" || -e "$objtree$source.S") {
+>> >> >> >+ $fullname =~ s/\.o$//;
+>> >> >> >+ $source = $basename;
+>> >> >> >+ $source =~ s/\.o$//;
+>> >> >>
+>> >> >> With your patch applied, $source will be the basename of
+>> >> >> an obj path with .o stripped.
+>> >> >>
+>> >> >> >+ if (-e "$objtree$fullname.c" || -e "$objtree$fullname.S") {
+>> >> >> > 		$source = "$objtree$source";
+>> >> >> > 	} else {
+>> >> >> > 		$source = "$srctree$source";
+>> >> >> >
+>> >> >>
+>> >> >> So here we will get a non-exist path stored in $source.
+>> >> >>
+>> ...
 >> >>
->> >> 1) rename the events to match Thomas's proposal:
->> >> † † power:power_cpu_cstate
->> >> † † power:power_cpu_pstate
->> >> † † power:power_cpu_sstate
-> I'd not name it that X86/ACPI specific.
-> † †power:processor_sleep
-> † †power:processor_frequency
-> † †power:system_suspend
-> This would map with X86/ACPI c/p/s states but the name would
-> also match fine with ARM and other archs.
-Good for me!
-
+>> >> I see, the docs of Find module said it will do chdir. :)
+>> >> But I think your patch is still not right, how about the
+>> >> one below?
+>> >
+>> >Please be more precise about "not right"? It makes the code
+>> >work.
+>> >
+>> 
+>> Hmm? $srctree is the path of top source code, and $source
+>> is the basename of an object, so dirname is missed, no?
 >
->> > If that sstate thing is going to mean "suspend", then please drop
->> > it.
->> > "Suspend" is not a state, let alone a CPU state. †It is a procedure
->> > by which the (entire) system is put into a sleep state (that is not
->> > confined to CPUs).
->>
->> there are also non-suspend S states, like S0i1 and S0i3 (supported in
->> the current Intel "Moorestown" platform)
->>
->> so it's slightly more complex than "just" suspend :)
-> Something specific for this arch could get introduced, similar as
-> Jean did for the ARM specifics, e.g.:
-> power:moorestown_suspend
-I would not introduce arch specific events. Your other proposal below
-is more generic.
-
-> Intel probably invented three names for this new technique, one
-> might fit as an event name?
-> Depending whether extra info needs passed through this event it
-> could also use
-> † †power:system_suspend
-> and pass a suspend state of #define S0i1 0x100, #define S0i2 0x101...
-I am OK with that.
-
+>No. it works, please stop speculating and use a debugger or demonstrate
+>what you think the problem is.
 >
-> I try to find time to come up with another cleanup patch.
-> I also want to look at perf timechart then where I remember some ugly
-> hacks with C-state accounting and the broken state_start, state_end and
-> frequency_switch events. Hope it won't get too ugly and perf timechart
-> can support both, the old and the cleaned up events for a while.
-About pytimechart, I think it should be updated with the support for
-the new events only. The current version is not perfect but supports
-the current events correctly. I am planning to celan up and upgrade
-that tool when the new API is out.
 
-If that could force people to upgrade to the new events API asap...
+Just add a print to see what $source is, after you patch applied,
+I got something like:
 
->
-> † †Thomas
->
-I know you want to see real code. Let me come with a respin of the
-patch asap (it is a matter of days).
+===>/home/wangcong/linux-2.6/btusb
 
-Thanks,
-Jean
+I can't see any reason that this is correct. Maybe it works, but
+probably by accident.
+
+Thanks.
+
