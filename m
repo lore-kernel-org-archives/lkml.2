@@ -1,525 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab0I2Niw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 09:38:52 -0400
-Received: from mga09.intel.com ([134.134.136.24]:18211 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753894Ab0I2Nit convert rfc822-to-8bit (ORCPT
+	id S1756186Ab0I2Njo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 09:39:44 -0400
+Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:47698 "EHLO
+	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753894Ab0I2Njn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 09:38:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,253,1283756400"; 
-   d="scan'208";a="559024645"
-From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-To: Ben Hutchings <bhutchings@solarflare.com>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	Wed, 29 Sep 2010 09:39:43 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9IGLR-01-E8F-02
+X-M-MSG: 
+Date: Wed, 29 Sep 2010 15:39:23 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "davem@davemloft.net" <davem@davemloft.net>,
-        "herbert@gondor.hengli.com.au" <herbert@gondor.hengli.com.au>,
-        "jdike@linux.intel.com" <jdike@linux.intel.com>
-Date: Wed, 29 Sep 2010 21:38:42 +0800
-Subject: RE: [PATCH v11 13/17] Add mp(mediate passthru) device.
-Thread-Topic: [PATCH v11 13/17] Add mp(mediate passthru) device.
-Thread-Index: Acteikx5qJf/uf/cQsu3jNrNP+jKdAA8vpOA
-Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792EC64F8154@shsmsx502.ccr.corp.intel.com>
-References: <1285388855-27410-1-git-send-email-xiaohui.xin@intel.com>
-	 <2c954a831e2d9a93437aaf06386cd3a5af6b73b9.1285385607.git.xiaohui.xin@intel.com>
- <1285622613.2263.550.camel@achroite.uk.solarflarecom.com>
-In-Reply-To: <1285622613.2263.550.camel@achroite.uk.solarflarecom.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "andi@firstfloor.org" <andi@firstfloor.org>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "gorcunov@gmail.com" <gorcunov@gmail.com>,
+        "ying.huang@intel.com" <ying.huang@intel.com>,
+        "fweisbec@gmail.com" <fweisbec@gmail.com>,
+        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "dzickus@redhat.com" <dzickus@redhat.com>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
+ disabling counters
+Message-ID: <20100929133923.GI13563@erda.amd.com>
+References: <20100915162034.GO13563@erda.amd.com>
+ <tip-63e6be6d98e1a2bcdca86872b67052e51ab6afa1@git.kernel.org>
+ <AANLkTimB2gf=2zYCwiKEgozt_Rsa1Cpb6JuLSzmHusFX@mail.gmail.com>
+ <20100929125301.GG13563@erda.amd.com>
+ <20100929125453.GH13563@erda.amd.com>
+ <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <AANLkTimoE8wAhT+yxXBPnZvTTGrAtDjdaXPBN3Xg28eL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Ben Hutchings [mailto:bhutchings@solarflare.com]
->Sent: Tuesday, September 28, 2010 5:24 AM
->To: Xin, Xiaohui
->Cc: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
->mingo@elte.hu; davem@davemloft.net; herbert@gondor.hengli.com.au;
->jdike@linux.intel.com
->Subject: Re: [PATCH v11 13/17] Add mp(mediate passthru) device.
->
->On Sat, 2010-09-25 at 12:27 +0800, xiaohui.xin@intel.com wrote:
->> From: Xin Xiaohui <xiaohui.xin@intel.com>
->>
->> The patch add mp(mediate passthru) device, which now
->> based on vhost-net backend driver and provides proto_ops
->> to send/receive guest buffers data from/to guest vitio-net
->> driver.
->>
->> Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
->> Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
->> Reviewed-by: Jeff Dike <jdike@linux.intel.com>
->> ---
->>  drivers/vhost/mpassthru.c | 1407
->+++++++++++++++++++++++++++++++++++++++++++++
->>  1 files changed, 1407 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/vhost/mpassthru.c
->>
->> diff --git a/drivers/vhost/mpassthru.c b/drivers/vhost/mpassthru.c
->> new file mode 100644
->> index 0000000..d86d94c
->> --- /dev/null
->> +++ b/drivers/vhost/mpassthru.c
->[...]
->> +/* #define MPASSTHRU_DEBUG 1 */
->> +
->> +#ifdef MPASSTHRU_DEBUG
->> +static int debug;
->> +
->> +#define DBG  if (mp->debug) printk
->> +#define DBG1 if (debug == 2) printk
->
->This is unsafe; consider this usage:
->
->	if (foo)
->		DBG("bar\n");
->	else
->		baz();
->
->You should use the standard pr_debug() or dev_dbg() instead.
->
-Ok. Move to pr_debug().
+On 29.09.10 09:13:30, Stephane Eranian wrote:
 
->[...]
->> +struct page_ctor {
->> +       struct list_head        readq;
->> +       int                     wq_len;
->> +       int                     rq_len;
->> +       spinlock_t              read_lock;
->
->Only one queue?!
->
-This readq is for mp device to store the rx guest buffers coming from vhost.
-For tx side, we don't need that, since tx buffers are sent out to device immediately.
+> for_each_set_bit(bit, (unsigned long *)&status, X86_PMC_IDX_MAX) {
+>                 struct perf_event *event = cpuc->events[bit];
+> 
+>                 handled++;
+> 
+>                 if (!test_bit(bit, cpuc->active_mask))
 
->I would have appreciated some introductory comments on these structures.
->I still don't have any sort of clear picture of how this is all supposed
->to work.
->
-Basically, struct page_info{} is used to store each info of the guest buffers
-and some of vhost ring descriptor info according to this buffers.
-struct page_ctor{} is used to manipulate multiple struct page_info{}.
-Each device can do zero-copy is according one struct page_ctor{}.
+			/* spurious interrupt here */
 
-Anyway, I will comments on fields of these structures.
+>                     continue;
+> }
+> 
+> I think the logic is similar. What makes the difference, it seems, is that
+> handled is incremented unconditionally if the ovfl_mask says it has
+> an overflow, i.e., before active_mask is checked.
 
->[...]
->> +/* The main function to allocate external buffers */
->> +static struct skb_ext_page *page_ctor(struct mpassthru_port *port,
->> +		struct sk_buff *skb, int npages)
->> +{
->> +	int i;
->> +	unsigned long flags;
->> +	struct page_ctor *ctor;
->> +	struct page_info *info = NULL;
->> +
->> +	ctor = container_of(port, struct page_ctor, port);
->> +
->> +	spin_lock_irqsave(&ctor->read_lock, flags);
->> +	if (!list_empty(&ctor->readq)) {
->> +		info = list_first_entry(&ctor->readq, struct page_info, list);
->> +		list_del(&info->list);
->> +		ctor->rq_len--;
->> +	}
->> +	spin_unlock_irqrestore(&ctor->read_lock, flags);
->> +	if (!info)
->> +		return NULL;
->> +
->> +	for (i = 0; i < info->pnum; i++)
->> +		get_page(info->pages[i]);
->> +	info->skb = skb;
->> +	return &info->ext_page;
->> +}
->
->Why isn't the npages parameter used?
->
+Note that we can use here for_each_set_bit() since we have the status
+mask. So we may increment handled always.
 
-Sorry, somehow forgot that, currently it only allocates one page a time,
-we want to use npages to see if we break the limit.
+On AMD we use for_each_counter(), but only check active counters to
+avoid unnecessary rdmsrl()s for unused counters. But here, we only can
+increment handled if we detect an overflow or if we know a counter was
+disabled.
 
->[...]
->> +static void relinquish_resource(struct page_ctor *ctor)
->> +{
->> +	if (!(ctor->dev->flags & IFF_UP) &&
->> +			!(ctor->wq_len + ctor->rq_len))
->> +		printk(KERN_INFO "relinquish_resource\n");
->> +}
->
->Looks like something's missing here.
->
+> On Westmere, we've seen situations where the overflow mask and active
+> mask did not agree.
 
-This function is for debug, and so on the rq_len stuff, I'll remove them later.
+It's the 'spurious interrupt' branch above.
 
->> +static void mp_ki_dtor(struct kiocb *iocb)
->> +{
->> +	struct page_info *info = (struct page_info *)(iocb->private);
->> +	int i;
->> +
->> +	if (info->flags == INFO_READ) {
->> +		for (i = 0; i < info->pnum; i++) {
->> +			if (info->pages[i]) {
->> +				set_page_dirty_lock(info->pages[i]);
->> +				put_page(info->pages[i]);
->> +			}
->> +		}
->> +		mp_hash_delete(info->ctor, info);
->> +		if (info->skb) {
->> +			info->skb->destructor = NULL;
->> +			kfree_skb(info->skb);
->> +		}
->> +		info->ctor->rq_len--;
->
->Doesn't rq_len represent the number of buffers queued between the guest
->and the driver?  It is already decremented in page_ctor() so it seems
->like it gets decremented twice for each buffer.  Also don't you need to
->hold the read_lock when updating rq_len?
->
->> +	} else
->> +		info->ctor->wq_len--;
->
->Maybe you should define rq_len and wq_len both as atomic_t.
->
->[...]
->> +static void __mp_detach(struct mp_struct *mp)
->> +{
->> +	mp->mfile = NULL;
->> +
->> +	mp_dev_change_flags(mp->dev, mp->dev->flags & ~IFF_UP);
->> +	page_ctor_detach(mp);
->> +	mp_dev_change_flags(mp->dev, mp->dev->flags | IFF_UP);
->
->This is racy; you should hold rtnl_lock over all these changes.
->
-That's true. Though mp_dev_change_flags() did use rtnl_lock.
-But page_ctor_detach() change mp_port from dev structure too.....
+> On counter disable, the overflow mask bit is not cleared, thus one may iterate
+> in the loop and fail the active_mask. But handled would be incremented in that
+> case, so that would behave like in your patch.
 
->[...]
->> +typedef u32 key_mp_t;
->> +static inline key_mp_t mp_hash(struct page *page, int buckets)
->> +{
->> +	key_mp_t k;
->> +
->> +	k = ((((unsigned long)page << 32UL) >> 32UL) / 0x38) % buckets ;
->> +	return k;
->> +}
->
->This is never going to work on a 32-bit machine, and what is the purpose
->of the magic number 0x38?
->
+Right, spurious interrupts are counted and a 'handled' is returned.
 
-The 0x38 is the size of struct page, I should use sizeof(struct page).
-Let me try to fit it on 32-bit machine.
+-Robert
 
->Try using hash_ptr() from <linux/hash.h>.
->
-
-I tried that before, but performance is much worse than what I did,
-nearly 1G bandwidth less.
-
->> +static struct page_info *mp_hash_delete(struct page_ctor *ctor,
->> +					struct page_info *info)
->> +{
->> +	key_mp_t key = mp_hash(info->pages[0], HASH_BUCKETS);
->> +	struct page_info *tmp = NULL;
->> +	int i;
->> +
->> +	tmp = ctor->hash_table[key];
->> +	while (tmp) {
->> +		if (tmp == info) {
->> +			if (!tmp->prev) {
->> +				ctor->hash_table[key] = tmp->next;
->> +				if (tmp->next)
->> +					tmp->next->prev = NULL;
->> +			} else {
->> +				tmp->prev->next = tmp->next;
->> +				if (tmp->next)
->> +					tmp->next->prev = tmp->prev;
->> +			}
->> +			return tmp;
->> +		}
->> +		tmp = tmp->next;
->> +	}
->> +	return tmp;
->> +}
->> +
->> +static struct page_info *mp_hash_lookup(struct page_ctor *ctor,
->> +					struct page *page)
->> +{
->> +	key_mp_t key = mp_hash(page, HASH_BUCKETS);
->> +	struct page_info *tmp = NULL;
->> +
->> +	int i;
->> +	tmp = ctor->hash_table[key];
->> +	while (tmp) {
->> +		for (i = 0; i < tmp->pnum; i++) {
->> +			if (tmp->pages[i] == page)
->> +				return tmp;
->> +		}
->> +		tmp = tmp->next;
->> +	}
->> +	return tmp;
->> +}
->
->How are thse serialised?
->
-This hash function is only used for rx side. And both insert and delete
-are called in mp_recvmsg, which is locked by vq->mutex.
-
->> +/* The main function to transform the guest user space address
->> + * to host kernel address via get_user_pages(). Thus the hardware
->> + * can do DMA directly to the external buffer address.
->> + */
->> +static struct page_info *alloc_page_info(struct page_ctor *ctor,
->> +		struct kiocb *iocb, struct iovec *iov,
->> +		int count, struct frag *frags,
->> +		int npages, int total)
->> +{
->> +	int rc;
->> +	int i, j, n = 0;
->> +	int len;
->> +	unsigned long base, lock_limit;
->> +	struct page_info *info = NULL;
->> +
->> +	lock_limit = current->signal->rlim[RLIMIT_MEMLOCK].rlim_cur;
->> +	lock_limit >>= PAGE_SHIFT;
->> +
->> +	if (ctor->lock_pages + count > lock_limit && npages) {
->> +		printk(KERN_INFO "exceed the locked memory rlimit.");
->> +		return NULL;
->> +	}
->
->What if the process is locking pages with mlock() as well?  Doesn't this
->allow it to lock twice as many pages as it should be able to?
->
->> +	info = kmem_cache_alloc(ext_page_info_cache, GFP_KERNEL);
->> +
->> +	if (!info)
->> +		return NULL;
->> +	info->skb = NULL;
->> +	info->next = info->prev = NULL;
->> +
->> +	for (i = j = 0; i < count; i++) {
->> +		base = (unsigned long)iov[i].iov_base;
->> +		len = iov[i].iov_len;
->> +
->> +		if (!len)
->> +			continue;
->> +		n = ((base & ~PAGE_MASK) + len + ~PAGE_MASK) >> PAGE_SHIFT;
->> +
->> +		rc = get_user_pages_fast(base, n, npages ? 1 : 0,
->> +				&info->pages[j]);
->> +		if (rc != n)
->> +			goto failed;
->> +
->> +		while (n--) {
->> +			frags[j].offset = base & ~PAGE_MASK;
->> +			frags[j].size = min_t(int, len,
->> +					PAGE_SIZE - frags[j].offset);
->> +			len -= frags[j].size;
->> +			base += frags[j].size;
->> +			j++;
->> +		}
->> +	}
->> +
->> +#ifdef CONFIG_HIGHMEM
->> +	if (npages && !(dev->features & NETIF_F_HIGHDMA)) {
->> +		for (i = 0; i < j; i++) {
->> +			if (PageHighMem(info->pages[i]))
->> +				goto failed;
->> +		}
->> +	}
->> +#endif
->
->Shouldn't you try to allocate lowmem pages explicitly, rather than
->failing at this point?
->
->[...]
->> +static int mp_recvmsg(struct kiocb *iocb, struct socket *sock,
->> +		struct msghdr *m, size_t total_len,
->> +		int flags)
->> +{
->> +	struct mp_struct *mp = container_of(sock->sk, struct mp_sock, sk)->mp;
->> +	struct page_ctor *ctor;
->> +	struct iovec *iov = m->msg_iov;
->> +	int count = m->msg_iovlen;
->> +	int npages, payload;
->> +	struct page_info *info;
->> +	struct frag frags[MAX_SKB_FRAGS];
->> +	unsigned long base;
->> +	int i, len;
->> +	unsigned long flag;
->> +
->> +	if (!(flags & MSG_DONTWAIT))
->> +		return -EINVAL;
->> +
->> +	ctor = mp->ctor;
->> +	if (!ctor)
->> +		return -EINVAL;
->> +
->> +	/* Error detections in case invalid external buffer */
->> +	if (count > 2 && iov[1].iov_len < ctor->port.hdr_len &&
->> +			mp->dev->features & NETIF_F_SG) {
->> +		return -EINVAL;
->> +	}
->> +
->> +	npages = ctor->port.npages;
->> +	payload = ctor->port.data_len;
->> +
->> +	/* If KVM guest virtio-net FE driver use SG feature */
->> +	if (count > 2) {
->> +		for (i = 2; i < count; i++) {
->> +			base = (unsigned long)iov[i].iov_base & ~PAGE_MASK;
->> +			len = iov[i].iov_len;
->> +			if (npages == 1)
->> +				len = min_t(int, len, PAGE_SIZE - base);
->> +			else if (base)
->> +				break;
->> +			payload -= len;
->> +			if (payload <= 0)
->> +				goto proceed;
->> +			if (npages == 1 || (len & ~PAGE_MASK))
->> +				break;
->> +		}
->> +	}
->> +
->> +	if ((((unsigned long)iov[1].iov_base & ~PAGE_MASK)
->> +				- NET_SKB_PAD - NET_IP_ALIGN) >= 0)
->> +		goto proceed;
->> +
->> +	return -EINVAL;
->> +
->> +proceed:
->> +	/* skip the virtnet head */
->> +	if (count > 1) {
->> +		iov++;
->> +		count--;
->> +	}
->> +
->> +	if (!ctor->lock_pages || !ctor->rq_len) {
->> +		set_memlock_rlimit(ctor, RLIMIT_MEMLOCK,
->> +				iocb->ki_user_data * 4096 * 2,
->> +				iocb->ki_user_data * 4096 * 2);
->> +	}
->> +
->> +	/* Translate address to kernel */
->> +	info = alloc_page_info(ctor, iocb, iov, count, frags, npages, 0);
->> +	if (!info)
->> +		return -ENOMEM;
->
->I'm not convinced that the checks above this ensure that there will be
-><= MAX_SKB_FRAGS fragments.
->
-It doesn't need to check about that, because for SG feature guest virtio-net
-driver never submit multiple buffers for one skb. The drivers never knows
-which frags belongs to which skb. The fragements are collected by multiple
-buffers with numbers which a receiving skb is exactly needed.
-
->[...]
->> +static int mp_chr_open(struct inode *inode, struct file * file)
->> +{
->> +	struct mp_file *mfile;
->> +	cycle_kernel_lock();
->
->Seriously?
->
->[...]
->> +static ssize_t mp_chr_aio_write(struct kiocb *iocb, const struct iovec *iov,
->> +				unsigned long count, loff_t pos)
->> +{
->> +	struct file *file = iocb->ki_filp;
->> +	struct mp_struct *mp = mp_get(file->private_data);
->> +	struct sock *sk = mp->socket.sk;
->> +	struct sk_buff *skb;
->> +	int len, err;
->> +	ssize_t result = 0;
->> +
->> +	if (!mp)
->> +		return -EBADFD;
->> +
->> +	/* currently, async is not supported.
->> +	 * but we may support real async aio from user application,
->> +	 * maybe qemu virtio-net backend.
->> +	 */
->> +	if (!is_sync_kiocb(iocb))
->> +		return -EFAULT;
->> +
->> +	len = iov_length(iov, count);
->> +
->> +	if (unlikely(len) < ETH_HLEN)
->> +		return -EINVAL;
->
->The first close-paren is in the wrong place.
->
-
-Thanks.
-It should be : if(unlikely(len < ETH_HLEN)).
-
->> +	skb = sock_alloc_send_skb(sk, len + NET_IP_ALIGN,
->> +				  file->f_flags & O_NONBLOCK, &err);
->> +
->> +	if (!skb)
->> +		return -EFAULT;
->
->Why EFAULT?
-
-Then -ENOMEM maybe much better.
-
->
->> +	skb_reserve(skb, NET_IP_ALIGN);
->> +	skb_put(skb, len);
->> +
->> +	if (skb_copy_datagram_from_iovec(skb, 0, iov, 0, len)) {
->> +		kfree_skb(skb);
->> +		return -EAGAIN;
->> +	}
->> +
->> +	skb->protocol = eth_type_trans(skb, mp->dev);
->
->Why are you calling eth_type_trans() on transmit?
->
->[...]
->> +static int mp_device_event(struct notifier_block *unused,
->> +		unsigned long event, void *ptr)
->> +{
->> +	struct net_device *dev = ptr;
->> +	struct mpassthru_port *port;
->> +	struct mp_struct *mp = NULL;
->> +	struct socket *sock = NULL;
->> +	struct sock *sk;
->> +
->> +	port = dev->mp_port;
->> +	if (port == NULL)
->> +		return NOTIFY_DONE;
->> +
->> +	switch (event) {
->> +	case NETDEV_UNREGISTER:
->> +		sock = dev->mp_port->sock;
->> +		mp = container_of(sock->sk, struct mp_sock, sk)->mp;
->> +		do_unbind(mp->mfile);
->[...]
->
->This can deadlock - netdev notifiers are called under the RTNL lock and
->do_unbind() acquires the mp_mutex, whereas in other places they are
->acquired in the opposite order.
->
-
-Let me think how to avoid this.
-
->Ben.
->
->--
->Ben Hutchings, Senior Software Engineer, Solarflare Communications
->Not speaking for my employer; that's the marketing department's job.
->They asked us to note that Solarflare product names are trademarked.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
