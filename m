@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755860Ab0I2UaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 16:30:18 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37793 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755754Ab0I2UaQ (ORCPT
+	id S1755864Ab0I2UgB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 16:36:01 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:34123 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752120Ab0I2Uf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 16:30:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=KDNrDKvNHfQhYJYiSPc7EG+uNCCc94JkZY+z1axcsR1PiAGEXMpOov+2Z62DiAF78
-	keuuxdR+xo/DuJdGuv5zw==
-Date: Wed, 29 Sep 2010 13:30:11 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Namhyung Kim <namhyung@gmail.com>
-cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] slub: Fix signedness warnings
-In-Reply-To: <1285761735-31499-1-git-send-email-namhyung@gmail.com>
-Message-ID: <alpine.DEB.2.00.1009291329400.9797@chino.kir.corp.google.com>
-References: <1285761735-31499-1-git-send-email-namhyung@gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 29 Sep 2010 16:35:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=oMv3PsP0Artbwln4NBy0KbwdwmH4cf7f7mo4f+8iNMceLlGALD1ctYZSDXj9PsJf0F
+         L6MyDR6GQ5gi3DYkueRz5OH00FRSJMTJqZEyK6qFdh9HxBspCYI+tYBMFrOQdnplV0yL
+         JZHJkg4oldQiJV2dujLDvNGD0FI9euIGNd5Lw=
+Message-ID: <4CA3BFA3.1060204@gmail.com>
+Date: Thu, 30 Sep 2010 00:37:23 +0200
+From: Roel Kluin <roel.kluin@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] [XFRM]: Don't dereference error pointer dst1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010, Namhyung Kim wrote:
+Don't dereference dst1 when it's an error pointer.
 
-> The bit-ops routines require its arg to be a pointer to unsigned long.
-> This leads sparse to complain about different signedness as follows:
-> 
->  mm/slub.c:2425:49: warning: incorrect type in argument 2 (different signedness)
->  mm/slub.c:2425:49:    expected unsigned long volatile *addr
->  mm/slub.c:2425:49:    got long *map
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+---
+ net/xfrm/xfrm_policy.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Acked-by: David Rientjes <rientjes@google.com>
+I just noticed this by code analysis. It wasn't tested in any way.
+
+diff --git a/net/xfrm/xfrm_policy.c b/net/xfrm/xfrm_policy.c
+index cbab6e1..b186c3d 100644
+--- a/net/xfrm/xfrm_policy.c
++++ b/net/xfrm/xfrm_policy.c
+@@ -1414,13 +1414,14 @@ static struct dst_entry *xfrm_bundle_create(struct xfrm_policy *policy,
+ 
+ 	for (; i < nx; i++) {
+ 		struct xfrm_dst *xdst = xfrm_alloc_dst(net, family);
+-		struct dst_entry *dst1 = &xdst->u.dst;
++		struct dst_entry *dst1;
+ 
+ 		err = PTR_ERR(xdst);
+ 		if (IS_ERR(xdst)) {
+ 			dst_release(dst);
+ 			goto put_states;
+ 		}
++		dst1 = &xdst->u.dst;
+ 
+ 		if (!dst_prev)
+ 			dst0 = dst1;
+
