@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab0I2Wjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 18:39:43 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:41941 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751829Ab0I2Wjm convert rfc822-to-8bit (ORCPT
+	id S1752881Ab0I2WvZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 18:51:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34504 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab0I2WvY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 18:39:42 -0400
+	Wed, 29 Sep 2010 18:51:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
          :x-google-sender-auth:message-id:subject:from:to:cc:content-type
          :content-transfer-encoding;
-        b=L8vstSYF7Vnlx8DFILabDpR95JkhLj8ZNV4kRFfAsCLHincIW6IwZsB515HZ/MfKTk
-         9XcRU5QGzni3CDLGSkOJV7nkR3R0Ny0+YjwfYkG35VZQw8aMFKe7F0XqgExhhAGQCa7W
-         Mz6p7Gw7vVUCByKX6xxIMMw3bz18G+uIU+R3E=
+        b=SyJZWVLlb1nj/luYUwQ3GYyBdIAQHJ36rvYtGE1BGpqB2GMBMsCpiSkqs50q5OuWVi
+         VCXvr59OUdUYYrUERRoyIFwTw19fJ3wUCS4oVR1J3ON9LbRghTYD8lXg9IdXIj6cinbr
+         yqbjUiZUHeQX0Nd/WFgap3ydO8eZvxN0D6klY=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=b-Wzp4-0vg_AVz0os08dC7hX6gZBQn8WHfcF5@mail.gmail.com>
-References: <1285682257-16482-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTi=b-Wzp4-0vg_AVz0os08dC7hX6gZBQn8WHfcF5@mail.gmail.com>
-Date: Thu, 30 Sep 2010 00:39:41 +0200
-X-Google-Sender-Auth: PpZANbtogQ6-T-qOzzphzP0s6gs
-Message-ID: <AANLkTi=cvg6YKaEqOOCjBu2gc__k7470t1rdF9gvBsR4@mail.gmail.com>
-Subject: Re: [PATCH] driver for the ARM PL080/PL081 PrimeCells v5
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, Peter Pearse <peter.pearse@arm.com>,
-        Ben Dooks <ben-linux@fluff.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Alessandro Rubini <rubini@unipv.it>
+In-Reply-To: <AANLkTins=SXOf_aeokFWwXX0KU1mhUBnPtbznb9xj+4v@mail.gmail.com>
+References: <1285657392-28937-1-git-send-email-linus.walleij@stericsson.com>
+	<AANLkTimBvtwnHmWeT_uEo+ScZtYePKnZYkFEJyOVD5DO@mail.gmail.com>
+	<AANLkTins=SXOf_aeokFWwXX0KU1mhUBnPtbznb9xj+4v@mail.gmail.com>
+Date: Wed, 29 Sep 2010 15:51:17 -0700
+X-Google-Sender-Auth: tydDKBuvOCooPuJuOw2SQt9MyKU
+Message-ID: <AANLkTinfwtR5MYe5DTnU_bRvVKPt4U-DuYczBW_sX9Yp@mail.gmail.com>
+Subject: Re: [PATCH 1/2] DMAENGINE: define a dummy filter function for coh901318
+From: Dan Williams <dan.j.williams@intel.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/9/29 Dan Williams <dan.j.williams@intel.com>:
-> [Me]
->> +/*
->> + * Initialize a descriptor to be used by memcpy submit
->> + */
->> +static struct dma_async_tx_descriptor *pl08x_prep_dma_memcpy(
->> +               struct dma_chan *chan, dma_addr_t dest, dma_addr_t src,
->> +               size_t len, unsigned long flags)
->> +{
->> +       struct pl08x_dma_chan *plchan = to_pl08x_chan(chan);
->> +       struct pl08x_driver_data *pl08x = plchan->host;
->> +       struct pl08x_txd *txd;
->> +       int ret;
->> +
->> +       txd = kzalloc(sizeof(struct pl08x_txd), GFP_KERNEL);
->> +       if (!txd) {
->> +               dev_err(&pl08x->adev->dev,
->> +                       "%s no memory for descriptor\n", __func__);
->> +               return NULL;
->> +       }
+On Wed, Sep 29, 2010 at 3:36 PM, Linus Walleij
+<linus.ml.walleij@gmail.com> wrote:
+> 2010/9/29 Dan Williams <dan.j.williams@intel.com>:
+>> On Tue, Sep 28, 2010 at 12:03 AM, Linus Walleij <linus.walleij@stericsson.com> wrote:
+>>> All platform data has to be made conditional on
+>>> as to avoid cluttering the code with other #ifdef:s.
+>>>
+>>
+>> The filter id function assumes that the channel passed in is a
+>> coh901318 which requires that you are in a mach-u300 build and that no
+>> other dma driver will ever appear on this platform.  Which may be
+>> true,
 >
-> With your acknowledgment I'll append a patch to convert this to
-> GFP_NOWAIT because device_prep_dma_memcpy() is meant to be callable
-> from atomic contexts.
+> It is... I promise, the platform only has COH901318 and is not being
+> refined into future derivates with any multi-DMA-engine variants.
+>
+> Feels a bit over-engineered to take that aspect into account.
+> Can't we handle it the day we have a platform available with
+> two or more diverse DMA controllers?
 
-Damn typically I forgot something. Please go ahead with this!
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Yeah, no rush to change it now.
 
-Yours,
-Linus Walleij
+>
+>> but it would be safer to look at
+>> chan->device->dev->platform_data and deduce that it is indeed a
+>> coh901318 channel before de-referencing private fields.
+>
+> I read it like you want a patch also patching the filter function to
+> do this check or am I misreading it?
+
+Yes.
+
+>
+> Right now it atleast has the other theoretical upside (as compared to
+> having another totally different DMA block): it can support
+> multiple instances of COH901318:s, handling each a subset of
+> channels. In this case the filter function will locate the right channel
+> on the right instance -> elegant.
+>
+>> Taken further
+>> if you rewrite the filter_id function in terms of platform_data then
+>> it could live purely in the arch code and not depend on the driver.
+>> ...or did you already try this route and hit a snag?
+>
+> Nah can probably be done, it just feels more elegant to check
+> the channel ID (in this case a simple number) against the thing
+> that's actually registered in the driver.
+>
+> It will be a bigger patch fixing a sort of different problem though,
+> this will just fix my problem of compiling the platform without
+> DMA support, which is currently not possible without a lot of
+> #ifdefs in the platform code.
+
+You can add my acked-by to this one and take it through the arch tree.
+
+...but an eventual patch killing a driver specific export and making
+the filter function intrinsically safe (i.e. without needing to know
+it is a config bool, or that no other dma blocks will show up on this
+machine) would be readily accepted.
+
+--
+Dan
