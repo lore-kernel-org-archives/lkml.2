@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753542Ab0I3XPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:15:22 -0400
-Received: from www.tglx.de ([62.245.132.106]:52315 "EHLO www.tglx.de"
+	id S1754195Ab0I3XP1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:15:27 -0400
+Received: from www.tglx.de ([62.245.132.106]:52344 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752072Ab0I3XPS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:15:18 -0400
-Message-Id: <20100930221738.868664682@linutronix.de>
+	id S1752072Ab0I3XPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:15:24 -0400
+Message-Id: <20100930221738.976171570@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 30 Sep 2010 23:14:51 -0000
+Date: Thu, 30 Sep 2010 23:14:58 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
@@ -22,55 +22,85 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [patch 04/47] arm: Use irq status modifier
+Subject: [patch 05/47] genirq-sanitize-irq-data-accessors.patch
 References: <20100930221351.682772535@linutronix.de>
-Content-Disposition: inline; filename=arm-use-status-modifier.patch
+Content-Disposition: inline; filename=genirq-sanitize-irq-data-accessors.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the open coded unlocked access to irq_desc.status
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arm/kernel/irq.c |   20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+ include/linux/irq.h |   31 ++++++++++++++++++++++++++-----
+ kernel/irq/chip.c   |    8 ++++++++
+ 2 files changed, 34 insertions(+), 5 deletions(-)
 
-Index: linux-2.6-tip/arch/arm/kernel/irq.c
+Index: linux-2.6-tip/include/linux/irq.h
 ===================================================================
---- linux-2.6-tip.orig/arch/arm/kernel/irq.c
-+++ linux-2.6-tip/arch/arm/kernel/irq.c
-@@ -132,24 +132,18 @@ asmlinkage void __exception asm_do_IRQ(u
+--- linux-2.6-tip.orig/include/linux/irq.h
++++ linux-2.6-tip/include/linux/irq.h
+@@ -478,17 +478,38 @@ extern int set_irq_data(unsigned int irq
+ extern int set_irq_chip_data(unsigned int irq, void *data);
+ extern int set_irq_type(unsigned int irq, unsigned int type);
+ extern int set_irq_msi(unsigned int irq, struct msi_desc *entry);
++extern struct irq_data *irq_get_irq_data(unsigned int irq);
  
- void set_irq_flags(unsigned int irq, unsigned int iflags)
- {
--	struct irq_desc *desc;
--	unsigned long flags;
-+	unsigned long clr = 0;
- 
--	if (irq >= nr_irqs) {
--		printk(KERN_ERR "Trying to set irq flags for IRQ%d\n", irq);
--		return;
--	}
-+	irq_set_status_flags(irq, IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN);
- 
--	desc = irq_to_desc(irq);
--	raw_spin_lock_irqsave(&desc->lock, flags);
--	desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE | IRQ_NOAUTOEN;
- 	if (iflags & IRQF_VALID)
--		desc->status &= ~IRQ_NOREQUEST;
-+		clr |= IRQ_NOREQUEST;
- 	if (iflags & IRQF_PROBE)
--		desc->status &= ~IRQ_NOPROBE;
-+		clr |= IRQ_NOPROBE;
- 	if (!(iflags & IRQF_NOAUTOEN))
--		desc->status &= ~IRQ_NOAUTOEN;
--	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+		clr |= IRQ_NOAUTOEN;
++static inline struct irq_chip *get_irq_chip(unsigned int irq)
++{
++	struct irq_data *d = irq_get_irq_data(irq);
++	return d ? d->chip : NULL;
++}
 +
-+	irq_clear_status_flags(irq, clr);
++static inline void *get_irq_chip_data(unsigned int irq)
++{
++	struct irq_data *d = irq_get_irq_data(irq);
++	return d ? d->chip_data : NULL;
++}
++
++static inline void *get_irq_data(unsigned int irq)
++{
++	struct irq_data *d = irq_get_irq_data(irq);
++	return d ? d->handler_data : NULL;
++}
++
++static inline struct msi_desc *get_irq_msi(unsigned int irq)
++{
++	struct irq_data *d = irq_get_irq_data(irq);
++	return d ? d->msi_desc : NULL;
++}
++
++/* Needs to die ! */
+ static inline void set_irq_desc_chip_data(struct irq_desc *desc, void *data)
+ {
+ 	desc->irq_data.chip_data = data;
  }
  
- void __init init_IRQ(void)
+-#define get_irq_chip(irq)	(irq_to_desc(irq)->chip)
+-#define get_irq_chip_data(irq)	(irq_to_desc(irq)->irq_data.chip_data)
+-#define get_irq_data(irq)	(irq_to_desc(irq)->irq_data.handler_data)
+-#define get_irq_msi(irq)	(irq_to_desc(irq)->irq_data.msi_desc)
+-
+ #define get_irq_desc_chip(desc)		((desc)->irq_data.chip)
+ #define get_irq_desc_chip_data(desc)	((desc)->irq_data.chip_data)
+ #define get_irq_desc_data(desc)		((desc)->irq_data.handler_data)
+Index: linux-2.6-tip/kernel/irq/chip.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/chip.c
++++ linux-2.6-tip/kernel/irq/chip.c
+@@ -259,6 +259,14 @@ int set_irq_chip_data(unsigned int irq, 
+ }
+ EXPORT_SYMBOL(set_irq_chip_data);
+ 
++struct irq_data *irq_get_irq_data(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++
++	return desc ? &desc->irq_data : NULL;
++}
++EXPORT_SYMBOL_GPL(irq_get_irq_data);
++
+ /**
+  *	set_irq_nested_thread - Set/Reset the IRQ_NESTED_THREAD flag of an irq
+  *
 
 
