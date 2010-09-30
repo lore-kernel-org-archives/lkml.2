@@ -1,124 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0I3J2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 05:28:10 -0400
+	id S1755353Ab0I3J2S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 05:28:18 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:40807 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab0I3J2I (ORCPT
+	with ESMTP id S1755292Ab0I3J2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 05:28:08 -0400
+	Thu, 30 Sep 2010 05:28:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=H1bLzcz3cgk3C5Wl+3UdXE+qtVEGXZH/BgR/fU+QIysjC1RUfz1tk+NWCW7jLLAujB
-         FG/ogeBLm0CkH1grCgikD3rOsG3/XiqBF5YtdC0aJWb+naQ5SI3nGNaSgg8uJDUHdhIR
-         EMfMKCtnbqToBiEZNV+i8KkVR2Zxoxp/3mipg=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=T6jN9bldxfeM6gJ8z6eiQGVFsIFz2FjzoXaTKizxMhNe3LooAXyrg2OlCvCQSs11V6
+         n7ljvos2qLremld3C4G0+snw24qXiM42yz6LmA51wstoc/EbRZ7uglf3fHZY9WxwYw6p
+         Qkg96Ejst7jQUlWNTd1sqFNQh2glVPzX/KVzo=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
         linux-kernel@vger.kernel.org
-Subject: [PATCH RESEND v3 00/24] ptrace cleanups
-Date: Thu, 30 Sep 2010 18:27:35 +0900
-Message-Id: <1285838880-4977-1-git-send-email-namhyung@gmail.com>
+Subject: [PATCH RESEND v3 02/24] ptrace: cleanup ptrace_request()
+Date: Thu, 30 Sep 2010 18:27:37 +0900
+Message-Id: <1285838880-4977-3-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1285838880-4977-1-git-send-email-namhyung@gmail.com>
+References: <1285838880-4977-1-git-send-email-namhyung@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Use new 'datavp' and 'datalp' variables to remove unnecesary castings.
 
-This patchset tries to cleanup architecture independent/dependent part of
-ptrace syscall. Specifically it changes prototype of sys_ptrace() to have
-its arguments @addr and @data to be unsigned long. Since user space API of
-ptrace() declares them as void pointers, and most of archs consider them
-unsigned already in their arch_ptrace(), it would be no harmful to change
-them from (signed) long into unsigned long, IMHO.
-
-ptrace() code accesses user area using above arguments frequently, changing
-them enables to drop unnecessary __force markup when casting them to __user
-pointers because sparse allows it only in case of unsigned long. And some
-duplicated/misused castings can be grouped into one place in favor of new
-variables to cleanup code further. This was suggested by Arnd Bergmann and
-comment from Christoph Hellwig was also helpful.
-
-Although I couldn't test all archs, I hope it will not break anything.
-
-Any comments would be appreciated.
-Thanks.
-
-
-* Changes from v2:
- add Acked-by from maintainers
- fix some checkpatch warnings
- rebased on top of 2.6.36-rc6
-
-* Changes from v1:
- combine all arch signature changes into a single patch
- retain uses of get/put_user()
- rebased on top of 2.6.36-rc3
-
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Acked-by: Roland McGrath <roland@redhat.com>
 ---
+ kernel/ptrace.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-Namhyung Kim (24):
-  ptrace: change signature of sys_ptrace() and friends
-  ptrace: cleanup ptrace_request()
-  ptrace: change signature of arch_ptrace()
-  ptrace: cleanup arch_ptrace() on x86
-  ptrace: cleanup arch_ptrace() on ARM
-  ptrace: cleanup arch_ptrace() on avr32
-  ptrace: cleanup arch_ptrace() and friends on Blackfin
-  ptrace: cleanup arch_ptrace() on cris
-  ptrace: cleanup arch_ptrace() on frv
-  ptrace: cleanup arch_ptrace() on h8300
-  ptrace: cleanup arch_ptrace() on m32r
-  ptrace: cleanup arch_ptrace() on m68k
-  ptrace: cleanup arch_ptrace() on m68knommu
-  ptrace: cleanup arch_ptrace() on microblaze
-  ptrace: cleanup arch_ptrace() on MIPS
-  ptrace: cleanup arch_ptrace() on mn10300
-  ptrace: cleanup arch_ptrace() on parisc
-  ptrace: cleanup arch_ptrace() on powerpc
-  ptrace: cleanup arch_ptrace() on score
-  ptrace: cleanup arch_ptrace() on sh
-  ptrace: cleanup arch_ptrace() on sparc
-  ptrace: cleanup arch_ptrace() on tile
-  ptrace: cleanup arch_ptrace() on um
-  ptrace: cleanup arch_ptrace() on xtensa
-
- arch/alpha/kernel/ptrace.c         |    7 ++--
- arch/arm/kernel/ptrace.c           |   28 ++++++++-------
- arch/avr32/kernel/ptrace.c         |   11 +++---
- arch/blackfin/kernel/ptrace.c      |   16 +++++----
- arch/cris/arch-v10/kernel/ptrace.c |   20 +++++-----
- arch/cris/arch-v32/kernel/ptrace.c |   16 ++++----
- arch/frv/kernel/ptrace.c           |   32 ++++++++---------
- arch/h8300/kernel/ptrace.c         |   33 +++++++++---------
- arch/ia64/kernel/ptrace.c          |    3 +-
- arch/m32r/kernel/ptrace.c          |   11 +++---
- arch/m68k/kernel/ptrace.c          |   51 ++++++++++++++-------------
- arch/m68knommu/kernel/ptrace.c     |   63 ++++++++++++++++------------------
- arch/microblaze/kernel/ptrace.c    |    5 ++-
- arch/mips/kernel/ptrace.c          |   25 +++++++------
- arch/mn10300/kernel/ptrace.c       |   20 +++++-----
- arch/parisc/kernel/ptrace.c        |   13 ++++---
- arch/powerpc/kernel/ptrace.c       |   66 ++++++++++++++++++-----------------
- arch/s390/kernel/ptrace.c          |    3 +-
- arch/score/kernel/ptrace.c         |    7 ++--
- arch/sh/kernel/ptrace_32.c         |   45 +++++++++++++-----------
- arch/sh/kernel/ptrace_64.c         |   25 +++++++++-----
- arch/sparc/kernel/ptrace_32.c      |   57 ++++++++++++-------------------
- arch/sparc/kernel/ptrace_64.c      |   15 ++++----
- arch/tile/kernel/ptrace.c          |   11 +++---
- arch/um/kernel/ptrace.c            |   23 ++++++------
- arch/um/sys-i386/ptrace.c          |    4 +-
- arch/um/sys-x86_64/ptrace.c        |   11 +++---
- arch/x86/kernel/ptrace.c           |   20 +++++------
- arch/xtensa/kernel/ptrace.c        |   14 ++++---
- include/linux/ptrace.h             |   12 ++++--
- include/linux/syscalls.h           |    3 +-
- kernel/ptrace.c                    |   30 +++++++++-------
- 32 files changed, 360 insertions(+), 340 deletions(-)
-
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index f838afe..dded1d6 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -563,6 +563,8 @@ int ptrace_request(struct task_struct *child, long request,
+ {
+ 	int ret = -EIO;
+ 	siginfo_t siginfo;
++	void __user *datavp = (void __user *) data;
++	unsigned long __user *datalp = datavp;
+ 
+ 	switch (request) {
+ 	case PTRACE_PEEKTEXT:
+@@ -579,19 +581,17 @@ int ptrace_request(struct task_struct *child, long request,
+ 		ret = ptrace_setoptions(child, data);
+ 		break;
+ 	case PTRACE_GETEVENTMSG:
+-		ret = put_user(child->ptrace_message, (unsigned long __user *) data);
++		ret = put_user(child->ptrace_message, datalp);
+ 		break;
+ 
+ 	case PTRACE_GETSIGINFO:
+ 		ret = ptrace_getsiginfo(child, &siginfo);
+ 		if (!ret)
+-			ret = copy_siginfo_to_user((siginfo_t __user *) data,
+-						   &siginfo);
++			ret = copy_siginfo_to_user(datavp, &siginfo);
+ 		break;
+ 
+ 	case PTRACE_SETSIGINFO:
+-		if (copy_from_user(&siginfo, (siginfo_t __user *) data,
+-				   sizeof siginfo))
++		if (copy_from_user(&siginfo, datavp, sizeof siginfo))
+ 			ret = -EFAULT;
+ 		else
+ 			ret = ptrace_setsiginfo(child, &siginfo);
+@@ -622,7 +622,7 @@ int ptrace_request(struct task_struct *child, long request,
+ 		}
+ 		mmput(mm);
+ 
+-		ret = put_user(tmp, (unsigned long __user *) data);
++		ret = put_user(tmp, datalp);
+ 		break;
+ 	}
+ #endif
+@@ -651,7 +651,7 @@ int ptrace_request(struct task_struct *child, long request,
+ 	case PTRACE_SETREGSET:
+ 	{
+ 		struct iovec kiov;
+-		struct iovec __user *uiov = (struct iovec __user *) data;
++		struct iovec __user *uiov = datavp;
+ 
+ 		if (!access_ok(VERIFY_WRITE, uiov, sizeof(*uiov)))
+ 			return -EFAULT;
 -- 
 1.7.2.2
 
