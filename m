@@ -1,72 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab0I3PR7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 11:17:59 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:41291 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756662Ab0I3PR6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 11:17:58 -0400
-Message-ID: <4CA4AA21.9030109@austin.ibm.com>
-Date: Thu, 30 Sep 2010 10:17:53 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1756686Ab0I3P2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 11:28:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65181 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756668Ab0I3P2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 11:28:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,259,1283756400"; 
+   d="scan'208";a="662711545"
+From: Alan Cox <alan@linux.intel.com>
+Subject: [PATCH] support to overwrite DMI board info
+To: linux-kernel@vger.kernel.org, x86@kernel.org
+Date: Thu, 30 Sep 2010 15:39:36 +0100
+Message-ID: <20100930143933.7835.55138.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Robin Holt <holt@sgi.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
- sections
-References: <4CA0EBEB.1030204@austin.ibm.com> <20100928123848.GH14068@sgi.com> <4CA2313D.2030508@austin.ibm.com> <20100929192830.GK14068@sgi.com>
-In-Reply-To: <20100929192830.GK14068@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/29/2010 02:28 PM, Robin Holt wrote:
-> On Tue, Sep 28, 2010 at 01:17:33PM -0500, Nathan Fontenot wrote:
->> On 09/28/2010 07:38 AM, Robin Holt wrote:
->>> I was tasked with looking at a slowdown in similar sized SGI machines
->>> booting x86_64.  Jack Steiner had already looked into the memory_dev_init.
->>> I was looking at link_mem_sections().
->>>
->>> I made a dramatic improvement on a 16TB machine in that function by
->>> merely caching the most recent memory section and checking to see if
->>> the next memory section happens to be the subsequent in the linked list
->>> of kobjects.
->>>
->>> That simple cache reduced the time for link_mem_sections from 1 hour 27
->>> minutes down to 46 seconds.
->>
->> Nice!
->>
->>>
->>> I would like to propose we implement something along those lines also,
->>> but I am currently swamped.  I can probably get you a patch tomorrow
->>> afternoon that applies at the end of this set.
->>
->> Should this be done as a separate patch?  This patch set concentrates on
->> updates to the memory code with the node updates only being done due to the
->> memory changes.
->>
->> I think its a good idea to do the caching and have no problem adding on to
->> this patchset if no one else has any objections.
-> 
-> I am sorry.  I had meant to include you on the Cc: list.  I just posted a
-> set of patches (3 small patches) which implement the cache most recent bit
-> I aluded to above.  Search for a subject of "Speed up link_mem_sections
-> during boot" and you will find them.  I did add you to the Cc: list for
-> the next time I end up sending the set.
-> 
-> My next task is to implement a x86_64 SGI UV specific chunk of code
-> to memory_block_size_bytes().  Would you consider adding that to your
-> patch set?  I expect to have that either later today or early tomorrow.
-> 
+From: Jiang, Chao <chao.jiang@intel.com>
 
-No problem. I'm putting together a new patch set with updates from all of
-the comments now so go ahead and send it to me when you have it ready.
+support to overwrite board vendor/version/name information by editing
+/boot/cmdline file. Format example:
+	board_vendor="XXX company" board_version=DV3.0
 
--Nathan
+
+Signed-off-by: Jiang, Chao <chao.jiang@intel.com>
+[Added Documentation as requested]
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ Documentation/kernel-parameters.txt |   16 +++++++++++++++
+ drivers/firmware/dmi_scan.c         |   37 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 53 insertions(+), 0 deletions(-)
+
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 9139a2d..fb1b606 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -43,6 +43,7 @@ parameter is applicable:
+ 	AVR32	AVR32 architecture is enabled.
+ 	AX25	Appropriate AX.25 support is enabled.
+ 	BLACKFIN Blackfin architecture is enabled.
++	DMI	Desktop Management Interface is enabled
+ 	EDD	BIOS Enhanced Disk Drive Services (EDD) is enabled
+ 	EFI	EFI Partitioning (GPT) is enabled
+ 	EIDE	EIDE/ATAPI support is enabled.
+@@ -390,6 +391,21 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			Format: <io>,<irq>,<mode>
+ 			See header of drivers/net/hamradio/baycom_ser_hdx.c.
+ 
++	board_name=	[DMI]
++			Override reported name in firmware DMI data. Used
++			for testing and for checking board specific
++			workarounds
++
++	board_vendor=	[DMI]
++			Override reported vendor in firmware DMI data. Used
++			for testing and for checking board specific
++			workarounds
++
++	board_version=	[DMI]
++			Override reported version in firmware DMI data. Used
++			for testing and for checking board specific
++			workarounds
++
+ 	boot_delay=	Milliseconds to delay each printk during boot.
+ 			Values larger than 10 seconds (10000) are changed to
+ 			no delay (0).
+diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+index b3d22d6..5763618 100644
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -712,3 +712,40 @@ bool dmi_match(enum dmi_field f, const char *str)
+ 	return !strcmp(info, str);
+ }
+ EXPORT_SYMBOL_GPL(dmi_match);
++
++static int __init dmi_override(int slot, char *str)
++{
++	size_t len;
++	char *p;
++	if (!str)
++		return -EINVAL;
++	len = strlen(str) + 1;
++	p = dmi_alloc(len);
++	if (p != NULL)
++		strcpy(p, str);
++	else {
++		printk(KERN_ERR "dm_override: cannot allocate %Zu bytes.\n",
++					len);
++		return -ENOMEM;
++	}
++	dmi_ident[slot] = p;
++	return 0;
++}
++
++static int __init override_dmi_board_vendor(char *str)
++{
++	return dmi_override(DMI_BOARD_VENDOR, str);
++}
++early_param("board_vendor", override_dmi_board_vendor);
++
++static int __init override_dmi_board_version(char *str)
++{
++	return dmi_override(DMI_BOARD_VERSION, str);
++}
++early_param("board_version", override_dmi_board_version);
++
++static int __init override_dmi_board_name(char *str)
++{
++	return dmi_override(DMI_BOARD_NAME, str);
++}
++early_param("board_name", override_dmi_board_name);
+
