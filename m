@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab0I3Jgf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 05:36:35 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:45371 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752903Ab0I3Jge (ORCPT
+	id S1755291Ab0I3JiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 05:38:18 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:52482 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab0I3JiQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 05:36:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ikUvbII6SUzeZBdE3PVLhvDNTMEKk1gBEkUa5XX+0gKObHAKsSymLK9Bj0EKHhaYoQ
-         8Z/lRQaVXq5EX982l2VlpdoGIYOzglEHMxKGUvkkTP/OV0TlMgO6eL+Ycs1pJwoRjl0N
-         BVn9XsOuACBGcwC5tXZicekdromJoY4HM3k3M=
-MIME-Version: 1.0
-In-Reply-To: <20100930083806.GU13563@erda.amd.com>
-References: <1285549026-5008-6-git-send-email-ying.huang@intel.com>
-	<20100927100901.GC32222@erda.amd.com>
-	<AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
-	<20100927133816.GP13563@erda.amd.com>
-	<20100927152014.GY26290@redhat.com>
-	<1285634172.20791.92.camel@yhuang-dev>
-	<20100928153247.GL26290@redhat.com>
-	<AANLkTinmhTgVhPsmGLC8Z-9Kx3xRovWy=9+R_5B4u6Cx@mail.gmail.com>
-	<20100930043628.GE26290@redhat.com>
-	<1285822630.6944.69.camel@yhuang-dev>
-	<20100930083806.GU13563@erda.amd.com>
-Date: Thu, 30 Sep 2010 17:36:33 +0800
-Message-ID: <AANLkTimWwO=6uOxxXdSgOU2vWY8a-XeW1b+GRyua2Brw@mail.gmail.com>
-Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
- with unknown NMI
-From: huang ying <huang.ying.caritas@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 30 Sep 2010 05:38:16 -0400
+To: Valerie Aurora <vaurora@redhat.com>
+CC: viro@zeniv.linux.org.uk, miklos@szeredi.hu, hch@infradead.org,
+        agruen@suse.de, npiggin@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, vaurora@redhat.com
+In-reply-to: <1284675145-4391-24-git-send-email-vaurora@redhat.com> (message
+	from Valerie Aurora on Thu, 16 Sep 2010 15:12:14 -0700)
+Subject: Re: [PATCH 23/34] union-mount: Prevent topmost file system from being mounted elsewhere
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-24-git-send-email-vaurora@redhat.com>
+Message-Id: <E1P1FaG-0001wr-Nn@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 30 Sep 2010 11:37:48 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 4:38 PM, Robert Richter <robert.richter@amd.com> wrote:
-> On 30.09.10 00:57:10, Huang Ying wrote:
->> Yes. Both MCE and perf are CPU features. I think they can be thought as
->> optional architectural features. I think it is good to put similar
->> features into arch/x86/kernel/cpu instead of traps.c. But if necessary,
->> we can put direct call in traps.c instead of notifier block.
->
-> As you see it seems not being obviously, what goes here and what goes
-> there. The approach is wrong. If we want to handle some hardware
-> feature, we should simply register a handler for this. Implemetations
-> for unhandled or unrecovered interrupts should be in traps.c. It's
-> that simple.
+On Thu, 16 Sep 2010, Valerie Aurora wrote:
+> The device underlying the topmost read-write layer of a file system
+> cannot be mounted anywhere else on the system.  We keep a pointer to
+> the union stack in the dentry of the topmost directory, so that dentry
+> can't be part of a different mount, since dentries are shared between
+> different mounts of the same device.
+> 
+> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> ---
+>  fs/namespace.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/namespace.c b/fs/namespace.c
+> index 61256e6..26efaf3 100644
+> --- a/fs/namespace.c
+> +++ b/fs/namespace.c
+> @@ -1998,6 +1998,11 @@ int do_add_mount(struct vfsmount *newmnt, struct path *path,
+>  	if (S_ISLNK(newmnt->mnt_root->d_inode->i_mode))
+>  		goto unlock;
+>  
+> +	/* Top layers of union mounts can't be mounted elsewhere */
+> +	err = -EBUSY;
+> +	if (newmnt->mnt_sb->s_union_lower_mnts)
+> +		goto unlock;
+> +
 
-That is possible. I just don't like it. We should keep things as
-"straightforward" as possible. Direct call is more straightfoward than
-indirect call like notifier chain.
+This is insufficient: the super block may be mounted elsewhere later.
+And no, preventing bind mounts is not enough.
 
-Best Regards,
-Huang Ying
+BTW, what about CLONE_NEWNS?  I think it's a rather big limitation if
+that doesn't work...
+
+Thanks,
+Miklos
