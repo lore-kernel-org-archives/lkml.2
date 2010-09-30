@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab0I3SQb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:16:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18553 "EHLO mx1.redhat.com"
+	id S932344Ab0I3SQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:16:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50066 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932212Ab0I3SQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:16:28 -0400
+	id S932212Ab0I3SQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 14:16:32 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 12/17] autofs4: cleanup inode operations
+Subject: [PATCH 13/17] autofs4: cleanup dentry operations
 To: viro@ftp.linux.org.uk, jmoyer@redhat.com
 Cc: linux-fs@vger.kernel.org, autofs@linux.kernel.org,
         linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
         linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
         Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>
-Date: Thu, 30 Sep 2010 19:15:57 +0100
-Message-ID: <20100930181557.30939.78979.stgit@warthog.procyon.org.uk>
+Date: Thu, 30 Sep 2010 19:16:02 +0100
+Message-ID: <20100930181602.30939.21192.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 References: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -31,71 +31,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Kent <raven@themaw.net>
 
-Since the use of ->follow_link() has been eliminated there is no
-need to separate the indirect and direct inode operations.
+There are now two distinct dentry operations uses. One for dentrys
+that trigger mounts and one for dentrys that do not.
+
+Rationalize the use of these dentry operations and rename them to
+reflect their function.
 
 Signed-off-by: Ian Kent <raven@themaw.net>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/autofs4/autofs_i.h |    3 ---
- fs/autofs4/inode.c    |    4 +---
- fs/autofs4/root.c     |   15 ---------------
- 3 files changed, 1 insertions(+), 21 deletions(-)
+ fs/autofs4/autofs_i.h |    7 ++-----
+ fs/autofs4/inode.c    |   12 ++++--------
+ fs/autofs4/root.c     |   36 ++++++++++++++++++++----------------
+ 3 files changed, 26 insertions(+), 29 deletions(-)
 
 diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index cb86036..8710878 100644
+index 8710878..8b1c0bc 100644
 --- a/fs/autofs4/autofs_i.h
 +++ b/fs/autofs4/autofs_i.h
-@@ -201,9 +201,6 @@ void autofs_dev_ioctl_exit(void);
- 
- extern const struct inode_operations autofs4_symlink_inode_operations;
+@@ -203,11 +203,8 @@ extern const struct inode_operations autofs4_symlink_inode_operations;
  extern const struct inode_operations autofs4_dir_inode_operations;
--extern const struct inode_operations autofs4_root_inode_operations;
--extern const struct inode_operations autofs4_indirect_root_inode_operations;
--extern const struct inode_operations autofs4_direct_root_inode_operations;
  extern const struct file_operations autofs4_dir_operations;
  extern const struct file_operations autofs4_root_operations;
+-
+-/* Operations methods */
+-
+-struct vfsmount *autofs4_d_automount(struct path *);
+-int autofs4_d_manage(struct path *, bool);
++extern const struct dentry_operations autofs4_dentry_operations;
++extern const struct dentry_operations autofs4_mount_dentry_operations;
+ 
+ /* VFS automount flags management functions */
  
 diff --git a/fs/autofs4/inode.c b/fs/autofs4/inode.c
-index c6e75b3..80cdffd 100644
+index 80cdffd..8eaa723 100644
 --- a/fs/autofs4/inode.c
 +++ b/fs/autofs4/inode.c
-@@ -326,9 +326,7 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+@@ -251,12 +251,6 @@ static struct autofs_info *autofs4_mkroot(struct autofs_sb_info *sbi)
+ 	return ino;
+ }
+ 
+-static const struct dentry_operations autofs4_sb_dentry_operations = {
+-	.d_automount	= autofs4_d_automount,
+-	.d_manage	= autofs4_d_manage,
+-	.d_release      = autofs4_dentry_release,
+-};
+-
+ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ {
+ 	struct inode * root_inode;
+@@ -311,7 +305,7 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 		goto fail_iput;
+ 	pipe = NULL;
+ 
+-	root->d_op = &autofs4_sb_dentry_operations;
++	root->d_op = &autofs4_dentry_operations;
+ 	root->d_fsdata = ino;
+ 
+ 	/* Can this call block? */
+@@ -322,8 +316,10 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 		goto fail_dput;
+ 	}
+ 
+-	if (autofs_type_trigger(sbi->type))
++	if (autofs_type_trigger(sbi->type)) {
++		root->d_op = &autofs4_mount_dentry_operations;
  		__managed_dentry_set_managed(root);
++	}
  
  	root_inode->i_fop = &autofs4_root_operations;
--	root_inode->i_op = autofs_type_trigger(sbi->type) ?
--			&autofs4_direct_root_inode_operations :
--			&autofs4_indirect_root_inode_operations;
-+	root_inode->i_op = &autofs4_dir_inode_operations;
- 
- 	/* Couldn't this be tested earlier? */
- 	if (sbi->max_proto < AUTOFS_MIN_PROTO_VERSION ||
+ 	root_inode->i_op = &autofs4_dir_inode_operations;
 diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 77257dd..2856a0c 100644
+index 2856a0c..cb168ba 100644
 --- a/fs/autofs4/root.c
 +++ b/fs/autofs4/root.c
-@@ -52,21 +52,6 @@ const struct file_operations autofs4_dir_operations = {
- 	.llseek		= dcache_dir_lseek,
+@@ -31,6 +31,8 @@ static long autofs4_root_ioctl(struct file *,unsigned int,unsigned long);
+ static long autofs4_root_compat_ioctl(struct file *,unsigned int,unsigned long);
+ static int autofs4_dir_open(struct inode *inode, struct file *file);
+ static struct dentry *autofs4_lookup(struct inode *,struct dentry *, struct nameidata *);
++static struct vfsmount *autofs4_d_automount(struct path *);
++static int autofs4_d_manage(struct path *, bool);
+ 
+ const struct file_operations autofs4_root_operations = {
+ 	.open		= dcache_dir_open,
+@@ -60,6 +62,18 @@ const struct inode_operations autofs4_dir_inode_operations = {
+ 	.rmdir		= autofs4_dir_rmdir,
  };
  
--const struct inode_operations autofs4_indirect_root_inode_operations = {
--	.lookup		= autofs4_lookup,
--	.unlink		= autofs4_dir_unlink,
--	.symlink	= autofs4_dir_symlink,
--	.mkdir		= autofs4_dir_mkdir,
--	.rmdir		= autofs4_dir_rmdir,
++/* For dentries that don't initiate mounting */
++const struct dentry_operations autofs4_dentry_operations = {
++	.d_release	= autofs4_dentry_release,
++};
++
++/* For dentries that do initiate mounting */
++const struct dentry_operations autofs4_mount_dentry_operations = {
++	.d_automount	= autofs4_d_automount,
++	.d_manage	= autofs4_d_manage,
++	.d_release	= autofs4_dentry_release,
++};
++
+ static void autofs4_add_active(struct dentry *dentry)
+ {
+ 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
+@@ -151,18 +165,6 @@ void autofs4_dentry_release(struct dentry *de)
+ 	}
+ }
+ 
+-/* For dentries of directories in the root dir */
+-static const struct dentry_operations autofs4_root_dentry_operations = {
+-	.d_release	= autofs4_dentry_release,
 -};
 -
--const struct inode_operations autofs4_direct_root_inode_operations = {
--	.lookup		= autofs4_lookup,
--	.unlink		= autofs4_dir_unlink,
--	.mkdir		= autofs4_dir_mkdir,
--	.rmdir		= autofs4_dir_rmdir,
+-/* For other dentries */
+-static const struct dentry_operations autofs4_dentry_operations = {
+-	.d_automount	= autofs4_d_automount,
+-	.d_manage	= autofs4_d_manage,
+-	.d_release	= autofs4_dentry_release,
 -};
 -
- const struct inode_operations autofs4_dir_inode_operations = {
- 	.lookup		= autofs4_lookup,
- 	.unlink		= autofs4_dir_unlink,
+ static struct dentry *autofs4_lookup_active(struct dentry *dentry)
+ {
+ 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
+@@ -330,7 +332,7 @@ static struct dentry *autofs4_mountpoint_changed(struct path *path)
+ 	return path->dentry;
+ }
+ 
+-struct vfsmount *autofs4_d_automount(struct path *path)
++static struct vfsmount *autofs4_d_automount(struct path *path)
+ {
+ 	struct dentry *dentry = path->dentry;
+ 	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
+@@ -499,7 +501,7 @@ static struct dentry *autofs4_lookup(struct inode *dir, struct dentry *dentry, s
+ 	if (active)
+ 		return active;
+ 	else {
+-		dentry->d_op = &autofs4_root_dentry_operations;
++		dentry->d_op = &autofs4_dentry_operations;
+ 
+ 		/*
+ 		 * A dentry that is not within the root can never trigger
+@@ -512,7 +514,7 @@ static struct dentry *autofs4_lookup(struct inode *dir, struct dentry *dentry, s
+ 
+ 		/* Mark entries in the root as mount triggers */
+ 		if (autofs_type_indirect(sbi->type) && IS_ROOT(dentry->d_parent)) {
+-			dentry->d_op = &autofs4_dentry_operations;
++			dentry->d_op = &autofs4_mount_dentry_operations;
+ 			__managed_dentry_set_managed(dentry);
+ 		}
+ 
+@@ -572,6 +574,8 @@ static int autofs4_dir_symlink(struct inode *dir,
+ 	}
+ 	d_add(dentry, inode);
+ 
++	dentry->d_op = &autofs4_dentry_operations;
++
+ 	dentry->d_fsdata = ino;
+ 	ino->dentry = dget(dentry);
+ 	atomic_inc(&ino->count);
+@@ -786,7 +790,7 @@ static inline int autofs4_ask_umount(struct vfsmount *mnt, int __user *p)
+ int is_autofs4_dentry(struct dentry *dentry)
+ {
+ 	return dentry && dentry->d_inode &&
+-		(dentry->d_op == &autofs4_root_dentry_operations ||
++		(dentry->d_op == &autofs4_mount_dentry_operations ||
+ 		 dentry->d_op == &autofs4_dentry_operations) &&
+ 		dentry->d_fsdata != NULL;
+ }
 
