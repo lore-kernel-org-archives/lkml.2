@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab0I3Swx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:52:53 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35157 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751317Ab0I3Sww (ORCPT
+	id S1754736Ab0I3Szd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:55:33 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47883 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752591Ab0I3Szc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:52:52 -0400
+	Thu, 30 Sep 2010 14:55:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=kCbFFX2YSp3LLePG/elVAL5StIlnP2vd/6nGbFJgXRoaY21Cgegs4ddK2/kjojTgIp
-         nHRnnpzKkPwEVGyb27OKw4dc3ec+W/tBGrXQzDXfhBEYds++3C5wC9wKCWICDNbXVxl/
-         YUY7/HEPTWQnU1EopB/K+ha9HG88WODkItM6s=
-Subject: Re: Packet time delays on multi-core systems
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <20100930181556.GC4094@beaver.vrungel.ru>
-References: <20100929191851.GC86786@beaver.vrungel.ru>
-	 <1285796721.5211.156.camel@edumazet-laptop>
-	 <20100930062419.GD86786@beaver.vrungel.ru>
-	 <1285828432.5211.812.camel@edumazet-laptop>
-	 <20100930122321.GA1575@beaver.vrungel.ru>
-	 <1285850669.2615.426.camel@edumazet-laptop>
-	 <20100930173732.GB4094@beaver.vrungel.ru>
-	 <1285869782.2615.920.camel@edumazet-laptop>
-	 <20100930181556.GC4094@beaver.vrungel.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 20:52:45 +0200
-Message-ID: <1285872765.2615.1008.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        h=from:to:subject:date:message-id:x-mailer;
+        b=QwL0E1FUuGm6hsUipoWdAv+zSFgvN1j+ti/hAjNEWZFwUOK7ZqKgTJifvO/ZtW7GFp
+         5h+3L8jAFAA3UEusCUeE0Zx6Tobw4lzn5fwCqBCioG2fLkQyx0mb4tGjryp8dy6x9jEp
+         ivwCj4frD7WqSS2WO0R9hONLeNyjV68IyQ8W8=
+From: Maurice Dawson <mauricedawson2699@gmail.com>
+To: gregkh@suse.de, arun.thomas@gmail.com, tsanghan@gmail.com,
+        u.kleine-koenig@pengutronix.de, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 14/14] staging: comedi: file: Removed whitespaces before quoted newlines
+Date: Thu, 30 Sep 2010 19:55:18 +0100
+Message-Id: <1285872918-2990-1-git-send-email-mauricedawson2699@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 30 septembre 2010 à 22:15 +0400, Alexey Vlasov a écrit :
-> On Thu, Sep 30, 2010 at 08:03:02PM +0200, Eric Dumazet wrote:
-> > >  
-> > > The last test were made already concerning such rx queue binding:
-> > > # cat /proc/irq/60/smp_affinity
-> > > 001000
-> > > # cat /proc/irq/61/smp_affinity
-> > > 010000
-> > > # cat /proc/irq/62/smp_affinity
-> > > 080000
-> > > # cat /proc/irq/63/smp_affinity
-> > > 800000
-> > > 
-> > 
-> > Why 60, 61, 62, 63 ? This should be 753, 754, 755, 756
-> 
-> I've got several similar servers, the interrups 60-63 are on
-> that one that I can test now, so this isn't a mistake.
-> 
+Unnecessary whitespaces before quoted newlines
 
-If you have a burst of 'LOG' matches, it can really slow down the whole
-thing.
+Signed-off-by: Maurice Dawson <mauricedawson2699@gmail.com>
+---
+ drivers/staging/comedi/drivers/adl_pci9118.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-You should add a limiter (eg: no more than 5 messages per second)
-
-http://netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-7.html
-
-	This module is most useful after a limit match, so you don't
-	flood your logs.
-
-
+diff --git a/drivers/staging/comedi/drivers/adl_pci9118.c b/drivers/staging/comedi/drivers/adl_pci9118.c
+index b0e39cb..7600431 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9118.c
++++ b/drivers/staging/comedi/drivers/adl_pci9118.c
+@@ -1235,7 +1235,7 @@ static int Compute_and_setup_dma(struct comedi_device *dev)
+ 							 * align to 32bit down
+ 							 */
+ 	}
+-	DPRINTK("2 dmalen0=%d dmalen1=%d \n", dmalen0, dmalen1);
++	DPRINTK("2 dmalen0=%d dmalen1=%d\n", dmalen0, dmalen1);
+ 
+ 	/* we want wake up every scan? */
+ 	if (devpriv->ai_flags & TRIG_WAKE_EOS) {
+@@ -1295,7 +1295,7 @@ static int Compute_and_setup_dma(struct comedi_device *dev)
+ 		}
+ 	}
+ 
+-	DPRINTK("3 dmalen0=%d dmalen1=%d \n", dmalen0, dmalen1);
++	DPRINTK("3 dmalen0=%d dmalen1=%d\n", dmalen0, dmalen1);
+ 	/* transfer without TRIG_WAKE_EOS */
+ 	if (!(devpriv->ai_flags & TRIG_WAKE_EOS)) {
+ 		/* if it's possible then allign DMA buffers to length of scan */
+@@ -1323,13 +1323,13 @@ static int Compute_and_setup_dma(struct comedi_device *dev)
+ 			    ((devpriv->ai_n_realscanlen << 1) *
+ 			     devpriv->ai_scans)) {
+ 				DPRINTK
+-				    ("3.0 ai_n_realscanlen=%d ai_scans=%d \n",
++				    ("3.0 ai_n_realscanlen=%d ai_scans=%d\n",
+ 				     devpriv->ai_n_realscanlen,
+ 				     devpriv->ai_scans);
+ 				dmalen0 =
+ 				    (devpriv->ai_n_realscanlen << 1) *
+ 				    devpriv->ai_scans;
+-				DPRINTK("3.1 dmalen0=%d dmalen1=%d \n", dmalen0,
++				DPRINTK("3.1 dmalen0=%d dmalen1=%d\n", dmalen0,
+ 					dmalen1);
+ 				dmalen0 &= ~3L;
+ 			} else {	/*
+@@ -1342,21 +1342,21 @@ static int Compute_and_setup_dma(struct comedi_device *dev)
+ 					dmalen1 =
+ 					    (devpriv->ai_n_realscanlen << 1) *
+ 					    devpriv->ai_scans - dmalen0;
+-				DPRINTK("3.2 dmalen0=%d dmalen1=%d \n", dmalen0,
++				DPRINTK("3.2 dmalen0=%d dmalen1=%d\n", dmalen0,
+ 					dmalen1);
+ 				dmalen1 &= ~3L;
+ 			}
+ 		}
+ 	}
+ 
+-	DPRINTK("4 dmalen0=%d dmalen1=%d \n", dmalen0, dmalen1);
++	DPRINTK("4 dmalen0=%d dmalen1=%d\n", dmalen0, dmalen1);
+ 
+ 	/* these DMA buffer size will be used */
+ 	devpriv->dma_actbuf = 0;
+ 	devpriv->dmabuf_use_size[0] = dmalen0;
+ 	devpriv->dmabuf_use_size[1] = dmalen1;
+ 
+-	DPRINTK("5 dmalen0=%d dmalen1=%d \n", dmalen0, dmalen1);
++	DPRINTK("5 dmalen0=%d dmalen1=%d\n", dmalen0, dmalen1);
+ #if 0
+ 	if (devpriv->ai_n_scanlen < this_board->half_fifo_size) {
+ 		devpriv->dmabuf_panic_size[0] =
+-- 
+1.7.0.4
 
