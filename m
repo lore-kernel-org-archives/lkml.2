@@ -1,53 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab0I3F3b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 01:29:31 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:41717 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753481Ab0I3F3a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 01:29:30 -0400
-Date: Thu, 30 Sep 2010 07:29:27 +0200
-From: Florian Mickler <florian@mickler.org>
-To: tmhikaru@gmail.com
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>
-Subject: Re: Linux 2.6.35.6
-Message-ID: <20100930072927.77f0f79b@schatten.dmk.lab>
-In-Reply-To: <20100930013305.GA23569@roll>
-References: <20100927003608.GA20395@kroah.com>
-	<20100927163208.GA4892@roll>
-	<20100927215135.3d11d587@schatten.dmk.lab>
-	<20100927233956.GA15705@roll>
-	<20100928083505.0a808ffd@schatten.dmk.lab>
-	<20100928190358.GA24303@roll>
-	<20100929092924.2090f19e@schatten.dmk.lab>
-	<20100929110247.GA2032@roll>
-	<20100929135248.09cd7a84@schatten.dmk.lab>
-	<20100930013305.GA23569@roll>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	id S1754068Ab0I3Fgc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 01:36:32 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33303 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753727Ab0I3Fga (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 01:36:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Pn2n72w3rQLk/1BOO8gqfjJaQ/8C99pRG0ZL2wbIomUbcr3ieq7dcGm2uwQo1o1y+r
+         /aOxgU895G7EQaJB0yALOlUllD+avT5dkO6pAGl2qSgEdv8D28Akg8C58i8ViNkMojIz
+         87HY4Q9G5uTBFVGTcXE6b1JizOpZR3FB3N43w=
+Subject: Re: [PATCH 15/17] fs: inode per-cpu last_ino allocator
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100929215312.5fcb6976.akpm@linux-foundation.org>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	 <1285762729-17928-16-git-send-email-david@fromorbit.com>
+	 <20100929215312.5fcb6976.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Sep 2010 07:36:22 +0200
+Message-ID: <1285824982.5211.675.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010 21:33:05 -0400
-tmhikaru@gmail.com wrote:
-
-> On Wed, Sep 29, 2010 at 01:52:48PM +0200, Florian Mickler wrote:
-> > In all cases, you can simply do the bisection based on the 'load
-> > average' criteria and then later check if the changeset that you've
-> > found that way also influences the kernel compile times. 
-> Works for me.
+Le mercredi 29 septembre 2010 à 21:53 -0700, Andrew Morton a écrit :
+> On Wed, 29 Sep 2010 22:18:47 +1000 Dave Chinner <david@fromorbit.com> wrote:
 > 
-> > Out of curiosity, what region are you circling in?
-> git log says I'm at
+> > From: Eric Dumazet <dada1@cosmosbay.com>
+> > 
 
-git-log is not that expressive here, as it only shows the history of
-current HEAD (the currently checked out version). You can post the
-output of 'git bisect log'. 
-If you wanna know how the region looks like you can type 'git bisect
-visualize'. 
+Please note my new email address, thanks.
 
-Regards,
-Flo
+> > last_ino was converted to an atomic variable to allow the inode_lock
+> > to go away. However, contended atomics do not scale on large
+> > machines, and new_inode() triggers excessive contention in such
+> > situations.
+> > 
+> > Solve this problem by providing to each cpu a per_cpu variable,
+> > feeded by the shared last_ino, but once every 1024 allocations.
+> > This reduces contention on the shared last_ino, and give same
+> > spreading ino numbers than before (i.e. same wraparound after 2^32
+> > allocations).
+> > 
+> > [npiggin: some extra commenting and use of defines]
+> > 
+> > ...
+> >  
+> > +#ifdef CONFIG_SMP
+> > +#define LAST_INO_BATCH 1024
+> > +/*
+> > + * Each cpu owns a range of LAST_INO_BATCH numbers.
+> > + * 'shared_last_ino' is dirtied only once out of LAST_INO_BATCH allocations,
+> > + * to renew the exhausted range.
+> > + *
+> > + * This does not significantly increase overflow rate because every CPU can
+> > + * consume at most LAST_INO_BATCH-1 unused inode numbers. So there is
+> > + * NR_CPUS*(LAST_INO_BATCH-1) wastage. At 4096 and 1024, this is ~0.1% of the
+> > + * 2^32 range, and is a worst-case. Even a 50% wastage would only increase
+> > + * overflow rate by 2x, which does not seem too significant.
+> > + *
+> > + * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
+> > + * error if st_ino won't fit in target struct field. Use 32bit counter
+> > + * here to attempt to avoid that.
+> > + */
+> > +static DEFINE_PER_CPU(unsigned int, last_ino);
+> > +static atomic_t shared_last_ino;
+> > +
+> > +static unsigned int last_ino_get(void)
+> > +{
+> > +	unsigned int *p = &get_cpu_var(last_ino);
+> > +	unsigned int res = *p;
+> > +
+> > +	if (unlikely((res & (LAST_INO_BATCH-1)) == 0))
+> > +		res = (unsigned int)atomic_add_return(LAST_INO_BATCH,
+> > +				&shared_last_ino) - LAST_INO_BATCH;
+> 
+> May as well remove the "- LAST_INO_BATCH" there, I think.  It'll skew
+> the results a tad at startup, but why does that matter?
+
+
+Because on x86, atomic_add_return(val, ptr) uses xadd() + val
+
+So, using "atomic_add_return(val, ptr) - val" removes one instruction ;)
+
+> 
+> > +	*p = ++res;
+> > +	put_cpu_var(last_ino);
+> > +	return res;
+> > +}
+> > +#else
+> > +static unsigned int last_ino_get(void)
+> > +{
+> > +	static unsigned int last_ino;
+> > +
+> > +	return ++last_ino;
+> > +}
+> 
+> This is racy with CONFIG_PREEMPT on some architectures, I suspect.  I'd
+> suggest conversion to atomic_t with, of course, an explanatory comment ;)
+> 
+
+Thanks, I'll rework the patch !
+
+I am pretty happy to see some interest on this patch serie,
+eventually :)
+
+
+
