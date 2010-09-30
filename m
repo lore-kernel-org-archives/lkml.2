@@ -1,78 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab0I3GZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 02:25:10 -0400
-Received: from kroah.org ([198.145.64.141]:53262 "EHLO coco.kroah.org"
+	id S1754600Ab0I3GYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 02:24:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22419 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754086Ab0I3GZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 02:25:07 -0400
-Date: Wed, 29 Sep 2010 23:20:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: Sam Ravnborg <sam@ravnborg.org>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 01/22] Staging: cx25821: Makefile:cleaned up
-	makefile cflag lines
-Message-ID: <20100930062027.GC8707@kroah.com>
-References: <1285370890-8984-1-git-send-email-tdent48227@gmail.com> <20100925102801.GA3450@merkur.ravnborg.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100925102801.GA3450@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1754426Ab0I3GYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 02:24:49 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kbuild@vger.kernel.org
+Cc: Amerigo Wang <amwang@redhat.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/4] Some bug fixes for namespace.pl
+Date: Thu, 30 Sep 2010 14:28:57 +0800
+Message-Id: <1285828138-5873-3-git-send-email-amwang@redhat.com>
+In-Reply-To: <1285828138-5873-1-git-send-email-amwang@redhat.com>
+References: <1285828138-5873-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Sep 25, 2010 at 12:28:01PM +0200, Sam Ravnborg wrote:
-> On Fri, Sep 24, 2010 at 07:27:49PM -0400, Tracey Dent wrote:
-> > changed to use proper ccflags-y option
-> > 
-> > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
-> > ---
-> >  drivers/staging/cx25821/Makefile |    8 ++++----
-> >  1 files changed, 4 insertions(+), 4 deletions(-)
-> > 
-> > diff --git a/drivers/staging/cx25821/Makefile b/drivers/staging/cx25821/Makefile
-> > index d0eb16e..2f1c73e 100644
-> > --- a/drivers/staging/cx25821/Makefile
-> > +++ b/drivers/staging/cx25821/Makefile
-> > @@ -7,7 +7,7 @@ cx25821-objs   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
-> >  obj-$(CONFIG_VIDEO_CX25821) += cx25821.o
-> >  obj-$(CONFIG_VIDEO_CX25821_ALSA) += cx25821-alsa.o
-> >  
-> > -EXTRA_CFLAGS += -Idrivers/media/video
-> > -EXTRA_CFLAGS += -Idrivers/media/common/tuners
-> > -EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
-> > -EXTRA_CFLAGS += -Idrivers/media/dvb/frontends
-> > +ccflags-y := -Idrivers/media/video
-> > +ccflags-y := -Idrivers/media/common/tuners
-> > +ccflags-y := -Idrivers/media/dvb/dvb-core
-> > +ccflags-y := -Idrivers/media/dvb/frontends
-> 
-> This is wrong.
-> 
-> First you assign "ccflags-y" the value -Idrivers/media/video
-> And in next line you assign it a new value - loosing the old value.
-> 
-> It should lok like this:
-> > +ccflags-y := -Idrivers/media/video
-> > +ccflags-y += -Idrivers/media/common/tuners
-> > +ccflags-y += -Idrivers/media/dvb/dvb-core
-> > +ccflags-y += -Idrivers/media/dvb/frontends
-> 
-> In this way you append to the variable.
-> 
-> You said in another mil that it builds.
-> This tells me that either some of the assignments are not needes - or you just loose
-> something that you are not aware of.
-> 
-> Please go through all your patches and fix it up - I saw the above
-> bug in the two patches I looked at.
+1. Teach namespace.pl to understand "V" and "v"
+2. cond_syscalls are moved into kernel/sys_ni.c
 
-I agree, these need to be fixed up, care to redo the series and send
-them again?
+Signed-off-by: Amerigo Wang <amwang@redhat.com>
+---
+ scripts/namespace.pl |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
 
-thanks,
+diff --git a/scripts/namespace.pl b/scripts/namespace.pl
+index c8d0922..bccf610 100755
+--- a/scripts/namespace.pl
++++ b/scripts/namespace.pl
+@@ -266,6 +266,7 @@ sub do_nm
+ 		# T global label/procedure
+ 		# U external reference
+ 		# W weak external reference to text that has been resolved
++		# V similar to W, but the value of the weak symbol becomes zero with no error.
+ 		# a assembler equate
+ 		# b static variable, uninitialised
+ 		# d static variable, initialised
+@@ -274,8 +275,9 @@ sub do_nm
+ 		# s static variable, uninitialised, small bss
+ 		# t static label/procedures
+ 		# w weak external reference to text that has not been resolved
++		# v similar to w
+ 		# ? undefined type, used a lot by modules
+-		if ($type !~ /^[ABCDGRSTUWabdgrstw?]$/) {
++		if ($type !~ /^[ABCDGRSTUWVabdgrstwv?]$/) {
+ 			printf STDERR "nm output for $fullname contains unknown type '$_'\n";
+ 		}
+ 		elsif ($name =~ /\./) {
+@@ -286,7 +288,7 @@ sub do_nm
+ 			# binutils keeps changing the type for exported symbols, force it to R
+ 			$type = 'R' if ($name =~ /^__ksymtab/ || $name =~ /^__kstrtab/);
+ 			$name =~ s/_R[a-f0-9]{8}$//;	# module versions adds this
+-			if ($type =~ /[ABCDGRSTW]/ &&
++			if ($type =~ /[ABCDGRSTWV]/ &&
+ 				$name ne 'init_module' &&
+ 				$name ne 'cleanup_module' &&
+ 				$name ne 'Using_Versions' &&
+@@ -353,11 +355,12 @@ sub list_multiply_defined
+ 	foreach my $name (keys(%def)) {
+ 		if ($#{$def{$name}} > 0) {
+ 			# Special case for cond_syscall
+-			if ($#{$def{$name}} == 1 && $name =~ /^sys_/ &&
+-			    ($def{$name}[0] eq "kernel/sys.o" ||
+-			     $def{$name}[1] eq "kernel/sys.o")) {
+-				&drop_def("kernel/sys.o", $name);
+-				next;
++			if ($#{$def{$name}} == 1 && $name =~ /^sys_/) {
++				if($def{$name}[0] eq "kernel/sys_ni.o" ||
++				   $def{$name}[1] eq "kernel/sys_ni.o") {
++					&drop_def("kernel/sys_ni.o", $name);
++					next;
++				}
+ 			}
+ 			# Special case for i386 entry code
+ 			if ($#{$def{$name}} == 1 && $name =~ /^__kernel_/ &&
+-- 
+1.6.5.2
 
-greg k-h
