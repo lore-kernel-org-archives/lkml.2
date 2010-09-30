@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab0I3WrG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 18:47:06 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:64649 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755060Ab0I3WrF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 18:47:05 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/YsGGiRIntHxn6lAtY2GV4
-Date: Thu, 30 Sep 2010 15:46:59 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Couple of omap fixes
-Message-ID: <20100930224659.GP3117@atomide.com>
+	id S1756885Ab0I3W4w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 18:56:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42106 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab0I3W4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 18:56:52 -0400
+Message-ID: <4CA515AA.7060400@zytor.com>
+Date: Thu, 30 Sep 2010 15:56:42 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Avinash Kurup <kurup.avinash@gmail.com>
+Subject: Re: [PATCH] Skip looking for ioapic overrides when ioapics are not
+ present
+References: <AANLkTilT0cPU8y2m4ZeatfvtflAagSyQEP9JubqZ6TeW@mail.gmail.com> <m17hmcke5m.fsf@fess.ebiederm.org>
+In-Reply-To: <m17hmcke5m.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 06/05/2010 08:56 PM, Eric W. Biederman wrote:
+> 
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 33f3563..226a6d1 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -4066,6 +4066,9 @@ int acpi_get_override_irq(u32 gsi, int *trigger, int *polarity)
+>  {
+>  	int ioapic, pin, idx;
+>  
+> +	if (acpi_irq_model != ACPI_IRQ_MODEL_IOAPIC)
+> +		return -1;
+> +
+>  	if (skip_ioapic_setup)
+>  		return -1;
+>  
 
-Please pull two omap fixes from:
+I was just poked about this patch... it doesn't build "make allnoconfig"
+on x86-64.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+This is also a bugzilla ticket now:
+https://bugzilla.kernel.org/show_bug.cgi?id=17772
 
-Regards,
-
-Tony
-
-
-The following changes since commit 899611ee7d373e5eeda08e9a8632684e1ebbbf00:
-
-  Linux 2.6.36-rc6 (2010-09-28 18:01:22 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
-
-Scott Ellis (1):
-      omap: McBSP: tx_irq_completion used in rx_irq_handler
-
-Tony Lindgren (1):
-      omap: Fix compile dependency to LEDS_CLASS
-
- arch/arm/plat-omap/Kconfig |    2 +-
- arch/arm/plat-omap/mcbsp.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+	-hpa
