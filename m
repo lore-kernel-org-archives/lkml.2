@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753894Ab0I3LWY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 07:22:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57328 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab0I3LWX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 07:22:23 -0400
-Subject: Re: [PATCH 5/5] perf: Declare hw_perf_{dis,en}able() in
- perf_event.h
-From: Peter Zijlstra <peterz@infradead.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1285583997-1262-6-git-send-email-namhyung@gmail.com>
-References: <1285583997-1262-1-git-send-email-namhyung@gmail.com>
-	 <1285583997-1262-6-git-send-email-namhyung@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 30 Sep 2010 13:22:12 +0200
-Message-ID: <1285845732.2144.13.camel@laptop>
+	id S1754395Ab0I3L0q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 07:26:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58842 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753469Ab0I3L0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 07:26:44 -0400
+Date: Thu, 30 Sep 2010 07:26:15 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: smfrench@gmail.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [PATCH] cifs: set backing_dev_info on new S_ISREG inodes
+Message-ID: <20100930072615.3eb07575@barsoom.rdu.redhat.com>
+In-Reply-To: <20100929231730.GA6921@infradead.org>
+References: <1285768194-29595-1-git-send-email-jlayton@redhat.com>
+	<20100929231730.GA6921@infradead.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 19:39 +0900, Namhyung Kim wrote:
-> Since they can be defined in arch-specific code declare them in
-> perf_event.h and remove following warnings from sparse:
-> 
->  kernel/perf_event.c:83:13: warning: symbol 'hw_perf_disable' was not declared. Should it be static?
->  kernel/perf_event.c:84:13: warning: symbol 'hw_perf_enable' was not declared. Should it be static?
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+On Wed, 29 Sep 2010 19:17:30 -0400
+Christoph Hellwig <hch@infradead.org> wrote:
 
-What tree is this against, those function no longer exist!?
+> On Wed, Sep 29, 2010 at 09:49:54AM -0400, Jeff Layton wrote:
+> > Testing on very recent kernel (2.6.36-rc6) made this warning pop:
+> > 
+> >     WARNING: at fs/fs-writeback.c:87 inode_to_bdi+0x65/0x70()
+> >     Hardware name:
+> >     Dirtiable inode bdi default != sb bdi cifs
+> > 
+> > ...the following patch fixes it and seems to be the obviously correct
+> > thing to do for cifs.
+> 
+> See my patch in the btrfs/default_backing_dev_info thread for the real
+> fix for the underlying issue.  But your patch won't harm either way.
+> 
+
+Thanks Christoph. I looked to NFS as a model for this, which does a
+very similar thing in nfs_fhget. It's probably reasonable for us to set
+this here in case there is further churn in the VFS for this sort of
+thing.
+
+-- 
+Jeff Layton <jlayton@redhat.com>
