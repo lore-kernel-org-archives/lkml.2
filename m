@@ -1,78 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752636Ab0I3BpS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 21:45:18 -0400
-Received: from kroah.org ([198.145.64.141]:35768 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752546Ab0I3BpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 21:45:16 -0400
-Date: Wed, 29 Sep 2010 18:37:00 -0700
-From: Greg KH <greg@kroah.com>
-To: David Cross <david.cross@cypress.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Staging: west bridge, cyasgadget fix for
-	usb_gadget_probe_driver
-Message-ID: <20100930013700.GA22193@kroah.com>
-References: <1285287600.17888.2.camel@odc-laptop>
+	id S1752586Ab0I3BwQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 21:52:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59836 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752218Ab0I3BwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 21:52:15 -0400
+Date: Wed, 29 Sep 2010 21:52:14 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/17] fs: Introduce per-bucket inode hash locks
+Message-ID: <20100930015213.GA1535@infradead.org>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+ <1285762729-17928-13-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285287600.17888.2.camel@odc-laptop>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1285762729-17928-13-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 05:20:00PM -0700, David Cross wrote:
-> This patch fixes the west bridge cyasgadget driver in order to allow for
-> compilation against the linux-next tree. This changes
-> usb_gadget_register_driver to usb_gadget_probe_driver and updates this
-> function based on the new function definition (bind call).
-> 
-> Signed-off-by: David Cross <david.cross@cypress.com>
-> 
-> --- linux-next-vanilla/drivers/staging/westbridge/astoria/gadget/cyasgadget.c	2010-09-20 23:40:58.000000000 -0700
-> +++ linux-next-incremen/drivers/staging/westbridge/astoria/gadget/cyasgadget.c	2010-09-23 16:54:32.000000000 -0700
-> @@ -1882,9 +1882,8 @@ static void cyas_ep0_start(
->   * disconnect is reported.  then a host may connect again, or
->   * the driver might get unbound.
->   */
-> -int usb_gadget_register_driver(
-> -				struct usb_gadget_driver *driver
-> -				)
-> +int usb_gadget_probe_driver(struct usb_gadget_driver *driver,
-> +		int (*bind)(struct usb_gadget *))
->  {
->  	cyasgadget *dev = cy_as_gadget_controller ;
->  	int		retval;
-> @@ -1898,7 +1897,7 @@ int usb_gadget_register_driver(
->  	* "must not be used in normal operation"
->  	*/
->  	if (!driver
-> -		|| !driver->bind
-> +		|| !bind
->  		|| !driver->unbind
->  		|| !driver->setup)
->  		return -EINVAL;
-> @@ -1919,7 +1918,7 @@ int usb_gadget_register_driver(
->  	cyas_usb_reset(dev) ; /* External usb */
->  	cyas_usb_reinit(dev) ; /* Internal */
->  
-> -	retval = driver->bind(&dev->gadget);
-> +	retval = bind(&dev->gadget);
->  	if (retval) {
->  		#ifndef WESTBRIDGE_NDEBUG
->  		cy_as_hal_print_message("%s bind to driver %s --> %d\n",
-> @@ -1938,7 +1937,7 @@ int usb_gadget_register_driver(
->  
->  	return 0;
->  }
-> -EXPORT_SYMBOL(usb_gadget_register_driver);
-> +EXPORT_SYMBOL(usb_gadget_probe_driver);
 
-That's a pretty generic name you are exporting, I'd recommend changing
-this very soon...
+Instead of doing the lock overkill on a still fundamentally global data
+structure what about replacing this with something better.  I know
+you've already done this with the XFS icache, and while the per-AG
+concept obviously can't be generic at least some of the lessons could be
+applied.
 
-thanks,
+then again how much testing did this get anyway given that you
+benchmark ran mostly XFS which doesn't hit this at all?
 
-greg k-h
+If it was up to me I'd dtop this (and the bl_list addition) from the
+series for now and wait for people who care about the scalability of
+the generic icache code to come up with a better data structure.
+
