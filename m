@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755748Ab0I3Jao (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 05:30:44 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33384 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755300Ab0I3J3Z (ORCPT
+	id S1755957Ab0I3JbP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 05:31:15 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:55969 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755753Ab0I3J3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 05:29:25 -0400
+	Thu, 30 Sep 2010 05:29:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=ph7OyEIopperCZUvhOvMuWR30twEkm5B97hG58ALZlY7a40W5ngmW/lm5C6JjBEb0d
-         2+1dQpaJmIEiV/E+4ts1sZYk7uHhFjsxgpck5VWSXxcRy9DGRCsFdSg5tdQBC3kXkkW5
-         LL+Jv7pTQU5P0ZJzIzf0kXrMXxNVWpf8U5O0I=
+        b=QqsiUV22rZXfj1kHHRJNjtglajp5XG0Oohqre1VzgQG6WGwNrWJTEhkYeKD2rY2zok
+         nQJZaE/+I48Rn2Fh5DrLw1H0nOV8+ypj5jM+5KDoC//1p7PuCDYWvhVM9GqZ5vzif8RD
+         3kuSuto43zF5B8lKJY3ze+wHlRzv2GCJvZoMQ=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, Chen Liqin <liqin.chen@sunplusct.com>,
-        Lennox Wu <lennox.wu@gmail.com>
-Subject: [PATCH RESEND v3 19/24] ptrace: cleanup arch_ptrace() on score
-Date: Thu, 30 Sep 2010 18:27:54 +0900
-Message-Id: <1285838880-4977-20-git-send-email-namhyung@gmail.com>
+        linux-kernel@vger.kernel.org, Ralf Baechle <ralf@linux-mips.org>
+Subject: [PATCH RESEND v3 15/24] ptrace: cleanup arch_ptrace() on MIPS
+Date: Thu, 30 Sep 2010 18:27:50 +0900
+Message-Id: <1285838880-4977-16-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1285838880-4977-1-git-send-email-namhyung@gmail.com>
 References: <1285838880-4977-1-git-send-email-namhyung@gmail.com>
@@ -28,33 +27,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove unnecessary castings.
+Use new 'addrp', 'datavp' and 'datalp' variables in order to remove
+unnecessary castings.
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Cc: Chen Liqin <liqin.chen@sunplusct.com>
-Cc: Lennox Wu <lennox.wu@gmail.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 ---
- arch/score/kernel/ptrace.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/mips/kernel/ptrace.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/score/kernel/ptrace.c b/arch/score/kernel/ptrace.c
-index 894dcbf..5583618 100644
---- a/arch/score/kernel/ptrace.c
-+++ b/arch/score/kernel/ptrace.c
-@@ -336,14 +336,14 @@ arch_ptrace(struct task_struct *child, long request,
- 		ret = copy_regset_to_user(child, &user_score_native_view,
- 						REGSET_GENERAL,
- 						0, sizeof(struct pt_regs),
--						(void __user *)datap);
-+						datap);
+diff --git a/arch/mips/kernel/ptrace.c b/arch/mips/kernel/ptrace.c
+index 26c29dd..2465ed1 100644
+--- a/arch/mips/kernel/ptrace.c
++++ b/arch/mips/kernel/ptrace.c
+@@ -259,6 +259,9 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		 unsigned long addr, unsigned long data)
+ {
+ 	int ret;
++	void __user *addrp = (void __user *) addr;
++	void __user *datavp = (void __user *) data;
++	unsigned long __user *datalp = (void __user *) data;
+ 
+ 	switch (request) {
+ 	/* when I and D space are separate, these will need to be fixed. */
+@@ -387,7 +390,7 @@ long arch_ptrace(struct task_struct *child, long request,
+ 			ret = -EIO;
+ 			goto out;
+ 		}
+-		ret = put_user(tmp, (unsigned long __user *) data);
++		ret = put_user(tmp, datalp);
+ 		break;
+ 	}
+ 
+@@ -479,34 +482,31 @@ long arch_ptrace(struct task_struct *child, long request,
+ 		}
+ 
+ 	case PTRACE_GETREGS:
+-		ret = ptrace_getregs(child, (__s64 __user *) data);
++		ret = ptrace_getregs(child, datavp);
  		break;
  
  	case PTRACE_SETREGS:
- 		ret = copy_regset_from_user(child, &user_score_native_view,
- 						REGSET_GENERAL,
- 						0, sizeof(struct pt_regs),
--						(const void __user *)datap);
-+						datap);
+-		ret = ptrace_setregs(child, (__s64 __user *) data);
++		ret = ptrace_setregs(child, datavp);
+ 		break;
+ 
+ 	case PTRACE_GETFPREGS:
+-		ret = ptrace_getfpregs(child, (__u32 __user *) data);
++		ret = ptrace_getfpregs(child, datavp);
+ 		break;
+ 
+ 	case PTRACE_SETFPREGS:
+-		ret = ptrace_setfpregs(child, (__u32 __user *) data);
++		ret = ptrace_setfpregs(child, datavp);
+ 		break;
+ 
+ 	case PTRACE_GET_THREAD_AREA:
+-		ret = put_user(task_thread_info(child)->tp_value,
+-				(unsigned long __user *) data);
++		ret = put_user(task_thread_info(child)->tp_value, datalp);
+ 		break;
+ 
+ 	case PTRACE_GET_WATCH_REGS:
+-		ret = ptrace_get_watch_regs(child,
+-					(struct pt_watch_regs __user *) addr);
++		ret = ptrace_get_watch_regs(child, addrp);
+ 		break;
+ 
+ 	case PTRACE_SET_WATCH_REGS:
+-		ret = ptrace_set_watch_regs(child,
+-					(struct pt_watch_regs __user *) addr);
++		ret = ptrace_set_watch_regs(child, addrp);
  		break;
  
  	default:
