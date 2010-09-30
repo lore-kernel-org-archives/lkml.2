@@ -1,287 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932377Ab0I3TKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 15:10:01 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:39154 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756241Ab0I3TJv (ORCPT
+	id S1756199Ab0I3TOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 15:14:48 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:23533 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755002Ab0I3TOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 15:09:51 -0400
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: jmorris@namei.org, joe@perches.com, christophe-h.ricard@st.com
-Subject: [PATCH 3/3] TPM: Add missing break and neatening
-Date: Thu, 30 Sep 2010 16:09:22 -0300
-Message-Id: <1eb6523d49218a7bd7788e25693c5d7e651849fd.1285870690.git.srajiv@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.2.2
-In-Reply-To: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
-References: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
-In-Reply-To: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
-References: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
+	Thu, 30 Sep 2010 15:14:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=MlRLPLE+pA8K2lbEnYrN22CFYx79Fh9bW8XV4XQdbGjjAPx9Vr+/vdtpHG1QGzEsWI
+         JB13BWnOvuxbwZiNSBWg==
+MIME-Version: 1.0
+In-Reply-To: <1285843669.2144.2.camel@laptop>
+References: <1285742774-5013-1-git-send-email-dima@android.com>
+	<1285843669.2144.2.camel@laptop>
+Date: Thu, 30 Sep 2010 12:14:42 -0700
+X-Google-Sender-Auth: jM8bS3R_jX8ZjVYlMQioyObt-zg
+Message-ID: <AANLkTikVQist_VnCcpZzU78t0TVuocwOcDPG4POVzSdv@mail.gmail.com>
+Subject: Re: [PATCH 1/2] sched: normalize sleeper's vruntime during group change
+From: Dima Zavin <dima@android.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>,
+        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
+Peter,
 
-Add missing break in wait_until_good_shape
-Use init; while (test) loops not for(init;test;)
-Calculate bytes to transfer using if and min_t not multiple ?:
-Miscellaneous function whitespace aliging
+>> This adds a new callback, prep_move_task, to struct sched_class
+>> to give sched_fair the opportunity to adjust the task's vruntime
+>> just before setting its new group.
+>>
+>> This allows us to properly normalize a sleeping task's vruntime
+>> when moving it between different cgroups.
+>
+> Don't much like these patches, and changelogs need full descriptions not
+> fuzzy links out to the interwebs that might or might not stay valid.
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
----
- drivers/char/tpm/tpm_stm_st19_i2c.c |  158 +++++++++++++++++++----------------
- 1 files changed, 85 insertions(+), 73 deletions(-)
+Sorry, I'll resend with a better changelog and no tubes.
 
-diff --git a/drivers/char/tpm/tpm_stm_st19_i2c.c b/drivers/char/tpm/tpm_stm_st19_i2c.c
-index cdf2eb3..4b1ed05 100644
---- a/drivers/char/tpm/tpm_stm_st19_i2c.c
-+++ b/drivers/char/tpm/tpm_stm_st19_i2c.c
-@@ -158,8 +158,10 @@ static int wait_until_good_shape(void)
- 		else if (!signal_pending(current)) {
- 			ret = schedule_timeout(time);
- 			wait_time += time;
--		} else
-+		} else {
- 			ret = -ERESTARTSYS;
-+			break;
-+		}
- 	} while (1);
- 	finish_wait(&queue, &__wait);
- 
-@@ -204,10 +206,10 @@ static int wait_event_interruptible_on_gpio(wait_queue_head_t queue,
- 		else if (wait_time >= timeout)
- 			break;
- 		else if (!signal_pending(current)) {
--			ret =
--			    schedule_timeout(msecs_to_jiffies
--					     (TICK_GPIO_SPOOLING));
--			wait_time += msecs_to_jiffies(TICK_GPIO_SPOOLING);
-+			int time = msecs_to_jiffies(TICK_GPIO_SPOOLING);
-+
-+			ret = schedule_timeout(time);
-+			wait_time += time;
- 		} else {
- 			ret = -ERESTARTSYS;
- 			break;
-@@ -286,9 +288,9 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 	/* sending data (data_avail_pin hight) */
- 	/* If data are available, we read the data */
- 	init_waitqueue_head(&pin_infos->write_queue);
--	pin = wait_event_interruptible_on_gpio(pin_infos->write_queue,
--					       tpm_calc_ordinal_duration
--					       (chip, ordinal));
-+	pin = wait_event_interruptible_on_gpio(
-+			pin_infos->write_queue,
-+			tpm_calc_ordinal_duration(chip, ordinal));
- 	if (pin < 0) {
- 		ret = pin;
- 		goto end;
-@@ -297,25 +299,30 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 	client->flags = I2C_M_RD;
- 
- 	size = TPM_HEADER_SIZE;
--	for (i = 0; pin == DATA_ON && i < size;) {
--		ret = i2c_master_recv(client,
--				      pin_infos->tpm_i2c_buffer[1],
--				      (i == 0) ? TPM_HEADER_SIZE :
--				      count - i > TPM_I2C_BLOCK_SIZE ?
--				      TPM_I2C_BLOCK_SIZE : count - i);
-+	i = 0;
-+	while (i < size && pin == DATA_ON) {
-+		int bytes;
-+
-+		if (i == 0)
-+			bytes = TPM_HEADER_SIZE;
-+		else
-+			bytes = min_t(int, count - i, TPM_I2C_BLOCK_SIZE);
-+
-+		ret = i2c_master_recv(client, pin_infos->tpm_i2c_buffer[1],
-+				      bytes);
- 		if (ret < 0)
- 			goto end;
--		if (i == 0)
--			size =
--			    responseSize(pin_infos->tpm_i2c_buffer[1], count);
--		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
-+		if (i == 0) {
-+			size = responseSize(pin_infos->tpm_i2c_buffer[1],
-+					    count);
-+			i += TPM_HEADER_SIZE;
-+		} else
-+			i += TPM_I2C_BLOCK_SIZE;
- 
- 		if (i < size)
--			pin =
--			    wait_event_interruptible_on_gpio(pin_infos->
--							     write_queue,
--							     msecs_to_jiffies
--							     (TPM_I2C_SHORT));
-+			pin = wait_event_interruptible_on_gpio(
-+					pin_infos->write_queue,
-+					msecs_to_jiffies(TPM_I2C_SHORT));
- 	}
- 
- 	pin = wait_event_interruptible_on_gpio(pin_infos->write_queue,
-@@ -325,36 +332,41 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 	client->flags = 0;
- 
- 	size = TPM_HEADER_SIZE;
--	for (i = 0; i < size && pin == COMMAND_ON;) {
--		memcpy(pin_infos->tpm_i2c_buffer[0], buf + i,
--		       (i == 0) ? TPM_HEADER_SIZE : count - i >
--		       TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE : count - i);
-+	i = 0;
-+	while (i < size && pin == COMMAND_ON) {
-+		int bytes;
-+
-+		if (i == 0)
-+			bytes = TPM_HEADER_SIZE;
-+		else
-+			bytes = min_t(int, count - i, TPM_I2C_BLOCK_SIZE);
-+
-+		memcpy(pin_infos->tpm_i2c_buffer[0], buf + i, bytes);
- 
- 		if (i == 0) {
- 			size = responseSize(buf, count);
--			size = (size < count ? size : count);
-+			size = size < count ? size : count;
- 		}
--		ret =
--		    i2c_master_send(client,
--				    pin_infos->tpm_i2c_buffer[0],
--				    count >= TPM_HEADER_SIZE ? (i ==
--								0) ?
--				    TPM_HEADER_SIZE : count - i >
--				    TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
--				    count - i : count);
-+
-+		if (count < TPM_HEADER_SIZE)
-+			bytes = count;
-+
-+		ret = i2c_master_send(client, pin_infos->tpm_i2c_buffer[0],
-+				      bytes);
- 		if (ret < 0) {
- 			pr_info("Failed to send data\n");
- 			goto end;
- 		}
- 
--		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
-+		if (i == 0)
-+			i += TPM_HEADER_SIZE;
-+		else
-+			i += TPM_I2C_BLOCK_SIZE;
- 		/* Wait for AcceptCmd signal hight */
- 		if (i < size)
--			pin =
--			    wait_event_interruptible_on_gpio(pin_infos->
--							     write_queue,
--							     msecs_to_jiffies
--							     (TPM_I2C_SHORT));
-+			pin = wait_event_interruptible_on_gpio(
-+					pin_infos->write_queue,
-+					msecs_to_jiffies(TPM_I2C_SHORT));
- 
- 		if (pin != COMMAND_ON) {
- 			pr_info("Failed to read gpio pin (AcceptCmd)\n");
-@@ -362,6 +374,7 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
- 			goto end;
- 		}
- 	}
-+
- 	if (i == 0) {
- 		pr_info("Failed to read gpio pin (AcceptCmd)\n");
- 		ret = -EIO;
-@@ -412,49 +425,48 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
- 
- 	/* Spool on the good gpio as long as pin GPIO 3 not HIGHT */
- 	init_waitqueue_head(&chip->vendor.read_queue);
--	pin = wait_event_interruptible_on_gpio(chip->vendor.read_queue,
--					       tpm_calc_ordinal_duration
--					       (chip, TPM_I2C_ORDINAL_LONG));
-+	pin = wait_event_interruptible_on_gpio(
-+			chip->vendor.read_queue,
-+			tpm_calc_ordinal_duration(chip, TPM_I2C_ORDINAL_LONG));
- 
- 	size = TPM_HEADER_SIZE;
--	for (i = 0; i < size && pin == DATA_ON;) {
--		ret =
--		    i2c_master_recv(client,
--				    pin_infos->tpm_i2c_buffer[1],
--				    (count >= TPM_HEADER_SIZE ? i ==
--				     0 ? TPM_HEADER_SIZE : (size - i) >
--				     TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
--				     size - i : count));
-+	i = 0;
-+	while (i < size && pin == DATA_ON) {
-+		int bytes;
-+
-+		if (count < TPM_HEADER_SIZE)
-+			bytes = count;
-+		else if (i == 0)
-+			bytes = TPM_HEADER_SIZE;
-+		else
-+			bytes = min_t(int, size - i, TPM_I2C_BLOCK_SIZE);
-+
-+		ret = i2c_master_recv(client, pin_infos->tpm_i2c_buffer[1],
-+				      bytes);
- 		if (ret < 0) {
- 			pr_info("Failed to read gpio pin (DataAvailable)\n");
- 			goto end;
- 		}
- 
--		if (buf != NULL) {
--			memcpy(buf + i, pin_infos->tpm_i2c_buffer[1],
--			       (count >= TPM_HEADER_SIZE ? i == 0 ?
--				TPM_HEADER_SIZE : (size - i) >
--				TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE : size -
--				i : count));
--
--			if (i == 0) {
--				size = responseSize(buf, size);
--				if (size > count)
--					size = count;
--			}
--		} else {
-+		if (!buf) {
- 			pr_info("read buffer is NULL\n");
- 			goto end;
- 		}
- 
--		(i == 0) ? (i += TPM_HEADER_SIZE) : (i += TPM_I2C_BLOCK_SIZE);
-+		memcpy(buf + i, pin_infos->tpm_i2c_buffer[1], size);
-+
-+		if (i == 0) {
-+			size = responseSize(buf, size);
-+			if (size > count)
-+				size = count;
-+			i += TPM_HEADER_SIZE;
-+		} else
-+			i += TPM_I2C_BLOCK_SIZE;
- 
- 		if (i < size)
--			pin =
--			    wait_event_interruptible_on_gpio(chip->vendor.
--							     read_queue,
--							     msecs_to_jiffies
--							     (TPM_I2C_SHORT));
-+			pin = wait_event_interruptible_on_gpio(
-+					chip->vendor.read_queue,
-+					msecs_to_jiffies(TPM_I2C_SHORT));
- 	}
- 
- 	if (i == 0) {
-@@ -532,7 +544,7 @@ static ssize_t tpm_st19_i2c_ioctl(struct inode *inode, struct file *file,
- 		return -ENOSYS;
- 	case TPMIOC_TRANSMIT:
- 		if (copy_from_user(pin_infos->tpm_i2c_buffer[0],
--		    (const char *)arg, TPM_HEADER_SIZE))
-+				   (const char *)arg, TPM_HEADER_SIZE))
- 			return -EFAULT;
- 		in_size = responseSize(pin_infos->tpm_i2c_buffer[0],
- 				      TPM_HEADER_SIZE);
--- 
-1.7.2.2
+> If you change a task's cgroup, the task is new in that cgroup and should
+> be placed like a new task would, carrying over any history it has in the
+> old cgroup is dubious at best.
 
+That is certainly not the behavior today for running tasks as I
+understand it. They get their vruntime normalized before being taken
+off the run_queue of old group, and then get the new min_vruntime
+added when they get re-enqueued. For sleeping tasks it's just plain
+broken (see below).
+
+Also, I am skeptical that the behavior you describe is desired. If you
+were to just place the task in the new cgroup like it was a brand new
+task, it could allow threads to game the system and potentially let
+them reset their vruntime back. If I do a bunch of work and then move
+myself out of the group and then back onto it, I may get lower
+vruntime than by just staying on the group.
+
+> Please explain this stuff..
+
+The situation today is quite bad for sleeping tasks. Currently, when
+you move a sleeping thread between cgroups, the thread can retain its
+old vruntime value if the old group was far ahead of the new group
+since it essentially does a max(se->vruntime, new_vruntime) in
+place_entity. This can prevent the task from running for a very long
+time. That is what this patch was trying to address. It normalizes the
+sleeper thread's vruntime before moving it to the new group.
+
+Thanks in advance.
+
+--Dima
