@@ -1,43 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab0I3MWR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 08:22:17 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:52779 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab0I3MWQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 08:22:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=gI5NAE4bqGd4II5AOjo7nmIBiQlSig48canAyQFVcTbt4Ho6DyINn/iwrzEzjpUL3Z
-         TyiTGzYn/5kN9GNd0MIs9cY8bZPEawKuLKV2DGzN24kkxfVHEpqLuHUcyhjkDPF3t7Ao
-         9e5Y6pi357Y7CS4D1o2/LI79oZbli2uMevi70=
-Date: Thu, 30 Sep 2010 14:18:39 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/6] x86, amd: Add basic support for AMD CPU family 15h
-Message-ID: <20100930121839.GA20545@loge.amd.com>
+	id S1753926Ab0I3MZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 08:25:20 -0400
+Received: from smtp.df.ru ([195.42.160.16]:59719 "EHLO smtp.df.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751159Ab0I3MZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 08:25:18 -0400
+Date: Thu, 30 Sep 2010 16:23:21 +0400
+From: Alexey Vlasov <renton@renton.name>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Packet time delays on multi-core systems
+Message-ID: <20100930122321.GA1575@beaver.vrungel.ru>
+References: <20100929191851.GC86786@beaver.vrungel.ru> <1285796721.5211.156.camel@edumazet-laptop> <20100930062419.GD86786@beaver.vrungel.ru> <1285828432.5211.812.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=koi8-r
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1285828432.5211.812.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Sep 30, 2010 at 08:33:52AM +0200, Eric Dumazet wrote:
+> Le jeudi 30 septembre 2010 ?? 10:24 +0400, Alexey Vlasov a ??crit :
+> > Here I found some dude with the same problem:
+> > http://lkml.org/lkml/2010/7/9/340
+> > 
+> 
+> In your opinion its the same problem.
+> 
+> But the description you gave is completely different.
+> 
+> You have time skew only when activating a particular iptables rule.
+ 
+Well I put interrups from NIC, namely tx/rx query, to different
+processors and got normal pings by adding LOG rule.
 
-following a bunch of patches with basic adaptions to support AMD CPU
-family 15h.
+I also found that overruns is constantly growing, I don't know if these are connected.
+RX packets:2831439546 errors:0 dropped:134726 overruns:947671733 frame:0
+TX packets:2880849825 errors:0 dropped:0 overruns:0 carrier:0
 
-Patches are against tip/master (v2.6.36-rc6-1544-gc5bf3de).
-Please apply.
+Rather strange that only one processor was involved, even in top was
+clear that ksoftirqd eats the first processor up to 100%. 
 
+Here goes the typical distribution of interrups on new servers:
+           CPU0    CPU1    CPU2    CPU3 ... CPU23
+752:         11       0       0       0 ...     0 PCI-MSI-edge eth0
+753: 2799366721       0       0       0 ...     0 PCI-MSI-edge eth0-rx3
+754: 2821840553       0       0       0 ...     0 PCI-MSI-edge eth0-rx2
+755: 2786117044       0       0       0 ...     0 PCI-MSI-edge eth0-rx1
+756: 2896099336       0       0       0 ...     0 PCI-MSI-edge eth0-rx0
+757: 1808404680       0       0       0 ...     0 PCI-MSI-edge eth0-tx3
+758: 1797855130       0       0       0 ...     0 PCI-MSI-edge eth0-tx2
+759: 1807222032       0       0       0 ...     0 PCI-MSI-edge eth0-tx1
+760: 1820309360       0       0       0 ...     0 PCI-MSI-edge eth0-tx0
 
-Thanks,
+On the old ones:
+           CPU0       CPU1       CPU2  ...      CPU8
+502:  522320256  522384039  522327386  ... 522380267 PCI-MSI-edge eth0
 
-Andreas
+-- 
+BRGDS. Alexey Vlasov.
