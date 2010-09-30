@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756030Ab0I3XQu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:16:50 -0400
-Received: from www.tglx.de ([62.245.132.106]:52647 "EHLO www.tglx.de"
+	id S1755975Ab0I3XQt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:16:49 -0400
+Received: from www.tglx.de ([62.245.132.106]:52650 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755819Ab0I3XQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755820Ab0I3XQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Sep 2010 19:16:44 -0400
-Message-Id: <20100930221740.545532651@linutronix.de>
+Message-Id: <20100930221740.640417405@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 30 Sep 2010 23:16:16 -0000
+Date: Thu, 30 Sep 2010 23:16:23 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
@@ -22,101 +22,51 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [patch 21/47] x86: Sanitize apb timer interrupt handling
+Subject: [patch 22/47] x86: lguest: Convert to new irq chip functions
 References: <20100930221351.682772535@linutronix.de>
-Content-Disposition: inline; filename=x86-sanitize-abptimer.patch
+Content-Disposition: inline; filename=x86-convert-virt.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Disable the interrupt in CPU_DEAD where it belongs. Remove the
-open coded irq_desc manipulation.
-
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/x86/kernel/apb_timer.c |   54 +++++++++++++++++++-------------------------
- 1 file changed, 24 insertions(+), 30 deletions(-)
+ arch/x86/lguest/boot.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
 
-Index: linux-2.6-tip/arch/x86/kernel/apb_timer.c
+Index: linux-2.6-tip/arch/x86/lguest/boot.c
 ===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apb_timer.c
-+++ linux-2.6-tip/arch/x86/kernel/apb_timer.c
-@@ -231,34 +231,6 @@ static void apbt_restart_clocksource(str
- 	apbt_start_counter(phy_cs_timer_id);
+--- linux-2.6-tip.orig/arch/x86/lguest/boot.c
++++ linux-2.6-tip/arch/x86/lguest/boot.c
+@@ -788,22 +788,22 @@ static void lguest_flush_tlb_kernel(void
+  * simple as setting a bit.  We don't actually "ack" interrupts as such, we
+  * just mask and unmask them.  I wonder if we should be cleverer?
+  */
+-static void disable_lguest_irq(unsigned int irq)
++static void disable_lguest_irq(struct irq_data *data)
+ {
+-	set_bit(irq, lguest_data.blocked_interrupts);
++	set_bit(data->irq, lguest_data.blocked_interrupts);
  }
  
--/* Setup IRQ routing via IOAPIC */
--#ifdef CONFIG_SMP
--static void apbt_setup_irq(struct apbt_dev *adev)
--{
--	struct irq_chip *chip;
--	struct irq_desc *desc;
--
--	/* timer0 irq has been setup early */
--	if (adev->irq == 0)
--		return;
--	desc = irq_to_desc(adev->irq);
--	chip = get_irq_chip(adev->irq);
--	disable_irq(adev->irq);
--	desc->status |= IRQ_MOVE_PCNTXT;
--	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
--	/* APB timer irqs are set up as mp_irqs, timer is edge triggerred */
--	set_irq_chip_and_handler_name(adev->irq, chip, handle_edge_irq, "edge");
--	enable_irq(adev->irq);
--	if (system_state == SYSTEM_BOOTING)
--		if (request_irq(adev->irq, apbt_interrupt_handler,
--				IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
--				adev->name, adev)) {
--			printk(KERN_ERR "Failed request IRQ for APBT%d\n",
--			       adev->num);
--		}
--}
--#endif
--
- static void apbt_enable_int(int n)
+-static void enable_lguest_irq(unsigned int irq)
++static void enable_lguest_irq(struct irq_data *data)
  {
- 	unsigned long ctrl = apbt_readl(n, APBTMR_N_CONTROL);
-@@ -334,6 +306,27 @@ static int __init apbt_clockevent_regist
+-	clear_bit(irq, lguest_data.blocked_interrupts);
++	clear_bit(data->irq, lguest_data.blocked_interrupts);
  }
  
- #ifdef CONFIG_SMP
-+
-+static void apbt_setup_irq(struct apbt_dev *adev)
-+{
-+	/* timer0 irq has been setup early */
-+	if (adev->irq == 0)
-+		return;
-+
-+	if (system_state == SYSTEM_BOOTING) {
-+		irq_modify_status(adev->irq, 0, IRQ_MOVE_PCNTXT);
-+		/* APB timer irqs are set up as mp_irqs, timer is edge type */
-+		__set_irq_handler(adev->irq, handle_edge_irq, 0, "edge");
-+		if (request_irq(adev->irq, apbt_interrupt_handler,
-+				IRQF_TIMER | IRQF_DISABLED | IRQF_NOBALANCING,
-+				adev->name, adev)) {
-+			printk(KERN_ERR "Failed request IRQ for APBT%d\n",
-+			       adev->num);
-+		}
-+	} else
-+		enable_irq(adev->irq);
-+}
-+
- /* Should be called with per cpu */
- void apbt_setup_secondary_clock(void)
- {
-@@ -389,10 +382,11 @@ static int apbt_cpuhp_notify(struct noti
+ /* This structure describes the lguest IRQ controller. */
+ static struct irq_chip lguest_irq_controller = {
+ 	.name		= "lguest",
+-	.mask		= disable_lguest_irq,
+-	.mask_ack	= disable_lguest_irq,
+-	.unmask		= enable_lguest_irq,
++	.irq_mask	= disable_lguest_irq,
++	.irq_mask_ack	= disable_lguest_irq,
++	.irq_unmask	= enable_lguest_irq,
+ };
  
- 	switch (action & 0xf) {
- 	case CPU_DEAD:
-+		disable_irq(adev->irq);
- 		apbt_disable_int(cpu);
--		if (system_state == SYSTEM_RUNNING)
-+		if (system_state == SYSTEM_RUNNING) {
- 			pr_debug("skipping APBT CPU %lu offline\n", cpu);
--		else if (adev) {
-+		}else if (adev) {
- 			pr_debug("APBT clockevent for cpu %lu offline\n", cpu);
- 			free_irq(adev->irq, adev);
- 		}
+ /*
 
 
