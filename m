@@ -1,133 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754560Ab0I3GYv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 02:24:51 -0400
-Received: from smtp.df.ru ([195.42.160.16]:36030 "EHLO smtp.df.ru"
+	id S1754642Ab0I3G0C (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 02:26:02 -0400
+Received: from kroah.org ([198.145.64.141]:53247 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754515Ab0I3GYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 02:24:50 -0400
-Date: Thu, 30 Sep 2010 10:24:19 +0400
-From: Alexey Vlasov <renton@renton.name>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Packet time delays on multi-core systems
-Message-ID: <20100930062419.GD86786@beaver.vrungel.ru>
-References: <20100929191851.GC86786@beaver.vrungel.ru> <1285796721.5211.156.camel@edumazet-laptop>
+	id S1754427Ab0I3GYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 02:24:45 -0400
+Date: Wed, 29 Sep 2010 23:18:52 -0700
+From: Greg KH <greg@kroah.com>
+To: walter harms <wharms@bfs.de>
+Cc: Tracey Dent <tdent48227@gmail.com>, kernel-janitors@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 11/22] Staging: rtl8187se: Makefile: cleaned up
+	makefile cflag lines
+Message-ID: <20100930061852.GA8707@kroah.com>
+References: <1285370890-8984-1-git-send-email-tdent48227@gmail.com> <1285370890-8984-11-git-send-email-tdent48227@gmail.com> <4C9DD2A4.6080508@bfs.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285796721.5211.156.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C9DD2A4.6080508@bfs.de>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here I found some dude with the same problem:
-http://lkml.org/lkml/2010/7/9/340
+On Sat, Sep 25, 2010 at 12:44:52PM +0200, walter harms wrote:
+> 
+> 
+> Tracey Dent schrieb:
+> > Changed to use proper ccflags-y option
+> > 
+> > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+> > ---
+> >  drivers/staging/rtl8187se/Makefile |   20 ++++++++++----------
+> >  1 files changed, 10 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/drivers/staging/rtl8187se/Makefile b/drivers/staging/rtl8187se/Makefile
+> > index e6adf91..51fbd24 100644
+> > --- a/drivers/staging/rtl8187se/Makefile
+> > +++ b/drivers/staging/rtl8187se/Makefile
+> > @@ -1,20 +1,20 @@
+> >  
+> > -#EXTRA_CFLAGS += -DCONFIG_IEEE80211_NOWEP=y
+> > -#EXTRA_CFLAGS += -std=gnu89
+> > -#EXTRA_CFLAGS += -O2
+> > +#ccflags-y := -DCONFIG_IEEE80211_NOWEP=y
+> > +#ccflags-y := -std=gnu89
+> > +#ccflags-y := -O2
+> >  #CC            = gcc
+> >  
+> > -EXTRA_CFLAGS += -DSW_ANTE
+> > -EXTRA_CFLAGS += -DTX_TRACK
+> > -EXTRA_CFLAGS += -DHIGH_POWER
+> > -EXTRA_CFLAGS += -DSW_DIG
+> > -EXTRA_CFLAGS += -DRATE_ADAPT
+> > +ccflags-y := -DSW_ANTE
+> > +ccflags-y := -DTX_TRACK
+> > +ccflags-y := -DHIGH_POWER
+> > +ccflags-y := -DSW_DIG
+> > +ccflags-y := -DRATE_ADAPT
+> >  
+> >  #enable it for legacy power save, disable it for leisure  power save
+> > -EXTRA_CFLAGS += -DENABLE_LPS
+> > +ccflags-y := -DENABLE_LPS
+> >  
+> >  
+> > -#EXTRA_CFLAGS += -mhard-float -DCONFIG_FORCE_HARD_FLOAT=y
+> > +#ccflags-y := -mhard-float -DCONFIG_FORCE_HARD_FLOAT=y
+> >  
+> 
+> I do not understand this. If CONFIG_FORCE_HARD_FLOAT is required by the
+> driver so he should fail if CONFIG_FORCE_HARD_FLOAT=n
+> Or you need to protect the -mhard-float with an if().
 
-On Wed, Sep 29, 2010 at 11:45:21PM +0200, Eric Dumazet wrote:
-> Le mercredi 29 septembre 2010 ?? 23:18 +0400, Alexey Vlasov a ??crit : 
-> > Hi.
-> > 
-> > I'm not sure actually that I should write here, may be I should ask in
-> > netfilter maillist, but if is something wrong please correct me.
-> > 
-> 
-> CC netdev
-> 
-> 
-> > I've got rather large linux shared hosting, and on my new servers I
-> > noticed some strange singularity, that this simple rule:
-> > 
-> > # iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags
-> > FIN,SYN,RST,ACK SYN -j LOG --log-prefix "ipsec:SYN-OUTPUT "
-> > --log-uid
-> > 
-> > gives essential time delays simply at ping from the adjacent server
-> > on a local area network. I don't know precisely what's wrong whether the
-> > reason is in the bad support by a kernel of new hardware, or it concerns
-> > generally the new kernel, but now it leads to the situation that even at simple
-> > DDOS attacks to client sites, it becomes difficult to make something, and in
-> > general all works only worse.
-> > 
-> > It seems to me that with the increase of CPU cores' amount, it only becomes
-> > worse and worse, and, obviously, iptables uses resources of only one processor,
-> > which resources to it for any reason doesn't suffice.
-> > 
-> 
-> Its not true. iptables can run on all cpus in //
-> 
-> > newbox # iptables -F
-> > otherbox # ping -c 100 newbox
-> > ...
-> > 100 packets transmitted, 100 received, 0% packet loss, time 100044ms
-> > rtt min/avg/max/mdev = 0.133/2.637/17.172/3.736 ms
-> > 
-> > OK.
-> > 
-> > newbox # iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
-> > -j LOG --log-prefix "ipsec:SYN-OUTPUT " --log-uid
-> > otherbox # ping -c 100 newbox
-> > ...
-> > 64 bytes from (newbox): icmp_seq=3 ttl=64 time=1.58 ms
-> > 64 bytes from (newbox): icmp_seq=4 ttl=64 time=98.7 ms
-> > 64 bytes from (newbox): icmp_seq=5 ttl=64 time=18.2 ms
-> > 64 bytes from (newbox): icmp_seq=6 ttl=64 time=6.13 ms
-> > 64 bytes from (newbox): icmp_seq=7 ttl=64 time=108 ms
-> > ...
-> > 64 bytes from (newbox): icmp_seq=55 ttl=64 time=2.30 ms
-> > 64 bytes from (newbox): icmp_seq=56 ttl=64 time=59.9 ms
-> > 64 bytes from (newbox): icmp_seq=57 ttl=64 time=0.155 ms
-> > ...
-> > 64 bytes from (newbox): icmp_seq=61 ttl=64 time=13.4 ms
-> > 64 bytes from (newbox): icmp_seq=62 ttl=64 time=55.0 ms
-> > 64 bytes from (newbox): icmp_seq=63 ttl=64 time=0.233 ms
-> > ...
-> > 100 packets transmitted, 100 received, 0% packet loss, time 99957ms
-> > rtt min/avg/max/mdev = 0.111/7.519/108.061/18.478 ms
-> > 
-> > newbox # iptables -L -v -n
-> > Chain INPUT (policy ACCEPT 346K packets, 213M bytes)
-> >  pkts bytes target     prot opt in     out     source               destination
-> > 
-> > Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
-> >  pkts bytes target     prot opt in     out     source               destination
-> > 
-> > Chain OUTPUT (policy ACCEPT 296K packets, 290M bytes)
-> >  pkts bytes target     prot opt in     out     source               destination
-> >   234 14040 LOG        tcp  --  *      *       0.0.0.0/0            0.0.0.0/0    
-> > tcp dpt:80 flags:0x17/0x02 LOG flags 8 level 4 prefix `ipsec:SYN-OUTPUT- '
-> > 
-> > My old server: Intel SR1500, Xeon 5430, kernel 2.6.24 - 2.6.28
-> > Newbox: SR1620UR, 5650, kernel 2.6.32
-> > 
-> > Thanks in advance.
-> > 
-> 
-> Seems strange indeed, since the LOG you add should not slowdown icmp
-> trafic that much.
-> 
-> But if you send SYN packets in the same time, (logged), this might slow
-> down the reception (and answers) of ICMP frames. LOG target can be quite
-> expensive... 
-> 
-> Is using other rules gives same problem ?
-> 
-> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
-> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
-> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
-> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
-> 
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+That line is commented out, it doesn't do anything, so I wouldn't worry
+about it :)
 
--- 
-BRGDS. Alexey Vlasov.
+thanks,
+
+greg k-h
