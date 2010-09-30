@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab0I3Mqv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 08:46:51 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:37151 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab0I3Mqu (ORCPT
+	id S1755938Ab0I3MrA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 08:47:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45280 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755872Ab0I3Mq7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 08:46:50 -0400
+	Thu, 30 Sep 2010 08:46:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QeUTWS1oAEUZF2p7fuBOCU6Dq0tiID8cM5GtqFfbSvAUGGCyy++45rlQ7Pxuz4RzkQ
-         LNW0K1VVlD0gO/wq2VkePnKMSFVIz1ytoERFgG581bsg1JhFoaC9OpKE3007ZOchlFK6
-         X/aX0K4SY8HysrvmOwQUCXxs15HWSW8EvvzKs=
-Date: Thu, 30 Sep 2010 14:43:16 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] x86, amd_nb: Enable GART support for AMD family 0x15
- CPUs
-Message-ID: <20100930124316.GG20545@loge.amd.com>
-References: <20100930121839.GA20545@loge.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100930121839.GA20545@loge.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=TScoMN0FbzBwn5ATns5OzscOSFJy3tA6hquT3D6LfK+0S/w607CN5aGSeLU/VblyBD
+         wgFkBShIUumc/UT4XkYKTVMeT98GHeyfrBYkieM/Z0zAFy9UDRU8ZzFzMo9vQqeePuaU
+         mCkTc0m7yHjGzT/XGfPdNtUtibTrrE8FJO3gs=
+Subject: Re: Packet time delays on multi-core systems
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexey Vlasov <renton@renton.name>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <20100930123048.GA4094@beaver.vrungel.ru>
+References: <20100929191851.GC86786@beaver.vrungel.ru>
+	 <1285796721.5211.156.camel@edumazet-laptop>
+	 <20100930123048.GA4094@beaver.vrungel.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Sep 2010 14:46:52 +0200
+Message-ID: <1285850812.2615.432.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+Le jeudi 30 septembre 2010 à 16:30 +0400, Alexey Vlasov a écrit :
+> On Wed, Sep 29, 2010 at 11:45:21PM +0200, Eric Dumazet wrote:
+> > But if you send SYN packets in the same time, (logged), this might
+> > slow
+> > down the reception (and answers) of ICMP frames. LOG target can be
+> > quite
+> > expensive...
+> 
+> Yes, it's clear that  some slow down can appear, but 100 ms is too much,
+> and this happens at 200 SYN packets in 2 minutes just as in my example.
+> On old servers where some tx/rx are missing in NIC card I don't see
+> such a situation even at more then 1000 SYN-packets per sec.
 
-AMD CPU family 0x15 still supports GART for compatibility reasons.
+Because all cpus were servicing interrupts, which was good for your
+needs. Things apparently changed with 2.6.32. 
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/kernel/amd_nb.c |    4 +++-
- include/linux/pci_ids.h  |    1 +
- 2 files changed, 4 insertions(+), 1 deletions(-)
+You have a multiqueue NIC, but using a single CPU to handle the
+workload.
 
-diff --git a/arch/x86/kernel/amd_nb.c b/arch/x86/kernel/amd_nb.c
-index 4ffc38d..8f6463d 100644
---- a/arch/x86/kernel/amd_nb.c
-+++ b/arch/x86/kernel/amd_nb.c
-@@ -15,6 +15,7 @@ static u32 *flush_words;
- struct pci_device_id k8_nb_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_K8_NB_MISC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_10H_NB_MISC) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_15H_NB_MISC) },
- 	{}
- };
- EXPORT_SYMBOL(k8_nb_ids);
-@@ -45,7 +46,8 @@ int cache_k8_northbridges(void)
- 		k8_northbridges.num++;
- 
- 	/* some CPU families (e.g. family 0x11) do not support GART */
--	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10)
-+	if (boot_cpu_data.x86 == 0xf || boot_cpu_data.x86 == 0x10 ||
-+	    boot_cpu_data.x86 == 0x15)
- 		k8_northbridges.gart_supported = 1;
- 
- 	k8_northbridges.nb_misc = kmalloc((k8_northbridges.num + 1) *
-diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-index 570fdde..2615c37 100644
---- a/include/linux/pci_ids.h
-+++ b/include/linux/pci_ids.h
-@@ -517,6 +517,7 @@
- #define PCI_DEVICE_ID_AMD_11H_NB_DRAM	0x1302
- #define PCI_DEVICE_ID_AMD_11H_NB_MISC	0x1303
- #define PCI_DEVICE_ID_AMD_11H_NB_LINK	0x1304
-+#define PCI_DEVICE_ID_AMD_15H_NB_MISC	0x1603
- #define PCI_DEVICE_ID_AMD_LANCE		0x2000
- #define PCI_DEVICE_ID_AMD_LANCE_HOME	0x2001
- #define PCI_DEVICE_ID_AMD_SCSI		0x2020
--- 
-1.6.4.4
+> 
+> > Is using other rules gives same problem ?
+> >
+> > iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags
+> 
+> No, only LOG gives such a scheme.
+> 
+
 
