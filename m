@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab0I3TXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 15:23:49 -0400
-Received: from s318.xrea.com ([125.53.25.46]:33483 "HELO s318.xrea.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752337Ab0I3TXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 15:23:48 -0400
-From: Naohiro Aota <naota@elisp.net>
-To: Roman Zippel <zippel@linux-m68k.org>, Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Ulf Magnusson <ulfalizer.lkml@gmail.com>,
-        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Naohiro Aota <naota@elisp.net>
-Subject: [PATCH -next] kconfig: Don't go out from read config loop when you read new symbol
-Date: Fri, 01 Oct 2010 04:23:17 +0900
-Message-ID: <87sk0rghne.fsf@elisp.net>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756314Ab0I3T1B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 15:27:01 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:50707 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755869Ab0I3T07 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 15:26:59 -0400
+Date: Thu, 30 Sep 2010 20:24:29 +0100
+From: Alban Crequy <alban.crequy@collabora.co.uk>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Ian Molton <ian.molton@collabora.co.uk>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/5] AF_UNIX: find peers on multicast Unix stream 
+ sockets
+Message-ID: <20100930202429.42808a38@chocolatine.cbg.collabora.co.uk>
+In-Reply-To: <1285351237.2478.7.camel@edumazet-laptop>
+References: <20100924182257.11abd9a6@chocolatine.cbg.collabora.co.uk>
+ <1285349116-17529-4-git-send-email-alban.crequy@collabora.co.uk>
+ <1285351237.2478.7.camel@edumazet-laptop>
+Organization: Collabora
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.8; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 8baefd30b5b0101aa07aa75da44a9eee881eed28 of linux-next replaced
-a `switch()' statement with some `if()' statements, but left `break's
-in the `switch()' statement untouched. This cause read config loop to
-exit and so "make oldconfig" is not much usable (see below).
+Le Fri, 24 Sep 2010 20:00:37 +0200,
+Eric Dumazet <eric.dumazet@gmail.com> a écrit :
 
-> $ make oldconfig
-><snip>
-> scripts/kconfig/conf --oldconfig Kconfig
-> #
-> # using defaults found in /boot/config-2.6.34-ccs-r1
-> #
-> *
-> * Restart config...
-> *
-> *
-> * General setup
-> *
-> Prompt for development and/or incomplete code/drivers (EXPERIMENTAL) [N/y/?] (NEW)
+> Le vendredi 24 septembre 2010 à 18:25 +0100, Alban Crequy a écrit :
+> 
+> > @@ -1612,7 +1671,12 @@ static int unix_stream_sendmsg(struct kiocb
+> > *kiocb, struct socket *sock, } else {
+> >  		sunaddr = NULL;
+> >  		err = -ENOTCONN;
+> > -		other = NULL; /* FIXME: get the list of other
+> > connection */
+> > +		max_others = atomic_read(&unix_nr_multicast_socks);
+> > +		others = kzalloc((max_others + 1) * sizeof(void
+> > *), GFP_KERNEL);
+> > +		unix_find_other(sock_net(sk), u->addr->name,
+> > +		    u->addr->len, 0, u->addr->hash, 1, others,
+> > max_others, &err);
+> > +		other = others[0];
+> > +		kfree(others);
+> >  		if (!other)
+> >  			goto out_err;
+> >  	}
+> 
+> Seriously, this block sizing against unix_nr_multicast_socks is not
+> scalable. What happens if we have 1000 sockets ?
+> kzalloc() to clear 8000 bytes ?
+> Its also unsafe.
+> 
+> (say you kzalloc() a buffer for 2 sockets, and another cpu inserts a
+> new socket. unix_find_socket_byname() can overflow the buffer)
+> 
+> 
+> You should use a list, and allocates elements in
+> unix_find_socket_byname()
+> 
+> struct item {
+> 	struct item *next;
+> 	struct sock *s;
+> };
 
-(I've already have "CONFIG_EXPERIMENTAL=y" in the old config file. But
-that's not read here.)
+Thanks for your review.
 
-This patch should fix this problem.
+I cannot allocate elements directly in unix_find_socket_byname()
+iteration after iteration because the spinlock "unix_table_lock" is
+held. If I release the spinlock to allocate, the number of sockets in
+the table may change.
 
-Signed-off-by: Naohiro Aota <naota@elisp.net>
----
- scripts/kconfig/confdata.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+I changed the code to count the sockets with the lock held and then
+allocate. In the unfortunate case where the allocation is not big
+enough (if another process inserts a new socket), it just tries again.
 
-diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
-index f7d89d7..35c08ec 100644
---- a/scripts/kconfig/confdata.c
-+++ b/scripts/kconfig/confdata.c
-@@ -234,7 +234,7 @@ load:
- 				sym = sym_find(line + 2 + strlen(CONFIG_));
- 				if (!sym) {
- 					sym_add_change_count(1);
--					break;
-+					goto setsym;
- 				}
- 			} else {
- 				sym = sym_lookup(line + 2 + strlen(CONFIG_), 0);
-@@ -268,7 +268,7 @@ load:
- 				sym = sym_find(line + strlen(CONFIG_));
- 				if (!sym) {
- 					sym_add_change_count(1);
--					break;
-+					goto setsym;
- 				}
- 			} else {
- 				sym = sym_lookup(line + strlen(CONFIG_), 0);
-@@ -285,6 +285,7 @@ load:
- 				conf_warning("unexpected data");
- 			continue;
- 		}
-+setsym:
- 		if (sym && sym_is_choice_value(sym)) {
- 			struct symbol *cs = prop_get_symbol(sym_get_choice_prop(sym));
- 			switch (sym->def[def].tri) {
--- 
-1.7.3
+The code is available here. Please pull from:
+
+git://git.collabora.co.uk/git/user/alban/linux-2.6.35.y/.git unix-multicast2
+
+It is still a work in progress. Missing pieces:
+
+- The flow control does not work correctly: poll/select does not match
+  the reality
+
+- Atomic delivery: if a process is killed or interrupted in the middle
+  of a delivery, only a subset of the recipients will get the message 
+
+- Some locking to provide the same delivery order to all the recipients
+  when several senders run concurrently.
+
+Feedback welcome,
+
+Alban Crequy
+
