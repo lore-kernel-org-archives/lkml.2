@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755061Ab0I3KsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 06:48:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38455 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab0I3Kr6 convert rfc822-to-8bit (ORCPT
+	id S1752577Ab0I3Kuf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 06:50:35 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52084 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751655Ab0I3Kue (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 06:47:58 -0400
-Subject: Re: [PATCH 1/2] sched: normalize sleeper's vruntime during group
- change
-From: Peter Zijlstra <peterz@infradead.org>
-To: Dima Zavin <dima@android.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <1285742774-5013-1-git-send-email-dima@android.com>
-References: <1285742774-5013-1-git-send-email-dima@android.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 30 Sep 2010 12:47:49 +0200
-Message-ID: <1285843669.2144.2.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 30 Sep 2010 06:50:34 -0400
+MIME-Version: 1.0
+In-Reply-To: <1285843077.748.32.camel@marc>
+References: <4CA391B3.1030806@wol.de> <20100930103010.1a6a7785@lxorguk.ukuu.org.uk>
+ <1285843077.748.32.camel@marc>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 30 Sep 2010 12:50:18 +0200
+Message-ID: <AANLkTi=d+5uDVK9RHguSmwFhKLVUPXvzo=G3s=NKKDW3@mail.gmail.com>
+Subject: Re: [PATCH] Fix capi devicenames
+To: "Marc - A. Dahlhaus" <mad@wol.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        isdn@linux-pingi.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-09-28 at 23:46 -0700, Dima Zavin wrote:
-> This adds a new callback, prep_move_task, to struct sched_class
-> to give sched_fair the opportunity to adjust the task's vruntime
-> just before setting its new group.
-> 
-> This allows us to properly normalize a sleeping task's vruntime
-> when moving it between different cgroups.
+On Thu, Sep 30, 2010 at 12:37, Marc - A. Dahlhaus <mad@wol.de> wrote:
+> Am Donnerstag, den 30.09.2010, 10:30 +0100 schrieb Alan Cox:
+>> On Wed, 29 Sep 2010 21:21:23 +0200
+>> "Marc - A. Dahlhaus" <mad@wol.de> wrote:
+>>
+>> > capi device names should get changed to what userspace expects.
+>>
+>> If userspace isn't following the spec (which has been the spec for many
+>> years) then thats not our problem.
 
-Don't much like these patches, and changelogs need full descriptions not
-fuzzy links out to the interwebs that might or might not stay valid.
+>> NAK. Fix udev.
+>
+> I don't think udev is the right place to fix this.
+>
+> Udev creates symlinks and is no longer able to overwrite the name
+> attribute.
 
-If you change a task's cgroup, the task is new in that cgroup and should
-be placed like a new task would, carrying over any history it has in the
-old cgroup is dubious at best.
+Right, udev has no business here. It's the kernels responsibility since a while.
 
-Please explain this stuff..
+If you can't rename the kernel devices right away for some reason, you
+can add naming hints to the kernel, which udev and devtmpfs will
+follow, and all should work.
+
+In any case devices.txt should be fixed, it has not much to do with
+the real world.
+
+Kay
