@@ -1,68 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752519Ab0I3B5U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 21:57:20 -0400
-Received: from mail.codesourcery.com ([38.113.113.100]:40032 "EHLO
-	mail.codesourcery.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751707Ab0I3B5T (ORCPT
+	id S1752504Ab0I3CB1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 22:01:27 -0400
+Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:58373 "EHLO
+	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab0I3CB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 21:57:19 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Sep 2010 21:57:19 EDT
-Date: Thu, 30 Sep 2010 02:50:17 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@codesourcery.com>
-To: David Daney <ddaney@caviumnetworks.com>
-cc: Al Viro <viro@ftp.linux.org.uk>, ralf@linux-mips.org,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>
-Subject: Re: [PATCH 3/5] mips: sanitize restart logics
-In-Reply-To: <4CA38538.8000007@caviumnetworks.com>
-Message-ID: <alpine.DEB.1.10.1009300218380.25860@tp.orcam.me.uk>
-References: <E1P0eK5-0006j5-4q@ZenIV.linux.org.uk> <4CA38538.8000007@caviumnetworks.com>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	Wed, 29 Sep 2010 22:01:26 -0400
+Date: Thu, 30 Sep 2010 11:01:18 +0900
+From: Norbert Preining <preining@logic.at>
+To: "Alex,Shi" <alex.shi@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "arjan@infradead.org" <arjan@infradead.org>,
+        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
+        tglx <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>
+Subject: Re: high power consumption in recent kernels
+Message-ID: <20100930020118.GE30836@gamma.logic.tuwien.ac.at>
+References: <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com> <20100909205115.GD11053@gamma.logic.tuwien.ac.at> <1284107099.402.30.camel@laptop> <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com> <20100910145451.GB21450@gamma.logic.tuwien.ac.at> <1284355277.26157.8109.camel@debian> <20100922154452.GA9080@gamma.logic.tuwien.ac.at> <1285670426.21962.43.camel@debian> <4CA34F95.30400@logic.at> <1285807841.21962.1147.camel@debian>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285807841.21962.1147.camel@debian>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Sep 2010, David Daney wrote:
+On Do, 30 Sep 2010, Alex,Shi wrote:
+> +               arch_needs_cpu(cpu)|| (inidle && nohz_ratelimit(cpu))) {
 
-> > Put the original syscall number into ->regs[0] when we leave syscall
-> > with error.  Use it in restart logics.  Everything else will have
-> > it 0 since we pass through SAVE_SOME on all the ways in.  Note that
-> > in places like bad_stack and inllegal_syscall we leave it 0 - it's
-> > not restartable.
-> > 
-> 
-> IIRC Userspace getcontext/setcontext rely on regs[0] having a value of zero in
-> the when the signal handlers are invoked.
+Sorry right, the 
+	inidle
+is new, missed that one. I will rebuild in a minute and test.
 
- Not exactly.  These GNU C library functions rely on the magic value of 
-"1" there to recognise contexts they created themselves and which must 
-therefore be handled by themselves internally (these contexts are not 
-complete and only preserve the call-saved registers as specified by the 
-respective MIPS ABIs, and are therefore unsafe to be passed to the 
-rt_sigreturn(2) syscall).  All the other values, including of course "0", 
-are not treated specially and the context is passed to rt_sigreturn(2) as 
-usually.  This only matters in cases where e.g. setcontext(3) is used to 
-exit from or return to a signal handler.
+Best wishes
 
-> I haven't fully traced through the code, but I hope that this 'invariant'
-> holds both before and after this patch.  I think Maciej did the work on
-> getcontext/setcontext, he may know for sure what the requirements are.
-
- Thanks for the heads-up, David -- I would have surely missed this e-mail 
-from the flood I get.  I think the change is safe as MIPS/Linux only uses 
-syscall numbers from 4000 up (not sure why such a non-round number was 
-chosen; one like 4096 would seem more appropriate to me but there you go), 
-so there should be no clash unless an invalid syscall number has a chance 
-to be stored there.
-
- For how exactly the magic value is used please have a look at 
-sysdeps/unix/sysv/linux/mips/*context.S in glibc-ports and search for 
-"magic flag" (yes, I know these pieces of assembly butchered and mixed 
-with CPP mince require some mind-twistedness to parse; sorry about that, 
-but I tried my best and put some comments throughout so that the magic 
-flag is easy to find ;) ).
-
-  Maciej
+Norbert
+------------------------------------------------------------------------
+Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
+JAIST, Japan                                 TeX Live & Debian Developer
+DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
+------------------------------------------------------------------------
+AITH (n.)
+The single bristle that sticks out sideways on a cheap paintbrush.
+			--- Douglas Adams, The Meaning of Liff
