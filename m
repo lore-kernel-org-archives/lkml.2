@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab0I3R3R (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 13:29:17 -0400
-Received: from kroah.org ([198.145.64.141]:50615 "EHLO coco.kroah.org"
+	id S932287Ab0I3Rak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 13:30:40 -0400
+Received: from kroah.org ([198.145.64.141]:50634 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753026Ab0I3R3Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 13:29:16 -0400
-Date: Thu, 30 Sep 2010 04:51:23 -0700
+	id S1753026Ab0I3Raj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 13:30:39 -0400
+Date: Thu, 30 Sep 2010 05:12:10 -0700
 From: Greg KH <greg@kroah.com>
-To: pavan_savoy@ti.com
-Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, devel@driverdev.osuosl.org,
+To: Hank Janssen <hjanssen@sailtheuniverse.com>
+Cc: hjanssen@microsoft.com, Haiyang Zhang <haiyangz@microsoft.com>,
+        devel@driverdev.osuosl.org, virtualization@lists.osdl.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers:staging:ti-st: mv ti_wilink_st header
-Message-ID: <20100930115123.GB2779@kroah.com>
-References: <1285777522-13709-1-git-send-email-pavan_savoy@ti.com>
+Subject: Re: [PATCH 1/1] staging: hv: Remove camel case variables in
+	channel.c
+Message-ID: <20100930121210.GA14358@kroah.com>
+References: <4CA4105E.80602@sailtheuniverse.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285777522-13709-1-git-send-email-pavan_savoy@ti.com>
+In-Reply-To: <4CA4105E.80602@sailtheuniverse.com>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 12:25:22PM -0400, pavan_savoy@ti.com wrote:
-> From: Pavan Savoy <pavan_savoy@ti.com>
+On Wed, Sep 29, 2010 at 09:21:50PM -0700, Hank Janssen wrote:
 > 
-> Greg,
+> Rename camel case variables in channel.c and changed them to
+> lowercase.
 > 
-> How is the movement of drivers done out of staging?
-> Should I submit patches like these, which move individual files without
-> breaking the build during anytime of movement?
+> Sending this from my own accounts till we have a proper mail server
+> set up that allows us to send out patches without issues.
 
-Yes.
+This paragraph goes below the '---' line, it doesn't belong in the
+change log, right?
 
-> In few following days I plan to submit patches to move the ST headers sources
-> out.
-> ti_wilink_st.h -> include/linux/
-> st_core.c, st_kim.c and st_ll.c -> drivers/misc/
-> Makefile and Kconfig changes to drivers/misc/Kconfig and drivers/misc/Makefile
-> bt_drv.c -> drivers/bluetooth/
+> This patch was created by Haiyang Zhang.
 
-Yes, that sounds great.
+Then put the proper "From:" line in the email body like the file,
+Documentation/SubmittingPatches tells you to do so that git properly
+credits the correct author.
 
-But, the bluetooth patch should go to the bluetooth maintainer for his
-review, I'll need the ack from him before I can apply it.
+Oh, you also forgot to cc: me so I know to pick the patch up :)
 
-Oh, this patch looks nice, but I found one problem:
-
-> --- a/drivers/staging/ti-st/ti_wilink_st.h
-> +++ /dev/null
-> -#ifndef TI_WILINK_ST_H
-> -#define TI_WILINK_ST_H
-> -
-> -/* TODO:
-> - * Move the following to tty.h upon acceptance
-> - */
-> -#define N_TI_WL	22	/* Ldisc for TI's WL BT, FM, GPS combo chips */
-
-We need to do that now, before you move this file.
-
-Then, you can drop this:
-
-> -#ifdef __KERNEL__
-
-As it will not be needed, right?
-
-Care to send me a patch that does this first?
+Care to try it again?
 
 thanks,
 
