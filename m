@@ -1,108 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751761Ab0I3EiT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 00:38:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52238 "EHLO mx1.redhat.com"
+	id S1751506Ab0I3Ep2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 00:45:28 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49071 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab0I3EiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 00:38:18 -0400
-Message-ID: <4CA41431.1000304@redhat.com>
-Date: Thu, 30 Sep 2010 01:38:09 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for September 29 (media & IR build errors)
-References: <20100929143604.3d870ddf.sfr@canb.auug.org.au> <20100929083128.4efc3f0d.randy.dunlap@oracle.com>
-In-Reply-To: <20100929083128.4efc3f0d.randy.dunlap@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1750706Ab0I3Ep0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 00:45:26 -0400
+Date: Thu, 30 Sep 2010 14:45:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for September 30
+Message-Id: <20100930144519.5b559c10.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Sep_2010_14_45_19_+1000_IQ9BBXVnaRIUdxNz"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 29-09-2010 12:31, Randy Dunlap escreveu:
-> On Wed, 29 Sep 2010 14:36:04 +1000 Stephen Rothwell wrote:
-> 
->> Hi all,
->>
->> Changes since 20100928:
-> 
-> 
-> ERROR: "ir_keydown" [drivers/media/video/ir-kbd-i2c.ko] undefined!
-> ERROR: "__ir_input_register" [drivers/media/video/ir-kbd-i2c.ko] undefined!
-> ERROR: "get_rc_map" [drivers/media/video/ir-kbd-i2c.ko] undefined!
-> ERROR: "ir_input_unregister" [drivers/media/video/ir-kbd-i2c.ko] undefined!
-> ERROR: "get_rc_map" [drivers/media/video/cx88/cx88xx.ko] undefined!
-> ERROR: "ir_repeat" [drivers/media/video/cx88/cx88xx.ko] undefined!
-> ERROR: "ir_input_unregister" [drivers/media/video/cx88/cx88xx.ko] undefined!
-> ERROR: "ir_keydown" [drivers/media/video/cx88/cx88xx.ko] undefined!
-> ERROR: "__ir_input_register" [drivers/media/video/cx88/cx88xx.ko] undefined!
-> ERROR: "get_rc_map" [drivers/media/video/bt8xx/bttv.ko] undefined!
-> ERROR: "ir_input_unregister" [drivers/media/video/bt8xx/bttv.ko] undefined!
-> ERROR: "__ir_input_register" [drivers/media/video/bt8xx/bttv.ko] undefined!
-> ERROR: "ir_core_debug" [drivers/media/IR/ir-common.ko] undefined!
-> ERROR: "ir_g_keycode_from_table" [drivers/media/IR/ir-common.ko] undefined!
+--Signature=_Thu__30_Sep_2010_14_45_19_+1000_IQ9BBXVnaRIUdxNz
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Randy,
+Hi all,
 
-Thanks for the test.
+Changes since 20100929:
 
-With Sept, 29 + my linux-next tree (that weren't merged on yesterday's build,
-I didn't notice the above errors). I suspect that the fixes were already on my
-tree.
+The nfs tree gained a build failure for which I reverted a commit.
 
-I noticed, however, two Kconfig errors on staging (for go7007 and cx25821), related
-to IR_CORE changes:
+The nfsd tree lost its build failure.
 
-warning: (VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && BKL && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
-warning: (VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+The sound-asoc tree gained a conflict against the i.MX tree.
 
-I'm adding the enclosed patch to my linux-next tree in order to fix this trouble.
-On a test after the patch on my tree, your randconfig applied well over my tree.
-So, I'm pushing it to my tree at kernel.org.
+The v4l-dvb tree still has its build failure so I used the version from
+next-20100928.
 
+The hwpoison tree still has its build failure so I used the version from
+next-20100924.
+
+I have applied a merge fix patch to the staging-next tree.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 176 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
 Cheers,
-Mauro
+Stephen Rothwell                    sfr@canb.auug.org.au
 
----
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/platforms/85xx/mpc85xx_m=
+ds.c
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+$ git reset --hard HEAD^
+Merging refs/next/20100928/v4l-dvb
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-keytable.c
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-lirc-codec.c
+CONFLICT (content): Merge conflict in drivers/media/IR/ir-raw-event.c
+CONFLICT (add/add): Merge conflict in drivers/media/IR/streamzap.c
+CONFLICT (content): Merge conflict in drivers/media/dvb/siano/smscoreapi.c
+CONFLICT (add/add): Merge conflict in drivers/media/video/s5p-fimc/fimc-cor=
+e.c
+[master 388f318] Merge commit 'refs/next/20100928/v4l-dvb'
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging swiotlb-xen/master
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging wireless/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3pandor=
+a.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom-periph=
+erals.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/libertas/if_sdio=
+.c
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/pcnet_cs.c
+Merging mtd/master
+Merging crypto/master
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
+Merging sound-asoc/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-mx3/devices.c
+CONFLICT (content): Merge conflict in drivers/video/sh_mobile_hdmi.c
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+CONFLICT (content): Merge conflict in drivers/net/pcmcia/smc91c92_cs.c
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging mmc/mmc-next
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/mfd/sh_mobile_sdhi.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/atombios_crtc.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_legacy_=
+crtc.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_mode.h
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/smp_plat.h
+CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
+CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/ct-ca9x4.c
+Merging alacrity/linux-next
+CONFLICT (content): Merge conflict in include/linux/Kbuild
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging i7300_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging xen/upstream/xen
+Merging rcu/rcu/next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in include/linux/percpu.h
+CONFLICT (content): Merge conflict in net/core/dev.c
+Merging lost-spurious-irq/lost-spurious-irq
+CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
+CONFLICT (content): Merge conflict in include/linux/libata.h
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+CONFLICT (content): Merge conflict in include/linux/percpu.h
+CONFLICT (content): Merge conflict in mm/percpu.c
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+$ git reset --hard HEAD^
+Merging refs/next/20100924/hwpoison
+Merging sysctl/master
+Merging quilt/driver-core
+CONFLICT (content): Merge conflict in drivers/misc/Makefile
+Merging quilt/tty
+Merging quilt/usb
+CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/Makefile
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
+face.c
+CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
+ in HEAD and modified in staging-next/staging-next. Version staging-next/st=
+aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
+CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
+c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
+g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
+eft in tree.
+CONFLICT (delete/modify): drivers/staging/ti-st/st.h deleted in staging-nex=
+t/staging-next and modified in HEAD. Version HEAD of drivers/staging/tiReso=
+lved 'drivers/staging/Makefile' using previous resolution.
+CONFLICT (delete/modify): drivers/staging/ti-st/st_core.h deleted in stagin=
+g-next/staging-next and modified in HEAD. Version HEAD of drivers/staging/t=
+i-st/st_core.h left in tree.
+CONFLICT (content): Merge conflict in drivers/staging/ti-st/st_kim.c
+$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
+touchscreen/intel-mid-touch.c
+$ git rm -f drivers/staging/ti-st/st.h drivers/staging/ti-st/st_core.h
+Applying: staging: ath6kl: Fixing the driver to use modified mmc_host struc=
+ture
+Merging slabh/slabh
+Merging bkl-trivial/trivial
+CONFLICT (content): Merge conflict in drivers/block/ataflop.c
+CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4000_cs.c
+CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4040_cs.c
+CONFLICT (content): Merge conflict in drivers/mmc/card/block.c
+Merging bkl-llseek/llseek
+CONFLICT (content): Merge conflict in drivers/infiniband/hw/cxgb4/device.c
+Merging bkl-vfs/vfs
+CONFLICT (content): Merge conflict in fs/nilfs2/super.c
+Merging bkl-config/config
+Merging irqflags/master
+Merging cleancache/linux-next
+CONFLICT (content): Merge conflict in include/linux/fs.h
+CONFLICT (content): Merge conflict in mm/Kconfig
+Merging scsi-post-merge/merge-base:master
+[master 2d5f8e3] Revert "NFS: new idmapper"
 
-commit 9c1eba02d90134fdfa4140b594b2367e90df1dbf
-Author: Mauro Carvalho Chehab <mchehab@redhat.com>
-Date:   Thu Sep 30 00:56:08 2010 -0300
+--Signature=_Thu__30_Sep_2010_14_45_19_+1000_IQ9BBXVnaRIUdxNz
+Content-Type: application/pgp-signature
 
-    V4L/DVB: Fix Kconfig dependencies for VIDEO_IR
-    
-    warning: (VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && BKL && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
-    warning: (VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
-    
-    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-diff --git a/drivers/staging/cx25821/Kconfig b/drivers/staging/cx25821/Kconfig
-index df7756a..a766d0b 100644
---- a/drivers/staging/cx25821/Kconfig
-+++ b/drivers/staging/cx25821/Kconfig
-@@ -4,7 +4,7 @@ config VIDEO_CX25821
- 	select I2C_ALGOBIT
- 	select VIDEO_BTCX
- 	select VIDEO_TVEEPROM
--	select VIDEO_IR
-+	depends on VIDEO_IR
- 	select VIDEOBUF_DVB
- 	select VIDEOBUF_DMA_SG
- 	select VIDEO_CX25840
-diff --git a/drivers/staging/go7007/Kconfig b/drivers/staging/go7007/Kconfig
-index e47f683..b816a60 100644
---- a/drivers/staging/go7007/Kconfig
-+++ b/drivers/staging/go7007/Kconfig
-@@ -3,7 +3,7 @@ config VIDEO_GO7007
- 	depends on VIDEO_DEV && PCI && I2C && INPUT
- 	depends on SND
- 	select VIDEOBUF_DMA_SG
--	select VIDEO_IR
-+	depends on VIDEO_IR
- 	select VIDEO_TUNER
- 	select VIDEO_TVEEPROM
- 	select SND_PCM
+iQEcBAEBAgAGBQJMpBXfAAoJEDMEi1NhKgbs4iMH/312lpR5uXDImB4manoB5J7H
+2wXQpePr67rQDwPC2sqGnopUWHKdT+zzzTU5aeUMZR1skpiGLvebx6t/RkDRk/GX
+yuRrZoc+ifWAfIW8+ZHzRQrsK2OrF3o32mWiUvL8idz10JtctuLHH3awRdf5IsWo
+qY5PqHyJvbE702G363Jxvlg+21iq4dyjgx2NXlPxwlnyWqMR/D8NCeMQNR/8T0SE
+oUEca2A9fwPIU7oGwKlpt2zXtLjLiQDvJI1pHnP8Z3r+q1oqgDSFyUznRxhYN5+1
+E/XROq09d9SicPQF0SGJc5LUEQ0qJ6VUVgKhXzWk5R8IFW7xctoThgjpjt24CAE=
+=TXtG
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__30_Sep_2010_14_45_19_+1000_IQ9BBXVnaRIUdxNz--
