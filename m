@@ -1,127 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab0I3D6i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 23:58:38 -0400
-Received: from mail-in-13.arcor-online.net ([151.189.21.53]:55111 "EHLO
-	mail-in-13.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753652Ab0I3D6h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 23:58:37 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-18.arcor-online.net 90DE23DC437
-Subject: Re: [GIT PULL for 2.6.36] V4L/DVB fixes
-From: hermann pitton <hermann-pitton@arcor.de>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4CA3FF3B.50004@redhat.com>
-References: <4CA10545.4010204@redhat.com>
-	 <AANLkTikYyEPAHq5rYzzckExTSFFCAj_DUqAZEvoeU0WD@mail.gmail.com>
-	 <1285808690.4880.18.camel@pc07.localdom.local>  <4CA3FF3B.50004@redhat.com>
-Content-Type: text/plain
-Date: Thu, 30 Sep 2010 05:50:39 +0200
-Message-Id: <1285818639.6459.19.camel@pc07.localdom.local>
+	id S1753970Ab0I3D6p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 23:58:45 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34049 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753894Ab0I3D6o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 23:58:44 -0400
+Date: Thu, 30 Sep 2010 13:58:34 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Bryan Schumaker <bjschuma@netapp.com>
+Subject: linux-next: build failure after merge of the final tree (nfs tree
+ related)
+Message-Id: <20100930135834.dc73dfac.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-5.fc8) 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Sep_2010_13_58_34_+1000_BUUwJU_KsCkoL.nA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Thu__30_Sep_2010_13_58_34_+1000_BUUwJU_KsCkoL.nA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Am Donnerstag, den 30.09.2010, 00:08 -0300 schrieb Mauro Carvalho
-Chehab:
-> Em 29-09-2010 22:04, hermann pitton escreveu:
-> > 
-> > Linus,
-> > 
-> > Am Montag, den 27.09.2010, 17:02 -0700 schrieb Linus Torvalds:
-> >> On Mon, Sep 27, 2010 at 1:57 PM, Mauro Carvalho Chehab
-> >> <mchehab@redhat.com> wrote:
-> >>> The following changes since commit 32163f4b2cef28a5aab8b226ffecfc6379a53786:
-> >>>
-> >>>  alpha: fix usp value in multithreaded coredumps (2010-09-25 14:38:13 -0700)
-> >>>
-> >>> are available in the git repository at:
-> >>>  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/linux-2.6.git v4l_for_linus
-> >>
-> >> I get
-> >>
-> >>   scripts/kconfig/conf --oldconfig arch/x86/Kconfig
-> >>   drivers/media/Kconfig:146: 'endif' in different file than 'if'
-> >>   drivers/media/IR/Kconfig:15: location of the 'if'
-> >>   drivers/Kconfig:114: unexpected 'endmenu' within if block
-> >>   drivers/Kconfig:1: missing end statement for this entry
-> >>   make[1]: *** [oldconfig] Error 1
-> >>   make: *** [oldconfig] Error 2
-> >>
-> >> with this. And it seems to be due to a totally broken commit at the
-> >> very beginning of the series by a commit called "Kconfig fixes"
-> >> (Hah!), that clearly has not been tested at all.
-> >>
-> >> The commit sequence was also done today, apparently immediately before
-> >> sending me the pull request. Which sure as hell explains the "clearly
-> >> not tested at all" situation.
-> >>
-> >> Don't do this. You are now officially on my shit-list for sending me
-> >> total crap.
-> >>
-> >> How effing hard can it be to understand: you don't send me stuff that
-> >> hasn't been tested. It needs to be in -next for SEVERAL DAYS, and you
-> >> don't rebase it or take it from some random quilt series just before
-> >> sending it to me.
-> >>
-> >> That's true _especially_ during the -rc series. But it's damn well
-> >> true at any other time too.
-> >>
-> >> I'm angry. I expect at least some _minimal_ amount of competence from
-> >> people I pull from. This was not it. Get your ^&#! act together!
-> >>
-> >>                                    Linus
-> > 
-> > you should not be such rude.
-> > 
-> > You have never been in any hardware details on v4l and dvb.
-> > 
-> > After Gerd Knorr did quit, out of reasons, you noticed there is some
-> > noise on v4l and dvb, but you never had to fix much on your own in the
-> > last eight years.
-> > 
-> > Shouting around and blaming others always was enough ...
-> > 
-> > I agree, a rc-1 should be at least compile tested.
-> > 
-> > Any idea, why this goes away?
-> 
-> Hermann,
-> 
-> That's OK. I did crap. Linus is right. I'll send him the patches again
-> after having the same tree branch being tested for a few days at linux-next, 
-> without any bad results.
-> 
-> Cheers,
-> Mauro.
+Hi Trond,
 
-Mauro,
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-hopefully, a few days on linux-next can replace all what we had in the
-past, causing sometimes years of delay ...
+fs/nfs/idmap.c: In function 'nfs_idmap_init':
+fs/nfs/idmap.c:79: error: implicit declaration of function 'IS_ERR'
+fs/nfs/idmap.c:80: error: implicit declaration of function 'PTR_ERR'
+fs/nfs/idmap.c: In function 'nfs_idmap_request_key':
+fs/nfs/idmap.c:170: error: implicit declaration of function 'IS_ERR_OR_NULL'
 
-What to say ?
+Caused by commit 892c16b2faae80ce1a3b3bd280a93533cd4f04a6 ("NFS: new
+idmapper").  I guess an include of linux/err.h is missing.
 
-OK, if you say we are fine with it now, it is up to you.
-
-So, the whole mistake was, that Linus did not start kicking asses harder
-earlier?
-
-What a total crap!
-
+I have reverted that commit for today.
+--=20
 Cheers,
-Hermann
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__30_Sep_2010_13_58_34_+1000_BUUwJU_KsCkoL.nA
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMpArqAAoJEDMEi1NhKgbsqK0H/2tsrvVT4J7x0w+A+f5LlUOA
+E9uK6Cbh/wwoLBaA3SDuo8l3t97NMSuv1FH+LqU+J3J7Q4vaopkfXJn3qT4djNjp
+z9MMl9KJt3EUlhvTAyqSwyZuUFScypMoPFinT+EQWR/CNUBg0mMxwbjRCeWamG5K
+OiIl79RYJaAbYw/NtvIWBDP4CSLJpeiHUOSUlqD+ZyzzJQrOuY9ZBCjiS/Jbnk1r
+PAvQ5f22zkxYXz042nKcksoSR7ifIPkXrZMxXJEpprkwUcCagtAoz3N7KXOqeIZB
+Q/KCpSX3YG7PVL5SSKHGvIqgfKKXS1O/1waNrWoJSIE0O6+xRXLzEWzXLqbIUHg=
+=Mtua
+-----END PGP SIGNATURE-----
 
-
-
+--Signature=_Thu__30_Sep_2010_13_58_34_+1000_BUUwJU_KsCkoL.nA--
