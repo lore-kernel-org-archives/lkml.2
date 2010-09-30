@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751784Ab0I3AH5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 20:07:57 -0400
-Received: from verein.lst.de ([213.95.11.210]:42862 "EHLO verein.lst.de"
+	id S1751832Ab0I3ALv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 20:11:51 -0400
+Received: from mga01.intel.com ([192.55.52.88]:43948 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751120Ab0I3AH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 20:07:56 -0400
-Date: Thu, 30 Sep 2010 02:06:41 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Christoph Hellwig <hch@lst.de>, Chris Mason <chris.mason@oracle.com>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Jens Axboe <jaxboe@fusionio.com>,
-        linux-btrfs@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org, stable@kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Micha?? Piotrowski <mkkp4x4@gmail.com>,
-        Chuck Ebbert <cebbert@redhat.com>, kernel@lists.fedoraproject.org,
-        linux-mtd@lists.infradead.org, David Woodhouse <dwmw2@infradead.org>
-Subject: Re: Dirtiable inode bdi default != sb bdi btrfs
-Message-ID: <20100930000641.GA27865@lst.de>
-References: <4C9AA546.6050201@cesarb.net> <20100923123849.8975fe47.akpm@linux-foundation.org> <20100927222548.GG3610@quack.suse.cz> <20100927225452.GG4270@think> <20100929081936.GA23322@lst.de> <20100929121808.GB3290@quack.suse.cz> <20100929141006.GB7439@lst.de> <20100929233806.GB12707@quack.suse.cz>
+	id S1751023Ab0I3ALs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 20:11:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,257,1283756400"; 
+   d="scan'208";a="611747988"
+Subject: Re: [PATCH -v2 1/5] ACPI, APEI, Fix APEI related table size
+ checking
+From: Huang Ying <ying.huang@intel.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <lenb@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+In-Reply-To: <AANLkTi=JkcJiQhxLSmU2vgmrACPSrE16cEhRnxCOr_5g@mail.gmail.com>
+References: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
+	 <1285761235-4751-2-git-send-email-ying.huang@intel.com>
+	 <AANLkTi=JkcJiQhxLSmU2vgmrACPSrE16cEhRnxCOr_5g@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Sep 2010 08:11:46 +0800
+Message-ID: <1285805506.6944.4.camel@yhuang-dev>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100929233806.GB12707@quack.suse.cz>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 01:38:07AM +0200, Jan Kara wrote:
-> > No.  For one thing we don't need any exception for correctnes alone -
-> > even the block device variant would work fine with the default case.
-> Here I don't agree. If you don't have some kind of exception, sb->s_bdi
-> for both "block" and "mtd_inodefs" filesystems points to
-> noop_backing_dev_info and you get no writeback for that one. So it isn't
-> just a performance issue but also a correctness one.
+Hi, Yinghai,
 
-Indeed - for internal filesystems that require writeback the change
-causes trouble if they haven't registered a s_bdi.  But for all user
-visible filesystems that doesn't happen as we require s_bdi for
-sync or even unmounts to work.
+On Wed, 2010-09-29 at 23:47 +0800, Yinghai Lu wrote:
+> On Wed, Sep 29, 2010 at 4:53 AM, Huang Ying <ying.huang@intel.com> wrote:
+> > On Huang Ying's machine:
+> >
+> > erst_tab->header_length == sizeof(struct acpi_table_einj)
+> 
+> So it seems your system firmware violates the 4.0 spec
+
+Perhaps. :)
+
+But the machine firmware has been released, and we should support as
+many machines as possible I think. Do you agree?
+
+Best Regards,
+Huang Ying
+
+
