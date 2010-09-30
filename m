@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757070Ab0I3XTb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:19:31 -0400
-Received: from www.tglx.de ([62.245.132.106]:43655 "EHLO www.tglx.de"
+	id S1756955Ab0I3XS6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:18:58 -0400
+Received: from www.tglx.de ([62.245.132.106]:43628 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757018Ab0I3XT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:19:28 -0400
-Message-Id: <20100930221742.514911056@linutronix.de>
+	id S1757012Ab0I3XSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:18:53 -0400
+Message-Id: <20100930221743.113364752@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 30 Sep 2010 23:18:03 -0000
+Date: Thu, 30 Sep 2010 23:18:32 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
@@ -22,30 +22,53 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [patch 41/47] arm: davinci: Cleanup irq_desc access
+Subject: [patch 47/47] genirq: Remove the old sparse irq allocator function
 References: <20100930221351.682772535@linutronix.de>
-Content-Disposition: inline; filename=arm-davinci-cleanup-irq-desc-access.patch
+Content-Disposition: inline; filename=genirq-remove-craplocator.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Last user is gone. Remove it.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arm/mach-davinci/gpio.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ include/linux/irq.h  |    2 --
+ kernel/irq/irqdesc.c |    9 ---------
+ 2 files changed, 11 deletions(-)
 
-Index: linux-2.6-tip/arch/arm/mach-davinci/gpio.c
+Index: linux-2.6-tip/include/linux/irq.h
 ===================================================================
---- linux-2.6-tip.orig/arch/arm/mach-davinci/gpio.c
-+++ linux-2.6-tip/arch/arm/mach-davinci/gpio.c
-@@ -395,7 +395,7 @@ static int __init davinci_gpio_irq_setup
+--- linux-2.6-tip.orig/include/linux/irq.h
++++ linux-2.6-tip/include/linux/irq.h
+@@ -261,8 +261,6 @@ struct irq_desc {
+ extern struct irq_desc irq_desc[NR_IRQS];
+ #endif
  
- 		/* AINTC handles mask/unmask; GPIO handles triggering */
- 		irq = bank_irq;
--		gpio_irqchip_unbanked = *get_irq_desc_chip(irq_to_desc(irq));
-+		gpio_irqchip_unbanked = *irq_get_irq_data(irq)->chip;
- 		gpio_irqchip_unbanked.name = "GPIO-AINTC";
- 		gpio_irqchip_unbanked.set_type = gpio_irq_type_unbanked;
+-extern struct irq_desc *irq_to_desc_alloc_node(unsigned int irq, int node);
+-
+ int irq_alloc_descs(unsigned int irq, unsigned int from, unsigned int cnt, int node);
  
+ static inline int irq_alloc_desc(int node)
+Index: linux-2.6-tip/kernel/irq/irqdesc.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/irqdesc.c
++++ linux-2.6-tip/kernel/irq/irqdesc.c
+@@ -192,15 +192,6 @@ err:
+ 	return -ENOMEM;
+ }
+ 
+-struct irq_desc * __ref irq_to_desc_alloc_node(unsigned int irq, int node)
+-{
+-	int res = irq_alloc_descs(irq, irq, 1, node);
+-
+-	if (res == -EEXIST || res == irq)
+-		return irq_to_desc(irq);
+-	return NULL;
+-}
+-
+ int __init early_irq_init(void)
+ {
+ 	int i, initcnt, node = first_online_node;
 
 
