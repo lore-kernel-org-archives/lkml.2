@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab0I3PFs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 11:05:48 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:35726 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755122Ab0I3PFr (ORCPT
+	id S932090Ab0I3PR7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 11:17:59 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:41291 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756662Ab0I3PR6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 11:05:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=YU/UEUTuveF8IipTGkFC/gkodA6xyscdTGwc9jbd84t7ZWkG9+1n4FmmpkCd9YVas7
-         t4yBy0Wr7AOwVsEhUXl7jjyV67/3AcGFVrL0CuSvtv4/GcKf4kVhzFkhnVxFdyWp4xwq
-         Cg82fCPDxW/7UJMpJx+SEBqE3e0t7MmEbmZeU=
-Subject: Re: [PATCH 5/5] perf: Declare hw_perf_{dis,en}able() in
- perf_event.h
-From: Namhyung Kim <namhyung@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1285845732.2144.13.camel@laptop>
-References: <1285583997-1262-1-git-send-email-namhyung@gmail.com>
-	 <1285583997-1262-6-git-send-email-namhyung@gmail.com>
-	 <1285845732.2144.13.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Oct 2010 00:05:37 +0900
-Message-ID: <1285859137.1628.4.camel@leonhard>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 30 Sep 2010 11:17:58 -0400
+Message-ID: <4CA4AA21.9030109@austin.ibm.com>
+Date: Thu, 30 Sep 2010 10:17:53 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: Robin Holt <holt@sgi.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
+ sections
+References: <4CA0EBEB.1030204@austin.ibm.com> <20100928123848.GH14068@sgi.com> <4CA2313D.2030508@austin.ibm.com> <20100929192830.GK14068@sgi.com>
+In-Reply-To: <20100929192830.GK14068@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010-09-30 (목), 13:22 +0200, Peter Zijlstra:
-> On Mon, 2010-09-27 at 19:39 +0900, Namhyung Kim wrote:
-> > Since they can be defined in arch-specific code declare them in
-> > perf_event.h and remove following warnings from sparse:
-> > 
-> >  kernel/perf_event.c:83:13: warning: symbol 'hw_perf_disable' was not declared. Should it be static?
-> >  kernel/perf_event.c:84:13: warning: symbol 'hw_perf_enable' was not declared. Should it be static?
-> > 
-> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+On 09/29/2010 02:28 PM, Robin Holt wrote:
+> On Tue, Sep 28, 2010 at 01:17:33PM -0500, Nathan Fontenot wrote:
+>> On 09/28/2010 07:38 AM, Robin Holt wrote:
+>>> I was tasked with looking at a slowdown in similar sized SGI machines
+>>> booting x86_64.  Jack Steiner had already looked into the memory_dev_init.
+>>> I was looking at link_mem_sections().
+>>>
+>>> I made a dramatic improvement on a 16TB machine in that function by
+>>> merely caching the most recent memory section and checking to see if
+>>> the next memory section happens to be the subsequent in the linked list
+>>> of kobjects.
+>>>
+>>> That simple cache reduced the time for link_mem_sections from 1 hour 27
+>>> minutes down to 46 seconds.
+>>
+>> Nice!
+>>
+>>>
+>>> I would like to propose we implement something along those lines also,
+>>> but I am currently swamped.  I can probably get you a patch tomorrow
+>>> afternoon that applies at the end of this set.
+>>
+>> Should this be done as a separate patch?  This patch set concentrates on
+>> updates to the memory code with the node updates only being done due to the
+>> memory changes.
+>>
+>> I think its a good idea to do the caching and have no problem adding on to
+>> this patchset if no one else has any objections.
 > 
-> What tree is this against, those function no longer exist!?
+> I am sorry.  I had meant to include you on the Cc: list.  I just posted a
+> set of patches (3 small patches) which implement the cache most recent bit
+> I aluded to above.  Search for a subject of "Speed up link_mem_sections
+> during boot" and you will find them.  I did add you to the Cc: list for
+> the next time I end up sending the set.
+> 
+> My next task is to implement a x86_64 SGI UV specific chunk of code
+> to memory_block_size_bytes().  Would you consider adding that to your
+> patch set?  I expect to have that either later today or early tomorrow.
+> 
 
-That was Linus' tree. Sorry, I didn't check -tip tree.
-Please ignore this :-(
+No problem. I'm putting together a new patch set with updates from all of
+the comments now so go ahead and send it to me when you have it ready.
 
-
--- 
-Regards,
-Namhyung Kim
-
-
+-Nathan
