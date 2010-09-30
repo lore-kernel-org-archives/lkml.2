@@ -1,104 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932418Ab0I3UZK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:25:10 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53948 "EHLO mx1.suse.de"
+	id S932427Ab0I3U0T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 16:26:19 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:56793 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932188Ab0I3UZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:25:08 -0400
-Date: Thu, 30 Sep 2010 22:25:07 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnaud Lacombe <lacombar@gmail.com>, Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: linux-next: build warning after merge of the kbuild tree
-Message-ID: <20100930202507.GC25629@sepie.suse.cz>
-References: <20100930105025.c46e2fe0.sfr@canb.auug.org.au>
+	id S932116Ab0I3U0S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 16:26:18 -0400
+Date: Thu, 30 Sep 2010 15:26:12 -0500
+From: Robin Holt <holt@sgi.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, dipankar@in.ibm.com, holt@sgi.com,
+        viro@zeniv.linux.org.uk, bcrl@kvack.org, den@openvz.org, mingo@elte.hu,
+        mszeredi@suse.cz, cmm@us.ibm.com, npiggin@kernel.dk, xemul@openvz.org,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH V3] fs: allow for more than 2^31 files
+Message-ID: <20100930202612.GM14068@sgi.com>
+References: <20100923121704.GR14064@sgi.com>
+ <1285246384.362.3.camel@edumazet-laptop>
+ <20100923141037.GA3811@in.ibm.com>
+ <20100927.153639.212415479.davem@davemloft.net>
+ <1285645611.10438.27.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100930105025.c46e2fe0.sfr@canb.auug.org.au>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1285645611.10438.27.camel@edumazet-laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 10:50:25AM +1000, Stephen Rothwell wrote:
-> Hi Michal,
+On Tue, Sep 28, 2010 at 05:46:51AM +0200, Eric Dumazet wrote:
+> Le lundi 27 septembre 2010 à 15:36 -0700, David Miller a écrit :
+...
+
+> Fix is to let /proc/sys/fs/file-nr & /proc/sys/fs/file-max use long
+> integers, and change af_unix to use an atomic_long_t instead of
+> atomic_t.
 > 
-> After merging the kbuild tree, today's linux-next build (powerpc
-> ppc64_defconfig) produced this warning:
-> 
-> scripts/kconfig/kxgettext.c: In function 'menu_build_message_list':
-> scripts/kconfig/kxgettext.c:175: warning: passing argument 3 of 'message__add' discards qualifiers from pointer target type
-> scripts/kconfig/kxgettext.c:148: note: expected 'char *' but argument is of type 'const char * const'
-> scripts/kconfig/kxgettext.c:180: warning: passing argument 3 of 'message__add' discards qualifiers from pointer target type
-> scripts/kconfig/kxgettext.c:148: note: expected 'char *' but argument is of type 'const char * const'
+> get_max_files() is changed to return an unsigned long.
 
-Thanks, fixed with
+I _THINK_ we actually want get_max_files to return a long and have
+the files_stat_struct definitions be longs.  If we do not have it that
+way, we could theoretically open enough files on a single cpu to make
+get_nr_files return a negative without overflowing max_files.  That,
+of course, would require an insane amount of memory, but I think it is
+technically more correct.
 
 
-From: Michal Marek <mmarek@suse.cz>
-Subject: kconfig: Propagate const
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -1352,16 +1352,16 @@ static struct ctl_table fs_table[] = {
+>  	{
+>  		.procname	= "file-nr",
+>  		.data		= &files_stat,
+> -		.maxlen		= 3*sizeof(int),
+> +		.maxlen		= sizeof(files_stat),
+>  		.mode		= 0444,
+> -		.proc_handler	= proc_nr_files,
+> +		.proc_handler	= proc_doulongvec_minmax,
 
-Commit 2e7a091 made struct file->name a const char*, but forgot to
-constify all users of it.
+With this change, don't we lose the current nr_files value?  I think
+you need proc_nr_files to stay as it was.  If you disagree, we should
+probably eliminate the definitions for proc_nr_files as I don't believe
+they are used anywhere else.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
----
- scripts/kconfig/kxgettext.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
 
-diff --git a/scripts/kconfig/kxgettext.c b/scripts/kconfig/kxgettext.c
-index dcc3fcc..e9d8e79 100644
---- a/scripts/kconfig/kxgettext.c
-+++ b/scripts/kconfig/kxgettext.c
-@@ -63,11 +63,11 @@ next:
- 
- struct file_line {
- 	struct file_line *next;
--	char*		 file;
--	int		 lineno;
-+	const char *file;
-+	int lineno;
- };
- 
--static struct file_line *file_line__new(char *file, int lineno)
-+static struct file_line *file_line__new(const char *file, int lineno)
- {
- 	struct file_line *self = malloc(sizeof(*self));
- 
-@@ -90,7 +90,8 @@ struct message {
- 
- static struct message *message__list;
- 
--static struct message *message__new(const char *msg, char *option, char *file, int lineno)
-+static struct message *message__new(const char *msg, char *option,
-+				    const char *file, int lineno)
- {
- 	struct message *self = malloc(sizeof(*self));
- 
-@@ -130,7 +131,8 @@ static struct message *mesage__find(const char *msg)
- 	return m;
- }
- 
--static int message__add_file_line(struct message *self, char *file, int lineno)
-+static int message__add_file_line(struct message *self, const char *file,
-+				  int lineno)
- {
- 	int rc = -1;
- 	struct file_line *fl = file_line__new(file, lineno);
-@@ -145,7 +147,8 @@ out:
- 	return rc;
- }
- 
--static int message__add(const char *msg, char *option, char *file, int lineno)
-+static int message__add(const char *msg, char *option, const char *file,
-+			int lineno)
- {
- 	int rc = 0;
- 	char bf[16384];
--- 
-1.7.1
-
+Thanks,
+Robin
