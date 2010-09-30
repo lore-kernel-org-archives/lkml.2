@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab0I3XQE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:16:04 -0400
-Received: from www.tglx.de ([62.245.132.106]:52487 "EHLO www.tglx.de"
+	id S1755577Ab0I3XQN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:16:13 -0400
+Received: from www.tglx.de ([62.245.132.106]:52529 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754981Ab0I3XP7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:15:59 -0400
-Message-Id: <20100930221739.661942830@linutronix.de>
+	id S1755374Ab0I3XQL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:16:11 -0400
+Message-Id: <20100930221739.955643455@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 30 Sep 2010 23:15:38 -0000
+Date: Thu, 30 Sep 2010 23:15:49 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
@@ -22,47 +22,82 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [patch 12/47] arm: Use ARCH_IRQ_INIT_FLAGS
+Subject: [patch 15/47] genirq: Prepare proc for real sparse irq support
 References: <20100930221351.682772535@linutronix.de>
-Content-Disposition: inline; filename=arm-use-genirq-default-init-flags.patch
+Content-Disposition: inline; filename=genirq-prepare-proc-for-real-sparse.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define the ARCH_IRQ_INIT_FLAGS instead of fixing it up in a loop.
+/proc/irq never removes any entries, but when irq descriptors can be
+freed for real this is necessary. Otherwise we'd reference a freed
+descriptor in /proc/irq/N
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/arm/include/asm/hw_irq.h |    2 ++
- arch/arm/kernel/irq.c         |    4 +---
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ kernel/irq/internals.h |    2 ++
+ kernel/irq/irqdesc.c   |    2 ++
+ kernel/irq/proc.c      |   18 ++++++++++++++++++
+ 3 files changed, 22 insertions(+)
 
-Index: linux-2.6-tip/arch/arm/include/asm/hw_irq.h
+Index: linux-2.6-tip/kernel/irq/internals.h
 ===================================================================
---- linux-2.6-tip.orig/arch/arm/include/asm/hw_irq.h
-+++ linux-2.6-tip/arch/arm/include/asm/hw_irq.h
-@@ -24,4 +24,6 @@ void set_irq_flags(unsigned int irq, uns
- #define IRQF_PROBE	(1 << 1)
- #define IRQF_NOAUTOEN	(1 << 2)
+--- linux-2.6-tip.orig/kernel/irq/internals.h
++++ linux-2.6-tip/kernel/irq/internals.h
+@@ -26,10 +26,12 @@ void replace_irq_desc(unsigned int irq, 
  
-+#define ARCH_IRQ_INIT_FLAGS	(IRQ_NOREQUEST | IRQ_NOPROBE)
+ #ifdef CONFIG_PROC_FS
+ extern void register_irq_proc(unsigned int irq, struct irq_desc *desc);
++extern void unregister_irq_proc(unsigned int irq, struct irq_desc *desc);
+ extern void register_handler_proc(unsigned int irq, struct irqaction *action);
+ extern void unregister_handler_proc(unsigned int irq, struct irqaction *action);
+ #else
+ static inline void register_irq_proc(unsigned int irq, struct irq_desc *desc) { }
++static inline void unregister_irq_proc(unsigned int irq, struct irq_desc *desc); { }
+ static inline void register_handler_proc(unsigned int irq,
+ 					 struct irqaction *action) { }
+ static inline void unregister_handler_proc(unsigned int irq,
+Index: linux-2.6-tip/kernel/irq/irqdesc.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/irq/irqdesc.c
++++ linux-2.6-tip/kernel/irq/irqdesc.c
+@@ -210,6 +210,8 @@ static void free_desc(unsigned int irq)
+ 	struct irq_desc *desc = irq_to_desc(irq);
+ 	unsigned long flags;
+ 
++	unregister_irq_proc(irq, desc);
 +
- #endif
-Index: linux-2.6-tip/arch/arm/kernel/irq.c
+ 	raw_spin_lock_irqsave(&sparse_irq_lock, flags);
+ 	delete_irq_desc(irq);
+ 	raw_spin_unlock_irqrestore(&sparse_irq_lock, flags);
+Index: linux-2.6-tip/kernel/irq/proc.c
 ===================================================================
---- linux-2.6-tip.orig/arch/arm/kernel/irq.c
-+++ linux-2.6-tip/arch/arm/kernel/irq.c
-@@ -151,10 +151,8 @@ void __init init_IRQ(void)
- 	struct irq_desc *desc;
- 	int irq;
- 
--	for (irq = 0; irq < nr_irqs; irq++) {
-+	for (irq = 0; irq < nr_irqs; irq++)
- 		desc = irq_to_desc_alloc_node(irq, 0);
--		desc->status |= IRQ_NOREQUEST | IRQ_NOPROBE;
--	}
- 
- 	init_arch_irq();
+--- linux-2.6-tip.orig/kernel/irq/proc.c
++++ linux-2.6-tip/kernel/irq/proc.c
+@@ -297,6 +297,24 @@ void register_irq_proc(unsigned int irq,
+ 			 &irq_spurious_proc_fops, (void *)(long)irq);
  }
+ 
++void unregister_irq_proc(unsigned int irq, struct irq_desc *desc)
++{
++	char name [MAX_NAMELEN];
++
++	if (!root_irq_dir || !desc->dir)
++		return;
++#ifdef CONFIG_SMP
++	remove_proc_entry("smp_affinity", desc->dir);
++	remove_proc_entry("affinity_hint", desc->dir);
++	remove_proc_entry("node", desc->dir);
++#endif
++	remove_proc_entry("spurious", desc->dir);
++
++	memset(name, 0, MAX_NAMELEN);
++	sprintf(name, "%u", irq);
++	remove_proc_entry(name, root_irq_dir);
++}
++
+ #undef MAX_NAMELEN
+ 
+ void unregister_handler_proc(unsigned int irq, struct irqaction *action)
 
 
