@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab0I3NV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 09:21:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:26609 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753508Ab0I3NV2 convert rfc822-to-8bit (ORCPT
+	id S1753441Ab0I3NXY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 09:23:24 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:6533 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab0I3NXX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 09:21:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,259,1283756400"; 
-   d="scan'208";a="662674122"
-From: "Shi, Alex" <alex.shi@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Norbert Preining <preining@logic.at>, "Chen, Tim C" <tim.c.chen@intel.com>,
-        "arjan@infradead.org" <arjan@infradead.org>,
-        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
-        tglx <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>,
-        "Fu, Michael" <michael.fu@intel.com>
-Date: Thu, 30 Sep 2010 21:21:22 +0800
-Subject: RE: high power consumption in recent kernels
-Thread-Topic: high power consumption in recent kernels
-Thread-Index: ActgnB3c73zFZr/PR0uDTrBfx+MZogABe1KA
-Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B2E73741C41@shsmsx502.ccr.corp.intel.com>
-References: <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com>
-	 <20100909205115.GD11053@gamma.logic.tuwien.ac.at>
-	 <1284107099.402.30.camel@laptop>
-	 <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>
-	 <20100910145451.GB21450@gamma.logic.tuwien.ac.at>
-	 <1284355277.26157.8109.camel@debian>
-	 <20100922154452.GA9080@gamma.logic.tuwien.ac.at>
-	 <1285670426.21962.43.camel@debian> <4CA34F95.30400@logic.at>
-	 <1285807841.21962.1147.camel@debian>
-	 <20100930065902.GC15882@gamma.logic.tuwien.ac.at>
-	 <1285835230.21962.1290.camel@debian> <1285850185.2144.49.camel@laptop>
-In-Reply-To: <1285850185.2144.49.camel@laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Sep 2010 09:23:23 -0400
+Message-ID: <4CA48F47.5020101@tilera.com>
+Date: Thu, 30 Sep 2010 09:23:19 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: <linasvepstas@gmail.com>
+CC: Arnd Bergmann <arnd@arndb.de>, GLIBC Devel <libc-alpha@sourceware.org>,
+        <linux-kernel@vger.kernel.org>, <libc-ports@sourceware.org>
+Subject: Re: asm-generic/unistd.h and glibc use of NR_ipc
+References: <AANLkTi=33kimswSJ1tYsnG-PVs6Z4dVBtnqq65GN8Vxw@mail.gmail.com> <201009281040.09728.arnd@arndb.de> <4CA1E809.5010103@tilera.com> <AANLkTik4K+P_3pzN3g4_1UBnOVWTHLmRwFoHLKOS018T@mail.gmail.com>
+In-Reply-To: <AANLkTik4K+P_3pzN3g4_1UBnOVWTHLmRwFoHLKOS018T@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> Thanks Norbert!
->> Mike&Peter:
->> would you like to add signed-off for the following patch?
+ On 9/28/2010 1:36 PM, Linas Vepstas wrote:
+> On 28 September 2010 08:05, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>> On 9/28/2010 4:40 AM, Arnd Bergmann wrote:
+>>> Chris Metcalf is using the generic unistd.h file on the tile architecture
+>>> and has a glibc port that should be easily portable to all future
+>>> architectures. There are a few of them getting ready to be merged
+>>> now (c6x, lm32, nios2, and some people have contacted me privately
+>>> for architectures I cannot name).
+>>>
+>> I'm happy to provide some previews of the work I'm doing to interested parties.
+> Yes, this is exactly what I'm looking for!  I'd love to "preview" the
+> code; it'll take a good long while to get everything built and tested,
+> so feeback might take a while ...
 >
->I would really rather see the nohz decision move into the whole cpuidle
->governor thing, which can make a much better cost vs benefit decision.
->
-See! 
+> Any chance that these could be split out as a distinct set of patches,
+> taken apart from the tilera arch port, and submitted upstream
+> independently (to glibc and/or ports collection)?  I'll help w/ patch
+> preparation...
+
+At this point I'm probably a week away from having something with the
+obvious bugs all fixed, at which point I can start submitting it back
+upstream.  The few patches I have to common infrastructure I'll just submit
+to libc-alpha as git patches, then I'll probably just send a two-part patch
+set to libc-ports, one with the linux/generic stuff, and one with the
+tile-specific stuff.  (It looks like changes are never made as "git pull"
+requests on the glibc lists, just as emailed unidiffs -- someone correct me
+if I'm wrong.)
+
+Linas, if you can wait a week I'd rather have you see the stuff I believe
+to be working 100% to get maximum use out of you as a reviewer :-)  If you
+need it sooner, of course, I'm happy to let you have something now.
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
