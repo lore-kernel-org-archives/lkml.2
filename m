@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753242Ab0I3Rwm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 13:52:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34934 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab0I3Rwk (ORCPT
+	id S1752746Ab0I3SAF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:00:05 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:36744 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751603Ab0I3SAD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 13:52:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=fOKQjGehlg84db6CufIoPfHrnx8ENwWVktT1ckvOyN/3Vpspyo7gozj0pmhq8fYg6X
-         tXTfDgE0BpWb4/BqgyYjX6d5ciGAN97IGOKwEeZ1/H6BVjhsOJo1XetxKlon89KnfjfF
-         CFB2l7VmFW0he3hjLc8exnJcn3b48ULIuxTBE=
-Subject: QUESTION: block layer ->request and tasklets
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Alex Dubov <oakad@yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 19:52:34 +0200
-Message-ID: <1285869154.26846.44.camel@maxim-laptop>
+	Thu, 30 Sep 2010 14:00:03 -0400
+Date: Thu, 30 Sep 2010 19:59:42 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] dmi: export dmi data through debugfs
+Message-ID: <20100930195942.6780c7a6@endymion.delvare>
+In-Reply-To: <87pqvvuoce.fsf@basil.nowhere.org>
+References: <20100928211246.GA20941@lixom.net>
+	<20100929093403.7db92388@endymion.delvare>
+	<20100929145330.GA9351@lixom.net>
+	<20100929171118.1dbf3fbb@endymion.delvare>
+	<20100929222804.7f506ba5@lxorguk.ukuu.org.uk>
+	<87pqvvuoce.fsf@basil.nowhere.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Andi,
 
-I have an issue that is possible related to my lack of understanding of
-the block system, that really drives me nuts.
+On Thu, 30 Sep 2010 19:34:57 +0200, Andi Kleen wrote:
+> Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
+> 
+> >> Now if you really insist on exposing the whole DMI table through sysfs,
+> >> I can't prevent you from doing that. After all, ACPI already exposes
+> >> its tables under /sys/firmware/acpi/tables (mode 0400). But then you'd
+> >> rather expose the DMI entry point and tables
+> >> under /sys/firmware/dmi/tables for consistency, rather than using
+> >> debugfs. But again, I don't think it is adding any value over what we
+> >> already have.
+> >
+> > If you really the DMI data generally available run dmidecode in the boot
+> > scripts directed to a file. It even has a dump mode for this.
+> 
+> FWIW i have been pondering to put DMI into sysfs too. One of the reasons
+> mcelog has to start up as root is that it needs to get these tables
+> out of /dev/mem.
+> 
+> Just having a binary file to read would be fine though, no need to 
+> do decoding.
 
-Here is the short description:
+Out of curiosity, what exactly does mcelog need out of the DMI data?
 
-A 'perfect' block driver is supposed to start a sector transfer right in
-the ->request.
-
-An IRQ will cause the driver to end this request (or part of it), and
-try to fetch another one and submit it to the hardware, effectively
-doing the same thing the ->request does.
-This is not easy to implement in stand alone block driver, and it is
-even harder to so in a common layer.
-Yet, Alex's memorystick subsystem does implement this style of a driver,
-and it works quite well
-
-A memory stick low level driver is designed after the block driver.
-It also has a ->request function and a 'queue' of requests, even though
-this is an illusion, because every time a request is 'fetched' from
-upper layer, it is created on the fly by a state machine.
-An upper level driver is a block driver.
-
-Now the problem:
-The jmb38x_ms ->request function doesn't set the hardware, but rather it
-queues a tasklet, which does the work.
-It seems to be redundant, and yet if I remove the tasklet, the system
-randomly freezes, and worse that that, none of lockup detecters catch
-it, so I am unable to get a backtrace.
-This is a time I am really mad at hardware vendors for removing the
-reset button....
-
-On the other hand my ms_block.c, an upper level driver for old
-MemorySticks, works OK.
-But it contains a thread that does the IO. Its ->request only wakes it
-up.
-
-So in both cases, the block layer calls the ->request of the high level
-block driver, and then execution context switches (to thread or tasklet)
-which setups the IO.
-I have a bad feeling that this is a race/deadlock somewhere, but I
-triple checked everything.
-
-
-Any ideas?
-
-Best regards,
-	Maxim Levitsky
-
+-- 
+Jean Delvare
