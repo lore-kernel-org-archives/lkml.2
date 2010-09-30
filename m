@@ -1,85 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753828Ab0I3FVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 01:21:18 -0400
-Received: from mga03.intel.com ([143.182.124.21]:20906 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753485Ab0I3FVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 01:21:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,258,1283756400"; 
-   d="scan'208";a="330366181"
-Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100930040432.GD26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	 <1285549026-5008-7-git-send-email-ying.huang@intel.com>
-	 <20100927104426.GD32222@erda.amd.com>
-	 <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
-	 <20100927134341.GQ13563@erda.amd.com> <20100927151607.GX26290@redhat.com>
-	 <1285633705.20791.84.camel@yhuang-dev> <20100928151924.GJ26290@redhat.com>
-	 <AANLkTinuNKfTBYTK1+Ks-QSPbQ3qz5cCZC6vUwUZ+zCh@mail.gmail.com>
-	 <20100930040432.GD26290@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 13:21:14 +0800
-Message-ID: <1285824074.6944.85.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1753819Ab0I3F0R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 01:26:17 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49789 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753481Ab0I3F0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 01:26:16 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Sage Weil <sage@newdream.net>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
+        viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
+        neilb@suse.de, npiggin@kernel.dk, hooanon05@yahoo.co.jp,
+        miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V20 02/12] vfs: Add name to file handle conversion support
+In-Reply-To: <Pine.LNX.4.64.1009291022350.16498@cobra.newdream.net>
+References: <1285702610-32733-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1285702610-32733-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100928203045.GC10548@fieldses.org> <m3k4m57ync.fsf@linux.vnet.ibm.com> <Pine.LNX.4.64.1009291022350.16498@cobra.newdream.net>
+User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Thu, 30 Sep 2010 10:56:00 +0530
+Message-ID: <m3k4m3redz.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-30 at 12:04 +0800, Don Zickus wrote:
-> On Wed, Sep 29, 2010 at 02:55:58PM +0800, huang ying wrote:
-> > Hi, Don,
-> > 
-> > I think we all agree that to use order to determine the reason/source
-> > of NMI. The difference is that I want to keep as many direct calls in
-> > default_do_nmi() as possible, while you guys want to wrap almost all
-> > code in default_do_nmi() into notifier handler and leave only one
-> > notify_die() in defualt_do_nmi(). And I want to use different die_val
-> > (and their calling order in default_do_nmi()) to determine the order
-> > while you guys want to use priority (based on its value) to determine
-> > the order.
+On Wed, 29 Sep 2010 10:26:32 -0700 (PDT), Sage Weil <sage@newdream.net> wrote:
+> Hi Aneesh,
 > 
-> Well, I just wanted to see if we can minimize the number of times we
-> walked the die_chain.  Priorities was an interesting idea, I am not sure
-> it works out.  Registering two handlers, seems clunky.  But I am open to
-> the discussions.
-
-die_chain is used for multiple purposes now.
-
-Although I don't like the idea. I think it may be possible to use just
-one walking of die_chain to determine the source/reason of NMI.
-
-But we need several walking of die_chain after determining the
-source/reason and before the default processing. Such as DIE_NMIWATCHDOG
-before go panic.
-
-> > On the other hand, I think we should call corresponding DIE_NMIxxx
-> > before the default operations, such as for watchdog, call
-> > DIE_NMIWATCHDOG before go panic, for unknown nmi, call DIE_NMIUNKNOWN
-> > before the default processing (may panic).
-> > 
-> > I think it is important to distinguish between die chain used to
-> > determine the source/reason of NMI and the die chain used to see if
-> > any other driver wanted to do some processing before the default
-> > operation.
+> On Wed, 29 Sep 2010, Aneesh Kumar K. V wrote:
 > 
-> I guess I still prefer to take your patch set with its change and then
-> layer any new ideas on top.  I have a feeling this discussion could go on
-> forever regarding how die_chains can work.
+> > On Tue, 28 Sep 2010 16:30:45 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > > By the way, apologies, I can't remember from last time: did you decide
+> > > that overflow was really the only case when 255 would be returned from
+> > > exportfs_encode_fs()?
+> > > 
+> > 
+> > All in kernel file system other than cepth return 255 on overflow.
+> > ceph return -ENOSPC when there is an EOVERFLOW case. (I also
+> > need to fix Ceph to return minimum handle size). I guess ceph usage was
+> > correct as per the existing documentation. But the current documentation
+> > is wrong and all the file system was returning 255 instead of ENOSPC
+> > 
+> > We look at the returned handle size of exportfs_encode_fh and determine
+> > the overflow case in open by handle code. May be i should fix that to
+> > include both 255 and ENOSPC ?
+> > 
+> > 	if ((handle->handle_bytes > f_handle.handle_bytes) ||
+> > 	    (retval == 255) || (retval == -ENOSPC)) {
+> > 		/* As per old exportfs_encode_fh documentation
+> > 		 * we could return ENOSPC to indicate overflow
+> > 		 * But file system returned 255 always. So handle
+> > 		 * both the values
+> > 		 */
+> > 		/*
+> > 		 * set the handle_size to zero so we copy only
+> > 		 * non variable part of the file_handle
+> > 		 */
+> > 		handle->handle_bytes = 0;
+> > 		retval = -EOVERFLOW;
+> >       }
+> > 
+> > Attached ceph change below
+> 
+> This looks good to me.  If ceph is the only one returning ENOSPC we may as 
+> well fix it there (and in the documentation) and avoid adding an 
+> additional return code check.  Unless you're worried about out of tree 
+> file systems?
+> 
+> In any case, I'll add the below patch to the ceph tree.  
+> 
+> Thanks!
+> sage
+> 
+> 
+> 
+> 
+> > 
+> > diff --git a/fs/ceph/export.c b/fs/ceph/export.c
+> > index 4480cb1..e38423e 100644
+> > --- a/fs/ceph/export.c
+> > +++ b/fs/ceph/export.c
+> > @@ -42,32 +42,37 @@ struct ceph_nfs_confh {
+> >  static int ceph_encode_fh(struct dentry *dentry, u32 *rawfh, int *max_len,
+> >  			  int connectable)
+> >  {
+> > +	int type;
+> >  	struct ceph_nfs_fh *fh = (void *)rawfh;
+> >  	struct ceph_nfs_confh *cfh = (void *)rawfh;
+> >  	struct dentry *parent = dentry->d_parent;
+> >  	struct inode *inode = dentry->d_inode;
+> > -	int type;
+> > +	int connected_handle_length = sizeof(*cfh)/4;
+> > +	int handle_length = sizeof(*fh)/4;
+> >  
+> >  	/* don't re-export snaps */
+> >  	if (ceph_snap(inode) != CEPH_NOSNAP)
+> >  		return -EINVAL;
+> >  
+> > -	if (*max_len >= sizeof(*cfh)) {
+> > +	if (*max_len >= connected_handle_length) {
+> >  		dout("encode_fh %p connectable\n", dentry);
+> >  		cfh->ino = ceph_ino(dentry->d_inode);
+> >  		cfh->parent_ino = ceph_ino(parent->d_inode);
+> >  		cfh->parent_name_hash = parent->d_name.hash;
+> > -		*max_len = sizeof(*cfh);
+> > +		*max_len = connected_handle_length;
+> >  		type = 2;
+> > -	} else if (*max_len > sizeof(*fh)) {
+> > -		if (connectable)
+> > -			return -ENOSPC;
+> > +	} else if (*max_len >= handle_length) {
+> > +		if (connectable) {
+> > +			*max_len = connected_handle_length;
+> > +			return 255;
+> > +		}
+> >  		dout("encode_fh %p\n", dentry);
+> >  		fh->ino = ceph_ino(dentry->d_inode);
+> > -		*max_len = sizeof(*fh);
+> > +		*max_len = handle_length;
+> >  		type = 1;
+> >  	} else {
+> > -		return -ENOSPC;
+> > +		*max_len = handle_length;
+> > +		return 255;
+> >  	}
+> >  	return type;
+> >  }
+> > 
 
-Yes. I will send out a new version soon.
+Part of the patch that update *max_len on error is added by the
+open by handle patch series for other file system. If I split that
+part from the patch above it will create merge conflict later. So i am not
+sure how to handle that. But if you are ok with everything in a single
+patch you can add 
 
-Best Regards,
-Huang Ying
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-
+-aneesh
