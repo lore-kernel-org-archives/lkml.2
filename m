@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab0I3NbM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 09:31:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43738 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753264Ab0I3NbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 09:31:11 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,259,1283756400"; 
-   d="scan'208";a="611921051"
-Date: Thu, 30 Sep 2010 21:29:37 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        Jaroslav Kysela <perex@perex.cz>
-Subject: Re: Microphone not working on PCI ID 8086:3b56
-Message-ID: <20100930132937.GA5728@localhost>
-References: <Pine.LNX.4.64.1009302047410.25061@boston.corp.fedex.com>
+	id S1756033Ab0I3NeM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 09:34:12 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:56799 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755995Ab0I3NeK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 09:34:10 -0400
+Date: Thu, 30 Sep 2010 09:19:07 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg KH <gregkh@suse.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Arjan van de Ven <arjan@linux.intel.com>,
+        Ian Jackson <Ian.Jackson@eu.citrix.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Subject: Re: Powertop shows events/0 waking at high rate due to ptys
+Message-ID: <20100930071907.GA2429@ucw.cz>
+References: <4CA0D660.3010804@goop.org>
+ <20100927191536.1de29492@lxorguk.ukuu.org.uk>
+ <4CA1367F.7040106@goop.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1009302047410.25061@boston.corp.fedex.com>
+In-Reply-To: <4CA1367F.7040106@goop.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 09:11:07PM +0800, Jeff Chua wrote:
+On Mon 2010-09-27 17:27:43, Jeremy Fitzhardinge wrote:
+>  On 09/27/2010 11:15 AM, Alan Cox wrote:
+> > Really the line discipline should wake the work queue when it sets
+> > tty->receive_room non-zero, but while only n_tty currently uses that
+> > facility the existing code doesn't do it in any kind of race-free manner
+> > and sometimes is only saved by the polling picking it up.
+> >
+> > It's all really just a symptom of the fact that input and output buffers
+> > shouldn't be attached to the tty in the first place but to a struct
+> > representing the physical port. Fix that and the race conditions in
+> > serial output go away, as do the potential crashes and this wakeup stuff
+> > as well as a ton of locking in the irq/tx/rx paths. In several cases it
+> > also saves you an entire copy.
+> >
+> > Unfortunately while I got the tty port structures into lots of places
+> > needed the job never gone done.
 > 
-> 
-> On Tue, Sep 28, 2010 at 9:42 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> > Enable all CONFIG_SND_HDA_*.
-> 
-> Done that. Still no mic.
-> 
-> 
-> On Tue, Sep 28, 2010 at 9:42 PM, Wu Fengguang <fengguang.wu@intel.com> 
-> wrote:
-> > It's easier to enable all of them. They are small modules.
-> 
-> Tried just about everything, still no mic. Sounds works in all cases.
-> 
-> 
-> I found that with SND_HDA_CODEC_INTELHDMI selected, SND_DYNAMIC_MINORS 
-> will be enabled by default which won't work in my case as I'm not using 
-> udev. Here's a patch to take away the default so non-udev will still 
-> works.
+> OK, so it sounds like there's a basic design problem here which will
+> need some non-trivial work to fix.  In the meantime we'll need to look
+> at doing something to work around the issue, since it ends up consuming
+> a non-trivial amount of CPU in events/0.  I guess reducing HZ would be
+> the first, simplest thing to do, but changing xenconsoled to avoid
+> writing to readerless ptys might not be too hard.
 
-Intel HDMI audio selects SND_DYNAMIC_MINORS because it runs out of the
-static minor numbers. I initially proposed an extended static
-allocation scheme here:
-http://comments.gmane.org/gmane.linux.alsa.devel/72916 however the
-idea was rejected.
+Replace "1" in schedule_delayed_work with (HZ/100) should make it
+better, and looks like good thing while better fix is prepared?
 
-> Do I really need udev to get mic to work?
 
-You can disable SND_HDA_CODEC_INTELHDMI for now. You don't need it.
 
-Thanks,
-Fengguang
-
-> 
-> 
-> 
-> --- lx/sound/pci/hda/Kconfig.org	2010-09-14 16:34:52.000000000 +0800
-> +++ lx/sound/pci/hda/Kconfig	2010-09-14 16:35:09.000000000 +0800
-> @@ -145,7 +145,6 @@
-> 
->   config SND_HDA_CODEC_INTELHDMI
->   	bool "Build INTEL HDMI HD-audio codec support"
-> -	select SND_DYNAMIC_MINORS
->   	default y
->   	help
->   	  Say Y here to include INTEL HDMI HD-audio codec support in
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
