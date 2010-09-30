@@ -1,279 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756012Ab0I3NOu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 09:14:50 -0400
-Received: from jurassic.park.msu.ru ([195.208.223.243]:50058 "EHLO
-	jurassic.park.msu.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751761Ab0I3NOs (ORCPT
+	id S1755990Ab0I3NV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 09:21:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26609 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753508Ab0I3NV2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 09:14:48 -0400
-Date: Thu, 30 Sep 2010 17:14:43 +0400
-From: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-To: Matt Turner <mattst88@gmail.com>
-Cc: Richard Henderson <rth@twiddle.net>, Al Viro <viro@ZenIV.linux.org.uk>,
-        linux-alpha@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] alpha: use single HAE window on T2 core logic (gamma,
-	sable)
-Message-ID: <20100930131443.GA6452@jurassic.park.msu.ru>
+	Thu, 30 Sep 2010 09:21:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,259,1283756400"; 
+   d="scan'208";a="662674122"
+From: "Shi, Alex" <alex.shi@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Norbert Preining <preining@logic.at>, "Chen, Tim C" <tim.c.chen@intel.com>,
+        "arjan@infradead.org" <arjan@infradead.org>,
+        "efault@gmx.de" <efault@gmx.de>, "Li, Shaohua" <shaohua.li@intel.com>,
+        tglx <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhao, Yakui" <yakui.zhao@intel.com>,
+        "Fu, Michael" <michael.fu@intel.com>
+Date: Thu, 30 Sep 2010 21:21:22 +0800
+Subject: RE: high power consumption in recent kernels
+Thread-Topic: high power consumption in recent kernels
+Thread-Index: ActgnB3c73zFZr/PR0uDTrBfx+MZogABe1KA
+Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B2E73741C41@shsmsx502.ccr.corp.intel.com>
+References: <EA929A9653AAE14F841771FB1DE5A1366008738EC2@rrsmsx501.amr.corp.intel.com>
+	 <20100909205115.GD11053@gamma.logic.tuwien.ac.at>
+	 <1284107099.402.30.camel@laptop>
+	 <6E3BC7F7C9A4BF4286DD4C043110F30B2991AF14FD@shsmsx502.ccr.corp.intel.com>
+	 <20100910145451.GB21450@gamma.logic.tuwien.ac.at>
+	 <1284355277.26157.8109.camel@debian>
+	 <20100922154452.GA9080@gamma.logic.tuwien.ac.at>
+	 <1285670426.21962.43.camel@debian> <4CA34F95.30400@logic.at>
+	 <1285807841.21962.1147.camel@debian>
+	 <20100930065902.GC15882@gamma.logic.tuwien.ac.at>
+	 <1285835230.21962.1290.camel@debian> <1285850185.2144.49.camel@laptop>
+In-Reply-To: <1285850185.2144.49.camel@laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-T2 are the only alpha SMP systems that do HAE switching at runtime,
-which is fundamentally racy on SMP. This patch limits MMIO space on T2
-to HAE0 only, like we did on MCPCIA (rawhide) long ago.
-This leaves us with only 112 Mb of PCI MMIO (128 Mb HAE aperture minus
-16 Mb reserved for EISA), but since linux PCI allocations are reasonably
-tight, it should be enough for sane hardware configurations.
-
-Also, fix a typo in MCPCIA_FROB_MMIO macro which shouldn't call
-set_hae() if MCPCIA_ONE_HAE_WINDOW is defined. It's more for correctness,
-as set_hae() is a no-op anyway in that case.
-
-Signed-off-by: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
-
-diff --git a/arch/alpha/include/asm/core_mcpcia.h b/arch/alpha/include/asm/core_mcpcia.h
-index 21ac533..9f67a05 100644
---- a/arch/alpha/include/asm/core_mcpcia.h
-+++ b/arch/alpha/include/asm/core_mcpcia.h
-@@ -247,7 +247,7 @@ struct el_MCPCIA_uncorrected_frame_mcheck {
- #define vip	volatile int __force *
- #define vuip	volatile unsigned int __force *
- 
--#ifdef MCPCIA_ONE_HAE_WINDOW
-+#ifndef MCPCIA_ONE_HAE_WINDOW
- #define MCPCIA_FROB_MMIO						\
- 	if (__mcpcia_is_mmio(hose)) {					\
- 		set_hae(hose & 0xffffffff);				\
-diff --git a/arch/alpha/include/asm/core_t2.h b/arch/alpha/include/asm/core_t2.h
-index 471c072..91b4680 100644
---- a/arch/alpha/include/asm/core_t2.h
-+++ b/arch/alpha/include/asm/core_t2.h
-@@ -1,6 +1,9 @@
- #ifndef __ALPHA_T2__H__
- #define __ALPHA_T2__H__
- 
-+/* Fit everything into one 128MB HAE window. */
-+#define T2_ONE_HAE_WINDOW 1
-+
- #include <linux/types.h>
- #include <linux/spinlock.h>
- #include <asm/compiler.h>
-@@ -19,7 +22,7 @@
-  *
-  */
- 
--#define T2_MEM_R1_MASK 0x07ffffff  /* Mem sparse region 1 mask is 26 bits */
-+#define T2_MEM_R1_MASK 0x07ffffff  /* Mem sparse region 1 mask is 27 bits */
- 
- /* GAMMA-SABLE is a SABLE with EV5-based CPUs */
- /* All LYNX machines, EV4 or EV5, use the GAMMA bias also */
-@@ -85,7 +88,9 @@
- #define T2_DIR			(IDENT_ADDR + GAMMA_BIAS + 0x38e0004a0UL)
- #define T2_ICE			(IDENT_ADDR + GAMMA_BIAS + 0x38e0004c0UL)
- 
-+#ifndef T2_ONE_HAE_WINDOW
- #define T2_HAE_ADDRESS		T2_HAE_1
-+#endif
- 
- /*  T2 CSRs are in the non-cachable primary IO space from 3.8000.0000 to
-  3.8fff.ffff
-@@ -429,13 +434,15 @@ extern inline void t2_outl(u32 b, unsigned long addr)
-  *
-  */
- 
-+#ifdef T2_ONE_HAE_WINDOW
-+#define t2_set_hae
-+#else
- #define t2_set_hae { \
--	msb = addr  >> 27; \
-+	unsigned long msb = addr >> 27; \
- 	addr &= T2_MEM_R1_MASK; \
- 	set_hae(msb); \
- }
--
--extern raw_spinlock_t t2_hae_lock;
-+#endif
- 
- /*
-  * NOTE: take T2_DENSE_MEM off in each readX/writeX routine, since
-@@ -446,28 +453,22 @@ extern raw_spinlock_t t2_hae_lock;
- __EXTERN_INLINE u8 t2_readb(const volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long result, msb;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
-+	unsigned long result;
- 
- 	t2_set_hae;
- 
- 	result = *(vip) ((addr << 5) + T2_SPARSE_MEM + 0x00);
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- 	return __kernel_extbl(result, addr & 3);
- }
- 
- __EXTERN_INLINE u16 t2_readw(const volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long result, msb;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
-+	unsigned long result;
- 
- 	t2_set_hae;
- 
- 	result = *(vuip) ((addr << 5) + T2_SPARSE_MEM + 0x08);
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- 	return __kernel_extwl(result, addr & 3);
- }
- 
-@@ -478,59 +479,47 @@ __EXTERN_INLINE u16 t2_readw(const volatile void __iomem *xaddr)
- __EXTERN_INLINE u32 t2_readl(const volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long result, msb;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
-+	unsigned long result;
- 
- 	t2_set_hae;
- 
- 	result = *(vuip) ((addr << 5) + T2_SPARSE_MEM + 0x18);
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- 	return result & 0xffffffffUL;
- }
- 
- __EXTERN_INLINE u64 t2_readq(const volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long r0, r1, work, msb;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
-+	unsigned long r0, r1, work;
- 
- 	t2_set_hae;
- 
- 	work = (addr << 5) + T2_SPARSE_MEM + 0x18;
- 	r0 = *(vuip)(work);
- 	r1 = *(vuip)(work + (4 << 5));
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- 	return r1 << 32 | r0;
- }
- 
- __EXTERN_INLINE void t2_writeb(u8 b, volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long msb, w;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
-+	unsigned long w;
- 
- 	t2_set_hae;
- 
- 	w = __kernel_insbl(b, addr & 3);
- 	*(vuip) ((addr << 5) + T2_SPARSE_MEM + 0x00) = w;
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- }
- 
- __EXTERN_INLINE void t2_writew(u16 b, volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long msb, w;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
-+	unsigned long w;
- 
- 	t2_set_hae;
- 
- 	w = __kernel_inswl(b, addr & 3);
- 	*(vuip) ((addr << 5) + T2_SPARSE_MEM + 0x08) = w;
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- }
- 
- /*
-@@ -540,29 +529,22 @@ __EXTERN_INLINE void t2_writew(u16 b, volatile void __iomem *xaddr)
- __EXTERN_INLINE void t2_writel(u32 b, volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long msb;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
- 
- 	t2_set_hae;
- 
- 	*(vuip) ((addr << 5) + T2_SPARSE_MEM + 0x18) = b;
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- }
- 
- __EXTERN_INLINE void t2_writeq(u64 b, volatile void __iomem *xaddr)
- {
- 	unsigned long addr = (unsigned long) xaddr - T2_DENSE_MEM;
--	unsigned long msb, work;
--	unsigned long flags;
--	raw_spin_lock_irqsave(&t2_hae_lock, flags);
-+	unsigned long work;
- 
- 	t2_set_hae;
- 
- 	work = (addr << 5) + T2_SPARSE_MEM + 0x18;
- 	*(vuip)work = b;
- 	*(vuip)(work + (4 << 5)) = b >> 32;
--	raw_spin_unlock_irqrestore(&t2_hae_lock, flags);
- }
- 
- __EXTERN_INLINE void __iomem *t2_ioportmap(unsigned long addr)
-diff --git a/arch/alpha/kernel/core_t2.c b/arch/alpha/kernel/core_t2.c
-index e6d9056..2f770e9 100644
---- a/arch/alpha/kernel/core_t2.c
-+++ b/arch/alpha/kernel/core_t2.c
-@@ -74,8 +74,6 @@
- # define DBG(args)
- #endif
- 
--DEFINE_RAW_SPINLOCK(t2_hae_lock);
--
- static volatile unsigned int t2_mcheck_any_expected;
- static volatile unsigned int t2_mcheck_last_taken;
- 
-@@ -406,6 +404,7 @@ void __init
- t2_init_arch(void)
- {
- 	struct pci_controller *hose;
-+	struct resource *hae_mem;
- 	unsigned long temp;
- 	unsigned int i;
- 
-@@ -433,7 +432,13 @@ t2_init_arch(void)
- 	 */
- 	pci_isa_hose = hose = alloc_pci_controller();
- 	hose->io_space = &ioport_resource;
--	hose->mem_space = &iomem_resource;
-+	hae_mem = alloc_resource();
-+	hae_mem->start = 0;
-+	hae_mem->end = T2_MEM_R1_MASK;
-+	hae_mem->name = pci_hae0_name;
-+	if (request_resource(&iomem_resource, hae_mem) < 0)
-+		printk(KERN_ERR "Failed to request HAE_MEM\n");
-+	hose->mem_space = hae_mem;
- 	hose->index = 0;
- 
- 	hose->sparse_mem_base = T2_SPARSE_MEM - IDENT_ADDR;
-diff --git a/arch/alpha/kernel/machvec_impl.h b/arch/alpha/kernel/machvec_impl.h
-index 512685f..7fa6248 100644
---- a/arch/alpha/kernel/machvec_impl.h
-+++ b/arch/alpha/kernel/machvec_impl.h
-@@ -25,6 +25,9 @@
- #ifdef MCPCIA_ONE_HAE_WINDOW
- #define MCPCIA_HAE_ADDRESS	(&alpha_mv.hae_cache)
- #endif
-+#ifdef T2_ONE_HAE_WINDOW
-+#define T2_HAE_ADDRESS		(&alpha_mv.hae_cache)
-+#endif
- 
- /* Only a few systems don't define IACK_SC, handling all interrupts through
-    the SRM console.  But splitting out that one case from IO() below
+>> Thanks Norbert!
+>> Mike&Peter:
+>> would you like to add signed-off for the following patch?
+>
+>I would really rather see the nohz decision move into the whole cpuidle
+>governor thing, which can make a much better cost vs benefit decision.
+>
+See! 
