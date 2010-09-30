@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756504Ab0I3TzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 15:55:11 -0400
-Received: from brigitte.telenet-ops.be ([195.130.137.66]:59604 "EHLO
-	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab0I3TzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 15:55:09 -0400
-Date: Thu, 30 Sep 2010 21:55:07 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Jarod Wilson <jarod@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-media@vger.kernel.org
-Subject: [PATCH] lirc: Make struct file_operations pointer const
-Message-ID: <alpine.DEB.2.00.1009302153210.2434@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756535Ab0I3T5Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 15:57:25 -0400
+Received: from hawk.vispa.com ([83.217.161.11]:43510 "EHLO hawk.vispa.net.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756385Ab0I3T5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 15:57:24 -0400
+X-Greylist: delayed 1332 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Sep 2010 15:57:24 EDT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Fri, 01 Oct 2010 01:02:34 +0550
+From: International Awareness Promo 2010 <claims85@live.com>
+To: undisclosed-recipients:;
+Subject: Dear Email Account Holder Congratulation!!!
+Organization: International Awareness Promo 2010
+Reply-To: fundsdispatch.uk@feynet.cn
+Message-ID: <92dc80d127ae09ca4cad25440ab69513@vispa.com>
+User-Agent: Roundcube Webmail/0.4
+X-Vispa-MailScanner-Information: Please contact abuse@nlhosting.net for more information
+X-MailScanner-ID: 1P1OXI-00007k-9M
+X-Vispa-MailScanner: Found to be clean
+X-Vispa-MailScanner-SpamCheck: 
+X-Vispa-MailScanner-From: claims85@live.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-struct file_operations was made const in the drivers, but not in struct
-lirc_driver:
-
-drivers/staging/lirc/lirc_it87.c:365: warning: initialization discards qualifiers from pointer target type
-drivers/staging/lirc/lirc_parallel.c:571: warning: initialization discards qualifiers from pointer target type
-drivers/staging/lirc/lirc_serial.c:1073: warning: initialization discards qualifiers from pointer target type
-drivers/staging/lirc/lirc_sir.c:482: warning: initialization discards qualifiers from pointer target type
-drivers/staging/lirc/lirc_zilog.c:1284: warning: assignment discards qualifiers from pointer target type
-
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
----
- include/media/lirc_dev.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/media/lirc_dev.h b/include/media/lirc_dev.h
-index b1f6066..71a896e 100644
---- a/include/media/lirc_dev.h
-+++ b/include/media/lirc_dev.h
-@@ -139,7 +139,7 @@ struct lirc_driver {
- 	struct lirc_buffer *rbuf;
- 	int (*set_use_inc) (void *data);
- 	void (*set_use_dec) (void *data);
--	struct file_operations *fops;
-+	const struct file_operations *fops;
- 	struct device *dev;
- 	struct module *owner;
- };
--- 
-1.7.0.4
-
-Gr{oetje,eeting}s,
-
-						Geert
-
 --
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Congratulation you have won the Sum Of £750,000.00 from the 
+International Awareness Promo 2010.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+1.Name:
+2.Address:
+3.Telephone Number:
+4.Country:
+5.Winning No: HONDA :2551256003/23.
+6.Bonus No: 5647600545188
+
+(CONTACT EVENTS MANAGER VIA E-MAIL FOR CLAIMS)
+Name:Dr Stone Morgan
+Email:fundsdispatch.uk@feynet.cn
+MOBILE NO: +448712347592
+
+Warm Regards
+David Clark
+Promo Co-ordinator
+Honda Motor Company
+
