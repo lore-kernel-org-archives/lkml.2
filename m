@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756769Ab0I3Rd2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 13:33:28 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:59319 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753778Ab0I3Rd1 convert rfc822-to-8bit (ORCPT
+	id S1756791Ab0I3RfE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 13:35:04 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45302 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879Ab0I3RfC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 13:33:27 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Greg KH <greg@kroah.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 30 Sep 2010 23:03:02 +0530
-Subject: RE: [PATCH] drivers:staging:ti-st: mv ti_wilink_st header
-Thread-Topic: [PATCH] drivers:staging:ti-st: mv ti_wilink_st header
-Thread-Index: ActgxQOtCX7DXVK3RLq5y14XCzqXkQAAFP5Q
-Message-ID: <19F8576C6E063C45BE387C64729E739404A9D8AEA7@dbde02.ent.ti.com>
-References: <1285777522-13709-1-git-send-email-pavan_savoy@ti.com>
- <20100930115123.GB2779@kroah.com>
-In-Reply-To: <20100930115123.GB2779@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Sep 2010 13:35:02 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Jean Delvare <khali@linux-fr.org>, Olof Johansson <olof@lixom.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] dmi: export dmi data through debugfs
+References: <20100928211246.GA20941@lixom.net>
+	<20100929093403.7db92388@endymion.delvare>
+	<20100929145330.GA9351@lixom.net>
+	<20100929171118.1dbf3fbb@endymion.delvare>
+	<20100929222804.7f506ba5@lxorguk.ukuu.org.uk>
+Date: Thu, 30 Sep 2010 19:34:57 +0200
+In-Reply-To: <20100929222804.7f506ba5@lxorguk.ukuu.org.uk> (Alan Cox's message
+	of "Wed, 29 Sep 2010 22:28:04 +0100")
+Message-ID: <87pqvvuoce.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
 
-Greg,
+>> Now if you really insist on exposing the whole DMI table through sysfs,
+>> I can't prevent you from doing that. After all, ACPI already exposes
+>> its tables under /sys/firmware/acpi/tables (mode 0400). But then you'd
+>> rather expose the DMI entry point and tables
+>> under /sys/firmware/dmi/tables for consistency, rather than using
+>> debugfs. But again, I don't think it is adding any value over what we
+>> already have.
+>
+> If you really the DMI data generally available run dmidecode in the boot
+> scripts directed to a file. It even has a dump mode for this.
 
- 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Thursday, September 30, 2010 6:51 AM
-> To: Savoy, Pavan
-> Cc: gregkh@suse.de; alan@lxorguk.ukuu.org.uk; devel@driverdev.osuosl.org;
-> linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] drivers:staging:ti-st: mv ti_wilink_st header
-> 
-> On Wed, Sep 29, 2010 at 12:25:22PM -0400, pavan_savoy@ti.com wrote:
-> > From: Pavan Savoy <pavan_savoy@ti.com>
-> >
-> > Greg,
-> >
-> > How is the movement of drivers done out of staging?
-> > Should I submit patches like these, which move individual files without
-> > breaking the build during anytime of movement?
-> 
-> Yes.
-> 
-> > In few following days I plan to submit patches to move the ST headers
-> sources
-> > out.
-> > ti_wilink_st.h -> include/linux/
-> > st_core.c, st_kim.c and st_ll.c -> drivers/misc/
-> > Makefile and Kconfig changes to drivers/misc/Kconfig and
-> drivers/misc/Makefile
-> > bt_drv.c -> drivers/bluetooth/
-> 
-> Yes, that sounds great.
-> 
-> But, the bluetooth patch should go to the bluetooth maintainer for his
-> review, I'll need the ack from him before I can apply it.
+FWIW i have been pondering to put DMI into sysfs too. One of the reasons
+mcelog has to start up as root is that it needs to get these tables
+out of /dev/mem.
 
-Yes, I will loop in linux-bluetooth and Marcel when I post the Bluetooth driver patch, he has been already introduced to ST, so hopefully the transition is smoother.
+Just having a binary file to read would be fine though, no need to 
+do decoding.
 
-> Oh, this patch looks nice, but I found one problem:
-> 
-> > --- a/drivers/staging/ti-st/ti_wilink_st.h
-> > +++ /dev/null
-> > -#ifndef TI_WILINK_ST_H
-> > -#define TI_WILINK_ST_H
-> > -
-> > -/* TODO:
-> > - * Move the following to tty.h upon acceptance
-> > - */
-> > -#define N_TI_WL	22	/* Ldisc for TI's WL BT, FM, GPS combo chips */
-> 
-> We need to do that now, before you move this file.
-> 
-> Then, you can drop this:
-> 
-> > -#ifdef __KERNEL__
-> 
-> As it will not be needed, right?
-> 
-> Care to send me a patch that does this first?
+-andi
 
-Yes, sending it right away.
-
-> thanks,
-> 
-> greg k-h
+-- 
+ak@linux.intel.com -- Speaking for myself only.
