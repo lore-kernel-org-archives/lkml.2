@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab0I3SQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:16:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35054 "EHLO mx1.redhat.com"
+	id S932202Ab0I3SQZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:16:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32285 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932098Ab0I3SQJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:16:09 -0400
+	id S1755486Ab0I3SQV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 14:16:21 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 08/17] Make follow_down() handle d_manage()
+Subject: [PATCH 10/17] autofs4: add d_manage() dentry operation
 To: viro@ftp.linux.org.uk, jmoyer@redhat.com
 Cc: linux-fs@vger.kernel.org, autofs@linux.kernel.org,
         linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
         linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Ian Kent <raven@themaw.net>
-Date: Thu, 30 Sep 2010 19:15:36 +0100
-Message-ID: <20100930181536.30939.6776.stgit@warthog.procyon.org.uk>
+        Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>
+Date: Thu, 30 Sep 2010 19:15:46 +0100
+Message-ID: <20100930181546.30939.47177.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 References: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -29,328 +29,400 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The previous patch (that adds d_manage()) offers autofs the opportunity to
-block processes whilst it is rearranging its dentry tree, but only covers cases
-where managed_dentry() is called.  Some places call follow_down(), which would
-allow processes to bypass autofs's attempts to block them.
+From: Ian Kent <raven@themaw.net>
 
-Make follow_down() handle managed dentries.  Do this by renaming follow_down()
-to follow_down_one() and instituting a new follow_down().  follow_down_one() is
-then only used where a call to d_manage() is not needed.
+This patch required a previous patch to add the ->d_automount()
+dentry operation.
 
-follow_down() then incorporates the loop from its remaining callers to follow
-down through all mounted filesystems at that point.  Before each mountpoint is
-transited and if requested by the filesystem, d_manage() is called to hold or
-reject that transit.  The callers of follow_down() must then handle a possible
-error condition.
+Add a function to use the newly defined ->d_manage() dentry operation
+for blocking during mount and expire.
 
-follow_down() is given a parameter to say whether someone is trying to mount on
-that point (and holding namespace_sem).  This is now passed on to d_manage().
-The filesystem may reject this request by returning an error from d_manage().
+Whether the VFS calls the dentry operations d_automount() and d_manage()
+is controled by the DMANAGED_AUTOMOUNT and DMANAGED_TRANSIT flags. autofs
+uses the d_automount() operation to callback to user space to request
+mount operations and the d_manage() operation to block walks into mounts
+that are under construction or destruction.
 
-Furthermore, d_manage() may end follow_down() processing early by returning
--EISDIR to indicate it wants the dentry to be dealt with as an ordinary
-directory, not a mountpoint.  This permits autofs to let its daemon see the
-underlying dentry.
+In order to prevent these functions from being called unnecessarily the
+DMANAGED_* flags are cleared for cases which would cause this. In the
+common case the DMANAGED_AUTOMOUNT and DMANAGED_TRANSIT flags are both
+set for dentrys waiting to be mounted. The DMANAGED_TRANSIT flag is
+cleared upon successful mount request completion and set during expire
+runs, both during the dentry expire check, and if selected for expire,
+is left set until a subsequent successful mount request completes.
 
+The exception to this is the so-called rootless multi-mount which has
+no actual mount at its base. In this case the DMANAGED_AUTOMOUNT flag
+is cleared upon successful mount request completion as well and set
+again after a successful expire.
+
+Signed-off-by: Ian Kent <raven@themaw.net>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Ian Kent <raven@themaw.net>
 ---
 
- fs/autofs/dirhash.c    |    5 ++--
- fs/autofs4/autofs_i.h  |   13 -----------
- fs/autofs4/dev-ioctl.c |    2 +-
- fs/autofs4/expire.c    |    2 +-
- fs/autofs4/root.c      |   11 ++++-----
- fs/namei.c             |   57 +++++++++++++++++++++++++++++++++++++++++++++---
- fs/namespace.c         |   14 +++++++-----
- fs/nfsd/vfs.c          |    5 +++-
- include/linux/dcache.h |    7 +++++-
- include/linux/namei.h  |    3 ++-
- 10 files changed, 82 insertions(+), 37 deletions(-)
+ fs/autofs4/autofs_i.h |   50 ++++++++++++++++++++++++-
+ fs/autofs4/expire.c   |   42 +++++++++++++--------
+ fs/autofs4/inode.c    |    3 +
+ fs/autofs4/root.c     |  100 +++++++++++++++++++++++++++++++++++++++++++------
+ 4 files changed, 164 insertions(+), 31 deletions(-)
 
-diff --git a/fs/autofs/dirhash.c b/fs/autofs/dirhash.c
-index e947915..a24092c 100644
---- a/fs/autofs/dirhash.c
-+++ b/fs/autofs/dirhash.c
-@@ -85,13 +85,12 @@ struct autofs_dir_ent *autofs_expire(struct super_block *sb,
- 		}
- 		path.mnt = mnt;
- 		path_get(&path);
--		if (!follow_down(&path)) {
-+		if (!follow_down_one(&path)) {
- 			path_put(&path);
- 			DPRINTK(("autofs: not expirable (not a mounted directory): %s\n", ent->name));
- 			continue;
- 		}
--		while (d_mountpoint(path.dentry) && follow_down(&path))
--			;
-+		follow_down(&path, false);  // TODO: need to check error
- 		umount_ok = may_umount(path.mnt);
- 		path_put(&path);
- 
 diff --git a/fs/autofs4/autofs_i.h b/fs/autofs4/autofs_i.h
-index 3d283ab..08af160 100644
+index 079206c..48f8248 100644
 --- a/fs/autofs4/autofs_i.h
 +++ b/fs/autofs4/autofs_i.h
-@@ -226,19 +226,6 @@ int autofs4_wait(struct autofs_sb_info *,struct dentry *, enum autofs_notify);
- int autofs4_wait_release(struct autofs_sb_info *,autofs_wqt_t,int);
- void autofs4_catatonic_mode(struct autofs_sb_info *);
+@@ -96,7 +96,6 @@ struct autofs_info {
+ };
  
--static inline int autofs4_follow_mount(struct path *path)
--{
--	int res = 0;
--
--	while (d_mountpoint(path->dentry)) {
--		int followed = follow_down(path);
--		if (!followed)
--			break;
--		res = 1;
--	}
--	return res;
--}
--
- static inline u32 autofs4_get_dev(struct autofs_sb_info *sbi)
- {
- 	return new_encode_dev(sbi->sb->s_dev);
-diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-index ba4a38b..8567abc 100644
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -551,7 +551,7 @@ static int autofs_dev_ioctl_ismountpoint(struct file *fp,
+ #define AUTOFS_INF_EXPIRING	(1<<0) /* dentry is in the process of expiring */
+-#define AUTOFS_INF_MOUNTPOINT	(1<<1) /* mountpoint status for direct expire */
+ #define AUTOFS_INF_PENDING	(1<<2) /* dentry pending mount */
  
- 		err = have_submounts(path.dentry);
+ struct autofs_wait_queue {
+@@ -218,6 +217,7 @@ extern const struct file_operations autofs4_root_operations;
+ /* Operations methods */
  
--		if (follow_down(&path))
-+		if (follow_down_one(&path))
- 			magic = path.mnt->mnt_sb->s_magic;
- 	}
+ struct vfsmount *autofs4_d_automount(struct path *);
++int autofs4_d_manage(struct path *, bool);
  
-diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
-index 9f5bde2..47feba9 100644
---- a/fs/autofs4/expire.c
-+++ b/fs/autofs4/expire.c
-@@ -56,7 +56,7 @@ static int autofs4_mount_busy(struct vfsmount *mnt, struct dentry *dentry)
+ /* VFS automount flags management functions */
  
- 	path_get(&path);
- 
--	if (!follow_down(&path))
-+	if (!follow_down_one(&path))
- 		goto done;
- 
- 	if (is_autofs4_dentry(path.dentry)) {
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index cb1bd38..7dd218b 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -227,7 +227,7 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- 		nd->flags);
- 	/*
- 	 * For an expire of a covered direct or offset mount we need
--	 * to break out of follow_down() at the autofs mount trigger
-+	 * to break out of follow_down_one() at the autofs mount trigger
- 	 * (d_mounted--), so we can see the expiring flag, and manage
- 	 * the blocking and following here until the expire is completed.
- 	 */
-@@ -236,7 +236,7 @@ static void *autofs4_follow_link(struct dentry *dentry, struct nameidata *nd)
- 		if (ino->flags & AUTOFS_INF_EXPIRING) {
- 			spin_unlock(&sbi->fs_lock);
- 			/* Follow down to our covering mount. */
--			if (!follow_down(&nd->path))
-+			if (!follow_down_one(&nd->path))
- 				goto done;
- 			goto follow;
- 		}
-@@ -281,11 +281,10 @@ follow:
- 	 * multi-mount with no root offset so we don't need
- 	 * to follow it.
- 	 */
--	if (d_mountpoint(dentry)) {
--		if (!autofs4_follow_mount(&nd->path)) {
--			status = -ENOENT;
-+	if (d_managed(dentry)) {
-+		status = follow_down(&nd->path, false);
-+		if (status < 0)
- 			goto out_error;
--		}
- 	}
- 
- done:
-diff --git a/fs/namei.c b/fs/namei.c
-index 1bbd2d4..c7f5f71 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -700,9 +700,9 @@ static int managed_dentry(struct path *path, unsigned flags)
- 		if (d_managed & DMANAGED_TRANSIT) {
- 			BUG_ON(!path->dentry->d_op);
- 			BUG_ON(!path->dentry->d_op->d_manage);
--			ret = path->dentry->d_op->d_manage(path);
-+			ret = path->dentry->d_op->d_manage(path, false);
- 			if (ret < 0)
--				return ret;
-+				return ret == -EISDIR ? 0 : ret;
- 		}
- 
- 		/* Transit to a mounted filesystem. */
-@@ -741,7 +741,7 @@ static int managed_dentry(struct path *path, unsigned flags)
- /* no need for dcache_lock, as serialization is taken care in
-  * namespace.c
-  */
--int follow_down(struct path *path)
-+int follow_down_one(struct path *path)
- {
- 	struct vfsmount *mounted;
- 
-@@ -757,6 +757,56 @@ int follow_down(struct path *path)
+@@ -245,6 +245,54 @@ static inline void managed_dentry_clear_automount(struct dentry *dentry)
+ 	spin_unlock(&dentry->d_lock);
  }
  
- /*
-+ * Follow down to the topmost point on a stack of mountpoints.  At each point,
-+ * the filesystem owning that dentry may be queried as to whether the caller is
-+ * permitted to proceed or not.
-+ *
-+ * Care must be taken as namespace_sem may be held.
-+ */
-+int follow_down(struct path *path, bool mounting_here)
++static inline void __managed_dentry_set_transit(struct dentry *dentry)
 +{
-+	unsigned d_managed;
-+	int ret;
++	dentry->d_managed |= DMANAGED_TRANSIT;
++}
 +
-+	while (d_managed = path->dentry->d_managed,
-+	       unlikely(d_managed != 0)) {
-+		/* Allow the filesystem to manage the transit without i_mutex
-+		 * being held.
-+		 *
-+		 * We indicate to the filesystem if someone is trying to mount
-+		 * something here.  This gives autofs the chance to deny anyone
-+		 * other than its daemon the right to mount on its
-+		 * superstructure.
-+		 *
-+		 * The filesystem may sleep at this point.
-+		 */
-+		if (d_managed & DMANAGED_TRANSIT) {
-+			BUG_ON(!path->dentry->d_op);
-+			BUG_ON(!path->dentry->d_op->d_manage);
-+			ret = path->dentry->d_op->d_manage(path, mounting_here);
-+			if (ret < 0)
-+				return ret == -EISDIR ? 0 : ret;
-+		}
++static inline void managed_dentry_set_transit(struct dentry *dentry)
++{
++	spin_lock(&dentry->d_lock);
++	__managed_dentry_set_transit(dentry);
++	spin_unlock(&dentry->d_lock);
++}
 +
-+		/* Transit to a mounted filesystem. */
-+		if (d_managed & DMANAGED_MOUNTPOINT) {
-+			struct vfsmount *mounted = lookup_mnt(path);
-+			if (!mounted)
-+				break;
-+			dput(path->dentry);
-+			mntput(path->mnt);
-+			path->mnt = mounted;
-+			path->dentry = dget(mounted->mnt_root);
-+			continue;
-+		}
++static inline void __managed_dentry_clear_transit(struct dentry *dentry)
++{
++	dentry->d_managed &= ~DMANAGED_TRANSIT;
++}
 +
-+		/* Don't handle automount points here */
-+		break;
++static inline void managed_dentry_clear_transit(struct dentry *dentry)
++{
++	spin_lock(&dentry->d_lock);
++	__managed_dentry_clear_transit(dentry);
++	spin_unlock(&dentry->d_lock);
++}
++
++static inline void __managed_dentry_set_managed(struct dentry *dentry)
++{
++	dentry->d_managed |= (DMANAGED_AUTOMOUNT|DMANAGED_TRANSIT);
++}
++
++static inline void managed_dentry_set_managed(struct dentry *dentry)
++{
++	spin_lock(&dentry->d_lock);
++	__managed_dentry_set_managed(dentry);
++	spin_unlock(&dentry->d_lock);
++}
++
++static inline void __managed_dentry_clear_managed(struct dentry *dentry)
++{
++	dentry->d_managed &= ~(DMANAGED_AUTOMOUNT|DMANAGED_TRANSIT);
++}
++
++static inline void managed_dentry_clear_managed(struct dentry *dentry)
++{
++	spin_lock(&dentry->d_lock);
++	__managed_dentry_clear_managed(dentry);
++	spin_unlock(&dentry->d_lock);
++}
++
+ /* Initializing function */
+ 
+ int autofs4_fill_super(struct super_block *, void *, int);
+diff --git a/fs/autofs4/expire.c b/fs/autofs4/expire.c
+index c366dac..5901da5 100644
+--- a/fs/autofs4/expire.c
++++ b/fs/autofs4/expire.c
+@@ -26,10 +26,6 @@ static inline int autofs4_can_expire(struct dentry *dentry,
+ 	if (ino == NULL)
+ 		return 0;
+ 
+-	/* No point expiring a pending mount */
+-	if (ino->flags & AUTOFS_INF_PENDING)
+-		return 0;
+-
+ 	if (!do_now) {
+ 		/* Too young to die */
+ 		if (!timeout || time_after(ino->last_used + timeout, now))
+@@ -264,6 +260,7 @@ struct dentry *autofs4_expire_direct(struct super_block *sb,
+ 	unsigned long timeout;
+ 	struct dentry *root = dget(sb->s_root);
+ 	int do_now = how & AUTOFS_EXP_IMMEDIATE;
++	struct autofs_info *ino;
+ 
+ 	if (!root)
+ 		return NULL;
+@@ -272,18 +269,21 @@ struct dentry *autofs4_expire_direct(struct super_block *sb,
+ 	timeout = sbi->exp_timeout;
+ 
+ 	spin_lock(&sbi->fs_lock);
++	ino = autofs4_dentry_ino(root);
++	/* No point expiring a pending mount */
++	if (ino->flags & AUTOFS_INF_PENDING) {
++		spin_unlock(&sbi->fs_lock);
++		return NULL;
 +	}
-+	return 0;
-+}
-+
-+/*
-  * Skip to top of mountpoint pile for follow_dotdot().
-  */
- static void follow_mount(struct path *path)
-@@ -2985,6 +3035,7 @@ const struct inode_operations page_symlink_inode_operations = {
++	managed_dentry_set_transit(root);
+ 	if (!autofs4_direct_busy(mnt, root, timeout, do_now)) {
+ 		struct autofs_info *ino = autofs4_dentry_ino(root);
+-		if (d_mountpoint(root)) {
+-			ino->flags |= AUTOFS_INF_MOUNTPOINT;
+-			root->d_managed--;
+-		}
+ 		ino->flags |= AUTOFS_INF_EXPIRING;
+-		managed_dentry_set_automount(root);
+ 		init_completion(&ino->expire_complete);
+ 		spin_unlock(&sbi->fs_lock);
+ 		return root;
+ 	}
++	managed_dentry_clear_transit(root);
+ 	spin_unlock(&sbi->fs_lock);
+ 	dput(root);
+ 
+@@ -335,6 +335,10 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
+ 
+ 		spin_lock(&sbi->fs_lock);
+ 		ino = autofs4_dentry_ino(dentry);
++		/* No point expiring a pending mount */
++		if (ino->flags & AUTOFS_INF_PENDING)
++			goto cont;
++		managed_dentry_set_transit(dentry);
+ 
+ 		/*
+ 		 * Case 1: (i) indirect mount or top level pseudo direct mount
+@@ -394,6 +398,8 @@ struct dentry *autofs4_expire_indirect(struct super_block *sb,
+ 			}
+ 		}
+ next:
++		managed_dentry_clear_transit(dentry);
++cont:
+ 		spin_unlock(&sbi->fs_lock);
+ 		dput(dentry);
+ 		spin_lock(&dcache_lock);
+@@ -407,7 +413,6 @@ found:
+ 		expired, (int)expired->d_name.len, expired->d_name.name);
+ 	ino = autofs4_dentry_ino(expired);
+ 	ino->flags |= AUTOFS_INF_EXPIRING;
+-	managed_dentry_set_automount(expired);
+ 	init_completion(&ino->expire_complete);
+ 	spin_unlock(&sbi->fs_lock);
+ 	spin_lock(&dcache_lock);
+@@ -476,7 +481,7 @@ int autofs4_expire_run(struct super_block *sb,
+ 	ino = autofs4_dentry_ino(dentry);
+ 	ino->flags &= ~AUTOFS_INF_EXPIRING;
+ 	if (!d_unhashed(dentry))
+-		managed_dentry_clear_automount(dentry);
++		managed_dentry_clear_transit(dentry);
+ 	complete_all(&ino->expire_complete);
+ 	spin_unlock(&sbi->fs_lock);
+ 
+@@ -502,13 +507,18 @@ int autofs4_do_expire_multi(struct super_block *sb, struct vfsmount *mnt,
+ 		ret = autofs4_wait(sbi, dentry, NFY_EXPIRE);
+ 
+ 		spin_lock(&sbi->fs_lock);
+-		if (ino->flags & AUTOFS_INF_MOUNTPOINT) {
+-			sb->s_root->d_managed++;
+-			ino->flags &= ~AUTOFS_INF_MOUNTPOINT;
+-		}
+ 		ino->flags &= ~AUTOFS_INF_EXPIRING;
++		spin_lock(&dentry->d_lock);
+ 		if (ret)
+-			managed_dentry_clear_automount(dentry);
++			__managed_dentry_clear_transit(dentry);
++		else {
++			if ((IS_ROOT(dentry) ||
++			    (autofs_type_indirect(sbi->type) &&
++			     IS_ROOT(dentry->d_parent))) &&
++			    !(dentry->d_managed & DMANAGED_AUTOMOUNT))
++				__managed_dentry_set_automount(dentry);
++		}
++		spin_unlock(&dentry->d_lock);
+ 		complete_all(&ino->expire_complete);
+ 		spin_unlock(&sbi->fs_lock);
+ 		dput(dentry);
+diff --git a/fs/autofs4/inode.c b/fs/autofs4/inode.c
+index 41b7ad1..c6e75b3 100644
+--- a/fs/autofs4/inode.c
++++ b/fs/autofs4/inode.c
+@@ -253,6 +253,7 @@ static struct autofs_info *autofs4_mkroot(struct autofs_sb_info *sbi)
+ 
+ static const struct dentry_operations autofs4_sb_dentry_operations = {
+ 	.d_automount	= autofs4_d_automount,
++	.d_manage	= autofs4_d_manage,
+ 	.d_release      = autofs4_dentry_release,
  };
  
- EXPORT_SYMBOL(user_path_at);
-+EXPORT_SYMBOL(follow_down_one);
- EXPORT_SYMBOL(follow_down);
- EXPORT_SYMBOL(follow_up);
- EXPORT_SYMBOL(get_write_access); /* binfmt_aout */
-diff --git a/fs/namespace.c b/fs/namespace.c
-index e72b7b9..70cf805 100644
---- a/fs/namespace.c
-+++ b/fs/namespace.c
-@@ -1668,9 +1668,10 @@ static int do_move_mount(struct path *path, char *old_name)
- 		return err;
+@@ -322,7 +323,7 @@ int autofs4_fill_super(struct super_block *s, void *data, int silent)
+ 	}
  
- 	down_write(&namespace_sem);
--	while (d_mountpoint(path->dentry) &&
--	       follow_down(path))
--		;
-+	err = follow_down(path, true);
-+	if (err < 0)
-+		goto out;
-+
- 	err = -EINVAL;
- 	if (!check_mnt(path->mnt) || !check_mnt(old_path.mnt))
- 		goto out;
-@@ -1766,9 +1767,10 @@ int do_add_mount(struct vfsmount *newmnt, struct path *path,
+ 	if (autofs_type_trigger(sbi->type))
+-		__managed_dentry_set_automount(root);
++		__managed_dentry_set_managed(root);
  
- 	down_write(&namespace_sem);
- 	/* Something was mounted here while we slept */
--	while (d_mountpoint(path->dentry) &&
--	       follow_down(path))
--		;
-+	err = follow_down(path, true);
-+	if (err < 0)
-+		goto unlock;
-+
- 	err = -EINVAL;
- 	if (!(mnt_flags & MNT_SHRINKABLE) && !check_mnt(path->mnt))
- 		goto unlock;
-diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
-index 661a6cf..e20cf68 100644
---- a/fs/nfsd/vfs.c
-+++ b/fs/nfsd/vfs.c
-@@ -88,8 +88,9 @@ nfsd_cross_mnt(struct svc_rqst *rqstp, struct dentry **dpp,
- 			    .dentry = dget(dentry)};
- 	int err = 0;
- 
--	while (d_mountpoint(path.dentry) && follow_down(&path))
--		;
-+	err = follow_down(&path, false);
-+	if (err < 0)
-+		goto out;
- 
- 	exp2 = rqst_exp_get_by_name(rqstp, &path);
- 	if (IS_ERR(exp2)) {
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index 2da5aa4..970f0ba 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -144,7 +144,7 @@ struct dentry_operations {
- 	void (*d_iput)(struct dentry *, struct inode *);
- 	char *(*d_dname)(struct dentry *, char *, int);
- 	struct vfsmount *(*d_automount)(struct path *);
--	int (*d_manage)(struct path *);
-+	int (*d_manage)(struct path *, bool);
+ 	root_inode->i_fop = &autofs4_root_operations;
+ 	root_inode->i_op = autofs_type_trigger(sbi->type) ?
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index 22dc4c0..3e71e4c 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -403,6 +403,7 @@ static const struct dentry_operations autofs4_root_dentry_operations = {
+ /* For other dentries */
+ static const struct dentry_operations autofs4_dentry_operations = {
+ 	.d_automount	= autofs4_d_automount,
++	.d_manage	= autofs4_d_manage,
+ 	.d_release	= autofs4_dentry_release,
  };
  
- /* the dentry parameter passed to d_hash and d_compare is the parent
-@@ -394,6 +394,11 @@ static inline struct dentry *dget_parent(struct dentry *dentry)
+@@ -583,6 +584,20 @@ struct vfsmount *autofs4_d_automount(struct path *path)
+ 	DPRINTK("dentry=%p %.*s",
+ 		dentry, dentry->d_name.len, dentry->d_name.name);
  
- extern void dput(struct dentry *);
++	/*
++	 * Someone may have manually umounted this or it was a submount
++	 * that has gone away.
++	 */
++	spin_lock(&dcache_lock);
++	if (!d_mountpoint(dentry) && list_empty(&dentry->d_subdirs)) {
++		spin_lock(&dentry->d_lock);
++		if (!(dentry->d_managed & DMANAGED_TRANSIT) &&
++		     (dentry->d_managed & DMANAGED_AUTOMOUNT))
++			__managed_dentry_set_transit(path->dentry);
++		spin_unlock(&dentry->d_lock);
++	}
++	spin_unlock(&dcache_lock);
++
+ 	/* The daemon never triggers a mount. */
+ 	if (autofs4_oz_mode(sbi))
+ 		return NULL;
+@@ -612,31 +627,65 @@ struct vfsmount *autofs4_d_automount(struct path *path)
  
-+static inline bool d_managed(struct dentry *dentry)
+ 	/*
+ 	 * If the dentry is a symlink it's equivalent to a directory
+-	 * having d_mounted() true, so there's no need to call back
++	 * having d_mountpoint() true, so there's no need to call back
+ 	 * to the daemon.
+ 	 */
+ 	if (dentry->d_inode && S_ISLNK(dentry->d_inode->i_mode))
+ 		goto done;
+-	spin_lock(&dcache_lock);
+-	if (!d_mountpoint(dentry) && list_empty(&dentry->d_subdirs)) {
++	if (!d_mountpoint(dentry)) {
++		/*
++		 * It's possible that user space hasn't removed directories
++		 * after umounting a rootless multi-mount, although it
++		 * should. For v5 have_submounts() is sufficient to handle
++		 * this because the leaves of the directory tree under the
++		 * mount never trigger mounts themselves (they have an autofs
++		 * trigger mount mounted on them). But v4 pseudo direct mounts
++		 * do need the leaves to to trigger mounts. In this case we
++		 * have no choice but to use the list_empty() check and
++		 * require user space behave.
++		 */
++		if (sbi->version > 4) {
++			if (have_submounts(dentry))
++				goto done;
++		} else {
++			spin_lock(&dcache_lock);
++			if (!list_empty(&dentry->d_subdirs)) {
++				spin_unlock(&dcache_lock);
++				goto done;
++			}
++			spin_unlock(&dcache_lock);
++		}
+ 		ino->flags |= AUTOFS_INF_PENDING;
+-		spin_unlock(&dcache_lock);
+ 		spin_unlock(&sbi->fs_lock);
+ 		status = autofs4_mount_wait(dentry);
+ 		if (status)
+ 			return ERR_PTR(status);
+ 		spin_lock(&sbi->fs_lock);
+ 		ino->flags &= ~AUTOFS_INF_PENDING;
+-		goto done;
+ 	}
+-	spin_unlock(&dcache_lock);
+ done:
+-	/*
+-	 * Any needed mounting has been completed and the path updated
+-	 * so turn this into a normal dentry so we don't continually
+-	 * call ->d_automount().
+-	 */
+-	managed_dentry_clear_automount(dentry);
++	if (!(ino->flags & AUTOFS_INF_EXPIRING)) {
++		/*
++		 * Any needed mounting has been completed and the path updated
++		 * so turn this into a normal dentry so we don't continually
++		 * call ->d_automount() and ->d_manage().
++		 */
++		spin_lock(&dcache_lock);
++		spin_lock(&dentry->d_lock);
++		__managed_dentry_clear_transit(dentry);
++		/*
++		 * Only clear DMANAGED_AUTOMOUNT for rootless multi-mounts and
++		 * symlinks as in all other cases the dentry will be covered by
++		 * an actual mount so ->d_automount() won't be called during
++		 * the follow.
++		 */
++		if ((!d_mountpoint(dentry) &&
++		    !list_empty(&dentry->d_subdirs)) ||
++		    (dentry->d_inode && S_ISLNK(dentry->d_inode->i_mode)))
++			__managed_dentry_clear_automount(dentry);
++		spin_unlock(&dentry->d_lock);
++		spin_unlock(&dcache_lock);
++	}
+ 	spin_unlock(&sbi->fs_lock);
+ 
+ 	/* Mount succeeded, check if we ended up with a new dentry */
+@@ -647,6 +696,31 @@ done:
+ 	return NULL;
+ }
+ 
++int autofs4_d_manage(struct path *path, bool mounting_here)
 +{
-+	return dentry->d_managed != 0;
++	struct dentry *dentry = path->dentry;
++	struct autofs_sb_info *sbi = autofs4_sbi(dentry->d_sb);
++
++	DPRINTK("dentry=%p %.*s",
++		dentry, dentry->d_name.len, dentry->d_name.name);
++
++	/* The daemon never waits. */
++	if (autofs4_oz_mode(sbi) || mounting_here) {
++		if (!d_mountpoint(dentry))
++			return -EISDIR;
++		return 0;
++	}
++
++	/* Wait for pending expires */
++	do_expire_wait(dentry);
++
++	/*
++	 * This dentry may be under construction so wait on mount
++	 * completion.
++	 */
++	return autofs4_mount_wait(dentry);
 +}
 +
- static inline bool d_mountpoint(struct dentry *dentry)
+ /* Lookups in the root directory */
+ static struct dentry *autofs4_lookup(struct inode *dir, struct dentry *dentry, struct nameidata *nd)
  {
- 	return (dentry->d_managed & DMANAGED_MOUNTPOINT) != 0;
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 1e1febf..57fa817 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -77,7 +77,8 @@ extern struct file *lookup_instantiate_filp(struct nameidata *nd, struct dentry
+@@ -683,7 +757,7 @@ static struct dentry *autofs4_lookup(struct inode *dir, struct dentry *dentry, s
+ 		/* Mark entries in the root as mount triggers */
+ 		if (autofs_type_indirect(sbi->type) && IS_ROOT(dentry->d_parent)) {
+ 			dentry->d_op = &autofs4_dentry_operations;
+-			managed_dentry_set_automount(dentry);
++			__managed_dentry_set_managed(dentry);
+ 		}
  
- extern struct dentry *lookup_one_len(const char *, struct dentry *, int);
- 
--extern int follow_down(struct path *);
-+extern int follow_down_one(struct path *);
-+extern int follow_down(struct path *, bool);
- extern int follow_up(struct path *);
- 
- extern struct dentry *lock_rename(struct dentry *, struct dentry *);
+ 		ino = autofs4_init_ino(NULL, sbi, 0555);
 
