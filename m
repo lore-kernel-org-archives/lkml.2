@@ -1,53 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab0I3J7f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 05:59:35 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58337 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab0I3J7e (ORCPT
+	id S1755678Ab0I3KGn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 06:06:43 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:59390 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754250Ab0I3KGk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 05:59:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=sB0plkXQZSVcr7JNSgrI0asy+1wdMRmslsQa9dT34Ll4JRLjt5Lqm1DsTgdhWgKUlq
-         tSbnNDWPLDQRv1vWhtxFHWzeoirwck033r9SD7Otg7ZrXt2W61O3IwUwrDqoCJhziBTH
-         702hDdft19+pQSevjeAfoWRXv+SOq/q4dcX80=
-Date: Thu, 30 Sep 2010 18:04:05 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Andreas Saebjoernsen <andreas@digitalplaywright.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: interpreting semantics of ipc system call
-Message-ID: <20100930100405.GB5265@cr0.nay.redhat.com>
-References: <AANLkTik8auzhRB00fRWxbmZKOKg+T87ZZa07ydDAGp=f@mail.gmail.com>
+	Thu, 30 Sep 2010 06:06:40 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4CA46126.7020104@cam.ac.uk>
+Date: Thu, 30 Sep 2010 11:06:30 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100928 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik8auzhRB00fRWxbmZKOKg+T87ZZa07ydDAGp=f@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jonathan Cameron <jic23@cam.ac.uk>
+CC: Hemanth V <hemanthv@ti.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux-iio@vger.kernel.org, linux-input@vger.kernel.org,
+        Dmitry Torokhov <dtor@mail.ru>,
+        Manuel Stahl <manuel.stahl@iis.fraunhofer.de>,
+        Jean Delvare <khali@linux-fr.org>, Greg KH <greg@kroah.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, drivers@analog.com,
+        achew@nvidia.com, Donggeun Kim <dg77.kim@samsung.com>
+Subject: Re: Sensor event related attribute naming.
+References: <4C98C7FE.4050305@cam.ac.uk> <03d301cb5bd4$152287d0$LocalHost@wipblrx0099946> <4C9C927B.1010500@cam.ac.uk> <4CA06714.8080008@cam.ac.uk>
+In-Reply-To: <4CA06714.8080008@cam.ac.uk>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 03:03:11PM -0700, Andreas Saebjoernsen wrote:
->We are developing a simulator that can simulate any specimen x86 linux program.
->Our simulator has a simulated memory, unlike the concrete memory state of
->tools like Valgrind, so that we can do concrete symbolic execution. Instead of
->reimplementing the system calls we marshal the system calls called by
->the specimen.
->
->I am currently working on marshaling calls to the ipc system call (system
->call 117) which has the following signature
->
->int ipc(unsigned int call, int first, int second, int third, void
->*ptr, long fifth)
->
->I have a problem interpreting what the size is of the data structure
->pointed to by
->the 'void*', and I have been unable to locate good documentation or code on the
->semantics of this system call.
+On 09/27/10 10:42, Jonathan Cameron wrote:
+> On 09/24/10 12:58, Jonathan Cameron wrote:
+>> On 09/24/10 11:34, Hemanth V wrote:
+>>> ----- Original Message ----- From: "Jonathan Cameron" <jic23@cam.ac.uk>
+>>> <snip>
+>>>>
+>>>> We have had naming conventions in IIO for a while but they have not
+>>>> yet been terribly satisfactory. Our latest suggestion, which I'm
+>>>> finally happy is general enough whilst remaining clear to be found
+>>>> in  http://marc.info/?l=linux-iio&m=128394796116223&w=2
+>>>>
+>>>> Manuel Stahl pointed out that the following summary covers what was
+>>>> proposed in a clearer fashion.
+>>>>
+>>>> <channel>_<limit>_<dir>_<attr>, where
+>>>> <channel>: name of the channel, i.e. accel_x0
+>>>> <limit>:   thresh, mag, roc
+>>>> <dir>:     rising, falling
+>>>> <attr>:    en, value, period, mean_period
+>>>>
+>>>
+>>> Jonathan, I am trying to understand howto apply this to cma3000. I
+>>> have few parameters like below. Would you be able to suggest how
+>>> the sysfs entries should look like for the below parameters or are these
+>>> still to be defined.
+>> Hi Hemanth,
+>>
+>>>
+>>> grange:  2000, 8000 mg sampling frequency  : 40, 100, 400 Hz
+>> These weren't covered by this discussion at all. However, I am happy to at
+>> least tell you how these are handled in IIO.  Firstly instead of defining
+>> ranges we define _scale attributes.  This decision has a lot to do with
+>> our approach of using raw data. To process that data, userspace needs to
+>> know how to scale it appropriately. It really doesn't directly care what the
+>> limits are.  If there is a particular use case for these limits directly then
+>> we could propose adding say accel_mag_max. Such a parameter would clearly
+>> interact with the alternate setting mechanism of accel_scale and maintaining
+>> that relationship would be a job for the driver.
+>>
+>> Note that if the multiplication is handled in driver (and hence to userspace
+>> looks like the device was doing it) then any sysfs based output is obtained
+>> via accel_x_input and the associated scale would be in accel_calibgain.
+>> accel_calibgain_available would give a space separated list of available gains.
+>>
+>> Also note that we always stick to SI units, so accelerations are measured in
+>> m/s^2 rather that g, so there are some factors to be taken into account.
+>> We are against making an exception for accelerometers because that will then
+>> make the units for a given sensor type very unpredictable.
+>>
+>> Frequency is controlled via sampling_frequency (in Hz) with a space
+>> separated list of available options in sampling_frequency_available
+>>
+>> Things are a little fiddly for some parts as the available range can be
+>> mode dependant - lower frequencies are often used for motion detection.
+>> For example, when motion detection is enabled on the cma3000 the sampling
+>> frequency and the measurement range change (10Hz and 8g) so this should be
+>> reflected in any reads of these attributes.
+>>
+>>> Modes : Motion detect, Measurement, Free fall
+>> Based on our sca3000 driver and the cma3000 data sheet.
+>>
+>> The device starts up in Measurement mode - this is the mode it is always
+>> in if neither of the others are enabled.  It's up to userspace to switch to
+>> one of the other modes.  If sysfs direct read attributes are supplied and the
+>> current mode does not allow values to be obtained then we simply return -EBUSY.
+>>
+>> We then have two event enable attributes.  The names of these are up for
+>> discussion (and part of what this thread was meant to address).  Let us for
+>> now call them:
+>> accel_freefall_en and accel_motiondetect_en
+>>
+>> The will have accompanying parameters
+>>
+>> accel_motiondetect_period (MDTMR[3:0] -> in seconds, a pain to do, but it's the
+>> 			only way we will have a consistent interface, for cases
+>> 			like this with few options,
+>> 			 accel_motiondetect_period_available could provide a
+>> 			 list of options)
+>> accel_motiondetect_value (MDTHR[6:0] -> in either raw units or processed.
+>> 			 Whether we need to make this choice explicit in
+>> 			 the naming is one of the questions I was hoping this
+>> 			 thread might answer) Perhaps
+>> 			 accel_motiondetect_value_input for processed values
+>> 			 and accel_motiondetect_value_raw for raw sensor units
+>> 			 (adc counts).
+>>
+>> accel_freefall_period (FFTMR[3:0] -> again in seconds)
+>> accel_freefall_value (FFTMR[3:0])
+>>
+>> In our event code structure (not yet posted) we actually allow another option
+>> which leads to a more logical and general description of these two detectors
+>> which I am keen on because we do have parts that allow weird subsets and
+>> devices other than accelerometers that actually perform very similar combined
+>> axis boolean combinations. Basically freefall and motiondetect don't really
+>> generalise to anything other than 3d accelerometers.
+>>
+>> For motion detection:
+>>
+>> accel_x|y|z_thresh_rising_en (the | characters are part of the name,
+>> 			     not indicating options for naming!)
+>>
+>> accel_x|y|z_thresh_rising_period, accel_x|y|z_thresh_rising_value
+>>
+>> for freefall:
+>>
+>> accel_x&y&z_thresh_falling_en
+>> accel_x&y&z_thresh_falling_value
+>> accel_x&y&z_thresh_falling_period
+>>
+>> These generalize to other forms of sensor far better than the magic 'freefall'
+>> but do not easily allow for more sophisticated free fall detectors. From an IIO
+>> point of view I would actually like to distinguish how these detectors are
+>> working but fully appreciate that your average user on a mobile phone doesn't
+>> care!
+>>
+>> I also know of some parts that do more complex arithmetic to detect free fall
+>> such as applying the detector on the sum squared value. I haven't as yet worked
+>> out how to name that one! Perhaps, accel_sum^2_thresh_falling_en?  One for
+>> another day I think.
+>>
+>> Anyhow for your part you would need to make the attributes mutually exclusive
+>> (I think).  Thus we only guarantee that an interrupt will remain enabled as long
+>> as no userspace interactions occur with the attributes.  Hence if one enabled
+>> freefall first then motion detection, userspace gets to find out they are
+>> mutually exclusive by reading back the values when it is done setting up what it
+>> would like.  Providing the 'mode' type option you suggested unfortunately does
+>> not generalize. For the cma3000 for example, how do you indicate that full rate
+>> data (more or less as if you were in measurement mode) is available when in free
+>> fall mode, but not when in motion detection mode? (on the sca3000 to take this
+>> futher, motion detecton mode completely disables any direct reading of the
+>> acceleration values) Also, the mode approach breaks down the moment you have
+>> a device that can do 2 out of n forms of detection at the same time.  This is
+>> very common (see Analog devices adis parts which have 2 general purpose alarms
+>> which can detect various things on one channel each where there may be 10 or
+>> more channels).
+>>
+>> For these special cases, I am perfectly willing to accept that simply labelling
+>> them free fall and motion detect is fine. I may map the resulting codes in IIO
+>> to the same as for the above alternate forms, but that doesn't matter for this
+>> discussion.
+>>
+> I have started conducting a review of what devices on the market actually implement.
+> http://sourceforge.net/apps/mediawiki/iioutils/index.php?title=Events
+> 
+> One additional option to the above has come up and I'm not entirely sure how it would
+> fit into the above. The ADXL345 implements a activity and inactivity detection with
+> 'AC coupling'.  This basically means it takes a sample of the current value when
+> the detector is first enabled then subtract this from the current value before
+> threshold comparisons are performed.  This is obviously an entirely sensible thing
+> to do, I merely haven't seen it before. If it were possible to read back the
+> offset that is being applied we could simply add say, accel_x_mag_rising_offset
+> (and one per axis) but it isn't.  Thus I can only think to suggest another
+> 'event' type.  Perhaps accel_x_offsetmag_rising? Suggestions for better
+> names would be most welcome.
+> 
+> This device can also effectively provide 2 freefall detectors if we set the 'inactivity'
+> detector to be DC with a very low period and value.  The 'inactivity' detector is 
+> a lot more flexible than the free fall detector.   I guess we may have to allow
+> accel_x&y&z_falling0_en and accel_x&y&z_falling1_en.
+> 
+> Anyhow, I'm sure there will be more devices out there implementing combinations I
+> haven't thought of yet...
+> 
+Given the lack of further comment, I went ahead and implemented the above naming
+scheme for IIO. As the above discussion with Hemanth shows, there are some corner cases
+that will need futher thought in the future.
 
+One question for this round of updates though.  How to distinguish whether
+the _value attributes are in raw units (common in iio) or in processed units (typically
+SI) such as the are in input. In IIO we can normally distinguish the two cases based
+on the naming of the direct access sysfs interfaces to the relevant channels. However,
+this doesn't generalize well as for some devices there may be no direct read capability.
 
-Take a look at ipc/syscall.c, that pointer will be interpreted to different
-data structures when you pass different arguments to 'call'.
+Lets take an example
+
+accel_x_thresh_mag_rising_value  is ambiguous, the next most obvious option is:
+accel_x_thresh_mag_rising_value_input
+accel_x_thresh_mag_rising_value_raw
+
+but that makes them look like the direct access attributes for very odd channels.
+
+accel_x_input_thresh_mag_rising_value
+accel_x_raw_thresh_mag_rising_value
+would do the job I suppose, but are clunky given the other parameter names
+accel_x_thresh_mag_rising_period etc..
+
+We could introduce new keywords (other than input and raw) to distinguish the cases
+but that will introduce further inconsistencies...
+
+Other suggestions most welcome, if nothing better is suggested I guess I'll go
+with the last option above...
+
+I'm keen to get this cleared up as much as possible for the next merge window
+so time is of the essence!
+
+Jonathan
+
