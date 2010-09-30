@@ -1,117 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756263Ab0I3ORl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 10:17:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38755 "EHLO
+	id S1756458Ab0I3OWW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 10:22:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54489 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755164Ab0I3ORk (ORCPT
+	with ESMTP id S1751974Ab0I3OWV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 10:17:40 -0400
+	Thu, 30 Sep 2010 10:22:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=NGYeyDqxffMr48W9LOIjbNU18FpDzTgHSbJBVMsu54w/bic5pl1s18ZZ0zotBvEqLy
-         YC4uRg9D1QkFBP82twVSqLtMYX0AekRbJX6bAUokHVswpnrp5cLcuU5fH5jTAKg0rgYK
-         JE0e/HZXR0IZy0b9M4gonRntpq65iPvW0c5Lk=
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Tejun Heo <tj@kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <20100930133823.39353d23@schatten.dmk.lab>
-References: <1284284969.2928.18.camel@maxim-laptop>
-	 <4C8F2699.3020509@kernel.org>
-	 <AANLkTinGHB9fbLw1Cm5wvPLGy8QEuoBBmFiqpnvXiZ8R@mail.gmail.com>
-	 <1284507516.4963.2.camel@maxim-laptop>
-	 <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
-	 <1284511071.3551.1.camel@maxim-laptop>
-	 <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
-	 <20100915132731.GA20558@khazad-dum.debian.net>
-	 <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
-	 <1284589207.4672.3.camel@maxim-laptop>
-	 <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
-	 <1285069338.3124.4.camel@maxim-laptop>
-	 <1285110590.2822.9.camel@maxim-laptop> <4C99B25D.20805@kernel.org>
-	 <1285162900.3335.15.camel@maxim-laptop>
-	 <1285163911.3159.5.camel@maxim-laptop> <4C9B141F.3050908@kernel.org>
-	 <AANLkTim31g84J6eeuh_6MiEw0w8zOi5sOWrL_WnoaueP@mail.gmail.com>
-	 <20100930083020.62b56218@schatten.dmk.lab>
-	 <AANLkTi=G42-0X0MWsgTaDKEnHocFEa+9Cmw4pfCMAk5=@mail.gmail.com>
-	 <20100930133823.39353d23@schatten.dmk.lab>
+        b=roNh/6gbbnHW9JYDOmPWe6kkrfRrD0rtQHHH7+iZR7qw96eQRt0nz+UFTR4ondRrPu
+         ZXqF8M1aQ1SWd7/jASmbiVA1Zqclhlf4KsVD0/saxk8l8ucivRxypua44PlP20ee+jGu
+         CV8qrGfDCXmZWnRSErRg9oZTE0eE9bn6dDo3w=
+Subject: Re: [PATCH v12 10/17] Add a hook to intercept external buffers
+ from NIC driver.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: xiaohui.xin@intel.com
+Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+In-Reply-To: <fda262fa746dfc1feb8543cf88d5ecf60001c186.1285853725.git.xiaohui.xin@intel.com>
+References: <1285855474-12110-1-git-send-email-xiaohui.xin@intel.com>
+	 <fda262fa746dfc1feb8543cf88d5ecf60001c186.1285853725.git.xiaohui.xin@intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 16:17:32 +0200
-Message-ID: <1285856252.26846.12.camel@maxim-laptop>
+Date: Thu, 30 Sep 2010 16:22:13 +0200
+Message-ID: <1285856533.2615.573.camel@edumazet-laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-30 at 13:38 +0200, Florian Mickler wrote:
-> On Thu, 30 Sep 2010 09:48:50 +0200
-> Kay Sievers <kay.sievers@vrfy.org> wrote:
-> > >
-> > > So, is the $subject problem solved now? Normally, we shouldn't break
-> > > stuff with new kernels... If this is only a temporary breakage on
-> > > the other hand, we should keep track of it...
-> > > I ask, because this is listed as https://bugzilla.kernel.org/show_bug.cgi?id=18522.
-> > > If it should stay listed, we may need an ETA for the fix...
-> > 
-> > Hmm, I still don't think that's a bug or regression.
-> > 
-> > Optical drives are not supposed to report media changes without
-> > constantly being polled. Why Tejun's seems to have an influence in
-> > Maxim's setup, is likely more a timing-related issue, or some other
-> > thing, we never really got an idea why it could change anything.
-> > 
-> > The current behavior is the expected and correct behavior, and for me
-> > also the older kernels behave like this.
-> > 
-> > Kay
+Le jeudi 30 septembre 2010 à 22:04 +0800, xiaohui.xin@intel.com a
+écrit :
+> From: Xin Xiaohui <xiaohui.xin@intel.com>
 > 
-> So I'm gonna close this as invalid then. Please shout, if that's
-> not ok.
-Its not invalid at all.
+> The hook is called in netif_receive_skb().
+> Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+> Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+> Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+> ---
+>  net/core/dev.c |   35 +++++++++++++++++++++++++++++++++++
+>  1 files changed, 35 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index c11e32c..83172b8 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -2517,6 +2517,37 @@ err:
+>  EXPORT_SYMBOL(netdev_mp_port_prep);
+>  #endif
+>  
+> +#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
+> +/* Add a hook to intercept mediate passthru(zero-copy) packets,
+> + * and insert it to the socket queue owned by mp_port specially.
+> + */
+> +static inline struct sk_buff *handle_mpassthru(struct sk_buff *skb,
+> +					       struct packet_type **pt_prev,
+> +					       int *ret,
+> +					       struct net_device *orig_dev)
+> +{
+> +	struct mp_port *mp_port = NULL;
+> +	struct sock *sk = NULL;
+> +
+> +	if (!dev_is_mpassthru(skb->dev))
+> +		return skb;
+> +	mp_port = skb->dev->mp_port;
+> +
+> +	if (*pt_prev) {
+> +		*ret = deliver_skb(skb, *pt_prev, orig_dev);
+> +		*pt_prev = NULL;
+> +	}
+> +
+> +	sk = mp_port->sock->sk;
+> +	skb_queue_tail(&sk->sk_receive_queue, skb);
+> +	sk->sk_state_change(sk);
+> +
+> +	return NULL;
+> +}
+> +#else
+> +#define handle_mpassthru(skb, pt_prev, ret, orig_dev)     (skb)
+> +#endif
+> +
+>  /**
+>   *	netif_receive_skb - process receive buffer from network
+>   *	@skb: buffer to process
+> @@ -2598,6 +2629,10 @@ int netif_receive_skb(struct sk_buff *skb)
+>  ncls:
+>  #endif
+>  
+> +	/* To intercept mediate passthru(zero-copy) packets here */
+> +	skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
+> +	if (!skb)
+> +		goto out;
+>  	skb = handle_bridge(skb, &pt_prev, &ret, orig_dev);
+>  	if (!skb)
+>  		goto out;
 
-Let me explain again the problem:
+This does not apply to current net-next-2.6
 
-Indeed cdrom drivers need to be polled.
-And yes, both udisks and hal _do_ poll the drive.
-
-However, udisks uses O_EXCL, when it opens the drive, and that fails s
-soon as filesystem is mounted, therefore effectively, as soon as disk is
-inserted, polling stops.
-
-Without the bisected commit, O_EXCL would still fail, however due to the
-bug that commit fixed, the drive will still be polled.
-
-Hal also polls the drive, but it has a workaround, that is if open with
-O_EXCL fails, it retries the open without it.
-
-This is pretty much all, there are no unknowns left.
+We now have dev->rx_handler (currently for bridge or macvlan)
 
 
-However the reason behind O_EXCL is that we don't want polling while a
-disk is being written (burned), but we do want polling while disk is
-mounted.
+commit ab95bfe01f9872459c8678572ccadbf646badad0
+Author: Jiri Pirko <jpirko@redhat.com>
+Date:   Tue Jun 1 21:52:08 2010 +0000
 
-So just 'fixing' udisk to not take O_EXCL will bring us to square one,
-as well as reverting the commit.
+    net: replace hooks in __netif_receive_skb V5
+    
+    What this patch does is it removes two receive frame hooks (for bridge and for
+    macvlan) from __netif_receive_skb. These are replaced them with a single
+    hook for both. It only supports one hook per device because it makes no
+    sense to do bridging and macvlan on the same device.
+    
+    Then a network driver (of virtual netdev like macvlan or bridge) can register
+    an rx_handler for needed net device.
+    
+    Signed-off-by: Jiri Pirko <jpirko@redhat.com>
+    Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
 
-Therefore this problem doesn't have a simple solution.
-I think that the best solution is to move polling to the kernel, and
-introduce a way for burning application to take absolute exclusive
-access to the device and as a part of that disable that in-kernel
-polling.
-A new ioctl will suffice, or the meaning of O_EXCL can be changed for
-cdrom driver only (if somebody has it open with O_EXCL, fail all opens,
-including the ones that don't have O_EXCL).
 
-
-Best regards,
-	Maxim Levitsky
 
