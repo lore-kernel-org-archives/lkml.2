@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab0I3UI4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:08:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56974 "EHLO mx1.redhat.com"
+	id S1756631Ab0I3UJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 16:09:16 -0400
+Received: from www.tglx.de ([62.245.132.106]:39718 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751885Ab0I3UIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:08:55 -0400
-Date: Thu, 30 Sep 2010 16:08:51 -0400
-From: Dave Jones <davej@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: Davidlohr Bueso <dave@gnu.org>, cpufreq@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] cpufreq: unnecesary double free in
- pcc_cpufreq_do_osc
-Message-ID: <20100930200850.GB4120@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	David Rientjes <rientjes@google.com>,
-	Davidlohr Bueso <dave@gnu.org>, cpufreq@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>
-References: <1285875804.2180.1.camel@cowboy>
- <alpine.DEB.2.00.1009301258550.9112@chino.kir.corp.google.com>
+	id S1754793Ab0I3UJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 16:09:14 -0400
+Date: Thu, 30 Sep 2010 22:08:15 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+cc: arjan@linux.intel.com, akpm@linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, Artem.Bityutskiy@nokia.com
+Subject: Re: timer: permit statically-declared work with deferrable timers
+In-Reply-To: <1285874789-1481-1-git-send-email-ext-phil.2.carmody@nokia.com>
+Message-ID: <alpine.LFD.2.00.1009302207060.2416@localhost6.localdomain6>
+References: <1285874789-1481-1-git-send-email-ext-phil.2.carmody@nokia.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009301258550.9112@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 01:02:54PM -0700, David Rientjes wrote:
-  > > index 994230d..db7dc35 100644
- > > --- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
- > > +++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
- > > @@ -379,6 +379,8 @@ static int __init pcc_cpufreq_do_osc(acpi_handle *handle)
- > >  	if (!(supported & 0x1))
- > >  		return -ENODEV;
- > >  
- > > +	return ret;
- > > +
- > >  out_free:
- > >  	kfree(output.pointer);
- > >  	return ret;
- > 
- > Why is the kfree() unnecessary?  acpi_evaluate_object() will allocate a 
- > new output.pointer if it returns 0, so at this point in the code you would 
- > now be leaking the buffer.
- > 
- > Instead, it would probably be better to fix the existing memory leaks in 
- > that function where we return -ENODEV without going to out_free when 
- > output.length is non-zero.
+On Thu, 30 Sep 2010, Phil Carmody wrote:
 
-Oh, *duh*. That was subtle.
-You, and Pekka are of course correct.  I'll merge up Pekka's patch.
+> 
+> Arjen, Thomas,
+> 
+> This patch is an enabler which hopefully can lead to simplification of code 
+> elsewhere. For example, it would turn Artem's patch I refer to in the commit
+> message (8eab945c5616fc984e97b922d6a2559be93f39a1) into just:
+> 
+> -static DECLARE_DELAYED_WORK(cache_cleaner, do_cache_clean);
+> +static DECLARE_DEFERRED_WORK(cache_cleaner, do_cache_clean);
+> 
+> rather than the creation of a __init helper that required touching 3 files.
+> 
+> I'm prepared to follow up with such simplifying patches if it's considered
+> worthwhile.
 
-thanks,
+If it simplies stuff, no objections from my side. The patch looks
+reasonable enough.
 
-	Dave
+How many (ab)users will it clean up ?
 
+Thanks,
+
+	tglx
