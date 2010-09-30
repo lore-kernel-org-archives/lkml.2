@@ -1,98 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab0I3QtI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 12:49:08 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:43521 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab0I3QtH (ORCPT
+	id S932251Ab0I3Q7d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 12:59:33 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51815 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755809Ab0I3Q7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 12:49:07 -0400
-Subject: [PATCH v2] DMI: log system, BIOS, and board information
-To: Andrew Morton <akpm@linux-foundation.org>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Date: Thu, 30 Sep 2010 10:49:05 -0600
-Message-ID: <20100930164905.13154.33194.stgit@bob.kio>
-User-Agent: StGit/0.15
+	Thu, 30 Sep 2010 12:59:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=b2XZk+vetLBQcB4vnbm6mt7q5cWDRv43xWCCMhMf4wDlPt0uBaRMxDfsWGt4Owr6FN
+         X9cGDtepEvokgCbH9PXRNO72lJYEUmdL9tVc9AcSEh2CigVCRdT7aXHp9q7NMwnzOfiE
+         0dKELagrCzNS5vAdj7dqAy/N68zkSacoHmlNk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
+References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
+Date: Thu, 30 Sep 2010 18:59:30 +0200
+Message-ID: <AANLkTikapE3RaVVFS3yBSGmCkMGUvfZECJq5eOmayWhZ@mail.gmail.com>
+Subject: Re: mmotm 2010-09-28-16-13 uploaded
+From: Na Pohybel <napohybelskurwysynom2010@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-Put basic system information in the dmesg log.  There are lots of dmesg
-logs on the web, and it would be useful if they contained this information
-for debugging platform problems.
+2010/9/29  <akpm@linux-foundation.org>:
+> The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
 
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
----
+Could you add this tree to the next mmotm?
+git pull git://github.com/napohybelskurwysynom2010/Linux-2.6-nps.git rodi
 
- drivers/firmware/dmi_scan.c |   35 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 34 insertions(+), 1 deletions(-)
+It removes some duplicate includes
+
+ arch/arm/mach-davinci/board-da850-evm.c        |    1 -
+ arch/arm/mach-shmobile/board-ap4evb.c          |    1 -
+ arch/arm/mach-tegra/timer.c                    |    1 -
+ arch/arm/plat-nomadik/include/plat/ste_dma40.h |    1 -
+ arch/tile/kernel/setup.c                       |    2 --
+ arch/x86/mm/init_64.c                          |    1 -
+ arch/x86/xen/enlighten.c                       |    1 -
+ drivers/ide/ide-tape.c                         |    1 -
+ drivers/media/IR/lirc_dev.c                    |    1 -
+ drivers/net/pxa168_eth.c                       |    2 --
+ drivers/net/wireless/libertas/cfg.c            |    1 -
+ drivers/platform/x86/intel_pmic_gpio.c         |    1 -
+ drivers/staging/lirc/lirc_parallel.c           |    1 -
+ drivers/staging/spectra/lld_mtd.c              |    3 ---
+ drivers/staging/tidspbridge/gen/gb.c           |    1 -
+ drivers/staging/tidspbridge/gen/gs.c           |    1 -
+ drivers/video/omap/lcd_omap3beagle.c           |    1 -
+ include/linux/virtio_9p.h                      |    1 -
+ kernel/trace/trace_kprobe.c                    |    1 -
+ net/caif/caif_socket.c                         |    1 -
+ net/netfilter/xt_ipvs.c                        |    1 -
+ sound/soc/nuc900/nuc900-ac97.c                 |    1 -
+ 22 files changed, 0 insertions(+), 26 deletions(-)
 
 
-diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-index b3d22d6..d625e53 100644
---- a/drivers/firmware/dmi_scan.c
-+++ b/drivers/firmware/dmi_scan.c
-@@ -2,6 +2,7 @@
- #include <linux/string.h>
- #include <linux/init.h>
- #include <linux/module.h>
-+#include <linux/ctype.h>
- #include <linux/dmi.h>
- #include <linux/efi.h>
- #include <linux/bootmem.h>
-@@ -361,6 +362,36 @@ static void __init dmi_decode(const struct dmi_header *dm, void *dummy)
- 	}
- }
- 
-+static const char * __init dmi_printable_system_info(int field)
-+{
-+	const char *info, *p;
-+
-+	info = dmi_get_system_info(field);
-+	if (!info)
-+		return NULL;
-+
-+	for (p = info; *p; p++)
-+		if (!isprint(*p))
-+			return "<...>";
-+
-+	return info;
-+}
-+
-+static void __init dmi_dump_ids(void)
-+{
-+	const char *board;
-+
-+	printk(KERN_DEBUG "DMI: system: %s %s",
-+	       dmi_printable_system_info(DMI_SYS_VENDOR),
-+	       dmi_printable_system_info(DMI_PRODUCT_NAME));
-+	board = dmi_printable_system_info(DMI_BOARD_NAME);
-+	if (board)
-+		printk(KERN_CONT " (%s board)", board);
-+	printk(KERN_CONT ", BIOS: %s %s\n",
-+	       dmi_printable_system_info(DMI_BIOS_VERSION),
-+	       dmi_printable_system_info(DMI_BIOS_DATE));
-+}
-+
- static int __init dmi_present(const char __iomem *p)
- {
- 	u8 buf[15];
-@@ -381,8 +412,10 @@ static int __init dmi_present(const char __iomem *p)
- 			       buf[14] >> 4, buf[14] & 0xF);
- 		else
- 			printk(KERN_INFO "DMI present.\n");
--		if (dmi_walk_early(dmi_decode) == 0)
-+		if (dmi_walk_early(dmi_decode) == 0) {
-+			dmi_dump_ids();
- 			return 0;
-+		}
- 	}
- 	return 1;
- }
-
+-- 
+Slawa!
+N.P.S.
