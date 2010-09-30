@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932400Ab0I3URl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:17:41 -0400
-Received: from caiajhbdcaid.dreamhost.com ([208.97.132.83]:58541 "EHLO
-	homiemail-a7.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932161Ab0I3URk (ORCPT
+	id S932390Ab0I3UVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 16:21:31 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51244 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab0I3UVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:17:40 -0400
-Subject: Re: [RESEND PATCH] cpufreq: unnecesary double free in
- pcc_cpufreq_do_osc
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: Dave Jones <davej@redhat.com>
-Cc: David Rientjes <rientjes@google.com>, cpufreq@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100930200850.GB4120@redhat.com>
-References: <1285875804.2180.1.camel@cowboy>
-	 <alpine.DEB.2.00.1009301258550.9112@chino.kir.corp.google.com>
-	 <20100930200850.GB4120@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 16:17:31 -0400
-Message-ID: <1285877851.2180.8.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Sep 2010 16:21:30 -0400
+Date: Thu, 30 Sep 2010 21:21:04 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, iommu@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 2/3] x86/amd-iommu: Work around S3 BIOS bug
+Message-ID: <20100930202104.GA20495@srcf.ucam.org>
+References: <1285253089-4570-1-git-send-email-joerg.roedel@amd.com> <1285253089-4570-3-git-send-email-joerg.roedel@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285253089-4570-3-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-30 at 16:08 -0400, Dave Jones wrote:
-> On Thu, Sep 30, 2010 at 01:02:54PM -0700, David Rientjes wrote:
->   > > index 994230d..db7dc35 100644
->  > > --- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
->  > > +++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
->  > > @@ -379,6 +379,8 @@ static int __init pcc_cpufreq_do_osc(acpi_handle *handle)
->  > >  	if (!(supported & 0x1))
->  > >  		return -ENODEV;
->  > >  
->  > > +	return ret;
->  > > +
->  > >  out_free:
->  > >  	kfree(output.pointer);
->  > >  	return ret;
->  > 
->  > Why is the kfree() unnecessary?  acpi_evaluate_object() will allocate a 
->  > new output.pointer if it returns 0, so at this point in the code you would 
->  > now be leaking the buffer.
->  > 
->  > Instead, it would probably be better to fix the existing memory leaks in 
->  > that function where we return -ENODEV without going to out_free when 
->  > output.length is non-zero.
-> 
-> Oh, *duh*. That was subtle.
+On Thu, Sep 23, 2010 at 04:44:48PM +0200, Joerg Roedel wrote:
+> +static void iommu_apply_quirks(struct amd_iommu *iommu)
+> +{
+> +	if (is_rd890_iommu(iommu->dev)) {
+> +		pci_write_config_dword(iommu->dev, 0xf0, iommu->cache_cfg[0]);
+> +		pci_write_config_dword(iommu->dev, 0xf4, iommu->cache_cfg[1]);
+> +		pci_write_config_dword(iommu->dev, 0xf8, iommu->cache_cfg[2]);
+> +		pci_write_config_dword(iommu->dev, 0xfc, iommu->cache_cfg[3]);
+> +	}
+> +}
+> +
 
-Yep, anyways, at least we got the correct "fix".
+This doesn't look right. 0xf0-0xff are for indexed register access, so 
+what you're doing here is just restoring the last of each of those 
+registers that the BIOS programmed - and if the BIOS cleared the 
+writable flag afterwards, you're not even doing that.
 
-> You, and Pekka are of course correct.  I'll merge up Pekka's patch.
-> 
-> thanks,
-> 
-> 	Dave
-> 
-> 
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
