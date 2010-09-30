@@ -1,95 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756740Ab0I3Ugr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:36:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61777 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756466Ab0I3Ugq (ORCPT
+	id S1756800Ab0I3UhJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 16:37:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50678 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756771Ab0I3UhH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:36:46 -0400
+	Thu, 30 Sep 2010 16:37:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Lim1utUqbqHxipSK9h9/FnyxawRXernlJpmylWYJIKYY490nSoRVJ1NZYy4o4DR11P
-         9zNqx4eDLzN610Z8GRskj3hfNZuaA14BFsi6e4p4hvKSs90kTd2gIV3gKLuhD5ZoriOf
-         zaA2ZRsCNmPwCm11BA+V+2BHEAzFM8FKEXnKA=
-Subject: Re: QUESTION: block layer ->request and tasklets
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <axboe@kernel.dk>, Alex Dubov <oakad@yahoo.com>
-In-Reply-To: <1285869154.26846.44.camel@maxim-laptop>
-References: <1285869154.26846.44.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 22:36:37 +0200
-Message-ID: <1285878997.26846.50.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=pXFPegDEQblSlKTtC69S2M+49Mr75c/9Iagq93nB6z0mG8++dHKI/HIAZA/NX4GtKv
+         D1cMB1vQ4jgh9MD42bgJxXhYNDH2ICVbhZXZ/d6vkg4Kr7WkB+TPolrgqrQAkyixbBjj
+         hIUvcVjIER8V2xOn9JLg5yQss4d2Gmfd2yG6s=
+MIME-Version: 1.0
+In-Reply-To: <4CA4F10E.5060109@zytor.com>
+References: <1285334543-7074-1-git-send-regression-fweisbec@gmail.com>
+	<AANLkTinnRB-cpRrxymUQYMx0TjgkDkSbg=Euaq+Y16sE@mail.gmail.com>
+	<4CA4F10E.5060109@zytor.com>
+Date: Thu, 30 Sep 2010 22:37:07 +0200
+X-Google-Sender-Auth: UuAcds1Joxlg9BxbGIkR0J-DHvc
+Message-ID: <AANLkTinQG-Jt5CVuYPrAFO2nYAkyKEt++SPC+sGKKUDr@mail.gmail.com>
+Subject: Re: [PATCH 1/2] autofs: Only declare function when CONFIG_COMPAT is defined
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        =?UTF-8?B?TcOhcnRvbiBOw6ltZXRo?= <nm127@freemail.hu>,
+        Arnd Bergmann <arnd@arndb.de>, Ian Kent <raven@themaw.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-30 at 19:52 +0200, Maxim Levitsky wrote:
-> Hi,
-> 
-> I have an issue that is possible related to my lack of understanding of
-> the block system, that really drives me nuts.
-> 
-> Here is the short description:
-> 
-> A 'perfect' block driver is supposed to start a sector transfer right in
-> the ->request.
-> 
-> An IRQ will cause the driver to end this request (or part of it), and
-> try to fetch another one and submit it to the hardware, effectively
-> doing the same thing the ->request does.
-> This is not easy to implement in stand alone block driver, and it is
-> even harder to so in a common layer.
-> Yet, Alex's memorystick subsystem does implement this style of a driver,
-> and it works quite well
-> 
-> A memory stick low level driver is designed after the block driver.
-> It also has a ->request function and a 'queue' of requests, even though
-> this is an illusion, because every time a request is 'fetched' from
-> upper layer, it is created on the fly by a state machine.
-> An upper level driver is a block driver.
-> 
-> Now the problem:
-> The jmb38x_ms ->request function doesn't set the hardware, but rather it
-> queues a tasklet, which does the work.
-> It seems to be redundant, and yet if I remove the tasklet, the system
-> randomly freezes, and worse that that, none of lockup detecters catch
-> it, so I am unable to get a backtrace.
-> This is a time I am really mad at hardware vendors for removing the
-> reset button....
-> 
-> On the other hand my ms_block.c, an upper level driver for old
-> MemorySticks, works OK.
-> But it contains a thread that does the IO. Its ->request only wakes it
-> up.
-> 
-> So in both cases, the block layer calls the ->request of the high level
-> block driver, and then execution context switches (to thread or tasklet)
-> which setups the IO.
-> I have a bad feeling that this is a race/deadlock somewhere, but I
-> triple checked everything.
-> 
-> 
-> Any ideas?
-Please disregard this.
-The spinlock debugging saved me. I got a backtrace, and of course found
-what I expected, a spin on already taken spinlock.
+On Thu, Sep 30, 2010 at 22:20, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 09/30/2010 01:00 PM, Geert Uytterhoeven wrote:
+>>
+>> An alternative (and IMHO better) fix would be to move autofs_root_operations[]
+>> and autofs_root_inode_operations[] to the bottom of the file, and get rid of all
+>> the forward declarations.
+>>
+>
+> This is a legacy piece of code (autofs3) which has been long since
+> obsolete anyway... it's one thing to do a minimal patch to keep it
+> alive, another to restructure crap when it's already overdue for removal.
 
-I really didn't expect memstick_next_request (and state machines it
-calls) to call the memstick_new_request and therefore jmicron's
-->request.
-I fixed mspro_block.c not to so (don't call memstick_new_request from
-state machine handlers, and problem went away. 
-Now I can happily remove that tasklet :-)
+You're right. But please note that autofs4 has the exact same issue.
 
-Jens Axboe, sorry for noise.
+Gr{oetje,eeting}s,
 
-Best regards,
-	Maxim Levitsky
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
