@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932359Ab0I3SQv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:16:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24788 "EHLO mx1.redhat.com"
+	id S1755889Ab0I3SRE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:17:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30358 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755737Ab0I3SQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:16:48 -0400
+	id S932366Ab0I3SQw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 14:16:52 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 16/17] autofs4 - add v4 pseudo direct mount support
+Subject: [PATCH 17/17] autofs4 - bump version
 To: viro@ftp.linux.org.uk, jmoyer@redhat.com
 Cc: linux-fs@vger.kernel.org, autofs@linux.kernel.org,
         linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
         linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
         Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>
-Date: Thu, 30 Sep 2010 19:16:17 +0100
-Message-ID: <20100930181617.30939.37248.stgit@warthog.procyon.org.uk>
+Date: Thu, 30 Sep 2010 19:16:22 +0100
+Message-ID: <20100930181622.30939.55468.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 References: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -31,102 +31,27 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Kent <raven@themaw.net>
 
-Version 4 of autofs provides a pseudo direct mount implementation
-that relies on directories at the leaves of a directory tree under
-an indirect mount to trigger mounts.
-
-This patch adds support for that functionality.
+Increase the autofs module sub-version so we can tell what kernel
+implementation is being used from user space debug logging.
 
 Signed-off-by: Ian Kent <raven@themaw.net>
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/autofs4/root.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 60 insertions(+), 0 deletions(-)
+ include/linux/auto_fs4.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
-index 3b38794..135d713 100644
---- a/fs/autofs4/root.c
-+++ b/fs/autofs4/root.c
-@@ -629,6 +629,60 @@ static int autofs4_dir_unlink(struct inode *dir, struct dentry *dentry)
- 	return 0;
- }
+diff --git a/include/linux/auto_fs4.h b/include/linux/auto_fs4.h
+index 8b49ac4..e02982f 100644
+--- a/include/linux/auto_fs4.h
++++ b/include/linux/auto_fs4.h
+@@ -24,7 +24,7 @@
+ #define AUTOFS_MIN_PROTO_VERSION	3
+ #define AUTOFS_MAX_PROTO_VERSION	5
  
-+/*
-+ * Version 4 of autofs provides a pseudo direct mount implementation
-+ * that relies on directories at the leaves of a directory tree under
-+ * an indirect mount to trigger mounts. To allow for this we need to
-+ * set the DMANAGED_AUTOMOUNT and DMANAGED_TRANSIT flags on the leaves
-+ * of the directory tree. There is no need to clear the automount flag
-+ * following a mount or restore it after an expire because these mounts
-+ * are always covered. However, it is neccessary to ensure that these
-+ * flags are clear on non-empty directories to avoid unnecessary calls
-+ * during path walks.
-+ */
-+static void autofs_set_leaf_automount_flags(struct dentry *dentry)
-+{
-+	struct dentry *parent;
-+
-+	/* root and dentrys in the root are already handled */
-+	if (IS_ROOT(dentry->d_parent))
-+		return;
-+
-+	managed_dentry_set_managed(dentry);
-+
-+	parent = dentry->d_parent;
-+	/* only consider parents below dentrys in the root */
-+	if (IS_ROOT(parent->d_parent))
-+		return;
-+	managed_dentry_clear_managed(parent);
-+	return;
-+}
-+
-+static void autofs_clear_leaf_automount_flags(struct dentry *dentry)
-+{
-+	struct list_head *d_child;
-+	struct dentry *parent;
-+
-+	/* flags for dentrys in the root are handled elsewhere */
-+	if (IS_ROOT(dentry->d_parent))
-+		return;
-+
-+	managed_dentry_clear_managed(dentry);
-+
-+	parent = dentry->d_parent;
-+	/* only consider parents below dentrys in the root */
-+	if (IS_ROOT(parent->d_parent))
-+		return;
-+	d_child = &dentry->d_u.d_child;
-+	spin_lock(&dcache_lock);
-+	/* Set parent managed if it's becoming empty */
-+	if (d_child->next == &parent->d_subdirs &&
-+	    d_child->prev == &parent->d_subdirs)
-+		managed_dentry_set_managed(parent);
-+	spin_unlock(&dcache_lock);
-+	return;
-+}
-+
- static int autofs4_dir_rmdir(struct inode *dir, struct dentry *dentry)
- {
- 	struct autofs_sb_info *sbi = autofs4_sbi(dir->i_sb);
-@@ -652,6 +706,9 @@ static int autofs4_dir_rmdir(struct inode *dir, struct dentry *dentry)
- 	spin_unlock(&dentry->d_lock);
- 	spin_unlock(&dcache_lock);
+-#define AUTOFS_PROTO_SUBVERSION		1
++#define AUTOFS_PROTO_SUBVERSION		2
  
-+	if (sbi->version < 5)
-+		autofs_clear_leaf_automount_flags(dentry);
-+
- 	if (atomic_dec_and_test(&ino->count)) {
- 		p_ino = autofs4_dentry_ino(dentry->d_parent);
- 		if (p_ino && dentry->d_parent != dentry)
-@@ -694,6 +751,9 @@ static int autofs4_dir_mkdir(struct inode *dir, struct dentry *dentry, int mode)
- 	}
- 	d_add(dentry, inode);
- 
-+	if (sbi->version < 5)
-+		autofs_set_leaf_automount_flags(dentry);
-+
- 	dentry->d_fsdata = ino;
- 	ino->dentry = dget(dentry);
- 	atomic_inc(&ino->count);
+ /* Mask for expire behaviour */
+ #define AUTOFS_EXP_IMMEDIATE		1
 
