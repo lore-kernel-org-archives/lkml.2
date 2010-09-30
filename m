@@ -1,59 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0I3TUw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 15:20:52 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:43368 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754647Ab0I3TUv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 15:20:51 -0400
+	id S1756268Ab0I3TXt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 15:23:49 -0400
+Received: from s318.xrea.com ([125.53.25.46]:33483 "HELO s318.xrea.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752337Ab0I3TXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 15:23:48 -0400
+From: Naohiro Aota <naota@elisp.net>
+To: Roman Zippel <zippel@linux-m68k.org>, Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Ulf Magnusson <ulfalizer.lkml@gmail.com>,
+        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Naohiro Aota <naota@elisp.net>
+Subject: [PATCH -next] kconfig: Don't go out from read config loop when you read new symbol
+Date: Fri, 01 Oct 2010 04:23:17 +0900
+Message-ID: <87sk0rghne.fsf@elisp.net>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1285851024.748.97.camel@marc>
-References: <4CA391B3.1030806@wol.de> <20100930103010.1a6a7785@lxorguk.ukuu.org.uk>
- <1285843077.748.32.camel@marc> <AANLkTi=d+5uDVK9RHguSmwFhKLVUPXvzo=G3s=NKKDW3@mail.gmail.com>
- <20100930122928.19e5ee84@lxorguk.ukuu.org.uk> <1285851024.748.97.camel@marc>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 30 Sep 2010 21:20:29 +0200
-Message-ID: <AANLkTimRa9VsOgSkcdrg=41pskEbMhNL4D9SXeV3dztG@mail.gmail.com>
-Subject: Re: [PATCH] Fix capi devicenames
-To: "Marc - A. Dahlhaus" <mad@wol.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        isdn@linux-pingi.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-n Thu, Sep 30, 2010 at 14:50, Marc - A. Dahlhaus <mad@wol.de> wrote:
-> Am Donnerstag, den 30.09.2010, 12:29 +0100 schrieb Alan Cox:
->> > In any case devices.txt should be fixed, it has not much to do with
->> > the real world.
->>
->> If some distros chose not to follow devices.txt that is their problem.
->>
->> devices.txt is the specification, and its ABI.
->>
->> It is fixed and the kernel behaviour is to follow it. Those who didn't
->> follow it, or who didn't propose a change back when it was specified in
->> the first place have only themselves to blame.
->>
->> It isn't changing, and the ISDN code should follow the spec.
->>
->> How you sort out your userspace is a problem for those who dug holes and
->> jumped down them.
->
-> Well, i doubt that any distro or hand crafted setup out there is using
-> anything else than the /dev/capi20 and /dev/capi/[0-9]+ devices for capi
-> interaction. Because the userspace (libcapi20 & capiinit) handle just
-> this devices. (i checked debian/ubuntu, fedora rawhide and gentoo and
-> all are not using other device node names...)
+commit 8baefd30b5b0101aa07aa75da44a9eee881eed28 of linux-next replaced
+a `switch()' statement with some `if()' statements, but left `break's
+in the `switch()' statement untouched. This cause read config loop to
+exit and so "make oldconfig" is not much usable (see below).
 
-devices.txt is just bogus in this case and states stuff which was
-never used in the real world. But you don't need to touch it. Just add
-the naming hints (char *(*devnode)) to the capi class and nothing will
-change, the device names in /sys and everywhere else will stay as they
-are today, just devtmpfs and udev will create the right device nodes
-out of the kernel supplied additional information. We did this for the
-rest of the kernel the same way.
+> $ make oldconfig
+><snip>
+> scripts/kconfig/conf --oldconfig Kconfig
+> #
+> # using defaults found in /boot/config-2.6.34-ccs-r1
+> #
+> *
+> * Restart config...
+> *
+> *
+> * General setup
+> *
+> Prompt for development and/or incomplete code/drivers (EXPERIMENTAL) [N/y/?] (NEW)
 
-Kay
+(I've already have "CONFIG_EXPERIMENTAL=y" in the old config file. But
+that's not read here.)
+
+This patch should fix this problem.
+
+Signed-off-by: Naohiro Aota <naota@elisp.net>
+---
+ scripts/kconfig/confdata.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/scripts/kconfig/confdata.c b/scripts/kconfig/confdata.c
+index f7d89d7..35c08ec 100644
+--- a/scripts/kconfig/confdata.c
++++ b/scripts/kconfig/confdata.c
+@@ -234,7 +234,7 @@ load:
+ 				sym = sym_find(line + 2 + strlen(CONFIG_));
+ 				if (!sym) {
+ 					sym_add_change_count(1);
+-					break;
++					goto setsym;
+ 				}
+ 			} else {
+ 				sym = sym_lookup(line + 2 + strlen(CONFIG_), 0);
+@@ -268,7 +268,7 @@ load:
+ 				sym = sym_find(line + strlen(CONFIG_));
+ 				if (!sym) {
+ 					sym_add_change_count(1);
+-					break;
++					goto setsym;
+ 				}
+ 			} else {
+ 				sym = sym_lookup(line + strlen(CONFIG_), 0);
+@@ -285,6 +285,7 @@ load:
+ 				conf_warning("unexpected data");
+ 			continue;
+ 		}
++setsym:
+ 		if (sym && sym_is_choice_value(sym)) {
+ 			struct symbol *cs = prop_get_symbol(sym_get_choice_prop(sym));
+ 			switch (sym->def[def].tri) {
+-- 
+1.7.3
