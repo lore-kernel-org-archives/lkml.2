@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756488Ab0I3NvQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 09:51:16 -0400
+	id S1756601Ab0I3Nto (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 09:49:44 -0400
 Received: from mga03.intel.com ([143.182.124.21]:30013 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756175Ab0I3Nqz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 09:46:55 -0400
+	id S1756254Ab0I3NrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 09:47:04 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,259,1283756400"; 
-   d="scan'208";a="330506175"
+   d="scan'208";a="330506223"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v12 03/17] Add a ndo_mp_port_prep pointer to net_device_ops.
-Date: Thu, 30 Sep 2010 22:04:20 +0800
-Message-Id: <71d822c4ef96c404f21fce724549c0ba9f71bd36.1285853725.git.xiaohui.xin@intel.com>
+Subject: [PATCH v12 08/17] Modify netdev_free_page() to release external buffer
+Date: Thu, 30 Sep 2010 22:04:25 +0800
+Message-Id: <b433a728f866b0c42e1fb63864e27ad7d9514c76.1285853725.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285855474-12110-1-git-send-email-xiaohui.xin@intel.com>
 References: <1285855474-12110-1-git-send-email-xiaohui.xin@intel.com>
@@ -28,46 +28,68 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-If the driver want to allocate external buffers,
-then it can export it's capability, as the skb
-buffer header length, the page length can be DMA, etc.
-The external buffers owner may utilize this.
+Currently, it can get external buffers from mp device.
 
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
+ include/linux/skbuff.h |    4 +++-
+ net/core/skbuff.c      |   24 ++++++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 9ef9bf1..24a31e7 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -651,6 +651,12 @@ struct mp_port	{
-  * int (*ndo_set_vf_tx_rate)(struct net_device *dev, int vf, int rate);
-  * int (*ndo_get_vf_config)(struct net_device *dev,
-  *			    int vf, struct ifla_vf_info *ivf);
-+ *
-+ * int (*ndo_mp_port_prep)(struct net_device *dev, struct mp_port *port);
-+ *	If the driver want to allocate external buffers,
-+ *	then it can export it's capability, as the skb
-+ *	buffer header length, the page length can be DMA, etc.
-+ *	The external buffers owner may utilize this.
-  */
- #define HAVE_NET_DEVICE_OPS
- struct net_device_ops {
-@@ -713,6 +719,10 @@ struct net_device_ops {
- 	int			(*ndo_fcoe_get_wwn)(struct net_device *dev,
- 						    u64 *wwn, int type);
- #endif
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+	int			(*ndo_mp_port_prep)(struct net_device *dev,
-+						struct mp_port *port);
-+#endif
- };
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index ab29675..3d7f70e 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1512,9 +1512,11 @@ static inline struct page *netdev_alloc_page(struct net_device *dev)
+ 	return __netdev_alloc_page(dev, GFP_ATOMIC);
+ }
  
- /*
++extern void __netdev_free_page(struct net_device *dev, struct page *page);
++
+ static inline void netdev_free_page(struct net_device *dev, struct page *page)
+ {
+-	__free_page(page);
++	__netdev_free_page(dev, page);
+ }
+ 
+ /**
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index da02fa1..76c8301 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -306,6 +306,30 @@ struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
+ }
+ EXPORT_SYMBOL(__netdev_alloc_page);
+ 
++void netdev_free_ext_page(struct net_device *dev, struct page *page)
++{
++	struct skb_ext_page *ext_page = NULL;
++	if (dev_is_mpassthru(dev) && dev->mp_port->hash) {
++		ext_page = dev->mp_port->hash(dev, page);
++		if (ext_page)
++			ext_page->dtor(ext_page);
++		else
++			__free_page(page);
++	}
++}
++EXPORT_SYMBOL(netdev_free_ext_page);
++
++void __netdev_free_page(struct net_device *dev, struct page *page)
++{
++	if (dev_is_mpassthru(dev)) {
++		netdev_free_ext_page(dev, page);
++		return;
++	}
++
++	__free_page(page);
++}
++EXPORT_SYMBOL(__netdev_free_page);
++
+ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+ 		int size)
+ {
 -- 
 1.7.3
 
