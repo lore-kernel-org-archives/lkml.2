@@ -1,45 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755448Ab0I3LxE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 07:53:04 -0400
-Received: from mail.southpole.se ([193.12.106.18]:46223 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755141Ab0I3LxC (ORCPT
+	id S1755353Ab0I3L4s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 07:56:48 -0400
+Received: from jurassic.park.msu.ru ([195.208.223.243]:53709 "EHLO
+	jurassic.park.msu.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753485Ab0I3L4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 07:53:02 -0400
-Subject: Re: ioremap definition in generic io.h
-From: Jonas Bonn <jonas@southpole.se>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Jiri Slaby <jirislaby@gmail.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <201009301345.16817.arnd@arndb.de>
-References: <1285747145.12259.3.camel@needafix> <4CA31AA6.7020003@gmail.com>
-	 <1285758446.12259.9.camel@needafix>  <201009301345.16817.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Organization: South Pole AB
-Date: Thu, 30 Sep 2010 13:52:59 +0200
-Message-ID: <1285847579.2639.3.camel@needafix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Sep 2010 07:56:47 -0400
+Date: Thu, 30 Sep 2010 15:56:45 +0400
+From: Ivan Kokshaysky <ink@jurassic.park.msu.ru>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Al Viro <viro@ftp.linux.org.uk>,
+        linux-kernel@vger.kernel.org, mattst88@gmail.com,
+        torvalds@linux-foundation.org, linux-alpha@vger.kernel.org
+Subject: Re: [PATCH 1/2] alpha: switch osf_sigprocmask() to use of
+	sigprocmask()
+Message-ID: <20100930115645.GA6037@jurassic.park.msu.ru>
+References: <E1OzvxM-0002ng-B5@ZenIV.linux.org.uk> <4CA1B7DF.10202@orcon.net.nz> <20100929010738.GJ19804@ZenIV.linux.org.uk> <4CA43E95.5040301@orcon.net.nz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA43E95.5040301@orcon.net.nz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-30 at 13:45 +0200, Arnd Bergmann wrote:
-> On Wednesday 29 September 2010, Jonas Bonn wrote:
-> > On another note, looking at the definitions of ioread32/iowrite32, they
-> > imply a little-endian bus.  Some architectures (e.g. Microblaze) define
-> > these to use host-native byte ordering instead.  Is there a correct
-> > way these functions should be defined?
-> 
-> ioread32/iowrite32 are accessor functions for PCI byte order which is
-> little endian. If microblaze does this differently, that is a microblaze
-> bug. Any code that needs big-endian I/O should use ioread32be/iowrite32be.
-> 
+On Thu, Sep 30, 2010 at 08:39:01PM +1300, Michael Cree wrote:
+> It appears to be worse than that.  It introduces a regression.  On boot up 
+> on a Compaq Alpha XP1000 the system appears to freeze at the point of 
+> mounting swap.  It eventually resumes after almost three minutes and 
+> continues to boot.  A bisection returned this very commit as the first bad 
+> commit.  With a kernel without this commit the (truncated) bootup log is:
 
-So what's the correct way to do host-native access?  For example, big
-endian access on a big endian processor.  I think I'm missing something
-fundamental here...
+Confirmed, I see some processes get stuck, apparently waiting for signals.
 
-/Jonas
+Looks like yet another typo - _BLOCKABLE is defined as
+(~(sigmask(SIGKILL) | sigmask(SIGSTOP))), so (newmask & ~_BLOCKABLE)
+clears everything but SIGKILL and SIGSTOP.
 
+Ivan.
+
+diff --git a/arch/alpha/kernel/signal.c b/arch/alpha/kernel/signal.c
+index d290845..6f7feb5 100644
+--- a/arch/alpha/kernel/signal.c
++++ b/arch/alpha/kernel/signal.c
+@@ -48,7 +48,7 @@ SYSCALL_DEFINE2(osf_sigprocmask, int, how, unsigned long, newmask)
+ 	sigset_t mask;
+ 	unsigned long res;
+ 
+-	siginitset(&mask, newmask & ~_BLOCKABLE);
++	siginitset(&mask, newmask & _BLOCKABLE);
+ 	res = sigprocmask(how, &mask, &oldmask);
+ 	if (!res) {
+ 		force_successful_syscall_return();
