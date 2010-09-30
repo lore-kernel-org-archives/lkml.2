@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932463Ab0I3Vqx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 17:46:53 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:41524 "EHLO
+	id S1756435Ab0I3Vqv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 17:46:51 -0400
+Received: from ovro.ovro.caltech.edu ([192.100.16.2]:41522 "EHLO
 	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756037Ab0I3Vqt (ORCPT
+	with ESMTP id S1755801Ab0I3Vqt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Sep 2010 17:46:49 -0400
 From: "Ira W. Snyder" <iws@ovro.caltech.edu>
 To: linux-kernel@vger.kernel.org
 Cc: Dan Williams <dan.j.williams@intel.com>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v4 2/4] fsldma: implement support for scatterlist to scatterlist copy
-Date: Thu, 30 Sep 2010 14:46:45 -0700
-Message-Id: <1285883207-13761-3-git-send-email-iws@ovro.caltech.edu>
+Subject: [PATCH v4 1/4] dma: add support for scatterlist to scatterlist copy
+Date: Thu, 30 Sep 2010 14:46:44 -0700
+Message-Id: <1285883207-13761-2-git-send-email-iws@ovro.caltech.edu>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285883207-13761-1-git-send-email-iws@ovro.caltech.edu>
 References: <1285883207-13761-1-git-send-email-iws@ovro.caltech.edu>
@@ -21,186 +21,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that the DMAEngine API has support for scatterlist to scatterlist
-copy, implement support for the Freescale DMA controller.
+This adds support for scatterlist to scatterlist DMA transfers. A
+similar interface is exposed by the fsldma driver (through the DMA_SLAVE
+API) and by the ste_dma40 driver (through an exported function).
+
+This patch paves the way for making this type of copy operation a part
+of the generic DMAEngine API. Futher patches will add support in
+individual drivers.
 
 Signed-off-by: Ira W. Snyder <iws@ovro.caltech.edu>
 ---
- drivers/dma/fsldma.c |  128 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 125 insertions(+), 3 deletions(-)
+ drivers/dma/dmaengine.c   |    2 ++
+ include/linux/dmaengine.h |    6 ++++++
+ 2 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/fsldma.c b/drivers/dma/fsldma.c
-index cea08be..1ed29d1 100644
---- a/drivers/dma/fsldma.c
-+++ b/drivers/dma/fsldma.c
-@@ -38,6 +38,8 @@
- #include <asm/fsldma.h>
- #include "fsldma.h"
+diff --git a/drivers/dma/dmaengine.c b/drivers/dma/dmaengine.c
+index 9d31d5e..db403b8 100644
+--- a/drivers/dma/dmaengine.c
++++ b/drivers/dma/dmaengine.c
+@@ -690,6 +690,8 @@ int dma_async_device_register(struct dma_device *device)
+ 		!device->device_prep_dma_memset);
+ 	BUG_ON(dma_has_cap(DMA_INTERRUPT, device->cap_mask) &&
+ 		!device->device_prep_dma_interrupt);
++	BUG_ON(dma_has_cap(DMA_SG, device->cap_mask) &&
++		!device->device_prep_dma_sg);
+ 	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+ 		!device->device_prep_slave_sg);
+ 	BUG_ON(dma_has_cap(DMA_SLAVE, device->cap_mask) &&
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index c61d4ca..7c44620 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -64,6 +64,7 @@ enum dma_transaction_type {
+ 	DMA_PQ_VAL,
+ 	DMA_MEMSET,
+ 	DMA_INTERRUPT,
++	DMA_SG,
+ 	DMA_PRIVATE,
+ 	DMA_ASYNC_TX,
+ 	DMA_SLAVE,
+@@ -473,6 +474,11 @@ struct dma_device {
+ 		unsigned long flags);
+ 	struct dma_async_tx_descriptor *(*device_prep_dma_interrupt)(
+ 		struct dma_chan *chan, unsigned long flags);
++	struct dma_async_tx_descriptor *(*device_prep_dma_sg)(
++		struct dma_chan *chan,
++		struct scatterlist *dst_sg, unsigned int dst_nents,
++		struct scatterlist *src_sg, unsigned int src_nents,
++		unsigned long flags);
  
-+static const char msg_ld_oom[] = "No free memory for link descriptor\n";
-+
- static void dma_init(struct fsldma_chan *chan)
- {
- 	/* Reset the channel */
-@@ -499,7 +501,7 @@ fsl_dma_prep_interrupt(struct dma_chan *dchan, unsigned long flags)
- 
- 	new = fsl_dma_alloc_descriptor(chan);
- 	if (!new) {
--		dev_err(chan->dev, "No free memory for link descriptor\n");
-+		dev_err(chan->dev, msg_ld_oom);
- 		return NULL;
- 	}
- 
-@@ -536,8 +538,7 @@ static struct dma_async_tx_descriptor *fsl_dma_prep_memcpy(
- 		/* Allocate the link descriptor from DMA pool */
- 		new = fsl_dma_alloc_descriptor(chan);
- 		if (!new) {
--			dev_err(chan->dev,
--					"No free memory for link descriptor\n");
-+			dev_err(chan->dev, msg_ld_oom);
- 			goto fail;
- 		}
- #ifdef FSL_DMA_LD_DEBUG
-@@ -583,6 +584,125 @@ fail:
- 	return NULL;
- }
- 
-+static struct dma_async_tx_descriptor *fsl_dma_prep_sg(struct dma_chan *dchan,
-+	struct scatterlist *dst_sg, unsigned int dst_nents,
-+	struct scatterlist *src_sg, unsigned int src_nents,
-+	unsigned long flags)
-+{
-+	struct fsl_desc_sw *first = NULL, *prev = NULL, *new = NULL;
-+	struct fsldma_chan *chan = to_fsl_chan(dchan);
-+	size_t dst_avail, src_avail;
-+	dma_addr_t dst, src;
-+	size_t len;
-+
-+	/* basic sanity checks */
-+	if (dst_nents == 0 || src_nents == 0)
-+		return NULL;
-+
-+	if (dst_sg == NULL || src_sg == NULL)
-+		return NULL;
-+
-+	/*
-+	 * TODO: should we check that both scatterlists have the same
-+	 * TODO: number of bytes in total? Is that really an error?
-+	 */
-+
-+	/* get prepared for the loop */
-+	dst_avail = sg_dma_len(dst_sg);
-+	src_avail = sg_dma_len(src_sg);
-+
-+	/* run until we are out of scatterlist entries */
-+	while (true) {
-+
-+		/* create the largest transaction possible */
-+		len = min_t(size_t, src_avail, dst_avail);
-+		len = min_t(size_t, len, FSL_DMA_BCR_MAX_CNT);
-+		if (len == 0)
-+			goto fetch;
-+
-+		dst = sg_dma_address(dst_sg) + sg_dma_len(dst_sg) - dst_avail;
-+		src = sg_dma_address(src_sg) + sg_dma_len(src_sg) - src_avail;
-+
-+		/* allocate and populate the descriptor */
-+		new = fsl_dma_alloc_descriptor(chan);
-+		if (!new) {
-+			dev_err(chan->dev, msg_ld_oom);
-+			goto fail;
-+		}
-+#ifdef FSL_DMA_LD_DEBUG
-+		dev_dbg(chan->dev, "new link desc alloc %p\n", new);
-+#endif
-+
-+		set_desc_cnt(chan, &new->hw, len);
-+		set_desc_src(chan, &new->hw, src);
-+		set_desc_dst(chan, &new->hw, dst);
-+
-+		if (!first)
-+			first = new;
-+		else
-+			set_desc_next(chan, &prev->hw, new->async_tx.phys);
-+
-+		new->async_tx.cookie = 0;
-+		async_tx_ack(&new->async_tx);
-+		prev = new;
-+
-+		/* Insert the link descriptor to the LD ring */
-+		list_add_tail(&new->node, &first->tx_list);
-+
-+		/* update metadata */
-+		dst_avail -= len;
-+		src_avail -= len;
-+
-+fetch:
-+		/* fetch the next dst scatterlist entry */
-+		if (dst_avail == 0) {
-+
-+			/* no more entries: we're done */
-+			if (dst_nents == 0)
-+				break;
-+
-+			/* fetch the next entry: if there are no more: done */
-+			dst_sg = sg_next(dst_sg);
-+			if (dst_sg == NULL)
-+				break;
-+
-+			dst_nents--;
-+			dst_avail = sg_dma_len(dst_sg);
-+		}
-+
-+		/* fetch the next src scatterlist entry */
-+		if (src_avail == 0) {
-+
-+			/* no more entries: we're done */
-+			if (src_nents == 0)
-+				break;
-+
-+			/* fetch the next entry: if there are no more: done */
-+			src_sg = sg_next(src_sg);
-+			if (src_sg == NULL)
-+				break;
-+
-+			src_nents--;
-+			src_avail = sg_dma_len(src_sg);
-+		}
-+	}
-+
-+	new->async_tx.flags = flags; /* client is in control of this ack */
-+	new->async_tx.cookie = -EBUSY;
-+
-+	/* Set End-of-link to the last link descriptor of new list */
-+	set_ld_eol(chan, new);
-+
-+	return &first->async_tx;
-+
-+fail:
-+	if (!first)
-+		return NULL;
-+
-+	fsldma_free_desc_list_reverse(chan, &first->tx_list);
-+	return NULL;
-+}
-+
- /**
-  * fsl_dma_prep_slave_sg - prepare descriptors for a DMA_SLAVE transaction
-  * @chan: DMA channel
-@@ -1327,11 +1447,13 @@ static int __devinit fsldma_of_probe(struct platform_device *op,
- 
- 	dma_cap_set(DMA_MEMCPY, fdev->common.cap_mask);
- 	dma_cap_set(DMA_INTERRUPT, fdev->common.cap_mask);
-+	dma_cap_set(DMA_SG, fdev->common.cap_mask);
- 	dma_cap_set(DMA_SLAVE, fdev->common.cap_mask);
- 	fdev->common.device_alloc_chan_resources = fsl_dma_alloc_chan_resources;
- 	fdev->common.device_free_chan_resources = fsl_dma_free_chan_resources;
- 	fdev->common.device_prep_dma_interrupt = fsl_dma_prep_interrupt;
- 	fdev->common.device_prep_dma_memcpy = fsl_dma_prep_memcpy;
-+	fdev->common.device_prep_dma_sg = fsl_dma_prep_sg;
- 	fdev->common.device_tx_status = fsl_tx_status;
- 	fdev->common.device_issue_pending = fsl_dma_memcpy_issue_pending;
- 	fdev->common.device_prep_slave_sg = fsl_dma_prep_slave_sg;
+ 	struct dma_async_tx_descriptor *(*device_prep_slave_sg)(
+ 		struct dma_chan *chan, struct scatterlist *sgl,
 -- 
 1.7.1
 
