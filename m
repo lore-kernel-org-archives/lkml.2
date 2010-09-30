@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754068Ab0I3Dut (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 23:50:49 -0400
+	id S1753908Ab0I3Dum (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 23:50:42 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:56474 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab0I3Duq (ORCPT
+	with ESMTP id S1753728Ab0I3Duk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 23:50:46 -0400
+	Wed, 29 Sep 2010 23:50:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=rta5HvddJKmlEPh92ve4HldwhowvRAtPHgPi6nK4xljtBc2WJ7eymhRnVYZXoLTayc
-         zNa0YbcipHIcyDJRueRZfOowcSYbNssSMW65XhgEPbKMPULX2jhMZzQ8VVuJ+nyRL9/y
-         VYQ5+poSTACzCU5w3z2Pg+GPdxTAK/3QsP2Ys=
+        b=BZWpd2J+iGVwm1lhyMq8lD9asGtWpidtFc2RSY0HX75OAzwv2fiXhM/HoEmGgS5Cvq
+         i9XqzmViA57gp3Fsik6bt05PluvKbyf+YC4YGtQo0Bdi8Zy6T3im7Ol9yoR6AgNbOhy9
+         oq7vwin4+lJL923ohLIHw28hk5TVxeWO5LcZo=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 06/12] rmap: annotate lock context change on page_[un]lock_anon_vma()
-Date: Thu, 30 Sep 2010 12:50:15 +0900
-Message-Id: <1285818621-29890-7-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 04/12] mm: add lock release annotation on do_wp_page()
+Date: Thu, 30 Sep 2010 12:50:13 +0900
+Message-Id: <1285818621-29890-5-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1285818621-29890-1-git-send-email-namhyung@gmail.com>
 References: <1285818621-29890-1-git-send-email-namhyung@gmail.com>
@@ -26,64 +26,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The page_lock_anon_vma() conditionally grabs RCU and anon_vma lock
-but page_unlock_anon_vma() releases them unconditionally. This leads
-sparse to complain about context imbalance. Annotate them.
+The do_wp_page() releases @ptl but was missing proper annotation.
+Add it. This removes following warnings from sparse:
+
+ mm/memory.c:2337:9: warning: context imbalance in 'do_wp_page' - unexpected unlock
+ mm/memory.c:3142:19: warning: context imbalance in 'handle_mm_fault' - different lock contexts for basic block
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- include/linux/rmap.h |   15 ++++++++++++++-
- mm/rmap.c            |    4 +++-
- 2 files changed, 17 insertions(+), 2 deletions(-)
+ mm/memory.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/rmap.h b/include/linux/rmap.h
-index 31b2fd7..0fa7769 100644
---- a/include/linux/rmap.h
-+++ b/include/linux/rmap.h
-@@ -230,7 +230,20 @@ int try_to_munlock(struct page *);
- /*
-  * Called by memory-failure.c to kill processes.
-  */
--struct anon_vma *page_lock_anon_vma(struct page *page);
-+struct anon_vma *__page_lock_anon_vma(struct page *page);
-+
-+static inline struct anon_vma *page_lock_anon_vma(struct page *page)
-+{
-+	struct anon_vma *anon_vma;
-+
-+	__cond_lock(RCU, anon_vma = __page_lock_anon_vma(page));
-+
-+	/* (void) is needed to make gcc happy */
-+	(void) __cond_lock(&anon_vma->root->lock, anon_vma);
-+
-+	return anon_vma;
-+}
-+
- void page_unlock_anon_vma(struct anon_vma *anon_vma);
- int page_mapped_in_vma(struct page *page, struct vm_area_struct *vma);
- 
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 9d2ba01..244ff06 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -314,7 +314,7 @@ void __init anon_vma_init(void)
-  * Getting a lock on a stable anon_vma from a page off the LRU is
-  * tricky: page_lock_anon_vma rely on RCU to guard against the races.
-  */
--struct anon_vma *page_lock_anon_vma(struct page *page)
-+struct anon_vma *__page_lock_anon_vma(struct page *page)
+diff --git a/mm/memory.c b/mm/memory.c
+index 219b50a..76fa60e 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2107,6 +2107,7 @@ static inline void cow_user_page(struct page *dst, struct page *src, unsigned lo
+ static int do_wp_page(struct mm_struct *mm, struct vm_area_struct *vma,
+ 		unsigned long address, pte_t *page_table, pmd_t *pmd,
+ 		spinlock_t *ptl, pte_t orig_pte)
++	__releases(ptl)
  {
- 	struct anon_vma *anon_vma, *root_anon_vma;
- 	unsigned long anon_mapping;
-@@ -348,6 +348,8 @@ out:
- }
- 
- void page_unlock_anon_vma(struct anon_vma *anon_vma)
-+	__releases(&anon_vma->root->lock)
-+	__releases(RCU)
- {
- 	anon_vma_unlock(anon_vma);
- 	rcu_read_unlock();
+ 	struct page *old_page, *new_page;
+ 	pte_t entry;
 -- 
 1.7.2.2
 
