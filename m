@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0I3CxL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 22:53:11 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46108 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab0I3CxK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 22:53:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=Sf3FuToLfOCGihMbNclmXidwKnB8HzJ2DqHOd82hKZO/m0ZiDysL5BfhdOc65FNcuT
-         aDXfZ6LU3qYnn6a8xt1G7lIYTSwiqGBcrILB9TOgXOM/p0ts2ZEIl11Blf/gISNiwVvE
-         5AIKPOLKzh/Ycu0GZ6hh148osBqKDXViamVZo=
+	id S1753377Ab0I3Czh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 22:55:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49225 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751789Ab0I3Czg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 22:55:36 -0400
+Date: Wed, 29 Sep 2010 19:56:17 -0700
+From: Greg KH <gregkh@suse.de>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Greg KH <greg@kroah.com>, devel@driverdev.osuosl.org, dsd@laptop.org,
+        jon.nettleton@gmail.com, linux-geode@lists.infradead.org,
+        linux-kernel@vger.kernel.org, cjb@laptop.org,
+        David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCH 3/4] cs5535: add some additional cs5535-specific GPIO
+	functionality
+Message-ID: <20100930025617.GA4877@suse.de>
+References: <20100925190712.6aa5c2fc@debxo> <20100930010501.GA28145@kroah.com> <20100929194650.7283174c@debxo>
 MIME-Version: 1.0
-In-Reply-To: <006201cb6048$962b6810$c2823830$%kim@samsung.com>
-References: <AANLkTi=NFz95jvk73cgXGV-kzj7FFazgMJ6D+GOXr3Kb@mail.gmail.com>
-	<006201cb6048$962b6810$c2823830$%kim@samsung.com>
-Date: Thu, 30 Sep 2010 11:53:08 +0900
-X-Google-Sender-Auth: 75O5ySRM6jRQQNdAY75sE2QrUqY
-Message-ID: <AANLkTimb02EB+G2eV2dEcL8Fc7EJitgvshWYMawuzgOx@mail.gmail.com>
-Subject: Re: Please don't edit the subject. Use S5PC110 & S5PC210 as is
-From: Kyungmin Park <kmpark@infradead.org>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: arm-linux <linux-arm-kernel@lists.infradead.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Tomasz Fujak <t.fujak@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100929194650.7283174c@debxo>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 11:38 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> Kyungmin Park wrote:
->>
->> Hi,
->>
->> Please don't edit the subject.
->>
->> http://git.kernel.org/?p=linux/kernel/git/kgene/linux-
->> samsung.git;a=commitdiff;h=d8c3d96f5df54251c06686bb00811e4b7e0f6547
->> http://git.kernel.org/?p=linux/kernel/git/kgene/linux-
->> samsung.git;a=commitdiff;h=7dcde8f18b0df4d332d6b359fd6270772a42f71f
->>
->> Patches from DMC we decide to use the S5PC110 & S5PC210 as we're only
->> received the Spec C110 & C210.
->> Most of people including mobile division don't know the V210 & V310
->> SOC receptively.
->>
->> We're already confusing with names, we always talk with C110 & C210
->> but works on V210 & V310 directory.
->>
->> well question. What's the SOC is used at Galaxy S & wave phone?
->>
->> I think S5PC110 is more well known than S5PV210.
->>
->> http://lwn.net/Articles/399720/
->> The conclusion of the 2.6.36 merge window
->> Systems and processors: Income s.r.o. PXA270 single-board computers,
->> Wiliboard WBD-111 boards, and Samsung S5PC210-based systems.
->>
->> Thank you,
->> Kyungmin Park
->
-> As I'm a maintainer of Samsung S5P SoCs, I would like to use second column
-> in the subject line to indicate the ARCH_XXX name like following.
-> 'ARM: S5PV210: <patch subject>'
-> As you know, it means the patch is mainly regarding ARCH_S5PV210
-> (arch/arm/mach-s5pv210/).
->
-> It can be help to many people, including me that the title speak where it
-> belong to.
->
-> And I believe someone who can use git log to see the log and source, S5PC110
-> is in the 'arch/arm/mach-s5pv210/'.
+On Wed, Sep 29, 2010 at 07:46:50PM -0700, Andres Salomon wrote:
+> On Wed, 29 Sep 2010 18:05:01 -0700
+> Greg KH <greg@kroah.com> wrote:
+> 
+> > On Sat, Sep 25, 2010 at 07:07:12PM -0700, Andres Salomon wrote:
+> > > 
+> > > This adds (well, re-adds actually) handling for events/IRQs through
+> > > cs5535 GPIOs.  In the wild and wooly world of CS5535, setup_event()
+> > > is for assigning an IRQ to a GPIO filter/event pair, and set_irq()
+> > > sets up the pair to trigger IRQs.
+> > > 
+> > > These should really only be used in highly platform-specific
+> > > drivers (such as OLPC's DCON driver).  Sadly, because set_irq()
+> > > uses MSRs, this causes the driver to become X86-specific.
+> > > 
+> > > Signed-off-by: Andres Salomon <dilinger@queued.net>
+> > > ---
+> > >  drivers/gpio/Kconfig       |    2 +-
+> > >  drivers/gpio/cs5535-gpio.c |   52
+> > > ++++++++++++++++++++++++++++++++++++++++++++
+> > > include/linux/cs5535.h     |    2 +
+> > 
+> > I can't take this change without the gpio subsystem maintainer acking
+> > it.  Can you get that approval from them?
+> 
+> 
+> I believe the GPIO subsystem is unmaintained (please correct me if
+> I'm wrong).   David Brownell had some good input on my original
+> cs5535-gpio driver patches that I sent, so I'll Cc him.  I
+> think that's as close to a maintainer as we're going to get. :)
 
-Right, many people are confused where's the s5pc110 codes? and know
-it's under mach-s5pv210.
-And finally know it's almost same S5PC110 = S5PV210 so if it use the
-S5PC110 at subject. not issue.
+Fair enough, get his ack and agreement that I can take this through the
+staging tree, and I'll be glad to do it.
 
->
-> If you want to display S5PC110 or S5PC210 in the subject, you can properly
-> add it in the last column of the title.
->
-> And Hmm...
-> I wonder why posted this to LKML
->
-> Thanks.
->
-> Best regards,
-> Kgene.
-> --
-> Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-> SW Solution Development Team, Samsung Electronics Co., Ltd.
->
->
+> If I recall correctly, the past few of my (and others') cs5535-gpio
+> patches have gone in by way of the -mm tree.
+
+Ah, that means there's no real maintainer :(
+
+thanks,
+
+greg k-h
