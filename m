@@ -1,40 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab0I3W34 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 18:29:56 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47577 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754642Ab0I3W3z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 18:29:55 -0400
-Date: Thu, 30 Sep 2010 23:29:46 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Len Brown <lenb@kernel.org>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-        linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3
-	boot hang
-Message-ID: <20100930222946.GB23084@srcf.ucam.org>
-References: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain> <20100927135735.GA856@srcf.ucam.org> <alpine.LFD.2.00.1009301810380.7033@localhost.localdomain>
+	id S1756933Ab0I3WaY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 18:30:24 -0400
+Received: from void.printf.net ([89.145.121.20]:49713 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751911Ab0I3WaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 18:30:22 -0400
+Date: Thu, 30 Sep 2010 23:30:11 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Linus Walleij <linus.ml.walleij@gmail.com>,
+        "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "STEricsson_nomadik_linux@list.st.com" 
+	<STEricsson_nomadik_linux@list.st.com>,
+        Hanumath Prasad <hanumath.prasad@stericsson.com>,
+        Kyungmin Park <kmpark@infradead.org>
+Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
+Message-ID: <20100930223011.GB29047@void.printf.net>
+References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com> <AANLkTikBdBhJeQ-t2+0echJfAxz529QZEYPJtyHUsROd@mail.gmail.com> <m3pqxbsibq.fsf@pullcord.laptop.org> <20100823204829.GB6510@console-pimps.org> <20100823142816.59b12253.akpm@linux-foundation.org> <4C739F55.8030301@nokia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1009301810380.7033@localhost.localdomain>
+In-Reply-To: <4C739F55.8030301@nokia.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 06:14:35PM -0400, Len Brown wrote:
+Hi,
 
-> we check (and clear) that bit only if the acpi tables
-> tell us to do so.
+On Tue, Aug 24, 2010 at 01:30:45PM +0300, Adrian Hunter wrote:
+> From: Adrian Hunter <adrian.hunter@nokia.com>
+> Date: Tue, 24 Aug 2010 13:20:26 +0300
+> Subject: [PATCH] mmc: Fix Dual Data Rate (DDR) support
+>
+> The DDR support patch needs the following fixes:
+>
+> - The block driver does not need to know about DDR, any more
+> than it needs to know about bus width.
+> - Not only the card must be switched to DDR mode.  The host
+> controller must also be configured, which is done through
+> the 'set_ios()' function.
+> - Do not set the DDR mode state until after the switch command
+> is successful.
+> - Setting block length is not supported in DDR mode.  Make that
+> a core function and change the other place it is used (mmc_test)
+> also.
+>
+> Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
 
-Do the tables tell us to do so on this platform?
+Applied to mmc-next, thanks very much Adrian.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
