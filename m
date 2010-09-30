@@ -1,76 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754427Ab0I3XZR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:25:17 -0400
-Received: from www.tglx.de ([62.245.132.106]:34739 "EHLO www.tglx.de"
+	id S1754250Ab0I3X3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:29:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:55143 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751150Ab0I3XZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:25:15 -0400
-Message-Id: <20100930221738.572997675@linutronix.de>
-User-Agent: quilt/0.48-1
-Date: Thu, 30 Sep 2010 23:14:33 -0000
-From: Thomas Gleixner <tglx@linutronix.de>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Yinghai Lu <yhlu.kernel@gmail.com>, stable@kernel.org
-Subject: [patch 01/47] x86: Plug memory leak in sparse irq
-References: <20100930221351.682772535@linutronix.de>
-Content-Disposition: inline; filename=x86-plug-memory-leak-in-sparse-irq.patch
+	id S1753049Ab0I3X27 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:28:59 -0400
+Date: Fri, 1 Oct 2010 01:27:59 +0200
+From: Jan Kara <jack@suse.cz>
+To: Johannes Stezenbach <js@sig21.net>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: block cache replacement strategy?
+Message-ID: <20100930232758.GI3573@quack.suse.cz>
+References: <20100907133429.GB3430@sig21.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100907133429.GB3430@sig21.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-free_irq_cfg() is not freeing the cpumask_vars in irq_cfg. Fixing this
-triggers a use after free caused by the fact that copying struct
-irq_cfg is done with memcpy, which copies the pointer not the cpumask.
+  Hi,
 
-Fix both places.
+On Tue 07-09-10 15:34:29, Johannes Stezenbach wrote:
+> during some simple disk read throughput testing I observed
+> caching behaviour that doesn't seem right.  The machine
+> has 2G of RAM and AMD Athlon 4850e, x86_64 kernel but 32bit
+> userspace, Linux 2.6.35.4.  It seems that contents of the
+> block cache are not evicted to make room for other blocks.
+> (Or something like that, I have no real clue about this.)
+> 
+> Since this is a rather artificial test I'm not too worried,
+> but it looks strange to me so I thought I better report it.
+> 
+> 
+> zzz:~# echo 3 >/proc/sys/vm/drop_caches 
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.9454 s, 75.2 MB/s
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 0.92799 s, 1.1 GB/s
+> 
+> OK, seems like the blocks are cached. But:
+> 
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.8375 s, 75.8 MB/s
+> zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> 1000+0 records in
+> 1000+0 records out
+> 1048576000 bytes (1.0 GB) copied, 13.8429 s, 75.7 MB/s
+  I took a look at this because it looked strange at the first sight to me.
+After some code reading the result is that everything is working as
+designed.
+  The first dd fills up memory with 1GB of data. Pages with data just freshly
+read from disk are in "Inactive" state. When these pages are read again by
+the second dd, they move into the "Active" state - caching has proved
+useful and thus we value the data more. When the third dd is run, it
+eventually needs to reclaim some pages to cache new data. System preferably
+reclaims "Inactive" pages and since it has plenty of them - all the data
+the third dd has read so far - it succeeds. Thus when a third dd finishes,
+only a small part of the whole 1 GB chunk is in memory since we continually
+reclaimed pages from it.
+  Active pages would start becoming inactive only when there would be too
+many of them (e.g. when there would be more active pages than inactive
+pages). But that does not happen with your workload... I guess this
+explains it.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yinghai Lu <yhlu.kernel@gmail.com>
-LKML-Reference: <alpine.LFD.2.00.1009282052570.2416@localhost6.localdomain6>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: stable@kernel.org
----
- arch/x86/kernel/apic/io_apic.c |   11 ++++++++---
- 1 file changed, 8 insertions(+), 3 deletions(-)
+								Honza
 
-Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-===================================================================
---- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
-+++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -307,14 +307,19 @@ void arch_init_copy_chip_data(struct irq
- 
- 	old_cfg = get_irq_desc_chip_data(old_desc);
- 
--	memcpy(cfg, old_cfg, sizeof(struct irq_cfg));
-+	cfg->vector = old_cfg->vector;
-+	cfg->move_in_progress = old_cfg->move_in_progress;
-+	cpumask_copy(cfg->domain, old_cfg->domain);
-+	cpumask_copy(cfg->old_domain, old_cfg->old_domain);
- 
- 	init_copy_irq_2_pin(old_cfg, cfg, node);
- }
- 
--static void free_irq_cfg(struct irq_cfg *old_cfg)
-+static void free_irq_cfg(struct irq_cfg *cfg)
- {
--	kfree(old_cfg);
-+	free_cpumask_var(cfg->domain);
-+	free_cpumask_var(cfg->old_domain);
-+	kfree(cfg);
- }
- 
- void arch_free_chip_data(struct irq_desc *old_desc, struct irq_desc *desc)
-
-
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
