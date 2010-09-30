@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753987Ab0I3Duo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 23:50:44 -0400
+	id S1754136Ab0I3Duu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 23:50:50 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:56474 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753910Ab0I3Dum (ORCPT
+	with ESMTP id S1754058Ab0I3Dut (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 23:50:42 -0400
+	Wed, 29 Sep 2010 23:50:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eM/pBhuGwiTuVvJ6XJX6Lzj6IxqK6gdedT4rhN+LeQLuMDrYjsjz6VJaKLTpCClZZb
-         1AAaqWukhtdLUE5isK5zGY8xvo5MU/ZtxR0ctIM8JoWknJrF7tlWETGUiLx5jAIj5c1K
-         2frLno4/+BW8rPztUVTbcd7mpmfpOexHnlMNE=
+        b=gScupyaMk9nDvR0DHPRubPpODaw3qTlvWYcShK9z6Oc9CmEwzPpksdEiVAFmA/uWii
+         nf9y3aG8THAOX0kdsdDDp8Cs5dtiL1x7k3eulUrziVQ5mcCb+Bcjbl1bcR9QbHsRzelf
+         mtBS9sLM77+LLDOi0RalyHsdF+6/6f6qjC+w0=
 From: Namhyung Kim <namhyung@gmail.com>
 To: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 05/12] mm: wrap follow_pte() using __cond_lock()
-Date: Thu, 30 Sep 2010 12:50:14 +0900
-Message-Id: <1285818621-29890-6-git-send-email-namhyung@gmail.com>
+Subject: [PATCH 07/12] rmap: wrap page_check_address() using __cond_lock()
+Date: Thu, 30 Sep 2010 12:50:16 +0900
+Message-Id: <1285818621-29890-8-git-send-email-namhyung@gmail.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1285818621-29890-1-git-send-email-namhyung@gmail.com>
 References: <1285818621-29890-1-git-send-email-namhyung@gmail.com>
@@ -26,48 +26,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The follow_pte() conditionally grabs *@ptlp in case of returning 0.
-Rename and wrap it using __cond_lock() removes following warnings:
+The page_check_address() conditionally grabs *@ptlp in case of returning
+non-NULL. Rename and wrap it using __cond_lock() removes following
+warnings from sparse:
 
- mm/memory.c:2337:9: warning: context imbalance in 'do_wp_page' - unexpected unlock
- mm/memory.c:3142:19: warning: context imbalance in 'handle_mm_fault' - different lock contexts for basic block
+ mm/rmap.c:472:9: warning: context imbalance in 'page_mapped_in_vma' - unexpected unlock
+ mm/rmap.c:524:9: warning: context imbalance in 'page_referenced_one' - unexpected unlock
+ mm/rmap.c:706:9: warning: context imbalance in 'page_mkclean_one' - unexpected unlock
+ mm/rmap.c:1066:9: warning: context imbalance in 'try_to_unmap_one' - unexpected unlock
 
 Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- mm/memory.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+ include/linux/rmap.h |   13 ++++++++++++-
+ mm/rmap.c            |    2 +-
+ 2 files changed, 13 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memory.c b/mm/memory.c
-index 76fa60e..6892fe8 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -3344,7 +3344,7 @@ int in_gate_area_no_task(unsigned long addr)
+diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+index 0fa7769..490206c 100644
+--- a/include/linux/rmap.h
++++ b/include/linux/rmap.h
+@@ -205,9 +205,20 @@ int try_to_unmap_one(struct page *, struct vm_area_struct *,
+ /*
+  * Called from mm/filemap_xip.c to unmap empty zero page
+  */
+-pte_t *page_check_address(struct page *, struct mm_struct *,
++pte_t *__page_check_address(struct page *, struct mm_struct *,
+ 				unsigned long, spinlock_t **, int);
  
- #endif	/* __HAVE_ARCH_GATE_AREA */
- 
--static int follow_pte(struct mm_struct *mm, unsigned long address,
-+static int __follow_pte(struct mm_struct *mm, unsigned long address,
- 		pte_t **ptepp, spinlock_t **ptlp)
- {
- 	pgd_t *pgd;
-@@ -3381,6 +3381,17 @@ out:
- 	return -EINVAL;
- }
- 
-+static inline int follow_pte(struct mm_struct *mm, unsigned long address,
-+			     pte_t **ptepp, spinlock_t **ptlp)
++static inline pte_t *page_check_address(struct page *page, struct mm_struct *mm,
++					unsigned long address,
++					spinlock_t **ptlp, int sync)
 +{
-+	int res;
++	pte_t *ptep;
 +
-+	/* (void) is needed to make gcc happy */
-+	(void) __cond_lock(*ptlp,
-+			   !(res = __follow_pte(mm, address, ptepp, ptlp)));
-+	return res;
++	__cond_lock(*ptlp, ptep = __page_check_address(page, mm, address,
++						       ptlp, sync));
++	return ptep;
 +}
 +
- /**
-  * follow_pfn - look up PFN at a user virtual address
-  * @vma: memory mapping
+ /*
+  * Used by swapoff to help locate where page is expected in vma.
+  */
+diff --git a/mm/rmap.c b/mm/rmap.c
+index 244ff06..9c900dd 100644
+--- a/mm/rmap.c
++++ b/mm/rmap.c
+@@ -403,7 +403,7 @@ unsigned long page_address_in_vma(struct page *page, struct vm_area_struct *vma)
+  *
+  * On success returns with pte mapped and locked.
+  */
+-pte_t *page_check_address(struct page *page, struct mm_struct *mm,
++pte_t *__page_check_address(struct page *page, struct mm_struct *mm,
+ 			  unsigned long address, spinlock_t **ptlp, int sync)
+ {
+ 	pgd_t *pgd;
 -- 
 1.7.2.2
 
