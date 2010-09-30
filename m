@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab0I3Pjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 11:39:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42264 "EHLO mx2.suse.de"
+	id S932165Ab0I3Pll (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 11:41:41 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45679 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932083Ab0I3Pjl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 11:39:41 -0400
-Date: Thu, 30 Sep 2010 17:39:40 +0200
-Message-ID: <s5h4od7tf43.wl%tiwai@suse.de>
+	id S932117Ab0I3Plk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 11:41:40 -0400
+Date: Thu, 30 Sep 2010 17:41:39 +0200
+Message-ID: <s5h39srtf0s.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Jeff Chua <jeff.chua.linux@gmail.com>
 Cc: Wu Fengguang <fengguang.wu@intel.com>,
         Linux Kernel <linux-kernel@vger.kernel.org>,
-        alsa-devel@alsa-project.org
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        Jaroslav Kysela <perex@perex.cz>
 Subject: Re: Microphone not working on PCI ID 8086:3b56
-In-Reply-To: <AANLkTinT3EU3aLSBt5WmA=qDOf1cFABUNG+RiT3Nvx3e@mail.gmail.com>
+In-Reply-To: <AANLkTi=pdvGeLgcp8+Kwgu-o7BnYJ-ELKfq_8OTHrYqN@mail.gmail.com>
 References: <Pine.LNX.4.64.1009302047410.25061@boston.corp.fedex.com>
-	<s5hsk0rtlun.wl%tiwai@suse.de>
-	<AANLkTinT3EU3aLSBt5WmA=qDOf1cFABUNG+RiT3Nvx3e@mail.gmail.com>
+	<20100930132937.GA5728@localhost>
+	<AANLkTi=pdvGeLgcp8+Kwgu-o7BnYJ-ELKfq_8OTHrYqN@mail.gmail.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -27,27 +28,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Thu, 30 Sep 2010 23:29:45 +0800,
+At Thu, 30 Sep 2010 23:34:44 +0800,
 Jeff Chua wrote:
 > 
-> On Thu, Sep 30, 2010 at 9:14 PM, Takashi Iwai <tiwai@suse.de> wrote:
+> On Thu, Sep 30, 2010 at 9:29 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
 > 
-> > Check /sys/modules/snd_hda_intel/parameters/model whether you really
-> > passed the correct value.
-> 
-> # cat /sys/module/snd_hda_intel/parameters/model
-> lenovo-x200,(null),(null),(null),(null),(null),(null),(null)
-
-OK, and did you get the corresponding kernel message?
-
-> >> in my case as I'm not using udev. Here's a patch to take away the default so non-udev will still
-> >> works.
+> > Intel HDMI audio selects SND_DYNAMIC_MINORS because it runs out of the
+> > static minor numbers. I initially proposed an extended static
+> > allocation scheme here:
+> > http://comments.gmane.org/gmane.linux.alsa.devel/72916 however the
+> > idea was rejected.
 > >
-> > Wow, what's a conservative system :)
+> >> Do I really need udev to get mic to work?
+> >
+> > You can disable SND_HDA_CODEC_INTELHDMI for now. You don't need it.
 > 
-> Keeping things simple :)  and my / root filesystem is mounted read-only.
+> Does not make sense to force everyone to use udev.
 
-Nowadays /dev is mostly tmpfs or its variant.
+Otherwise you can't handle enough PCM devices.
+
+> Any chance to make it work without udev?
+
+The minor numbers are almost static as long as you don't change the
+configuration.  So, you can recreate /dev/snd/* files appropriately,
+if needed.  Or just simply patch as you did :)
 
 
 Takashi
