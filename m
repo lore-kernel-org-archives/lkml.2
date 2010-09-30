@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756513Ab0I3XR1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:17:27 -0400
-Received: from www.tglx.de ([62.245.132.106]:52845 "EHLO www.tglx.de"
+	id S1755301Ab0I3XRd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:17:33 -0400
+Received: from www.tglx.de ([62.245.132.106]:52869 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756422Ab0I3XRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:17:25 -0400
-Message-Id: <20100930221741.426534734@linutronix.de>
+	id S1756541Ab0I3XRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:17:31 -0400
+Message-Id: <20100930221740.348118306@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 30 Sep 2010 23:16:58 -0000
+Date: Thu, 30 Sep 2010 23:16:06 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
@@ -22,95 +22,117 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [patch 30/47] dmar: Convert to new irq chip functions
+Subject: [patch 19/47] genirq: Query arch for number of early descriptors
 References: <20100930221351.682772535@linutronix.de>
-Content-Disposition: inline; filename=dmar-convert-irq-functions.patch
+Content-Disposition: inline;
+	filename=genirq-ask-arch-for-number-of-irqs-to-init.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+sparse irq sets up NR_IRQS_LEGACY irq descriptors and archs then go
+ahead and allocate more.
+
+Use the unused return value of arch_probe_nr_irqs() to let the
+architecture return the number of early allocations. Fix up all users.
+
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/ia64/kernel/msi_ia64.c    |    4 ++--
- arch/x86/kernel/apic/io_apic.c |    4 ++--
- drivers/pci/dmar.c             |    8 ++++----
- include/linux/dmar.h           |    5 +++--
- 4 files changed, 11 insertions(+), 10 deletions(-)
+ arch/arm/kernel/irq.c          |    8 +-------
+ arch/sh/kernel/irq.c           |    2 +-
+ arch/x86/kernel/apic/io_apic.c |    2 +-
+ kernel/irq/irqdesc.c           |    6 +++---
+ kernel/softirq.c               |    2 +-
+ 5 files changed, 7 insertions(+), 13 deletions(-)
 
-Index: linux-2.6-tip/arch/ia64/kernel/msi_ia64.c
+Index: linux-2.6-tip/arch/arm/kernel/irq.c
 ===================================================================
---- linux-2.6-tip.orig/arch/ia64/kernel/msi_ia64.c
-+++ linux-2.6-tip/arch/ia64/kernel/msi_ia64.c
-@@ -160,8 +160,8 @@ static int dmar_msi_set_affinity(unsigne
+--- linux-2.6-tip.orig/arch/arm/kernel/irq.c
++++ linux-2.6-tip/arch/arm/kernel/irq.c
+@@ -148,12 +148,6 @@ void set_irq_flags(unsigned int irq, uns
  
- static struct irq_chip dmar_msi_type = {
- 	.name = "DMAR_MSI",
--	.unmask = dmar_msi_unmask,
--	.mask = dmar_msi_mask,
-+	.irq_unmask = dmar_msi_unmask,
-+	.irq_mask = dmar_msi_mask,
- 	.ack = ia64_ack_msi_irq,
- #ifdef CONFIG_SMP
- 	.set_affinity = dmar_msi_set_affinity,
+ void __init init_IRQ(void)
+ {
+-	struct irq_desc *desc;
+-	int irq;
+-
+-	for (irq = 0; irq < nr_irqs; irq++)
+-		desc = irq_to_desc_alloc_node(irq, 0);
+-
+ 	init_arch_irq();
+ }
+ 
+@@ -161,7 +155,7 @@ void __init init_IRQ(void)
+ int __init arch_probe_nr_irqs(void)
+ {
+ 	nr_irqs = arch_nr_irqs ? arch_nr_irqs : NR_IRQS;
+-	return 0;
++	return nr_irqs;
+ }
+ #endif
+ 
+Index: linux-2.6-tip/arch/sh/kernel/irq.c
+===================================================================
+--- linux-2.6-tip.orig/arch/sh/kernel/irq.c
++++ linux-2.6-tip/arch/sh/kernel/irq.c
+@@ -290,7 +290,7 @@ void __init init_IRQ(void)
+ int __init arch_probe_nr_irqs(void)
+ {
+ 	nr_irqs = sh_mv.mv_nr_irqs;
+-	return 0;
++	return NR_IRQS_LEGACY;
+ }
+ #endif
+ 
 Index: linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
 ===================================================================
 --- linux-2.6-tip.orig/arch/x86/kernel/apic/io_apic.c
 +++ linux-2.6-tip/arch/x86/kernel/apic/io_apic.c
-@@ -3599,8 +3599,8 @@ static int dmar_msi_set_affinity(unsigne
+@@ -3886,7 +3886,7 @@ int __init arch_probe_nr_irqs(void)
+ 	if (nr < nr_irqs)
+ 		nr_irqs = nr;
  
- static struct irq_chip dmar_msi_type = {
- 	.name = "DMAR_MSI",
--	.unmask = dmar_msi_unmask,
--	.mask = dmar_msi_mask,
-+	.irq_unmask = dmar_msi_unmask,
-+	.irq_mask = dmar_msi_mask,
- 	.irq_ack = ack_apic_edge,
- #ifdef CONFIG_SMP
- 	.set_affinity = dmar_msi_set_affinity,
-Index: linux-2.6-tip/drivers/pci/dmar.c
+-	return 0;
++	return nr_irqs_gsi;
+ }
+ #endif
+ 
+Index: linux-2.6-tip/kernel/irq/irqdesc.c
 ===================================================================
---- linux-2.6-tip.orig/drivers/pci/dmar.c
-+++ linux-2.6-tip/drivers/pci/dmar.c
-@@ -1221,9 +1221,9 @@ const char *dmar_get_fault_reason(u8 fau
- 	}
+--- linux-2.6-tip.orig/kernel/irq/irqdesc.c
++++ linux-2.6-tip/kernel/irq/irqdesc.c
+@@ -225,16 +225,16 @@ struct irq_desc * __ref irq_to_desc_allo
+ 
+ int __init early_irq_init(void)
+ {
+-	int i, node = first_online_node;
++	int i, initcnt, node = first_online_node;
+ 	struct irq_desc *desc;
+ 
+ 	init_irq_default_affinity();
+ 
+ 	 /* initialize nr_irqs based on nr_cpu_ids */
+-	arch_probe_nr_irqs();
++	initcnt = arch_probe_nr_irqs();
+ 	printk(KERN_INFO "NR_IRQS:%d nr_irqs:%d\n", NR_IRQS, nr_irqs);
+ 
+-	for (i = 0; i < NR_IRQS_LEGACY; i++) {
++	for (i = 0; i < initcnt; i++) {
+ 		desc = alloc_desc(i, node);
+ 		set_bit(i, allocated_irqs);
+ 		irq_insert_desc(i, desc);
+Index: linux-2.6-tip/kernel/softirq.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/softirq.c
++++ linux-2.6-tip/kernel/softirq.c
+@@ -888,7 +888,7 @@ int __init __weak early_irq_init(void)
+ 
+ int __init __weak arch_probe_nr_irqs(void)
+ {
+-	return 0;
++	return NR_IRQS_LEGACY;
  }
  
--void dmar_msi_unmask(unsigned int irq)
-+void dmar_msi_unmask(struct irq_data *data)
- {
--	struct intel_iommu *iommu = get_irq_data(irq);
-+	struct intel_iommu *iommu = data->handler_data;
- 	unsigned long flag;
- 
- 	/* unmask it */
-@@ -1234,10 +1234,10 @@ void dmar_msi_unmask(unsigned int irq)
- 	spin_unlock_irqrestore(&iommu->register_lock, flag);
- }
- 
--void dmar_msi_mask(unsigned int irq)
-+void dmar_msi_mask(struct irq_data *data)
- {
- 	unsigned long flag;
--	struct intel_iommu *iommu = get_irq_data(irq);
-+	struct intel_iommu *iommu = data->handler_data;
- 
- 	/* mask it */
- 	spin_lock_irqsave(&iommu->register_lock, flag);
-Index: linux-2.6-tip/include/linux/dmar.h
-===================================================================
---- linux-2.6-tip.orig/include/linux/dmar.h
-+++ linux-2.6-tip/include/linux/dmar.h
-@@ -187,8 +187,9 @@ static inline int set_msi_sid(struct irt
- /* Can't use the common MSI interrupt functions
-  * since DMAR is not a pci device
-  */
--extern void dmar_msi_unmask(unsigned int irq);
--extern void dmar_msi_mask(unsigned int irq);
-+struct irq_data;
-+extern void dmar_msi_unmask(struct irq_data *data);
-+extern void dmar_msi_mask(struct irq_data *data);
- extern void dmar_msi_read(int irq, struct msi_msg *msg);
- extern void dmar_msi_write(int irq, struct msi_msg *msg);
- extern int dmar_set_interrupt(struct intel_iommu *iommu);
+ int __init __weak arch_early_irq_init(void)
 
 
