@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752306Ab0I3BUZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 21:20:25 -0400
-Received: from antispam02.maxim-ic.com ([205.153.101.183]:36538 "EHLO
-	antispam02.maxim-ic.com.maxim-ic.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751343Ab0I3BUY convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 21:20:24 -0400
-X-ASG-Debug-ID: 1285809624-4d1261740001-xx1T2L
-X-Barracuda-Envelope-From: Peter.Hsiang@maxim-ic.com
-From: Peter Hsiang <Peter.Hsiang@maxim-ic.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesse Marroquin <Jesse.Marroquin@maxim-ic.com>
-Date: Wed, 29 Sep 2010 18:20:34 -0700
-X-ASG-Orig-Subj: RE: [PATCH] ASoC: Add max98088 CODEC driver
-Subject: RE: [PATCH] ASoC: Add max98088 CODEC driver
-Thread-Topic: [PATCH] ASoC: Add max98088 CODEC driver
-Thread-Index: ActgOq0dKRk7wRHbT6mf4sAq6B+UbAAAqG6Q
-Message-ID: <B2150E1E4418E1438554A300EA5040E40D46F2DA19@ITSVLEX06.it.maxim-ic.internal>
-References: <B2150E1E4418E1438554A300EA5040E40D469C124D@ITSVLEX06.it.maxim-ic.internal>
- <20100929033757.GB29975@opensource.wolfsonmicro.com>
- <B2150E1E4418E1438554A300EA5040E40D46F2D8D8@ITSVLEX06.it.maxim-ic.internal>
- <20100929221826.GC31934@opensource.wolfsonmicro.com>
- <B2150E1E4418E1438554A300EA5040E40D46F2D9E9@ITSVLEX06.it.maxim-ic.internal>
- <20100930005850.GB4517@opensource.wolfsonmicro.com>
-In-Reply-To: <20100930005850.GB4517@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginalArrivalTime: 30 Sep 2010 01:20:47.0327 (UTC) FILETIME=[B60566F0:01CB603D]
-X-Barracuda-Connect: terlingua.dalsemi.com[180.0.34.46]
-X-Barracuda-Start-Time: 1285809624
-X-Barracuda-URL: http://AntiSpam02.maxim-ic.com:8000/cgi-mod/mark.cgi
+	id S1752482Ab0I3BXN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 21:23:13 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47381 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751974Ab0I3BXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 21:23:11 -0400
+Date: Thu, 30 Sep 2010 11:23:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Sascha Hauer <s.hauer@pengutronix.de>
+Subject: linux-next: manual merge of the sound-asoc tree with the i.MX tree
+Message-Id: <20100930112302.e554d367.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Sep_2010_11_23_02_+1000_PB_a5ruTPe4/g6f5"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010, Mark Brown wrote:
-> On Wed, Sep 29, 2010 at 05:52:08PM -0700, Peter Hsiang wrote:
-> > On Wed, Sep 29, 2010, Mark Brown wrote:
-> 
-> > > You're looking for the non-DAPM equivalent of SND_SOC_DAPM_VALUE_MUX().
-> 
-> > This is a simple table lookup of a register value from the index
-> > number given by SOC_ENUM, the same way it's been done in other drivers.
-> 
-> Yes, exactly.
-> 
-> > I found a "case snd_soc_dapm_value_mux:" in dapm_set_path_status()
-> > Is this what you are referring to?
-> > How is the code there relevant to this?
-> 
-> No, I'm referring to the fact that it provides an enum that allows
-> arbatrary values to be set for each enum value rather than just allowing
-> indexes as the standard SOC_ENUM does.  This is essentially what you've
-> implemented, it would factor out the code so that others can use it too
-> (and IIRC save you some code since IIRC you had more than one of these
-> in the driver).
+--Signature=_Thu__30_Sep_2010_11_23_02_+1000_PB_a5ruTPe4/g6f5
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you!
+Hi all,
 
+Today's linux-next merge of the sound-asoc tree got a conflict in
+arch/arm/mach-mx3/devices.c between commit
+4697bb926f43b8012ebd111ef43834f42126a0ef ("ARM: imx: dynamically allocate
+imx-ssi devices") from the i.MX tree and commit
+f0fba2ad1b6b53d5360125c41953b7afcd6deff0 ("ASoC: multi-component - ASoC
+Multi-Component Support") from the sound-asoc tree.
+
+The former removed that code that the latter changed.  I just used the
+former.
+
+The latter was just changing some names, so ti may be able to be
+integrated into the former.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__30_Sep_2010_11_23_02_+1000_PB_a5ruTPe4/g6f5
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMo+Z2AAoJEDMEi1NhKgbsy84IAJxrXoSaS1cfgSObHCrvxieY
+zQDNdTJHyNPel97eLAGxmYE/rpabs5KVjCE4vSd7JKg0XPPRv4/j3NP/QHTNOLvs
+GuSLZOodZmK/zDT4vEMPsDdbeCK1zLqjkoLJfoWdOEIAF/ooNuTHZjpnMJ7CF6Uk
+c8ZJtF52AzX0dlUoAZ8WjHWQa+/0iw4BvlojYHobkHl18pzyrfXxIfN5i+K3coFD
+AX3diSQhSEvGYfqKMaOF8CZPF+IK8Zs3fkdXA9uslJK7vHrBwV1dkQUDwKsJ98Ni
+Cx5OKn/3IahexuXKw11OstyLfyLxMso95ZQEfLRr7QLAmOPBBTBRU16myJZdW+8=
+=ey/3
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__30_Sep_2010_11_23_02_+1000_PB_a5ruTPe4/g6f5--
