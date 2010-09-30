@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab0I3LBd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 07:01:33 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41694 "EHLO
+	id S1754733Ab0I3LBp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 07:01:45 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:41679 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145Ab0I3LBD (ORCPT
+	with ESMTP id S1754158Ab0I3LA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 07:01:03 -0400
+	Thu, 30 Sep 2010 07:00:56 -0400
 From: Borislav Petkov <bp@amd64.org>
 To: <norsk5@yahoo.com>
 Cc: <linux-edac@vger.kernel.org>, <x86@kernel.org>,
         <linux-kernel@vger.kernel.org>,
         Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 7/8] EDAC, MCE: Rework MCE injection
-Date: Thu, 30 Sep 2010 13:01:48 +0200
-Message-Id: <1285844509-27120-8-git-send-email-bp@amd64.org>
+Subject: [PATCH 6/8] EDAC: Export edac sysfs class to users.
+Date: Thu, 30 Sep 2010 13:01:47 +0200
+Message-Id: <1285844509-27120-7-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285844509-27120-1-git-send-email-bp@amd64.org>
 References: <1285844509-27120-1-git-send-email-bp@amd64.org>
@@ -24,570 +24,414 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-Add sysfs injection facilities for testing the MCE decoding code. Remove
-large parts of amd64_edac_dbg.c, as a result, which did only NB MCE
-injection anyway and the new injection code supports that functionality
-already.
-
-More importantly, make the injection module build as module by default
-so that MCE decoding code in production kernels like those in RHEL and
-SLES can be tested without the need for rebuilding them with EDAC_DEBUG
-enabled.
+Move toplevel sysfs class to the stub and make it available to
+non-modularized code too. Add proper refcounting of its users and move
+the registration functionality into the reference counting routines.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/Kconfig          |   14 +++-
- drivers/edac/Makefile         |    2 +
- drivers/edac/amd64_edac.h     |    2 +-
- drivers/edac/amd64_edac_dbg.c |  213 +++--------------------------------------
- drivers/edac/edac_mce_amd.c   |    4 +-
- drivers/edac/edac_mce_amd.h   |    4 +-
- drivers/edac/mce_amd_inj.c    |  171 +++++++++++++++++++++++++++++++++
- 7 files changed, 203 insertions(+), 207 deletions(-)
- create mode 100644 drivers/edac/mce_amd_inj.c
+ drivers/edac/edac_device_sysfs.c |   16 +++++---
+ drivers/edac/edac_mc_sysfs.c     |    9 +++-
+ drivers/edac/edac_module.c       |   79 +-------------------------------------
+ drivers/edac/edac_module.h       |    1 -
+ drivers/edac/edac_pci_sysfs.c    |   10 +++-
+ drivers/edac/edac_stub.c         |   51 ++++++++++++++++++++++--
+ include/linux/edac.h             |    4 ++
+ 7 files changed, 75 insertions(+), 95 deletions(-)
 
-diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 70bb350..107f2c7 100644
---- a/drivers/edac/Kconfig
-+++ b/drivers/edac/Kconfig
-@@ -39,7 +39,7 @@ config EDAC_DEBUG
- 	  there're four debug levels (x=0,1,2,3 from low to high).
- 	  Usually you should select 'N'.
- 
-- config EDAC_DECODE_MCE
-+config EDAC_DECODE_MCE
- 	tristate "Decode MCEs in human-readable form (only on AMD for now)"
- 	depends on CPU_SUP_AMD && X86_MCE
- 	default y
-@@ -51,6 +51,16 @@ config EDAC_DEBUG
- 	  which occur really early upon boot, before the module infrastructure
- 	  has been initialized.
- 
-+config EDAC_MCE_INJ
-+	tristate "Simple MCE injection interface over /sysfs"
-+	depends on EDAC_DECODE_MCE
-+	default m
-+	help
-+	  This is a simple interface to inject MCEs over /sysfs and test
-+	  the MCE decoding code in EDAC.
-+
-+	  This is currently AMD-only.
-+
- config EDAC_MM_EDAC
- 	tristate "Main Memory EDAC (Error Detection And Correction) reporting"
- 	help
-@@ -72,7 +82,7 @@ config EDAC_AMD64
- 	  Families of Memory Controllers (K8, F10h and F11h)
- 
- config EDAC_AMD64_ERROR_INJECTION
--	bool "Sysfs Error Injection facilities"
-+	bool "Sysfs HW Error injection facilities"
- 	depends on EDAC_AMD64
- 	help
- 	  Recent Opterons (Family 10h and later) provide for Memory Error
-diff --git a/drivers/edac/Makefile b/drivers/edac/Makefile
-index ca6b1bb..5c38ad3 100644
---- a/drivers/edac/Makefile
-+++ b/drivers/edac/Makefile
-@@ -17,6 +17,8 @@ ifdef CONFIG_PCI
- edac_core-objs	+= edac_pci.o edac_pci_sysfs.o
- endif
- 
-+obj-$(CONFIG_EDAC_MCE_INJ)		+= mce_amd_inj.o
-+
- obj-$(CONFIG_EDAC_DECODE_MCE)		+= edac_mce_amd.o
- 
- obj-$(CONFIG_EDAC_AMD76X)		+= amd76x_edac.o
-diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
-index 613b938..67d9ceb 100644
---- a/drivers/edac/amd64_edac.h
-+++ b/drivers/edac/amd64_edac.h
-@@ -486,7 +486,7 @@ extern const char *ext_msgs[32];
- extern const char *htlink_msgs[8];
- 
- #ifdef CONFIG_EDAC_DEBUG
--#define NUM_DBG_ATTRS 9
-+#define NUM_DBG_ATTRS 5
- #else
- #define NUM_DBG_ATTRS 0
- #endif
-diff --git a/drivers/edac/amd64_edac_dbg.c b/drivers/edac/amd64_edac_dbg.c
-index f6d5695..e356228 100644
---- a/drivers/edac/amd64_edac_dbg.c
-+++ b/drivers/edac/amd64_edac_dbg.c
-@@ -1,173 +1,16 @@
- #include "amd64_edac.h"
- 
--/*
-- * accept a hex value and store it into the virtual error register file, field:
-- * nbeal and nbeah. Assume virtual error values have already been set for: NBSL,
-- * NBSH and NBCFG. Then proceed to map the error values to a MC, CSROW and
-- * CHANNEL
-- */
--static ssize_t amd64_nbea_store(struct mem_ctl_info *mci, const char *data,
--				size_t count)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--	u64 value;
--	int ret = 0;
--	struct mce m;
--
--	ret = strict_strtoull(data, 16, &value);
--	if (ret != -EINVAL) {
--		struct err_regs *regs = &pvt->ctl_error_info;
--
--		debugf0("received NBEA= 0x%llx\n", value);
--
--		/* place the value into the virtual error packet */
--		pvt->ctl_error_info.nbeal = (u32) value;
--		value >>= 32;
--		pvt->ctl_error_info.nbeah = (u32) value;
--
--		m.addr   = value;
--		m.status = regs->nbsl | ((u64)regs->nbsh << 32);
--
--		/* Process the Mapping request */
--		/* TODO: Add race prevention */
--		amd_decode_nb_mce(pvt->mc_node_id, &m, regs->nbcfg);
--
--		return count;
--	}
--	return ret;
-+#define EDAC_DCT_ATTR_SHOW(reg)						\
-+static ssize_t amd64_##reg##_show(struct mem_ctl_info *mci, char *data)	\
-+{									\
-+	struct amd64_pvt *pvt = mci->pvt_info;				\
-+		return sprintf(data, "0x%016llx\n", (u64)pvt->reg);	\
- }
- 
--/* display back what the last NBEA (MCA NB Address (MC4_ADDR)) was written */
--static ssize_t amd64_nbea_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--	u64 value;
--
--	value = pvt->ctl_error_info.nbeah;
--	value <<= 32;
--	value |= pvt->ctl_error_info.nbeal;
--
--	return sprintf(data, "%llx\n", value);
--}
--
--/* store the NBSL (MCA NB Status Low (MC4_STATUS)) value user desires */
--static ssize_t amd64_nbsl_store(struct mem_ctl_info *mci, const char *data,
--				size_t count)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--	unsigned long value;
--	int ret = 0;
--
--	ret = strict_strtoul(data, 16, &value);
--	if (ret != -EINVAL) {
--		debugf0("received NBSL= 0x%lx\n", value);
--
--		pvt->ctl_error_info.nbsl = (u32) value;
--
--		return count;
--	}
--	return ret;
--}
--
--/* display back what the last NBSL value written */
--static ssize_t amd64_nbsl_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--	u32 value;
--
--	value = pvt->ctl_error_info.nbsl;
--
--	return sprintf(data, "%x\n", value);
--}
--
--/* store the NBSH (MCA NB Status High) value user desires */
--static ssize_t amd64_nbsh_store(struct mem_ctl_info *mci, const char *data,
--				size_t count)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--	unsigned long value;
--	int ret = 0;
--
--	ret = strict_strtoul(data, 16, &value);
--	if (ret != -EINVAL) {
--		debugf0("received NBSH= 0x%lx\n", value);
--
--		pvt->ctl_error_info.nbsh = (u32) value;
--
--		return count;
--	}
--	return ret;
--}
--
--/* display back what the last NBSH value written */
--static ssize_t amd64_nbsh_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--	u32 value;
--
--	value = pvt->ctl_error_info.nbsh;
--
--	return sprintf(data, "%x\n", value);
--}
--
--/* accept and store the NBCFG (MCA NB Configuration) value user desires */
--static ssize_t amd64_nbcfg_store(struct mem_ctl_info *mci,
--					const char *data, size_t count)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--	unsigned long value;
--	int ret = 0;
--
--	ret = strict_strtoul(data, 16, &value);
--	if (ret != -EINVAL) {
--		debugf0("received NBCFG= 0x%lx\n", value);
--
--		pvt->ctl_error_info.nbcfg = (u32) value;
--
--		return count;
--	}
--	return ret;
--}
--
--/* various show routines for the controls of a MCI */
--static ssize_t amd64_nbcfg_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--
--	return sprintf(data, "%x\n", pvt->ctl_error_info.nbcfg);
--}
--
--
--static ssize_t amd64_dhar_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--
--	return sprintf(data, "%x\n", pvt->dhar);
--}
--
--
--static ssize_t amd64_dbam_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--
--	return sprintf(data, "%x\n", pvt->dbam0);
--}
--
--
--static ssize_t amd64_topmem_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--
--	return sprintf(data, "%llx\n", pvt->top_mem);
--}
--
--
--static ssize_t amd64_topmem2_show(struct mem_ctl_info *mci, char *data)
--{
--	struct amd64_pvt *pvt = mci->pvt_info;
--
--	return sprintf(data, "%llx\n", pvt->top_mem2);
--}
-+EDAC_DCT_ATTR_SHOW(dhar);
-+EDAC_DCT_ATTR_SHOW(dbam0);
-+EDAC_DCT_ATTR_SHOW(top_mem);
-+EDAC_DCT_ATTR_SHOW(top_mem2);
- 
- static ssize_t amd64_hole_show(struct mem_ctl_info *mci, char *data)
- {
-@@ -188,38 +31,6 @@ struct mcidev_sysfs_attribute amd64_dbg_attrs[] = {
- 
- 	{
- 		.attr = {
--			.name = "nbea_ctl",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show = amd64_nbea_show,
--		.store = amd64_nbea_store,
--	},
--	{
--		.attr = {
--			.name = "nbsl_ctl",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show = amd64_nbsl_show,
--		.store = amd64_nbsl_store,
--	},
--	{
--		.attr = {
--			.name = "nbsh_ctl",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show = amd64_nbsh_show,
--		.store = amd64_nbsh_store,
--	},
--	{
--		.attr = {
--			.name = "nbcfg_ctl",
--			.mode = (S_IRUGO | S_IWUSR)
--		},
--		.show = amd64_nbcfg_show,
--		.store = amd64_nbcfg_store,
--	},
--	{
--		.attr = {
- 			.name = "dhar",
- 			.mode = (S_IRUGO)
- 		},
-@@ -231,7 +42,7 @@ struct mcidev_sysfs_attribute amd64_dbg_attrs[] = {
- 			.name = "dbam",
- 			.mode = (S_IRUGO)
- 		},
--		.show = amd64_dbam_show,
-+		.show = amd64_dbam0_show,
- 		.store = NULL,
- 	},
- 	{
-@@ -239,7 +50,7 @@ struct mcidev_sysfs_attribute amd64_dbg_attrs[] = {
- 			.name = "topmem",
- 			.mode = (S_IRUGO)
- 		},
--		.show = amd64_topmem_show,
-+		.show = amd64_top_mem_show,
- 		.store = NULL,
- 	},
- 	{
-@@ -247,7 +58,7 @@ struct mcidev_sysfs_attribute amd64_dbg_attrs[] = {
- 			.name = "topmem2",
- 			.mode = (S_IRUGO)
- 		},
--		.show = amd64_topmem2_show,
-+		.show = amd64_top_mem2_show,
- 		.store = NULL,
- 	},
- 	{
-diff --git a/drivers/edac/edac_mce_amd.c b/drivers/edac/edac_mce_amd.c
-index 6cfa881..c75c47b 100644
---- a/drivers/edac/edac_mce_amd.c
-+++ b/drivers/edac/edac_mce_amd.c
-@@ -324,8 +324,7 @@ static inline void amd_decode_err_code(u16 ec)
- 		pr_emerg(HW_ERR "Huh? Unknown MCE error 0x%x\n", ec);
- }
- 
--static int amd_decode_mce(struct notifier_block *nb, unsigned long val,
--			   void *data)
-+int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data)
- {
- 	struct mce *m = (struct mce *)data;
- 	int node, ecc;
-@@ -379,6 +378,7 @@ static int amd_decode_mce(struct notifier_block *nb, unsigned long val,
- 
- 	return NOTIFY_STOP;
- }
-+EXPORT_SYMBOL_GPL(amd_decode_mce);
- 
- static struct notifier_block amd_mce_dec_nb = {
- 	.notifier_call	= amd_decode_mce,
-diff --git a/drivers/edac/edac_mce_amd.h b/drivers/edac/edac_mce_amd.h
-index 0fba0e7..2712a90 100644
---- a/drivers/edac/edac_mce_amd.h
-+++ b/drivers/edac/edac_mce_amd.h
-@@ -1,6 +1,8 @@
- #ifndef _EDAC_MCE_AMD_H
- #define _EDAC_MCE_AMD_H
- 
-+#include <linux/notifier.h>
-+
- #include <asm/mce.h>
- 
- #define ERROR_CODE(x)			((x) & 0xffff)
-@@ -61,10 +63,10 @@ struct err_regs {
- 	u32 nbeal;
- };
- 
--
- void amd_report_gart_errors(bool);
- void amd_register_ecc_decoder(void (*f)(int, struct mce *, u32));
- void amd_unregister_ecc_decoder(void (*f)(int, struct mce *, u32));
- void amd_decode_nb_mce(int, struct mce *, u32);
-+int amd_decode_mce(struct notifier_block *nb, unsigned long val, void *data);
- 
- #endif /* _EDAC_MCE_AMD_H */
-diff --git a/drivers/edac/mce_amd_inj.c b/drivers/edac/mce_amd_inj.c
-new file mode 100644
-index 0000000..0e4f2dc
---- /dev/null
-+++ b/drivers/edac/mce_amd_inj.c
-@@ -0,0 +1,171 @@
-+/*
-+ * A simple MCE injection facility for testing the MCE decoding code. This
-+ * driver should be built as module so that it can be loaded on production
-+ * kernels for testing purposes.
-+ *
-+ * This file may be distributed under the terms of the GNU General Public
-+ * License version 2.
-+ *
-+ * Copyright (c) 2010:  Borislav Petkov <borislav.petkov@amd.com>
-+ *			Advanced Micro Devices Inc.
-+ */
-+
-+#include <linux/kobject.h>
-+#include <linux/sysdev.h>
+diff --git a/drivers/edac/edac_device_sysfs.c b/drivers/edac/edac_device_sysfs.c
+index 0709681..2941dca 100644
+--- a/drivers/edac/edac_device_sysfs.c
++++ b/drivers/edac/edac_device_sysfs.c
+@@ -13,6 +13,7 @@
+ #include <linux/ctype.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
 +#include <linux/edac.h>
-+#include <asm/mce.h>
-+
-+#include "edac_mce_amd.h"
-+
-+struct edac_mce_attr {
-+	struct attribute attr;
-+	ssize_t (*show) (struct kobject *kobj, struct edac_mce_attr *attr, char *buf);
-+	ssize_t (*store)(struct kobject *kobj, struct edac_mce_attr *attr,
-+			 const char *buf, size_t count);
-+};
-+
-+#define EDAC_MCE_ATTR(_name, _mode, _show, _store)			\
-+static struct edac_mce_attr mce_attr_##_name = __ATTR(_name, _mode, _show, _store)
-+
-+static struct kobject *mce_kobj;
-+
-+/*
-+ * Collect all the MCi_XXX settings
-+ */
-+static struct mce i_mce;
-+
-+#define MCE_INJECT_STORE(reg)						\
-+static ssize_t edac_inject_##reg##_store(struct kobject *kobj,		\
-+					 struct edac_mce_attr *attr,	\
-+					 const char *data, size_t count)\
-+{									\
-+	int ret = 0;							\
-+	unsigned long value;						\
-+									\
-+	ret = strict_strtoul(data, 16, &value);				\
-+	if (ret < 0)							\
-+		printk(KERN_ERR "Error writing MCE " #reg " field.\n");	\
-+									\
-+	i_mce.reg = value;						\
-+									\
-+	return count;							\
-+}
-+
-+MCE_INJECT_STORE(status);
-+MCE_INJECT_STORE(misc);
-+MCE_INJECT_STORE(addr);
-+
-+#define MCE_INJECT_SHOW(reg)						\
-+static ssize_t edac_inject_##reg##_show(struct kobject *kobj,		\
-+					struct edac_mce_attr *attr,	\
-+					char *buf)			\
-+{									\
-+	return sprintf(buf, "0x%016llx\n", i_mce.reg);			\
-+}
-+
-+MCE_INJECT_SHOW(status);
-+MCE_INJECT_SHOW(misc);
-+MCE_INJECT_SHOW(addr);
-+
-+EDAC_MCE_ATTR(status, 0644, edac_inject_status_show, edac_inject_status_store);
-+EDAC_MCE_ATTR(misc, 0644, edac_inject_misc_show, edac_inject_misc_store);
-+EDAC_MCE_ATTR(addr, 0644, edac_inject_addr_show, edac_inject_addr_store);
-+
-+/*
-+ * This denotes into which bank we're injecting and triggers
-+ * the injection, at the same time.
-+ */
-+static ssize_t edac_inject_bank_store(struct kobject *kobj,
-+				      struct edac_mce_attr *attr,
-+				      const char *data, size_t count)
-+{
-+	int ret = 0;
-+	unsigned long value;
-+
-+	ret = strict_strtoul(data, 10, &value);
-+	if (ret < 0) {
-+		printk(KERN_ERR "Invalid bank value!\n");
-+		return -EINVAL;
-+	}
-+
-+	if (value > 5) {
-+		printk(KERN_ERR "Non-existant MCE bank: %lu\n", value);
-+		return -EINVAL;
-+	}
-+
-+	i_mce.bank = value;
-+
-+	amd_decode_mce(NULL, 0, &i_mce);
-+
-+	return count;
-+}
-+
-+static ssize_t edac_inject_bank_show(struct kobject *kobj,
-+				     struct edac_mce_attr *attr, char *buf)
-+{
-+	return sprintf(buf, "%d\n", i_mce.bank);
-+}
-+
-+EDAC_MCE_ATTR(bank, 0644, edac_inject_bank_show, edac_inject_bank_store);
-+
-+static struct edac_mce_attr *sysfs_attrs[] = { &mce_attr_status, &mce_attr_misc,
-+					       &mce_attr_addr, &mce_attr_bank
-+};
-+
-+static int __init edac_init_mce_inject(void)
-+{
-+	struct sysdev_class *edac_class = NULL;
-+	int i, err = 0;
-+
+ 
+ #include "edac_core.h"
+ #include "edac_module.h"
+@@ -235,7 +236,7 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
+ 	debugf1("%s()\n", __func__);
+ 
+ 	/* get the /sys/devices/system/edac reference */
+-	edac_class = edac_get_edac_class();
 +	edac_class = edac_get_sysfs_class();
-+	if (!edac_class)
-+		return -EINVAL;
-+
-+	mce_kobj = kobject_create_and_add("mce", &edac_class->kset.kobj);
-+	if (!mce_kobj) {
-+		printk(KERN_ERR "Error creating a mce kset.\n");
-+		err = -ENOMEM;
-+		goto err_mce_kobj;
-+	}
-+
-+	for (i = 0; i < ARRAY_SIZE(sysfs_attrs); i++) {
-+		err = sysfs_create_file(mce_kobj, &sysfs_attrs[i]->attr);
-+		if (err) {
-+			printk(KERN_ERR "Error creating %s in sysfs.\n",
-+					sysfs_attrs[i]->attr.name);
-+			goto err_sysfs_create;
-+		}
-+	}
-+	return 0;
-+
-+err_sysfs_create:
-+	while (i-- >= 0)
-+		sysfs_remove_file(mce_kobj, &sysfs_attrs[i]->attr);
-+
-+	kobject_del(mce_kobj);
-+
-+err_mce_kobj:
+ 	if (edac_class == NULL) {
+ 		debugf1("%s() no edac_class error\n", __func__);
+ 		err = -ENODEV;
+@@ -255,7 +256,7 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
+ 
+ 	if (!try_module_get(edac_dev->owner)) {
+ 		err = -ENODEV;
+-		goto err_out;
++		goto err_mod_get;
+ 	}
+ 
+ 	/* register */
+@@ -282,6 +283,9 @@ int edac_device_register_sysfs_main_kobj(struct edac_device_ctl_info *edac_dev)
+ err_kobj_reg:
+ 	module_put(edac_dev->owner);
+ 
++err_mod_get:
 +	edac_put_sysfs_class();
 +
-+	return err;
-+}
+ err_out:
+ 	return err;
+ }
+@@ -290,12 +294,11 @@ err_out:
+  * edac_device_unregister_sysfs_main_kobj:
+  *	the '..../edac/<name>' kobject
+  */
+-void edac_device_unregister_sysfs_main_kobj(
+-					struct edac_device_ctl_info *edac_dev)
++void edac_device_unregister_sysfs_main_kobj(struct edac_device_ctl_info *dev)
+ {
+ 	debugf0("%s()\n", __func__);
+ 	debugf4("%s() name of kobject is: %s\n",
+-		__func__, kobject_name(&edac_dev->kobj));
++		__func__, kobject_name(&dev->kobj));
+ 
+ 	/*
+ 	 * Unregister the edac device's kobject and
+@@ -304,7 +307,8 @@ void edac_device_unregister_sysfs_main_kobj(
+ 	 *   a) module_put() this module
+ 	 *   b) 'kfree' the memory
+ 	 */
+-	kobject_put(&edac_dev->kobj);
++	kobject_put(&dev->kobj);
++	edac_put_sysfs_class();
+ }
+ 
+ /* edac_dev -> instance information */
+diff --git a/drivers/edac/edac_mc_sysfs.c b/drivers/edac/edac_mc_sysfs.c
+index aa93ad8..a413586 100644
+--- a/drivers/edac/edac_mc_sysfs.c
++++ b/drivers/edac/edac_mc_sysfs.c
+@@ -11,6 +11,7 @@
+ 
+ #include <linux/ctype.h>
+ #include <linux/slab.h>
++#include <linux/edac.h>
+ #include <linux/bug.h>
+ 
+ #include "edac_core.h"
+@@ -1017,7 +1018,7 @@ int edac_sysfs_setup_mc_kset(void)
+ 	debugf1("%s()\n", __func__);
+ 
+ 	/* get the /sys/devices/system/edac class reference */
+-	edac_class = edac_get_edac_class();
++	edac_class = edac_get_sysfs_class();
+ 	if (edac_class == NULL) {
+ 		debugf1("%s() no edac_class error=%d\n", __func__, err);
+ 		goto fail_out;
+@@ -1028,15 +1029,16 @@ int edac_sysfs_setup_mc_kset(void)
+ 	if (!mc_kset) {
+ 		err = -ENOMEM;
+ 		debugf1("%s() Failed to register '.../edac/mc'\n", __func__);
+-		goto fail_out;
++		goto fail_kset;
+ 	}
+ 
+ 	debugf1("%s() Registered '.../edac/mc' kobject\n", __func__);
+ 
+ 	return 0;
+ 
++fail_kset:
++	edac_put_sysfs_class();
+ 
+-	/* error unwind stack */
+ fail_out:
+ 	return err;
+ }
+@@ -1049,5 +1051,6 @@ fail_out:
+ void edac_sysfs_teardown_mc_kset(void)
+ {
+ 	kset_unregister(mc_kset);
++	edac_put_sysfs_class();
+ }
+ 
+diff --git a/drivers/edac/edac_module.c b/drivers/edac/edac_module.c
+index 7e1374a..be4b075 100644
+--- a/drivers/edac/edac_module.c
++++ b/drivers/edac/edac_module.c
+@@ -27,15 +27,6 @@ EXPORT_SYMBOL_GPL(edac_debug_level);
+ struct workqueue_struct *edac_workqueue;
+ 
+ /*
+- * sysfs object: /sys/devices/system/edac
+- *	need to export to other files in this modules
+- */
+-static struct sysdev_class edac_class = {
+-	.name = "edac",
+-};
+-static int edac_class_valid;
+-
+-/*
+  * edac_op_state_to_string()
+  */
+ char *edac_op_state_to_string(int opstate)
+@@ -55,60 +46,6 @@ char *edac_op_state_to_string(int opstate)
+ }
+ 
+ /*
+- * edac_get_edac_class()
+- *
+- *	return pointer to the edac class of 'edac'
+- */
+-struct sysdev_class *edac_get_edac_class(void)
+-{
+-	struct sysdev_class *classptr = NULL;
+-
+-	if (edac_class_valid)
+-		classptr = &edac_class;
+-
+-	return classptr;
+-}
+-
+-/*
+- * edac_register_sysfs_edac_name()
+- *
+- *	register the 'edac' into /sys/devices/system
+- *
+- * return:
+- *	0  success
+- *	!0 error
+- */
+-static int edac_register_sysfs_edac_name(void)
+-{
+-	int err;
+-
+-	/* create the /sys/devices/system/edac directory */
+-	err = sysdev_class_register(&edac_class);
+-
+-	if (err) {
+-		debugf1("%s() error=%d\n", __func__, err);
+-		return err;
+-	}
+-
+-	edac_class_valid = 1;
+-	return 0;
+-}
+-
+-/*
+- * sysdev_class_unregister()
+- *
+- *	unregister the 'edac' from /sys/devices/system
+- */
+-static void edac_unregister_sysfs_edac_name(void)
+-{
+-	/* only if currently registered, then unregister it */
+-	if (edac_class_valid)
+-		sysdev_class_unregister(&edac_class);
+-
+-	edac_class_valid = 0;
+-}
+-
+-/*
+  * edac_workqueue_setup
+  *	initialize the edac work queue for polling operations
+  */
+@@ -154,21 +91,11 @@ static int __init edac_init(void)
+ 	edac_pci_clear_parity_errors();
+ 
+ 	/*
+-	 * perform the registration of the /sys/devices/system/edac class object
+-	 */
+-	if (edac_register_sysfs_edac_name()) {
+-		edac_printk(KERN_ERR, EDAC_MC,
+-			"Error initializing 'edac' kobject\n");
+-		err = -ENODEV;
+-		goto error;
+-	}
+-
+-	/*
+ 	 * now set up the mc_kset under the edac class object
+ 	 */
+ 	err = edac_sysfs_setup_mc_kset();
+ 	if (err)
+-		goto sysfs_setup_fail;
++		goto error;
+ 
+ 	/* Setup/Initialize the workq for this core */
+ 	err = edac_workqueue_setup();
+@@ -183,9 +110,6 @@ static int __init edac_init(void)
+ workq_fail:
+ 	edac_sysfs_teardown_mc_kset();
+ 
+-sysfs_setup_fail:
+-	edac_unregister_sysfs_edac_name();
+-
+ error:
+ 	return err;
+ }
+@@ -201,7 +125,6 @@ static void __exit edac_exit(void)
+ 	/* tear down the various subsystems */
+ 	edac_workqueue_teardown();
+ 	edac_sysfs_teardown_mc_kset();
+-	edac_unregister_sysfs_edac_name();
+ }
+ 
+ /*
+diff --git a/drivers/edac/edac_module.h b/drivers/edac/edac_module.h
+index 233d479..17aabb7 100644
+--- a/drivers/edac/edac_module.h
++++ b/drivers/edac/edac_module.h
+@@ -42,7 +42,6 @@ extern void edac_device_unregister_sysfs_main_kobj(
+ 				struct edac_device_ctl_info *edac_dev);
+ extern int edac_device_create_sysfs(struct edac_device_ctl_info *edac_dev);
+ extern void edac_device_remove_sysfs(struct edac_device_ctl_info *edac_dev);
+-extern struct sysdev_class *edac_get_edac_class(void);
+ 
+ /* edac core workqueue: single CPU mode */
+ extern struct workqueue_struct *edac_workqueue;
+diff --git a/drivers/edac/edac_pci_sysfs.c b/drivers/edac/edac_pci_sysfs.c
+index c39697d..023b01c 100644
+--- a/drivers/edac/edac_pci_sysfs.c
++++ b/drivers/edac/edac_pci_sysfs.c
+@@ -7,7 +7,7 @@
+  *
+  */
+ #include <linux/module.h>
+-#include <linux/sysdev.h>
++#include <linux/edac.h>
+ #include <linux/slab.h>
+ #include <linux/ctype.h>
+ 
+@@ -354,7 +354,7 @@ static int edac_pci_main_kobj_setup(void)
+ 	/* First time, so create the main kobject and its
+ 	 * controls and atributes
+ 	 */
+-	edac_class = edac_get_edac_class();
++	edac_class = edac_get_sysfs_class();
+ 	if (edac_class == NULL) {
+ 		debugf1("%s() no edac_class\n", __func__);
+ 		err = -ENODEV;
+@@ -368,7 +368,7 @@ static int edac_pci_main_kobj_setup(void)
+ 	if (!try_module_get(THIS_MODULE)) {
+ 		debugf1("%s() try_module_get() failed\n", __func__);
+ 		err = -ENODEV;
+-		goto decrement_count_fail;
++		goto mod_get_fail;
+ 	}
+ 
+ 	edac_pci_top_main_kobj = kzalloc(sizeof(struct kobject), GFP_KERNEL);
+@@ -403,6 +403,9 @@ kobject_init_and_add_fail:
+ kzalloc_fail:
+ 	module_put(THIS_MODULE);
+ 
++mod_get_fail:
++	edac_put_sysfs_class();
 +
-+static void __exit edac_exit_mce_inject(void)
+ decrement_count_fail:
+ 	/* if are on this error exit, nothing to tear down */
+ 	atomic_dec(&edac_pci_sysfs_refcount);
+@@ -429,6 +432,7 @@ static void edac_pci_main_kobj_teardown(void)
+ 			__func__);
+ 		kobject_put(edac_pci_top_main_kobj);
+ 	}
++	edac_put_sysfs_class();
+ }
+ 
+ /*
+diff --git a/drivers/edac/edac_stub.c b/drivers/edac/edac_stub.c
+index 20b428a..aab9707 100644
+--- a/drivers/edac/edac_stub.c
++++ b/drivers/edac/edac_stub.c
+@@ -3,10 +3,13 @@
+  *
+  * Author: Dave Jiang <djiang@mvista.com>
+  *
+- * 2007 (c) MontaVista Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
++ * 2007 (c) MontaVista Software, Inc.
++ * 2010 (c) Advanced Micro Devices Inc.
++ *	    Borislav Petkov <borislav.petkov@amd.com>
++ *
++ * This file is licensed under the terms of the GNU General Public
++ * License version 2. This program is licensed "as is" without any
++ * warranty of any kind, whether express or implied.
+  *
+  */
+ #include <linux/module.h>
+@@ -23,6 +26,8 @@ EXPORT_SYMBOL_GPL(edac_handlers);
+ int edac_err_assert = 0;
+ EXPORT_SYMBOL_GPL(edac_err_assert);
+ 
++static atomic_t edac_class_valid = ATOMIC_INIT(0);
++
+ /*
+  * called to determine if there is an EDAC driver interested in
+  * knowing an event (such as NMI) occurred
+@@ -44,3 +49,41 @@ void edac_atomic_assert_error(void)
+ 	edac_err_assert++;
+ }
+ EXPORT_SYMBOL_GPL(edac_atomic_assert_error);
++
++/*
++ * sysfs object: /sys/devices/system/edac
++ *	need to export to other files
++ */
++struct sysdev_class edac_class = {
++	.name = "edac",
++};
++EXPORT_SYMBOL_GPL(edac_class);
++
++/* return pointer to the 'edac' node in sysfs */
++struct sysdev_class *edac_get_sysfs_class(void)
 +{
-+	int i;
++	int err = 0;
 +
-+	for (i = 0; i < ARRAY_SIZE(sysfs_attrs); i++)
-+		sysfs_remove_file(mce_kobj, &sysfs_attrs[i]->attr);
++	if (atomic_read(&edac_class_valid))
++		goto out;
 +
-+	kobject_del(mce_kobj);
++	/* create the /sys/devices/system/edac directory */
++	err = sysdev_class_register(&edac_class);
++	if (err) {
++		printk(KERN_ERR "Error registering toplevel EDAC sysfs dir\n");
++		return NULL;
++	}
 +
-+	edac_put_sysfs_class();
++out:
++	atomic_inc(&edac_class_valid);
++	return &edac_class;
 +}
++EXPORT_SYMBOL_GPL(edac_get_sysfs_class);
 +
-+module_init(edac_init_mce_inject);
-+module_exit(edac_exit_mce_inject);
-+
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Borislav Petkov <borislav.petkov@amd.com>");
-+MODULE_AUTHOR("AMD Inc.");
-+MODULE_DESCRIPTION("MCE injection facility for testing MCE decoding");
++void edac_put_sysfs_class(void)
++{
++	/* last user unregisters it */
++	if (atomic_dec_and_test(&edac_class_valid))
++		sysdev_class_unregister(&edac_class);
++}
++EXPORT_SYMBOL_GPL(edac_put_sysfs_class);
+diff --git a/include/linux/edac.h b/include/linux/edac.h
+index 7cf92e8..36c6644 100644
+--- a/include/linux/edac.h
++++ b/include/linux/edac.h
+@@ -13,6 +13,7 @@
+ #define _LINUX_EDAC_H_
+ 
+ #include <asm/atomic.h>
++#include <linux/sysdev.h>
+ 
+ #define EDAC_OPSTATE_INVAL	-1
+ #define EDAC_OPSTATE_POLL	0
+@@ -22,9 +23,12 @@
+ extern int edac_op_state;
+ extern int edac_err_assert;
+ extern atomic_t edac_handlers;
++extern struct sysdev_class edac_class;
+ 
+ extern int edac_handler_set(void);
+ extern void edac_atomic_assert_error(void);
++extern struct sysdev_class *edac_get_sysfs_class(void);
++extern void edac_put_sysfs_class(void);
+ 
+ static inline void opstate_init(void)
+ {
 -- 
 1.7.1
 
