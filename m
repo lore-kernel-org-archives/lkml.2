@@ -1,59 +1,593 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0I3SAF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:00:05 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:36744 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751603Ab0I3SAD (ORCPT
+	id S1753123Ab0I3SBZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:01:25 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:46025 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab0I3SBV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:00:03 -0400
-Date: Thu, 30 Sep 2010 19:59:42 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Olof Johansson <olof@lixom.net>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] dmi: export dmi data through debugfs
-Message-ID: <20100930195942.6780c7a6@endymion.delvare>
-In-Reply-To: <87pqvvuoce.fsf@basil.nowhere.org>
-References: <20100928211246.GA20941@lixom.net>
-	<20100929093403.7db92388@endymion.delvare>
-	<20100929145330.GA9351@lixom.net>
-	<20100929171118.1dbf3fbb@endymion.delvare>
-	<20100929222804.7f506ba5@lxorguk.ukuu.org.uk>
-	<87pqvvuoce.fsf@basil.nowhere.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Sep 2010 14:01:21 -0400
+Date: Thu, 30 Sep 2010 20:01:16 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Build regressions/improvements in v2.6.36-rc6
+In-Reply-To: <alpine.DEB.2.00.1009221958570.8898@ayla.of.borg>
+Message-ID: <alpine.DEB.2.00.1009301956440.27079@ayla.of.borg>
+References: <alpine.DEB.2.00.1009221958570.8898@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andi,
+Below is the list of build error/warning regressions/improvements in
+v2.6.36-rc6 compared to v2.6.35.
 
-On Thu, 30 Sep 2010 19:34:57 +0200, Andi Kleen wrote:
-> Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
-> 
-> >> Now if you really insist on exposing the whole DMI table through sysfs,
-> >> I can't prevent you from doing that. After all, ACPI already exposes
-> >> its tables under /sys/firmware/acpi/tables (mode 0400). But then you'd
-> >> rather expose the DMI entry point and tables
-> >> under /sys/firmware/dmi/tables for consistency, rather than using
-> >> debugfs. But again, I don't think it is adding any value over what we
-> >> already have.
-> >
-> > If you really the DMI data generally available run dmidecode in the boot
-> > scripts directed to a file. It even has a dump mode for this.
-> 
-> FWIW i have been pondering to put DMI into sysfs too. One of the reasons
-> mcelog has to start up as root is that it needs to get these tables
-> out of /dev/mem.
-> 
-> Just having a binary file to read would be fine though, no need to 
-> do decoding.
+JFYI, when comparing v2.6.36-rc6 to v2.6.36-rc5, the summaries are:
+ - build errors: +39/-3 (ough!)
+ - build warnings: +50/-156
 
-Out of curiosity, what exactly does mcelog need out of the DMI data?
+In addition, I will (master.kernel.org is down?) put the verbose summary at
+http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v2.6.36-rc6.summary.gz
+so you can easily find out for which configs and architectures the
+errors/warnings you're interested in are happening.
 
--- 
-Jean Delvare
+Happy fixing! ;-)
+
+Thanks to the linux-next team for providing the build service.
+
+
+*** ERRORS ***
+
+121 regressions:
+	arch/avr32/include/asm/syscalls.h: error: previous declaration of ¡sys_execve¢ was here:  => 25
+	arch/avr32/kernel/process.c: error: conflicting types for ¡sys_execve¢:  => 390
+	arch/cris/arch-v10/drivers/sync_serial.c: error: 'ret' undeclared (first use in this function):  => 626
+	arch/cris/arch-v10/drivers/sync_serial.c: error: (Each undeclared identifier is reported only once:  => 626
+	arch/cris/arch-v10/drivers/sync_serial.c: error: conflicting types for 'sync_serial_ioctl':  => 959
+	arch/cris/arch-v10/drivers/sync_serial.c: error: for each function it appears in.):  => 626
+	arch/cris/arch-v10/drivers/sync_serial.c: error: previous declaration of 'sync_serial_ioctl' was here:  => 160
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: 'no_llseek' undeclared here (not in a function):  => 659
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: dereferencing pointer to incomplete type:  => 643, 635, 562, 549
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: implicit declaration of function 'nonseekable_open':  => 636
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: unknown field 'llseek' specified in initializer:  => 659
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: unknown field 'open' specified in initializer:  => 662
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: unknown field 'owner' specified in initializer:  => 658
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: unknown field 'release' specified in initializer:  => 663
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: unknown field 'unlocked_ioctl' specified in initializer:  => 661
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: unknown field 'write' specified in initializer:  => 660
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: error: variable 'mpc52xx_wdt_fops' has initializer but incomplete type:  => 657
+	arch/sh/include/asm/syscalls_32.h: error: previous declaration of 'sys_execve' was here:  => 22
+	arch/sh/kernel/process_32.c: error: conflicting types for 'sys_execve':  => 299
+	arch/x86/include/asm/uaccess_32.h: error: call to 'copy_from_user_overflow' declared with attribute error: copy_from_user() buffer size is not provably correct:  => 212
+	drivers/block/hd.c: error: implicit declaration of function 'inb_p':  => 257
+	drivers/block/hd.c: error: implicit declaration of function 'outb_p':  => 298
+	drivers/block/paride/bpck.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 56, 62
+	drivers/char/ipmi/ipmi_si_intf.c: error: invalid operands to binary << (have 'void *' and 'int'):  => 1381, 1396
+	drivers/char/specialix.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 238, 228
+	drivers/char/tpm/tpm.h: error: invalid operands to binary & (have 'void *' and 'int'):  => 125
+	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'ioread32':  => 392
+	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'ioread8':  => 83
+	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'iowrite32':  => 401
+	drivers/char/tpm/tpm_tis.c: error: implicit declaration of function 'iowrite8':  => 96
+	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_EDGE_BOTH' undeclared (first use in this function):  => 146
+	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_EDGE_FALLING' undeclared (first use in this function):  => 153
+	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_LEVEL_HIGH' undeclared (first use in this function):  => 138
+	drivers/gpio/timbgpio.c: error: 'IRQ_TYPE_LEVEL_LOW' undeclared (first use in this function):  => 138
+	drivers/gpio/timbgpio.c: error: 'handle_simple_irq' undeclared (first use in this function):  => 258
+	drivers/gpio/timbgpio.c: error: (Each undeclared identifier is reported only once:  => 138
+	drivers/gpio/timbgpio.c: error: dereferencing pointer to incomplete type:  => 173
+	drivers/gpio/timbgpio.c: error: for each function it appears in.):  => 138
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'generic_handle_irq':  => 178
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'get_irq_chip_data':  => 109
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'get_irq_data':  => 169
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'set_irq_chained_handler':  => 266
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'set_irq_chip':  => 293
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'set_irq_chip_and_handler_name':  => 257
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'set_irq_chip_data':  => 259
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'set_irq_data':  => 265
+	drivers/gpio/timbgpio.c: error: implicit declaration of function 'set_irq_handler':  => 297
+	drivers/gpio/timbgpio.c: error: unknown field 'disable' specified in initializer:  => 184
+	drivers/gpio/timbgpio.c: error: unknown field 'enable' specified in initializer:  => 183
+	drivers/gpio/timbgpio.c: error: unknown field 'name' specified in initializer:  => 182
+	drivers/gpio/timbgpio.c: error: unknown field 'set_type' specified in initializer:  => 185
+	drivers/gpio/timbgpio.c: error: variable 'timbgpio_irqchip' has initializer but incomplete type:  => 181
+	drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'ioread8':  => 74
+	drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'iowrite8':  => 69
+	drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'ioread8':  => 46
+	drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'iowrite8':  => 64
+	drivers/net/3c59x.c: error: request for member 'current_state' in something not a structure or union:  => 3211
+	drivers/scsi/aha1542.c: error: implicit declaration of function 'isa_page_to_bus':  => 677
+	drivers/scsi/aha1542.c: error: implicit declaration of function 'isa_virt_to_bus':  => 480
+	drivers/scsi/wd7000.c: error: implicit declaration of function 'isa_bus_to_virt':  => 1056
+	drivers/scsi/wd7000.c: error: implicit declaration of function 'isa_page_to_bus':  => 1122
+	drivers/serial/mfd.c: error: implicit declaration of function 'kfree':  => 175
+	drivers/serial/mfd.c: error: implicit declaration of function 'kzalloc':  => 144
+	drivers/serial/mrst_max3110.c: error: 'IRQ_TYPE_EDGE_FALLING' undeclared (first use in this function):  => 470
+	drivers/serial/mrst_max3110.c: error: (Each undeclared identifier is reported only once:  => 470
+	drivers/serial/mrst_max3110.c: error: for each function it appears in.):  => 470
+	drivers/staging/comedi/drivers.c: error: 'PAGE_KERNEL_NOCACHE' undeclared (first use in this function):  => 505
+	drivers/staging/comedi/drivers.c: error: (Each undeclared identifier is reported only once:  => 505
+	drivers/staging/comedi/drivers.c: error: for each function it appears in.):  => 505
+	drivers/watchdog/gef_wdt.c: error: 'no_llseek' undeclared here (not in a function):  => 249
+	drivers/watchdog/gef_wdt.c: error: implicit declaration of function 'nonseekable_open':  => 228
+	drivers/watchdog/gef_wdt.c: error: unknown field 'llseek' specified in initializer:  => 249
+	drivers/watchdog/gef_wdt.c: error: unknown field 'open' specified in initializer:  => 252
+	drivers/watchdog/gef_wdt.c: error: unknown field 'owner' specified in initializer:  => 248
+	drivers/watchdog/gef_wdt.c: error: unknown field 'release' specified in initializer:  => 253
+	drivers/watchdog/gef_wdt.c: error: unknown field 'unlocked_ioctl' specified in initializer:  => 251
+	drivers/watchdog/gef_wdt.c: error: unknown field 'write' specified in initializer:  => 250
+	drivers/watchdog/gef_wdt.c: error: variable 'gef_wdt_fops' has initializer but incomplete type:  => 247
+	error: No rule to make target include/config/auto.conf:  => N/A
+	fs/9p/vfs_inode.c: error: implicit declaration of function 'inode_setattr':  => 1267
+	fs/ceph/mds_client.c: error: insn does not satisfy its constraints::  => 3192
+	fs/nfs/nfsroot.c: error: __setup_str_nfs_root_setup causes a section type conflict:  => 403
+	fs/ntfs/file.c: error: insn does not satisfy its constraints::  => 2069
+	include/linux/kprobes.h: error: dereferencing pointer to incomplete type:  => 316
+	include/linux/vgaarb.h: error: asm/vga.h: No such file or directory:  => 34:21
+	init/Kconfig: error: recursive dependency detected!:  => 985
+	kernel/trace/trace_clock.c: error: implicit declaration of function 'raw_local_irq_restore':  => 112
+	kernel/trace/trace_clock.c: error: implicit declaration of function 'raw_local_irq_save':  => 86
+	lib/atomic64_test.c: error: 'atomic64_t' undeclared (first use in this function):  => 24
+	lib/atomic64_test.c: error: 'v' undeclared (first use in this function):  => 26
+	lib/atomic64_test.c: error: (Each undeclared identifier is reported only once:  => 24
+	lib/atomic64_test.c: error: expected ';' before 'v':  => 24
+	lib/atomic64_test.c: error: for each function it appears in.):  => 24
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_add':  => 34
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_add_return':  => 45
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_add_unless':  => 108
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_cmpxchg':  => 99
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_dec':  => 84
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_dec_if_positive':  => 119
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_dec_return':  => 90
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_inc':  => 74
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_inc_not_zero':  => 135
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_inc_return':  => 80
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_read':  => 31
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_set':  => 28
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_sub':  => 54
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_sub_return':  => 65
+	lib/atomic64_test.c: error: implicit declaration of function 'atomic64_xchg':  => 94
+	mm/memcontrol.c: error: implicit declaration of function 'is_swap_pte':  => 4016
+	mm/memcontrol.c: error: implicit declaration of function 'mem_cgroup_do_precharge':  => 4118
+	mm/memcontrol.c: error: previous definition of 'mem_cgroup_can_attach' was here:  => 3954
+	mm/memcontrol.c: error: previous definition of 'mem_cgroup_cancel_attach' was here:  => 3961
+	mm/memcontrol.c: error: previous definition of 'mem_cgroup_move_task' was here:  => 3968
+	mm/memcontrol.c: error: redefinition of 'mem_cgroup_can_attach':  => 4165
+	mm/memcontrol.c: error: redefinition of 'mem_cgroup_cancel_attach':  => 4206
+	mm/memcontrol.c: error: redefinition of 'mem_cgroup_move_task':  => 4314
+	net/mac80211/led.c: error: dereferencing pointer to incomplete type:  => 74, 85, 63, 96
+	net/mac80211/led.c: error: implicit declaration of function 'led_trigger_register':  => 64
+	net/mac80211/led.c: error: implicit declaration of function 'led_trigger_unregister':  => 107
+	net/mac80211/led.c: error: invalid application of 'sizeof' to incomplete type 'struct led_trigger' :  => 92, 81, 59, 70
+	net/rds/rdma.c: error: insn does not satisfy its constraints::  => 647
+
+46 improvements:
+	arch/alpha/kernel/pci-sysfs.c: error: passing argument 1 of 'pci_mmap_resource' from incompatible pointer type: 98, 105 => 
+	arch/alpha/kernel/pci-sysfs.c: error: passing argument 2 of 'pci_mmap_resource' from incompatible pointer type: 98, 105 => 
+	arch/alpha/kernel/pci-sysfs.c: error: passing argument 3 of 'pci_mmap_resource' from incompatible pointer type: 98, 105 => 
+	arch/alpha/kernel/pci-sysfs.c: error: passing argument 4 of 'pci_mmap_resource' makes pointer from integer without a cast: 98 => 
+	arch/alpha/kernel/pci-sysfs.c: error: too few arguments to function 'pci_mmap_resource': 98, 105 => 
+	arch/powerpc/kernel/crash_dump.c: error: comparison of distinct pointer types lacks a cast: 131 => 
+	arch/powerpc/sysdev/fsl_rio.c: error: 'MCSR_BUS_RBERR' undeclared (first use in this function): 250 => 
+	arch/powerpc/sysdev/fsl_rio.c: error: 'MCSR_MASK' undeclared (first use in this function): 248 => 
+	arch/powerpc/sysdev/fsl_rio.c: error: (Each undeclared identifier is reported only once: 248 => 
+	arch/powerpc/sysdev/fsl_rio.c: error: for each function it appears in.): 248 => 
+	arch/xtensa/include/asm/pgalloc.h: error: implicit declaration of function 'kmem_cache_alloc': 47 => 
+	arch/xtensa/include/asm/pgalloc.h: error: implicit declaration of function 'kmem_cache_free': 62 => 
+	drivers/gpio/gpiolib.c: error: 'ARCH_NR_GPIOS' undeclared here (not in a function): 68 => 
+	drivers/gpio/gpiolib.c: error: 'GPIOF_DIR_IN' undeclared (first use in this function): 1261 => 
+	drivers/gpio/gpiolib.c: error: 'GPIOF_INIT_HIGH' undeclared (first use in this function): 1265 => 
+	drivers/gpio/gpiolib.c: error: (Each undeclared identifier is reported only once: 1261 => 
+	drivers/gpio/gpiolib.c: error: arithmetic on pointer to an incomplete type: 1302, 1289, 1280 => 
+	drivers/gpio/gpiolib.c: error: decrement of pointer to unknown structure: 1289 => 
+	drivers/gpio/gpiolib.c: error: dereferencing pointer to incomplete type: 1588, 743, 1720, 1428, 1410, 942, 1481, 1637, 943, 1375, 598, 1532, 1423, 1360, 1721, 1013, 1188, 986, 1138, 1413, 1289, 1232, 744, 1531, 1370, 1072, 1604, 1550, 1081, 1614, 1624, 1184, 1233, 750, 1628, 1191, 949, 1077, 1636, 1063, 1483, 1088, 1097, 144, 1281, 100, 1110, 979, 1412, 957, 1230, 589, 749, 1384, 1357, 1471, 1172, 1468, 112, 1321, 1470, 1131, 1570, 1196, 104, 1713, 962, 1373, 1707, 755, 1302, 1359, 1714, 607, 1551, 1237, 1715, 1437, 1426, 1061, 1708 => 
+	drivers/gpio/gpiolib.c: error: for each function it appears in.): 1261 => 
+	drivers/gpio/gpiolib.c: error: increment of pointer to unknown structure: 1302, 1280 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_direction_input': 1346 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_direction_output': 1399 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_export': 721 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_export_link': 807 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_free': 1211 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_get_value_cansleep': 1599 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_request': 1157 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_set_debounce': 1457 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_set_value_cansleep': 1609 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_sysfs_set_active_low': 854 => 
+	drivers/gpio/gpiolib.c: error: redefinition of 'gpio_unexport': 894 => 
+	error: vga16fb.c: undefined reference to `vgacon_remap_base': .devinit.text+0x1a8fa), .devinit.text+0x1a8fe) => 
+	include/linux/bio.h: error: #error "You should define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE for your platform": 396:3 => 
+	include/linux/blkdev.h: error: #error "You should define ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE for your platform": 762:3 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_direction_input' was here: 45 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_direction_output' was here: 50 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_export' was here: 93 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_export_link' was here: 101 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_free' was here: 37 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_get_value_cansleep' was here: 80 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_request' was here: 32 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_set_debounce' was here: 55 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_set_value_cansleep' was here: 87 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_sysfs_set_active_low' was here: 108 => 
+	include/linux/gpio.h: error: previous definition of 'gpio_unexport' was here: 115 => 
+
+
+*** WARNINGS ***
+
+179 regressions:
+	.config: warning: symbol value '' invalid for X86_INTERNODE_CACHE_SHIFT:  => 263
+	<stdin>: warning: #warning syscall dup3 not implemented: 1495:2 => 1494:2, 1495:2
+	<stdin>: warning: #warning syscall epoll_create1 not implemented: 1491:2 => 1490:2, 1491:2
+	<stdin>: warning: #warning syscall eventfd2 not implemented: 1487:2 => 1486:2, 1487:2
+	<stdin>: warning: #warning syscall fallocate not implemented: 1471:2 => 1470:2, 1471:2
+	<stdin>: warning: #warning syscall fanotify_init not implemented:  => 1526:2
+	<stdin>: warning: #warning syscall fanotify_mark not implemented:  => 1530:2
+	<stdin>: warning: #warning syscall inotify_init1 not implemented: 1503:2 => 1503:2, 1502:2
+	<stdin>: warning: #warning syscall perf_event_open not implemented: 1519:2 => 1518:2, 1519:2
+	<stdin>: warning: #warning syscall pipe2 not implemented: 1499:2 => 1499:2, 1498:2
+	<stdin>: warning: #warning syscall pread64 not implemented: 907:2 => 906:2, 907:2
+	<stdin>: warning: #warning syscall preadv not implemented: 1507:2 => 1507:2, 1506:2
+	<stdin>: warning: #warning syscall prlimit64 not implemented:  => 1534:2
+	<stdin>: warning: #warning syscall pwrite64 not implemented: 911:2 => 910:2, 911:2
+	<stdin>: warning: #warning syscall pwritev not implemented: 1511:2 => 1511:2, 1510:2
+	<stdin>: warning: #warning syscall recvmmsg not implemented: 1523:2 => 1523:2, 1522:2
+	<stdin>: warning: #warning syscall rt_tgsigqueueinfo not implemented: 1515:2 => 1515:2, 1514:2
+	<stdin>: warning: #warning syscall signalfd4 not implemented: 1483:2 => 1483:2, 1482:2
+	<stdin>: warning: #warning syscall sync_file_range not implemented: 1431:2 => 1431:2, 1430:2
+	<stdin>: warning: #warning syscall timerfd_create not implemented: 1463:2 => 1462:2, 1463:2
+	<stdin>: warning: #warning syscall timerfd_gettime not implemented: 1479:2 => 1478:2, 1479:2
+	<stdin>: warning: #warning syscall timerfd_settime not implemented: 1475:2 => 1474:2, 1475:2
+	<stdin>: warning: #warning syscall umount2 not implemented: 395:2 => 394:2, 395:2
+	arch/cris/arch-v10/drivers/sync_serial.c: warning: initialization from incompatible pointer type:  => 251
+	arch/cris/arch-v10/drivers/sync_serial.c: warning: passing argument 1 of 'memcpy' discards qualifiers from pointer target type:  => 1341, 1351
+	arch/cris/arch-v10/drivers/sync_serial.c: warning: passing argument 1 of 'virt_to_phys' discards qualifiers from pointer target type:  => 1222
+	arch/cris/mm/fault.c: warning: ISO C90 forbids mixed declarations and code:  => 205
+	arch/mips/sibyte/bcm1480/smp.c: warning: passing argument 1 of '__cpus_clear' discards qualifiers from pointer target type:  => 149
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: warning: (near initialization for 'mpc52xx_wdt_fops'):  => 661, 662, 660, 659, 663, 658
+	arch/powerpc/platforms/52xx/mpc52xx_gpt.c: warning: excess elements in struct initializer:  => 661, 662, 660, 659, 663, 658
+	arch/x86/kernel/scx200_32.c: warning: 'base' may be used uninitialized in this function:  => 82
+	arch/xtensa/kernel/entry.S: Warning: value 0xffffffff30000000 truncated to 0x30000000: 1544 => 1544, 1545
+	drivers/acpi/sysfs.c: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type:  => 152, 154
+	drivers/atm/nicstar.c: warning: 'err' may be used uninitialized in this function:  => 956
+	drivers/base/power/main.c: warning: comparison of distinct pointer types lacks a cast: 413 => 414, 415
+	drivers/block/hd.c: warning: statement with no effect:  => 468
+	drivers/block/z2ram.c: warning: format '%lu' expects type 'long unsigned int', but argument 2 has type 'sector_t': 82 => 83, 82
+	drivers/char/n_gsm.c: warning: ignoring return value of '__kfifo_must_check_helper', declared with attribute warn_unused_result:  => 1580
+	drivers/char/rocket.c: warning: 'rmSpeakerReset' defined but not used: 3152, 3153 => 3152, 3163, 3164
+	drivers/char/rocket.c: warning: 'rocket_pci_ids' defined but not used: 1756 => 1756, 1767
+	drivers/char/rocket.c: warning: 'sPCIInitController' defined but not used: 2611, 2616 => 2627, 2611, 2622
+	drivers/char/tpm/tpm.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 390, 423
+	drivers/char/tty_buffer.c: warning: comparison of distinct pointer types lacks a cast:  => 251, 288
+	drivers/gpio/timbgpio.c: warning: (near initialization for 'timbgpio_irqchip'):  => 182, 185, 183, 184
+	drivers/gpio/timbgpio.c: warning: excess elements in struct initializer:  => 182, 185, 183, 184
+	drivers/gpio/timbgpio.c: warning: initialization makes pointer from integer without a cast:  => 109, 169, 125, 117
+	drivers/gpu/drm/drm_context.c: warning: passing argument 2 of '__constant_test_and_set_bit' discards qualifiers from pointer target type:  => 233
+	drivers/gpu/drm/drm_context.c: warning: passing argument 2 of '__generic_test_and_set_bit' discards qualifiers from pointer target type:  => 233
+	drivers/gpu/drm/drm_pci.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast:  => 109, 84
+	drivers/gpu/drm/drm_vm.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast:  => 308
+	drivers/gpu/drm/radeon/radeon_gart.c: warning: passing argument 3 of 'pci_free_consistent' discards qualifiers from pointer target type:  => 69
+	drivers/i2c/busses/i2c-cpm.c: warning: passing argument 3 of 'dma_alloc_coherent' from incompatible pointer type:  => 536, 543
+	drivers/ide/ide-io-std.c: warning: statement with no effect:  => 200, 185
+	drivers/infiniband/core/uverbs_main.c: warning: the address of 'uverbs_event_fops' will always evaluate as 'true': 523 => 526, 537
+	drivers/infiniband/hw/amso1100/c2_qp.c: warning: 'actual_sge_count' may be used uninitialized in this function:  => 799, 961
+	drivers/infiniband/hw/amso1100/c2_qp.c: warning: 'tot_len' may be used uninitialized in this function:  => 798
+	drivers/infiniband/hw/cxgb4/cm.c: warning: cast to pointer from integer of different size:  => 2326
+	drivers/infiniband/hw/cxgb4/cq.c: warning: cast from pointer to integer of different size:  => 58, 135
+	drivers/infiniband/hw/cxgb4/mem.c: warning: cast from pointer to integer of different size:  => 74
+	drivers/infiniband/hw/cxgb4/qp.c: warning: cast from pointer to integer of different size:  => 147, 1063, 988
+	drivers/input/misc/hp_sdc_rtc.c: warning: 'hp_sdc_rtc_set_fhs' defined but not used: 319 => 319, 320
+	drivers/input/misc/hp_sdc_rtc.c: warning: 'hp_sdc_rtc_set_i8042timer' defined but not used: 359 => 360, 359
+	drivers/input/misc/hp_sdc_rtc.c: warning: 'hp_sdc_rtc_set_rt' defined but not used: 279 => 280, 279
+	drivers/isdn/hardware/mISDN/mISDNipac.c: warning: unsupported argument to '__builtin_return_address':  => 754
+	drivers/isdn/hardware/mISDN/netjet.c: warning: comparison is always false due to limited range of data type:  => 318
+	drivers/isdn/hardware/mISDN/w6692.c: warning: unsupported argument to '__builtin_return_address':  => 1188
+	drivers/leds/leds-gpio.c: warning: 'create_gpio_led' defined but not used:  => 91
+	drivers/leds/leds-gpio.c: warning: 'delete_gpio_led' defined but not used:  => 145
+	drivers/leds/leds-gpio.c: warning: 'flags' may be used uninitialized in this function:  => 251
+	drivers/leds/leds-gpio.c: warning: 'ret' is used uninitialized in this function:  => 334
+	drivers/media/dvb/frontends/dib3000mc.c: warning: the frame size of 2208 bytes is larger than 2048 bytes:  => 853
+	drivers/media/dvb/frontends/dib7000p.c: warning: the frame size of 2288 bytes is larger than 2048 bytes:  => 1367
+	drivers/media/dvb/ngene/ngene-core.c: warning: unused variable 'flags':  => 1308
+	drivers/media/video/sh_mobile_ceu_camera.c: warning: 'sd' is used uninitialized in this function:  => 1245
+	drivers/media/video/sh_mobile_ceu_camera.c: warning: 'sd' may be used uninitialized in this function:  => 1707, 1683, 943
+	drivers/media/video/sh_mobile_ceu_camera.c: warning: unused variable 'sd':  => 1648
+	drivers/message/fusion/mptsas.c: warning: unused variable 'log_info':  => 5010
+	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2288 bytes is larger than 2048 bytes:  => 657
+	drivers/mtd/devices/doc2001plus.c: warning: passing argument 2 of 'MemWriteDOC' discards qualifiers from pointer target type:  => 767
+	drivers/mtd/devices/docprobe.c: warning: #warning Unknown architecture for DiskOnChip. No default probe locations defined: 80:2 => 80:2, 79:2
+	drivers/mtd/nand/alauda.c: warning: passing argument 3 of 'alauda_write_page' discards qualifiers from pointer target type:  => 480
+	drivers/net/3c59x.c: warning: dereferencing 'void *' pointer:  => 3211
+	drivers/net/pcmcia/ibmtr_cs.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:200):  => 235
+	drivers/net/pcmcia/ibmtr_cs.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:202):  => 235
+	drivers/net/pcmcia/nmclan_cs.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:200):  => 650
+	drivers/net/pcmcia/nmclan_cs.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:202):  => 650
+	drivers/net/pcmcia/smc91c92_cs.c: warning: 'j' may be used uninitialized in this function:  => 846
+	drivers/net/smc91x.c: warning: cast from pointer to integer of different size:  => 1913
+	drivers/net/tehuti.c: warning: passing argument 2 of 'bdx_tx_push_desc_safe' discards qualifiers from pointer target type:  => 330
+	drivers/net/wan/farsync.c: warning: cast to pointer from integer of different size:  => 1408
+	drivers/net/wireless/iwmc3200wifi/rx.c: warning: comparison is always true due to limited range of data type:  => 1198
+	drivers/net/wireless/libertas/cfg.c: warning: passing argument 3 of 'lbs_deb_hex' discards qualifiers from pointer target type:  => 273
+	drivers/net/wireless/mwl8k.c: warning: 'ap_legacy_rates' may be used uninitialized in this function:  => 3403
+	drivers/net/wireless/p54/p54usb.c: warning: 'p54u_device_reset' defined but not used:  => 406, 407
+	drivers/parisc/led.c: warning: assignment from incompatible pointer type:  => 366
+	drivers/pci/pcie/portdrv_core.c: warning: 'cap_mask' may be used uninitialized in this function:  => 241
+	drivers/rtc/rtc-m41t80.c: warning: passing argument 1 of 'rtc_valid_tm' from incompatible pointer type:  => 367
+	drivers/scsi/aic7xxx_old.c: warning: passing argument 3 of 'pci_free_consistent' discards qualifiers from pointer target type:  => 8490
+	drivers/scsi/constants.c: warning: zero-length gnu_printf format string:  => 1407, 1413, 1456
+	drivers/scsi/constants.c: warning: zero-length printf format string:  => 1407, 1413, 1456
+	drivers/scsi/dtc.c: warning: 'dtc_setup' defined but not used:  => 179
+	drivers/scsi/g_NCR5380.c: warning: 'id_table' defined but not used:  => 943
+	drivers/scsi/hpsa.c: warning: 'cp' may be used uninitialized in this function:  => 2335, 2299
+	drivers/scsi/mpt2sas/mpt2sas_base.c: warning: right shift count >= width of type:  => 3022, 3020
+	drivers/scsi/mpt2sas/mpt2sas_ctl.c: warning: '_ctl_sas_device_find_by_handle' defined but not used:  => 94
+	drivers/scsi/mpt2sas/mpt2sas_scsih.c: warning: unused variable 'mpi_reply':  => 2718
+	drivers/scsi/pmcraid.c: warning: passing argument 2 of 'access_ok' makes pointer from integer without a cast:  => 3800
+	drivers/scsi/scsi_debug.c: warning: comparison of distinct pointer types lacks a cast:  => 1965, 1846, 1756, 2013, 1992, 1686
+	drivers/scsi/scsi_debug.c: warning: passing argument 1 of '__div64_32' from incompatible pointer type:  => 1965, 1846, 1756, 2013, 1992, 1686
+	drivers/scsi/scsi_debug.c: warning: right shift count >= width of type:  => 1965, 1846, 1756, 2013, 1992, 1686
+	drivers/scsi/sd.c: warning: zero-length printf format string:  => 2630, 2636, 2628
+	drivers/scsi/stex.c: warning: passing argument 2 of 'scsi_sg_copy_from_buffer' discards qualifiers from pointer target type:  => 636
+	drivers/scsi/wd7000.c: warning: assignment makes pointer from integer without a cast:  => 1056
+	drivers/serial/mfd.c: warning: assignment makes pointer from integer without a cast:  => 144, 1361, 818, 187
+	drivers/staging/xgifb/XGI_main_26.c: warning: unused variable 'sr_data':  => 1045
+	drivers/staging/xgifb/vb_setmode.c: warning: 'ModeIdIndex' is used uninitialized in this function:  => 4460
+	drivers/uio/uio.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast:  => 654
+	drivers/usb/gadget/storage_common.c: warning: 'fsg_show_nofua' defined but not used:  => 718, 720
+	drivers/usb/gadget/storage_common.c: warning: 'fsg_store_nofua' defined but not used:  => 782, 785
+	drivers/usb/host/ehci-lpm.c: warning: 'ehci_lpm_check' defined but not used:  => 40
+	drivers/usb/host/ehci-lpm.c: warning: 'ehci_lpm_set_da' defined but not used:  => 20
+	drivers/video/aty/aty128fb.c: warning: 'backlight' defined but not used:  => 362
+	drivers/watchdog/alim1535_wdt.c: warning: 'ali_pci_tbl' defined but not used:  => 304
+	drivers/watchdog/gef_wdt.c: warning: (near initialization for 'gef_wdt_fops'):  => 252, 251, 253, 250, 248, 249
+	drivers/watchdog/gef_wdt.c: warning: excess elements in struct initializer:  => 252, 251, 253, 250, 248, 249
+	fs/9p/xattr.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 52
+	fs/9p/xattr.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t':  => 52
+	fs/autofs/root.c: warning: 'autofs_root_compat_ioctl' declared 'static' but never defined:  => 30
+	fs/autofs4/root.c: warning: 'autofs4_root_compat_ioctl' declared 'static' but never defined:  => 31
+	fs/fuse/dev.c: warning: 'total_len' may be used uninitialized in this function:  => 1357
+	fs/fuse/dev.c: warning: ¡total_len¢ may be used uninitialized in this function:  => 1357
+	fs/nfsd/nfs4state.c: warning: control reaches end of non-void function:  => 452
+	fs/notify/fanotify/fanotify.c: warning: 'marks_ignored_mask' may be used uninitialized in this function:  => 162
+	fs/notify/fanotify/fanotify.c: warning: 'marks_mask' may be used uninitialized in this function:  => 162
+	fs/notify/fanotify/fanotify_user.c: warning: unused variable 'lre':  => 375
+	fs/notify/fanotify/fanotify_user.c: warning: unused variable 're':  => 375
+	include/media/soc_camera.h: warning: 'dummy' is used uninitialized in this function:  => 278
+	include/net/ipx.h: warning: 'packed' attribute ignored for field of type '__be16':  => 32, 30
+	include/net/ipx.h: warning: 'packed' attribute ignored for field of type 'struct ipx_address':  => 42, 41
+	kernel/module.c: warning: passing argument 2 of 'add_kallsyms' discards qualifiers from pointer target type:  => 2534
+	kernel/pm_qos_params.c: warning: control may reach end of non-void function ¡pm_qos_get_value¢ being inlined:  => 200
+	kernel/pm_qos_params.c: warning: control reaches end of non-void function:  => 132
+	kernel/trace/trace_events.c: warning: enumeration value 'TRACE_REG_PERF_REGISTER' not handled in switch:  => 146
+	kernel/trace/trace_events.c: warning: enumeration value 'TRACE_REG_PERF_UNREGISTER' not handled in switch:  => 146
+	kernel/trace/trace_functions_graph.c: warning: comparison of distinct pointer types lacks a cast:  => 652
+	kernel/watchdog.c: warning: 'watchdog_disable_all_cpus' defined but not used:  => 476
+	kernel/watchdog.c: warning: 'watchdog_enable_all_cpus' defined but not used:  => 463
+	lib/atomic64_test.c: warning: ISO C90 forbids mixed declarations and code:  => 25
+	lib/radix-tree.c: warning: 'radix_tree_range_tag_if_tagged' uses dynamic stack allocation:  => 737
+	mm/percpu.c: warning: 'pcpu_build_alloc_info' defined but not used:  => 1094
+	modpost: WARNING: modpost: Found 13 section mismatch(es).:  => N/A
+	modpost: WARNING: modpost: Found 65 section mismatch(es).:  => N/A
+	net/irda/irnet/irnet_ppp.c: warning: format '%Zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 332
+	net/mac80211/tx.c: warning: unused variable 'mesh_hdr':  => 1702
+	net/packet/af_packet.c: warning: 'hdrlen' may be used uninitialized in this function: 655 => 657, 648
+	net/sunrpc/auth_gss/auth_gss.c: warning: format '%Zd' expects type 'signed size_t', but argument 2 has type 'ssize_t':  => 706
+	net/sunrpc/auth_gss/auth_gss.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 688
+	security/keys/keyctl.c: warning: #warning TIF_NOTIFY_RESUME not implemented: 1329:2 => 1346:2, 1342:2
+	sound/pcmcia/pdaudiocf/pdaudiocf.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:200):  => 226
+	sound/pcmcia/pdaudiocf/pdaudiocf.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:202):  => 226
+	sound/pcmcia/vx/vxpocket.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:200):  => 233
+	sound/pcmcia/vx/vxpocket.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:202):  => 233
+	sound/usb/mixer.c: warning: unused variable 'chip':  => 762
+	warning: (BATTERY_DS2760 && POWER_SUPPLY) selects W1 which has unmet direct dependencies (HAS_IOMEM):  => N/A
+	warning: (COMPAT && SPARC64) selects COMPAT_BINFMT_ELF which has unmet direct dependencies (COMPAT && BINFMT_ELF):  => N/A
+	warning: (ETRAX_USB_HOST && ETRAX_ARCH_V10 || MOUSE_APPLETOUCH && !S390 && INPUT && INPUT_MOUSE && USB_ARCH_HAS_HCD || MOUSE_BCM5974 && !S390 && INPUT && INPUT_MOUSE && USB_ARCH_HAS_HCD || JOYSTICK_XPAD && !S390 && INPUT && INPUT_JOYSTICK && USB_ARCH_HAS_HCD || TABLET_USB_ACECAD && !S390 && INPUT && INPUT_TABLET && USB_ARCH_HAS_HCD || TABLET_USB_AIPTEK && !S390 && INPUT && INPUT_TABLET && USB_ARCH_HAS_HCD || TABLET_USB_KBTAB && !S390 && INPUT && INPUT_TABLET && USB_ARCH_HAS_HCD || TABLET_USB_WACOM && !S390 && INPUT && INPUT_TABLET && USB_ARCH_HAS_HCD || TOUCHSCREEN_USB_COMPOSITE && !S390 && INPUT && INPUT_TOUCHSCREEN && USB_ARCH_HAS_HCD || INPUT_ATI_REMOTE && !S390 && INPUT && INPUT_MISC && USB_ARCH_HAS_HCD || INPUT_ATI_REMOTE2 && !S390 && INPUT && INPUT_MISC && USB_ARCH_HAS_HCD || INPUT_KEYSPAN_REMOTE && !S390 && INPUT && INPUT_MISC && EXPERIMENTAL && USB_ARCH_HAS_HCD || INPUT_POWERMATE && !S390 && INPUT && INPUT_MISC && USB_ARCH_HAS_HCD || INPUT_YEALINK && !S390 && INPUT && INPUT_MISC && EXPERIMENTAL && USB_ARCH_HAS_HCD || INPUT_CM109 && !S390 && INPUT && INPUT_MISC && EXPERIMENTAL && USB_ARCH_HAS_HCD) selects USB which has unmet direct dependencies (USB_ARCH_HAS_HCD):  => N/A
+	warning: (GFS2_FS && BLOCK && EXPERIMENTAL && (64BIT || LBDAF)) selects QUOTACTL which has unmet direct dependencies (XFS_QUOTA || QUOTA):  => N/A
+	warning: (IRQSOFF_TRACER && TRACING_SUPPORT && FTRACE && TRACE_IRQFLAGS_SUPPORT && !ARCH_USES_GETTIMEOFFSET) selects TRACE_IRQFLAGS which has unmet direct dependencies (DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && PROVE_LOCKING):  => N/A
+	warning: (LOCKDEP && DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT && !MIPS && !PPC && !ARM_UNWIND && !S390 && !MICROBLAZE || FAULT_INJECTION_STACKTRACE_FILTER && FAULT_INJECTION_DEBUG_FS && STACKTRACE_SUPPORT && !X86_64 && !PPC && !S390 && !MICROBLAZE || LATENCYTOP && HAVE_LATENCYTOP_SUPPORT && DEBUG_KERNEL && STACKTRACE_SUPPORT && PROC_FS && !MIPS && !PPC && !S390 && !MICROBLAZE || FUNCTION_TRACER && TRACING_SUPPORT && FTRACE && HAVE_FUNCTION_TRACER || KMEMCHECK && HAVE_ARCH_KMEMCHECK && DEBUG_KERNEL && !X86_USE_3DNOW && (SLUB || SLAB) && !CC_OPTIMIZE_FOR_SIZE && !FUNCTION_TRACER) selects FRAME_POINTER which has unmet direct dependencies (DEBUG_KERNEL && (CRIS || M68K || M68KNOMMU || FRV || UML || AVR32 || SUPERH || BLACKFIN || MN10300) || ARCH_WANT_FRAME_POINTERS):  => N/A
+	warning: (PAGE_POISONING && DEBUG_KERNEL && !ARCH_SUPPORTS_DEBUG_PAGEALLOC && !HIBERNATION) selects DEBUG_PAGEALLOC which has unmet direct dependencies (DEBUG_KERNEL && ARCH_SUPPORTS_DEBUG_PAGEALLOC && (!HIBERNATION || !PPC && !SPARC) && !KMEMCHECK):  => N/A
+	warning: (PCMCIA_LOAD_CIS && PCCARD && PCMCIA && EXPERIMENTAL || USB_IRDA && NET && IRDA && USB || BT_HCIBCM203X && NET && BT && USB || BT_HCIBFUSB && NET && BT && USB || BT_HCIBT3C && NET && BT && PCMCIA || BT_MRVL_SDIO && NET && BT && BT_MRVL && MMC || BT_ATH3K && NET && BT && BT_HCIBTUSB || IWMC3200TOP && MISC_DEVICES && MMC && EXPERIMENTAL || SCSI_AIC94XX && SCSI_LOWLEVEL && SCSI && PCI || SCSI_MVSAS && SCSI_LOWLEVEL && SCSI && PCI || SCSI_IPR && SCSI_LOWLEVEL && PCI && SCSI && ATA || SCSI_QLA_FC && SCSI_LOWLEVEL && PCI && SCSI || BNX2 && NETDEVICES && NETDEV_1000 && PCI || SPIDER_NET && NETDEVICES && NETDEV_1000 && PCI && (PPC_IBM_CELL_BLADE || PPC_CELLEB) || CHELSIO_T3 && NETDEVICES && NETDEV_10000 && CHELSIO_T3_DEPENDS || CHELSIO_T4 && NETDEVICES && NETDEV_10000 && CHELSIO_T4_DEPENDS || MYRI10GE && NETDEVICES && NETDEV_10000 && PCI && INET || NETXEN_NIC && NETDEVICES && NETDEV_10000 && PCI || BNX2X && NETDEVICES && NETDEV_10000 && PCI || QLCNIC && NETDEVICES && NETDEV_10000 && PCI || TMS380TR && NETDEVICES && TR && (PCI || ISA && ISA_DMA_API || MCA) || LIBERTAS_THINFIRM && NETDEVICES && WLAN && MAC80211 || ATMEL && NETDEVICES && WLAN && (PCI || PCMCIA) || PCMCIA_ATMEL && NETDEVICES && WLAN && ATMEL && PCMCIA || AT76C50X_USB && NETDEVICES && WLAN && MAC80211 && USB || PRISM54 && NETDEVICES && WLAN && PCI && EXPERIMENTAL || USB_ZD1201 && NETDEVICES && WLAN && USB || B43 && NETDEVICES && WLAN && SSB_POSSIBLE && MAC80211 && HAS_DMA || B43LEGACY && NETDEVICES && WLAN && SSB_POSSIBLE && MAC80211 && HAS_DMA || IPW2100 && NETDEVICES && WLAN && PCI && CFG80211 || IPW2200 && NETDEVICES && WLAN && PCI && CFG80211 && CFG80211_WEXT || IWLWIFI && NETDEVICES && WLAN && PCI && MAC80211 || IWM && NETDEVICES && WLAN && MMC && EXPERIMENTAL && CFG80211 || LIBERTAS && NETDEVICES && WLAN && CFG80211 || HERMES && NETDEVICES && WLAN && (PPC_PMAC || PCI || PCMCIA) && CFG80211 && CFG80211_WEXT || ORINOCO_USB && NETDEVICES && WLAN && USB && HERMES || P54_COMMON && NETDEVICES && WLAN && MAC80211 && EXPERIMENTAL || WL1251 &&!
+  NETDEVICES && WLAN && WL12XX && GENERIC_HARDIRQS || WL1271 && NETDEVICES && WLAN && WL12XX && GENERIC_HARDIRQS && INET || ZD1211RW && NETDEVICES && WLAN && USB && MAC80211 && EXPERIMENTAL || AR9170_USB && NETDEVICES && WLAN && ATH_COMMON && USB && MAC80211 || RT2X00_LIB_FIRMWARE && NETDEVICES && WLAN && RT2X00 || WIMAX_I2400M && NETDEVICES && WIMAX || ATM_FORE200E && ATM_DRIVERS && NETDEVICES && ATM && (PCI || SBUS) || ATM_SOLOS && ATM_DRIVERS && NETDEVICES && ATM && PCI || CYCLADES && SERIAL_NONSTANDARD && (PCI || ISA) || MOXA_INTELLIO && SERIAL_NONSTANDARD && (ISA || EISA || PCI) || ISI && SERIAL_NONSTANDARD && PCI || SERIAL_ICOM && HAS_IOMEM && PCI && (PPC_ISERIES || PPC_PSERIES) || SERIAL_QE && HAS_IOMEM && QUICC_ENGINE || VIDEO_SAA7164 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C || DVB_LGS8GXX && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_FE_CUSTOMISE && DVB_CORE && I2C || DRM_R128 && HAS_IOMEM && DRM && PCI || DRM_RADEON && HAS_IOMEM && DRM && PCI || DRM_MGA && HAS_IOMEM && DRM && PCI || SND_SB16_CSP && SOUND && !M68K && SND && SND_ISA && (SND_SB16 || SND_SBAWE) && (BROKEN || !PPC) || SND_SSCAPE && SOUND && !M68K && SND && SND_ISA || SND_WAVEFRONT && SOUND && !M68K && SND && SND_ISA || SND_MSND_PINNACLE && SOUND && !M68K && SND && SND_ISA && X86 && EXPERIMENTAL || SND_MSND_CLASSIC && SOUND && !M68K && SND && SND_ISA && X86 && EXPERIMENTAL || SND_ASIHPI && SOUND && !M68K && SND && SND_PCI && X86 || SND_DARLA20 && SOUND && !M68K && SND && SND_PCI || SND_GINA20 && SOUND && !M68K && SND && SND_PCI || SND_LAYLA20 && SOUND && !M68K && SND && SND_PCI || SND_DARLA24 && SOUND && !M68K && SND && SND_PCI || SND_GINA24 && SOUND && !M68K && SND && SND_PCI || SND_LAYLA24 && SOUND && !M68K && SND && SND_PCI || SND_MONA && SOUND && !M68K && SND && SND_PCI || SND_MIA && SOUND && !M68K && SND && SND_PCI || SND_ECHO3G && SOUND && !M68K && SND && SND_PCI || SND_INDIGO && SOUND && !M68K && SND && SND_PCI || SND_INDIGOIO && SOUND && !M68K && SND && SND_PCI || SND_INDIGODJ && SOUND && !M68!
+ K && SND && SND_PCI || SND_INDIGOIOX && SOUND && !M68K && SND && SND_PCI || SND_INDIGODJX && SOUND && !M68K && SND && SND_PCI || SND_EMU10K1 && SOUND && !M68K && SND && SND_PCI || SND_RIPTIDE && SOUND && !M68K && SND && SND_PCI || SND_HDA_PATCH_LOADER && SOUND && !M68K && SND && SND_PCI && SND_HDA_INTEL && EXPERIMENTAL || SND_SOC_SH4_SIU && SOUND && !M68K && SND && SND_SOC && (SUPERH || ARCH_SHMOBILE) && HAVE_CLK || USB_ISIGHTFW && USB_SUPPORT && USB || USB_SPEEDTOUCH && USB_SUPPORT && USB_ATM || USB_CXACRU && USB_SUPPORT && USB_ATM || USB_UEAGLEATM && USB_SUPPORT && USB_ATM || UWB_I1480U && UWB && UWB_HWA || RT2860 && STAGING && !STAGING_EXCLUDE_BUILD && PCI && X86 && WLAN || RT2870 && STAGING && !STAGING_EXCLUDE_BUILD && USB && (X86 || ARM) && WLAN || DRM_NOUVEAU && STAGING && !STAGING_EXCLUDE_BUILD && DRM && PCI || TI_ST && STAGING && !STAGING_EXCLUDE_BUILD && RFKILL) selects FW_LOADER which has unmet direct dependencies (HOTPLUG):  => N/A
+	warning: (PPC_PS3 && PPC64 && PPC_BOOK3S || PPC_CELLEB && PPC64 && PPC_BOOK3S || USB_OHCI_HCD_PPC_SOC && USB_SUPPORT && USB_OHCI_HCD && (STB03xxx || PPC_MPC52xx) || USB_OHCI_HCD_PPC_OF_BE && USB_SUPPORT && USB_OHCI_HCD && PPC_OF) selects USB_OHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_OHCI_HCD):  => N/A
+	warning: (PPC_PS3 && PPC64 && PPC_BOOK3S || PPC_CELLEB && PPC64 && PPC_BOOK3S || XPS_USB_HCD_XILINX && USB_SUPPORT && USB_EHCI_HCD && (PPC32 || MICROBLAZE)) selects USB_EHCI_BIG_ENDIAN_MMIO which has unmet direct dependencies (USB_EHCI_HCD && (PPC_CELLEB || PPC_PS3 || 440EPX || ARCH_IXP4XX || XPS_USB_HCD_XILINX)):  => N/A
+	warning: (PS3_PS3AV && PPC_PS3 || PS3_SYS_MANAGER && PPC_PS3) selects PS3_VUART which has unmet direct dependencies (PPC_PS3 && PS3_ADVANCED):  => N/A
+	warning: (RADIO_MIROPCM20 && MEDIA_SUPPORT && RADIO_ADAPTERS && ISA && VIDEO_V4L2 && SND) selects SND_ISA which has unmet direct dependencies (ISA && ISA_DMA_API):  => N/A
+	warning: (SCSI_SAS_LIBSAS && SCSI || SCSI_MPT2SAS && SCSI_LOWLEVEL && PCI && SCSI || FUSION_SAS && FUSION && PCI && SCSI) selects SCSI_SAS_ATTRS which has unmet direct dependencies (SCSI && BLK_DEV_BSG):  => N/A
+	warning: (SINGLE_MEMORY_CHUNK) selects NEED_MULTIPLE_NODES which has unmet direct dependencies (DISCONTIGMEM || NUMA):  => N/A
+	warning: (SUPERH32) selects HAVE_HW_BREAKPOINT which has unmet direct dependencies (PERF_EVENTS):  => N/A
+	warning: (USB_WUSB && USB_SUPPORT && EXPERIMENTAL && USB) selects UWB which has unmet direct dependencies (EXPERIMENTAL && PCI):  => N/A
+
+181 improvements:
+	.config: warning: override: SLOB changes choice state: 163, 166 => 156
+	arch/cris/arch-v32/mach-fs/pinmux.c: warning: ISO C90 forbids mixed declarations and code: 225, 97 => 
+	arch/cris/boot/compressed/misc.c: warning: conflicting types for built-in function 'puts': 109 => 
+	arch/cris/boot/compressed/misc.c: warning: value computed is not used: 182 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol MTD: 120 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol MTD_BLOCK: 173 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol MTD_CFI: 143 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol MTD_CFI_AMDSTD: 146 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol MTD_CFI_INTELEXT: 145 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol MTD_CHAR: 172 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol NET_ETHERNET: 301 => 
+	arch/cris/configs/etrax-100lx_defconfig: warning: override: reassigning to symbol USB: 497 => 
+	arch/cris/kernel/profile.c: warning: no return statement in function returning non-void: 57 => 
+	arch/ia64/configs/generic_defconfig: warning: symbol value 'm' invalid for INET_LRO: 317 => 
+	arch/m68k/configs/multi_defconfig: warning: symbol value 'm' invalid for INET_LRO: 222 => 
+	arch/m68k/configs/sun3_defconfig: warning: symbol value 'm' invalid for INET_LRO: 207 => 
+	arch/mips/configs/ip22_defconfig: warning: symbol value 'm' invalid for RFKILL_INPUT: 611 => 
+	arch/parisc/configs/a500_defconfig: warning: symbol value 'm' invalid for PCCARD_NONSTATIC: 199 => 
+	arch/powerpc/configs/iseries_defconfig: warning: symbol value 'm' invalid for GFS2_FS_LOCKING_DLM: 953 => 
+	arch/powerpc/configs/pmac32_defconfig: warning: symbol value 'm' invalid for PCCARD_NONSTATIC: 332 => 
+	arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for GFS2_FS_LOCKING_DLM: 3021 => 
+	arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for IP_DCCP_CCID3: 683 => 
+	arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for IP_DCCP_TFRC_LIB: 686 => 
+	arch/powerpc/kernel/crash_dump.c: warning: comparison of distinct pointer types lacks a cast: 131 => 
+	arch/powerpc/kvm/book3s_paired_singles.c: warning: the frame size of 2288 bytes is larger than 2048 bytes: 1289 => 
+	arch/powerpc/platforms/52xx/mpc52xx_pci.c: warning: cast to pointer from integer of different size: 295 => 
+	arch/powerpc/platforms/52xx/mpc52xx_pci.c: warning: format '%x' expects type 'unsigned int', but argument 2 has type 'resource_size_t': 277 => 
+	arch/powerpc/platforms/52xx/mpc52xx_pci.c: warning: format '%x' expects type 'unsigned int', but argument 3 has type 'resource_size_t': 277 => 
+	arch/sh/kernel/cpu/sh2/../../entry-common.S: Warning: overflow in branch to __restore_all; converted into longer instruction sequence: 89 => 
+	arch/sh/kernel/cpu/sh2/../../entry-common.S: Warning: overflow in branch to syscall_call; converted into longer instruction sequence: 209 => 
+	arch/sh/kernel/cpu/sh2/../../entry-common.S: Warning: overflow in branch to syscall_exit_work; converted into longer instruction sequence: 364, 361 => 
+	arch/sh/kernel/cpu/sh2/../../entry-common.S: Warning: overflow in branch to syscall_trace_entry; converted into longer instruction sequence: 337, 335 => 
+	arch/sparc/include/asm/uaccess_32.h: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct: 276 => 
+	arch/sparc/include/asm/uaccess_64.h: warning: call to 'copy_from_user_overflow' declared with attribute warning: copy_from_user() buffer size is not provably correct: 232 => 
+	arch/x86/kernel/pci-gart_64.c: warning: 'info.aper_base' may be used uninitialized in this function: 735 => 
+	arch/xtensa/include/asm/pgalloc.h: warning: return makes pointer from integer without a cast: 47 => 
+	crypto/testmgr.c: warning: 'alg_test_crc32c' uses dynamic stack allocation: 1488 => 
+	drivers/acpi/acpi_pad.c: warning: 'num_cpus' may be used uninitialized in this function: 432 => 
+	drivers/acpi/acpica/nsrepair.c: warning: 'new_object' may be used uninitialized in this function: 125 => 
+	drivers/bluetooth/btmrvl_sdio.c: warning: 'fws1' may be used uninitialized in this function: 80 => 
+	drivers/char/isicom.c: warning: unused variable 'card': 875 => 
+	drivers/char/specialix.c: warning: 'specialx_pci_tbl' defined but not used: 2359, 2358 => 2359
+	drivers/dma/timb_dma.c: warning: cast to pointer from integer of different size: 203 => 
+	drivers/gpio/bt8xxgpio.c: warning: ignoring return value of 'gpiochip_remove', declared with attribute warn_unused_result: 247 => 
+	drivers/gpio/gpiolib.c: warning: 'struct gpio' declared inside parameter list: 1299, 1276 => 
+	drivers/gpio/gpiolib.c: warning: its scope is only this definition or declaration, which is probably not what you want: 1276 => 
+	drivers/gpu/drm/drm_edid.c: warning: array subscript is above array bounds: 1174, 954, 1525, 1577 => 1294, 1256, 1080
+	drivers/infiniband/hw/ipath/ipath_driver.c: warning: 'pnum' may be used uninitialized in this function: 1630 => 
+	drivers/input/keyboard/matrix_keypad.c: warning: 'matrix_keypad_resume' defined but not used: 242 => 
+	drivers/input/keyboard/matrix_keypad.c: warning: 'matrix_keypad_suspend' defined but not used: 219 => 
+	drivers/isdn/i4l/isdn_common.c: warning: unused variable 's': 1284 => 
+	drivers/media/dvb/frontends/dib3000mc.c: warning: the frame size of 2192 bytes is larger than 2048 bytes: 853 => 
+	drivers/media/dvb/frontends/dib7000p.c: warning: the frame size of 2272 bytes is larger than 2048 bytes: 1367 => 
+	drivers/media/video/sh_mobile_ceu_camera.c: warning: 'ceu_sub_height' may be used uninitialized in this function: 1517 => 
+	drivers/media/video/sh_mobile_ceu_camera.c: warning: 'ceu_sub_width' may be used uninitialized in this function: 1517 => 
+	drivers/message/i2o/i2o_config.c: warning: cast to pointer from integer of different size: 878, 933 => 
+	drivers/mfd/sh_mobile_sdhi.c: warning: 'sh_mobile_sdhi_remove' defined but not used: 142 => 
+	drivers/mfd/twl4030-irq.c: warning: cast to pointer from integer of different size: 731 => 
+	drivers/mfd/wm8350-regmap.c: warning: #warning MFD_WM8350_CONFIG_MODE_n options from the board driver.: 3178:2 => 
+	drivers/mfd/wm8350-regmap.c: warning: #warning No WM8350 config modes supported - select at least one of the: 3177:2 => 
+	drivers/misc/enclosure.c: warning: ignoring return value of 'ERR_PTR', declared with attribute warn_unused_result: 289 => 
+	drivers/misc/hpilo.c: warning: 'ilo_remove' defined but not used: 720 => 
+	drivers/misc/hpilo.c: warning: cast to pointer from integer of different size: 275 => 
+	drivers/misc/sgi-gru/grufault.c: warning: 'paddr' may be used uninitialized in this function: 265 => 
+	drivers/misc/sgi-gru/grufault.c: warning: 'ps' may be used uninitialized in this function: 266 => 
+	drivers/mtd/chips/cfi_cmdset_0001.c: warning: the frame size of 2080 bytes is larger than 2048 bytes: 1800 => 
+	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 1324 bytes is larger than 1024 bytes: 606 => 
+	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2160 bytes is larger than 2048 bytes: 983 => 
+	drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2368 bytes is larger than 2048 bytes: 658 => 
+	drivers/mtd/maps/gpio-addr-flash.c: warning: cast to pointer from integer of different size: 212, 224 => 
+	drivers/mtd/nand/diskonchip.c: warning: #warning Unknown architecture for DiskOnChip. No default probe locations defined: 56:2, 57:2 => 56:2
+	drivers/net/arcnet/capmode.c: warning: 'arcnet_cap_init' defined but not used: 64, 65 => 64
+	drivers/net/bonding/bond_main.c: warning: 'disable_netpoll' defined but not used: 171 => 
+	drivers/net/fs_enet/mii-fec.c: warning: format '%x' expects type 'unsigned int', but argument 4 has type 'resource_size_t': 131 => 
+	drivers/net/mac8390.c: warning: passing argument 1 of '__builtin_memcpy' makes pointer from integer without a cast: 248 => 
+	drivers/net/mac8390.c: warning: passing argument 1 of 'word_memcpy_tocard' makes pointer from integer without a cast: 253 => 
+	drivers/net/mac8390.c: warning: passing argument 2 of 'word_memcpy_fromcard' makes pointer from integer without a cast: 255 => 
+	drivers/net/pcmcia/ibmtr_cs.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:191): 237 => 
+	drivers/net/pcmcia/nmclan_cs.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:191): 651 => 
+	drivers/net/pcmcia/nmclan_cs.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:193): 651 => 
+	drivers/net/qlcnic/qlcnic_main.c: warning: 'pci_using_dac' may be used uninitialized in this function: 1041 => 
+	drivers/net/s2io.c: warning: 'tcp_len' may be used uninitialized in this function: 7521 => 
+	drivers/net/sh_eth.c: warning: unused variable 'i': 1389 => 
+	drivers/net/wireless/iwlwifi/iwl-tx.c: warning: passing argument 1 of 'ieee80211_stop_tx_ba_cb_irqsafe' from incompatible pointer type: 1356 => 
+	drivers/pci/pcie/aer/aerdrv_core.c: warning: 'e_src.id' may be used uninitialized in this function: 756 => 
+	drivers/pci/pcie/aer/aerdrv_core.c: warning: 'e_src.status' may be used uninitialized in this function: 756 => 
+	drivers/platform/x86/fujitsu-laptop.c: warning: 'pnp_ids' defined but not used: 1245 => 
+	drivers/rtc/rtc-cmos.c: warning: #warning Assuming 128 bytes of RTC+NVRAM address space, not 64 bytes.: 697:2, 693:2 => 693:2
+	drivers/serial/mpc52xx_uart.c: warning: cast to pointer from integer of different size: 1139, 812, 1272 => 
+	drivers/staging/comedi/drivers/serial2002.c: warning: the frame size of 1664 bytes is larger than 1024 bytes: 677 => 
+	drivers/staging/iio/accel/adis16220_core.c: warning: initialization from incompatible pointer type: 437, 484, 460 => 
+	drivers/staging/iio/imu/adis16400_core.c: warning: 'adis16400_self_test' defined but not used: 416 => 
+	drivers/staging/quatech_usb2/quatech_usb2.c: warning: 'qt2_box_flush' defined but not used: 1852 => 
+	drivers/staging/udlfb/udlfb.c: warning: ignoring return value of 'device_create_bin_file', declared with attribute warn_unused_result: 1364 => 
+	drivers/staging/udlfb/udlfb.c: warning: ignoring return value of 'device_create_file', declared with attribute warn_unused_result: 1362 => 
+	drivers/usb/gadget/r8a66597-udc.h: warning: 'data' may be used uninitialized in this function: 139 => 
+	drivers/usb/host/whci/hcd.c: warning: 'whci_hcd_id_table' defined but not used: 359, 358 => 359
+	drivers/video/aty/radeon_pm.c: warning: 'radeon_reinitialize_M10' defined but not used: 1718 => 
+	drivers/video/aty/radeon_pm.c: warning: 'radeon_reinitialize_M9P' defined but not used: 1971 => 
+	drivers/video/fsl-diu-fb.c: warning: format '%08x' expects type 'unsigned int', but argument 5 has type 'resource_size_t': 1457 => 
+	drivers/video/via/via-gpio.c: warning: assignment from incompatible pointer type: 216 => 
+	drivers/xen/events.c: warning: 'gsi_from_irq' defined but not used: 181 => 
+	drivers/xen/events.c: warning: 'mk_pirq_info' defined but not used: 135 => 
+	drivers/xen/events.c: warning: 'vector_from_irq' defined but not used: 191 => 
+	fs/cifs/cifssmb.c: warning: 'pdata' may be used uninitialized in this function: 3082 => 
+	fs/dcache.c: warning: control reaches end of non-void function: 1885, 1870, 1887 => 1899, 1887
+	fs/ecryptfs/messaging.c: warning: 'daemon' may be used uninitialized in this function: 277 => 
+	fs/fat/namei_vfat.c: warning: 'lcase' may be used uninitialized in this function: 590 => 
+	fs/fat/namei_vfat.c: warning: 'ulen' may be used uninitialized in this function: 595 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[10u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[11u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[12u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[13u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[14u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[15u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[16u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[1u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[2u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[3u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[4u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[5u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[6u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[7u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[8u]' may be used uninitialized in this function: 435 => 
+	fs/ncpfs/inode.c: warning: 'data.mounted_vol[9u]' may be used uninitialized in this function: 435 => 
+	fs/omfs/file.c: warning: 'new_block' may be used uninitialized in this function: 225 => 
+	fs/qnx4/namei.c: warning: 'ino' may be used uninitialized in this function: 104 => 
+	fs/quota/quota_tree.c: warning: format '%zd' expects type 'signed size_t', but argument 2 has type 'ssize_t': 376 => 
+	fs/quota/quota_v2.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': 66 => 
+	fs/squashfs/xattr.c: warning: 'squashfs_xattr_handler' declared inline after being called: 37 => 
+	fs/squashfs/xattr.c: warning: previous declaration of 'squashfs_xattr_handler' was here: 37 => 
+	fs/sysfs/dir.c: warning: 'sysfs_pathname' defined but not used: 411, 410 => 411
+	include/config/auto.conf: warning: symbol value '' invalid for CROSS_COMPILE: 165, 4001, 428, 309, 3655, 297 => 149, 3707, 428, 307, 4062
+	include/config/auto.conf: warning: symbol value '' invalid for DEFAULT_SECURITY: 147 => 
+	include/linux/bio.h: warning: "ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE" is not defined: 398:5 => 
+	include/linux/blkdev.h: warning: "ARCH_IMPLEMENTS_FLUSH_DCACHE_PAGE" is not defined: 764:5 => 
+	include/trace/events/timer.h: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'cputime_t': 279 => 
+	include/trace/events/timer.h: warning: format '%lu' expects type 'long unsigned int', but argument 5 has type 'cputime_t': 316 => 
+	kernel/irq/handle.c: warning:   CC      kernel/irq/spurious.o: 432:3 => 
+	kernel/kprobes.c: warning: ¡cleanup_rp_inst¢ defined but not used: 910 => 
+	kernel/stop_machine.c: warning: unused variable 'ksym_buf': 265 => 
+	lib/decompress_bunzip2.c: warning: the frame size of 1824 bytes is larger than 1024 bytes: 511 => 
+	lib/decompress_bunzip2.c: warning: the frame size of 1840 bytes is larger than 1024 bytes: 511 => 
+	lib/decompress_bunzip2.c: warning: the frame size of 1876 bytes is larger than 1024 bytes: 511 => 
+	lib/decompress_bunzip2.c: warning: the frame size of 1916 bytes is larger than 1024 bytes: 511 => 
+	mm/memcontrol.c: warning: 'val' may be used uninitialized in this function: 3119, 2725 => 3192
+	modpost: WARNING: modpost: Found 10 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 11 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 14 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 26 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 28 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 3 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 43 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 45 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 49 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 70 section mismatch(es).: N/A => 
+	modpost: WARNING: modpost: Found 81 section mismatch(es).: N/A => 
+	net/bluetooth/l2cap.c: warning: comparison is always false due to limited range of data type: 4150, 4145, 3826, 3873 => 
+	net/dccp/ccids/ccid2.c: warning: 'veclen' may be used uninitialized in this function: 508 => 
+	net/dccp/ccids/ccid2.c: warning: 'vector' may be used uninitialized in this function: 507 => 
+	net/packet/af_packet.c: warning: ¡vnet_hdr_len¢ may be used uninitialized in this function: 1092 => 
+	net/sctp/socket.c: warning: 'newsock' may be used uninitialized in this function: 4025 => 
+	sound/drivers/serial-u16550.c: warning: 'uart' may be used uninitialized in this function: 905 => 
+	sound/i2c/other/ak4xxx-adda.c: warning: no return statement in function returning non-void: 903 => 
+	sound/oss/pss.c: warning: 'check_region' is deprecated (declared at /scratch/kisskb/src/include/linux/ioport.h:169): 676 => 
+	sound/pci/atiixp.c: warning: 'chip' may be used uninitialized in this function: 1652 => 
+	sound/pci/atiixp_modem.c: warning: 'chip' may be used uninitialized in this function: 1288 => 
+	sound/pci/ice1712/quartet.c: warning: 'get_binary' defined but not used: 211 => 
+	sound/pci/via82xx.c: warning: 'chip' may be used uninitialized in this function: 2498 => 
+	sound/pci/via82xx_modem.c: warning: 'chip' may be used uninitialized in this function: 1168 => 
+	sound/pcmcia/pdaudiocf/pdaudiocf.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:191): 226 => 
+	sound/pcmcia/pdaudiocf/pdaudiocf.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:193): 226 => 
+	sound/pcmcia/vx/vxpocket.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:191): 233 => 
+	sound/pcmcia/vx/vxpocket.c: warning: 'pcmcia_request_exclusive_irq' is deprecated (declared at /scratch/kisskb/src/include/pcmcia/ds.h:193): 233 => 
+	sound/soc/codecs/wm8900.c: warning: 'fll_div.fll_ratio' may be used uninitialized in this function: 749 => 
+	sound/soc/codecs/wm8900.c: warning: 'fll_div.fll_slow_lock_ref' may be used uninitialized in this function: 749 => 
+	sound/soc/codecs/wm8900.c: warning: 'fll_div.fllclk_div' may be used uninitialized in this function: 749 => 
+	sound/soc/codecs/wm8900.c: warning: 'fll_div.k' may be used uninitialized in this function: 749 => 
+	sound/soc/codecs/wm8900.c: warning: 'fll_div.n' may be used uninitialized in this function: 749 => 
+	sound/usb/format.c: warning: 'ret' may be used uninitialized in this function: 355 => 
+	sound/usb/misc/ua101.c: warning: unused variable 'ua': 1172 => 
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
