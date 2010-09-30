@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab0I3Qp1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 12:45:27 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36969 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754295Ab0I3Qp0 (ORCPT
+	id S932243Ab0I3QtI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 12:49:08 -0400
+Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:43521 "EHLO
+	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932227Ab0I3QtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 12:45:26 -0400
-Date: Thu, 30 Sep 2010 09:45:58 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: inode per-cpu last_ino allocator
-Message-Id: <20100930094558.97c9afa2.akpm@linux-foundation.org>
-In-Reply-To: <1285842136.2615.251.camel@edumazet-laptop>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	<1285762729-17928-16-git-send-email-david@fromorbit.com>
-	<20100929215312.5fcb6976.akpm@linux-foundation.org>
-	<1285824982.5211.675.camel@edumazet-laptop>
-	<1285833189.2615.31.camel@edumazet-laptop>
-	<20100930011417.6ca16ed7.akpm@linux-foundation.org>
-	<1285842136.2615.251.camel@edumazet-laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 30 Sep 2010 12:49:07 -0400
+Subject: [PATCH v2] DMI: log system, BIOS, and board information
+To: Andrew Morton <akpm@linux-foundation.org>
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Date: Thu, 30 Sep 2010 10:49:05 -0600
+Message-ID: <20100930164905.13154.33194.stgit@bob.kio>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Sep 2010 12:22:16 +0200 Eric Dumazet <eric.dumazet@gmail.com> wrote:
 
-> Le jeudi 30 septembre 2010 __ 01:14 -0700, Andrew Morton a __crit :
-> 
-> > Perhaps
-> > 
-> > 	WARN_ON_ONCE(preemptible());
-> > 
-> > if we had a developer-only version of WARN_ON_ONCE, which we don't.
-> 
-> Or just use a regular PER_CPU variable, even on !SMP, and get preempt
-> safe implementation.
+Put basic system information in the dmesg log.  There are lots of dmesg
+logs on the web, and it would be useful if they contained this information
+for debugging platform problems.
 
-Good stuff.
+Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+---
 
-> What do you think of following patch, on top of current linux-2.6 tree ?
->
-> ...
->
-> +static noinline unsigned int last_ino_get(void)
-> +{
-> +	unsigned int *p = &get_cpu_var(last_ino);
-> +	unsigned int res = *p;
-> +
-> +#ifdef CONFIG_SMP
-> +	if (unlikely((res & (LAST_INO_BATCH - 1)) == 0)) {
-> +		static atomic_t shared_last_ino;
-> +		int next = atomic_add_return(LAST_INO_BATCH, &shared_last_ino);
-> +
-> +		res = next - LAST_INO_BATCH;
-> +	}
-> +#endif
-> +	*p = ++res;
-> +	put_cpu_var(last_ino);
-> +	return res;
-> +}
+ drivers/firmware/dmi_scan.c |   35 ++++++++++++++++++++++++++++++++++-
+ 1 files changed, 34 insertions(+), 1 deletions(-)
 
-Could eliminate `p' I guess, but that would involve using
-__get_cpu_var() as an lval, which looks vile and might generate worse
-code.
 
-Readers of this code won't know why last_ino_get() was marked noinline.
-It looks wrong, really.
+diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+index b3d22d6..d625e53 100644
+--- a/drivers/firmware/dmi_scan.c
++++ b/drivers/firmware/dmi_scan.c
+@@ -2,6 +2,7 @@
+ #include <linux/string.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
++#include <linux/ctype.h>
+ #include <linux/dmi.h>
+ #include <linux/efi.h>
+ #include <linux/bootmem.h>
+@@ -361,6 +362,36 @@ static void __init dmi_decode(const struct dmi_header *dm, void *dummy)
+ 	}
+ }
+ 
++static const char * __init dmi_printable_system_info(int field)
++{
++	const char *info, *p;
++
++	info = dmi_get_system_info(field);
++	if (!info)
++		return NULL;
++
++	for (p = info; *p; p++)
++		if (!isprint(*p))
++			return "<...>";
++
++	return info;
++}
++
++static void __init dmi_dump_ids(void)
++{
++	const char *board;
++
++	printk(KERN_DEBUG "DMI: system: %s %s",
++	       dmi_printable_system_info(DMI_SYS_VENDOR),
++	       dmi_printable_system_info(DMI_PRODUCT_NAME));
++	board = dmi_printable_system_info(DMI_BOARD_NAME);
++	if (board)
++		printk(KERN_CONT " (%s board)", board);
++	printk(KERN_CONT ", BIOS: %s %s\n",
++	       dmi_printable_system_info(DMI_BIOS_VERSION),
++	       dmi_printable_system_info(DMI_BIOS_DATE));
++}
++
+ static int __init dmi_present(const char __iomem *p)
+ {
+ 	u8 buf[15];
+@@ -381,8 +412,10 @@ static int __init dmi_present(const char __iomem *p)
+ 			       buf[14] >> 4, buf[14] & 0xF);
+ 		else
+ 			printk(KERN_INFO "DMI present.\n");
+-		if (dmi_walk_early(dmi_decode) == 0)
++		if (dmi_walk_early(dmi_decode) == 0) {
++			dmi_dump_ids();
+ 			return 0;
++		}
+ 	}
+ 	return 1;
+ }
+
