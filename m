@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab0I3LjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 07:39:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47100 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753620Ab0I3LjD convert rfc822-to-8bit (ORCPT
+	id S1754548Ab0I3LmN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 07:42:13 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34369 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753620Ab0I3LmM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 07:39:03 -0400
-Subject: Re: [PATCH 1/5] perf: Wrap perf_lock_task_context using
- __cond_lock()
+	Thu, 30 Sep 2010 07:42:12 -0400
+Subject: Re: kgdb segv in the latest tip due to perf ctx changes
 From: Peter Zijlstra <peterz@infradead.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <1285583997-1262-2-git-send-email-namhyung@gmail.com>
-References: <1285583997-1262-1-git-send-email-namhyung@gmail.com>
-	 <1285583997-1262-2-git-send-email-namhyung@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Jiri Olsa <jolsa@redhat.com>,
+        kgdb-bugreport@lists.sourceforge.net, linux-kernel@vger.kernel.org
+In-Reply-To: <20100925135532.GA5349@nowhere>
+References: <20100924180417.GC1818@jolsa.brq.redhat.com>
+	 <4C9D0A82.5020406@windriver.com> <1285374560.2275.1054.camel@laptop>
+	 <20100925135532.GA5349@nowhere>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 30 Sep 2010 13:38:49 +0200
-Message-ID: <1285846729.2144.16.camel@laptop>
+Date: Thu, 30 Sep 2010 13:42:01 +0200
+Message-ID: <1285846921.2144.19.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 19:39 +0900, Namhyung Kim wrote:
-> perf_lock_task_context() conditionally grabs ctx->lock in case of
-> returning non-NULL. Rename and wrap it using __cond_lock to make
-> sparse happy.
+On Sat, 2010-09-25 at 15:55 +0200, Frederic Weisbecker wrote:
+
+> > Frederic, anything we can do about that?
 > 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  kernel/perf_event.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
 > 
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index db5b560..c058a42 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -151,7 +151,7 @@ static u64 primary_event_id(struct perf_event *event)
->   * the context could get moved to another task.
->   */
->  static struct perf_event_context *
-> -perf_lock_task_context(struct task_struct *task, unsigned long *flags)
-> +__perf_lock_task_context(struct task_struct *task, unsigned long *flags)
+> 
+> Jason's patch is partially good, it just lacks one place to handle.
+> Jiri, can you test that?
+> 
+> diff --git a/kernel/hw_breakpoint.c b/kernel/hw_breakpoint.c
+> index d71a987..d727c58 100644
+> --- a/kernel/hw_breakpoint.c
+> +++ b/kernel/hw_breakpoint.c
+> @@ -134,7 +134,7 @@ fetch_bp_busy_slots(struct bp_busy_slots *slots, struct perf_event *bp,
+>  		    enum bp_type_idx type)
 >  {
->  	struct perf_event_context *ctx;
+>  	int cpu = bp->cpu;
+> -	struct task_struct *tsk = bp->ctx->task;
+> +	struct task_struct *tsk = bp->ctx ? bp->ctx->task : NULL;
 >  
-> @@ -184,6 +184,14 @@ perf_lock_task_context(struct task_struct *task, unsigned long *flags)
->  	return ctx;
->  }
+>  	if (cpu >= 0) {
+>  		slots->pinned = per_cpu(nr_cpu_bp_pinned[type], cpu);
+> @@ -213,7 +213,7 @@ toggle_bp_slot(struct perf_event *bp, bool enable, enum bp_type_idx type,
+>  	       int weight)
+>  {
+>  	int cpu = bp->cpu;
+> -	struct task_struct *tsk = bp->ctx->task;
+> +	struct task_struct *tsk = bp->ctx ? bp->ctx->task : NULL;
 >  
-> +static inline struct perf_event_context *
-> +perf_lock_task_context(struct task_struct *task, unsigned long *flags)
-> +{
-> +	struct perf_event_context *ctx;
-> +	__cond_lock(&ctx->lock, ctx = __perf_lock_task_context(task, flags));
-> +	return ctx;
-> +}
-> +
->  /*
->   * Get the context for a task and increment its pin_count so it
->   * can't get swapped to another task.  This also increments its
+>  	/* Pinned counter cpu profiling */
+>  	if (!tsk) {
 
-This is a rather ugly annotation... why can't sparse use something like
-the regular __acquire() function annotation but instead all it
-__cond_acquire() ?
+That's identical to writing *tsk = NULL;
 
+You seem to be missing the detail that perf_event->ctx will _always_ be
+NULL during pmu::event_init()
+
+
+> > That'll probably screw over some accounting, not sure what tsk is used
+> > for there.
+> 
+> 
+> Nope it's ok. tsk is used to know if we are dealing with
+> a task/cpu bound breakpoint or a cpu wide bound one.
+> 
+> If tsk ends up being NULL, it will think it's a cpu wide bound
+> breakpoint, which it is in the case of kgdb breakpoints.
+
+See above, there's currently no way to know that in pmu::event_init().
 
