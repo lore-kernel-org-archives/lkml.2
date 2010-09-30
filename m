@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0I3X3M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:29:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:59571 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab0I3X3I convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:29:08 -0400
+	id S1756063Ab0I3XjZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:39:25 -0400
+Received: from smtp.kponet.fi ([213.145.209.38]:34480 "EHLO smtp.kponet.fi"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753750Ab0I3XjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:39:23 -0400
+Date: Fri, 1 Oct 2010 02:39:21 +0300
+From: Sami Farin <hvtaifwkbgefbaei@gmail.com>
+To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
+        Sami Farin <hvtaifwkbgefbaei@gmail.com>, linux-kernel@vger.kernel.org,
+        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: [E1000-devel] Something wrong with tx/rx/sg/gso with dhclient
+ etc (Was: Linux 2.6.35.6/e1000e does not receive replies  from DHCP server,
+ 2.6.33 works)
+Message-ID: <20100930233921.vc4yfsa5qcgtquje@m.safari.iki.fi>
+Mail-Followup-To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
+	Sami Farin <hvtaifwkbgefbaei@gmail.com>,
+	linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+	netdev@vger.kernel.org
+References: <20100927131935.d5f2ghpfaufiq6yx@m.safari.iki.fi>
+ <20100927160731.ehcljyewa5b5wrbm@m.safari.iki.fi>
+ <EA929A9653AAE14F841771FB1DE5A13660222E867B@rrsmsx501.amr.corp.intel.com>
+ <20100930094417.r6jgrljaer2opekv@m.safari.iki.fi>
 MIME-Version: 1.0
-X-Originating-IP: [98.248.182.159]
-In-Reply-To: <201009301337.55511.arnd@arndb.de>
-References: <AANLkTik8auzhRB00fRWxbmZKOKg+T87ZZa07ydDAGp=f@mail.gmail.com>
-	<20100930100405.GB5265@cr0.nay.redhat.com>
-	<201009301337.55511.arnd@arndb.de>
-Date: Thu, 30 Sep 2010 16:29:06 -0700
-Message-ID: <AANLkTimHsih_s+ETtq7YHSj7zvAx-DjipOHXvZfWOdXR@mail.gmail.com>
-Subject: Re: interpreting semantics of ipc system call
-From: Andreas Saebjoernsen <andreas@digitalplaywright.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100930094417.r6jgrljaer2opekv@m.safari.iki.fi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you! I am now implementing support for this system call. Looking at the
-data structures that the 'void*' can represent it will probably take a
-some time,
-but the semantics is clear.
+On Thu, Sep 30, 2010 at 12:44:17 +0300, Sami Farin wrote:
+> On Wed, Sep 29, 2010 at 17:40:08 -0600, Tantilov, Emil S wrote:
+> > Sami Farin wrote:
+> > > False alarm, 2.6.35.6+latest git e1000e does not work any better.
+> > > I was just lucky.
+> > 
+> > Is your `latest git` from Linus or net-next tree? 
+> 
+> Linus.
+> 
+> >All of our latest patches go into net-next, so if you haven't already - give it a try and see if it resolves your issue.
+> 
+> Maybe later =)
 
-kind regards,
-Andreas
+I now tried net-next 6d0722a2cec2c23db3b0855ff8bb433175a16b44, it works fine,
+with ethtool -K tx/rx on and off.
+I used the same .config as with 2.6.35.6 (make oldconfig).
+I retested 2.6.33.7, it's still okay.
 
-On Thu, Sep 30, 2010 at 4:37 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 30 September 2010, Américo Wang wrote:
->> On Wed, Sep 29, 2010 at 03:03:11PM -0700, Andreas Saebjoernsen wrote:
->> >We are developing a simulator that can simulate any specimen x86 linux program.
->> >Our simulator has a simulated memory, unlike the concrete memory state of
->> >tools like Valgrind, so that we can do concrete symbolic execution. Instead of
->> >reimplementing the system calls we marshal the system calls called by
->> >the specimen.
->> >
->> >I am currently working on marshaling calls to the ipc system call (system
->> >call 117) which has the following signature
->> >
->> >int ipc(unsigned int call, int first, int second, int third, void
->> >*ptr, long fifth)
->> >
->> >I have a problem interpreting what the size is of the data structure
->> >pointed to by
->> >the 'void*', and I have been unable to locate good documentation or code on the
->> >semantics of this system call.
->>
->>
->> Take a look at ipc/syscall.c, that pointer will be interpreted to different
->> data structures when you pass different arguments to 'call'.
->
-> Right. Note that you can ignore the version field for all practical
-> purposes and consider it constant.
->
->        Arnd
->
+And unfortunately 2.6.35.6 did not work very well after rebooting,
+I had to waste a lot of time playing with -K tx off rx off, -K tx on rx on, etc.
+Before it started working, eth0 had interrupts occurring only on CPU0.
+CPU1 started getting some usage only after dhclient started working..
+Probably irrelevant, but I am running out of ideas.
+I have tried e1000e param IntMode 0, 1, 2, no luck.
+
+-- 
+Do what you love because life is too short for anything else.
+
