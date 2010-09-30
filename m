@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754127Ab0I3FhE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 01:37:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60339 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab0I3FhC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 01:37:02 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 30 Sep 2010 14:31:47 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [RFC][PATCH 0/4] memcg: use ID instead of pointer in
- page_cgroup , retry v2.
-Message-Id: <20100930143147.82143840.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100927184821.f4bf2b2c.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100924181302.7d764e0d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100927184821.f4bf2b2c.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1754158Ab0I3Fp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 01:45:29 -0400
+Received: from sh.osrg.net ([192.16.179.4]:56885 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754085Ab0I3Fp1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 01:45:27 -0400
+Date: Thu, 30 Sep 2010 14:45:19 +0900
+To: toralf.foerster@gmx.de
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: dma-mapping commit breaks UML
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <201009291629.39077.toralf.foerster@gmx.de>
+References: <201009291155.30873.toralf.foerster@gmx.de>
+	<20100929221620K.fujita.tomonori@lab.ntt.co.jp>
+	<201009291629.39077.toralf.foerster@gmx.de>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100930144059N.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 30 Sep 2010 14:45:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Sep 2010 18:48:21 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Wed, 29 Sep 2010 16:29:38 +0200
+Toralf **UNKNOWN CHARSET** <toralf.foerster@gmx.de> wrote:
 
-> On Fri, 24 Sep 2010 18:13:02 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > 
-> > This is a reviced series of use ID.
-> > Restart from RFC.
-> > 
-> 
-> Then, I changed my mind..This is a new set. No new special lookups.
-> But you may feel somethig strange. I don't want to merge these patches
-> at once. Just think this set as a dump of my stack. Any comments are welcome.
-> 
+> but catched another compile error - how can I now automatically
+> git-bisect for that wrong commit w/o heavy scripting ? - Or simply
+> asking who to blame wrt this compile error ?
 
-At LinuxCon Japan, I talked with Nishimura and just sending only patch 1/4
-will be best (go step-by-step). And I know Greg Thelen now rewrite his
-dirty page accounting for memcg patch onto the latest mmotm. I think current
-priority of it is higher than this. So, I'll wait for a while and post only
-patch 1/4.
+Fortunately, looks like we can easily figure out the root cause of
+this (commit d6d1b650ae6acce73d55dd0246de22180303ae73), the last
+commit to arch/um/drivers/hostaudio_kern.c
 
-Thanks,
--Kame
+The following patch works?
 
+diff --git a/arch/um/drivers/hostaudio_kern.c b/arch/um/drivers/hostaudio_kern.c
+index 0c46e39..63c740a 100644
+--- a/arch/um/drivers/hostaudio_kern.c
++++ b/arch/um/drivers/hostaudio_kern.c
+@@ -40,6 +40,11 @@ static char *mixer = HOSTAUDIO_DEV_MIXER;
+ "    This is used to specify the host mixer device to the hostaudio driver.\n"\
+ "    The default is \"" HOSTAUDIO_DEV_MIXER "\".\n\n"
+ 
++module_param(dsp, charp, 0644);
++MODULE_PARM_DESC(dsp, DSP_HELP);
++module_param(mixer, charp, 0644);
++MODULE_PARM_DESC(mixer, MIXER_HELP);
++
+ #ifndef MODULE
+ static int set_dsp(char *name, int *add)
+ {
+@@ -56,15 +61,6 @@ static int set_mixer(char *name, int *add)
+ }
+ 
+ __uml_setup("mixer=", set_mixer, "mixer=<mixer device>\n" MIXER_HELP);
+-
+-#else /*MODULE*/
+-
+-module_param(dsp, charp, 0644);
+-MODULE_PARM_DESC(dsp, DSP_HELP);
+-
+-module_param(mixer, charp, 0644);
+-MODULE_PARM_DESC(mixer, MIXER_HELP);
+-
+ #endif
+ 
+ /* /dev/dsp file operations */
