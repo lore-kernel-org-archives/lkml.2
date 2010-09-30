@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753574Ab0I3LLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 07:11:12 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:33928 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751754Ab0I3LLL (ORCPT
+	id S1753244Ab0I3LRh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 07:17:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36332 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751508Ab0I3LRg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 07:11:11 -0400
-Date: Thu, 30 Sep 2010 12:35:37 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Marc - A. Dahlhaus" <mad@wol.de>
-Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, isdn@linux-pingi.de
-Subject: Re: [PATCH] Fix capi devicenames
-Message-ID: <20100930123537.165375de@lxorguk.ukuu.org.uk>
-In-Reply-To: <1285843077.748.32.camel@marc>
-References: <4CA391B3.1030806@wol.de>
-	<20100930103010.1a6a7785@lxorguk.ukuu.org.uk>
-	<1285843077.748.32.camel@marc>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Thu, 30 Sep 2010 07:17:36 -0400
+Subject: Re: [PATCH] si time accounting accounts bh_disable'd time to si
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>
+In-Reply-To: <1285619753-10892-1-git-send-email-venki@google.com>
+References: <1285003599.2275.756.camel@laptop>
+	 <1285619753-10892-1-git-send-email-venki@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 30 Sep 2010 13:17:01 +0200
+Message-ID: <1285845421.2144.12.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The Documentation doesn't even represent what is in the code right now.
-> kernelcapi.ko creates /dev/capi as the capi control device
-> and /dev/capi[0-9]+ for the applications. Documentation states the
-> Devices are /dev/capi20 and /dev/capi20.[0-9]+ for applications.
+On Mon, 2010-09-27 at 13:35 -0700, Venkatesh Pallipadi wrote:
+> >> >> > You still do have the problem with local_bh_disable() though, since you
+> >> >> > cannot distinguish between having bh disabled and processing softirq.
+> >> >> >
+> >> >> > So a hardirq that hits while you have bh disabled will inflate your
+> >> >> > softirq time.
+> 
+> >> >> Hmm, that bug is valid for CONFIG_VIRT_CPU_ACCOUNTING=y as well.
+> >> >
+> >> > And nobody ever noticed?
+> >> >
+> >> Yes. I inherited the API from VIRT_CPU_ACCOUNTING along with this
+> >> local_bh_disable bug. Agree that we need one extra bit to handle this
+> >> case. I will take a stab at fixing this along with refresh of this
+> >> patchset if no one else has beaten me to it until then.
+> >
+> >Make sure to only fix the softirq processing on the hardirq tail, not
+> > the ksoftirqd one :-)
+> 
+> softirq processing from hardirq tail and ksoftirqd are currently
+> handled in the same way and I didn't see any issues changing both of
+> them. Am I missing something? 
 
-Ok that much needs sorting out.
-
-> Because of this udev removed the possibility to change devicenodes to new names without
-> keeping the kernels suggested devicenode name. I hope i got this right.
-
-Not my problem. Udev can do what it likes
-
-> So IMO the documentation is wrong. And also the kernelcapi module is
-> wrong about that node it creates.
-
-The problem is that the current default naming is ABI. The fact someone
-screwed it up years ago and never fixed it merely makes it worse. At the
-very least we need to sort out what the naming should be and support
-*both* sets of names for a while. That would I think be an acceptable
-path.
-
-> I just want that it works with the latest upstream sources out of the
-> box and this isn't the case right now.
-
-That is fine, but I also want it to work on whatever random setups people
-have had for the past ten years and on other distros which may be using
-the kernel default names.
-
-If we really do have a mess of that scale here then we need to follow the
-proper sequence of things for obsoleting an interface, and that is
-
-- Document it
-- Add the new one
-- Wait a long time
-- Remove the old one
-
-Alan
+Well, ksoftirq is a task and its runtime should be accounted to that
+task, not softirq.. otherwise softirq and task time get all funny, makes
+sense?
