@@ -1,102 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755688Ab0I3Mok (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 08:44:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47882 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751982Ab0I3Moi (ORCPT
+	id S1755840Ab0I3Mpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 08:45:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:60490 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab0I3Mpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 08:44:38 -0400
+	Thu, 30 Sep 2010 08:45:31 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=xQ7iT9MXM92hY6Z6cOaQioiPzcmrula7JREUczKjCMvPYBrhfLie5bnpire5FnA2sc
-         S4lZbvYtFnIo0+VYfUAbTV5rFPNZ1eYm47udi1yVzhmiy/wlcoR7XKVgYALJHCFyAhyX
-         ogujbyCfZbIN/uhwTINEJoZkXIcqROvAdRLxM=
-Subject: Re: Packet time delays on multi-core systems
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-In-Reply-To: <20100930122321.GA1575@beaver.vrungel.ru>
-References: <20100929191851.GC86786@beaver.vrungel.ru>
-	 <1285796721.5211.156.camel@edumazet-laptop>
-	 <20100930062419.GD86786@beaver.vrungel.ru>
-	 <1285828432.5211.812.camel@edumazet-laptop>
-	 <20100930122321.GA1575@beaver.vrungel.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 14:44:29 +0200
-Message-ID: <1285850669.2615.426.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tE3g6r6N4a80mAQRzF6g4s1w0KS08IQlc+Z9F16J+eXLxRJQXKmzzvyq4S9uwCtfeY
+         sT6YvjUgISWPZkjLnqbvsCBmxVR14nfRp7ahzqPGVPi/8hn0ld16fugw1wPhadOEk1RD
+         v6uSUUdNaJ3jtzZKYe1g3EOFk3It7Q0WvYVXc=
+Date: Thu, 30 Sep 2010 14:41:56 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 5/6] x86, amd: Use compute unit information to determine
+ thread siblings
+Message-ID: <20100930124156.GF20545@loge.amd.com>
+References: <20100930121839.GA20545@loge.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100930121839.GA20545@loge.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 30 septembre 2010 à 16:23 +0400, Alexey Vlasov a écrit :
-> On Thu, Sep 30, 2010 at 08:33:52AM +0200, Eric Dumazet wrote:
-> > Le jeudi 30 septembre 2010 ?? 10:24 +0400, Alexey Vlasov a ??crit :
-> > > Here I found some dude with the same problem:
-> > > http://lkml.org/lkml/2010/7/9/340
-> > > 
-> > 
-> > In your opinion its the same problem.
-> > 
-> > But the description you gave is completely different.
-> > 
-> > You have time skew only when activating a particular iptables rule.
->  
-> Well I put interrups from NIC, namely tx/rx query, to different
-> processors and got normal pings by adding LOG rule.
-> 
-> I also found that overruns is constantly growing, I don't know if these are connected.
-> RX packets:2831439546 errors:0 dropped:134726 overruns:947671733 frame:0
-> TX packets:2880849825 errors:0 dropped:0 overruns:0 carrier:0
-> 
-> Rather strange that only one processor was involved, even in top was
-> clear that ksoftirqd eats the first processor up to 100%. 
-> 
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-OK, because only CPU0 gets interrupts of all queues.
+This information is vital for different load balancing policies.
 
-> Here goes the typical distribution of interrups on new servers:
->            CPU0    CPU1    CPU2    CPU3 ... CPU23
-> 752:         11       0       0       0 ...     0 PCI-MSI-edge eth0
-> 753: 2799366721       0       0       0 ...     0 PCI-MSI-edge eth0-rx3
-> 754: 2821840553       0       0       0 ...     0 PCI-MSI-edge eth0-rx2
-> 755: 2786117044       0       0       0 ...     0 PCI-MSI-edge eth0-rx1
-> 756: 2896099336       0       0       0 ...     0 PCI-MSI-edge eth0-rx0
-> 757: 1808404680       0       0       0 ...     0 PCI-MSI-edge eth0-tx3
-> 758: 1797855130       0       0       0 ...     0 PCI-MSI-edge eth0-tx2
-> 759: 1807222032       0       0       0 ...     0 PCI-MSI-edge eth0-tx1
-> 760: 1820309360       0       0       0 ...     0 PCI-MSI-edge eth0-tx0
-> 
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/smpboot.c |   28 ++++++++++++++++++++--------
+ 1 files changed, 20 insertions(+), 8 deletions(-)
 
-echo 01 >/proc/irq/*/eth0-rx0/../smp_affinity
-echo 02 >/proc/irq/*/eth0-rx1/../smp_affinity
-echo 04 >/proc/irq/*/eth0-rx2/../smp_affinity
-echo 08 >/proc/irq/*/eth0-rx3/../smp_affinity
-
-
-cat /proc/irq/*/eth0-rx0/../smp_affinity
-cat /proc/irq/*/eth0-rx1/../smp_affinity
-cat /proc/irq/*/eth0-rx2/../smp_affinity
-cat /proc/irq/*/eth0-rx3/../smp_affinity
-
-
-
-> On the old ones:
->            CPU0       CPU1       CPU2  ...      CPU8
-> 502:  522320256  522384039  522327386  ... 522380267 PCI-MSI-edge eth0
-> 
-
-What network driver is it (newbox), was it (old box) ?
-
-If you switch to 2.6.35, you can use RPS to dispatch packets to several
-cpu, in the case interrupt affinity could not be changed (all interrupts
-still handled by CPU0)
-
-
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index d3484f1..2ced73b 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -396,6 +396,19 @@ void __cpuinit smp_store_cpu_info(int id)
+ 		identify_secondary_cpu(c);
+ }
+ 
++static void __cpuinit link_thread_siblings(int cpu1, int cpu2)
++{
++	struct cpuinfo_x86 *c1 = &cpu_data(cpu1);
++	struct cpuinfo_x86 *c2 = &cpu_data(cpu2);
++
++	cpumask_set_cpu(cpu1, cpu_sibling_mask(cpu2));
++	cpumask_set_cpu(cpu2, cpu_sibling_mask(cpu1));
++	cpumask_set_cpu(cpu1, cpu_core_mask(cpu2));
++	cpumask_set_cpu(cpu2, cpu_core_mask(cpu1));
++	cpumask_set_cpu(cpu1, c2->llc_shared_map);
++	cpumask_set_cpu(cpu2, c1->llc_shared_map);
++}
++
+ 
+ void __cpuinit set_cpu_sibling_map(int cpu)
+ {
+@@ -408,14 +421,13 @@ void __cpuinit set_cpu_sibling_map(int cpu)
+ 		for_each_cpu(i, cpu_sibling_setup_mask) {
+ 			struct cpuinfo_x86 *o = &cpu_data(i);
+ 
+-			if (c->phys_proc_id == o->phys_proc_id &&
+-			    c->cpu_core_id == o->cpu_core_id) {
+-				cpumask_set_cpu(i, cpu_sibling_mask(cpu));
+-				cpumask_set_cpu(cpu, cpu_sibling_mask(i));
+-				cpumask_set_cpu(i, cpu_core_mask(cpu));
+-				cpumask_set_cpu(cpu, cpu_core_mask(i));
+-				cpumask_set_cpu(i, c->llc_shared_map);
+-				cpumask_set_cpu(cpu, o->llc_shared_map);
++			if (cpu_has(c, X86_FEATURE_TOPOEXT)) {
++				if (c->phys_proc_id == o->phys_proc_id &&
++				    c->compute_unit_id == o->compute_unit_id)
++					link_thread_siblings(cpu, i);
++			} else if (c->phys_proc_id == o->phys_proc_id &&
++				   c->cpu_core_id == o->cpu_core_id) {
++				link_thread_siblings(cpu, i);
+ 			}
+ 		}
+ 	} else {
+-- 
+1.6.4.4
 
