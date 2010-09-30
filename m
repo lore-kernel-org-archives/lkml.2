@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab0I3XSX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:18:23 -0400
-Received: from www.tglx.de ([62.245.132.106]:53068 "EHLO www.tglx.de"
+	id S1756947Ab0I3XSh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:18:37 -0400
+Received: from www.tglx.de ([62.245.132.106]:43547 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756830Ab0I3XSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:18:20 -0400
-Message-Id: <20100930221742.416816916@linutronix.de>
+	id S1756683Ab0I3XSe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:18:34 -0400
+Message-Id: <20100930221742.717242572@linutronix.de>
 User-Agent: quilt/0.48-1
-Date: Thu, 30 Sep 2010 23:17:56 -0000
+Date: Thu, 30 Sep 2010 23:18:14 -0000
 From: Thomas Gleixner <tglx@linutronix.de>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
@@ -22,253 +22,74 @@ Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
         Yinghai Lu <yinghai@kernel.org>,
         Grant Likely <grant.likely@secretlab.ca>,
         "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [patch 40/47] genirq: Sanitize dynamic irq handling
+Subject: [patch 43/47] x86: xen: Sanitise sparse_irq handling
 References: <20100930221351.682772535@linutronix.de>
-Content-Disposition: inline;
-	filename=generiq-sanitize-dynamic-irq-handling.patch
+Content-Disposition: inline; filename=xen-sanitise-sparse.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the cleanup functions of the dynamic allocator. No need to have
-separate implementations.
+There seems to be more cleanups possible, but that's left to the xen
+experts :)
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/irq.h    |   12 +++--
- kernel/irq/chip.c      |  104 -------------------------------------------------
- kernel/irq/internals.h |    1 
- kernel/irq/irqdesc.c   |   37 +++++++++++------
- 4 files changed, 33 insertions(+), 121 deletions(-)
+ drivers/xen/events.c |   23 +++++++++++------------
+ 1 file changed, 11 insertions(+), 12 deletions(-)
 
-Index: linux-2.6-tip/include/linux/irq.h
+Index: linux-2.6-tip/drivers/xen/events.c
 ===================================================================
---- linux-2.6-tip.orig/include/linux/irq.h
-+++ linux-2.6-tip/include/linux/irq.h
-@@ -497,11 +497,15 @@ static inline int irq_has_action(unsigne
- 	return desc->action != NULL;
- }
+--- linux-2.6-tip.orig/drivers/xen/events.c
++++ linux-2.6-tip/drivers/xen/events.c
+@@ -338,30 +338,29 @@ static void unmask_evtchn(int port)
  
--/* Dynamic irq helper functions */
--extern void dynamic_irq_init(unsigned int irq);
--void dynamic_irq_init_keep_chip_data(unsigned int irq);
-+/*
-+ * Dynamic irq helper functions. Obsolete. Use irq_alloc_desc* and
-+ * irq_free_desc instead.
-+ */
- extern void dynamic_irq_cleanup(unsigned int irq);
--void dynamic_irq_cleanup_keep_chip_data(unsigned int irq);
-+static inline void dynamic_irq_init(unsigned int irq)
-+{
-+	dynamic_irq_cleanup(irq);
-+}
- 
- /* Set/get chip/data for an IRQ: */
- extern int set_irq_chip(unsigned int irq, struct irq_chip *chip);
-Index: linux-2.6-tip/kernel/irq/chip.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/chip.c
-+++ linux-2.6-tip/kernel/irq/chip.c
-@@ -18,110 +18,6 @@
- 
- #include "internals.h"
- 
--static void dynamic_irq_init_x(unsigned int irq, bool keep_chip_data)
--{
+ static int find_unbound_irq(void)
+ {
+-	int irq;
 -	struct irq_desc *desc;
--	unsigned long flags;
--
--	desc = irq_to_desc(irq);
--	if (!desc) {
--		WARN(1, KERN_ERR "Trying to initialize invalid IRQ%d\n", irq);
--		return;
--	}
--
--	/* Ensure we don't have left over values from a previous use of this irq */
--	raw_spin_lock_irqsave(&desc->lock, flags);
--	desc->status = IRQ_DEFAULT_INIT_FLAGS;
--	desc->chip = &no_irq_chip;
--	desc->irq_data.chip = &no_irq_chip;
--	desc->handle_irq = handle_bad_irq;
--	desc->depth = 1;
--	desc->irq_data.msi_desc = NULL;
--	desc->irq_data.handler_data = NULL;
--	if (!keep_chip_data)
--		desc->irq_data.chip_data = NULL;
--	desc->action = NULL;
--	desc->irq_count = 0;
--	desc->irqs_unhandled = 0;
--#ifdef CONFIG_SMP
--	cpumask_setall(desc->affinity);
--#ifdef CONFIG_GENERIC_PENDING_IRQ
--	cpumask_clear(desc->pending_mask);
--#endif
--#endif
--	raw_spin_unlock_irqrestore(&desc->lock, flags);
--}
--
--/**
-- *	dynamic_irq_init - initialize a dynamically allocated irq
-- *	@irq:	irq number to initialize
-- */
--void dynamic_irq_init(unsigned int irq)
--{
--	dynamic_irq_init_x(irq, false);
--}
--
--/**
-- *	dynamic_irq_init_keep_chip_data - initialize a dynamically allocated irq
-- *	@irq:	irq number to initialize
-- *
-- *	does not set irq_to_desc(irq)->chip_data to NULL
-- */
--void dynamic_irq_init_keep_chip_data(unsigned int irq)
--{
--	dynamic_irq_init_x(irq, true);
--}
--
--static void dynamic_irq_cleanup_x(unsigned int irq, bool keep_chip_data)
--{
--	struct irq_desc *desc = irq_to_desc(irq);
--	unsigned long flags;
--
--	if (!desc) {
--		WARN(1, KERN_ERR "Trying to cleanup invalid IRQ%d\n", irq);
--		return;
--	}
--
--	raw_spin_lock_irqsave(&desc->lock, flags);
--	if (desc->action) {
--		raw_spin_unlock_irqrestore(&desc->lock, flags);
--		WARN(1, KERN_ERR "Destroying IRQ%d without calling free_irq\n",
--			irq);
--		return;
--	}
--	desc->irq_data.msi_desc = NULL;
--	desc->irq_data.handler_data = NULL;
--	if (!keep_chip_data)
--		desc->irq_data.chip_data = NULL;
--	desc->handle_irq = handle_bad_irq;
--	desc->chip = &no_irq_chip;
--	desc->irq_data.chip = &no_irq_chip;
--	desc->name = NULL;
--	clear_kstat_irqs(desc);
--	raw_spin_unlock_irqrestore(&desc->lock, flags);
--}
--
--/**
-- *	dynamic_irq_cleanup - cleanup a dynamically allocated irq
-- *	@irq:	irq number to initialize
-- */
--void dynamic_irq_cleanup(unsigned int irq)
--{
--	dynamic_irq_cleanup_x(irq, false);
--}
--
--/**
-- *	dynamic_irq_cleanup_keep_chip_data - cleanup a dynamically allocated irq
-- *	@irq:	irq number to initialize
-- *
-- *	does not set irq_to_desc(irq)->chip_data to NULL
-- */
--void dynamic_irq_cleanup_keep_chip_data(unsigned int irq)
--{
--	dynamic_irq_cleanup_x(irq, true);
--}
--
--
- /**
-  *	set_irq_chip - set the irq chip for an irq
-  *	@irq:	irq number
-Index: linux-2.6-tip/kernel/irq/internals.h
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/internals.h
-+++ linux-2.6-tip/kernel/irq/internals.h
-@@ -17,7 +17,6 @@ extern void __enable_irq(struct irq_desc
++	struct irq_data *data;
++	int irq, res;
  
- extern struct lock_class_key irq_desc_lock_class;
- extern void init_kstat_irqs(struct irq_desc *desc, int node, int nr);
--extern void clear_kstat_irqs(struct irq_desc *desc);
- extern raw_spinlock_t sparse_irq_lock;
+ 	for (irq = 0; irq < nr_irqs; irq++) {
+-		desc = irq_to_desc(irq);
++		data = irq_get_irq_data(irq);
+ 		/* only 0->15 have init'd desc; handle irq > 16 */
+-		if (desc == NULL)
++		if (!data)
+ 			break;
+-		if (desc->chip == &no_irq_chip)
++		if (data->chip == &no_irq_chip)
+ 			break;
+-		if (desc->chip != &xen_dynamic_chip)
++		if (data->chip != &xen_dynamic_chip)
+ 			continue;
+ 		if (irq_info[irq].type == IRQT_UNBOUND)
+-			break;
++			return irq;
+ 	}
  
- #ifdef CONFIG_SPARSE_IRQ
-Index: linux-2.6-tip/kernel/irq/irqdesc.c
-===================================================================
---- linux-2.6-tip.orig/kernel/irq/irqdesc.c
-+++ linux-2.6-tip/kernel/irq/irqdesc.c
-@@ -54,10 +54,13 @@ static void desc_smp_init(struct irq_des
- 	desc->node = node;
- 	desc->irq_data.affinity = &desc->affinity;
- 	cpumask_copy(desc->affinity, irq_default_affinity);
-+#ifdef CONFIG_GENERIC_PENDING_IRQ
-+	cpumask_clear(desc->pending_mask);
-+#endif
+ 	if (irq == nr_irqs)
+ 		panic("No available IRQ to bind to: increase nr_irqs!\n");
+ 
+-	desc = irq_to_desc_alloc_node(irq, 0);
+-	if (WARN_ON(desc == NULL))
+-		return -1;
++	res = irq_alloc_desc_at(irq, 0);
+ 
+-	dynamic_irq_init_keep_chip_data(irq);
++	if (WARN_ON(res != irq))
++		return -1;
+ 
+ 	return irq;
  }
--
-+static inline int desc_node(struct irq_desc *desc) { return desc->node; }
- #else
--static inline int
-+static inline int desc_node(struct irq_desc *desc) { return 0; }
- alloc_masks(struct irq_desc *desc, gfp_t gfp, int node) { return 0; }
- static inline void desc_smp_init(struct irq_desc *desc, int node) { }
- #endif
-@@ -72,6 +75,8 @@ static void desc_set_defaults(unsigned i
- 	desc->irq_data.chip = &no_irq_chip;
- 	desc->handle_irq = handle_bad_irq;
- 	desc->depth = 1;
-+	desc->irq_count = 0;
-+	desc->irqs_unhandled = 0;
- 	desc->name = NULL;
- 	memset(desc->kstat_irqs, 0, nr_cpu_ids * sizeof(*(desc->kstat_irqs)));
- 	desc_smp_init(desc, node);
-@@ -136,6 +141,7 @@ static void free_masks(struct irq_desc *
- #endif
- 	free_cpumask_var(desc->affinity);
- }
-+static int node
- #else
- static inline void free_masks(struct irq_desc *desc) { }
- #endif
-@@ -290,16 +296,7 @@ struct irq_desc *irq_to_desc_alloc_node(
+@@ -495,7 +494,7 @@ static void unbind_from_irq(unsigned int
+ 	if (irq_info[irq].type != IRQT_UNBOUND) {
+ 		irq_info[irq] = mk_unbound_info();
  
- static void free_desc(unsigned int irq)
- {
--	struct irq_desc *desc = irq_to_desc(irq);
--	unsigned long flags;
--
--	raw_spin_lock_irqsave(&desc->lock, flags);
--#ifdef CONFIG_SMP
--	desc_set_defaults(irq, desc, desc->node);
--#else
--	desc_set_defaults(irq, desc, 0);
--#endif
--	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+	dynamic_irq_cleanup(irq);
- }
+-		dynamic_irq_cleanup(irq);
++		irq_free_desc(irq);
+ 	}
  
- static inline int alloc_descs(unsigned int start, unsigned int cnt, int node)
-@@ -386,6 +383,22 @@ unsigned int irq_get_next_irq(unsigned i
- 	return res;
- }
- 
-+/**
-+ * dynamic_irq_cleanup - cleanup a dynamically allocated irq
-+ * @irq:	irq number to initialize
-+ */
-+void dynamic_irq_cleanup(unsigned int irq)
-+{
-+	struct irq_desc *desc = irq_to_desc(irq);
-+	unsigned long flags;
-+
-+	raw_spin_lock_irqsave(&desc->lock, flags);
-+	desc_set_defaults(irq, desc, desc_node(desc));
-+	raw_spin_unlock_irqrestore(&desc->lock, flags);
-+}
-+
-+ unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
-+
- /* Statistics access */
- void clear_kstat_irqs(struct irq_desc *desc)
- {
+ 	spin_unlock(&irq_mapping_update_lock);
 
 
