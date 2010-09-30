@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0I3SnV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:43:21 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35858 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755869Ab0I3SnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:43:19 -0400
-From: Ernesto Ramos <ernesto@ti.com>
-To: gregkh@suse.de, linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: ameya.palande@nokia.com, felipe.contreras@gmail.com,
-        andy.shevchenko@gmail.com, Ernesto Ramos <ernesto@ti.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>
-Subject: [PATCH] staging: tidspbridge: disable all peripherals at bridge_brd_stop
-Date: Thu, 30 Sep 2010 13:49:36 -0500
-Message-Id: <1285872576-31526-1-git-send-email-ernesto@ti.com>
-X-Mailer: git-send-email 1.5.4.5
+	id S1756186Ab0I3Stw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:49:52 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:35807
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752018Ab0I3Stv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 14:49:51 -0400
+Date: Thu, 30 Sep 2010 11:50:10 -0700 (PDT)
+Message-Id: <20100930.115010.45893999.davem@davemloft.net>
+To: wg@grandegger.com
+Cc: masa-korg@dsn.okisemi.com, w.sang@pengutronix.de, chripell@fsfe.org,
+        21cnbao@gmail.com, sameo@linux.intel.com,
+        socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, meego-dev@meego.com,
+        andrew.chih.howe.khor@intel.com, qi.wang@intel.com,
+        margie.foster@intel.com, yong.y.wang@intel.com, kok.howg.ewe@intel.com,
+        morinaga526@dsn.okisemi.com, joel.clark@intel.com
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4CA4541F.5040804@grandegger.com>
+References: <4C9C7C6F.1000003@dsn.okisemi.com>
+	<4CA4541F.5040804@grandegger.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DSP Bridge needs to disable the peripheral clocks when switches to
-BRD_STOPPED since that would prevent the domain to enter in OFF state.
+From: Wolfgang Grandegger <wg@grandegger.com>
+Date: Thu, 30 Sep 2010 11:10:55 +0200
 
-Signed-off-by: Ernesto Ramos <ernesto@ti.com>
-Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
----
- drivers/staging/tidspbridge/core/tiomap3430.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> On 09/24/2010 12:24 PM, Masayuki Ohtak wrote:
+>> +};
+>> +
+>> +static struct can_bittiming_const pch_can_bittiming_const = {
+>> +	.name = KBUILD_MODNAME,
+> 
+> Not sure what KBUILD_MODNAME is. Should be "pch_can", the name of the
+> driver.
 
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index f1e59e8..e32e98a 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -625,7 +625,6 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 	struct bridge_dev_context *dev_context = dev_ctxt;
- 	struct pg_table_attrs *pt_attrs;
- 	u32 dsp_pwr_state;
--	int clk_status;
- 	struct dspbridge_platform_data *pdata =
- 				omap_dspbridge_dev->dev.platform_data;
- 
-@@ -679,7 +678,8 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 	(*pdata->dsp_prm_write)(OMAP3430_RST1_IVA2_MASK | OMAP3430_RST2_IVA2_MASK |
- 			OMAP3430_RST3_IVA2_MASK, OMAP3430_IVA2_MOD, OMAP2_RM_RSTCTRL);
- 
--	clk_status = dsp_clk_disable(DSP_CLK_IVA2);
-+	dsp_clock_disable_all(dev_context->dsp_per_clks);
-+	dsp_clk_disable(DSP_CLK_IVA2);
- 
- 	return status;
- }
--- 
-1.5.4.5
+That's what KBUILD_MODNAME will be defined to when this gets
+compiled :-)
 
