@@ -1,166 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756586Ab0I3WJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 18:09:21 -0400
-Received: from vms173015pub.verizon.net ([206.46.173.15]:61500 "EHLO
-	vms173015pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab0I3WJT (ORCPT
+	id S1756654Ab0I3WPJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 18:15:09 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:54058 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755060Ab0I3WPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 18:09:19 -0400
-Date: Thu, 30 Sep 2010 18:08:57 -0400 (EDT)
+	Thu, 30 Sep 2010 18:15:07 -0400
+Date: Thu, 30 Sep 2010 18:14:35 -0400 (EDT)
 From: Len Brown <lenb@kernel.org>
 X-X-Sender: lenb@localhost.localdomain
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Linux-Kernel <linux-kernel@vger.kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: 2.6.35.4: intel_idle has reduced residency in high C states.
-In-reply-to: <AANLkTik99SDg1-StoOF+jbAH+H=NaqPRPFHCvMQg1YbD@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1009301806390.7033@localhost.localdomain>
-References: <AANLkTik99SDg1-StoOF+jbAH+H=NaqPRPFHCvMQg1YbD@mail.gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+        linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot
+ hang
+In-reply-to: <20100927135735.GA856@srcf.ucam.org>
+Message-id: <alpine.LFD.2.00.1009301810380.7033@localhost.localdomain>
+References: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain>
+ <20100927135735.GA856@srcf.ucam.org>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-version: 1.0
-Content-type: MULTIPART/MIXED; BOUNDARY="8323328-2018783627-1285884539=:7033"
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+> > When the Lenovo Ideapad S10-3 is booted with HT enabled,
+> > it hits a boot hang in the intel_idle driver.
+> > 
+> > This occurs when entering ATM-C4 for the first time,
+> > unless BM_STS is first cleared.
+> > 
+> > acpi_idle doesn't see this because it first checks
+> > and clears BM_STS, but it would hit the same hang
+> > if that check were disabled.
+> 
+> If there's hardware that expects BM_STS to be cleared, and if we've 
+> previously always cleared BM_STS, shouldn't intel_idle be doing the same 
+> thing?
 
---8323328-2018783627-1285884539=:7033
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+No, we don't always clear BM_STS with acpi_idle --
+we check (and clear) that bit only if the acpi tables
+tell us to do so.
 
-On Sun, 26 Sep 2010, Corrado Zoccolo wrote:
+BM_STS is a status bit, not a control bit.
+It is a surprise that the NM10 chip-set requires that it be cleared --
+apparently once at boot time.
 
-> Hi Len,
-> I tested intel_idle on my Acer Aspire One netbook (Atom based), and
-> got lower residency in high C states compared to acpi_idle:
-> Immediately after boot, PowerTOP 1.11 reports for intel_idle:
-> Your CPU supports the following C-states : C1 C2 C4
-> Your BIOS reports the following C-states : C1 C2 C4
-> Cn                Avg residency
-> C0 (cpu occupata)      ( 2,3%)
-
-Corrado,
-differences in C2 vs C4 residency don't matter much
-when when the CPU is buy (C0) for 2 or 3% of the time.
-
-For an apples/apples comparison of intel_idle vs acpi_idle,
-CONFIG_INTEL_IDLE=y and boot with and without
-intel_idle.max_cstate=0 to run with acpi_idle
-and intel_idle, respectively.
+No, I don't want intel_idle to know about this chip-set quirk,
+and I don't want to add an IO access to the idle hot path
+if we can possibly avoid it.
 
 thanks,
--Len Brown, Intel Open Source Technology Center
-
-
-
-> polling           0,0ms ( 0,0%)
-> C1 mwait         54,4ms (57,3%)
-> C2 mwait          1,7ms ( 2,8%)
-> C4 mwait          3,1ms (37,6%)
-> P-states (frequencies)
->   1,60 Ghz     0,0%
->   1333 Mhz     0,0%
->   1066 Mhz     0,0%
->    800 Mhz   100,0%
-> Wakeups-from-idle per second : 149,4    interval: 15,0s
-> no ACPI power usage estimate available
-> Top causes for wakeups:
->   74,0% ( 98,5)     <kernel core> : hrtimer_start_range_ns (tick_sched_timer)
->    6,5% (  8,7)       <interrupt> : acpi
->    4,0% (  5,3)     <kernel core> : hrtimer_start (tick_sched_timer)
->    3,7% (  4,9)       <interrupt> : eth0
->    1,9% (  2,5)                 X : __mod_timer (i915_hangcheck_elapsed)
->    1,5% (  2,0)           lxpanel : hrtimer_start_range_ns (hrtimer_wakeup)
->    1,3% (  1,7)        lxterminal : hrtimer_start_range_ns (hrtimer_wakeup)
->    1,0% (  1,3)           lxpanel : __mod_timer (process_timeout)
->    0,8% (  1,1)      <kernel IPI> : TLB shootdowns
->    0,8% (  1,0)           ifplugd : hrtimer_start_range_ns (hrtimer_wakeup)
->    0,7% (  0,9)                 X : queue_delayed_work (delayed_work_timer_fn)
-> 
-> while for acpi_idle:
-> Cn                Avg residency
-> C0 (cpu occupata)      ( 2,1%)
-> polling           0,0ms ( 0,0%)
-> C1 halt           0,1ms ( 0,0%)
-> C2               11,9ms (14,7%)
-> C3               12,1ms (83,2%)
-> P-states (frequencies)
->   1,60 Ghz     0,0%
->   1333 Mhz     0,0%
->   1066 Mhz     0,3%
->    800 Mhz    99,7%
-> Wakeups-from-idle per second : 81,2     interval: 15,0s
-> no ACPI power usage estimate available
-> Top causes for wakeups:
->   60,3% ( 92,3)     <kernel core> : hrtimer_start_range_ns (tick_sched_timer)
->   12,4% ( 18,9)       <interrupt> : extra timer interrupt
->    5,9% (  9,0)      <kernel IPI> : Rescheduling interrupts
->    5,6% (  8,6)       <interrupt> : acpi
->    3,4% (  5,2)       <interrupt> : eth0
->    2,7% (  4,1)     <kernel core> : hrtimer_start (tick_sched_timer)
->    1,6% (  2,4)                 X : __mod_timer (i915_hangcheck_elapsed)
->    1,3% (  2,0)           lxpanel : hrtimer_start_range_ns (hrtimer_wakeup)
->    1,2% (  1,8)           lxpanel : __mod_timer (process_timeout)
->    1,1% (  1,7)        lxterminal : hrtimer_start_range_ns (hrtimer_wakeup)
->    0,7% (  1,0)           ifplugd : hrtimer_start_range_ns (hrtimer_wakeup)
->    0,6% (  0,9)                 X : queue_delayed_work (delayed_work_timer_fn)
->    0,3% (  0,5)     <kernel core> : enqueue_task_rt (sched_rt_period_timer)
->    0,3% (  0,5)      <kernel IPI> : TLB shootdowns
-> 
-> This may be unrelated, but I noticed that compared with 2.6.34, the
-> load average immediately after boot is higher for 2.6.35.4 (and
-> decreases more slowly). This gives a higher multiplier in the menu
-> governor, so the residency numbers for 2.6.34 with acpi_idle are again
-> different:
-> Cn                Avg residency
-> C0 (cpu occupata)      ( 3,2%)
-> polling           0,0ms ( 0,0%)
-> C1 halt           0,1ms ( 0,0%)
-> C2                7,9ms (10,5%)
-> C3               11,7ms (86,3%)
-> P-states (frequencies)
->   1,60 Ghz     0,0%
->   1333 Mhz     0,0%
->   1066 Mhz     0,9%
->    800 Mhz    99,1%
-> Wakeups-from-idle per second : 87,1     interval: 15,0s
-> no ACPI power usage estimate available
-> Top causes for wakeups:
->   67,1% (130,0)     <kernel core> : hrtimer_start_range_ns (tick_sched_timer)
->    8,7% ( 16,9)       <interrupt> : extra timer interrupt
->    6,5% ( 12,5)      <kernel IPI> : Rescheduling interrupts
->    4,5% (  8,7)       <interrupt> : acpi
->    2,3% (  4,5)     <kernel core> : hrtimer_start (tick_sched_timer)
->    1,9% (  3,7)       <interrupt> : eth0
->    1,4% (  2,7)                 X : __mod_timer (i915_hangcheck_elapsed)
->    1,0% (  2,0)           lxpanel : hrtimer_start_range_ns (hrtimer_wakeup)
->    0,9% (  1,8)           lxpanel : __mod_timer (process_timeout)
->    0,9% (  1,7)        lxterminal : hrtimer_start_range_ns (hrtimer_wakeup)
->    0,5% (  1,0)           ifplugd : hrtimer_start_range_ns (hrtimer_wakeup)
->    0,4% (  0,8)       <interrupt> : ehci_hcd:usb1, uhci_hcd:usb2,
-> i915@pci:0000:00:02.0
->    0,4% (  0,7)       <interrupt> : ata_piix
->    0,4% (  0,7)                 X : queue_delayed_work (delayed_work_timer_fn)
-> The numbers for 2.6.34 look more sensible (avg residency in C2 << avg
-> residency in C3), so it may be good to re-evaluate the factors in menu
-> governor.
-> 
-> Thanks,
-> Corrado
-> 
-> ---
-> __________________________________________________________________________
-> 
-> dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-> PhD - Department of Computer Science - University of Pisa, Italy
-> --------------------------------------------------------------------------
-> The self-confidence of a warrior is not the self-confidence of the average
-> man. The average man seeks certainty in the eyes of the onlooker and calls
-> that self-confidence. The warrior seeks impeccability in his own eyes and
-> calls that humbleness.
->                                Tales of Power - C. Castaneda
-> 
---8323328-2018783627-1285884539=:7033--
+Len Brown, Intel Open Source Technology Center
