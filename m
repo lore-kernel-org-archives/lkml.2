@@ -1,49 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754339Ab0I3GQp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 02:16:45 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:49402 "EHLO
+	id S1754215Ab0I3GVD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 02:21:03 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:34749 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754067Ab0I3GQo (ORCPT
+	with ESMTP id S1751759Ab0I3GVA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 02:16:44 -0400
-Date: Thu, 30 Sep 2010 16:16:40 +1000
+	Thu, 30 Sep 2010 02:21:00 -0400
+Date: Thu, 30 Sep 2010 16:20:57 +1000
 From: Dave Chinner <david@fromorbit.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/17] fs: icache lock lru/writeback lists
-Message-ID: <20100930061640.GZ5665@dastard>
+Subject: Re: [PATCH 07/17] fs: icache atomic inodes_stat
+Message-ID: <20100930062057.GA5665@dastard>
 References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
- <1285762729-17928-7-git-send-email-david@fromorbit.com>
- <20100929215240.feb118f3.akpm@linux-foundation.org>
+ <1285762729-17928-8-git-send-email-david@fromorbit.com>
+ <20100929215253.6fd944a2.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100929215240.feb118f3.akpm@linux-foundation.org>
+In-Reply-To: <20100929215253.6fd944a2.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 09:52:40PM -0700, Andrew Morton wrote:
-> On Wed, 29 Sep 2010 22:18:38 +1000 Dave Chinner <david@fromorbit.com> wrote:
+On Wed, Sep 29, 2010 at 09:52:53PM -0700, Andrew Morton wrote:
+> On Wed, 29 Sep 2010 22:18:39 +1000 Dave Chinner <david@fromorbit.com> wrote:
 > 
-> > The inode moves between different lists protected by the inode_lock. Introduce
-> > a new lock that protects all of the lists (dirty, unused, in use, etc) that the
-> > inode will move around as it changes state. As this is mostly a list for
-> > protecting the writeback lists, name it wb_inode_list_lock and nest all the
-> > list manipulations in this lock inside the current inode_lock scope.
+> > From: Nick Piggin <npiggin@suse.de>
+> > 
+> > The inode use statistics are currently protected by the inode_lock.
+> > Before we can remove the inode_lock, we need to protect these
+> > counters against races. Do this by converting them to atomic
+> > counters so they ar enot dependent on any lock at all.
 > 
-> All those spin_trylock()s are real ugly.  They're unexplained in the
-> changelog and unexplained in code comments.
+> typo
+> 
+> >
+> > ...
+> >
+> > --- a/fs/fs-writeback.c
+> > +++ b/fs/fs-writeback.c
+> > @@ -764,7 +764,8 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
+> >  	wb->last_old_flush = jiffies;
+> >  	nr_pages = global_page_state(NR_FILE_DIRTY) +
+> >  			global_page_state(NR_UNSTABLE_NFS) +
+> > -			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
+> > +			(atomic_read(&inodes_stat.nr_inodes) -
+> > +			atomic_read(&inodes_stat.nr_unused));
+> 
+> race bug.
 
-Yes, they are, but I don't know exactly why it is so trylock happy.
-I'll try to dig out the reason for it and:
+What new race?  The code has gone from using subtraction of unlocked
+counters to using subtraction of unlocked atomic counters. I can't
+see any new race condition in that transformation....
 
-> I'd suggest that each such site have a comment explaining why we're
-> resorting to this.
+> > +struct inodes_stat_t {
+> > +	atomic_t nr_inodes;
+> > +	atomic_t nr_unused;
+> > +	int dummy[5];		/* padding for sysctl ABI compatibility */
+> > +};
+> 
+> OK, that's a hack.  The first two "ints" are copied out to userspace. 
+> This change assumes that sizeof(atomic_t)=4 and that an atomic_t has
+> the same layout, alignment and padding as an int.
+> 
+> Probably that's true in current kernels and with current architectures
+> but it's a hack and it's presumptive.
+> 
+> It shouldn't be snuck into the tree unchangelogged and uncommented.
+> 
+> (time passes)
+> 
+> OK, I see that all of this gets reverted later on.  Please update the
+> changelog so the next reviewer doesn't get fooled.
 
-At least get this far.
+That's the multiple changes to the counter infrastructure I
+described in the preliminary series description. clearly it needs to
+be cleaned up.
 
 Cheers,
 
