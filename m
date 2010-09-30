@@ -1,108 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755731Ab0JAAbL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 20:31:11 -0400
+	id S1755394Ab0JAAbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 20:31:06 -0400
 Received: from gimli.pxnet.com ([89.1.7.7]:34819 "EHLO mail.pxnet.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754853Ab0JAAbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 20:31:08 -0400
+	id S1754853Ab0JAAbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 20:31:03 -0400
 X-Greylist: delayed 3367 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Sep 2010 20:30:56 EDT
 From: Tilman Schmidt <tilman@imap.cc>
 To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>
 CC: Hansjoerg Lipp <hjlipp@web.de>, Karsten Keil <keil@b1-systems.de>,
         i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Message-ID: <20100930-patch-gigaset-04.tilman@imap.cc>
+Message-ID: <20100930-patch-gigaset-03.tilman@imap.cc>
 In-Reply-To: <20100930-patch-gigaset-00.tilman@imap.cc>
 References: <20100930-patch-gigaset-00.tilman@imap.cc>
-Subject: [PATCH 4/9] isdn/gigaset: drop obsolete debug option
-Date: Fri,  1 Oct 2010 01:35:01 +0200 (CEST)
-X-Spam-Score: -1.985 () AWL,BAYES_00,RDNS_DYNAMIC
+Subject: [PATCH 3/9] isdn/gigaset: correct bas_gigaset rx buffer handling
+Date: Fri,  1 Oct 2010 01:34:51 +0200 (CEST)
+X-Spam-Score: -1.392 () AWL,BAYES_05,RDNS_DYNAMIC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the debug flag DEBUG_DRIVER and associated code.
-It doesn't serve any useful purpose anymore.
+In transparent data reception, avoid a NULL pointer dereference
+in case an skbuff cannot be allocated, remove an inappropriate
+call to the HDLC flush routine, and correct the accounting of
+received bytes for continued buffers.
 
 Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+CC: stable <stable@kernel.org>
 ---
- drivers/isdn/gigaset/common.c  |   26 --------------------------
- drivers/isdn/gigaset/gigaset.h |    3 +--
- drivers/isdn/gigaset/i4l.c     |    2 --
- 3 files changed, 1 insertions(+), 30 deletions(-)
+ drivers/isdn/gigaset/isocdata.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/isdn/gigaset/common.c b/drivers/isdn/gigaset/common.c
-index 3ca561e..db621db 100644
---- a/drivers/isdn/gigaset/common.c
-+++ b/drivers/isdn/gigaset/common.c
-@@ -1026,32 +1026,6 @@ struct cardstate *gigaset_get_cs_by_id(int id)
- 	return ret;
- }
+diff --git a/drivers/isdn/gigaset/isocdata.c b/drivers/isdn/gigaset/isocdata.c
+index 2dfd346..f39ccdf 100644
+--- a/drivers/isdn/gigaset/isocdata.c
++++ b/drivers/isdn/gigaset/isocdata.c
+@@ -842,13 +842,14 @@ static inline void trans_receive(unsigned char *src, unsigned count,
  
--void gigaset_debugdrivers(void)
--{
--	unsigned long flags;
--	static struct cardstate *cs;
--	struct gigaset_driver *drv;
--	unsigned i;
--
--	spin_lock_irqsave(&driver_lock, flags);
--	list_for_each_entry(drv, &drivers, list) {
--		gig_dbg(DEBUG_DRIVER, "driver %p", drv);
--		spin_lock(&drv->lock);
--		for (i = 0; i < drv->minors; ++i) {
--			gig_dbg(DEBUG_DRIVER, "  index %u", i);
--			cs = drv->cs + i;
--			gig_dbg(DEBUG_DRIVER, "    cardstate %p", cs);
--			gig_dbg(DEBUG_DRIVER, "    flags 0x%02x", cs->flags);
--			gig_dbg(DEBUG_DRIVER, "    minor_index %u",
--				cs->minor_index);
--			gig_dbg(DEBUG_DRIVER, "    driver %p", cs->driver);
--			gig_dbg(DEBUG_DRIVER, "    i4l id %d", cs->myid);
--		}
--		spin_unlock(&drv->lock);
--	}
--	spin_unlock_irqrestore(&driver_lock, flags);
--}
--
- static struct cardstate *gigaset_get_cs_by_minor(unsigned minor)
- {
- 	unsigned long flags;
-diff --git a/drivers/isdn/gigaset/gigaset.h b/drivers/isdn/gigaset/gigaset.h
-index a69512f..6dd3607 100644
---- a/drivers/isdn/gigaset/gigaset.h
-+++ b/drivers/isdn/gigaset/gigaset.h
-@@ -70,7 +70,6 @@ enum debuglevel {
- 	DEBUG_STREAM_DUMP = 0x00080, /* application data stream content */
- 	DEBUG_LLDATA	  = 0x00100, /* sent/received LL data */
- 	DEBUG_EVENT	  = 0x00200, /* event processing */
--	DEBUG_DRIVER	  = 0x00400, /* driver structure */
- 	DEBUG_HDLC	  = 0x00800, /* M10x HDLC processing */
- 	DEBUG_CHANNEL	  = 0x01000, /* channel allocation/deallocation */
- 	DEBUG_TRANSCMD	  = 0x02000, /* AT-COMMANDS+RESPONSES */
-@@ -727,7 +726,7 @@ struct gigaset_driver *gigaset_initdriver(unsigned minor, unsigned minors,
- 
- /* Deallocate driver structure. */
- void gigaset_freedriver(struct gigaset_driver *drv);
--void gigaset_debugdrivers(void);
-+
- struct cardstate *gigaset_get_cs_by_tty(struct tty_struct *tty);
- struct cardstate *gigaset_get_cs_by_id(int id);
- void gigaset_blockdriver(struct gigaset_driver *drv);
-diff --git a/drivers/isdn/gigaset/i4l.c b/drivers/isdn/gigaset/i4l.c
-index 34bca37..9bec8b9 100644
---- a/drivers/isdn/gigaset/i4l.c
-+++ b/drivers/isdn/gigaset/i4l.c
-@@ -201,8 +201,6 @@ static int command_from_LL(isdn_ctrl *cntrl)
- 	int i;
- 	size_t l;
- 
--	gigaset_debugdrivers();
--
- 	gig_dbg(DEBUG_CMD, "driver: %d, command: %d, arg: 0x%lx",
- 		cntrl->driver, cntrl->command, cntrl->arg);
- 
+ 	if (unlikely(bcs->ignore)) {
+ 		bcs->ignore--;
+-		hdlc_flush(bcs);
+ 		return;
+ 	}
+ 	skb = bcs->rx_skb;
+-	if (skb == NULL)
++	if (skb == NULL) {
+ 		skb = gigaset_new_rx_skb(bcs);
+-	bcs->hw.bas->goodbytes += skb->len;
++		if (skb == NULL)
++			return;
++	}
+ 	dobytes = bcs->rx_bufsize - skb->len;
+ 	while (count > 0) {
+ 		dst = skb_put(skb, count < dobytes ? count : dobytes);
+@@ -860,6 +861,7 @@ static inline void trans_receive(unsigned char *src, unsigned count,
+ 		if (dobytes == 0) {
+ 			dump_bytes(DEBUG_STREAM_DUMP,
+ 				   "rcv data", skb->data, skb->len);
++			bcs->hw.bas->goodbytes += skb->len;
+ 			gigaset_skb_rcvd(bcs, skb);
+ 			skb = gigaset_new_rx_skb(bcs);
+ 			if (skb == NULL)
 -- 
 1.7.3.15.g442cb
 
