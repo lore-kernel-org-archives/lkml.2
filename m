@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932189Ab0I3PqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 11:46:06 -0400
-Received: from mga09.intel.com ([134.134.136.24]:35602 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932067Ab0I3PqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 11:46:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,260,1283756400"; 
-   d="scan'208";a="662717991"
-Date: Thu, 30 Sep 2010 23:45:57 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jeff Chua <jeff.chua.linux@gmail.com>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: Microphone not working on PCI ID 8086:3b56
-Message-ID: <20100930154557.GD11399@localhost>
-References: <Pine.LNX.4.64.1009302047410.25061@boston.corp.fedex.com>
- <s5hsk0rtlun.wl%tiwai@suse.de>
- <AANLkTinT3EU3aLSBt5WmA=qDOf1cFABUNG+RiT3Nvx3e@mail.gmail.com>
- <s5h4od7tf43.wl%tiwai@suse.de>
+	id S932210Ab0I3Pr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 11:47:57 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:61735 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756643Ab0I3Prz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 11:47:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=JVPVwfRbK9HAMeruKwEMwXNLxA+sgyp56GU+rclISxP7fVyEvhV5ZVNwg46/osUnhI
+         y/HE1beJknh13OJBVucp+odGDTQwLnf+K22VaUwte2Z3N2BkwOSyBfeS175YwyoBRRXA
+         7zMXmdpDjFwr9H5wnadRuYzFXedXTjNOIOMP4=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Bastien Nocera <hadess@hadess.net>
+Subject: Re: [RESEND] [PATCH] Input: add appleir USB driver
+Date: Thu, 30 Sep 2010 08:47:41 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6+; KDE/4.4.5; x86_64; ; )
+Cc: "linux-input" <linux-input@vger.kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <1285844276.26405.26.camel@cookie.hadess.net>
+In-Reply-To: <1285844276.26405.26.camel@cookie.hadess.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5h4od7tf43.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201009300847.43090.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 11:39:40PM +0800, Takashi Iwai wrote:
-> At Thu, 30 Sep 2010 23:29:45 +0800,
-> Jeff Chua wrote:
-> > 
-> > On Thu, Sep 30, 2010 at 9:14 PM, Takashi Iwai <tiwai@suse.de> wrote:
-> > 
-> > > Check /sys/modules/snd_hda_intel/parameters/model whether you really
-> > > passed the correct value.
-> > 
-> > # cat /sys/module/snd_hda_intel/parameters/model
-> > lenovo-x200,(null),(null),(null),(null),(null),(null),(null)
+Bastien,
+
+On Thursday, September 30, 2010 03:57:55 am Bastien Nocera wrote:
+> This driver was originally written by James McKenzie, updated by
+> Greg Kroah-Hartman, further updated by myself, with suspend support
+> added.
 > 
-> OK, and did you get the corresponding kernel message?
+> More recent versions of the IR receiver are also supported through
+> a patch by Alex Karpenko. The patch also adds support for the 2nd
+> and 5th generation of the controller, and the menu key on newer
+> brushed metal remotes.
+> 
+> Tested on a MacbookAir1,1
+> 
 
-As a kindly reminder, these verbose options are pretty useful:
+There are no changes from the last time you sent it, right? I'll try
+to get the driver in .37 but after that we should probably move it
+over to the new IR infrastructure...
 
-CONFIG_SND_VERBOSE_PROCFS=y
-CONFIG_SND_VERBOSE_PRINTK=y
-CONFIG_SND_DEBUG=y
-CONFIG_SND_DEBUG_VERBOSE=y
+Thanks.
 
-Thanks,
-Fengguang
+-- 
+Dmitry
