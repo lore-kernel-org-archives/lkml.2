@@ -1,84 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754600Ab0I3GYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 02:24:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22419 "EHLO mx1.redhat.com"
+	id S1754560Ab0I3GYv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 02:24:51 -0400
+Received: from smtp.df.ru ([195.42.160.16]:36030 "EHLO smtp.df.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754426Ab0I3GYt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 02:24:49 -0400
-From: Amerigo Wang <amwang@redhat.com>
-To: linux-kbuild@vger.kernel.org
-Cc: Amerigo Wang <amwang@redhat.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/4] Some bug fixes for namespace.pl
-Date: Thu, 30 Sep 2010 14:28:57 +0800
-Message-Id: <1285828138-5873-3-git-send-email-amwang@redhat.com>
-In-Reply-To: <1285828138-5873-1-git-send-email-amwang@redhat.com>
-References: <1285828138-5873-1-git-send-email-amwang@redhat.com>
+	id S1754515Ab0I3GYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 02:24:50 -0400
+Date: Thu, 30 Sep 2010 10:24:19 +0400
+From: Alexey Vlasov <renton@renton.name>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Packet time delays on multi-core systems
+Message-ID: <20100930062419.GD86786@beaver.vrungel.ru>
+References: <20100929191851.GC86786@beaver.vrungel.ru> <1285796721.5211.156.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <1285796721.5211.156.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. Teach namespace.pl to understand "V" and "v"
-2. cond_syscalls are moved into kernel/sys_ni.c
+Here I found some dude with the same problem:
+http://lkml.org/lkml/2010/7/9/340
 
-Signed-off-by: Amerigo Wang <amwang@redhat.com>
----
- scripts/namespace.pl |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+On Wed, Sep 29, 2010 at 11:45:21PM +0200, Eric Dumazet wrote:
+> Le mercredi 29 septembre 2010 ?? 23:18 +0400, Alexey Vlasov a ??crit : 
+> > Hi.
+> > 
+> > I'm not sure actually that I should write here, may be I should ask in
+> > netfilter maillist, but if is something wrong please correct me.
+> > 
+> 
+> CC netdev
+> 
+> 
+> > I've got rather large linux shared hosting, and on my new servers I
+> > noticed some strange singularity, that this simple rule:
+> > 
+> > # iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags
+> > FIN,SYN,RST,ACK SYN -j LOG --log-prefix "ipsec:SYN-OUTPUT "
+> > --log-uid
+> > 
+> > gives essential time delays simply at ping from the adjacent server
+> > on a local area network. I don't know precisely what's wrong whether the
+> > reason is in the bad support by a kernel of new hardware, or it concerns
+> > generally the new kernel, but now it leads to the situation that even at simple
+> > DDOS attacks to client sites, it becomes difficult to make something, and in
+> > general all works only worse.
+> > 
+> > It seems to me that with the increase of CPU cores' amount, it only becomes
+> > worse and worse, and, obviously, iptables uses resources of only one processor,
+> > which resources to it for any reason doesn't suffice.
+> > 
+> 
+> Its not true. iptables can run on all cpus in //
+> 
+> > newbox # iptables -F
+> > otherbox # ping -c 100 newbox
+> > ...
+> > 100 packets transmitted, 100 received, 0% packet loss, time 100044ms
+> > rtt min/avg/max/mdev = 0.133/2.637/17.172/3.736 ms
+> > 
+> > OK.
+> > 
+> > newbox # iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+> > -j LOG --log-prefix "ipsec:SYN-OUTPUT " --log-uid
+> > otherbox # ping -c 100 newbox
+> > ...
+> > 64 bytes from (newbox): icmp_seq=3 ttl=64 time=1.58 ms
+> > 64 bytes from (newbox): icmp_seq=4 ttl=64 time=98.7 ms
+> > 64 bytes from (newbox): icmp_seq=5 ttl=64 time=18.2 ms
+> > 64 bytes from (newbox): icmp_seq=6 ttl=64 time=6.13 ms
+> > 64 bytes from (newbox): icmp_seq=7 ttl=64 time=108 ms
+> > ...
+> > 64 bytes from (newbox): icmp_seq=55 ttl=64 time=2.30 ms
+> > 64 bytes from (newbox): icmp_seq=56 ttl=64 time=59.9 ms
+> > 64 bytes from (newbox): icmp_seq=57 ttl=64 time=0.155 ms
+> > ...
+> > 64 bytes from (newbox): icmp_seq=61 ttl=64 time=13.4 ms
+> > 64 bytes from (newbox): icmp_seq=62 ttl=64 time=55.0 ms
+> > 64 bytes from (newbox): icmp_seq=63 ttl=64 time=0.233 ms
+> > ...
+> > 100 packets transmitted, 100 received, 0% packet loss, time 99957ms
+> > rtt min/avg/max/mdev = 0.111/7.519/108.061/18.478 ms
+> > 
+> > newbox # iptables -L -v -n
+> > Chain INPUT (policy ACCEPT 346K packets, 213M bytes)
+> >  pkts bytes target     prot opt in     out     source               destination
+> > 
+> > Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+> >  pkts bytes target     prot opt in     out     source               destination
+> > 
+> > Chain OUTPUT (policy ACCEPT 296K packets, 290M bytes)
+> >  pkts bytes target     prot opt in     out     source               destination
+> >   234 14040 LOG        tcp  --  *      *       0.0.0.0/0            0.0.0.0/0    
+> > tcp dpt:80 flags:0x17/0x02 LOG flags 8 level 4 prefix `ipsec:SYN-OUTPUT- '
+> > 
+> > My old server: Intel SR1500, Xeon 5430, kernel 2.6.24 - 2.6.28
+> > Newbox: SR1620UR, 5650, kernel 2.6.32
+> > 
+> > Thanks in advance.
+> > 
+> 
+> Seems strange indeed, since the LOG you add should not slowdown icmp
+> trafic that much.
+> 
+> But if you send SYN packets in the same time, (logged), this might slow
+> down the reception (and answers) of ICMP frames. LOG target can be quite
+> expensive... 
+> 
+> Is using other rules gives same problem ?
+> 
+> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+> iptables -A OUTPUT -p tcp -m tcp --dport 80 --tcp-flags FIN,SYN,RST,ACK SYN
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-diff --git a/scripts/namespace.pl b/scripts/namespace.pl
-index c8d0922..bccf610 100755
---- a/scripts/namespace.pl
-+++ b/scripts/namespace.pl
-@@ -266,6 +266,7 @@ sub do_nm
- 		# T global label/procedure
- 		# U external reference
- 		# W weak external reference to text that has been resolved
-+		# V similar to W, but the value of the weak symbol becomes zero with no error.
- 		# a assembler equate
- 		# b static variable, uninitialised
- 		# d static variable, initialised
-@@ -274,8 +275,9 @@ sub do_nm
- 		# s static variable, uninitialised, small bss
- 		# t static label/procedures
- 		# w weak external reference to text that has not been resolved
-+		# v similar to w
- 		# ? undefined type, used a lot by modules
--		if ($type !~ /^[ABCDGRSTUWabdgrstw?]$/) {
-+		if ($type !~ /^[ABCDGRSTUWVabdgrstwv?]$/) {
- 			printf STDERR "nm output for $fullname contains unknown type '$_'\n";
- 		}
- 		elsif ($name =~ /\./) {
-@@ -286,7 +288,7 @@ sub do_nm
- 			# binutils keeps changing the type for exported symbols, force it to R
- 			$type = 'R' if ($name =~ /^__ksymtab/ || $name =~ /^__kstrtab/);
- 			$name =~ s/_R[a-f0-9]{8}$//;	# module versions adds this
--			if ($type =~ /[ABCDGRSTW]/ &&
-+			if ($type =~ /[ABCDGRSTWV]/ &&
- 				$name ne 'init_module' &&
- 				$name ne 'cleanup_module' &&
- 				$name ne 'Using_Versions' &&
-@@ -353,11 +355,12 @@ sub list_multiply_defined
- 	foreach my $name (keys(%def)) {
- 		if ($#{$def{$name}} > 0) {
- 			# Special case for cond_syscall
--			if ($#{$def{$name}} == 1 && $name =~ /^sys_/ &&
--			    ($def{$name}[0] eq "kernel/sys.o" ||
--			     $def{$name}[1] eq "kernel/sys.o")) {
--				&drop_def("kernel/sys.o", $name);
--				next;
-+			if ($#{$def{$name}} == 1 && $name =~ /^sys_/) {
-+				if($def{$name}[0] eq "kernel/sys_ni.o" ||
-+				   $def{$name}[1] eq "kernel/sys_ni.o") {
-+					&drop_def("kernel/sys_ni.o", $name);
-+					next;
-+				}
- 			}
- 			# Special case for i386 entry code
- 			if ($#{$def{$name}} == 1 && $name =~ /^__kernel_/ &&
 -- 
-1.6.5.2
-
+BRGDS. Alexey Vlasov.
