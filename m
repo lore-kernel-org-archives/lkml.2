@@ -1,47 +1,225 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab0I3TJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 15:09:47 -0400
-Received: from e24smtp02.br.ibm.com ([32.104.18.86]:39138 "EHLO
-	e24smtp02.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab0I3TJq (ORCPT
+	id S932270Ab0I3TJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 15:09:52 -0400
+Received: from e24smtp01.br.ibm.com ([32.104.18.85]:51831 "EHLO
+	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755010Ab0I3TJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 15:09:46 -0400
+	Thu, 30 Sep 2010 15:09:49 -0400
 From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: jmorris@namei.org, joe@perches.com, christophe-h.ricard@st.com
-Subject: [PATCH 0/3] New stm i2c tpm device driver 
-Date: Thu, 30 Sep 2010 16:09:19 -0300
-Message-Id: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
+Subject: [PATCH 2/3] TPM: Use pr_fmt, pr_<level> and FUNC_ENTER
+Date: Thu, 30 Sep 2010 16:09:21 -0300
+Message-Id: <35e4cf94e4df9814fe9b82a568931c5c3178b81a.1285870690.git.srajiv@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
+References: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
+In-Reply-To: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
+References: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patches include a new STMicroelectronics i2c tpm device 
-driver together with a document describing the platform on which the 
-code was tested, and subsequent improvements submitted by Joe Perches.
+From: Joe Perches <joe@perches.com>
 
-Christophe Henri RICARD (1):
-  TPM: New I2C TPM device driver
+Add FUNC_ENTER to emit pr_info("%s\n", __func_) with #DEBUG
 
-Joe Perches (2):
-  drivers/char/tpm/tpm_stm_st19_i2c.c: Use pr_fmt, pr_<level> and
-    FUNC_ENTER
-  drivers/char/tpm/tpm_stm_st19_i2c.c: Add missing break and neatening
+Signed-off-by: Joe Perches <joe@perches.com>
+Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+---
+ drivers/char/tpm/tpm_stm_st19_i2c.c |   57 ++++++++++++++++++-----------------
+ 1 files changed, 29 insertions(+), 28 deletions(-)
 
- Documentation/tpm/tpm_stm_st19_i2c.txt |  168 +++++++
- drivers/char/tpm/Kconfig               |    9 +
- drivers/char/tpm/Makefile              |    1 +
- drivers/char/tpm/tpm_stm_st19_i2c.c    |  835 ++++++++++++++++++++++++++++++++
- drivers/char/tpm/tpm_stm_st19_i2c.h    |   63 +++
- include/linux/i2c/tpm_stm_st19_i2c.h   |   45 ++
- 6 files changed, 1121 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/tpm/tpm_stm_st19_i2c.txt
- create mode 100644 drivers/char/tpm/tpm_stm_st19_i2c.c
- create mode 100644 drivers/char/tpm/tpm_stm_st19_i2c.h
- create mode 100644 include/linux/i2c/tpm_stm_st19_i2c.h
-
+diff --git a/drivers/char/tpm/tpm_stm_st19_i2c.c b/drivers/char/tpm/tpm_stm_st19_i2c.c
+index 35307d2..cdf2eb3 100644
+--- a/drivers/char/tpm/tpm_stm_st19_i2c.c
++++ b/drivers/char/tpm/tpm_stm_st19_i2c.c
+@@ -58,6 +58,8 @@
+  * ----------------------------------------------------------------------
+  */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/module.h>
+ #include <linux/kernel.h>
+ #include <linux/delay.h>
+@@ -81,6 +83,12 @@
+ 
+ #include "tpm_stm_st19_i2c.h"
+ 
++#ifdef DEBUG
++#define FUNC_ENTER()	pr_info("%s\n", __func__)
++#else
++#define FUNC_ENTER()	do {} while (0)
++#endif
++
+ /*
+  * @Comments: tpm_stm_st19_platform_specific.h deliver shows a platform specific
+  * file example.
+@@ -260,9 +268,7 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 	u32 ret = 0, i, size, ordinal, pin = 0;
+ 	struct i2c_client *client;
+ 
+-#ifdef DEBUG
+-	printk(KERN_INFO "tpm_st19_i2c: tpm_stm_i2c_send\n");
+-#endif
++	FUNC_ENTER();
+ 
+ 	if (chip == NULL)
+ 		return -EBUSY;
+@@ -337,7 +343,7 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 				    TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
+ 				    count - i : count);
+ 		if (ret < 0) {
+-			printk(KERN_INFO "tpm_st19_i2c: Failed to send data\n");
++			pr_info("Failed to send data\n");
+ 			goto end;
+ 		}
+ 
+@@ -351,16 +357,13 @@ static int tpm_stm_i2c_send(struct tpm_chip *chip, unsigned char *buf,
+ 							     (TPM_I2C_SHORT));
+ 
+ 		if (pin != COMMAND_ON) {
+-			printk(KERN_INFO
+-			       "tpm_st19_i2c:"
+-			       " Failed to read gpio pin (AcceptCmd)\n");
++			pr_info("Failed to read gpio pin (AcceptCmd)\n");
+ 			ret = -EIO;
+ 			goto end;
+ 		}
+ 	}
+ 	if (i == 0) {
+-		printk(KERN_INFO
+-		       "tpm_st19_i2c: Failed to read gpio pin (AcceptCmd)\n");
++		pr_info("Failed to read gpio pin (AcceptCmd)\n");
+ 		ret = -EIO;
+ 	}
+ end:
+@@ -395,9 +398,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 	int pin = 0;
+ 	struct i2c_client *client;
+ 
+-#ifdef DEBUG
+-	printk(KERN_INFO "tpm_st19_i2c: tpm_stm_i2c_recv\n");
+-#endif
++	FUNC_ENTER();
+ 
+ 	if (chip == NULL)
+ 		return -EBUSY;
+@@ -425,9 +426,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 				     TPM_I2C_BLOCK_SIZE ? TPM_I2C_BLOCK_SIZE :
+ 				     size - i : count));
+ 		if (ret < 0) {
+-			printk(KERN_INFO
+-			       "tpm_st19_i2c:"
+-			       " Failed to read gpio pin (DataAvalaible)\n");
++			pr_info("Failed to read gpio pin (DataAvailable)\n");
+ 			goto end;
+ 		}
+ 
+@@ -444,7 +443,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 					size = count;
+ 			}
+ 		} else {
+-			printk(KERN_INFO "tpm_st19_i2c: read buffer is NULL\n");
++			pr_info("read buffer is NULL\n");
+ 			goto end;
+ 		}
+ 
+@@ -459,9 +458,7 @@ static int tpm_stm_i2c_recv(struct tpm_chip *chip, unsigned char *buf,
+ 	}
+ 
+ 	if (i == 0) {
+-		printk(KERN_INFO
+-		       "tpm_st19_i2c: "
+-		       "Failed to read gpio pin (DataAvalaible)\n");
++		pr_info("Failed to read gpio pin (DataAvailable)\n");
+ 		ret = -EIO;
+ 		goto end;
+ 	}
+@@ -501,7 +498,8 @@ static void tpm_st19_i2c_dummy(struct device *dev)
+ static void tpm_st19_i2c_release(struct kobject *kobj)
+ {
+ 	struct tpm_chip *chip;
+-	printk(KERN_INFO "tpm_st19_i2c_release\n");
++
++	FUNC_ENTER();
+ 
+ 	if (_client != NULL) {
+ 		chip = (struct tpm_chip *)i2c_get_clientdata(_client);
+@@ -614,19 +612,19 @@ tpm_st19_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	struct tpm_chip *chip;
+ 	struct st19np18_platform_data *platform_data;
+ 
+-	printk(KERN_INFO "tpm_st19_i2c: tpm_st19_i2c_probe\n");
++	FUNC_ENTER();
+ 
+ 	err = 0;
+ 
+ 	/* Check I2C platform functionnalities */
+ 	if (client == NULL) {
+-		printk(KERN_INFO "client is NULL. exiting.\n");
++		pr_info("client is NULL. exiting.\n");
+ 		err = -ENODEV;
+ 		goto end;
+ 	}
+ 
+ 	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+-		printk(KERN_INFO "tpm_st19_i2c: client not i2c capable\n");
++		pr_info("client not i2c capable\n");
+ 		err = -ENODEV;
+ 		goto end;
+ 	}
+@@ -680,7 +678,7 @@ tpm_st19_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
+ 	i2c_set_clientdata(client, chip);
+ 	pin_infos->bChipF = false;
+ 
+-	printk(KERN_INFO "tpm_st19_i2c: TPM I2C Initialized\n");
++	pr_info("TPM I2C Initialized\n");
+ 	return 0;
+ _gpio_set:
+ _gpio_init:
+@@ -701,7 +699,7 @@ _tpm_clean_answer:
+ 	}
+ 	pin_infos->bChipF = true;
+ end:
+-	printk(KERN_INFO "tpm_st19_i2c: TPM I2C initialisation fail\n");
++	pr_info("TPM I2C initialisation fail\n");
+ 	return err;
+ }
+ 
+@@ -714,7 +712,8 @@ end:
+ static __devexit int tpm_st19_i2c_remove(struct i2c_client *client)
+ {
+ 	struct tpm_chip *chip = (struct tpm_chip *)i2c_get_clientdata(client);
+-	printk(KERN_INFO "tpm_st19_i2c: tpm_st19_i2c_remove\n");
++
++	FUNC_ENTER();
+ 
+ 	if (pin_infos != NULL) {
+ 		gpio_free(pin_infos->accept_pin);
+@@ -799,7 +798,8 @@ static struct i2c_driver tpm_st19_i2c_driver = {
+  */
+ static int __init tpm_st19_i2c_init(void)
+ {
+-	printk(KERN_INFO "tpm_st19_i2c: tpm_st19_i2c_init\n");
++	FUNC_ENTER();
++
+ 	return i2c_add_driver(&tpm_st19_i2c_driver);
+ }
+ 
+@@ -809,7 +809,8 @@ static int __init tpm_st19_i2c_init(void)
+  */
+ static void __exit tpm_st19_i2c_exit(void)
+ {
+-	printk(KERN_INFO "tpm_st19_i2c: tpm_st19_i2c_exit\n");
++	FUNC_ENTER();
++
+ 	i2c_del_driver(&tpm_st19_i2c_driver);
+ }
+ 
 -- 
 1.7.2.2
 
