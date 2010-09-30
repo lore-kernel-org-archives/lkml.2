@@ -1,113 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753371Ab0I3I0z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 04:26:55 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60656 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751907Ab0I3IY1 (ORCPT
+	id S1753508Ab0I3IeL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 04:34:11 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:47056 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1753084Ab0I3IeJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 04:24:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: Marek Belisko <marek.belisko@gmail.com>, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 1/6] staging: make new character devices nonseekable
-Date: Thu, 30 Sep 2010 10:24:07 +0200
-Message-Id: <1285835052-11880-2-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1285835052-11880-1-git-send-email-arnd@arndb.de>
-References: <1285835052-11880-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:jg4o37PJULSr03tvfv2u1VFef5bHW1CA0T3U4Nkd1DE
- C6V2K0CBC/0nPO3uVlM/tm19kU4XyRMBEaNmF01/Bat0rspKla
- gwgOlz9RMoOnpsWtPb5bJj6t83om0jv2MaJEsILaeyfdfHzIc9
- 3E73sB6RywyPyT4f69jAnHJeAAJtCqKMC/vDEgJ9iLnhi43BW0
- SzR56bl0vsL6ldb1bSzPQ==
+	Thu, 30 Sep 2010 04:34:09 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18ofsRti5YoWgHgX5htqa065QC42sAGRZH14cb1+g
+	AdHmt6VuCgxnu6
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: dma-mapping commit breaks UML
+Date: Thu, 30 Sep 2010 10:34:00 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.6; KDE/4.4.5; i686; ; )
+Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201009291155.30873.toralf.foerster@gmx.de> <201009291629.39077.toralf.foerster@gmx.de> <20100930144059N.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100930144059N.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201009301034.01157.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As a preparation for changing the default behaviour of llseek to no_llseek,
-every file_operations structure should have a .llseek operation.
 
-There are three new instances in staging now, which can all be changed
-into no_llseek explicitly since the devices do not need to seek.
+FUJITA Tomonori wrote at 07:45:19
+> On Wed, 29 Sep 2010 16:29:38 +0200
+> 
+> Toralf **UNKNOWN CHARSET** <toralf.foerster@gmx.de> wrote:
+> > but catched another compile error - how can I now automatically
+> > git-bisect for that wrong commit w/o heavy scripting ? - Or simply
+> > asking who to blame wrt this compile error ?
+> 
+> Fortunately, looks like we can easily figure out the root cause of
+> this (commit d6d1b650ae6acce73d55dd0246de22180303ae73), the last
+> commit to arch/um/drivers/hostaudio_kern.c
+> 
+> The following patch works?
 
-Add nonseekable_open where appropriate, to prevent pread/pwrite as well.
+YES :-)
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
- drivers/staging/bcm/Bcmchar.c                    |    5 +++++
- drivers/staging/bcm/InterfaceInit.c              |    1 +
- drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   10 ++++++----
- 3 files changed, 12 insertions(+), 4 deletions(-)
+> diff --git a/arch/um/drivers/hostaudio_kern.c
+> b/arch/um/drivers/hostaudio_kern.c index 0c46e39..63c740a 100644
+> --- a/arch/um/drivers/hostaudio_kern.c
+> +++ b/arch/um/drivers/hostaudio_kern.c
+> @@ -40,6 +40,11 @@ static char *mixer = HOSTAUDIO_DEV_MIXER;
+>  "    This is used to specify the host mixer device to the hostaudio
+> driver.\n"\ "    The default is \"" HOSTAUDIO_DEV_MIXER "\".\n\n"
+> 
+> +module_param(dsp, charp, 0644);
+> +MODULE_PARM_DESC(dsp, DSP_HELP);
+> +module_param(mixer, charp, 0644);
+> +MODULE_PARM_DESC(mixer, MIXER_HELP);
+> +
+>  #ifndef MODULE
+>  static int set_dsp(char *name, int *add)
+>  {
+> @@ -56,15 +61,6 @@ static int set_mixer(char *name, int *add)
+>  }
+> 
+>  __uml_setup("mixer=", set_mixer, "mixer=<mixer device>\n" MIXER_HELP);
+> -
+> -#else /*MODULE*/
+> -
+> -module_param(dsp, charp, 0644);
+> -MODULE_PARM_DESC(dsp, DSP_HELP);
+> -
+> -module_param(mixer, charp, 0644);
+> -MODULE_PARM_DESC(mixer, MIXER_HELP);
+> -
+>  #endif
+> 
+>  /* /dev/dsp file operations */
 
-diff --git a/drivers/staging/bcm/Bcmchar.c b/drivers/staging/bcm/Bcmchar.c
-index b239862..afde77a 100644
---- a/drivers/staging/bcm/Bcmchar.c
-+++ b/drivers/staging/bcm/Bcmchar.c
-@@ -1,3 +1,5 @@
-+#include <linux/fs.h>
-+
- #include "headers.h"
- /***************************************************************
- * Function	  - bcm_char_open()
-@@ -35,6 +37,8 @@ static int bcm_char_open(struct inode *inode, struct file * filp)
- 
- 	/*Start Queuing the control response Packets*/
- 	atomic_inc(&Adapter->ApplicationRunning);
-+
-+	nonseekable_open(inode, filp);
- 	return 0;
- }
- static int bcm_char_release(struct inode *inode, struct file *filp)
-@@ -2360,6 +2364,7 @@ static struct file_operations bcm_fops = {
-     .release  = bcm_char_release,
-     .read     = bcm_char_read,
-     .unlocked_ioctl    = bcm_char_ioctl,
-+	.llseek = no_llseek,
- };
- 
- 
-diff --git a/drivers/staging/bcm/InterfaceInit.c b/drivers/staging/bcm/InterfaceInit.c
-index d22a0e5..67d8572 100644
---- a/drivers/staging/bcm/InterfaceInit.c
-+++ b/drivers/staging/bcm/InterfaceInit.c
-@@ -163,6 +163,7 @@ static struct file_operations usbbcm_fops = {
-     .read    =  usbbcm_read,
-     .write   =  usbbcm_write,
-     .owner   =  THIS_MODULE,
-+	.llseek = no_llseek,
- };
- 
- static struct usb_class_driver usbbcm_class = {
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-index 65087ce..89d9a58 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-@@ -81,10 +81,11 @@ int numofmsgbuf = 0;
- //
- static struct file_operations ft1000fops =
- {
--    unlocked_ioctl:    ft1000_ChIoctl,
--    poll:     ft1000_ChPoll,
--    open:     ft1000_ChOpen,
--    release:  ft1000_ChRelease
-+	.unlocked_ioctl	= ft1000_ChIoctl,
-+	.poll		= ft1000_ChPoll,
-+	.open		= ft1000_ChOpen,
-+	.release	= ft1000_ChRelease,
-+	.llseek		= no_llseek,
- };
- 
- 
-@@ -470,6 +471,7 @@ static int ft1000_ChOpen (struct inode *Inode, struct file *File)
- 
-     File->private_data = pdevobj[num]->net;
- 
-+	nonseekable_open(Inode, File);
-     return 0;
- }
- 
+
 -- 
-1.7.1
+MfG/Kind regards
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
