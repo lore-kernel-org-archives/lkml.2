@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab0I3W3X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 18:29:23 -0400
-Received: from void.printf.net ([89.145.121.20]:49670 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754642Ab0I3W3W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 18:29:22 -0400
-Date: Thu, 30 Sep 2010 23:29:19 +0100
-From: Chris Ball <cjb@laptop.org>
-To: Hanumath Prasad <hanumath.prasad@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-        linus.walleij@stericsson.com, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: MMC 4.4 DDR support
-Message-ID: <20100930222919.GA29047@void.printf.net>
-References: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com>
+	id S1756921Ab0I3W34 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 18:29:56 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47577 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754642Ab0I3W3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 18:29:55 -0400
+Date: Thu, 30 Sep 2010 23:29:46 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+        linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3
+	boot hang
+Message-ID: <20100930222946.GB23084@srcf.ucam.org>
+References: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain> <20100927135735.GA856@srcf.ucam.org> <alpine.LFD.2.00.1009301810380.7033@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1278658780-26397-1-git-send-email-hanumath.prasad@stericsson.com>
+In-Reply-To: <alpine.LFD.2.00.1009301810380.7033@localhost.localdomain>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 12:29:40PM +0530, Hanumath Prasad wrote:
-> Add support for Dual Data Rate MMC cards as defined in the 4.4
-> specification.
-> 
-> Cc: linux-mmc@vger.kernel.org
-> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-> Signed-off-by: Hanumath Prasad <hanumath.prasad@stericsson.com>
+On Thu, Sep 30, 2010 at 06:14:35PM -0400, Len Brown wrote:
 
-Thanks very much, pushed to mmc-next along with Zhangfei's Tested-By:
-and Adrian's fixup patch.
+> we check (and clear) that bit only if the acpi tables
+> tell us to do so.
+
+Do the tables tell us to do so on this platform?
 
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Matthew Garrett | mjg59@srcf.ucam.org
