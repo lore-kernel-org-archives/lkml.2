@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754215Ab0I3GVD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 02:21:03 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:34749 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751759Ab0I3GVA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 02:21:00 -0400
-Date: Thu, 30 Sep 2010 16:20:57 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/17] fs: icache atomic inodes_stat
-Message-ID: <20100930062057.GA5665@dastard>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
- <1285762729-17928-8-git-send-email-david@fromorbit.com>
- <20100929215253.6fd944a2.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100929215253.6fd944a2.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754314Ab0I3GYh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 02:24:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9203 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752779Ab0I3GYg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 02:24:36 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kbuild@vger.kernel.org
+Cc: Amerigo Wang <amwang@redhat.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] Fix wrong source path in scripts/namespace.pl
+Date: Thu, 30 Sep 2010 14:28:55 +0800
+Message-Id: <1285828138-5873-1-git-send-email-amwang@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 09:52:53PM -0700, Andrew Morton wrote:
-> On Wed, 29 Sep 2010 22:18:39 +1000 Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > From: Nick Piggin <npiggin@suse.de>
-> > 
-> > The inode use statistics are currently protected by the inode_lock.
-> > Before we can remove the inode_lock, we need to protect these
-> > counters against races. Do this by converting them to atomic
-> > counters so they ar enot dependent on any lock at all.
-> 
-> typo
-> 
-> >
-> > ...
-> >
-> > --- a/fs/fs-writeback.c
-> > +++ b/fs/fs-writeback.c
-> > @@ -764,7 +764,8 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
-> >  	wb->last_old_flush = jiffies;
-> >  	nr_pages = global_page_state(NR_FILE_DIRTY) +
-> >  			global_page_state(NR_UNSTABLE_NFS) +
-> > -			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
-> > +			(atomic_read(&inodes_stat.nr_inodes) -
-> > +			atomic_read(&inodes_stat.nr_unused));
-> 
-> race bug.
+File::Find will do chdir automatically, so we need to get
+the absolute patch with $File::Find::dir.
 
-What new race?  The code has gone from using subtraction of unlocked
-counters to using subtraction of unlocked atomic counters. I can't
-see any new race condition in that transformation....
+Reported-by: Stephen Hemminger <shemminger@vyatta.com>
+Signed-off-by: Amerigo Wang <amwang@redhat.com>
+---
+ scripts/namespace.pl |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-> > +struct inodes_stat_t {
-> > +	atomic_t nr_inodes;
-> > +	atomic_t nr_unused;
-> > +	int dummy[5];		/* padding for sysctl ABI compatibility */
-> > +};
-> 
-> OK, that's a hack.  The first two "ints" are copied out to userspace. 
-> This change assumes that sizeof(atomic_t)=4 and that an atomic_t has
-> the same layout, alignment and padding as an int.
-> 
-> Probably that's true in current kernels and with current architectures
-> but it's a hack and it's presumptive.
-> 
-> It shouldn't be snuck into the tree unchangelogged and uncommented.
-> 
-> (time passes)
-> 
-> OK, I see that all of this gets reverted later on.  Please update the
-> changelog so the next reviewer doesn't get fooled.
-
-That's the multiple changes to the counter infrastructure I
-described in the preliminary series description. clearly it needs to
-be cleaned up.
-
-Cheers,
-
-Dave.
+diff --git a/scripts/namespace.pl b/scripts/namespace.pl
+index 361d0f7..fb4e245 100755
+--- a/scripts/namespace.pl
++++ b/scripts/namespace.pl
+@@ -167,11 +167,11 @@ sub do_nm
+ 		printf STDERR "$fullname is not an object file\n";
+ 		return;
+ 	}
+-	($source = $fullname) =~ s/\.o$//;
+-	if (-e "$objtree$source.c" || -e "$objtree$source.S") {
+-		$source = "$objtree$source";
++	($source = $basename) =~ s/\.o$//;
++	if (-e "$source.c" || -e "$source.S") {
++		$source = "$objtree$File::Find::dir/$source";
+ 	} else {
+-		$source = "$srctree$source";
++		$source = "$srctree$File::Find::dir/$source";
+ 	}
+ 	if (! -e "$source.c" && ! -e "$source.S") {
+ 		# No obvious source, exclude the object if it is conglomerate
 -- 
-Dave Chinner
-david@fromorbit.com
+1.6.5.2
+
