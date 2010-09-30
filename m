@@ -1,86 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab0I3JM4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 05:12:56 -0400
-Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:11243 "EHLO
-	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753618Ab0I3JMz convert rfc822-to-8bit (ORCPT
+	id S1755141Ab0I3JPo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 05:15:44 -0400
+Received: from exprod8ob114.obsmtp.com ([64.18.3.27]:36003 "EHLO
+	exprod8ob114.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750840Ab0I3JPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 05:12:55 -0400
-X-SpamScore: -25
-X-BigFish: VPS-25(zzbb2cK1102K1432N98dN9371Pzz1202hzz8275bhz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9JYX9-02-6RF-02
-X-M-MSG: 
-Date: Thu, 30 Sep 2010 11:12:46 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
- disabling counters
-Message-ID: <20100930091246.GV13563@erda.amd.com>
-References: <AANLkTi=WYU2=4Hu7tb+TSrhJw9K9du19_KjMcG3ij=qn@mail.gmail.com>
- <20100929150140.GK13563@erda.amd.com>
- <20100929151253.GL13563@erda.amd.com>
- <20100929152745.GC9440@lenovo>
- <AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
- <20100929154528.GD9440@lenovo>
- <AANLkTinkqTXXD5fMUYTT4zrRD6YoTi_G+uOA5CsOgxtT@mail.gmail.com>
- <20100929170924.GR13563@erda.amd.com>
- <20100929181207.GW26290@redhat.com>
- <AANLkTimp=+1GzBOYaUZWtDF6teGt6FZe+RTpb9fAyOyd@mail.gmail.com>
+	Thu, 30 Sep 2010 05:15:43 -0400
+Reply-To: <jameskubu@aol.com>
+From: "NGO/CSO REGISTRATION" <JAMESKUBU@HOTMAIL.COM>
+Subject: NGO/CSO Registration.
+Date: Thu, 30 Sep 2010 11:08:32 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <AANLkTimp=+1GzBOYaUZWtDF6teGt6FZe+RTpb9fAyOyd@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: unknown
+Content-Type: text/plain;
+	charset="_iso-2022-jp$ESC"
+Content-Transfer-Encoding: 7bit
+X-Priority: 1
+X-MSMail-Priority: High
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-ID: <POWEREDGE1M3oryKFRJ00000438@poweredge1.local.sccky.edu>
+X-OriginalArrivalTime: 30 Sep 2010 09:10:42.0987 (UTC) FILETIME=[5BF1AFB0:01CB607F]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.09.10 15:42:26, Stephane Eranian wrote:
-> On Wed, Sep 29, 2010 at 8:12 PM, Don Zickus <dzickus@redhat.com> wrote:
-> > I think you missed Stephane's point.  Say for example, kgdb is being used
-> > while we are doing stuff with the perf counter (and say kgdb's handler is
-> > a lower priority than perf; which isn't true I know, but let's say):
-> >
-> Yes, exactly my point. The reality is you cannot afford to have false positive
-> because you may starve another subsystem from an important notification.
-
-As soon as you stop executing the chain, there are chances to miss an
-nmi for other parts of the system. Where is no way to avoid this. So
-your argument above is valid also for regular perf nmis and not only
-for catched-spurious or back-to-back nmis.
-
-> > Now I sent a patch last week that can prevent that extra NMI from being
-> > generated at the cost of another rdmsrl in the non-pmu_stop cases (which I
-> > will attach below again, obviously P4 would need something similar too).
-
-A rdmsrl() does not help, it only causes overhead. There is no bit to
-detect if a counter overflowed and triggered the interrupt, you only
-know the counter value is greater zero or not.
-
-We should take care the discussion becomes not academical and do not
-start to overengineer something. I always can imagine some really rare
-corner cases in which we may loss an nmi. This is because hardware is
-not built for it. But in 99% or so of the cases we get all nmis,
-instead of before where all nmis were eaten by the profiler.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Registration of an NGO for Mutual Benefit.
+Mr.James Kubu.
