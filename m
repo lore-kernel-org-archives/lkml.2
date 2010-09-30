@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756728Ab0I3QhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 12:37:22 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3362 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab0I3QhV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 12:37:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Fl8qxHFnFcSEZzv2I+ORlS1OsFSfujFfvEf580njCP09yvDFiaHHLp0dGk+lTYq6AJ
-         bL6HwSXYNiZzFJjH3aHg==
+	id S1756736Ab0I3Qjo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 12:39:44 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:41044 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755675Ab0I3Qjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 12:39:43 -0400
+Date: Thu, 30 Sep 2010 11:39:39 -0500
+From: Robin Holt <holt@sgi.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: Robin Holt <holt@sgi.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@ozlabs.org, Greg KH <greg@kroah.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 0/8] v2 De-Couple sysfs memory directories from memory
+ sections
+Message-ID: <20100930163939.GL14068@sgi.com>
+References: <4CA0EBEB.1030204@austin.ibm.com>
+ <20100928123848.GH14068@sgi.com>
+ <4CA2313D.2030508@austin.ibm.com>
+ <20100929192830.GK14068@sgi.com>
 MIME-Version: 1.0
-In-Reply-To: <8762xnwtjn.fsf@basil.nowhere.org>
-References: <1285788096-29471-1-git-send-email-venki@google.com>
-	<8762xnwtjn.fsf@basil.nowhere.org>
-Date: Thu, 30 Sep 2010 09:37:17 -0700
-Message-ID: <AANLkTimd0Acz3kcNswBoDS2XytfUgbE+ZyTxHUAcNspa@mail.gmail.com>
-Subject: Re: Proper kernel irq time accounting -v3
-From: Venkatesh Pallipadi <venki@google.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>, Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100929192830.GK14068@sgi.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 12:59 AM, Andi Kleen <andi@firstfloor.org> wrote:
-> Venkatesh Pallipadi <venki@google.com> writes:
->>
->> Solution to (1) involves adding extra timing on irq entry/exit to
->> get the fine granularity info and then exporting it to user.
->
-> This means RDTSC right?
->
-> I am a bit concerned about overhead on systems with high TSC overhead.
-> Is there a way to turn this off at runtime for those?
->
+On Wed, Sep 29, 2010 at 02:28:30PM -0500, Robin Holt wrote:
+> On Tue, Sep 28, 2010 at 01:17:33PM -0500, Nathan Fontenot wrote:
+...
+> My next task is to implement a x86_64 SGI UV specific chunk of code
+> to memory_block_size_bytes().  Would you consider adding that to your
+> patch set?  I expect to have that either later today or early tomorrow.
 
-Yes. Overhead will be RDTSC.
-notsc is a boot option that will disable this. I didn't want to have a
-specific run time option to disable this as we would already have
-other RDTSC users like native_sched_clock. Do you think we need a
-specific option to disable this feature? I don't like adding a runtime
-option because it complicates the code a bit (to handle things like
-someone turning it off and turning it on later, etc).
+The patch is below.
+
+I left things at a u32, but I would really like it if you changed to an
+unsigned long and adjusted my patch for me.
 
 Thanks,
-Venki
+Robin
+
+------------------------------------------------------------------------
+Subject: [Patch] Implement memory_block_size_bytes for x86_64 when CONFIG_X86_UV
+
+
+Nathan Fontenot has implemented a patch set for large memory configuration
+systems which will combine drivers/base/memory.c memory sections
+together into memory blocks with the default behavior being
+unchanged from the current behavior.
+
+In his patch set, he implements a memory_block_size_bytes() function
+for PPC.  This is the equivalent patch for x86_64 when it has
+CONFIG_X86_UV set.
+
+Signed-off-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: lkml <linux-kernel@vger.kernel.org>
+
+---
+
+ arch/x86/mm/init_64.c |   15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+Index: memory_block/arch/x86/mm/init_64.c
+===================================================================
+--- memory_block.orig/arch/x86/mm/init_64.c	2010-09-29 14:46:50.711824616 -0500
++++ memory_block/arch/x86/mm/init_64.c	2010-09-29 14:46:55.683997672 -0500
+@@ -50,6 +50,7 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
++#include <asm/uv/uv.h>
+ #include <linux/bootmem.h>
+ 
+ static unsigned long dma_reserve __initdata;
+@@ -928,6 +929,20 @@ const char *arch_vma_name(struct vm_area
+ 	return NULL;
+ }
+ 
++#ifdef CONFIG_X86_UV
++#define MIN_MEMORY_BLOCK_SIZE   (1 << SECTION_SIZE_BITS)
++
++u32 memory_block_size_bytes(void)
++{
++	if (is_uv_system()) {
++		printk("UV: memory block size 2GB\n");
++		return 2UL * 1024 * 1024 * 1024;
++	}
++	return MIN_MEMORY_BLOCK_SIZE;
++}
++#endif
++
++
+ #ifdef CONFIG_SPARSEMEM_VMEMMAP
+ /*
+  * Initialise the sparsemem vmemmap using huge-pages at the PMD level.
