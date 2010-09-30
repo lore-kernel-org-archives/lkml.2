@@ -1,119 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756813Ab0I3Ri5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 13:38:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33851 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755918Ab0I3Ri4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 13:38:56 -0400
-Date: Thu, 30 Sep 2010 10:39:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
+	id S932302Ab0I3Rja (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 13:39:30 -0400
+Received: from smtp.df.ru ([195.42.160.16]:49487 "EHLO smtp.df.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755918Ab0I3Rj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 13:39:29 -0400
+Date: Thu, 30 Sep 2010 21:37:32 +0400
+From: Alexey Vlasov <renton@renton.name>
 To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: inode per-cpu last_ino allocator
-Message-Id: <20100930103926.e60f3099.akpm@linux-foundation.org>
-In-Reply-To: <1285867685.2615.865.camel@edumazet-laptop>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	<1285762729-17928-16-git-send-email-david@fromorbit.com>
-	<20100929215312.5fcb6976.akpm@linux-foundation.org>
-	<1285824982.5211.675.camel@edumazet-laptop>
-	<1285833189.2615.31.camel@edumazet-laptop>
-	<20100930011417.6ca16ed7.akpm@linux-foundation.org>
-	<1285842136.2615.251.camel@edumazet-laptop>
-	<20100930094558.97c9afa2.akpm@linux-foundation.org>
-	<1285867685.2615.865.camel@edumazet-laptop>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Packet time delays on multi-core systems
+Message-ID: <20100930173732.GB4094@beaver.vrungel.ru>
+References: <20100929191851.GC86786@beaver.vrungel.ru> <1285796721.5211.156.camel@edumazet-laptop> <20100930062419.GD86786@beaver.vrungel.ru> <1285828432.5211.812.camel@edumazet-laptop> <20100930122321.GA1575@beaver.vrungel.ru> <1285850669.2615.426.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=koi8-r
+Content-Disposition: inline
+In-Reply-To: <1285850669.2615.426.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Sep 2010 19:28:05 +0200 Eric Dumazet <eric.dumazet@gmail.com> wrote:
+On Thu, Sep 30, 2010 at 02:44:29PM +0200, Eric Dumazet wrote:
+> Le jeudi 30 septembre 2010 ?? 16:23 +0400, Alexey Vlasov a ??crit :
+> > On Thu, Sep 30, 2010 at 08:33:52AM +0200, Eric Dumazet wrote:
+> > > Le jeudi 30 septembre 2010 ?? 10:24 +0400, Alexey Vlasov a ??crit :
+> > > > Here I found some dude with the same problem:
+> > > > http://lkml.org/lkml/2010/7/9/340
+> >  
+> > Well I put interrups from NIC, namely tx/rx query, to different
+> > processors and got normal pings by adding LOG rule.
+> > 
+> > I also found that overruns is constantly growing, I don't know if these are connected.
+> > RX packets:2831439546 errors:0 dropped:134726 overruns:947671733 frame:0
+> > TX packets:2880849825 errors:0 dropped:0 overruns:0 carrier:0
+> > 
 
-> Le jeudi 30 septembre 2010 __ 09:45 -0700, Andrew Morton a __crit :
-> 
-> > Could eliminate `p' I guess, but that would involve using
-> > __get_cpu_var() as an lval, which looks vile and might generate worse
-> > code.
+Too early to be happy, concerning one rule- the situation got better, but still
+there are some time delays. But adding one more rule:
+-A INPUT -p all -m state --state INVALID -j LOG --log-prefix
+"ipsec:IN-INVALID "
+it got totally wrecked:
+...
+64 bytes from (10.0.2.17): icmp_seq=24 ttl=64 time=0.342 ms
+64 bytes from (10.0.2.17): icmp_seq=25 ttl=64 time=1868 ms
+64 bytes from (10.0.2.17): icmp_seq=26 ttl=64 time=1448 ms
+64 bytes from (10.0.2.17): icmp_seq=27 ttl=64 time=447 ms
+64 bytes from (10.0.2.17): icmp_seq=28 ttl=64 time=0.196 ms
+...
+100 packets transmitted, 100 received, 0% packet loss, time 99990ms
+rtt min/avg/max/mdev = 0.108/39.068/1868.663/237.507 ms, pipe 2
+
+# iptables -L -v -n
+Chain INPUT (policy ACCEPT 601K packets, 475M bytes)
+ pkts bytes target     prot opt in     out     source               destination
+  275 11096 LOG        all  --  *      *       0.0.0.0/0            0.0.0.0/0           state INVALID LOG flags 0 level 4 prefix `ipsec:IN-INVALID '
+
+Chain FORWARD (policy ACCEPT 0 packets, 0 bytes)
+ pkts bytes target     prot opt in     out     source               destination
+
+Chain OUTPUT (policy ACCEPT 529K packets, 561M bytes)
+ pkts bytes target     prot opt in     out     source               destination
+13979  839K LOG        tcp  --  *      *       0.0.0.0/0            0.0.0.0/0           tcp dpt:80 flags:0x17/0x02 LOG flags 8 level 4 prefix `ipsec:SYN-OUTPUT-DROP '
+ 
+> > Here goes the typical distribution of interrups on new servers:
+> >            CPU0    CPU1    CPU2    CPU3 ... CPU23
+> > 752:         11       0       0       0 ...     0 PCI-MSI-edge eth0
+> > 753: 2799366721       0       0       0 ...     0 PCI-MSI-edge eth0-rx3
+> > 754: 2821840553       0       0       0 ...     0 PCI-MSI-edge eth0-rx2
+> > 755: 2786117044       0       0       0 ...     0 PCI-MSI-edge eth0-rx1
+> > 756: 2896099336       0       0       0 ...     0 PCI-MSI-edge eth0-rx0
+> > 757: 1808404680       0       0       0 ...     0 PCI-MSI-edge eth0-tx3
+> > 758: 1797855130       0       0       0 ...     0 PCI-MSI-edge eth0-tx2
+> > 759: 1807222032       0       0       0 ...     0 PCI-MSI-edge eth0-tx1
+> > 760: 1820309360       0       0       0 ...     0 PCI-MSI-edge eth0-tx0
 > > 
 > 
-> Hmm, I see, please check this new patch, using the most modern stuff ;)
+> echo 01 >/proc/irq/*/eth0-rx0/../smp_affinity
+> echo 02 >/proc/irq/*/eth0-rx1/../smp_affinity
+> echo 04 >/proc/irq/*/eth0-rx2/../smp_affinity
+> echo 08 >/proc/irq/*/eth0-rx3/../smp_affinity
 > 
-> > Readers of this code won't know why last_ino_get() was marked noinline.
-> > It looks wrong, really.
 > 
-> Oops sorry, this was a temporary hack of mine to ease disassembly
-> analysis. Good catch !
+> cat /proc/irq/*/eth0-rx0/../smp_affinity
+> cat /proc/irq/*/eth0-rx1/../smp_affinity
+> cat /proc/irq/*/eth0-rx2/../smp_affinity
+> cat /proc/irq/*/eth0-rx3/../smp_affinity
+ 
+The last test were made already concerning such rx queue binding:
+# cat /proc/irq/60/smp_affinity
+001000
+# cat /proc/irq/61/smp_affinity
+010000
+# cat /proc/irq/62/smp_affinity
+080000
+# cat /proc/irq/63/smp_affinity
+800000
+
+Now ksoftirqd eats not only one processor but all oness where I assigned the IRQs.
+
+> > On the old ones:
+> >            CPU0       CPU1       CPU2  ...      CPU8
+> > 502:  522320256  522384039  522327386  ... 522380267 PCI-MSI-edge eth0
+> > 
 > 
-> Here is the new generated code on i686 (with the noinline) : 
-> pretty good ;)
-> 
-> c02e5930 <last_ino_get>:
-> c02e5930:	55                   	push   %ebp
-> c02e5931:	89 e5                	mov    %esp,%ebp
-> c02e5933:	64 a1 44 29 7d c0    	mov    %fs:0xc07d2944,%eax
-> c02e5939:	a9 ff 03 00 00       	test   $0x3ff,%eax
-> c02e593e:	74 09                	je     c02e5949 <last_ino_get+0x19>
-> c02e5940:	40                   	inc    %eax
-> c02e5941:	64 a3 44 29 7d c0    	mov    %eax,%fs:0xc07d2944
-> c02e5947:	c9                   	leave  
-> c02e5948:	c3                   	ret    
-> c02e5949:	b8 00 04 00 00       	mov    $0x400,%eax
-> c02e594e:	f0 0f c1 05 80 c8 92 c0	lock xadd %eax,0xc092c880
-> c02e5956:	eb e8                	jmp    c02e5940 <last_ino_get+0x10>
-> 
+> What network driver is it (newbox), was it (old box) ?
 
-That uniprocessor, PREEMPT=n I guess.
+newbox:
+01:00.0 Ethernet controller: Intel Corporation 82575EB Gigabit Network
+Connection (rev 02)
+driver: igb
+version: 1.3.16-k2
+firmware-version: 2.1-0
+bus-info: 0000:01:00.0
 
-> --- a/fs/inode.c
-> +++ b/fs/inode.c
-> @@ -624,6 +624,45 @@ void inode_add_to_lists(struct super_block *sb, struct inode *inode)
->  }
->  EXPORT_SYMBOL_GPL(inode_add_to_lists);
->  
-> +#define LAST_INO_BATCH 1024
-> +
-> +/*
-> + * Each cpu owns a range of LAST_INO_BATCH numbers.
-> + * 'shared_last_ino' is dirtied only once out of LAST_INO_BATCH allocations,
-> + * to renew the exhausted range.
-> + *
-> + * This does not significantly increase overflow rate because every CPU can
-> + * consume at most LAST_INO_BATCH-1 unused inode numbers. So there is
-> + * NR_CPUS*(LAST_INO_BATCH-1) wastage. At 4096 and 1024, this is ~0.1% of the
-> + * 2^32 range, and is a worst-case. Even a 50% wastage would only increase
-> + * overflow rate by 2x, which does not seem too significant.
-> + *
-> + * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
-> + * error if st_ino won't fit in target struct field. Use 32bit counter
-> + * here to attempt to avoid that.
-> + */
-> +static DEFINE_PER_CPU(unsigned int, last_ino);
-> +
-> +static unsigned int last_ino_get(void)
-> +{
-> +	unsigned int res;
-> +
-> +	get_cpu();
-> +	res = __this_cpu_read(last_ino);
-> +#ifdef CONFIG_SMP
-> +	if (unlikely((res & (LAST_INO_BATCH - 1)) == 0)) {
-> +		static atomic_t shared_last_ino;
-> +		int next = atomic_add_return(LAST_INO_BATCH, &shared_last_ino);
-> +
-> +		res = next - LAST_INO_BATCH;
-> +	}
-> +#endif
-> +	res++;
-> +	__this_cpu_write(last_ino, res);
-> +	put_cpu();
-> +	return res;
-> +}
+oldbox:
+05:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit
+Ethernet Controller (Copper) (rev 01)
+driver: e1000e
+version: 0.3.3.3-k6
+firmware-version: 1.0-0
+bus-info: 0000:05:00.0
 
-Looks good ;)
-
-
+-- 
+BRGDS. Alexey Vlasov.
