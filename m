@@ -1,66 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab0I3Do1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 23:44:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55728 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752978Ab0I3Do0 (ORCPT
+	id S1753264Ab0I3DsA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 23:48:00 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48282 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab0I3Dr7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 23:44:26 -0400
-Message-ID: <4CA40784.20205@infradead.org>
-Date: Thu, 30 Sep 2010 00:44:04 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
+	Wed, 29 Sep 2010 23:47:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=XvIyGvS8jFwTSTzQD04GPQDsvy0l9tYgS/UBpb9il7AcZUYKIvL+zJ/4WIeqdSUGHK
+         pvQYQpZKf0QQ4sU+zbv6BFgsodAygobDvc6ALqoSslvSosYaU+zw9AsOU6n1SCxqOE3W
+         3pHXQNT6eG1DBLgu+rq2CCDYgVZCfcOq9qyfQ=
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-References: <20100929112904.3fd117e0.sfr@canb.auug.org.au>
-In-Reply-To: <20100929112904.3fd117e0.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <AANLkTimb02EB+G2eV2dEcL8Fc7EJitgvshWYMawuzgOx@mail.gmail.com>
+References: <AANLkTi=NFz95jvk73cgXGV-kzj7FFazgMJ6D+GOXr3Kb@mail.gmail.com>
+	<006201cb6048$962b6810$c2823830$%kim@samsung.com>
+	<AANLkTimb02EB+G2eV2dEcL8Fc7EJitgvshWYMawuzgOx@mail.gmail.com>
+Date: Thu, 30 Sep 2010 12:47:58 +0900
+Message-ID: <AANLkTi=4Eb+_1MTQtic3y5Wfn+i6dYgJrqtFYwAHVGGT@mail.gmail.com>
+Subject: Re: Please don't edit the subject. Use S5PC110 & S5PC210 as is
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>, Tomasz Fujak <t.fujak@samsung.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        arm-linux <linux-arm-kernel@lists.infradead.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 28-09-2010 22:29, Stephen Rothwell escreveu:
-> Hi Mauro,
-> 
-> After merging the v4l-dvb tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> drivers/media/video/bt8xx/bttv-input.c: In function 'init_bttv_i2c_ir':
-> drivers/media/video/bt8xx/bttv-input.c:306: error: too few arguments to function 'i2c_new_probed_device'
-> 
-> Caused by commit 3c81f945a74224d6e3017596297ee9903929b1a7 ("V4L/DVB:
-> bttv: Move PV951 IR to the right driver") interacting with commit
-> 9a94241afcc9a481691a9c29b7460217925b59b8 ("i2c: Add support for custom
-> probe function") that entered Linus' tree in v2.6.36-rc1.  I guess that
-> the v4l-dvb commit moved that code to a driver that is now being built.
-> 
-> I have used the v4l-dvb tree from next-20100928 for today.
+On Thu, Sep 30, 2010 at 11:53 AM, Kyungmin Park <kmpark@infradead.org> wrote:
+> On Thu, Sep 30, 2010 at 11:38 AM, Kukjin Kim <kgene.kim@samsung.com> wrote:
+>> Kyungmin Park wrote:
+>>>
+>>> Hi,
+>>>
+>>> Please don't edit the subject.
+>>>
+>>> http://git.kernel.org/?p=linux/kernel/git/kgene/linux-
+>>> samsung.git;a=commitdiff;h=d8c3d96f5df54251c06686bb00811e4b7e0f6547
+>>> http://git.kernel.org/?p=linux/kernel/git/kgene/linux-
+>>> samsung.git;a=commitdiff;h=7dcde8f18b0df4d332d6b359fd6270772a42f71f
+>>>
+>>> Patches from DMC we decide to use the S5PC110 & S5PC210 as we're only
+>>> received the Spec C110 & C210.
+>>> Most of people including mobile division don't know the V210 & V310
+>>> SOC receptively.
+>>>
+>>> We're already confusing with names, we always talk with C110 & C210
+>>> but works on V210 & V310 directory.
+>>>
+>>> well question. What's the SOC is used at Galaxy S & wave phone?
+>>>
+>>> I think S5PC110 is more well known than S5PV210.
+>>>
+>>> http://lwn.net/Articles/399720/
+>>> The conclusion of the 2.6.36 merge window
+>>> Systems and processors: Income s.r.o. PXA270 single-board computers,
+>>> Wiliboard WBD-111 boards, and Samsung S5PC210-based systems.
+>>>
+>>> Thank you,
+>>> Kyungmin Park
+>>
+>> As I'm a maintainer of Samsung S5P SoCs, I would like to use second column
+>> in the subject line to indicate the ARCH_XXX name like following.
+>> 'ARM: S5PV210: <patch subject>'
+>> As you know, it means the patch is mainly regarding ARCH_S5PV210
+>> (arch/arm/mach-s5pv210/).
+>>
+>> It can be help to many people, including me that the title speak where it
+>> belong to.
+>>
+>> And I believe someone who can use git log to see the log and source, S5PC110
+>> is in the 'arch/arm/mach-s5pv210/'.
+>
+> Right, many people are confused where's the s5pc110 codes? and know
+> it's under mach-s5pv210.
+> And finally know it's almost same S5PC110 = S5PV210 so if it use the
+> S5PC110 at subject. not issue.
 
-Ok, that's easy. a new parameter were added to this function, probably via Jean's tree.
-The fix is as simple as:
-
--		i2c_new_probed_device(&btv->c.i2c_adap, &info, addr_list);
-+		i2c_new_probed_device(&btv->c.i2c_adap, &info, addr_list, NULL);
-
-The extra parameter is for an extra customized probe function, that it is not
-needed in this case.
-
-I got a small merge problem on this function:
-
-drivers/media/video/wm8739.c
-
-I just merged the conflict resolution at the merge object, and added a new
-patch for the extra parameter in order to solve I2C conflict.
-
-I did a compilation test after merging it with next-20100929 and those issues
-were solved on my local build.
-
-Cheers,
-Mauro.
+People will be confused to see S5PC110/C210 in subject line, when
+apparently there is no such machine in the kernel.
+The decision time was when we moved C110 -> V210 and C210 -> V310
+No point invoking the dead, let us move one.
