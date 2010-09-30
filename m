@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932432Ab0I3U5y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:57:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49091 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756090Ab0I3U5x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:57:53 -0400
+	id S1756808Ab0I3VDv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 17:03:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54995 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753805Ab0I3VDu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 17:03:50 -0400
+Date: Thu, 30 Sep 2010 23:02:51 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        hch@infradead.org
+Subject: Re: [2.6.36-rc1] unmount livelock due to racing with bdi-flusher
+ threads
+Message-ID: <20100930210250.GE3573@quack.suse.cz>
+References: <20100821084126.GE31488@dastard>
+ <20100913024128.GC411@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20100930224758.0c535d05@schatten.dmk.lab>
-References: <1284284969.2928.18.camel@maxim-laptop> <20100915132731.GA20558@khazad-dum.debian.net>
- <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
- <1284589207.4672.3.camel@maxim-laptop> <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
- <1285069338.3124.4.camel@maxim-laptop> <1285110590.2822.9.camel@maxim-laptop>
- <4C99B25D.20805@kernel.org> <1285162900.3335.15.camel@maxim-laptop>
- <1285163911.3159.5.camel@maxim-laptop> <4C9B141F.3050908@kernel.org>
- <AANLkTim31g84J6eeuh_6MiEw0w8zOi5sOWrL_WnoaueP@mail.gmail.com>
- <20100930083020.62b56218@schatten.dmk.lab> <AANLkTi=G42-0X0MWsgTaDKEnHocFEa+9Cmw4pfCMAk5=@mail.gmail.com>
- <20100930133823.39353d23@schatten.dmk.lab> <1285856252.26846.12.camel@maxim-laptop>
- <20100930164918.22f40a83@schatten.dmk.lab> <AANLkTim_ZW6D6TKNh9W5Qn2biC0_BQcPuMKKKS6_X-bp@mail.gmail.com>
- <20100930221426.5d0d3e7d@schatten.dmk.lab> <AANLkTinMuLUB-vsiecMYHWv4ZbWE6yGB_K-8XB6GmaOv@mail.gmail.com>
- <20100930224758.0c535d05@schatten.dmk.lab>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 30 Sep 2010 22:57:37 +0200
-Message-ID: <AANLkTim+JBU0LAfDe8WvN5peyQhRo-CAkgLpToG1wPGr@mail.gmail.com>
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-To: Florian Mickler <florian@mickler.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100913024128.GC411@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 22:47, Florian Mickler <florian@mickler.org> wrote:
-> On Thu, 30 Sep 2010 22:32:33 +0200
-> Kay Sievers <kay.sievers@vrfy.org> wrote:
->
->> On Thu, Sep 30, 2010 at 22:14, Florian Mickler <florian@mickler.org> wrote:
->> > On Thu, 30 Sep 2010 21:27:52 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
->>
->> >> I don't think anything needs to be or can really be fixed in the
->> >> kernel. We need a working O_EXCL, and before Tejun's patch it was
->> >> broken. That the broken behavior seemed to have some wanted effects on
->> >> some boxes can't the reason to leave O_EXCL broken.
->> >
->> > Ack on this on the technical side.
->> >
->> > But we have to look from the user side at this, as bug tracking is
->> > mostly a tool to get feedback from the users. So if we close this bug,
->> > we loose valuable feedback on the functioning of the kernel.
->> >
->> > So, I can't really close the report if it is not resolved in any way.
->>
->> As said, it can't be resolved. That it seemed to work was a buggy
->> O_EXCL, which let stuff through the O_EXCL barrier, which was never
->> supposed to reach the drive. I can't even reproduce that on older
->> kernels. It seems like a specific timing problem.
->
-> Yes I see this from the changelog of Tejuns commit. It shure looks like
-> it all works just fine...
->
-> Aren't cdrom devices physically locked while mounted? How could this be
-> a problem then? Is it about force-opening the device?
+On Mon 13-09-10 12:41:28, Dave Chinner wrote:
+> ping?
+  Pong ;) I finally had a look at this. Thanks for reporting this.
 
-Yes, udisks doesn't support force-unlocked cdrom doors. This all can
-not happen otherwise.
+> > I just had an umount take a very long time burning a CPU the entire
+> > time. It wasn't the unmount thread, either, it was the the bdi
+> > flusher thread for the the filesystem being unmounted. It was
+> > spinning with this perf top trace:
+> > 
+> >            553144.00 76.9% writeback_inodes_wb  [kernel.kallsyms]
+> >            106434.00 14.8% __ticket_spin_lock   [kernel.kallsyms]
+> >             25646.00  3.6% __ticket_spin_unlock [kernel.kallsyms]
+> >             10512.00  1.5% _raw_spin_lock       [kernel.kallsyms]
+> >              9606.00  1.3% put_super            [kernel.kallsyms]
+> >              7920.00  1.1% __put_super          [kernel.kallsyms]
+> >              5592.00  0.8% down_read_trylock    [kernel.kallsyms]
+> >                46.00  0.0% kfree                [kernel.kallsyms]
+> >                22.00  0.0% __do_softirq         [kernel.kallsyms]
+> >                19.00  0.0% wb_writeback         [kernel.kallsyms]
+> >                16.00  0.0% wb_do_writeback      [kernel.kallsyms]
+> >                 8.00  0.0% queue_io             [kernel.kallsyms]
+> >                 6.00  0.0% run_timer_softirq    [kernel.kallsyms]
+> >                 6.00  0.0% local_bh_enable_ip   [kernel.kallsyms]
+> > 
+> > This went on for ~7m25s (according to the pmchart trace I had on
+> > screen) before something broke the livelock by writing the inodes to
+> > disk (maybe the xfssyncd) and the unmount then completed a couple
+> > of seconds later.
+> > 
+> > From the above profile, I'm assuming that writeback_inodes_wb() was
+> > seeing pin_sb_for_writeback(sb) failing and moving dirty inodes from
+> > the the b_io to the b_more_io list, then being called again,
+> > splicing the inodes on b_more_io back to b_io, and then failed again
+> > to pin_sb_for_writeback() for each inode, moving them back to the
+> > b_more_io list....
+> > 
+> > This is on 2.6.36-rc1 + the radix tree fixes for writeback.
+  Indeed, your analysis looks correct. The trouble is following:
 
-> And what are the symptoms when the cd is removed while mounted? Are
-> there horrible timeouts when accessing the file system?
+  Flusher thread                           Umount
+- start processing background writeback
+					   - get s_mount for writing
+					   - queue syncing work for flusher
+					   - waits until flusher thread
+					     gets to it
+- loops infinitely, trying to get s_umount
+  for reading
 
-It did even crash the entire kernel sometimes in the past, I didn't
-try the last 2 years.
+In principle a classical ABBA deadlock. Actually, there are more
+complicated (and harder to hit) cases like:
 
-> I don't think we pay rent in the bugzilla yet... So this can just stay
-> open, until the necessary infrastructure is in place..
-> But I'm wondering if it is futile or not.
+  Flusher thread	  Sync				Remount
+- processes background
+  writeback
+			  - gets s_umount for reading
+			  - queues syncing work
+			  - waits for syncing work
+							- tries to get
+							  s_umount for writing
+							  and blocks
+- now loops infinitely
+  since it cannot get
+  s_umount for reading anymore
 
-Sure, keep it open if you like. I just say that it's not a regression
-in the sense that it can be fixed by rolling back to an earlier state.
-Such functionality will need a new feature to be implemented. It was
-only a bug that let O_EXCL pass the barrier, and that same bug broke
-physical media, and we need to fix it.
+The question is how to properly resolve it. The cases like the second one
+above show that it's not enough to just somehow work-around writeback
+during umount. Also it's not only background writeback that can get
+deadlocked like this but generally anything submitted via
+__bdi_start_writeback (as these kinds of writeback do not have superblock
+specified).
 
-Kay
+I think the best resolution of this problem would be to change the work
+that is submitted via bdi_start_writeback() (i.e., the work without
+superblock = work which needs to do locking) to "target based scheme" like
+Christoph wanted already some time ago. I actually have a patch to do this
+for background writeback so I will just modify it to apply to a wider range
+of writeback as well. Or Christoph, do you already have some patches in
+this direction?
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
