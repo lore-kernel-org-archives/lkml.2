@@ -1,115 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932387Ab0I3T2N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 15:28:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48762 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932346Ab0I3T2J (ORCPT
+	id S1756352Ab0I3TgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 15:36:10 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63544 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755450Ab0I3TgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 15:28:09 -0400
+	Thu, 30 Sep 2010 15:36:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Bt1UF5wnpWDy4RGxJ0/Qcp7nN3PN37PLQSyUHTxApaR5loM/L9yUiBY6gpTHui8SFA
+         SJI4/PyhbIsxBSBSYdzl6im0TaP4U+vDMMeVWvyIlJETnwlVXPkh/7I3f/TjHeNYODf2
+         O3ELa/Zkv8dGNAb7oIjrZdrI9chyqSphyBFIE=
+Date: Thu, 30 Sep 2010 23:23:03 +0400
+From: Vasiliy Kulikov <segooon@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        Marek Belisko <marek.belisko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: ft1000: fix skb, netdev, memory leaks
+Message-ID: <20100930192303.GA10342@albatros>
+References: <1285696175-5654-1-git-send-email-segooon@gmail.com>
+ <20100930111345.GA9978@kroah.com>
 MIME-Version: 1.0
-In-Reply-To: <20100930164918.22f40a83@schatten.dmk.lab>
-References: <1284284969.2928.18.camel@maxim-laptop> <1284507516.4963.2.camel@maxim-laptop>
- <AANLkTimFpyYab69=XQVZc+P50v6_uVr6UbA246Fnm3-u@mail.gmail.com>
- <1284511071.3551.1.camel@maxim-laptop> <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
- <20100915132731.GA20558@khazad-dum.debian.net> <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
- <1284589207.4672.3.camel@maxim-laptop> <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
- <1285069338.3124.4.camel@maxim-laptop> <1285110590.2822.9.camel@maxim-laptop>
- <4C99B25D.20805@kernel.org> <1285162900.3335.15.camel@maxim-laptop>
- <1285163911.3159.5.camel@maxim-laptop> <4C9B141F.3050908@kernel.org>
- <AANLkTim31g84J6eeuh_6MiEw0w8zOi5sOWrL_WnoaueP@mail.gmail.com>
- <20100930083020.62b56218@schatten.dmk.lab> <AANLkTi=G42-0X0MWsgTaDKEnHocFEa+9Cmw4pfCMAk5=@mail.gmail.com>
- <20100930133823.39353d23@schatten.dmk.lab> <1285856252.26846.12.camel@maxim-laptop>
- <20100930164918.22f40a83@schatten.dmk.lab>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 30 Sep 2010 21:27:52 +0200
-Message-ID: <AANLkTim_ZW6D6TKNh9W5Qn2biC0_BQcPuMKKKS6_X-bp@mail.gmail.com>
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-To: Florian Mickler <florian@mickler.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100930111345.GA9978@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 16:49, Florian Mickler <florian@mickler.org> wrote:
-> On Thu, 30 Sep 2010 16:17:32 +0200
-> Maxim Levitsky <maximlevitsky@gmail.com> wrote:
->> On Thu, 2010-09-30 at 13:38 +0200, Florian Mickler wrote:
->> > On Thu, 30 Sep 2010 09:48:50 +0200
->> > Kay Sievers <kay.sievers@vrfy.org> wrote:
->> > > >
->> > > > So, is the $subject problem solved now? Normally, we shouldn't break
->> > > > stuff with new kernels... If this is only a temporary breakage on
->> > > > the other hand, we should keep track of it...
->> > > > I ask, because this is listed as https://bugzilla.kernel.org/show_bug.cgi?id=18522.
->> > > > If it should stay listed, we may need an ETA for the fix...
->> > >
->> > > Hmm, I still don't think that's a bug or regression.
->> > >
->> > > Optical drives are not supposed to report media changes without
->> > > constantly being polled. Why Tejun's seems to have an influence in
->> > > Maxim's setup, is likely more a timing-related issue, or some other
->> > > thing, we never really got an idea why it could change anything.
->> > >
->> > > The current behavior is the expected and correct behavior, and for me
->> > > also the older kernels behave like this.
->> >
->> > So I'm gonna close this as invalid then. Please shout, if that's
->> > not ok.
->> Its not invalid at all.
->>
->> Let me explain again the problem:
->>
->> Indeed cdrom drivers need to be polled.
->> And yes, both udisks and hal _do_ poll the drive.
->>
->> However, udisks uses O_EXCL, when it opens the drive, and that fails s
->> soon as filesystem is mounted, therefore effectively, as soon as disk is
->> inserted, polling stops.
->>
->> Without the bisected commit, O_EXCL would still fail, however due to the
->> bug that commit fixed, the drive will still be polled.
->>
->> Hal also polls the drive, but it has a workaround, that is if open with
->> O_EXCL fails, it retries the open without it.
->>
->> This is pretty much all, there are no unknowns left.
->>
->>
->> However the reason behind O_EXCL is that we don't want polling while a
->> disk is being written (burned), but we do want polling while disk is
->> mounted.
->>
->> So just 'fixing' udisk to not take O_EXCL will bring us to square one,
->> as well as reverting the commit.
->>
->> Therefore this problem doesn't have a simple solution.
->> I think that the best solution is to move polling to the kernel, and
->> introduce a way for burning application to take absolute exclusive
->> access to the device and as a part of that disable that in-kernel
->> polling.
->> A new ioctl will suffice, or the meaning of O_EXCL can be changed for
->> cdrom driver only (if somebody has it open with O_EXCL, fail all opens,
->> including the ones that don't have O_EXCL).
+On Thu, Sep 30, 2010 at 04:13 -0700, Greg KH wrote:
+> On Tue, Sep 28, 2010 at 09:49:35PM +0400, Vasiliy Kulikov wrote:
+> > ft1000_copy_up_pkt() doesn't free skb on errors.
+> > init_ft1000_card() doesn't free netdev with free_netdev() but with kfree().
+> > init_ft1000_card() doesn't check request_region()'s return value
+> > and doesn't free region on error.
+> > 
+> > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > ---
+> >  Compile tested.
+> 
+> No you didn't
 
-> Ok. I will reopen then. Is someone working on fixing this issue?
->
-> If we leave it open, we wanna have an ETA for the fix so that people
-> trolling the bugzilla know for how long they have to let this report
-> simmer.
+No I did:
 
-I don't think anything needs to be or can really be fixed in the
-kernel. We need a working O_EXCL, and before Tejun's patch it was
-broken. That the broken behavior seemed to have some wanted effects on
-some boxes can't the reason to leave O_EXCL broken.
+make -C /home/vasya/linux drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.o
+make: Вход в каталог `/home/vasya/dev/linux-next'
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CC      drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.o
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c: In function ‘ft1000_reset_card’:
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:525: warning: passing argument 2 of ‘card_download’ discards qualifiers from pointer target type
+drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:56: note: expected ‘void *’ but argument is of type ‘const u8 * const’
+make: Выход из каталога `/home/vasya/dev/linux-next'
 
-The current state is the expected behavior. It all seems more like an
-issue with current udisks which should be discussed at the freedesktop
-bugzilla. Udisk's behavior is intended, but there might be no specific
-reason not to change it to what HAL did.
+However, 
 
-Kay
+    cd ../drivers/staging/ft1000/ft1000-pcmcia/
+    LANG=C make -C ~/linux ft1000_hw.o
+    make: Entering directory `/home/vasya/dev/linux-next'
+    make: *** No rule to make target `ft1000_hw.o'.  Stop.
+    make: Leaving directory `/home/vasya/dev/linux-next'
+
+
+Is "make" from linux root buggy/not supported for staging/everything?
+
+> 
+> >  drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c |   32 +++++++++++++--------
+> >  1 files changed, 20 insertions(+), 12 deletions(-)
+> 
+> This file doesn't build at this point in time, how did you build test
+> this?
+> 
+> I don't mind taking the patch, but please, don't lie.
+> 
+> thanks,
+> 
+> greg k-h
+
+-- 
+Vasiliy
