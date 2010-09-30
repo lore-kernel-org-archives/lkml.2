@@ -1,293 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755950Ab0I3S0F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:26:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64325 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754865Ab0I3S0C (ORCPT
+	id S1755828Ab0I3S10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:27:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:52149 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752972Ab0I3S1Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:26:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Nq8DPOoNiu2lBDv6XecZM2tDqrXN46e2557ES0+mZlKDKa0jUw4h8MW4i4Nn84Bwwc
-         TXZKrSTuhvPBzgk8Ud4B8+mAe+vUrkJUrg1ebJOZ2JxL4g09MHlmAYWmwGyOxif4TEmo
-         50+xbNPhSU4sjUwRWQMehbloCNYMj41ATozWA=
-Message-ID: <4CA4D61C.2010909@gmail.com>
-Date: Thu, 30 Sep 2010 20:25:32 +0200
-From: "N.P.S." <napohybelskurwysynom2010@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; pl; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: akpm@linux-foundation.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-09-28-16-13 uploaded
-References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org> <AANLkTikapE3RaVVFS3yBSGmCkMGUvfZECJq5eOmayWhZ@mail.gmail.com>
-In-Reply-To: <AANLkTikapE3RaVVFS3yBSGmCkMGUvfZECJq5eOmayWhZ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Sep 2010 14:27:24 -0400
+From: Ernesto Ramos <ernesto@ti.com>
+To: gregkh@suse.de, linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: ameya.palande@nokia.com, felipe.contreras@gmail.com,
+        andy.shevchenko@gmail.com, Ernesto Ramos <ernesto@ti.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Subject: [PATCH] staging:ti dspbridge: remove cmm_xlator_delete wrapper
+Date: Thu, 30 Sep 2010 13:33:41 -0500
+Message-Id: <1285871621-26918-1-git-send-email-ernesto@ti.com>
+X-Mailer: git-send-email 1.5.4.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  W dniu 2010-09-30 18:59, Na Pohybel pisze:
-> Hi,
->
-> 2010/9/29<akpm@linux-foundation.org>:
->> The mm-of-the-moment snapshot 2010-09-28-16-13 has been uploaded to
-> Could you add this tree to the next mmotm?
-> git pull git://github.com/napohybelskurwysynom2010/Linux-2.6-nps.git rodi
+Resending this patch since it was missed in the last merge...
 
-I noticed that some of these changes are already in mmotm. I'm sending a 
-revised, folded patch.
+Remove unnecessary cmm_xlator_delete function and use
+kfree() kernel function directly.
 
-Removal of duplicate includes from arch/arm/mach-davinci/board-da850-evm.c
-Removal of duplicate includes from 
-arch/arm/plat-nomadik/include/plat/ste_dma40.h
-Removal of duplicate includes from arch/arm/mach-shmobile/board-ap4evb.c
-Removal of duplicate includes from arch/arm/mach-tegra/timer.c
-Removal of duplicate includes from arch/x86/mm/init_64.c
-Removal of duplicate includes from arch/x86/xen/enlighten.c
-Removal of duplicate includes from arch/tile/kernel/setup.c
-Removal of duplicate includes from drivers/media/IR/lirc_dev.c
-Removal of duplicate includes from drivers/platform/x86/intel_pmic_gpio.c
-Removal of duplicate includes from drivers/staging/lirc/lirc_parallel.c
-Removal of duplicate includes from drivers/staging/spectra/lld_mtd.c
-Removal of duplicate includes from drivers/staging/tidspbridge/gen/gs.c
-Removal of duplicate includes from drivers/video/omap/lcd_omap3beagle.c
-Removal of duplicate includes from include/linux/virtio_9p.h
-Removal of duplicate includes from kernel/trace/trace_kprobe.c
-Removal of duplicate includes from net/netfilter/xt_ipvs.c
-Removal of duplicate includes from net/caif/caif_socket.c
-Removal of duplicate includes from sound/soc/nuc900/nuc900-ac97.c
+Signed-off-by: Ernesto Ramos <ernesto@ti.com>
+Signed-off-by: Omar Ramirez Luna <omar.ramirez@ti.com>
+---
+ .../staging/tidspbridge/include/dspbridge/cmm.h    |   19 -------------------
+ drivers/staging/tidspbridge/pmgr/cmm.c             |   17 -----------------
+ drivers/staging/tidspbridge/rmgr/node.c            |    9 ++-------
+ drivers/staging/tidspbridge/rmgr/strm.c            |   11 ++---------
+ 4 files changed, 4 insertions(+), 52 deletions(-)
 
-Signed-off-by: N.P.S. <napohybelskurwysynom2010@gmail.com>
-
-diff --git a/arch/arm/mach-davinci/board-da850-evm.c 
-b/arch/arm/mach-davinci/board-da850-evm.c
-index fdc2cc5..851cc45 100644
---- a/arch/arm/mach-davinci/board-da850-evm.c
-+++ b/arch/arm/mach-davinci/board-da850-evm.c
-@@ -26,7 +26,6 @@
-  #include <linux/mtd/physmap.h>
-  #include <linux/regulator/machine.h>
-  #include <linux/regulator/tps6507x.h>
--#include <linux/mfd/tps6507x.h>
-  #include <linux/input/tps6507x-ts.h>
-
-  #include <asm/mach-types.h>
-diff --git a/arch/arm/mach-shmobile/board-ap4evb.c 
-b/arch/arm/mach-shmobile/board-ap4evb.c
-index 95935c8..3ebb5be 100644
---- a/arch/arm/mach-shmobile/board-ap4evb.c
-+++ b/arch/arm/mach-shmobile/board-ap4evb.c
-@@ -30,7 +30,6 @@
-  #include <linux/mtd/mtd.h>
-  #include <linux/mtd/partitions.h>
-  #include <linux/mtd/physmap.h>
--#include <linux/mmc/host.h>
-  #include <linux/mmc/sh_mmcif.h>
-  #include <linux/i2c.h>
-  #include <linux/i2c/tsc2007.h>
-diff --git a/arch/arm/mach-tegra/timer.c b/arch/arm/mach-tegra/timer.c
-index 2f42021..9057d6f 100644
---- a/arch/arm/mach-tegra/timer.c
-+++ b/arch/arm/mach-tegra/timer.c
-@@ -28,7 +28,6 @@
-  #include <linux/cnt32_to_63.h>
-
-  #include <asm/mach/time.h>
--#include <asm/mach/time.h>
-  #include <asm/localtimer.h>
-
-  #include <mach/iomap.h>
-diff --git a/arch/arm/plat-nomadik/include/plat/ste_dma40.h 
-b/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-index 5fbde4b..93a8126 100644
---- a/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-+++ b/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-@@ -14,7 +14,6 @@
-  #include <linux/dmaengine.h>
-  #include <linux/workqueue.h>
-  #include <linux/interrupt.h>
--#include <linux/dmaengine.h>
-
-  /* dev types for memcpy */
-  #define STEDMA40_DEV_DST_MEMORY (-1)
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index e7d54c7..45874f7 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -30,8 +30,6 @@
-  #include <linux/timex.h>
-  #include <asm/setup.h>
-  #include <asm/sections.h>
--#include <asm/sections.h>
--#include <asm/cacheflush.h>
-  #include <asm/cacheflush.h>
-  #include <asm/pgalloc.h>
-  #include <asm/mmu_context.h>
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 9a66746..612f353 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -50,7 +50,6 @@
-  #include <asm/numa.h>
-  #include <asm/cacheflush.h>
-  #include <asm/init.h>
--#include <linux/bootmem.h>
-
-  static unsigned long dma_reserve __initdata;
-
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 7d46c84..3396891 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -58,7 +58,6 @@
-  #include <asm/pgtable.h>
-  #include <asm/tlbflush.h>
-  #include <asm/reboot.h>
--#include <asm/setup.h>
-  #include <asm/stackprotector.h>
-  #include <asm/hypervisor.h>
-
-diff --git a/drivers/media/IR/lirc_dev.c b/drivers/media/IR/lirc_dev.c
-index 899891b..42b5e64 100644
---- a/drivers/media/IR/lirc_dev.c
-+++ b/drivers/media/IR/lirc_dev.c
-@@ -27,7 +27,6 @@
-  #include <linux/fs.h>
-  #include <linux/poll.h>
-  #include <linux/completion.h>
--#include <linux/errno.h>
-  #include <linux/mutex.h>
-  #include <linux/wait.h>
-  #include <linux/unistd.h>
-diff --git a/drivers/platform/x86/intel_pmic_gpio.c 
-b/drivers/platform/x86/intel_pmic_gpio.c
-index 5cdcff6..73eae6f 100644
---- a/drivers/platform/x86/intel_pmic_gpio.c
-+++ b/drivers/platform/x86/intel_pmic_gpio.c
-@@ -29,7 +29,6 @@
-  #include <linux/init.h>
-  #include <linux/io.h>
-  #include <linux/gpio.h>
--#include <linux/interrupt.h>
-  #include <asm/intel_scu_ipc.h>
-  #include <linux/device.h>
-  #include <linux/intel_pmic_gpio.h>
-diff --git a/drivers/staging/lirc/lirc_parallel.c 
-b/drivers/staging/lirc/lirc_parallel.c
-index 6da4a8c..0c831f5 100644
---- a/drivers/staging/lirc/lirc_parallel.c
-+++ b/drivers/staging/lirc/lirc_parallel.c
-@@ -40,7 +40,6 @@
-  #include <linux/delay.h>
-
-  #include <linux/io.h>
--#include <linux/signal.h>
-  #include <linux/irq.h>
-  #include <linux/uaccess.h>
-  #include <asm/div64.h>
-diff --git a/drivers/staging/spectra/lld_mtd.c 
-b/drivers/staging/spectra/lld_mtd.c
-index 0de05b1..ec57a15 100644
---- a/drivers/staging/spectra/lld_mtd.c
-+++ b/drivers/staging/spectra/lld_mtd.c
-@@ -24,9 +24,6 @@
-  #include "ffsdefs.h"
-  #include "lld_emu.h"
-  #include "lld.h"
--#if CMD_DMA
--#include "lld_cdma.h"
--#endif
-
-  #define GLOB_LLD_PAGES           64
-  #define GLOB_LLD_PAGE_SIZE       (512+16)
-diff --git a/drivers/staging/tidspbridge/gen/gs.c 
-b/drivers/staging/tidspbridge/gen/gs.c
-index 9fc6144..8335bf5 100644
---- a/drivers/staging/tidspbridge/gen/gs.c
-+++ b/drivers/staging/tidspbridge/gen/gs.c
-@@ -19,7 +19,6 @@
-  #include <linux/types.h>
-  /*  ----------------------------------- DSP/BIOS Bridge */
-  #include <dspbridge/dbdefs.h>
--#include <linux/types.h>
-
-  /*  ----------------------------------- This */
-  #include <dspbridge/gs.h>
-diff --git a/drivers/video/omap/lcd_omap3beagle.c 
-b/drivers/video/omap/lcd_omap3beagle.c
-index ca75cc2..ac715f9 100644
---- a/drivers/video/omap/lcd_omap3beagle.c
-+++ b/drivers/video/omap/lcd_omap3beagle.c
-@@ -26,7 +26,6 @@
-  #include <linux/i2c/twl.h>
-
-  #include <plat/mux.h>
--#include <plat/mux.h>
-  #include <asm/mach-types.h>
-
-  #include "omapfb.h"
-diff --git a/include/linux/virtio_9p.h b/include/linux/virtio_9p.h
-index 1faa80d..e68b439 100644
---- a/include/linux/virtio_9p.h
-+++ b/include/linux/virtio_9p.h
-@@ -5,7 +5,6 @@
-  #include <linux/types.h>
-  #include <linux/virtio_ids.h>
-  #include <linux/virtio_config.h>
--#include <linux/types.h>
-
-  /* The feature bitmap for virtio 9P */
-
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 544301d..87f0a95 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -31,7 +31,6 @@
-  #include <linux/perf_event.h>
-  #include <linux/stringify.h>
-  #include <linux/limits.h>
--#include <linux/uaccess.h>
-  #include <asm/bitsperlong.h>
-
-  #include "trace.h"
-diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
-index 8ce9047..7a09fb6 100644
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -15,7 +15,6 @@
-  #include <linux/poll.h>
-  #include <linux/tcp.h>
-  #include <linux/uaccess.h>
--#include <linux/mutex.h>
-  #include <linux/debugfs.h>
-  #include <linux/caif/caif_socket.h>
-  #include <asm/atomic.h>
-diff --git a/net/netfilter/xt_ipvs.c b/net/netfilter/xt_ipvs.c
-index 7a4d66d..9127a3d 100644
---- a/net/netfilter/xt_ipvs.c
-+++ b/net/netfilter/xt_ipvs.c
-@@ -16,7 +16,6 @@
-  #include <linux/ip_vs.h>
-  #include <linux/types.h>
-  #include <linux/netfilter/x_tables.h>
--#include <linux/netfilter/x_tables.h>
-  #include <linux/netfilter/xt_ipvs.h>
-  #include <net/netfilter/nf_conntrack.h>
-
-diff --git a/sound/soc/nuc900/nuc900-ac97.c b/sound/soc/nuc900/nuc900-ac97.c
-index caa7c90..265a950 100644
---- a/sound/soc/nuc900/nuc900-ac97.c
-+++ b/sound/soc/nuc900/nuc900-ac97.c
-@@ -20,7 +20,6 @@
-  #include <sound/pcm.h>
-  #include <sound/initval.h>
-  #include <sound/soc.h>
--#include <linux/device.h>
-  #include <linux/clk.h>
-
-  #include <mach/mfp.h>
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmm.h b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+index a921f1b..6ad313f 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cmm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+@@ -300,25 +300,6 @@ extern int cmm_xlator_create(struct cmm_xlatorobject **xlator,
+ 				    struct cmm_xlatorattrs *xlator_attrs);
+ 
+ /*
+- *  ======== cmm_xlator_delete ========
+- *  Purpose:
+- *      Delete translator resources
+- *  Parameters:
+- *      xlator:    handle to translator.
+- *      force:     force = TRUE will free XLators SM buffers/dscriptrs.
+- *  Returns:
+- *      0:        Success.
+- *      -EFAULT:    Bad translator handle.
+- *      -EPERM:      Unable to free translator resources.
+- *  Requires:
+- *      refs > 0
+- *  Ensures:
+- *
+- */
+-extern int cmm_xlator_delete(struct cmm_xlatorobject *xlator,
+-				    bool force);
+-
+-/*
+  *  ======== cmm_xlator_free_buf ========
+  *  Purpose:
+  *      Free SM buffer and descriptor.
+diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
+index e3f77bd..93a7c4f 100644
+--- a/drivers/staging/tidspbridge/pmgr/cmm.c
++++ b/drivers/staging/tidspbridge/pmgr/cmm.c
+@@ -968,23 +968,6 @@ int cmm_xlator_create(struct cmm_xlatorobject **xlator,
+ }
+ 
+ /*
+- *  ======== cmm_xlator_delete ========
+- *  Purpose:
+- *      Free the Xlator resources.
+- *      VM gets freed later.
+- */
+-int cmm_xlator_delete(struct cmm_xlatorobject *xlator, bool force)
+-{
+-	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
+-
+-	DBC_REQUIRE(refs > 0);
+-
+-	kfree(xlator_obj);
+-
+-	return 0;
+-}
+-
+-/*
+  *  ======== cmm_xlator_alloc_buf ========
+  */
+ void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *va_buf,
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index 84882dc..1562f3c 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -2505,7 +2505,6 @@ static void delete_node(struct node_object *hnode,
+ 			struct process_context *pr_ctxt)
+ {
+ 	struct node_mgr *hnode_mgr;
+-	struct cmm_xlatorobject *xlator;
+ 	struct bridge_drv_interface *intf_fxns;
+ 	u32 i;
+ 	enum node_type node_type;
+@@ -2523,7 +2522,7 @@ static void delete_node(struct node_object *hnode,
+ 	hnode_mgr = hnode->hnode_mgr;
+ 	if (!hnode_mgr)
+ 		goto func_end;
+-	xlator = hnode->xlator;
++
+ 	node_type = node_get_type(hnode);
+ 	if (node_type != NODE_DEVICE) {
+ 		node_msg_args = hnode->create_args.asa.node_msg_args;
+@@ -2619,11 +2618,7 @@ static void delete_node(struct node_object *hnode,
+ 	hnode->dcd_props.obj_data.node_obj.pstr_i_alg_name = NULL;
+ 
+ 	/* Free all SM address translator resources */
+-	if (xlator) {
+-		(void)cmm_xlator_delete(xlator, true);	/* force free */
+-		xlator = NULL;
+-	}
+-
++	kfree(hnode->xlator);
+ 	kfree(hnode->nldr_node_obj);
+ 	hnode->nldr_node_obj = NULL;
+ 	hnode->hnode_mgr = NULL;
+diff --git a/drivers/staging/tidspbridge/rmgr/strm.c b/drivers/staging/tidspbridge/rmgr/strm.c
+index f4986b7..2e42714 100644
+--- a/drivers/staging/tidspbridge/rmgr/strm.c
++++ b/drivers/staging/tidspbridge/rmgr/strm.c
+@@ -834,16 +834,9 @@ static int delete_strm(struct strm_object *stream_obj)
+ 			 * is invalid. */
+ 			status = (*intf_fxns->pfn_chnl_close)
+ 					(stream_obj->chnl_obj);
+-			/* Free all SM address translator resources */
+-			if (!status) {
+-				if (stream_obj->xlator) {
+-					/* force free */
+-					(void)cmm_xlator_delete(stream_obj->
+-								xlator,
+-								true);
+-				}
+-			}
+ 		}
++		/* Free all SM address translator resources */
++		kfree(stream_obj->xlator);
+ 		kfree(stream_obj);
+ 	} else {
+ 		status = -EFAULT;
+-- 
+1.5.4.5
 
