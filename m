@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab0I3SP7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 14:15:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12713 "EHLO mx1.redhat.com"
+	id S932359Ab0I3SQv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 14:16:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24788 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755216Ab0I3SP4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 14:15:56 -0400
+	id S1755737Ab0I3SQs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 14:16:48 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 05/17] Remove the automount through follow_link() kludge code
-	from pathwalk
+Subject: [PATCH 16/17] autofs4 - add v4 pseudo direct mount support
 To: viro@ftp.linux.org.uk, jmoyer@redhat.com
 Cc: linux-fs@vger.kernel.org, autofs@linux.kernel.org,
         linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
         linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Ian Kent <raven@themaw.net>
-Date: Thu, 30 Sep 2010 19:15:21 +0100
-Message-ID: <20100930181521.30939.31415.stgit@warthog.procyon.org.uk>
+        Ian Kent <raven@themaw.net>, David Howells <dhowells@redhat.com>
+Date: Thu, 30 Sep 2010 19:16:17 +0100
+Message-ID: <20100930181617.30939.37248.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 References: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -30,56 +29,104 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the automount through follow_link() kludge code from pathwalk in favour
-of using d_automount().
+From: Ian Kent <raven@themaw.net>
 
+Version 4 of autofs provides a pseudo direct mount implementation
+that relies on directories at the leaves of a directory tree under
+an indirect mount to trigger mounts.
+
+This patch adds support for that functionality.
+
+Signed-off-by: Ian Kent <raven@themaw.net>
 Signed-off-by: David Howells <dhowells@redhat.com>
-Acked-by: Ian Kent <raven@themaw.net>
 ---
 
- fs/namei.c |   17 +++--------------
- 1 files changed, 3 insertions(+), 14 deletions(-)
+ fs/autofs4/root.c |   60 +++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 60 insertions(+), 0 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index c50b9d7..86421f9 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -861,17 +861,6 @@ fail:
+diff --git a/fs/autofs4/root.c b/fs/autofs4/root.c
+index 3b38794..135d713 100644
+--- a/fs/autofs4/root.c
++++ b/fs/autofs4/root.c
+@@ -629,6 +629,60 @@ static int autofs4_dir_unlink(struct inode *dir, struct dentry *dentry)
+ 	return 0;
  }
  
- /*
-- * This is a temporary kludge to deal with "automount" symlinks; proper
-- * solution is to trigger them on follow_mount(), so that do_lookup()
-- * would DTRT.  To be killed before 2.6.34-final.
-- */
--static inline int follow_on_final(struct inode *inode, unsigned lookup_flags)
--{
--	return inode && unlikely(inode->i_op->follow_link) &&
--		((lookup_flags & LOOKUP_FOLLOW) || S_ISDIR(inode->i_mode));
--}
--
--/*
-  * Name resolution.
-  * This is the basic name resolution function, turning a pathname into
-  * the final dentry. We expect 'base' to be positive and a directory.
-@@ -991,7 +980,8 @@ last_component:
- 		if (err)
- 			break;
- 		inode = next.dentry->d_inode;
--		if (follow_on_final(inode, lookup_flags)) {
-+		if (inode && unlikely(inode->i_op->follow_link) &&
-+		    (lookup_flags & LOOKUP_FOLLOW)) {
- 			err = do_follow_link(&next, nd);
- 			if (err)
- 				goto return_err;
-@@ -1882,8 +1872,7 @@ reval:
- 		struct inode *inode = path.dentry->d_inode;
- 		void *cookie;
- 		error = -ELOOP;
--		/* S_ISDIR part is a temporary automount kludge */
--		if (!(nd.flags & LOOKUP_FOLLOW) && !S_ISDIR(inode->i_mode))
-+		if (!(nd.flags & LOOKUP_FOLLOW))
- 			goto exit_dput;
- 		if (count++ == 32)
- 			goto exit_dput;
++/*
++ * Version 4 of autofs provides a pseudo direct mount implementation
++ * that relies on directories at the leaves of a directory tree under
++ * an indirect mount to trigger mounts. To allow for this we need to
++ * set the DMANAGED_AUTOMOUNT and DMANAGED_TRANSIT flags on the leaves
++ * of the directory tree. There is no need to clear the automount flag
++ * following a mount or restore it after an expire because these mounts
++ * are always covered. However, it is neccessary to ensure that these
++ * flags are clear on non-empty directories to avoid unnecessary calls
++ * during path walks.
++ */
++static void autofs_set_leaf_automount_flags(struct dentry *dentry)
++{
++	struct dentry *parent;
++
++	/* root and dentrys in the root are already handled */
++	if (IS_ROOT(dentry->d_parent))
++		return;
++
++	managed_dentry_set_managed(dentry);
++
++	parent = dentry->d_parent;
++	/* only consider parents below dentrys in the root */
++	if (IS_ROOT(parent->d_parent))
++		return;
++	managed_dentry_clear_managed(parent);
++	return;
++}
++
++static void autofs_clear_leaf_automount_flags(struct dentry *dentry)
++{
++	struct list_head *d_child;
++	struct dentry *parent;
++
++	/* flags for dentrys in the root are handled elsewhere */
++	if (IS_ROOT(dentry->d_parent))
++		return;
++
++	managed_dentry_clear_managed(dentry);
++
++	parent = dentry->d_parent;
++	/* only consider parents below dentrys in the root */
++	if (IS_ROOT(parent->d_parent))
++		return;
++	d_child = &dentry->d_u.d_child;
++	spin_lock(&dcache_lock);
++	/* Set parent managed if it's becoming empty */
++	if (d_child->next == &parent->d_subdirs &&
++	    d_child->prev == &parent->d_subdirs)
++		managed_dentry_set_managed(parent);
++	spin_unlock(&dcache_lock);
++	return;
++}
++
+ static int autofs4_dir_rmdir(struct inode *dir, struct dentry *dentry)
+ {
+ 	struct autofs_sb_info *sbi = autofs4_sbi(dir->i_sb);
+@@ -652,6 +706,9 @@ static int autofs4_dir_rmdir(struct inode *dir, struct dentry *dentry)
+ 	spin_unlock(&dentry->d_lock);
+ 	spin_unlock(&dcache_lock);
+ 
++	if (sbi->version < 5)
++		autofs_clear_leaf_automount_flags(dentry);
++
+ 	if (atomic_dec_and_test(&ino->count)) {
+ 		p_ino = autofs4_dentry_ino(dentry->d_parent);
+ 		if (p_ino && dentry->d_parent != dentry)
+@@ -694,6 +751,9 @@ static int autofs4_dir_mkdir(struct inode *dir, struct dentry *dentry, int mode)
+ 	}
+ 	d_add(dentry, inode);
+ 
++	if (sbi->version < 5)
++		autofs_set_leaf_automount_flags(dentry);
++
+ 	dentry->d_fsdata = ino;
+ 	ino->dentry = dget(dentry);
+ 	atomic_inc(&ino->count);
 
