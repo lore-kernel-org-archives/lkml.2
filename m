@@ -1,102 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751824Ab0I3E5N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 00:57:13 -0400
-Received: from mga11.intel.com ([192.55.52.93]:12087 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751359Ab0I3E5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 00:57:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,257,1283756400"; 
-   d="scan'208";a="842247934"
-Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
- with unknown NMI
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: huang ying <huang.ying.caritas@gmail.com>,
-        Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-In-Reply-To: <20100930043628.GE26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
-	 <1285549026-5008-6-git-send-email-ying.huang@intel.com>
-	 <20100927100901.GC32222@erda.amd.com>
-	 <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
-	 <20100927133816.GP13563@erda.amd.com> <20100927152014.GY26290@redhat.com>
-	 <1285634172.20791.92.camel@yhuang-dev> <20100928153247.GL26290@redhat.com>
-	 <AANLkTinmhTgVhPsmGLC8Z-9Kx3xRovWy=9+R_5B4u6Cx@mail.gmail.com>
-	 <20100930043628.GE26290@redhat.com>
+	id S1752070Ab0I3E7J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 00:59:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33019 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751359Ab0I3E7H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 00:59:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cYRNvbH2TdY2bkOMLolVGp+7zrtGMCjhzPP3UPaDRULTNOBUaQBJIWbQIkfCZC6QcF
+         n5vv55QQVFjIDdK5UX/h/71Nkp8zqgIIjAkOkG0uXt11PWTikIGQrw49Rq70UBWqgwKE
+         RtJB/uM1sGEGycr5U81it6JvJ3JqYN1wuPezI=
+Subject: Re: Scheduler latency problems when using NAND
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Mark Mason <mason@postdiluvian.org>
+Cc: linux-mtd@lists.infradead.org, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100929221401.GA32583@postdiluvian.org>
+References: <20100929221401.GA32583@postdiluvian.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 12:57:10 +0800
-Message-ID: <1285822630.6944.69.camel@yhuang-dev>
+Date: Thu, 30 Sep 2010 07:56:58 +0300
+Message-ID: <1285822618.11684.9.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Don,
-
-On Thu, 2010-09-30 at 12:36 +0800, Don Zickus wrote:
-> On Wed, Sep 29, 2010 at 04:17:30PM +0800, huang ying wrote:
-> > On Tue, Sep 28, 2010 at 11:32 PM, Don Zickus <dzickus@redhat.com> wrote:
-> > 
-> > > But the problem is you have to export all this platform specific stuff to
-> > > traps.c and surround the code with #ifdef's, which start to look ugly.
-> > 
-> > There is no #ifdef in my final default_do_nmi(), so I think the code
-> > can be cleaned up without converting everything into notifier block. I
-> > think the rule can be: architecture specific thing should go direct
-> > call, while device driver should be turned into notifier block.
+On Wed, 2010-09-29 at 18:14 -0400, Mark Mason wrote:
+> Hi all,
 > 
-> That sounds like a good rule, but then my definition of architecture
-> specific is whatever is written in the intel/amd x86_64 architecture
-> manual (that sits on my desk, dated 2002), which wouldn't include any
-> of the error handling you propose, nor MCE, nor perf.
+> I hope this is the right place for this question.  I'm having some
+> problems with scheduler latency when using UBIFS, and I'm hoping for
+> some suggestions.
 
-MCE is at least in new version of Intel SDM vol 3A. But we do not need
-to process MCE in NMI handler. Performance monitor counter is in Intel
-SDM Vol 3B.
+Hi Mark, this e-mail is not specific to UBIFS, so I suggest you keep
+lkml to CC.
 
-> I guess I look at all that stuff as cpu features because not all the cpus
-> on the market have them.  Shouldn't traps.c just contain core architecture
-> stuff and all those hardware error features could go under
-> arch/x86/kernel/cpu with the rest of the features, no?
+I cannot really suggest you much. Off the top of my head - try to enable
+preemption in your kernel. But in general, it sounds like you actually
+need the RT tree. Also there is the ftrace latency tracer - try to use
+it.
 
-Yes. Both MCE and perf are CPU features. I think they can be thought as
-optional architectural features. I think it is good to put similar
-features into arch/x86/kernel/cpu instead of traps.c. But if necessary,
-we can put direct call in traps.c instead of notifier block.
-
-> > > Is there any reason why traps.c should know about MCA/HEST/<other hardware
-> > > errors>?  Shouldn't it be abstracted away?
-> > 
-> > Yes. The device drivers should be abstracted away, leaving
-> > architectural logic, such as port 0x61 as direct call. We need
-> > notifier chain, but I just suggest reduce its usage if possible.
-> > 
-> > > Honestly, I would be interested in creating a southbridge driver and
-> > > moving the port 0x61 code there and keeping the default_do_nmi() function
-> > > stupidly simple (just a call to the die_chain and the
-> > > unknown_nmi_error()).
-> > 
-> > I think the southbridge drivers should go notifier block, but the port
-> > 0x61 code is architectural and should be kept in default_do_nmi().
+> Linux 2.6.29-6, with a newer MTD, dating from probably around six
+> months ago.  Embedded PowerPC 8315, with built-in NAND controller,
+> using nand/fsl_elbc_nand.c.  NAND is a Samsung K9WAG08U1B two-die
+> stack (one package with two chip selects), 2Gbyte x 8 bit.  The system
+> has plenty of memory, but is short on CPU.
 > 
-> Is port 0x61 architectural?  I thought it a southbridge thing.  In fact I
-> thought with modern chipsets you can access the same thing through port
-> 0x70 or 0x71 (I can't seem to figure out which Intel doc I saw that in).
-> (Not that this conversation has any bearing on your patchset, just an idea
-> I had).
+> The application is storing streaming video, almost entirely large
+> sequential files, roughly 250K to 15M, to a 1.6G filesystem.  There's
+> no seeking or rewriting, just creat, write, close, repeat.  No
+> compression is used on the filesystem.
+> 
+> The problem I'm seeing is excessively large scheduler latency when
+> data is flushed to NAND.
+> 
+> Originally this had been happening during erases.  I noticed that
+> hundreds of erases (up to around 700) were being issued in rapid
+> succession, and I was seeing other threads unable to run for sometimes
+> as much as the expected 7 seconds (I measured 1.1 ms per erase).  To
+> address this, I split the erase command in two halves - FIR_OP_CM0 |
+> FIR_OP_PA | FIR_OP_CM2 and FIR_OP_CW1 | FIR_OP_RS - with schedule()
+> called in between.  This had the effect if issuing the erase, calling
+> schedule(), then waiting for the erase to complete if it hadn't
+> already, but usually it had.
+> 
+> I'm surprised this helped so much, since the calling thread should
+> have been put to sleep for the duration of the erase by the call to
+> wait_event_timeout(), but it definitely did - I guess it was the
+> explicit schedule().
+> 
+> The erases are no longer a significant bottleneck, but now the writes
+> are.  A page program takes 200us, which seems too short for an
+> explicit schedule(), and I am seeing periods with the busy line
+> asserted in back-to-back 200us chunks for most of a second.
+> 
+> I have played with thread priorities a bit, but I wound up with too
+> many threads being "most important".  There is some hardware that
+> can't tolerate large latencies, and unfortunately the existing code
+> base doesn't have enough separation between critical and non-critical
+> tasks to allow us to run just the critical stuff at a higher priority.
+> 
+> On average, the system can keep up with the load, but it has problems
+> with the burstiness of the flushes to NAND, so I'm hoping for some
+> ideas to smooth the traffic out, or even a totally different way to
+> approach the problem.  I tried lowering the priority of the UBI
+> background thread, the failure mode there is pretty obvious.  I tried
+> lowering dirty_background_centisecs, that helped a little bit, but not
+> enough, and there's also a SATA drive, although a smaller commit
+> interval probably wouldn't bother it since the traffic is similar.
+> 
+> I'm contemplating something along the lines of a smaller commit
+> interval, an even higher background thread priority, and a sleep with
+> a schedule during the page program, but that many extra context
+> switches are liable to be a problem - there's no L2 cache on this CPU,
+> so context switches are extra expensive.
+> 
+> Does anyone have any suggestions, ideas, hints, advice, etc?
+> 
+> Thanks!
 
-At least until now, I think port 0x61 can be considered architectural
-(just like we think PIT is architectural before). Maybe in the future it
-will become deprecated and turned into something like a device driver.
-But why not wait until it be.
-
+-- 
 Best Regards,
-Huang Ying
-
+Artem Bityutskiy (Артём Битюцкий)
 
