@@ -1,93 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756637Ab0I3Ucv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:32:51 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51270 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab0I3Ucu (ORCPT
+	id S1756740Ab0I3Ugr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 16:36:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:61777 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756466Ab0I3Ugq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:32:50 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100930221426.5d0d3e7d@schatten.dmk.lab>
-References: <1284284969.2928.18.camel@maxim-laptop> <1284511071.3551.1.camel@maxim-laptop>
- <AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
- <20100915132731.GA20558@khazad-dum.debian.net> <AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
- <1284589207.4672.3.camel@maxim-laptop> <AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
- <1285069338.3124.4.camel@maxim-laptop> <1285110590.2822.9.camel@maxim-laptop>
- <4C99B25D.20805@kernel.org> <1285162900.3335.15.camel@maxim-laptop>
- <1285163911.3159.5.camel@maxim-laptop> <4C9B141F.3050908@kernel.org>
- <AANLkTim31g84J6eeuh_6MiEw0w8zOi5sOWrL_WnoaueP@mail.gmail.com>
- <20100930083020.62b56218@schatten.dmk.lab> <AANLkTi=G42-0X0MWsgTaDKEnHocFEa+9Cmw4pfCMAk5=@mail.gmail.com>
- <20100930133823.39353d23@schatten.dmk.lab> <1285856252.26846.12.camel@maxim-laptop>
- <20100930164918.22f40a83@schatten.dmk.lab> <AANLkTim_ZW6D6TKNh9W5Qn2biC0_BQcPuMKKKS6_X-bp@mail.gmail.com>
- <20100930221426.5d0d3e7d@schatten.dmk.lab>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 30 Sep 2010 22:32:33 +0200
-Message-ID: <AANLkTinMuLUB-vsiecMYHWv4ZbWE6yGB_K-8XB6GmaOv@mail.gmail.com>
-Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
-To: Florian Mickler <florian@mickler.org>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
+	Thu, 30 Sep 2010 16:36:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Lim1utUqbqHxipSK9h9/FnyxawRXernlJpmylWYJIKYY490nSoRVJ1NZYy4o4DR11P
+         9zNqx4eDLzN610Z8GRskj3hfNZuaA14BFsi6e4p4hvKSs90kTd2gIV3gKLuhD5ZoriOf
+         zaA2ZRsCNmPwCm11BA+V+2BHEAzFM8FKEXnKA=
+Subject: Re: QUESTION: block layer ->request and tasklets
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Jens Axboe <axboe@kernel.dk>, Alex Dubov <oakad@yahoo.com>
+In-Reply-To: <1285869154.26846.44.camel@maxim-laptop>
+References: <1285869154.26846.44.camel@maxim-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Sep 2010 22:36:37 +0200
+Message-ID: <1285878997.26846.50.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 22:14, Florian Mickler <florian@mickler.org> wrote:
-> On Thu, 30 Sep 2010 21:27:52 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
+On Thu, 2010-09-30 at 19:52 +0200, Maxim Levitsky wrote:
+> Hi,
+> 
+> I have an issue that is possible related to my lack of understanding of
+> the block system, that really drives me nuts.
+> 
+> Here is the short description:
+> 
+> A 'perfect' block driver is supposed to start a sector transfer right in
+> the ->request.
+> 
+> An IRQ will cause the driver to end this request (or part of it), and
+> try to fetch another one and submit it to the hardware, effectively
+> doing the same thing the ->request does.
+> This is not easy to implement in stand alone block driver, and it is
+> even harder to so in a common layer.
+> Yet, Alex's memorystick subsystem does implement this style of a driver,
+> and it works quite well
+> 
+> A memory stick low level driver is designed after the block driver.
+> It also has a ->request function and a 'queue' of requests, even though
+> this is an illusion, because every time a request is 'fetched' from
+> upper layer, it is created on the fly by a state machine.
+> An upper level driver is a block driver.
+> 
+> Now the problem:
+> The jmb38x_ms ->request function doesn't set the hardware, but rather it
+> queues a tasklet, which does the work.
+> It seems to be redundant, and yet if I remove the tasklet, the system
+> randomly freezes, and worse that that, none of lockup detecters catch
+> it, so I am unable to get a backtrace.
+> This is a time I am really mad at hardware vendors for removing the
+> reset button....
+> 
+> On the other hand my ms_block.c, an upper level driver for old
+> MemorySticks, works OK.
+> But it contains a thread that does the IO. Its ->request only wakes it
+> up.
+> 
+> So in both cases, the block layer calls the ->request of the high level
+> block driver, and then execution context switches (to thread or tasklet)
+> which setups the IO.
+> I have a bad feeling that this is a race/deadlock somewhere, but I
+> triple checked everything.
+> 
+> 
+> Any ideas?
+Please disregard this.
+The spinlock debugging saved me. I got a backtrace, and of course found
+what I expected, a spin on already taken spinlock.
 
->> I don't think anything needs to be or can really be fixed in the
->> kernel. We need a working O_EXCL, and before Tejun's patch it was
->> broken. That the broken behavior seemed to have some wanted effects on
->> some boxes can't the reason to leave O_EXCL broken.
->
-> Ack on this on the technical side.
->
-> But we have to look from the user side at this, as bug tracking is
-> mostly a tool to get feedback from the users. So if we close this bug,
-> we loose valuable feedback on the functioning of the kernel.
->
-> So, I can't really close the report if it is not resolved in any way.
+I really didn't expect memstick_next_request (and state machines it
+calls) to call the memstick_new_request and therefore jmicron's
+->request.
+I fixed mspro_block.c not to so (don't call memstick_new_request from
+state machine handlers, and problem went away. 
+Now I can happily remove that tasklet :-)
 
-As said, it can't be resolved. That it seemed to work was a buggy
-O_EXCL, which let stuff through the O_EXCL barrier, which was never
-supposed to reach the drive. I can't even reproduce that on older
-kernels. It seems like a specific timing problem.
+Jens Axboe, sorry for noise.
 
-> The issue is that the cdrom drive does not detect removal while it is
-> mounted.
->
-> Do you see any way, how userspace can change this without kernel help?
+Best regards,
+	Maxim Levitsky
 
-Sure, it can open the device without O_EXCL like HAL. But successors
-of HAL stopped doing that because it broke too many burning sessions.
-
->> The current state is the expected behavior.
->
-> Expected for a kernel developer who understands the inner workings of
-> his system. For a user, I'd argue, this is not expected.
-
-Yeah, might be. There is still nothing I think we can do at the moment
-at the kernel side.
-
->> It all seems more like an
->> issue with current udisks which should be discussed at the freedesktop
->> bugzilla. Udisk's behavior is intended, but there might be no specific
->> reason not to change it to what HAL did.
->
-> I think we can close this, as soon as we have an acknowledged bug by
-> the udisks maintainer. But not earlier.
-
-It's not a bug of udisks, it's decided to do it that way. It can be
-discussed though.
-
-> At the moment, I don't see this issue as resolved.
-
-Sure, no problem. I'm just saying that nobody can fix the problem in
-the kernel without adding something completely new like in-kernel
-polling. And that might take a longer time to get actually enabled by
-default. :)
-
-Kay
