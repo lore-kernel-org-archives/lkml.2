@@ -1,494 +1,258 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab0I3XJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:09:40 -0400
-Received: from sj-iport-1.cisco.com ([171.71.176.70]:16397 "EHLO
-	sj-iport-1.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751348Ab0I3XJj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:09:39 -0400
-Authentication-Results: sj-iport-1.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.57,262,1283731200"; 
-   d="scan'208";a="367010187"
-From: Tom Lyon <pugs@cisco.com>
-Organization: Cisco Systems, Inc.
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH 3/3] VFIO V4: VFIO driver: Non-privileged user level PCI drivers
-Date: Thu, 30 Sep 2010 16:09:39 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.34.4-0.1-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, jbarnes@virtuousgeek.org,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        randy.dunlap@oracle.com, arnd@arndb.de, joro@8bytes.org,
-        hjk@linutronix.de, avi@redhat.com, gregkh@suse.de, chrisw@sous-sol.org,
-        alex.williamson@redhat.com
-References: <4c9a72a0.u2cnjUB7QZ91tLeo%pugs@cisco.com> <20100927115420.GA7427@redhat.com>
-In-Reply-To: <20100927115420.GA7427@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009301609.39906.pugs@cisco.com>
+	id S1752801Ab0I3XPI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 19:15:08 -0400
+Received: from www.tglx.de ([62.245.132.106]:52274 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab0I3XPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 19:15:06 -0400
+Message-Id: <20100930221351.682772535@linutronix.de>
+User-Agent: quilt/0.48-1
+Date: Thu, 30 Sep 2010 23:14:27 -0000
+From: Thomas Gleixner <tglx@linutronix.de>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [patch 00/47] Sparse irq rework
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, September 27, 2010 04:54:21 am Michael S. Tsirkin wrote:
-> On Wed, Sep 22, 2010 at 02:18:24PM -0700, Tom Lyon wrote:
-> > Signed-off-by: Tom Lyon <pugs@cisco.com>
-> 
-> Some comments on the pci bits:
-> 
-> After going over them for the Nth time - something needs to be done
-> with the rvirt/write tables. I doubt anyone besides me and you
-> has gone over them: one has to pull
-> up the spec just to understand which bits are set here. Why can't we
-> have a module init routine and use the macros in pci_regs.h for this
-> purpose, as all other drivers do? We will also get to use the nice
-> endian-ness macros linux has for portability ...
+The following patch series cleans up and mostly reimplements the core
+sparse irq implementation and sanitizes the most complex (ab)user:
+arch/x86
 
-I tried a couple of approaches before settling on this one. Yes, its dense, 
-perhaps its ugly, but a table approach beats open coding of rules.
-And I absolutely don't expect it to verifiable to someone without a PCI spec;
-I had to have the PCI spec to write it! This is an example of where 
-correctness and readability pull to different places. And the defines in 
-pci_regs are incomplete and not real self-consistent anyways.
+The series is based on the previous rework of irq chip functions which
+is available at:
 
-Perhaps its time for someone to code up a different approach? Code talks!
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git irq/core
 
-> 
-> > +static struct perm_bits pci_cap_basic_perm[] = {
-> 
-> What endian-ness is this? Native?
-> You pass this to user as is but pci config is little endian...
-> Also -are all these readonly? So const? read mostly?
-Yes, I need some consts.
-Endianness - I haven't really thought much and I don't have  any big-endian 
-machines to test with.  However, for now everything is byte-at-a-time which 
-makes things easier. I'll take a pass at cleaning it up.
-> 
-> > +	{ 0xFFFFFFFF,	0, },		/* 0x00 vendor & device id - RO */
-> > +	{ 0x00000003,	0xFFFFFFFF, },	/* 0x04 cmd - mem & io bits virt */
-> 
-> Interrupt disable bit is under host control.
-Yes?
+A combined throwaway git repository with all the following patches on top of
+tip/irq/core is available at:
 
-> 
-> > +	{ 0,		0, },		/* 0x08 class code & revision id */
-> > +	{ 0,		0xFF00FFFF, },	/* 0x0c bist, htype, lat, cache */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x10 bar */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x14 bar */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x18 bar */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x1c bar */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x20 bar */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x24 bar */
-> > +	{ 0,		0, },		/* 0x28 cardbus - not yet */
-> > +	{ 0,		0, },		/* 0x2c subsys vendor & dev */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x30 rom bar */
-> > +	{ 0,		0, },		/* 0x34 capability ptr & resv */
-> > +	{ 0,		0, },		/* 0x38 resv */
-> > +	{ 0x000000FF,	0x000000FF, },	/* 0x3c max_lat ... irq */
-> > +};
-> > +
-> > +static struct perm_bits pci_cap_pm_perm[] = {
-> > +	{ 0,		0, },		/* 0x00 PM capabilities */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x04 PM control/status */
-> > +};
-> > +
-> > +static struct perm_bits pci_cap_vpd_perm[] = {
-> > +	{ 0,		0xFFFF0000, },	/* 0x00 address */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x04 data */
-> > +};
-> > +
-> > +static struct perm_bits pci_cap_slotid_perm[] = {
-> > +	{ 0,		0, },		/* 0x00 all read only */
-> > +};
-> > +
-> > +/* 4 different possible layouts of MSI capability */
-> > +static struct perm_bits pci_cap_msi_10_perm[] = {
-> > +	{ 0x00FF0000,	0x00FF0000, },	/* 0x00 MSI message control */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x04 MSI message address */
-> > +	{ 0x0000FFFF,	0x0000FFFF, },	/* 0x08 MSI message data */
-> > +};
-> > +static struct perm_bits pci_cap_msi_14_perm[] = {
-> > +	{ 0x00FF0000,	0x00FF0000, },	/* 0x00 MSI message control */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x04 MSI message address */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x08 MSI message upper addr */
-> > +	{ 0x0000FFFF,	0x0000FFFF, },	/* 0x0c MSI message data */
-> > +};
-> > +static struct perm_bits pci_cap_msi_20_perm[] = {
-> > +	{ 0x00FF0000,	0x00FF0000, },	/* 0x00 MSI message control */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x04 MSI message address */
-> > +	{ 0x0000FFFF,	0x0000FFFF, },	/* 0x08 MSI message data */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x0c MSI mask bits */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x10 MSI pending bits */
-> > +};
-> > +static struct perm_bits pci_cap_msi_24_perm[] = {
-> > +	{ 0x00FF0000,	0x00FF0000, },	/* 0x00 MSI message control */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x04 MSI message address */
-> > +	{ 0xFFFFFFFF,	0xFFFFFFFF, },	/* 0x08 MSI message upper addr */
-> > +	{ 0x0000FFFF,	0x0000FFFF, },	/* 0x0c MSI message data */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x10 MSI mask bits */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x14 MSI pending bits */
-> > +};
-> 
-> You let guest control MSI mask and do not virtualize,
-> but the host expects to control this register - it is
-> used for masking during interrupt rebalancing.
-> This will break the device, or even the host with
-> 'unsafe interrupts' enabled.
-> 
-> Note that if you virtualize it, you will have to virtualize
-> the pending bits too.
-I can't find any interaction between MSIs and irqbalance. I thought it was all 
-magic in the APIC. Please point me at counter-example.
-Otherwise I don't see a problem with the guest controlling the mask.
-> 
-> > +
-> > +static struct perm_bits pci_cap_pcix_perm[] = {
-> > +	{ 0,		0xFFFF0000, },	/* 0x00 PCI_X_CMD */
-> > +	{ 0,		0, },		/* 0x04 PCI_X_STATUS */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x08 ECC ctlr & status */
-> > +	{ 0,		0, },		/* 0x0c ECC first addr */
-> > +	{ 0,		0, },		/* 0x10 ECC second addr */
-> > +	{ 0,		0, },		/* 0x14 ECC attr */
-> > +};
-> > +
-> > +/* pci express capabilities */
-> > +static struct perm_bits pci_cap_exp_perm[] = {
-> > +	{ 0,		0, },		/* 0x00 PCIe capabilities */
-> > +	{ 0,		0, },		/* 0x04 PCIe device capabilities */
-> > +	{ 0,		0xFFFFFFFF, },	/* 0x08 PCIe device control & status */
-> > +	{ 0,		0, },		/* 0x0c PCIe link capabilities */
-> > +	{ 0,		0x000000FF, },	/* 0x10 PCIe link ctl/stat - SAFE? */
-> > +	{ 0,		0, },		/* 0x14 PCIe slot capabilities */
-> > +	{ 0,		0x00FFFFFF, },	/* 0x18 PCIe link ctl/stat - SAFE? */
-> > +	{ 0,		0, },		/* 0x1c PCIe root port stuff */
-> > +	{ 0,		0, },		/* 0x20 PCIe root port stuff */
-> > +};
-> > +
-> > +static struct perm_bits pci_cap_msix_perm[] = {
-> > +	{ 0,		0, },		/* 0x00 MSI-X Enable */
-> > +	{ 0,		0, },		/* 0x04 table offset & bir */
-> > +	{ 0,		0, },		/* 0x08 pba offset & bir */
-> > +};
-> > +
-> > +static struct perm_bits pci_cap_af_perm[] = {
-> > +	{ 0,		0, },		/* 0x00 af capability */
-> > +	{ 0,		0x0001,	 },	/* 0x04 af flr bit */
-> > +};
-> > +
-> > +static struct perm_bits *pci_cap_perms[] = {
-> > +	[PCI_CAP_ID_BASIC]	= pci_cap_basic_perm,
-> > +	[PCI_CAP_ID_PM]		= pci_cap_pm_perm,
-> > +	[PCI_CAP_ID_VPD]	= pci_cap_vpd_perm,
-> > +	[PCI_CAP_ID_SLOTID]	= pci_cap_slotid_perm,
-> > +	[PCI_CAP_ID_MSI]	= NULL,			/* special */
-> > +	[PCI_CAP_ID_PCIX]	= pci_cap_pcix_perm,
-> > +	[PCI_CAP_ID_EXP]	= pci_cap_exp_perm,
-> > +	[PCI_CAP_ID_MSIX]	= pci_cap_msix_perm,
-> > +	[PCI_CAP_ID_AF]		= pci_cap_af_perm,
-> > +};
-> > 
-> > 
-> > 
-> > 
-> > +int vfio_build_config_map(struct vfio_dev *vdev)
-> > +{
-> > +	struct pci_dev *pdev = vdev->pdev;
-> > +	u8 *map;
-> > +	int i, len;
-> > +	u8 pos, cap, tmp;
-> > +	u16 flags;
-> > +	int ret;
-> > +#ifndef PCI_FIND_CAP_TTL
-> > +#define PCI_FIND_CAP_TTL	48
-> > +#endif
-> 
-> Could you add a comment to explain what is the TTL for?
-> Where do you get the number 48?
-> Why do you have the ifndef here?
-> Why does it start with PCI_?
-The TTL just keeps the code from looping forever if the chain in the pci 
-device is looped.  The name and constant are copied from pci/pci.c
-> 
-> > +	int loops = PCI_FIND_CAP_TTL;
-> > +
-> > +	map = kmalloc(pdev->cfg_size, GFP_KERNEL);
-> 
-> So this will allocate a 4K for express, but you
-> never even look at express capabilities, so
-> you will never even touch them?
-Someday this'll probably be extended for PCIe capabilities.
-> 
-> > +	if (map == NULL)
-> > +		return -ENOMEM;
-> > +	for (i = 0; i < pdev->cfg_size; i++)
-> > +		map[i] = 0xFF;
-> > +	vdev->pci_config_map = map;
-> > +
-> > +	/* default config space */
-> > +	for (i = 0; i < pci_capability_length[0]; i++)
-> > +		map[i] = 0;
-> > +
-> > +	/* any capabilities? */
-> > +	ret = pci_read_config_word(pdev, PCI_STATUS, &flags);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +	if ((flags & PCI_STATUS_CAP_LIST) == 0)
-> > +		return 0;
-> > +
-> > +	ret = pci_read_config_byte(pdev, PCI_CAPABILITY_LIST, &pos);
-> > +	if (ret < 0)
-> > +		return ret;
-> > +	while (pos && --loops > 0) {
-> > +		ret = pci_read_config_byte(pdev, pos, &cap);
-> > +		if (ret < 0)
-> > +			return ret;
-> > +		if (cap == 0) {
-> > +			printk(KERN_WARNING "%s: cap 0\n", __func__);
-> > +			break;
-> > +		}
-> > +		if (cap > PCI_CAP_ID_MAX) {
-> > +			printk(KERN_WARNING "%s: unknown pci capability id %x\n",
-> > +					__func__, cap);
-> > +			len = 0;
-> > +		} else
-> > +			len = pci_capability_length[cap];
-> > +		if (len == 0) {
-> > +			printk(KERN_WARNING "%s: unknown length for pci cap %x\n",
-> > +					__func__, cap);
-> > +			len = 4;
-> > +		}
-> > +		if (len == 0xFF) {
-> > +			switch (cap) {
-> > +			case PCI_CAP_ID_MSI:
-> > +				len = vfio_msi_cap_len(vdev, pos);
-> > +				if (len < 0)
-> > +					return len;
-> > +				break;
-> > +			case PCI_CAP_ID_PCIX:
-> > +				ret = pci_read_config_word(pdev, pos + 2,
-> > +					&flags);
-> > +				if (ret < 0)
-> > +					return ret;
-> > +				if (flags & 0x3000)
-> > +					len = 24;
-> > +				else
-> > +					len = 8;
-> > +				break;
-> > +			case PCI_CAP_ID_VNDR:
-> > +				/* length follows next field */
-> > +				ret = pci_read_config_byte(pdev, pos + 2, &tmp);
-> > +				if (ret < 0)
-> > +					return ret;
-> > +				len = tmp;
-> > +				break;
-> > +			default:
-> > +				len = 0;
-> > +				break;
-> > +			}
-> > +		}
-> > +
-> > +		for (i = 0; i < len; i++) {
-> > +			if (map[pos+i] != 0xFF)
-> > +				printk(KERN_WARNING
-> > +					"%s: pci config conflict at %x, "
-> > +					"caps %x %x\n",
-> > +					__func__, i, map[pos+i], cap);
-> > +			map[pos+i] = cap;
-> > +		}
-> > +		ret = pci_read_config_byte(pdev, pos + PCI_CAP_LIST_NEXT, &pos);
-> > +		if (ret < 0)
-> > +			return ret;
-> > +	}
-> > +	if (loops <= 0)
-> > +		printk(KERN_ERR "%s: config space loop!\n", __func__);
-> 
-> If you just want to find all predefined capabilities,
-> you should porobably just use pci_find_cap.
-But this is a lot quicker.
-> 
-> > +	return 0;
-> > +}
-> > +
-> > +static int vfio_virt_init(struct vfio_dev *vdev)
-> > +{
-> > +	struct pci_dev *pdev = vdev->pdev;
-> > +	u32 *lp;
-> > +	int i;
-> > +
-> > +	vdev->vconfig = kmalloc(256, GFP_KERNEL);
-> > +	if (vdev->vconfig == NULL)
-> > +		return -ENOMEM;
-> 
-> This one is only 256. It looks like it's sometimes
-> indexed by position which is up to cfg_size,
-> so it can crash for pci express.
-No, because the capability maps don't do pcie yet, but I'll clean this up.
-> 
-> > +
-> > +	lp = (u32 *)vdev->vconfig;
-> > +	for (i = 0; i < 256/sizeof(u32); i++, lp++)
-> > +		pci_read_config_dword(pdev, i * sizeof(u32), lp);
-> > +	vdev->bardirty = 1;
-> > +
-> > +	vdev->rbar[0] = *(u32 *)&vdev->vconfig[PCI_BASE_ADDRESS_0];
-> > +	vdev->rbar[1] = *(u32 *)&vdev->vconfig[PCI_BASE_ADDRESS_1];
-> > +	vdev->rbar[2] = *(u32 *)&vdev->vconfig[PCI_BASE_ADDRESS_2];
-> > +	vdev->rbar[3] = *(u32 *)&vdev->vconfig[PCI_BASE_ADDRESS_3];
-> > +	vdev->rbar[4] = *(u32 *)&vdev->vconfig[PCI_BASE_ADDRESS_4];
-> > +	vdev->rbar[5] = *(u32 *)&vdev->vconfig[PCI_BASE_ADDRESS_5];
-> > +	vdev->rbar[6] = *(u32 *)&vdev->vconfig[PCI_ROM_ADDRESS];
-> > +
-> > +	/* for sr-iov devices */
-> > +	vdev->vconfig[PCI_VENDOR_ID] = pdev->vendor & 0xFF;
-> > +	vdev->vconfig[PCI_VENDOR_ID+1] = pdev->vendor >> 8;
-> > +	vdev->vconfig[PCI_DEVICE_ID] = pdev->device & 0xFF;
-> > +	vdev->vconfig[PCI_DEVICE_ID+1] = pdev->device >> 8;
-> > +
-> > +	return 0;
-> > +}
-> > +
-> > +/*
-> > + * Restore the *real* BARs after we detect a backdoor reset.
-> > + * (backdoor = some device specific technique that we didn't catch)
-> > + */
-> > +static void vfio_bar_restore(struct vfio_dev *vdev)
-> > +{
-> > +	printk(KERN_WARNING "%s: restoring real bars\n", __func__);
-> > +
-> > +#define do_bar(off, which) \
-> > +	pci_user_write_config_dword(vdev->pdev, off, vdev->rbar[which])
-> > +
-> > +	do_bar(PCI_BASE_ADDRESS_0, 0);
-> > +	do_bar(PCI_BASE_ADDRESS_1, 1);
-> > +	do_bar(PCI_BASE_ADDRESS_2, 2);
-> > +	do_bar(PCI_BASE_ADDRESS_3, 3);
-> > +	do_bar(PCI_BASE_ADDRESS_4, 4);
-> > +	do_bar(PCI_BASE_ADDRESS_5, 5);
-> > +	do_bar(PCI_ROM_ADDRESS, 6);
-> > +#undef do_bar
-> > +}
-> > +
-> > +/*
-> > + * Pretend we're hardware and tweak the values
-> > + * of the *virtual* pci BARs to reflect the hardware
-> > + * capabilities
-> > + */
-> > +static void vfio_bar_fixup(struct vfio_dev *vdev)
-> > +{
-> 
-> So you do this on each read?
-> Why don't you mask the appropriate bits on write?
-> This is what real hardware does, after all.
-> Then you won't need the bardirty field.
-> 
-> > +	struct pci_dev *pdev = vdev->pdev;
-> > +	int bar;
-> > +	u32 *lp;
-> > +	u64 mask;
-> > +
-> > +	for (bar = 0; bar <= 5; bar++) {
-> > +		if (pci_resource_start(pdev, bar))
-> > +			mask = ~(pci_resource_len(pdev, bar) - 1);
-> > +		else
-> > +			mask = 0;
-> > +		lp = (u32 *)vdev->vconfig + PCI_BASE_ADDRESS_0 + 4*bar;
-> > +		*lp &= (u32)mask;
-> > +
-> > +		if (pci_resource_flags(pdev, bar) & IORESOURCE_IO)
-> > +			*lp |= PCI_BASE_ADDRESS_SPACE_IO;
-> > +		else if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM) {
-> > +			*lp |= PCI_BASE_ADDRESS_SPACE_MEMORY;
-> > +			if (pci_resource_flags(pdev, bar) & IORESOURCE_PREFETCH)
-> > +				*lp |= PCI_BASE_ADDRESS_MEM_PREFETCH;
-> > +			if (pci_resource_flags(pdev, bar) & IORESOURCE_MEM_64) {
-> > +				*lp |= PCI_BASE_ADDRESS_MEM_TYPE_64;
-> > +				lp++;
-> > +				*lp &= (u32)(mask >> 32);
-> > +				bar++;
-> > +			}
-> > +		}
-> > +	}
-> > +
-> > +	if (pci_resource_start(pdev, PCI_ROM_RESOURCE))
-> 
-> Not if (pci_resource_len)?
-> 
-> > +		mask = ~(pci_resource_len(pdev, PCI_ROM_RESOURCE) - 1);
-> > +	else
-> > +		mask = 0;
-> > +	lp = (u32 *)vdev->vconfig + PCI_ROM_ADDRESS;
-> > +	*lp &= (u32)mask;
-> > +
-> > +	vdev->bardirty = 0;
-> 
-> Aren't the pci values in little endian format?
-> If so doing operations on them in native endianness is wrong.
-> sparse generally is good at catching these, but you will
-> have to avoid so many type casts and annotate endian-ness
-> for it to be of any use.
-Will clean.
-> 
-> > +ssize_t vfio_config_readwrite(int write,
-> > +		struct vfio_dev *vdev,
-> > +		char __user *buf,
-> > +		size_t count,
-> > +		loff_t *ppos)
-> > +{
-> > +	struct pci_dev *pdev = vdev->pdev;
-> > +	int done = 0;
-> > +	int ret;
-> > +	u16 pos;
-> > +
-> > +
-> > +	if (vdev->pci_config_map == NULL) {
-> > +		ret = vfio_build_config_map(vdev);
-> > +		if (ret)
-> > +			goto out;
-> > +	}
-> > +	if (vdev->vconfig == NULL) {
-> > +		ret = vfio_virt_init(vdev);
-> > +		if (ret)
-> > +			goto out;
-> > +	}
-> 
-> Why don't you init all this on open?
-Keeps all the hooks in the same code file.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tglx/linux-2.6-sparse-irq.git
 
-> 
-> > +
-> > +	while (count > 0) {
-> > +		pos = *ppos;
-> > +		if (pos == pdev->cfg_size)
-> > +			break;
-> > +		if (pos > pdev->cfg_size) {
-> > +			ret = -EINVAL;
-> > +			goto out;
-> > +		}
-> > +
-> > +		ret = vfio_config_rwbyte(write, vdev, pos, buf);
-> 
-> So you split each access to 1 byte accesses. Hmm.
-> This will break atomicity guarantees - maybe it does not matter,
-> but this is why the _userspace accesses are there after all.
-> 
-> Wouldn't it be easier to only support 1, 2 and 4 byte accesses?
-> This is what all drivers do after all...
-Future optimization.  PCI is actually pretty good about not needing
-atomics, so 8 and 16  bit processors are happy.
-I wanted to settle on the table format and contents before doing the
-2 and 4 byte accesses.
-> 
-> > +
-> > +		if (ret < 0)
-> > +			goto out;
-> > +		buf++;
-> > +		done++;
-> > +		count--;
-> > +		(*ppos)++;
-> > +	}
-> > +	ret = done;
-> > +out:
-> > +	return ret;
-> > +}
+The overall changes are (full changelog below):
+    56 files changed, 1229 insertions(+), 1682 deletions(-)
+
+The series consists of 3 parts:
+
+    - cleanup of kernel/irq code and implementation of new allocator
+    - conversion of x86 to new irq_chip functions and new allocator
+    - trivial cleanup of the remaining users and removal of the old stuff
+
+It's fully bisectable and survived a night of testing in my testfarm.
+
+There are two bugfix patches (1/47, 2/47), which resulted of staring
+at that maze for way too long. They are targeted for mainline urgent,
+but I left them in the queue to avoid further churn.
+
+
+Rationale:
+----------
+
+The current sparse_irq allocator has several short comings due to
+failures in the design or the lack of it:
+
+ - Requires iteration over the number of active irqs to find a free slot
+   Some architectures have grown their own workarounds for this.
+
+ - Freeing of irq descriptors is not possible
+
+ - Racy between create_irq_nr and destroy_irq plugged by horrible
+   callbacks
+
+ - Migration of active irq descriptors is not possible
+
+ - No bulk allocation of irq ranges
+
+Aside of that the sparse irq design failure caused that we sprinkled
+irq_desc references all over the place outside of kernel/irq/. That
+makes it extremly hard to do the core changes which are necessary to
+do further cleanups and improvements like he migration of active irq
+descriptors. The arch code needs only to know about the irq chip and
+the data associated with the irq. The irq descriptor itself is solely
+a core code data structure.
+
+The reason is that with the non sparse code access to the irq data was
+just array pointer math and most code (aside of the old __do_IRQ()
+users) used the provided accessor functions.
+
+With sparse it requires a radix tree lookup, which casued performance
+problems. Instead of tackling the problem at the chip function level
+and handing down a pointer to the associated data instead of an irq
+number, the low level code acquired a reference to irq_desc and
+populated that all over the place. Yeah, it's easier than doing a full
+cleanup and a sensible migration path, but the resulting mess is just
+disgusting.
+
+The previous chip functions series on which this series is based is
+addressing this issue on the chip level side by handing down the
+associated interrupt data instead of the interruut number. The x86
+cleanup is making use of it.
+
+
+New implementation:
+-------------------
+
+I've implemented a sane allocator which fixes the above short comings
+(though migration of active descriptors still needs a full tree wide
+cleanup of the direct and mostly unlocked access to irq_desc).
+
+The new allocator still uses a radix_tree, but uses a bitmap for
+keeping track of allocated irq numbers. That results in:
+
+ - Fast lookup of a free slot
+
+ - The removal of disposed descriptors (destroy_irq())
+
+ - Prevents the create/destroy race
+
+ - Bulk (de)allocation of consecutive irq ranges
+
+ - Migration of life descriptors after further cleanups
+
+The bitmap is also used in the SPARSE_IRQ=n case for lookup and
+raceless (de)allocation of irq numbers. So it removes the requirement
+for looping through the descriptor array to find slots.
+
+Right now it uses sparse_irq_lock to protect the bitmap and the radix
+tree, but after cleaning up all users we should be able to convert
+that to a mutex and switch the radix_tree and descriptor allocations
+to GFP_KERNEL.
+
+Note, that I wanted to use lib/idr.c code for it, but idr/ida lacks
+bulk allocation and a bitmap based iterator function, so I decided to
+open code it for now. That's definitely something which could be
+useful for others as well, but I have only a limited coding power.
+
+There are some trivial preparatory patches as well, which touch places
+all over the tree to make the conversion and cleanup simpler.
+
+
+Full conversion and clean up of x86:
+------------------------------------
+
+I spent quite a time to come up with a sane and splitable concept,
+which does not reach out into drivers/pci/[msi|ht|dmar] and whatever.
+
+But that's simply impossible because everything is twisted together
+mainly by optimization hacks done over time. (i.e. handing down
+irq_desc to low level msi functions instead of irq_desc.msi_desc would
+have kept the mess confined to x86).
+
+So I went there and started to convert stuff piece by piece in x86 and
+added the drivers/pci/* fixes as separate patches along the way. Not
+nice, but it turned out to be the only way which avoided even more
+churn.
+
+
+Cleanup of leftovers:
+---------------------
+
+The leftovers (powerpc, arm, sh) have been converted with minimal
+effort to allow the removal of the core code gunk. Not urgent stuff
+
+There are more things which might be cleaned up, but that's not the
+scope of this work.
+
+
+Further work:
+-------------
+
+ - Cleanup the irq_desc references all over the tree, which should become
+   easier after the remaining __do_IRQ() users are gone.
+
+ - Implement migration of active irq descriptors
+
+ - Implement node bound late allocation of low level irq vectors which
+   solves an existing (SGI) problem on large machines.
+
+
+How to merge:
+-------------
+
+It needs:
+
+   - ack to the new allocator design
+
+   - ack to merge the whole arch/!x86 and driver related cleanups
+     along with the core changes and the x86 cleanup
+
+
+Thoughts ?
+
+Thanks,
+
+	tglx
+---
+
+ b/Documentation/DocBook/genericirq.tmpl  |   82 +--
+ b/arch/arm/include/asm/hw_irq.h          |    2 
+ b/arch/arm/kernel/irq.c                  |   30 -
+ b/arch/arm/mach-davinci/gpio.c           |    2 
+ b/arch/arm/mach-iop13xx/msi.c            |    8 
+ b/arch/ia64/kernel/msi_ia64.c            |    8 
+ b/arch/ia64/sn/kernel/msi_sn.c           |    4 
+ b/arch/powerpc/include/asm/hw_irq.h      |    2 
+ b/arch/powerpc/kernel/irq.c              |   32 -
+ b/arch/powerpc/platforms/cell/axon_msi.c |    6 
+ b/arch/powerpc/platforms/pseries/xics.c  |    2 
+ b/arch/powerpc/sysdev/fsl_msi.c          |    4 
+ b/arch/powerpc/sysdev/mpic_pasemi_msi.c  |   22 
+ b/arch/powerpc/sysdev/mpic_u3msi.c       |   16 
+ b/arch/sh/kernel/cpu/irq/ipr.c           |    6 
+ b/arch/sh/kernel/irq.c                   |    2 
+ b/arch/sparc/kernel/pci_msi.c            |    8 
+ b/arch/x86/Kconfig                       |    1 
+ b/arch/x86/include/asm/hpet.h            |   10 
+ b/arch/x86/include/asm/hw_irq.h          |    7 
+ b/arch/x86/include/asm/i8259.h           |    2 
+ b/arch/x86/kernel/apb_timer.c            |   54 --
+ b/arch/x86/kernel/apic/io_apic.c         |  812 +++++++++++--------------------
+ b/arch/x86/kernel/apic/nmi.c             |    2 
+ b/arch/x86/kernel/hpet.c                 |   18 
+ b/arch/x86/kernel/i8259.c                |   63 +-
+ b/arch/x86/kernel/irqinit.c              |   17 
+ b/arch/x86/kernel/smpboot.c              |    4 
+ b/arch/x86/kernel/uv_irq.c               |   55 --
+ b/arch/x86/kernel/visws_quirks.c         |  140 +----
+ b/arch/x86/lguest/boot.c                 |   18 
+ b/drivers/isdn/hisax/config.c            |   18 
+ b/drivers/isdn/hisax/hisax.h             |    1 
+ b/drivers/pci/dmar.c                     |    8 
+ b/drivers/pci/htirq.c                    |   22 
+ b/drivers/pci/msi.c                      |   38 -
+ b/drivers/sh/intc.c                      |   37 -
+ b/drivers/xen/events.c                   |   23 
+ b/include/linux/dmar.h                   |    5 
+ b/include/linux/htirq.h                  |    5 
+ b/include/linux/interrupt.h              |    3 
+ b/include/linux/irq.h                    |  195 +++----
+ b/include/linux/irqnr.h                  |    5 
+ b/include/linux/lockdep.h                |    8 
+ b/include/linux/msi.h                    |   13 
+ b/init/main.c                            |    1 
+ b/kernel/irq/Kconfig                     |    5 
+ b/kernel/irq/Makefile                    |    3 
+ b/kernel/irq/chip.c                      |  138 -----
+ b/kernel/irq/dummychip.c                 |   67 ++
+ b/kernel/irq/handle.c                    |  344 -------------
+ b/kernel/irq/internals.h                 |   11 
+ b/kernel/irq/irqdesc.c                   |  377 ++++++++++++++
+ b/kernel/irq/proc.c                      |   18 
+ b/kernel/softirq.c                       |    7 
+ kernel/irq/numa_migrate.c                |  120 ----
+ 56 files changed, 1229 insertions(+), 1682 deletions(-)
+
+
+
