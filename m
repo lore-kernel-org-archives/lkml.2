@@ -1,24 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754626Ab0I3GgG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 02:36:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41860 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754376Ab0I3GgE (ORCPT
+	id S1754593Ab0I3GhA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 02:37:00 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34902 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753554Ab0I3Gg7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 02:36:04 -0400
-Date: Wed, 29 Sep 2010 23:37:05 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/17] fs: icache atomic inodes_stat
-Message-Id: <20100929233705.dc959855.akpm@linux-foundation.org>
-In-Reply-To: <20100930062057.GA5665@dastard>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	<1285762729-17928-8-git-send-email-david@fromorbit.com>
-	<20100929215253.6fd944a2.akpm@linux-foundation.org>
-	<20100930062057.GA5665@dastard>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 30 Sep 2010 02:36:59 -0400
+Date: Thu, 30 Sep 2010 08:36:39 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Olof Johansson <olof@lixom.net>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] dmi: export dmi data through debugfs
+Message-ID: <20100930083639.3b9effa0@endymion.delvare>
+In-Reply-To: <20100929222804.7f506ba5@lxorguk.ukuu.org.uk>
+References: <20100928211246.GA20941@lixom.net>
+	<20100929093403.7db92388@endymion.delvare>
+	<20100929145330.GA9351@lixom.net>
+	<20100929171118.1dbf3fbb@endymion.delvare>
+	<20100929222804.7f506ba5@lxorguk.ukuu.org.uk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -26,24 +28,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Sep 2010 16:20:57 +1000 Dave Chinner <david@fromorbit.com> wrote:
+Hi Alan,
 
-> > > --- a/fs/fs-writeback.c
-> > > +++ b/fs/fs-writeback.c
-> > > @@ -764,7 +764,8 @@ static long wb_check_old_data_flush(struct bdi_writeback *wb)
-> > >  	wb->last_old_flush = jiffies;
-> > >  	nr_pages = global_page_state(NR_FILE_DIRTY) +
-> > >  			global_page_state(NR_UNSTABLE_NFS) +
-> > > -			(inodes_stat.nr_inodes - inodes_stat.nr_unused);
-> > > +			(atomic_read(&inodes_stat.nr_inodes) -
-> > > +			atomic_read(&inodes_stat.nr_unused));
-> > 
-> > race bug.
+On Wed, 29 Sep 2010 22:28:04 +0100, Alan Cox wrote:
+> > Now if you really insist on exposing the whole DMI table through sysfs,
+> > I can't prevent you from doing that. After all, ACPI already exposes
+> > its tables under /sys/firmware/acpi/tables (mode 0400). But then you'd
+> > rather expose the DMI entry point and tables
+> > under /sys/firmware/dmi/tables for consistency, rather than using
+> > debugfs. But again, I don't think it is adding any value over what we
+> > already have.
 > 
-> What new race?  The code has gone from using subtraction of unlocked
-> counters to using subtraction of unlocked atomic counters. I can't
-> see any new race condition in that transformation....
+> If you really the DMI data generally available run dmidecode in the boot
+> scripts directed to a file. It even has a dump mode for this.
 
-Oh.  I assumed that all the above used to happen under inode_lock.
+Dump mode? Do you mean dmidecode --dump, dmidecode --dump-bin, or
+something of your own?
 
-Coz that's wot the changelog told me :)
+-- 
+Jean Delvare
