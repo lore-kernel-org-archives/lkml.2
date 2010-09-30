@@ -1,81 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab0I3UAf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:00:35 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34496 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756501Ab0I3UAe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:00:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=I47ppdBbjJ9+lGgV0xH5F9H5iraVVvB/My8+5wtAjLlwz+YW2gub04uY05Czy1MIcM
-         Rb6egZ6qpocMv/Lmnari6TCYVsT7dZ81LUVvQl7jNYLZZxLYx6RoRUGH30hmVY/c+lFd
-         6MmQ6anyzwtzi8wgItQT+0Vq36xCS7GpTTfn4=
+	id S1756548Ab0I3UCc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 16:02:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49990 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754724Ab0I3UCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 16:02:31 -0400
+Date: Thu, 30 Sep 2010 12:53:07 -0700
+From: Greg KH <gregkh@suse.de>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: Greg KH <greg@kroah.com>, kernel-janitors@vger.kernel.org,
+        devel@driverdev.osuosl.org, Marek Belisko <marek.belisko@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: ft1000: fix skb, netdev, memory leaks
+Message-ID: <20100930195307.GA30952@suse.de>
+References: <1285696175-5654-1-git-send-email-segooon@gmail.com>
+ <20100930111345.GA9978@kroah.com>
+ <20100930192303.GA10342@albatros>
 MIME-Version: 1.0
-In-Reply-To: <1285334543-7074-1-git-send-regression-fweisbec@gmail.com>
-References: <1285334543-7074-1-git-send-regression-fweisbec@gmail.com>
-Date: Thu, 30 Sep 2010 22:00:33 +0200
-X-Google-Sender-Auth: MT8TF619C6-IQS7pYm5OL9JxNi4
-Message-ID: <AANLkTinnRB-cpRrxymUQYMx0TjgkDkSbg=Euaq+Y16sE@mail.gmail.com>
-Subject: Re: [PATCH 1/2] autofs: Only declare function when CONFIG_COMPAT is defined
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        =?UTF-8?B?TcOhcnRvbiBOw6ltZXRo?= <nm127@freemail.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Arnd Bergmann <arnd@arndb.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100930192303.GA10342@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 15:22, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> From: Márton Németh <nm127@freemail.hu>
->
-> The patch solves the following warnings message when CONFIG_COMPAT
-> is not defined:
->
-> fs/autofs/root.c:30: warning: ‘autofs_root_compat_ioctl’ declared ‘static’ but never defined
->
-> Signed-off-by: Márton Németh <nm127@freemail.hu>
-> Cc: "H. Peter Anvin" <hpa@zytor.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  fs/autofs/root.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/autofs/root.c b/fs/autofs/root.c
-> index 11b1ea7..0c4ca81 100644
-> --- a/fs/autofs/root.c
-> +++ b/fs/autofs/root.c
-> @@ -27,7 +27,9 @@ static int autofs_root_unlink(struct inode *,struct dentry *);
->  static int autofs_root_rmdir(struct inode *,struct dentry *);
->  static int autofs_root_mkdir(struct inode *,struct dentry *,int);
->  static long autofs_root_ioctl(struct file *,unsigned int,unsigned long);
-> +#ifdef CONFIG_COMPAT
->  static long autofs_root_compat_ioctl(struct file *,unsigned int,unsigned long);
-> +#endif
->
->  const struct file_operations autofs_root_operations = {
->        .llseek         = generic_file_llseek,
+On Thu, Sep 30, 2010 at 11:23:03PM +0400, Vasiliy Kulikov wrote:
+> On Thu, Sep 30, 2010 at 04:13 -0700, Greg KH wrote:
+> > On Tue, Sep 28, 2010 at 09:49:35PM +0400, Vasiliy Kulikov wrote:
+> > > ft1000_copy_up_pkt() doesn't free skb on errors.
+> > > init_ft1000_card() doesn't free netdev with free_netdev() but with kfree().
+> > > init_ft1000_card() doesn't check request_region()'s return value
+> > > and doesn't free region on error.
+> > > 
+> > > Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+> > > ---
+> > >  Compile tested.
+> > 
+> > No you didn't
+> 
+> No I did:
+> 
+> make -C /home/vasya/linux drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.o
+> make: Вход в каталог `/home/vasya/dev/linux-next'
+>   CHK     include/linux/version.h
+>   CHK     include/generated/utsrelease.h
+>   CALL    scripts/checksyscalls.sh
+>   CC      drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.o
+> drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c: In function ‘ft1000_reset_card’:
+> drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:525: warning: passing argument 2 of ‘card_download’ discards qualifiers from pointer target type
+> drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c:56: note: expected ‘void *’ but argument is of type ‘const u8 * const’
+> make: Выход из каталога `/home/vasya/dev/linux-next'
 
-An alternative (and IMHO better) fix would be to move autofs_root_operations[]
-and autofs_root_inode_operations[] to the bottom of the file, and get rid of all
-the forward declarations.
+Heh, I didn't think to try that, amazed that it worked at all.
 
-Gr{oetje,eeting}s,
+> However, 
+> 
+>     cd ../drivers/staging/ft1000/ft1000-pcmcia/
+>     LANG=C make -C ~/linux ft1000_hw.o
+>     make: Entering directory `/home/vasya/dev/linux-next'
+>     make: *** No rule to make target `ft1000_hw.o'.  Stop.
+>     make: Leaving directory `/home/vasya/dev/linux-next'
+> 
+> 
+> Is "make" from linux root buggy/not supported for staging/everything?
 
-                        Geert
+This driver is marked broken, look at the Kconfig file:
+	config FT1000_PCMCIA
+	        tristate "Driver for ft1000 pcmcia device."
+	        depends on PCMCIA && BROKEN
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+It will be fixed up soon hopefully.
+
+thanks,
+
+greg k-h
