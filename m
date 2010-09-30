@@ -1,50 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751201Ab0I3EDg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 00:03:36 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11196 "EHLO mga09.intel.com"
+	id S1751377Ab0I3EEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 00:04:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51998 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750836Ab0I3EDf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 00:03:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,257,1283756400"; 
-   d="scan'208";a="662548207"
-From: "Wu, Xia" <xia.wu@intel.com>
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 30 Sep 2010 12:02:24 +0800
-Subject: unnecessary timer interrupt of slab.c and bdi tasks when the system
- is in sleep state
-Thread-Topic: unnecessary timer interrupt of slab.c and bdi tasks when the
- system is in sleep state
-Thread-Index: ActgVEnT01fHIvVUTSu1KnDWt0lFCA==
-Message-ID: <A24AE1FFE7AEC5489F83450EE98351BF221878E11F@shsmsx502.ccr.corp.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750894Ab0I3EEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 00:04:47 -0400
+Date: Thu, 30 Sep 2010 00:04:32 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: huang ying <huang.ying.caritas@gmail.com>
+Cc: Huang Ying <ying.huang@intel.com>, Robert Richter <robert.richter@amd.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH -v2 7/7] x86, NMI, Remove do_nmi_callback logic
+Message-ID: <20100930040432.GD26290@redhat.com>
+References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
+ <1285549026-5008-7-git-send-email-ying.huang@intel.com>
+ <20100927104426.GD32222@erda.amd.com>
+ <AANLkTinA2HK57w5wqCtq319WNy-PLtWaGBe-v+uoFB=Y@mail.gmail.com>
+ <20100927134341.GQ13563@erda.amd.com>
+ <20100927151607.GX26290@redhat.com>
+ <1285633705.20791.84.camel@yhuang-dev>
+ <20100928151924.GJ26290@redhat.com>
+ <AANLkTinuNKfTBYTK1+Ks-QSPbQ3qz5cCZC6vUwUZ+zCh@mail.gmail.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinuNKfTBYTK1+Ks-QSPbQ3qz5cCZC6vUwUZ+zCh@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I found some unnecessary timer interrupts when the system enter sleep state.
-(1) /mm/slab.c
-   cache_reap() clean up on allocated memory every 2s. If the system is in sleep state, the system is waked-up when this timer expires. In fact,
-   there isn't more slabs to been cleaned up in sleep state. 
-   
-(2) /mm/backing-dev.c and /fs/fs-writeback.c
-   fs-writeback.c and backing-dev.c define a set of bdi tasks which write back dirty date to the file-system. These tasks typically runs 
-   every 5 seconds even there isn't any dirty date in memory. These tasks call schedule_timeout () and schedule_timeout_interruptible().
-   In fact, there isn't any dirty data in memory when the system is in sleep state. 
+On Wed, Sep 29, 2010 at 02:55:58PM +0800, huang ying wrote:
+> Hi, Don,
+> 
+> I think we all agree that to use order to determine the reason/source
+> of NMI. The difference is that I want to keep as many direct calls in
+> default_do_nmi() as possible, while you guys want to wrap almost all
+> code in default_do_nmi() into notifier handler and leave only one
+> notify_die() in defualt_do_nmi(). And I want to use different die_val
+> (and their calling order in default_do_nmi()) to determine the order
+> while you guys want to use priority (based on its value) to determine
+> the order.
 
-I think these timers should not wake-up the system when the system is in sleep state. In these cases, these timers only waste the CPU resource
-and consume more power.
+Well, I just wanted to see if we can minimize the number of times we
+walked the die_chain.  Priorities was an interesting idea, I am not sure
+it works out.  Registering two handlers, seems clunky.  But I am open to
+the discussions.
 
-Regards
-xia
+> 
+> On the other hand, I think we should call corresponding DIE_NMIxxx
+> before the default operations, such as for watchdog, call
+> DIE_NMIWATCHDOG before go panic, for unknown nmi, call DIE_NMIUNKNOWN
+> before the default processing (may panic).
+> 
+> I think it is important to distinguish between die chain used to
+> determine the source/reason of NMI and the die chain used to see if
+> any other driver wanted to do some processing before the default
+> operation.
 
+I guess I still prefer to take your patch set with its change and then
+layer any new ideas on top.  I have a feeling this discussion could go on
+forever regarding how die_chains can work.
+
+Cheers,
+Don
