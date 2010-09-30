@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932114Ab0I3Pdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 11:33:36 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:7550 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932083Ab0I3Pdf (ORCPT
+	id S932130Ab0I3Pdw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 11:33:52 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59892 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932117Ab0I3Pdu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 11:33:35 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] dmi: export dmi data through debugfs
-Date: Thu, 30 Sep 2010 09:32:33 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: Olof Johansson <olof@lixom.net>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-References: <20100928211246.GA20941@lixom.net> <20100929145330.GA9351@lixom.net> <20100929171118.1dbf3fbb@endymion.delvare>
-In-Reply-To: <20100929171118.1dbf3fbb@endymion.delvare>
+	Thu, 30 Sep 2010 11:33:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CS7ucmR3N/eDG7LCKcxORS5V9I+VD9+d5AT1jzlU6QZdHGkhp75B2pvNkNHnPLs9IV
+         Sh8HiEkSjq009MroWTA9dUW8hrSTuu9hfCo/to4IbVQhoiRpnL0KytFfcZNwJv40QRcu
+         RXd0LqaDzQfSwO6Lb8zi2wH1ln7KjccGZZuCA=
+Date: Thu, 30 Sep 2010 19:33:37 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Felipe Balbi <balbi@ti.com>
+Cc: Grazvydas Ignotas <notasas@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Chikkature Rajashekar, Madhusudhan" <madhu.cr@ti.com>,
+        Arun Murthy <arunrmurthy.83@gmail.com>
+Subject: Re: [PATCH v4] power_supply: Add driver for TWL4030/TPS65950 BCI
+ charger
+Message-ID: <20100930153336.GA5923@oksana.dev.rtsoft.ru>
+References: <1285618704-8985-1-git-send-email-notasas@gmail.com>
+ <20100928060554.GF2702@legolas.emea.dhcp.ti.com>
+ <AANLkTikZqtXa2YQsDehoWVMRstefUyafsQn2mph7U3CZ@mail.gmail.com>
+ <20100928084251.GC3900@legolas.emea.dhcp.ti.com>
+ <AANLkTin-6BLBHeiyA1edTJVjwVAimmJLVicZj8c_VC_2@mail.gmail.com>
+ <20100928090637.GD3900@legolas.emea.dhcp.ti.com>
+ <AANLkTim28RmH28LGgp6bEJ7XbyL4oO_5_C0phLL86roY@mail.gmail.com>
+ <20100928094122.GA7081@legolas.emea.dhcp.ti.com>
+ <20100928112643.GC22734@oksana.dev.rtsoft.ru>
+ <20100928133345.GA8575@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201009300932.34827.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100928133345.GA8575@legolas.emea.dhcp.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, September 29, 2010 09:11:18 am Jean Delvare wrote:
-> On Wed, 29 Sep 2010 09:53:30 -0500, Olof Johansson wrote:
-> > On Wed, Sep 29, 2010 at 09:34:03AM +0200, Jean Delvare wrote:
-> > > Hi Olaf,
-> > > 
-> > > On Tue, 28 Sep 2010 16:12:46 -0500, Olof Johansson wrote:
-> > > > I've found this quite useful since it allows dmidecode to run without
-> > > > root privileges using --from-dump to read this file instead
-> > > 
-> > > This is a bad idea. We do NOT want every user to have access to all the
-> > > DMI information. There is sensitive information in there (serial
-> > > numbers and UUIDs, and possibly even more sensitive data in
-> > > OEM-specific records.)
+On Tue, Sep 28, 2010 at 04:33:45PM +0300, Felipe Balbi wrote:
+[...]
+> >>>Hm you are probably talking about TWL5031, which has redesigned
+> >>>charger block that is named BCC. TWL4030 charger is different, called
+> >>>BCI and requires software charger detection from what I see in it's
+> >>>TRM.
+> >>
+> >>ok, might be that I got confused. Then it's ok the way it is. So we need
+> >>other means to detect the charger :-p
+> >
+> >May we consider this as a minor issue that can be improved later?
+> 
+> Sure, it's fine.
+> 
+> >If so, I would like to apply it, but I'll wait a day or two for
+> >Reviewed-by or Acked-by tags to give the proper credits.
+> 
+> Here you go.
+> 
+> Acked-by: Felipe Balbi <balbi@ti.com>
 
-If DMI has sensitive information, then I agree, we shouldn't expose
-the whole table to non-root users.  I don't know the original motivation
-for allowing non-root access for dmidecode -- maybe it could be addressed
-by making dmidecode smart enough to look at /sys/class/dmi/id/* when
-running as a non-root user?
+Applied, thanks everyone!
 
-> > It's
-> > still better than having a userspace tool dig around /dev/mem for the
-> > information.
-
-I don't like /dev/mem either.  If someone's making an effort to remove
-/dev/mem, this might be one piece.  But I don't know whether that's
-feasible.
-
-> Now if you really insist on exposing the whole DMI table through sysfs,
-> I can't prevent you from doing that. After all, ACPI already exposes
-> its tables under /sys/firmware/acpi/tables (mode 0400). But then you'd
-> rather expose the DMI entry point and tables
-> under /sys/firmware/dmi/tables for consistency, rather than using
-> debugfs.
-
-If you do pursue this on the grounds of migrating away from /dev/mem,
-I like the idea of making it similar to what ACPI does.
-
-Bjorn
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
