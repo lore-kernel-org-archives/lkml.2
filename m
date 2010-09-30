@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751462Ab0I3AZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 20:25:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60826 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750998Ab0I3AZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 20:25:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,257,1283756400"; 
-   d="scan'208";a="662497528"
-Subject: Re: [PATCH -v2 1/5] ACPI, APEI, Fix APEI related table size
- checking
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1009291400590.3855@localhost.localdomain>
-References: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
-	 <1285761235-4751-2-git-send-email-ying.huang@intel.com>
-	 <alpine.LFD.2.00.1009291400590.3855@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 08:25:34 +0800
-Message-ID: <1285806334.6944.8.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1751373Ab0I3ApR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 20:45:17 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55134 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750964Ab0I3ApQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 20:45:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=WQpOTjJbOthVqcIEvTerssQLONL/6m/4CIuWu50nn2GAx7FbLbn5VqWV9h29VqatpU
+         9jbvzLv/Q9o/fBGjrtHVDAp2Et07omuZHKCQXBLHwDoU4qHnpWPLucK9FSW2SUN/cJo6
+         tFYE96n05i8u6/4iiHIkGfii/ugSE/Mdu8BCI=
+MIME-Version: 1.0
+Date: Thu, 30 Sep 2010 09:45:14 +0900
+X-Google-Sender-Auth: 6BKlP8RKqSJWUf2XnDcDOCmGRjE
+Message-ID: <AANLkTi=NFz95jvk73cgXGV-kzj7FFazgMJ6D+GOXr3Kb@mail.gmail.com>
+Subject: Please don't edit the subject. Use S5PC110 & S5PC210 as is
+From: Kyungmin Park <kmpark@infradead.org>
+To: Kukjin Kim <kgene.kim@samsung.com>,
+        arm-linux <linux-arm-kernel@lists.infradead.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Tomasz Fujak <t.fujak@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Len,
+Hi,
 
-On Thu, 2010-09-30 at 02:01 +0800, Len Brown wrote:
-> > Originally-by: Yinghai Lu <yinghai@kernel.org>
-> 
-> BTW.
-> 
-> If the patch is substantially the same as the original,
-> then the method to credit the original author is to
-> start the patch body with:
-> 
-> From: Yinghai Lu <yinghai@kernel.org>
-> 
-> and you can choose to note your changes in the signed-off part,
-> like akpm typically does, or not.
+Please don't edit the subject.
 
-Thanks for remaining.
+http://git.kernel.org/?p=linux/kernel/git/kgene/linux-samsung.git;a=commitdiff;h=d8c3d96f5df54251c06686bb00811e4b7e0f6547
+http://git.kernel.org/?p=linux/kernel/git/kgene/linux-samsung.git;a=commitdiff;h=7dcde8f18b0df4d332d6b359fd6270772a42f71f
 
-I changes the logic in original patch, and don't know whether Yinghai
-agree with me. So uses Originally-by: here. If I just do some minor
-fixes, I will use From:
+Patches from DMC we decide to use the S5PC110 & S5PC210 as we're only
+received the Spec C110 & C210.
+Most of people including mobile division don't know the V210 & V310
+SOC receptively.
 
-Best Regards,
-Huang Ying
+We're already confusing with names, we always talk with C110 & C210
+but works on V210 & V310 directory.
 
+well question. What's the SOC is used at Galaxy S & wave phone?
 
+I think S5PC110 is more well known than S5PV210.
+
+http://lwn.net/Articles/399720/
+The conclusion of the 2.6.36 merge window
+Systems and processors: Income s.r.o. PXA270 single-board computers,
+Wiliboard WBD-111 boards, and Samsung S5PC210-based systems.
+
+Thank you,
+Kyungmin Park
