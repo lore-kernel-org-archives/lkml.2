@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab0I3Mdy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 08:33:54 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37696 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751363Ab0I3Mdx convert rfc822-to-8bit (ORCPT
+	id S1755120Ab0I3MgL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 08:36:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50609 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751261Ab0I3MgI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 08:33:53 -0400
-Subject: Re: [PATCH] perf, x86: catch spurious interrupts after disabling
- counters
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, "gorcunov@gmail.com" <gorcunov@gmail.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>
-In-Reply-To: <AANLkTimeAbm6eHsf++-5OO6ba9zDYehw=W_zfbi+2Z=g@mail.gmail.com>
-References: <20100910155659.GD13563@erda.amd.com>
-	 <20100911094157.GA11521@elte.hu> <20100911114404.GE13563@erda.amd.com>
-	 <20100911124537.GA22850@elte.hu> <20100912095202.GF13563@erda.amd.com>
-	 <20100913143713.GK13563@erda.amd.com> <20100914174132.GN13563@erda.amd.com>
-	 <20100915162034.GO13563@erda.amd.com> <20100924000234.GO26290@redhat.com>
-	 <20100924031834.GP26290@redhat.com> <20100924100345.GE13563@erda.amd.com>
-	 <AANLkTimeAbm6eHsf++-5OO6ba9zDYehw=W_zfbi+2Z=g@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 30 Sep 2010 14:33:38 +0200
-Message-ID: <1285850018.2144.48.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 30 Sep 2010 08:36:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mMW/hxPybBDhAHIFfuSEqhc7V6POLs9T/xwfxeARb4ukewlrtpbs6cNVPPMZdTD5Sd
+         mMBNSrCcz2EjTJltMl1mqXjgslnC0oCRASrvwnIqfUqO7xZ6GuRZvTwYbiVE3OXlOAfZ
+         GfiJ+SN26q3Ya5WHBIJ9yCTol+18188ACXchI=
+Date: Thu, 30 Sep 2010 14:32:35 +0200
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/6] x86, mtrr: Assume SYS_CFG[Tom2ForceMemTypeWB] exists
+ on all future AMD CPUs
+Message-ID: <20100930123235.GB20545@loge.amd.com>
+References: <20100930121839.GA20545@loge.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100930121839.GA20545@loge.amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-09-24 at 15:38 +0200, Stephane Eranian wrote:
-> > I don't like the approach of disabling all counters in the nmi
-> > handler. First, it stops counting and thus may falsify
-> > measurement. Second, it introduces much overhead doing a rd-/wrmsrl()
-> > for each counter.
-> >
-> But that's exactly what is going on the Intel side. PMU is stopped on interrupt.
-> An argument for this is that you don't necessarily want to monitor across
-> the PMU handler, i.e., the overhead you introduce.
+From: Andreas Herrmann <andreas.herrmann3@amd.com>
 
-Right, its really a question of what you want to measure. I prefer not
-to measure the measuring itself, things are hard enough to interpret
-already.
+Instead of adapting the CPU family check in amd_special_default_mtrr()
+for each new CPU family assume that all new AMD CPUs support the
+necessary bits in SYS_CFG MSR.
 
-Then again, the Intel stuff has a real handy way to disable the whole
-PMU, unlike the AMD bits where you need to iterate each counter
-individually.
+Tom2Enabled is architectural (defined in APM Vol.2).
+Tom2ForceMemTypeWB is defined in all BKDGs starting with K8 NPT.
+In pre K8-NPT BKDG this bit is reserved (read as zero).
+
+W/o this adaption Linux would unnecessarily complain about bad MTRR
+settings on every new AMD CPU family, e.g.
+
+[    0.000000] WARNING: BIOS bug: CPU MTRRs don't cover all of memory, losing 4863MB of RAM.
+
+Cc: stable@kernel.org # .32.x, .35.x
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+---
+ arch/x86/kernel/cpu/mtrr/cleanup.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index c5f59d0..ac140c7 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -827,7 +827,7 @@ int __init amd_special_default_mtrr(void)
+ 
+ 	if (boot_cpu_data.x86_vendor != X86_VENDOR_AMD)
+ 		return 0;
+-	if (boot_cpu_data.x86 < 0xf || boot_cpu_data.x86 > 0x11)
++	if (boot_cpu_data.x86 < 0xf)
+ 		return 0;
+ 	/* In case some hypervisor doesn't pass SYSCFG through: */
+ 	if (rdmsr_safe(MSR_K8_SYSCFG, &l, &h) < 0)
+-- 
+1.6.4.4
+
