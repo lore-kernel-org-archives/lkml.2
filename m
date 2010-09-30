@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab0I3LFD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 07:05:03 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:50875 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752591Ab0I3LFB (ORCPT
+	id S1752680Ab0I3LGW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 07:06:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56342 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751667Ab0I3LGV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 07:05:01 -0400
-Date: Thu, 30 Sep 2010 12:29:28 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: "Marc - A. Dahlhaus" <mad@wol.de>, linux-kernel@vger.kernel.org,
-        isdn@linux-pingi.de
-Subject: Re: [PATCH] Fix capi devicenames
-Message-ID: <20100930122928.19e5ee84@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTi=d+5uDVK9RHguSmwFhKLVUPXvzo=G3s=NKKDW3@mail.gmail.com>
-References: <4CA391B3.1030806@wol.de>
-	<20100930103010.1a6a7785@lxorguk.ukuu.org.uk>
-	<1285843077.748.32.camel@marc>
-	<AANLkTi=d+5uDVK9RHguSmwFhKLVUPXvzo=G3s=NKKDW3@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Thu, 30 Sep 2010 07:06:21 -0400
+Subject: Re: [PATCH 3/7] Add IRQ_TIME_ACCOUNTING, finer accounting of irq
+ time -v3
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <1285788096-29471-4-git-send-email-venki@google.com>
+References: <1285788096-29471-1-git-send-email-venki@google.com>
+	 <1285788096-29471-4-git-send-email-venki@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 30 Sep 2010 13:06:08 +0200
+Message-ID: <1285844768.2144.11.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In any case devices.txt should be fixed, it has not much to do with
-> the real world.
+On Wed, 2010-09-29 at 12:21 -0700, Venkatesh Pallipadi wrote:
+> +void account_system_vtime(struct task_struct *curr)
+> +{
+> +       unsigned long flags;
+> +       int cpu;
+> +       u64 now, delta;
+> +
+> +       if (!sched_clock_irqtime)
+> +               return;
+> +
+> +       local_irq_save(flags);
+> +
+> +       now = sched_clock();
+> +       cpu = smp_processor_id();
 
-If some distros chose not to follow devices.txt that is their problem.
+Like said before, that really wants to read like:
 
-devices.txt is the specification, and its ABI.
+	cpu = smp_processor_id();
+	now = sched_clock_cpu(cpu);
 
-It is fixed and the kernel behaviour is to follow it. Those who didn't
-follow it, or who didn't propose a change back when it was specified in
-the first place have only themselves to blame.
+sched_clock() is raw tsc + ns conversion and can go all over the place.
 
-It isn't changing, and the ISDN code should follow the spec.
-
-How you sort out your userspace is a problem for those who dug holes and
-jumped down them.
+> +       delta = now - per_cpu(irq_start_time, cpu);
+> +       per_cpu(irq_start_time, cpu) = now;
+> +       if (hardirq_count())
+> +               per_cpu(cpu_hardirq_time, cpu) += delta;
+> +       else if (in_serving_softirq())
+> +               per_cpu(cpu_softirq_time, cpu) += delta;
+> +
+> +       local_irq_restore(flags);
+> +} 
