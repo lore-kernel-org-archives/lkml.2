@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751264Ab0I3AYz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 20:24:55 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:50639 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750873Ab0I3AYz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 20:24:55 -0400
-Date: Thu, 30 Sep 2010 10:24:50 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/17] fs: Inode cache scalability
-Message-ID: <20100930002450.GT5665@dastard>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
- <20100929235716.GA18423@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100929235716.GA18423@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751462Ab0I3AZ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 20:25:58 -0400
+Received: from mga02.intel.com ([134.134.136.20]:60826 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750998Ab0I3AZ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Sep 2010 20:25:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,257,1283756400"; 
+   d="scan'208";a="662497528"
+Subject: Re: [PATCH -v2 1/5] ACPI, APEI, Fix APEI related table size
+ checking
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1009291400590.3855@localhost.localdomain>
+References: <1285761235-4751-1-git-send-email-ying.huang@intel.com>
+	 <1285761235-4751-2-git-send-email-ying.huang@intel.com>
+	 <alpine.LFD.2.00.1009291400590.3855@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 30 Sep 2010 08:25:34 +0800
+Message-ID: <1285806334.6944.8.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 07:57:16PM -0400, Christoph Hellwig wrote:
-> On Wed, Sep 29, 2010 at 10:18:32PM +1000, Dave Chinner wrote:
-> > I've only ported the patches so far, without changing anything
-> > significant other than the comit descriptions. One thing that has
-> > stood out as I've done this is that the ordering of the patches is
-> > not ideal, and some things (like the inode counters) are modified
-> > multiple times through the patch set.  I'm quite happy to
-> > reorder/rework the series to fix these problems if that is desired.
+Hi, Len,
+
+On Thu, 2010-09-30 at 02:01 +0800, Len Brown wrote:
+> > Originally-by: Yinghai Lu <yinghai@kernel.org>
 > 
-> There's two obvious ordering issues: first the inode counters that you
-> mentioned.  I think this is esialy fixed by simply dropping both batches
-> messing with it - we should have the new locks protecting it in places once
-> inode_lock is dropped.  The other one is the clean up inode reference
-> counting patch, which sounds like it should be earlier in the series so
-> that we have the helpers in place before touching all places that
-> opencode an inode reference count increment.
+> BTW.
+> 
+> If the patch is substantially the same as the original,
+> then the method to credit the original author is to
+> start the patch body with:
+> 
+> From: Yinghai Lu <yinghai@kernel.org>
+> 
+> and you can choose to note your changes in the signed-off part,
+> like akpm typically does, or not.
 
-Yeah, I thought you'd want that. ;) I'll reorder the iget helper
-patch to be the first in the series which should reduce churn quite
-a bit, and then convert both the nr_inode and nr_unused counters to
-be per-cpu before any of the other modifications and so they can be
-ignored completely in later patches.
+Thanks for remaining.
 
-Cheers,
+I changes the logic in original patch, and don't know whether Yinghai
+agree with me. So uses Originally-by: here. If I just do some minor
+fixes, I will use From:
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Best Regards,
+Huang Ying
+
+
