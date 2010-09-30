@@ -1,63 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756118Ab0I3Vqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 17:46:50 -0400
-Received: from ovro.ovro.caltech.edu ([192.100.16.2]:41521 "EHLO
-	ovro.ovro.caltech.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755737Ab0I3Vqt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 17:46:49 -0400
-From: "Ira W. Snyder" <iws@ovro.caltech.edu>
-To: linux-kernel@vger.kernel.org
-Cc: Dan Williams <dan.j.williams@intel.com>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v4 0/4] dma: add support for scatterlist to scatterlist copy
-Date: Thu, 30 Sep 2010 14:46:43 -0700
-Message-Id: <1285883207-13761-1-git-send-email-iws@ovro.caltech.edu>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.0 (ovro.ovro.caltech.edu); Thu, 30 Sep 2010 14:46:48 -0700 (PDT)
+	id S932507Ab0I3Vrj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 17:47:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28323 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932485Ab0I3Vrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 17:47:37 -0400
+Date: Thu, 30 Sep 2010 17:47:16 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, hch@infradead.org, agruen@suse.de,
+        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 23/34] union-mount: Prevent topmost file system from being mounted elsewhere
+Message-ID: <20100930214716.GC490@shell>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-24-git-send-email-vaurora@redhat.com> <E1P1FaG-0001wr-Nn@pomaz-ex.szeredi.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1P1FaG-0001wr-Nn@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series adds support for scatterlist to scatterlist copies to the
-generic DMAEngine API. Both the fsldma and ste_dma40 drivers currently
-implement a similar API using different, non-generic methods. This series
-converts both of them to the new, standardized API.
+On Thu, Sep 30, 2010 at 11:37:48AM +0200, Miklos Szeredi wrote:
+> On Thu, 16 Sep 2010, Valerie Aurora wrote:
+> > The device underlying the topmost read-write layer of a file system
+> > cannot be mounted anywhere else on the system.  We keep a pointer to
+> > the union stack in the dentry of the topmost directory, so that dentry
+> > can't be part of a different mount, since dentries are shared between
+> > different mounts of the same device.
+> > 
+> > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> > ---
+> >  fs/namespace.c |    5 +++++
+> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/fs/namespace.c b/fs/namespace.c
+> > index 61256e6..26efaf3 100644
+> > --- a/fs/namespace.c
+> > +++ b/fs/namespace.c
+> > @@ -1998,6 +1998,11 @@ int do_add_mount(struct vfsmount *newmnt, struct path *path,
+> >  	if (S_ISLNK(newmnt->mnt_root->d_inode->i_mode))
+> >  		goto unlock;
+> >  
+> > +	/* Top layers of union mounts can't be mounted elsewhere */
+> > +	err = -EBUSY;
+> > +	if (newmnt->mnt_sb->s_union_lower_mnts)
+> > +		goto unlock;
+> > +
+> 
+> This is insufficient: the super block may be mounted elsewhere later.
+> And no, preventing bind mounts is not enough.
 
-By doing this as part of the core DMAEngine API, the individual drivers
-have control over how to chain their descriptors together. In addition,
-this makes graceful failure much easier to support.
+My mistake, that's a bug in the comment/commit message - s/mount/union
+mount/.  The patch that prevents not-union mounts is:
 
-The fsldma implementation has been tested on real hardware, using slightly
-modified versions of the patches posted a few weeks ago, titled:
-[PATCH RFCv2 0/5] CARMA Board Support
+    union-mount: Create check_topmost_union_mnt()
+    
+    check_topmost_union_mnt() checks that the topmost layer of a proposed
+    union mount is read-write, supports fallthrus and whiteouts, and isn't
+    mounted elsewhere.
 
-These patches will be re-submitted with the appropriate changes after we're
-happy with this series.
+And the patch that prevents bind mounts is:
 
-Thanks to all that provided input!
-Ira
+    union-mount: Prevent bind mounts of union mounts
+    
+    Prevent bind mounts of parts of union mounts.
+    
+    XXX - Bind mounting parts of union mounts is probably easy to
+    implement, but requires some careful thought about corner cases,
+    extensive testing, and some refactoring of the code.
 
-Changes since v3:
-- ste40_dma's implementation now returns NULL (thanks Dan!)
-- fsldma now uses a custom command for external control
-- fsldma now uses the standard struct dma_slave_config
-- tested on real hardware
+If you see any problems in those patches, I'd appreciate the comment.
 
-Ira W. Snyder (4):
-  dma: add support for scatterlist to scatterlist copy
-  fsldma: implement support for scatterlist to scatterlist copy
-  fsldma: improved DMA_SLAVE support
-  ste_dma40: implement support for scatterlist to scatterlist copy
+> BTW, what about CLONE_NEWNS?  I think it's a rather big limitation if
+> that doesn't work...
 
- arch/powerpc/include/asm/fsldma.h |  137 ---------------
- drivers/dma/dmaengine.c           |    2 +
- drivers/dma/fsldma.c              |  328 ++++++++++++++++++-------------------
- drivers/dma/ste_dma40.c           |   17 ++
- include/linux/dmaengine.h         |    9 +
- 5 files changed, 184 insertions(+), 309 deletions(-)
- delete mode 100644 arch/powerpc/include/asm/fsldma.h
+Great segue - I think the same code will make both CLONE_NEWNS and
+bind mounts work.  We can allow multiple mounts of a union if it's the
+exact same stack in each mount.  I will work on this.
 
+-VAL
