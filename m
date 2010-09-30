@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab0I3NrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 09:47:04 -0400
+	id S1756333Ab0I3NrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 09:47:13 -0400
 Received: from mga03.intel.com ([143.182.124.21]:30013 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756222Ab0I3NrC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 09:47:02 -0400
+	id S1756278Ab0I3NrK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 09:47:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,259,1283756400"; 
-   d="scan'208";a="330506215"
+   d="scan'208";a="330506244"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
         herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [PATCH v12 07/17]Modify netdev_alloc_page() to get external buffer
-Date: Thu, 30 Sep 2010 22:04:24 +0800
-Message-Id: <095b529a397d60b9ac9bcd345bd587630bcbab79.1285853725.git.xiaohui.xin@intel.com>
+Subject: [PATCH v12 11/17] Add header file for mp device.
+Date: Thu, 30 Sep 2010 22:04:28 +0800
+Message-Id: <e3154d3c650ca5e8a33df346cc28a122544b596c.1285853725.git.xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.7.3
 In-Reply-To: <1285855474-12110-1-git-send-email-xiaohui.xin@intel.com>
 References: <1285855474-12110-1-git-send-email-xiaohui.xin@intel.com>
@@ -28,58 +28,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-    Currently, it can get external buffers from mp device.
-
-    Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-    Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-    Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- net/core/skbuff.c |   27 +++++++++++++++++++++++++++
- 1 files changed, 27 insertions(+), 0 deletions(-)
+ include/linux/mpassthru.h |   26 ++++++++++++++++++++++++++
+ 1 files changed, 26 insertions(+), 0 deletions(-)
+ create mode 100644 include/linux/mpassthru.h
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 117d82b..da02fa1 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -269,11 +269,38 @@ struct sk_buff *__netdev_alloc_skb(struct net_device *dev,
- }
- EXPORT_SYMBOL(__netdev_alloc_skb);
- 
-+struct page *netdev_alloc_ext_pages(struct net_device *dev, int npages)
+diff --git a/include/linux/mpassthru.h b/include/linux/mpassthru.h
+new file mode 100644
+index 0000000..c0973b6
+--- /dev/null
++++ b/include/linux/mpassthru.h
+@@ -0,0 +1,26 @@
++#ifndef __MPASSTHRU_H
++#define __MPASSTHRU_H
++
++#include <linux/types.h>
++#include <linux/if_ether.h>
++#include <linux/ioctl.h>
++
++/* ioctl defines */
++#define MPASSTHRU_BINDDEV      _IOW('M', 213, int)
++#define MPASSTHRU_UNBINDDEV    _IO('M', 214)
++
++#ifdef __KERNEL__
++#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
++struct socket *mp_get_socket(struct file *);
++#else
++#include <linux/err.h>
++#include <linux/errno.h>
++struct file;
++struct socket;
++static inline struct socket *mp_get_socket(struct file *f)
 +{
-+	struct mp_port *port;
-+	struct skb_ext_page *ext_page = NULL;
-+
-+	port = dev->mp_port;
-+	if (!port)
-+		goto out;
-+	ext_page = port->ctor(port, NULL, npages);
-+	if (ext_page)
-+		return ext_page->page;
-+out:
-+	return NULL;
-+
++	return ERR_PTR(-EINVAL);
 +}
-+EXPORT_SYMBOL(netdev_alloc_ext_pages);
-+
-+struct page *netdev_alloc_ext_page(struct net_device *dev)
-+{
-+	return netdev_alloc_ext_pages(dev, 1);
-+
-+}
-+EXPORT_SYMBOL(netdev_alloc_ext_page);
-+
- struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
- {
- 	int node = dev->dev.parent ? dev_to_node(dev->dev.parent) : -1;
- 	struct page *page;
- 
-+	if (dev_is_mpassthru(dev))
-+		return netdev_alloc_ext_page(dev);
-+
- 	page = alloc_pages_node(node, gfp_mask, 0);
- 	return page;
- }
++#endif /* CONFIG_MEDIATE_PASSTHRU */
++#endif /* __KERNEL__ */
++#endif /* __MPASSTHRU_H */
 -- 
 1.7.3
 
