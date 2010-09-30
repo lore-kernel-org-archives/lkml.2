@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756431Ab0I3TnW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 15:43:22 -0400
-Received: from mx1.spunky.mail.dreamhost.com ([208.97.132.47]:34716 "EHLO
-	homiemail-a62.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754677Ab0I3TnV (ORCPT
+	id S1756512Ab0I3Tne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 15:43:34 -0400
+Received: from caiajhbdcbbj.dreamhost.com ([208.97.132.119]:47037 "EHLO
+	homiemail-a60.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756477Ab0I3Tnd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 15:43:21 -0400
-Subject: [RESEND PATCH] x86: return proper error code
+	Thu, 30 Sep 2010 15:43:33 -0400
+Subject: [RESEND PATCH] cpufreq: unnecesary double free in
+ pcc_cpufreq_do_osc
 From: Davidlohr Bueso <dave@gnu.org>
 Reply-To: dave@gnu.org
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com
-Cc: LKML <linux-kernel@vger.kernel.org>, x86@kernel.org
+To: davej@redhat.com, cpufreq@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Sep 2010 15:43:14 -0400
-Message-ID: <1285875794.2180.0.camel@cowboy>
+Date: Thu, 30 Sep 2010 15:43:24 -0400
+Message-ID: <1285875804.2180.1.camel@cowboy>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -22,26 +23,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-x86: return -ENOMEM instead of -1 when returning on memory allocation errors in add_kmmio_fault_page()
+x86, cpufreq: avoid an unnecessary double free when finished in pcc_cpufreq_do_osc()
+
+There is no need to fall through the out_free label thus saving a kfree call.
 
 Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 ---
- arch/x86/mm/kmmio.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/kmmio.c b/arch/x86/mm/kmmio.c
-index e5d5e2c..36a4347 100644
---- a/arch/x86/mm/kmmio.c
-+++ b/arch/x86/mm/kmmio.c
-@@ -370,7 +370,7 @@ static int add_kmmio_fault_page(unsigned long page)
+diff --git a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
+index 994230d..db7dc35 100644
+--- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
++++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
+@@ -379,6 +379,8 @@ static int __init pcc_cpufreq_do_osc(acpi_handle *handle)
+ 	if (!(supported & 0x1))
+ 		return -ENODEV;
  
- 	f = kzalloc(sizeof(*f), GFP_ATOMIC);
- 	if (!f)
--		return -1;
-+		return -ENOMEM;
- 
- 	f->count = 1;
- 	f->page = page;
++	return ret;
++
+ out_free:
+ 	kfree(output.pointer);
+ 	return ret;
 -- 
 1.7.0.4
 
