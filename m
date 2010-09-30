@@ -1,82 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751638Ab0I3Egm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 00:36:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21457 "EHLO mx1.redhat.com"
+	id S1751761Ab0I3EiT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 00:38:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52238 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751563Ab0I3Egl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 00:36:41 -0400
-Date: Thu, 30 Sep 2010 00:36:28 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: huang ying <huang.ying.caritas@gmail.com>
-Cc: Huang Ying <ying.huang@intel.com>, Robert Richter <robert.richter@amd.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: Re: [PATCH -v2 6/7] x86, NMI, Add support to notify hardware error
- with unknown NMI
-Message-ID: <20100930043628.GE26290@redhat.com>
-References: <1285549026-5008-1-git-send-email-ying.huang@intel.com>
- <1285549026-5008-6-git-send-email-ying.huang@intel.com>
- <20100927100901.GC32222@erda.amd.com>
- <AANLkTimY5hr3DgN9=v83Z289MkzjgX8k0WzdTWZbGorj@mail.gmail.com>
- <20100927133816.GP13563@erda.amd.com>
- <20100927152014.GY26290@redhat.com>
- <1285634172.20791.92.camel@yhuang-dev>
- <20100928153247.GL26290@redhat.com>
- <AANLkTinmhTgVhPsmGLC8Z-9Kx3xRovWy=9+R_5B4u6Cx@mail.gmail.com>
+	id S1751506Ab0I3EiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 00:38:18 -0400
+Message-ID: <4CA41431.1000304@redhat.com>
+Date: Thu, 30 Sep 2010 01:38:09 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100827 Red Hat/3.1.3-1.el6 Lightning/1.0b2 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinmhTgVhPsmGLC8Z-9Kx3xRovWy=9+R_5B4u6Cx@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for September 29 (media & IR build errors)
+References: <20100929143604.3d870ddf.sfr@canb.auug.org.au> <20100929083128.4efc3f0d.randy.dunlap@oracle.com>
+In-Reply-To: <20100929083128.4efc3f0d.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 04:17:30PM +0800, huang ying wrote:
-> On Tue, Sep 28, 2010 at 11:32 PM, Don Zickus <dzickus@redhat.com> wrote:
+Em 29-09-2010 12:31, Randy Dunlap escreveu:
+> On Wed, 29 Sep 2010 14:36:04 +1000 Stephen Rothwell wrote:
 > 
-> > But the problem is you have to export all this platform specific stuff to
-> > traps.c and surround the code with #ifdef's, which start to look ugly.
+>> Hi all,
+>>
+>> Changes since 20100928:
 > 
-> There is no #ifdef in my final default_do_nmi(), so I think the code
-> can be cleaned up without converting everything into notifier block. I
-> think the rule can be: architecture specific thing should go direct
-> call, while device driver should be turned into notifier block.
+> 
+> ERROR: "ir_keydown" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+> ERROR: "__ir_input_register" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+> ERROR: "get_rc_map" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+> ERROR: "ir_input_unregister" [drivers/media/video/ir-kbd-i2c.ko] undefined!
+> ERROR: "get_rc_map" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "ir_repeat" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "ir_input_unregister" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "ir_keydown" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "__ir_input_register" [drivers/media/video/cx88/cx88xx.ko] undefined!
+> ERROR: "get_rc_map" [drivers/media/video/bt8xx/bttv.ko] undefined!
+> ERROR: "ir_input_unregister" [drivers/media/video/bt8xx/bttv.ko] undefined!
+> ERROR: "__ir_input_register" [drivers/media/video/bt8xx/bttv.ko] undefined!
+> ERROR: "ir_core_debug" [drivers/media/IR/ir-common.ko] undefined!
+> ERROR: "ir_g_keycode_from_table" [drivers/media/IR/ir-common.ko] undefined!
 
-That sounds like a good rule, but then my definition of architecture
-specific is whatever is written in the intel/amd x86_64 architecture
-manual (that sits on my desk, dated 2002), which wouldn't include any
-of the error handling you propose, nor MCE, nor perf.
+Randy,
 
-I guess I look at all that stuff as cpu features because not all the cpus
-on the market have them.  Shouldn't traps.c just contain core architecture
-stuff and all those hardware error features could go under
-arch/x86/kernel/cpu with the rest of the features, no?
+Thanks for the test.
 
-> 
-> > Is there any reason why traps.c should know about MCA/HEST/<other hardware
-> > errors>?  Shouldn't it be abstracted away?
-> 
-> Yes. The device drivers should be abstracted away, leaving
-> architectural logic, such as port 0x61 as direct call. We need
-> notifier chain, but I just suggest reduce its usage if possible.
-> 
-> > Honestly, I would be interested in creating a southbridge driver and
-> > moving the port 0x61 code there and keeping the default_do_nmi() function
-> > stupidly simple (just a call to the die_chain and the
-> > unknown_nmi_error()).
-> 
-> I think the southbridge drivers should go notifier block, but the port
-> 0x61 code is architectural and should be kept in default_do_nmi().
+With Sept, 29 + my linux-next tree (that weren't merged on yesterday's build,
+I didn't notice the above errors). I suspect that the fixes were already on my
+tree.
 
-Is port 0x61 architectural?  I thought it a southbridge thing.  In fact I
-thought with modern chipsets you can access the same thing through port
-0x70 or 0x71 (I can't seem to figure out which Intel doc I saw that in).
-(Not that this conversation has any bearing on your patchset, just an idea
-I had).
+I noticed, however, two Kconfig errors on staging (for go7007 and cx25821), related
+to IR_CORE changes:
+
+warning: (VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && BKL && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+warning: (VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+
+I'm adding the enclosed patch to my linux-next tree in order to fix this trouble.
+On a test after the patch on my tree, your randconfig applied well over my tree.
+So, I'm pushing it to my tree at kernel.org.
 
 Cheers,
-Don
+Mauro
+
+---
+
+commit 9c1eba02d90134fdfa4140b594b2367e90df1dbf
+Author: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date:   Thu Sep 30 00:56:08 2010 -0300
+
+    V4L/DVB: Fix Kconfig dependencies for VIDEO_IR
+    
+    warning: (VIDEO_GO7007 && STAGING && !STAGING_EXCLUDE_BUILD && VIDEO_DEV && PCI && I2C && INPUT && BKL && SND || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+    warning: (VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_IR which has unmet direct dependencies (IR_CORE)
+    
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/staging/cx25821/Kconfig b/drivers/staging/cx25821/Kconfig
+index df7756a..a766d0b 100644
+--- a/drivers/staging/cx25821/Kconfig
++++ b/drivers/staging/cx25821/Kconfig
+@@ -4,7 +4,7 @@ config VIDEO_CX25821
+ 	select I2C_ALGOBIT
+ 	select VIDEO_BTCX
+ 	select VIDEO_TVEEPROM
+-	select VIDEO_IR
++	depends on VIDEO_IR
+ 	select VIDEOBUF_DVB
+ 	select VIDEOBUF_DMA_SG
+ 	select VIDEO_CX25840
+diff --git a/drivers/staging/go7007/Kconfig b/drivers/staging/go7007/Kconfig
+index e47f683..b816a60 100644
+--- a/drivers/staging/go7007/Kconfig
++++ b/drivers/staging/go7007/Kconfig
+@@ -3,7 +3,7 @@ config VIDEO_GO7007
+ 	depends on VIDEO_DEV && PCI && I2C && INPUT
+ 	depends on SND
+ 	select VIDEOBUF_DMA_SG
+-	select VIDEO_IR
++	depends on VIDEO_IR
+ 	select VIDEO_TUNER
+ 	select VIDEO_TVEEPROM
+ 	select SND_PCM
