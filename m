@@ -1,66 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab0I3UDH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 16:03:07 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:16073 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932108Ab0I3UDF (ORCPT
+	id S1756622Ab0I3UGY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 16:06:24 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:33464 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751885Ab0I3UGX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 16:03:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=SVQuMK+C3EZu2NlHxfl1yf0nvp+MX3DNSNoBbUPFfqhyN3B5Qw8GNVdqmsNHWg62Ob
-         aijWXR3a/rfMHrbydRPg==
-Date: Thu, 30 Sep 2010 13:02:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Davidlohr Bueso <dave@gnu.org>
-cc: davej@redhat.com, cpufreq@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RESEND PATCH] cpufreq: unnecesary double free in
- pcc_cpufreq_do_osc
-In-Reply-To: <1285875804.2180.1.camel@cowboy>
-Message-ID: <alpine.DEB.2.00.1009301258550.9112@chino.kir.corp.google.com>
-References: <1285875804.2180.1.camel@cowboy>
+	Thu, 30 Sep 2010 16:06:23 -0400
+Date: Thu, 30 Sep 2010 22:06:21 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Miklos Szeredi <mszeredi@suse.cz>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        fuse-devel@lists.sourceforge.net,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH] fuse: Initialize total_len in fuse_retrieve()
+Message-ID: <alpine.DEB.2.00.1009302205420.3131@ayla.of.borg>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Sep 2010, Davidlohr Bueso wrote:
+fs/fuse/dev.c:1357: warning: ¡total_len¢ may be used uninitialized in this
+function
 
-> x86, cpufreq: avoid an unnecessary double free when finished in pcc_cpufreq_do_osc()
-> 
-> There is no need to fall through the out_free label thus saving a kfree call.
-> 
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> ---
->  arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-> index 994230d..db7dc35 100644
-> --- a/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-> +++ b/arch/x86/kernel/cpu/cpufreq/pcc-cpufreq.c
-> @@ -379,6 +379,8 @@ static int __init pcc_cpufreq_do_osc(acpi_handle *handle)
->  	if (!(supported & 0x1))
->  		return -ENODEV;
->  
-> +	return ret;
-> +
->  out_free:
->  	kfree(output.pointer);
->  	return ret;
+Initialize total_len to zero, else its value will be undefined.
 
-Why is the kfree() unnecessary?  acpi_evaluate_object() will allocate a 
-new output.pointer if it returns 0, so at this point in the code you would 
-now be leaking the buffer.
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+---
+ fs/fuse/dev.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Instead, it would probably be better to fix the existing memory leaks in 
-that function where we return -ENODEV without going to out_free when 
-output.length is non-zero.
+diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
+index d367af1..cde755c 100644
+--- a/fs/fuse/dev.c
++++ b/fs/fuse/dev.c
+@@ -1354,7 +1354,7 @@ static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
+ 	loff_t file_size;
+ 	unsigned int num;
+ 	unsigned int offset;
+-	size_t total_len;
++	size_t total_len = 0;
+ 
+ 	req = fuse_get_req(fc);
+ 	if (IS_ERR(req))
+-- 
+1.7.0.4
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
