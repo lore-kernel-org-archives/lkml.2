@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753212Ab0I3ClN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Sep 2010 22:41:13 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:54221 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab0I3ClK (ORCPT
+	id S1753300Ab0I3Cnh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Sep 2010 22:43:37 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:34595 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752452Ab0I3Cng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Sep 2010 22:41:10 -0400
-Date: Wed, 29 Sep 2010 22:41:03 -0400
-From: Kyle McMartin <kyle@mcmartin.ca>
-To: Kyle McMartin <kyle@mcmartin.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-alpha@vger.kernel.org,
-        linux-cris-kernel@axis.com, Haavard Skinnemoen <hskinnemoen@atmel.com>,
-        Tony Luck <tony.luck@intel.com>, linux-ia64@vger.kernel.org,
-        Yoshinori Sato <ysato@users.sourceforge.jp>,
-        Hirokazu Takata <takata@linux-m32r.org>,
-        Greg Ungerer <gerg@uclinux.org>, Jeff Dike <jdike@addtoit.com>,
-        linux-parisc@vger.kernel.org, Chris Zankel <chris@zankel.net>,
-        linux-arch@vger.kernel.org
-Subject: Re: [RFC trollpatch 1/1] genirq: Remove the fits all and nothing
- __do_IRQ() code
-Message-ID: <20100930024103.GB2604@bombadil.infradead.org>
-References: <20100908152036.643594727@linutronix.de>
- <20100930012641.GA2604@bombadil.infradead.org>
+	Wed, 29 Sep 2010 22:43:36 -0400
+Date: Thu, 30 Sep 2010 12:43:31 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/17] fs: Introduce per-bucket inode hash locks
+Message-ID: <20100930024331.GW5665@dastard>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+ <1285762729-17928-13-git-send-email-david@fromorbit.com>
+ <20100930015213.GA1535@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100930012641.GA2604@bombadil.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100930015213.GA1535@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 09:26:41PM -0400, Kyle McMartin wrote:
-> I'd appreciate a second pair of eyes, and if it's ok, I'll clean it up
-> and submit it.
+On Wed, Sep 29, 2010 at 09:52:14PM -0400, Christoph Hellwig wrote:
 > 
+> Instead of doing the lock overkill on a still fundamentally global data
+> structure what about replacing this with something better.  I know
+> you've already done this with the XFS icache, and while the per-AG
+> concept obviously can't be generic at least some of the lessons could be
+> applied.
 
-Let's do h8300 while we're at it, since that also /looks/ trivial...
-(probably famous last words.)
+The XFS inode cache design is tied tightly to the inode layout in
+XFS, so the tree-per-ag-per-mount parallelism design really does not
+work in a generic manner.  Sure, we could probably make it a
+hashed-tree rather than hashed-link-list design, but that's a much
+more fundamental change than just splitting the locks up.
 
-No idea if it's edge or level or what, but given the handlers that would
-be called in the __do_IRQ patch, handle_edge_irq seems most sensible.
+> then again how much testing did this get anyway given that you
+> benchmark ran mostly XFS which doesn't hit this at all?
 
-Executive summary: kill implied .ack = NULL, rename enable to unmask,
-kill empty .end since dummy_irq_chip.end will suit us fine. Kill some
-unneeded irq_desc initializers that are also implicit...
+I've been running comparitive benchmarks on ext4 as well so that I
+also test all the generic paths.
 
-Again, if someone could build/boot/whatever test this, that would be
-fantastic, and I'll add their Tested-by and submit.
+> If it was up to me I'd dtop this (and the bl_list addition) from the
+> series for now and wait for people who care about the scalability of
+> the generic icache code to come up with a better data structure.
 
---kyle
+I think that it's going to take a lot of work to come up with
+something more generically optimal, so in the mean time I think this
+is a net win for filesystems that use the generic icache.
 
----
- irq.c |   16 ++++------------
- 1 file changed, 4 insertions(+), 12 deletions(-)
+Cheers,
 
-diff --git a/arch/h8300/kernel/irq.c b/arch/h8300/kernel/irq.c
-index c25dc2c..acdbc07 100644
---- a/arch/h8300/kernel/irq.c
-+++ b/arch/h8300/kernel/irq.c
-@@ -50,10 +50,6 @@ static void h8300_disable_irq(unsigned int irq)
- 		IER_REGS &= ~(1 << (irq - EXT_IRQ0));
- }
- 
--static void h8300_end_irq(unsigned int irq)
--{
--}
--
- static unsigned int h8300_startup_irq(unsigned int irq)
- {
- 	if (is_ext_irq(irq))
-@@ -75,10 +71,9 @@ struct irq_chip h8300irq_chip = {
- 	.name		= "H8300-INTC",
- 	.startup	= h8300_startup_irq,
- 	.shutdown	= h8300_shutdown_irq,
--	.enable		= h8300_enable_irq,
-+	.unmask		= h8300_enable_irq,
-+	.mask		= h8300_disable_irq,
- 	.disable	= h8300_disable_irq,
--	.ack		= NULL,
--	.end		= h8300_end_irq,
- };
- 
- #if defined(CONFIG_RAMKERNEL)
-@@ -161,17 +156,14 @@ void __init init_IRQ(void)
- 	setup_vector();
- 
- 	for (c = 0; c < NR_IRQS; c++) {
--		irq_desc[c].status = IRQ_DISABLED;
--		irq_desc[c].action = NULL;
--		irq_desc[c].depth = 1;
--		irq_desc[c].chip = &h8300irq_chip;
-+		set_irq_chip_and_handler(c, &h8300_irq_chip, handle_edge_irq);
- 	}
- }
- 
- asmlinkage void do_IRQ(int irq)
- {
- 	irq_enter();
--	__do_IRQ(irq);
-+	generic_handle_irq(irq);
- 	irq_exit();
- }
- 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
