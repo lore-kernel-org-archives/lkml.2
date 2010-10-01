@@ -1,77 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752861Ab0JAC3J (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 22:29:09 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:54972 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751410Ab0JAC3G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 22:29:06 -0400
-X-Nat-Received: from [202.181.97.72]:63455 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1285900143.27405
-Message-Id: <201010010229.o912T3rT089958@www262.sakura.ne.jp>
-Subject: Re: Is it legal to return positive value when do_execve() succeeds?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
+	id S1752932Ab0JACsh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 22:48:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52060 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751542Ab0JACsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 22:48:35 -0400
+Date: Fri, 1 Oct 2010 12:48:30 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Damian Lukowski <damian@tvk.rwth-aachen.de>,
+        Jerry Chu <hkchu@google.com>
+Subject: linux-next: manual merge of the net tree with the net-current tree
+Message-Id: <20101001124830.9c35d36f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Date: Fri, 01 Oct 2010 11:29:03 +0900
-References: <201009302207.IJB81715.tFSLFHFOVJOOMQ@I-love.SAKURA.ne.jp>
-In-Reply-To: <201009302207.IJB81715.tFSLFHFOVJOOMQ@I-love.SAKURA.ne.jp>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 30092010 #4259328, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tetsuo Handa wrote:
-> Is it legal to return positive value when do_execve() succeeds?
+Hi all,
 
-It seems to me that do_execve() should not return positive return code because
-some callers are expecting do_execve() to return 0 on success.
+Today's linux-next merge of the net tree got a conflict in
+net/ipv4/tcp_timer.c between commit
+4d22f7d372f5769c6c0149e427ed6353e2dcfe61 ("net-2.6: SYN retransmits: Add
+new parameter to retransmits_timed_out()") from the net-current tree and
+commit dca43c75e7e545694a9dd6288553f55c53e2a3a3 ("tcp: Add
+TCP_USER_TIMEOUT socket option") from the net tree.
 
-linux-2.6.36-rc6/arch/x86/kernel/process.c:
-304 long sys_execve(const char __user *name,
-305                 const char __user *const __user *argv,
-306                 const char __user *const __user *envp, struct pt_regs *regs)
-307 {
-308         long error;
-309         char *filename;
-310 
-311         filename = getname(name);
-312         error = PTR_ERR(filename);
-313         if (IS_ERR(filename))
-314                 return error;
-315         error = do_execve(filename, argv, envp, regs);
-316 
-317 #ifdef CONFIG_X86_32
-318         if (error == 0) {
-319                 /* Make sure we don't return using sysenter.. */
-320                 set_thread_flag(TIF_IRET);
-321         }
-322 #endif
-323 
-324         putname(filename);
-325         return error;
-326 }
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-But there are several "struct linux_binfmt"->load_binary() users who return
-positive return code for error paths.
-
-  load_elf_binary() will return positive return code if set_brk() returned
-  positive return code.
-
-  load_aout_binary() will return positive return code if do_brk() or
-  do_mmap() returned unwanted result.
-
-Are we using positive return code for telling unrecoverable errors?
-
-send_sig(SIGKILL, current, 0) is used when execve() failed after reaching
-"the point of no return", isn't it? But set_thread_flag(TIF_IRET) will not be
-called if execve() failed after "the point of no return".
-
-Is this no problem as the current task will be SIGKILL'ed as soon as returning
-using sysenter()?
-
-Regards.
+diff --cc net/ipv4/tcp_timer.c
+index 74c54b3,baea4a1..0000000
+--- a/net/ipv4/tcp_timer.c
++++ b/net/ipv4/tcp_timer.c
+@@@ -140,11 -139,9 +140,11 @@@ static void tcp_mtu_probing(struct inet
+   */
+  static bool retransmits_timed_out(struct sock *sk,
+  				  unsigned int boundary,
+ -				  unsigned int timeout)
+++				  unsigned int timeout,
+ +				  bool syn_set)
+  {
+- 	unsigned int timeout, linear_backoff_thresh;
+- 	unsigned int start_ts;
++ 	unsigned int linear_backoff_thresh, start_ts;
+ +	unsigned int rto_base = syn_set ? TCP_TIMEOUT_INIT : TCP_RTO_MIN;
+  
+  	if (!inet_csk(sk)->icsk_retransmits)
+  		return false;
+@@@ -154,14 -151,15 +154,16 @@@
+  	else
+  		start_ts = tcp_sk(sk)->retrans_stamp;
+  
+- 	linear_backoff_thresh = ilog2(TCP_RTO_MAX/rto_base);
++ 	if (likely(timeout == 0)) {
+ -		linear_backoff_thresh = ilog2(TCP_RTO_MAX/TCP_RTO_MIN);
+++		linear_backoff_thresh = ilog2(TCP_RTO_MAX/rto_base);
+  
+- 	if (boundary <= linear_backoff_thresh)
+- 		timeout = ((2 << boundary) - 1) * rto_base;
+- 	else
+- 		timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
+- 			  (boundary - linear_backoff_thresh) * TCP_RTO_MAX;
++ 		if (boundary <= linear_backoff_thresh)
+ -			timeout = ((2 << boundary) - 1) * TCP_RTO_MIN;
+++			timeout = ((2 << boundary) - 1) * rto_base;
++ 		else
+ -			timeout = ((2 << linear_backoff_thresh) - 1) * TCP_RTO_MIN +
+++			timeout = ((2 << linear_backoff_thresh) - 1) * rto_base +
++ 				(boundary - linear_backoff_thresh) * TCP_RTO_MAX;
+ +
++ 	}
+  	return (tcp_time_stamp - start_ts) >= timeout;
+  }
+  
+@@@ -176,9 -174,8 +178,9 @@@ static int tcp_write_timeout(struct soc
+  		if (icsk->icsk_retransmits)
+  			dst_negative_advice(sk);
+  		retry_until = icsk->icsk_syn_retries ? : sysctl_tcp_syn_retries;
+ +		syn_set = 1;
+  	} else {
+--		if (retransmits_timed_out(sk, sysctl_tcp_retries1, 0)) {
+++		if (retransmits_timed_out(sk, sysctl_tcp_retries1, 0, 0)) {
+  			/* Black hole detection */
+  			tcp_mtu_probing(icsk, sk);
+  
+@@@ -191,14 -188,16 +193,16 @@@
+  
+  			retry_until = tcp_orphan_retries(sk, alive);
+  			do_reset = alive ||
+--				   !retransmits_timed_out(sk, retry_until, 0);
+++				   !retransmits_timed_out(sk, retry_until, 0, 0);
+  
+  			if (tcp_out_of_resources(sk, do_reset))
+  				return 1;
+  		}
+  	}
+  
+- 	if (retransmits_timed_out(sk, retry_until, syn_set)) {
++ 	if (retransmits_timed_out(sk, retry_until,
++ 	    (1 << sk->sk_state) & (TCPF_SYN_SENT | TCPF_SYN_RECV) ? 0 :
+ -	    icsk->icsk_user_timeout)) {
+++	    icsk->icsk_user_timeout, syn_set)) {
+  		/* Has it gone just too far? */
+  		tcp_write_err(sk);
+  		return 1;
+@@@ -440,7 -439,7 +444,7 @@@ out_reset_timer
+  		icsk->icsk_rto = min(icsk->icsk_rto << 1, TCP_RTO_MAX);
+  	}
+  	inet_csk_reset_xmit_timer(sk, ICSK_TIME_RETRANS, icsk->icsk_rto, TCP_RTO_MAX);
+--	if (retransmits_timed_out(sk, sysctl_tcp_retries1 + 1, 0))
+++	if (retransmits_timed_out(sk, sysctl_tcp_retries1 + 1, 0, 0))
+  		__sk_dst_reset(sk);
+  
+  out:;
