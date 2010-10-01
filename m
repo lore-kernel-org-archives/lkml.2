@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab0JACA6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 22:00:58 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:35031 "EHLO arroyo.ext.ti.com"
+	id S1754748Ab0JACA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 22:00:56 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:42544 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab0JAB7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752795Ab0JAB7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Sep 2010 21:59:38 -0400
 From: Fernando Guzman Lugo <x0095840@ti.com>
 To: <gregkh@suse.de>
@@ -12,212 +12,392 @@ Cc: <felipe.contreras@nokia.com>, <ameya.palande@nokia.com>, <nm@ti.com>,
         <Hiroshi.DOYU@nokia.com>, <ohad@wizery.com>,
         <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
         <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCHv2 05/11] staging: tidspbridge - fix mmufault support
-Date: Thu, 30 Sep 2010 21:12:52 -0500
-Message-Id: <1285899178-14413-6-git-send-email-x0095840@ti.com>
+Subject: [PATCHv2 10/11] staging: tidspbridge - deprecate reserve/unreserve_memory funtions
+Date: Thu, 30 Sep 2010 21:12:57 -0500
+Message-Id: <1285899178-14413-11-git-send-email-x0095840@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1285899178-14413-5-git-send-email-x0095840@ti.com>
+In-Reply-To: <1285899178-14413-10-git-send-email-x0095840@ti.com>
 References: <1285899178-14413-1-git-send-email-x0095840@ti.com>
  <1285899178-14413-2-git-send-email-x0095840@ti.com>
  <1285899178-14413-3-git-send-email-x0095840@ti.com>
  <1285899178-14413-4-git-send-email-x0095840@ti.com>
  <1285899178-14413-5-git-send-email-x0095840@ti.com>
+ <1285899178-14413-6-git-send-email-x0095840@ti.com>
+ <1285899178-14413-7-git-send-email-x0095840@ti.com>
+ <1285899178-14413-8-git-send-email-x0095840@ti.com>
+ <1285899178-14413-9-git-send-email-x0095840@ti.com>
+ <1285899178-14413-10-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With changes for iommu migration mmufault report and dsp track
-dump is broken, this patch fixes that.
+Now what iommu memory usage is kept track by iommu module
+the functions reserve/unreserve_memory are not needed anymore.
 
 Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
 ---
- drivers/staging/tidspbridge/core/_deh.h       |    2 +
- drivers/staging/tidspbridge/core/tiomap3430.c |    2 +
- drivers/staging/tidspbridge/core/ue_deh.c     |   93 ++++++++++---------------
- 3 files changed, 40 insertions(+), 57 deletions(-)
+ .../staging/tidspbridge/include/dspbridge/proc.h   |   46 --------
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |   34 +-----
+ drivers/staging/tidspbridge/rmgr/node.c            |   20 +----
+ drivers/staging/tidspbridge/rmgr/proc.c            |  114 ++------------------
+ 4 files changed, 17 insertions(+), 197 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/core/_deh.h b/drivers/staging/tidspbridge/core/_deh.h
-index 16723cd..f1254f0 100644
---- a/drivers/staging/tidspbridge/core/_deh.h
-+++ b/drivers/staging/tidspbridge/core/_deh.h
-@@ -32,4 +32,6 @@ struct deh_mgr {
- 	struct tasklet_struct dpc_tasklet;
- };
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+index 5e09fd1..2d12aab 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+@@ -551,29 +551,6 @@ extern int proc_map(void *hprocessor,
+ 			   struct process_context *pr_ctxt);
  
-+int mmu_fault_isr(struct iommu *mmu);
-+
- #endif /* _DEH_ */
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index f99cc24..55ea265 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -56,6 +56,7 @@
- #include "_tiomap.h"
- #include "_tiomap_pwr.h"
- #include "tiomap_io.h"
-+#include "_deh.h"
- 
- /* Offset in shared mem to write to in order to synchronize start with DSP */
- #define SHMSYNCOFFSET 4		/* GPP byte offset */
-@@ -365,6 +366,7 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
- 	}
- 	if (!status) {
- 		dev_context->dsp_mmu = mmu;
-+		mmu->isr = mmu_fault_isr;
- 		sm_sg = &dev_context->sh_s;
- 		sg0_da = iommu_kmap(mmu, sm_sg->seg0_da, sm_sg->seg0_pa,
- 			sm_sg->seg0_size, IOVMF_ENDIAN_LITTLE | IOVMF_ELSZ_32);
-diff --git a/drivers/staging/tidspbridge/core/ue_deh.c b/drivers/staging/tidspbridge/core/ue_deh.c
-index 14f3191..2e1ac89 100644
---- a/drivers/staging/tidspbridge/core/ue_deh.c
-+++ b/drivers/staging/tidspbridge/core/ue_deh.c
-@@ -31,7 +31,7 @@
- #include <dspbridge/drv.h>
- #include <dspbridge/wdt.h>
- 
--static u32 fault_addr;
-+#define MMU_CNTL_TWL_EN		(1 << 2)
- 
- static void mmu_fault_dpc(unsigned long data)
- {
-@@ -43,43 +43,18 @@ static void mmu_fault_dpc(unsigned long data)
- 	bridge_deh_notify(deh, DSP_MMUFAULT, 0);
- }
- 
--static irqreturn_t mmu_fault_isr(int irq, void *data)
-+int mmu_fault_isr(struct iommu *mmu)
- {
--	struct deh_mgr *deh = data;
--	struct cfg_hostres *resources;
--	u32 event;
-+	struct deh_mgr *dm;
- 
--	if (!deh)
--		return IRQ_HANDLED;
-+	dev_get_deh_mgr(dev_get_first(), &dm);
- 
--	resources = deh->hbridge_context->resources;
--	if (!resources) {
--		dev_dbg(bridge, "%s: Failed to get Host Resources\n",
--				__func__);
--		return IRQ_HANDLED;
--	}
-+	if (!dm)
-+		return -EPERM;
- 
--	hw_mmu_event_status(resources->dw_dmmu_base, &event);
--	if (event == HW_MMU_TRANSLATION_FAULT) {
--		hw_mmu_fault_addr_read(resources->dw_dmmu_base, &fault_addr);
--		dev_dbg(bridge, "%s: event=0x%x, fault_addr=0x%x\n", __func__,
--				event, fault_addr);
--		/*
--		 * Schedule a DPC directly. In the future, it may be
--		 * necessary to check if DSP MMU fault is intended for
--		 * Bridge.
--		 */
--		tasklet_schedule(&deh->dpc_tasklet);
+ /*
+- *  ======== proc_reserve_memory ========
+- *  Purpose:
+- *      Reserve a virtually contiguous region of DSP address space.
+- *  Parameters:
+- *      hprocessor      :   The processor handle.
+- *      ul_size	  :   Size of the address space to reserve.
+- *      pp_rsv_addr       :   Ptr to DSP side reserved u8 address.
+- *  Returns:
+- *      0	 :   Success.
+- *      -EFAULT     :   Invalid processor handle.
+- *      -EPERM       :   General failure.
+- *      -ENOMEM     :   Cannot reserve chunk of this size.
+- *  Requires:
+- *      pp_rsv_addr is not NULL
+- *      PROC Initialized.
+- *  Ensures:
+- *  Details:
+- */
+-extern int proc_reserve_memory(void *hprocessor,
+-				      u32 ul_size, void **pp_rsv_addr,
+-				      struct process_context *pr_ctxt);
 -
--		/* Disable the MMU events, else once we clear it will
--		 * start to raise INTs again */
--		hw_mmu_event_disable(resources->dw_dmmu_base,
--				HW_MMU_TRANSLATION_FAULT);
--	} else {
--		hw_mmu_event_disable(resources->dw_dmmu_base,
--				HW_MMU_ALL_INTERRUPTS);
+-/*
+  *  ======== proc_un_map ========
+  *  Purpose:
+  *      Removes a MPU buffer mapping from the DSP address space.
+@@ -595,27 +572,4 @@ extern int proc_reserve_memory(void *hprocessor,
+ extern int proc_un_map(void *hprocessor, void *map_addr,
+ 			      struct process_context *pr_ctxt);
+ 
+-/*
+- *  ======== proc_un_reserve_memory ========
+- *  Purpose:
+- *      Frees a previously reserved region of DSP address space.
+- *  Parameters:
+- *      hprocessor      :   The processor handle.
+- *      prsv_addr	:   Ptr to DSP side reservedBYTE address.
+- *  Returns:
+- *      0	 :   Success.
+- *      -EFAULT     :   Invalid processor handle.
+- *      -EPERM       :   General failure.
+- *      -ENOENT   :   Cannot find a reserved region starting with this
+- *		      :   address.
+- *  Requires:
+- *      prsv_addr is not NULL
+- *      PROC Initialized.
+- *  Ensures:
+- *  Details:
+- */
+-extern int proc_un_reserve_memory(void *hprocessor,
+-					 void *prsv_addr,
+-					 struct process_context *pr_ctxt);
+-
+ #endif /* PROC_ */
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index faf8304..0187c47 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -989,27 +989,10 @@ u32 procwrap_register_notify(union trapped_args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_reserve_memory ========
+  */
+-u32 procwrap_reserve_memory(union trapped_args *args, void *pr_ctxt)
++u32 __deprecated procwrap_reserve_memory(union trapped_args *args,
++							void *pr_ctxt)
+ {
+-	int status;
+-	void *prsv_addr;
+-	void *hprocessor = ((struct process_context *)pr_ctxt)->hprocessor;
+-
+-	if ((args->args_proc_rsvmem.ul_size <= 0) ||
+-	    (args->args_proc_rsvmem.ul_size & (PG_SIZE4K - 1)) != 0)
+-		return -EINVAL;
+-
+-	status = proc_reserve_memory(hprocessor,
+-				     args->args_proc_rsvmem.ul_size, &prsv_addr,
+-				     pr_ctxt);
+-	if (!status) {
+-		if (put_user(prsv_addr, args->args_proc_rsvmem.pp_rsv_addr)) {
+-			status = -EINVAL;
+-			proc_un_reserve_memory(args->args_proc_rsvmem.
+-					       hprocessor, prsv_addr, pr_ctxt);
+-		}
 -	}
--	return IRQ_HANDLED;
-+	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
-+	tasklet_schedule(&dm->dpc_tasklet);
+-	return status;
 +	return 0;
  }
  
- int bridge_deh_create(struct deh_mgr **ret_deh,
-@@ -161,42 +136,45 @@ int bridge_deh_register_notify(struct deh_mgr *deh, u32 event_mask,
- #ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
- static void mmu_fault_print_stack(struct bridge_dev_context *dev_context)
+ /*
+@@ -1038,15 +1021,10 @@ u32 procwrap_un_map(union trapped_args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_un_reserve_memory ========
+  */
+-u32 procwrap_un_reserve_memory(union trapped_args *args, void *pr_ctxt)
++u32 __deprecated procwrap_un_reserve_memory(union trapped_args *args,
++							void *pr_ctxt)
  {
--	struct cfg_hostres *resources;
--	struct hw_mmu_map_attrs_t map_attrs = {
--		.endianism = HW_LITTLE_ENDIAN,
--		.element_size = HW_ELEM_SIZE16BIT,
--		.mixed_size = HW_MMU_CPUES,
--	};
--	void *dummy_va_addr;
+-	int status;
+-	void *hprocessor = ((struct process_context *)pr_ctxt)->hprocessor;
 -
--	resources = dev_context->resources;
--	dummy_va_addr = (void*)__get_free_page(GFP_ATOMIC);
-+	void *dummy_addr;
-+	u32 fa, tmp;
-+	struct iotlb_entry e;
-+	struct iommu *mmu = dev_context->dsp_mmu;
-+	dummy_addr = (void *)__get_free_page(GFP_ATOMIC);
- 
- 	/*
- 	 * Before acking the MMU fault, let's make sure MMU can only
- 	 * access entry #0. Then add a new entry so that the DSP OS
- 	 * can continue in order to dump the stack.
- 	 */
--	hw_mmu_twl_disable(resources->dw_dmmu_base);
--	hw_mmu_tlb_flush_all(resources->dw_dmmu_base);
--
--	hw_mmu_tlb_add(resources->dw_dmmu_base,
--			virt_to_phys(dummy_va_addr), fault_addr,
--			HW_PAGE_SIZE4KB, 1,
--			&map_attrs, HW_SET, HW_SET);
-+	tmp = iommu_read_reg(mmu, MMU_CNTL);
-+	tmp &= ~MMU_CNTL_TWL_EN;
-+	iommu_write_reg(mmu, tmp, MMU_CNTL);
-+	fa = iommu_read_reg(mmu, MMU_FAULT_AD);
-+	e.da = fa & PAGE_MASK;
-+	e.pa = virt_to_phys(dummy_addr);
-+	e.valid = 1;
-+	e.prsvd = 1;
-+	e.pgsz = IOVMF_PGSZ_4K & MMU_CAM_PGSZ_MASK;
-+	e.endian = MMU_RAM_ENDIAN_LITTLE;
-+	e.elsz = MMU_RAM_ELSZ_32;
-+	e.mixed = 0;
-+
-+	load_iotlb_entry(dev_context->dsp_mmu, &e);
- 
- 	dsp_clk_enable(DSP_CLK_GPT8);
- 
- 	dsp_gpt_wait_overflow(DSP_CLK_GPT8, 0xfffffffe);
- 
- 	/* Clear MMU interrupt */
--	hw_mmu_event_ack(resources->dw_dmmu_base,
--			HW_MMU_TRANSLATION_FAULT);
-+	tmp = iommu_read_reg(mmu, MMU_IRQSTATUS);
-+	iommu_write_reg(mmu, tmp, MMU_IRQSTATUS);
-+
- 	dump_dsp_stack(dev_context);
- 	dsp_clk_disable(DSP_CLK_GPT8);
- 
--	hw_mmu_disable(resources->dw_dmmu_base);
--	free_page((unsigned long)dummy_va_addr);
-+	iopgtable_clear_entry(mmu, fa);
-+	free_page((unsigned long)dummy_addr);
+-	status = proc_un_reserve_memory(hprocessor,
+-					args->args_proc_unrsvmem.prsv_addr,
+-					pr_ctxt);
+-	return status;
++	return 0;
  }
- #endif
  
-@@ -215,6 +193,7 @@ void bridge_deh_notify(struct deh_mgr *deh, int event, int info)
+ /*
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index 84882dc..d681617 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -430,17 +430,6 @@ int node_allocate(struct proc_object *hprocessor,
+ 	if (status)
+ 		goto func_cont;
+ 
+-	status = proc_reserve_memory(hprocessor,
+-				     pnode->create_args.asa.task_arg_obj.
+-				     heap_size + PAGE_SIZE,
+-				     (void **)&(pnode->create_args.asa.
+-					task_arg_obj.udsp_heap_res_addr),
+-				     pr_ctxt);
+-	if (status) {
+-		pr_err("%s: Failed to reserve memory for heap: 0x%x\n",
+-		       __func__, status);
+-		goto func_cont;
+-	}
+ #ifdef DSP_DMM_DEBUG
+ 	status = dmm_get_handle(p_proc_object, &dmm_mgr);
+ 	if (!dmm_mgr) {
+@@ -456,8 +445,7 @@ int node_allocate(struct proc_object *hprocessor,
+ 	map_attrs |= DSP_MAPVIRTUALADDR;
+ 	status = proc_map(hprocessor, (void *)attr_in->pgpp_virt_addr,
+ 			  pnode->create_args.asa.task_arg_obj.heap_size,
+-			  (void *)pnode->create_args.asa.task_arg_obj.
+-			  udsp_heap_res_addr, (void **)&mapped_addr, map_attrs,
++			  NULL, (void **)&mapped_addr, map_attrs,
+ 			  pr_ctxt);
+ 	if (status)
+ 		pr_err("%s: Failed to map memory for Heap: 0x%x\n",
+@@ -2577,12 +2565,6 @@ static void delete_node(struct node_object *hnode,
+ 			status = proc_un_map(hnode->hprocessor, (void *)
+ 					     task_arg_obj.udsp_heap_addr,
+ 					     pr_ctxt);
+-
+-			status = proc_un_reserve_memory(hnode->hprocessor,
+-							(void *)
+-							task_arg_obj.
+-							udsp_heap_res_addr,
+-							pr_ctxt);
+ #ifdef DSP_DMM_DEBUG
+ 			status = dmm_get_handle(p_proc_object, &dmm_mgr);
+ 			if (dmm_mgr)
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+index e5fec57..429f354 100644
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -152,34 +152,21 @@ static struct dmm_map_object *add_mapping_info(struct process_context *pr_ctxt,
+ 	return map_obj;
+ }
+ 
+-static int match_exact_map_obj(struct dmm_map_object *map_obj,
+-					u32 dsp_addr, u32 size)
+-{
+-	if (map_obj->dsp_addr == dsp_addr && map_obj->size != size)
+-		pr_err("%s: addr match (0x%x), size don't (0x%x != 0x%x)\n",
+-				__func__, dsp_addr, map_obj->size, size);
+-
+-	return map_obj->dsp_addr == dsp_addr &&
+-		map_obj->size == size;
+-}
+-
+ static void remove_mapping_information(struct process_context *pr_ctxt,
+-						u32 dsp_addr, u32 size)
++						u32 dsp_addr)
  {
- 	struct bridge_dev_context *dev_context;
- 	const char *str = event_to_string(event);
-+	u32 fa;
+ 	struct dmm_map_object *map_obj;
  
- 	if (!deh)
- 		return;
-@@ -232,8 +211,8 @@ void bridge_deh_notify(struct deh_mgr *deh, int event, int info)
- #endif
- 		break;
- 	case DSP_MMUFAULT:
--		dev_err(bridge, "%s: %s, addr=0x%x", __func__,
--				str, fault_addr);
-+		fa = iommu_read_reg(dev_context->dsp_mmu, MMU_FAULT_AD);
-+		dev_err(bridge, "%s: %s, addr=0x%x", __func__, str, fa);
- #ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
- 		print_dsp_trace_buffer(dev_context);
- 		dump_dl_modules(dev_context);
+-	pr_debug("%s: looking for virt 0x%x size 0x%x\n", __func__,
+-							dsp_addr, size);
++	pr_debug("%s: looking for virt 0x%x\n", __func__, dsp_addr);
+ 
+ 	spin_lock(&pr_ctxt->dmm_map_lock);
+ 	list_for_each_entry(map_obj, &pr_ctxt->dmm_map_list, link) {
+-		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x size 0x%x\n",
++		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x\n",
+ 							__func__,
+ 							map_obj->mpu_addr,
+-							map_obj->dsp_addr,
+-							map_obj->size);
++							map_obj->dsp_addr);
+ 
+-		if (match_exact_map_obj(map_obj, dsp_addr, size)) {
++		if (map_obj->dsp_addr == dsp_addr) {
+ 			pr_debug("%s: match, deleting map info\n", __func__);
+ 			list_del(&map_obj->link);
+ 			kfree(map_obj->dma_info.sg);
+@@ -1353,7 +1340,6 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
+ {
+ 	u32 va_align;
+ 	u32 pa_align;
+-	struct dmm_object *dmm_mgr;
+ 	u32 size_align;
+ 	int status = 0;
+ 	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
+@@ -1382,11 +1368,6 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
+ 	}
+ 	/* Critical section */
+ 	mutex_lock(&proc_lock);
+-	dmm_get_handle(p_proc_object, &dmm_mgr);
+-	if (dmm_mgr)
+-		status = dmm_map_memory(dmm_mgr, va_align, size_align);
+-	else
+-		status = -EFAULT;
+ 
+ 	/* Add mapping to the page tables. */
+ 	if (!status) {
+@@ -1409,9 +1390,9 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
+ 		map_obj->dsp_addr = (va_align |
+ 					((u32)pmpu_addr & (PG_SIZE4K - 1)));
+ 		*pp_map_addr = (void *)map_obj->dsp_addr;
++		pr_err("%s: mapped address %x\n", __func__, *pp_map_addr);
+ 	} else {
+-		remove_mapping_information(pr_ctxt, va_align, size_align);
+-		dmm_un_map_memory(dmm_mgr, va_align, &size_align);
++		remove_mapping_information(pr_ctxt, va_align);
+ 	}
+ 	mutex_unlock(&proc_lock);
+ 
+@@ -1504,38 +1485,6 @@ func_end:
+ }
+ 
+ /*
+- *  ======== proc_reserve_memory ========
+- *  Purpose:
+- *      Reserve a virtually contiguous region of DSP address space.
+- */
+-int proc_reserve_memory(void *hprocessor, u32 ul_size,
+-			       void **pp_rsv_addr,
+-			       struct process_context *pr_ctxt)
+-{
+-	struct dmm_object *dmm_mgr;
+-	int status = 0;
+-	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
+-
+-	if (!p_proc_object) {
+-		status = -EFAULT;
+-		goto func_end;
+-	}
+-
+-	status = dmm_get_handle(p_proc_object, &dmm_mgr);
+-	if (!dmm_mgr) {
+-		status = -EFAULT;
+-		goto func_end;
+-	}
+-
+-	status = dmm_reserve_memory(dmm_mgr, ul_size, (u32 *) pp_rsv_addr);
+-func_end:
+-	dev_dbg(bridge, "%s: hprocessor: 0x%p ul_size: 0x%x pp_rsv_addr: 0x%p "
+-		"status 0x%x\n", __func__, hprocessor,
+-		ul_size, pp_rsv_addr, status);
+-	return status;
+-}
+-
+-/*
+  *  ======== proc_start ========
+  *  Purpose:
+  *      Start a processor running.
+@@ -1683,7 +1632,6 @@ int proc_un_map(void *hprocessor, void *map_addr,
+ {
+ 	int status = 0;
+ 	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
+-	struct dmm_object *dmm_mgr;
+ 	u32 va_align;
+ 	u32 size_align;
+ 
+@@ -1693,23 +1641,11 @@ int proc_un_map(void *hprocessor, void *map_addr,
+ 		goto func_end;
+ 	}
+ 
+-	status = dmm_get_handle(hprocessor, &dmm_mgr);
+-	if (!dmm_mgr) {
+-		status = -EFAULT;
+-		goto func_end;
+-	}
+-
+ 	/* Critical section */
+ 	mutex_lock(&proc_lock);
+-	/*
+-	 * Update DMM structures. Get the size to unmap.
+-	 * This function returns error if the VA is not mapped
+-	 */
+-	status = dmm_un_map_memory(dmm_mgr, (u32) va_align, &size_align);
+ 	/* Remove mapping from the page tables. */
+-	if (!status)
+-		status = user_to_dsp_unmap(
+-			p_proc_object->hbridge_context->dsp_mmu, va_align);
++	status = user_to_dsp_unmap(p_proc_object->hbridge_context->dsp_mmu,
++								va_align);
+ 
+ 	mutex_unlock(&proc_lock);
+ 	if (status)
+@@ -1720,7 +1656,7 @@ int proc_un_map(void *hprocessor, void *map_addr,
+ 	 * from dmm_map_list, so that mapped memory resource tracking
+ 	 * remains uptodate
+ 	 */
+-	remove_mapping_information(pr_ctxt, (u32) map_addr, size_align);
++	remove_mapping_information(pr_ctxt, (u32) map_addr);
+ 
+ func_end:
+ 	dev_dbg(bridge, "%s: hprocessor: 0x%p map_addr: 0x%p status: 0x%x\n",
+@@ -1729,36 +1665,6 @@ func_end:
+ }
+ 
+ /*
+- *  ======== proc_un_reserve_memory ========
+- *  Purpose:
+- *      Frees a previously reserved region of DSP address space.
+- */
+-int proc_un_reserve_memory(void *hprocessor, void *prsv_addr,
+-				  struct process_context *pr_ctxt)
+-{
+-	struct dmm_object *dmm_mgr;
+-	int status = 0;
+-	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
+-
+-	if (!p_proc_object) {
+-		status = -EFAULT;
+-		goto func_end;
+-	}
+-
+-	status = dmm_get_handle(p_proc_object, &dmm_mgr);
+-	if (!dmm_mgr) {
+-		status = -EFAULT;
+-		goto func_end;
+-	}
+-
+-	status = dmm_un_reserve_memory(dmm_mgr, (u32) prsv_addr);
+-func_end:
+-	dev_dbg(bridge, "%s: hprocessor: 0x%p prsv_addr: 0x%p status: 0x%x\n",
+-		__func__, hprocessor, prsv_addr, status);
+-	return status;
+-}
+-
+-/*
+  *  ======== = proc_monitor ======== ==
+  *  Purpose:
+  *      Place the Processor in Monitor State. This is an internal
 -- 
 1.6.3.3
 
