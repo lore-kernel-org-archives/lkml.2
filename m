@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754079Ab0JAR7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 13:59:45 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:36350 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab0JAR7o (ORCPT
+	id S1754210Ab0JASAB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 14:00:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48268 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754121Ab0JASAA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 13:59:44 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Matthew Garrett <mjg@redhat.com>
-Subject: Re: [PATCH] pci: Reenable the AMD IOMMU if it's mysteriously vanished over suspend
-Date: Fri, 1 Oct 2010 11:58:42 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-        joerg.roedel@amd.com, jbarnes@virtuousgeek.org
-References: <1285861108-24122-1-git-send-email-mjg@redhat.com>
-In-Reply-To: <1285861108-24122-1-git-send-email-mjg@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010011158.45746.bjorn.helgaas@hp.com>
+	Fri, 1 Oct 2010 14:00:00 -0400
+Subject: Re: Introduce support for little endian PowerPC
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1285935283.2463.78.camel@pasglop>
+Date: Fri, 1 Oct 2010 12:59:31 -0500
+Cc: Josh Boyer <jwboyer@gmail.com>, paulus@samba.org,
+        linuxppc-dev@lists.ozlabs.org, Ian Munsie <imunsie@au1.ibm.com>,
+        linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <BBD78246-343E-4A96-9E55-3E40AD628C0B@kernel.crashing.org>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com> <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org> <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com> <1285935283.2463.78.camel@pasglop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 30, 2010 09:38:28 am Matthew Garrett wrote:
-> AMD's reference BIOS code had a bug that could result in the firmware
-> failing to reenable the iommu on resume. It transpires that this causes
-> certain less than desirable behaviour when it comes to PCI accesses, to
-> whit them ending up somewhere near Bristol when the more desirable outcome
-> was Edinburgh. Sadness ensues, perhaps along with filesystem corruption.
-> Let's make sure that it gets turned back on.
-> 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> ---
->  drivers/pci/quirks.c |   33 +++++++++++++++++++++++++++++++++
->  1 files changed, 33 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-> index 89ed181..dcf9832 100644
-> --- a/drivers/pci/quirks.c
-> +++ b/drivers/pci/quirks.c
-> @@ -2695,6 +2695,39 @@ DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_RICOH, PCI_DEVICE_ID_RICOH_R5C832,
->  #endif /*CONFIG_MMC_RICOH_MMC*/
->  
->  
-> +#ifdef CONFIG_AMD_IOMMU
-> +
-> +/* Some AMD BIOSes fail to reenable the iommu on resume */
-> +
-> +static void amd_iommu_reenable(struct pci_dev *dev)
-> +{
-> +	u32 ioc_feature_control;
-> +	struct pci_dev *iommu;
-> +
-> +	iommu = pci_get_device(PCI_VENDOR_ID_ATI, 0x5a23, NULL);
-> +
-> +	if (!iommu)
-> +		return;
-> +
-> +	/* Select Northbridge indirect register 0x75 and enable writing */
-> +	pci_write_config_dword(dev, 0x60, 0x75 | (1 << 7));
-> +	pci_read_config_dword(dev, 0x64, &ioc_feature_control);
-> +
-> +	/* Enable the iommu if it's vanished */
-> +	if (!(ioc_feature_control & 0x1))
-> +		pci_write_config_dword(dev, 0x64, ioc_feature_control | 1);
 
-This sounds important and tricky enough that it'd be nice to have a
-note in dmesg about what we're doing.
+On Oct 1, 2010, at 7:14 AM, Benjamin Herrenschmidt wrote:
 
-> +	/* Disable writing again */
-> +	pci_write_config_dword(dev, 0x60, 0x75);
-> +
-> +	pci_dev_put(iommu);
-> +}
-> +
-> +DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, 0x5a10, amd_iommu_reenable);
-> +DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, 0x5a12, amd_iommu_reenable);
-> +DECLARE_PCI_FIXUP_RESUME_EARLY(PCI_VENDOR_ID_ATI, 0x5a13, amd_iommu_reenable);
-> +#endif
-> +
->  static void pci_do_fixups(struct pci_dev *dev, struct pci_fixup *f,
->  			  struct pci_fixup *end)
->  {
+> On Fri, 2010-10-01 at 07:30 -0400, Josh Boyer wrote:
+>> 
+>>> From a community aspect is anyone actually going to use this?  Is
+>> this going to be the equivalent of voyager on x86?  I've got nothing
+>> against some of the endian clean ups this introduces.  However the
+>> changes to misc_32.S are a bit ugly from a readability point of view.
+>> Just seems like this is likely to bit-rot pretty quickly.
+>> 
+>> I'm with Kumar on this one.  Why would we want to support this?  I
+>> can't say I would be very willing to help anyone run in LE mode, let
+>> alone have it randomly selectable. 
 > 
+> There's some good reasons on the field ... sadly.
+> 
+> At this stage this is mostly an experiment, which went pretty well in
+> the sense that it's actually quite easy and a lot of the "fixes" are
+> actually reasonable cleanups to carry.
+> 
+> Now, the main reasons in practice are anything touching graphics.
+> 
+> There's quite a few IP cores out there for SoCs that don't have HW
+> swappers, and -tons- of more or less ugly code that can't deal with non
+> native pixel ordering (hell, even Xorg isn't good at it, we really only
+> support cards that have HW swappers today).
+> 
+> There's an even bigger pile of application code that deals with graphics
+> without any regard for endianness and is essentially unfixable.
+> 
+> So it becomes a matter of potential customers that will take it if it
+> does LE and won't if it doesn't ...
+> 
+> Now, I don't have a problem supporting that as the maintainer, as I
+> said, from a kernel standpoint, it's all quite easy to deal with. Some
+> of the most gory aspects in misc_32.S could probably be done in a way
+> that is slightly more readable, but the approach is actually good, I
+> think, to have macros to represent the high/low parts of register pairs.
+> 
+> So at this stage, I'd say, let's not dismiss it just because we all come
+> from a long education of hating LE for the sake of it :-)
+> 
+> It makes -some- sense, even if it's not necessarily on the markets
+> targeted by FSL today for example. At least from the kernel POV, it
+> doesn't seem to me to be a significant support burden at all.
+> 
+> Cheers,
+> Ben.
+
+I'm not against it, and I agree some of the patches seem like good clean up.  I'm concerned about this bit rotting pretty quickly.
+
+- k
+
