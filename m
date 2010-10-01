@@ -1,103 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab0JAKF0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 06:05:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44336 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752019Ab0JAKFZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 06:05:25 -0400
-Subject: Problem: initrd boot failure on QSD8250
-From: Tomasz Sterna <tsterna@tuenti.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Organization: Tuenti.com
-Date: Fri, 01 Oct 2010 12:05:19 +0200
-Message-ID: <1285927519.16981.63.camel@ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756184Ab0JAKGC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 06:06:02 -0400
+Received: from mga11.intel.com ([192.55.52.93]:23651 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752019Ab0JAKGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 06:06:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,264,1283756400"; 
+   d="scan'208";a="842676437"
+Date: Fri, 1 Oct 2010 12:06:20 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: linux-kernel@vger.kernel.org, laforge@gnumonks.org
+Subject: Re: [PATCH 1/3] MFD: allow for bypass of cell resource conflict
+ check
+Message-ID: <20101001100619.GA3064@sortiz-mobl>
+References: <20100930205536.4E29E9D401B@zog.reactivated.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100930205536.4E29E9D401B@zog.reactivated.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Hi Daniel,
 
-I am porting msm-2.6.35 kernel to Dell Streak. I ported required
-board-qsd8x50.c changes and most Streak hardware drivers from 2.06 Dell
-release and the kernel is booting.
+On Thu, Sep 30, 2010 at 09:55:36PM +0100, Daniel Drake wrote:
+> The upcoming VIA VX855 MFD driver needs to communicate resources
+> to subdevices where the resources may be claimed by ACPI.
+> 
+> Add a flag to mfd_cell to request that resources are not policed.
+Thanks a lot. All 3 patches applied.
 
-The problem is that it breaks on starting init from initrd, which is not
-accessible. I have no idea what could be wrong. Maybe you could help me?
-
-If you're interested in the kernel source it's on:
-http://gitorious.org/streak/kernel and I'm using streak_defconfig to
-build.
-
-CONFIG_CMDLINE="init=/sbin/init root=/dev/ram rw initrd=0x11000000,16M console=tty mem=88M"
-
-and the end of kernel boot looks like this:
-[...] 
-clock_late_init() disabled 21 unused clocks
-input: 8k_handset as /devices/virtual/input/input1
-__msm_rpc_connect: server not found 30000091:30001
-__msm_rpc_connect: server not found 30000091:20001
-[BAT]## Charger Mode = [I2C Control]
-report_hs_key: No mapping for remote handset event 136
-[BAT]## usb_current: 0 -> 100
-[BAT]## bat_status: Unknown -> Not charging
-msm_rpc_client_req: RPC call was not successful (4)
-hs_rpc_cb_init: RPC client request failed for pwr key delay cmd, using normal mode
-BUG: key df2ec770 not in .data!
-------------[ cut here ]------------
-WARNING: at kernel/lockdep.c:2701 sysfs_add_file_mode+0x4c/0xa8()
-Modules linked in:
-[<c0037920>] (unwind_backtrace+0x0/0xe4) from [<c0071094>] (warn_slowpath_common+0x4c/0x64)
-[<c0071094>] (warn_slowpath_common+0x4c/0x64) from [<c00710c4>] (warn_slowpath_null+0x18/0x1c)
-[<c00710c4>] (warn_slowpath_null+0x18/0x1c) from [<c011faf8>] (sysfs_add_file_mode+0x4c/0xa8)
-[<c011faf8>] (sysfs_add_file_mode+0x4c/0xa8) from [<c01220c4>] (internal_create_group+0x110/0x190)
-[<c01220c4>] (internal_create_group+0x110/0x190) from [<c000fbc8>] (msm_pm_init+0x244/0x3d8)
-[<c000fbc8>] (msm_pm_init+0x244/0x3d8) from [<c00313b8>] (do_one_initcall+0x58/0x1b8)
-[<c00313b8>] (do_one_initcall+0x58/0x1b8) from [<c0008404>] (kernel_init+0xa8/0x168)
-[<c0008404>] (kernel_init+0xa8/0x168) from [<c0032fbc>] (kernel_thread_exit+0x0/0x8)
----[ end trace 0684cd56c42dcf4f ]---
-BUG: key df2ec790 not in .data!
-BUG: key df2ec7b0 not in .data!
-BUG: key df2ec7d0 not in .data!
-BUG: key df2ec370 not in .data!
-BUG: key df2ec390 not in .data!
-BUG: key df2ec3b0 not in .data!
-BUG: key df2ec3d0 not in .data!
-BUG: key de3498b0 not in .data!
-BUG: key de3498d0 not in .data!
-BUG: key de3498f0 not in .data!
-BUG: key de349910 not in .data!
-BUG: key de35f850 not in .data!
-BUG: key de35f870 not in .data!
-BUG: key de35f890 not in .data!
-BUG: key de35f8b0 not in .data!
-VFP support v0.3: implementor 51 architecture 0 part 0f variant 0 rev 1
-[BAT]## bat_capacity: 100 (99), vol: 4077, ma: -371, fcc: 1445
-[BAT]## bat_low: 0 -> 1
-msmrtc_tod_proc_result: 09/30/2010 20:35:30 (03)
-rs30000048 rs30000048.65536: setting system clock to 2010-09-30 20:35:30 UTC (1285878930)
-msm_v4l2: msm_v4l2_init
-VFS: Cannot open root device "(null)" or unknown-block(0,0)
-Please append a correct "root=" boot option; here are the available partitions:
-1f00            5120 mtdblock0 (driver?)
-1f01            6144 mtdblock0 (driver?)
-1f02            6144 mtdblock0 (driver?)
-1f03             256 mtdblock0 (driver?)
-1f04            3072 mtdblock0 (driver?)
-1f05            1024 mtdblock0 (driver?)
-1f06          266240 mtdblock0 (driver?)
-1f07          143360 mtdblock0 (driver?)
-Kernel panic - not syncing: VFS: Unable to mount root fs on unknown-block(0,0)
-[<c0037920>] (unwind_backtrace+0x0/0xe4) from [<c043275c>] (panic_0x58/0xdc)
-[<c043275c>] (panic_0x58/0xdc) from [<c0008edc>] (mount_block_root+0x254/0x2a4)
-[<c0008edc>] (mount_block_root+0x254/0x2a4) from [<c00090ec>] (prepare_namespace+0x164/0x1b8)
-[<c00090ec>] (prepare_namespace+0x164/0x1b8) from [<c000847c>] (kernel_init+0x120/0x168)
-[<c000847c>] (kernel_init+0x120/0x168) from [<c0032fbc>] (kernel_thread_exit+0x0/0x8)
+Cheers,
+Samuel.
 
 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  drivers/mfd/mfd-core.c   |    8 +++++---
+>  include/linux/mfd/core.h |    3 +++
+>  2 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+> index 1823a57..d1c8605 100644
+> --- a/drivers/mfd/mfd-core.c
+> +++ b/drivers/mfd/mfd-core.c
+> @@ -65,9 +65,11 @@ static int mfd_add_device(struct device *parent, int id,
+>  			res[r].end   = cell->resources[r].end;
+>  		}
+>  
+> -		ret = acpi_check_resource_conflict(res);
+> -		if (ret)
+> -			goto fail_res;
+> +		if (!cell->ignore_resource_conflicts) {
+> +			ret = acpi_check_resource_conflict(res);
+> +			if (ret)
+> +				goto fail_res;
+> +		}
+>  	}
+>  
+>  	ret = platform_device_add_resources(pdev, res, cell->num_resources);
+> diff --git a/include/linux/mfd/core.h b/include/linux/mfd/core.h
+> index 11d740b..cb93d80 100644
+> --- a/include/linux/mfd/core.h
+> +++ b/include/linux/mfd/core.h
+> @@ -44,6 +44,9 @@ struct mfd_cell {
+>  	 */
+>  	int			num_resources;
+>  	const struct resource	*resources;
+> +
+> +	/* don't check for resource conflicts */
+> +	bool			ignore_resource_conflicts;
+>  };
+>  
+>  extern int mfd_add_devices(struct device *parent, int id,
+> -- 
+> 1.7.2.3
+> 
 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
