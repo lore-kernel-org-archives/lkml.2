@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753849Ab0JADJU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 23:09:20 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:47039 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab0JADJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 23:09:19 -0400
-From: Fernando Guzman Lugo <x0095840@ti.com>
-To: <tony@atomide.com>
-Cc: <Hiroshi.DOYU@nokia.com>, <linux-kernel@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCH] scatterlist: define SG chain for arm architecture
-Date: Thu, 30 Sep 2010 22:22:34 -0500
-Message-Id: <1285903354-7378-1-git-send-email-x0095840@ti.com>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753924Ab0JADOH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 23:14:07 -0400
+Received: from fed1rmmtai109.cox.net ([68.230.241.51]:38855 "EHLO
+	fed1rmmtai109.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751542Ab0JADOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 23:14:05 -0400
+X-Greylist: delayed 714 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Sep 2010 23:14:04 EDT
+X-VR-Score: 30.00
+X-Authority-Analysis: v=1.1 cv=PyPhBskYoaHflNqPyNkGzxEHMB/j16Lz16eTzQWlCdI=
+ c=1 sm=1 a=vWaEu_EYmfAA:10 a=IkcTkHD0fZMA:10 a=m2hBE1MU0Day8CEAPJIbIg==:17
+ a=SvCV6cmC42nph6vtV0cA:9 a=RSY1fpMvBD0Xx06aUwK8pr3kIvUA:4 a=QEXdDO2ut3YA:10
+ a=PyEhSLcoLz4A:10 a=W8ubvyPcEsx32rto:21 a=MnD6hbFDmFbHlg4D:21
+ a=m2hBE1MU0Day8CEAPJIbIg==:117
+X-CM-Score: 0.00
+Authentication-Results: cox.net; none
+Message-ID: <20100930230209.HKQHR.1109125.imail@fed1rmwml46>
+Date: Thu, 30 Sep 2010 20:02:09 -0700
+From: Chev wins <nijaatfity@cox.net>
+Reply-To: fdddd@ok.ms
+Subject: Complete
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Sensitivity: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define SG chain for ARM architecture in order to work
-with big buffers. This patch is needed in order to
-iovmm users can pass a big buffer to map it and ARM
-architecture has not issues using SG chain.
-
-This change was suggested by FUJITA Tomonori.
-
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
----
- arch/arm/include/asm/scatterlist.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/include/asm/scatterlist.h b/arch/arm/include/asm/scatterlist.h
-index 2f87870..3de0a0b 100644
---- a/arch/arm/include/asm/scatterlist.h
-+++ b/arch/arm/include/asm/scatterlist.h
-@@ -5,4 +5,6 @@
- #include <asm/types.h>
- #include <asm-generic/scatterlist.h>
- 
-+#define ARCH_HAS_SG_CHAIN
-+
- #endif /* _ASMARM_SCATTERLIST_H */
--- 
-1.6.3.3
-
+I have been directed to inform you that you have been chosen for Award of GBP 1,000,000.00 by the board of trustees of the above stated non-governmental aid organization Chevron/Texaco .Your grant number is (CT-222-6747,FGN/P-900-56).
+Contact Mr Collins Tevez
+email: fdddd@ok.ms
+and provide these details:
+FULL NAMES,
+CONTACT ADDRESS,
+NATIONALITY,
+GENDER,
+AGE,
+TEL NO,
+OCCUPATION.
+Regards.
+Patricia Sowinski-Demarco
+Promo Announcer
