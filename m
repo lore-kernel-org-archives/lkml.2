@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab0JAJCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 05:02:45 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37322 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751708Ab0JAJCo convert rfc822-to-8bit (ORCPT
+	id S1755742Ab0JAJGf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 05:06:35 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:41874 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752499Ab0JAJGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 05:02:44 -0400
-Subject: Re: Introduce support for little endian PowerPC
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-Date: Fri, 1 Oct 2010 04:02:24 -0500
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, paulus@samba.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-X-Mailer: Apple Mail (2.1081)
+	Fri, 1 Oct 2010 05:06:33 -0400
+X-Greylist: delayed 638 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 05:06:33 EDT
+X-Sasl-enc: vVYJVAlPLzXJIENQioHtlE04S95XpcWIQL+K1CyDwGIl 1285923354
+Subject: Re: [PATCH 06/17] Add an AT_NO_AUTOMOUNT flag to suppress terminal
+ automount
+From: Ian Kent <raven@themaw.net>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@ftp.linux.org.uk, jmoyer@redhat.com, linux-fs@vger.kernel.org,
+        autofs@linux.kernel.org, linux-kernel@vger.kernel.org,
+        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org
+In-Reply-To: <20100930181526.30939.22704.stgit@warthog.procyon.org.uk>
+References: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
+	 <20100930181526.30939.22704.stgit@warthog.procyon.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Oct 2010 16:55:47 +0800
+Message-ID: <1285923347.3207.7.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-09-30 at 19:15 +0100, David Howells wrote:
+> Add an AT_NO_AUTOMOUNT flag to suppress terminal automounting of directories
+> with follow_link semantics.  This can be used by fstatat() users to permit the
+> gathering of attributes on an automount point and also prevent
+> mass-automounting of a directory of automount points by ls.
+> 
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Acked-by: Ian Kent <raven@themaw.net>
+> ---
+> 
+>  fs/namei.c            |    6 ++++++
+>  fs/stat.c             |    4 +++-
+>  include/linux/fcntl.h |    1 +
+>  include/linux/namei.h |    2 ++
+>  4 files changed, 12 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 86421f9..74bce3a 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -625,6 +625,12 @@ static int follow_automount(struct path *path, unsigned flags,
+>  	if (!path->dentry->d_op || !path->dentry->d_op->d_automount)
+>  		return -EREMOTE;
+>  
+> +	/* We don't want to mount if someone supplied AT_NO_AUTOMOUNT
+> +	 * and this is the terminal part of the path.
+> +	 */
+> +	if ((flags & LOOKUP_NO_AUTOMOUNT) && !(flags & LOOKUP_CONTINUE))
+> +		return -EXDEV; /* we actually want to stop here */
 
-On Oct 1, 2010, at 2:05 AM, Ian Munsie wrote:
+Oops, we missed this -EXDEV when we made the change to -EISDIR.
 
-> Some PowerPC processors can be run in either big or little endian modes, some
-> others can map selected pages of memory as little endian, which allows the same
-> thing. Until now we have only supported the default big endian mode in Linux.
-> This patch set introduces little endian support for the 44x family of PowerPC
-> processors.
-
->From a community aspect is anyone actually going to use this?  Is this going to be the equivalent of voyager on x86?  I've got nothing against some of the endian clean ups this introduces.  However the changes to misc_32.S are a bit ugly from a readability point of view.  Just seems like this is likely to bit-rot pretty quickly.
-
-- k
+Ian
 
