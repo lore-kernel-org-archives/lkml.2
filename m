@@ -1,40 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752953Ab0JAQq7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:46:59 -0400
-Received: from claw.goop.org ([74.207.240.146]:38363 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752189Ab0JAQq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:46:58 -0400
-Message-ID: <4CA61080.6070709@goop.org>
-Date: Fri, 01 Oct 2010 09:46:56 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1753079Ab0JAQv2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:51:28 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:45208 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab0JAQv1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 12:51:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZUZoSwPcWVAQ3DMluWdJV04khUT8q6Ujt35Il2wiGyvkuOtReTPyIQkl+m5ZySLGGI
+         XMCpGvbckrkavjz2G8Dw==
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Kyle McMartin <kyle@redhat.com>, stable@kernel.org,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        James Dingwall <james.dingwall@amdocs.com>
-Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just	after
- the boot
-References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com> <20100927024044.GQ13116@bombadil.infradead.org> <20100927061336.GA22721@kroah.com> <4CA0DDAB.9090507@goop.org> <20100928182910.GA32464@kroah.com> <4CA35FB7.10600@goop.org> <20100930000644.GA26380@kroah.com>
-In-Reply-To: <20100930000644.GA26380@kroah.com>
+In-Reply-To: <1285933569.2144.57.camel@laptop>
+References: <1285788096-29471-1-git-send-email-venki@google.com>
+	<1285788096-29471-4-git-send-email-venki@google.com>
+	<1285844768.2144.11.camel@laptop>
+	<AANLkTi=r5DX52+735OtGHmJCS38n1P_WxEkKzLVf1E_m@mail.gmail.com>
+	<AANLkTikHfyjjZfDcoO-yDW+JTnpDb42VxRMckk55Xp+O@mail.gmail.com>
+	<1285933569.2144.57.camel@laptop>
+Date: Fri, 1 Oct 2010 09:51:21 -0700
+Message-ID: <AANLkTinmgCmozNMQyesaTxrAfzgJ7bKEAeyNRWh7ceZ5@mail.gmail.com>
+Subject: Re: [PATCH 3/7] Add IRQ_TIME_ACCOUNTING, finer accounting of irq time -v3
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/29/2010 05:06 PM, Greg KH wrote:
-> On Wed, Sep 29, 2010 at 08:48:07AM -0700, Jeremy Fitzhardinge wrote:
+On Fri, Oct 1, 2010 at 4:46 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Thu, 2010-09-30 at 13:38 -0700, Venkatesh Pallipadi wrote:
+>> On Thu, Sep 30, 2010 at 9:29 AM, Venkatesh Pallipadi <venki@google.com> wrote:
+>> > On Thu, Sep 30, 2010 at 4:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> >> On Wed, 2010-09-29 at 12:21 -0700, Venkatesh Pallipadi wrote:
+>> >>> +void account_system_vtime(struct task_struct *curr)
+>> >>> +{
+>> >>> +       unsigned long flags;
+>> >>> +       int cpu;
+>> >>> +       u64 now, delta;
+>> >>> +
+>> >>> +       if (!sched_clock_irqtime)
+>> >>> +               return;
+>> >>> +
+>> >>> +       local_irq_save(flags);
+>> >>> +
+>> >>> +       now = sched_clock();
+>> >>> +       cpu = smp_processor_id();
+>> >>
+>> >> Like said before, that really wants to read like:
+>> >>
+>> >>        cpu = smp_processor_id();
+>> >>        now = sched_clock_cpu(cpu);
+>> >>
+>> >> sched_clock() is raw tsc + ns conversion and can go all over the place.
+>> >
+>> > sched_clock_cpu() won't really work for here, due to what looks like
+>> > idle and timer tick dependencies. Using sched_clock_cpu(), I end up
+>> > accounting CPU idle time to hardirq due to time captured before the
+>> > handler and after the handler.
+>> >
 >>
->> I should have pointed out it is the same in the stable-2.6.32 tree as well.
-> Yes, sorry, I know, I only had the chance to get the .35 release out
-> yesterday, I'll do the .32 one now.
+>> Specifically, here is the now and delta log from my test setup with
+>> using sched_clock_cpu() above (data below from a particular CPU)
+>>
+>>           <idle>-0     [001]  1697.910060: account_system_vtime:
+>> SOFTIRQ STOP 1700897011613, delta 3555
+>>           <idle>-0     [001]  1697.911047: account_system_vtime: IRQ
+>> START 1700897999028
 >
+> Dude, linewrap hell! And what are you trying to illustrate?
+>
+Sorry. Retrying with shorted lines
 
-Ping?  Looks like the fix hasn't hit stable-2.6.32/master yet.
+This is the log of start, hardirq stop, softirq stop and deltas at
+stop, taken in account_system_vtime on CPU 1 with sched_clock_cpu.
+
+~5000 delta for a hardirq seems reasonable. But, as you see there are
+frequent ms deltas on hardirq, specifically when in idle.
+
+<idle>-0     []  1697.911047: START 1700897999028
+<idle>-0     []  1697.911051: HARD STOP 1700898005071, delta 6043
+<idle>-0     []  1697.911052: START 1700898006003
+<idle>-0     []  1697.911057: SOFT STOP 1700898010685, delta 4682
+<idle>-0     []  1697.911931: START 1700898884039
+<idle>-0     []  1697.911935: HARD STOP 1700898890304, delta 6265
+<idle>-0     []  1697.915040: START 1700899887146
+<idle>-0     []  1697.915047: HARD STOP 1700902008678, delta 2121532
+<idle>-0     []  1697.915048: START 1700902009617
+<idle>-0     []  1697.915055: SOFT STOP 1700902015924, delta 6307
+<idle>-0     []  1697.918958: START 1700903006980
+<idle>-0     []  1697.918963: HARD STOP 1700905931367, delta 2924387
+<idle>-0     []  1697.919553: START 1700906521486
+<idle>-0     []  1697.919557: HARD STOP 1700906527006, delta 5520
+<idle>-0     []  1697.933420: START 1700907524219
+<idle>-0     []  1697.933428: HARD STOP 1700920424020, delta 12899801
+<idle>-0     []  1697.936512: START 1700921418037
+<idle>-0     []  1697.936523: HARD STOP 1700923524497, delta 2106460
+
+
+This is probably because this test system is of the crazy TSC ones.
+But, it does have TSC as its closcksource and there is no trace of
+mark_tsc_unstable in dmesg.
 
 Thanks,
-    J
+Venki
