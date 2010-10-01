@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932494Ab0JAMF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 08:05:28 -0400
-Received: from hermes.mlbassoc.com ([64.234.241.98]:60743 "EHLO
-	mail.chez-thomas.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932182Ab0JAMF0 (ORCPT
+	id S932491Ab0JAMG3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 08:06:29 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:7868 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932098Ab0JAMG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 08:05:26 -0400
-X-Greylist: delayed 584 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 08:05:26 EDT
-Message-ID: <4CA5CC3C.6020006@mlbassoc.com>
-Date: Fri, 01 Oct 2010 05:55:40 -0600
-From: Gary Thomas <gary@mlbassoc.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Josh Boyer <jwboyer@gmail.com>
-CC: Kumar Gala <galak@kernel.crashing.org>, paulus@samba.org,
-        linuxppc-dev@lists.ozlabs.org, Ian Munsie <imunsie@au1.ibm.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Introduce support for little endian PowerPC
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>	<2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org> <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
-In-Reply-To: <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Fri, 1 Oct 2010 08:06:28 -0400
+Date: Fri, 1 Oct 2010 14:06:19 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] i2c fixes for 2.6.36
+Message-ID: <20101001140619.28d96040@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2010 05:30 AM, Josh Boyer wrote:
-> On Fri, Oct 1, 2010 at 5:02 AM, Kumar Gala<galak@kernel.crashing.org>  wrote:
->>
->> On Oct 1, 2010, at 2:05 AM, Ian Munsie wrote:
->>
->>> Some PowerPC processors can be run in either big or little endian modes, some
->>> others can map selected pages of memory as little endian, which allows the same
->>> thing. Until now we have only supported the default big endian mode in Linux.
->>> This patch set introduces little endian support for the 44x family of PowerPC
->>> processors.
->>
->>  From a community aspect is anyone actually going to use this?  Is this going to be the equivalent of voyager on x86?  I've got nothing against some of the endian clean ups this introduces.  However the changes to misc_32.S are a bit ugly from a readability point of view.  Just seems like this is likely to bit-rot pretty quickly.
->
-> I'm with Kumar on this one.  Why would we want to support this?  I
-> can't say I would be very willing to help anyone run in LE mode, let
-> alone have it randomly selectable.
+Hi Linus,
 
-Indeed, I thought we had killed that Windows-NT dog ~15 years ago :-)
+Please pull i2c subsystem fixes for Linux 2.6.36 from:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
+
+ drivers/i2c/busses/i2c-cpm.c           |    5 +++
+ drivers/i2c/busses/i2c-ibm_iic.c       |    3 ++
+ drivers/i2c/busses/i2c-mpc.c           |    1 +
+ drivers/i2c/busses/i2c-pca-isa.c       |   12 +++++--
+ drivers/i2c/busses/i2c-pca-platform.c  |   11 ++++--
+ drivers/i2c/i2c-core.c                 |   54 ++++++++++++++-----------------
+ drivers/misc/bh1780gli.c               |    1 -
+ drivers/regulator/ad5398.c             |    1 -
+ drivers/regulator/isl6271a-regulator.c |    2 -
+ drivers/rtc/rtc-ds3232.c               |    2 -
+ 10 files changed, 48 insertions(+), 44 deletions(-)
+
+---------------
+
+Grant Likely (1):
+      of/i2c: Fix module load order issue caused by of_i2c.c
+
+Rajendra Nayak (1):
+      i2c: Fix checks which cause legacy suspend to never get called
+
+Vishwanath BS (1):
+      i2c: Fix for suspend/resume issue
+
+Wolfram Sang (1):
+      i2c: Remove obsolete cleanup for clientdata
+
+Yegor Yefremov (1):
+      i2c-pca: Fix waitforcompletion() return value
+
+Thanks,
 -- 
-------------------------------------------------------------
-Gary Thomas                 |  Consulting for the
-MLB Associates              |    Embedded world
-------------------------------------------------------------
+Jean Delvare
