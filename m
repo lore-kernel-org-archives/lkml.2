@@ -1,47 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932433Ab0JANUv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 09:20:51 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:44337 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab0JANUu (ORCPT
+	id S932505Ab0JANVe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 09:21:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:45016 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab0JANVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 09:20:50 -0400
+	Fri, 1 Oct 2010 09:21:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=DZW2vjUAacpgb6T8f8OEG9s8iigMU8CkLFzwSawLwEASt2fhqTKWYBQglRYw1Nnv/Q
-         jWooHot8YefaB00CDwQlP8SSB+xiPUziHTAhVpaWN6CIOn7M1F89hC87ZaJtKwD5O13p
-         DOdBFy2RrNfOVg3VAkXRJlfaaAeCJPuLLPUc8=
-Date: Fri, 1 Oct 2010 17:20:45 +0400
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WZbKCn+TSS4xpzBANHfFRHGaNngVA/Lzp0x7YhikkdV2rRBSPGhOUXEDug0G5BN+G9
+         yFwGR+r49FrWHtMSDgSYAZShq2DLwrVxOZsTyklPMr8ne5UjT9c5+s3PUbycFX+ihFqA
+         7pYNIpi8rZuVxMX6nPTSG5JNhW3MBoYljO++I=
+Date: Fri, 1 Oct 2010 17:21:25 +0400
 From: Anton Vorontsov <cbouatmailru@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Alan Cox <alan@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
         Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v2 0/8] Some patches for Altera UART driver
-Message-ID: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
+Subject: [PATCH 1/8] serial: Factor out uart_poll_timeout() from 8250 driver
+Message-ID: <20101001132125.GA25897@oksana.dev.rtsoft.ru>
+References: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
+In-Reply-To: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Soon we will use that handy function in the altera_uart driver.
 
-Here is v2. Changes:
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+---
+ drivers/serial/8250.c       |   14 ++++----------
+ include/linux/serial_core.h |    8 ++++++++
+ 2 files changed, 12 insertions(+), 10 deletions(-)
 
-- Addressed comments by Alan Cox and Tobias Klauser;
-- In patch 'Add support for getting mapbase and IRQ from resources',
-  added ioremap() return value checking;
-- Added a few fixup patches.
-
-Thanks,
-
+diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+index 24110f6..61e95dd 100644
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -1722,12 +1722,6 @@ static void serial_unlink_irq_chain(struct uart_8250_port *up)
+ 	mutex_unlock(&hash_mutex);
+ }
+ 
+-/* Base timer interval for polling */
+-static inline int poll_timeout(int timeout)
+-{
+-	return timeout > 6 ? (timeout / 2 - 2) : 1;
+-}
+-
+ /*
+  * This function is used to handle ports that do not have an
+  * interrupt.  This doesn't work very well for 16450's, but gives
+@@ -1742,7 +1736,7 @@ static void serial8250_timeout(unsigned long data)
+ 	iir = serial_in(up, UART_IIR);
+ 	if (!(iir & UART_IIR_NO_INT))
+ 		serial8250_handle_port(up);
+-	mod_timer(&up->timer, jiffies + poll_timeout(up->port.timeout));
++	mod_timer(&up->timer, jiffies + uart_poll_timeout(&up->port));
+ }
+ 
+ static void serial8250_backup_timeout(unsigned long data)
+@@ -1787,7 +1781,7 @@ static void serial8250_backup_timeout(unsigned long data)
+ 
+ 	/* Standard timer interval plus 0.2s to keep the port running */
+ 	mod_timer(&up->timer,
+-		jiffies + poll_timeout(up->port.timeout) + HZ / 5);
++		jiffies + uart_poll_timeout(&up->port) + HZ / 5);
+ }
+ 
+ static unsigned int serial8250_tx_empty(struct uart_port *port)
+@@ -2069,7 +2063,7 @@ static int serial8250_startup(struct uart_port *port)
+ 		up->timer.function = serial8250_backup_timeout;
+ 		up->timer.data = (unsigned long)up;
+ 		mod_timer(&up->timer, jiffies +
+-			  poll_timeout(up->port.timeout) + HZ / 5);
++			uart_poll_timeout(port) + HZ / 5);
+ 	}
+ 
+ 	/*
+@@ -2079,7 +2073,7 @@ static int serial8250_startup(struct uart_port *port)
+ 	 */
+ 	if (!is_real_interrupt(up->port.irq)) {
+ 		up->timer.data = (unsigned long)up;
+-		mod_timer(&up->timer, jiffies + poll_timeout(up->port.timeout));
++		mod_timer(&up->timer, jiffies + uart_poll_timeout(port));
+ 	} else {
+ 		retval = serial_link_irq_chain(up);
+ 		if (retval)
+diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
+index 563e234..ac48082 100644
+--- a/include/linux/serial_core.h
++++ b/include/linux/serial_core.h
+@@ -411,6 +411,14 @@ unsigned int uart_get_baud_rate(struct uart_port *port, struct ktermios *termios
+ 				unsigned int max);
+ unsigned int uart_get_divisor(struct uart_port *port, unsigned int baud);
+ 
++/* Base timer interval for polling */
++static inline int uart_poll_timeout(struct uart_port *port)
++{
++	int timeout = port->timeout;
++
++	return timeout > 6 ? (timeout / 2 - 2) : 1;
++}
++
+ /*
+  * Console helpers.
+  */
 -- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+1.7.0.5
+
