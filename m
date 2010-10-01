@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932386Ab0JAL7g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 07:59:36 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:37959 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932246Ab0JAL7c (ORCPT
+	id S932358Ab0JAL7O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 07:59:14 -0400
+Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:55839 "EHLO
+	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932180Ab0JAL6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 07:59:32 -0400
+	Fri, 1 Oct 2010 07:58:33 -0400
 From: Viresh KUMAR <viresh.kumar@st.com>
 To: linux-arm-kernel@lists.infradead.org, rtc-linux@googlegroups.com,
         a.zummo@towertech.it, dbrownell@users.sourceforge.net,
@@ -14,14 +14,13 @@ To: linux-arm-kernel@lists.infradead.org, rtc-linux@googlegroups.com,
         dmitry.torokhov@gmail.com, linux-mtd@lists.infradead.org,
         dwmw2@infradead.org, linux-kernel@vger.kernel.org,
         akpm@linux-foundation.org
-Cc: Ryan Mallon <ryan@bluewatersys.com>, shiraz.hashim@st.com,
+Cc: Viresh Kumar <viresh.kumar@st.com>, shiraz.hashim@st.com,
         vipin.kumar@st.com, deepak.sikri@st.com, armando.visconti@st.com,
         vipulkumar.samar@st.com, rajeev-dlh.kumar@st.com,
-        pratyush.anand@st.com, bhupesh.sharma@st.com,
-        Viresh Kumar <viresh.kumar@st.com>
-Subject: [PATCH V2 57/69] SPEAr3xx: Make local structures static
-Date: Fri,  1 Oct 2010 17:26:17 +0530
-Message-Id: <a4419b75d9a8f793c745d89e1cd0ba5d23880bd1.1285933332.git.viresh.kumar@st.com>
+        pratyush.anand@st.com, bhupesh.sharma@st.com
+Subject: [PATCH V2 63/69] ST SPEAr3xx: Updating plgpio and emi source to make it compliant with single image strategy
+Date: Fri,  1 Oct 2010 17:26:23 +0530
+Message-Id: <ea27f60aea71a84a2c42e0c8c24144398c7e757b.1285933332.git.viresh.kumar@st.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <cover.1285933331.git.viresh.kumar@st.com>
 References: <cover.1285933331.git.viresh.kumar@st.com>
@@ -31,204 +30,259 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ryan Mallon <ryan@bluewatersys.com>
-
-Several structures in arch/arm/mach-spear3xx are not marked static
-like they should be. Fix this.
-
-Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
 Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
 ---
- arch/arm/mach-spear3xx/spear300.c |    6 +++---
- arch/arm/mach-spear3xx/spear310.c |   16 ++++++++--------
- arch/arm/mach-spear3xx/spear320.c |   12 ++++++------
- arch/arm/mach-spear3xx/spear3xx.c |    2 --
- 4 files changed, 17 insertions(+), 19 deletions(-)
+ arch/arm/mach-spear3xx/emi.c               |   18 ++++++++++-
+ arch/arm/mach-spear3xx/include/mach/emi.h  |   19 ++++++-----
+ arch/arm/mach-spear3xx/include/mach/gpio.h |   27 ++++++++--------
+ arch/arm/plat-spear/plgpio.c               |   46 ++++++++++++++++++++-------
+ 4 files changed, 75 insertions(+), 35 deletions(-)
 
-diff --git a/arch/arm/mach-spear3xx/spear300.c b/arch/arm/mach-spear3xx/spear300.c
-index 9885fe9..bbaf872 100644
---- a/arch/arm/mach-spear3xx/spear300.c
-+++ b/arch/arm/mach-spear3xx/spear300.c
-@@ -114,7 +114,6 @@ struct pmx_mode caml_lcd_mode = {
- 	.value = 0x0F,
- };
+diff --git a/arch/arm/mach-spear3xx/emi.c b/arch/arm/mach-spear3xx/emi.c
+index 7b62ff0..7d7cea7 100644
+--- a/arch/arm/mach-spear3xx/emi.c
++++ b/arch/arm/mach-spear3xx/emi.c
+@@ -15,6 +15,7 @@
+ #include <linux/err.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
++#include <asm/mach-types.h>
+ #include <mach/emi.h>
  
--/* devices */
- /* Pad multiplexing for FSMC 2 NAND devices */
- static struct pmx_mux_reg pmx_fsmc_2_mux[] = {
- 	{
-@@ -700,7 +699,7 @@ struct platform_device sdhci_device = {
- };
- 
- /* spear3xx shared irq */
--struct shirq_dev_config shirq_ras1_config[] = {
-+static struct shirq_dev_config shirq_ras1_config[] = {
- 	{
- 		.virq = VIRQ_IT_PERS_S,
- 		.enb_mask = IT_PERS_S_IRQ_MASK,
-@@ -740,7 +739,8 @@ struct shirq_dev_config shirq_ras1_config[] = {
- 	},
- };
- 
--struct spear_shirq shirq_ras1 = {
+ int __init emi_init(struct platform_device *pdev, unsigned long base,
+@@ -23,8 +24,23 @@ int __init emi_init(struct platform_device *pdev, unsigned long base,
+ 	void __iomem *emi_reg_base;
+ 	struct clk *clk;
+ 	int ret;
++	u32 ack_reg, max_banks;
++	/* u32 timeout_reg, irq_reg; */
 +
-+static struct spear_shirq shirq_ras1 = {
- 	.irq = IRQ_GEN_RAS_1,
- 	.dev_config = shirq_ras1_config,
- 	.dev_count = ARRAY_SIZE(shirq_ras1_config),
-diff --git a/arch/arm/mach-spear3xx/spear310.c b/arch/arm/mach-spear3xx/spear310.c
-index be2f9de..7d4ff0e 100644
---- a/arch/arm/mach-spear3xx/spear310.c
-+++ b/arch/arm/mach-spear3xx/spear310.c
-@@ -363,7 +363,7 @@ struct platform_device plgpio_device = {
++	/* fixing machine dependent values */
++	if (machine_is_spear310()) {
++		ack_reg = SPEAR310_ACK_REG;
++		max_banks = SPEAR310_EMI_MAX_BANKS;
++		/* timeout_reg = SPEAR310_TIMEOUT_REG; */
++		/* irq_reg = SPEAR310_IRQ_REG; */
++	} else {
++		ack_reg = SPEAR320_ACK_REG;
++		max_banks = SPEAR320_EMI_MAX_BANKS;
++		/* timeout_reg = SPEAR320_TIMEOUT_REG; */
++		/* irq_reg = SPEAR320_IRQ_REG; */
++	}
  
+-	if (bank > (EMI_MAX_BANKS - 1))
++	if (bank > (max_banks - 1))
+ 		return -EINVAL;
  
- /* spear3xx shared irq */
--struct shirq_dev_config shirq_ras1_config[] = {
-+static struct shirq_dev_config shirq_ras1_config[] = {
- 	{
- 		.virq = VIRQ_SMII0,
- 		.status_mask = SMII0_IRQ_MASK,
-@@ -391,7 +391,7 @@ struct shirq_dev_config shirq_ras1_config[] = {
- 	},
- };
+ 	emi_reg_base = ioremap(base, EMI_REG_SIZE);
+diff --git a/arch/arm/mach-spear3xx/include/mach/emi.h b/arch/arm/mach-spear3xx/include/mach/emi.h
+index b620bf5..59f69c4 100644
+--- a/arch/arm/mach-spear3xx/include/mach/emi.h
++++ b/arch/arm/mach-spear3xx/include/mach/emi.h
+@@ -33,18 +33,19 @@
+ #define CTRL_REG		(0x14)
  
--struct spear_shirq shirq_ras1 = {
-+static struct spear_shirq shirq_ras1 = {
- 	.irq = IRQ_GEN_RAS_1,
- 	.dev_config = shirq_ras1_config,
- 	.dev_count = ARRAY_SIZE(shirq_ras1_config),
-@@ -403,7 +403,7 @@ struct spear_shirq shirq_ras1 = {
- 	},
- };
+ #if defined(CONFIG_MACH_SPEAR310)
+-#define TIMEOUT_REG		(0x90)
+-#define ACK_REG			(0x94)
+-#define IRQ_REG			(0x98)
++#define SPEAR310_TIMEOUT_REG	(0x90)
++#define SPEAR310_ACK_REG	(0x94)
++#define SPEAR310_IRQ_REG	(0x98)
  
--struct shirq_dev_config shirq_ras2_config[] = {
-+static struct shirq_dev_config shirq_ras2_config[] = {
- 	{
- 		.virq = VIRQ_UART1,
- 		.status_mask = UART1_IRQ_MASK,
-@@ -422,7 +422,7 @@ struct shirq_dev_config shirq_ras2_config[] = {
- 	},
- };
+-#define EMI_MAX_BANKS		6
++#define SPEAR310_EMI_MAX_BANKS	6
++#endif
  
--struct spear_shirq shirq_ras2 = {
-+static struct spear_shirq shirq_ras2 = {
- 	.irq = IRQ_GEN_RAS_2,
- 	.dev_config = shirq_ras2_config,
- 	.dev_count = ARRAY_SIZE(shirq_ras2_config),
-@@ -434,14 +434,14 @@ struct spear_shirq shirq_ras2 = {
- 	},
- };
+-#elif defined(CONFIG_MACH_SPEAR320)
+-#define TIMEOUT_REG		(0x60)
+-#define ACK_REG			(0x64)
+-#define IRQ_REG			(0x68)
++#if defined(CONFIG_MACH_SPEAR320)
++#define SPEAR320_TIMEOUT_REG	(0x60)
++#define SPEAR320_ACK_REG	(0x64)
++#define SPEAR320_IRQ_REG	(0x68)
  
--struct shirq_dev_config shirq_ras3_config[] = {
-+static struct shirq_dev_config shirq_ras3_config[] = {
- 	{
- 		.virq = VIRQ_EMI,
- 		.status_mask = EMI_IRQ_MASK,
- 	},
- };
+-#define EMI_MAX_BANKS		4
++#define SPEAR320_EMI_MAX_BANKS	4
  
--struct spear_shirq shirq_ras3 = {
-+static struct spear_shirq shirq_ras3 = {
- 	.irq = IRQ_GEN_RAS_3,
- 	.dev_config = shirq_ras3_config,
- 	.dev_count = ARRAY_SIZE(shirq_ras3_config),
-@@ -453,7 +453,7 @@ struct spear_shirq shirq_ras3 = {
- 	},
- };
+ #endif
  
--struct shirq_dev_config shirq_intrcomm_ras_config[] = {
-+static struct shirq_dev_config shirq_intrcomm_ras_config[] = {
- 	{
- 		.virq = VIRQ_TDM_HDLC,
- 		.status_mask = TDM_HDLC_IRQ_MASK,
-@@ -466,7 +466,7 @@ struct shirq_dev_config shirq_intrcomm_ras_config[] = {
- 	},
- };
+diff --git a/arch/arm/mach-spear3xx/include/mach/gpio.h b/arch/arm/mach-spear3xx/include/mach/gpio.h
+index f15248c..0c13d8c 100644
+--- a/arch/arm/mach-spear3xx/include/mach/gpio.h
++++ b/arch/arm/mach-spear3xx/include/mach/gpio.h
+@@ -17,20 +17,21 @@
+ #include <plat/gpio.h>
  
--struct spear_shirq shirq_intrcomm_ras = {
-+static struct spear_shirq shirq_intrcomm_ras = {
- 	.irq = IRQ_INTRCOMM_RAS_ARM,
- 	.dev_config = shirq_intrcomm_ras_config,
- 	.dev_count = ARRAY_SIZE(shirq_intrcomm_ras_config),
-diff --git a/arch/arm/mach-spear3xx/spear320.c b/arch/arm/mach-spear3xx/spear320.c
-index bd308b8..948ca8e 100644
---- a/arch/arm/mach-spear3xx/spear320.c
-+++ b/arch/arm/mach-spear3xx/spear320.c
-@@ -835,7 +835,7 @@ struct platform_device sdhci_device = {
- };
+ #ifdef CONFIG_MACH_SPEAR310
+-#define PLGPIO_ENB		0x0010
+-#define PLGPIO_WDATA		0x0020
+-#define PLGPIO_DIR		0x0030
+-#define PLGPIO_IE		0x0040
+-#define PLGPIO_RDATA		0x0050
+-#define PLGPIO_MIS		0x0060
++#define SPEAR310_PLGPIO_ENB		0x0010
++#define SPEAR310_PLGPIO_WDATA		0x0020
++#define SPEAR310_PLGPIO_DIR		0x0030
++#define SPEAR310_PLGPIO_IE		0x0040
++#define SPEAR310_PLGPIO_RDATA		0x0050
++#define SPEAR310_PLGPIO_MIS		0x0060
++#endif
  
- /* spear3xx shared irq */
--struct shirq_dev_config shirq_ras1_config[] = {
-+static struct shirq_dev_config shirq_ras1_config[] = {
- 	{
- 		.virq = VIRQ_EMI,
- 		.status_mask = EMI_IRQ_MASK,
-@@ -851,7 +851,7 @@ struct shirq_dev_config shirq_ras1_config[] = {
- 	},
- };
+-#elif defined(CONFIG_MACH_SPEAR320)
+-#define PLGPIO_ENB		0x0024
+-#define PLGPIO_WDATA		0x0034
+-#define PLGPIO_DIR		0x0044
+-#define PLGPIO_RDATA		0x0054
+-#define PLGPIO_IE		0x0064
+-#define PLGPIO_MIS		0x0074
++#if defined(CONFIG_MACH_SPEAR320)
++#define SPEAR320_PLGPIO_ENB		0x0024
++#define SPEAR320_PLGPIO_WDATA		0x0034
++#define SPEAR320_PLGPIO_DIR		0x0044
++#define SPEAR320_PLGPIO_RDATA		0x0054
++#define SPEAR320_PLGPIO_IE		0x0064
++#define SPEAR320_PLGPIO_MIS		0x0074
+ #endif
  
--struct spear_shirq shirq_ras1 = {
-+static struct spear_shirq shirq_ras1 = {
- 	.irq = IRQ_GEN_RAS_1,
- 	.dev_config = shirq_ras1_config,
- 	.dev_count = ARRAY_SIZE(shirq_ras1_config),
-@@ -864,7 +864,7 @@ struct spear_shirq shirq_ras1 = {
- 	},
- };
+ #define BASIC_GPIO_0		0
+diff --git a/arch/arm/plat-spear/plgpio.c b/arch/arm/plat-spear/plgpio.c
+index 3080178..f5220c0 100644
+--- a/arch/arm/plat-spear/plgpio.c
++++ b/arch/arm/plat-spear/plgpio.c
+@@ -22,12 +22,16 @@
+ #include <linux/gpio.h>
+ #include <linux/slab.h>
+ #include <linux/platform_device.h>
++#include <asm/mach-types.h>
  
--struct shirq_dev_config shirq_ras3_config[] = {
-+static struct shirq_dev_config shirq_ras3_config[] = {
- 	{
- 		.virq = VIRQ_PLGPIO,
- 		.enb_mask = GPIO_IRQ_MASK,
-@@ -883,7 +883,7 @@ struct shirq_dev_config shirq_ras3_config[] = {
- 	},
- };
+ #define MAX_GPIO_PER_REG		32
+ #define PIN_OFFSET(pin)			(pin % MAX_GPIO_PER_REG)
+ #define REG_OFFSET(base, reg, pin)	(base + reg + (pin / MAX_GPIO_PER_REG)\
+ 		* sizeof(int *))
  
--struct spear_shirq shirq_ras3 = {
-+static struct spear_shirq shirq_ras3 = {
- 	.irq = IRQ_GEN_RAS_3,
- 	.dev_config = shirq_ras3_config,
- 	.dev_count = ARRAY_SIZE(shirq_ras3_config),
-@@ -897,7 +897,7 @@ struct spear_shirq shirq_ras3 = {
- 	},
- };
++static u32 plgpio_enb, plgpio_wdata, plgpio_dir, plgpio_rdata, plgpio_ie,
++	   plgpio_mis;
++
+ /*
+  * struct plgpio: plgpio driver specific structure
+  *
+@@ -96,7 +100,7 @@ static int plgpio_direction_input(struct gpio_chip *chip, unsigned offset)
+ 	}
  
--struct shirq_dev_config shirq_intrcomm_ras_config[] = {
-+static struct shirq_dev_config shirq_intrcomm_ras_config[] = {
- 	{
- 		.virq = VIRQ_CANU,
- 		.status_mask = CAN_U_IRQ_MASK,
-@@ -945,7 +945,7 @@ struct shirq_dev_config shirq_intrcomm_ras_config[] = {
- 	},
- };
+ 	spin_lock_irqsave(&plgpio->lock, flags);
+-	plgpio_reg_set(plgpio->base, offset, PLGPIO_DIR);
++	plgpio_reg_set(plgpio->base, offset, plgpio_dir);
+ 	spin_unlock_irqrestore(&plgpio->lock, flags);
  
--struct spear_shirq shirq_intrcomm_ras = {
-+static struct spear_shirq shirq_intrcomm_ras = {
- 	.irq = IRQ_INTRCOMM_RAS_ARM,
- 	.dev_config = shirq_intrcomm_ras_config,
- 	.dev_count = ARRAY_SIZE(shirq_intrcomm_ras_config),
-diff --git a/arch/arm/mach-spear3xx/spear3xx.c b/arch/arm/mach-spear3xx/spear3xx.c
-index ec1340c..544072d 100644
---- a/arch/arm/mach-spear3xx/spear3xx.c
-+++ b/arch/arm/mach-spear3xx/spear3xx.c
-@@ -292,7 +292,6 @@ void __init spear3xx_map_io(void)
+ 	return 0;
+@@ -125,11 +129,11 @@ static int plgpio_direction_output(struct gpio_chip *chip, unsigned offset,
+ 	}
+ 
+ 	spin_lock_irqsave(&plgpio->lock, flags);
+-	plgpio_reg_reset(plgpio->base, dir_offset, PLGPIO_DIR);
++	plgpio_reg_reset(plgpio->base, dir_offset, plgpio_dir);
+ 	if (value)
+-		plgpio_reg_set(plgpio->base, wdata_offset, PLGPIO_WDATA);
++		plgpio_reg_set(plgpio->base, wdata_offset, plgpio_wdata);
+ 	else
+-		plgpio_reg_reset(plgpio->base, wdata_offset, PLGPIO_WDATA);
++		plgpio_reg_reset(plgpio->base, wdata_offset, plgpio_wdata);
+ 	spin_unlock_irqrestore(&plgpio->lock, flags);
+ 
+ 	return 0;
+@@ -149,7 +153,7 @@ static int plgpio_get_value(struct gpio_chip *chip, unsigned offset)
+ 			return -EINVAL;
+ 	}
+ 
+-	return is_plgpio_set(plgpio->base, offset, PLGPIO_RDATA);
++	return is_plgpio_set(plgpio->base, offset, plgpio_rdata);
  }
  
- /* pad multiplexing support */
--/* devices */
+ static void plgpio_set_value(struct gpio_chip *chip, unsigned offset, int value)
+@@ -167,9 +171,9 @@ static void plgpio_set_value(struct gpio_chip *chip, unsigned offset, int value)
+ 	}
  
- /* Pad multiplexing for firda device */
- static struct pmx_mux_reg pmx_firda_mux[] = {
-@@ -625,7 +624,6 @@ struct pmx_dev pmx_timer_1_2 = {
- };
+ 	if (value)
+-		plgpio_reg_set(plgpio->base, offset, PLGPIO_WDATA);
++		plgpio_reg_set(plgpio->base, offset, plgpio_wdata);
+ 	else
+-		plgpio_reg_reset(plgpio->base, offset, PLGPIO_WDATA);
++		plgpio_reg_reset(plgpio->base, offset, plgpio_wdata);
+ }
  
- #if defined(CONFIG_MACH_SPEAR310) || defined(CONFIG_MACH_SPEAR320)
--/* plgpios devices */
- /* Pad multiplexing for plgpio_0_1 devices */
- static struct pmx_mux_reg pmx_plgpio_0_1_mux[] = {
- 	{
+ static int plgpio_request(struct gpio_chip *chip, unsigned offset)
+@@ -196,7 +200,7 @@ static int plgpio_request(struct gpio_chip *chip, unsigned offset)
+ 	}
+ 
+ 	spin_lock_irqsave(&plgpio->lock, flags);
+-	plgpio_reg_set(plgpio->base, offset, PLGPIO_ENB);
++	plgpio_reg_set(plgpio->base, offset, plgpio_enb);
+ 	spin_unlock_irqrestore(&plgpio->lock, flags);
+ 
+ 	return 0;
+@@ -218,7 +222,7 @@ static void plgpio_free(struct gpio_chip *chip, unsigned offset)
+ 	}
+ 
+ 	spin_lock_irqsave(&plgpio->lock, flags);
+-	plgpio_reg_reset(plgpio->base, offset, PLGPIO_ENB);
++	plgpio_reg_reset(plgpio->base, offset, plgpio_enb);
+ 	spin_unlock_irqrestore(&plgpio->lock, flags);
+ }
+ 
+@@ -247,7 +251,7 @@ static void plgpio_irq_mask(unsigned irq)
+ 	}
+ 
+ 	spin_lock_irqsave(&plgpio->lock, flags);
+-	plgpio_reg_set(plgpio->base, offset, PLGPIO_IE);
++	plgpio_reg_set(plgpio->base, offset, plgpio_ie);
+ 	spin_unlock_irqrestore(&plgpio->lock, flags);
+ }
+ 
+@@ -265,7 +269,7 @@ static void plgpio_irq_unmask(unsigned irq)
+ 	}
+ 
+ 	spin_lock_irqsave(&plgpio->lock, flags);
+-	plgpio_reg_reset(plgpio->base, offset, PLGPIO_IE);
++	plgpio_reg_reset(plgpio->base, offset, plgpio_ie);
+ 	spin_unlock_irqrestore(&plgpio->lock, flags);
+ }
+ 
+@@ -298,7 +302,7 @@ static void plgpio_irq_handler(unsigned irq, struct irq_desc *desc)
+ 
+ 	/* check all plgpio MIS registers for a possible interrupt */
+ 	for (; i < regs_count; i++) {
+-		pending = readl(plgpio->base + PLGPIO_MIS + i * sizeof(int *));
++		pending = readl(plgpio->base + plgpio_mis + i * sizeof(int *));
+ 		if (!pending)
+ 			continue;
+ 
+@@ -443,6 +447,24 @@ static struct platform_driver plgpio_driver = {
+ 
+ static int __init plgpio_init(void)
+ {
++	if (machine_is_spear310()) {
++		plgpio_enb = SPEAR310_PLGPIO_ENB;
++		plgpio_wdata = SPEAR310_PLGPIO_WDATA;
++		plgpio_dir = SPEAR310_PLGPIO_DIR;
++		plgpio_rdata = SPEAR310_PLGPIO_IE;
++		plgpio_ie = SPEAR310_PLGPIO_RDATA;
++		plgpio_mis = SPEAR310_PLGPIO_MIS;
++	} else if (machine_is_spear320()) {
++		plgpio_enb = SPEAR320_PLGPIO_ENB;
++		plgpio_wdata = SPEAR320_PLGPIO_WDATA;
++		plgpio_dir = SPEAR320_PLGPIO_DIR;
++		plgpio_rdata = SPEAR320_PLGPIO_IE;
++		plgpio_ie = SPEAR320_PLGPIO_RDATA;
++		plgpio_mis = SPEAR320_PLGPIO_MIS;
++	} else {
++		return 0;
++	}
++
+ 	return platform_driver_register(&plgpio_driver);
+ }
+ subsys_initcall(plgpio_init);
 -- 
 1.7.2.2
 
