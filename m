@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756977Ab0JAWQJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 18:16:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36571 "EHLO ogre.sisk.pl"
+	id S1752068Ab0JAW2W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 18:28:22 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55199 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751110Ab0JAWQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 18:16:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nigel Cunningham <nigel@tuxonice.net>
-Subject: Re: [PATCH 01/23] Hibernation: Split compression support out.
-Date: Sat, 2 Oct 2010 00:15:10 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201010012328.09892.rjw@sisk.pl> <4CA65684.1050500@tuxonice.net>
-In-Reply-To: <4CA65684.1050500@tuxonice.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1750902Ab0JAW2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 18:28:21 -0400
+Subject: Re: Introduce support for little endian PowerPC
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Olof Johansson <olof@lixom.net>
+Cc: Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101001220343.GA10494@lixom.net>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
+	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
+	 <1285935283.2463.78.camel@pasglop>
+	 <BBD78246-343E-4A96-9E55-3E40AD628C0B@kernel.crashing.org>
+	 <1285966315.2463.141.camel@pasglop>  <20101001220343.GA10494@lixom.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Oct 2010 08:28:02 +1000
+Message-ID: <1285972082.2463.250.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010020015.10749.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 01, 2010, Nigel Cunningham wrote:
-> Hi Rafael.
-
-Hi,
-
-> On 02/10/10 07:28, Rafael J. Wysocki wrote:
-> > On Monday, September 27, 2010, Nigel Cunningham wrote:
-> >> Hi.
-> >>
-> >> On 28/09/10 06:27, Rafael J. Wysocki wrote:
-> >>> On Monday, September 27, 2010, Nigel Cunningham wrote:
-> > ...
-> >>> This one doesn't really good to me.  What I'd prefer would be to have a
-> >>> structure of "swap operations" pointers like ->start(), ->write_data(),
-> >>> ->read_data(), and ->finish() that will point to the functions in this file
-> >>> (if compression is to be used) or to the "old" swap_write_page()/swap_read_page()
-> >>> otherwise.  That would reduce the number of the
-> >>> (flags&   SF_NOCOMPRESS_MODE) checks quite substantially and will likely result
-> >>> in code that's easier to follow.
-> >>
-> >> Me too. I was heading in that direction, but not doing it in one step.
-> >> I'll happily change that.
-> >
-> > I'm still waiting for the reworked patch.  If you can submit it in a few days
-> > and it looks good, I'll include it into the pull request for 2.6.37.
+On Fri, 2010-10-01 at 17:03 -0500, Olof Johansson wrote:
+> > Maybe. Most of it doesn't seem to be that bit-rottable.
+> > 
+> > The changes to the asm stuff in misc_32.S for example are functions we
+> > never ever touch once written (libgcc replacements) so I don't see them
+> > rotting more with LE support than they did with BE :-)
 > 
-> Sorry for the delay.
+> Does KVM/qemu support running LE guest on BE host? That'd help keeping
+> the bitrot lower. :) 
 
-No biggie.
+Not yet I suppose :-) But then, I'm not sure it would make a big
+difference, if you have a 440 board in the first place, you can boot
+either LE or BE, no need for a special FW or anything.
 
-> Would you be happy if, rather than reworking that patch and modifying 
-> other patches that are affected, I added a new patch to the end of the 
-> series?
+What we've done is basically keep the zImage wrapper BE (for now at
+least), and have it trampoline to LE when executing the actual kernel
+(using a cuImage, of course a device-tree enabled u-Boot would probably
+need something akin to a proper ePAPR zImage to do that but that's
+reasonably easy to do nowadays).
 
-Not really.  That would make it difficult for other people to follow the
-changes.  Let's do things in the right order from the start. :-)
 
-Thanks,
-Rafael
+Cheers,
+Ben.
+
+
