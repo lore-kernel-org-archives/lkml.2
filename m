@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754576Ab0JASdo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 14:33:44 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:37980 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab0JASdn (ORCPT
+	id S1754672Ab0JASek (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 14:34:40 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:51657 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754325Ab0JASei (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 14:33:43 -0400
-Message-ID: <4CA62982.5080900@austin.ibm.com>
-Date: Fri, 01 Oct 2010 13:33:38 -0500
+	Fri, 1 Oct 2010 14:34:38 -0400
+Message-ID: <4CA629BA.60100@austin.ibm.com>
+Date: Fri, 01 Oct 2010 13:34:34 -0500
 From: Nathan Fontenot <nfont@austin.ibm.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
@@ -17,7 +17,7 @@ To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
 CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Robin Holt <holt@sgi.com>, steiner@sgi.com
-Subject: [PATCH 5/9] v3 rename phys_index properties of memory block struct
+Subject: [PATCH 6/9] v3 Update node sysfs code
 References: <4CA62700.7010809@austin.ibm.com>
 In-Reply-To: <4CA62700.7010809@austin.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -26,146 +26,96 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the 'phys_index' property of a the memory_block struct to be
-called start_section_nr, and add a end_section_nr property.  The
-data tracked here is the same but the updated naming is more in line
-with what is stored here, namely the first and last section number
-that the memory block spans.
-
-The names presented to userspace remain the same, phys_index for
-start_section_nr and end_phys_index for end_section_nr, to avoid breaking
-anything in userspace.
+Update the node sysfs code to be aware of the new capability for a memory
+block to contain multiple memory sections and be aware of the memory block
+structure name changes (start_section_nr).  This requires an additional
+parameter to unregister_mem_sect_under_nodes so that we know which memory
+section of the memory block to unregister.
 
 Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
 ---
- drivers/base/memory.c  |   39 ++++++++++++++++++++++++++++++---------
- include/linux/memory.h |    3 ++-
- 2 files changed, 32 insertions(+), 10 deletions(-)
+ drivers/base/memory.c |    2 +-
+ drivers/base/node.c   |   12 ++++++++----
+ include/linux/node.h  |    6 ++++--
+ 3 files changed, 13 insertions(+), 7 deletions(-)
 
+Index: linux-next/drivers/base/node.c
+===================================================================
+--- linux-next.orig/drivers/base/node.c	2010-09-30 14:44:38.000000000 -0500
++++ linux-next/drivers/base/node.c	2010-09-30 14:46:12.000000000 -0500
+@@ -346,8 +346,10 @@
+ 		return -EFAULT;
+ 	if (!node_online(nid))
+ 		return 0;
+-	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
+-	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
++
++	sect_start_pfn = section_nr_to_pfn(mem_blk->start_section_nr);
++	sect_end_pfn = section_nr_to_pfn(mem_blk->end_section_nr);
++	sect_end_pfn += PAGES_PER_SECTION - 1;
+ 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
+ 		int page_nid;
+ 
+@@ -371,7 +373,8 @@
+ }
+ 
+ /* unregister memory section under all nodes that it spans */
+-int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
++int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++				    unsigned long phys_index)
+ {
+ 	NODEMASK_ALLOC(nodemask_t, unlinked_nodes, GFP_KERNEL);
+ 	unsigned long pfn, sect_start_pfn, sect_end_pfn;
+@@ -383,7 +386,8 @@
+ 	if (!unlinked_nodes)
+ 		return -ENOMEM;
+ 	nodes_clear(*unlinked_nodes);
+-	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
++
++	sect_start_pfn = section_nr_to_pfn(phys_index);
+ 	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
+ 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
+ 		int nid;
 Index: linux-next/drivers/base/memory.c
 ===================================================================
---- linux-next.orig/drivers/base/memory.c	2010-09-30 14:46:00.000000000 -0500
-+++ linux-next/drivers/base/memory.c	2010-09-30 14:46:09.000000000 -0500
-@@ -97,7 +97,7 @@
- 	int error;
+--- linux-next.orig/drivers/base/memory.c	2010-09-30 14:46:09.000000000 -0500
++++ linux-next/drivers/base/memory.c	2010-09-30 14:46:12.000000000 -0500
+@@ -587,10 +587,10 @@
  
- 	memory->sysdev.cls = &memory_sysdev_class;
--	memory->sysdev.id = memory->phys_index / sections_per_block;
-+	memory->sysdev.id = memory->start_section_nr / sections_per_block;
+ 	mutex_lock(&mem_sysfs_mutex);
+ 	mem = find_memory_block(section);
++	unregister_mem_sect_under_nodes(mem, __section_nr(section));
  
- 	error = sysdev_register(&memory->sysdev);
- 	return error;
-@@ -138,12 +138,26 @@
-  * uses.
-  */
- 
--static ssize_t show_mem_phys_index(struct sys_device *dev,
-+static ssize_t show_mem_start_phys_index(struct sys_device *dev,
- 			struct sysdev_attribute *attr, char *buf)
- {
- 	struct memory_block *mem =
- 		container_of(dev, struct memory_block, sysdev);
--	return sprintf(buf, "%08lx\n", mem->phys_index / sections_per_block);
-+	unsigned long phys_index;
-+
-+	phys_index = mem->start_section_nr / sections_per_block;
-+	return sprintf(buf, "%08lx\n", phys_index);
-+}
-+
-+static ssize_t show_mem_end_phys_index(struct sys_device *dev,
-+			struct sysdev_attribute *attr, char *buf)
-+{
-+	struct memory_block *mem =
-+		container_of(dev, struct memory_block, sysdev);
-+	unsigned long phys_index;
-+
-+	phys_index = mem->end_section_nr / sections_per_block;
-+	return sprintf(buf, "%08lx\n", phys_index);
- }
- 
- /*
-@@ -158,7 +172,7 @@
- 		container_of(dev, struct memory_block, sysdev);
- 
- 	for (i = 0; i < sections_per_block; i++) {
--		pfn = section_nr_to_pfn(mem->phys_index + i);
-+		pfn = section_nr_to_pfn(mem->start_section_nr + i);
- 		ret &= is_mem_section_removable(pfn, PAGES_PER_SECTION);
- 	}
- 
-@@ -275,14 +289,15 @@
- 		mem->state = MEM_GOING_OFFLINE;
- 
- 	for (i = 0; i < sections_per_block; i++) {
--		ret = memory_section_action(mem->phys_index + i, to_state);
-+		ret = memory_section_action(mem->start_section_nr + i,
-+					    to_state);
- 		if (ret)
- 			break;
- 	}
- 
- 	if (ret) {
- 		for (i = 0; i < sections_per_block; i++)
--			memory_section_action(mem->phys_index + i,
-+			memory_section_action(mem->start_section_nr + i,
- 					      from_state_req);
- 
- 		mem->state = from_state_req;
-@@ -330,7 +345,8 @@
- 	return sprintf(buf, "%d\n", mem->phys_device);
- }
- 
--static SYSDEV_ATTR(phys_index, 0444, show_mem_phys_index, NULL);
-+static SYSDEV_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
-+static SYSDEV_ATTR(end_phys_index, 0444, show_mem_end_phys_index, NULL);
- static SYSDEV_ATTR(state, 0644, show_mem_state, store_mem_state);
- static SYSDEV_ATTR(phys_device, 0444, show_phys_device, NULL);
- static SYSDEV_ATTR(removable, 0444, show_mem_removable, NULL);
-@@ -514,17 +530,21 @@
- 		return -ENOMEM;
- 
- 	scn_nr = __section_nr(section);
--	mem->phys_index = base_memory_block_id(scn_nr) * sections_per_block;
-+	mem->start_section_nr =
-+			base_memory_block_id(scn_nr) * sections_per_block;
-+	mem->end_section_nr = mem->start_section_nr + sections_per_block - 1;
- 	mem->state = state;
- 	mem->section_count++;
- 	mutex_init(&mem->state_mutex);
--	start_pfn = section_nr_to_pfn(mem->phys_index);
-+	start_pfn = section_nr_to_pfn(mem->start_section_nr);
- 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
- 
- 	ret = register_memory(mem);
- 	if (!ret)
- 		ret = mem_create_simple_file(mem, phys_index);
- 	if (!ret)
-+		ret = mem_create_simple_file(mem, end_phys_index);
-+	if (!ret)
- 		ret = mem_create_simple_file(mem, state);
- 	if (!ret)
- 		ret = mem_create_simple_file(mem, phys_device);
-@@ -572,6 +592,7 @@
+ 	mem->section_count--;
  	if (mem->section_count == 0) {
- 		unregister_mem_sect_under_nodes(mem);
+-		unregister_mem_sect_under_nodes(mem);
  		mem_remove_simple_file(mem, phys_index);
-+		mem_remove_simple_file(mem, end_phys_index);
+ 		mem_remove_simple_file(mem, end_phys_index);
  		mem_remove_simple_file(mem, state);
- 		mem_remove_simple_file(mem, phys_device);
- 		mem_remove_simple_file(mem, removable);
-Index: linux-next/include/linux/memory.h
+Index: linux-next/include/linux/node.h
 ===================================================================
---- linux-next.orig/include/linux/memory.h	2010-09-30 14:44:39.000000000 -0500
-+++ linux-next/include/linux/memory.h	2010-09-30 14:46:09.000000000 -0500
-@@ -21,7 +21,8 @@
- #include <linux/mutex.h>
+--- linux-next.orig/include/linux/node.h	2010-09-30 14:44:38.000000000 -0500
++++ linux-next/include/linux/node.h	2010-09-30 14:46:12.000000000 -0500
+@@ -44,7 +44,8 @@
+ extern int unregister_cpu_under_node(unsigned int cpu, unsigned int nid);
+ extern int register_mem_sect_under_node(struct memory_block *mem_blk,
+ 						int nid);
+-extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk);
++extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++					   unsigned long phys_index);
  
- struct memory_block {
--	unsigned long phys_index;
-+	unsigned long start_section_nr;
-+	unsigned long end_section_nr;
- 	unsigned long state;
- 	int section_count;
- 
+ #ifdef CONFIG_HUGETLBFS
+ extern void register_hugetlbfs_with_node(node_registration_func_t doregister,
+@@ -72,7 +73,8 @@
+ {
+ 	return 0;
+ }
+-static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
++static inline int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++						  unsigned long phys_index)
+ {
+ 	return 0;
+ }
+
 
