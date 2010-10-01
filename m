@@ -1,107 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab0JASfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 14:35:08 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:38563 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754325Ab0JASfH convert rfc822-to-8bit (ORCPT
+	id S1754643Ab0JASgB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 14:36:01 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:52019 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752197Ab0JASf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 14:35:07 -0400
-X-IronPort-AV: E=Sophos;i="4.57,267,1283756400"; 
-   d="scan'208";a="461498497"
-Subject: Re: Odd NFS related SIGBUS (& possible fix)
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1285956768.30373.39.camel@heimdal.trondhjem.org>
-References: <1285734825.14081.87.camel@pasglop>
-	 <1285956768.30373.39.camel@heimdal.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Fri, 01 Oct 2010 14:35:04 -0400
-Message-ID: <1285958104.30373.41.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-X-OriginalArrivalTime: 01 Oct 2010 18:35:06.0831 (UTC) FILETIME=[5EC7F5F0:01CB6197]
+	Fri, 1 Oct 2010 14:35:59 -0400
+Message-ID: <4CA62A0A.4050406@austin.ibm.com>
+Date: Fri, 01 Oct 2010 13:35:54 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org
+CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Robin Holt <holt@sgi.com>, steiner@sgi.com
+Subject: [PATCH 7/9] v3 Define memory_block_size_bytes for powerpc/pseries
+References: <4CA62700.7010809@austin.ibm.com>
+In-Reply-To: <4CA62700.7010809@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-01 at 14:12 -0400, Trond Myklebust wrote:
-> However, it looks to me as if the right thing to do when the
-> page->mapping has changed would be to do the same thing as
-> block_page_mkwrite(), and just return VM_FAULT_NOPAGE so that the VM can
-> retry the fault.
-> IMO: We should only SIGBUS if the calls to nfs_flush_incompatible()
-> and/or nfs_updatepage() fail.
-> 
-> Cheers
->   Trond
+Define a version of memory_block_size_bytes() for powerpc/pseries such that
+a memory block spans an entire lmb.
 
-IOW: Something like the following patch.
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-Cheers
-  Trond
-
----------------------------------------------------------------------------
-NFS: Don't SIGBUS if nfs_vm_page_mkwrite races with a cache invalidation
-
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-In the case where we lock the page, and then find out that the page has
-been thrown out of the page cache, we should just return VM_FAULT_NOPAGE.
-This is what block_page_mkwrite() does in these situations.
-
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
 ---
+ arch/powerpc/platforms/pseries/hotplug-memory.c |   66 +++++++++++++++++++-----
+ 1 file changed, 53 insertions(+), 13 deletions(-)
 
- fs/nfs/file.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
-
-
-diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 05bf3c0..6d95e24 100644
---- a/fs/nfs/file.c
-+++ b/fs/nfs/file.c
-@@ -551,7 +551,7 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	struct file *filp = vma->vm_file;
- 	struct dentry *dentry = filp->f_path.dentry;
- 	unsigned pagelen;
--	int ret = -EINVAL;
-+	int ret = VM_FAULT_NOPAGE;
- 	struct address_space *mapping;
+Index: linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c
+===================================================================
+--- linux-next.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-30 14:44:37.000000000 -0500
++++ linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-30 14:47:04.000000000 -0500
+@@ -17,6 +17,54 @@
+ #include <asm/pSeries_reconfig.h>
+ #include <asm/sparsemem.h>
  
- 	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
-@@ -567,21 +567,20 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	if (mapping != dentry->d_inode->i_mapping)
- 		goto out_unlock;
++static unsigned long get_memblock_size(void)
++{
++	struct device_node *np;
++	unsigned int memblock_size = 0;
++
++	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
++	if (np) {
++		const unsigned long *size;
++
++		size = of_get_property(np, "ibm,lmb-size", NULL);
++		memblock_size = size ? *size : 0;
++
++		of_node_put(np);
++	} else {
++		unsigned int memzero_size = 0;
++		const unsigned int *regs;
++
++		np = of_find_node_by_path("/memory@0");
++		if (np) {
++			regs = of_get_property(np, "reg", NULL);
++			memzero_size = regs ? regs[3] : 0;
++			of_node_put(np);
++		}
++
++		if (memzero_size) {
++			/* We now know the size of memory@0, use this to find
++			 * the first memoryblock and get its size.
++			 */
++			char buf[64];
++
++			sprintf(buf, "/memory@%x", memzero_size);
++			np = of_find_node_by_path(buf);
++			if (np) {
++				regs = of_get_property(np, "reg", NULL);
++				memblock_size = regs ? regs[3] : 0;
++				of_node_put(np);
++			}
++		}
++	}
++
++	return memblock_size;
++}
++
++unsigned long memory_block_size_bytes(void)
++{
++	return get_memblock_size();
++}
++
+ static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
+ {
+ 	unsigned long start, start_pfn;
+@@ -127,30 +175,22 @@
  
--	ret = 0;
- 	pagelen = nfs_page_length(page);
- 	if (pagelen == 0)
- 		goto out_unlock;
+ static int pseries_drconf_memory(unsigned long *base, unsigned int action)
+ {
+-	struct device_node *np;
+-	const unsigned long *lmb_size;
++	unsigned long memblock_size;
+ 	int rc;
  
--	ret = nfs_flush_incompatible(filp, page);
--	if (ret != 0)
--		goto out_unlock;
-+	ret = VM_FAULT_LOCKED;
-+	if (nfs_flush_incompatible(filp, page) == 0 &&
-+	    nfs_updatepage(filp, page, 0, pagelen) == 0)
-+		goto out;
+-	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
+-	if (!np)
++	memblock_size = get_memblock_size();
++	if (!memblock_size)
+ 		return -EINVAL;
  
--	ret = nfs_updatepage(filp, page, 0, pagelen);
-+	ret = VM_FAULT_SIGBUS;
- out_unlock:
--	if (!ret)
--		return VM_FAULT_LOCKED;
- 	unlock_page(page);
--	return VM_FAULT_SIGBUS;
-+out:
-+	return ret;
+-	lmb_size = of_get_property(np, "ibm,lmb-size", NULL);
+-	if (!lmb_size) {
+-		of_node_put(np);
+-		return -EINVAL;
+-	}
+-
+ 	if (action == PSERIES_DRCONF_MEM_ADD) {
+-		rc = memblock_add(*base, *lmb_size);
++		rc = memblock_add(*base, memblock_size);
+ 		rc = (rc < 0) ? -EINVAL : 0;
+ 	} else if (action == PSERIES_DRCONF_MEM_REMOVE) {
+-		rc = pseries_remove_memblock(*base, *lmb_size);
++		rc = pseries_remove_memblock(*base, memblock_size);
+ 	} else {
+ 		rc = -EINVAL;
+ 	}
+ 
+-	of_node_put(np);
+ 	return rc;
  }
  
- static const struct vm_operations_struct nfs_file_vm_ops = {
 
