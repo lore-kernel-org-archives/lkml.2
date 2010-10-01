@@ -1,182 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932704Ab0JAP2D (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 11:28:03 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56956 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab0JAP2A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 11:28:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=LUFdKKOfq0AOidCK4IiRK7HS4yECKt3b6ZMjSzrTkY4p6TSejeYkIkzIK4lGXT2dvw
-         6zDULotIB3qi9Yh16FwXlQ4TjQyxOBFV7rCohi9tTbVTYl34TJvfr2HwDXXDQ1Gbvq+T
-         DCXMuYaRbpfuuV7lfxsVMe4ctGwwVqlbFae1M=
-Subject: Re: Packet time delays on multi-core systems
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Alexey Vlasov <renton@renton.name>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Emil Tantilov <emil.s.tantilov@intel.com>
-In-Reply-To: <20101001141858.GE4094@beaver.vrungel.ru>
-References: <20100930062419.GD86786@beaver.vrungel.ru>
-	 <1285828432.5211.812.camel@edumazet-laptop>
-	 <20100930122321.GA1575@beaver.vrungel.ru>
-	 <1285850669.2615.426.camel@edumazet-laptop>
-	 <20100930173732.GB4094@beaver.vrungel.ru>
-	 <1285869782.2615.920.camel@edumazet-laptop>
-	 <20100930181556.GC4094@beaver.vrungel.ru>
-	 <1285872765.2615.1008.camel@edumazet-laptop>
-	 <20101001101650.GD4094@beaver.vrungel.ru>
-	 <1285937966.2641.117.camel@edumazet-laptop>
-	 <20101001141858.GE4094@beaver.vrungel.ru>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Oct 2010 17:27:41 +0200
-Message-ID: <1285946861.21547.24.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S932677Ab0JAPcE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 11:32:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51286 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932400Ab0JAPcC convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 11:32:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <1285909484-30958-3-git-send-email-walken@google.com>
+References: <1285909484-30958-1-git-send-email-walken@google.com> <1285909484-30958-3-git-send-email-walken@google.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Oct 2010 08:31:01 -0700
+Message-ID: <AANLkTinGgZC7eHW_Q-aR5Vmur4yjv_kKSJ8z3MX60e-r@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Release mmap_sem when page fault blocks on disk transfer.
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 01 octobre 2010 Ã  18:18 +0400, Alexey Vlasov a Ã©crit :
+I have nothing against the 1/2 patch, it seems nice regardless.
 
-> NIC statistics:
->      rx_packets: 2973717440
->      tx_packets: 3032670910
->      rx_bytes: 1892633650741
->      tx_bytes: 2536130682695
->      rx_broadcast: 118773199
->      tx_broadcast: 68013
->      rx_multicast: 95257
->      tx_multicast: 0
->      rx_errors: 0
->      tx_errors: 0
->      tx_dropped: 0
->      multicast: 95257
->      collisions: 0
->      rx_length_errors: 0
->      rx_over_errors: 0
->      rx_crc_errors: 0
->      rx_frame_errors: 0
->      rx_no_buffer_count: 7939
->      rx_queue_drop_packet_count: 1324025520
->      rx_missed_errors: 146631
->      tx_aborted_errors: 0
->      tx_carrier_errors: 0
->      tx_fifo_errors: 0
->      tx_heartbeat_errors: 0
->      tx_window_errors: 0
->      tx_abort_late_coll: 0
->      tx_deferred_ok: 0
->      tx_single_coll_ok: 0
->      tx_multi_coll_ok: 0
->      tx_timeout_count: 0
->      tx_restart_queue: 50715
->      rx_long_length_errors: 0
->      rx_short_length_errors: 0
->      rx_align_errors: 0
->      tx_tcp_seg_good: 344724062
->      tx_tcp_seg_failed: 0
->      rx_flow_control_xon: 0
->      rx_flow_control_xoff: 0
->      tx_flow_control_xon: 0
->      tx_flow_control_xoff: 0
->      rx_long_byte_count: 1892633650741
->      rx_csum_offload_good: 2973697420
->      rx_csum_offload_errors: 6235
->      tx_dma_out_of_sync: 0
->      alloc_rx_buff_failed: 0
->      tx_smbus: 9327
->      rx_smbus: 118531661
->      dropped_smbus: 0
->      tx_queue_0_packets: 797617475
->      tx_queue_0_bytes: 630191908685
->      tx_queue_1_packets: 719681297
->      tx_queue_1_bytes: 625907304846
->      tx_queue_2_packets: 718841556
->      tx_queue_2_bytes: 620522418855
->      tx_queue_3_packets: 796521255
->      tx_queue_3_bytes: 646196024585
->      rx_queue_0_packets: 788885797
->      rx_queue_0_bytes: 458936338699
->      rx_queue_0_drops: 0
->      rx_queue_1_packets: 701354604
->      rx_queue_1_bytes: 457490536453
->      rx_queue_1_drops: 0
->      rx_queue_2_packets: 791887663
->      rx_queue_2_bytes: 534425333616
->      rx_queue_2_drops: 0
->      rx_queue_3_packets: 691579028
->      rx_queue_3_bytes: 429887244557
->      rx_queue_3_drops: 0
-> 11.111.80: R 1983626201:1983626201(0) win 0
-> > > 
+This one is really messy, though. I think you're making the code much
+less readable (and it's not wonderful to start with). That's
+unacceptable.
 
-OK
+On Thu, Sep 30, 2010 at 10:04 PM, Michel Lespinasse <walken@google.com> wrote:
+>        int fault;
+> +       unsigned int release_flag = FAULT_FLAG_RELEASE;
 
-IGB stats are wrong... for rx_queue_drop_packet_count field at least
+Try this with just "flag", and make it look something like
 
-Here is a patch against 2.6.32.23, to get the idea...
+   unsigned int flag;
 
-Dont trust it unless you patch your kernel ;)
+   flag = FAULT_FLAG_RELEASE | (write ? FAULT_FLAG_WRITE : 0);
 
-Thanks
+and just keep the whole mm_handle_fault() flags value in there. That
+avoids one ugly/complex line, and makes it much easier to add other
+flags if we ever do.
 
-Note: current linux-2.6 tree doesnt have this bug.
+Also, I think the "RELEASE" naming is too much about the
+implementation, not about the context. I think it would be more
+sensible to call it "ALLOW_RETRY" or "ATOMIC" or something like this,
+and not make it about releasing the page lock so much as about what
+you want to happen.
 
-[PATCH] igb: rx_fifo_errors counter fix
+Because quite frankly, I could imagine other reasons to allow page fault retry.
 
-Alexey Vlasov reported insane rx_queue_drop_packet_count
-(rx_fifo_errors) values. 
+(Similarly, I would rename VM_FAULT_RELEASED to VM_FAULT_RETRY. Again:
+name things for the _concept_, not for some odd implementation issue)
 
-IGB drivers is doing an accumulation for 82575, instead using a zero
-value for rqdpc_total.
+> -       if (fault & VM_FAULT_MAJOR) {
+> -               tsk->maj_flt++;
+> -               perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
+> -                                    regs, address);
+> -       } else {
+> -               tsk->min_flt++;
+> -               perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
+> -                                    regs, address);
+> +       if (release_flag) {     /* Did not go through a retry */
+> +               if (fault & VM_FAULT_MAJOR) {
 
-Reported-by: Alexey Vlasov <renton@renton.name>
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- linux-2.6.32.23/net/igb/igb_main.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+I really don't know if this is correct. What if you have two major
+faults due to the retry? What if the first one is a minor fault, but
+when we retry it's a major fault because the page got released? The
+nesting of the conditionals doesn't seem to make conceptual sense.
 
---- linux-2.6.32.23/drivers/net/igb/igb_main.c.orig
-+++ linux-2.6.32.23/drivers/net/igb/igb_main.c
-@@ -3552,6 +3552,7 @@
- 	struct e1000_hw *hw = &adapter->hw;
- 	struct pci_dev *pdev = adapter->pdev;
- 	u16 phy_tmp;
-+	unsigned long rqdpc_total = 0;
- 
- #define PHY_IDLE_ERROR_COUNT_MASK 0x00FF
- 
-@@ -3645,7 +3646,6 @@
- 
- 	if (hw->mac.type != e1000_82575) {
- 		u32 rqdpc_tmp;
--		u64 rqdpc_total = 0;
- 		int i;
- 		/* Read out drops stats per RX queue.  Notice RQDPC (Receive
- 		 * Queue Drop Packet Count) stats only gets incremented, if
-@@ -3660,7 +3660,6 @@
- 			adapter->rx_ring[i].rx_stats.drops += rqdpc_tmp;
- 			rqdpc_total += adapter->rx_ring[i].rx_stats.drops;
- 		}
--		adapter->net_stats.rx_fifo_errors = rqdpc_total;
- 	}
- 
- 	/* Note RNBC (Receive No Buffers Count) is an not an exact
-@@ -3668,7 +3667,7 @@
- 	 * one of the reason for saving it in rx_fifo_errors, as its
- 	 * potentially not a true drop.
- 	 */
--	adapter->net_stats.rx_fifo_errors += adapter->stats.rnbc;
-+	adapter->net_stats.rx_fifo_errors = rqdpc_total + adapter->stats.rnbc;
- 
- 	/* RLEC on some newer hardware can be incorrect so build
- 	 * our own version based on RUC and ROC */
+I dunno. I can see what you're doing ("only do statistics for the
+first return"), but at the same time it just feels a bit icky.
 
+> -       lock_page(page);
+> +       /* Lock the page. */
+> +       if (!trylock_page(page)) {
+> +               if (!(vmf->flags & FAULT_FLAG_RELEASE))
+> +                       __lock_page(page);
+> +               else {
+> +                       /*
+> +                        * Caller passed FAULT_FLAG_RELEASE flag.
+> +                        * This indicates it has read-acquired mmap_sem,
+> +                        * and requests that it be released if we have to
+> +                        * wait for the page to be transferred from disk.
+> +                        * Caller will then retry starting with the
+> +                        * mmap_sem read-acquire.
+> +                        */
+> +                       up_read(&vma->vm_mm->mmap_sem);
+> +                       wait_on_page_locked(page);
+> +                       page_cache_release(page);
+> +                       return ret | VM_FAULT_RELEASED;
+> +               }
+> +       }
 
+I'd much rather see this abstracted out (preferably together with the
+"did it get truncated" logic) into a small helper function of its own.
+The main reason I say that is because I hate your propensity for
+putting the comments deep inside the code. I think any code that needs
+big comments at a deep indentation is fundamentally flawed.
+
+You had the same thing in the x86 fault path. I really think it's
+wrong. Needing a comment _inside_ a conditional is just nasty. You
+shouldn't explain what just happened, you should explain what is
+_going_ to happen, an why you do a test in the first place.
+
+But on the whole I think that if the implementation didn't raise my
+hackles so badly, I think the concept looks fine.
+
+                                         Linus
