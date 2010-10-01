@@ -1,78 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756447Ab0JANFn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 09:05:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10465 "EHLO mga09.intel.com"
+	id S932603Ab0JANFv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 09:05:51 -0400
+Received: from bar.sig21.net ([80.81.252.164]:41500 "EHLO bar.sig21.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753441Ab0JANFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 09:05:42 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,266,1283756400"; 
-   d="scan'208";a="663055438"
-Date: Fri, 1 Oct 2010 15:06:01 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@linux.intel.com>,
-        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Valentin Longchamp <valentin.longchamp@epfl.ch>
-Subject: Re: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
-Message-ID: <20101001130600.GD3064@sortiz-mobl>
-References: <20100929162315.GG29811@pengutronix.de>
- <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
- <20101001104250.GB3064@sortiz-mobl>
- <20101001110233.GG784@pengutronix.de>
+	id S932592Ab0JANFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 09:05:49 -0400
+Date: Fri, 1 Oct 2010 15:05:28 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: block cache replacement strategy?
+Message-ID: <20101001130528.GA28723@sig21.net>
+References: <20100907133429.GB3430@sig21.net>
+ <20100930232758.GI3573@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101001110233.GG784@pengutronix.de>
+In-Reply-To: <20100930232758.GI3573@quack.suse.cz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam-21-Score: -3.8 (---)
+X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.603,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 01:02:33PM +0200, Uwe Kleine-König wrote:
-> On Fri, Oct 01, 2010 at 12:42:51PM +0200, Samuel Ortiz wrote:
-> > Hi Uwe,
+Hi,
+
+On Fri, Oct 01, 2010 at 01:27:59AM +0200, Jan Kara wrote:
+> On Tue 07-09-10 15:34:29, Johannes Stezenbach wrote:
 > > 
-> > On Wed, Sep 29, 2010 at 06:23:46PM +0200, Uwe Kleine-König wrote:
-> > > mc13892 is the companion PMIC for Freescale's i.MX51.  It's similar enough
-> > > to mc13782 to support it in a single driver.
-> > > 
-> > > This patch introduces enough compatibility cruft to keep all users of the
-> > > superseded mc13783 driver unchanged.
-> > All 4 patches applied, thanks.
-> Thanks.
->  
-> > I have one comment though:
+> > zzz:~# echo 3 >/proc/sys/vm/drop_caches 
+> > zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> > 1000+0 records in
+> > 1000+0 records out
+> > 1048576000 bytes (1.0 GB) copied, 13.9454 s, 75.2 MB/s
+> > zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000
+> > 1000+0 records in
+> > 1000+0 records out
+> > 1048576000 bytes (1.0 GB) copied, 0.92799 s, 1.1 GB/s
 > > 
-> > > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > > index db51ea1..1868d9b 100644
-> > > --- a/drivers/mfd/Kconfig
-> > > +++ b/drivers/mfd/Kconfig
-> > > @@ -408,11 +408,16 @@ config MFD_PCF50633
-> > >  	  so that function-specific drivers can bind to them.
-> > >  
-> > >  config MFD_MC13783
-> > > -	tristate "Support Freescale MC13783"
-> > > +	tristate
-> > > +
-> > I don't think it's worth keeping this symbol around.
-> That's part of the compatibility cruft because some drivers depend on
-> it.  
-Right, there are 4 of them left, I didnt see that.
+> > OK, seems like the blocks are cached. But:
+> > 
+> > zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> > 1000+0 records in
+> > 1000+0 records out
+> > 1048576000 bytes (1.0 GB) copied, 13.8375 s, 75.8 MB/s
+> > zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+> > 1000+0 records in
+> > 1000+0 records out
+> > 1048576000 bytes (1.0 GB) copied, 13.8429 s, 75.7 MB/s
+>   I took a look at this because it looked strange at the first sight to me.
+> After some code reading the result is that everything is working as
+> designed.
+>   The first dd fills up memory with 1GB of data. Pages with data just freshly
+> read from disk are in "Inactive" state. When these pages are read again by
+> the second dd, they move into the "Active" state - caching has proved
+> useful and thus we value the data more. When the third dd is run, it
+> eventually needs to reclaim some pages to cache new data. System preferably
+> reclaims "Inactive" pages and since it has plenty of them - all the data
+> the third dd has read so far - it succeeds. Thus when a third dd finishes,
+> only a small part of the whole 1 GB chunk is in memory since we continually
+> reclaimed pages from it.
+>   Active pages would start becoming inactive only when there would be too
+> many of them (e.g. when there would be more active pages than inactive
+> pages). But that does not happen with your workload... I guess this
+> explains it.
 
-> This will be removed when all other drivers are converted together
-> with (e.g.) include/mfd/mc13783.h.
-It would be nice to have them ready for the next merge window, and I suppose
-this should go through my tree then.
+Thank you for your comments, I see now how it works.
 
-Cheers,
-Samuel.
+What you snipped from my post:
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> > Even if I let 15min pass and repeat the dd command
+> > several times, I cannot see any caching effects, it
+> > stays at ~75 MB/s.
+...
+> > Active:           792720 kB
+> > Inactive:         758832 kB
+
+So with my new knowledge I tried to run dd with a smaller data set
+to get new data on the Active pages list:
+
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=680 skip=1000
+680+0 records in
+680+0 records out
+713031680 bytes (713 MB) copied, 9.8105 s, 72.7 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=680 skip=1000
+680+0 records in
+680+0 records out
+713031680 bytes (713 MB) copied, 0.676862 s, 1.1 GB/s
+
+zzz:~# cat /proc/meminfo 
+MemTotal:        1793272 kB
+MemFree:           15788 kB
+Buffers:         1379332 kB
+Cached:            14084 kB
+SwapCached:        19516 kB
+Active:          1493748 kB
+Inactive:          45928 kB
+Active(anon):     106416 kB
+Inactive(anon):    42456 kB
+Active(file):    1387332 kB
+Inactive(file):     3472 kB
+
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 5.09198 s, 206 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 1.63369 s, 642 MB/s
+zzz:~# dd if=/dev/sda2 of=/dev/null bs=1M count=1000 skip=1000
+1000+0 records in
+1000+0 records out
+1048576000 bytes (1.0 GB) copied, 0.892916 s, 1.2 GB/s
+
+
+Yippie!
+
+BTW, it seems this has nothing to do with sequential read, and my
+earlier testing with lmdd was flawed since lmdd uses 1M = 1000000
+and 1m = 1048576, thus my test read overlapping blocks and the
+resulting data set was smaller than the number of inactive pages.
+A correct test with lmdd would use
+
+  lmdd if=some_large_file_or_blockdev bs=1m count=1024 rand=5g norepeat=
+  lmdd if=some_large_file_or_blockdev bs=1m count=1024 rand=5g norepeat= start=5g
+
+and shows the same caching behaviour (on a machine with 2G RAM).
+
+
+Thanks
+Johannes
