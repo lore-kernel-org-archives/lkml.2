@@ -1,78 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755985Ab0JAJHL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 05:07:11 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:49812
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755792Ab0JAJHJ (ORCPT
+	id S1755885Ab0JAJHs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 05:07:48 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57673 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753448Ab0JAJHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 05:07:09 -0400
-X-SpamScore: -21
-X-BigFish: VS-21(zz1432N98dNzz1202hzz15d4Rz32i87h2a8h43h64h)
-X-Spam-TCS-SCL: 3:0
-X-FB-SS: 0,
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L9LTB7-02-4S7-02
-X-M-MSG: 
-Date: Fri, 1 Oct 2010 11:07:24 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Ingo Molnar <mingo@elte.hu>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH 2/3] x86/amd-iommu: Work around S3 BIOS bug
-Message-ID: <20101001090723.GQ9817@amd.com>
-References: <1285253089-4570-1-git-send-email-joerg.roedel@amd.com>
- <1285253089-4570-3-git-send-email-joerg.roedel@amd.com>
- <20100930202104.GA20495@srcf.ucam.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100930202104.GA20495@srcf.ucam.org>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Fri, 1 Oct 2010 05:07:47 -0400
+Date: Fri, 1 Oct 2010 10:31:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/2] vcs: add poll/fasync support
+Message-ID: <20101001103142.352f42a2@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
+References: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 04:21:04PM -0400, Matthew Garrett wrote:
-> On Thu, Sep 23, 2010 at 04:44:48PM +0200, Joerg Roedel wrote:
-> > +static void iommu_apply_quirks(struct amd_iommu *iommu)
-> > +{
-> > +	if (is_rd890_iommu(iommu->dev)) {
-> > +		pci_write_config_dword(iommu->dev, 0xf0, iommu->cache_cfg[0]);
-> > +		pci_write_config_dword(iommu->dev, 0xf4, iommu->cache_cfg[1]);
-> > +		pci_write_config_dword(iommu->dev, 0xf8, iommu->cache_cfg[2]);
-> > +		pci_write_config_dword(iommu->dev, 0xfc, iommu->cache_cfg[3]);
-> > +	}
-> > +}
-> > +
-> 
-> This doesn't look right. 0xf0-0xff are for indexed register access, so 
-> what you're doing here is just restoring the last of each of those 
-> registers that the BIOS programmed - and if the BIOS cleared the 
-> writable flag afterwards, you're not even doing that.
+> Not to create unwanted overhead, the needed data structure is allocated
+> and the vt notification callback is registered only when the poll or
+> fasync method is invoked for the first time per file instance.
 
-With a half-fixed BIOS (a BIOS which re-enables the IOMMU on resume)
-this was the necessary step to make the IOMMU execute commands again. So
-it actually fixed the problem I have seen. I agree that its better to
-fully restore the indirect register spaces when we workaround the fully
-broken BIOSes. When we have this I remove this code, but until then it
-fixes the problem.
 
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Acked-by: Alan Cox <alan@linux.intel.com>
