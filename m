@@ -1,114 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab0JAIDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 04:03:07 -0400
-Received: from cmx.wol.de ([193.158.62.4]:38050 "EHLO cmx.wol.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754068Ab0JAIDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 04:03:04 -0400
-Subject: [PATCH] Fix capi devicenames v2
-From: "Marc - A. Dahlhaus" <mad@wol.de>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        isdn@linux-pingi.de
-In-Reply-To: <AANLkTimRa9VsOgSkcdrg=41pskEbMhNL4D9SXeV3dztG@mail.gmail.com>
-References: <4CA391B3.1030806@wol.de>
-	 <20100930103010.1a6a7785@lxorguk.ukuu.org.uk>
-	 <1285843077.748.32.camel@marc>
-	 <AANLkTi=d+5uDVK9RHguSmwFhKLVUPXvzo=G3s=NKKDW3@mail.gmail.com>
-	 <20100930122928.19e5ee84@lxorguk.ukuu.org.uk>
-	 <1285851024.748.97.camel@marc>
-	 <AANLkTimRa9VsOgSkcdrg=41pskEbMhNL4D9SXeV3dztG@mail.gmail.com>
-Content-Type: multipart/mixed; boundary="=-KS7k0NCfTrFH3zLFrxug"
-Date: Fri, 01 Oct 2010 10:02:53 +0200
-Message-Id: <1285920173.13411.34.camel@marc>
+	id S1754956Ab0JAI0t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 04:26:49 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:41080 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab0JAI0r convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:5:1>);
+	Fri, 1 Oct 2010 04:26:47 -0400
+Message-Id: <4CA5B7910200007800019F50@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Fri, 01 Oct 2010 09:27:29 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Ingo Molnar" <mingo@elte.hu>, <heukelum@fastmail.fm>,
+        <tglx@linutronix.de>, <akpm@linux-foundation.org>,
+        "LKML" <linux-kernel@vger.kernel.org>
+Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
+References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org>
+ <4C91F07E0200007800016B50@vpn.id2.novell.com>
+ <20100916082816.GA25681@elte.hu>
+ <4C91F3A30200007800016B64@vpn.id2.novell.com>
+ <20100916101355.GA31458@elte.hu>
+ <4C9219BC0200007800016C53@vpn.id2.novell.com> <4CA52AA5.5040402@zytor.com>
+In-Reply-To: <4CA52AA5.5040402@zytor.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>>> On 01.10.10 at 02:26, "H. Peter Anvin" <hpa@zytor.com> wrote:
+> ... but that doesn't work with the macros like movq_cfi.  On those, we
 
---=-KS7k0NCfTrFH3zLFrxug
-Content-Type: text/plain
-Content-Transfer-Encoding: 7bit
+Is that only because of the register names used as operands to
+movq_cfi etc not having the % specified right away? I don't think
+that is really needed, i.e. the % could go there rather than being
+added in the macro body - the .cfi_* directives are perfectly happy
+with having the prefix there (and I don't know why it was coded
+this way in the first place, as this made it less similar to the plain
+movq while I thought the goal was to keep the differences to a
+minimum).
 
-Specification in devices.txt about capi devices is out of date as the capifs
-layout for capi tty devices was never added to it.
+> could argue that at least people won't put $ on them, but cpp will still
+> split them apart with spaces; this apparently causes problems at least
+> as soon as there is an expression more complicated than addition
+> involved (apparently plus signs are okay, but minus signs aren't!)
+> 
+> I'm completely lost about how to deal with this.   We can't simply
+> defang the macros -- at least not in a way that is likely to *stay*
+> working -- and dropping the macros is seriously going to impact the
+> debuggability of the kernel.  One way, of course, is to simply declare
+> binutils 2.16 and 2.15.9x (which is apparently included in
+> RHEL/CentOS 4) to be broken beyond repair unless distros backport a fix,
+> and in many ways I think that is the preferred option, but I don't know
+> if that makes sense to others...
 
-Recent udev versions can't produce working device nodes because of a typo in
-the device_create call for the capi control device.
+The other alternative, albeit disliked by Ingo, continues to be to use
+__stringify() on all non-trivial operands, which then wouldn't require
+suppressing CONFIG_AS_CFI for pre-2.17 binutils.
 
-Due to this the wrong node name of the control device "capi" collides with
-the "capi" directory under which the now deprecated capifs was mounted and
-created the capi tty device nodes.
-
-This also changes the capi tty device names passed to udev to the capifs
-layout which isn't mentioned in the specs.
-
-Signed-off-by: Marc - Andre Dahlhaus <mad@wol.de>
-
---- a/drivers/isdn/capi/capi.c
-+++ b/drivers/isdn/capi/capi.c
-@@ -1363,7 +1363,7 @@ static int __init capinc_tty_init(void)
- 	}
- 	drv->owner = THIS_MODULE;
- 	drv->driver_name = "capi_nc";
--	drv->name = "capi";
-+	drv->name = "capi/";
- 	drv->major = 0;
- 	drv->minor_start = 0;
- 	drv->type = TTY_DRIVER_TYPE_SERIAL;
-@@ -1509,7 +1509,7 @@ static int __init capi_init(void)
- 		return PTR_ERR(capi_class);
- 	}
- 
--	device_create(capi_class, NULL, MKDEV(capi_major, 0), NULL, "capi");
-+	device_create(capi_class, NULL, MKDEV(capi_major, 0), NULL, "capi20");
- 
- 	if (capinc_tty_init() < 0) {
- 		device_destroy(capi_class, MKDEV(capi_major, 0));
-
---=-KS7k0NCfTrFH3zLFrxug
-Content-Disposition: attachment; filename="capi-name.patch"
-Content-Type: text/x-patch; name="capi-name.patch"; charset="ISO-8859-15"
-Content-Transfer-Encoding: 7bit
-
-Specification in devices.txt about capi devices is out of date as the capifs
-layout for capi tty devices was never added to it.
-
-Recent udev versions can't produce working device nodes because of a typo in
-the device_create call for the capi control device.
-
-Due to this the wrong node name of the control device "capi" collides with
-the "capi" directory under which the now deprecated capifs was mounted and
-created the capi tty device nodes.
-
-This also changes the capi tty device names passed to udev to the capifs
-layout which isn't mentioned in the specs.
-
-Signed-off-by: Marc - Andre Dahlhaus <mad@wol.de>
-
---- a/drivers/isdn/capi/capi.c
-+++ b/drivers/isdn/capi/capi.c
-@@ -1363,7 +1363,7 @@ static int __init capinc_tty_init(void)
- 	}
- 	drv->owner = THIS_MODULE;
- 	drv->driver_name = "capi_nc";
--	drv->name = "capi";
-+	drv->name = "capi/";
- 	drv->major = 0;
- 	drv->minor_start = 0;
- 	drv->type = TTY_DRIVER_TYPE_SERIAL;
-@@ -1509,7 +1509,7 @@ static int __init capi_init(void)
- 		return PTR_ERR(capi_class);
- 	}
- 
--	device_create(capi_class, NULL, MKDEV(capi_major, 0), NULL, "capi");
-+	device_create(capi_class, NULL, MKDEV(capi_major, 0), NULL, "capi20");
- 
- 	if (capinc_tty_init() < 0) {
- 		device_destroy(capi_class, MKDEV(capi_major, 0));
-
---=-KS7k0NCfTrFH3zLFrxug--
+Jan
 
