@@ -1,61 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab0JAP12 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 11:27:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52145 "EHLO
+	id S932704Ab0JAP2D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 11:28:03 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56956 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab0JAP10 (ORCPT
+	with ESMTP id S932177Ab0JAP2A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 11:27:26 -0400
+	Fri, 1 Oct 2010 11:28:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pi+Zsl7OxnTHda7IP0dwFG8AtsDqewfzW8KvPwQHXgy56BDPkPmZJYTs5oX3NjUN+P
-         mIGr4B+JETPf2JyidJUtNmURTZjnnYVRmjmNsrWwOx4Er/wNtce7VC7sBgV6V7iNHo/I
-         xUn/QVZ85cmbbfq/9+GtO15hTFbVCC30G27/s=
-Date: Fri, 1 Oct 2010 17:27:19 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
-Cc: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        "Wu, Xia" <xia.wu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhu, Daniel" <daniel.zhu@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>
-Subject: Re: unnecessary timer interrupt of slab.c and bdi tasks when the
-	system is in sleep state
-Message-ID: <20101001152715.GA5338@nowhere>
-References: <A24AE1FFE7AEC5489F83450EE98351BF221878E0FB@shsmsx502.ccr.corp.intel.com> <alpine.DEB.2.00.1009300908050.27201@router.home> <20101001141932.GA5467@nowhere> <26E9B811E137AB4B95200FD4C950886BA64E0E96@orsmsx507.amr.corp.intel.com> <20101001143546.GA6194@nowhere> <26E9B811E137AB4B95200FD4C950886BA64E0ECD@orsmsx507.amr.corp.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <26E9B811E137AB4B95200FD4C950886BA64E0ECD@orsmsx507.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LUFdKKOfq0AOidCK4IiRK7HS4yECKt3b6ZMjSzrTkY4p6TSejeYkIkzIK4lGXT2dvw
+         6zDULotIB3qi9Yh16FwXlQ4TjQyxOBFV7rCohi9tTbVTYl34TJvfr2HwDXXDQ1Gbvq+T
+         DCXMuYaRbpfuuV7lfxsVMe4ctGwwVqlbFae1M=
+Subject: Re: Packet time delays on multi-core systems
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Alexey Vlasov <renton@renton.name>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Emil Tantilov <emil.s.tantilov@intel.com>
+In-Reply-To: <20101001141858.GE4094@beaver.vrungel.ru>
+References: <20100930062419.GD86786@beaver.vrungel.ru>
+	 <1285828432.5211.812.camel@edumazet-laptop>
+	 <20100930122321.GA1575@beaver.vrungel.ru>
+	 <1285850669.2615.426.camel@edumazet-laptop>
+	 <20100930173732.GB4094@beaver.vrungel.ru>
+	 <1285869782.2615.920.camel@edumazet-laptop>
+	 <20100930181556.GC4094@beaver.vrungel.ru>
+	 <1285872765.2615.1008.camel@edumazet-laptop>
+	 <20101001101650.GD4094@beaver.vrungel.ru>
+	 <1285937966.2641.117.camel@edumazet-laptop>
+	 <20101001141858.GE4094@beaver.vrungel.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Oct 2010 17:27:41 +0200
+Message-ID: <1285946861.21547.24.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 08:20:22AM -0700, Van De Ven, Arjan wrote:
-> 
-> > > the slab timer is already deferable... which means it won't hit while
-> > the system is completely idle.
-> > 
-> > 
-> > I'm not sure what you mean exactly. The slab work seems to be scheduled
-> > strictly
-> > periodically, unless the cpu goes offline. But I can't find any nohz-
-> > wise adaptation.
-> > 
-> 
->                 INIT_DELAYED_WORK_DEFERRABLE(reap_work, cache_reap);
-> 
-> that will cause it to only run when the cpu is actually idle...
+Le vendredi 01 octobre 2010 à 18:18 +0400, Alexey Vlasov a écrit :
 
+> NIC statistics:
+>      rx_packets: 2973717440
+>      tx_packets: 3032670910
+>      rx_bytes: 1892633650741
+>      tx_bytes: 2536130682695
+>      rx_broadcast: 118773199
+>      tx_broadcast: 68013
+>      rx_multicast: 95257
+>      tx_multicast: 0
+>      rx_errors: 0
+>      tx_errors: 0
+>      tx_dropped: 0
+>      multicast: 95257
+>      collisions: 0
+>      rx_length_errors: 0
+>      rx_over_errors: 0
+>      rx_crc_errors: 0
+>      rx_frame_errors: 0
+>      rx_no_buffer_count: 7939
+>      rx_queue_drop_packet_count: 1324025520
+>      rx_missed_errors: 146631
+>      tx_aborted_errors: 0
+>      tx_carrier_errors: 0
+>      tx_fifo_errors: 0
+>      tx_heartbeat_errors: 0
+>      tx_window_errors: 0
+>      tx_abort_late_coll: 0
+>      tx_deferred_ok: 0
+>      tx_single_coll_ok: 0
+>      tx_multi_coll_ok: 0
+>      tx_timeout_count: 0
+>      tx_restart_queue: 50715
+>      rx_long_length_errors: 0
+>      rx_short_length_errors: 0
+>      rx_align_errors: 0
+>      tx_tcp_seg_good: 344724062
+>      tx_tcp_seg_failed: 0
+>      rx_flow_control_xon: 0
+>      rx_flow_control_xoff: 0
+>      tx_flow_control_xon: 0
+>      tx_flow_control_xoff: 0
+>      rx_long_byte_count: 1892633650741
+>      rx_csum_offload_good: 2973697420
+>      rx_csum_offload_errors: 6235
+>      tx_dma_out_of_sync: 0
+>      alloc_rx_buff_failed: 0
+>      tx_smbus: 9327
+>      rx_smbus: 118531661
+>      dropped_smbus: 0
+>      tx_queue_0_packets: 797617475
+>      tx_queue_0_bytes: 630191908685
+>      tx_queue_1_packets: 719681297
+>      tx_queue_1_bytes: 625907304846
+>      tx_queue_2_packets: 718841556
+>      tx_queue_2_bytes: 620522418855
+>      tx_queue_3_packets: 796521255
+>      tx_queue_3_bytes: 646196024585
+>      rx_queue_0_packets: 788885797
+>      rx_queue_0_bytes: 458936338699
+>      rx_queue_0_drops: 0
+>      rx_queue_1_packets: 701354604
+>      rx_queue_1_bytes: 457490536453
+>      rx_queue_1_drops: 0
+>      rx_queue_2_packets: 791887663
+>      rx_queue_2_bytes: 534425333616
+>      rx_queue_2_drops: 0
+>      rx_queue_3_packets: 691579028
+>      rx_queue_3_bytes: 429887244557
+>      rx_queue_3_drops: 0
+> 11.111.80: R 1983626201:1983626201(0) win 0
+> > > 
 
-Aah ok, I missed that. Thanks.
+OK
+
+IGB stats are wrong... for rx_queue_drop_packet_count field at least
+
+Here is a patch against 2.6.32.23, to get the idea...
+
+Dont trust it unless you patch your kernel ;)
+
+Thanks
+
+Note: current linux-2.6 tree doesnt have this bug.
+
+[PATCH] igb: rx_fifo_errors counter fix
+
+Alexey Vlasov reported insane rx_queue_drop_packet_count
+(rx_fifo_errors) values. 
+
+IGB drivers is doing an accumulation for 82575, instead using a zero
+value for rqdpc_total.
+
+Reported-by: Alexey Vlasov <renton@renton.name>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ linux-2.6.32.23/net/igb/igb_main.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+--- linux-2.6.32.23/drivers/net/igb/igb_main.c.orig
++++ linux-2.6.32.23/drivers/net/igb/igb_main.c
+@@ -3552,6 +3552,7 @@
+ 	struct e1000_hw *hw = &adapter->hw;
+ 	struct pci_dev *pdev = adapter->pdev;
+ 	u16 phy_tmp;
++	unsigned long rqdpc_total = 0;
+ 
+ #define PHY_IDLE_ERROR_COUNT_MASK 0x00FF
+ 
+@@ -3645,7 +3646,6 @@
+ 
+ 	if (hw->mac.type != e1000_82575) {
+ 		u32 rqdpc_tmp;
+-		u64 rqdpc_total = 0;
+ 		int i;
+ 		/* Read out drops stats per RX queue.  Notice RQDPC (Receive
+ 		 * Queue Drop Packet Count) stats only gets incremented, if
+@@ -3660,7 +3660,6 @@
+ 			adapter->rx_ring[i].rx_stats.drops += rqdpc_tmp;
+ 			rqdpc_total += adapter->rx_ring[i].rx_stats.drops;
+ 		}
+-		adapter->net_stats.rx_fifo_errors = rqdpc_total;
+ 	}
+ 
+ 	/* Note RNBC (Receive No Buffers Count) is an not an exact
+@@ -3668,7 +3667,7 @@
+ 	 * one of the reason for saving it in rx_fifo_errors, as its
+ 	 * potentially not a true drop.
+ 	 */
+-	adapter->net_stats.rx_fifo_errors += adapter->stats.rnbc;
++	adapter->net_stats.rx_fifo_errors = rqdpc_total + adapter->stats.rnbc;
+ 
+ 	/* RLEC on some newer hardware can be incorrect so build
+ 	 * our own version based on RUC and ROC */
+
 
