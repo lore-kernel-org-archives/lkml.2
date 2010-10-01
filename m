@@ -1,71 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab0JALCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 07:02:45 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41406 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab0JALCo (ORCPT
+	id S1756308Ab0JALHO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 07:07:14 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:53021 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab0JALHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 07:02:44 -0400
-Date: Fri, 1 Oct 2010 13:02:33 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@linux.intel.com>,
-        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Valentin Longchamp <valentin.longchamp@epfl.ch>
-Subject: Re: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
-Message-ID: <20101001110233.GG784@pengutronix.de>
-References: <20100929162315.GG29811@pengutronix.de> <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de> <20101001104250.GB3064@sortiz-mobl>
+	Fri, 1 Oct 2010 07:07:12 -0400
+Date: Fri, 1 Oct 2010 13:57:11 +0300
+From: David Cohen <david.cohen@nokia.com>
+To: ext Fernando Guzman Lugo <x0095840@ti.com>
+Cc: "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
+        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
+        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and end check for
+ the last area
+Message-ID: <20101001105711.GA11617@esdhcp036161.research.nokia.com>
+References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
+ <1285902536-7043-2-git-send-email-x0095840@ti.com>
+ <1285902536-7043-3-git-send-email-x0095840@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101001104250.GB3064@sortiz-mobl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1285902536-7043-3-git-send-email-x0095840@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 01 Oct 2010 11:06:59.0161 (UTC) FILETIME=[C47B1C90:01CB6158]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 12:42:51PM +0200, Samuel Ortiz wrote:
-> Hi Uwe,
-> 
-> On Wed, Sep 29, 2010 at 06:23:46PM +0200, Uwe Kleine-König wrote:
-> > mc13892 is the companion PMIC for Freescale's i.MX51.  It's similar enough
-> > to mc13782 to support it in a single driver.
-> > 
-> > This patch introduces enough compatibility cruft to keep all users of the
-> > superseded mc13783 driver unchanged.
-> All 4 patches applied, thanks.
-Thanks.
- 
-> I have one comment though:
-> 
-> > diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> > index db51ea1..1868d9b 100644
-> > --- a/drivers/mfd/Kconfig
-> > +++ b/drivers/mfd/Kconfig
-> > @@ -408,11 +408,16 @@ config MFD_PCF50633
-> >  	  so that function-specific drivers can bind to them.
-> >  
-> >  config MFD_MC13783
-> > -	tristate "Support Freescale MC13783"
-> > +	tristate
-> > +
-> I don't think it's worth keeping this symbol around.
-That's part of the compatibility cruft because some drivers depend on
-it.  This will be removed when all other drivers are converted together
-with (e.g.) include/mfd/mc13783.h.
+Hi,
 
-Best regards
-Uwe
+On Fri, Oct 01, 2010 at 05:08:53AM +0200, ext Fernando Guzman Lugo wrote:
+> As da_end does not belongs to the area the roundup should
+> be done to da_end and not to da_end + 1.
+> Also the end check for the last area should be
+> ULONG_MAX - start + 1 >= bytes.
+> 
+> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> ---
+>  arch/arm/plat-omap/iovmm.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+> index 24ca9c4..fc6b109 100644
+> --- a/arch/arm/plat-omap/iovmm.c
+> +++ b/arch/arm/plat-omap/iovmm.c
+> @@ -289,19 +289,19 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
+>  	prev_end = 0;
+>  	list_for_each_entry(tmp, &obj->mmap, list) {
+>  
+> -		if (prev_end >= start)
+> +		if (prev_end > start)
+>  			break;
+>  
+>  		if (start + bytes <= tmp->da_start)
+>  			goto found;
+>  
+>  		if (flags & IOVMF_DA_ANON)
+> -			start = roundup(tmp->da_end + 1, alignement);
+> +			start = roundup(tmp->da_end, alignement);
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+There's a lack of comment here, but the purpose of tmp->da_end + 1 is to
+create a gap between iovm areas to force to trigger iommu faults when
+some access exceeds a valid area. Without this gap, such situation
+may produce data corruption which is much more difficult to track.
+
+Br,
+
+David
+
+>  
+>  		prev_end = tmp->da_end;
+>  	}
+>  
+> -	if ((start > prev_end) && (ULONG_MAX - start >= bytes))
+> +	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
+>  		goto found;
+>  
+>  	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
