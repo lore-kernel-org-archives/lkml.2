@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab0JAKSu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 06:18:50 -0400
-Received: from smtp.df.ru ([195.42.160.16]:41864 "EHLO smtp.df.ru"
+	id S1756241Ab0JAKmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 06:42:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51228 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756169Ab0JAKSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 06:18:48 -0400
-Date: Fri, 1 Oct 2010 14:16:50 +0400
-From: Alexey Vlasov <renton@renton.name>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Packet time delays on multi-core systems
-Message-ID: <20101001101650.GD4094@beaver.vrungel.ru>
-References: <20100929191851.GC86786@beaver.vrungel.ru> <1285796721.5211.156.camel@edumazet-laptop> <20100930062419.GD86786@beaver.vrungel.ru> <1285828432.5211.812.camel@edumazet-laptop> <20100930122321.GA1575@beaver.vrungel.ru> <1285850669.2615.426.camel@edumazet-laptop> <20100930173732.GB4094@beaver.vrungel.ru> <1285869782.2615.920.camel@edumazet-laptop> <20100930181556.GC4094@beaver.vrungel.ru> <1285872765.2615.1008.camel@edumazet-laptop>
+	id S1756202Ab0JAKmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 06:42:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,265,1283756400"; 
+   d="scan'208";a="330905656"
+Date: Fri, 1 Oct 2010 12:42:51 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
+        rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
+        Richard Purdie <rpurdie@linux.intel.com>,
+        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+        Valentin Longchamp <valentin.longchamp@epfl.ch>
+Subject: Re: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
+Message-ID: <20101001104250.GB3064@sortiz-mobl>
+References: <20100929162315.GG29811@pengutronix.de>
+ <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1285872765.2615.1008.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 08:52:45PM +0200, Eric Dumazet wrote:
+Hi Uwe,
+
+On Wed, Sep 29, 2010 at 06:23:46PM +0200, Uwe Kleine-König wrote:
+> mc13892 is the companion PMIC for Freescale's i.MX51.  It's similar enough
+> to mc13782 to support it in a single driver.
 > 
-> If you have a burst of 'LOG' matches, it can really slow down the whole
-> thing.
-> 
-> You should add a limiter (eg: no more than 5 messages per second)
-> 
-> http://netfilter.org/documentation/HOWTO/packet-filtering-HOWTO-7.html
+> This patch introduces enough compatibility cruft to keep all users of the
+> superseded mc13783 driver unchanged.
+All 4 patches applied, thanks.
 
-Yes, sometimes there aren't even 5 packets a second, but also it slows down.
-So I don't think this is the reason.
+I have one comment though:
 
-I have also found that:
-1. rx overruns is increasing.
-2. rx_queue_drop_packet_count is increasing.
-# ethtool -S eth0 | grep drop
-     tx_dropped: 0
-     rx_queue_drop_packet_count: 1260743751
-     dropped_smbus: 0
-     rx_queue_0_drops: 0
-     rx_queue_1_drops: 0
-     rx_queue_2_drops: 0
-     rx_queue_3_drops: 0
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index db51ea1..1868d9b 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -408,11 +408,16 @@ config MFD_PCF50633
+>  	  so that function-specific drivers can bind to them.
+>  
+>  config MFD_MC13783
+> -	tristate "Support Freescale MC13783"
+> +	tristate
+> +
+I don't think it's worth keeping this symbol around.
 
-3. By sending SYN-packets by hping, RST packet doesn't send, but I don't know may 
-be it is just some feature in 2.6.32.
-newbox # hping -c 1 -S -p 80 111.111.111.111
-HPING 111.111.111.111 (eth0 111.111.111.111): S set, 40 headers + 0 data bytes
-len=46 ip=111.111.111.111 ttl=58 DF id=11471 sport=80 flags=SA seq=0 win=65535 rtt=99.0 ms
-
---- 111.111.111.111 hping statistic ---
-1 packets tramitted, 1 packets received, 0% packet loss
-round-trip min/avg/max = 99.0/99.0/99.0 ms
-
-13:59:07.439528 IP newbox.2777 > 111.111.111.111.80: S 345595033:345595033(0) win 512
-13:59:07.439626 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-13:59:10.439368 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-13:59:16.439313 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-13:59:28.439206 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-
-As a result I got doubles:
-DUP! len=46 ip=111.111.111.111 ttl=58 DF id=27454 sport=80 flags=SA seq=0 win=65535 rtt=3137.8 ms
-
-Example of another TCP-session from 2.6.28 kernel:
-oldbox # hping -c 1 -S -p 80 111.111.111.111
-HPING 111.111.111.111 (eth0 111.111.111.111): S set, 40 headers + 0 data bytes
-len=46 ip=111.111.111.111 ttl=58 DF id=53180 sport=80 flags=SA seq=0 win=65535 rtt=2.9 ms
-
---- 111.111.111.111 hping statistic ---
-1 packets tramitted, 1 packets received, 0% packet loss
-round-trip min/avg/max = 2.9/2.9/2.9 ms
-
-14:01:45.225136 IP oldbox.2776 > 111.111.111.111.80: S 1983626200:1983626200(0) win 512
-14:01:45.225288 IP 111.111.111.111.80 > oldbox.2776: S 3796385036:3796385036(0) ack 1983626201 win 65535 <mss 1460>
-14:01:45.227990 IP oldbox.2776 > 111.111.111.111.80: R 1983626201:1983626201(0) win 0
+Cheers,
+Samuel.
 
 -- 
-BRGDS. Alexey Vlasov.
+Intel Open Source Technology Centre
+http://oss.intel.com/
