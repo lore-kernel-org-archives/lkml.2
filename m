@@ -1,103 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751495Ab0JAFDj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 01:03:39 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:48680 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751092Ab0JAFDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 01:03:38 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18QIMtSp6UQ5GgN792jwEP4zv0caJANKNPKVjojhr
-	TVM0an+GaiI6XW
-Subject: Re: [PATCH] fix 2.6.32.23 suspend regression caused by commit
- 6f6198a
-From: Mike Galbraith <efault@gmx.de>
-To: stable <stable@kernel.org>
-Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1285907236.7425.42.camel@marge.simson.net>
-References: <1285907236.7425.42.camel@marge.simson.net>
-Content-Type: text/plain
-Date: Fri, 01 Oct 2010 07:04:11 +0200
-Message-Id: <1285909451.7425.49.camel@marge.simson.net>
+	id S1751708Ab0JAFEE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 01:04:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34684 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751535Ab0JAFEB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 01:04:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=hqxK2Y9FNDT7VkO/PihAg7vt5VLiScAoZuvZj0F1ReSzIE5gxXpwkGl7QSUYt3Fb2K
+         rkL+2WwsfErGqJWNh2QIsRL6yP5T8ktzAZA8t3jEoBja72dgtJFgIX6UjANxO68VM5+o
+         +tYrNyKdukinFt7xweaVZVjV8XtKlve1NUeAk=
+Subject: Re: [PATCH V3] fs: allow for more than 2^31 files
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Robin Holt <holt@sgi.com>
+Cc: David Miller <davem@davemloft.net>, dipankar@in.ibm.com,
+        viro@zeniv.linux.org.uk, bcrl@kvack.org, den@openvz.org, mingo@elte.hu,
+        mszeredi@suse.cz, cmm@us.ibm.com, npiggin@kernel.dk, xemul@openvz.org,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <20101001043413.GN14068@sgi.com>
+References: <20100923121704.GR14064@sgi.com>
+	 <1285246384.362.3.camel@edumazet-laptop> <20100923141037.GA3811@in.ibm.com>
+	 <20100927.153639.212415479.davem@davemloft.net>
+	 <1285645611.10438.27.camel@edumazet-laptop>
+	 <20100930202612.GM14068@sgi.com> <1285879545.2705.4.camel@edumazet-laptop>
+	 <20101001043413.GN14068@sgi.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Oct 2010 07:03:54 +0200
+Message-ID: <1285909434.2705.35.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Again, with a less bouncy address.
+Le jeudi 30 septembre 2010 à 23:34 -0500, Robin Holt a écrit :
 
-From: Mike Galbraith <efault@gmx.de>
-Date: Fri, 1 Oct 2010 05:57:59 +0200
-Subject: [PATCH] fix 2.6.32.23 suspend regression caused by commit
-6f6198a
+> The proc_handler used to be proc_nr_files() which would call
+> get_nr_files() and deposit the result in files_stat.nr_files then cascade
+> to proc_dointvec() which would dump the 3 values.  Now it will dump the
+> three values, but not update the middle (nr_files) value first.
+> 
 
-6f6198a sched: kill migration thread in CPU_POST_DEAD instead of
-CPU_DEAD
-leaves migration threads lying about.  Mask out CPU_TASKS_FROZEN.
+Ah I get it now, thanks !
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
----
- kernel/sched.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+I'll send a V4 shortly.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3480822..a675fd6 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -7752,10 +7752,9 @@ migration_call(struct notifier_block *nfb,
-unsigned long action, void *hcpu)
-        unsigned long flags;
-        struct rq *rq;
- 
--       switch (action) {
-+       switch (action & ~CPU_TASKS_FROZEN) {
- 
-        case CPU_UP_PREPARE:
--       case CPU_UP_PREPARE_FROZEN:
-                p = kthread_create(migration_thread, hcpu, "migration/%
-d", cpu);
-                if (IS_ERR(p))
-                        return NOTIFY_BAD;
-@@ -7770,7 +7769,6 @@ migration_call(struct notifier_block *nfb,
-unsigned long action, void *hcpu)
-                break;
- 
-        case CPU_ONLINE:
--       case CPU_ONLINE_FROZEN:
-                /* Strictly unnecessary, as first user will wake it. */
-                wake_up_process(cpu_rq(cpu)->migration_thread);
- 
-@@ -7787,7 +7785,6 @@ migration_call(struct notifier_block *nfb,
-unsigned long action, void *hcpu)
- 
- #ifdef CONFIG_HOTPLUG_CPU
-        case CPU_UP_CANCELED:
--       case CPU_UP_CANCELED_FROZEN:
-                if (!cpu_rq(cpu)->migration_thread)
-                        break;
-                /* Unbind it from offline cpu so it can run. Fall thru.
-*/
-@@ -7812,7 +7809,6 @@ migration_call(struct notifier_block *nfb,
-unsigned long action, void *hcpu)
-                break;
- 
-        case CPU_DEAD:
--       case CPU_DEAD_FROZEN:
-                migrate_live_tasks(cpu);
-                rq = cpu_rq(cpu);
-                /* Idle task back to normal (off runqueue, low prio) */
-@@ -7846,7 +7842,6 @@ migration_call(struct notifier_block *nfb,
-unsigned long action, void *hcpu)
-                break;
- 
-        case CPU_DYING:
--       case CPU_DYING_FROZEN:
-                /* Update our root-domain */
-                rq = cpu_rq(cpu);
-                spin_lock_irqsave(&rq->lock, flags);
--- 
-1.7.1
+
 
