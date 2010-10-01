@@ -1,93 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756308Ab0JALHO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 07:07:14 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:53021 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab0JALHM (ORCPT
+	id S1756332Ab0JALJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 07:09:46 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:53900 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751899Ab0JALJp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 07:07:12 -0400
-Date: Fri, 1 Oct 2010 13:57:11 +0300
-From: David Cohen <david.cohen@nokia.com>
-To: ext Fernando Guzman Lugo <x0095840@ti.com>
-Cc: "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
-        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and end check for
- the last area
-Message-ID: <20101001105711.GA11617@esdhcp036161.research.nokia.com>
-References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
- <1285902536-7043-2-git-send-email-x0095840@ti.com>
- <1285902536-7043-3-git-send-email-x0095840@ti.com>
+	Fri, 1 Oct 2010 07:09:45 -0400
+X-Greylist: delayed 631 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 07:09:45 EDT
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Subject: 2.6.36-rc5 i915 regression
+Date: Fri, 1 Oct 2010 13:00:05 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5+; KDE/4.5.1; i686; ; )
+Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285902536-7043-3-git-send-email-x0095840@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 01 Oct 2010 11:06:59.0161 (UTC) FILETIME=[C47B1C90:01CB6158]
-X-Nokia-AV: Clean
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010011300.06298.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+With 2.6.36-rc5 and later my netbook is unusable. After login on X (KDE) the
+screen gets totally garbled, under X and console too. The log shows me this
+messages:
 
-On Fri, Oct 01, 2010 at 05:08:53AM +0200, ext Fernando Guzman Lugo wrote:
-> As da_end does not belongs to the area the roundup should
-> be done to da_end and not to da_end + 1.
-> Also the end check for the last area should be
-> ULONG_MAX - start + 1 >= bytes.
-> 
-> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> ---
->  arch/arm/plat-omap/iovmm.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-> index 24ca9c4..fc6b109 100644
-> --- a/arch/arm/plat-omap/iovmm.c
-> +++ b/arch/arm/plat-omap/iovmm.c
-> @@ -289,19 +289,19 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
->  	prev_end = 0;
->  	list_for_each_entry(tmp, &obj->mmap, list) {
->  
-> -		if (prev_end >= start)
-> +		if (prev_end > start)
->  			break;
->  
->  		if (start + bytes <= tmp->da_start)
->  			goto found;
->  
->  		if (flags & IOVMF_DA_ANON)
-> -			start = roundup(tmp->da_end + 1, alignement);
-> +			start = roundup(tmp->da_end, alignement);
+Sep 30 21:20:01 netbook kernel: render error detected, EIR: 0x00000010
+Sep 30 21:20:01 netbook kernel: page table error
+Sep 30 21:20:01 netbook kernel: PGTBL_ER: 0x00100113
+Sep 30 21:20:01 netbook kernel: [drm:i915_report_and_clear_eir] *ERROR* EIR stuck: 0x00000010, masking
+Sep 30 21:20:01 netbook kernel: render error detected, EIR: 0x00000010
+Sep 30 21:20:01 netbook kernel: page table error
+Sep 30 21:20:01 netbook kernel: PGTBL_ER: 0x00100113
+Sep 30 21:20:02 netbook kernel: [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck timer elapsed... GPU hung
 
-There's a lack of comment here, but the purpose of tmp->da_end + 1 is to
-create a gap between iovm areas to force to trigger iommu faults when
-some access exceeds a valid area. Without this gap, such situation
-may produce data corruption which is much more difficult to track.
+I've bisected it to this commit:
 
-Br,
+commit e259befd9013e212648c3bd4f6f1fbf92d0dd51d
+Author: Chris Wilson <chris@chris-wilson.co.uk>
+Date:   Fri Sep 17 00:32:02 2010 +0100
 
-David
+    drm/i915: Fix Sandybridge fence registers
+    
+    With 5 places to update when adding handling for fence registers, it is
+    easy to overlook one or two. Correct that oversight, but fence
+    management should be improved before a new set of registers is added.
+    
+    Bugzilla: https://bugs.freedesktop.org/show_bug?id=30199
+    Original patch by: Yuanhan Liu <yuanhan.liu@intel.com>
+    Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+    Cc: stable@kernel.org
 
->  
->  		prev_end = tmp->da_end;
->  	}
->  
-> -	if ((start > prev_end) && (ULONG_MAX - start >= bytes))
-> +	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
->  		goto found;
->  
->  	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
-> -- 
-> 1.6.3.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
+hardware is:
+
+00:00.0 Host bridge: Intel Corporation Mobile 945GME Express Memory Controller Hub (rev 03)
+        Subsystem: Giga-byte Technology Device 1999
+        Flags: bus master, fast devsel, latency 0
+        Capabilities: [e0] Vendor Specific Information: Len=09 <?>
+        Kernel driver in use: agpgart-intel
+
+00:02.0 VGA compatible controller: Intel Corporation Mobile 945GME Express Integrated Graphics Controller (rev 03) (prog-if 00 [VGA controller])
+        Subsystem: Giga-byte Technology Device 1999
+        Flags: bus master, fast devsel, latency 0, IRQ 16
+        Memory at f2200000 (32-bit, non-prefetchable) [size=512K]
+        I/O ports at 18d0 [size=8]
+        Memory at d0000000 (32-bit, prefetchable) [size=256M]
+        Memory at f2300000 (32-bit, non-prefetchable) [size=256K]
+        Expansion ROM at <unassigned> [disabled]
+        Capabilities: [90] MSI: Enable- Count=1/1 Maskable- 64bit-                                                                                          
+        Capabilities: [d0] Power Management version 2                                                                                                       
+        Kernel driver in use: i915                                                                                                                          
+                                                                                                                                                            
+00:02.1 Display controller: Intel Corporation Mobile 945GM/GMS/GME, 943/940GML Express Integrated Graphics Controller (rev 03)                              
+        Subsystem: Giga-byte Technology Device 1999                                                                                                         
+        Flags: bus master, fast devsel, latency 0
+        Memory at f2280000 (32-bit, non-prefetchable) [disabled] [size=512K]
+        Capabilities: [d0] Power Management version 2
+
+If more infos are needed, please tell me.
+
+The errors always happend with an external display connected. I've booted the
+system, logged in and changed the resolution to maximum of the external
+display. Shortly after this the error happend.
+
+regards,
+  Johannes
