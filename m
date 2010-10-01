@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753035Ab0JAQUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:20:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39653 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab0JAQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:20:42 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, axboe@kernel.dk
-Cc: vgoyal@redhat.com
-Subject: [PATCH 2/3] blkio-throttle: limit max iops value to UINT_MAX
-Date: Fri,  1 Oct 2010 12:20:28 -0400
-Message-Id: <1285950029-30205-3-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1285950029-30205-1-git-send-email-vgoyal@redhat.com>
-References: <1285950029-30205-1-git-send-email-vgoyal@redhat.com>
+	id S1753167Ab0JAQUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:20:53 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:34175 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753092Ab0JAQUv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 12:20:51 -0400
+X-Quarantine-ID: <GYOG0tgtnI9l>
+X-Amavis-Alert: BAD HEADER, Improper folded header field made up entirely of
+	whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n jycPrvgA\n\t\n
+	R1goSzOnkp14Y[...]
+Subject: Re: Introduce support for little endian PowerPC
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        Ian Munsie <imunsie@au1.ibm.com>
+In-Reply-To: <1285935283.2463.78.camel@pasglop>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
+	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
+	 <1285935283.2463.78.camel@pasglop>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 01 Oct 2010 18:20:41 +0200
+Message-ID: <1285950041.15020.272.camel@thor.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Limit max iops value to UINT_MAX and return error to user if value is more
-  than that instead of accepting bigger values and truncating implicitly.
----
- block/blk-cgroup.c |   11 +++++++----
- block/blk-cgroup.h |    3 +++
- 2 files changed, 10 insertions(+), 4 deletions(-)
+On Fre, 2010-10-01 at 22:14 +1000, Benjamin Herrenschmidt wrote: 
+> 
+> Now, the main reasons in practice are anything touching graphics.
+> 
+> There's quite a few IP cores out there for SoCs that don't have HW
+> swappers, and -tons- of more or less ugly code that can't deal with non
+> native pixel ordering (hell, even Xorg isn't good at it, we really only
+> support cards that have HW swappers today).
 
-diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
-index e863418..b1febd0 100644
---- a/block/blk-cgroup.c
-+++ b/block/blk-cgroup.c
-@@ -656,10 +656,10 @@ static int blkio_policy_parse_and_set(char *buf,
- {
- 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
- 	int ret;
--	unsigned long major, minor, temp, iops;
-+	unsigned long major, minor, temp;
- 	int i = 0;
- 	dev_t dev;
--	u64 bps;
-+	u64 bps, iops;
- 
- 	memset(s, 0, sizeof(s));
- 
-@@ -731,13 +731,16 @@ static int blkio_policy_parse_and_set(char *buf,
- 			break;
- 		case BLKIO_THROTL_read_iops_device:
- 		case BLKIO_THROTL_write_iops_device:
--			ret = strict_strtoul(s[1], 10, &iops);
-+			ret = strict_strtoull(s[1], 10, &iops);
- 			if (ret)
- 				return -EINVAL;
- 
-+			if (iops > THROTL_IOPS_MAX)
-+				return -EINVAL;
-+
- 			newpn->plid = plid;
- 			newpn->fileid = fileid;
--			newpn->val.iops = iops;
-+			newpn->val.iops = (unsigned int)iops;
- 			break;
- 		}
- 		break;
-diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
-index 034c355..ea4861b 100644
---- a/block/blk-cgroup.h
-+++ b/block/blk-cgroup.h
-@@ -20,6 +20,9 @@ enum blkio_policy_id {
- 	BLKIO_POLICY_THROTL,		/* Throttling */
- };
- 
-+/* Max limits for throttle policy */
-+#define THROTL_IOPS_MAX		UINT_MAX
-+
- #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
- 
- #ifndef CONFIG_BLK_CGROUP
+That's not true. Even the radeon driver doesn't really need the HW
+swappers anymore with KMS.
+
+
+> There's an even bigger pile of application code that deals with graphics
+> without any regard for endianness and is essentially unfixable.
+
+Out of curiosity, what kind of APIs are those apps using? X11 and OpenGL
+have well-defined semantics wrt endianness, allowing the drivers to
+handle any necessary byte swapping internally, and IME the vast majority
+of apps handle this correctly.
+
+
 -- 
-1.7.2.3
-
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
