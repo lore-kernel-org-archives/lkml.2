@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932646Ab0JANWc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 09:22:32 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33073 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab0JANW3 (ORCPT
+	id S932660Ab0JANWr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 09:22:47 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:65327 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932587Ab0JANWo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 09:22:29 -0400
+	Fri, 1 Oct 2010 09:22:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=qodL913yHMp/RkTAsXMFLqj4gf8IAnxbWOQWsMgl1+VzK3k8usZCLAKUFLt6l89Ks5
-         QWTsuknbthiBWGGB6hKXP2UfNCxzJDxVEtLRpFwvBy8fVkBNrRshDiV3pVa/PtR7Oofm
-         ftXwC9TGYd9iWmGNynOQYL5TRT33G6Uxg9TAI=
-Date: Fri, 1 Oct 2010 17:22:07 +0400
+        b=hps9FUyhQW1OINvi+bNuiEKszduHbGw9c8x8W9SSZBR30m6TfR5GfF7Q31Z3LX32Xn
+         7l1qtsybxHYlcTtsXN6QV8eJLesb5A3ZZkcE2puzb1mKODMW9lPrn2Wij8KW645My+P9
+         hKlSkZJPGD4QH9kNnL1tnuwsHb/5ibIfUASKE=
+Date: Fri, 1 Oct 2010 17:22:37 +0400
 From: Anton Vorontsov <cbouatmailru@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Alan Cox <alan@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
         Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 5/8] altera_uart: Make it possible to use Altera UART and
- 8250 ports together
-Message-ID: <20101001132207.GE25897@oksana.dev.rtsoft.ru>
+Subject: [PATCH 6/8] altera_uart: Fixup type usage of port flags
+Message-ID: <20101001132237.GF25897@oksana.dev.rtsoft.ru>
 References: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -33,53 +32,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes tty name and major number conflicts. The major number
-204 is used across many platform-specific serial drivers, so we
-use that.
+port->flags is of type upf_t, which corresponds to UPF_* flags.
+
+ASYNC_BOOT_AUTOCONF is an unsigned integer, which happen to
+be the same as UPF_BOOT_AUTOCONF.
 
 Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-Acked-by: Tobias Klauser <tklauser@distanz.ch>
 ---
- drivers/serial/altera_uart.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+ drivers/serial/altera_uart.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
-index f1985aa..99e007f 100644
+index 99e007f..304181c 100644
 --- a/drivers/serial/altera_uart.c
 +++ b/drivers/serial/altera_uart.c
-@@ -28,6 +28,7 @@
- #include <linux/altera_uart.h>
+@@ -420,7 +420,7 @@ int __init early_altera_uart_setup(struct altera_uart_platform_uart *platp)
+ 		port->iotype = SERIAL_IO_MEM;
+ 		port->irq = platp[i].irq;
+ 		port->uartclk = platp[i].uartclk;
+-		port->flags = ASYNC_BOOT_AUTOCONF;
++		port->flags = UPF_BOOT_AUTOCONF;
+ 		port->ops = &altera_uart_ops;
+ 		port->private_data = platp;
+ 	}
+@@ -550,7 +550,7 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
+ 	port->iotype = SERIAL_IO_MEM;
+ 	port->uartclk = platp->uartclk;
+ 	port->ops = &altera_uart_ops;
+-	port->flags = ASYNC_BOOT_AUTOCONF;
++	port->flags = UPF_BOOT_AUTOCONF;
+ 	port->private_data = platp;
  
- #define DRV_NAME "altera_uart"
-+#define SERIAL_ALTERA_MAJOR 204
- 
- /*
-  * Altera UART register definitions according to the Nios UART datasheet:
-@@ -471,7 +472,7 @@ static int __init altera_uart_console_setup(struct console *co, char *options)
- static struct uart_driver altera_uart_driver;
- 
- static struct console altera_uart_console = {
--	.name	= "ttyS",
-+	.name	= "ttyAL",
- 	.write	= altera_uart_console_write,
- 	.device	= uart_console_device,
- 	.setup	= altera_uart_console_setup,
-@@ -502,8 +503,8 @@ console_initcall(altera_uart_console_init);
- static struct uart_driver altera_uart_driver = {
- 	.owner		= THIS_MODULE,
- 	.driver_name	= DRV_NAME,
--	.dev_name	= "ttyS",
--	.major		= TTY_MAJOR,
-+	.dev_name	= "ttyAL",
-+	.major		= SERIAL_ALTERA_MAJOR,
- 	.minor		= 64,
- 	.nr		= CONFIG_SERIAL_ALTERA_UART_MAXPORTS,
- 	.cons		= ALTERA_UART_CONSOLE,
-@@ -603,3 +604,4 @@ MODULE_DESCRIPTION("Altera UART driver");
- MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS("platform:" DRV_NAME);
-+MODULE_ALIAS_CHARDEV_MAJOR(SERIAL_ALTERA_MAJOR);
+ 	uart_add_one_port(&altera_uart_driver, port);
 -- 
 1.7.0.5
 
