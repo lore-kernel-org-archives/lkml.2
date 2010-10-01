@@ -1,140 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757092Ab0JAWDI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 18:03:08 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:57369 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab0JAWDG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 18:03:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=jYGAd7yRF01DmLIAmxKI3WpVlQPdXsGOK8KFbS5YUwBlkBQdY05jHon9QD0Cjb+0Sk
-         mqpoPvDGca9On71dMd/wpQLkIkDXA8GfoG/TpHSkHc3fMY8XzlNIixdaRQndxPGfoV77
-         qfJZOPEyMHGh+0HLB3W63jYDkNo+veumP9aZ0=
+	id S1757118Ab0JAWDo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 18:03:44 -0400
+Received: from mail.lixom.net ([70.86.134.90]:53319 "EHLO mail.lixom.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754951Ab0JAWDn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 18:03:43 -0400
+Date: Fri, 1 Oct 2010 17:03:43 -0500
+From: Olof Johansson <olof@lixom.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Introduce support for little endian PowerPC
+Message-ID: <20101001220343.GA10494@lixom.net>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com> <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org> <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com> <1285935283.2463.78.camel@pasglop> <BBD78246-343E-4A96-9E55-3E40AD628C0B@kernel.crashing.org> <1285966315.2463.141.camel@pasglop>
 MIME-Version: 1.0
-Date: Sat, 2 Oct 2010 00:03:04 +0200
-Message-ID: <AANLkTimmwViVHMy-7S3N9Ps1Vj_n_TfJLvwzoupsFPnp@mail.gmail.com>
-Subject: um: rcu_sched_state detected stall on CPU 0
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: user-mode-linux-devel@lists.sourceforge.net
-Content-Type: multipart/mixed; boundary=00c09f9daf37e7c3380491955b69
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285966315.2463.141.camel@pasglop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00c09f9daf37e7c3380491955b69
-Content-Type: text/plain; charset=ISO-8859-1
+On Sat, Oct 02, 2010 at 06:51:55AM +1000, Benjamin Herrenschmidt wrote:
+> On Fri, 2010-10-01 at 12:59 -0500, Kumar Gala wrote:
+> > I'm not against it, and I agree some of the patches seem like good
+> > clean up.  I'm concerned about this bit rotting pretty quickly.
+> 
+> Maybe. Most of it doesn't seem to be that bit-rottable.
+> 
+> The changes to the asm stuff in misc_32.S for example are functions we
+> never ever touch once written (libgcc replacements) so I don't see them
+> rotting more with LE support than they did with BE :-)
 
-Hi,
+Does KVM/qemu support running LE guest on BE host? That'd help keeping
+the bitrot lower. :)
 
-I'm seeing often messages like this one on my UML:
-...
-INFO: rcu_sched_state detected stall on CPU 0 (t=7348 jiffies)
-...
 
-The system often seems to be frozen.
-When I press a button it wakes up immediately and continues to run.
 
-Any ideas?
-Config is attached.
-
--- 
-Cheers,
-//richard
-
---00c09f9daf37e7c3380491955b69
-Content-Type: application/x-gzip; name="config-2.6.36-rc6-00105-gd7d8ecb.gz"
-Content-Disposition: attachment; 
-	filename="config-2.6.36-rc6-00105-gd7d8ecb.gz"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gerlmdl60
-
-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
---00c09f9daf37e7c3380491955b69--
+-Olof
