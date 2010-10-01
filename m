@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab0JAA5v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 20:57:51 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:37653 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640Ab0JAA5u (ORCPT
+	id S1755199Ab0JABA0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 21:00:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59987 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751121Ab0JABAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 20:57:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=r2JLxMJmPbCM8y8Q0guXvQkTJDWyLRGhDpdAfmkx04dWC1ERF1lNoAPSKTVVSlIqaG
-         YJp0hNQemMcUA8Fr64xCtA1T21tvIe/wULy/5GYdyhFVWM42Z2D7DYjgwvSoWs7gzJXS
-         95aDo6JLe5cnRlnFrSzB9nLzg2BElu/EkZxqo=
-MIME-Version: 1.0
-In-Reply-To: <1285894187.1613.17.camel@bencharluo-laptop>
-References: <1285894187.1613.17.camel@bencharluo-laptop>
-Date: Fri, 1 Oct 2010 02:57:05 +0200
-Message-ID: <AANLkTinSKdd-pa-O+Eeo6jmTVmH9RXw5+EKYeNJNBrMN@mail.gmail.com>
-Subject: Re: linux-kernel 0.11 compile
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-To: runcoderen <runcoderzhcn@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 30 Sep 2010 21:00:25 -0400
+Date: Thu, 30 Sep 2010 18:01:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        heukelum@fastmail.fm, tglx@linutronix.de,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
+Message-Id: <20100930180100.4607034f.akpm@linux-foundation.org>
+In-Reply-To: <4CA52AA5.5040402@zytor.com>
+References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org>
+	<4C91F07E0200007800016B50@vpn.id2.novell.com>
+	<20100916082816.GA25681@elte.hu>
+	<4C91F3A30200007800016B64@vpn.id2.novell.com>
+	<20100916101355.GA31458@elte.hu>
+	<4C9219BC0200007800016C53@vpn.id2.novell.com>
+	<4CA52AA5.5040402@zytor.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/1 runcoderen <runcoderzhcn@gmail.com>:
-> hi all:
-> I am compiling kernel 0.11.
-> but It notes me that make : gas : command cannot find.
-> How can I solve this problem?
-> Have I to modify the Makefile?
->
-> my platform is ubuntu10.10(DVD installed style)
+On Thu, 30 Sep 2010 17:26:13 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
 
-Good luck :)
+> On 09/16/2010 04:21 AM, Jan Beulich wrote:
+> >>
+> >> Yes, to only generate CFI on binutils that allows us to write sane 
+> >> looking code.
+> >>
+> >> I.e. to disable CONFIG_AS_CFI on binutils that are broken for this.
+> > 
+> > Again - that won't help, as it's the macro invocation that gas
+> > fails one, not one of the actual .cfi_* directives.
+> > 
+> 
+> Looking again at this issue with the binutils version from hell
+> (sigh)... I'm running quickly out of ideas.
+> 
+> The problem is that cpp inserts spaces around expansions, so:
+> 
+> 	pushq_cfi $(USER_DS)
+> 
+> ... turns into something like ...
+> 
+> 	pushq_cfi $( ( 5 * 8 + 3 ) )
+> 
+> ... which these old versions of gas considers multiple arguments to the
+> macro, even though there is no comma anywhere.
 
-Seriously, you need some older system - Red Hat 1.0 may be too new :)
+Could we run another little program after cpp which takes the spaces
+out again?
 
-
-
-
--- 
-Slawa!
-N.P.S.
