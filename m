@@ -1,25 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab0JAHIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 03:08:23 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57815 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754967Ab0JAHGc (ORCPT
+	id S1755137Ab0JAHG2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 03:06:28 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:59921 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab0JAHGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 03:06:32 -0400
+	Fri, 1 Oct 2010 03:06:24 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         benh@kernel.crashing.org
 Cc: paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
-        Stefan Weil <weil@mail.berlios.de>, Jiri Kosina <jkosina@suse.cz>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Albert Herranz <albert_herranz@yahoo.es>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Sean MacLennan <smaclennan@pikatech.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Michal Simek <monstr@monstr.eu>,
-        "David S. Miller" <davem@davemloft.net>,
-        devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 14/18] powerpc, of_serial: Endianness issues setting up the serial ports
-Date: Fri,  1 Oct 2010 17:06:07 +1000
-Message-Id: <1285916771-18033-15-git-send-email-imunsie@au1.ibm.com>
+        Segher Boessenkool <segher@kernel.crashing.org>,
+        Andreas Schwab <schwab@linux-m68k.org>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Torez Smith <lnxtorez@linux.vnet.ibm.com>
+Subject: [PATCH 01/18] powerpc: Add ability to build little endian kernels
+Date: Fri,  1 Oct 2010 17:05:54 +1000
+Message-Id: <1285916771-18033-2-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
 References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
@@ -29,150 +31,123 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-The speed and clock of the serial ports is retrieved from the device
-tree in both the PowerPC legacy serial code and the Open Firmware serial
-driver, therefore they need to handle the fact that the device tree is
-always big endian, while the CPU may not be.
+This patch allows the kbuild system to successfully compile a kernel for
+the little endian PowerPC architecture.
 
-Also fix other device tree references in the legacy serial code.
+To build such a kernel a supported platform must be used and
+CONFIG_CPU_LITTLE_ENDIAN must be set. CROSS_COMPILE must be set to a
+suitable toolchain prefix (compiled for the powerpcle-elf target, or
+patched to allow the powerpcle-linux target).
+
+Since the system will always start in big endian mode, the zImage
+wrapper must still be compiled with a big endian toolchain, which can be
+specified via CROSS32_COMPILE.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- arch/powerpc/kernel/legacy_serial.c |   22 +++++++++++-----------
- drivers/serial/of_serial.c          |   12 ++++++------
- 2 files changed, 17 insertions(+), 17 deletions(-)
+ arch/powerpc/Makefile                   |   22 +++++++++++++++++++---
+ arch/powerpc/boot/Makefile              |    3 ++-
+ arch/powerpc/kernel/vdso32/vdso32.lds.S |    4 ++++
+ arch/powerpc/platforms/Kconfig.cputype  |   16 ++++++++++++++++
+ 4 files changed, 41 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
-index c1fd0f9..c834757 100644
---- a/arch/powerpc/kernel/legacy_serial.c
-+++ b/arch/powerpc/kernel/legacy_serial.c
-@@ -52,14 +52,14 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
- 				  phys_addr_t taddr, unsigned long irq,
- 				  upf_t flags, int irq_check_parent)
- {
--	const u32 *clk, *spd;
-+	const __be32 *clk, *spd;
- 	u32 clock = BASE_BAUD * 16;
- 	int index;
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index b7212b6..3eed685 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -56,11 +56,27 @@ endif
  
- 	/* get clock freq. if present */
- 	clk = of_get_property(np, "clock-frequency", NULL);
- 	if (clk && *clk)
--		clock = *clk;
-+		clock = be32_to_cpup(clk);
+ UTS_MACHINE := $(OLDARCH)
  
- 	/* get default speed if present */
- 	spd = of_get_property(np, "current-speed", NULL);
-@@ -109,7 +109,7 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
- 	legacy_serial_infos[index].taddr = taddr;
- 	legacy_serial_infos[index].np = of_node_get(np);
- 	legacy_serial_infos[index].clock = clock;
--	legacy_serial_infos[index].speed = spd ? *spd : 0;
-+	legacy_serial_infos[index].speed = spd ? be32_to_cpup(spd) : 0;
- 	legacy_serial_infos[index].irq_check_parent = irq_check_parent;
++ifeq ($(CONFIG_CPU_LITTLE_ENDIAN),y)
++override CC	+= -mlittle-endian
++override AS	+= -mlittle-endian
++override LD	+= -EL
++LDEMULATION	:= lppc
++GNUTARGET	:= powerpcle
++MULTIPLEWORD	:= -mno-multiple
++else
++override CC	+= -mbig-endian
++override AS	+= -mbig-endian
++override LD	+= -EB
++LDEMULATION	:= ppc
++GNUTARGET	:= powerpc
++MULTIPLEWORD	:= -mmultiple
++endif
++
+ ifeq ($(HAS_BIARCH),y)
+ override AS	+= -a$(CONFIG_WORD_SIZE)
+-override LD	+= -m elf$(CONFIG_WORD_SIZE)ppc
++override LD	+= -m elf$(CONFIG_WORD_SIZE)$(LDEMULATION)
+ override CC	+= -m$(CONFIG_WORD_SIZE)
+-override AR	:= GNUTARGET=elf$(CONFIG_WORD_SIZE)-powerpc $(AR)
++override AR	:= GNUTARGET=elf$(CONFIG_WORD_SIZE)-$(GNUTARGET) $(AR)
+ endif
  
- 	printk(KERN_DEBUG "Found legacy serial port %d for %s\n",
-@@ -168,7 +168,7 @@ static int __init add_legacy_soc_port(struct device_node *np,
- static int __init add_legacy_isa_port(struct device_node *np,
- 				      struct device_node *isa_brg)
- {
--	const u32 *reg;
-+	const __be32 *reg;
- 	const char *typep;
- 	int index = -1;
- 	u64 taddr;
-@@ -181,7 +181,7 @@ static int __init add_legacy_isa_port(struct device_node *np,
- 		return -1;
+ LDFLAGS_vmlinux-yy := -Bstatic
+@@ -68,7 +84,7 @@ LDFLAGS_vmlinux-$(CONFIG_PPC64)$(CONFIG_RELOCATABLE) := -pie
+ LDFLAGS_vmlinux	:= $(LDFLAGS_vmlinux-yy)
  
- 	/* Verify it's an IO port, we don't support anything else */
--	if (!(reg[0] & 0x00000001))
-+	if (!(be32_to_cpu(reg[0]) & 0x00000001))
- 		return -1;
+ CFLAGS-$(CONFIG_PPC64)	:= -mminimal-toc -mtraceback=none  -mcall-aixdesc
+-CFLAGS-$(CONFIG_PPC32)	:= -ffixed-r2 -mmultiple
++CFLAGS-$(CONFIG_PPC32)	:= -ffixed-r2 $(MULTIPLEWORD)
+ KBUILD_CPPFLAGS	+= -Iarch/$(ARCH)
+ KBUILD_AFLAGS	+= -Iarch/$(ARCH)
+ KBUILD_CFLAGS	+= -msoft-float -pipe -Iarch/$(ARCH) $(CFLAGS-y)
+diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
+index fae8192..39f10a4 100644
+--- a/arch/powerpc/boot/Makefile
++++ b/arch/powerpc/boot/Makefile
+@@ -22,7 +22,8 @@ all: $(obj)/zImage
+ BOOTCFLAGS    := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+ 		 -fno-strict-aliasing -Os -msoft-float -pipe \
+ 		 -fomit-frame-pointer -fno-builtin -fPIC -nostdinc \
+-		 -isystem $(shell $(CROSS32CC) -print-file-name=include)
++		 -isystem $(shell $(CROSS32CC) -print-file-name=include) \
++		 -mbig-endian
+ BOOTAFLAGS	:= -D__ASSEMBLY__ $(BOOTCFLAGS) -traditional -nostdinc
  
- 	/* Now look for an "ibm,aix-loc" property that gives us ordering
-@@ -202,7 +202,7 @@ static int __init add_legacy_isa_port(struct device_node *np,
- 		taddr = 0;
+ ifdef CONFIG_DEBUG_INFO
+diff --git a/arch/powerpc/kernel/vdso32/vdso32.lds.S b/arch/powerpc/kernel/vdso32/vdso32.lds.S
+index 0546bcd..f4c6676 100644
+--- a/arch/powerpc/kernel/vdso32/vdso32.lds.S
++++ b/arch/powerpc/kernel/vdso32/vdso32.lds.S
+@@ -4,7 +4,11 @@
+  */
+ #include <asm/vdso.h>
  
- 	/* Add port, irq will be dealt with later */
--	return add_legacy_port(np, index, UPIO_PORT, reg[1], taddr,
-+	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]), taddr,
- 			       NO_IRQ, UPF_BOOT_AUTOCONF, 0);
++#ifdef __LITTLE_ENDIAN__
++OUTPUT_FORMAT("elf32-powerpcle", "elf32-powerpcle", "elf32-powerpcle")
++#else
+ OUTPUT_FORMAT("elf32-powerpc", "elf32-powerpc", "elf32-powerpc")
++#endif
+ OUTPUT_ARCH(powerpc:common)
+ ENTRY(_start)
  
- }
-@@ -251,9 +251,9 @@ static int __init add_legacy_pci_port(struct device_node *np,
- 	 * we get to their "reg" property
- 	 */
- 	if (np != pci_dev) {
--		const u32 *reg = of_get_property(np, "reg", NULL);
--		if (reg && (*reg < 4))
--			index = lindex = *reg;
-+		const __be32 *reg = of_get_property(np, "reg", NULL);
-+		if (reg && (be32_to_cpup(reg) < 4))
-+			index = lindex = be32_to_cpup(reg);
- 	}
+diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
+index d361f81..074ff12 100644
+--- a/arch/powerpc/platforms/Kconfig.cputype
++++ b/arch/powerpc/platforms/Kconfig.cputype
+@@ -329,3 +329,19 @@ config CHECK_CACHE_COHERENCY
+ 	bool
  
- 	/* Local index means it's the Nth port in the PCI chip. Unfortunately
-@@ -507,7 +507,7 @@ static int __init check_legacy_serial_console(void)
- 	struct device_node *prom_stdout = NULL;
- 	int i, speed = 0, offset = 0;
- 	const char *name;
--	const u32 *spd;
-+	const __be32 *spd;
- 
- 	DBG(" -> check_legacy_serial_console()\n");
- 
-@@ -547,7 +547,7 @@ static int __init check_legacy_serial_console(void)
- 	}
- 	spd = of_get_property(prom_stdout, "current-speed", NULL);
- 	if (spd)
--		speed = *spd;
-+		speed = be32_to_cpup(spd);
- 
- 	if (strcmp(name, "serial") != 0)
- 		goto not_found;
-diff --git a/drivers/serial/of_serial.c b/drivers/serial/of_serial.c
-index 2af8fd1..17849dc 100644
---- a/drivers/serial/of_serial.c
-+++ b/drivers/serial/of_serial.c
-@@ -31,8 +31,8 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
- {
- 	struct resource resource;
- 	struct device_node *np = ofdev->dev.of_node;
--	const unsigned int *clk, *spd;
--	const u32 *prop;
-+	const __be32 *clk, *spd;
-+	const __be32 *prop;
- 	int ret, prop_size;
- 
- 	memset(port, 0, sizeof *port);
-@@ -55,23 +55,23 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
- 	/* Check for shifted address mapping */
- 	prop = of_get_property(np, "reg-offset", &prop_size);
- 	if (prop && (prop_size == sizeof(u32)))
--		port->mapbase += *prop;
-+		port->mapbase += be32_to_cpup(prop);
- 
- 	/* Check for registers offset within the devices address range */
- 	prop = of_get_property(np, "reg-shift", &prop_size);
- 	if (prop && (prop_size == sizeof(u32)))
--		port->regshift = *prop;
-+		port->regshift = be32_to_cpup(prop);
- 
- 	port->irq = irq_of_parse_and_map(np, 0);
- 	port->iotype = UPIO_MEM;
- 	port->type = type;
--	port->uartclk = *clk;
-+	port->uartclk = be32_to_cpup(clk);
- 	port->flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP
- 		| UPF_FIXED_PORT | UPF_FIXED_TYPE;
- 	port->dev = &ofdev->dev;
- 	/* If current-speed was set, then try not to change it. */
- 	if (spd)
--		port->custom_divisor = *clk / (16 * (*spd));
-+		port->custom_divisor = be32_to_cpup(clk) / (16 * (be32_to_cpup(spd)));
- 
- 	return 0;
- }
+ endmenu
++
++config ARCH_SUPPORTS_LITTLE_ENDIAN
++	bool
++
++config CPU_LITTLE_ENDIAN
++	bool "Build little endian kernel"
++	depends on ARCH_SUPPORTS_LITTLE_ENDIAN && EXPERIMENTAL
++	default n
++	help
++	  This option selects whether a big endian or little endian kernel will
++	  be built.
++
++	  Note that if building a little endian kernel, CROSS_COMPILE must
++	  point to a toolchain capable of targetting little endian powerpc,
++	  while the toolchain specified by CROSS32_COMPILE must be capable of
++	  targetting *BIG* endian PowerPC.
 -- 
 1.7.1
 
