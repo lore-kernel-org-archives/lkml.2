@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753924Ab0JAHyA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 03:54:00 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:60281 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0JAHx7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 03:53:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=KKKDmK+UZRDvLoy4z+fAyz+VV7scNJ81wTQE7/qOkzEh5PzQEdIS/c77z32AwQiIC5
-         0cJCnpwIbddWBv2hwwWxRKGWGizUlkNC8YeCvBQ81ZAnQykPD4X08C2G8rV8PbAxWeTY
-         LJq3JYzFeKPqkbH/P3a4LySPh49V5uiiEuGDM=
-MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20101001071906.GC20529@opensource.wolfsonmicro.com>
-References: <1285912587.12422.2.camel@mola> <20101001071906.GC20529@opensource.wolfsonmicro.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Fri, 1 Oct 2010 15:53:38 +0800
-Message-ID: <AANLkTinNiRLi=EdpNku54Wsu7KNx3Tvhg9CEa6Q8wMGY@mail.gmail.com>
-Subject: Re: [PATCH] regulator: max8649 - fix setting extclk_freq
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754470Ab0JAHyu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 03:54:50 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:60600 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917Ab0JAHyt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 03:54:49 -0400
+Date: Fri, 1 Oct 2010 09:54:46 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Jens Axboe <axboe@kernel.dk>
+Subject: Re: [REGRESSION] cdrom drive doesn't detect removal
+Message-ID: <20101001095446.042fd675@schatten.dmk.lab>
+In-Reply-To: <4CA577E0.7020508@kernel.org>
+References: <1284284969.2928.18.camel@maxim-laptop>
+	<1284511071.3551.1.camel@maxim-laptop>
+	<AANLkTikF37hN7dFqPbCp-gcim7SarveaTrjXipnGpJM7@mail.gmail.com>
+	<20100915132731.GA20558@khazad-dum.debian.net>
+	<AANLkTinGDUxsgaGey7EnYOu3kKP-YRE00gL33hiKvAWj@mail.gmail.com>
+	<1284589207.4672.3.camel@maxim-laptop>
+	<AANLkTin37rbEbcGDejhcsnxZNYhhUWGy+x=v4Y=s0_Qx@mail.gmail.com>
+	<1285069338.3124.4.camel@maxim-laptop>
+	<1285110590.2822.9.camel@maxim-laptop>
+	<4C99B25D.20805@kernel.org>
+	<1285162900.3335.15.camel@maxim-laptop>
+	<1285163911.3159.5.camel@maxim-laptop>
+	<4C9B141F.3050908@kernel.org>
+	<AANLkTim31g84J6eeuh_6MiEw0w8zOi5sOWrL_WnoaueP@mail.gmail.com>
+	<20100930083020.62b56218@schatten.dmk.lab>
+	<AANLkTi=G42-0X0MWsgTaDKEnHocFEa+9Cmw4pfCMAk5=@mail.gmail.com>
+	<20100930133823.39353d23@schatten.dmk.lab>
+	<1285856252.26846.12.camel@maxim-laptop>
+	<20100930164918.22f40a83@schatten.dmk.lab>
+	<4CA577E0.7020508@kernel.org>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/1 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Fri, Oct 01, 2010 at 01:56:27PM +0800, Axel Lin wrote:
->> The SYNC bits are BIT6 and BIT7 of MAX8649_SYNC register.
->> pdata->extclk_freq could be [0|1|2].
->> (MAX8649_EXTCLK_26MHZ|MAX8649_EXTCLK_13MHZ|MAX8649_EXTCLK_19MHZ)
->> It requires to left shift 6 bits to properly set extclk_freq.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->
-> Are there existing users of the driver?  It's not always 100% clear if
-> people are expecting bitfield values that will be shifted in or values
-> that can be ored directly in.  I don't really mind either way but I'd
-> rather be careful.
->
+On Fri, 01 Oct 2010 07:55:44 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-max8649 regulator is used in arch/arm/mach-mmp/jasper.c (Marvell
-Jasper Development Platform)
+> Hello,
+> 
+> On 09/30/2010 04:49 PM, Florian Mickler wrote:
+> > Ok. I will reopen then. Is someone working on fixing this issue? 
+> > 
+> > If we leave it open, we wanna have an ETA for the fix so that people
+> > trolling the bugzilla know for how long they have to let this report
+> > simmer.
+> 
+> I just started working on in-kernel media presence polling and it
+> shouldn't be too hard to distinguish ro-mount and burning cases and it
+> should be possible to keep polling for ro mounts.  I think it's
+> already a bit too late for the next merge window but the one after
+> that would be a reasonable target.
+> 
+> Thanks.
+> 
 
-I checked include/linux/regulator/max8649.h
-extclk_freq only takes 2 bits:
-unsigned        extclk_freq:2;
+Ok, cool. 
 
-People should set extclk_freq to
-[MAX8649_EXTCLK_26MHZ|MAX8649_EXTCLK_13MHZ|MAX8649_EXTCLK_19MHZ],
-so we need to do 6 bits left shift to properly set extclk_freq.
-
-Regards,
-Axel
+Flo
