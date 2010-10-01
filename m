@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab0JAHSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 03:18:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53578 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751102Ab0JAHSw (ORCPT
+	id S1751745Ab0JAHT5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 03:19:57 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:56260 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750920Ab0JAHT4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 03:18:52 -0400
-Date: Fri, 1 Oct 2010 00:19:06 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
+	Fri, 1 Oct 2010 03:19:56 -0400
+Content-Type: text/plain; charset=UTF-8
 Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [PATCH] regulator: max8649 - fix setting extclk_freq
-Message-ID: <20101001071906.GC20529@opensource.wolfsonmicro.com>
-References: <1285912587.12422.2.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285912587.12422.2.camel@mola>
-X-Cookie: Your aim is high and to the right.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        benh <benh@kernel.crashing.org>, Michal Marek <mmarek@suse.cz>,
+        Albert Herranz <albert_herranz@yahoo.es>, paulus <paulus@samba.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH 02/18] powerpc: Add CROSSBE_COMPILE to build big endian boot wrapper
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+In-reply-to: <AANLkTi=VmSXN6XeD__nkQLJAYXzxOh6WEtW6-jjJcC4Q@mail.gmail.com>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com> <1285916771-18033-3-git-send-email-imunsie@au1.ibm.com> <AANLkTi=VmSXN6XeD__nkQLJAYXzxOh6WEtW6-jjJcC4Q@mail.gmail.com>
+Date: Fri, 01 Oct 2010 17:19:54 +1000
+Message-Id: <1285917531-sup-3488@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 01:56:27PM +0800, Axel Lin wrote:
-> The SYNC bits are BIT6 and BIT7 of MAX8649_SYNC register.
-> pdata->extclk_freq could be [0|1|2].
-> (MAX8649_EXTCLK_26MHZ|MAX8649_EXTCLK_13MHZ|MAX8649_EXTCLK_19MHZ)
-> It requires to left shift 6 bits to properly set extclk_freq.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Excerpts from Geert Uytterhoeven's message of Fri Oct 01 17:13:19 +1000 2010:
+> Shouldn't the help text added by [PATCH 01/18]:
+....
+> be updated here as well?
 
-Are there existing users of the driver?  It's not always 100% clear if
-people are expecting bitfield values that will be shifted in or values
-that can be ored directly in.  I don't really mind either way but I'd
-rather be careful.
+Yep, you're right. Thanks for pointing that out, I'll fix it for the next
+revision.
+
+Cheers,
+-Ian
