@@ -1,48 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab0JAFZt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 01:25:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64759 "EHLO mx1.redhat.com"
+	id S1751970Ab0JAF1s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 01:27:48 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:47293 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751705Ab0JAFZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 01:25:47 -0400
-Date: Fri, 1 Oct 2010 01:25:41 -0400
-From: Dave Jones <davej@redhat.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: dave@gnu.org, cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        x86 maintainers <x86@kernel.org>
-Subject: Re: [RESEND PATCH] cpufreq: unnecesary double free in
- pcc_cpufreq_do_osc
-Message-ID: <20101001052540.GA31519@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Pekka Enberg <penberg@kernel.org>, dave@gnu.org,
-	cpufreq@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-	x86 maintainers <x86@kernel.org>
-References: <1285875804.2180.1.camel@cowboy>
- <AANLkTikbSYutRGwQLU2srEQG6CO7pvXdFBQ0W216DoCv@mail.gmail.com>
- <20100930200617.GA4120@redhat.com>
- <4CA567DB.4000208@kernel.org>
+	id S1751208Ab0JAF1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 01:27:47 -0400
+Date: Fri, 1 Oct 2010 06:27:34 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1010010623270.29377@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA567DB.4000208@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 07:47:23AM +0300, Pekka Enberg wrote:
 
- > > I think Dave's patch is correct.  There's a kfree(output.pointer) at line 359.
- > > If we fall all the way through without hitting any of the return -ENODEVs,
- > > we end up doing a 2nd kfree in the out_free:
- > 
- > There's a second call to acpi_evaluate_object() which takes "output" as 
- > its argument and allocates more memory.
+Hi Linus,
 
-yup. I merged your patch. after it's soaked in -next for a day, I'll push it to
-Linus.  (Looks obviously correct, but just being extra careful given where
-we are in the release cycle)
+We had an unplanned leak/race finding week:
 
-	Dave
+Had a pretty nasty race in TTM reported (scrolling certain pages in 
+firefox caused a major leak of objects), fix from Thomas in here.
 
+A nasty slow leak in the i915 GEM code, fix from Chris here.
+A race on object deletion in the GEM code, fix from Chris.
+
+A leak/memory corruptor when unloading drm modules after X had started due 
+to using krefs in a non-kref compatible manner, fix from me (found while 
+tracking down the firefox one).
+
+Apart from that, just some general radeon fixes, a BKL regression fix, a 
+vmware regression fix from the ioctl cleanups.
+
+Dave.
+
+The following changes since commit 32163f4b2cef28a5aab8b226ffecfc6379a53786:
+
+  alpha: fix usp value in multithreaded coredumps (2010-09-25 14:38:13 -0700)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+
+Alex Deucher (3):
+      drm/radeon/kms: fix up encoder info messages for DFP6
+      drm/radeon/kms: fix potential segfault in r600_ioctl_wait_idle
+      drm/radeon/kms: add quirk for MSI K9A2GM motherboard
+
+Arnd Bergmann (1):
+      drm: i810/i830: fix locked ioctl variant
+
+Chris Wilson (2):
+      drm: Prune GEM vma entries
+      drm: Hold the mutex when dropping the last GEM reference
+
+Dave Airlie (2):
+      drm/radeon: fix PCI ID 5657 to be an RV410
+      drm/gem: handlecount isn't really a kref so don't make it one.
+
+Thomas Hellstrom (2):
+      drm/ttm: Fix two race conditions
+      drm/vmwgfx: Fix breakage introduced by commit "drm: block userspace under allocating buffer and having drivers overwrite it (v2)"
+
+ drivers/gpu/drm/drm_gem.c                  |   39 ++++-----------
+ drivers/gpu/drm/drm_info.c                 |    2 +-
+ drivers/gpu/drm/drm_vm.c                   |   28 +++++++----
+ drivers/gpu/drm/i810/i810_dma.c            |    2 +-
+ drivers/gpu/drm/i830/i830_dma.c            |    2 +-
+ drivers/gpu/drm/i915/i915_gem.c            |    6 +--
+ drivers/gpu/drm/i915/intel_fb.c            |    4 +-
+ drivers/gpu/drm/nouveau/nouveau_fbcon.c    |    1 +
+ drivers/gpu/drm/nouveau/nouveau_gem.c      |    6 +--
+ drivers/gpu/drm/nouveau/nouveau_notifier.c |    1 +
+ drivers/gpu/drm/radeon/r600.c              |    3 +-
+ drivers/gpu/drm/radeon/radeon_atombios.c   |    9 +++
+ drivers/gpu/drm/radeon/radeon_display.c    |    5 ++-
+ drivers/gpu/drm/radeon/radeon_fb.c         |   14 ++----
+ drivers/gpu/drm/radeon/radeon_gem.c        |    4 +-
+ drivers/gpu/drm/ttm/ttm_bo.c               |   74 +++++++++++++++++++++++----
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c        |    2 +-
+ include/drm/drmP.h                         |   28 ++++++++---
+ include/drm/drm_pciids.h                   |    2 +-
+ include/drm/ttm/ttm_bo_api.h               |    4 +-
+ 20 files changed, 149 insertions(+), 87 deletions(-)
