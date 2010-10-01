@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab0JARdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 13:33:13 -0400
-Received: from mail.tpi.com ([70.99.223.143]:1040 "EHLO mail.tpi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752695Ab0JARdM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 13:33:12 -0400
-Message-ID: <4CA61B50.6090203@canonical.com>
-Date: Fri, 01 Oct 2010 11:33:04 -0600
-From: Tim Gardner <tim.gardner@canonical.com>
-Reply-To: tim.gardner@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1753230Ab0JARga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 13:36:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:58621 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751345Ab0JARg3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 13:36:29 -0400
+Date: Fri, 1 Oct 2010 10:36:44 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Haojian Zhuang <haojian.zhuang@marvell.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [PATCH] regulator: max8649 - fix setting extclk_freq
+Message-ID: <20101001173643.GB21157@opensource.wolfsonmicro.com>
+References: <1285912587.12422.2.camel@mola>
+ <20101001071906.GC20529@opensource.wolfsonmicro.com>
+ <AANLkTi=4Bv72d56XU+4jXZ8wHp+R_1VfaKOrvp_PtG4M@mail.gmail.com>
 MIME-Version: 1.0
-To: feng.tang@intel.com
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] serial/mfd.c: Fix ARM compile error
-Content-Type: multipart/mixed;
- boundary="------------020700000808060100020008"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=4Bv72d56XU+4jXZ8wHp+R_1VfaKOrvp_PtG4M@mail.gmail.com>
+X-Cookie: You'll be sorry...
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------020700000808060100020008
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, Oct 01, 2010 at 07:18:14PM +0800, Axel Lin wrote:
+> 2010/10/1 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-Does it even make sense to build this module for non-x86 architectures?
+> > Are there existing users of the driver?  It's not always 100% clear if
+> > people are expecting bitfield values that will be shifted in or values
+> > that can be ored directly in.  I don't really mind either way but I'd
+> > rather be careful.
 
-rtg
--- 
-Tim Gardner tim.gardner@canonical.com
+> I think I should explain this way:
 
---------------020700000808060100020008
-Content-Type: text/x-patch;
- name="0001-UBUNTU-Upstream-Fix-ARM-compile-error.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="0001-UBUNTU-Upstream-Fix-ARM-compile-error.patch"
+> In max8649.h , we have
+> enum {
+>         MAX8649_EXTCLK_26MHZ = 0,
+>         MAX8649_EXTCLK_13MHZ,
+>         MAX8649_EXTCLK_19MHZ,   /* 19.2MHz */
+> };
 
->From 61cdfbb1040ca0809c2f4988aa90297c185a6b22 Mon Sep 17 00:00:00 2001
-From: Tim Gardner <tim.gardner@canonical.com>
-Date: Fri, 1 Oct 2010 11:24:41 -0600
-Subject: [PATCH] serial/mfd.c: Fix ARM compile error
+OK, that's clearer.  When changing the interpretation of existing
+platform data like this it's good to note this sort of thing in the
+changelog since merge issues can be a real pain.
 
-drivers/serial/mfd.c: In function 'port_show_regs':
-drivers/serial/mfd.c:144: error: implicit declaration of function 'kzalloc'
-
-Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
----
- drivers/serial/mfd.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/serial/mfd.c b/drivers/serial/mfd.c
-index 324c385..b67f499 100644
---- a/drivers/serial/mfd.c
-+++ b/drivers/serial/mfd.c
-@@ -38,6 +38,7 @@
- #include <linux/dma-mapping.h>
- #include <linux/pci.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
- #include <linux/debugfs.h>
- 
- #define  MFD_HSU_A0_STEPPING	1
--- 
-1.7.0.4
-
-
---------------020700000808060100020008--
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
