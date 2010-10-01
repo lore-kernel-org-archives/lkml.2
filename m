@@ -1,56 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab0JAW2W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 18:28:22 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55199 "EHLO gate.crashing.org"
+	id S1753026Ab0JAWhs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 18:37:48 -0400
+Received: from kroah.org ([198.145.64.141]:59825 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750902Ab0JAW2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 18:28:21 -0400
-Subject: Re: Introduce support for little endian PowerPC
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Olof Johansson <olof@lixom.net>
-Cc: Kumar Gala <galak@kernel.crashing.org>, linuxppc-dev@lists.ozlabs.org,
-        paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101001220343.GA10494@lixom.net>
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
-	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
-	 <1285935283.2463.78.camel@pasglop>
-	 <BBD78246-343E-4A96-9E55-3E40AD628C0B@kernel.crashing.org>
-	 <1285966315.2463.141.camel@pasglop>  <20101001220343.GA10494@lixom.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Oct 2010 08:28:02 +1000
-Message-ID: <1285972082.2463.250.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751882Ab0JAWhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 18:37:47 -0400
+Date: Fri, 1 Oct 2010 15:16:15 -0700
+From: Greg KH <greg@kroah.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "stable@kernel.org" <stable@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [stable] Please promote to stable
+Message-ID: <20101001221615.GA12589@kroah.com>
+References: <4CA64CC1.5050702@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA64CC1.5050702@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-01 at 17:03 -0500, Olof Johansson wrote:
-> > Maybe. Most of it doesn't seem to be that bit-rottable.
-> > 
-> > The changes to the asm stuff in misc_32.S for example are functions we
-> > never ever touch once written (libgcc replacements) so I don't see them
-> > rotting more with LE support than they did with BE :-)
+On Fri, Oct 01, 2010 at 02:04:01PM -0700, H. Peter Anvin wrote:
+> Please promote the following x86 patches to stable:
 > 
-> Does KVM/qemu support running LE guest on BE host? That'd help keeping
-> the bitrot lower. :) 
+> 1dedefd1a066a795a87afca9c0236e1a94de9bf6
+> d900329e20f4476db6461752accebcf7935a8055 [as soon as Linus merges it]
+> 
+> The latter is already tagged stable.
+> 
+> These two patches are needed to resolve kernel bugzilla 16322.
 
-Not yet I suppose :-) But then, I'm not sure it would make a big
-difference, if you have a 440 board in the first place, you can boot
-either LE or BE, no need for a special FW or anything.
+For .35 and .32, or only .35?
 
-What we've done is basically keep the zImage wrapper BE (for now at
-least), and have it trampoline to LE when executing the actual kernel
-(using a cuImage, of course a device-tree enabled u-Boot would probably
-need something akin to a proper ePAPR zImage to do that but that's
-reasonably easy to do nowadays).
+thanks,
 
-
-Cheers,
-Ben.
-
-
+greg k-h
