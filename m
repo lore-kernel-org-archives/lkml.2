@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab0JAFEE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 01:04:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34684 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751535Ab0JAFEB (ORCPT
+	id S1751648Ab0JAFE7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 01:04:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:60743 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab0JAFE6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 01:04:01 -0400
+	Fri, 1 Oct 2010 01:04:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=hqxK2Y9FNDT7VkO/PihAg7vt5VLiScAoZuvZj0F1ReSzIE5gxXpwkGl7QSUYt3Fb2K
-         rkL+2WwsfErGqJWNh2QIsRL6yP5T8ktzAZA8t3jEoBja72dgtJFgIX6UjANxO68VM5+o
-         +tYrNyKdukinFt7xweaVZVjV8XtKlve1NUeAk=
-Subject: Re: [PATCH V3] fs: allow for more than 2^31 files
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Robin Holt <holt@sgi.com>
-Cc: David Miller <davem@davemloft.net>, dipankar@in.ibm.com,
-        viro@zeniv.linux.org.uk, bcrl@kvack.org, den@openvz.org, mingo@elte.hu,
-        mszeredi@suse.cz, cmm@us.ibm.com, npiggin@kernel.dk, xemul@openvz.org,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <20101001043413.GN14068@sgi.com>
-References: <20100923121704.GR14064@sgi.com>
-	 <1285246384.362.3.camel@edumazet-laptop> <20100923141037.GA3811@in.ibm.com>
-	 <20100927.153639.212415479.davem@davemloft.net>
-	 <1285645611.10438.27.camel@edumazet-laptop>
-	 <20100930202612.GM14068@sgi.com> <1285879545.2705.4.camel@edumazet-laptop>
-	 <20101001043413.GN14068@sgi.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Oct 2010 07:03:54 +0200
-Message-ID: <1285909434.2705.35.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=pZ/iVY2aSJyipRuxh7ye4JctBIAvho3yqt6TahYdUyI6ZOJo5BiiauwY6nfUT9pTnK
+         8FBM9ZgtDnG9cdY1iphg==
+From: Michel Lespinasse <walken@google.com>
+To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ying Han <yinghan@google.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>
+Subject: [PATCH 0/2] Reduce mmap_sem hold times during file backed page faults
+Date: Thu, 30 Sep 2010 22:04:42 -0700
+Message-Id: <1285909484-30958-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 30 septembre 2010 à 23:34 -0500, Robin Holt a écrit :
+Linus, I would appreciate your comments on this since you shot down the
+previous proposal. I hope you'll find this approach is sane, but I would
+be interested to hear if you have specific objections.
 
-> The proc_handler used to be proc_nr_files() which would call
-> get_nr_files() and deposit the result in files_stat.nr_files then cascade
-> to proc_dointvec() which would dump the 3 values.  Now it will dump the
-> three values, but not update the middle (nr_files) value first.
-> 
+mmap_sem is very coarse grained (per process) and has long read-hold times
+(disk latencies); this breaks down rapidly for workloads that use both
+read and write mmap_sem acquires. This short patch series tries to reduce
+mmap_sem hold times when faulting in file backed VMAs.
 
-Ah I get it now, thanks !
+First patch creates a single place to lock the page in filemap_fault().
+There should be no behavior differences.
 
-I'll send a V4 shortly.
+Second patch modifies that lock_page() so that, if trylock_page() fails,
+we consider releasing the mmap_sem while waiting for page to be unlocked.
+This is controlled by a new FAULT_FLAG_RELEASE flag. If the mmap_sem gets
+released, we return the VM_FAULT_RELEASED status; the caller is then expected
+to re-acquire mmap_sem and retry the page fault. Chances are that the same
+page will be accessed and will now be unlocked, so the mmap_sem hold time
+will be short.
 
+Michel Lespinasse (2):
+  Unique path for locking page in filemap_fault()
+  Release mmap_sem when page fault blocks on disk transfer.
 
-
+ arch/x86/mm/fault.c |   35 ++++++++++++++++++++++++++---------
+ include/linux/mm.h  |    2 ++
+ mm/filemap.c        |   38 +++++++++++++++++++++++++++++---------
+ mm/memory.c         |    3 ++-
+ 4 files changed, 59 insertions(+), 19 deletions(-)
