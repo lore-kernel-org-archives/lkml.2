@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab0JAUxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 16:53:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:45010 "EHLO gate.crashing.org"
+	id S1756098Ab0JAU4v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 16:56:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59357 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753278Ab0JAUxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 16:53:38 -0400
-Subject: Re: Odd NFS related SIGBUS (& possible fix)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1285956768.30373.39.camel@heimdal.trondhjem.org>
-References: <1285734825.14081.87.camel@pasglop>
-	 <1285956768.30373.39.camel@heimdal.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Oct 2010 06:53:27 +1000
-Message-ID: <1285966407.2463.145.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1752842Ab0JAU4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 16:56:49 -0400
+Date: Fri, 1 Oct 2010 22:56:46 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: matt mooney <mfm@muteddisk.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Documentation/kbuild: correct variable definitions in
+ makefiles.txt
+Message-ID: <20101001205646.GA10988@sepie.suse.cz>
+References: <1284964412-32211-1-git-send-email-mfm@muteddisk.com>
+ <4CA35541.9090106@suse.cz>
+ <20100929175031.GA9278@merkur.ravnborg.org>
+ <20100929231904.GB21930@haskell.muteddisk.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100929231904.GB21930@haskell.muteddisk.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-01 at 14:12 -0400, Trond Myklebust wrote:
+On Wed, Sep 29, 2010 at 04:19:04PM -0700, matt mooney wrote:
+> On 19:50 Wed 29 Sep     , Sam Ravnborg wrote:
+> > On Wed, Sep 29, 2010 at 05:03:29PM +0200, Michal Marek wrote:
+> > > On 20.9.2010 08:33, matt mooney wrote:
+> > > > Change $(src) and $(obj) definitions to state the path as absolute and
+> > > > not relative.
+> > > 
+> > > It _is_ a relative patch, AFAICS. What makes you think otherwise?
+> > 
+> > With extenal modules $(src) and $(obj) are absolute - but in nomal
+> > use they are relative.
+
+Ah, I see. Then we should simply say "path", without any adjectives.
+
+
+> > And again in normal use they are also equal. I usually say that we
+> > have two just to document what is srource and what is generated.
 > 
-> However, it looks to me as if the right thing to do when the
-> page->mapping has changed would be to do the same thing as
-> block_page_mkwrite(), and just return VM_FAULT_NOPAGE so that the VM
-> can
-> retry the fault.
-> IMO: We should only SIGBUS if the calls to nfs_flush_incompatible()
-> and/or nfs_updatepage() fail.
+> Ah, I see. Sorry, I should have looked into this more. Now you did say
+> in normal use they are equal, but I thought they were also equal when
+> used for an external module too.
 
-Well, other filesystems seem to think that if the mapping -changed-,
-SIGBUS is a good idea... But they don't have to deal with invalidations
-wiping mappings in the background.
+Yes, they are, using $(src) for shipped files and $(obj) for generated
+ones is just a service for the reader of the Makefile.
 
-So that's why I was thinking about singling out the "mapping became
-NULL" case and keep the SIGBUS for when the mapping became something
-else... but that's your call really :-)
-
-Cheers,
-Ben.
-
+Michal
