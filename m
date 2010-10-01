@@ -1,24 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab0JAHHv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 03:07:51 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:59962 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755574Ab0JAHGe (ORCPT
+	id S1755765Ab0JAHHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 03:07:31 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:48062 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755615Ab0JAHGe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Oct 2010 03:06:34 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         benh@kernel.crashing.org
 Cc: paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Sean MacLennan <smaclennan@pikatech.com>, Tejun Heo <tj@kernel.org>,
-        netdev@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH 17/18] net: Fix endianess issues in IBM newemac driver
-Date: Fri,  1 Oct 2010 17:06:10 +1000
-Message-Id: <1285916771-18033-18-git-send-email-imunsie@au1.ibm.com>
+        David Woodhouse <dwmw2@infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>, Julia Lawall <julia@diku.dk>,
+        Sean MacLennan <smaclennan@pikatech.com>,
+        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Anatolij Gustschin <agust@denx.de>,
+        Steve Deiters <SteveDeiters@basler.com>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        linux-mtd@lists.infradead.org
+Subject: [PATCH 15/18] mtd: Fix endianness issues from device tree
+Date: Fri,  1 Oct 2010 17:06:08 +1000
+Message-Id: <1285916771-18033-16-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
 References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
@@ -28,282 +33,192 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This patch fixes all the device tree and ring buffer accesses in the IBM
-newemac driver.
+This patch adds the appropriate conversions to correct the endianness
+issues in the MTD driver whenever it accesses the device tree (which is
+always big endian).
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- drivers/net/ibm_newemac/core.c |   68 ++++++++++++++++++++--------------------
- drivers/net/ibm_newemac/mal.c  |    6 ++--
- drivers/net/ibm_newemac/mal.h  |    6 ++--
- 3 files changed, 40 insertions(+), 40 deletions(-)
+ drivers/mtd/maps/physmap_of.c  |   14 +++++++-------
+ drivers/mtd/nand/fsl_upm.c     |    8 ++++----
+ drivers/mtd/nand/mpc5121_nfc.c |    4 ++--
+ drivers/mtd/nand/ndfc.c        |    8 ++++----
+ drivers/mtd/ofpart.c           |    6 +++---
+ 5 files changed, 20 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/net/ibm_newemac/core.c b/drivers/net/ibm_newemac/core.c
-index 3506fd6..67238b8 100644
---- a/drivers/net/ibm_newemac/core.c
-+++ b/drivers/net/ibm_newemac/core.c
-@@ -981,12 +981,12 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
- 	 * to simplify error recovery in the case of allocation failure later.
- 	 */
- 	for (i = 0; i < NUM_RX_BUFF; ++i) {
--		if (dev->rx_desc[i].ctrl & MAL_RX_CTRL_FIRST)
-+		if (dev->rx_desc[i].ctrl & cpu_to_be16(MAL_RX_CTRL_FIRST))
- 			++dev->estats.rx_dropped_resize;
- 
- 		dev->rx_desc[i].data_len = 0;
--		dev->rx_desc[i].ctrl = MAL_RX_CTRL_EMPTY |
--		    (i == (NUM_RX_BUFF - 1) ? MAL_RX_CTRL_WRAP : 0);
-+		dev->rx_desc[i].ctrl = cpu_to_be16(MAL_RX_CTRL_EMPTY |
-+		    (i == (NUM_RX_BUFF - 1) ? MAL_RX_CTRL_WRAP : 0));
- 	}
- 
- 	/* Reallocate RX ring only if bigger skb buffers are required */
-@@ -1005,9 +1005,9 @@ static int emac_resize_rx_ring(struct emac_instance *dev, int new_mtu)
- 		dev_kfree_skb(dev->rx_skb[i]);
- 
- 		skb_reserve(skb, EMAC_RX_SKB_HEADROOM + 2);
--		dev->rx_desc[i].data_ptr =
-+		dev->rx_desc[i].data_ptr = cpu_to_be32(
- 		    dma_map_single(&dev->ofdev->dev, skb->data - 2, rx_sync_size,
--				   DMA_FROM_DEVICE) + 2;
-+				   DMA_FROM_DEVICE) + 2);
- 		dev->rx_skb[i] = skb;
- 	}
-  skip:
-@@ -1067,7 +1067,7 @@ static void emac_clean_tx_ring(struct emac_instance *dev)
- 		if (dev->tx_skb[i]) {
- 			dev_kfree_skb(dev->tx_skb[i]);
- 			dev->tx_skb[i] = NULL;
--			if (dev->tx_desc[i].ctrl & MAL_TX_CTRL_READY)
-+			if (dev->tx_desc[i].ctrl & cpu_to_be16(MAL_TX_CTRL_READY))
- 				++dev->estats.tx_dropped;
- 		}
- 		dev->tx_desc[i].ctrl = 0;
-@@ -1104,12 +1104,12 @@ static inline int emac_alloc_rx_skb(struct emac_instance *dev, int slot,
- 	dev->rx_desc[slot].data_len = 0;
- 
- 	skb_reserve(skb, EMAC_RX_SKB_HEADROOM + 2);
--	dev->rx_desc[slot].data_ptr =
-+	dev->rx_desc[slot].data_ptr = cpu_to_be32(
- 	    dma_map_single(&dev->ofdev->dev, skb->data - 2, dev->rx_sync_size,
--			   DMA_FROM_DEVICE) + 2;
-+			   DMA_FROM_DEVICE) + 2);
- 	wmb();
--	dev->rx_desc[slot].ctrl = MAL_RX_CTRL_EMPTY |
--	    (slot == (NUM_RX_BUFF - 1) ? MAL_RX_CTRL_WRAP : 0);
-+	dev->rx_desc[slot].ctrl = cpu_to_be16(MAL_RX_CTRL_EMPTY |
-+	    (slot == (NUM_RX_BUFF - 1) ? MAL_RX_CTRL_WRAP : 0));
- 
- 	return 0;
- }
-@@ -1373,12 +1373,12 @@ static int emac_start_xmit(struct sk_buff *skb, struct net_device *ndev)
- 	DBG2(dev, "xmit(%u) %d" NL, len, slot);
- 
- 	dev->tx_skb[slot] = skb;
--	dev->tx_desc[slot].data_ptr = dma_map_single(&dev->ofdev->dev,
-+	dev->tx_desc[slot].data_ptr = cpu_to_be32(dma_map_single(&dev->ofdev->dev,
- 						     skb->data, len,
--						     DMA_TO_DEVICE);
--	dev->tx_desc[slot].data_len = (u16) len;
-+						     DMA_TO_DEVICE));
-+	dev->tx_desc[slot].data_len = cpu_to_be16(len);
- 	wmb();
--	dev->tx_desc[slot].ctrl = ctrl;
-+	dev->tx_desc[slot].ctrl = cpu_to_be16(ctrl);
- 
- 	return emac_xmit_finish(dev, len);
- }
-@@ -1399,9 +1399,9 @@ static inline int emac_xmit_split(struct emac_instance *dev, int slot,
- 			ctrl |= MAL_TX_CTRL_WRAP;
- 
- 		dev->tx_skb[slot] = NULL;
--		dev->tx_desc[slot].data_ptr = pd;
--		dev->tx_desc[slot].data_len = (u16) chunk;
--		dev->tx_desc[slot].ctrl = ctrl;
-+		dev->tx_desc[slot].data_ptr = cpu_to_be32(pd);
-+		dev->tx_desc[slot].data_len = cpu_to_be16(chunk);
-+		dev->tx_desc[slot].ctrl = cpu_to_be16(ctrl);
- 		++dev->tx_cnt;
- 
- 		if (!len)
-@@ -1442,9 +1442,9 @@ static int emac_start_xmit_sg(struct sk_buff *skb, struct net_device *ndev)
- 	/* skb data */
- 	dev->tx_skb[slot] = NULL;
- 	chunk = min(len, MAL_MAX_TX_SIZE);
--	dev->tx_desc[slot].data_ptr = pd =
--	    dma_map_single(&dev->ofdev->dev, skb->data, len, DMA_TO_DEVICE);
--	dev->tx_desc[slot].data_len = (u16) chunk;
-+	dev->tx_desc[slot].data_ptr = cpu_to_be32(pd =
-+	    dma_map_single(&dev->ofdev->dev, skb->data, len, DMA_TO_DEVICE));
-+	dev->tx_desc[slot].data_len = cpu_to_be16(chunk);
- 	len -= chunk;
- 	if (unlikely(len))
- 		slot = emac_xmit_split(dev, slot, pd + chunk, len, !nr_frags,
-@@ -1473,7 +1473,7 @@ static int emac_start_xmit_sg(struct sk_buff *skb, struct net_device *ndev)
- 	if (dev->tx_slot == NUM_TX_BUFF - 1)
- 		ctrl |= MAL_TX_CTRL_WRAP;
- 	wmb();
--	dev->tx_desc[dev->tx_slot].ctrl = ctrl;
-+	dev->tx_desc[dev->tx_slot].ctrl = cpu_to_be16(ctrl);
- 	dev->tx_slot = (slot + 1) % NUM_TX_BUFF;
- 
- 	return emac_xmit_finish(dev, skb->len);
-@@ -1541,7 +1541,7 @@ static void emac_poll_tx(void *param)
- 		u16 ctrl;
- 		int slot = dev->ack_slot, n = 0;
- 	again:
--		ctrl = dev->tx_desc[slot].ctrl;
-+		ctrl = be16_to_cpu(dev->tx_desc[slot].ctrl);
- 		if (!(ctrl & MAL_TX_CTRL_READY)) {
- 			struct sk_buff *skb = dev->tx_skb[slot];
- 			++n;
-@@ -1583,8 +1583,8 @@ static inline void emac_recycle_rx_skb(struct emac_instance *dev, int slot,
- 
- 	dev->rx_desc[slot].data_len = 0;
- 	wmb();
--	dev->rx_desc[slot].ctrl = MAL_RX_CTRL_EMPTY |
--	    (slot == (NUM_RX_BUFF - 1) ? MAL_RX_CTRL_WRAP : 0);
-+	dev->rx_desc[slot].ctrl = cpu_to_be16(MAL_RX_CTRL_EMPTY |
-+	    (slot == (NUM_RX_BUFF - 1) ? MAL_RX_CTRL_WRAP : 0));
- }
- 
- static void emac_parse_rx_error(struct emac_instance *dev, u16 ctrl)
-@@ -1628,7 +1628,7 @@ static inline void emac_rx_csum(struct emac_instance *dev,
- static inline int emac_rx_sg_append(struct emac_instance *dev, int slot)
+diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
+index fe63f6b..ec4011c 100644
+--- a/drivers/mtd/maps/physmap_of.c
++++ b/drivers/mtd/maps/physmap_of.c
+@@ -50,7 +50,7 @@ static int parse_obsolete_partitions(struct platform_device *dev,
  {
- 	if (likely(dev->rx_sg_skb != NULL)) {
--		int len = dev->rx_desc[slot].data_len;
-+		int len = be16_to_cpu(dev->rx_desc[slot].data_len);
- 		int tot_len = dev->rx_sg_skb->len + len;
+ 	int i, plen, nr_parts;
+ 	const struct {
+-		u32 offset, len;
++		__be32 offset, len;
+ 	} *part;
+ 	const char *names;
  
- 		if (unlikely(tot_len + 2 > dev->rx_skb_size)) {
-@@ -1659,14 +1659,14 @@ static int emac_poll_rx(void *param, int budget)
- 	while (budget > 0) {
- 		int len;
- 		struct sk_buff *skb;
--		u16 ctrl = dev->rx_desc[slot].ctrl;
-+		u16 ctrl = be16_to_cpu(dev->rx_desc[slot].ctrl);
+@@ -69,9 +69,9 @@ static int parse_obsolete_partitions(struct platform_device *dev,
+ 	names = of_get_property(dp, "partition-names", &plen);
  
- 		if (ctrl & MAL_RX_CTRL_EMPTY)
- 			break;
+ 	for (i = 0; i < nr_parts; i++) {
+-		info->parts[i].offset = part->offset;
+-		info->parts[i].size   = part->len & ~1;
+-		if (part->len & 1) /* bit 0 set signifies read only partition */
++		info->parts[i].offset = be32_to_cpu(part->offset);
++		info->parts[i].size   = be32_to_cpu(part->len) & ~1;
++		if (be32_to_cpu(part->len) & 1) /* bit 0 set signifies read only partition */
+ 			info->parts[i].mask_flags = MTD_WRITEABLE;
  
- 		skb = dev->rx_skb[slot];
- 		mb();
--		len = dev->rx_desc[slot].data_len;
-+		len = be16_to_cpu(dev->rx_desc[slot].data_len);
+ 		if (names && (plen > 0)) {
+@@ -226,11 +226,11 @@ static int __devinit of_flash_probe(struct platform_device *dev,
+ 	struct resource res;
+ 	struct of_flash *info;
+ 	const char *probe_type = match->data;
+-	const u32 *width;
++	const __be32 *width;
+ 	int err;
+ 	int i;
+ 	int count;
+-	const u32 *p;
++	const __be32 *p;
+ 	int reg_tuple_size;
+ 	struct mtd_info **mtd_list = NULL;
+ 	resource_size_t res_size;
+@@ -294,7 +294,7 @@ static int __devinit of_flash_probe(struct platform_device *dev,
+ 		info->list[i].map.name = dev_name(&dev->dev);
+ 		info->list[i].map.phys = res.start;
+ 		info->list[i].map.size = res_size;
+-		info->list[i].map.bankwidth = *width;
++		info->list[i].map.bankwidth = be32_to_cpup(width);
  
- 		if (unlikely(!MAL_IS_SINGLE_RX(ctrl)))
- 			goto sg;
-@@ -1757,7 +1757,7 @@ static int emac_poll_rx(void *param, int budget)
- 
- 	if (unlikely(budget && test_bit(MAL_COMMAC_RX_STOPPED, &dev->commac.flags))) {
- 		mb();
--		if (!(dev->rx_desc[slot].ctrl & MAL_RX_CTRL_EMPTY)) {
-+		if (!(dev->rx_desc[slot].ctrl & cpu_to_be16(MAL_RX_CTRL_EMPTY))) {
- 			DBG2(dev, "rx restart" NL);
- 			received = 0;
- 			goto again;
-@@ -1783,7 +1783,7 @@ static int emac_peek_rx(void *param)
+ 		err = -ENOMEM;
+ 		info->list[i].map.virt = ioremap(info->list[i].map.phys,
+diff --git a/drivers/mtd/nand/fsl_upm.c b/drivers/mtd/nand/fsl_upm.c
+index 4eff8b2..8da9014 100644
+--- a/drivers/mtd/nand/fsl_upm.c
++++ b/drivers/mtd/nand/fsl_upm.c
+@@ -222,7 +222,7 @@ static int __devinit fun_probe(struct platform_device *ofdev,
  {
- 	struct emac_instance *dev = param;
- 
--	return !(dev->rx_desc[dev->rx_slot].ctrl & MAL_RX_CTRL_EMPTY);
-+	return !(dev->rx_desc[dev->rx_slot].ctrl & cpu_to_be16(MAL_RX_CTRL_EMPTY));
- }
- 
- /* NAPI poll context */
-@@ -1793,7 +1793,7 @@ static int emac_peek_rx_sg(void *param)
- 
- 	int slot = dev->rx_slot;
- 	while (1) {
--		u16 ctrl = dev->rx_desc[slot].ctrl;
-+		u16 ctrl = be16_to_cpu(dev->rx_desc[slot].ctrl);
- 		if (ctrl & MAL_RX_CTRL_EMPTY)
- 			return 0;
- 		else if (ctrl & MAL_RX_CTRL_LAST)
-@@ -2367,14 +2367,14 @@ static int __devinit emac_read_uint_prop(struct device_node *np, const char *nam
- 					 u32 *val, int fatal)
- {
- 	int len;
--	const u32 *prop = of_get_property(np, name, &len);
-+	const __be32 *prop = of_get_property(np, name, &len);
- 	if (prop == NULL || len < sizeof(u32)) {
- 		if (fatal)
- 			printk(KERN_ERR "%s: missing %s property\n",
- 			       np->full_name, name);
- 		return -ENODEV;
- 	}
--	*val = *prop;
-+	*val = be32_to_cpup(prop);
- 	return 0;
- }
- 
-@@ -3013,7 +3013,7 @@ static void __init emac_make_bootlist(void)
- 
- 	/* Collect EMACs */
- 	while((np = of_find_all_nodes(np)) != NULL) {
--		const u32 *idx;
-+		const __be32 *idx;
- 
- 		if (of_match_node(emac_match, np) == NULL)
- 			continue;
-@@ -3022,7 +3022,7 @@ static void __init emac_make_bootlist(void)
- 		idx = of_get_property(np, "cell-index", NULL);
- 		if (idx == NULL)
- 			continue;
--		cell_indices[i] = *idx;
-+		cell_indices[i] = be32_to_cpup(idx);
- 		emac_boot_list[i++] = of_node_get(np);
- 		if (i >= EMAC_BOOT_LIST_SIZE) {
- 			of_node_put(np);
-diff --git a/drivers/net/ibm_newemac/mal.c b/drivers/net/ibm_newemac/mal.c
-index d5717e2..9e4939e 100644
---- a/drivers/net/ibm_newemac/mal.c
-+++ b/drivers/net/ibm_newemac/mal.c
-@@ -524,7 +524,7 @@ static int __devinit mal_probe(struct platform_device *ofdev,
- 	int err = 0, i, bd_size;
- 	int index = mal_count++;
- 	unsigned int dcr_base;
--	const u32 *prop;
+ 	struct fsl_upm_nand *fun;
+ 	struct resource io_res;
+-	const uint32_t *prop;
 +	const __be32 *prop;
- 	u32 cfg;
- 	unsigned long irqflags;
- 	irq_handler_t hdlr_serr, hdlr_txde, hdlr_rxde;
-@@ -550,7 +550,7 @@ static int __devinit mal_probe(struct platform_device *ofdev,
- 		err = -ENODEV;
- 		goto fail;
+ 	int rnb_gpio;
+ 	int ret;
+ 	int size;
+@@ -270,7 +270,7 @@ static int __devinit fun_probe(struct platform_device *ofdev,
+ 			goto err1;
+ 		}
+ 		for (i = 0; i < fun->mchip_count; i++)
+-			fun->mchip_offsets[i] = prop[i];
++			fun->mchip_offsets[i] = be32_to_cpu(prop[i]);
+ 	} else {
+ 		fun->mchip_count = 1;
  	}
--	mal->num_tx_chans = prop[0];
-+	mal->num_tx_chans = be32_to_cpu(prop[0]);
+@@ -295,13 +295,13 @@ static int __devinit fun_probe(struct platform_device *ofdev,
  
- 	prop = of_get_property(ofdev->dev.of_node, "num-rx-chans", NULL);
- 	if (prop == NULL) {
-@@ -560,7 +560,7 @@ static int __devinit mal_probe(struct platform_device *ofdev,
- 		err = -ENODEV;
- 		goto fail;
+ 	prop = of_get_property(ofdev->dev.of_node, "chip-delay", NULL);
+ 	if (prop)
+-		fun->chip_delay = *prop;
++		fun->chip_delay = be32_to_cpup(prop);
+ 	else
+ 		fun->chip_delay = 50;
+ 
+ 	prop = of_get_property(ofdev->dev.of_node, "fsl,upm-wait-flags", &size);
+ 	if (prop && size == sizeof(uint32_t))
+-		fun->wait_flags = *prop;
++		fun->wait_flags = be32_to_cpup(prop);
+ 	else
+ 		fun->wait_flags = FSL_UPM_WAIT_RUN_PATTERN |
+ 				  FSL_UPM_WAIT_WRITE_BYTE;
+diff --git a/drivers/mtd/nand/mpc5121_nfc.c b/drivers/mtd/nand/mpc5121_nfc.c
+index df0c1da..aeb27a1 100644
+--- a/drivers/mtd/nand/mpc5121_nfc.c
++++ b/drivers/mtd/nand/mpc5121_nfc.c
+@@ -660,7 +660,7 @@ static int __devinit mpc5121_nfc_probe(struct platform_device *op,
+ #endif
+ 	struct nand_chip *chip;
+ 	unsigned long regs_paddr, regs_size;
+-	const uint *chips_no;
++	const __be32 *chips_no;
+ 	int resettime = 0;
+ 	int retval = 0;
+ 	int rev, len;
+@@ -803,7 +803,7 @@ static int __devinit mpc5121_nfc_probe(struct platform_device *op,
  	}
--	mal->num_rx_chans = prop[0];
-+	mal->num_rx_chans = be32_to_cpu(prop[0]);
  
- 	dcr_base = dcr_resource_start(ofdev->dev.of_node, 0);
- 	if (dcr_base == 0) {
-diff --git a/drivers/net/ibm_newemac/mal.h b/drivers/net/ibm_newemac/mal.h
-index 6608421..b8ee413 100644
---- a/drivers/net/ibm_newemac/mal.h
-+++ b/drivers/net/ibm_newemac/mal.h
-@@ -147,9 +147,9 @@ static inline int mal_tx_chunks(int len)
+ 	/* Detect NAND chips */
+-	if (nand_scan(mtd, *chips_no)) {
++	if (nand_scan(mtd, be32_to_cpup(chips_no))) {
+ 		dev_err(dev, "NAND Flash not found !\n");
+ 		devm_free_irq(dev, prv->irq, mtd);
+ 		retval = -ENXIO;
+diff --git a/drivers/mtd/nand/ndfc.c b/drivers/mtd/nand/ndfc.c
+index 510554e..c9ae0a5 100644
+--- a/drivers/mtd/nand/ndfc.c
++++ b/drivers/mtd/nand/ndfc.c
+@@ -229,7 +229,7 @@ static int __devinit ndfc_probe(struct platform_device *ofdev,
+ 				const struct of_device_id *match)
+ {
+ 	struct ndfc_controller *ndfc = &ndfc_ctrl;
+-	const u32 *reg;
++	const __be32 *reg;
+ 	u32 ccr;
+ 	int err, len;
  
- /* MAL Buffer Descriptor structure */
- struct mal_descriptor {
--	u16 ctrl;		/* MAL / Commac status control bits */
--	u16 data_len;		/* Max length is 4K-1 (12 bits)     */
--	u32 data_ptr;		/* pointer to actual data buffer    */
-+	__be16 ctrl;		/* MAL / Commac status control bits */
-+	__be16 data_len;	/* Max length is 4K-1 (12 bits)     */
-+	__be32 data_ptr;	/* pointer to actual data buffer    */
- };
+@@ -244,7 +244,7 @@ static int __devinit ndfc_probe(struct platform_device *ofdev,
+ 		dev_err(&ofdev->dev, "unable read reg property (%d)\n", len);
+ 		return -ENOENT;
+ 	}
+-	ndfc->chip_select = reg[0];
++	ndfc->chip_select = be32_to_cpu(reg[0]);
  
- /* the following defines are for the MadMAL status and control registers. */
+ 	ndfc->ndfcbase = of_iomap(ofdev->dev.of_node, 0);
+ 	if (!ndfc->ndfcbase) {
+@@ -257,7 +257,7 @@ static int __devinit ndfc_probe(struct platform_device *ofdev,
+ 	/* It is ok if ccr does not exist - just default to 0 */
+ 	reg = of_get_property(ofdev->dev.of_node, "ccr", NULL);
+ 	if (reg)
+-		ccr |= *reg;
++		ccr |= be32_to_cpup(reg);
+ 
+ 	out_be32(ndfc->ndfcbase + NDFC_CCR, ccr);
+ 
+@@ -265,7 +265,7 @@ static int __devinit ndfc_probe(struct platform_device *ofdev,
+ 	reg = of_get_property(ofdev->dev.of_node, "bank-settings", NULL);
+ 	if (reg) {
+ 		int offset = NDFC_BCFG0 + (ndfc->chip_select << 2);
+-		out_be32(ndfc->ndfcbase + offset, *reg);
++		out_be32(ndfc->ndfcbase + offset, be32_to_cpup(reg));
+ 	}
+ 
+ 	err = ndfc_chip_init(ndfc, ofdev->dev.of_node);
+diff --git a/drivers/mtd/ofpart.c b/drivers/mtd/ofpart.c
+index 8bf7dc6..a996718 100644
+--- a/drivers/mtd/ofpart.c
++++ b/drivers/mtd/ofpart.c
+@@ -44,7 +44,7 @@ int __devinit of_mtd_parse_partitions(struct device *dev,
+ 	pp = NULL;
+ 	i = 0;
+ 	while ((pp = of_get_next_child(node, pp))) {
+-		const u32 *reg;
++		const __be32 *reg;
+ 		int len;
+ 
+ 		reg = of_get_property(pp, "reg", &len);
+@@ -53,8 +53,8 @@ int __devinit of_mtd_parse_partitions(struct device *dev,
+ 			continue;
+ 		}
+ 
+-		(*pparts)[i].offset = reg[0];
+-		(*pparts)[i].size = reg[1];
++		(*pparts)[i].offset = be32_to_cpu(reg[0]);
++		(*pparts)[i].size = be32_to_cpu(reg[1]);
+ 
+ 		partname = of_get_property(pp, "label", &len);
+ 		if (!partname)
 -- 
 1.7.1
 
