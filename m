@@ -1,96 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab0JAJcz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 05:32:55 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:45271 "EHLO comal.ext.ti.com"
+	id S1756093Ab0JAJfc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 05:35:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43503 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753951Ab0JAJcx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 05:32:53 -0400
-From: "Marathe, Yogesh" <yogesh_marathe@ti.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>
-CC: "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Fri, 1 Oct 2010 15:02:42 +0530
-Subject: RE: [PATCH 1/4] iommu: remove CONFIG_MPU_BRIDGE_IOMMU
-Thread-Topic: [PATCH 1/4] iommu: remove CONFIG_MPU_BRIDGE_IOMMU
-Thread-Index: ActhFHAvoISiTxAwSQ2kZuuZXu0mxQALAsvw
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593023412B188@dbde02.ent.ti.com>
-References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
- <1285902536-7043-2-git-send-email-x0095840@ti.com>
-In-Reply-To: <1285902536-7043-2-git-send-email-x0095840@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1751578Ab0JAJfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 05:35:31 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Valerie Aurora <vaurora@redhat.com>
+Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
+Date: Fri, 1 Oct 2010 11:34:57 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linuxram@us.ibm.com,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        neilb@suse.de, viro@zeniv.linux.org.uk
+References: <20100920180404.939991832@szeredi.hu> <201009281025.00727.agruen@suse.de> <20100930215114.GD490@shell>
+In-Reply-To: <20100930215114.GD490@shell>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010011134.57594.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
-> owner@vger.kernel.org] On Behalf Of Guzman Lugo, Fernando
-> Sent: Friday, October 01, 2010 8:39 AM
-> To: Hiroshi.DOYU@nokia.com
-> Cc: felipe.contreras@nokia.com; ameya.palande@nokia.com; linux-
-> kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux-
-> omap@vger.kernel.org; Guzman Lugo, Fernando
-> Subject: [PATCH 1/4] iommu: remove
-> CONFIG_MPU_BRIDGE_IOMMU
+On Thursday 30 September 2010 23:51:15 Valerie Aurora wrote:
+> On Tue, Sep 28, 2010 at 10:24:59AM +0200, Andreas Gruenbacher wrote:
+> > On Monday 27 September 2010 20:47:47 Valerie Aurora wrote:
+> > > Again, maybe I'm misunderstanding, but this doesn't make much sense to
+> > > me.  Say I create:
+> > > 
+> > > /upper/a_dir/upper_file
+> > > /lower/a_dir/lower_file
+> > > 
+> > > Then when I union mount them, I want a_dir/ to be transparent
+> > > automatically and show both upper_file and lower_file, without marking
+> > > it manually.
+> > 
+> > Why?
 > 
-> remove CONFIG_MPU_BRIDGE_IOMMU in order to create
-> iommu_device
-> for iva2.
+> Hm, this was a pretty basic assumption for me - that you'd want to
+> construct a topmost image offline that would be "merged" with the
+> lower layers.  So, for example:
 > 
-> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> ---
->  arch/arm/mach-omap2/omap-iommu.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+> Topmost layer contains:
 > 
-> diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach-
-> omap2/omap-iommu.c
-> index f5a1aad..bb8c01d 100644
-> --- a/arch/arm/mach-omap2/omap-iommu.c
-> +++ b/arch/arm/mach-omap2/omap-iommu.c
-> @@ -35,7 +35,6 @@ static struct iommu_device omap3_devices[] = {
->  			.clk_name = "cam_ick",
->  		},
->  	},
-> -#if defined(CONFIG_MPU_BRIDGE_IOMMU)
->  	{
->  		.base = 0x5d000000,
->  		.irq = 28,
-> @@ -45,7 +44,6 @@ static struct iommu_device omap3_devices[] = {
->  			.clk_name = "iva2_ck",
->  		},
->  	},
-> -#endif
->  };
->  #define NR_OMAP3_IOMMU_DEVICES
-> ARRAY_SIZE(omap3_devices)
->  static struct platform_device
-> *omap3_iommu_pdev[NR_OMAP3_IOMMU_DEVICES];
-> --
-> 1.6.3.3
+> /etc/hostname
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Lower layers contain everything else in /etc/.  So /etc/ would exist
+> on the topmost layer at the time of union mount, but we would want it
+> to be transparent.  But if we created a new dir *during* the union
+> mount, it would be opaque.
+> 
+> What was your model?
 
-Fernando,
+The prevalent use case probably is to start out with an empty topmost layer on 
+top of an existing file system.  When things are modified, changes obviously 
+go into the topmost layer.  Additional layers can later be stacked on top of 
+that, turning the previous topmost layer into a read-only lower layer.
 
-I have already submitted this patch and it is being discussed here.
-http://www.mail-archive.com/linux-omap@vger.kernel.org/msg35615.html
+Overlaying preexisting file systems doesn't seem that important; users 
+commonly should be able to start out with an empty topmost layer instead.  To 
+also cover the less common cases, there should be a way to convert directories 
+in a union from opaque to transparent and back though, just like there should 
+be a way to get rid of a whiteout.
 
-Regards,
-Yogesh.
+Makes sense?
 
+Thanks,
+Andreas
