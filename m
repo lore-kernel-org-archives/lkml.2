@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754136Ab0JAGQG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 02:16:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60292 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751501Ab0JAGQE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 02:16:04 -0400
-Date: Fri, 1 Oct 2010 02:16:02 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/17] fs: icache lock i_count
-Message-ID: <20101001061602.GA19107@infradead.org>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
- <1285762729-17928-6-git-send-email-david@fromorbit.com>
- <20100929215229.160c7bce.akpm@linux-foundation.org>
- <20101001055536.GD32349@infradead.org>
- <20100930230416.868e6468.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100930230416.868e6468.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754386Ab0JAGXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 02:23:12 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:19289 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751501Ab0JAGXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 02:23:08 -0400
+Subject: Re: [PATCH 1/1] timer: permit statically-declared work with
+ deferrable timers
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reply-To: Artem.Bityutskiy@nokia.com
+To: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1285874789-1481-2-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1285874789-1481-1-git-send-email-ext-phil.2.carmody@nokia.com>
+	 <1285874789-1481-2-git-send-email-ext-phil.2.carmody@nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Nokia
+Date: Fri, 01 Oct 2010 09:19:33 +0300
+Message-ID: <1285913973.11684.63.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 8bit
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 11:04:16PM -0700, Andrew Morton wrote:
-> No, we've run into problems *frequently*.  A common case is where we
-> convert a mutex to a spinlock or vice versa.  If you don't rename the
-> lock, the code still compiles (with warnings) and crashes horridly at
-> runtime.
-
-Sorry, if you run code with that obvious warnings you beg for trouble.
-If you really believe your advanced users arw too stupid to read
-compiler warnings enforcing -Werror is for sure better than obsfucating
-the code.
-
-> Still wrong.  We do this frequently and we do it in areas where we
-> believe that the implementation might change in the future.
+On Thu, 2010-09-30 at 21:26 +0200, ext Phil Carmody wrote:
+> Currently, you have to just define a delayed_work uninitialised, and then
+> initialise it before first use. That's a tad clumsy. At risk of playing
+> mind-games with the compiler, fooling it into doing pointer arithmetic
+> with compile-time-constants, this lets clients properly initialise delayed
+> work with deferrable timers statically.
 > 
-> Had we done it with i_count from day one then this part of the patchset
-> would be far simpler.
+> This patch was inspired by the issues which lead Artem Bityutskiy
+> to commit 8eab945c5616fc984e97b922d6a2559be93f39a1.
+> 
+> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Acked-by: Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-I don't thin that's quite true.  The big point of using i_lock is that
-we can hold it over accessing other things that also are protected by
-it.  No accessor is going to help you with that.  For plain opencoded
-increments we indeed need a helper as shown by Chris' aio speedup and
-the churn in here - but that's already added later in the series and I
-asked Dave to move it before this patch.
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
