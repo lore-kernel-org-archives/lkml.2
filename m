@@ -1,562 +1,871 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755827Ab0JACBf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 22:01:35 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42542 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752322Ab0JAB7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 21:59:37 -0400
+	id S1755054Ab0JACB0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 22:01:26 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54951 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752597Ab0JAB7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 21:59:38 -0400
 From: Fernando Guzman Lugo <x0095840@ti.com>
 To: <gregkh@suse.de>
 Cc: <felipe.contreras@nokia.com>, <ameya.palande@nokia.com>, <nm@ti.com>,
         <Hiroshi.DOYU@nokia.com>, <ohad@wizery.com>,
         <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
         <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCHv2 04/11] staging: tidspbridge - remove custom mmu code from tiomap3430.c
-Date: Thu, 30 Sep 2010 21:12:51 -0500
-Message-Id: <1285899178-14413-5-git-send-email-x0095840@ti.com>
+Subject: [PATCHv2 07/11] staging: tidspbridge - move all iommu related code to a new file
+Date: Thu, 30 Sep 2010 21:12:54 -0500
+Message-Id: <1285899178-14413-8-git-send-email-x0095840@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1285899178-14413-4-git-send-email-x0095840@ti.com>
+In-Reply-To: <1285899178-14413-7-git-send-email-x0095840@ti.com>
 References: <1285899178-14413-1-git-send-email-x0095840@ti.com>
  <1285899178-14413-2-git-send-email-x0095840@ti.com>
  <1285899178-14413-3-git-send-email-x0095840@ti.com>
  <1285899178-14413-4-git-send-email-x0095840@ti.com>
+ <1285899178-14413-5-git-send-email-x0095840@ti.com>
+ <1285899178-14413-6-git-send-email-x0095840@ti.com>
+ <1285899178-14413-7-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes all the custom mmu code remaining in
-tiomap3430.c which is not needed anymore.
+Create dsp-mmu module and moves all the iommu code related to
+this module.
 
 Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
 ---
- drivers/staging/tidspbridge/core/_tiomap.h    |    2 -
- drivers/staging/tidspbridge/core/tiomap3430.c |  425 -------------------------
- 2 files changed, 0 insertions(+), 427 deletions(-)
+ drivers/staging/tidspbridge/Makefile               |    2 +-
+ drivers/staging/tidspbridge/core/_deh.h            |    3 -
+ drivers/staging/tidspbridge/core/_tiomap.h         |   27 +--
+ drivers/staging/tidspbridge/core/dsp-mmu.c         |  316 ++++++++++++++++++++
+ drivers/staging/tidspbridge/core/tiomap3430.c      |  178 +-----------
+ drivers/staging/tidspbridge/core/ue_deh.c          |   86 +------
+ .../tidspbridge/include/dspbridge/dsp-mmu.h        |   67 ++++
+ 7 files changed, 390 insertions(+), 289 deletions(-)
+ create mode 100644 drivers/staging/tidspbridge/core/dsp-mmu.c
+ create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
 
+diff --git a/drivers/staging/tidspbridge/Makefile b/drivers/staging/tidspbridge/Makefile
+index e09547d..bd36651 100644
+--- a/drivers/staging/tidspbridge/Makefile
++++ b/drivers/staging/tidspbridge/Makefile
+@@ -2,7 +2,7 @@ obj-$(CONFIG_TIDSPBRIDGE)	+= bridgedriver.o
+ 
+ libgen = gen/gb.o gen/gs.o gen/gh.o gen/uuidutil.o
+ libcore = core/chnl_sm.o core/msg_sm.o core/io_sm.o core/tiomap3430.o \
+-		core/tiomap3430_pwr.o core/tiomap_io.o \
++		core/tiomap3430_pwr.o core/tiomap_io.o core/dsp-mmu.o \
+ 		core/ue_deh.o core/wdt.o core/dsp-clock.o core/sync.o
+ libpmgr = pmgr/chnl.o pmgr/io.o pmgr/msg.o pmgr/cod.o pmgr/dev.o pmgr/dspapi.o \
+ 		pmgr/dmm.o pmgr/cmm.o pmgr/dbll.o
+diff --git a/drivers/staging/tidspbridge/core/_deh.h b/drivers/staging/tidspbridge/core/_deh.h
+index f1254f0..8ae2633 100644
+--- a/drivers/staging/tidspbridge/core/_deh.h
++++ b/drivers/staging/tidspbridge/core/_deh.h
+@@ -27,9 +27,6 @@
+ struct deh_mgr {
+ 	struct bridge_dev_context *hbridge_context;	/* Bridge context. */
+ 	struct ntfy_object *ntfy_obj;	/* NTFY object */
+-
+-	/* MMU Fault DPC */
+-	struct tasklet_struct dpc_tasklet;
+ };
+ 
+ int mmu_fault_isr(struct iommu *mmu);
 diff --git a/drivers/staging/tidspbridge/core/_tiomap.h b/drivers/staging/tidspbridge/core/_tiomap.h
-index 8777492..394a64a 100644
+index cd7ff88..e0a801c 100644
 --- a/drivers/staging/tidspbridge/core/_tiomap.h
 +++ b/drivers/staging/tidspbridge/core/_tiomap.h
-@@ -330,7 +330,6 @@ struct bridge_dev_context {
- 	 */
- 	u32 dw_dsp_ext_base_addr;	/* See the comment above */
- 	u32 dw_api_reg_base;	/* API mem map'd registers */
--	void __iomem *dw_dsp_mmu_base;	/* DSP MMU Mapped registers */
- 	u32 dw_api_clk_base;	/* CLK Registers */
- 	u32 dw_dsp_clk_m2_base;	/* DSP Clock Module m2 */
- 	u32 dw_public_rhea;	/* Pub Rhea */
-@@ -356,7 +355,6 @@ struct bridge_dev_context {
+@@ -23,8 +23,7 @@
+ #include <plat/clockdomain.h>
+ #include <mach-omap2/prm-regbits-34xx.h>
+ #include <mach-omap2/cm-regbits-34xx.h>
+-#include <plat/iommu.h>
+-#include <plat/iovmm.h>
++#include <dspbridge/dsp-mmu.h>
+ #include <dspbridge/devdefs.h>
+ #include <dspbridge/dspioctl.h>	/* for bridge_ioctl_extproc defn */
+ #include <dspbridge/sync.h>
+@@ -380,28 +379,4 @@ extern s32 dsp_debug;
+  */
+ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val);
  
- 	/* TC Settings */
- 	bool tc_word_swap_on;	/* Traffic Controller Word Swap */
--	struct pg_table_attrs *pt_attrs;
- 	u32 dsp_per_clks;
- };
- 
+-/**
+- * user_to_dsp_map() - maps user to dsp virtual address
+- * @mmu:	Pointer to iommu handle.
+- * @uva:		Virtual user space address.
+- * @da		DSP address
+- * @size		Buffer size to map.
+- * @usr_pgs	struct page array pointer where the user pages will be stored
+- *
+- * This function maps a user space buffer into DSP virtual address.
+- *
+- */
+-u32 user_to_dsp_map(struct iommu *mmu, u32 uva, u32 da, u32 size,
+-						struct page **usr_pgs);
+-
+-/**
+- * user_to_dsp_unmap() - unmaps DSP virtual buffer.
+- * @mmu:	Pointer to iommu handle.
+- * @da		DSP address
+- *
+- * This function unmaps a user space buffer into DSP virtual address.
+- *
+- */
+-int user_to_dsp_unmap(struct iommu *mmu, u32 da);
+-
+ #endif /* _TIOMAP_ */
+diff --git a/drivers/staging/tidspbridge/core/dsp-mmu.c b/drivers/staging/tidspbridge/core/dsp-mmu.c
+new file mode 100644
+index 0000000..3c978f9
+--- /dev/null
++++ b/drivers/staging/tidspbridge/core/dsp-mmu.c
+@@ -0,0 +1,316 @@
++/*
++ * dsp-mmu.c
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * DSP iommu.
++ *
++ * Copyright (C) 2010 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++#include <dspbridge/host_os.h>
++#include <plat/dmtimer.h>
++#include <dspbridge/dbdefs.h>
++#include <dspbridge/dev.h>
++#include <dspbridge/io_sm.h>
++#include <dspbridge/dspdeh.h>
++#include "_tiomap.h"
++
++#include <dspbridge/dsp-mmu.h>
++
++#define MMU_CNTL_TWL_EN		(1 << 2)
++
++static struct tasklet_struct mmu_tasklet;
++
++#ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
++static void mmu_fault_print_stack(struct bridge_dev_context *dev_context)
++{
++	void *dummy_addr;
++	u32 fa, tmp;
++	struct iotlb_entry e;
++	struct iommu *mmu = dev_context->dsp_mmu;
++	dummy_addr = (void *)__get_free_page(GFP_ATOMIC);
++
++	/*
++	 * Before acking the MMU fault, let's make sure MMU can only
++	 * access entry #0. Then add a new entry so that the DSP OS
++	 * can continue in order to dump the stack.
++	 */
++	tmp = iommu_read_reg(mmu, MMU_CNTL);
++	tmp &= ~MMU_CNTL_TWL_EN;
++	iommu_write_reg(mmu, tmp, MMU_CNTL);
++	fa = iommu_read_reg(mmu, MMU_FAULT_AD);
++	e.da = fa & PAGE_MASK;
++	e.pa = virt_to_phys(dummy_addr);
++	e.valid = 1;
++	e.prsvd = 1;
++	e.pgsz = IOVMF_PGSZ_4K & MMU_CAM_PGSZ_MASK;
++	e.endian = MMU_RAM_ENDIAN_LITTLE;
++	e.elsz = MMU_RAM_ELSZ_32;
++	e.mixed = 0;
++
++	load_iotlb_entry(mmu, &e);
++
++	dsp_clk_enable(DSP_CLK_GPT8);
++
++	dsp_gpt_wait_overflow(DSP_CLK_GPT8, 0xfffffffe);
++
++	/* Clear MMU interrupt */
++	tmp = iommu_read_reg(mmu, MMU_IRQSTATUS);
++	iommu_write_reg(mmu, tmp, MMU_IRQSTATUS);
++
++	dump_dsp_stack(dev_context);
++	dsp_clk_disable(DSP_CLK_GPT8);
++
++	iopgtable_clear_entry(mmu, fa);
++	free_page((unsigned long)dummy_addr);
++}
++#endif
++
++
++static void fault_tasklet(unsigned long data)
++{
++	struct iommu *mmu = (struct iommu *)data;
++	struct bridge_dev_context *dev_ctx;
++	struct deh_mgr *dm;
++	u32 fa;
++	dev_get_deh_mgr(dev_get_first(), &dm);
++	dev_get_bridge_context(dev_get_first(), &dev_ctx);
++
++	if (!dm || !dev_ctx)
++		return;
++
++	fa = iommu_read_reg(mmu, MMU_FAULT_AD);
++
++#ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
++	print_dsp_trace_buffer(dev_ctx);
++	dump_dl_modules(dev_ctx);
++	mmu_fault_print_stack(dev_ctx);
++#endif
++
++	bridge_deh_notify(dm, DSP_MMUFAULT, fa);
++}
++
++/*
++ *  ======== mmu_fault_isr ========
++ *      ISR to be triggered by a DSP MMU fault interrupt.
++ */
++static int mmu_fault_callback(struct iommu *mmu)
++{
++	if (!mmu)
++		return -EPERM;
++
++	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
++	tasklet_schedule(&mmu_tasklet);
++	return 0;
++}
++
++/**
++ * dsp_mmu_init() - initialize dsp_mmu module and returns a handle
++ *
++ * This function initialize dsp mmu module and returns a struct iommu
++ * handle to use it for dsp maps.
++ *
++ */
++struct iommu *dsp_mmu_init()
++{
++	struct iommu *mmu;
++
++	mmu = iommu_get("iva2");
++
++	if (!IS_ERR(mmu)) {
++		tasklet_init(&mmu_tasklet, fault_tasklet, (unsigned long)mmu);
++		mmu->isr = mmu_fault_callback;
++	}
++
++	return mmu;
++}
++
++/**
++ * dsp_mmu_exit() - destroy dsp mmu module
++ * @mmu:	Pointer to iommu handle.
++ *
++ * This function destroys dsp mmu module.
++ *
++ */
++void dsp_mmu_exit(struct iommu *mmu)
++{
++	if (mmu)
++		iommu_put(mmu);
++	tasklet_kill(&mmu_tasklet);
++}
++
++/**
++ * user_va2_pa() - get physical address from userspace address.
++ * @mm:		mm_struct Pointer of the process.
++ * @address:	Virtual user space address.
++ *
++ */
++static u32 user_va2_pa(struct mm_struct *mm, u32 address)
++{
++	pgd_t *pgd;
++	pmd_t *pmd;
++	pte_t *ptep, pte;
++
++	pgd = pgd_offset(mm, address);
++	if (!(pgd_none(*pgd) || pgd_bad(*pgd))) {
++		pmd = pmd_offset(pgd, address);
++		if (!(pmd_none(*pmd) || pmd_bad(*pmd))) {
++			ptep = pte_offset_map(pmd, address);
++			if (ptep) {
++				pte = *ptep;
++				if (pte_present(pte))
++					return pte & PAGE_MASK;
++			}
++		}
++	}
++
++	return 0;
++}
++
++/**
++ * get_io_pages() - pin and get pages of io user's buffer.
++ * @mm:		mm_struct Pointer of the process.
++ * @uva:		Virtual user space address.
++ * @pages	Pages to be pined.
++ * @usr_pgs	struct page array pointer where the user pages will be stored
++ *
++ */
++static int get_io_pages(struct mm_struct *mm, u32 uva, unsigned pages,
++						struct page **usr_pgs)
++{
++	u32 pa;
++	int i;
++	struct page *pg;
++
++	for (i = 0; i < pages; i++) {
++		pa = user_va2_pa(mm, uva);
++
++		if (!pfn_valid(__phys_to_pfn(pa)))
++			break;
++
++		pg = phys_to_page(pa);
++		usr_pgs[i] = pg;
++		get_page(pg);
++	}
++	return i;
++}
++
++/**
++ * user_to_dsp_map() - maps user to dsp virtual address
++ * @mmu:	Pointer to iommu handle.
++ * @uva:		Virtual user space address.
++ * @da		DSP address
++ * @size		Buffer size to map.
++ * @usr_pgs	struct page array pointer where the user pages will be stored
++ *
++ * This function maps a user space buffer into DSP virtual address.
++ *
++ */
++u32 user_to_dsp_map(struct iommu *mmu, u32 uva, u32 da, u32 size,
++				struct page **usr_pgs)
++{
++	int res, w;
++	unsigned pages, i;
++	struct vm_area_struct *vma;
++	struct mm_struct *mm = current->mm;
++	struct sg_table *sgt;
++	struct scatterlist *sg;
++
++	if (!size || !usr_pgs)
++		return -EINVAL;
++
++	pages = size / PG_SIZE4K;
++
++	down_read(&mm->mmap_sem);
++	vma = find_vma(mm, uva);
++	while (vma && (uva + size > vma->vm_end))
++		vma = find_vma(mm, vma->vm_end + 1);
++
++	if (!vma) {
++		pr_err("%s: Failed to get VMA region for 0x%x (%d)\n",
++						__func__, uva, size);
++		up_read(&mm->mmap_sem);
++		return -EINVAL;
++	}
++	if (vma->vm_flags & (VM_WRITE | VM_MAYWRITE))
++		w = 1;
++
++	if (vma->vm_flags & VM_IO)
++		i = get_io_pages(mm, uva, pages, usr_pgs);
++	else
++		i = get_user_pages(current, mm, uva, pages, w, 1,
++							usr_pgs, NULL);
++	up_read(&mm->mmap_sem);
++
++	if (i < 0)
++		return i;
++
++	if (i < pages) {
++		res = -EFAULT;
++		goto err_pages;
++	}
++
++	sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
++	if (!sgt) {
++		res = -ENOMEM;
++		goto err_pages;
++	}
++
++	res = sg_alloc_table(sgt, pages, GFP_KERNEL);
++
++	if (res < 0)
++		goto err_sg;
++
++	for_each_sg(sgt->sgl, sg, sgt->nents, i)
++		sg_set_page(sg, usr_pgs[i], PAGE_SIZE, 0);
++
++	da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE | IOVMF_ELSZ_32);
++
++	if (!IS_ERR_VALUE(da))
++		return da;
++	res = (int)da;
++
++	sg_free_table(sgt);
++err_sg:
++	kfree(sgt);
++	i = pages;
++err_pages:
++	while (i--)
++		put_page(usr_pgs[i]);
++	return res;
++}
++
++/**
++ * user_to_dsp_unmap() - unmaps DSP virtual buffer.
++ * @mmu:	Pointer to iommu handle.
++ * @da		DSP address
++ *
++ * This function unmaps a user space buffer into DSP virtual address.
++ *
++ */
++int user_to_dsp_unmap(struct iommu *mmu, u32 da)
++{
++	unsigned i;
++	struct sg_table *sgt;
++	struct scatterlist *sg;
++
++	sgt = iommu_vunmap(mmu, da);
++	if (!sgt)
++		return -EFAULT;
++
++	for_each_sg(sgt->sgl, sg, sgt->nents, i)
++		put_page(sg_page(sg));
++	sg_free_table(sgt);
++	kfree(sgt);
++
++	return 0;
++}
 diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index 8825700..f99cc24 100644
+index 58118aa..789cc5e 100644
 --- a/drivers/staging/tidspbridge/core/tiomap3430.c
 +++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -102,56 +102,8 @@ static int bridge_dev_create(struct bridge_dev_context
- static int bridge_dev_ctrl(struct bridge_dev_context *dev_context,
- 				  u32 dw_cmd, void *pargs);
- static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt);
--static int pte_update(struct bridge_dev_context *dev_ctxt, u32 pa,
--			     u32 va, u32 size,
--			     struct hw_mmu_map_attrs_t *map_attrs);
--static int pte_set(struct pg_table_attrs *pt, u32 pa, u32 va,
--			  u32 size, struct hw_mmu_map_attrs_t *attrs);
--static int mem_map_vmalloc(struct bridge_dev_context *dev_context,
--				  u32 ul_mpu_addr, u32 virt_addr,
--				  u32 ul_num_bytes,
--				  struct hw_mmu_map_attrs_t *hw_attrs);
--
- bool wait_for_start(struct bridge_dev_context *dev_context, u32 dw_sync_addr);
+@@ -52,7 +52,6 @@
+ #include "_tiomap.h"
+ #include "_tiomap_pwr.h"
+ #include "tiomap_io.h"
+-#include "_deh.h"
  
--/*  ----------------------------------- Globals */
--
--/* Attributes of L2 page tables for DSP MMU */
--struct page_info {
--	u32 num_entries;	/* Number of valid PTEs in the L2 PT */
--};
--
--/* Attributes used to manage the DSP MMU page tables */
--struct pg_table_attrs {
--	spinlock_t pg_lock;	/* Critical section object handle */
--
--	u32 l1_base_pa;		/* Physical address of the L1 PT */
--	u32 l1_base_va;		/* Virtual  address of the L1 PT */
--	u32 l1_size;		/* Size of the L1 PT */
--	u32 l1_tbl_alloc_pa;
--	/* Physical address of Allocated mem for L1 table. May not be aligned */
--	u32 l1_tbl_alloc_va;
--	/* Virtual address of Allocated mem for L1 table. May not be aligned */
--	u32 l1_tbl_alloc_sz;
--	/* Size of consistent memory allocated for L1 table.
--	 * May not be aligned */
--
--	u32 l2_base_pa;		/* Physical address of the L2 PT */
--	u32 l2_base_va;		/* Virtual  address of the L2 PT */
--	u32 l2_size;		/* Size of the L2 PT */
--	u32 l2_tbl_alloc_pa;
--	/* Physical address of Allocated mem for L2 table. May not be aligned */
--	u32 l2_tbl_alloc_va;
--	/* Virtual address of Allocated mem for L2 table. May not be aligned */
--	u32 l2_tbl_alloc_sz;
--	/* Size of consistent memory allocated for L2 table.
--	 * May not be aligned */
--
--	u32 l2_num_pages;	/* Number of allocated L2 PT */
--	/* Array [l2_num_pages] of L2 PT info structs */
--	struct page_info *pg_info;
--};
--
- /*
-  *  This Bridge driver's function interface table.
-  */
-@@ -200,27 +152,6 @@ static struct bridge_drv_interface drv_interface_fxns = {
- 	bridge_msg_set_queue_id,
- };
+ /* Offset in shared mem to write to in order to synchronize start with DSP */
+ #define SHMSYNCOFFSET 4		/* GPP byte offset */
+@@ -67,7 +66,6 @@
+ #define MMU_SMALL_PAGE_MASK      0xFFFFF000
+ #define OMAP3_IVA2_BOOTADDR_MASK 0xFFFFFC00
+ #define PAGES_II_LVL_TABLE   512
+-#define PHYS_TO_PAGE(phys)      pfn_to_page((phys) >> PAGE_SHIFT)
  
--static inline void flush_all(struct bridge_dev_context *dev_context)
--{
--	if (dev_context->dw_brd_state == BRD_DSP_HIBERNATION ||
--	    dev_context->dw_brd_state == BRD_HIBERNATION)
--		wake_dsp(dev_context, NULL);
--
--	hw_mmu_tlb_flush_all(dev_context->dw_dsp_mmu_base);
--}
--
--static void bad_page_dump(u32 pa, struct page *pg)
--{
--	pr_emerg("DSPBRIDGE: MAP function: COUNT 0 FOR PA 0x%x\n", pa);
--	pr_emerg("Bad page state in process '%s'\n"
--		 "page:%p flags:0x%0*lx mapping:%p mapcount:%d count:%d\n"
--		 "Backtrace:\n",
--		 current->comm, pg, (int)(2 * sizeof(unsigned long)),
--		 (unsigned long)pg->flags, pg->mapping,
--		 page_mapcount(pg), page_count(pg));
--	dump_stack();
--}
--
- /*
-  *  ======== bridge_drv_entry ========
-  *  purpose:
-@@ -626,7 +557,6 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- {
- 	int status = 0;
- 	struct bridge_dev_context *dev_context = dev_ctxt;
--	struct pg_table_attrs *pt_attrs;
- 	u32 dsp_pwr_state;
- 	int clk_status, i;
- 	struct bridge_ioctl_extproc *tlb = dev_context->atlb_entry;
-@@ -665,14 +595,6 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 
- 	dsp_wdt_enable(false);
- 
--	/* This is a good place to clear the MMU page tables as well */
--	if (dev_context->pt_attrs) {
--		pt_attrs = dev_context->pt_attrs;
--		memset((u8 *) pt_attrs->l1_base_va, 0x00, pt_attrs->l1_size);
--		memset((u8 *) pt_attrs->l2_base_va, 0x00, pt_attrs->l2_size);
--		memset((u8 *) pt_attrs->pg_info, 0x00,
--		       (pt_attrs->l2_num_pages * sizeof(struct page_info)));
--	}
- 	/* Reset DSP */
- 	(*pdata->dsp_prm_rmw_bits)(OMAP3430_RST1_IVA2_MASK,
- 		OMAP3430_RST1_IVA2_MASK, OMAP3430_IVA2_MOD, OMAP2_RM_RSTCTRL);
-@@ -762,10 +684,6 @@ static int bridge_dev_create(struct bridge_dev_context
- 	struct bridge_dev_context *dev_context = NULL;
- 	s32 entry_ndx;
- 	struct cfg_hostres *resources = config_param;
--	struct pg_table_attrs *pt_attrs;
--	u32 pg_tbl_pa;
--	u32 pg_tbl_va;
--	u32 align_size;
- 	struct drv_data *drv_datap = dev_get_drvdata(bridge);
- 
- 	/* Allocate and initialize a data structure to contain the bridge driver
-@@ -796,97 +714,8 @@ static int bridge_dev_create(struct bridge_dev_context
- 	if (!dev_context->dw_dsp_base_addr)
- 		status = -EPERM;
- 
--	pt_attrs = kzalloc(sizeof(struct pg_table_attrs), GFP_KERNEL);
--	if (pt_attrs != NULL) {
--		/* Assuming that we use only DSP's memory map
--		 * until 0x4000:0000 , we would need only 1024
--		 * L1 enties i.e L1 size = 4K */
--		pt_attrs->l1_size = 0x1000;
--		align_size = pt_attrs->l1_size;
--		/* Align sizes are expected to be power of 2 */
--		/* we like to get aligned on L1 table size */
--		pg_tbl_va = (u32) mem_alloc_phys_mem(pt_attrs->l1_size,
--						     align_size, &pg_tbl_pa);
--
--		/* Check if the PA is aligned for us */
--		if ((pg_tbl_pa) & (align_size - 1)) {
--			/* PA not aligned to page table size ,
--			 * try with more allocation and align */
--			mem_free_phys_mem((void *)pg_tbl_va, pg_tbl_pa,
--					  pt_attrs->l1_size);
--			/* we like to get aligned on L1 table size */
--			pg_tbl_va =
--			    (u32) mem_alloc_phys_mem((pt_attrs->l1_size) * 2,
--						     align_size, &pg_tbl_pa);
--			/* We should be able to get aligned table now */
--			pt_attrs->l1_tbl_alloc_pa = pg_tbl_pa;
--			pt_attrs->l1_tbl_alloc_va = pg_tbl_va;
--			pt_attrs->l1_tbl_alloc_sz = pt_attrs->l1_size * 2;
--			/* Align the PA to the next 'align'  boundary */
--			pt_attrs->l1_base_pa =
--			    ((pg_tbl_pa) +
--			     (align_size - 1)) & (~(align_size - 1));
--			pt_attrs->l1_base_va =
--			    pg_tbl_va + (pt_attrs->l1_base_pa - pg_tbl_pa);
--		} else {
--			/* We got aligned PA, cool */
--			pt_attrs->l1_tbl_alloc_pa = pg_tbl_pa;
--			pt_attrs->l1_tbl_alloc_va = pg_tbl_va;
--			pt_attrs->l1_tbl_alloc_sz = pt_attrs->l1_size;
--			pt_attrs->l1_base_pa = pg_tbl_pa;
--			pt_attrs->l1_base_va = pg_tbl_va;
--		}
--		if (pt_attrs->l1_base_va)
--			memset((u8 *) pt_attrs->l1_base_va, 0x00,
--			       pt_attrs->l1_size);
--
--		/* number of L2 page tables = DMM pool used + SHMMEM +EXTMEM +
--		 * L4 pages */
--		pt_attrs->l2_num_pages = ((DMMPOOLSIZE >> 20) + 6);
--		pt_attrs->l2_size = HW_MMU_COARSE_PAGE_SIZE *
--		    pt_attrs->l2_num_pages;
--		align_size = 4;	/* Make it u32 aligned */
--		/* we like to get aligned on L1 table size */
--		pg_tbl_va = (u32) mem_alloc_phys_mem(pt_attrs->l2_size,
--						     align_size, &pg_tbl_pa);
--		pt_attrs->l2_tbl_alloc_pa = pg_tbl_pa;
--		pt_attrs->l2_tbl_alloc_va = pg_tbl_va;
--		pt_attrs->l2_tbl_alloc_sz = pt_attrs->l2_size;
--		pt_attrs->l2_base_pa = pg_tbl_pa;
--		pt_attrs->l2_base_va = pg_tbl_va;
--
--		if (pt_attrs->l2_base_va)
--			memset((u8 *) pt_attrs->l2_base_va, 0x00,
--			       pt_attrs->l2_size);
--
--		pt_attrs->pg_info = kzalloc(pt_attrs->l2_num_pages *
--					sizeof(struct page_info), GFP_KERNEL);
--		dev_dbg(bridge,
--			"L1 pa %x, va %x, size %x\n L2 pa %x, va "
--			"%x, size %x\n", pt_attrs->l1_base_pa,
--			pt_attrs->l1_base_va, pt_attrs->l1_size,
--			pt_attrs->l2_base_pa, pt_attrs->l2_base_va,
--			pt_attrs->l2_size);
--		dev_dbg(bridge, "pt_attrs %p L2 NumPages %x pg_info %p\n",
--			pt_attrs, pt_attrs->l2_num_pages, pt_attrs->pg_info);
--	}
--	if ((pt_attrs != NULL) && (pt_attrs->l1_base_va != 0) &&
--	    (pt_attrs->l2_base_va != 0) && (pt_attrs->pg_info != NULL))
--		dev_context->pt_attrs = pt_attrs;
--	else
--		status = -ENOMEM;
--
- 	if (!status) {
--		spin_lock_init(&pt_attrs->pg_lock);
- 		dev_context->tc_word_swap_on = drv_datap->tc_wordswapon;
--
--		/* Set the Clock Divisor for the DSP module */
--		udelay(5);
--		/* MMU address is obtained from the host
--		 * resources struct */
--		dev_context->dw_dsp_mmu_base = resources->dw_dmmu_base;
--	}
--	if (!status) {
- 		dev_context->hdev_obj = hdev_obj;
- 		/* Store current board state. */
- 		dev_context->dw_brd_state = BRD_UNKNOWN;
-@@ -896,23 +725,6 @@ static int bridge_dev_create(struct bridge_dev_context
- 		/* Return ptr to our device state to the DSP API for storage */
- 		*dev_cntxt = dev_context;
- 	} else {
--		if (pt_attrs != NULL) {
--			kfree(pt_attrs->pg_info);
--
--			if (pt_attrs->l2_tbl_alloc_va) {
--				mem_free_phys_mem((void *)
--						  pt_attrs->l2_tbl_alloc_va,
--						  pt_attrs->l2_tbl_alloc_pa,
--						  pt_attrs->l2_tbl_alloc_sz);
--			}
--			if (pt_attrs->l1_tbl_alloc_va) {
--				mem_free_phys_mem((void *)
--						  pt_attrs->l1_tbl_alloc_va,
--						  pt_attrs->l1_tbl_alloc_pa,
--						  pt_attrs->l1_tbl_alloc_sz);
--			}
--		}
--		kfree(pt_attrs);
- 		kfree(dev_context);
+ /* Forward Declarations: */
+ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt);
+@@ -352,17 +350,16 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
+ 					OMAP3430_IVA2_MOD, OMAP2_RM_RSTCTRL);
+ 		mmu = dev_context->dsp_mmu;
+ 		if (mmu)
+-			iommu_put(mmu);
+-		mmu = iommu_get("iva2");
++			dsp_mmu_exit(mmu);
++		mmu = dsp_mmu_init();
+ 		if (IS_ERR(mmu)) {
+-			dev_err(bridge, "iommu_get failed!\n");
++			dev_err(bridge, "dsp_mmu_init failed!\n");
+ 			dev_context->dsp_mmu = NULL;
+ 			status = (int)mmu;
+ 		}
  	}
- func_end:
-@@ -980,7 +792,6 @@ static int bridge_dev_ctrl(struct bridge_dev_context *dev_context,
-  */
- static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt)
- {
--	struct pg_table_attrs *pt_attrs;
- 	int status = 0;
- 	struct bridge_dev_context *dev_context = (struct bridge_dev_context *)
- 	    dev_ctxt;
-@@ -994,23 +805,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt)
- 
- 	/* first put the device to stop state */
- 	bridge_brd_stop(dev_context);
--	if (dev_context->pt_attrs) {
--		pt_attrs = dev_context->pt_attrs;
--		kfree(pt_attrs->pg_info);
--
--		if (pt_attrs->l2_tbl_alloc_va) {
--			mem_free_phys_mem((void *)pt_attrs->l2_tbl_alloc_va,
--					  pt_attrs->l2_tbl_alloc_pa,
--					  pt_attrs->l2_tbl_alloc_sz);
--		}
--		if (pt_attrs->l1_tbl_alloc_va) {
--			mem_free_phys_mem((void *)pt_attrs->l1_tbl_alloc_va,
--					  pt_attrs->l1_tbl_alloc_pa,
--					  pt_attrs->l1_tbl_alloc_sz);
--		}
--		kfree(pt_attrs);
--
--	}
- 
- 	if (dev_context->resources) {
- 		host_res = dev_context->resources;
-@@ -1307,225 +1101,6 @@ int user_to_dsp_unmap(struct iommu *mmu, u32 da)
+ 	if (!status) {
+ 		dev_context->dsp_mmu = mmu;
+-		mmu->isr = mmu_fault_isr;
+ 		sm_sg = &dev_context->sh_s;
+ 		sg0_da = iommu_kmap(mmu, sm_sg->seg0_da, sm_sg->seg0_pa,
+ 			sm_sg->seg0_size, IOVMF_ENDIAN_LITTLE | IOVMF_ELSZ_32);
+@@ -618,7 +615,7 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
+ 		}
+ 		iommu_kunmap(dev_context->dsp_mmu, dev_context->sh_s.seg0_da);
+ 		iommu_kunmap(dev_context->dsp_mmu, dev_context->sh_s.seg1_da);
+-		iommu_put(dev_context->dsp_mmu);
++		dsp_mmu_exit(dev_context->dsp_mmu);
+ 		dev_context->dsp_mmu = NULL;
+ 	}
+ 	/* Reset IVA IOMMU*/
+@@ -932,173 +929,6 @@ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
  }
  
  /*
-- *  ======== pte_update ========
-- *      This function calculates the optimum page-aligned addresses and sizes
-- *      Caller must pass page-aligned values
+- *  ======== user_va2_pa ========
+- *  Purpose:
+- *      This function walks through the page tables to convert a userland
+- *      virtual address to physical address
 - */
--static int pte_update(struct bridge_dev_context *dev_ctxt, u32 pa,
--			     u32 va, u32 size,
--			     struct hw_mmu_map_attrs_t *map_attrs)
+-static u32 user_va2_pa(struct mm_struct *mm, u32 address)
 -{
--	u32 i;
--	u32 all_bits;
--	u32 pa_curr = pa;
--	u32 va_curr = va;
--	u32 num_bytes = size;
--	struct bridge_dev_context *dev_context = dev_ctxt;
--	int status = 0;
--	u32 page_size[] = { HW_PAGE_SIZE16MB, HW_PAGE_SIZE1MB,
--		HW_PAGE_SIZE64KB, HW_PAGE_SIZE4KB
--	};
+-	pgd_t *pgd;
+-	pmd_t *pmd;
+-	pte_t *ptep, pte;
 -
--	while (num_bytes && !status) {
--		/* To find the max. page size with which both PA & VA are
--		 * aligned */
--		all_bits = pa_curr | va_curr;
--
--		for (i = 0; i < 4; i++) {
--			if ((num_bytes >= page_size[i]) && ((all_bits &
--							     (page_size[i] -
--							      1)) == 0)) {
--				status =
--				    pte_set(dev_context->pt_attrs, pa_curr,
--					    va_curr, page_size[i], map_attrs);
--				pa_curr += page_size[i];
--				va_curr += page_size[i];
--				num_bytes -= page_size[i];
--				/* Don't try smaller sizes. Hopefully we have
--				 * reached an address aligned to a bigger page
--				 * size */
--				break;
+-	pgd = pgd_offset(mm, address);
+-	if (!(pgd_none(*pgd) || pgd_bad(*pgd))) {
+-		pmd = pmd_offset(pgd, address);
+-		if (!(pmd_none(*pmd) || pmd_bad(*pmd))) {
+-			ptep = pte_offset_map(pmd, address);
+-			if (ptep) {
+-				pte = *ptep;
+-				if (pte_present(pte))
+-					return pte & PAGE_MASK;
 -			}
 -		}
 -	}
 -
--	return status;
+-	return 0;
 -}
 -
--/*
-- *  ======== pte_set ========
-- *      This function calculates PTE address (MPU virtual) to be updated
-- *      It also manages the L2 page tables
+-/**
+- * get_io_pages() - pin and get pages of io user's buffer.
+- * @mm:		mm_struct Pointer of the process.
+- * @uva:		Virtual user space address.
+- * @pages	Pages to be pined.
+- * @usr_pgs	struct page array pointer where the user pages will be stored
+- *
 - */
--static int pte_set(struct pg_table_attrs *pt, u32 pa, u32 va,
--			  u32 size, struct hw_mmu_map_attrs_t *attrs)
+-static int get_io_pages(struct mm_struct *mm, u32 uva, unsigned pages,
+-						struct page **usr_pgs)
 -{
--	u32 i;
--	u32 pte_val;
--	u32 pte_addr_l1;
--	u32 pte_size;
--	/* Base address of the PT that will be updated */
--	u32 pg_tbl_va;
--	u32 l1_base_va;
--	/* Compiler warns that the next three variables might be used
--	 * uninitialized in this function. Doesn't seem so. Working around,
--	 * anyways. */
--	u32 l2_base_va = 0;
--	u32 l2_base_pa = 0;
--	u32 l2_page_num = 0;
--	int status = 0;
--
--	l1_base_va = pt->l1_base_va;
--	pg_tbl_va = l1_base_va;
--	if ((size == HW_PAGE_SIZE64KB) || (size == HW_PAGE_SIZE4KB)) {
--		/* Find whether the L1 PTE points to a valid L2 PT */
--		pte_addr_l1 = hw_mmu_pte_addr_l1(l1_base_va, va);
--		if (pte_addr_l1 <= (pt->l1_base_va + pt->l1_size)) {
--			pte_val = *(u32 *) pte_addr_l1;
--			pte_size = hw_mmu_pte_size_l1(pte_val);
--		} else {
--			return -EPERM;
--		}
--		spin_lock(&pt->pg_lock);
--		if (pte_size == HW_MMU_COARSE_PAGE_SIZE) {
--			/* Get the L2 PA from the L1 PTE, and find
--			 * corresponding L2 VA */
--			l2_base_pa = hw_mmu_pte_coarse_l1(pte_val);
--			l2_base_va =
--			    l2_base_pa - pt->l2_base_pa + pt->l2_base_va;
--			l2_page_num =
--			    (l2_base_pa -
--			     pt->l2_base_pa) / HW_MMU_COARSE_PAGE_SIZE;
--		} else if (pte_size == 0) {
--			/* L1 PTE is invalid. Allocate a L2 PT and
--			 * point the L1 PTE to it */
--			/* Find a free L2 PT. */
--			for (i = 0; (i < pt->l2_num_pages) &&
--			     (pt->pg_info[i].num_entries != 0); i++)
--				;;
--			if (i < pt->l2_num_pages) {
--				l2_page_num = i;
--				l2_base_pa = pt->l2_base_pa + (l2_page_num *
--						HW_MMU_COARSE_PAGE_SIZE);
--				l2_base_va = pt->l2_base_va + (l2_page_num *
--						HW_MMU_COARSE_PAGE_SIZE);
--				/* Endianness attributes are ignored for
--				 * HW_MMU_COARSE_PAGE_SIZE */
--				status =
--				    hw_mmu_pte_set(l1_base_va, l2_base_pa, va,
--						   HW_MMU_COARSE_PAGE_SIZE,
--						   attrs);
--			} else {
--				status = -ENOMEM;
--			}
--		} else {
--			/* Found valid L1 PTE of another size.
--			 * Should not overwrite it. */
--			status = -EPERM;
--		}
--		if (!status) {
--			pg_tbl_va = l2_base_va;
--			if (size == HW_PAGE_SIZE64KB)
--				pt->pg_info[l2_page_num].num_entries += 16;
--			else
--				pt->pg_info[l2_page_num].num_entries++;
--			dev_dbg(bridge, "PTE: L2 BaseVa %x, BasePa %x, PageNum "
--				"%x, num_entries %x\n", l2_base_va,
--				l2_base_pa, l2_page_num,
--				pt->pg_info[l2_page_num].num_entries);
--		}
--		spin_unlock(&pt->pg_lock);
--	}
--	if (!status) {
--		dev_dbg(bridge, "PTE: pg_tbl_va %x, pa %x, va %x, size %x\n",
--			pg_tbl_va, pa, va, size);
--		dev_dbg(bridge, "PTE: endianism %x, element_size %x, "
--			"mixed_size %x\n", attrs->endianism,
--			attrs->element_size, attrs->mixed_size);
--		status = hw_mmu_pte_set(pg_tbl_va, pa, va, size, attrs);
--	}
--
--	return status;
--}
--
--/* Memory map kernel VA -- memory allocated with vmalloc */
--static int mem_map_vmalloc(struct bridge_dev_context *dev_context,
--				  u32 ul_mpu_addr, u32 virt_addr,
--				  u32 ul_num_bytes,
--				  struct hw_mmu_map_attrs_t *hw_attrs)
--{
--	int status = 0;
--	struct page *page[1];
--	u32 i;
--	u32 pa_curr;
--	u32 pa_next;
--	u32 va_curr;
--	u32 size_curr;
--	u32 num_pages;
 -	u32 pa;
--	u32 num_of4k_pages;
--	u32 temp = 0;
+-	int i;
+-	struct page *pg;
 -
--	/*
--	 * Do Kernel va to pa translation.
--	 * Combine physically contiguous regions to reduce TLBs.
--	 * Pass the translated pa to pte_update.
--	 */
--	num_pages = ul_num_bytes / PAGE_SIZE;	/* PAGE_SIZE = OS page size */
--	i = 0;
--	va_curr = ul_mpu_addr;
--	page[0] = vmalloc_to_page((void *)va_curr);
--	pa_next = page_to_phys(page[0]);
--	while (!status && (i < num_pages)) {
--		/*
--		 * Reuse pa_next from the previous iteraion to avoid
--		 * an extra va2pa call
--		 */
--		pa_curr = pa_next;
--		size_curr = PAGE_SIZE;
--		/*
--		 * If the next page is physically contiguous,
--		 * map it with the current one by increasing
--		 * the size of the region to be mapped
--		 */
--		while (++i < num_pages) {
--			page[0] =
--			    vmalloc_to_page((void *)(va_curr + size_curr));
--			pa_next = page_to_phys(page[0]);
+-	for (i = 0; i < pages; i++) {
+-		pa = user_va2_pa(mm, uva);
 -
--			if (pa_next == (pa_curr + size_curr))
--				size_curr += PAGE_SIZE;
--			else
--				break;
--
--		}
--		if (pa_next == 0) {
--			status = -ENOMEM;
+-		if (!pfn_valid(__phys_to_pfn(pa)))
 -			break;
--		}
--		pa = pa_curr;
--		num_of4k_pages = size_curr / HW_PAGE_SIZE4KB;
--		while (temp++ < num_of4k_pages) {
--			get_page(PHYS_TO_PAGE(pa));
--			pa += HW_PAGE_SIZE4KB;
--		}
--		status = pte_update(dev_context, pa_curr, virt_addr +
--				    (va_curr - ul_mpu_addr), size_curr,
--				    hw_attrs);
--		va_curr += size_curr;
+-
+-		pg = PHYS_TO_PAGE(pa);
+-		usr_pgs[i] = pg;
+-		get_page(pg);
 -	}
--	/*
--	 * In any case, flush the TLB
--	 * This is called from here instead from pte_update to avoid unnecessary
--	 * repetition while mapping non-contiguous physical regions of a virtual
--	 * region
--	 */
--	flush_all(dev_context);
--	dev_dbg(bridge, "%s status %x\n", __func__, status);
--	return status;
+-	return i;
+-}
+-
+-/**
+- * user_to_dsp_map() - maps user to dsp virtual address
+- * @mmu:	Pointer to iommu handle.
+- * @uva:		Virtual user space address.
+- * @da		DSP address
+- * @size		Buffer size to map.
+- * @usr_pgs	struct page array pointer where the user pages will be stored
+- *
+- * This function maps a user space buffer into DSP virtual address.
+- *
+- */
+-u32 user_to_dsp_map(struct iommu *mmu, u32 uva, u32 da, u32 size,
+-				struct page **usr_pgs)
+-{
+-	int res, w;
+-	unsigned pages, i;
+-	struct vm_area_struct *vma;
+-	struct mm_struct *mm = current->mm;
+-	struct sg_table *sgt;
+-	struct scatterlist *sg;
+-
+-	if (!size || !usr_pgs)
+-		return -EINVAL;
+-
+-	pages = size / PG_SIZE4K;
+-
+-	down_read(&mm->mmap_sem);
+-	vma = find_vma(mm, uva);
+-	while (vma && (uva + size > vma->vm_end))
+-		vma = find_vma(mm, vma->vm_end + 1);
+-
+-	if (!vma) {
+-		pr_err("%s: Failed to get VMA region for 0x%x (%d)\n",
+-						__func__, uva, size);
+-		up_read(&mm->mmap_sem);
+-		return -EINVAL;
+-	}
+-	if (vma->vm_flags & (VM_WRITE | VM_MAYWRITE))
+-		w = 1;
+-
+-	if (vma->vm_flags & VM_IO)
+-		i = get_io_pages(mm, uva, pages, usr_pgs);
+-	else
+-		i = get_user_pages(current, mm, uva, pages, w, 1,
+-							usr_pgs, NULL);
+-	up_read(&mm->mmap_sem);
+-
+-	if (i < 0)
+-		return i;
+-
+-	if (i < pages) {
+-		res = -EFAULT;
+-		goto err_pages;
+-	}
+-
+-	sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
+-	if (!sgt) {
+-		res = -ENOMEM;
+-		goto err_pages;
+-	}
+-
+-	res = sg_alloc_table(sgt, pages, GFP_KERNEL);
+-
+-	if (res < 0)
+-		goto err_sg;
+-
+-	for_each_sg(sgt->sgl, sg, sgt->nents, i)
+-		sg_set_page(sg, usr_pgs[i], PAGE_SIZE, 0);
+-
+-	da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE | IOVMF_ELSZ_32);
+-
+-	if (!IS_ERR_VALUE(da))
+-		return da;
+-	res = (int)da;
+-
+-	sg_free_table(sgt);
+-err_sg:
+-	kfree(sgt);
+-	i = pages;
+-err_pages:
+-	while (i--)
+-		put_page(usr_pgs[i]);
+-	return res;
+-}
+-
+-/**
+- * user_to_dsp_unmap() - unmaps DSP virtual buffer.
+- * @mmu:	Pointer to iommu handle.
+- * @da		DSP address
+- *
+- * This function unmaps a user space buffer into DSP virtual address.
+- *
+- */
+-int user_to_dsp_unmap(struct iommu *mmu, u32 da)
+-{
+-	unsigned i;
+-	struct sg_table *sgt;
+-	struct scatterlist *sg;
+-
+-	sgt = iommu_vunmap(mmu, da);
+-	if (!sgt)
+-		return -EFAULT;
+-
+-	for_each_sg(sgt->sgl, sg, sgt->nents, i)
+-		put_page(sg_page(sg));
+-	sg_free_table(sgt);
+-	kfree(sgt);
+-
+-	return 0;
 -}
 -
 -/*
   *  ======== wait_for_start ========
   *      Wait for the singal from DSP that it has started, or time out.
   */
+diff --git a/drivers/staging/tidspbridge/core/ue_deh.c b/drivers/staging/tidspbridge/core/ue_deh.c
+index 2e1ac89..e24ea0c 100644
+--- a/drivers/staging/tidspbridge/core/ue_deh.c
++++ b/drivers/staging/tidspbridge/core/ue_deh.c
+@@ -31,32 +31,6 @@
+ #include <dspbridge/drv.h>
+ #include <dspbridge/wdt.h>
+ 
+-#define MMU_CNTL_TWL_EN		(1 << 2)
+-
+-static void mmu_fault_dpc(unsigned long data)
+-{
+-	struct deh_mgr *deh = (void *)data;
+-
+-	if (!deh)
+-		return;
+-
+-	bridge_deh_notify(deh, DSP_MMUFAULT, 0);
+-}
+-
+-int mmu_fault_isr(struct iommu *mmu)
+-{
+-	struct deh_mgr *dm;
+-
+-	dev_get_deh_mgr(dev_get_first(), &dm);
+-
+-	if (!dm)
+-		return -EPERM;
+-
+-	iommu_write_reg(mmu, 0, MMU_IRQENABLE);
+-	tasklet_schedule(&dm->dpc_tasklet);
+-	return 0;
+-}
+-
+ int bridge_deh_create(struct deh_mgr **ret_deh,
+ 		struct dev_object *hdev_obj)
+ {
+@@ -84,9 +58,6 @@ int bridge_deh_create(struct deh_mgr **ret_deh,
+ 	}
+ 	ntfy_init(deh->ntfy_obj);
+ 
+-	/* Create a MMUfault DPC */
+-	tasklet_init(&deh->dpc_tasklet, mmu_fault_dpc, (u32) deh);
+-
+ 	/* Fill in context structure */
+ 	deh->hbridge_context = hbridge_context;
+ 
+@@ -110,9 +81,6 @@ int bridge_deh_destroy(struct deh_mgr *deh)
+ 		kfree(deh->ntfy_obj);
+ 	}
+ 
+-	/* Free DPC object */
+-	tasklet_kill(&deh->dpc_tasklet);
+-
+ 	/* Deallocate the DEH manager object */
+ 	kfree(deh);
+ 
+@@ -133,51 +101,6 @@ int bridge_deh_register_notify(struct deh_mgr *deh, u32 event_mask,
+ 		return ntfy_unregister(deh->ntfy_obj, hnotification);
+ }
+ 
+-#ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
+-static void mmu_fault_print_stack(struct bridge_dev_context *dev_context)
+-{
+-	void *dummy_addr;
+-	u32 fa, tmp;
+-	struct iotlb_entry e;
+-	struct iommu *mmu = dev_context->dsp_mmu;
+-	dummy_addr = (void *)__get_free_page(GFP_ATOMIC);
+-
+-	/*
+-	 * Before acking the MMU fault, let's make sure MMU can only
+-	 * access entry #0. Then add a new entry so that the DSP OS
+-	 * can continue in order to dump the stack.
+-	 */
+-	tmp = iommu_read_reg(mmu, MMU_CNTL);
+-	tmp &= ~MMU_CNTL_TWL_EN;
+-	iommu_write_reg(mmu, tmp, MMU_CNTL);
+-	fa = iommu_read_reg(mmu, MMU_FAULT_AD);
+-	e.da = fa & PAGE_MASK;
+-	e.pa = virt_to_phys(dummy_addr);
+-	e.valid = 1;
+-	e.prsvd = 1;
+-	e.pgsz = IOVMF_PGSZ_4K & MMU_CAM_PGSZ_MASK;
+-	e.endian = MMU_RAM_ENDIAN_LITTLE;
+-	e.elsz = MMU_RAM_ELSZ_32;
+-	e.mixed = 0;
+-
+-	load_iotlb_entry(dev_context->dsp_mmu, &e);
+-
+-	dsp_clk_enable(DSP_CLK_GPT8);
+-
+-	dsp_gpt_wait_overflow(DSP_CLK_GPT8, 0xfffffffe);
+-
+-	/* Clear MMU interrupt */
+-	tmp = iommu_read_reg(mmu, MMU_IRQSTATUS);
+-	iommu_write_reg(mmu, tmp, MMU_IRQSTATUS);
+-
+-	dump_dsp_stack(dev_context);
+-	dsp_clk_disable(DSP_CLK_GPT8);
+-
+-	iopgtable_clear_entry(mmu, fa);
+-	free_page((unsigned long)dummy_addr);
+-}
+-#endif
+-
+ static inline const char *event_to_string(int event)
+ {
+ 	switch (event) {
+@@ -193,7 +116,6 @@ void bridge_deh_notify(struct deh_mgr *deh, int event, int info)
+ {
+ 	struct bridge_dev_context *dev_context;
+ 	const char *str = event_to_string(event);
+-	u32 fa;
+ 
+ 	if (!deh)
+ 		return;
+@@ -211,13 +133,7 @@ void bridge_deh_notify(struct deh_mgr *deh, int event, int info)
+ #endif
+ 		break;
+ 	case DSP_MMUFAULT:
+-		fa = iommu_read_reg(dev_context->dsp_mmu, MMU_FAULT_AD);
+-		dev_err(bridge, "%s: %s, addr=0x%x", __func__, str, fa);
+-#ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
+-		print_dsp_trace_buffer(dev_context);
+-		dump_dl_modules(dev_context);
+-		mmu_fault_print_stack(dev_context);
+-#endif
++		dev_err(bridge, "%s: %s, addr=0x%x", __func__, str, info);
+ 		break;
+ 	default:
+ 		dev_err(bridge, "%s: %s", __func__, str);
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h b/drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
+new file mode 100644
+index 0000000..cb38d4c
+--- /dev/null
++++ b/drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
+@@ -0,0 +1,67 @@
++/*
++ * dsp-mmu.h
++ *
++ * DSP-BIOS Bridge driver support functions for TI OMAP processors.
++ *
++ * DSP iommu.
++ *
++ * Copyright (C) 2005-2010 Texas Instruments, Inc.
++ *
++ * This package is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
++ * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
++ * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
++ */
++
++#ifndef _DSP_MMU_
++#define _DSP_MMU_
++
++#include <plat/iommu.h>
++#include <plat/iovmm.h>
++
++/**
++ * dsp_mmu_init() - initialize dsp_mmu module and returns a handle
++ *
++ * This function initialize dsp mmu module and returns a struct iommu
++ * handle to use it for dsp maps.
++ *
++ */
++struct iommu *dsp_mmu_init(void);
++
++/**
++ * dsp_mmu_exit() - destroy dsp mmu module
++ * @mmu:	Pointer to iommu handle.
++ *
++ * This function destroys dsp mmu module.
++ *
++ */
++void dsp_mmu_exit(struct iommu *mmu);
++
++/**
++ * user_to_dsp_map() - maps user to dsp virtual address
++ * @mmu:	Pointer to iommu handle.
++ * @uva:		Virtual user space address.
++ * @da		DSP address
++ * @size		Buffer size to map.
++ * @usr_pgs	struct page array pointer where the user pages will be stored
++ *
++ * This function maps a user space buffer into DSP virtual address.
++ *
++ */
++u32 user_to_dsp_map(struct iommu *mmu, u32 uva, u32 da, u32 size,
++						struct page **usr_pgs);
++
++/**
++ * user_to_dsp_unmap() - unmaps DSP virtual buffer.
++ * @mmu:	Pointer to iommu handle.
++ * @da		DSP address
++ *
++ * This function unmaps a user space buffer into DSP virtual address.
++ *
++ */
++int user_to_dsp_unmap(struct iommu *mmu, u32 da);
++
++#endif
 -- 
 1.6.3.3
 
