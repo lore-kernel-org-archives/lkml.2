@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab0JAMIV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 08:08:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20132 "EHLO mx1.redhat.com"
+	id S932540Ab0JAMKN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 08:10:13 -0400
+Received: from gate.crashing.org ([63.228.1.57]:49643 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932098Ab0JAMIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 08:08:20 -0400
-Message-ID: <4CA5CF17.1090807@redhat.com>
-Date: Fri, 01 Oct 2010 08:07:51 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
+	id S932182Ab0JAMKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 08:10:11 -0400
+Subject: Re: [PATCH 01/18] powerpc: Add ability to build little endian
+ kernels
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Josh Boyer <jwboyer@gmail.com>
+Cc: Kumar Gala <galak@kernel.crashing.org>, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Albert Herranz <albert_herranz@yahoo.es>, linux-kernel@vger.kernel.org,
+        paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
+        Andreas Schwab <schwab@linux-m68k.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 0/2] Reduce mmap_sem hold times during file backed page
- faults
-References: <1285909484-30958-1-git-send-email-walken@google.com>
-In-Reply-To: <1285909484-30958-1-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        linuxppc-dev@lists.ozlabs.org,
+        Torez Smith <lnxtorez@linux.vnet.ibm.com>
+In-Reply-To: <AANLkTimGtB_KoOgwk3Ujn2UcNzs9qHxzeZcb1ShLgcXh@mail.gmail.com>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+	 <1285916771-18033-2-git-send-email-imunsie@au1.ibm.com>
+	 <F7E7DAE6-A132-458D-ABC3-4CC92A4C7263@kernel.crashing.org>
+	 <AANLkTimGtB_KoOgwk3Ujn2UcNzs9qHxzeZcb1ShLgcXh@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Oct 2010 22:09:13 +1000
+Message-ID: <1285934953.2463.72.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2010 01:04 AM, Michel Lespinasse wrote:
-> Linus, I would appreciate your comments on this since you shot down the
-> previous proposal. I hope you'll find this approach is sane, but I would
-> be interested to hear if you have specific objections.
->
-> mmap_sem is very coarse grained (per process) and has long read-hold times
-> (disk latencies); this breaks down rapidly for workloads that use both
-> read and write mmap_sem acquires. This short patch series tries to reduce
-> mmap_sem hold times when faulting in file backed VMAs.
+On Fri, 2010-10-01 at 07:28 -0400, Josh Boyer wrote:
+> > Shouldn't we have something that limits to the sub-arch'es that
+> actually support it?  I doubt I'm ever going to make FSL-Book-e
+> support LE.
+> 
+> Yes, it should. 
 
-The changes make sense to me, but it would be good to know
-what kind of benefits you have seen with these patches.
+Sure, that's only WIP patches :-)
 
-Especially performance numbers :)
+Tho FSL BookE would be relatively easy...
 
--- 
-All rights reversed
+Cheers,
+Ben.
+
+
