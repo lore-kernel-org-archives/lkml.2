@@ -1,79 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752041Ab0JAB7H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 21:59:07 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38804 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab0JAB7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 21:59:06 -0400
-Date: Thu, 30 Sep 2010 18:58:57 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Valerie Aurora <vaurora@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
-        viro@zeniv.linux.org.uk, hch@infradead.org, agruen@suse.de,
-        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 01/34] VFS: Make clone_mnt() and copy_tree() return
- error codes
-Message-ID: <20101001015857.GA5003@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
- <1284675145-4391-2-git-send-email-vaurora@redhat.com>
- <E1P1FnW-0001yC-Ts@pomaz-ex.szeredi.hu>
- <20100930214123.GA490@shell>
- <20100930214418.GB490@shell>
- <20101001003342.GI9247@ram-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101001003342.GI9247@ram-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753643Ab0JAB7n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 21:59:43 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54949 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752230Ab0JAB7h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 21:59:37 -0400
+From: Fernando Guzman Lugo <x0095840@ti.com>
+To: <gregkh@suse.de>
+Cc: <felipe.contreras@nokia.com>, <ameya.palande@nokia.com>, <nm@ti.com>,
+        <Hiroshi.DOYU@nokia.com>, <ohad@wizery.com>,
+        <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
+        <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCHv2 08/11] staging: tidspbridge: remove dw_dmmu_base from cfg_hostres struct
+Date: Thu, 30 Sep 2010 21:12:55 -0500
+Message-Id: <1285899178-14413-9-git-send-email-x0095840@ti.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1285899178-14413-8-git-send-email-x0095840@ti.com>
+References: <1285899178-14413-1-git-send-email-x0095840@ti.com>
+ <1285899178-14413-2-git-send-email-x0095840@ti.com>
+ <1285899178-14413-3-git-send-email-x0095840@ti.com>
+ <1285899178-14413-4-git-send-email-x0095840@ti.com>
+ <1285899178-14413-5-git-send-email-x0095840@ti.com>
+ <1285899178-14413-6-git-send-email-x0095840@ti.com>
+ <1285899178-14413-7-git-send-email-x0095840@ti.com>
+ <1285899178-14413-8-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 05:33:42PM -0700, Ram Pai wrote:
-> On Thu, Sep 30, 2010 at 05:44:18PM -0400, Valerie Aurora wrote:
-> > (Resend with correct email for Ram Pai)
-> > 
-> > On Thu, Sep 30, 2010 at 11:51:30AM +0200, Miklos Szeredi wrote:
-> > > On Thu, 16 Sep 2010, Valerie Aurora wrote:
-> > > > copy_tree() can theoretically fail in a case other than ENOMEM, but
-> > > > always returns NULL which is interpreted by callers as -ENOMEM.
-> > > > Convert to return an explicit error.  Convert clone_mnt() for
-> > > > consistency and because union mounts will add new error cases.
-> > > 
-> > > I think it makes sense to push this fix to 2.6.37 independently of the
-> > > other patches.
-> > > 
-> > > Acked-by: Miklos Szeredi <mszeredi@suse.cz>
-> > 
-> > I'm certainly not going to argue, but I spent an hour trying to
-> > trigger the non-ENOMEM case (below) and failed - maybe it's
-> > unreachable?
-> > 
-> > > > @@ -1212,11 +1216,12 @@ struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
-> > > >  	struct path path;
-> > > >  
-> > > >  	if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(mnt))
-> > > > -		return NULL;
-> > > > +		return ERR_PTR(-EINVAL);
-> > 
-> > Ram, do you remember how this worked?
-> 
-> Oops. That should be a OR condition. there is one other check in that
-> function that should also be a OR condition.
+We don't need to map iva2 iommu register base address
+anymore.
 
-I may be wrong here. Can't exactly recollect what CL_COPY_ALL flag means. Al Viro
-might remember?  If CL_COPY_ALL means, to clone everything irrespective of any other
-flags, then the above code seems right. 
+Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+---
+ drivers/staging/tidspbridge/core/tiomap3430.c      |    3 ---
+ drivers/staging/tidspbridge/core/tiomap_io.c       |    3 +--
+ .../tidspbridge/include/dspbridge/cfgdefs.h        |    1 -
+ drivers/staging/tidspbridge/rmgr/drv.c             |    4 ----
+ 4 files changed, 1 insertions(+), 10 deletions(-)
 
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 789cc5e..f890a0e 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -830,8 +830,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt)
+ 			iounmap((void *)host_res->dw_mem_base[3]);
+ 		if (host_res->dw_mem_base[4])
+ 			iounmap((void *)host_res->dw_mem_base[4]);
+-		if (host_res->dw_dmmu_base)
+-			iounmap(host_res->dw_dmmu_base);
+ 		if (host_res->dw_per_base)
+ 			iounmap(host_res->dw_per_base);
+ 		if (host_res->dw_per_pm_base)
+@@ -845,7 +843,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt)
+ 		host_res->dw_mem_base[2] = (u32) NULL;
+ 		host_res->dw_mem_base[3] = (u32) NULL;
+ 		host_res->dw_mem_base[4] = (u32) NULL;
+-		host_res->dw_dmmu_base = NULL;
+ 		host_res->dw_sys_ctrl_base = NULL;
+ 
+ 		kfree(host_res);
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
+index 63d46bc..81a5401 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.c
++++ b/drivers/staging/tidspbridge/core/tiomap_io.c
+@@ -391,7 +391,6 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
+ 		omap_dspbridge_dev->dev.platform_data;
+ 	struct cfg_hostres *resources = dev_context->resources;
+ 	int status = 0;
+-	u32 temp;
+ 
+ 	if (!dev_context->mbox)
+ 		return 0;
+@@ -435,7 +434,7 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
+ 		omap_mbox_restore_ctx(dev_context->mbox);
+ 
+ 		/* Access MMU SYS CONFIG register to generate a short wakeup */
+-		temp = readl(resources->dw_dmmu_base + 0x10);
++		iommu_read_reg(dev_context->dsp_mmu, MMU_SYSCONFIG);
+ 
+ 		dev_context->dw_brd_state = BRD_RUNNING;
+ 	} else if (dev_context->dw_brd_state == BRD_RETENTION) {
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
+index 38122db..dfb55cc 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
+@@ -68,7 +68,6 @@ struct cfg_hostres {
+ 	void __iomem *dw_per_base;
+ 	u32 dw_per_pm_base;
+ 	u32 dw_core_pm_base;
+-	void __iomem *dw_dmmu_base;
+ 	void __iomem *dw_sys_ctrl_base;
+ };
+ 
+diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
+index 81b1b90..0c857b9 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv.c
++++ b/drivers/staging/tidspbridge/rmgr/drv.c
+@@ -743,7 +743,6 @@ static int request_bridge_resources(struct cfg_hostres *res)
+ 	host_res->dw_sys_ctrl_base = ioremap(OMAP_SYSC_BASE, OMAP_SYSC_SIZE);
+ 	dev_dbg(bridge, "dw_mem_base[0] 0x%x\n", host_res->dw_mem_base[0]);
+ 	dev_dbg(bridge, "dw_mem_base[3] 0x%x\n", host_res->dw_mem_base[3]);
+-	dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
+ 
+ 	/* for 24xx base port is not mapping the mamory for DSP
+ 	 * internal memory TODO Do a ioremap here */
+@@ -797,8 +796,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
+ 							 OMAP_PER_PRM_SIZE);
+ 		host_res->dw_core_pm_base = (u32) ioremap(OMAP_CORE_PRM_BASE,
+ 							  OMAP_CORE_PRM_SIZE);
+-		host_res->dw_dmmu_base = ioremap(OMAP_DMMU_BASE,
+-						 OMAP_DMMU_SIZE);
+ 
+ 		dev_dbg(bridge, "dw_mem_base[0] 0x%x\n",
+ 			host_res->dw_mem_base[0]);
+@@ -810,7 +807,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
+ 			host_res->dw_mem_base[3]);
+ 		dev_dbg(bridge, "dw_mem_base[4] 0x%x\n",
+ 			host_res->dw_mem_base[4]);
+-		dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
+ 
+ 		shm_size = drv_datap->shm_size;
+ 		if (shm_size >= 0x10000) {
+-- 
+1.6.3.3
 
-> 
-> BTW: the return value has to be NULL. right? because its not an error
-> to clone a unbindable mount. Nor is it an error to not specify CL_COPY_ALL.
-> It just means that you want nothing in return.
-
-In any case i think the return value should be NULL.
-
-RP
