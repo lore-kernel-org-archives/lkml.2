@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab0JASm2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 14:42:28 -0400
-Received: from kroah.org ([198.145.64.141]:39482 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754536Ab0JASm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 14:42:27 -0400
-Date: Fri, 1 Oct 2010 11:26:41 -0700
-From: Greg KH <greg@kroah.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Kyle McMartin <kyle@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        stable@kernel.org, James Dingwall <james.dingwall@amdocs.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just
- after the boot
-Message-ID: <20101001182641.GA9588@kroah.com>
-References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com>
- <20100927024044.GQ13116@bombadil.infradead.org>
- <20100927061336.GA22721@kroah.com>
- <4CA0DDAB.9090507@goop.org>
- <20100928182910.GA32464@kroah.com>
- <4CA35FB7.10600@goop.org>
- <20100930000644.GA26380@kroah.com>
- <4CA61080.6070709@goop.org>
+	id S1754782Ab0JASpk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 14:45:40 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:34158 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753715Ab0JASpj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 14:45:39 -0400
+Date: Fri, 1 Oct 2010 13:45:38 -0500
+From: Robin Holt <holt@sgi.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, Greg KH <greg@kroah.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Robin Holt <holt@sgi.com>, steiner@sgi.com
+Subject: Re: [PATCH 2/9] v3 Add mutex for adding/removing memory blocks
+Message-ID: <20101001184538.GI14064@sgi.com>
+References: <4CA62700.7010809@austin.ibm.com>
+ <4CA62896.2060307@austin.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CA61080.6070709@goop.org>
+In-Reply-To: <4CA62896.2060307@austin.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 09:46:56AM -0700, Jeremy Fitzhardinge wrote:
->  On 09/29/2010 05:06 PM, Greg KH wrote:
-> > On Wed, Sep 29, 2010 at 08:48:07AM -0700, Jeremy Fitzhardinge wrote:
-> >>
-> >> I should have pointed out it is the same in the stable-2.6.32 tree as well.
-> > Yes, sorry, I know, I only had the chance to get the .35 release out
-> > yesterday, I'll do the .32 one now.
-> >
+On Fri, Oct 01, 2010 at 01:29:42PM -0500, Nathan Fontenot wrote:
+> Add a new mutex for use in adding and removing of memory blocks.  This
+> is needed to avoid any race conditions in which the same memory block could
+> be added and removed at the same time.
 > 
-> Ping?  Looks like the fix hasn't hit stable-2.6.32/master yet.
+> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-No it hasn't, sorry.  Turns out the Embedded Linux kernel "summit" was
-too interesting to get a stable kernel out during it, and I've been in a
-train/plane/train/ferry/taxi/bed since then.
+Reviewed-by: Robin Holt <holt@sgi.com>
 
-Should now be out in a few hours...
+I am fine with this patch by itself, but its only real function is
+to protect the count introduced by the next patch.  You might want to
+combine the patches, but if not, that is fine as well.
 
-thanks,
-
-greg k-h
+Robin
