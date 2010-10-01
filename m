@@ -1,340 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932440Ab0JAOUc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 10:20:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49320 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab0JAOUa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 10:20:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZsfbcU+aegayw14FaT4DDSPEyAg7QQ98XJEHg7M8H7TEc1QOiV3cdw0Em42Ba9XhRO
-         FXWM1EewFerM1p3awDkrLGJoYFRJd97OdHVeFIw+Za6mFkoDj3/FDFT9wambssc/zLPE
-         +U10XlM6Cuo89LU5ncXbSwH71n1OahKK8fxxc=
-Date: Fri, 1 Oct 2010 16:20:12 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: "Wu, Xia" <xia.wu@intel.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Zhu, Daniel" <daniel.zhu@intel.com>,
-        "Wang, Yong Y" <yong.y.wang@intel.com>
-Subject: Re: unnecessary timer interrupt of slab.c and bdi tasks when the
-	system is in sleep state
-Message-ID: <20101001141932.GA5467@nowhere>
-References: <A24AE1FFE7AEC5489F83450EE98351BF221878E0FB@shsmsx502.ccr.corp.intel.com> <alpine.DEB.2.00.1009300908050.27201@router.home>
+	id S932551Ab0JAOUz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 10:20:55 -0400
+Received: from smtp.df.ru ([195.42.160.16]:48770 "EHLO smtp.df.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932151Ab0JAOUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 10:20:54 -0400
+Date: Fri, 1 Oct 2010 18:18:58 +0400
+From: Alexey Vlasov <renton@renton.name>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        netdev <netdev@vger.kernel.org>
+Subject: Re: Packet time delays on multi-core systems
+Message-ID: <20101001141858.GE4094@beaver.vrungel.ru>
+References: <20100930062419.GD86786@beaver.vrungel.ru> <1285828432.5211.812.camel@edumazet-laptop> <20100930122321.GA1575@beaver.vrungel.ru> <1285850669.2615.426.camel@edumazet-laptop> <20100930173732.GB4094@beaver.vrungel.ru> <1285869782.2615.920.camel@edumazet-laptop> <20100930181556.GC4094@beaver.vrungel.ru> <1285872765.2615.1008.camel@edumazet-laptop> <20101001101650.GD4094@beaver.vrungel.ru> <1285937966.2641.117.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=koi8-r
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1009300908050.27201@router.home>
+In-Reply-To: <1285937966.2641.117.camel@edumazet-laptop>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 09:13:02AM -0500, Christoph Lameter wrote:
-> On Thu, 30 Sep 2010, Wu, Xia wrote:
+On Fri, Oct 01, 2010 at 02:59:26PM +0200, Eric Dumazet wrote:
+> Le vendredi 01 octobre 2010 ?? 14:16 +0400, Alexey Vlasov a ??crit :
 > 
-> > I found some unnecessary timer interrupts when the system enter sleep state.
-> > (1)     /mm/slab.c
-> > cache_reap() clean up on allocated memory every 2s. If the system is in sleep state, the system is waked-up when this timer expires. In fact,
-> > there isn't more slabs to been cleaned up in sleep state.
+> > I have also found that:
+> > 1. rx overruns is increasing.
+> > 2. rx_queue_drop_packet_count is increasing.
 > 
-> Right. We could switch off the timer when idle without much of an issue.
-> The expiration of the caches wont occur and so we will have stale objects
-> on the queues when we exit sleep state. You could flush the queues before
-> switching off the timers?
+> So you flood machine with packets, its not an idle one ?
+> 
+> I thought you were doing experiments with light trafic.
 
+No, it's a usual working server for shared hosting. There're about 1000 
+clients' website, and I don't flood it specially. Franlky speaking I don't 
+see any network suspicious activity.
+ 
+> > # ethtool -S eth0 | grep drop
+> >      tx_dropped: 0
+> >      rx_queue_drop_packet_count: 1260743751
+> >      dropped_smbus: 0
+> >      rx_queue_0_drops: 0
+> >      rx_queue_1_drops: 0
+> >      rx_queue_2_drops: 0
+> >      rx_queue_3_drops: 0
+> > 
+> 
+> 
+> ethtool -S eth0   (full output, not small parts)
 
-May be flushing the queue everytime we enter nohz is too much, as that can
-happen very often?
+NIC statistics:
+     rx_packets: 2973717440
+     tx_packets: 3032670910
+     rx_bytes: 1892633650741
+     tx_bytes: 2536130682695
+     rx_broadcast: 118773199
+     tx_broadcast: 68013
+     rx_multicast: 95257
+     tx_multicast: 0
+     rx_errors: 0
+     tx_errors: 0
+     tx_dropped: 0
+     multicast: 95257
+     collisions: 0
+     rx_length_errors: 0
+     rx_over_errors: 0
+     rx_crc_errors: 0
+     rx_frame_errors: 0
+     rx_no_buffer_count: 7939
+     rx_queue_drop_packet_count: 1324025520
+     rx_missed_errors: 146631
+     tx_aborted_errors: 0
+     tx_carrier_errors: 0
+     tx_fifo_errors: 0
+     tx_heartbeat_errors: 0
+     tx_window_errors: 0
+     tx_abort_late_coll: 0
+     tx_deferred_ok: 0
+     tx_single_coll_ok: 0
+     tx_multi_coll_ok: 0
+     tx_timeout_count: 0
+     tx_restart_queue: 50715
+     rx_long_length_errors: 0
+     rx_short_length_errors: 0
+     rx_align_errors: 0
+     tx_tcp_seg_good: 344724062
+     tx_tcp_seg_failed: 0
+     rx_flow_control_xon: 0
+     rx_flow_control_xoff: 0
+     tx_flow_control_xon: 0
+     tx_flow_control_xoff: 0
+     rx_long_byte_count: 1892633650741
+     rx_csum_offload_good: 2973697420
+     rx_csum_offload_errors: 6235
+     tx_dma_out_of_sync: 0
+     alloc_rx_buff_failed: 0
+     tx_smbus: 9327
+     rx_smbus: 118531661
+     dropped_smbus: 0
+     tx_queue_0_packets: 797617475
+     tx_queue_0_bytes: 630191908685
+     tx_queue_1_packets: 719681297
+     tx_queue_1_bytes: 625907304846
+     tx_queue_2_packets: 718841556
+     tx_queue_2_bytes: 620522418855
+     tx_queue_3_packets: 796521255
+     tx_queue_3_bytes: 646196024585
+     rx_queue_0_packets: 788885797
+     rx_queue_0_bytes: 458936338699
+     rx_queue_0_drops: 0
+     rx_queue_1_packets: 701354604
+     rx_queue_1_bytes: 457490536453
+     rx_queue_1_drops: 0
+     rx_queue_2_packets: 791887663
+     rx_queue_2_bytes: 534425333616
+     rx_queue_2_drops: 0
+     rx_queue_3_packets: 691579028
+     rx_queue_3_bytes: 429887244557
+     rx_queue_3_drops: 0
 
-Another idea would be to disarm the scheduled work if it is the next timer
-that will exit nohz and then in this case schedule it right now instead,
-before entering idle.
+> > 3. By sending SYN-packets by hping, RST packet doesn't send, but I don't know may 
+> > be it is just some feature in 2.6.32.
+> > newbox # hping -c 1 -S -p 80 111.111.111.111
+> > HPING 111.111.111.111 (eth0 111.111.111.111): S set, 40 headers + 0 data bytes
+> > len=46 ip=111.111.111.111 ttl=58 DF id=11471 sport=80 flags=SA seq=0 win=65535 rtt=99.0 ms
+> > 
+> > --- 111.111.111.111 hping statistic ---
+> > 1 packets tramitted, 1 packets received, 0% packet loss
+> > round-trip min/avg/max = 99.0/99.0/99.0 ms
+> > 
+> > 13:59:07.439528 IP newbox.2777 > 111.111.111.111.80: S 345595033:345595033(0) win 512
+> > 13:59:07.439626 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
+> > 13:59:10.439368 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
+> > 13:59:16.439313 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
+> > 13:59:28.439206 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
+> > 
+> > As a result I got doubles:
+> 
+> Are you playing with trafic shaping ?
+> 
+> tc -s -d qdisc
+ 
+No, nothing alike, no shapers.
 
-Otherwise if this timer is after the time nohz will exit (ie: there is another
-timer before), then we don't care, and that should probably cover most cases.
+# tc -s -d qdisc
+bash: tc: command not found
+ 
+> > DUP! len=46 ip=111.111.111.111 ttl=58 DF id=27454 sport=80 flags=SA seq=0 win=65535 rtt=3137.8 ms
+> > 
+> > Example of another TCP-session from 2.6.28 kernel:
+> > oldbox # hping -c 1 -S -p 80 111.111.111.111
+> > HPING 111.111.111.111 (eth0 111.111.111.111): S set, 40 headers + 0 data bytes
+> > len=46 ip=111.111.111.111 ttl=58 DF id=53180 sport=80 flags=SA seq=0 win=65535 rtt=2.9 ms
+> > 
+> > --- 111.111.111.111 hping statistic ---
+> > 1 packets tramitted, 1 packets received, 0% packet loss
+> > round-trip min/avg/max = 2.9/2.9/2.9 ms
+> > 
+> > 14:01:45.225136 IP oldbox.2776 > 111.111.111.111.80: S 1983626200:1983626200(0) win 512
+> > 14:01:45.225288 IP 111.111.111.111.80 > oldbox.2776: S 3796385036:3796385036(0) ack 1983626201 win 65535 <mss 1460>
+> > 14:01:45.227990 IP oldbox.2776 > 111.111.111.111.80: R 1983626201:1983626201(0) win 0
+> > 
 
-But we really need a quick way to know if cache_reap() is needed at any time,
-this is really what we lack, so that we even further optimize with such state
-machine:
-
-enter nohz:
-
-* cache reap not needed? just cancel the delayed work
-* cache_reap needed and this is the timer that will wake up
-  nohz? cancel the timer and schedule the work right now.
-* otherwise don't change anything
-
-exit_nohz:
-
-* work was cancelled? reschedule it.
-
-
-But for that we need a kind of need_cache_reap() that I'm not sure how
-to implement as I don't know much the slab code.
-
-Does that sound silly?
-
-Here is how that could look like (untested, since that requires need_cache_reap()):
-
-
-diff --git a/include/linux/notifier.h b/include/linux/notifier.h
-index b2f1a4d..34f2935 100644
---- a/include/linux/notifier.h
-+++ b/include/linux/notifier.h
-@@ -277,5 +277,13 @@ extern struct blocking_notifier_head reboot_notifier_list;
- #define VT_UPDATE		0x0004 /* A bigger update occurred */
- #define VT_PREWRITE		0x0005 /* A char is about to be written to the console */
- 
-+/* Dyntick events */
-+#define NOHZ_ENTER_PREPARE	0x0001 /*
-+					* Still have a chance here to wake up a task
-+					* or change a timer state
-+					*/
-+#define NOHZ_ENTER		0x0002
-+#define NOHZ_EXIT		0x0003
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_NOTIFIER_H */
-diff --git a/include/linux/tick.h b/include/linux/tick.h
-index b232ccc..f4998cf 100644
---- a/include/linux/tick.h
-+++ b/include/linux/tick.h
-@@ -7,6 +7,7 @@
- #define _LINUX_TICK_H
- 
- #include <linux/clockchips.h>
-+#include <linux/notifier.h>
- 
- #ifdef CONFIG_GENERIC_CLOCKEVENTS
- 
-@@ -121,12 +122,17 @@ static inline int tick_oneshot_mode_active(void) { return 0; }
- #endif /* !CONFIG_GENERIC_CLOCKEVENTS */
- 
- # ifdef CONFIG_NO_HZ
-+extern int register_nohz_notifier(struct notifier_block *nb);
- extern void tick_nohz_stop_sched_tick(int inidle);
- extern void tick_nohz_restart_sched_tick(void);
- extern ktime_t tick_nohz_get_sleep_length(void);
- extern u64 get_cpu_idle_time_us(int cpu, u64 *last_update_time);
- extern u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time);
- # else
-+static inline int register_nohz_notifier(struct notifier_block *nb)
-+{
-+	return 0;
-+}
- static inline void tick_nohz_stop_sched_tick(int inidle) { }
- static inline void tick_nohz_restart_sched_tick(void) { }
- static inline ktime_t tick_nohz_get_sleep_length(void)
-diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
-index 3e216e0..7b0f5e0 100644
---- a/kernel/time/tick-sched.c
-+++ b/kernel/time/tick-sched.c
-@@ -248,6 +248,24 @@ u64 get_cpu_iowait_time_us(int cpu, u64 *last_update_time)
- }
- EXPORT_SYMBOL_GPL(get_cpu_iowait_time_us);
- 
-+
-+static RAW_NOTIFIER_HEAD(nohz_chain);
-+
-+int register_nohz_notifier(struct notifier_block *nb)
-+{
-+	return raw_notifier_chain_register(&nohz_chain, nb);
-+}
-+
-+static int nohz_notify(unsigned long val, void *arg)
-+{
-+	int ret;
-+
-+	ret = __raw_notifier_call_chain(&nohz_chain, val, arg,
-+					-1, NULL);
-+
-+	return notifier_to_errno(ret);
-+}
-+
- /**
-  * tick_nohz_stop_sched_tick - stop the idle tick from the idle task
-  *
-@@ -262,7 +280,7 @@ void tick_nohz_stop_sched_tick(int inidle)
- 	ktime_t last_update, expires, now;
- 	struct clock_event_device *dev = __get_cpu_var(tick_cpu_device).evtdev;
- 	u64 time_delta;
--	int cpu;
-+	int cpu, err;
- 
- 	local_irq_save(flags);
- 
-@@ -324,21 +342,29 @@ void tick_nohz_stop_sched_tick(int inidle)
- 		time_delta = timekeeping_max_deferment();
- 	} while (read_seqretry(&xtime_lock, seq));
- 
--	if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
--	    arch_needs_cpu(cpu)) {
--		next_jiffies = last_jiffies + 1;
--		delta_jiffies = 1;
--	} else {
--		/* Get the next timer wheel timer */
--		next_jiffies = get_next_timer_interrupt(last_jiffies);
--		delta_jiffies = next_jiffies - last_jiffies;
--	}
--	/*
--	 * Do not stop the tick, if we are only one off
--	 * or if the cpu is required for rcu
--	 */
--	if (!ts->tick_stopped && delta_jiffies == 1)
--		goto out;
-+	do {
-+		if (rcu_needs_cpu(cpu) || printk_needs_cpu(cpu) ||
-+		    arch_needs_cpu(cpu)) {
-+			next_jiffies = last_jiffies + 1;
-+			delta_jiffies = 1;
-+		} else {
-+			/* Get the next timer wheel timer */
-+			next_jiffies = get_next_timer_interrupt(last_jiffies);
-+			delta_jiffies = next_jiffies - last_jiffies;
-+		}
-+		/*
-+		 * Do not stop the tick, if we are only one off
-+		 * or if the cpu is required for rcu
-+		 */
-+		if (!ts->tick_stopped && delta_jiffies == 1)
-+			goto out;
-+
-+		err = nohz_notify(NOHZ_ENTER_PREPARE, &next_jiffies);
-+
-+	} while (err == -EAGAIN));
-+
-+	if (err)
-+		goto end;
- 
- 	/* Schedule the tick, if we are at least one jiffie off */
- 	if ((long)delta_jiffies >= 1) {
-@@ -410,6 +436,8 @@ void tick_nohz_stop_sched_tick(int inidle)
- 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
- 			ts->tick_stopped = 1;
- 			ts->idle_jiffies = last_jiffies;
-+
-+			nohz_notify(NOHZ_ENTER, cpu);
- 			rcu_enter_nohz();
- 		}
- 
-@@ -521,6 +549,7 @@ void tick_nohz_restart_sched_tick(void)
- 	ts->inidle = 0;
- 
- 	rcu_exit_nohz();
-+	nohz_notify(NOHZ_EXIT, cpu);
- 
- 	/* Update jiffies first */
- 	select_nohz_load_balancer(0);
-diff --git a/mm/slab.c b/mm/slab.c
-index fcae981..662a341 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -115,6 +115,7 @@
- #include	<linux/debugobjects.h>
- #include	<linux/kmemcheck.h>
- #include	<linux/memory.h>
-+#include	<linux/tick.h>
- 
- #include	<asm/cacheflush.h>
- #include	<asm/tlbflush.h>
-@@ -1323,10 +1324,64 @@ static int __cpuinit cpuup_callback(struct notifier_block *nfb,
- 	return notifier_from_errno(err);
- }
- 
--static struct notifier_block __cpuinitdata cpucache_notifier = {
-+static struct notifier_block __cpuinitdata cpucache_cpu_notifier = {
- 	&cpuup_callback, NULL, 0
- };
- 
-+#ifdef CONFIG_NO_HZ
-+static int nohz_callback(struct notifier_block *nfb,
-+			 unsigned long action, void *arg)
-+{
-+	struct delayed_work *work = &__get_cpu_var(slab_reap_work, cpu);
-+	int err = 0;
-+
-+	switch (action) {
-+	case NOHZ_ENTER_PREPARE:
-+		unsigned long nohz_exit = (unsigned long)arg;
-+
-+		if (!delayed_work_pending(work))
-+			goto end;
-+
-+		/*
-+		 * Nothing to flush. Cancel the work and force
-+		 * tick_nohz_stop_sched_tick to re-find
-+		 * the next timer interrupt.
-+		 *
-+		 * need_cache_reap() has yet to be implemented :-)
-+		 */
-+		if (!need_cache_reap(smp_processor_id())) {
-+			cancel_delayed_work(work);
-+			err = -EAGAIN;
-+			goto end;
-+		}
-+
-+		/*
-+		 * Something to flush and the next timer is _likely_ us.
-+		 * Cancel nohz and schedule the work right now to avoid
-+		 * breaking long idle cycles.
-+		 */
-+		if (time_before_eq(work->timer.expires, nohz_exit)) {
-+			cancel_delayed_work(work);
-+			schedule_delayed_work(work, 0);
-+			err = -EBUSY;
-+		}
-+		break;
-+
-+	case NOHZ_EXIT:
-+		if (!delayed_work_pending(work))
-+			schedule_delayed_work(work, round_jiffies_relative(REAPTIMEOUT_CPUC));
-+		break;
-+	}
-+
-+end:
-+	return notifier_from_errno(0);
-+}
-+
-+static struct notifier_block cpucache_nohz_notifier = {
-+	&nohz_callback, NULL, 0
-+};
-+#endif
-+
- #if defined(CONFIG_NUMA) && defined(CONFIG_MEMORY_HOTPLUG)
- /*
-  * Drains freelist for a node on each slab cache, used for memory hot-remove.
-@@ -1638,7 +1693,11 @@ void __init kmem_cache_init_late(void)
- 	 * Register a cpu startup notifier callback that initializes
- 	 * cpu_cache_get for all new cpus
- 	 */
--	register_cpu_notifier(&cpucache_notifier);
-+	register_cpu_notifier(&cpucache_cpu_notifier);
-+
-+#ifdef CONFIG_NO_HZ
-+	register_nohz_notifier(&cpucache_nohz_notifier);
-+#endif
- 
- #ifdef CONFIG_NUMA
- 	/*
-@@ -4118,6 +4177,9 @@ static void cache_reap(struct work_struct *w)
- 	int node = numa_mem_id();
- 	struct delayed_work *work = to_delayed_work(w);
- 
-+	if (!need_cache_reap(smp_processor_id()))
-+		return;
-+
- 	if (!mutex_trylock(&cache_chain_mutex))
- 		/* Give up. Setup the next iteration. */
- 		goto out;
-
+-- 
+BRGDS. Alexey Vlasov.
