@@ -1,56 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754188Ab0JASOZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 14:14:25 -0400
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:37170 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752811Ab0JASOY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 14:14:24 -0400
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: 2.6.36-rc5 i915 regression
-Date: Fri, 1 Oct 2010 20:15:18 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6+; KDE/4.5.1; i686; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201010011300.06298.johannes.hirte@fem.tu-ilmenau.de> <89k77n$p3lgk1@fmsmga001.fm.intel.com>
-In-Reply-To: <89k77n$p3lgk1@fmsmga001.fm.intel.com>
+	id S1754245Ab0JASXE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 14:23:04 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:34329 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab0JASXC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 14:23:02 -0400
+Message-ID: <4CA62700.7010809@austin.ibm.com>
+Date: Fri, 01 Oct 2010 13:22:56 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org
+CC: Greg KH <greg@kroah.com>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Robin Holt <holt@sgi.com>, steiner@sgi.com
+Subject: [PATCH 0/9] v3 De-couple sysfs memory directories from memory sections
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010012015.19272.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 October 2010 14:28:25 Chris Wilson wrote:
-> On Fri, 1 Oct 2010 13:00:05 +0200, Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de> wrote:
-> > With 2.6.36-rc5 and later my netbook is unusable. After login on X (KDE) the
-> > screen gets totally garbled, under X and console too. The log shows me this
-> > messages:
-> 
-> My humble apologies, fixed in 2.6.36-rc6:
-> 
-> commit 9b74f7348f214b1f99819f0d0da4a1cbabb1e740
-> Author: Chris Wilson <chris@chris-wilson.co.uk>
-> Date:   Wed Sep 22 19:10:44 2010 +0100
-> 
->     drm/i915: Fix 945GM regression in e259befd
->     
->     A minor typo caused a single fence register to be incorrectly
->     programmed, resulting in occassional tiling corruption.
->     
->     Reported-and-tested-by: Hans de Bruin <bruinjm@xs4all.nl>
->     Bugzilla: https://bugzilla.kernel.org/show_bug.cgi?id=18962
->     Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
->     Cc: stable@kernel.org
-> 
-> It appears to have bitten worse than just the occasional gfx corruption.
-> -Chris
+This set of patches decouples the concept that a single memory
+section corresponds to a single directory in 
+/sys/devices/system/memory/.  On systems
+with large amounts of memory (1+ TB) there are performance issues
+related to creating the large number of sysfs directories.  For
+a powerpc machine with 1 TB of memory we are creating 63,000+
+directories.  This is resulting in boot times of around 45-50
+minutes for systems with 1 TB of memory and 8 hours for systems
+with 2 TB of memory.  With this patch set applied I am now seeing
+boot times of 5 minutes or less.
 
-I was sure that I've tested latest git before reporting this bug, but obviously
-I didn't. With latest git the bug seems to be fixed. Sorry for the noise.
+The root of this issue is in sysfs directory creation. Every time
+a directory is created a string compare is done against all sibling
+directories to ensure we do not create duplicates.  The list of
+directory nodes in sysfs is kept as an unsorted list which results
+in this being an exponentially longer operation as the number of
+directories are created.
 
-regards,
-  Johannes
+The solution solved by this patch set is to allow a single
+directory in sysfs to span multiple memory sections.  This is
+controlled by an optional architecturally defined function
+memory_block_size_bytes().  The default definition of this
+routine returns a memory block size equal to the memory section
+size. This maintains the current layout of sysfs memory
+directories as it appears to userspace to remain the same as it
+is today.
+
+For architectures that define their own version of this routine,
+as is done for powerpc and x86_64 in this patchset, the view in userspace
+would change such that each memoryXXX directory would span
+multiple memory sections.  The number of sections spanned would
+depend on the value reported by memory_block_size_bytes.
+
+In both cases a new file 'end_phys_index' is created in each
+memoryXXX directory.  This file will contain the physical id
+of the last memory section covered by the sysfs directory.  For
+the default case, the value in 'end_phys_index' will be the same
+as in the existng 'phys_index' file.
+
+Updates for this version of the patch:
+
+- Patches 2 and 3 have been swapped which has alleviated the need for the
+  section count in the memory_block struct to be an atomic.
+
+- The get_memory_block_size and memory_block_size_bytes routines now return
+  an unsigned long instead of a u32.  This affects patches 4, 7, and 8.
+
+- [Patch 5/9] The phys_index member of the memory block struct is changed to
+  start_section_nr and the new end_phys_index is now named end_section_nr.
+
+- [Patch 8/9] A new patch added to the set to define a version of
+  memory_block_size_bytes() for x86_64 when CONFIG_X86_UV is set.
+
+- [Patch 9/9] Correct the updates to hotplug documentation to indicate that
+  4 or 5 files may be seen for each memory directory in sysfs.
+
+-Nathan Fontenot
