@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754956Ab0JAI0t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 04:26:49 -0400
-Received: from vpn.id2.novell.com ([195.33.99.129]:41080 "EHLO
-	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab0JAI0r convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:5:1>);
-	Fri, 1 Oct 2010 04:26:47 -0400
-Message-Id: <4CA5B7910200007800019F50@vpn.id2.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Fri, 01 Oct 2010 09:27:29 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Ingo Molnar" <mingo@elte.hu>, <heukelum@fastmail.fm>,
-        <tglx@linutronix.de>, <akpm@linux-foundation.org>,
-        "LKML" <linux-kernel@vger.kernel.org>
-Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
-References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org>
- <4C91F07E0200007800016B50@vpn.id2.novell.com>
- <20100916082816.GA25681@elte.hu>
- <4C91F3A30200007800016B64@vpn.id2.novell.com>
- <20100916101355.GA31458@elte.hu>
- <4C9219BC0200007800016C53@vpn.id2.novell.com> <4CA52AA5.5040402@zytor.com>
-In-Reply-To: <4CA52AA5.5040402@zytor.com>
+	id S1755238Ab0JAIfy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 04:35:54 -0400
+Received: from mail.southpole.se ([193.12.106.18]:53520 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752295Ab0JAIfx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 04:35:53 -0400
+Subject: Re: ioremap definition in generic io.h
+From: Jonas Bonn <jonas@southpole.se>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <201009301404.36551.arnd@arndb.de>
+References: <1285747145.12259.3.camel@needafix>
+	 <201009301345.16817.arnd@arndb.de> <1285847579.2639.3.camel@needafix>
+	 <201009301404.36551.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: South Pole AB
+Date: Fri, 01 Oct 2010 10:35:50 +0200
+Message-ID: <1285922150.2639.37.camel@needafix>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 01.10.10 at 02:26, "H. Peter Anvin" <hpa@zytor.com> wrote:
-> ... but that doesn't work with the macros like movq_cfi.  On those, we
+Hi Arnd,
 
-Is that only because of the register names used as operands to
-movq_cfi etc not having the % specified right away? I don't think
-that is really needed, i.e. the % could go there rather than being
-added in the macro body - the .cfi_* directives are perfectly happy
-with having the prefix there (and I don't know why it was coded
-this way in the first place, as this made it less similar to the plain
-movq while I thought the goal was to keep the differences to a
-minimum).
+Thanks for the detailed explanation... it's started to make sense now.
 
-> could argue that at least people won't put $ on them, but cpp will still
-> split them apart with spaces; this apparently causes problems at least
-> as soon as there is an expression more complicated than addition
-> involved (apparently plus signs are okay, but minus signs aren't!)
+> I assume that microblaze is a special case here because you synthesize
+> the I/O devices together with the CPU core and choose a common endianess
+> for both, right?
+
+Yeah, that's exactly the case I'm looking at.  I'm actually working on
+OpenRISC and not Microblaze, but that's just a detail!  The same issues
+are applicable to both architectures.
+
+> We have the __raw_readl()/__raw_writel() functions which are defined as
+> host-endian, but I would not recommend using them in general because they
+> also mean slightly different things depending on the architecture.
+
+OK, I'm curious what you mean here... I would have thought that wrapping
+our own functions around these would have been the right way to do
+things.  What subtleties exist here that I would need to look out for?
+
+> It's probably best to define your own functions for microblaze. Obviously
+> the drivers are not portable to other architectures anyway because those
+> might be cross-endian.
 > 
-> I'm completely lost about how to deal with this.   We can't simply
-> defang the macros -- at least not in a way that is likely to *stay*
-> working -- and dropping the macros is seriously going to impact the
-> debuggability of the kernel.  One way, of course, is to simply declare
-> binutils 2.16 and 2.15.9x (which is apparently included in
-> RHEL/CentOS 4) to be broken beyond repair unless distros backport a fix,
-> and in many ways I think that is the preferred option, but I don't know
-> if that makes sense to others...
+> It's probably best to name the accessors by the bus that the devices
+> are attached to, and then define them in a a per-bus header file, like
+> 
+> #ifdef CONFIG_PLB_BIG_ENDIAN
+> #define plb_ioread32(p) ioread32be(p)
+> #define plb_iowrite32(p) iowrite32be(p)
+> #else
+> #define plb_ioread32(p) ioread32(p)
+> #define plb_iowrite32(p) iowrite32(p)
+> #endif
+> 
 
-The other alternative, albeit disliked by Ingo, continues to be to use
-__stringify() on all non-trivial operands, which then wouldn't require
-suppressing CONFIG_AS_CFI for pre-2.17 binutils.
+This seems like a reasonable approach.  What got me looking at all of
+this was that I wanted to use asm-generic/io.h for our architecture, and
+it's mostly OK except for the definition of ioremap which implies NOMMU.
+Wouldn't it make sense to drop the ioremap definitions from this file,
+thus allowing it to be used by archictectures with MMU?  Or do you know
+of something more in this file which prohibits it from being used more
+"generically"?
 
-Jan
+Thanks for your helpful feedback!
+/Jonas
 
