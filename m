@@ -1,103 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752903Ab0JAQlQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:41:16 -0400
-Received: from mail.digidescorp.com ([66.244.163.200]:14484 "EHLO
-	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab0JAQlP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:41:15 -0400
-X-Spam-Processed: digidescorp.com, Fri, 01 Oct 2010 11:41:14 -0500
-X-Authenticated-Sender: steve@digidescorp.com
-X-MDRemoteIP: 12.54.16.226
-X-Return-Path: prvs=18902378fd=steve@digidescorp.com
-X-Envelope-From: steve@digidescorp.com
-X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][RESEND] nommu: add anonymous page memcg accounting
-From: "Steven J. Magnani" <steve@digidescorp.com>
-Reply-To: steve@digidescorp.com
-To: David Howells <dhowells@redhat.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-In-Reply-To: <5867.1285945621@redhat.com>
-References: <WC20101001143139.810346@digidescorp.com>
-	 <1285929315-2856-1-git-send-email-steve@digidescorp.com>
-	 <5206.1285943095@redhat.com>  <5867.1285945621@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Digital Design Corporation
-Date: Fri, 01 Oct 2010 11:41:07 -0500
-Message-ID: <1285951267.2558.69.camel@iscandar.digidescorp.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1752953Ab0JAQq7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:46:59 -0400
+Received: from claw.goop.org ([74.207.240.146]:38363 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752189Ab0JAQq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 12:46:58 -0400
+Message-ID: <4CA61080.6070709@goop.org>
+Date: Fri, 01 Oct 2010 09:46:56 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: Kyle McMartin <kyle@redhat.com>, stable@kernel.org,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        James Dingwall <james.dingwall@amdocs.com>
+Subject: Re: [stable] PROBLEM: [BISECTED] 2.6.35.5 xen domU panics just	after
+ the boot
+References: <3B7AEC3C7FCC864282DFAC9A56A7BA363D81475787@UKLNDMAIL1.corp.amdocs.com> <20100927024044.GQ13116@bombadil.infradead.org> <20100927061336.GA22721@kroah.com> <4CA0DDAB.9090507@goop.org> <20100928182910.GA32464@kroah.com> <4CA35FB7.10600@goop.org> <20100930000644.GA26380@kroah.com>
+In-Reply-To: <20100930000644.GA26380@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-01 at 16:07 +0100, David Howells wrote: 
-> Steve Magnani <steve@digidescorp.com> wrote:
-> 
-> > If anything I think nommu is one of the better applications of memcg. Since
-> > nommu typically embedded, being able to put potential memory pigs in a
-> > sandbox so they can't destabilize the system is a Good Thing. That was my
-> > motivation for doing this in the first place and it works quite well.
-> 
-> I suspect it's not useful for a few reasons:
-> 
->  (1) You don't normally run many applications on a NOMMU system.  Typically,
->      you'll run just one, probably threaded app, I think.
+ On 09/29/2010 05:06 PM, Greg KH wrote:
+> On Wed, Sep 29, 2010 at 08:48:07AM -0700, Jeremy Fitzhardinge wrote:
+>>
+>> I should have pointed out it is the same in the stable-2.6.32 tree as well.
+> Yes, sorry, I know, I only had the chance to get the .35 release out
+> yesterday, I'll do the .32 one now.
+>
 
-Not always.
+Ping?  Looks like the fix hasn't hit stable-2.6.32/master yet.
 
-> 
->  (2) In general, you won't be able to cull processes to make space.  If the OOM
->      killer runs your application has a bug in it.
-
-Not always. Every now and then applications have to deal with
-user-supplied input of some sort. 
-
-In our case it's a user-formatted disk drive that can have some
-arbitrarily-sized FAT32 partition on which we are required to run
-dosfsck. Now, dosfsck is the epitome of a memory pig; its memory
-requirements scale with partition size, number of dentries, and any
-damage encountered - none of which can be predicted. There is a set of
-partitions we are able to check with no problem, but no guarantee the
-user won't present us with one that would bring down the whole system,
-were the OOM killer to get involved. Putting just dosfsck in its own
-sandbox ensures this can't happen. See also my response to #4 below.
-
-> 
->  (3) memcg has a huge overhead.  20 bytes per page!  On a 4K page 32-bit
->      system, that's nearly 5% of your RAM, assuming I understand the
->      CGROUP_MEM_RES_CTLR config help text correctly.
-
-When you use 16K pages, 20 bytes/page isn't so huge :)
-
-> 
->  (4) There's no swapping, no page faults, no migration and little shareable
->      memory.  Being able to allocate large blocks of contiguous memory is much
->      more important and much more of a bottleneck than this.  The 5% of RAM
->      lost makes that just that little bit harder.
-> 
-> If it's memory sandboxing you require, ulimit might be sufficient for NOMMU
-> mode.
-
-dosfsck is written to handle memory allocation failures properly
-(bailing out) but I have not been able to get this code to execute when
-the system runs out of memory - the OOM killer gets invoked and that's
-all she wrote. Will a ulimit violation return control back to the
-process, or terminate it in some graceful manner? 
-
-> 
-> However, I suppose there's little harm in letting the patch in.  I would guess
-> the additions all optimise away if memcg isn't enabled.
-> 
-> A question for you: why does struct page_cgroup need a page pointer?  If an
-> array of page_cgroup structs is allocated per array of page structs, then you
-> should be able to use the array index to map between them.
-
-Kame is probably better able to answer this.
- 
-Steve
-
-
+Thanks,
+    J
