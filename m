@@ -1,148 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756426Ab0JANcO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 09:32:14 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:44629 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755247Ab0JANcN (ORCPT
+	id S932238Ab0JANit (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 09:38:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60495 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756274Ab0JANis convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 09:32:13 -0400
+	Fri, 1 Oct 2010 09:38:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:x-x-sender:to:cc:subject:message-id:user-agent
-         :mime-version:content-type;
-        b=Xh2lPNBIaLrbH55vB+Qx4IgQG+89t8gH5DVVxz6rfjrmh7LsaDxsYywB2yFN4R2H/y
-         3A3yYwYyuJJ5Wy42CgLuBkLJZTtJF/TkOIwSFh/O737BPoSpEfgX7gec2gFslaIW1GPe
-         4dU2vxgHLxCVvDKYCpMs1A6PUjFjczHifrl88=
-Date: Fri, 1 Oct 2010 09:32:09 -0400 (EDT)
-From: Bart Oldeman <bartoldeman@users.sourceforge.net>
-X-X-Sender: bart@localhost.localdomain
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Brian Gerst <brgerst@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Subject: [PATCH] x86, vm86: Eliminate jump to assembly code when
- returning from vm86().
-Message-ID: <alpine.DEB.2.00.1010010929210.25021@localhost.localdomain>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NZuTPoYNBLov/KUTYW7h2u0KPYsu6I0Gp4P8P7OFnH7O12Cu+1Kgr02Sv+kEPZdoba
+         g7VCXEj4eLVpi6YhpYF+bf7UcA1un+oF0rVVAy+jmvEhW7zhOWqDp6jWZ+rmGONGECJX
+         oCG0JNyj75w6jrZ1pVMaSNOgojvCP9QRoU6qw=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+In-Reply-To: <20101001140619.28d96040@endymion.delvare>
+References: <20101001140619.28d96040@endymion.delvare>
+Date: Fri, 1 Oct 2010 22:38:46 +0900
+X-Google-Sender-Auth: f_yAJhU8tYCs9yGEGMBE9KDpY5Y
+Message-ID: <AANLkTi=aKWP3_KhD88ebGB04xAM9Pc7eqw1LBr2EJNS_@mail.gmail.com>
+Subject: Re: [GIT PULL] i2c fixes for 2.6.36
+From: Kyungmin Park <kmpark@infradead.org>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux I2C <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The direct jump to the code in entry_32.S from return_to_32bit() caused
-confusion in the callers of handle_vm86_trap() and handle_vm86_fault(),
-giving rise to preempt bugs (now fixed in commit
-6554287b1de0448f1e02e200d02b43914e997d15). This patch eliminates the
-jump entirely by setting TIF_IRET, which causes the code in entry_32.S to
-adjust the stack correctly and return to 32-bit user space. Callers of
-return_to_32bit() are adjusted to return immediately.
+Hi Jean,
 
-Signed-off-by: Bart Oldeman <bartoldeman@users.sourceforge.net>
+Even though it's not yet acked from Ben. It should be fixed for
+correct operation.
+Without this patch, some I2C device doesn't work correctly.
+http://www.spinics.net/lists/linux-i2c/msg04016.html
 
-  arch/x86/kernel/vm86_32.c |   39 +++++++++++++++++++++------------------
-  1 files changed, 21 insertions(+), 18 deletions(-)
+Thank you,
+Kyungmin Park
 
-diff --git a/arch/x86/kernel/vm86_32.c b/arch/x86/kernel/vm86_32.c
-index 61fb985..16cb513 100644
---- a/arch/x86/kernel/vm86_32.c
-+++ b/arch/x86/kernel/vm86_32.c
-@@ -350,23 +350,18 @@ static void do_sys_vm86(struct kernel_vm86_struct *info, struct task_struct *tsk
-  	/* we never return here */
-  }
-
--static inline void return_to_32bit(struct kernel_vm86_regs *regs16, int retval)
-+static inline void return_to_32bit(struct kernel_vm86_regs *regs, int retval)
-  {
--	struct pt_regs *regs32;
--
--	regs32 = save_v86_state(regs16);
--	regs32->ax = retval;
--	__asm__ __volatile__("movl %0,%%esp\n\t"
--		"movl %1,%%ebp\n\t"
--		"jmp resume_userspace"
--		: : "r" (regs32), "r" (current_thread_info()));
-+	KVM86->regs32->ax = retval;
-+	/* setting this flag forces the code in entry_32.S to
-+	   call save_v86_state() and change the stack pointer
-+	   to KVM86->regs32 */
-+	set_thread_flag(TIF_IRET);
-  }
-
-  static inline void set_IF(struct kernel_vm86_regs *regs)
-  {
-  	VEFLAGS |= X86_EFLAGS_VIF;
--	if (VEFLAGS & X86_EFLAGS_VIP)
--		return_to_32bit(regs, VM86_STI);
-  }
-
-  static inline void clear_IF(struct kernel_vm86_regs *regs)
-@@ -552,11 +547,7 @@ int handle_vm86_trap(struct kernel_vm86_regs *regs, long error_code, int trapno)
-  {
-  	if (VMPI.is_vm86pus) {
-  		if ((trapno == 3) || (trapno == 1)) {
--			KVM86->regs32->ax = VM86_TRAP + (trapno << 8);
--			/* setting this flag forces the code in entry_32.S to
--			   call save_v86_state() and change the stack pointer
--			   to KVM86->regs32 */
--			set_thread_flag(TIF_IRET);
-+			return_to_32bit(regs, VM86_TRAP + (trapno << 8));
-  			return 0;
-  		}
-  		do_int(regs, trapno, (unsigned char __user *) (regs->pt.ss << 4), SP(regs));
-@@ -584,7 +575,7 @@ void handle_vm86_fault(struct kernel_vm86_regs *regs, long error_code)
-  #define VM86_FAULT_RETURN do { \
-  	if (VMPI.force_return_for_pic  && (VEFLAGS & (X86_EFLAGS_IF | X86_EFLAGS_VIF))) \
-  		return_to_32bit(regs, VM86_PICRETURN); \
--	if (orig_flags & X86_EFLAGS_TF) \
-+	else if (orig_flags & X86_EFLAGS_TF)	       \
-  		handle_vm86_trap(regs, 0, 1); \
-  	return; } while (0)
-
-@@ -644,6 +635,8 @@ void handle_vm86_fault(struct kernel_vm86_regs *regs, long error_code)
-  			set_vflags_long(newflags, regs);
-  		else
-  			set_vflags_short(newflags, regs);
-+		if (newflags & X86_EFLAGS_IF)
-+			goto sti_return;
-
-  		VM86_FAULT_RETURN;
-  		}
-@@ -653,8 +646,11 @@ void handle_vm86_fault(struct kernel_vm86_regs *regs, long error_code)
-  		int intno = popb(csp, ip, simulate_sigsegv);
-  		IP(regs) = ip;
-  		if (VMPI.vm86dbg_active) {
--			if ((1 << (intno & 7)) & VMPI.vm86dbg_intxxtab[intno >> 3])
-+			if ((1 << (intno & 7)) &
-+			    VMPI.vm86dbg_intxxtab[intno >> 3]) {
-  				return_to_32bit(regs, VM86_INTx + (intno << 8));
-+				return;
-+			}
-  		}
-  		do_int(regs, intno, ssp, sp);
-  		return;
-@@ -685,6 +681,8 @@ void handle_vm86_fault(struct kernel_vm86_regs *regs, long error_code)
-  		} else {
-  			set_vflags_short(newflags, regs);
-  		}
-+		if (newflags & X86_EFLAGS_IF)
-+			goto sti_return;
-  		VM86_FAULT_RETURN;
-  		}
-
-@@ -704,6 +702,11 @@ void handle_vm86_fault(struct kernel_vm86_regs *regs, long error_code)
-  	case 0xfb:
-  		IP(regs) = ip;
-  		set_IF(regs);
-+sti_return:
-+		if (VEFLAGS & X86_EFLAGS_VIP) {
-+			return_to_32bit(regs, VM86_STI);
-+			return;
-+		}
-  		VM86_FAULT_RETURN;
-
-  	default:
--- 
-1.7.1
-
+On Fri, Oct 1, 2010 at 9:06 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> Hi Linus,
+>
+> Please pull i2c subsystem fixes for Linux 2.6.36 from:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
+>
+>  drivers/i2c/busses/i2c-cpm.c           |    5 +++
+>  drivers/i2c/busses/i2c-ibm_iic.c       |    3 ++
+>  drivers/i2c/busses/i2c-mpc.c           |    1 +
+>  drivers/i2c/busses/i2c-pca-isa.c       |   12 +++++--
+>  drivers/i2c/busses/i2c-pca-platform.c  |   11 ++++--
+>  drivers/i2c/i2c-core.c                 |   54 ++++++++++++++-----------------
+>  drivers/misc/bh1780gli.c               |    1 -
+>  drivers/regulator/ad5398.c             |    1 -
+>  drivers/regulator/isl6271a-regulator.c |    2 -
+>  drivers/rtc/rtc-ds3232.c               |    2 -
+>  10 files changed, 48 insertions(+), 44 deletions(-)
+>
+> ---------------
+>
+> Grant Likely (1):
+>      of/i2c: Fix module load order issue caused by of_i2c.c
+>
+> Rajendra Nayak (1):
+>      i2c: Fix checks which cause legacy suspend to never get called
+>
+> Vishwanath BS (1):
+>      i2c: Fix for suspend/resume issue
+>
+> Wolfram Sang (1):
+>      i2c: Remove obsolete cleanup for clientdata
+>
+> Yegor Yefremov (1):
+>      i2c-pca: Fix waitforcompletion() return value
+>
+> Thanks,
+> --
+> Jean Delvare
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
