@@ -1,105 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755450Ab0JAIni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 04:43:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:53386 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752295Ab0JAInh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 04:43:37 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: ioremap definition in generic io.h
-Date: Fri, 1 Oct 2010 10:43:31 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5+; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <1285747145.12259.3.camel@needafix> <201009301404.36551.arnd@arndb.de> <1285922150.2639.37.camel@needafix>
-In-Reply-To: <1285922150.2639.37.camel@needafix>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010011043.32489.arnd@arndb.de>
-X-Provags-ID: V02:K0:Qb/T48v1laMQxE/Y1Of0c1L6ELXLfNFb6FqZMLIJvDV
- OOvyD408BkCpDW1ChsEQ/7AvfDQhWyHLVHgOsizGbGxrDrZBdS
- kXn2Ba3XCAmwKcuc7KRlhBOLpB1zbaiCCYC/rtjB+hLby6ruqq
- 0E0tmp6fgBAxPjJA/cBTfjRPdIdZ+TSUgxFXqypIJc17Kae95I
- 0bCRc7HR+ijuLw3Jb3Xtg==
+	id S1755486Ab0JAIs1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 04:48:27 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:23510 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751899Ab0JAIs0 (ORCPT
+	<rfc822;groupwise-jlee@novell.com:7:2>);
+	Fri, 1 Oct 2010 04:48:26 -0400
+Message-Id: <4CA62CF0020000230002124F@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Fri, 01 Oct 2010 02:48:16 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>
+Cc: <jerone.young@canonical.com>, <melchior+kernel@cmu.edu>,
+        <rui.zhang@intel.com>, <lenb@kernel.org>, <patrol@sinus.cz>,
+        <linux-acpi@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] DMI to disable Vista compatibility on MSI GX723
+ Notebook
+Mime-Version: 1.0
+Content-Type: multipart/mixed; boundary="=__Part614C8540.6__="
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 October 2010 10:35:50 Jonas Bonn wrote:
-> > We have the __raw_readl()/__raw_writel() functions which are defined as
-> > host-endian, but I would not recommend using them in general because they
-> > also mean slightly different things depending on the architecture.
+This is a MIME message. If you are reading this text, you may want to 
+consider changing to a mail reader or gateway that understands how to 
+properly handle MIME multipart messages.
+
+--=__Part614C8540.6__=
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
+
+Hi Matthew, 
+
+Thank's for your review!
+
+於 四，2010-09-30 於 14:25 +0100，Matthew Garrett 提到：
+> On Thu, Sep 30, 2010 at 06:44:11PM +0800, Lee, Chun-Yi wrote:
+> > The brightness control hotkey don't work with Vista compatibility
+> > , because MSI GX723 included a infinite while loop in DSDT when
+> > brightness control hotkey pressed.
+> > MSI GX723 used Nvida video card, the infinite while loop must be a
+> > workaround with Nvidia's Vista driver.
 > 
-> OK, I'm curious what you mean here... I would have thought that wrapping
-> our own functions around these would have been the right way to do
-> things.  What subtleties exist here that I would need to look out for?
-
-The most common problem is synchronization. On architectures with out of order
-I/O, you want the accessor functions to provide serialization against each
-other and against spinlocks. The __raw_* versions are typically completely
-unordered.
-
-I would expect that most architectures with a simple I/O model like
-microblaze don't have this problem though because the access is always
-serialized with  the instructions around it.
-
-> > 
-> > #ifdef CONFIG_PLB_BIG_ENDIAN
-> > #define plb_ioread32(p) ioread32be(p)
-> > #define plb_iowrite32(p) iowrite32be(p)
-> > #else
-> > #define plb_ioread32(p) ioread32(p)
-> > #define plb_iowrite32(p) iowrite32(p)
-> > #endif
+> While this would work, it seems likely that the expected behaviour is 
+> for the graphics driver to call the NVIF method. We don't do that as 
+> yet, but when we do I'm worried about it potentially resulting in this 
+> system being in an unexpected state (NVIF is used, but we don't claim to 
+> be Vista). Can you add a comment indicating that it should be reverted 
+> once nouveau grows support?
 > 
-> This seems like a reasonable approach.  What got me looking at all of
-> this was that I wanted to use asm-generic/io.h for our architecture, and
-> it's mostly OK except for the definition of ioremap which implies NOMMU.
-> Wouldn't it make sense to drop the ioremap definitions from this file,
-> thus allowing it to be used by archictectures with MMU?  Or do you know
-> of something more in this file which prohibits it from being used more
-> "generically"?
 
-The file is certainly meant to be as generic as possible, I just didn't
-consider MMU based architectures with strictly ordered I/O yet.
-I would suggest the patch below to let you override the defaults.
+I added comment to source code to remind need remove the MSI GX723 from
+blacklist table after nouveau driver support NVIF method.
 
-	Arnd
+The attached file is new patch. Do I need send the patch to kernel mail
+loop by git send-mail again?
 
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index 118601f..aaa5fac 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -247,12 +247,16 @@ static inline void *phys_to_virt(unsigned long address)
- /*
-  * Change "struct page" to physical address.
-  */
-+#ifndef ioremap
- static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- {
- 	return (void __iomem*) (unsigned long)offset;
- }
-+#endif
- 
-+#ifndef __ioremap
- #define __ioremap(offset, size, flags)	ioremap(offset, size)
-+#endif
- 
- #ifndef ioremap_nocache
- #define ioremap_nocache ioremap
-@@ -262,9 +266,11 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- #define ioremap_wc ioremap_nocache
- #endif
- 
-+#ifndef iounmap
- static inline void iounmap(void *addr)
- {
- }
-+#endif
- 
- #ifndef CONFIG_GENERIC_IOMAP
- static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+
+Thank's
+Joey Lee
+
+
+--=__Part614C8540.6__=
+Content-Type: text/plain; name="0001-DMI-to-disable-Vista-compatibility-on-MSI-GX723-Note.PATCH"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: attachment; filename="0001-DMI-to-disable-Vista-compatibility-on-MSI-GX723-Note.PATCH"
+
+>From c9541bb35389c3ccd96a49e9f30509e5bebae760 Mon Sep 17 00:00:00 =
+2001=0AFrom: Lee, Chun-Yi <jlee@novell.com>=0ADate: Fri, 1 Oct 2010 =
+16:28:29 +0800=0ASubject: [PATCH] DMI to disable Vista compatibility on =
+MSI GX723 Notebook=0A=0AThe brightness control hotkey don't work with =
+Vista compatibility=0A, because MSI GX723 included a infinite while loop =
+in DSDT when=0Abrightness control hotkey pressed.=0AMSI GX723 used Nvidia =
+video card, the infinite while loop must be=0Aa workaround with Nvidia's =
+Vista driver.=0A=0AThis patch should be reverted  once nouveau grows =
+support to call=0ANVIF method in DSDT.=0A=0ASigned-off-by: Lee, Chun-Yi =
+<jlee@novell.com>=0A---=0A drivers/acpi/blacklist.c |   17 ++++++++++++++++=
++=0A 1 files changed, 17 insertions(+), 0 deletions(-)=0A=0Adiff --git =
+a/drivers/acpi/blacklist.c b/drivers/acpi/blacklist.c=0Aindex f761960..fd24=
+325 100644=0A--- a/drivers/acpi/blacklist.c=0A+++ b/drivers/acpi/blacklist.=
+c=0A@@ -236,6 +236,23 @@ static struct dmi_system_id acpi_osi_dmi_table[] =
+__initdata =3D {=0A 		},=0A 	},=0A 	{=0A+	/*=0A+	 * There =
+have a NVIF method in MSI GX723 DSDT need call by Nvidia=0A+	 * driver =
+(e.g. nouveau) when user press brightness hotkey.=0A+	 * Currently, =
+nouveau driver didn't do the job and it causes there=0A+	 * have a =
+infinite while loop in DSDT when user press hotkey.=0A+	 * We add MSI =
+GX723's dmi information to this table for workaround=0A+	 * this =
+issue.=0A+	 * Will remove MSI GX723 from the table after nouveau =
+grows support.=0A+	 */=0A+	.callback =3D dmi_disable_osi_vista,=0A+	=
+.ident =3D "MSI GX723",=0A+	.matches =3D {=0A+		     =
+DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),=0A+		   =
+  DMI_MATCH(DMI_PRODUCT_NAME, "GX723"),=0A+		},=0A+	},=0A+	=
+{=0A 	.callback =3D dmi_disable_osi_win7,=0A 	.ident =3D "ASUS K50IJ",=0A=
+ 	.matches =3D {=0A-- =0A1.6.0.2=0A=0A
+--=__Part614C8540.6__=--
