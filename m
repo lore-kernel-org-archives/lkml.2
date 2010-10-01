@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755990Ab0JAJWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 05:22:47 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:40594 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab0JAJWq (ORCPT
+	id S1755908Ab0JAJ21 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 05:28:27 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:48194 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751578Ab0JAJ20 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 05:22:46 -0400
-Date: Fri, 1 Oct 2010 14:52:39 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX][PATCH v2] memcg: fix thresholds with use_hierarchy == 1
-Message-ID: <20101001092239.GG4261@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1285841792-23664-1-git-send-email-kirill@shutemov.name>
+	Fri, 1 Oct 2010 05:28:26 -0400
+Date: Fri, 1 Oct 2010 18:28:14 +0900
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: nbowler@elliptictech.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: Regression (ancient), bisected: TCP hangs with certain ESP6 SA.
+Message-ID: <20101001092814.GA26722@gondor.apana.org.au>
+References: <20100929142213.GA26031@elliptictech.com> <20100930.181716.43034538.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1285841792-23664-1-git-send-email-kirill@shutemov.name>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20100930.181716.43034538.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Kirill A. Shutsemov <kirill@shutemov.name> [2010-09-30 13:16:32]:
-
-> From: Kirill A. Shutemov <kirill@shutemov.name>
+On Thu, Sep 30, 2010 at 06:17:16PM -0700, David Miller wrote:
+> From: Nick Bowler <nbowler@elliptictech.com>
+> Date: Wed, 29 Sep 2010 10:22:13 -0400
 > 
-> We need to check parent's thresholds if parent has use_hierarchy == 1 to
-> be sure that parent's threshold events will be triggered even if parent
-> itself is not active (no MEM_CGROUP_EVENTS).
+> > b5c15fc004ac83b7ad280acbe0fd4bbed7e2c8d4 is the first bad commit
+> > commit b5c15fc004ac83b7ad280acbe0fd4bbed7e2c8d4
+> > Author: Herbert Xu <herbert@gondor.apana.org.au>
+> > Date:   Thu Feb 14 23:49:37 2008 -0800
+> > 
+> >     [IPV6]: Fix reversed local_df test in ip6_fragment
+> >     
+> >     I managed to reverse the local_df test when forward-porting this
+> >     patch so it actually makes things worse by never fragmenting at
+> >     all.
+> >     
+> >     Thanks to David Stevens for testing and reporting this bug.
+> >     
+> >     Bill Fink pointed out that the local_df setting is also the wrong
+> >     way around.
+> >     
+> >     Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+> >     Signed-off-by: David S. Miller <davem@davemloft.net>
 > 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-> ---
->  mm/memcontrol.c |   10 +++++++---
->  1 files changed, 7 insertions(+), 3 deletions(-)
+> I suspect that Herbert's change is correct, it's just that for some
+> reason PMTU doesn't work correctly with IPV6 for whatever reason.
 > 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3eed583..df40eaf 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -3587,9 +3587,13 @@ unlock:
-> 
->  static void mem_cgroup_threshold(struct mem_cgroup *memcg)
->  {
-> -	__mem_cgroup_threshold(memcg, false);
-> -	if (do_swap_account)
-> -		__mem_cgroup_threshold(memcg, true);
-> +	while (memcg) {
-> +		__mem_cgroup_threshold(memcg, false);
-> +		if (do_swap_account)
-> +			__mem_cgroup_threshold(memcg, true);
-> +
-> +		memcg =  parent_mem_cgroup(memcg);
-> +	}
->  }
->
+> That matches with your observed behavior that ping and UDP stuff
+> works just fine, and it's just TCP with certain ESP6 transport mode
+> settings.
 
-Good catch!
+Yeah I suspect if you go back even further (before the patch with
+the reversed logic referred to above) that you'll find it to be
+broken again.
 
- 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
+I'll try to reproduce this but I may not be able to get to it until
+November.
 
+Cheers,
 -- 
-	Three Cheers,
-	Balbir
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
