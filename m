@@ -1,65 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756241Ab0JAKmd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 06:42:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:51228 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756202Ab0JAKmc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 06:42:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,265,1283756400"; 
-   d="scan'208";a="330905656"
-Date: Fri, 1 Oct 2010 12:42:51 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Alessandro Zummo <a.zummo@towertech.it>,
-        rtc-linux@googlegroups.com, Andrew Morton <akpm@linux-foundation.org>,
-        Richard Purdie <rpurdie@linux.intel.com>,
-        Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-        Valentin Longchamp <valentin.longchamp@epfl.ch>
-Subject: Re: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
-Message-ID: <20101001104250.GB3064@sortiz-mobl>
-References: <20100929162315.GG29811@pengutronix.de>
- <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756286Ab0JAKpL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 06:45:11 -0400
+Received: from mail.digidescorp.com ([66.244.163.200]:25709 "EHLO
+	digidescorp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab0JAKpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 06:45:08 -0400
+X-Greylist: delayed 581 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 06:45:08 EDT
+X-Spam-Processed: digidescorp.com, Fri, 01 Oct 2010 05:35:26 -0500
+X-Authenticated-Sender: steve@digidescorp.com
+X-MDRemoteIP: 99.142.32.246
+X-Return-Path: prvs=18902378fd=steve@digidescorp.com
+X-Envelope-From: steve@digidescorp.com
+X-MDaemon-Deliver-To: linux-kernel@vger.kernel.org
+From: "Steven J. Magnani" <steve@digidescorp.com>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com,
+        kamezawa.hiroyu@jp.fujitsu.com,
+        "Steven J. Magnani" <steve@digidescorp.com>
+Subject: [PATCH][RESEND] nommu: add anonymous page memcg accounting
+Date: Fri,  1 Oct 2010 05:35:15 -0500
+Message-Id: <1285929315-2856-1-git-send-email-steve@digidescorp.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
+Add the necessary calls to track VM anonymous page usage.
 
-On Wed, Sep 29, 2010 at 06:23:46PM +0200, Uwe Kleine-König wrote:
-> mc13892 is the companion PMIC for Freescale's i.MX51.  It's similar enough
-> to mc13782 to support it in a single driver.
-> 
-> This patch introduces enough compatibility cruft to keep all users of the
-> superseded mc13783 driver unchanged.
-All 4 patches applied, thanks.
+Signed-off-by: Steven J. Magnani <steve@digidescorp.com>
+---
+diff -uprN a/mm/nommu.c b/mm/nommu.c
+--- a/mm/nommu.c	2010-09-02 19:47:43.000000000 -0500
++++ b/mm/nommu.c	2010-09-02 20:07:02.000000000 -0500
+@@ -524,8 +524,10 @@ static void delete_nommu_region(struct v
+ /*
+  * free a contiguous series of pages
+  */
+-static void free_page_series(unsigned long from, unsigned long to)
++static void free_page_series(unsigned long from, unsigned long to,
++			     const struct file *file)
+ {
++	mem_cgroup_uncharge_start();
+ 	for (; from < to; from += PAGE_SIZE) {
+ 		struct page *page = virt_to_page(from);
+ 
+@@ -534,8 +536,12 @@ static void free_page_series(unsigned lo
+ 		if (page_count(page) != 1)
+ 			kdebug("free page %p: refcount not one: %d",
+ 			       page, page_count(page));
++		if (!file)
++			mem_cgroup_uncharge_page(page);
++
+ 		put_page(page);
+ 	}
++	mem_cgroup_uncharge_end();
+ }
+ 
+ /*
+@@ -563,7 +569,8 @@ static void __put_nommu_region(struct vm
+ 		 * from ramfs/tmpfs mustn't be released here */
+ 		if (region->vm_flags & VM_MAPPED_COPY) {
+ 			kdebug("free series");
+-			free_page_series(region->vm_start, region->vm_top);
++			free_page_series(region->vm_start, region->vm_top,
++					 region->vm_file);
+ 		}
+ 		kmem_cache_free(vm_region_jar, region);
+ 	} else {
+@@ -1117,9 +1124,26 @@ static int do_mmap_private(struct vm_are
+ 		set_page_refcounted(&pages[point]);
+ 
+ 	base = page_address(pages);
+-	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
++
+ 	region->vm_start = (unsigned long) base;
+ 	region->vm_end   = region->vm_start + rlen;
++
++	if (!vma->vm_file) {
++		for (point = 0; point < total; point++) {
++			int charge_failed =
++				mem_cgroup_newpage_charge(&pages[point],
++							  current->mm,
++							  GFP_KERNEL);
++			if (charge_failed) {
++				free_page_series(region->vm_start,
++						 region->vm_end, NULL);
++				region->vm_start = region->vm_end = 0;
++				goto enomem;
++			}
++		}
++	}
++
++	region->vm_flags = vma->vm_flags |= VM_MAPPED_COPY;
+ 	region->vm_top   = region->vm_start + (total << PAGE_SHIFT);
+ 
+ 	vma->vm_start = region->vm_start;
+@@ -1150,7 +1174,7 @@ static int do_mmap_private(struct vm_are
+ 	return 0;
+ 
+ error_free:
+-	free_page_series(region->vm_start, region->vm_end);
++	free_page_series(region->vm_start, region->vm_end, vma->vm_file);
+ 	region->vm_start = vma->vm_start = 0;
+ 	region->vm_end   = vma->vm_end = 0;
+ 	region->vm_top   = 0;
+@@ -1555,7 +1579,7 @@ static int shrink_vma(struct mm_struct *
+ 	add_nommu_region(region);
+ 	up_write(&nommu_region_sem);
+ 
+-	free_page_series(from, to);
++	free_page_series(from, to, vma->vm_file);
+ 	return 0;
+ }
+ 
 
-I have one comment though:
-
-> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-> index db51ea1..1868d9b 100644
-> --- a/drivers/mfd/Kconfig
-> +++ b/drivers/mfd/Kconfig
-> @@ -408,11 +408,16 @@ config MFD_PCF50633
->  	  so that function-specific drivers can bind to them.
->  
->  config MFD_MC13783
-> -	tristate "Support Freescale MC13783"
-> +	tristate
-> +
-I don't think it's worth keeping this symbol around.
-
-Cheers,
-Samuel.
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
