@@ -1,91 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751970Ab0JAF1s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 01:27:48 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:47293 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab0JAF1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 01:27:47 -0400
-Date: Fri, 1 Oct 2010 06:27:34 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1010010623270.29377@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752000Ab0JAF31 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 01:29:27 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43314 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab0JAF30 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 01:29:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=HTNHMpRD9KAcjYZFNO4HW4F5hBncRiD4bV9E3fUmEGBoRm67EthUjHbW/pgDU3IBRJ
+         wn0V/cUP2GBdO4/D6xzXwCCPtyHx4VwTU16iiWI/bJKASipqPDu3XCC0aS36thPRbyLZ
+         jo9jCrubWpRdd6Dk5TRCGURKYC0spFFE/gyis=
+Subject: [PATCH V4] fs: allow for more than 2^31 files
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Robin Holt <holt@sgi.com>
+Cc: David Miller <davem@davemloft.net>, dipankar@in.ibm.com,
+        viro@zeniv.linux.org.uk, bcrl@kvack.org, den@openvz.org, mingo@elte.hu,
+        mszeredi@suse.cz, cmm@us.ibm.com, npiggin@kernel.dk, xemul@openvz.org,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <1285909434.2705.35.camel@edumazet-laptop>
+References: <20100923121704.GR14064@sgi.com>
+	 <1285246384.362.3.camel@edumazet-laptop> <20100923141037.GA3811@in.ibm.com>
+	 <20100927.153639.212415479.davem@davemloft.net>
+	 <1285645611.10438.27.camel@edumazet-laptop>
+	 <20100930202612.GM14068@sgi.com> <1285879545.2705.4.camel@edumazet-laptop>
+	 <20101001043413.GN14068@sgi.com> <1285909434.2705.35.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Oct 2010 07:29:18 +0200
+Message-ID: <1285910958.2705.56.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Le vendredi 01 octobre 2010 à 07:03 +0200, Eric Dumazet a écrit :
+> Le jeudi 30 septembre 2010 à 23:34 -0500, Robin Holt a écrit :
+> 
+> > The proc_handler used to be proc_nr_files() which would call
+> > get_nr_files() and deposit the result in files_stat.nr_files then cascade
+> > to proc_dointvec() which would dump the 3 values.  Now it will dump the
+> > three values, but not update the middle (nr_files) value first.
+> > 
+> 
+> Ah I get it now, thanks !
+> 
+> I'll send a V4 shortly.
+> 
+> 
 
-Hi Linus,
+In this v4, I call proc_nr_files() again, and proc_nr_files() calls
+proc_doulongvec_minmax() instead of proc_dointvec()
 
-We had an unplanned leak/race finding week:
+Added the "cat /proc/sys/fs/file-nr" in Changelog
 
-Had a pretty nasty race in TTM reported (scrolling certain pages in 
-firefox caused a major leak of objects), fix from Thomas in here.
+Thanks again Robin
 
-A nasty slow leak in the i915 GEM code, fix from Chris here.
-A race on object deletion in the GEM code, fix from Chris.
+[PATCH V3] fs: allow for more than 2^31 files
 
-A leak/memory corruptor when unloading drm modules after X had started due 
-to using krefs in a non-kref compatible manner, fix from me (found while 
-tracking down the firefox one).
+Robin Holt tried to boot a 16TB system and found af_unix was overflowing
+a 32bit value :
 
-Apart from that, just some general radeon fixes, a BKL regression fix, a 
-vmware regression fix from the ioctl cleanups.
+<quote>
 
-Dave.
+We were seeing a failure which prevented boot.  The kernel was incapable
+of creating either a named pipe or unix domain socket.  This comes down
+to a common kernel function called unix_create1() which does:
 
-The following changes since commit 32163f4b2cef28a5aab8b226ffecfc6379a53786:
+        atomic_inc(&unix_nr_socks);
+        if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
+                goto out;
 
-  alpha: fix usp value in multithreaded coredumps (2010-09-25 14:38:13 -0700)
+The function get_max_files() is a simple return of files_stat.max_files.
+files_stat.max_files is a signed integer and is computed in
+fs/file_table.c's files_init().
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
+        n = (mempages * (PAGE_SIZE / 1024)) / 10;
+        files_stat.max_files = n;
 
-Alex Deucher (3):
-      drm/radeon/kms: fix up encoder info messages for DFP6
-      drm/radeon/kms: fix potential segfault in r600_ioctl_wait_idle
-      drm/radeon/kms: add quirk for MSI K9A2GM motherboard
+In our case, mempages (total_ram_pages) is approx 3,758,096,384
+(0xe0000000).  That leaves max_files at approximately 1,503,238,553.
+This causes 2 * get_max_files() to integer overflow.
 
-Arnd Bergmann (1):
-      drm: i810/i830: fix locked ioctl variant
+</quote>
 
-Chris Wilson (2):
-      drm: Prune GEM vma entries
-      drm: Hold the mutex when dropping the last GEM reference
+Fix is to let /proc/sys/fs/file-nr & /proc/sys/fs/file-max use long
+integers, and change af_unix to use an atomic_long_t instead of
+atomic_t.
 
-Dave Airlie (2):
-      drm/radeon: fix PCI ID 5657 to be an RV410
-      drm/gem: handlecount isn't really a kref so don't make it one.
+get_max_files() is changed to return an unsigned long.
+get_nr_files() is changed to return a long.
 
-Thomas Hellstrom (2):
-      drm/ttm: Fix two race conditions
-      drm/vmwgfx: Fix breakage introduced by commit "drm: block userspace under allocating buffer and having drivers overwrite it (v2)"
+unix_nr_socks is changed from atomic_t to atomic_long_t, while not
+strictly needed to address Robin problem.
+ 
+Before patch (on a 64bit kernel) :
+# echo 2147483648 >/proc/sys/fs/file-max
+# cat /proc/sys/fs/file-max
+-18446744071562067968
 
- drivers/gpu/drm/drm_gem.c                  |   39 ++++-----------
- drivers/gpu/drm/drm_info.c                 |    2 +-
- drivers/gpu/drm/drm_vm.c                   |   28 +++++++----
- drivers/gpu/drm/i810/i810_dma.c            |    2 +-
- drivers/gpu/drm/i830/i830_dma.c            |    2 +-
- drivers/gpu/drm/i915/i915_gem.c            |    6 +--
- drivers/gpu/drm/i915/intel_fb.c            |    4 +-
- drivers/gpu/drm/nouveau/nouveau_fbcon.c    |    1 +
- drivers/gpu/drm/nouveau/nouveau_gem.c      |    6 +--
- drivers/gpu/drm/nouveau/nouveau_notifier.c |    1 +
- drivers/gpu/drm/radeon/r600.c              |    3 +-
- drivers/gpu/drm/radeon/radeon_atombios.c   |    9 +++
- drivers/gpu/drm/radeon/radeon_display.c    |    5 ++-
- drivers/gpu/drm/radeon/radeon_fb.c         |   14 ++----
- drivers/gpu/drm/radeon/radeon_gem.c        |    4 +-
- drivers/gpu/drm/ttm/ttm_bo.c               |   74 +++++++++++++++++++++++----
- drivers/gpu/drm/vmwgfx/vmwgfx_drv.c        |    2 +-
- include/drm/drmP.h                         |   28 ++++++++---
- include/drm/drm_pciids.h                   |    2 +-
- include/drm/ttm/ttm_bo_api.h               |    4 +-
- 20 files changed, 149 insertions(+), 87 deletions(-)
+After patch:
+# echo 2147483648 >/proc/sys/fs/file-max
+# cat /proc/sys/fs/file-max
+2147483648
+# cat /proc/sys/fs/file-nr
+704	0	2147483648
+
+
+Reported-by: Robin Holt <holt@sgi.com>
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ fs/file_table.c    |   17 +++++++----------
+ include/linux/fs.h |    8 ++++----
+ kernel/sysctl.c    |    6 +++---
+ net/unix/af_unix.c |   14 +++++++-------
+ 4 files changed, 21 insertions(+), 24 deletions(-)
+
+diff --git a/fs/file_table.c b/fs/file_table.c
+index a04bdd8..c3dee38 100644
+--- a/fs/file_table.c
++++ b/fs/file_table.c
+@@ -60,7 +60,7 @@ static inline void file_free(struct file *f)
+ /*
+  * Return the total number of open files in the system
+  */
+-static int get_nr_files(void)
++static long get_nr_files(void)
+ {
+ 	return percpu_counter_read_positive(&nr_files);
+ }
+@@ -68,7 +68,7 @@ static int get_nr_files(void)
+ /*
+  * Return the maximum number of open files in the system
+  */
+-int get_max_files(void)
++unsigned long get_max_files(void)
+ {
+ 	return files_stat.max_files;
+ }
+@@ -82,7 +82,7 @@ int proc_nr_files(ctl_table *table, int write,
+                      void __user *buffer, size_t *lenp, loff_t *ppos)
+ {
+ 	files_stat.nr_files = get_nr_files();
+-	return proc_dointvec(table, write, buffer, lenp, ppos);
++	return proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
+ }
+ #else
+ int proc_nr_files(ctl_table *table, int write,
+@@ -105,7 +105,7 @@ int proc_nr_files(ctl_table *table, int write,
+ struct file *get_empty_filp(void)
+ {
+ 	const struct cred *cred = current_cred();
+-	static int old_max;
++	static long old_max;
+ 	struct file * f;
+ 
+ 	/*
+@@ -140,8 +140,7 @@ struct file *get_empty_filp(void)
+ over:
+ 	/* Ran out of filps - report that */
+ 	if (get_nr_files() > old_max) {
+-		printk(KERN_INFO "VFS: file-max limit %d reached\n",
+-					get_max_files());
++		pr_info("VFS: file-max limit %lu reached\n", get_max_files());
+ 		old_max = get_nr_files();
+ 	}
+ 	goto fail;
+@@ -487,7 +486,7 @@ retry:
+ 
+ void __init files_init(unsigned long mempages)
+ { 
+-	int n; 
++	unsigned long n;
+ 
+ 	filp_cachep = kmem_cache_create("filp", sizeof(struct file), 0,
+ 			SLAB_HWCACHE_ALIGN | SLAB_PANIC, NULL);
+@@ -498,9 +497,7 @@ void __init files_init(unsigned long mempages)
+ 	 */ 
+ 
+ 	n = (mempages * (PAGE_SIZE / 1024)) / 10;
+-	files_stat.max_files = n; 
+-	if (files_stat.max_files < NR_FILE)
+-		files_stat.max_files = NR_FILE;
++	files_stat.max_files = max_t(unsigned long, n, NR_FILE);
+ 	files_defer_init();
+ 	lg_lock_init(files_lglock);
+ 	percpu_counter_init(&nr_files, 0);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 63d069b..8c06590 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -34,9 +34,9 @@
+ 
+ /* And dynamically-tunable limits and defaults: */
+ struct files_stat_struct {
+-	int nr_files;		/* read only */
+-	int nr_free_files;	/* read only */
+-	int max_files;		/* tunable */
++	unsigned long nr_files;		/* read only */
++	unsigned long nr_free_files;	/* read only */
++	unsigned long max_files;		/* tunable */
+ };
+ 
+ struct inodes_stat_t {
+@@ -404,7 +404,7 @@ extern void __init inode_init_early(void);
+ extern void __init files_init(unsigned long);
+ 
+ extern struct files_stat_struct files_stat;
+-extern int get_max_files(void);
++extern unsigned long get_max_files(void);
+ extern int sysctl_nr_open;
+ extern struct inodes_stat_t inodes_stat;
+ extern int leases_enable, lease_break_time;
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index f88552c..f789a0a 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1352,16 +1352,16 @@ static struct ctl_table fs_table[] = {
+ 	{
+ 		.procname	= "file-nr",
+ 		.data		= &files_stat,
+-		.maxlen		= 3*sizeof(int),
++		.maxlen		= sizeof(files_stat),
+ 		.mode		= 0444,
+ 		.proc_handler	= proc_nr_files,
+ 	},
+ 	{
+ 		.procname	= "file-max",
+ 		.data		= &files_stat.max_files,
+-		.maxlen		= sizeof(int),
++		.maxlen		= sizeof(files_stat.max_files),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec,
++		.proc_handler	= proc_doulongvec_minmax,
+ 	},
+ 	{
+ 		.procname	= "nr_open",
+diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
+index 0b39b24..3e1d7d1 100644
+--- a/net/unix/af_unix.c
++++ b/net/unix/af_unix.c
+@@ -117,7 +117,7 @@
+ 
+ static struct hlist_head unix_socket_table[UNIX_HASH_SIZE + 1];
+ static DEFINE_SPINLOCK(unix_table_lock);
+-static atomic_t unix_nr_socks = ATOMIC_INIT(0);
++static atomic_long_t unix_nr_socks;
+ 
+ #define unix_sockets_unbound	(&unix_socket_table[UNIX_HASH_SIZE])
+ 
+@@ -360,13 +360,13 @@ static void unix_sock_destructor(struct sock *sk)
+ 	if (u->addr)
+ 		unix_release_addr(u->addr);
+ 
+-	atomic_dec(&unix_nr_socks);
++	atomic_long_dec(&unix_nr_socks);
+ 	local_bh_disable();
+ 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, -1);
+ 	local_bh_enable();
+ #ifdef UNIX_REFCNT_DEBUG
+-	printk(KERN_DEBUG "UNIX %p is destroyed, %d are still alive.\n", sk,
+-		atomic_read(&unix_nr_socks));
++	printk(KERN_DEBUG "UNIX %p is destroyed, %ld are still alive.\n", sk,
++		atomic_long_read(&unix_nr_socks));
+ #endif
+ }
+ 
+@@ -606,8 +606,8 @@ static struct sock *unix_create1(struct net *net, struct socket *sock)
+ 	struct sock *sk = NULL;
+ 	struct unix_sock *u;
+ 
+-	atomic_inc(&unix_nr_socks);
+-	if (atomic_read(&unix_nr_socks) > 2 * get_max_files())
++	atomic_long_inc(&unix_nr_socks);
++	if (atomic_long_read(&unix_nr_socks) > 2 * get_max_files())
+ 		goto out;
+ 
+ 	sk = sk_alloc(net, PF_UNIX, GFP_KERNEL, &unix_proto);
+@@ -632,7 +632,7 @@ static struct sock *unix_create1(struct net *net, struct socket *sock)
+ 	unix_insert_socket(unix_sockets_unbound, sk);
+ out:
+ 	if (sk == NULL)
+-		atomic_dec(&unix_nr_socks);
++		atomic_long_dec(&unix_nr_socks);
+ 	else {
+ 		local_bh_disable();
+ 		sock_prot_inuse_add(sock_net(sk), sk->sk_prot, 1);
+
+
