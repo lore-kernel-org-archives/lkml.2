@@ -1,120 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752074Ab0JAFb6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 01:31:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53817 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751671Ab0JAFb4 (ORCPT
+	id S1752046Ab0JAFgS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 01:36:18 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:63103 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0JAFgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 01:31:56 -0400
-Message-ID: <4CA57173.5060803@kernel.org>
-Date: Thu, 30 Sep 2010 22:28:19 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 14/47] genirq: Implement a sane sparse_irq allocator
-References: <20100930221351.682772535@linutronix.de> <20100930221739.858896807@linutronix.de>
-In-Reply-To: <20100930221739.858896807@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Oct 2010 01:36:17 -0400
+Date: Fri, 01 Oct 2010 01:36:03 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Power Management List <linux-pm@lists.osdl.org>
+Subject: [git pull request] idle patches for 2.6.36-rc6
+Message-id: <alpine.LFD.2.00.1010010134120.7033@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2010 04:15 PM, Thomas Gleixner wrote:
-......
-> ---
->  include/linux/irq.h  |   25 +++++
->  kernel/irq/irqdesc.c |  226 +++++++++++++++++++++++++++++++++++++++++++++++++--
->  2 files changed, 243 insertions(+), 8 deletions(-)
-> 
-> Index: linux-2.6-tip/include/linux/irq.h
-> ===================================================================
-> --- linux-2.6-tip.orig/include/linux/irq.h
-> +++ linux-2.6-tip/include/linux/irq.h
-> @@ -276,6 +276,31 @@ static inline struct irq_desc *move_irq_
->  
->  extern struct irq_desc *irq_to_desc_alloc_node(unsigned int irq, int node);
->  
-> +int irq_alloc_descs(unsigned int irq, unsigned int from, unsigned int cnt, int node);
-> +
-> +static inline int irq_alloc_desc(int node)
-> +{
-> +	return irq_alloc_descs(0, 0, 1, node);
-> +}
-> +
-> +static inline int
-> +irq_alloc_desc_at(unsigned int at, int node)
-> +{
-> +	return irq_alloc_descs(at, 0, 1, node);
+Hi Linus,
 
-need to change to 
+please pull from: 
 
-	return irq_alloc_descs(at, at, 1, node);
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
 
-> +}
-> +
-...
+Two regressio fixes for those cutting over to intel_idle from acpi_idle,
+both are candidates for 2.6.35.stable.
 
-> Index: linux-2.6-tip/kernel/irq/irqdesc.c
-> ===================================================================
-> --- linux-2.6-tip.orig/kernel/irq/irqdesc.c
-> +++ linux-2.6-tip/kernel/irq/irqdesc.c
-...
+First, if you have a Lenovo S10-3 netbook, you could not boot.
+Second, intel_idle was not as quiet as acpi_idle on multi-core.
+Plus some low risk fluff patches to get out of the way.
 
-> +/**
-> + * irq_alloc_descs - allocate and initialize a range of irq descriptors
-> + * @irq:	Allocate for specific irq number if irq > 0
-> + * @from:	Start the search from this irq number
-> + * @cnt:	Number of consecutive irqs to allocate.
-> + * @node:	Preferred node on which the irq descriptor should be allocated
-> + *
-> + * Returns the first irq number or error code
-> + */
-> +int __ref
-> +irq_alloc_descs(unsigned int irq, unsigned int from, unsigned int cnt, int node)
-> +{
-> +	unsigned long flags;
-> +	int start, ret;
-> +
-> +	if (!cnt)
-> +		return -EINVAL;
-> +
-> +	raw_spin_lock_irqsave(&sparse_irq_lock, flags);
-> +
-or add
-	if (irq)
-		from = irq;
-here.
+This will update the files shown below.
 
-> +	start = bitmap_find_next_zero_area(allocated_irqs, nr_irqs, from, cnt, 0);
-> +	ret = -EEXIST;
-> +	if (irq && start != irq)
-> +		goto err;
-> +
-> +	ret = -ENOMEM;
-> +	if (start >= nr_irqs)
-> +		goto err;
-> +
-> +	bitmap_set(allocated_irqs, start, cnt);
-> +	raw_spin_unlock_irqrestore(&sparse_irq_lock, flags);
-> +	return alloc_descs(start, cnt, node);
-> +
-> +err:
-> +	raw_spin_unlock_irqrestore(&sparse_irq_lock, flags);
-> +	return ret;
-> +}
+thanks!
 
-Yinghai
+--
+Len Brown
+Intel Open Source Technology Center
+
+
+ps. individual patches are available on linux-pm@lists.linux-foundation.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.36/idle-release-2.6.36-rc6.diff.gz
+
+ drivers/acpi/processor_driver.c  |    2 +-
+ drivers/cpuidle/governors/menu.c |    2 +-
+ drivers/idle/intel_idle.c        |   20 +++++++++++++++-----
+ drivers/pci/quirks.c             |   20 ++++++++++++++++++++
+ include/linux/cpuidle.h          |    1 +
+ 5 files changed, 38 insertions(+), 7 deletions(-)
+ mode change 100755 => 100644 drivers/idle/intel_idle.c
+
+through these commits:
+
+Len Brown (2):
+      intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot hang
+      acpi_idle: add missing \n to printk
+
+Lucas De Marchi (1):
+      cpuidle: Fix typos
+
+Namhyung Kim (1):
+      intel_idle: add missing __percpu markup
+
+Suresh Siddha (1):
+      intel_idle: Voluntary leave_mm before entering deeper
+
+Thomas Weber (1):
+      intel_idle: Change mode 755 => 644
+
+with this log:
+
+commit 6110a1f43c27b516e16d5ce8860fca50748c2a87
+Author: Suresh Siddha <suresh.b.siddha@intel.com>
+Date:   Thu Sep 30 21:19:07 2010 -0400
+
+    intel_idle: Voluntary leave_mm before entering deeper
+    
+    Avoid TLB flush IPIs for the cores in deeper c-states by voluntary leave_mm()
+    before entering into that state. CPUs tend to flush TLB in those c-states
+    anyways.
+    
+    acpi_idle does this with C3-type states, but it was not caried over
+    when intel_idle was introduced.  intel_idle can apply it
+    to C-states in addition to those that ACPI might export as C3...
+    
+    Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 9587a678fa56ea6d7f39b048f24f5d03a89bf9b3
+Merge: e9a64ed 4731fdc
+Author: Len Brown <len.brown@intel.com>
+Date:   Tue Sep 28 23:30:58 2010 -0400
+
+    Merge branch 'meego-7093' into idle-release
+
+commit e9a64ed4994db04c9963495b03d8a86538e3ad55
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Sep 24 20:50:02 2010 -0400
+
+    acpi_idle: add missing \n to printk
+    
+    otherwise, these two lines print as one:
+    
+    ACPI: acpi_idle yielding to intel_idle
+    ACPI: SSDT 3f5d8741 00203 (v02 PmRef  Cpu0Ist 00003000 INTL 20050624)
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 3265eba0bed7645cacd5e2cb3614d504b5ac29e6
+Author: Namhyung Kim <namhyung@gmail.com>
+Date:   Sun Aug 8 03:10:03 2010 +0900
+
+    intel_idle: add missing __percpu markup
+    
+    intel_idle_cpuidle_devices is a percpu pointer
+    but was missing __percpu markup.
+    
+    Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+    Acked-by: Tejun Heo <tj@kernel.org>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 68f160125f0655c21a1c9f896ddff97d98012cb0
+Author: Thomas Weber <weber@corscience.de>
+Date:   Mon Jul 12 08:56:43 2010 +0200
+
+    intel_idle: Change mode 755 => 644
+    
+    Remove execution permission from source file.
+    
+    Signed-off-by: Thomas Weber <weber@corscience.de>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 20e3341bb138bc9860adea4d76707470357b76ab
+Author: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date:   Tue Sep 7 12:53:49 2010 -0400
+
+    cpuidle: Fix typos
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 4731fdcf6f7bdab3e369a3f844d4ea4d4017284d
+Author: Len Brown <len.brown@intel.com>
+Date:   Fri Sep 24 21:02:27 2010 -0400
+
+    intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot hang
+    
+    When the Lenovo Ideapad S10-3 is booted with HT enabled,
+    it hits a boot hang in the intel_idle driver.
+    
+    This occurs when entering ATM-C4 for the first time,
+    unless BM_STS is first cleared.
+    
+    acpi_idle doesn't see this because it first checks
+    and clears BM_STS, but it would hit the same hang
+    if that check were disabled.
+    
+    http://bugs.meego.com/show_bug.cgi?id=7093
+    https://bugs.launchpad.net/ubuntu/+source/linux/+bug/634702
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
