@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751695Ab0JAQCA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:02:00 -0400
-Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:33998
-	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751582Ab0JAQB7 (ORCPT
+	id S1752114Ab0JAQCM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:02:12 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:59659
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751908Ab0JAQCH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:01:59 -0400
+	Fri, 1 Oct 2010 12:02:07 -0400
 X-SpamScore: 1
-X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h62h)
-X-Spam-TCS-SCL: 1:0
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h66h)
+X-Spam-TCS-SCL: 5:0
+X-FB-SS: 0,
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L9MCH4-02-D82-02
+X-WSS-ID: 0L9MCH4-02-D85-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Ingo Molnar <mingo@elte.hu>
@@ -20,9 +21,9 @@ CC: LKML <linux-kernel@vger.kernel.org>,
         Will Deacon <will.deacon@arm.com>,
         Matt Fleming <matt@console-pimps.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 4/5] oprofile, ARM: Remove some goto statements
-Date: Fri, 1 Oct 2010 17:56:26 +0200
-Message-ID: <1285948587-24521-5-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 3/5] oprofile, ARM: Rework op_create_counter()
+Date: Fri, 1 Oct 2010 17:56:25 +0200
+Message-ID: <1285948587-24521-4-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.2.2
 In-Reply-To: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
 References: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
@@ -33,48 +34,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes some unnecessary goto statements.
+This patch simplifies op_create_counter(). Removing if/else if paths
+and return code variable by direct returning from function.
 
 Cc: Will Deacon <will.deacon@arm.com>
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/arm/oprofile/common.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ arch/arm/oprofile/common.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
 diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index cec9305..ab875f3 100644
+index 7ae9eeb..cec9305 100644
 --- a/arch/arm/oprofile/common.c
 +++ b/arch/arm/oprofile/common.c
-@@ -135,11 +135,10 @@ static int op_perf_start(void)
- 		for (event = 0; event < perf_num_counters; ++event) {
- 			ret = op_create_counter(cpu, event);
- 			if (ret)
--				goto out;
-+				return ret;
- 		}
+@@ -89,28 +89,28 @@ static void op_perf_setup(void)
+ 
+ static int op_create_counter(int cpu, int event)
+ {
+-	int ret = 0;
+ 	struct perf_event *pevent;
+ 
+-	if (!counter_config[event].enabled || (perf_events[cpu][event] != NULL))
+-		return ret;
++	if (!counter_config[event].enabled || perf_events[cpu][event])
++		return 0;
+ 
+ 	pevent = perf_event_create_kernel_counter(&counter_config[event].attr,
+ 						  cpu, -1,
+ 						  op_overflow_handler);
+ 
+-	if (IS_ERR(pevent)) {
+-		ret = PTR_ERR(pevent);
+-	} else if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
++	if (IS_ERR(pevent))
++		return PTR_ERR(pevent);
++
++	if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
+ 		perf_event_release_kernel(pevent);
+ 		pr_warning("oprofile: failed to enable event %d "
+ 				"on CPU %d\n", event, cpu);
+-		ret = -EBUSY;
+-	} else {
+-		perf_events[cpu][event] = pevent;
++		return -EBUSY;
  	}
  
--out:
- 	return ret;
+-	return ret;
++	perf_events[cpu][event] = pevent;
++
++	return 0;
  }
  
-@@ -263,7 +262,7 @@ static int __init init_driverfs(void)
- 
- 	ret = platform_driver_register(&oprofile_driver);
- 	if (ret)
--		goto out;
-+		return ret;
- 
- 	oprofile_pdev =	platform_device_register_simple(
- 				oprofile_driver.driver.name, 0, NULL, 0);
-@@ -272,7 +271,6 @@ static int __init init_driverfs(void)
- 		platform_driver_unregister(&oprofile_driver);
- 	}
- 
--out:
- 	return ret;
- }
- 
+ static void op_destroy_counter(int cpu, int event)
 -- 
 1.7.2.2
 
