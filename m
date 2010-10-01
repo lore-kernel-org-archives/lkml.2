@@ -1,117 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab0JAQv2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:51:28 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:45208 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750988Ab0JAQv1 convert rfc822-to-8bit (ORCPT
+	id S1753270Ab0JARFd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 13:05:33 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59218 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751470Ab0JARFc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:51:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZUZoSwPcWVAQ3DMluWdJV04khUT8q6Ujt35Il2wiGyvkuOtReTPyIQkl+m5ZySLGGI
-         XMCpGvbckrkavjz2G8Dw==
-MIME-Version: 1.0
-In-Reply-To: <1285933569.2144.57.camel@laptop>
-References: <1285788096-29471-1-git-send-email-venki@google.com>
-	<1285788096-29471-4-git-send-email-venki@google.com>
-	<1285844768.2144.11.camel@laptop>
-	<AANLkTi=r5DX52+735OtGHmJCS38n1P_WxEkKzLVf1E_m@mail.gmail.com>
-	<AANLkTikHfyjjZfDcoO-yDW+JTnpDb42VxRMckk55Xp+O@mail.gmail.com>
-	<1285933569.2144.57.camel@laptop>
-Date: Fri, 1 Oct 2010 09:51:21 -0700
-Message-ID: <AANLkTinmgCmozNMQyesaTxrAfzgJ7bKEAeyNRWh7ceZ5@mail.gmail.com>
-Subject: Re: [PATCH 3/7] Add IRQ_TIME_ACCOUNTING, finer accounting of irq time -v3
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 1 Oct 2010 13:05:32 -0400
+Subject: Re: [PATCH 0/5] oprofile updates for v2.6.37
+From: Will Deacon <will.deacon@arm.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Matt Fleming <matt@console-pimps.org>
+In-Reply-To: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
+References: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Oct 2010 18:05:05 +0100
+Message-ID: <1285952705.31571.2.camel@e102144-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Oct 2010 17:05:08.0752 (UTC) FILETIME=[CD467900:01CB618A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 1, 2010 at 4:46 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-09-30 at 13:38 -0700, Venkatesh Pallipadi wrote:
->> On Thu, Sep 30, 2010 at 9:29 AM, Venkatesh Pallipadi <venki@google.com> wrote:
->> > On Thu, Sep 30, 2010 at 4:06 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> >> On Wed, 2010-09-29 at 12:21 -0700, Venkatesh Pallipadi wrote:
->> >>> +void account_system_vtime(struct task_struct *curr)
->> >>> +{
->> >>> +       unsigned long flags;
->> >>> +       int cpu;
->> >>> +       u64 now, delta;
->> >>> +
->> >>> +       if (!sched_clock_irqtime)
->> >>> +               return;
->> >>> +
->> >>> +       local_irq_save(flags);
->> >>> +
->> >>> +       now = sched_clock();
->> >>> +       cpu = smp_processor_id();
->> >>
->> >> Like said before, that really wants to read like:
->> >>
->> >>        cpu = smp_processor_id();
->> >>        now = sched_clock_cpu(cpu);
->> >>
->> >> sched_clock() is raw tsc + ns conversion and can go all over the place.
->> >
->> > sched_clock_cpu() won't really work for here, due to what looks like
->> > idle and timer tick dependencies. Using sched_clock_cpu(), I end up
->> > accounting CPU idle time to hardirq due to time captured before the
->> > handler and after the handler.
->> >
->>
->> Specifically, here is the now and delta log from my test setup with
->> using sched_clock_cpu() above (data below from a particular CPU)
->>
->>           <idle>-0     [001]  1697.910060: account_system_vtime:
->> SOFTIRQ STOP 1700897011613, delta 3555
->>           <idle>-0     [001]  1697.911047: account_system_vtime: IRQ
->> START 1700897999028
->
-> Dude, linewrap hell! And what are you trying to illustrate?
->
-Sorry. Retrying with shorted lines
+Hello Robert,
 
-This is the log of start, hardirq stop, softirq stop and deltas at
-stop, taken in account_system_vtime on CPU 1 with sched_clock_cpu.
+On Fri, 2010-10-01 at 16:56 +0100, Robert Richter wrote:
+> This patch set contains some rework and cleanups of the oprofile code.
+> It also contains changes of the oprofile perf backend that is
+> currently implemented for the ARM architecture, but will be ported to
+> oprofile generic code.
+> 
+> Will, please ack the ARM changes if you are fine with it.
+> 
 
-~5000 delta for a hardirq seems reasonable. But, as you see there are
-frequent ms deltas on hardirq, specifically when in idle.
+I've been through patches 2, 3 and 4 and they look fine. I've also
+tested them and can't see any regressions. Thanks for sticking with
+this!
 
-<idle>-0     []  1697.911047: START 1700897999028
-<idle>-0     []  1697.911051: HARD STOP 1700898005071, delta 6043
-<idle>-0     []  1697.911052: START 1700898006003
-<idle>-0     []  1697.911057: SOFT STOP 1700898010685, delta 4682
-<idle>-0     []  1697.911931: START 1700898884039
-<idle>-0     []  1697.911935: HARD STOP 1700898890304, delta 6265
-<idle>-0     []  1697.915040: START 1700899887146
-<idle>-0     []  1697.915047: HARD STOP 1700902008678, delta 2121532
-<idle>-0     []  1697.915048: START 1700902009617
-<idle>-0     []  1697.915055: SOFT STOP 1700902015924, delta 6307
-<idle>-0     []  1697.918958: START 1700903006980
-<idle>-0     []  1697.918963: HARD STOP 1700905931367, delta 2924387
-<idle>-0     []  1697.919553: START 1700906521486
-<idle>-0     []  1697.919557: HARD STOP 1700906527006, delta 5520
-<idle>-0     []  1697.933420: START 1700907524219
-<idle>-0     []  1697.933428: HARD STOP 1700920424020, delta 12899801
-<idle>-0     []  1697.936512: START 1700921418037
-<idle>-0     []  1697.936523: HARD STOP 1700923524497, delta 2106460
+Acked-by: Will Deacon <will.deacon@arm.com>
 
+Have a good weekend,
 
-This is probably because this test system is of the crazy TSC ones.
-But, it does have TSC as its closcksource and there is no trace of
-mark_tsc_unstable in dmesg.
+Will
 
-Thanks,
-Venki
