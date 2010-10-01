@@ -1,172 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753373Ab0JAB7m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 21:59:42 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:42541 "EHLO bear.ext.ti.com"
+	id S1754145Ab0JAB7x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 21:59:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42307 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752193Ab0JAB7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 21:59:37 -0400
+	id S1753897Ab0JAB7u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 21:59:50 -0400
 From: Fernando Guzman Lugo <x0095840@ti.com>
 To: <gregkh@suse.de>
 Cc: <felipe.contreras@nokia.com>, <ameya.palande@nokia.com>, <nm@ti.com>,
         <Hiroshi.DOYU@nokia.com>, <ohad@wizery.com>,
         <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
         <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCHv2 09/11] staging: tidspbridge - remove reserved memory clean up
-Date: Thu, 30 Sep 2010 21:12:56 -0500
-Message-Id: <1285899178-14413-10-git-send-email-x0095840@ti.com>
+Subject: [PATCHv2 00/11] staging tidspbridge: iommu migration
+Date: Thu, 30 Sep 2010 21:12:47 -0500
+Message-Id: <1285899178-14413-1-git-send-email-x0095840@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1285899178-14413-9-git-send-email-x0095840@ti.com>
-References: <1285899178-14413-1-git-send-email-x0095840@ti.com>
- <1285899178-14413-2-git-send-email-x0095840@ti.com>
- <1285899178-14413-3-git-send-email-x0095840@ti.com>
- <1285899178-14413-4-git-send-email-x0095840@ti.com>
- <1285899178-14413-5-git-send-email-x0095840@ti.com>
- <1285899178-14413-6-git-send-email-x0095840@ti.com>
- <1285899178-14413-7-git-send-email-x0095840@ti.com>
- <1285899178-14413-8-git-send-email-x0095840@ti.com>
- <1285899178-14413-9-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now iommv module keeps track of iommu memory used,
-we do not need resource cleanup for reserved
-memories anymore.
+This set of patches remove the dspbridge custom mmu
+implementation and use iommu module instead.
 
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
----
- .../staging/tidspbridge/include/dspbridge/drv.h    |    4 --
- drivers/staging/tidspbridge/rmgr/drv.c             |   11 ------
+Version2:
+- Comments from FUJITA Tomonori and previous patch
+  "tidspbridge: add map support for big buffers"
+  was removed and instead a patch to define
+  ARCH_HAS_SG_CHAIN in arm architecture will be
+  sent.
+- Rebase to the latest tidspbridge.
+
+
+Fernando Guzman Lugo (11):
+  staging: tidspbridge: replace iommu custom for opensource
+    implementation
+  staging: tidspbridge - move shared memory iommu maps to tiomap3430.c
+  staging: tidspbridge - rename bridge_brd_mem_map/unmap to a proper
+    name
+  staging: tidspbridge - remove custom mmu code from tiomap3430.c
+  staging: tidspbridge - fix mmufault support
+  staging: tidspbrge - remove hw directory
+  staging: tidspbridge - move all iommu related code to a new file
+  staging: tidspbridge: remove dw_dmmu_base from cfg_hostres struct
+  staging: tidspbridge - remove reserved memory clean up
+  staging: tidspbridge - deprecate reserve/unreserve_memory funtions
+  staging: tidspbridge - remove dmm custom module
+
+ drivers/staging/tidspbridge/Makefile               |    7 +-
+ drivers/staging/tidspbridge/core/_deh.h            |    5 +-
+ drivers/staging/tidspbridge/core/_tiomap.h         |   19 +-
+ drivers/staging/tidspbridge/core/dsp-mmu.c         |  316 ++++++
+ drivers/staging/tidspbridge/core/io_sm.c           |  180 +---
+ drivers/staging/tidspbridge/core/tiomap3430.c      | 1070 ++------------------
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |    4 -
+ drivers/staging/tidspbridge/core/tiomap_io.c       |   17 +-
+ drivers/staging/tidspbridge/core/ue_deh.c          |  115 +---
+ drivers/staging/tidspbridge/hw/EasiGlobal.h        |   41 -
+ drivers/staging/tidspbridge/hw/MMUAccInt.h         |   76 --
+ drivers/staging/tidspbridge/hw/MMURegAcM.h         |  225 ----
+ drivers/staging/tidspbridge/hw/hw_defs.h           |   58 --
+ drivers/staging/tidspbridge/hw/hw_mmu.c            |  562 ----------
+ drivers/staging/tidspbridge/hw/hw_mmu.h            |  163 ---
+ .../tidspbridge/include/dspbridge/cfgdefs.h        |    1 -
+ .../staging/tidspbridge/include/dspbridge/dev.h    |   24 -
+ .../staging/tidspbridge/include/dspbridge/dmm.h    |   75 --
+ .../staging/tidspbridge/include/dspbridge/drv.h    |   10 -
+ .../tidspbridge/include/dspbridge/dsp-mmu.h        |   67 ++
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   44 -
+ .../tidspbridge/include/dspbridge/dspioctl.h       |    7 -
+ .../staging/tidspbridge/include/dspbridge/proc.h   |   46 -
+ drivers/staging/tidspbridge/pmgr/dev.c             |   63 +--
+ drivers/staging/tidspbridge/pmgr/dmm.c             |  533 ----------
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |   34 +-
+ drivers/staging/tidspbridge/rmgr/drv.c             |   15 -
  drivers/staging/tidspbridge/rmgr/drv_interface.c   |    2 -
- drivers/staging/tidspbridge/rmgr/proc.c            |   36 --------------------
- 4 files changed, 0 insertions(+), 53 deletions(-)
-
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-index c1f363e..427f38b 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-@@ -165,10 +165,6 @@ struct process_context {
- 	struct list_head dmm_map_list;
- 	spinlock_t dmm_map_lock;
- 
--	/* DMM reserved memory resources */
--	struct list_head dmm_rsv_list;
--	spinlock_t dmm_rsv_lock;
--
- 	/* DSP Heap resources */
- 	struct dspheap_res_object *pdspheap_list;
- 
-diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
-index 0c857b9..91cc168 100644
---- a/drivers/staging/tidspbridge/rmgr/drv.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv.c
-@@ -146,7 +146,6 @@ int drv_remove_all_dmm_res_elements(void *process_ctxt)
- 	struct process_context *ctxt = (struct process_context *)process_ctxt;
- 	int status = 0;
- 	struct dmm_map_object *temp_map, *map_obj;
--	struct dmm_rsv_object *temp_rsv, *rsv_obj;
- 
- 	/* Free DMM mapped memory resources */
- 	list_for_each_entry_safe(map_obj, temp_map, &ctxt->dmm_map_list, link) {
-@@ -156,16 +155,6 @@ int drv_remove_all_dmm_res_elements(void *process_ctxt)
- 			pr_err("%s: proc_un_map failed!"
- 			       " status = 0x%xn", __func__, status);
- 	}
--
--	/* Free DMM reserved memory resources */
--	list_for_each_entry_safe(rsv_obj, temp_rsv, &ctxt->dmm_rsv_list, link) {
--		status = proc_un_reserve_memory(ctxt->hprocessor, (void *)
--						rsv_obj->dsp_reserved_addr,
--						ctxt);
--		if (status)
--			pr_err("%s: proc_un_reserve_memory failed!"
--			       " status = 0x%xn", __func__, status);
--	}
- 	return status;
- }
- 
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index 4c0b9ee..f9a1e0b 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -507,8 +507,6 @@ static int bridge_open(struct inode *ip, struct file *filp)
- 		pr_ctxt->res_state = PROC_RES_ALLOCATED;
- 		spin_lock_init(&pr_ctxt->dmm_map_lock);
- 		INIT_LIST_HEAD(&pr_ctxt->dmm_map_list);
--		spin_lock_init(&pr_ctxt->dmm_rsv_lock);
--		INIT_LIST_HEAD(&pr_ctxt->dmm_rsv_list);
- 
- 		pr_ctxt->node_id = kzalloc(sizeof(struct idr), GFP_KERNEL);
- 		if (pr_ctxt->node_id) {
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index 59c946b..e5fec57 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -1515,7 +1515,6 @@ int proc_reserve_memory(void *hprocessor, u32 ul_size,
- 	struct dmm_object *dmm_mgr;
- 	int status = 0;
- 	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
--	struct dmm_rsv_object *rsv_obj;
- 
- 	if (!p_proc_object) {
- 		status = -EFAULT;
-@@ -1529,22 +1528,6 @@ int proc_reserve_memory(void *hprocessor, u32 ul_size,
- 	}
- 
- 	status = dmm_reserve_memory(dmm_mgr, ul_size, (u32 *) pp_rsv_addr);
--	if (status != 0)
--		goto func_end;
--
--	/*
--	 * A successful reserve should be followed by insertion of rsv_obj
--	 * into dmm_rsv_list, so that reserved memory resource tracking
--	 * remains uptodate
--	 */
--	rsv_obj = kmalloc(sizeof(struct dmm_rsv_object), GFP_KERNEL);
--	if (rsv_obj) {
--		rsv_obj->dsp_reserved_addr = (u32) *pp_rsv_addr;
--		spin_lock(&pr_ctxt->dmm_rsv_lock);
--		list_add(&rsv_obj->link, &pr_ctxt->dmm_rsv_list);
--		spin_unlock(&pr_ctxt->dmm_rsv_lock);
--	}
--
- func_end:
- 	dev_dbg(bridge, "%s: hprocessor: 0x%p ul_size: 0x%x pp_rsv_addr: 0x%p "
- 		"status 0x%x\n", __func__, hprocessor,
-@@ -1756,7 +1739,6 @@ int proc_un_reserve_memory(void *hprocessor, void *prsv_addr,
- 	struct dmm_object *dmm_mgr;
- 	int status = 0;
- 	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
--	struct dmm_rsv_object *rsv_obj;
- 
- 	if (!p_proc_object) {
- 		status = -EFAULT;
-@@ -1770,24 +1752,6 @@ int proc_un_reserve_memory(void *hprocessor, void *prsv_addr,
- 	}
- 
- 	status = dmm_un_reserve_memory(dmm_mgr, (u32) prsv_addr);
--	if (status != 0)
--		goto func_end;
--
--	/*
--	 * A successful unreserve should be followed by removal of rsv_obj
--	 * from dmm_rsv_list, so that reserved memory resource tracking
--	 * remains uptodate
--	 */
--	spin_lock(&pr_ctxt->dmm_rsv_lock);
--	list_for_each_entry(rsv_obj, &pr_ctxt->dmm_rsv_list, link) {
--		if (rsv_obj->dsp_reserved_addr == (u32) prsv_addr) {
--			list_del(&rsv_obj->link);
--			kfree(rsv_obj);
--			break;
--		}
--	}
--	spin_unlock(&pr_ctxt->dmm_rsv_lock);
--
- func_end:
- 	dev_dbg(bridge, "%s: hprocessor: 0x%p prsv_addr: 0x%p status: 0x%x\n",
- 		__func__, hprocessor, prsv_addr, status);
--- 
-1.6.3.3
+ drivers/staging/tidspbridge/rmgr/node.c            |   48 +-
+ drivers/staging/tidspbridge/rmgr/proc.c            |  197 +----
+ 30 files changed, 568 insertions(+), 3456 deletions(-)
+ create mode 100644 drivers/staging/tidspbridge/core/dsp-mmu.c
+ delete mode 100644 drivers/staging/tidspbridge/hw/EasiGlobal.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/MMUAccInt.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/MMURegAcM.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/hw_defs.h
+ delete mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.c
+ delete mode 100644 drivers/staging/tidspbridge/hw/hw_mmu.h
+ delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dmm.h
+ create mode 100644 drivers/staging/tidspbridge/include/dspbridge/dsp-mmu.h
+ delete mode 100644 drivers/staging/tidspbridge/pmgr/dmm.c
 
