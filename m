@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752230Ab0JACP4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 22:15:56 -0400
-Received: from mga11.intel.com ([192.55.52.93]:19818 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751367Ab0JACPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 22:15:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,262,1283756400"; 
-   d="scan'208";a="842585036"
-Date: Fri, 1 Oct 2010 10:15:48 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Takashi Iwai <tiwai@suse.de>, Linux Kernel <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: Microphone not working on PCI ID 8086:3b56
-Message-ID: <20101001021548.GA7115@localhost>
-References: <Pine.LNX.4.64.1009302047410.25061@boston.corp.fedex.com>
- <s5hsk0rtlun.wl%tiwai@suse.de>
- <AANLkTinT3EU3aLSBt5WmA=qDOf1cFABUNG+RiT3Nvx3e@mail.gmail.com>
- <s5h4od7tf43.wl%tiwai@suse.de>
- <20100930154557.GD11399@localhost>
- <AANLkTinnTeseJY4RDuGNkTjNE--QJ0Mw_S8FVKy_RT7h@mail.gmail.com>
+	id S1752861Ab0JAC3J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 22:29:09 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54972 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751410Ab0JAC3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 22:29:06 -0400
+X-Nat-Received: from [202.181.97.72]:63455 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1285900143.27405
+Message-Id: <201010010229.o912T3rT089958@www262.sakura.ne.jp>
+Subject: Re: Is it legal to return positive value when do_execve() succeeds?
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: linux-fsdevel@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinnTeseJY4RDuGNkTjNE--QJ0Mw_S8FVKy_RT7h@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+Date: Fri, 01 Oct 2010 11:29:03 +0900
+References: <201009302207.IJB81715.tFSLFHFOVJOOMQ@I-love.SAKURA.ne.jp>
+In-Reply-To: <201009302207.IJB81715.tFSLFHFOVJOOMQ@I-love.SAKURA.ne.jp>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 30092010 #4259328, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 02:08:09AM +0800, Jeff Chua wrote:
-> On Thu, Sep 30, 2010 at 11:45 PM, Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > As a kindly reminder, these verbose options are pretty useful:
-> >
-> > CONFIG_SND_VERBOSE_PROCFS=y
-> > CONFIG_SND_VERBOSE_PRINTK=y
-> > CONFIG_SND_DEBUG=y
-> > CONFIG_SND_DEBUG_VERBOSE=y
-> 
-> Attached alsa log and dmesg with above enabled.
+Tetsuo Handa wrote:
+> Is it legal to return positive value when do_execve() succeeds?
 
-Jeff, this should make your mic work.
+It seems to me that do_execve() should not return positive return code because
+some callers are expecting do_execve() to return 0 on success.
 
-Thanks,
-Fengguang
+linux-2.6.36-rc6/arch/x86/kernel/process.c:
+304 long sys_execve(const char __user *name,
+305                 const char __user *const __user *argv,
+306                 const char __user *const __user *envp, struct pt_regs *regs)
+307 {
+308         long error;
+309         char *filename;
+310 
+311         filename = getname(name);
+312         error = PTR_ERR(filename);
+313         if (IS_ERR(filename))
+314                 return error;
+315         error = do_execve(filename, argv, envp, regs);
+316 
+317 #ifdef CONFIG_X86_32
+318         if (error == 0) {
+319                 /* Make sure we don't return using sysenter.. */
+320                 set_thread_flag(TIF_IRET);
+321         }
+322 #endif
+323 
+324         putname(filename);
+325         return error;
+326 }
 
-diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
-index a6c68cb..c0c2b33 100644
---- a/sound/pci/hda/patch_conexant.c
-+++ b/sound/pci/hda/patch_conexant.c
-@@ -3110,6 +3110,7 @@ static struct snd_pci_quirk cxt5066_cfg_tbl[] = {
- 	SND_PCI_QUIRK(0x17aa, 0x21b2, "Thinkpad X100e", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21b3, "Thinkpad Edge 13 (197)", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x21b4, "Thinkpad Edge", CXT5066_IDEAPAD),
-+ 	SND_PCI_QUIRK(0x17aa, 0x2156, "Lenovo X201s", CXT5066_THINKPAD),
-  	SND_PCI_QUIRK(0x17aa, 0x215e, "Lenovo Thinkpad", CXT5066_THINKPAD),
-  	SND_PCI_QUIRK(0x17aa, 0x38af, "Lenovo G series", CXT5066_IDEAPAD),
- 	SND_PCI_QUIRK(0x17aa, 0x390a, "Lenovo S10-3t", CXT5066_IDEAPAD),
+But there are several "struct linux_binfmt"->load_binary() users who return
+positive return code for error paths.
+
+  load_elf_binary() will return positive return code if set_brk() returned
+  positive return code.
+
+  load_aout_binary() will return positive return code if do_brk() or
+  do_mmap() returned unwanted result.
+
+Are we using positive return code for telling unrecoverable errors?
+
+send_sig(SIGKILL, current, 0) is used when execve() failed after reaching
+"the point of no return", isn't it? But set_thread_flag(TIF_IRET) will not be
+called if execve() failed after "the point of no return".
+
+Is this no problem as the current task will be SIGKILL'ed as soon as returning
+using sysenter()?
+
+Regards.
