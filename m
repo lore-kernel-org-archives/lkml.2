@@ -1,377 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab0JANWQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 09:22:16 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:12351 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932362Ab0JANWM (ORCPT
+	id S932646Ab0JANWc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 09:22:32 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:33073 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab0JANW3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 09:22:12 -0400
-Date: Fri, 1 Oct 2010 15:21:58 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 7/8] drivers/i2c/busses/i2c-amd8111.c: Fix unsigned
- return type
-Message-ID: <20101001152158.24a2dc3d@endymion.delvare>
-In-Reply-To: <Pine.LNX.4.64.1009302226270.10470@ask.diku.dk>
-References: <Pine.LNX.4.64.1009080757050.27892@ask.diku.dk>
-	<20100908093449.0adef429@hyperion.delvare>
-	<Pine.LNX.4.64.1009081148040.3297@ask.diku.dk>
-	<20100929174606.616e564c@endymion.delvare>
-	<Pine.LNX.4.64.1009292147060.25609@ask.diku.dk>
-	<Pine.LNX.4.64.1009302226270.10470@ask.diku.dk>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Oct 2010 09:22:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qodL913yHMp/RkTAsXMFLqj4gf8IAnxbWOQWsMgl1+VzK3k8usZCLAKUFLt6l89Ks5
+         QWTsuknbthiBWGGB6hKXP2UfNCxzJDxVEtLRpFwvBy8fVkBNrRshDiV3pVa/PtR7Oofm
+         ftXwC9TGYd9iWmGNynOQYL5TRT33G6Uxg9TAI=
+Date: Fri, 1 Oct 2010 17:22:07 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Alan Cox <alan@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 5/8] altera_uart: Make it possible to use Altera UART and
+ 8250 ports together
+Message-ID: <20101001132207.GE25897@oksana.dev.rtsoft.ru>
+References: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Julia,
+This fixes tty name and major number conflicts. The major number
+204 is used across many platform-specific serial drivers, so we
+use that.
 
-On Thu, 30 Sep 2010 22:27:02 +0200 (CEST), Julia Lawall wrote:
-> The functions the functions amd_ec_wait_write and amd_ec_wait_read have an
-> unsigned return type, but return a negative constant to indicate an error
-> condition.
-> 
-> A sematic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @exists@
-> identifier f;
-> constant C;
-> @@
-> 
->  unsigned f(...)
->  { <+...
-> *  return -C;
->  ...+> }
-> // </smpl>
-> 
-> Fixing amd_ec_wait_write and amd_ec_wait_read leads to the need to adjust
-> the return type of the functions amd_ec_write and amd_ec_read, which are
-> the only functions that call amd_ec_wait_write and amd_ec_wait_read.
-> amd_ec_write and amd_ec_read, in turn, are only called from within the
-> function amd8111_access, which already returns a signed typed value.  Each
-> of the calls to amd_ec_write and amd_ec_read are updated using the
-> following semantic patch:
-> 
-> // <smpl>
-> @@
-> @@
-> 
-> + status = amd_ec_write
-> - amd_ec_write
->   (...);
-> + if (status) return status;
-> 
-> @@
-> @@
-> 
-> + status = amd_ec_read
-> - amd_ec_read
->   (...);
-> + if (status) return status;
-> // </smpl>
-> 
-> The patch also adds the declaration of the status variable.
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> Only compile tested.
+Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
+Acked-by: Tobias Klauser <tklauser@distanz.ch>
+---
+ drivers/serial/altera_uart.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
-Can't test it either, no hardware.
-
-> 
->  drivers/i2c/busses/i2c-amd8111.c    |  152 ++++++++++++++------
->  1 files changed, 110 insertions(+), 42 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-amd8111.c b/drivers/i2c/busses/i2c-amd8111.c
-> index af1e5e2..e12c584 100644
-> --- a/drivers/i2c/busses/i2c-amd8111.c
-> +++ b/drivers/i2c/busses/i2c-amd8111.c
-> @@ -69,7 +69,7 @@ static struct pci_driver amd8111_driver;
->   * ACPI 2.0 chapter 13 access of registers of the EC
->   */
->  
-> -static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
-> +static int amd_ec_wait_write(struct amd_smbus *smbus)
->  {
->  	int timeout = 500;
->  
-> @@ -85,7 +85,7 @@ static unsigned int amd_ec_wait_write(struct amd_smbus *smbus)
->  	return 0;
->  }
->  
-> -static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
-> +static int amd_ec_wait_read(struct amd_smbus *smbus)
->  {
->  	int timeout = 500;
->  
-> @@ -101,7 +101,7 @@ static unsigned int amd_ec_wait_read(struct amd_smbus *smbus)
->  	return 0;
->  }
->  
-> -static unsigned int amd_ec_read(struct amd_smbus *smbus, unsigned char address,
-> +static int amd_ec_read(struct amd_smbus *smbus, unsigned char address,
->  		unsigned char *data)
->  {
->  	int status;
-> @@ -124,7 +124,7 @@ static unsigned int amd_ec_read(struct amd_smbus *smbus, unsigned char address,
->  	return 0;
->  }
->  
-> -static unsigned int amd_ec_write(struct amd_smbus *smbus, unsigned char address,
-> +static int amd_ec_write(struct amd_smbus *smbus, unsigned char address,
->  		unsigned char data)
->  {
->  	int status;
-> @@ -196,7 +196,7 @@ static s32 amd8111_access(struct i2c_adapter * adap, u16 addr,
->  {
->  	struct amd_smbus *smbus = adap->algo_data;
->  	unsigned char protocol, len, pec, temp[2];
-> -	int i;
-> +	int i, status;
->  
->  	protocol = (read_write == I2C_SMBUS_READ) ? AMD_SMB_PRTCL_READ
->  						  : AMD_SMB_PRTCL_WRITE;
-> @@ -209,38 +209,62 @@ static s32 amd8111_access(struct i2c_adapter * adap, u16 addr,
->  			break;
->  
->  		case I2C_SMBUS_BYTE:
-> -			if (read_write == I2C_SMBUS_WRITE)
-> -				amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			if (read_write == I2C_SMBUS_WRITE) {
-> +				status = amd_ec_write(smbus, AMD_SMB_CMD,
-> +							command);
-> +				if (status)
-> +					return status;
-> +			}
->  			protocol |= AMD_SMB_PRTCL_BYTE;
->  			break;
->  
->  		case I2C_SMBUS_BYTE_DATA:
-> -			amd_ec_write(smbus, AMD_SMB_CMD, command);
-> -			if (read_write == I2C_SMBUS_WRITE)
-> -				amd_ec_write(smbus, AMD_SMB_DATA, data->byte);
-> +			status = amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			if (status)
-> +				return status;
-> +			if (read_write == I2C_SMBUS_WRITE) {
-> +				status = amd_ec_write(smbus, AMD_SMB_DATA,
-> +							data->byte);
-> +				if (status)
-> +					return status;
-> +			}
->  			protocol |= AMD_SMB_PRTCL_BYTE_DATA;
->  			break;
->  
->  		case I2C_SMBUS_WORD_DATA:
-> -			amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			status = amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			if (status)
-> +				return status;
->  			if (read_write == I2C_SMBUS_WRITE) {
-> -				amd_ec_write(smbus, AMD_SMB_DATA,
-> +				status = amd_ec_write(smbus, AMD_SMB_DATA,
->  					     data->word & 0xff);
-> -				amd_ec_write(smbus, AMD_SMB_DATA + 1,
-> +				if (status)
-> +					return status;
-> +				status = amd_ec_write(smbus, AMD_SMB_DATA + 1,
->  					     data->word >> 8);
-> +				if (status)
-> +					return status;
->  			}
->  			protocol |= AMD_SMB_PRTCL_WORD_DATA | pec;
->  			break;
->  
->  		case I2C_SMBUS_BLOCK_DATA:
-> -			amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			status = amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			if (status)
-> +				return status;
->  			if (read_write == I2C_SMBUS_WRITE) {
->  				len = min_t(u8, data->block[0],
->  					    I2C_SMBUS_BLOCK_MAX);
-> -				amd_ec_write(smbus, AMD_SMB_BCNT, len);
-> -				for (i = 0; i < len; i++)
-> -					amd_ec_write(smbus, AMD_SMB_DATA + i,
-> -						     data->block[i + 1]);
-> +				status = amd_ec_write(smbus, AMD_SMB_BCNT, len);
-> +				if (status)
-> +					return status;
-> +				for (i = 0; i < len; i++) {
-> +					status =
-> +					  amd_ec_write(smbus, AMD_SMB_DATA + i,
-> +						       data->block[i + 1]);
-> +					if (status)
-> +						return status;
-> +				}
->  			}
->  			protocol |= AMD_SMB_PRTCL_BLOCK_DATA | pec;
->  			break;
-> @@ -248,19 +272,35 @@ static s32 amd8111_access(struct i2c_adapter * adap, u16 addr,
->  		case I2C_SMBUS_I2C_BLOCK_DATA:
->  			len = min_t(u8, data->block[0],
->  				    I2C_SMBUS_BLOCK_MAX);
-> -			amd_ec_write(smbus, AMD_SMB_CMD, command);
-> -			amd_ec_write(smbus, AMD_SMB_BCNT, len);
-> +			status = amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			if (status)
-> +				return status;
-> +			status = amd_ec_write(smbus, AMD_SMB_BCNT, len);
-> +			if (status)
-> +				return status;
->  			if (read_write == I2C_SMBUS_WRITE)
-> -				for (i = 0; i < len; i++)
-> -					amd_ec_write(smbus, AMD_SMB_DATA + i,
-> -						     data->block[i + 1]);
-> +				for (i = 0; i < len; i++) {
-> +					status =
-> +					  amd_ec_write(smbus, AMD_SMB_DATA + i,
-> +						       data->block[i + 1]);
-> +					if (status)
-> +						return status;
-> +				}
->  			protocol |= AMD_SMB_PRTCL_I2C_BLOCK_DATA;
->  			break;
->  
->  		case I2C_SMBUS_PROC_CALL:
-> -			amd_ec_write(smbus, AMD_SMB_CMD, command);
-> -			amd_ec_write(smbus, AMD_SMB_DATA, data->word & 0xff);
-> -			amd_ec_write(smbus, AMD_SMB_DATA + 1, data->word >> 8);
-> +			status = amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			if (status)
-> +				return status;
-> +			status = amd_ec_write(smbus, AMD_SMB_DATA,
-> +						data->word & 0xff);
-> +			if (status)
-> +				return status;
-> +			status = amd_ec_write(smbus, AMD_SMB_DATA + 1,
-> +						data->word >> 8);
-> +			if (status)
-> +				return status;
->  			protocol = AMD_SMB_PRTCL_PROC_CALL | pec;
->  			read_write = I2C_SMBUS_READ;
->  			break;
-> @@ -268,11 +308,18 @@ static s32 amd8111_access(struct i2c_adapter * adap, u16 addr,
->  		case I2C_SMBUS_BLOCK_PROC_CALL:
->  			len = min_t(u8, data->block[0],
->  				    I2C_SMBUS_BLOCK_MAX - 1);
-> -			amd_ec_write(smbus, AMD_SMB_CMD, command);
-> -			amd_ec_write(smbus, AMD_SMB_BCNT, len);
-> -			for (i = 0; i < len; i++)
-> -				amd_ec_write(smbus, AMD_SMB_DATA + i,
-> +			status = amd_ec_write(smbus, AMD_SMB_CMD, command);
-> +			if (status)
-> +				return status;
-> +			status = amd_ec_write(smbus, AMD_SMB_BCNT, len);
-> +			if (status)
-> +				return status;
-> +			for (i = 0; i < len; i++) {
-> +				status = amd_ec_write(smbus, AMD_SMB_DATA + i,
->  					     data->block[i + 1]);
-> +				if (status)
-> +					return status;
-> +			}
->  			protocol = AMD_SMB_PRTCL_BLOCK_PROC_CALL | pec;
->  			read_write = I2C_SMBUS_READ;
->  			break;
-> @@ -282,24 +329,34 @@ static s32 amd8111_access(struct i2c_adapter * adap, u16 addr,
->  			return -EOPNOTSUPP;
->  	}
->  
-> -	amd_ec_write(smbus, AMD_SMB_ADDR, addr << 1);
-> -	amd_ec_write(smbus, AMD_SMB_PRTCL, protocol);
-> +	status = amd_ec_write(smbus, AMD_SMB_ADDR, addr << 1);
-> +	if (status)
-> +		return status;
-> +	status = amd_ec_write(smbus, AMD_SMB_PRTCL, protocol);
-> +	if (status)
-> +		return status;
->  
->  	/* FIXME this discards status from ec_read(); so temp[0] will
->  	 * hold stack garbage ... the rest of this routine will act
->  	 * nonsensically.  Ignored ec_write() status might explain
->  	 * some such failures...
->  	 */
-
-This comment can go away now :)
-
-> -	amd_ec_read(smbus, AMD_SMB_STS, temp + 0);
-> +	status = amd_ec_read(smbus, AMD_SMB_STS, temp + 0);
-> +	if (status)
-> +		return status;
->  
->  	if (~temp[0] & AMD_SMB_STS_DONE) {
->  		udelay(500);
-> -		amd_ec_read(smbus, AMD_SMB_STS, temp + 0);
-> +		status = amd_ec_read(smbus, AMD_SMB_STS, temp + 0);
-> +		if (status)
-> +			return status;
->  	}
->  
->  	if (~temp[0] & AMD_SMB_STS_DONE) {
->  		msleep(1);
-> -		amd_ec_read(smbus, AMD_SMB_STS, temp + 0);
-> +		status = amd_ec_read(smbus, AMD_SMB_STS, temp + 0);
-> +		if (status)
-> +			return status;
->  	}
->  
->  	if ((~temp[0] & AMD_SMB_STS_DONE) || (temp[0] & AMD_SMB_STS_STATUS))
-> @@ -311,24 +368,35 @@ static s32 amd8111_access(struct i2c_adapter * adap, u16 addr,
->  	switch (size) {
->  		case I2C_SMBUS_BYTE:
->  		case I2C_SMBUS_BYTE_DATA:
-> -			amd_ec_read(smbus, AMD_SMB_DATA, &data->byte);
-> +			status = amd_ec_read(smbus, AMD_SMB_DATA, &data->byte);
-> +			if (status)
-> +				return status;
->  			break;
->  
->  		case I2C_SMBUS_WORD_DATA:
->  		case I2C_SMBUS_PROC_CALL:
-> -			amd_ec_read(smbus, AMD_SMB_DATA, temp + 0);
-> -			amd_ec_read(smbus, AMD_SMB_DATA + 1, temp + 1);
-> +			status = amd_ec_read(smbus, AMD_SMB_DATA, temp + 0);
-> +			if (status)
-> +				return status;
-> +			status = amd_ec_read(smbus, AMD_SMB_DATA + 1, temp + 1);
-> +			if (status)
-> +				return status;
->  			data->word = (temp[1] << 8) | temp[0];
->  			break;
->  
->  		case I2C_SMBUS_BLOCK_DATA:
->  		case I2C_SMBUS_BLOCK_PROC_CALL:
-> -			amd_ec_read(smbus, AMD_SMB_BCNT, &len);
-> +			status = amd_ec_read(smbus, AMD_SMB_BCNT, &len);
-> +			if (status)
-> +				return status;
->  			len = min_t(u8, len, I2C_SMBUS_BLOCK_MAX);
->  		case I2C_SMBUS_I2C_BLOCK_DATA:
-> -			for (i = 0; i < len; i++)
-> -				amd_ec_read(smbus, AMD_SMB_DATA + i,
-> -					    data->block + i + 1);
-> +			for (i = 0; i < len; i++) {
-> +				status = amd_ec_read(smbus, AMD_SMB_DATA + i,
-> +							data->block + i + 1);
-> +				if (status)
-> +					return status;
-> +			}
->  			data->block[0] = len;
->  			break;
->  	}
-
-Patch looks good, applied (for 2.6.37, as it doesn't fix any reported
-issue), thanks.
-
+diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
+index f1985aa..99e007f 100644
+--- a/drivers/serial/altera_uart.c
++++ b/drivers/serial/altera_uart.c
+@@ -28,6 +28,7 @@
+ #include <linux/altera_uart.h>
+ 
+ #define DRV_NAME "altera_uart"
++#define SERIAL_ALTERA_MAJOR 204
+ 
+ /*
+  * Altera UART register definitions according to the Nios UART datasheet:
+@@ -471,7 +472,7 @@ static int __init altera_uart_console_setup(struct console *co, char *options)
+ static struct uart_driver altera_uart_driver;
+ 
+ static struct console altera_uart_console = {
+-	.name	= "ttyS",
++	.name	= "ttyAL",
+ 	.write	= altera_uart_console_write,
+ 	.device	= uart_console_device,
+ 	.setup	= altera_uart_console_setup,
+@@ -502,8 +503,8 @@ console_initcall(altera_uart_console_init);
+ static struct uart_driver altera_uart_driver = {
+ 	.owner		= THIS_MODULE,
+ 	.driver_name	= DRV_NAME,
+-	.dev_name	= "ttyS",
+-	.major		= TTY_MAJOR,
++	.dev_name	= "ttyAL",
++	.major		= SERIAL_ALTERA_MAJOR,
+ 	.minor		= 64,
+ 	.nr		= CONFIG_SERIAL_ALTERA_UART_MAXPORTS,
+ 	.cons		= ALTERA_UART_CONSOLE,
+@@ -603,3 +604,4 @@ MODULE_DESCRIPTION("Altera UART driver");
+ MODULE_AUTHOR("Thomas Chou <thomas@wytron.com.tw>");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:" DRV_NAME);
++MODULE_ALIAS_CHARDEV_MAJOR(SERIAL_ALTERA_MAJOR);
 -- 
-Jean Delvare
+1.7.0.5
+
