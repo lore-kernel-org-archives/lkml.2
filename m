@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0JAGXM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 02:23:12 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:19289 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751501Ab0JAGXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753556Ab0JAGXK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 02:23:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35858 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752349Ab0JAGXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Oct 2010 02:23:08 -0400
-Subject: Re: [PATCH 1/1] timer: permit statically-declared work with
- deferrable timers
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Cc: "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1285874789-1481-2-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1285874789-1481-1-git-send-email-ext-phil.2.carmody@nokia.com>
-	 <1285874789-1481-2-git-send-email-ext-phil.2.carmody@nokia.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Fri, 01 Oct 2010 09:19:33 +0300
-Message-ID: <1285913973.11684.63.camel@localhost>
+Date: Thu, 30 Sep 2010 23:23:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 05/17] fs: icache lock i_count
+Message-Id: <20100930232339.32ed3b38.akpm@linux-foundation.org>
+In-Reply-To: <20101001061602.GA19107@infradead.org>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+	<1285762729-17928-6-git-send-email-david@fromorbit.com>
+	<20100929215229.160c7bce.akpm@linux-foundation.org>
+	<20101001055536.GD32349@infradead.org>
+	<20100930230416.868e6468.akpm@linux-foundation.org>
+	<20101001061602.GA19107@infradead.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-30 at 21:26 +0200, ext Phil Carmody wrote:
-> Currently, you have to just define a delayed_work uninitialised, and then
-> initialise it before first use. That's a tad clumsy. At risk of playing
-> mind-games with the compiler, fooling it into doing pointer arithmetic
-> with compile-time-constants, this lets clients properly initialise delayed
-> work with deferrable timers statically.
-> 
-> This patch was inspired by the issues which lead Artem Bityutskiy
-> to commit 8eab945c5616fc984e97b922d6a2559be93f39a1.
-> 
-> Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
-Acked-by: Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Fri, 1 Oct 2010 02:16:02 -0400 Christoph Hellwig <hch@infradead.org> wrote:
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+> On Thu, Sep 30, 2010 at 11:04:16PM -0700, Andrew Morton wrote:
+> > No, we've run into problems *frequently*.  A common case is where we
+> > convert a mutex to a spinlock or vice versa.  If you don't rename the
+> > lock, the code still compiles (with warnings) and crashes horridly at
+> > runtime.
+> 
+> Sorry, if you run code with that obvious warnings you beg for trouble.
+> If you really believe your advanced users arw too stupid to read
+> compiler warnings enforcing -Werror is for sure better than obsfucating
+> the code.
 
+Well, it has happened, fairly regularly.  A common scenario is where
+someone has done a conversion in one tree and someone else has touched
+overlapping code in another tree and when the two meet in linux-next,
+splat.  Renaming the field simply eliminates this.
+
+Of course, the warnings don't get noticed because of the enormous
+warning storm which a kernel build produces (generally much worse on
+non-x86, btw).
+
+Another reason for remaining a field is when we desire that it
+henceforth be accessed via accessor functions - renaming it will
+reliably break any unconverted code.
