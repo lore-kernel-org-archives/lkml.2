@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab0JAAoq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 20:44:46 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:49337 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754277Ab0JAAop (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 20:44:45 -0400
-Date: Thu, 30 Sep 2010 17:44:38 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Ram Pai <ram.n.pai@gmail.com>, Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andreas Gruenbacher <agruen@suse.de>, Nick Piggin <npiggin@kernel.dk>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 03/34] VFS: Add CL_NO_SLAVE flag to
- clone_mnt()/copy_tree()
-Message-ID: <20101001004438.GJ9247@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
- <1284675145-4391-4-git-send-email-vaurora@redhat.com>
- <AANLkTim1bbGrrPcFHThx3XOm8GmudQFSmFUs3NAXT5yC@mail.gmail.com>
- <20100917043401.GD8926@ram-laptop>
- <20100917171514.GA32258@shell>
- <20100920052553.GM8926@ram-laptop>
- <20100921000344.GB9032@shell>
- <20100927054205.GE4999@ram-laptop>
- <20100927185017.GD8089@shell>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927185017.GD8089@shell>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755837Ab0JAApu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 20:45:50 -0400
+Received: from gate.crashing.org ([63.228.1.57]:54868 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754842Ab0JAApr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 20:45:47 -0400
+Subject: Re: [patch 46/47] powerpc: Use new irq allocator
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+In-Reply-To: <20100930221743.014571381@linutronix.de>
+References: <20100930221351.682772535@linutronix.de>
+	 <20100930221743.014571381@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Oct 2010 10:42:17 +1000
+Message-ID: <1285893737.2463.4.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 02:50:17PM -0400, Valerie Aurora wrote:
-> On Sun, Sep 26, 2010 at 10:42:05PM -0700, Ram Pai wrote:
-> > On Mon, Sep 20, 2010 at 08:03:44PM -0400, Valerie Aurora wrote:
-> > > On Sun, Sep 19, 2010 at 10:25:53PM -0700, Ram Pai wrote:
-> > > > 
-> > > > I understand your intentions, but I think you are making a wrong assumption.
-> > > > You seem to be thinking that if a slave-mount is cloned, the new cloned
-> > > > mount will also be a slave-mount and will hence receive propagations. As
-> > > > per shared subtree semantics, a slave-mount when cloned will create a private
-> > > > mount. Since your intention is to avoid generating any new mounts that 
-> > > > recieve propagations, you should be checking for shared-mounts and 
-> > > > slave-shared-mounts because these are the two kind of mounts that when
-> > > > cloned create new mounts that receive propagation.
-> > > 
-> > > No.  This isn't about the semantics of the clone mount operation.  It
-> > > is about the administrator creating a slave mount, unioning it, and
-> > > then being surprised when the unioned file system does not receive
-> > > mount propagation events.
-> > > 
-> > > Think of the source vfsmount tree as a set of command line arguments
-> > > for the union mount.
-> > 
-> > Ok. In that case,  you introduced a subtle change in the semantics of clone_mnt().
-> > As I understand it, the flags parameter of clone_mnt() are meant to be a modifier 
-> > for the cloned mount, not a filter on the source mount.
+On Thu, 2010-09-30 at 23:18 +0000, Thomas Gleixner wrote:
+> plain text document attachment (powerpc-use-new-allocator.patch)
+> Use the new functions and free the descriptor when the virq is
+> destroyed.
+
+Looks ok as a first pass, but we should go further and replace the
+allocator we have in powerpc to use yours instead.
+
+Then I should get rid of my big irq_map that maps virq to HW number &
+domain pointers and instead put those in the irq data. Any objection to
+me sticking some archdata there for that purpose ?
+
+That would make things much cleaner and in fact move one large step
+toward being able to make powerpc virq scheme generic, which seems to be
+a good idea from what I've heard :-)
+
+Cheers,
+Ben.
+
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> ---
+>  arch/powerpc/kernel/irq.c |   17 +++++++++--------
+>  1 file changed, 9 insertions(+), 8 deletions(-)
 > 
-> Yes, that's it exactly.
+> Index: linux-2.6-tip/arch/powerpc/kernel/irq.c
+> ===================================================================
+> --- linux-2.6-tip.orig/arch/powerpc/kernel/irq.c
+> +++ linux-2.6-tip/arch/powerpc/kernel/irq.c
+> @@ -676,16 +676,15 @@ void irq_set_virq_count(unsigned int cou
+>  static int irq_setup_virq(struct irq_host *host, unsigned int virq,
+>  			    irq_hw_number_t hwirq)
+>  {
+> -	struct irq_desc *desc;
+> +	int res;
+>  
+> -	desc = irq_to_desc_alloc_node(virq, 0);
+> -	if (!desc) {
+> +	res = irq_alloc_desc_at(virq, 0);
+> +	if (res != virq) {
+>  		pr_debug("irq: -> allocating desc failed\n");
+>  		goto error;
+>  	}
+>  
+> -	/* Clear IRQ_NOREQUEST flag */
+> -	desc->status &= ~IRQ_NOREQUEST;
+> +	irq_clear_status_flags(virq, IRQ_NOREQUEST);
+>  
+>  	/* map it */
+>  	smp_wmb();
+> @@ -694,11 +693,13 @@ static int irq_setup_virq(struct irq_hos
+>  
+>  	if (host->ops->map(host, virq, hwirq)) {
+>  		pr_debug("irq: -> mapping failed, freeing\n");
+> -		goto error;
+> +		goto errdesc;
+>  	}
+>  
+>  	return 0;
+>  
+> +errdesc:
+> +	irq_free_descs(virq, 1);
+>  error:
+>  	irq_free_virt(virq, 1);
+>  	return -1;
+> @@ -877,9 +878,9 @@ void irq_dispose_mapping(unsigned int vi
+>  	smp_mb();
+>  	irq_map[virq].hwirq = host->inval_irq;
+>  
+> -	/* Set some flags */
+> -	irq_to_desc(virq)->status |= IRQ_NOREQUEST;
+> +	irq_set_status_flags(virq, IRQ_NOREQUEST);
+>  
+> +	irq_free_descs(virq, 1);
+>  	/* Free it */
+>  	irq_free_virt(virq, 1);
+>  }
 > 
-> Do you have a suggestion for writing this a different way?  We can
-> move it all into copy_tree() and leave clone_mnt() alone, at the cost
-> of a little code duplication and some acrobatics around possible
-> loopback support.
 
-I would probably lean towards a function tree_receives_propagation() similar to
-tree_contains_unbindable(), where you walk down the tree and check if there
-are any SLAVE or SHARED mounts.  
 
-RP
-
-> 
-> -VAL
-
--- 
-Ram Pai
-System X Device-Driver Enablement Lead
-Linux Technology Center
-Beaverton OR-97006
-503-5783752 t/l 7753752
-linuxram@us.ibm.com
