@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756979Ab0JAOCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 10:02:47 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:37332 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756791Ab0JAOCq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 10:02:46 -0400
-Date: Sat, 2 Oct 2010 00:02:37 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: xfs@oss.sgi.com, John Hawley <warthog9@kernel.org>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [patch] xfs: properly account for reclaimed inodes
-Message-ID: <20101001140237.GC4681@dastard>
-References: <20101001074354.GF2618@cmpxchg.org>
+	id S932382Ab0JAOHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 10:07:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18913 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932197Ab0JAOHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 10:07:20 -0400
+Message-ID: <4CA5EB03.1070403@redhat.com>
+Date: Fri, 01 Oct 2010 10:06:59 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101001074354.GF2618@cmpxchg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Michel Lespinasse <walken@google.com>
+CC: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 2/2] Release mmap_sem when page fault blocks on disk transfer.
+References: <1285909484-30958-1-git-send-email-walken@google.com> <1285909484-30958-3-git-send-email-walken@google.com>
+In-Reply-To: <1285909484-30958-3-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 09:43:54AM +0200, Johannes Weiner wrote:
-> When marking an inode reclaimable, a per-AG counter is increased, the
-> inode is tagged reclaimable in its per-AG tree, and, when this is the
-> first reclaimable inode in the AG, the AG entry in the per-mount tree
-> is also tagged.
-> 
-> When an inode is finally reclaimed, however, it is only deleted from
-> the per-AG tree.  Neither the counter is decreased, nor is the parent
-> tree's AG entry untagged properly.
-> 
-> Since the tags in the per-mount tree are not cleared, the inode
-> shrinker iterates over all AGs that have had reclaimable inodes at one
-> point in time.
-> 
-> The counters on the other hand signal an increasing amount of slab
-> objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
-> per-filesystem context" this is not a real issue anymore because the
-> shrinker bails out after one iteration.
-> 
-> But the problem was observable on a machine running v2.6.34, where the
-> reclaimable work increased and each process going into direct reclaim
-> eventually got stuck on the xfs inode shrinking path, trying to scan
-> several million objects.
-> 
-> Fix this by properly unwinding the reclaimable-state tracking of an
-> inode when it is reclaimed.
-> 
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> Cc: stable@kernel.org
+On 10/01/2010 01:04 AM, Michel Lespinasse wrote:
+> This change reduces mmap_sem hold times that are caused by waiting for
+> disk transfers when accessing file mapped VMAs. It introduces the
+> VM_FAULT_RELEASED flag, which indicates that the call site holds mmap_lock
+> and wishes for it to be released if blocking on a pending disk transfer.
+> In that case, filemap_fault() returns the VM_FAULT_RELEASED status bit
+> and do_page_fault() will then re-acquire mmap_sem and retry the page fault.
+> It is expected that the retry will hit the same page which will now be cached,
+> and thus it will complete with a low mmap_sem hold time.
 
-Looks OK to me, and has run through a few hours of testing without
-problems.
+The concept makes sense.  A nitpick, though...
 
-Reviewed-by: Dave Chinner <dchinner@redhat.com>
+> +	if (release_flag) {	/* Did not go through a retry */
+> +		if (fault&  VM_FAULT_MAJOR) {
+> +			tsk->maj_flt++;
+> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
+> +				      regs, address);
+> +		} else {
+> +			tsk->min_flt++;
+> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
+> +				      regs, address);
+> +		}
+> +		if (fault&  VM_FAULT_RELEASED) {
+> +			/*
+> +			 * handle_mm_fault() found that the desired page was
+> +			 * locked. We asked for it to release mmap_sem in that
+> +			 * case, so as to avoid holding it for too long.
+> +			 * Retry starting at the mmap_sem acquire, this time
+> +			 * without FAULT_FLAG_RETRY so that we avoid any
+> +			 * risk of starvation.
+> +			 */
+> +			release_flag = 0;
+> +			goto retry;
+> +		}
 
-Cheers,
+Do we really want to count a minor page fault when we
+got VM_FAULT_RELEASED?
 
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+All rights reversed
