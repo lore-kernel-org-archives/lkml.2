@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753270Ab0JARFd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 13:05:33 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59218 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751470Ab0JARFc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 13:05:32 -0400
-Subject: Re: [PATCH 0/5] oprofile updates for v2.6.37
-From: Will Deacon <will.deacon@arm.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Matt Fleming <matt@console-pimps.org>
-In-Reply-To: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
-References: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Oct 2010 18:05:05 +0100
-Message-ID: <1285952705.31571.2.camel@e102144-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1753412Ab0JARH6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 13:07:58 -0400
+Received: from mga14.intel.com ([143.182.124.37]:45963 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753189Ab0JARH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 13:07:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,267,1283756400"; 
+   d="scan'208";a="331028660"
+From: John Fastabend <john.r.fastabend@intel.com>
+Subject: [PATCH] selinux: add dcbnl netlink messages to selinux
+To: jmorris@namei.com
+Cc: john.r.fastabend@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Fri, 01 Oct 2010 10:07:50 -0700
+Message-ID: <20101001170750.20327.16643.stgit@jf-dev1-dcblab>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Oct 2010 17:05:08.0752 (UTC) FILETIME=[CD467900:01CB618A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Robert,
+Add DCBNL netlink msg support to selinux. Without this
+'unrecognized netlink message' warnings may be seen.
 
-On Fri, 2010-10-01 at 16:56 +0100, Robert Richter wrote:
-> This patch set contains some rework and cleanups of the oprofile code.
-> It also contains changes of the oprofile perf backend that is
-> currently implemented for the ARM architecture, but will be ported to
-> oprofile generic code.
-> 
-> Will, please ack the ARM changes if you are fine with it.
-> 
+Signed-off-by: John Fastabend <john.r.fastabend@intel.com>
+---
 
-I've been through patches 2, 3 and 4 and they look fine. I've also
-tested them and can't see any regressions. Thanks for sticking with
-this!
+ security/selinux/nlmsgtab.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Acked-by: Will Deacon <will.deacon@arm.com>
-
-Have a good weekend,
-
-Will
+diff --git a/security/selinux/nlmsgtab.c b/security/selinux/nlmsgtab.c
+index 75ec0c6..8b02b21 100644
+--- a/security/selinux/nlmsgtab.c
++++ b/security/selinux/nlmsgtab.c
+@@ -65,6 +65,8 @@ static struct nlmsg_perm nlmsg_route_perms[] =
+ 	{ RTM_NEWADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+ 	{ RTM_DELADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+ 	{ RTM_GETADDRLABEL,	NETLINK_ROUTE_SOCKET__NLMSG_READ  },
++	{ RTM_GETDCB,		NETLINK_ROUTE_SOCKET__NLMSG_READ  },
++	{ RTM_SETDCB,		NETLINK_ROUTE_SOCKET__NLMSG_WRITE },
+ };
+ 
+ static struct nlmsg_perm nlmsg_firewall_perms[] =
 
