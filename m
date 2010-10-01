@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932491Ab0JAMG3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 08:06:29 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:7868 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932098Ab0JAMG2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 08:06:28 -0400
-Date: Fri, 1 Oct 2010 14:06:19 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux I2C <linux-i2c@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] i2c fixes for 2.6.36
-Message-ID: <20101001140619.28d96040@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932521Ab0JAMIV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 08:08:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20132 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932098Ab0JAMIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 08:08:20 -0400
+Message-ID: <4CA5CF17.1090807@redhat.com>
+Date: Fri, 01 Oct 2010 08:07:51 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+MIME-Version: 1.0
+To: Michel Lespinasse <walken@google.com>
+CC: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <peterz@infradead.org>,
+        Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/2] Reduce mmap_sem hold times during file backed page
+ faults
+References: <1285909484-30958-1-git-send-email-walken@google.com>
+In-Reply-To: <1285909484-30958-1-git-send-email-walken@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 10/01/2010 01:04 AM, Michel Lespinasse wrote:
+> Linus, I would appreciate your comments on this since you shot down the
+> previous proposal. I hope you'll find this approach is sane, but I would
+> be interested to hear if you have specific objections.
+>
+> mmap_sem is very coarse grained (per process) and has long read-hold times
+> (disk latencies); this breaks down rapidly for workloads that use both
+> read and write mmap_sem acquires. This short patch series tries to reduce
+> mmap_sem hold times when faulting in file backed VMAs.
 
-Please pull i2c subsystem fixes for Linux 2.6.36 from:
+The changes make sense to me, but it would be good to know
+what kind of benefits you have seen with these patches.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
+Especially performance numbers :)
 
- drivers/i2c/busses/i2c-cpm.c           |    5 +++
- drivers/i2c/busses/i2c-ibm_iic.c       |    3 ++
- drivers/i2c/busses/i2c-mpc.c           |    1 +
- drivers/i2c/busses/i2c-pca-isa.c       |   12 +++++--
- drivers/i2c/busses/i2c-pca-platform.c  |   11 ++++--
- drivers/i2c/i2c-core.c                 |   54 ++++++++++++++-----------------
- drivers/misc/bh1780gli.c               |    1 -
- drivers/regulator/ad5398.c             |    1 -
- drivers/regulator/isl6271a-regulator.c |    2 -
- drivers/rtc/rtc-ds3232.c               |    2 -
- 10 files changed, 48 insertions(+), 44 deletions(-)
-
----------------
-
-Grant Likely (1):
-      of/i2c: Fix module load order issue caused by of_i2c.c
-
-Rajendra Nayak (1):
-      i2c: Fix checks which cause legacy suspend to never get called
-
-Vishwanath BS (1):
-      i2c: Fix for suspend/resume issue
-
-Wolfram Sang (1):
-      i2c: Remove obsolete cleanup for clientdata
-
-Yegor Yefremov (1):
-      i2c-pca: Fix waitforcompletion() return value
-
-Thanks,
 -- 
-Jean Delvare
+All rights reversed
