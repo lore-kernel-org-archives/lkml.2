@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0JAQRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:17:15 -0400
-Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:51205
-	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752375Ab0JAQRD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:17:03 -0400
-X-SpamScore: 4
-X-BigFish: VS4(zz2f55kzz1202hzzz32i87h2a8h65h)
-X-Spam-TCS-SCL: 4:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L9MCH4-02-D83-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        Will Deacon <will.deacon@arm.com>,
-        Matt Fleming <matt@console-pimps.org>
-Subject: [PATCH 0/5] oprofile updates for v2.6.37
-Date: Fri, 1 Oct 2010 17:56:22 +0200
-Message-ID: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.2.2
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1753035Ab0JAQUp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:20:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39653 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752563Ab0JAQUm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 12:20:42 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: vgoyal@redhat.com
+Subject: [PATCH 2/3] blkio-throttle: limit max iops value to UINT_MAX
+Date: Fri,  1 Oct 2010 12:20:28 -0400
+Message-Id: <1285950029-30205-3-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1285950029-30205-1-git-send-email-vgoyal@redhat.com>
+References: <1285950029-30205-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set contains some rework and cleanups of the oprofile code.
-It also contains changes of the oprofile perf backend that is
-currently implemented for the ARM architecture, but will be ported to
-oprofile generic code.
+- Limit max iops value to UINT_MAX and return error to user if value is more
+  than that instead of accepting bigger values and truncating implicitly.
+---
+ block/blk-cgroup.c |   11 +++++++----
+ block/blk-cgroup.h |    3 +++
+ 2 files changed, 10 insertions(+), 4 deletions(-)
 
-Will, please ack the ARM changes if you are fine with it.
-
-Matt, these patches may cause conflicts with your next patch set, so I
-am fine with it if you are not rebasing your code. I will apply them
-then to a different branch and solve the conflicts myself.
-
-Ingo, this patch set is for review only. If there are no objections
-with it I am going to apply it to my oprofile tree.
-
-Thanks for review,
-
--Robert
-
+diff --git a/block/blk-cgroup.c b/block/blk-cgroup.c
+index e863418..b1febd0 100644
+--- a/block/blk-cgroup.c
++++ b/block/blk-cgroup.c
+@@ -656,10 +656,10 @@ static int blkio_policy_parse_and_set(char *buf,
+ {
+ 	char *s[4], *p, *major_s = NULL, *minor_s = NULL;
+ 	int ret;
+-	unsigned long major, minor, temp, iops;
++	unsigned long major, minor, temp;
+ 	int i = 0;
+ 	dev_t dev;
+-	u64 bps;
++	u64 bps, iops;
+ 
+ 	memset(s, 0, sizeof(s));
+ 
+@@ -731,13 +731,16 @@ static int blkio_policy_parse_and_set(char *buf,
+ 			break;
+ 		case BLKIO_THROTL_read_iops_device:
+ 		case BLKIO_THROTL_write_iops_device:
+-			ret = strict_strtoul(s[1], 10, &iops);
++			ret = strict_strtoull(s[1], 10, &iops);
+ 			if (ret)
+ 				return -EINVAL;
+ 
++			if (iops > THROTL_IOPS_MAX)
++				return -EINVAL;
++
+ 			newpn->plid = plid;
+ 			newpn->fileid = fileid;
+-			newpn->val.iops = iops;
++			newpn->val.iops = (unsigned int)iops;
+ 			break;
+ 		}
+ 		break;
+diff --git a/block/blk-cgroup.h b/block/blk-cgroup.h
+index 034c355..ea4861b 100644
+--- a/block/blk-cgroup.h
++++ b/block/blk-cgroup.h
+@@ -20,6 +20,9 @@ enum blkio_policy_id {
+ 	BLKIO_POLICY_THROTL,		/* Throttling */
+ };
+ 
++/* Max limits for throttle policy */
++#define THROTL_IOPS_MAX		UINT_MAX
++
+ #if defined(CONFIG_BLK_CGROUP) || defined(CONFIG_BLK_CGROUP_MODULE)
+ 
+ #ifndef CONFIG_BLK_CGROUP
+-- 
+1.7.2.3
 
