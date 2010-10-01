@@ -1,168 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932551Ab0JAOUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 10:20:55 -0400
-Received: from smtp.df.ru ([195.42.160.16]:48770 "EHLO smtp.df.ru"
+	id S932569Ab0JAOWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 10:22:14 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44156 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932151Ab0JAOUy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 10:20:54 -0400
-Date: Fri, 1 Oct 2010 18:18:58 +0400
-From: Alexey Vlasov <renton@renton.name>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        netdev <netdev@vger.kernel.org>
-Subject: Re: Packet time delays on multi-core systems
-Message-ID: <20101001141858.GE4094@beaver.vrungel.ru>
-References: <20100930062419.GD86786@beaver.vrungel.ru> <1285828432.5211.812.camel@edumazet-laptop> <20100930122321.GA1575@beaver.vrungel.ru> <1285850669.2615.426.camel@edumazet-laptop> <20100930173732.GB4094@beaver.vrungel.ru> <1285869782.2615.920.camel@edumazet-laptop> <20100930181556.GC4094@beaver.vrungel.ru> <1285872765.2615.1008.camel@edumazet-laptop> <20101001101650.GD4094@beaver.vrungel.ru> <1285937966.2641.117.camel@edumazet-laptop>
+	id S932151Ab0JAOWN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 10:22:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,266,1283756400"; 
+   d="scan'208";a="842738007"
+From: "Van De Ven, Arjan" <arjan.van.de.ven@intel.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>, Christoph Lameter <cl@linux.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+CC: "Wu, Xia" <xia.wu@intel.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "viro@zeniv.linux.org.uk" <viro@zeniv.linux.org.uk>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Zhu, Daniel" <daniel.zhu@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>
+Date: Fri, 1 Oct 2010 07:22:10 -0700
+Subject: RE: unnecessary timer interrupt of slab.c and bdi tasks when the
+	system is in sleep state
+Thread-Topic: unnecessary timer interrupt of slab.c and bdi tasks when the
+	system is in sleep state
+Thread-Index: Acthc9eCBlreOALgQhag8m7/EKnCaQAABmEg
+Message-ID: <26E9B811E137AB4B95200FD4C950886BA64E0E96@orsmsx507.amr.corp.intel.com>
+References: <A24AE1FFE7AEC5489F83450EE98351BF221878E0FB@shsmsx502.ccr.corp.intel.com>
+ <alpine.DEB.2.00.1009300908050.27201@router.home>
+ <20101001141932.GA5467@nowhere>
+In-Reply-To: <20101001141932.GA5467@nowhere>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
-Content-Disposition: inline
-In-Reply-To: <1285937966.2641.117.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 02:59:26PM +0200, Eric Dumazet wrote:
-> Le vendredi 01 octobre 2010 ?? 14:16 +0400, Alexey Vlasov a ??crit :
+> > > I found some unnecessary timer interrupts when the system enter
+> sleep state.
+> > > (1)     /mm/slab.c
+> > > cache_reap() clean up on allocated memory every 2s. If the system
+> is in sleep state, the system is waked-up when this timer expires. In
+> fact,
+> > > there isn't more slabs to been cleaned up in sleep state.
+> >
+> > Right. We could switch off the timer when idle without much of an
+> issue.
+> > The expiration of the caches wont occur and so we will have stale
+> objects
+> > on the queues when we exit sleep state. You could flush the queues
+> before
+> > switching off the timers?
 > 
-> > I have also found that:
-> > 1. rx overruns is increasing.
-> > 2. rx_queue_drop_packet_count is increasing.
 > 
-> So you flood machine with packets, its not an idle one ?
+> May be flushing the queue everytime we enter nohz is too much, as that
+> can
+> happen very often?
 > 
-> I thought you were doing experiments with light trafic.
 
-No, it's a usual working server for shared hosting. There're about 1000 
-clients' website, and I don't flood it specially. Franlky speaking I don't 
-see any network suspicious activity.
- 
-> > # ethtool -S eth0 | grep drop
-> >      tx_dropped: 0
-> >      rx_queue_drop_packet_count: 1260743751
-> >      dropped_smbus: 0
-> >      rx_queue_0_drops: 0
-> >      rx_queue_1_drops: 0
-> >      rx_queue_2_drops: 0
-> >      rx_queue_3_drops: 0
-> > 
-> 
-> 
-> ethtool -S eth0   (full output, not small parts)
 
-NIC statistics:
-     rx_packets: 2973717440
-     tx_packets: 3032670910
-     rx_bytes: 1892633650741
-     tx_bytes: 2536130682695
-     rx_broadcast: 118773199
-     tx_broadcast: 68013
-     rx_multicast: 95257
-     tx_multicast: 0
-     rx_errors: 0
-     tx_errors: 0
-     tx_dropped: 0
-     multicast: 95257
-     collisions: 0
-     rx_length_errors: 0
-     rx_over_errors: 0
-     rx_crc_errors: 0
-     rx_frame_errors: 0
-     rx_no_buffer_count: 7939
-     rx_queue_drop_packet_count: 1324025520
-     rx_missed_errors: 146631
-     tx_aborted_errors: 0
-     tx_carrier_errors: 0
-     tx_fifo_errors: 0
-     tx_heartbeat_errors: 0
-     tx_window_errors: 0
-     tx_abort_late_coll: 0
-     tx_deferred_ok: 0
-     tx_single_coll_ok: 0
-     tx_multi_coll_ok: 0
-     tx_timeout_count: 0
-     tx_restart_queue: 50715
-     rx_long_length_errors: 0
-     rx_short_length_errors: 0
-     rx_align_errors: 0
-     tx_tcp_seg_good: 344724062
-     tx_tcp_seg_failed: 0
-     rx_flow_control_xon: 0
-     rx_flow_control_xoff: 0
-     tx_flow_control_xon: 0
-     tx_flow_control_xoff: 0
-     rx_long_byte_count: 1892633650741
-     rx_csum_offload_good: 2973697420
-     rx_csum_offload_errors: 6235
-     tx_dma_out_of_sync: 0
-     alloc_rx_buff_failed: 0
-     tx_smbus: 9327
-     rx_smbus: 118531661
-     dropped_smbus: 0
-     tx_queue_0_packets: 797617475
-     tx_queue_0_bytes: 630191908685
-     tx_queue_1_packets: 719681297
-     tx_queue_1_bytes: 625907304846
-     tx_queue_2_packets: 718841556
-     tx_queue_2_bytes: 620522418855
-     tx_queue_3_packets: 796521255
-     tx_queue_3_bytes: 646196024585
-     rx_queue_0_packets: 788885797
-     rx_queue_0_bytes: 458936338699
-     rx_queue_0_drops: 0
-     rx_queue_1_packets: 701354604
-     rx_queue_1_bytes: 457490536453
-     rx_queue_1_drops: 0
-     rx_queue_2_packets: 791887663
-     rx_queue_2_bytes: 534425333616
-     rx_queue_2_drops: 0
-     rx_queue_3_packets: 691579028
-     rx_queue_3_bytes: 429887244557
-     rx_queue_3_drops: 0
+the slab timer is already deferable... which means it won't hit while the system is completely idle.
+I think this part of the original report is a red herring found on an older kernel.
 
-> > 3. By sending SYN-packets by hping, RST packet doesn't send, but I don't know may 
-> > be it is just some feature in 2.6.32.
-> > newbox # hping -c 1 -S -p 80 111.111.111.111
-> > HPING 111.111.111.111 (eth0 111.111.111.111): S set, 40 headers + 0 data bytes
-> > len=46 ip=111.111.111.111 ttl=58 DF id=11471 sport=80 flags=SA seq=0 win=65535 rtt=99.0 ms
-> > 
-> > --- 111.111.111.111 hping statistic ---
-> > 1 packets tramitted, 1 packets received, 0% packet loss
-> > round-trip min/avg/max = 99.0/99.0/99.0 ms
-> > 
-> > 13:59:07.439528 IP newbox.2777 > 111.111.111.111.80: S 345595033:345595033(0) win 512
-> > 13:59:07.439626 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-> > 13:59:10.439368 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-> > 13:59:16.439313 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-> > 13:59:28.439206 IP 111.111.111.111.80 > newbox.2777: S 1178827395:1178827395(0) ack 345595034 win 65535 <mss 1460>
-> > 
-> > As a result I got doubles:
-> 
-> Are you playing with trafic shaping ?
-> 
-> tc -s -d qdisc
- 
-No, nothing alike, no shapers.
-
-# tc -s -d qdisc
-bash: tc: command not found
- 
-> > DUP! len=46 ip=111.111.111.111 ttl=58 DF id=27454 sport=80 flags=SA seq=0 win=65535 rtt=3137.8 ms
-> > 
-> > Example of another TCP-session from 2.6.28 kernel:
-> > oldbox # hping -c 1 -S -p 80 111.111.111.111
-> > HPING 111.111.111.111 (eth0 111.111.111.111): S set, 40 headers + 0 data bytes
-> > len=46 ip=111.111.111.111 ttl=58 DF id=53180 sport=80 flags=SA seq=0 win=65535 rtt=2.9 ms
-> > 
-> > --- 111.111.111.111 hping statistic ---
-> > 1 packets tramitted, 1 packets received, 0% packet loss
-> > round-trip min/avg/max = 2.9/2.9/2.9 ms
-> > 
-> > 14:01:45.225136 IP oldbox.2776 > 111.111.111.111.80: S 1983626200:1983626200(0) win 512
-> > 14:01:45.225288 IP 111.111.111.111.80 > oldbox.2776: S 3796385036:3796385036(0) ack 1983626201 win 65535 <mss 1460>
-> > 14:01:45.227990 IP oldbox.2776 > 111.111.111.111.80: R 1983626201:1983626201(0) win 0
-> > 
-
--- 
-BRGDS. Alexey Vlasov.
