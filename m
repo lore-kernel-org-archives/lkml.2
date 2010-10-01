@@ -1,42 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753248Ab0JAC7V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 22:59:21 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40649 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751032Ab0JAC7U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 22:59:20 -0400
-Date: Thu, 30 Sep 2010 22:59:16 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [2.6.36-rc1] unmount livelock due to racing with bdi-flusher
- threads
-Message-ID: <20101001025916.GA12345@infradead.org>
-References: <20100821084126.GE31488@dastard>
- <20100913024128.GC411@dastard>
- <20100930210250.GE3573@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100930210250.GE3573@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1753849Ab0JADJU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 23:09:20 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:47039 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751032Ab0JADJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 23:09:19 -0400
+From: Fernando Guzman Lugo <x0095840@ti.com>
+To: <tony@atomide.com>
+Cc: <Hiroshi.DOYU@nokia.com>, <linux-kernel@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCH] scatterlist: define SG chain for arm architecture
+Date: Thu, 30 Sep 2010 22:22:34 -0500
+Message-Id: <1285903354-7378-1-git-send-email-x0095840@ti.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 11:02:51PM +0200, Jan Kara wrote:
-> I think the best resolution of this problem would be to change the work
-> that is submitted via bdi_start_writeback() (i.e., the work without
-> superblock = work which needs to do locking) to "target based scheme" like
-> Christoph wanted already some time ago. I actually have a patch to do this
-> for background writeback so I will just modify it to apply to a wider range
-> of writeback as well. Or Christoph, do you already have some patches in
-> this direction?
+Define SG chain for ARM architecture in order to work
+with big buffers. This patch is needed in order to
+iovmm users can pass a big buffer to map it and ARM
+architecture has not issues using SG chain.
 
-I've not started any work on it yet.
+This change was suggested by FUJITA Tomonori.
+
+Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+---
+ arch/arm/include/asm/scatterlist.h |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/include/asm/scatterlist.h b/arch/arm/include/asm/scatterlist.h
+index 2f87870..3de0a0b 100644
+--- a/arch/arm/include/asm/scatterlist.h
++++ b/arch/arm/include/asm/scatterlist.h
+@@ -5,4 +5,6 @@
+ #include <asm/types.h>
+ #include <asm-generic/scatterlist.h>
+ 
++#define ARCH_HAS_SG_CHAIN
++
+ #endif /* _ASMARM_SCATTERLIST_H */
+-- 
+1.6.3.3
 
