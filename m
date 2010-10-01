@@ -1,364 +1,461 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab0JAFiJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 01:38:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52361 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab0JAFiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 01:38:06 -0400
-Date: Fri, 1 Oct 2010 15:37:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for October 1
-Message-Id: <20101001153756.47b52566.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__1_Oct_2010_15_37_56_+1000_fnh8w0fFhXC92Vti"
+	id S1751842Ab0JAFpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 01:45:47 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:58866 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0JAFpo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 01:45:44 -0400
+Date: Fri, 01 Oct 2010 01:45:22 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-acpi@vger.kernel.org
+Subject: [git pull request] ACPI patches for Linux 2.6.36-rc6
+Message-id: <alpine.LFD.2.00.1010010142470.7033@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: MULTIPART/MIXED; BOUNDARY="8323328-873446607-1285911924=:7033"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__1_Oct_2010_15_37_56_+1000_fnh8w0fFhXC92Vti
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi all,
+--8323328-873446607-1285911924=:7033
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 
-Changes since 20100930:
+Hi Linus,
 
-The nfs tree lost its build failure.
+please pull from: 
 
-The v4l-dvb tree still lost its build failure but gained another so I
-used the version from next-20100928.
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
 
-The net tree gained conflicts against the net-current tree.
+A suspend regression fixed by Rafael.
+A long standing PCIe suspend/wakeup bug fixed.
+Incremental progress on Windows bug-compatibility
+Incremental progress on APEI, as it is now being tested on multiple platforms.
+A couple of build warning fixes and fluffy ones to get out of the way.
 
-The sound-asoc tree lost a conflict.
+This will update the files shown below.
 
-The oprofile tree gained a conflict against the tip tree.
+thanks!
 
-The hwpoison tree still has its build failure so I used the version from
-next-20100924.
+--
+Len Brown
+Intel Open Source Technology Center
 
-----------------------------------------------------------------------------
 
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
+ps. individual patches are available on linux-acpi@vger.kernel.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/acpi/patches/2.6.36/acpi-release-20100702-2.6.36-rc6.diff.gz
 
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
+ arch/x86/kernel/acpi/cstate.c    |    2 +-
+ drivers/acpi/Kconfig             |    2 +-
+ drivers/acpi/acpi_pad.c          |   34 ++++++++++++++++++----------------
+ drivers/acpi/acpica/aclocal.h    |    1 +
+ drivers/acpi/acpica/exutils.c    |    2 +-
+ drivers/acpi/acpica/rsutils.c    |    2 +-
+ drivers/acpi/apei/Kconfig        |    2 +-
+ drivers/acpi/apei/apei-base.c    |   21 ++++++++++++++++-----
+ drivers/acpi/apei/einj.c         |    4 +++-
+ drivers/acpi/apei/erst-dbg.c     |   18 +++++++++++-------
+ drivers/acpi/apei/erst.c         |   29 ++++++++++++++++++++++++-----
+ drivers/acpi/apei/ghes.c         |    2 +-
+ drivers/acpi/apei/hest.c         |   11 +++++++----
+ drivers/acpi/atomicio.c          |    2 +-
+ drivers/acpi/battery.c           |    1 -
+ drivers/acpi/blacklist.c         |   18 ++++++++++++++++++
+ drivers/acpi/bus.c               |   18 +++++-------------
+ drivers/acpi/fan.c               |    2 ++
+ drivers/acpi/processor_core.c    |    6 ------
+ drivers/acpi/processor_perflib.c |    4 ++--
+ drivers/acpi/sleep.c             |   22 ++++++++++++++++++++++
+ drivers/acpi/sysfs.c             |   20 ++++++++++++++------
+ drivers/acpi/video_detect.c      |    4 ++--
+ include/acpi/acpixf.h            |    2 +-
+ 24 files changed, 153 insertions(+), 76 deletions(-)
 
-Below is a summary of the state of the merge.
+through these commits:
 
-We are up to 176 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
+Andrea Gelmini (1):
+      ACPI: Kconfig: fix typo.
 
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
+Colin Ian King (1):
+      ACPI: enable repeated PCIEXP wakeup by clearing PCIEXP_WAKE_STS on resume
 
-Thanks to Randy Dunlap for doing many randconfig builds.
+Huang Ying (3):
+      ACPI, APEI, Fix APEI related table size checking
+      ACPI, APEI, Fix error path for memory allocation
+      ACPI, APEI, Fix ERST MOVE_DATA instruction implementation
 
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+Jin Dongming (2):
+      ACPI, APEI, Fix acpi_pre_map() return value
+      ACPI, APEI, HEST Fix the unsuitable usage of platform_data
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Len Brown (5):
+      ACPI: delete ZEPTO idle=nomwait DMI quirk
+      ACPI: expand Vista blacklist to include SP1 and SP2
+      ACPI: EC: add Vista incompatibility DMI entry for Toshiba Satellite L355
+      ACPI: acpi_pad: simplify code to avoid false gcc build warning
+      ACPI: invoke DSDT corruption workaround on all Toshiba Satellite
 
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-CONFLICT (content): Merge conflict in arch/arm/mm/mmu.c
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/platforms/85xx/mpc85xx_m=
-ds.c
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-$ git reset --hard HEAD^
-Merging refs/next/20100928/v4l-dvb
-CONFLICT (content): Merge conflict in drivers/media/IR/ir-keytable.c
-CONFLICT (content): Merge conflict in drivers/media/IR/ir-lirc-codec.c
-CONFLICT (content): Merge conflict in drivers/media/IR/ir-raw-event.c
-CONFLICT (add/add): Merge conflict in drivers/media/IR/streamzap.c
-CONFLICT (content): Merge conflict in drivers/media/dvb/siano/smscoreapi.c
-CONFLICT (add/add): Merge conflict in drivers/media/video/s5p-fimc/fimc-cor=
-e.c
-[master b11af4d] Merge commit 'refs/next/20100928/v4l-dvb'
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging swiotlb-xen/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging wireless/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3pandor=
-a.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom-periph=
-erals.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/libertas/if_sdio=
-.c
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/pcnet_cs.c
-CONFLICT (content): Merge conflict in net/ipv4/Kconfig
-CONFLICT (content): Merge conflict in net/ipv4/tcp_timer.c
-Merging mtd/master
-Merging crypto/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-Merging sound-asoc/for-next
-CONFLICT (content): Merge conflict in drivers/video/sh_mobile_hdmi.c
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/smc91c92_cs.c
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/sh_mobile_sdhi.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/atombios_crtc.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_legacy_=
-crtc.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/radeon/radeon_mode.h
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/smp_plat.h
-CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/ct-ca9x4.c
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-Merging i7core_edac/linux_next
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging xen/upstream/xen
-Merging rcu/rcu/next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in net/core/dev.c
-Merging lost-spurious-irq/lost-spurious-irq
-CONFLICT (content): Merge conflict in drivers/ata/libata-core.c
-CONFLICT (content): Merge conflict in include/linux/libata.h
-Merging edac-amd/for-next
-Merging oprofile/for-next
-CONFLICT (content): Merge conflict in arch/arm/oprofile/common.c
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in mm/percpu.c
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-$ git reset --hard HEAD^
-Merging refs/next/20100924/hwpoison
-Merging sysctl/master
-Merging quilt/driver-core
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-Merging quilt/tty
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
-Merging staging-next/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
-face.c
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
- in HEAD and modified in staging-next/staging-next. Version staging-next/st=
-aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
-c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
-g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
-eft in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st.h deleted in staging-nex=
-t/staging-next and modified in HEAD. Version HEAD of drivers/staging/tiReso=
-lved 'drivers/staging/Makefile' using previous resolution.
-CONFLICT (delete/modify): drivers/staging/ti-st/st_core.h deleted in stagin=
-g-next/staging-next and modified in HEAD. Version HEAD of drivers/staging/t=
-i-st/st_core.h left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/ti-st/st_kim.c
-$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
-touchscreen/intel-mid-touch.c
-$ git rm -f drivers/staging/ti-st/st.h drivers/staging/ti-st/st_core.h
-Applying: staging: ath6kl: Fixing the driver to use modified mmc_host struc=
-ture
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-CONFLICT (content): Merge conflict in drivers/block/ataflop.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4000_cs.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4040_cs.c
-CONFLICT (content): Merge conflict in drivers/mmc/card/block.c
-Merging bkl-llseek/llseek
-CONFLICT (content): Merge conflict in drivers/infiniband/hw/cxgb4/device.c
-Merging bkl-vfs/vfs
-CONFLICT (content): Merge conflict in fs/nilfs2/super.c
-Merging bkl-config/config
-Merging irqflags/master
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
+Lucas De Marchi (1):
+      ACPI: Fix typos
 
---Signature=_Fri__1_Oct_2010_15_37_56_+1000_fnh8w0fFhXC92Vti
-Content-Type: application/pgp-signature
+Luis Henriques (1):
+      ACPI: fan: Fix more unbalanced code block
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Matthew Garrett (1):
+      ACPI: Don't report current_now if battery reports in mWh
 
-iQEcBAEBAgAGBQJMpXO0AAoJEDMEi1NhKgbsti8H/1hzoE2LsHNecQ4uQmjb0Dvb
-EmvmohdPdrmy3e7bMfK5G+nCy1m7C2gVNt8uv0bNBWcqj0b9kfw7KoG5rQOy3Jhy
-4bZBE34oxTf+J1wMhvy19WLKkaPJlViIuU2kKPrfotcyb5lOh5qEohmO9cGF+plb
-kXCEVNN6iskGhSkwtxwcQG2EB0cGQ3GZyCSlzxtUaYKQHiln7T1d9TMKBn5cpaEO
-1lJs2dukqOb5jR5FkgSHnSOcIdTOc/igbCKl2qF7dHkHyjyOXGaE9E72J0hL2ZZe
-Kc6BjNffpF42ug1C66ChP1YRMQZub4T7dOtrMkM/QcYxTjjHQYSrYKoJwPmFRVM=
-=n1p8
------END PGP SIGNATURE-----
+Namhyung Kim (1):
+      ACPI: add missing __percpu markup in arch/x86/kernel/acpi/cstate.c
 
---Signature=_Fri__1_Oct_2010_15_37_56_+1000_fnh8w0fFhXC92Vti--
+Rafael J. Wysocki (1):
+      PM / ACPI: Blacklist systems known to require acpi_sleep=nonvs
+
+Zhang Rui (3):
+      ACPI: fix build warnings resulting from merge window conflict
+      ACPI video: fix a poor warning message
+      ACPI: Disable Windows Vista compatibility for Toshiba P305D
+
+with this log:
+
+commit fdb8c58a1671beb51949412e053926acd5500b5f
+Merge: 23f124c b137b99 64a3230 337279c 100cf87 5399864 573b638 0bbba38
+Author: Len Brown <len.brown@intel.com>
+Date:   Wed Sep 29 15:18:28 2010 -0400
+
+    Merge branches 'apei', 'battery-mwh-fix', 'bugzilla-10807', 'bugzilla-14736', 'bugzilla-14679', 'bugzilla-16396', 'launchpad-613381' and 'misc' into release
+
+commit 100cf87788c0e9104f6fb1b0ff5f72f73fbbbea3
+Author: Len Brown <len.brown@intel.com>
+Date:   Tue Sep 28 22:57:02 2010 -0400
+
+    ACPI: invoke DSDT corruption workaround on all Toshiba Satellite
+    
+    Our list of Toshiba Satellite models that require this workaround
+    is growing -- so invoke the workaround for the entire product line.
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=14679
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 0bbba38a61283a55f2061ab3e0910c572d19f462
+Author: Huang Ying <ying.huang@intel.com>
+Date:   Wed Sep 29 19:53:55 2010 +0800
+
+    ACPI, APEI, Fix ERST MOVE_DATA instruction implementation
+    
+    The src_base and dst_base fields in apei_exec_context are physical
+    address, so they should be ioremaped before being used in ERST
+    MOVE_DATA instruction.
+    
+    Reported-by: Javier Martinez Canillas <martinez.javier@gmail.com>
+    Reported-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Huang Ying <ying.huang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 0c827eebfcd5caad24a50bc514ef15476b086e47
+Author: Luis Henriques <luis.henrix@gmail.com>
+Date:   Wed Jul 7 19:30:15 2010 +0100
+
+    ACPI: fan: Fix more unbalanced code block
+    
+    commit 934231de706d2579fae14f5857fcd8de991009ff fixes an unbalanced
+    CONFIG_ACPI_PROCFS code block during module initialisation.  This
+    patch fixes similar issue but for the module exit.
+    
+    Signed-off-by: Luis Henriques <luis.henrix@gmail.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit c9ad8e062e4c733b36fc10ebc201bedde1a4da80
+Author: Len Brown <len.brown@intel.com>
+Date:   Tue Sep 28 16:50:50 2010 -0400
+
+    ACPI: acpi_pad: simplify code to avoid false gcc build warning
+    
+    acpi_pad.c:432: warning: ¡num_cpus¢ may be used uninitialized in this function
+    
+    gcc 4.4.4 was unable to notice that num_cpus is always set.
+    Re-arrange the code to un-confuse gcc, and also make
+    it easier for humans to read....
+    
+    Signed-off-by: Len Brown <len.browns@intel.com>
+
+commit 23f124ca3dda98496b7ccf897cfd66264a212b6c
+Author: Huang Ying <ying.huang@intel.com>
+Date:   Wed Sep 29 19:53:54 2010 +0800
+
+    ACPI, APEI, Fix error path for memory allocation
+    
+    In ERST debug/test support patch, a dynamic allocated buffer is
+    used. The may-failed memory allocation should be tried firstly before
+    free the previous buffer.
+    
+    APEI resource management memory allocation related error path is fixed
+    too.
+    
+    v2:
+    
+    - Fix error messages for APEI resources management
+    
+    Signed-off-by: Huang Ying <ying.huang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 1dd6b20e368765223c31569d364219785b24700b
+Author: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Date:   Wed Sep 29 19:53:53 2010 +0800
+
+    ACPI, APEI, HEST Fix the unsuitable usage of platform_data
+    
+    platform_data in hest_parse_ghes() is used for saving the address of entry
+    information of erst_tab. When the device is failed to be added, platform_data
+    will be freed by platform_device_put(). But the value saved in platform_data
+    should not be freed here. If it is done, it will make system panic.
+    
+    So I think platform_data should save the address of allocated memory
+    which saves entry information of erst_tab.
+    
+    This patch fixed it and I confirmed it on x86_64 next-tree.
+    
+    v2:
+        Transport the pointer of hest_hdr to platform_data using
+        platform_device_add_data()
+    
+    Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+    Signed-off-by: Huang Ying <ying.huang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit bad97c37db9c1ee36de8ac58f9f73931d15a2e94
+Author: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+Date:   Wed Sep 29 19:53:52 2010 +0800
+
+    ACPI, APEI, Fix acpi_pre_map() return value
+    
+    After we ioremap() a new region, we call __acpi_try_ioremap() to
+    see whether another thread has already mapped the same region.
+    This check clobbers "vaddr",  so compute the return value of
+    acpi_pre_map() using the ioremap() result "map->vaddr" instead.
+    
+    v2:
+        Modified the unsuitable description of patch.
+    
+    v3:
+        Removed unlikely() check and made description simpler.
+    
+    Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
+    Reviewed-by: Andi Kleen <ak@linux.intel.com>
+    Signed-off-by: Huang Ying <ying.huang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 3a78f965328482eee542217de79036c2a8791de8
+Author: Huang Ying <ying.huang@intel.com>
+Date:   Wed Sep 29 19:53:51 2010 +0800
+
+    ACPI, APEI, Fix APEI related table size checking
+    
+    On Huang Ying's machine:
+    
+    erst_tab->header_length == sizeof(struct acpi_table_einj)
+    
+    but Yinghai reported that on his machine,
+    
+    erst_tab->header_length == sizeof(struct acpi_table_einj) -
+    sizeof(struct acpi_table_header)
+    
+    To make erst table size checking code works on all systems, both
+    testing are treated as PASS.
+    
+    Same situation applies to einj_tab->header_length, so corresponding
+    table size checking is changed in similar way too.
+    
+    v2:
+    
+    - Treat both table size as valid
+    
+    Originally-by: Yinghai Lu <yinghai@kernel.org>
+    Signed-off-by: Huang Ying <ying.huang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 337279ce3aa85d81d34c0f837d1c204df105103b
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Tue Sep 28 22:48:55 2010 -0400
+
+    ACPI: Disable Windows Vista compatibility for Toshiba P305D
+    
+    Disable the Windows Vista (SP1) compatibility for Toshiba P305D.
+    
+    http://bugzilla.kernel.org/show_bug.cgi?id=14736
+    
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 25cb1bfdd8256cd1c614947e1696e42176ac22ec
+Author: Andrea Gelmini <andrea.gelmini@gelma.net>
+Date:   Wed Aug 18 15:22:10 2010 +0200
+
+    ACPI: Kconfig: fix typo.
+    
+    "power of" -> "power off"
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit bd126b23a2f30c3c7d268db2b96866923eb732a5
+Author: Namhyung Kim <namhyung@gmail.com>
+Date:   Sun Aug 8 02:17:29 2010 +0900
+
+    ACPI: add missing __percpu markup in arch/x86/kernel/acpi/cstate.c
+    
+    cpu_cstate_entry is a percpu pointer
+    but was missing __percpu markup.
+    
+    Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+    Acked-by: Tejun Heo <tj@kernel.org>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 58f87ed0d45141a90167f34c0959d607160a26df
+Author: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date:   Tue Sep 7 12:49:45 2010 -0400
+
+    ACPI: Fix typos
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit e9f74c489c9d4209946c04f29e7a724cb5537206
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Fri Sep 3 10:08:50 2010 +0800
+
+    ACPI video: fix a poor warning message
+    
+    Fix a vague warning message.
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=16599
+    
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit ec652b351f48ed4cd6796181fbb41759ff88cc0a
+Author: Zhang Rui <rui.zhang@intel.com>
+Date:   Mon Aug 30 14:08:02 2010 +0800
+
+    ACPI: fix build warnings resulting from merge window conflict
+    
+    drivers/acpi/sysfs.c:154: warning: passing argument 1 of '__check_old_set_param' from incompatible pointer type
+    include/linux/moduleparam.h:165: note: expected 'int (*)(const char *, struct kernel_param *)' but argument is of type 'int (*)(const char *, const struct kernel_param *)'
+    
+    Introduced by commit 1c8fce27e275fd7c6b75bc6455745f02d3903ee6 ("ACPI:
+    introduce drivers/acpi/sysfs.c") interacting with commit
+    9bbb9e5a33109b2832e2e63dcc7a132924ab374b ("param: use ops in struct
+    kernel_param, rather than get and set fns directly").
+    
+    Use module_param_cb instead of the obsoleted module_param_call to fix a build warning.
+    
+    Signed-off-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 7a1d602f5fc35d14907b7da98d5627acb69589d1
+Author: Len Brown <len.brown@intel.com>
+Date:   Tue Sep 28 17:51:51 2010 -0400
+
+    ACPI: EC: add Vista incompatibility DMI entry for Toshiba Satellite L355
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=12641
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit bbb7030fbb6469c46974c4736a5f90d12102f299
+Author: Len Brown <len.brown@intel.com>
+Date:   Tue Sep 28 17:48:49 2010 -0400
+
+    ACPI: expand Vista blacklist to include SP1 and SP2
+    
+    When we claim incompatibility with Vista,
+    include both Vista SP1 and SP2.
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=12641
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 64a32307b710c100beb101e9c78f8022f0e8ba61
+Author: Len Brown <len.brown@intel.com>
+Date:   Tue Sep 28 17:20:20 2010 -0400
+
+    ACPI: delete ZEPTO idle=nomwait DMI quirk
+    
+    per comments in the bug report, this entry
+    seems to hurt at much as it helps.
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=10807
+    
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 573b638158029898caf9470c8214b7ddd29751e3
+Author: Colin Ian King <colin.king@canonical.com>
+Date:   Mon Aug 2 15:14:43 2010 +0000
+
+    ACPI: enable repeated PCIEXP wakeup by clearing PCIEXP_WAKE_STS on resume
+    
+    Section 4.7.3.1.1 (PM1 Status Registers) of version 4.0 of
+    the ACPI spec concerning PCIEXP_WAKE_STS points out in
+    in the final note field in table 4-11 that if this bit is
+    set to 1 and the system is put into a sleeping state then
+    the system will not automatically wake.
+    
+    This bit gets set by hardware to indicate that the system
+    woke up due to a PCI Express wakeup event, so clear it during
+    acpi_hw_clear_acpi_status() calls to enable subsequent
+    resumes to work.
+    
+    BugLink: http://bugs.launchpad.net/bugs/613381
+    
+    Signed-off-by: Colin Ian King <colin.king@canonical.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit 539986482b0db07b7164ab086d167ab99b4d3061
+Author: Rafael J. Wysocki <rjw@sisk.pl>
+Date:   Fri Sep 24 16:46:14 2010 -0400
+
+    PM / ACPI: Blacklist systems known to require acpi_sleep=nonvs
+    
+    Commit 2a6b69765ad794389f2fc3e14a0afa1a995221c2 (ACPI: Store NVS
+    state even when entering suspend to RAM) changed the ACPI suspend
+    to RAM code so that the NVS memory area is always unconditionally
+    saved during suspend and restored during resume, since some systems
+    evidently need that for the suspend-resume to work on them.  However,
+    it turned out that this change broke suspend-resume on a few systems,
+    so commit 72ad5d77fb981963edae15eee8196c80238f5ed0 (ACPI / Sleep:
+    Allow the NVS saving to be skipped during suspend to RAM) introduced
+    the acpi_sleep=nonvs command line switch to allow their users to
+    work around this issue.  To keep track of the systems that require
+    this workaround and to make the life of their users slightly easier
+    blacklist them in acpisleep_dmi_table[].
+    
+    https://bugzilla.kernel.org/show_bug.cgi?id=16396
+    
+    Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+commit b137b9942a07843c64a934cfdb7d43155e507e13
+Author: Matthew Garrett <mjg@redhat.com>
+Date:   Mon Aug 23 20:25:32 2010 +0000
+
+    ACPI: Don't report current_now if battery reports in mWh
+    
+    ACPI batteries can report in units of either current or energy. Right
+    now we expose the current_now file even if the battery is reporting
+    energy units, resulting in a file that should contain mA instead
+    containing mW. Don't expose this value unless the battery is reporting
+    current.
+    
+    Signed-off-by: Matthew Garrett <mjg@redhat.com>
+    Cc: Arjan van de Ven <arjan@linux.intel.com>
+    Acked-by: Rafael J. Wysocki <rjw@sisk.pl>
+    Acked-by: Zhang Rui <rui.zhang@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+--8323328-873446607-1285911924=:7033--
