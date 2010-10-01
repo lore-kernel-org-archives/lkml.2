@@ -1,43 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab0JAVZR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 17:25:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36427 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756722Ab0JAVZO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 17:25:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [linux-pm] [RFC][PATCH] PM: Allow wakeup events to abort freezing of tasks
-Date: Fri, 1 Oct 2010 23:24:29 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-References: <201009300016.50128.rjw@sisk.pl> <20100930142903.GA1442@ucw.cz>
-In-Reply-To: <20100930142903.GA1442@ucw.cz>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010012324.29283.rjw@sisk.pl>
+	id S1756751Ab0JAV03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 17:26:29 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:34427 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754055Ab0JAV02 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 17:26:28 -0400
+From: Nishanth Aravamudan <nacc@us.ibm.com>
+To: nacc@us.ibm.com
+Cc: miltonm@bga.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org
+Subject: [RESEND PATCH 0/2] Fix IRQ round-robing w/o irqbalance on pseries
+Date: Fri,  1 Oct 2010 14:26:16 -0700
+Message-Id: <1285968378-12805-1-git-send-email-nacc@us.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, September 30, 2010, Pavel Machek wrote:
-> On Thu 2010-09-30 00:16:50, Rafael J. Wysocki wrote:
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > Subject: PM: Allow wakeup events to abort freezing of tasks
-> > 
-> > If there is a wakeup event during the freezing of tasks, suspend or
-> > hibernation will fail anyway.  Since try_to_freeze_tasks() can take
-> > up to 20 seconds to complete or fail, aborting it as soon as a wakeup
-> > event is detected improves the worst case wakeup latency.
-> > 
-> > Based on a patch from Arve Hj??nnev??g.
-> > 
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Ack.
+We have received reports on power systems not running irqbalance where
+all interrupts are being routed to CPU0 rather than being interleaved by
+default across the system. Current firmware only allows either sending
+interrupts to all CPUs or sending them to one CPU. The following two
+patches address this issue by fixing the mask used in generic code and
+by fixing the check for the "all" setting in the pseries code.
 
-Thanks!
+Nishanth Aravamudan (2):
+  IRQ: use cpu_possible_mask rather than online_mask in setup_affinity
+  pseries/xics: use cpu_possible_mask rather than cpu_all_mask
+
+ arch/powerpc/platforms/pseries/xics.c |    2 +-
+ kernel/irq/manage.c                   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
