@@ -1,113 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab0JALxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 07:53:43 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:14991 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753643Ab0JALxl (ORCPT
+	id S932139Ab0JAL6Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 07:58:25 -0400
+Received: from eu1sys200aog112.obsmtp.com ([207.126.144.133]:48820 "EHLO
+	eu1sys200aog112.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932070Ab0JAL6W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 07:53:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Ocx7pgpHliA1nV62IRdDKbyhIx5P+JN/AIUAmXczhJrORtIwzEVygm6DwI6KxK0/NV
-         xzvKQ0mEHQOyyqIqDWLA==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimUyLaVaBigjm0-CwRsdh4UXWDiss2ffX53S+k_@mail.gmail.com>
-References: <20100929151253.GL13563@erda.amd.com>
-	<20100929152745.GC9440@lenovo>
-	<AANLkTikvYreYiyCbGeG02j+r4dWVLRH7BqeeG9O=VTNN@mail.gmail.com>
-	<20100929154528.GD9440@lenovo>
-	<AANLkTinkqTXXD5fMUYTT4zrRD6YoTi_G+uOA5CsOgxtT@mail.gmail.com>
-	<20100929170924.GR13563@erda.amd.com>
-	<20100929181207.GW26290@redhat.com>
-	<AANLkTimp=+1GzBOYaUZWtDF6teGt6FZe+RTpb9fAyOyd@mail.gmail.com>
-	<20100930091246.GV13563@erda.amd.com>
-	<20100930194451.GI26290@redhat.com>
-	<20101001071750.GB13563@erda.amd.com>
-	<AANLkTimUyLaVaBigjm0-CwRsdh4UXWDiss2ffX53S+k_@mail.gmail.com>
-Date: Fri, 1 Oct 2010 13:53:37 +0200
-Message-ID: <AANLkTik4KmzqeHTGXZAcQtg80YkBRPDqegLOaMvTvDAQ@mail.gmail.com>
-Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
- disabling counters
-From: Stephane Eranian <eranian@google.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "ying.huang@intel.com" <ying.huang@intel.com>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Fri, 1 Oct 2010 07:58:22 -0400
+From: Viresh KUMAR <viresh.kumar@st.com>
+To: linux-arm-kernel@lists.infradead.org, rtc-linux@googlegroups.com,
+        a.zummo@towertech.it, dbrownell@users.sourceforge.net,
+        linux-usb@vger.kernel.org, linux-input@vger.kernel.org,
+        dmitry.torokhov@gmail.com, linux-mtd@lists.infradead.org,
+        dwmw2@infradead.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org
+Cc: Deepak Sikri <deepak.sikri@st.com>, shiraz.hashim@st.com,
+        vipin.kumar@st.com, armando.visconti@st.com, vipulkumar.samar@st.com,
+        rajeev-dlh.kumar@st.com, pratyush.anand@st.com, bhupesh.sharma@st.com,
+        Viresh Kumar <viresh.kumar@st.com>
+Subject: [PATCH V2 47/69] ST SPEAr13xx: Adding CPU hotplug support added for SMP platforms
+Date: Fri,  1 Oct 2010 17:26:07 +0530
+Message-Id: <af8b5622bfb525dd1bcb2f09bfabc70fe6012f8c.1285933332.git.viresh.kumar@st.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <cover.1285933331.git.viresh.kumar@st.com>
+References: <cover.1285933331.git.viresh.kumar@st.com>
+In-Reply-To: <cover.1285933331.git.viresh.kumar@st.com>
+References: <cover.1285933331.git.viresh.kumar@st.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[repost due to mime-encoding error on my part]
+From: Deepak Sikri <deepak.sikri@st.com>
 
-On Fri, Oct 1, 2010 at 9:17 AM, Robert Richter <robert.richter@amd.com>wrote:
+Signed-off-by: Deepak Sikri <deepak.sikri@st.com>
+Signed-off-by: shiraz hashim <shiraz.hashim@st.com>
+Signed-off-by: Viresh Kumar <viresh.kumar@st.com>
+---
+ arch/arm/mach-spear13xx/Makefile  |    1 +
+ arch/arm/mach-spear13xx/hotplug.c |  135 +++++++++++++++++++++++++++++++++++++
+ 2 files changed, 136 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-spear13xx/hotplug.c
 
-> On 30.09.10 15:44:51, Don Zickus wrote:
-> > On Thu, Sep 30, 2010 at 11:12:46AM +0200, Robert Richter wrote:
->
-> > > As soon as you stop executing the chain, there are chances to miss an
-> > > nmi for other parts of the system. Where is no way to avoid this. So
-> > > your argument above is valid also for regular perf nmis and not only
-> > > for catched-spurious or back-to-back nmis.
-> >
-> > I don't agree with that.  Most nmi handlers can do a check to see if
-> their
-> > subsystem triggered an nmi or not.  Now we may not catch it in the right
-> > order because one handler is higher in the chain than the other, but
-> > ultimately the other handler will get its chance to execute because it
-> > fired its own nmi (which hasn't been lost).
->
-> No, as soon as a handler with higher priority detected an nmi by its
-> own and handled it, it returns with a stop and all subsequent handlers
-> get ignored without the chance to check their hardware. So, if perf
-> consumes an nmi because a counter triggered, there are rare cases that
-> other handlers may not be executed.
->
+diff --git a/arch/arm/mach-spear13xx/Makefile b/arch/arm/mach-spear13xx/Makefile
+index 799eefa..869afb4 100644
+--- a/arch/arm/mach-spear13xx/Makefile
++++ b/arch/arm/mach-spear13xx/Makefile
+@@ -5,6 +5,7 @@
+ # common files
+ obj-y					+= spear13xx.o clock.o fsmc-nor.o
+ obj-$(CONFIG_SMP)			+= platsmp.o headsmp.o
++obj-$(CONFIG_HOTPLUG_CPU)		+= hotplug.o
+ obj-$(CONFIG_LOCAL_TIMERS)		+= localtimer.o
+ obj-$(CONFIG_PCIEPORTBUS)		+= pcie.o
+ obj-$(CONFIG_PM)			+= pm.o sleep.o
+diff --git a/arch/arm/mach-spear13xx/hotplug.c b/arch/arm/mach-spear13xx/hotplug.c
+new file mode 100644
+index 0000000..a3259bf
+--- /dev/null
++++ b/arch/arm/mach-spear13xx/hotplug.c
+@@ -0,0 +1,135 @@
++/*
++ * linux/arch/arm/mach-spear13xx/hotplug.c
++ *
++ * Copyright (C) 2010 ST Microelectronics Ltd.
++ * Deepak Sikri <deepak.sikri@st.com>
++ *
++ * based upon linux/arch/arm/mach-realview/hotplug.c
++ *
++ * Copyright (C) 2002 ARM Ltd.
++ * All Rights Reserved
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/smp.h>
++#include <linux/completion.h>
++#include <asm/cacheflush.h>
++#include <asm/system.h>
++
++extern volatile int pen_release;
++
++static DECLARE_COMPLETION(cpu_killed);
++
++static inline void cpu_enter_lowpower(void)
++{
++	unsigned int v;
++
++	flush_cache_all();
++	asm volatile(
++	"	mcr	p15, 0, %1, c7, c5, 0\n"
++	"	dsb\n"
++	/*
++	 * Turn off coherency
++	 */
++	"	mrc	p15, 0, %0, c1, c0, 1\n"
++	"	bic	%0, %0, #0x20\n"
++	"	mcr	p15, 0, %0, c1, c0, 1\n"
++	"	mrc	p15, 0, %0, c1, c0, 0\n"
++	"	bic	%0, %0, #0x04\n"
++	"	mcr	p15, 0, %0, c1, c0, 0\n"
++	  : "=&r" (v)
++	  : "r" (0)
++	  : "cc", "memory");
++}
++
++static inline void cpu_leave_lowpower(void)
++{
++	unsigned int v;
++
++	asm volatile("mrc	p15, 0, %0, c1, c0, 0\n"
++	"	orr	%0, %0, #0x04\n"
++	"	mcr	p15, 0, %0, c1, c0, 0\n"
++	"	mrc	p15, 0, %0, c1, c0, 1\n"
++	"	orr	%0, %0, #0x20\n"
++	"	mcr	p15, 0, %0, c1, c0, 1\n"
++	  : "=&r" (v)
++	  :
++	  : "cc");
++}
++
++static inline void platform_do_lowpower(unsigned int cpu)
++{
++	for (;;) {
++		wfi();
++
++		if (pen_release == cpu) {
++			/*
++			 * OK, proper wakeup, we're done
++			 */
++			break;
++		}
++
++		/*
++		 * getting here, means that we have come out of WFI without
++		 * having been woken up - this shouldn't happen
++		 *
++		 * The trouble is, letting people know about this is not really
++		 * possible, since we are currently running incoherently, and
++		 * therefore cannot safely call printk() or anything else
++		 */
++#ifdef DEBUG
++		pr_crit("CPU%u: spurious wakeup call\n", cpu);
++#endif
++	}
++}
++
++int platform_cpu_kill(unsigned int cpu)
++{
++	return wait_for_completion_timeout(&cpu_killed, 5000);
++}
++
++/*
++ * platform-specific code to shutdown a CPU
++ *
++ * Called with IRQs disabled
++ */
++void __cpuinit platform_cpu_die(unsigned int cpu)
++{
++#ifdef DEBUG
++	unsigned int this_cpu = hard_smp_processor_id();
++
++	if (cpu != this_cpu) {
++		pr_crit("Eek! platform_cpu_die running on %u, should\
++				be %u\n", this_cpu, cpu);
++		BUG();
++	}
++#endif
++
++	printk(KERN_NOTICE "CPU%u: shutdown\n", cpu);
++	complete(&cpu_killed);
++
++	/*
++	 * we're ready for shutdown now, so do it
++	 */
++	cpu_enter_lowpower();
++	platform_do_lowpower(cpu);
++
++	/*
++	 * bring this CPU back into the world of cache
++	 * coherency, and then restore interrupts
++	 */
++	cpu_leave_lowpower();
++}
++
++int platform_cpu_disable(unsigned int cpu)
++{
++	/*
++	 * we don't allow CPU 0 to be shutdown (it is still too special
++	 * e.g. clock tick interrupts)
++	 */
++	return cpu == 0 ? -EPERM : 0;
++}
+-- 
+1.7.2.2
 
-And that's what you want to avoid.
-
-> > Whereas the problem Stephane is describing is that the heurestics of the
-> > perf counters 'eats' an NMI, thus possibly starving another handler.
-> > With back-to-back nmis we are at least polite, letting everyone have a chance
-> > to process the nmi before we indulge ourselves and 'eat' it (if it still
-> > around to be eaten).
-> >
-> > However in the case of the 'catched-spurious', we selfishly 'eat' the NMI
-> > without really knowing if it was our to be eaten.  That was the
-> > difference and the concern.
->
-> But, this argument is valid. It would be better to handle
-> catched-spurious in the 'unknown' path to give other handlers the
-> chance to check their hardware.
->
-
-Yes, that was my point. You cannot do it until the kernel invokes the
-handler on the 'unknown nmi' callchain.
-
-
-> I don't think this is a show-stopper for v2.6.36 even because the perf
-> handler runs with the lowest priority now. So we will have enough time
-> after the merge window to improve the code here.
->
->
-That's another issue I have with this NMI callchain logic. It is hard to tell
-who's in front of who in each callchain. You may have two registered users
-at the same priority, the one which registers last gets priority.
-
-We may not want perf_event to run at the lowest priority because it is
-performance sensitive, remember that the counters are running until
-you get to the handler. Unlike many of the other subsystems on the
-call chain perf_event is doing performance monitoring not debugging.
-The rate of calls on the chain is now very high.
