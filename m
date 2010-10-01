@@ -1,75 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab0JAWNm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 18:13:42 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:33681 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751110Ab0JAWNl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 18:13:41 -0400
-Message-ID: <4CA65D0E.6080604@hp.com>
-Date: Fri, 01 Oct 2010 18:13:34 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11pre) Gecko/20100922 Lightning/1.0b2 Shredder/3.1.5pre
+	id S1756977Ab0JAWQJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 18:16:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36571 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751110Ab0JAWQI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 18:16:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [PATCH 01/23] Hibernation: Split compression support out.
+Date: Sat, 2 Oct 2010 00:15:10 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux PM <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201010012328.09892.rjw@sisk.pl> <4CA65684.1050500@tuxonice.net>
+In-Reply-To: <4CA65684.1050500@tuxonice.net>
 MIME-Version: 1.0
-To: Dan Rosenberg <drosenberg@vsecurity.com>
-CC: sri@us.ibm.com, linux-sctp@vger.kernel.org, linux-kernel@vger.kernel.org,
-        security@kernel.org, stable@kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] Fix out-of-bounds reading in sctp_asoc_get_hmac()
-References: <1285969907.2814.49.camel@Dan>
-In-Reply-To: <1285969907.2814.49.camel@Dan>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010020015.10749.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2010 05:51 PM, Dan Rosenberg wrote:
-> The sctp_asoc_get_hmac() function iterates through a peer's hmac_ids
-> array and attempts to ensure that only a supported hmac entry is
-> returned.  The current code fails to do this properly - if the last id
-> in the array is out of range (greater than SCTP_AUTH_HMAC_ID_MAX), the
-> id integer remains set after exiting the loop, and the address of an
-> out-of-bounds entry will be returned and subsequently used in the parent
-> function, causing potentially ugly memory corruption.  This patch resets
-> the id integer to 0 on encountering an invalid id so that NULL will be
-> returned after finishing the loop if no valid ids are found.
->
-> Signed-off-by: Dan Rosenberg<drosenberg@vsecurity.com>
+On Friday, October 01, 2010, Nigel Cunningham wrote:
+> Hi Rafael.
 
-Good catch.
+Hi,
 
-Acked-by: Vlad Yasevich <vladislav.yasevich@hp.com>
+> On 02/10/10 07:28, Rafael J. Wysocki wrote:
+> > On Monday, September 27, 2010, Nigel Cunningham wrote:
+> >> Hi.
+> >>
+> >> On 28/09/10 06:27, Rafael J. Wysocki wrote:
+> >>> On Monday, September 27, 2010, Nigel Cunningham wrote:
+> > ...
+> >>> This one doesn't really good to me.  What I'd prefer would be to have a
+> >>> structure of "swap operations" pointers like ->start(), ->write_data(),
+> >>> ->read_data(), and ->finish() that will point to the functions in this file
+> >>> (if compression is to be used) or to the "old" swap_write_page()/swap_read_page()
+> >>> otherwise.  That would reduce the number of the
+> >>> (flags&   SF_NOCOMPRESS_MODE) checks quite substantially and will likely result
+> >>> in code that's easier to follow.
+> >>
+> >> Me too. I was heading in that direction, but not doing it in one step.
+> >> I'll happily change that.
+> >
+> > I'm still waiting for the reworked patch.  If you can submit it in a few days
+> > and it looks good, I'll include it into the pull request for 2.6.37.
+> 
+> Sorry for the delay.
 
--vlad
+No biggie.
 
+> Would you be happy if, rather than reworking that patch and modifying 
+> other patches that are affected, I added a new patch to the end of the 
+> series?
 
->
-> --- linux-2.6.35.5.orig/net/sctp/auth.c	2010-09-20 16:59:09.000000000 -0400
-> +++ linux-2.6.35.5/net/sctp/auth.c	2010-10-01 16:48:58.000000000 -0400
-> @@ -543,16 +543,20 @@ struct sctp_hmac *sctp_auth_asoc_get_hma
->   		id = ntohs(hmacs->hmac_ids[i]);
->
->   		/* Check the id is in the supported range */
-> -		if (id>  SCTP_AUTH_HMAC_ID_MAX)
-> +		if (id>  SCTP_AUTH_HMAC_ID_MAX) {
-> +			id = 0;
->   			continue;
-> +		}
->
->   		/* See is we support the id.  Supported IDs have name and
->   		 * length fields set, so that we can allocated and use
->   		 * them.  We can safely just check for name, for without the
->   		 * name, we can't allocate the TFM.
->   		 */
-> -		if (!sctp_hmac_list[id].hmac_name)
-> +		if (!sctp_hmac_list[id].hmac_name) {
-> +			id = 0;
->   			continue;
-> +		}
->
->   		break;
->   	}
->
->
+Not really.  That would make it difficult for other people to follow the
+changes.  Let's do things in the right order from the start. :-)
 
+Thanks,
+Rafael
