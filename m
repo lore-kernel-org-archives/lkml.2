@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab0JAHJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 03:09:48 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45872 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754560Ab0JAHGY (ORCPT
+	id S1755010Ab0JAHG0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 03:06:26 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:39706 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754891Ab0JAHGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 1 Oct 2010 03:06:24 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         benh@kernel.crashing.org
 Cc: paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
+        Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
         Albert Herranz <albert_herranz@yahoo.es>,
         Grant Likely <grant.likely@secretlab.ca>,
-        Segher Boessenkool <segher@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Torez Smith <lnxtorez@linux.vnet.ibm.com>
-Subject: [PATCH 04/18] powerpc: Allow taishan platform to boot a little endian kernel
-Date: Fri,  1 Oct 2010 17:05:57 +1000
-Message-Id: <1285916771-18033-5-git-send-email-imunsie@au1.ibm.com>
+        Segher Boessenkool <segher@kernel.crashing.org>
+Subject: [PATCH 02/18] powerpc: Add CROSSBE_COMPILE to build big endian boot wrapper
+Date: Fri,  1 Oct 2010 17:05:55 +1000
+Message-Id: <1285916771-18033-3-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
 References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
@@ -28,167 +28,137 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-This adds code to the boot wrapper to allow 44x CPUs to boot little
-endian kernels. Presumably all 44x PowerPC platforms should also be able
-to use this code unmodified, but this patch only wires up the taishan
-platform as that has been tested.
+Since the boot wrapper must be built by a big endian 32bit toolchain
+regardless of what the rest of the kernel is using introduce a new
+parameter to specify that toolchain - CROSSBE_COMPILE.
 
-The boot wrapper is still run in 32bit big endian mode and must set the
-E bit in the TLB entries that the kernel may use initially. Naturally
-the code setting this up can't afford to change the E bit on it's own
-TLB entry while it is executing so it sets up a trampoline in address
-space 1 to affect the change on all address space 0 TLB entries.
+We already have CROSS32_COMPILE which is already used for the boot
+wrapper, but it is also used to build the 32bit vdso which should be
+build in the same endianness as the rest of the kernel, so it is
+necessary to be able to specify the toolchain to build the boot wrapper
+separately from that used to build the vdso and again separately from
+that used to build the main kernel.
+
+CROSSBE_COMPILE should be pointed to a toolchain capable of targeting
+32bit big endian powerpc, either specifically targetted at 32bit or
+bi-arch 64 and 32bit. If CROSSBE_COMPILE is not specified it will fall
+back to CROSS32_COMPILE to maintain compatibility with big endian
+targets.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- arch/powerpc/boot/4xx.h                |    2 +
- arch/powerpc/boot/Makefile             |    2 +-
- arch/powerpc/boot/cuboot-taishan.c     |    1 +
- arch/powerpc/boot/le-44x.S             |   85 ++++++++++++++++++++++++++++++++
- arch/powerpc/platforms/Kconfig.cputype |    1 +
- 5 files changed, 90 insertions(+), 1 deletions(-)
- create mode 100644 arch/powerpc/boot/le-44x.S
+ arch/powerpc/Makefile      |   19 +++++++++++++++++--
+ arch/powerpc/boot/Makefile |   25 +++++++++++++++----------
+ 2 files changed, 32 insertions(+), 12 deletions(-)
 
-diff --git a/arch/powerpc/boot/4xx.h b/arch/powerpc/boot/4xx.h
-index 7dc5d45..05bc068 100644
---- a/arch/powerpc/boot/4xx.h
-+++ b/arch/powerpc/boot/4xx.h
-@@ -29,5 +29,7 @@ void ibm440gx_fixup_clocks(unsigned int sys_clk, unsigned int ser_clk,
- 			   unsigned int tmr_clk);
- void ibm440spe_fixup_clocks(unsigned int sys_clk, unsigned int ser_clk,
- 			    unsigned int tmr_clk);
-+void ibm44x_le_kentry(unsigned long r3, unsigned long r4, void *r5,
-+		      kernel_entry_t kentry);
+diff --git a/arch/powerpc/Makefile b/arch/powerpc/Makefile
+index 3eed685..ab69b0e 100644
+--- a/arch/powerpc/Makefile
++++ b/arch/powerpc/Makefile
+@@ -14,7 +14,7 @@
  
- #endif /* _POWERPC_BOOT_4XX_H_ */
+ HAS_BIARCH	:= $(call cc-option-yn, -m32)
+ 
+-# Set default 32 bits cross compilers for vdso and boot wrapper
++# Set default 32 bits cross compilers for vdso
+ CROSS32_COMPILE ?=
+ 
+ CROSS32CC		:= $(CROSS32_COMPILE)gcc
+@@ -27,7 +27,22 @@ CROSS32AR	:= GNUTARGET=elf32-powerpc $(AR)
+ endif
+ endif
+ 
+-export CROSS32CC CROSS32AR
++# Set default big endian 32 bits cross compiler for boot wrapper
++ifeq ($(CROSSBE_COMPILE),)
++CROSSBECC	:= $(CROSS32CC)
++CROSSBEAR	:= $(CROSS32AR)
++else
++CROSSBECC	:= $(CROSSBE_COMPILE)gcc
++CROSSBEAR	:= $(CROSSBE_COMPILE)ar
++endif
++
++ifeq ($(call try-run,\
++	$(CROSSBECC) -m32 -c -xc /dev/null -o "$$TMP",y,n),y)
++CROSSBECC	:= $(CROSSBECC) -m32
++CROSSBEAR	:= GNUTARGET=elf32-powerpc $(CROSSBEAR)
++endif
++
++export CROSS32CC CROSS32AR CROSSBECC CROSSBEAR
+ 
+ ifeq ($(CROSS_COMPILE),)
+ KBUILD_DEFCONFIG := $(shell uname -m)_defconfig
 diff --git a/arch/powerpc/boot/Makefile b/arch/powerpc/boot/Makefile
-index 79d7e69..c4b8616 100644
+index 39f10a4..79d7e69 100644
 --- a/arch/powerpc/boot/Makefile
 +++ b/arch/powerpc/boot/Makefile
-@@ -69,7 +69,7 @@ src-wlib := string.S crt0.S crtsavres.S stdio.c main.c \
- 		gunzip_util.c elf_util.c $(zlib) devtree.c oflib.c ofconsole.c \
- 		4xx.c ebony.c mv64x60.c mpsc.c mv64x60_i2c.c cuboot.c bamboo.c \
- 		cpm-serial.c stdlib.c mpc52xx-psc.c planetcore.c uartlite.c \
--		fsl-soc.c mpc8xx.c pq2.c ugecon.c
-+		fsl-soc.c mpc8xx.c pq2.c ugecon.c le-44x.S
- src-plat := of.c cuboot-52xx.c cuboot-824x.c cuboot-83xx.c cuboot-85xx.c holly.c \
- 		cuboot-ebony.c cuboot-hotfoot.c treeboot-ebony.c prpmc2800.c \
- 		ps3-head.S ps3-hvcall.S ps3.c treeboot-bamboo.c cuboot-8xx.c \
-diff --git a/arch/powerpc/boot/cuboot-taishan.c b/arch/powerpc/boot/cuboot-taishan.c
-index 9bc906a..7fdd614 100644
---- a/arch/powerpc/boot/cuboot-taishan.c
-+++ b/arch/powerpc/boot/cuboot-taishan.c
-@@ -52,6 +52,7 @@ void platform_init(unsigned long r3, unsigned long r4, unsigned long r5,
- 	CUBOOT_INIT();
+@@ -6,23 +6,24 @@
+ # Based on coffboot by Paul Mackerras
+ # Simplified for ppc64 by Todd Inglett
+ #
+-# NOTE:	this code is built for 32 bit in ELF32 format even though
+-#	it packages a 64 bit kernel.  We do this to simplify the
++# NOTE:	this code is built for 32 bit big endian in ELF32 format even
++#	though it packages a 64 bit kernel.  We do this to simplify the
+ #	bootloader and increase compatibility with OpenFirmware.
+ #
+-#	To this end we need to define BOOTCC, etc, as the tools
+-#	needed to build the 32 bit image.  That's normally the same
++#	To this end we need to define BOOTCC, etc, as the tools needed
++#	to build the 32 bit big endian image.  That's normally the same
+ #	compiler for the rest of the kernel, with the -m32 flag added.
+ #	To make it easier to setup a cross compiler,
+-#	CROSS32_COMPILE is setup as a prefix just like CROSS_COMPILE
+-#	in the toplevel makefile.
++#	CROSSBE_COMPILE is setup as a prefix just like CROSS_COMPILE
++#	in the toplevel makefile. If building a big endian kernel,
++#	CROSS32_COMPILE may be used in it's place.
  
- 	platform_ops.fixups = taishan_fixups;
-+	platform_ops.le_kentry = ibm44x_le_kentry;
- 	fdt_init(_dtb_start);
- 	serial_console_init();
- }
-diff --git a/arch/powerpc/boot/le-44x.S b/arch/powerpc/boot/le-44x.S
-new file mode 100644
-index 0000000..c8d2ee4
---- /dev/null
-+++ b/arch/powerpc/boot/le-44x.S
-@@ -0,0 +1,85 @@
-+/*
-+ * Copyright © 2010 Ian Munsie, IBM Corporation
-+ *
-+ * Assembly to begin executing a little endian kernel from a big endian boot
-+ * wrapper. Uses a trampoline in address space 1 to update the E bit in each
-+ * TLB entry of address space 0 before entering the kernel.
-+ */
-+
-+#include "ppc_asm.h"
-+
-+#define __MASK(X)		(1<<(X))
-+
-+#define SPRN_SRR0		0x01A		/* Save/Restore Register 0 */
-+#define SPRN_SRR1		0x01B		/* Save/Restore Register 1 */
-+
-+#define MSR_IS			__MASK(5)	/* Instruction Space */
-+#define MSR_DS			__MASK(4)	/* Data Space */
-+
-+#define	PPC44x_TLB_PAGEID	0
-+#define	PPC44x_TLB_XLAT		1
-+#define	PPC44x_TLB_ATTRIB	2
-+
-+/* Page identification fields */
-+#define	PPC44x_TLB_VALID	0x00000200      /* Valid flag */
-+#define PPC44x_TLB_TS		0x00000100	/* Translation address space */
-+
-+/* Storage attribute and access control fields */
-+#define PPC44x_TLB_E		0x00000080      /* Memory is little endian */
-+
-+	.text
-+	.global ibm44x_le_kentry
-+ibm44x_le_kentry:
-+	/* Find an invalid TLB entry we can use */
-+	li	r12,0				/* Start searching at TLB 0 */
-+1:	tlbre	r10,r12,PPC44x_TLB_PAGEID	/* Read TLB page ID word */
-+	andi.	r0,r10,PPC44x_TLB_VALID		/* Test if TLB is valid */
-+	beq	2f				/* If not valid we are free to use it */
-+	addi	r12,r12,1			/* If valid, increment */
-+	cmpwi	r12,64				/* Have we reached the end of the TLBs? */
-+	bne	1b				/* If not, continue searching */
-+	blr					/* If so, no invalid TLB entries found :( Shouldn't happen AFAIK */
-+
-+	/* Locate TLB entry containing trampoline */
-+2:	lis	r0,le_trampoline@h
-+	ori	r0,r0,le_trampoline@l
-+	tlbsx	r11,0,r0
-+
-+	/* Set free TLB to match our TLB, but with TS=1 */
-+	tlbre	r10,r11,PPC44x_TLB_XLAT
-+	tlbwe	r10,r12,PPC44x_TLB_XLAT
-+	tlbre	r10,r11,PPC44x_TLB_ATTRIB
-+	tlbwe	r10,r12,PPC44x_TLB_ATTRIB
-+	tlbre	r10,r11,PPC44x_TLB_PAGEID
-+	ori	r10,r10,PPC44x_TLB_TS
-+	tlbwe	r10,r12,PPC44x_TLB_PAGEID
-+
-+	/* Goto trampoline in address space 1 */
-+	mtspr	SPRN_SRR0,r0
-+	mfmsr	r0
-+	ori	r0,r0,MSR_IS | MSR_DS
-+	mtspr	SPRN_SRR1,r0
-+	rfi
-+
-+le_trampoline:
-+	/* Set E bit on all valid TLB entries with TS=0 */
-+	li	r12,0				/* Start searching at TLB 0 */
-+1:	tlbre	r10,r12,PPC44x_TLB_PAGEID	/* Read TLB page ID word */
-+	andi.	r0,r10,PPC44x_TLB_VALID		/* Test if TLB is valid */
-+	beq	2f				/* If not valid, continue */
-+	andi.	r0,r10,PPC44x_TLB_TS		/* If valid, test if TLB is TS=1 */
-+	bne	2f				/* If TS=1, continue */
-+	tlbre	r10,r12,PPC44x_TLB_ATTRIB	/* If TS=0, read TLB attributes */
-+	ori	r10,r10,PPC44x_TLB_E		/* Set little endian bit */
-+	tlbwe	r10,r12,PPC44x_TLB_ATTRIB	/* Write attributes back */
-+2:	addi	r12,r12,1			/* Increment */
-+	cmpwi	r12,64				/* Are we done? */
-+	bne	1b				/* If not, continue searching */
-+
-+	/* Goto kentry in address space 0 */
-+	mtspr	SPRN_SRR0,r6			/* arg 4 (kentry) */
-+	mfmsr	r11
-+	li	r12,MSR_IS | MSR_DS
-+	andc	r11,r11,r12
-+	mtspr	SPRN_SRR1,r11
-+	rfi
-diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index 074ff12..8ba962e 100644
---- a/arch/powerpc/platforms/Kconfig.cputype
-+++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -49,6 +49,7 @@ config 44x
- 	select 4xx_SOC
- 	select PPC_PCI_CHOICE
- 	select PHYS_64BIT
-+	select ARCH_SUPPORTS_LITTLE_ENDIAN
+ all: $(obj)/zImage
  
- config E200
- 	bool "Freescale e200"
+ BOOTCFLAGS    := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+ 		 -fno-strict-aliasing -Os -msoft-float -pipe \
+ 		 -fomit-frame-pointer -fno-builtin -fPIC -nostdinc \
+-		 -isystem $(shell $(CROSS32CC) -print-file-name=include) \
++		 -isystem $(shell $(CROSSBECC) -print-file-name=include) \
+ 		 -mbig-endian
+ BOOTAFLAGS	:= -D__ASSEMBLY__ $(BOOTCFLAGS) -traditional -nostdinc
+ 
+@@ -122,13 +123,13 @@ clean-files := $(zlib) $(zlibheader) $(zliblinuxheader) \
+ 		empty.c zImage.coff.lds zImage.ps3.lds zImage.lds
+ 
+ quiet_cmd_bootcc = BOOTCC  $@
+-      cmd_bootcc = $(CROSS32CC) -Wp,-MD,$(depfile) $(BOOTCFLAGS) -c -o $@ $<
++      cmd_bootcc = $(CROSSBECC) -Wp,-MD,$(depfile) $(BOOTCFLAGS) -c -o $@ $<
+ 
+ quiet_cmd_bootas = BOOTAS  $@
+-      cmd_bootas = $(CROSS32CC) -Wp,-MD,$(depfile) $(BOOTAFLAGS) -c -o $@ $<
++      cmd_bootas = $(CROSSBECC) -Wp,-MD,$(depfile) $(BOOTAFLAGS) -c -o $@ $<
+ 
+ quiet_cmd_bootar = BOOTAR  $@
+-      cmd_bootar = $(CROSS32AR) -cr $@.$$$$ $(filter-out FORCE,$^); mv $@.$$$$ $@
++      cmd_bootar = $(CROSSBEAR) -cr $@.$$$$ $(filter-out FORCE,$^); mv $@.$$$$ $@
+ 
+ $(obj-libfdt): $(obj)/%.o: $(srctree)/scripts/dtc/libfdt/%.c FORCE
+ 	$(call if_changed_dep,bootcc)
+@@ -157,6 +158,9 @@ wrapperbits	:= $(extra-y) $(addprefix $(obj)/,addnote hack-coff mktree) \
+ #############
+ # Bits for building various flavours of zImage
+ 
++ifneq ($(CROSSBE_COMPILE),)
++CROSSWRAP := -C "$(CROSSBE_COMPILE)"
++else
+ ifneq ($(CROSS32_COMPILE),)
+ CROSSWRAP := -C "$(CROSS32_COMPILE)"
+ else
+@@ -164,6 +168,7 @@ ifneq ($(CROSS_COMPILE),)
+ CROSSWRAP := -C "$(CROSS_COMPILE)"
+ endif
+ endif
++endif
+ 
+ # args (to if_changed): 1 = (this rule), 2 = platform, 3 = dts 4=dtb 5=initrd
+ quiet_cmd_wrap	= WRAP    $@
 -- 
 1.7.1
 
