@@ -1,135 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752221Ab0JAQKh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:10:37 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:40500 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751446Ab0JAQKg convert rfc822-to-8bit (ORCPT
+	id S1752415Ab0JAQN4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:13:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:61671 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab0JAQNy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:10:36 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: David Cohen <david.cohen@nokia.com>
-CC: "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
-        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Fri, 1 Oct 2010 11:10:30 -0500
-Subject: RE: [PATCH 2/4] iovmm: fix roundup for next area and end check for
- the last area
-Thread-Topic: [PATCH 2/4] iovmm: fix roundup for next area and end check for
- the last area
-Thread-Index: ActhWM4ENy8UaD59RG+F/GZl37RxyAAKFnkg
-Message-ID: <496565EC904933469F292DDA3F1663E602F46544F9@dlee06.ent.ti.com>
-References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
- <1285902536-7043-2-git-send-email-x0095840@ti.com>
- <1285902536-7043-3-git-send-email-x0095840@ti.com>
- <20101001105711.GA11617@esdhcp036161.research.nokia.com>
-In-Reply-To: <20101001105711.GA11617@esdhcp036161.research.nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Oct 2010 12:13:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=rdCT4T1z9bdtyYMoRKVys/Gs6ziKIUmaoFgBLtci8yt+SyFGKtWpE/kWEg+pxMIjc8
+         uHDvo6aegMyW0Z/lx8xAHJJcl9w0QYCWLleFZUp086bZpZVhaTjy83IpFngg5DtwKlxb
+         JJmp0mjGsHhXfiN3nPLCRVM0PYzV3OlBmQu/0=
+Message-ID: <4CA608BE.4080908@gmail.com>
+Date: Fri, 01 Oct 2010 09:13:50 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
 MIME-Version: 1.0
+To: Finn Thain <fthain@telegraphics.com.au>
+CC: trivial@kernel.org, linux-kernel@vger.kernel.org, jkosina@suse.cz,
+        "Maciej W. Rozycki" <macro@linux-mips.org>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 1/2 v4]Update broken web addresses in arch directory.
+References: <1285854709-7488-1-git-send-email-justinmattock@gmail.com> <alpine.OSX.2.00.1010012003540.382@localhost>
+In-Reply-To: <alpine.OSX.2.00.1010012003540.382@localhost>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On 10/01/2010 05:47 AM, Finn Thain wrote:
 
-> -----Original Message-----
-> From: David Cohen [mailto:david.cohen@nokia.com] 
-> Sent: Friday, October 01, 2010 5:57 AM
-> To: Guzman Lugo, Fernando
-> Cc: Doyu Hiroshi (Nokia-MS/Espoo); Contreras Felipe 
-> (Nokia-MS/Helsinki); Palande Ameya (Nokia-MS/Helsinki); 
-> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
-> linux-omap@vger.kernel.org
-> Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and 
-> end check for the last area
-> 
-> Hi,
-> 
-> On Fri, Oct 01, 2010 at 05:08:53AM +0200, ext Fernando Guzman 
-> Lugo wrote:
-> > As da_end does not belongs to the area the roundup should 
-> be done to 
-> > da_end and not to da_end + 1.
-> > Also the end check for the last area should be ULONG_MAX - 
-> start + 1 
-> > >= bytes.
-> > 
-> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> > ---
-> >  arch/arm/plat-omap/iovmm.c |    6 +++---
-> >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/arch/arm/plat-omap/iovmm.c 
-> b/arch/arm/plat-omap/iovmm.c 
-> > index 24ca9c4..fc6b109 100644
-> > --- a/arch/arm/plat-omap/iovmm.c
-> > +++ b/arch/arm/plat-omap/iovmm.c
-> > @@ -289,19 +289,19 @@ static struct iovm_struct 
-> *alloc_iovm_area(struct iommu *obj, u32 da,
-> >  	prev_end = 0;
-> >  	list_for_each_entry(tmp, &obj->mmap, list) {
-> >  
-> > -		if (prev_end >= start)
-> > +		if (prev_end > start)
-> >  			break;
-> >  
-> >  		if (start + bytes <= tmp->da_start)
-> >  			goto found;
-> >  
-> >  		if (flags & IOVMF_DA_ANON)
-> > -			start = roundup(tmp->da_end + 1, alignement);
-> > +			start = roundup(tmp->da_end, alignement);
-> 
-> There's a lack of comment here, but the purpose of 
-> tmp->da_end + 1 is to create a gap between iovm areas to 
-> force to trigger iommu faults when some access exceeds a 
-> valid area. Without this gap, such situation may produce data 
-> corruption which is much more difficult to track.
 
-That only works when you are accessing sequencially beyond the
-End of the vm_area. However if you are accessing a random address
-Which is in the mmu tables you still can corrupt memory which does
-Not belong to you. That looks not very effective then why waste
-Memory?
+man what a pain.. I want this fuc*ing sh*t out of here..(tired of web 
+addresses)oh-well the learning process of development.. Ill resend with 
+the fixes.
 
-Maybe other mechanism should be implemente like in the process
-Switching when if the process has DMM virtual memory area and if
-So enablig only that area (all other process areas will be
-Dissabled and it would get a mmufault in case of access). However
-That increase the time of switching between process.
+>
+> On Thu, 30 Sep 2010, Justin P. Mattock wrote:
+>
+>> --- a/arch/arm/Kconfig
+>> +++ b/arch/arm/Kconfig
+>> @@ -647,7 +647,7 @@ config ARCH_S3C2410
+>>   	select HAVE_S3C2410_I2C
+>>   	help
+>>   	  Samsung S3C2410X CPU based systems, such as the Simtec Electronics
+>> -	  BAST (<http://www.simtec.co.uk/products/EB110ITX/>), the IPAQ 1940 or
+>> +	  BAST (<http://www.simtec.co.uk/products/EB110ATX/>), the IPAQ 1940 or
+>
+> This is not the same board, and not the same CPU.
+>
+> The old URL is not archived anywhere that I can see. I guess you could
+> change this paragraph to read something like, "...such as the Simtec
+> Electronics BAST (EB110ITX), the IPAQ 1940 or..." if you want to.
+>
+>
+>>   	the Samsung SMDK2410 development board (and derivatives).
+>>
+>>   	  Note, the S3C2416 and the S3C2450 are so close that they even share
+>
+>> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
+>> index 939bccd..c0bcfb8 100644
+>> --- a/arch/arm/mach-at91/Kconfig
+>> +++ b/arch/arm/mach-at91/Kconfig
+>> @@ -105,7 +105,7 @@ config MACH_ONEARM
+>>   	bool "Ajeco 1ARM Single Board Computer"
+>>   	help
+>>   	  Select this if you are using Ajeco's 1ARM Single Board Computer.
+>> -	<http://www.ajeco.fi/products.htm>
+>> +	<http://www.ajeco.fi/index.php?language=fin>
+>
+> Please use http://www.ajeco.fi/
+>
+>
+>>
+>>   config ARCH_AT91RM9200DK
+>>   	bool "Atmel AT91RM9200-DK Development board"
+>
+>> diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
+>> index a0a2928..c1a68af 100644
+>> --- a/arch/arm/mm/Kconfig
+>> +++ b/arch/arm/mm/Kconfig
+>> @@ -314,7 +314,7 @@ config CPU_SA110
+>>   	  The Intel StrongARM(R) SA-110 is a 32-bit microprocessor and
+>>   	  is available at five speeds ranging from 100 MHz to 233 MHz.
+>>   	  More information is available at
+>> -	<http://developer.intel.com/design/strong/sa110.htm>.
+>> +	<http://www.renan.org/ARM/doc/sa110.pdf>.
+>
+> This is in the web archive. Also, the original link is not the datasheet.
+>
+>
+>>
+>>   	Say Y if you want support for the SA-110 processor.
+>>   	  Otherwise, say N.
+>> diff --git a/arch/arm/mm/proc-xscale.S b/arch/arm/mm/proc-xscale.S
+>> index 1407597..25d03fa 100644
+>> --- a/arch/arm/mm/proc-xscale.S
+>> +++ b/arch/arm/mm/proc-xscale.S
+>> @@ -418,7 +418,7 @@ ENTRY(xscale_cache_fns)
+>>    *
+>>    * See erratum #25 of "Intel 80200 Processor Specification Update",
+>>    * revision January 22, 2003, available at:
+>> - *     http://www.intel.com/design/iio/specupdt/273415.htm
+>> + *     http://www.intel.com/design/support/faq/io_processors/iq80310_chipset.htm
+>
+> There were no errata at your URL that I could see. Also the old URL with
+> errata are in the web archive.
+>
+>
+>>    */
+>>   ENTRY(xscale_80200_A0_A1_cache_fns)
+>>   	.long	xscale_flush_kern_cache_all
+>
+>>    * Copyright (c) 2008 Simtec Electronics
+>> - *	http://armlinux.simnte.co.uk/
+>> + *	http://armlinux.simtec.co.uk/	
+>>    *	Ben Dooks<ben@simtec.co.uk>
+>>    *
+>>    * S3C ADC driver information
+>> diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
+>> index f515727..787dcba 100644
+>> --- a/arch/avr32/Kconfig
+>> +++ b/arch/avr32/Kconfig
+>> @@ -145,7 +145,7 @@ config BOARD_HAMMERHEAD
+>>   	  will cover even the most exceptional need of memory bandwidth. Together with the onboard
+>>   	  video decoder the board is ready for video processing.
+>>
+>> -	  For more information see: http://www.miromico.com/hammerhead
+>> +	  For more information see: http://www.hammerhead.ch/index.php/getting-started.html
+>
+> I think this probably is the same page:
+>
+> http://www.miromico.ch/index.php/hammerhead.html
+>
+>
+>>
+>>   config BOARD_FAVR_32
+>>   	bool "Favr-32 LCD-board"
+>
+>
+>> diff --git a/arch/h8300/Kconfig.cpu b/arch/h8300/Kconfig.cpu
+>> index 6e2ecff..8de966a 100644
+>> --- a/arch/h8300/Kconfig.cpu
+>> +++ b/arch/h8300/Kconfig.cpu
+>> @@ -49,15 +49,15 @@ config H8S_EDOSK2674
+>>   	help
+>>   	  Renesas EDOSK-2674 Evaluation Board Support
+>>   	  More Information.
+>> -	<http://www.azpower.com/H8-uClinux/index.html>
+>
+> This page is in the web archive archive, and there isn't really any
+> substitute that I can see, so keep this link.
+>
+>
+>> - 	<http://www.eu.renesas.com/tools/edk/support/edosk2674.html>
+>> +	<http://h8-uclinux.sourceforge.net/>
+>> + 	<http://www.renesas.eu/products/tools/introductory_evaluation_tools/evaluation_development_os_kits/edosk2674r/edosk2674r_software_tools_root.jsp>
+>>
+>
+>> diff --git a/arch/h8300/README b/arch/h8300/README
+>> index 2fd6f6d..7dac451 100644
+>> --- a/arch/h8300/README
+>> +++ b/arch/h8300/README
+>> @@ -14,11 +14,11 @@ H8/300H and H8S
+>
+>>   4.EDOSK2674
+>> -  see http://www.eu.renesas.com/products/mpumcu/tool/edk/support/edosk2674.html
+>> -      http://www.azpower.com/H8-uClinux/
+>> +  see http://www.uclinux.org/pub/uClinux/ports/h8/HITACHI-EDOSK2674-HOWTO
+>> +      http://h8-uclinux.sourceforge.net/
+>
+> Same here.
+>
+> Also, the renesas URL that you used above wouldn't hurt.
+>
+>
+>>
+>>   * Toolchain Version
+>>   gcc-3.1 or higher and patch
+>
+>> diff --git a/arch/m68k/mac/macboing.c b/arch/m68k/mac/macboing.c
+>> index 8f06408..234d9ee 100644
+>> --- a/arch/m68k/mac/macboing.c
+>> +++ b/arch/m68k/mac/macboing.c
+>> @@ -114,7 +114,8 @@ static void mac_init_asc( void )
+>>   			 *   16-bit I/O functionality.  The PowerBook 500 series computers
+>>   			 *   support 16-bit stereo output, but only mono input."
+>>   			 *
+>> -			 *   http://til.info.apple.com/techinfo.nsf/artnum/n16405
+>> +			 *   "Technical Information Library (TIL) article number 16405".
+>
+>
+> No need for the quote marks.
+>
+>
+>> +			 *   http://support.apple.com/kb/TA32601
+>>   			 *
+>>   			 * --David Kilzer
+>>   			 */
+>
+>
+> Thanks.
+>
+> Finn
+>
 
-Regards,
-Fernando.
-
-> 
-> Br,
-> 
-> David
-> 
-> >  
-> >  		prev_end = tmp->da_end;
-> >  	}
-> >  
-> > -	if ((start > prev_end) && (ULONG_MAX - start >= bytes))
-> > +	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
-> >  		goto found;
-> >  
-> >  	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
-> > --
-> > 1.6.3.3
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe 
-> > linux-kernel" in the body of a message to majordomo@vger.kernel.org 
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
