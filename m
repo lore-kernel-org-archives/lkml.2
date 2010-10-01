@@ -1,119 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756226Ab0JAU52 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 16:57:28 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34338 "EHLO gate.crashing.org"
+	id S1756290Ab0JAU5h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 16:57:37 -0400
+Received: from kroah.org ([198.145.64.141]:44086 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752842Ab0JAU50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 16:57:26 -0400
-Subject: Re: Odd NFS related SIGBUS (& possible fix)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: Nick Piggin <npiggin@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <1285958104.30373.41.camel@heimdal.trondhjem.org>
-References: <1285734825.14081.87.camel@pasglop>
-	 <1285956768.30373.39.camel@heimdal.trondhjem.org>
-	 <1285958104.30373.41.camel@heimdal.trondhjem.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Oct 2010 06:57:15 +1000
-Message-ID: <1285966635.2463.149.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754703Ab0JAU5g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 16:57:36 -0400
+Date: Fri, 1 Oct 2010 13:57:09 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        torvalds@linux-foundation.org, stable@kernel.org
+Cc: lwn@lwn.net
+Subject: Linux 2.6.32.24
+Message-ID: <20101001205709.GA11271@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-01 at 14:35 -0400, Trond Myklebust wrote:
-> On Fri, 2010-10-01 at 14:12 -0400, Trond Myklebust wrote:
-> > However, it looks to me as if the right thing to do when the
-> > page->mapping has changed would be to do the same thing as
-> > block_page_mkwrite(), and just return VM_FAULT_NOPAGE so that the VM can
-> > retry the fault.
-> > IMO: We should only SIGBUS if the calls to nfs_flush_incompatible()
-> > and/or nfs_updatepage() fail.
-> > 
-> > Cheers
-> >   Trond
-> 
-> IOW: Something like the following patch.
+I'm announcing the release of the 2.6.32.24 kernel.
 
-Thanks, I'll try it but it will have to wait about 10 days as I'm off on
-vacation.
+This is only needed if you run Xen, there was a typo that caused
+problems.  My fault, sorry.
 
-I'll see if somebody here can do some tests while I'm away
+The updated 2.6.32.y git tree can be found at:
+        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.32.y.git
+and can be browsed at the normal kernel.org git web browser:
+        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.32.y.git;a=summary
 
-Cheers,
-Ben.
+thanks,
 
-> Cheers
->   Trond
-> 
-> ---------------------------------------------------------------------------
-> NFS: Don't SIGBUS if nfs_vm_page_mkwrite races with a cache invalidation
-> 
-> From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> 
-> In the case where we lock the page, and then find out that the page has
-> been thrown out of the page cache, we should just return VM_FAULT_NOPAGE.
-> This is what block_page_mkwrite() does in these situations.
-> 
-> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> ---
-> 
->  fs/nfs/file.c |   17 ++++++++---------
->  1 files changed, 8 insertions(+), 9 deletions(-)
-> 
-> 
-> diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-> index 05bf3c0..6d95e24 100644
-> --- a/fs/nfs/file.c
-> +++ b/fs/nfs/file.c
-> @@ -551,7 +551,7 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->  	struct file *filp = vma->vm_file;
->  	struct dentry *dentry = filp->f_path.dentry;
->  	unsigned pagelen;
-> -	int ret = -EINVAL;
-> +	int ret = VM_FAULT_NOPAGE;
->  	struct address_space *mapping;
->  
->  	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
-> @@ -567,21 +567,20 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
->  	if (mapping != dentry->d_inode->i_mapping)
->  		goto out_unlock;
->  
-> -	ret = 0;
->  	pagelen = nfs_page_length(page);
->  	if (pagelen == 0)
->  		goto out_unlock;
->  
-> -	ret = nfs_flush_incompatible(filp, page);
-> -	if (ret != 0)
-> -		goto out_unlock;
-> +	ret = VM_FAULT_LOCKED;
-> +	if (nfs_flush_incompatible(filp, page) == 0 &&
-> +	    nfs_updatepage(filp, page, 0, pagelen) == 0)
-> +		goto out;
->  
-> -	ret = nfs_updatepage(filp, page, 0, pagelen);
-> +	ret = VM_FAULT_SIGBUS;
->  out_unlock:
-> -	if (!ret)
-> -		return VM_FAULT_LOCKED;
->  	unlock_page(page);
-> -	return VM_FAULT_SIGBUS;
-> +out:
-> +	return ret;
->  }
->  
->  static const struct vm_operations_struct nfs_file_vm_ops = {
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+greg k-h
 
+------------
+
+ Makefile             |    2 +-
+ drivers/xen/events.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+Greg Kroah-Hartman (1):
+      Linux 2.6.32.24
+
+James Dingwall (1):
+      Xen: fix typo in previous patch
 
