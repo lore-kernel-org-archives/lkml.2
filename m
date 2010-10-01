@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756002Ab0JAHHG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 03:07:06 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45900 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755686Ab0JAHGf (ORCPT
+	id S1755732Ab0JAHGe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 03:06:34 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:54805 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755180Ab0JAHG3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 03:06:35 -0400
+	Fri, 1 Oct 2010 03:06:29 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         benh@kernel.crashing.org
 Cc: paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Michal Marek <mmarek@suse.cz>, Tim Abbott <tabbott@ksplice.com>,
-        Sean MacLennan <smaclennan@pikatech.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH 18/18] powerpc: Fix jiffies variable on little endian
-Date: Fri,  1 Oct 2010 17:06:11 +1000
-Message-Id: <1285916771-18033-19-git-send-email-imunsie@au1.ibm.com>
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>,
+        Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Torez Smith <lnxtorez@linux.vnet.ibm.com>
+Subject: [PATCH 12/18] powerpc 44x: Handle TLB miss regardless of endianness
+Date: Fri,  1 Oct 2010 17:06:05 +1000
+Message-Id: <1285916771-18033-13-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
 References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
@@ -27,32 +26,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-The vmlinux linker script sets the jiffies variable to the low word of
-the jiffies_64 variable. This patch corrects which word is used on
-little endian.
+On the 44x we use 64bit page table entries, but the CPU is only 32bit.
+When a PTE is loaded during a TLB miss each half is loaded into
+different registers, so we need to reverse the offsets if the CPU is
+running in little endian mode.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- arch/powerpc/kernel/vmlinux.lds.S |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ arch/powerpc/kernel/head_44x.S |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/arch/powerpc/kernel/vmlinux.lds.S b/arch/powerpc/kernel/vmlinux.lds.S
-index 8a0deef..7a9010f 100644
---- a/arch/powerpc/kernel/vmlinux.lds.S
-+++ b/arch/powerpc/kernel/vmlinux.lds.S
-@@ -34,8 +34,12 @@ OUTPUT_ARCH(powerpc:common64)
- jiffies = jiffies_64;
- #else
- OUTPUT_ARCH(powerpc:common)
-+#ifdef CONFIG_CPU_LITTLE_ENDIAN
-+jiffies = jiffies_64;
-+#else
- jiffies = jiffies_64 + 4;
- #endif
-+#endif
- SECTIONS
- {
- 	. = 0;
+diff --git a/arch/powerpc/kernel/head_44x.S b/arch/powerpc/kernel/head_44x.S
+index 6198733..d4c144f 100644
+--- a/arch/powerpc/kernel/head_44x.S
++++ b/arch/powerpc/kernel/head_44x.S
+@@ -258,8 +258,8 @@ interrupt_base:
+ 
+ 	/* Compute pte address */
+ 	rlwimi  r12, r10, PPC44x_PTE_ADD_SHIFT, PPC44x_PTE_ADD_MASK_BIT, 28
+-	lwz	r11, 0(r12)		/* Get high word of pte entry */
+-	lwz	r12, 4(r12)		/* Get low word of pte entry */
++	lwz	r11, p64h(r12)		/* Get high word of pte entry */
++	lwz	r12, p64l(r12)		/* Get low word of pte entry */
+ 
+ 	lis	r10,tlb_44x_index@ha
+ 
+@@ -354,8 +354,8 @@ tlb_44x_patch_hwater_D:
+ 
+ 	/* Compute pte address */
+ 	rlwimi	r12, r10, PPC44x_PTE_ADD_SHIFT, PPC44x_PTE_ADD_MASK_BIT, 28
+-	lwz	r11, 0(r12)		/* Get high word of pte entry */
+-	lwz	r12, 4(r12)		/* Get low word of pte entry */
++	lwz	r11, p64h(r12)		/* Get high word of pte entry */
++	lwz	r12, p64l(r12)		/* Get low word of pte entry */
+ 
+ 	lis	r10,tlb_44x_index@ha
+ 
 -- 
 1.7.1
 
