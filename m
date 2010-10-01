@@ -1,64 +1,1340 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab0JALgl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 07:36:41 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44388 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab0JALgk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 07:36:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Yh/Uzo5+vQdgXoW/c5uqUeI8kuLqgSB0iJjhlYpShGM+9nM6tiX6g1maNBWlMIgoRj
-         XIklI6fDqvSfyT+u49Ke5u2P9J16qN1U8yT011vhiyev+e8Ajl27MPtoO/2BBI+baYei
-         dk2DuM1LcNtDTmiK8SeJlP7+KLuAyw/uEogmo=
-MIME-Version: 1.0
-In-Reply-To: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-Date: Fri, 1 Oct 2010 07:36:35 -0400
-Message-ID: <AANLkTikHcoccu-WGtSOSdkwU6Tw_An_VFkUcEoY==8=c@mail.gmail.com>
-Subject: Re: Introduce support for little endian PowerPC
-From: Josh Boyer <jwboyer@gmail.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, paulus@samba.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756609Ab0JALkB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 07:40:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55875 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756541Ab0JALj7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 07:39:59 -0400
+From: Nishanth Menon <nm@ti.com>
+To: linux-pm <linux-pm@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>
+Subject: [PATCH v5] power: introduce library for device-specific OPPs
+Date: Fri,  1 Oct 2010 06:39:34 -0500
+Message-Id: <1285933174-24053-1-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 1, 2010 at 3:05 AM, Ian Munsie <imunsie@au1.ibm.com> wrote:
-> This patch set in combination with a patched GCC, binutils, uClibc and
-> buildroot has allowed for a full proof of concept little endian environment on
-> a 440 Taishan board, which was able to successfully run busybox, OpenSSH and a
-> handful of other userspace programs without problems.
+SoCs have a standard set of tuples consisting of frequency and
+voltage pairs that the device will support per voltage domain. These
+are called Operating Performance Points or OPPs. The actual
+definitions of OPP varies over silicon versions. For a specific domain,
+we can have a set of {frequency, voltage} pairs. As the kernel boots
+and more information is available, a default set of these are activated
+based on the precise nature of device. Further on operation, based on
+conditions prevailing in the system (such as temperature), some OPP
+availability may be temporarily controlled by the SoC frameworks.
 
-Aside from my general "uh, why?" stance, I'm very very hesitant to
-integrate anything in the kernel that doesn'.t have released patches
-on the toolchain side.
+To implement an OPP, some sort of power management support is necessary
+hence this library depends on CONFIG_PM.
 
-Also, which uClibc?  The old and crusty uClibc that uses the horrible
-linuxthreads, or the somewhat less crusty that just switched to NPTL
-(which hasn't been verified on normal PowerPC that I recall).  Why not
-use glibc...
+Contributions include:
+Sanjeev Premi for the initial concept:
+	http://patchwork.kernel.org/patch/50998/
+Kevin Hilman for converting original design to device-based
+Kevin Hilman and Paul Walmsey for cleaning up many of the function
+abstractions, improvements and data structure handling
+Romit Dasgupta for using enums instead of opp pointers
+Thara Gopinath, Eduardo Valentin and Vishwanath BS for fixes and
+cleanups.
+Linus Walleij for recommending this layer be made generic for usage
+in other architectures beyond OMAP and ARM.
+Mark Brown, Andrew Morton, Rafael J Wysocki, Paul E McKenney for valuable
+improvements.
 
-> This is not yet complete support for little endian PowerPC, some outstanding
-> issues that I am aware of are:
->  * We only support 32bit PowerPC for now (and indeed, only 44x)
->  * The vdso has not been fixed to be endian agnostic - any userspace program
->   accessing it will get an unexpected result.
->  * I have not touched PCI at all
->  * Remaining device tree accesses still need to be examined to ensure they are
->   correctly handling the endianess of the device tree.
->  * Any other driver that uses the device tree is likely be broken for the same reason.
->  * I've included a patch for the alignment handler, however it is as yet
->   completely untested due to a property of the hardware I've been using for
->   testing.
+Discussions and comments from:
+http://marc.info/?l=linux-omap&m=126033945313269&w=2
+http://marc.info/?l=linux-omap&m=125482970102327&w=2
+http://marc.info/?t=125809247500002&r=1&w=2
+http://marc.info/?l=linux-omap&m=126025973426007&w=2
+http://marc.info/?t=128152609200064&r=1&w=2
+http://marc.info/?t=128468723000002&r=1&w=2
+incorporated.
 
-I'm not meeting to detract here, but the Kconfig should be dependent
-on && BROKEN until the above is fixed.
+Cc: Benoit Cousson <b-cousson@ti.com>
+Cc: Madhusudhan Chikkature Rajashekar <madhu.cr@ti.com>
+Cc: Phil Carmody <ext-phil.2.carmody@nokia.com>
+Cc: Roberto Granados Dorado <x0095451@ti.com>
+Cc: Santosh Shilimkar <santosh.shilimkar@ti.com>
+Cc: Sergio Alberto Aguirre Rodriguez <saaguirre@ti.com>
+Cc: Tero Kristo <Tero.Kristo@nokia.com>
+Cc: Eduardo Valentin <eduardo.valentin@nokia.com>
+Cc: Paul Walmsley <paul@pwsan.com>
+Cc: Sanjeev Premi <premi@ti.com>
+Cc: Thara Gopinath <thara@ti.com>
+Cc: Vishwanath BS <vishwanath.bs@ti.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-josh
+Signed-off-by: Nishanth Menon <nm@ti.com>
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+---
+V5:
+  opp pointers were being passed to callers outside rcu locks, this
+   causes the pointers to be potentially invalid between calls if
+   opp_enable/disable calls take place.
+   The solution for this cannot be reference counters either, as
+   opp pointer without control of opp library and rcu locks are
+   completely untrustworthy. The better approach is to enforce
+   restrictions on callers of query and retrieval functions to wrap
+   the relevant parts under rcu locks. This allows for tremendous
+   flexibility in the way opp libraries can be used as the users
+   can optimize their implementation based on the requirements.
+   NOTE: find_device_opp is implicitly wrapped as a result.
+	(ref, v4 comments)
+  One more side-effect has been that the opp_enable and disable
+   functions changed their prototypes to make it a little more easier
+   for the users to use them without having to get the pointers before
+   hand, as well as do the functionality that is being provided currently
+   as well.
+  opp_init_cpufreq_table now returns int and result of operation for
+   callers to adequately handle their error conditions.
+  pr_fmt is being used instead of duplicating "%s" .. __func__ with
+   every pr_xxx call.
+  Documentation update to reflect these.
+
+ Sample usage:
+  http://pastebin.mozilla.org/802375: cleanups for omap pm layer
+  http://pastebin.mozilla.org/802374: omap opp initialization
+
+V4:
+ http://marc.info/?t=128533285000002&r=1&w=2
+  Cc list trimmed to just the MLs.
+  RCU implementation - thanks for the pointers Rafael
+  re-tested on OMAP3630 with lock debugging enabled including cpufreq,
+  idle paths and "exception cases - enable/disable".
+  available_opp_count removed as it complicated the updates altogether
+   + the usage latencies are not too high given small lists.
+  In removed list_reverse usage as rcu has no list reverse equivalents
+   + searching either direction has no real difference when the list
+   is ordered.
+  change in protos for get_{voltage,frequency} - const removed from
+  parameter as rcu_dereference causes build warnings
+  introduced opp_set_availability helper to wrap common code between
+   opp_{enable,disable} - leaving these as is as they are more readable
+   from usage perspective + these are not meant to be used in hot paths
+   anyways.
+  Header guard __ASM_OPP_H replaced with __LINUX_OPP_H__ for opp.h
+
+V3:
+ https://patchwork.kernel.org/patch/200382/
+  Bunch of documentation update based on feedback
+  removed opp_def - opp_add enables the opp by default
+  lock usage optimization
+
+Sample usage:
+ http://pastebin.mozilla.org/794786 -> cleanups for OMAP power
+ http://pastebin.mozilla.org/794787 -> Sample OPP initialization for OMAP
+
+V2:
+ https://patchwork.kernel.org/patch/189532/
+  Incorporated review comments from v1. major changes being:
+  $subject change to reflect this is for power.
+  Documentation revamp and including it in the patch :)
+  OPP_DEF removed - lets introduce this if needed or leave it to
+  SOC frameworks to organize code as needed.
+  Rename of enable to available to better reflect the intent
+  few fixes and typos
+  Introduced mutex based locking for controlling access to list
+  modification (note: query functions are still unsafe- rationale
+		 in the patch below)
+  A new home for opp.c in drivers/base/power (moved from lib/)
+  A few optimization in function flow and additional error checks
+  added to exposed functions
+  offline aligned with Kevin for cleaning up the copyrights
+
+V1:
+ http://marc.info/?t=128468723000002&r=1&w=2
+ Documentation/power/00-INDEX |    2 +
+ Documentation/power/opp.txt  |  372 +++++++++++++++++++++++++
+ drivers/base/power/Makefile  |    1 +
+ drivers/base/power/opp.c     |  630 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/opp.h          |  105 +++++++
+ kernel/power/Kconfig         |   14 +
+ 6 files changed, 1124 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/power/opp.txt
+ create mode 100644 drivers/base/power/opp.c
+ create mode 100644 include/linux/opp.h
+
+diff --git a/Documentation/power/00-INDEX b/Documentation/power/00-INDEX
+index fb742c2..45e9d4a 100644
+--- a/Documentation/power/00-INDEX
++++ b/Documentation/power/00-INDEX
+@@ -14,6 +14,8 @@ interface.txt
+ 	- Power management user interface in /sys/power
+ notifiers.txt
+ 	- Registering suspend notifiers in device drivers
++opp.txt
++	- Operating Performance Point library
+ pci.txt
+ 	- How the PCI Subsystem Does Power Management
+ pm_qos_interface.txt
+diff --git a/Documentation/power/opp.txt b/Documentation/power/opp.txt
+new file mode 100644
+index 0000000..adf1e63
+--- /dev/null
++++ b/Documentation/power/opp.txt
+@@ -0,0 +1,372 @@
++*=============*
++* OPP Library *
++*=============*
++
++Contents
++--------
++1. Introduction
++2. Initial OPP List Registration
++3. OPP Search Functions
++4. OPP Availability Control Functions
++5. OPP Data Retrieval Functions
++6. Cpufreq Table Generation
++7. Data Structures
++
++1. Introduction
++===============
++Complex SoCs of today consists of a multiple sub-modules working in conjunction.
++In an operational system executing varied use cases, not all modules in the SoC
++need to function at their highest performing frequency all the time. To
++facilitate this, sub-modules in a SoC are grouped into domains, allowing some
++domains to run at lower voltage and frequency while other domains are loaded
++more. The set of discrete tuples consisting of frequency and voltage pairs that
++the device will support per domain are called Operating Performance Points or
++OPPs.
++
++OPP library provides a set of helper functions to organize and query the OPP
++information. The library is located in drivers/base/power/opp.c and the header
++is located in include/linux/opp.h. OPP library can be enabled by enabling
++CONFIG_PM_OPP from power management menuconfig menu. OPP library depends on
++CONFIG_PM as certain SoCs such as Texas Instrument's OMAP framework allows to
++optionally boot at a certain OPP without needing cpufreq.
++
++Typical usage of the OPP library is as follows:
++(users)		-> registers a set of default OPPs		-> (library)
++SoC framework	-> modifies on required cases certain OPPs	-> OPP layer
++		-> queries to search/retrieve information	->
++
++OPP layer expects each domain to be represented by a unique device pointer. SoC
++framework registers a set of initial OPPs per device with the OPP layer. This
++list is expected to be an optimally small number typically around 5 per device.
++This initial list contains a set of OPPs that the framework expects to be safely
++enabled by default in the system.
++
++Note on OPP Availability:
++------------------------
++As the system proceeds to operate, SoC framework may choose to make certain
++OPPs available or not available on each device based on various external
++factors. Example usage: Thermal management or other exceptional situations where
++SoC framework might choose to disable a higher frequency OPP to safely continue
++operations until that OPP could be re-enabled if possible.
++
++OPP library facilitates this concept in it's implementation. The following
++operational functions operate only on available opps:
++opp_find_freq_{ceil, floor}, opp_get_voltage, opp_get_freq, opp_get_opp_count
++and opp_init_cpufreq_table
++
++opp_find_freq_exact is meant to be used to find the opp pointer which can then
++be used for opp_enable/disable functions to make an opp available as required.
++
++WARNING: Users of OPP library should refresh their availability count using
++get_opp_count if opp_enable/disable functions are invoked for a device, the
++exact mechanism to trigger these or the notification mechanism to other
++dependent subsystems such as cpufreq are left to the discretion of the SoC
++specific framework which uses the OPP library. Similar care needs to be taken
++care to refresh the cpufreq table in cases of these operations.
++
++WARNING on OPP List locking mechanism:
++-------------------------------------------------
++OPP library uses RCU for exclusivity. RCU allows the query functions to operate
++in multiple contexts and this synchronization mechanism is optimal for a read
++intensive operations on data structure as the OPP library caters to.
++
++To ensure that the data retrieved are sane, the users such as SoC framework
++should ensure that the section of code operating on OPP queries are locked
++using RCU read locks. The opp_find_freq_{exact,ceil,floor},
++opp_get_{voltage, freq, opp_count} fall into this category.
++
++opp_{add,enable,disable} are updaters which use mutex and implement it's own
++RCU locking mechanisms. These functions should *NOT* be called under RCU locks
++and other contexts that prevent blocking functions in RCU or mutex operations
++from working.
++
++opp_init_cpufreq_table implements it's own RCU read locks and has the only
++preference of not being called under a recursive RCU read lock.
++
++2. Initial OPP List Registration
++================================
++The SoC implementation calls opp_add function iteratively to add OPPs per
++device. It is expected that the SoC framework will register the OPP entries
++optimally- typical numbers range to be less than 5. The list generated by
++registering the OPPs is maintained by OPP library throughout the device
++operation. The SoC framework can subsequently control the availability of the
++OPPs dynamically using the opp_enable / disable functions.
++
++opp_add - Add a new OPP for a specific domain represented by the device pointer.
++	The OPP is defined using the frequency and voltage. Once added, the OPP
++	is assumed to be available and control of it's availability can be done
++	with the opp_enable/disable functions. OPP library internally stores
++	and manages this information in the opp struct. This function may be
++	used by SoC framework to define a optimal list as per the demands of
++	SoC usage environment.
++
++	WARNING: Do not use these functions in interrupt context.
++
++	Example:
++	 soc_pm_init()
++	 {
++		/* Do things */
++		r = opp_add(mpu_dev, 1000000, 900000);
++		if (!r) {
++			pr_err("%s: unable to register mpu opp(%d)\n", r);
++			goto no_cpufreq;
++		}
++		/* Do cpufreq things */
++	 no_cpufreq:
++		/* Do remaining things */
++	 }
++
++3. OPP Search Functions
++=======================
++High level framework such as cpufreq operates on frequencies. To map the
++frequency back to the corresponding OPP, OPP library provides handy functions
++to search the OPP list that OPP library internally manages. These search
++functions return the matching pointer representing the opp if a match is
++found, else returns error. These errors are expected to be handled by standard
++error checks such as IS_ERR() and appropriate actions taken by the caller.
++
++opp_find_freq_exact - Search for an OPP based on an *exact* frequency and
++	availability. This function is especially useful to enable an OPP which
++	is not available by default.
++	Example: In a case when SoC framework detects a situation where a
++	higher frequency could be made available, it can use this function to
++	find the OPP prior to call the opp_enable to actually make it available.
++	 rcu_read_lock();
++	 opp = opp_find_freq_exact(dev, 1000000000, false);
++	 rcu_read_unlock();
++	 /* dont operate on the pointer.. just do a sanity check.. */
++	 if (IS_ERR(opp)) {
++		pr_err("frequency not disabled!\n");
++		/* trigger appropriate actions.. */
++	 } else {
++		opp_enable(dev,1000000000);
++	 }
++
++	NOTE: This is the only search function that operates on OPPs which are
++	not available.
++
++opp_find_freq_floor - Search for an available OPP which is *at most* the
++	provided frequency. This function is useful while searching for a lesser
++	match OR operating on OPP information in the order of decreasing
++	frequency.
++	Example: To find the highest opp for a device:
++	 freq = ULONG_MAX;
++	 rcu_read_lock();
++	 opp_find_freq_floor(dev, &freq);
++	 rcu_read_unlock();
++
++opp_find_freq_ceil - Search for an available OPP which is *at least* the
++	provided frequency. This function is useful while searching for a
++	higher match OR operating on OPP information in the order of increasing
++	frequency.
++	Example 1: To find the lowest opp for a device:
++	 freq = 0;
++	 rcu_read_lock();
++	 opp_find_freq_ceil(dev, &freq);
++	 rcu_read_unlock();
++	Example 2: A simplified implementation of a SoC cpufreq_driver->target:
++	 soc_cpufreq_target(..)
++	 {
++		/* Do stuff like policy checks etc. */
++		/* Find the best frequency match for the req */
++		rcu_read_lock();
++		opp = opp_find_freq_ceil(dev, &freq);
++		rcu_read_unlock();
++		if (!IS_ERR(opp))
++			soc_switch_to_freq_voltage(freq);
++		else
++			/* do something when we cant satisfy the req */
++		/* do other stuff */
++	 }
++
++4. OPP Availability Control Functions
++=====================================
++A default OPP list registered with the OPP library may not cater to all possible
++situation. The OPP library provides a set of functions to modify the
++availability of a OPP within the OPP list. This allows SoC frameworks to have
++fine grained dynamic control of which sets of OPPs are operationally available.
++These functions are intended to *temporarily* remove an OPP in conditions such
++as thermal considerations (e.g. don't use OPPx until the temperature drops).
++
++WARNING: Do not use these functions in interrupt context.
++
++opp_enable - Make a OPP available for operation.
++	Example: Lets say that 1GHz OPP is to be made available only if the
++	SoC temperature is lower than a certain threshold. The SoC framework
++	implementation might choose to do something as follows:
++	 if (cur_temp < temp_low_thresh) {
++		/* Enable 1GHz if it was disabled */
++		rcu_read_lock();
++		opp = opp_find_freq_exact(dev, 1000000000, false);
++		rcu_read_unlock();
++		/* just error check */
++		if (!IS_ERR(opp))
++			ret = opp_enable(dev, 1000000000);
++		else
++			goto try_something_else;
++	 }
++
++opp_disable - Make an OPP to be not available for operation
++	Example: Lets say that 1GHz OPP is to be disabled if the temperature
++	exceeds a threshold value. The SoC framework implementation might
++	choose to do something as follows:
++	 if (cur_temp > temp_high_thresh) {
++		/* Disable 1GHz if it was enabled */
++		rcu_read_lock();
++		opp = opp_find_freq_exact(dev, 1000000000, true);
++		rcu_read_unlock();
++		/* just error check */
++		if (!IS_ERR(opp))
++			ret = opp_disable(dev, 1000000000);
++		else
++			goto try_something_else;
++	 }
++
++5. OPP Data Retrieval Functions
++===============================
++Since OPP library abstracts away the OPP information, a set of functions to pull
++information from the OPP structure is necessary. Once an OPP pointer is
++retrieved using the search functions, the following functions can be used by SoC
++framework to retrieve the information represented inside the OPP layer.
++
++opp_get_voltage - Retrieve the voltage represented by the opp pointer.
++	Example: At a cpufreq transition to a different frequency, SoC
++	framework requires to set the voltage represented by the OPP using
++	the regulator framework to the Power Management chip providing the
++	voltage.
++	 soc_switch_to_freq_voltage(freq)
++	 {
++		/* do things */
++		rcu_read_lock();
++		opp = opp_find_freq_ceil(dev, &freq);
++		v = opp_get_voltage(opp);
++		rcu_read_unlock();
++		if (v)
++			regulator_set_voltage(.., v);
++		/* do other things */
++	 }
++
++opp_get_freq - Retrieve the freq represented by the opp pointer.
++	Example: Lets say the SoC framework uses a couple of helper functions
++	we could pass opp pointers instead of doing additional parameters to
++	handle quiet a bit of data parameters.
++	 soc_cpufreq_target(..)
++	 {
++		/* do things.. */
++		 max_freq = ULONG_MAX;
++		 rcu_read_lock();
++		 max_opp = opp_find_freq_floor(dev,&max_freq);
++		 requested_opp = opp_find_freq_ceil(dev,&freq);
++		 if (!IS_ERR(max_opp) && !IS_ERR(requested_opp))
++			r = soc_test_validity(max_opp, requested_opp);
++		 rcu_read_unlock();
++		/* do other things */
++	 }
++	 soc_test_validity(..)
++	 {
++		 if(opp_get_voltage(max_opp) < opp_get_voltage(requested_opp))
++			 return -EINVAL;
++		 if(opp_get_freq(max_opp) < opp_get_freq(requested_opp))
++			 return -EINVAL;
++		/* do things.. */
++	 }
++
++opp_get_opp_count - Retrieve the number of available opps for a device
++	Example: Lets say a co-processor in the SoC needs to know the available
++	frequencies in a table, the main processor can notify as following:
++	 soc_notify_coproc_available_frequencies()
++	 {
++		/* Do things */
++		rcu_read_lock();
++		num_available = opp_get_opp_count(dev);
++		speeds = kzalloc(sizeof(u32) * num_available, GFP_KERNEL);
++		/* populate the table in increasing order */
++		freq = 0;
++		while (!IS_ERR(opp = opp_find_freq_ceil(dev, &freq))) {
++			speeds[i] = freq;
++			freq++;
++			i++;
++		}
++		rcu_read_unlock();
++
++		soc_notify_coproc(AVAILABLE_FREQs, speeds, num_available);
++		/* Do other things */
++	 }
++
++6. Cpufreq Table Generation
++===========================
++opp_init_cpufreq_table - cpufreq framework typically is initialized with
++	cpufreq_frequency_table_cpuinfo which is provided with the list of
++	frequencies that are available for operation. This function provides
++	a ready to use conversion routine to translate the OPP layer's internal
++	information about the available frequencies into a format readily
++	providable to cpufreq.
++	Example:
++	 soc_pm_init()
++	 {
++		/* Do things */
++		r = opp_init_cpufreq_table(dev, &freq_table);
++		if (!r)
++			cpufreq_frequency_table_cpuinfo(policy, freq_table);
++		/* Do other things */
++	 }
++
++	NOTE: This function is available only if CONFIG_CPU_FREQ is enabled in
++	addition to CONFIG_PM as power management feature is required to
++	dynamically scale voltage and frequency in a system.
++
++7. Data Structures
++==================
++Typically an SoC contains multiple voltage domains which are variable. Each
++domain is represented by a device pointer. The relationship to OPP can be
++represented as follows:
++SoC
++ |- device 1
++ |	|- opp 1 (availability, freq, voltage)
++ |	|- opp 2 ..
++ ...	...
++ |	`- opp n ..
++ |- device 2
++ ...
++ `- device m
++
++OPP library maintains a internal list that the SoC framework populates and
++accessed by various functions as described above. However, the structures
++representing the actual OPPs and domains are internal to the OPP library itself
++to allow for suitable abstraction reusable across systems.
++
++struct opp - The internal data structure of OPP library which is used to
++	represent an OPP. In addition to the freq, voltage, availability
++	information, it also contains internal book keeping information required
++	for the OPP library to operate on.  Pointer to this structure is
++	provided back to the users such as SoC framework to be used as a
++	identifier for OPP in the interactions with OPP layer.
++
++	WARNING: The struct opp pointer should not be parsed or modified by the
++	users. The defaults of for an instance is populated by opp_add, but the
++	availability of the OPP can be modified by opp_enable/disable functions.
++
++struct device - This is used to identify a domain to the OPP layer. The
++	nature of the device and it's implementation is left to the user of
++	OPP library such as the SoC framework.
++
++Overall, in a simplistic view, the data structure operations is represented as
++following:
++
++Initialization / modification:
++            +-----+        /- opp_enable
++opp_add --> | opp | <-------
++  |         +-----+        \- opp_disable
++  \-------> domain_info(device)
++
++Search functions:
++             /-- opp_find_freq_ceil  ---\   +-----+
++domain_info<---- opp_find_freq_exact -----> | opp |
++             \-- opp_find_freq_floor ---/   +-----+
++
++Retrieval functions:
+++-----+     /- opp_get_voltage
++| opp | <---
+++-----+     \- opp_get_freq
++
++domain_info <- opp_get_opp_count
+diff --git a/drivers/base/power/Makefile b/drivers/base/power/Makefile
+index cbccf9a..abe46ed 100644
+--- a/drivers/base/power/Makefile
++++ b/drivers/base/power/Makefile
+@@ -3,6 +3,7 @@ obj-$(CONFIG_PM_SLEEP)	+= main.o wakeup.o
+ obj-$(CONFIG_PM_RUNTIME)	+= runtime.o
+ obj-$(CONFIG_PM_OPS)	+= generic_ops.o
+ obj-$(CONFIG_PM_TRACE_RTC)	+= trace.o
++obj-$(CONFIG_PM_OPP)	+= opp.o
+ 
+ ccflags-$(CONFIG_DEBUG_DRIVER) := -DDEBUG
+ ccflags-$(CONFIG_PM_VERBOSE)   += -DDEBUG
+diff --git a/drivers/base/power/opp.c b/drivers/base/power/opp.c
+new file mode 100644
+index 0000000..166999b
+--- /dev/null
++++ b/drivers/base/power/opp.c
+@@ -0,0 +1,630 @@
++/*
++ * Generic OPP Interface
++ *
++ * Copyright (C) 2009-2010 Texas Instruments Incorporated.
++ *	Nishanth Menon
++ *	Romit Dasgupta
++ *	Kevin Hilman
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#define pr_fmt(fmt)     "%s: " fmt, __func__
++
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/err.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/cpufreq.h>
++#include <linux/list.h>
++#include <linux/rculist.h>
++#include <linux/rcupdate.h>
++#include <linux/opp.h>
++
++/*
++ * Internal data structure organization with the OPP layer library is as
++ * follows:
++ * dev_opp_list (root)
++ *	|- device 1 (represents voltage domain 1)
++ *	|	|- opp 1 (availability, freq, voltage)
++ *	|	|- opp 2 ..
++ *	...	...
++ *	|	`- opp n ..
++ *	|- device 2 (represents the next voltage domain)
++ *	...
++ *	`- device m (represents mth voltage domain)
++ * device 1, 2.. are represented by dev_opp structure while each opp
++ * is represented by the opp structure.
++ */
++
++/**
++ * struct opp - Generic OPP description structure
++ * @node:	opp list node. The nodes are maintained throughout the lifetime
++ *		of boot. It is expected only an optimal set of OPPs are
++ *		added to the library by the SoC framework.
++ *		RCU usage: opp list is traversed with RCU locks. node
++ *		modification is possible realtime, hence the modifications
++ *		are protected by the mutex in device_opp to protect the list
++ *		integrity.
++ *		IMPORTANT: the opp nodes should be maintained in increasing
++ *		order.
++ * @available:	true/false - marks if this OPP as available or not
++ * @rate:	Frequency in hertz
++ * @u_volt:	Nominal voltage in microvolts corresponding to this OPP
++ * @dev_opp:	points back to the device_opp struct this opp belongs to
++ *
++ * This structure stores the OPP information for a given device.
++ */
++struct opp {
++	struct list_head node;
++
++	bool available;
++	unsigned long rate;
++	unsigned long u_volt;
++
++	struct device_opp *dev_opp;
++};
++
++/**
++ * struct device_opp - Device opp structure
++ * @node:	list node - contains the devices with OPPs that
++ *		have been registered. Nodes once added are not modified in this
++ *		list.
++ *		RCU usage: nodes are not modified in the list of device_opp,
++ *		however addition is possible and is secured by dev_opp_list_lock
++ * @lock:	Lock to allow exclusive modification in the list for the device
++ * @dev:	device pointer
++ * @opp_list:	list of opps
++ *
++ * This is an internal data structure maintaining the link to opps attached to
++ * a device. This structure is not meant to be shared to users as it is
++ * meant for book keeping and private to OPP library
++ */
++struct device_opp {
++	struct list_head node;
++	/* mutex for exclusive modification of device OPP list */
++	struct mutex lock;
++
++	struct device *dev;
++
++	struct list_head opp_list;
++};
++
++/*
++ * The root of the list of all devices. All device_opp structures branch off
++ * from here, with each device_opp containing the list of opp it supports in
++ * various states of availability.
++ */
++static LIST_HEAD(dev_opp_list);
++/* Lock to allow exclusive modification to the device list */
++static DEFINE_MUTEX(dev_opp_list_lock);
++
++/**
++ * find_device_opp() - find device_opp struct using device pointer
++ * @dev:	device pointer used to lookup device OPPs
++ *
++ * Search list of device OPPs for one containing matching device. Does a RCU
++ * reader operation to grab the pointer needed.
++ *
++ * Returns pointer to 'struct device_opp' if found, otherwise -ENODEV or
++ * -EINVAL based on type of error.
++ *
++ * Locking: This function must be called under rcu_read_lock(). device_opp
++ * is a RCU protected pointer. This means that device_opp is valid as long
++ * as we are under RCU lock.
++ */
++static struct device_opp *find_device_opp(struct device *dev)
++{
++	struct device_opp *tmp_dev_opp, *dev_opp = ERR_PTR(-ENODEV);
++
++	if (unlikely(!dev || IS_ERR(dev))) {
++		pr_err("Invalid parameters being passed\n");
++		return ERR_PTR(-EINVAL);
++	}
++
++	list_for_each_entry_rcu(tmp_dev_opp, &dev_opp_list, node) {
++		if (tmp_dev_opp->dev == dev) {
++			dev_opp = tmp_dev_opp;
++			break;
++		}
++	}
++
++	return dev_opp;
++}
++
++/**
++ * opp_get_voltage() - Gets the voltage corresponding to an available opp
++ * @opp:	opp for which voltage has to be returned for
++ *
++ * Return voltage in micro volt corresponding to the opp, else
++ * return 0
++ *
++ * Locking: This function must be called under rcu_read_lock(). opp is a rcu
++ * protected pointer. This means that opp which could have been fetched by
++ * opp_find_freq_{exact,ceil,floor} functions is valid as long as we are
++ * under RCU lock. The pointer returned by the opp_find_freq family must be
++ * used in the same section as the usage of this function with the pointer
++ * prior to unlocking with rcu_read_unlock() to maintain the integrity of the
++ * pointer.
++ */
++unsigned long opp_get_voltage(struct opp *opp)
++{
++	struct opp *tmp_opp;
++	unsigned long v = 0;
++
++	tmp_opp = rcu_dereference(opp);
++	if (unlikely(!tmp_opp || IS_ERR(tmp_opp)) || !tmp_opp->available)
++		pr_err("Invalid parameters being passed\n");
++	else
++		v = tmp_opp->u_volt;
++
++	return v;
++}
++
++/**
++ * opp_get_freq() - Gets the frequency corresponding to an available opp
++ * @opp:	opp for which frequency has to be returned for
++ *
++ * Return frequency in hertz corresponding to the opp, else
++ * return 0
++ *
++ * Locking: This function must be called under rcu_read_lock(). opp is a rcu
++ * protected pointer. This means that opp which could have been fetched by
++ * opp_find_freq_{exact,ceil,floor} functions is valid as long as we are
++ * under RCU lock. The pointer returned by the opp_find_freq family must be
++ * used in the same section as the usage of this function with the pointer
++ * prior to unlocking with rcu_read_unlock() to maintain the integrity of the
++ * pointer.
++ */
++unsigned long opp_get_freq(struct opp *opp)
++{
++	struct opp *tmp_opp;
++	unsigned long f = 0;
++
++	tmp_opp = rcu_dereference(opp);
++	if (unlikely(!tmp_opp || IS_ERR(tmp_opp)) || !tmp_opp->available)
++		pr_err("Invalid parameters being passed\n");
++	else
++		f = tmp_opp->rate;
++
++	return f;
++}
++
++/**
++ * opp_get_opp_count() - Get number of opps available in the opp list
++ * @dev:	device for which we do this operation
++ *
++ * This function returns the number of available opps if there are any,
++ * else returns 0 if none or the corresponding error value.
++ *
++ * Locking: This function must be called under rcu_read_lock(). This function
++ * internally references two RCU protected structures: device_opp and opp which
++ * are safe as long as we are under a common RCU locked section.
++ */
++int opp_get_opp_count(struct device *dev)
++{
++	struct device_opp *dev_opp;
++	struct opp *temp_opp;
++	int count = 0;
++
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp))
++		return PTR_ERR(dev_opp);
++
++	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
++		if (temp_opp->available)
++			count++;
++	}
++
++	return count;
++}
++
++/**
++ * opp_find_freq_exact() - search for an exact frequency
++ * @dev:		device for which we do this operation
++ * @freq:		frequency to search for
++ * @is_available:	true/false - match for available opp
++ *
++ * Searches for exact match in the opp list and returns pointer to the matching
++ * opp if found, else returns ERR_PTR in case of error and should be handled
++ * using IS_ERR.
++ *
++ * Note: available is a modifier for the search. if available=true, then the
++ * match is for exact matching frequency and is available in the stored OPP
++ * table. if false, the match is for exact frequency which is not available.
++ *
++ * This provides a mechanism to enable an opp which is not available currently
++ * or the opposite as well.
++ *
++ * Locking: This function must be called under rcu_read_lock(). opp is a rcu
++ * protected pointer. The reason for the same is that the opp pointer which is
++ * returned will remain valid for use with opp_get_{voltage, freq} only while
++ * under the locked area. The pointer returned must be used prior to unlocking
++ * with rcu_read_unlock() to maintain the integrity of the pointer.
++ */
++struct opp *opp_find_freq_exact(struct device *dev, unsigned long freq,
++				bool available)
++{
++	struct device_opp *dev_opp;
++	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
++
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp))
++		return opp;
++
++	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
++		if (temp_opp->available == available &&
++				temp_opp->rate == freq) {
++			opp = temp_opp;
++			break;
++		}
++	}
++
++	return opp;
++}
++
++/**
++ * opp_find_freq_ceil() - Search for an rounded ceil freq
++ * @dev:	device for which we do this operation
++ * @freq:	Start frequency
++ *
++ * Search for the matching ceil *available* OPP from a starting freq
++ * for a device.
++ *
++ * Returns matching *opp and refreshes *freq accordingly, else returns
++ * ERR_PTR in case of error and should be handled using IS_ERR.
++ *
++ * Locking: This function must be called under rcu_read_lock(). opp is a rcu
++ * protected pointer. The reason for the same is that the opp pointer which is
++ * returned will remain valid for use with opp_get_{voltage, freq} only while
++ * under the locked area. The pointer returned must be used prior to unlocking
++ * with rcu_read_unlock() to maintain the integrity of the pointer.
++ */
++struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq)
++{
++	struct device_opp *dev_opp;
++	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
++
++	if (!dev || !freq) {
++		pr_err("Invalid param dev=%p freq=%p\n", dev, freq);
++		return ERR_PTR(-EINVAL);
++	}
++
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp))
++		return opp;
++
++	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
++		if (temp_opp->available && temp_opp->rate >= *freq) {
++			opp = temp_opp;
++			*freq = opp->rate;
++			break;
++		}
++	}
++
++	return opp;
++}
++
++/**
++ * opp_find_freq_floor() - Search for a rounded floor freq
++ * @dev:	device for which we do this operation
++ * @freq:	Start frequency
++ *
++ * Search for the matching floor *available* OPP from a starting freq
++ * for a device.
++ *
++ * Returns matching *opp and refreshes *freq accordingly, else returns
++ * ERR_PTR in case of error and should be handled using IS_ERR.
++ *
++ * Locking: This function must be called under rcu_read_lock(). opp is a rcu
++ * protected pointer. The reason for the same is that the opp pointer which is
++ * returned will remain valid for use with opp_get_{voltage, freq} only while
++ * under the locked area. The pointer returned must be used prior to unlocking
++ * with rcu_read_unlock() to maintain the integrity of the pointer.
++ */
++struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq)
++{
++	struct device_opp *dev_opp;
++	struct opp *temp_opp, *opp = ERR_PTR(-ENODEV);
++
++	if (!dev || !freq) {
++		pr_err("Invalid param dev=%p freq=%p\n", dev, freq);
++		return ERR_PTR(-EINVAL);
++	}
++
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp))
++		return opp;
++
++	list_for_each_entry_rcu(temp_opp, &dev_opp->opp_list, node) {
++		if (temp_opp->available) {
++			/* go to the next node, before choosing prev */
++			if (temp_opp->rate > *freq)
++				break;
++			else
++				opp = temp_opp;
++		}
++	}
++	if (!IS_ERR(opp))
++		*freq = opp->rate;
++
++	return opp;
++}
++
++/**
++ * opp_add()  - Add an OPP table from a table definitions
++ * @dev:	device for which we do this operation
++ * @freq:	Frequency in Hz for this OPP
++ * @u_volt:	Voltage in uVolts for this OPP
++ *
++ * This function adds an opp definition to the opp list and returns status.
++ * The opp is made available by default and it can be controlled using
++ * opp_enable/disable functions.
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * Hence this function internally uses RCU and mutex locks to keep the
++ * integrity of the internal data structures. Callers should ensure that
++ * this function is *NOT* called under RCU protection or in contexts where
++ * mutex cannot be locked.
++ */
++int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
++{
++	struct device_opp *dev_opp = NULL;
++	struct opp *opp, *new_opp;
++	struct list_head *head;
++
++	/* allocate new OPP node */
++	new_opp = kzalloc(sizeof(struct opp), GFP_KERNEL);
++	if (!new_opp) {
++		pr_warning("Unable to allocate new opp node\n");
++		return -ENOMEM;
++	}
++
++	/* Check for existing list for 'dev' */
++	rcu_read_lock();
++	dev_opp = find_device_opp(dev);
++	rcu_read_unlock();
++	if (!dev_opp) {
++		/* Allocate a new device OPP table */
++		dev_opp = kzalloc(sizeof(struct device_opp), GFP_KERNEL);
++		if (!dev_opp) {
++			kfree(new_opp);
++			pr_warning("Unable to allocate device structure\n");
++			return -ENOMEM;
++		}
++
++		dev_opp->dev = dev;
++		INIT_LIST_HEAD(&dev_opp->opp_list);
++		mutex_init(&dev_opp->lock);
++
++		/* Secure the device list modification */
++		mutex_lock(&dev_opp_list_lock);
++		list_add_rcu(&dev_opp->node, &dev_opp_list);
++		mutex_unlock(&dev_opp_list_lock);
++	}
++
++	/* populate the opp table */
++	new_opp->dev_opp = dev_opp;
++	new_opp->rate = freq;
++	new_opp->u_volt = u_volt;
++	new_opp->available = true;
++
++	/* make the dev_opp modification safe */
++	mutex_lock(&dev_opp->lock);
++
++	rcu_read_lock();
++	/* Insert new OPP in order of increasing frequency */
++	head = &dev_opp->opp_list;
++	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
++		if (new_opp->rate < opp->rate)
++			break;
++		else
++			head = &opp->node;
++	}
++	rcu_read_unlock();
++
++	list_add_rcu(&new_opp->node, head);
++	mutex_unlock(&dev_opp->lock);
++
++	return 0;
++}
++
++/**
++ * opp_set_availability() - helper to set the availability of an opp
++ * @dev:		device for which we do this operation
++ * @freq:		OPP frequency to modify availability
++ * @availability_req:	availability status requested for this opp
++ *
++ * Set the availability of an OPP with an RCU operation, opp_{enable,disable}
++ * share a common logic which is isolated here.
++ *
++ * Returns -EINVAL for bad pointers, -ENOMEM if no memory available for the
++ * copy operation, returns 0 if no modifcation was done OR modification was
++ * successful.
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * Hence this function internally uses RCU and mutex locks to keep the
++ * integrity of the internal data structures. Callers should ensure that
++ * this function is *NOT* called under RCU protection or in contexts where
++ * mutex locking or synchronize_rcu() blocking calls cannot be used.
++ */
++static int opp_set_availability(struct device *dev, unsigned long freq,
++		bool availability_req)
++{
++	struct device_opp *tmp_dev_opp, *dev_opp = NULL;
++	struct opp *new_opp, *tmp_opp, *opp = ERR_PTR(-ENODEV);
++	int r = 0;
++
++	/* keep the node allocated */
++	new_opp = kmalloc(sizeof(struct opp), GFP_KERNEL);
++	if (!new_opp) {
++		pr_warning("Unable to allocate opp\n");
++		return -ENOMEM;
++	}
++
++	rcu_read_lock();
++
++	/* Find the device_opp */
++	list_for_each_entry_rcu(tmp_dev_opp, &dev_opp_list, node) {
++		if (dev == tmp_dev_opp->dev) {
++			dev_opp = tmp_dev_opp;
++			break;
++		}
++	}
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp)) {
++		r = PTR_ERR(dev_opp);
++		pr_warning("Unable to find device\n");
++		goto err;
++	}
++
++	/* Do we have the frequency? */
++	list_for_each_entry_rcu(tmp_opp, &dev_opp->opp_list, node) {
++		if (tmp_opp->rate == freq) {
++			opp = tmp_opp;
++			break;
++		}
++	}
++	if (IS_ERR(opp)) {
++		r = PTR_ERR(opp);
++		goto err;
++	}
++
++	mutex_lock(&opp->dev_opp->lock);
++	tmp_opp = rcu_dereference(opp);
++	/* Is update really needed? */
++	if (tmp_opp->available == availability_req)
++		goto out1;
++	/* copy the old data over */
++	*new_opp = *tmp_opp;
++	rcu_read_unlock();
++
++	/* plug in new node */
++	new_opp->available = availability_req;
++	list_replace_rcu(&opp->node, &new_opp->node);
++	mutex_unlock(&opp->dev_opp->lock);
++	synchronize_rcu();
++
++	/* clean up old opp */
++	new_opp = opp;
++	goto out;
++
++out1:
++	mutex_unlock(&opp->dev_opp->lock);
++err:
++	rcu_read_unlock();
++out:
++	kfree(new_opp);
++	return r;
++}
++
++/**
++ * opp_enable() - Enable a specific OPP
++ * @dev:	device for which we do this operation
++ * @freq:	OPP frequency to enable
++ *
++ * Enables a provided opp. If the operation is valid, this returns 0, else the
++ * corresponding error value. It is meant to be used for users an OPP available
++ * after being temporarily made unavailable with opp_disable.
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * Hence this function indirectly uses RCU and mutex locks to keep the
++ * integrity of the internal data structures. Callers should ensure that
++ * this function is *NOT* called under RCU protection or in contexts where
++ * mutex locking or synchronize_rcu() blocking calls cannot be used.
++ */
++int opp_enable(struct device *dev, unsigned long freq)
++{
++	return opp_set_availability(dev, freq, true);
++}
++
++/**
++ * opp_disable() - Disable a specific OPP
++ * @dev:	device for which we do this operation
++ * @freq:	OPP frequency to disable
++ *
++ * Disables a provided opp. If the operation is valid, this returns
++ * 0, else the corresponding error value. It is meant to be a temporary
++ * control by users to make this OPP not available until the circumstances are
++ * right to make it available again (with a call to opp_enable).
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * Hence this function indirectly uses RCU and mutex locks to keep the
++ * integrity of the internal data structures. Callers should ensure that
++ * this function is *NOT* called under RCU protection or in contexts where
++ * mutex locking or synchronize_rcu() blocking calls cannot be used.
++ */
++int opp_disable(struct device *dev, unsigned long freq)
++{
++	return opp_set_availability(dev, freq, false);
++}
++
++#ifdef CONFIG_CPU_FREQ
++/**
++ * opp_init_cpufreq_table() - create a cpufreq table for a device
++ * @dev:	device for which we do this operation
++ * @table:	Cpufreq table returned back to caller
++ *
++ * Generate a cpufreq table for a provided device- this assumes that the
++ * opp list is already initialized and ready for usage.
++ *
++ * This function allocates required memory for the cpufreq table. It is
++ * expected that the caller does the required maintenance such as freeing
++ * the table as required.
++ *
++ * Returns -EINVAL for bad pointers, -ENODEV if the device is not found, -ENOMEM
++ * if no memory available for the operation (table is not populated), returns 0
++ * if successful and table is populated.
++ *
++ * WARNING: It is  important for the callers to ensure refreshing their copy of
++ * the table if any of the mentioned functions have been invoked in the interim.
++ *
++ * Locking: The internal device_opp and opp structures are RCU protected.
++ * Hence this function indirectly uses RCU readlocks to ensure sane data is
++ * queried. Callers should ensure that this function is *NOT* called under
++ * RCU protection as the function already does the same appropriately.
++ */
++int opp_init_cpufreq_table(struct device *dev,
++			    struct cpufreq_frequency_table **table)
++{
++	struct device_opp *dev_opp;
++	struct opp *opp;
++	struct cpufreq_frequency_table *freq_table;
++	int i = 0;
++
++	rcu_read_lock();
++	dev_opp = find_device_opp(dev);
++	if (IS_ERR(dev_opp)) {
++		rcu_read_unlock();
++		pr_warning("Unable to find device\n");
++		return PTR_ERR(dev_opp);
++	}
++
++	freq_table = kzalloc(sizeof(struct cpufreq_frequency_table) *
++			     (opp_get_opp_count(dev) + 1), GFP_ATOMIC);
++	if (!freq_table) {
++		rcu_read_unlock();
++		pr_warning("Failed to allocate frequency table\n");
++		return -ENOMEM;
++	}
++
++	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
++		if (opp->available) {
++			freq_table[i].index = i;
++			freq_table[i].frequency = opp->rate / 1000;
++			i++;
++		}
++	}
++	rcu_read_unlock();
++
++	freq_table[i].index = i;
++	freq_table[i].frequency = CPUFREQ_TABLE_END;
++
++	*table = &freq_table[0];
++
++	return 0;
++}
++#endif		/* CONFIG_CPU_FREQ */
+diff --git a/include/linux/opp.h b/include/linux/opp.h
+new file mode 100644
+index 0000000..4dd8003
+--- /dev/null
++++ b/include/linux/opp.h
+@@ -0,0 +1,105 @@
++/*
++ * Generic OPP Interface
++ *
++ * Copyright (C) 2009-2010 Texas Instruments Incorporated.
++ *	Nishanth Menon
++ *	Romit Dasgupta
++ *	Kevin Hilman
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef __LINUX_OPP_H__
++#define __LINUX_OPP_H__
++
++#include <linux/err.h>
++#include <linux/cpufreq.h>
++
++struct opp;
++
++#if defined(CONFIG_PM_OPP)
++
++unsigned long opp_get_voltage(struct opp *opp);
++
++unsigned long opp_get_freq(struct opp *opp);
++
++int opp_get_opp_count(struct device *dev);
++
++struct opp *opp_find_freq_exact(struct device *dev, unsigned long freq,
++				bool available);
++
++struct opp *opp_find_freq_floor(struct device *dev, unsigned long *freq);
++
++struct opp *opp_find_freq_ceil(struct device *dev, unsigned long *freq);
++
++int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt);
++
++int opp_enable(struct device *dev, unsigned long freq);
++
++int opp_disable(struct device *dev, unsigned long freq);
++
++#else
++static inline unsigned long opp_get_voltage(struct opp *opp)
++{
++	return 0;
++}
++
++static inline unsigned long opp_get_freq(struct opp *opp)
++{
++	return 0;
++}
++
++static inline int opp_get_opp_count(struct device *dev)
++{
++	return 0;
++}
++
++static inline struct opp *opp_find_freq_exact(struct device *dev,
++					unsigned long freq, bool available)
++{
++	return ERR_PTR(-EINVAL);
++}
++
++static inline struct opp *opp_find_freq_floor(struct device *dev,
++					unsigned long *freq)
++{
++	return ERR_PTR(-EINVAL);
++}
++
++static inline struct opp *opp_find_freq_ceil(struct device *dev,
++					unsigned long *freq)
++{
++	return ERR_PTR(-EINVAL);
++}
++
++static inline int opp_add(struct device *dev, unsigned long freq,
++					unsigned long u_volt);
++{
++	return -EINVAL;
++}
++
++static inline int opp_enable(struct device *dev, unsigned long freq)
++{
++	return 0;
++}
++
++static inline int opp_disable(struct device *dev, unsigned long freq)
++{
++	return 0;
++}
++#endif		/* CONFIG_PM */
++
++#if defined(CONFIG_CPU_FREQ) && defined(CONFIG_PM_OPP)
++int opp_init_cpufreq_table(struct device *dev,
++			    struct cpufreq_frequency_table **table);
++#else
++static inline int opp_init_cpufreq_table(struct device *dev,
++			    struct cpufreq_frequency_table **table)
++{
++	return -EINVAL;
++}
++#endif		/* CONFIG_CPU_FREQ */
++
++#endif		/* __LINUX_OPP_H__ */
+diff --git a/kernel/power/Kconfig b/kernel/power/Kconfig
+index ca6066a..634eab6 100644
+--- a/kernel/power/Kconfig
++++ b/kernel/power/Kconfig
+@@ -242,3 +242,17 @@ config PM_OPS
+ 	bool
+ 	depends on PM_SLEEP || PM_RUNTIME
+ 	default y
++
++config PM_OPP
++	bool "Enable Operating Performance Point(OPP) Layer library"
++	depends on PM
++	---help---
++	  SOCs have a standard set of tuples consisting of frequency and
++	  voltage pairs that the device will support per voltage domain. This
++	  is called Operating Performance Point or OPP. The actual definitions
++	  of OPP varies over silicon within the same family of devices.
++
++	  OPP layer organizes the data internally using device pointers
++	  representing individual voltage domains and provides SOC
++	  implementations a ready to use framework to manage OPPs.
++	  For more information, read <file:Documentation/power/opp.txt>
+-- 
+1.6.3.3
+
