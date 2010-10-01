@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab0JAUdK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 16:33:10 -0400
-Received: from 1wt.eu ([62.212.114.60]:45837 "EHLO 1wt.eu"
+	id S1755973Ab0JAUff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 16:35:35 -0400
+Received: from www.tglx.de ([62.245.132.106]:41613 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753096Ab0JAUdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 16:33:08 -0400
-Date: Fri, 1 Oct 2010 22:30:22 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Robin Holt <holt@sgi.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-decnet-user@lists.sourceforge.net,
-        linux-sctp@vger.kernel.org
-Subject: Re: sysctl_{tcp,udp,sctp}_mem overflow on 16TB system.
-Message-ID: <20101001203022.GA28486@1wt.eu>
-References: <20101001193958.GP14068@sgi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101001193958.GP14068@sgi.com>
-User-Agent: Mutt/1.4.2.3i
+	id S1752873Ab0JAUfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 16:35:34 -0400
+Date: Fri, 1 Oct 2010 22:35:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+In-Reply-To: <4CA57795.4040308@kernel.org>
+Message-ID: <alpine.LFD.2.00.1010012233410.14550@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <4CA57795.4040308@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1581523691-1285965305=:14550"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Robin,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Fri, Oct 01, 2010 at 02:39:58PM -0500, Robin Holt wrote:
-> 
-> On a 16TB system, we noticed that sysctl_tcp_mem[2] and sysctl_udp_mem[2]
-> were negative.  Code review indicates that the same should occur with
-> sysctl_sctp_mem[2].
-> 
-> There are a couple ways we could address this.  The one which appears most
-> reasonable would be to change the struct proto defintion for sysctl_mem
-> from an int to a long and handle all the associated fallout.
-> 
-> An alternative is to limit the calculation to 1/2 INT_MAX.  The downside
-> being that the administrator could not tune the system to use more than
-> INT_MAX memory when much more is available.
-> 
-> Is there a compelling reason to not change the structure's definition
-> over to longs instead of ints and deal with the fallout from that change?
+---1463795968-1581523691-1285965305=:14550
+Content-Type: TEXT/PLAIN; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 
-Could we not see it differently ? => is there any reason someone would
-want to assign more than 8 TB of RAM to the network buffers in the near
-future ? Even at 100 Gbps, that's still 10 minutes of traffic stuck in
-buffers. Probably that the day we need that large buffers, Linux won't
-support 32-bit systems anymore and all such limits will have switched
-to 64-bit.
+On Thu, 30 Sep 2010, Yinghai Lu wrote:
+> On 09/30/2010 04:14 PM, Thomas Gleixner wrote:
+> kernel/irq/irqdesc.c:374: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘{’ token
+> kernel/irq/irqdesc.c:377: error: expected ‘{’ at end of input
+> make[1]: *** [kernel/irq/irqdesc.o] Error 1
 
-So probably that limiting the value to INT_MAX/2 sounds reasonable ?
+Yeah, I fat fingered the queue in the last moment :( Fixing the mess right now.
 
-Regards,
-Willy
+Thanks,
 
+	tglx
+e 
+---1463795968-1581523691-1285965305=:14550--
