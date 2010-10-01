@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932382Ab0JAOHW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 10:07:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18913 "EHLO mx1.redhat.com"
+	id S932490Ab0JAOJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 10:09:29 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:36994 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932197Ab0JAOHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 10:07:20 -0400
-Message-ID: <4CA5EB03.1070403@redhat.com>
-Date: Fri, 01 Oct 2010 10:06:59 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S932331Ab0JAOJ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 10:09:28 -0400
+Date: Fri, 1 Oct 2010 15:09:18 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux I2C <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] i2c fixes for 2.6.36
+Message-ID: <20101001140918.GU21564@trinity.fluff.org>
+References: <20101001140619.28d96040@endymion.delvare> <AANLkTi=aKWP3_KhD88ebGB04xAM9Pc7eqw1LBr2EJNS_@mail.gmail.com>
 MIME-Version: 1.0
-To: Michel Lespinasse <walken@google.com>
-CC: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 2/2] Release mmap_sem when page fault blocks on disk transfer.
-References: <1285909484-30958-1-git-send-email-walken@google.com> <1285909484-30958-3-git-send-email-walken@google.com>
-In-Reply-To: <1285909484-30958-3-git-send-email-walken@google.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=aKWP3_KhD88ebGB04xAM9Pc7eqw1LBr2EJNS_@mail.gmail.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2010 01:04 AM, Michel Lespinasse wrote:
-> This change reduces mmap_sem hold times that are caused by waiting for
-> disk transfers when accessing file mapped VMAs. It introduces the
-> VM_FAULT_RELEASED flag, which indicates that the call site holds mmap_lock
-> and wishes for it to be released if blocking on a pending disk transfer.
-> In that case, filemap_fault() returns the VM_FAULT_RELEASED status bit
-> and do_page_fault() will then re-acquire mmap_sem and retry the page fault.
-> It is expected that the retry will hit the same page which will now be cached,
-> and thus it will complete with a low mmap_sem hold time.
+On Fri, Oct 01, 2010 at 10:38:46PM +0900, Kyungmin Park wrote:
+> Hi Jean,
+> 
+> Even though it's not yet acked from Ben. It should be fixed for
+> correct operation.
+> Without this patch, some I2C device doesn't work correctly.
+> http://www.spinics.net/lists/linux-i2c/msg04016.html
 
-The concept makes sense.  A nitpick, though...
-
-> +	if (release_flag) {	/* Did not go through a retry */
-> +		if (fault&  VM_FAULT_MAJOR) {
-> +			tsk->maj_flt++;
-> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
-> +				      regs, address);
-> +		} else {
-> +			tsk->min_flt++;
-> +			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
-> +				      regs, address);
-> +		}
-> +		if (fault&  VM_FAULT_RELEASED) {
-> +			/*
-> +			 * handle_mm_fault() found that the desired page was
-> +			 * locked. We asked for it to release mmap_sem in that
-> +			 * case, so as to avoid holding it for too long.
-> +			 * Retry starting at the mmap_sem acquire, this time
-> +			 * without FAULT_FLAG_RETRY so that we avoid any
-> +			 * risk of starvation.
-> +			 */
-> +			release_flag = 0;
-> +			goto retry;
-> +		}
-
-Do we really want to count a minor page fault when we
-got VM_FAULT_RELEASED?
+It was in my last pull request to Linus.
 
 -- 
-All rights reversed
+Ben
+
+Q:      What's a light-year?
+A:      One-third less calories than a regular year.
+
