@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755344Ab0JAT3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 15:29:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63022 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab0JAT3L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 15:29:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RLfuWKaOIXEHoyXhFD7Q5HSiKrqk2tUe3ImC8jNSQ6KYfVfFtM0UMh7rTJMUr8vfIA
-         LTlGUuLmj2x64FmPT1BJ7Tmm2uXpqaYSW5VMJbsrMP069WbmU/JX721GhqXuz8NXWwAV
-         H4LA0Tv6vRne8S0I0Kyu5hjQ2jmcdN5AUKPeU=
-Subject: Re: [PATCH 15/18] mtd: Fix endianness issues from device tree
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        benh@kernel.crashing.org, paulus@samba.org,
-        David Woodhouse <dwmw2@infradead.org>,
-        Grant Likely <grant.likely@secretlab.ca>, Julia Lawall <julia@diku.dk>,
-        Sean MacLennan <smaclennan@pikatech.com>,
-        Jason Gunthorpe <jgunthorpe@obsidianresearch.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Anatolij Gustschin <agust@denx.de>,
-        Steve Deiters <SteveDeiters@basler.com>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        linux-mtd@lists.infradead.org
-In-Reply-To: <1285916771-18033-16-git-send-email-imunsie@au1.ibm.com>
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-	 <1285916771-18033-16-git-send-email-imunsie@au1.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Oct 2010 22:29:06 +0300
-Message-ID: <1285961346.32172.10.camel@brekeke>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
-Content-Transfer-Encoding: 8bit
+	id S1754182Ab0JATkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 15:40:15 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:58063 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750822Ab0JATkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 15:40:12 -0400
+Date: Fri, 1 Oct 2010 14:39:58 -0500
+From: Robin Holt <holt@sgi.com>
+To: "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        Patrick McHardy <kaber@trash.net>,
+        Vlad Yasevich <vladislav.yasevich@hp.com>,
+        Sridhar Samudrala <sri@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-decnet-user@lists.sourceforge.net, linux-sctp@vger.kernel.org
+Subject: sysctl_{tcp,udp,sctp}_mem overflow on 16TB system.
+Message-ID: <20101001193958.GP14068@sgi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-01 at 17:06 +1000, Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au1.ibm.com>
-> 
-> This patch adds the appropriate conversions to correct the endianness
-> issues in the MTD driver whenever it accesses the device tree (which is
-> always big endian).
-> 
-> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 
-Pushed to l2-mtd-2.6.git, thanks!
+On a 16TB system, we noticed that sysctl_tcp_mem[2] and sysctl_udp_mem[2]
+were negative.  Code review indicates that the same should occur with
+sysctl_sctp_mem[2].
 
--- 
-Best Regards,
-Artem Bityutskiy (Битюцкий Артём)
+There are a couple ways we could address this.  The one which appears most
+reasonable would be to change the struct proto defintion for sysctl_mem
+from an int to a long and handle all the associated fallout.
 
+An alternative is to limit the calculation to 1/2 INT_MAX.  The downside
+being that the administrator could not tune the system to use more than
+INT_MAX memory when much more is available.
+
+Is there a compelling reason to not change the structure's definition
+over to longs instead of ints and deal with the fallout from that change?
+
+Thanks,
+Robin Holt
