@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756156Ab0JAUsb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 16:48:31 -0400
-Received: from mxout1.idt.com ([157.165.5.25]:45729 "EHLO mxout1.idt.com"
+	id S1756040Ab0JAUud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 16:50:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48886 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830Ab0JAUsa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 16:48:30 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH v2 03/10] RapidIO: Use stored ingress port number instead of register read
-Date: Fri, 1 Oct 2010 13:46:06 -0700
-Message-ID: <0CE8B6BE3C4AD74AB97D9D29BD24E5520137C432@CORPEXCH1.na.ads.idt.com>
-In-Reply-To: <4C97C6D8.4010407@neli.hopto.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-thread-topic: [PATCH v2 03/10] RapidIO: Use stored ingress port number instead of register read
-thread-index: ActZA7LM6/OAgaIuSP+K985Hm9p+XgIn5i/Q
-References: <1284476363-1677-1-git-send-email-alexandre.bounine@idt.com><1284476363-1677-4-git-send-email-alexandre.bounine@idt.com> <20100914151219.5d92c6f9.akpm@linux-foundation.org> <0CE8B6BE3C4AD74AB97D9D29BD24E55201303D0E@CORPEXCH1.na.ads.idt.com> <4C97C6D8.4010407@neli.hopto.org>
-From: "Bounine, Alexandre" <Alexandre.Bounine@idt.com>
-To: "Micha Nelissen" <micha@neli.hopto.org>
-Cc: "Andrew Morton" <akpm@linux-foundation.org>,
-        <linux-kernel@vger.kernel.org>, <linuxppc-dev@lists.ozlabs.org>,
-        "Thomas Moll" <thomas.moll@sysgo.com>,
-        "Matt Porter" <mporter@kernel.crashing.org>,
-        "Li Yang" <leoli@freescale.com>,
-        "Kumar Gala" <galak@kernel.crashing.org>
+	id S1753935Ab0JAUuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 16:50:32 -0400
+Subject: Re: Introduce support for little endian PowerPC
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        Ian Munsie <imunsie@au1.ibm.com>
+In-Reply-To: <1285950041.15020.272.camel@thor.local>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
+	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
+	 <1285935283.2463.78.camel@pasglop>  <1285950041.15020.272.camel@thor.local>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Oct 2010 06:50:04 +1000
+Message-ID: <1285966204.2463.137.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Micha,
-
-Sorry for delayed reply.
-
-Micha Nelissen <micha@neli.hopto.org> wrote:
+On Fri, 2010-10-01 at 18:20 +0200, Michel Dänzer wrote:
+> On Fre, 2010-10-01 at 22:14 +1000, Benjamin Herrenschmidt wrote: 
+> > 
+> > Now, the main reasons in practice are anything touching graphics.
+> > 
+> > There's quite a few IP cores out there for SoCs that don't have HW
+> > swappers, and -tons- of more or less ugly code that can't deal with non
+> > native pixel ordering (hell, even Xorg isn't good at it, we really only
+> > support cards that have HW swappers today).
 > 
-> Bounine, Alexandre wrote:
-> > struct rio_dev {
-> >     struct list_head global_list;
-> >     struct list_head net_list;
-> >     .....
-> >     ..... rest of rio_dev
-> >     .....
-> >     struct rio_switch switch[0];
-> > }
+> That's not true. Even the radeon driver doesn't really need the HW
+> swappers anymore with KMS.
+
+And last I looked X still pukes if you give it a pixmap in non native
+byte order but that might have been fixed. In any case, X is far from
+the target here. More like existing stacks for embedded SoCs, including
+codecs etc... all written for LE.
+
+> > There's an even bigger pile of application code that deals with graphics
+> > without any regard for endianness and is essentially unfixable.
 > 
-> It makes sense to let rio_dev structures point to the switch they are
-> attached to. That can be useful in various situations, but is not
-> possible with this setup.
-> 
-> If a rio_dev is a switch then rdev->rswitch->rdev == rdev holds.
->
+> Out of curiosity, what kind of APIs are those apps using? X11 and OpenGL
+> have well-defined semantics wrt endianness, allowing the drivers to
+> handle any necessary byte swapping internally, and IME the vast majority
+> of apps handle this correctly.
 
-But the switch is a RIO device itself and all other parts of rio_dev
-structure
-are applicable to it as well. If there is situation when a device 
-needs to hold a pointer to the attached switch that should be a pointer
-to the switch rio_dev and not to its switch-specific extension. 
- 
-> > This will remove extra memory allocation, remove overlapping
-structure
-> > members and clean code sections like one shown below:
-> >
-> > 	u8 hopcount = 0xff;
-> > 	u16 destid = rdev->destid;
-> >
-> > 	if (rdev->rswitch) {
-> > 		destid = rdev->rswitch->destid;
-> > 		hopcount = rdev->rswitch->hopcount;
-> > 	}
-> 
-> Note that it is possible for rdev->destid to differ from
-> rdev->rswitch->destid even if rswitch->rdev == rdev (for non-hosts
-i.e.
-> agents). rswitch->destid is the destid by which we discovered the
-switch
-> (and can reach it) but rdev->destid is the actual id given to the
-switch.
-> 
+So why is it so hard to get any video card working on ppc ? :-) I
+haven't even started to look at r6xx which -does- have HW swapping
+capabilities...
 
-My goal is to have one destid storage for device - endpoint or switch.
-And destid should be used only for one purpose: to reach corresponding
-device.
-In your statement above you suggest using rdev->destid instead of
-rswitch->switchid.
-RIO switches do not have any specific RIO ID that can be assigned to the
-switch.
-In this case the rswitch->switchid should work well for logical
-identification
-of the switch.
+In this case tho, see above. I don't even need to care much about the
+details, customers are making the point over and over again. It might be
+fixable, but either they don't have the resources to fix it or don't
+want to fix it, or their -own- customers won't chose their product if
+it's BE for "perceived" difficulty of porting reason, whether they are
+valid or not.
 
-I think if (for switch) we load rdev->destid with some function
-different
-from its routing role this may bring unnecessary confusion.
+So it boils down to do we want to be another Amiga sinking into oblivion
+but keeping our purity intact, or do we make that "reasonably easy"
+thing to support LE at least at the kernel level for now, and -possibly-
+give powerpc a bit more juice on the market for a while longer ?
 
-I also will move rswitch->hopcount to rdev->hopcount. For endpoint it
-will be set
-to 0xff during rio_dev initialization.
+Cheers,
+Ben.
 
-Alex.
-       
+
