@@ -1,63 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab0JAQF0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 12:05:26 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:64696 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab0JAQFY (ORCPT
+	id S1752221Ab0JAQKh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:10:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:40500 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab0JAQKg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 12:05:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WPjk+7LHdW/7cboBQ9e8bixqeftn/gTQAkUZ1bIXfjXxA+EAGB9pfNQgRCbOb8OJTF
-         hb/VPVVPILL5W87rUchqrFiJUKTToVXInlae85cuilmpudtHhsWFZQYDt9fYkU+tYJwo
-         oheVR+QJJdhM7iIKjlMiQR3zPAbMF5mupqZjo=
-Date: Fri, 1 Oct 2010 20:05:18 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Alan Cox <alan@linux.intel.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 5/8] altera_uart: Make it possible to use Altera UART
- and 8250 ports together
-Message-ID: <20101001160518.GA20335@oksana.dev.rtsoft.ru>
-References: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
- <20101001132207.GE25897@oksana.dev.rtsoft.ru>
- <20101001134138.5ea2fb55@linux.intel.com>
- <20101001135254.GA27739@oksana.dev.rtsoft.ru>
- <20101001151841.3fad627c@linux.intel.com>
- <20101001152258.GA14846@oksana.dev.rtsoft.ru>
- <20101001155756.54e9716c@linux.intel.com>
+	Fri, 1 Oct 2010 12:10:36 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: David Cohen <david.cohen@nokia.com>
+CC: "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
+        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
+        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Fri, 1 Oct 2010 11:10:30 -0500
+Subject: RE: [PATCH 2/4] iovmm: fix roundup for next area and end check for
+ the last area
+Thread-Topic: [PATCH 2/4] iovmm: fix roundup for next area and end check for
+ the last area
+Thread-Index: ActhWM4ENy8UaD59RG+F/GZl37RxyAAKFnkg
+Message-ID: <496565EC904933469F292DDA3F1663E602F46544F9@dlee06.ent.ti.com>
+References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
+ <1285902536-7043-2-git-send-email-x0095840@ti.com>
+ <1285902536-7043-3-git-send-email-x0095840@ti.com>
+ <20101001105711.GA11617@esdhcp036161.research.nokia.com>
+In-Reply-To: <20101001105711.GA11617@esdhcp036161.research.nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20101001155756.54e9716c@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 03:57:56PM +0100, Alan Cox wrote:
-> > I don't need it, but someone might.
+ 
+
+> -----Original Message-----
+> From: David Cohen [mailto:david.cohen@nokia.com] 
+> Sent: Friday, October 01, 2010 5:57 AM
+> To: Guzman Lugo, Fernando
+> Cc: Doyu Hiroshi (Nokia-MS/Espoo); Contreras Felipe 
+> (Nokia-MS/Helsinki); Palande Ameya (Nokia-MS/Helsinki); 
+> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
+> linux-omap@vger.kernel.org
+> Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and 
+> end check for the last area
 > 
-> Why ?
-
-No idea. But why you asked in the first place? :-) I thought you
-have had some scenario when static major number is necessary.
-
-> > Plus, it doesn't solve anything as there are only 256 minor
-> > numbers. ;-) If we ever want  to support the insane number of Altera
-> > UARTs, we'll have to solve it very differently. For now, I'd vote for
-> > keeping it simple.
+> Hi,
 > 
-> We got past the 256/256 limit some time ago.
+> On Fri, Oct 01, 2010 at 05:08:53AM +0200, ext Fernando Guzman 
+> Lugo wrote:
+> > As da_end does not belongs to the area the roundup should 
+> be done to 
+> > da_end and not to da_end + 1.
+> > Also the end check for the last area should be ULONG_MAX - 
+> start + 1 
+> > >= bytes.
+> > 
+> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> > ---
+> >  arch/arm/plat-omap/iovmm.c |    6 +++---
+> >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/arch/arm/plat-omap/iovmm.c 
+> b/arch/arm/plat-omap/iovmm.c 
+> > index 24ca9c4..fc6b109 100644
+> > --- a/arch/arm/plat-omap/iovmm.c
+> > +++ b/arch/arm/plat-omap/iovmm.c
+> > @@ -289,19 +289,19 @@ static struct iovm_struct 
+> *alloc_iovm_area(struct iommu *obj, u32 da,
+> >  	prev_end = 0;
+> >  	list_for_each_entry(tmp, &obj->mmap, list) {
+> >  
+> > -		if (prev_end >= start)
+> > +		if (prev_end > start)
+> >  			break;
+> >  
+> >  		if (start + bytes <= tmp->da_start)
+> >  			goto found;
+> >  
+> >  		if (flags & IOVMF_DA_ANON)
+> > -			start = roundup(tmp->da_end + 1, alignement);
+> > +			start = roundup(tmp->da_end, alignement);
+> 
+> There's a lack of comment here, but the purpose of 
+> tmp->da_end + 1 is to create a gap between iovm areas to 
+> force to trigger iommu faults when some access exceeds a 
+> valid area. Without this gap, such situation may produce data 
+> corruption which is much more difficult to track.
 
-Oh? Then using dynamic major makes a lot of sense, thanks!
+That only works when you are accessing sequencially beyond the
+End of the vm_area. However if you are accessing a random address
+Which is in the mmu tables you still can corrupt memory which does
+Not belong to you. That looks not very effective then why waste
+Memory?
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+Maybe other mechanism should be implemente like in the process
+Switching when if the process has DMM virtual memory area and if
+So enablig only that area (all other process areas will be
+Dissabled and it would get a mmufault in case of access). However
+That increase the time of switching between process.
+
+Regards,
+Fernando.
+
+> 
+> Br,
+> 
+> David
+> 
+> >  
+> >  		prev_end = tmp->da_end;
+> >  	}
+> >  
+> > -	if ((start > prev_end) && (ULONG_MAX - start >= bytes))
+> > +	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
+> >  		goto found;
+> >  
+> >  	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
+> > --
+> > 1.6.3.3
+> > 
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe 
+> > linux-kernel" in the body of a message to majordomo@vger.kernel.org 
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
