@@ -1,114 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab0JAApu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 20:45:50 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54868 "EHLO gate.crashing.org"
+	id S1754897Ab0JAAtn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 20:49:43 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40548 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842Ab0JAApr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 20:45:47 -0400
-Subject: Re: [patch 46/47] powerpc: Use new irq allocator
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-In-Reply-To: <20100930221743.014571381@linutronix.de>
-References: <20100930221351.682772535@linutronix.de>
-	 <20100930221743.014571381@linutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Oct 2010 10:42:17 +1000
-Message-ID: <1285893737.2463.4.camel@pasglop>
+	id S1751784Ab0JAAtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 20:49:42 -0400
+Date: Fri, 1 Oct 2010 10:49:35 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: unable to fetch leds and backlight trees
+Message-Id: <20101001104935.76efd0b8.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__1_Oct_2010_10_49_35_+1000_B.JqSsEBq6qdlWUX"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-09-30 at 23:18 +0000, Thomas Gleixner wrote:
-> plain text document attachment (powerpc-use-new-allocator.patch)
-> Use the new functions and free the descriptor when the virq is
-> destroyed.
+--Signature=_Fri__1_Oct_2010_10_49_35_+1000_B.JqSsEBq6qdlWUX
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Looks ok as a first pass, but we should go further and replace the
-allocator we have in powerpc to use yours instead.
+Hi Richard,
 
-Then I should get rid of my big irq_map that maps virq to HW number &
-domain pointers and instead put those in the irq data. Any objection to
-me sticking some archdata there for that purpose ?
+Fetching the trees produces this error:
 
-That would make things much cleaner and in fact move one large step
-toward being able to make powerpc virq scheme generic, which seems to be
-a good idea from what I've heard :-)
+git.o-hand.com[0: 70.86.75.186]: errno=3DConnection refused
 
+Just letting you know.
+--=20
 Cheers,
-Ben.
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  arch/powerpc/kernel/irq.c |   17 +++++++++--------
->  1 file changed, 9 insertions(+), 8 deletions(-)
-> 
-> Index: linux-2.6-tip/arch/powerpc/kernel/irq.c
-> ===================================================================
-> --- linux-2.6-tip.orig/arch/powerpc/kernel/irq.c
-> +++ linux-2.6-tip/arch/powerpc/kernel/irq.c
-> @@ -676,16 +676,15 @@ void irq_set_virq_count(unsigned int cou
->  static int irq_setup_virq(struct irq_host *host, unsigned int virq,
->  			    irq_hw_number_t hwirq)
->  {
-> -	struct irq_desc *desc;
-> +	int res;
->  
-> -	desc = irq_to_desc_alloc_node(virq, 0);
-> -	if (!desc) {
-> +	res = irq_alloc_desc_at(virq, 0);
-> +	if (res != virq) {
->  		pr_debug("irq: -> allocating desc failed\n");
->  		goto error;
->  	}
->  
-> -	/* Clear IRQ_NOREQUEST flag */
-> -	desc->status &= ~IRQ_NOREQUEST;
-> +	irq_clear_status_flags(virq, IRQ_NOREQUEST);
->  
->  	/* map it */
->  	smp_wmb();
-> @@ -694,11 +693,13 @@ static int irq_setup_virq(struct irq_hos
->  
->  	if (host->ops->map(host, virq, hwirq)) {
->  		pr_debug("irq: -> mapping failed, freeing\n");
-> -		goto error;
-> +		goto errdesc;
->  	}
->  
->  	return 0;
->  
-> +errdesc:
-> +	irq_free_descs(virq, 1);
->  error:
->  	irq_free_virt(virq, 1);
->  	return -1;
-> @@ -877,9 +878,9 @@ void irq_dispose_mapping(unsigned int vi
->  	smp_mb();
->  	irq_map[virq].hwirq = host->inval_irq;
->  
-> -	/* Set some flags */
-> -	irq_to_desc(virq)->status |= IRQ_NOREQUEST;
-> +	irq_set_status_flags(virq, IRQ_NOREQUEST);
->  
-> +	irq_free_descs(virq, 1);
->  	/* Free it */
->  	irq_free_virt(virq, 1);
->  }
-> 
+--Signature=_Fri__1_Oct_2010_10_49_35_+1000_B.JqSsEBq6qdlWUX
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMpTAfAAoJEDMEi1NhKgbsE9UH/1nEV7Zs/aZ99bV63Xf0wy7H
+xKbSFjPfaic45i8V1YOckeVWtVjRc90s1oDXtaG3qPFDx42wB/CTOtrLFMsoYlH8
+CO3MTLuxLE61YNPurxK/CUa9b0tac8yRN0s9akEtncLGV/Ed6Y36yObKmtqOymmC
+yi2Z0ukien4ad8oN9f7VyPvTIayxuIAJC/S5LXsghRsIthhohRac+QK7XhymLumz
+ywO4fc0HmGz/qaJeSPAXHah1tXysuzbLSBDhvU1CYNEFqZ+s2pzATP3h2n4wwtr7
+63cAQXAh8tgvAZpB61rw9bYpHgZcAww32fFjFXv6hdp7IU+Q13gLbjj9HCTBgDk=
+=/slT
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__1_Oct_2010_10_49_35_+1000_B.JqSsEBq6qdlWUX--
