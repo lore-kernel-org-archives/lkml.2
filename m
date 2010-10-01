@@ -1,74 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932668Ab0JAPWa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 11:22:30 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50153 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932400Ab0JAPW3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 11:22:29 -0400
-Message-ID: <4CA5FC96.1030300@zytor.com>
-Date: Fri, 01 Oct 2010 08:21:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S932684Ab0JAPXH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 11:23:07 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:61060 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932177Ab0JAPXF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 11:23:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=c6MTWuj99Dl5yJTkBWEyiNjdqNj047ucgde3hqjoAJRyeTKVV5eKTVe5zOFzYuqdoE
+         VZouEsjhDV9EwpttiC1jaM5ibuZRHkcgzD+NZfXdSRlO3w3kY7oyiZxK0beFvtDsmdXK
+         RgTOiLsVKZTCKKTi8iAn8vTh8xkw1j0NdsxIw=
+Date: Fri, 1 Oct 2010 19:22:59 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/8] altera_uart: Make it possible to use Altera UART
+ and 8250 ports together
+Message-ID: <20101001152258.GA14846@oksana.dev.rtsoft.ru>
+References: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
+ <20101001132207.GE25897@oksana.dev.rtsoft.ru>
+ <20101001134138.5ea2fb55@linux.intel.com>
+ <20101001135254.GA27739@oksana.dev.rtsoft.ru>
+ <20101001151841.3fad627c@linux.intel.com>
 MIME-Version: 1.0
-To: Jan Beulich <JBeulich@novell.com>
-CC: Ingo Molnar <mingo@elte.hu>, heukelum@fastmail.fm, tglx@linutronix.de,
-        akpm@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
-References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org> <4C91F07E0200007800016B50@vpn.id2.novell.com> <20100916082816.GA25681@elte.hu> <4C91F3A30200007800016B64@vpn.id2.novell.com> <20100916101355.GA31458@elte.hu> <4C9219BC0200007800016C53@vpn.id2.novell.com> <4CA52AA5.5040402@zytor.com> <4CA5B7910200007800019F50@vpn.id2.novell.com>
-In-Reply-To: <4CA5B7910200007800019F50@vpn.id2.novell.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20101001151841.3fad627c@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/01/2010 01:27 AM, Jan Beulich wrote:
->>>> On 01.10.10 at 02:26, "H. Peter Anvin" <hpa@zytor.com> wrote:
->> ... but that doesn't work with the macros like movq_cfi.  On those, we
+On Fri, Oct 01, 2010 at 03:18:41PM +0100, Alan Cox wrote:
+> > I guess the sane maximum number of ports would be 8, but it is still
+> > possible to do hundreds of them.
 > 
-> Is that only because of the register names used as operands to
-> movq_cfi etc not having the % specified right away? I don't think
-> that is really needed, i.e. the % could go there rather than being
-> added in the macro body - the .cfi_* directives are perfectly happy
-> with having the prefix there (and I don't know why it was coded
-> this way in the first place, as this made it less similar to the plain
-> movq while I thought the goal was to keep the differences to a
-> minimum).
-> 
+> In that case you may just want to allocate a dynamic major instead - or
+> do you actually need a fixed major/minor for your boot up ?
 
-No, and in fact the problem that spurred this discussion was in the use
-of immediates, not registers:
+I don't need it, but someone might.
 
-	pushq_cfi $(USER_DS)
+Plus, it doesn't solve anything as there are only 256 minor numbers. ;-)
+If we ever want  to support the insane number of Altera UARTs, we'll
+have to solve it very differently. For now, I'd vote for keeping it
+simple.
 
-Obviously we can't add the % register prefix, since pushq can take
-either a register or an immediate (or, for that matter, a memory operand).
-
->> could argue that at least people won't put $ on them, but cpp will still
->> split them apart with spaces; this apparently causes problems at least
->> as soon as there is an expression more complicated than addition
->> involved (apparently plus signs are okay, but minus signs aren't!)
->>
->> I'm completely lost about how to deal with this.   We can't simply
->> defang the macros -- at least not in a way that is likely to *stay*
->> working -- and dropping the macros is seriously going to impact the
->> debuggability of the kernel.  One way, of course, is to simply declare
->> binutils 2.16 and 2.15.9x (which is apparently included in
->> RHEL/CentOS 4) to be broken beyond repair unless distros backport a fix,
->> and in many ways I think that is the preferred option, but I don't know
->> if that makes sense to others...
-> 
-> The other alternative, albeit disliked by Ingo, continues to be to use
-> __stringify() on all non-trivial operands, which then wouldn't require
-> suppressing CONFIG_AS_CFI for pre-2.17 binutils.
-
-You should be taken out and shot for even thinking that, never mind
-putting it in writing...
-
-	-hpa
+Thanks,
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
