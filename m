@@ -1,118 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab0JAPyD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 11:54:03 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48539 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988Ab0JAPyB convert rfc822-to-8bit (ORCPT
+	id S1751970Ab0JAQCH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 12:02:07 -0400
+Received: from am1ehsobe003.messaging.microsoft.com ([213.199.154.206]:59512
+	"EHLO AM1EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751798Ab0JAQCD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 11:54:01 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: "Marathe, Yogesh" <yogesh_marathe@ti.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>
-CC: "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Fri, 1 Oct 2010 10:52:48 -0500
-Subject: RE: [PATCH 1/4] iommu: remove CONFIG_MPU_BRIDGE_IOMMU
-Thread-Topic: [PATCH 1/4] iommu: remove CONFIG_MPU_BRIDGE_IOMMU
-Thread-Index: ActhFHAvoISiTxAwSQ2kZuuZXu0mxQALAsvwAA/8nmA=
-Message-ID: <496565EC904933469F292DDA3F1663E602F46544CE@dlee06.ent.ti.com>
-References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
- <1285902536-7043-2-git-send-email-x0095840@ti.com>
- <B85A65D85D7EB246BE421B3FB0FBB593023412B188@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593023412B188@dbde02.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Oct 2010 12:02:03 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h66h)
+X-Spam-TCS-SCL: 5:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L9MCH5-02-D86-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Will Deacon <will.deacon@arm.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 5/5] oprofile: Remove duplicate code around __oprofilefs_create_file()
+Date: Fri, 1 Oct 2010 17:56:27 +0200
+Message-ID: <1285948587-24521-6-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
+References: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Removing duplicate code by assigning the inodes private data pointer
+in __oprofilefs_create_file(). Extending the function interface to
+pass the pointer.
+
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ drivers/oprofile/oprofilefs.c |   46 ++++++++++++----------------------------
+ 1 files changed, 14 insertions(+), 32 deletions(-)
+
+diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
+index 2766a6d..789a1a8 100644
+--- a/drivers/oprofile/oprofilefs.c
++++ b/drivers/oprofile/oprofilefs.c
+@@ -126,50 +126,41 @@ static const struct file_operations ulong_ro_fops = {
+ };
  
+ 
+-static struct dentry *__oprofilefs_create_file(struct super_block *sb,
++static int __oprofilefs_create_file(struct super_block *sb,
+ 	struct dentry *root, char const *name, const struct file_operations *fops,
+-	int perm)
++	int perm, void *priv)
+ {
+ 	struct dentry *dentry;
+ 	struct inode *inode;
+ 
+ 	dentry = d_alloc_name(root, name);
+ 	if (!dentry)
+-		return NULL;
++		return -ENOMEM;
+ 	inode = oprofilefs_get_inode(sb, S_IFREG | perm);
+ 	if (!inode) {
+ 		dput(dentry);
+-		return NULL;
++		return -ENOMEM;
+ 	}
+ 	inode->i_fop = fops;
+ 	d_add(dentry, inode);
+-	return dentry;
++	dentry->d_inode->i_private = priv;
++	return 0;
+ }
+ 
+ 
+ int oprofilefs_create_ulong(struct super_block *sb, struct dentry *root,
+ 	char const *name, unsigned long *val)
+ {
+-	struct dentry *d = __oprofilefs_create_file(sb, root, name,
+-						     &ulong_fops, 0644);
+-	if (!d)
+-		return -EFAULT;
+-
+-	d->d_inode->i_private = val;
+-	return 0;
++	return __oprofilefs_create_file(sb, root, name,
++					&ulong_fops, 0644, val);
+ }
+ 
+ 
+ int oprofilefs_create_ro_ulong(struct super_block *sb, struct dentry *root,
+ 	char const *name, unsigned long *val)
+ {
+-	struct dentry *d = __oprofilefs_create_file(sb, root, name,
+-						     &ulong_ro_fops, 0444);
+-	if (!d)
+-		return -EFAULT;
+-
+-	d->d_inode->i_private = val;
+-	return 0;
++	return __oprofilefs_create_file(sb, root, name,
++					&ulong_ro_fops, 0444, val);
+ }
+ 
+ 
+@@ -189,31 +180,22 @@ static const struct file_operations atomic_ro_fops = {
+ int oprofilefs_create_ro_atomic(struct super_block *sb, struct dentry *root,
+ 	char const *name, atomic_t *val)
+ {
+-	struct dentry *d = __oprofilefs_create_file(sb, root, name,
+-						     &atomic_ro_fops, 0444);
+-	if (!d)
+-		return -EFAULT;
+-
+-	d->d_inode->i_private = val;
+-	return 0;
++	return __oprofilefs_create_file(sb, root, name,
++					&atomic_ro_fops, 0444, val);
+ }
+ 
+ 
+ int oprofilefs_create_file(struct super_block *sb, struct dentry *root,
+ 	char const *name, const struct file_operations *fops)
+ {
+-	if (!__oprofilefs_create_file(sb, root, name, fops, 0644))
+-		return -EFAULT;
+-	return 0;
++	return __oprofilefs_create_file(sb, root, name, fops, 0644, NULL);
+ }
+ 
+ 
+ int oprofilefs_create_file_perm(struct super_block *sb, struct dentry *root,
+ 	char const *name, const struct file_operations *fops, int perm)
+ {
+-	if (!__oprofilefs_create_file(sb, root, name, fops, perm))
+-		return -EFAULT;
+-	return 0;
++	return __oprofilefs_create_file(sb, root, name, fops, perm, NULL);
+ }
+ 
+ 
+-- 
+1.7.2.2
 
-Hi Yogesh,
 
-> -----Original Message-----
-> From: Marathe, Yogesh 
-> Sent: Friday, October 01, 2010 4:33 AM
-> To: Guzman Lugo, Fernando; Hiroshi.DOYU@nokia.com
-> Cc: felipe.contreras@nokia.com; ameya.palande@nokia.com; 
-> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
-> linux-omap@vger.kernel.org
-> Subject: RE: [PATCH 1/4] iommu: remove CONFIG_MPU_BRIDGE_IOMMU
-> 
-> > -----Original Message-----
-> > From: linux-omap-owner@vger.kernel.org [mailto:linux-omap- 
-> > owner@vger.kernel.org] On Behalf Of Guzman Lugo, Fernando
-> > Sent: Friday, October 01, 2010 8:39 AM
-> > To: Hiroshi.DOYU@nokia.com
-> > Cc: felipe.contreras@nokia.com; ameya.palande@nokia.com; linux- 
-> > kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux- 
-> > omap@vger.kernel.org; Guzman Lugo, Fernando
-> > Subject: [PATCH 1/4] iommu: remove
-> > CONFIG_MPU_BRIDGE_IOMMU
-> > 
-> > remove CONFIG_MPU_BRIDGE_IOMMU in order to create iommu_device for 
-> > iva2.
-> > 
-> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> > ---
-> >  arch/arm/mach-omap2/omap-iommu.c |    2 --
-> >  1 files changed, 0 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/mach-omap2/omap-iommu.c b/arch/arm/mach- 
-> > omap2/omap-iommu.c index f5a1aad..bb8c01d 100644
-> > --- a/arch/arm/mach-omap2/omap-iommu.c
-> > +++ b/arch/arm/mach-omap2/omap-iommu.c
-> > @@ -35,7 +35,6 @@ static struct iommu_device omap3_devices[] = {
-> >  			.clk_name = "cam_ick",
-> >  		},
-> >  	},
-> > -#if defined(CONFIG_MPU_BRIDGE_IOMMU)
-> >  	{
-> >  		.base = 0x5d000000,
-> >  		.irq = 28,
-> > @@ -45,7 +44,6 @@ static struct iommu_device omap3_devices[] = {
-> >  			.clk_name = "iva2_ck",
-> >  		},
-> >  	},
-> > -#endif
-> >  };
-> >  #define NR_OMAP3_IOMMU_DEVICES
-> > ARRAY_SIZE(omap3_devices)
-> >  static struct platform_device
-> > *omap3_iommu_pdev[NR_OMAP3_IOMMU_DEVICES];
-> > --
-> > 1.6.3.3
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe 
-> linux-omap" 
-> > in the body of a message to majordomo@vger.kernel.org More 
-> majordomo 
-> > info at  http://vger.kernel.org/majordomo-info.html
-> 
-> Fernando,
-> 
-> I have already submitted this patch and it is being discussed here.
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg35615.html
-
-Thanks Yogesh I was not aware of that. So please discard this patch.
-
-
-Regards,
-Fernando.
-
-> 
-> Regards,
-> Yogesh.
-> 
-> 
