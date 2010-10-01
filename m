@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932660Ab0JANWr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 09:22:47 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:65327 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932587Ab0JANWo (ORCPT
+	id S932632Ab0JANWa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 09:22:30 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:41217
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932406Ab0JANWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 09:22:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=hps9FUyhQW1OINvi+bNuiEKszduHbGw9c8x8W9SSZBR30m6TfR5GfF7Q31Z3LX32Xn
-         7l1qtsybxHYlcTtsXN6QV8eJLesb5A3ZZkcE2puzb1mKODMW9lPrn2Wij8KW645My+P9
-         hKlSkZJPGD4QH9kNnL1tnuwsHb/5ibIfUASKE=
-Date: Fri, 1 Oct 2010 17:22:37 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Alan Cox <alan@linux.intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Tobias Klauser <tklauser@distanz.ch>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] altera_uart: Fixup type usage of port flags
-Message-ID: <20101001132237.GF25897@oksana.dev.rtsoft.ru>
-References: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
+	Fri, 1 Oct 2010 09:22:15 -0400
+X-SpamScore: -23
+X-BigFish: VPS-23(zzbb2cK1432N98dN111aL148cMzz1202hzzz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9M54E-01-BR6-02
+X-M-MSG: 
+Date: Fri, 1 Oct 2010 15:21:52 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Will Deacon <will.deacon@arm.com>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the oprofile tree with the tip tree
+Message-ID: <20101001132151.GC13563@erda.amd.com>
+References: <20101001135301.5307c860.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20101001132045.GA9649@oksana.dev.rtsoft.ru>
+In-Reply-To: <20101001135301.5307c860.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-port->flags is of type upf_t, which corresponds to UPF_* flags.
+On 30.09.10 23:53:01, Stephen Rothwell wrote:
+> Today's linux-next merge of the oprofile tree got a conflict in
+> arch/arm/oprofile/common.c between commit
+> 98d943b02f6f1b57787ff1aa6f34d019a407e3ee ("oprofile, ARM: Release
+> resources on failure") from the tip tree and commit
+> c7fd239a647ead1c336a051012d6bb96465ea8c6 ("ARM: oprofile: fix and
+> simplify init/exit functions") from the oprofile tree.
+> 
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-ASYNC_BOOT_AUTOCONF is an unsigned integer, which happen to
-be the same as UPF_BOOT_AUTOCONF.
+Stephen,
 
-Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
----
- drivers/serial/altera_uart.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+thanks for catching this. I have updated the oprofile/for-next tree
+and now it should merge without conflicts with tip.
 
-diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
-index 99e007f..304181c 100644
---- a/drivers/serial/altera_uart.c
-+++ b/drivers/serial/altera_uart.c
-@@ -420,7 +420,7 @@ int __init early_altera_uart_setup(struct altera_uart_platform_uart *platp)
- 		port->iotype = SERIAL_IO_MEM;
- 		port->irq = platp[i].irq;
- 		port->uartclk = platp[i].uartclk;
--		port->flags = ASYNC_BOOT_AUTOCONF;
-+		port->flags = UPF_BOOT_AUTOCONF;
- 		port->ops = &altera_uart_ops;
- 		port->private_data = platp;
- 	}
-@@ -550,7 +550,7 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
- 	port->iotype = SERIAL_IO_MEM;
- 	port->uartclk = platp->uartclk;
- 	port->ops = &altera_uart_ops;
--	port->flags = ASYNC_BOOT_AUTOCONF;
-+	port->flags = UPF_BOOT_AUTOCONF;
- 	port->private_data = platp;
- 
- 	uart_add_one_port(&altera_uart_driver, port);
+Will,
+
+you may pull the merge from oprofile/core too.
+
+Thanks again,
+
+-Robert
+
 -- 
-1.7.0.5
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
