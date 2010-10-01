@@ -1,27 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751278Ab0JADnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 23:43:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58015 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750847Ab0JADna (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 23:43:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 1 Oct 2010 12:38:14 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "Kirill A. Shutsemov" <kirill@shutemov.name>
-Cc: linux-mm@kvack.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUGFIX][PATCH v2] memcg: fix thresholds with use_hierarchy ==
- 1
-Message-Id: <20101001123814.0b777694.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1285841792-23664-1-git-send-email-kirill@shutemov.name>
-References: <1285841792-23664-1-git-send-email-kirill@shutemov.name>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1751839Ab0JADxK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 23:53:10 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50630 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750968Ab0JADxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 23:53:08 -0400
+Date: Fri, 1 Oct 2010 13:53:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Robert Richter <robert.richter@amd.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the oprofile tree with the tip tree
+Message-Id: <20101001135301.5307c860.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -29,15 +24,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Sep 2010 13:16:32 +0300
-"Kirill A. Shutsemov" <kirill@shutemov.name> wrote:
+Hi Robert,
 
-> From: Kirill A. Shutemov <kirill@shutemov.name>
-> 
-> We need to check parent's thresholds if parent has use_hierarchy == 1 to
-> be sure that parent's threshold events will be triggered even if parent
-> itself is not active (no MEM_CGROUP_EVENTS).
-> 
-> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Today's linux-next merge of the oprofile tree got a conflict in
+arch/arm/oprofile/common.c between commit
+98d943b02f6f1b57787ff1aa6f34d019a407e3ee ("oprofile, ARM: Release
+resources on failure") from the tip tree and commit
+c7fd239a647ead1c336a051012d6bb96465ea8c6 ("ARM: oprofile: fix and
+simplify init/exit functions") from the oprofile tree.
 
+I fixed it up (I think - see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc arch/arm/oprofile/common.c
+index d1fb5b2,d660cb8..0000000
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@@ -395,6 -393,13 +394,14 @@@ int __init oprofile_arch_init(struct op
+  	else
+  		pr_info("oprofile: using %s\n", ops->cpu_type);
+  
++ out:
++ 	if (ret) {
++ 		for_each_possible_cpu(cpu)
++ 			kfree(perf_events[cpu]);
++ 		kfree(counter_config);
+++		counter_config = NULL;
++ 	}
++ 
+  	return ret;
+  }
+  
