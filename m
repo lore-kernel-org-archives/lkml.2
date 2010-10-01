@@ -1,23 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755602Ab0JAHGd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 03:06:33 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57806 "EHLO
+	id S1755679Ab0JAHIX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 03:08:23 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57815 "EHLO
 	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab0JAHG3 (ORCPT
+	with ESMTP id S1754967Ab0JAHGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 03:06:29 -0400
+	Fri, 1 Oct 2010 03:06:32 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
         benh@kernel.crashing.org
 Cc: paulus@samba.org, Ian Munsie <imunsie@au1.ibm.com>,
-        Matthew McClintock <msm@freescale.com>,
-        Torez Smith <lnxtorez@linux.vnet.ibm.com>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Subject: [PATCH 11/18] powerpc: Make assembly endian agnostic when accessing 64bit values
-Date: Fri,  1 Oct 2010 17:06:04 +1000
-Message-Id: <1285916771-18033-12-git-send-email-imunsie@au1.ibm.com>
+        Stefan Weil <weil@mail.berlios.de>, Jiri Kosina <jkosina@suse.cz>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Sean MacLennan <smaclennan@pikatech.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Michal Simek <monstr@monstr.eu>,
+        "David S. Miller" <davem@davemloft.net>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 14/18] powerpc, of_serial: Endianness issues setting up the serial ports
+Date: Fri,  1 Oct 2010 17:06:07 +1000
+Message-Id: <1285916771-18033-15-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
 References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
@@ -27,223 +29,150 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-The 32bit PowerPC ABI states that when passing arguments and return
-values via registers a value of type long long is stored in pairs of
-registers as follows:
+The speed and clock of the serial ports is retrieved from the device
+tree in both the PowerPC legacy serial code and the Open Firmware serial
+driver, therefore they need to handle the fact that the device tree is
+always big endian, while the CPU may not be.
 
-The lower addressed word is stored in the next available odd numbered
-register and the higher addressed value is stored in register+1.
-
-i.e. the values will either be stored in the next available of:
-r3/r4, r5/r6, r7/r8 or r9/r10
-
-Since the lower addressed value must be in the lower register number we
-have an endianness issue and need to treat this specially in any
-assembly that is passed or returns a 64bit value.
-
-This patch introduces some aliases in ppc_asm.h which will select the
-appropriate register from the pair depending on the CPU endianness.
-There are in the form of r34l for the low word from the r3/r4 pair and
-r34h for the high word and so on for the remaining register pairs.
-
-It also introduces p64l and p64h which can be used to select the
-appropriate offset whenever loading a 32bit word while referring to the
-address of a 64bit value. For instance if r3 contains the address of a
-64bit value the following assembly would load the high word into r5 and
-the low word into r6 regardless of endianness:
-	lwz	r5,p64h(r3)
-	lwz	r6,p64l(r3)
-
-Finally, the patch also alters the functions in misc_32.S that take
-64bit arguments to use these new accessors to work on the little endian
-PowerPC architecture:
-
-mulhdu, __div64_32, __ashrdi3, __ashldi3, __lshrdi3 and __ucmpdi2
+Also fix other device tree references in the legacy serial code.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- arch/powerpc/include/asm/ppc_asm.h |   24 ++++++++++++
- arch/powerpc/kernel/misc_32.S      |   72 ++++++++++++++++++------------------
- arch/powerpc/lib/div64.S           |    8 ++--
- 3 files changed, 64 insertions(+), 40 deletions(-)
+ arch/powerpc/kernel/legacy_serial.c |   22 +++++++++++-----------
+ drivers/serial/of_serial.c          |   12 ++++++------
+ 2 files changed, 17 insertions(+), 17 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/ppc_asm.h b/arch/powerpc/include/asm/ppc_asm.h
-index 9821006..6929483 100644
---- a/arch/powerpc/include/asm/ppc_asm.h
-+++ b/arch/powerpc/include/asm/ppc_asm.h
-@@ -510,6 +510,30 @@ END_FTR_SECTION_IFCLR(CPU_FTR_601)
- #define	r30	30
- #define	r31	31
+diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
+index c1fd0f9..c834757 100644
+--- a/arch/powerpc/kernel/legacy_serial.c
++++ b/arch/powerpc/kernel/legacy_serial.c
+@@ -52,14 +52,14 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
+ 				  phys_addr_t taddr, unsigned long irq,
+ 				  upf_t flags, int irq_check_parent)
+ {
+-	const u32 *clk, *spd;
++	const __be32 *clk, *spd;
+ 	u32 clock = BASE_BAUD * 16;
+ 	int index;
  
-+/* Endian agnostic accessors for 64 bit values passed and returned in GPRs */
-+#ifdef __BIG_ENDIAN__
-+#define r34l	r4
-+#define r34h	r3
-+#define r56l	r6
-+#define r56h	r5
-+#define r78l	r8
-+#define r78h	r7
-+
-+/* Endian agnostic accessors for pointer offsets to 64 bit values */
-+#define p64l	4
-+#define p64h	0
-+#else
-+#define r34l	r3
-+#define r34h	r4
-+#define r56l	r5
-+#define r56h	r6
-+#define r78l	r7
-+#define r78h	r8
-+
-+#define p64l	0
-+#define p64h	4
-+#endif
-+
+ 	/* get clock freq. if present */
+ 	clk = of_get_property(np, "clock-frequency", NULL);
+ 	if (clk && *clk)
+-		clock = *clk;
++		clock = be32_to_cpup(clk);
  
- /* Floating Point Registers (FPRs) */
+ 	/* get default speed if present */
+ 	spd = of_get_property(np, "current-speed", NULL);
+@@ -109,7 +109,7 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
+ 	legacy_serial_infos[index].taddr = taddr;
+ 	legacy_serial_infos[index].np = of_node_get(np);
+ 	legacy_serial_infos[index].clock = clock;
+-	legacy_serial_infos[index].speed = spd ? *spd : 0;
++	legacy_serial_infos[index].speed = spd ? be32_to_cpup(spd) : 0;
+ 	legacy_serial_infos[index].irq_check_parent = irq_check_parent;
  
-diff --git a/arch/powerpc/kernel/misc_32.S b/arch/powerpc/kernel/misc_32.S
-index a7a570d..6c40079 100644
---- a/arch/powerpc/kernel/misc_32.S
-+++ b/arch/powerpc/kernel/misc_32.S
-@@ -60,27 +60,27 @@ _GLOBAL(call_handle_irq)
-  * This returns the high 64 bits of the product of two 64-bit numbers.
-  */
- _GLOBAL(mulhdu)
--	cmpwi	r6,0
--	cmpwi	cr1,r3,0
--	mr	r10,r4
--	mulhwu	r4,r4,r5
-+	cmpwi	r56l,0
-+	cmpwi	cr1,r34h,0
-+	mr	r10,r34l
-+	mulhwu	r34l,r34l,r56h
- 	beq	1f
--	mulhwu	r0,r10,r6
--	mullw	r7,r10,r5
-+	mulhwu	r0,r10,r56l
-+	mullw	r7,r10,r56h
- 	addc	r7,r0,r7
--	addze	r4,r4
-+	addze	r34l,r34l
- 1:	beqlr	cr1		/* all done if high part of A is 0 */
--	mr	r10,r3
--	mullw	r9,r3,r5
--	mulhwu	r3,r3,r5
-+	mr	r10,r34h
-+	mullw	r9,r34h,r56h
-+	mulhwu	r34h,r34h,r56h
- 	beq	2f
--	mullw	r0,r10,r6
--	mulhwu	r8,r10,r6
-+	mullw	r0,r10,r56l
-+	mulhwu	r8,r10,r56l
- 	addc	r7,r0,r7
--	adde	r4,r4,r8
--	addze	r3,r3
--2:	addc	r4,r4,r9
--	addze	r3,r3
-+	adde	r34l,r34l,r8
-+	addze	r34h,r34h
-+2:	addc	r34l,r34l,r9
-+	addze	r34h,r34h
- 	blr
+ 	printk(KERN_DEBUG "Found legacy serial port %d for %s\n",
+@@ -168,7 +168,7 @@ static int __init add_legacy_soc_port(struct device_node *np,
+ static int __init add_legacy_isa_port(struct device_node *np,
+ 				      struct device_node *isa_brg)
+ {
+-	const u32 *reg;
++	const __be32 *reg;
+ 	const char *typep;
+ 	int index = -1;
+ 	u64 taddr;
+@@ -181,7 +181,7 @@ static int __init add_legacy_isa_port(struct device_node *np,
+ 		return -1;
  
- /*
-@@ -606,37 +606,37 @@ _GLOBAL(atomic_set_mask)
-  */
- _GLOBAL(__ashrdi3)
- 	subfic	r6,r5,32
--	srw	r4,r4,r5	# LSW = count > 31 ? 0 : LSW >> count
-+	srw	r34l,r34l,r5	# LSW = count > 31 ? 0 : LSW >> count
- 	addi	r7,r5,32	# could be xori, or addi with -32
--	slw	r6,r3,r6	# t1 = count > 31 ? 0 : MSW << (32-count)
-+	slw	r6,r34h,r6	# t1 = count > 31 ? 0 : MSW << (32-count)
- 	rlwinm	r8,r7,0,32	# t3 = (count < 32) ? 32 : 0
--	sraw	r7,r3,r7	# t2 = MSW >> (count-32)
--	or	r4,r4,r6	# LSW |= t1
-+	sraw	r7,r34h,r7	# t2 = MSW >> (count-32)
-+	or	r34l,r34l,r6	# LSW |= t1
- 	slw	r7,r7,r8	# t2 = (count < 32) ? 0 : t2
--	sraw	r3,r3,r5	# MSW = MSW >> count
--	or	r4,r4,r7	# LSW |= t2
-+	sraw	r34h,r34h,r5	# MSW = MSW >> count
-+	or	r34l,r34l,r7	# LSW |= t2
- 	blr
+ 	/* Verify it's an IO port, we don't support anything else */
+-	if (!(reg[0] & 0x00000001))
++	if (!(be32_to_cpu(reg[0]) & 0x00000001))
+ 		return -1;
  
- _GLOBAL(__ashldi3)
- 	subfic	r6,r5,32
--	slw	r3,r3,r5	# MSW = count > 31 ? 0 : MSW << count
-+	slw	r34h,r34h,r5	# MSW = count > 31 ? 0 : MSW << count
- 	addi	r7,r5,32	# could be xori, or addi with -32
--	srw	r6,r4,r6	# t1 = count > 31 ? 0 : LSW >> (32-count)
--	slw	r7,r4,r7	# t2 = count < 32 ? 0 : LSW << (count-32)
--	or	r3,r3,r6	# MSW |= t1
--	slw	r4,r4,r5	# LSW = LSW << count
--	or	r3,r3,r7	# MSW |= t2
-+	srw	r6,r34l,r6	# t1 = count > 31 ? 0 : LSW >> (32-count)
-+	slw	r7,r34l,r7	# t2 = count < 32 ? 0 : LSW << (count-32)
-+	or	r34h,r34h,r6	# MSW |= t1
-+	slw	r34l,r34l,r5	# LSW = LSW << count
-+	or	r34h,r34h,r7	# MSW |= t2
- 	blr
+ 	/* Now look for an "ibm,aix-loc" property that gives us ordering
+@@ -202,7 +202,7 @@ static int __init add_legacy_isa_port(struct device_node *np,
+ 		taddr = 0;
  
- _GLOBAL(__lshrdi3)
- 	subfic	r6,r5,32
--	srw	r4,r4,r5	# LSW = count > 31 ? 0 : LSW >> count
-+	srw	r34l,r34l,r5	# LSW = count > 31 ? 0 : LSW >> count
- 	addi	r7,r5,32	# could be xori, or addi with -32
--	slw	r6,r3,r6	# t1 = count > 31 ? 0 : MSW << (32-count)
--	srw	r7,r3,r7	# t2 = count < 32 ? 0 : MSW >> (count-32)
--	or	r4,r4,r6	# LSW |= t1
--	srw	r3,r3,r5	# MSW = MSW >> count
--	or	r4,r4,r7	# LSW |= t2
-+	slw	r6,r34h,r6	# t1 = count > 31 ? 0 : MSW << (32-count)
-+	srw	r7,r34h,r7	# t2 = count < 32 ? 0 : MSW >> (count-32)
-+	or	r34l,r34l,r6	# LSW |= t1
-+	srw	r34h,r34h,r5	# MSW = MSW >> count
-+	or	r34l,r34l,r7	# LSW |= t2
- 	blr
+ 	/* Add port, irq will be dealt with later */
+-	return add_legacy_port(np, index, UPIO_PORT, reg[1], taddr,
++	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]), taddr,
+ 			       NO_IRQ, UPF_BOOT_AUTOCONF, 0);
  
- /*
-@@ -644,10 +644,10 @@ _GLOBAL(__lshrdi3)
-  * Returns 0 if a < b, 1 if a == b, 2 if a > b.
-  */
- _GLOBAL(__ucmpdi2)
--	cmplw	r3,r5
-+	cmplw	r34h,r56h
- 	li	r3,1
- 	bne	1f
--	cmplw	r4,r6
-+	cmplw	r34l,r56l
- 	beqlr
- 1:	li	r3,0
- 	bltlr
-diff --git a/arch/powerpc/lib/div64.S b/arch/powerpc/lib/div64.S
-index 83d9832..12f2da4 100644
---- a/arch/powerpc/lib/div64.S
-+++ b/arch/powerpc/lib/div64.S
-@@ -17,8 +17,8 @@
- #include <asm/processor.h>
+ }
+@@ -251,9 +251,9 @@ static int __init add_legacy_pci_port(struct device_node *np,
+ 	 * we get to their "reg" property
+ 	 */
+ 	if (np != pci_dev) {
+-		const u32 *reg = of_get_property(np, "reg", NULL);
+-		if (reg && (*reg < 4))
+-			index = lindex = *reg;
++		const __be32 *reg = of_get_property(np, "reg", NULL);
++		if (reg && (be32_to_cpup(reg) < 4))
++			index = lindex = be32_to_cpup(reg);
+ 	}
  
- _GLOBAL(__div64_32)
--	lwz	r5,0(r3)	# get the dividend into r5/r6
--	lwz	r6,4(r3)
-+	lwz	r5,p64h(r3)	# get the dividend into r5/r6
-+	lwz	r6,p64l(r3)
- 	cmplw	r5,r4
- 	li	r7,0
- 	li	r8,0
-@@ -53,7 +53,7 @@ _GLOBAL(__div64_32)
- 	mullw	r10,r0,r4	# and get the remainder
- 	add	r8,r8,r0
- 	subf	r6,r10,r6
--4:	stw	r7,0(r3)	# return the quotient in *r3
--	stw	r8,4(r3)
-+4:	stw	r7,p64h(r3)	# return the quotient in *r3
-+	stw	r8,p64l(r3)
- 	mr	r3,r6		# return the remainder in r3
- 	blr
+ 	/* Local index means it's the Nth port in the PCI chip. Unfortunately
+@@ -507,7 +507,7 @@ static int __init check_legacy_serial_console(void)
+ 	struct device_node *prom_stdout = NULL;
+ 	int i, speed = 0, offset = 0;
+ 	const char *name;
+-	const u32 *spd;
++	const __be32 *spd;
+ 
+ 	DBG(" -> check_legacy_serial_console()\n");
+ 
+@@ -547,7 +547,7 @@ static int __init check_legacy_serial_console(void)
+ 	}
+ 	spd = of_get_property(prom_stdout, "current-speed", NULL);
+ 	if (spd)
+-		speed = *spd;
++		speed = be32_to_cpup(spd);
+ 
+ 	if (strcmp(name, "serial") != 0)
+ 		goto not_found;
+diff --git a/drivers/serial/of_serial.c b/drivers/serial/of_serial.c
+index 2af8fd1..17849dc 100644
+--- a/drivers/serial/of_serial.c
++++ b/drivers/serial/of_serial.c
+@@ -31,8 +31,8 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+ {
+ 	struct resource resource;
+ 	struct device_node *np = ofdev->dev.of_node;
+-	const unsigned int *clk, *spd;
+-	const u32 *prop;
++	const __be32 *clk, *spd;
++	const __be32 *prop;
+ 	int ret, prop_size;
+ 
+ 	memset(port, 0, sizeof *port);
+@@ -55,23 +55,23 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+ 	/* Check for shifted address mapping */
+ 	prop = of_get_property(np, "reg-offset", &prop_size);
+ 	if (prop && (prop_size == sizeof(u32)))
+-		port->mapbase += *prop;
++		port->mapbase += be32_to_cpup(prop);
+ 
+ 	/* Check for registers offset within the devices address range */
+ 	prop = of_get_property(np, "reg-shift", &prop_size);
+ 	if (prop && (prop_size == sizeof(u32)))
+-		port->regshift = *prop;
++		port->regshift = be32_to_cpup(prop);
+ 
+ 	port->irq = irq_of_parse_and_map(np, 0);
+ 	port->iotype = UPIO_MEM;
+ 	port->type = type;
+-	port->uartclk = *clk;
++	port->uartclk = be32_to_cpup(clk);
+ 	port->flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP
+ 		| UPF_FIXED_PORT | UPF_FIXED_TYPE;
+ 	port->dev = &ofdev->dev;
+ 	/* If current-speed was set, then try not to change it. */
+ 	if (spd)
+-		port->custom_divisor = *clk / (16 * (*spd));
++		port->custom_divisor = be32_to_cpup(clk) / (16 * (be32_to_cpup(spd)));
+ 
+ 	return 0;
+ }
 -- 
 1.7.1
 
