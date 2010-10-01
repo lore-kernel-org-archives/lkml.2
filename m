@@ -1,46 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab0JABs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 21:48:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50350 "EHLO mail.zytor.com"
+	id S1752041Ab0JAB7H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 21:59:07 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:38804 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751046Ab0JABs4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 21:48:56 -0400
-Message-ID: <4CA53DDE.5000901@zytor.com>
-Date: Thu, 30 Sep 2010 18:48:14 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1750952Ab0JAB7G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 21:59:06 -0400
+Date: Thu, 30 Sep 2010 18:58:57 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Valerie Aurora <vaurora@redhat.com>, Miklos Szeredi <miklos@szeredi.hu>,
+        viro@zeniv.linux.org.uk, hch@infradead.org, agruen@suse.de,
+        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 01/34] VFS: Make clone_mnt() and copy_tree() return
+ error codes
+Message-ID: <20101001015857.GA5003@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com>
+ <1284675145-4391-2-git-send-email-vaurora@redhat.com>
+ <E1P1FnW-0001yC-Ts@pomaz-ex.szeredi.hu>
+ <20100930214123.GA490@shell>
+ <20100930214418.GB490@shell>
+ <20101001003342.GI9247@ram-laptop>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        heukelum@fastmail.fm, tglx@linutronix.de,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
-References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org>	<4C91F07E0200007800016B50@vpn.id2.novell.com>	<20100916082816.GA25681@elte.hu>	<4C91F3A30200007800016B64@vpn.id2.novell.com>	<20100916101355.GA31458@elte.hu>	<4C9219BC0200007800016C53@vpn.id2.novell.com>	<4CA52AA5.5040402@zytor.com> <20100930180100.4607034f.akpm@linux-foundation.org>
-In-Reply-To: <20100930180100.4607034f.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101001003342.GI9247@ram-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2010 06:01 PM, Andrew Morton wrote:
->>
->> ... which these old versions of gas considers multiple arguments to the
->> macro, even though there is no comma anywhere.
+On Thu, Sep 30, 2010 at 05:33:42PM -0700, Ram Pai wrote:
+> On Thu, Sep 30, 2010 at 05:44:18PM -0400, Valerie Aurora wrote:
+> > (Resend with correct email for Ram Pai)
+> > 
+> > On Thu, Sep 30, 2010 at 11:51:30AM +0200, Miklos Szeredi wrote:
+> > > On Thu, 16 Sep 2010, Valerie Aurora wrote:
+> > > > copy_tree() can theoretically fail in a case other than ENOMEM, but
+> > > > always returns NULL which is interpreted by callers as -ENOMEM.
+> > > > Convert to return an explicit error.  Convert clone_mnt() for
+> > > > consistency and because union mounts will add new error cases.
+> > > 
+> > > I think it makes sense to push this fix to 2.6.37 independently of the
+> > > other patches.
+> > > 
+> > > Acked-by: Miklos Szeredi <mszeredi@suse.cz>
+> > 
+> > I'm certainly not going to argue, but I spent an hour trying to
+> > trigger the non-ENOMEM case (below) and failed - maybe it's
+> > unreachable?
+> > 
+> > > > @@ -1212,11 +1216,12 @@ struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
+> > > >  	struct path path;
+> > > >  
+> > > >  	if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(mnt))
+> > > > -		return NULL;
+> > > > +		return ERR_PTR(-EINVAL);
+> > 
+> > Ram, do you remember how this worked?
 > 
-> Could we run another little program after cpp which takes the spaces
-> out again?
+> Oops. That should be a OR condition. there is one other check in that
+> function that should also be a OR condition.
+
+I may be wrong here. Can't exactly recollect what CL_COPY_ALL flag means. Al Viro
+might remember?  If CL_COPY_ALL means, to clone everything irrespective of any other
+flags, then the above code seems right. 
+
+
 > 
+> BTW: the return value has to be NULL. right? because its not an error
+> to clone a unbindable mount. Nor is it an error to not specify CL_COPY_ALL.
+> It just means that you want nothing in return.
 
-We could try using the -traditional option to cpp, I don't know if that
-would break anything else.  We *used* to use it, and finally got rid of
-it...
+In any case i think the return value should be NULL.
 
-	-hpa
-
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+RP
