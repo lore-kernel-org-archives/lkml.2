@@ -1,48 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932576Ab0JAOZu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 10:25:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27339 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932151Ab0JAOZt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 10:25:49 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1285929315-2856-1-git-send-email-steve@digidescorp.com>
-References: <1285929315-2856-1-git-send-email-steve@digidescorp.com>
-To: "Steven J. Magnani" <steve@digidescorp.com>
-Cc: dhowells@redhat.com, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH][RESEND] nommu: add anonymous page memcg accounting
-Date: Fri, 01 Oct 2010 15:24:55 +0100
-Message-ID: <5206.1285943095@redhat.com>
+	id S932588Ab0JAO2E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 10:28:04 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:54518 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932151Ab0JAO2C convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 10:28:02 -0400
+From: Christophe Henri RICARD <christophe-h.ricard@st.com>
+To: James Morris <jmorris@namei.org>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "joe@perches.com" <joe@perches.com>
+Date: Fri, 1 Oct 2010 16:27:14 +0200
+Subject: RE: [PATCH 1/3] TPM: new stm i2c device driver
+Thread-Topic: [PATCH 1/3] TPM: new stm i2c device driver
+Thread-Index: ActhAsRuzjIc24maTcC2qxuk3BDmXgAcb0Ow
+Message-ID: <0B9F1C5B86169C4EA9D042C251022E49105CEE8F7E@SAFEX1MAIL3.st.com>
+References: <cover.1285870690.git.srajiv@linux.vnet.ibm.com>
+ <e828eb98bf5b36fea2bd89760d7bc3cf3d5b6755.1285870690.git.srajiv@linux.vnet.ibm.com>
+ <alpine.LRH.2.00.1010011049370.32042@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.00.1010011049370.32042@tundra.namei.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi James,
 
-Steven J. Magnani <steve@digidescorp.com> wrote:
+Which kernel are you using ?
+I have made my testing with a 2.6.35.4 kernel.
+As far as I know kernel 2.6.36 will not provide any ioctl field any more.
+May be this is the reason ?
 
-> Add the necessary calls to track VM anonymous page usage.
+Please let me know.
+Thanks
+Christophe
 
-Do we really need to do memcg accounting in NOMMU mode?  Might it be better to
-just apply the attached patch instead?
+-----Original Message-----
+From: James Morris [mailto:jmorris@namei.org] 
+Sent: Thursday, September 30, 2010 7:51 PM
+To: Rajiv Andrade
+Cc: linux-kernel@vger.kernel.org; joe@perches.com; Christophe Henri RICARD
+Subject: Re: [PATCH 1/3] TPM: new stm i2c device driver
 
-David
----
-diff --git a/init/Kconfig b/init/Kconfig
-index 2de5b1c..aecff10 100644
---- a/init/Kconfig
-+++ b/init/Kconfig
-@@ -555,7 +555,7 @@ config RESOURCE_COUNTERS
- 
- config CGROUP_MEM_RES_CTLR
- 	bool "Memory Resource Controller for Control Groups"
--	depends on CGROUPS && RESOURCE_COUNTERS
-+	depends on CGROUPS && RESOURCE_COUNTERS && MMU
- 	select MM_OWNER
- 	help
- 	  Provides a memory resource controller that manages both anonymous
+On Thu, 30 Sep 2010, Rajiv Andrade wrote:
+
+> From: Christophe Henri RICARD <christophe-h.ricard@st.com>
+> 
+> This driver uses the Linux I2C, TPM and generic gpio interfaces.
+> 
+> Signed-off-by: Christophe Henri RICARD <christophe-h.ricard@st.com>
+> Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+
+This does not look to have been compile tested against my tree:
+
+ CC [M]  drivers/char/tpm/tpm_stm_st19_i2c.o
+drivers/char/tpm/tpm_stm_st19_i2c.c:574: error: unknown field ioctl specified in initializer
+drivers/char/tpm/tpm_stm_st19_i2c.c:574: warning: initialization from incompatible pointer type
+make[1]: *** [drivers/char/tpm/tpm_stm_st19_i2c.o] Error 1
+
+The locked ioctl was removed in commit
+b19dd42faf413b4705d4adb38521e82d73fa4249
+
+
+
+- James
+-- 
+James Morris
+<jmorris@namei.org>
