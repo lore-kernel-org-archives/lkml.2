@@ -1,79 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751248Ab0JAEKq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 00:10:46 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:11359 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751140Ab0JAEKp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 00:10:45 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 01 Oct 2010 00:10:44 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH 2/2] vcs: invoke the vt update callback when /dev/vcs* is
- written to
-Message-id: <alpine.LFD.2.00.1009302329370.1146@xanadu.home>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751176Ab0JAE0p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 00:26:45 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:53597 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750864Ab0JAE0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 00:26:44 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX18kiLcllOMkJC0rfkqvq0hF/p6vfkASEZn/8SXIKv
+	oXpwl+wdbKc2ly
+Subject: [PATCH] fix 2.6.32.23 suspend regression caused by commit 6f6198a
+From: Mike Galbraith <efault@gmx.de>
+To: stable <stable@vger.kernel.org>
+Cc: Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Date: Fri, 01 Oct 2010 06:27:16 +0200
+Message-Id: <1285907236.7425.42.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A notifier chain is called whenever the vt code modifies a terminal
-content, except for one case which is when the modification comes
-through writes to /dev/vcs* devices.  Let's add the missing notifier
-invocation at the end of vcs_write() for that case too.
+Greetings -stable/Greg,
 
-Signed-off-by: Nicolas Pitre <nicolas.pitre@canonical.com>
+Thoroughly tested scheduler fixes series was not so thoroughly tested
+with suspend.. like at all (my nvidia card doesn't do the resume part).
+
+Sorry about that.
+
+	-Mike
+
+From: Mike Galbraith <efault@gmx.de>
+Date: Fri, 1 Oct 2010 05:57:59 +0200
+Subject: [PATCH] fix 2.6.32.23 suspend regression caused by commit 6f6198a
+
+6f6198a sched: kill migration thread in CPU_POST_DEAD instead of CPU_DEAD
+leaves migration threads lying about.  Mask out CPU_TASKS_FROZEN.
+
+Signed-off-by: Mike Galbraith <efault@gmx.de>
 ---
- drivers/char/vc_screen.c  |    2 ++
- drivers/char/vt.c         |    5 +++++
- include/linux/selection.h |    1 +
- 3 files changed, 8 insertions(+), 0 deletions(-)
+ kernel/sched.c |    7 +------
+ 1 files changed, 1 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
-index 9013573..58e8d5e 100644
---- a/drivers/char/vc_screen.c
-+++ b/drivers/char/vc_screen.c
-@@ -528,6 +528,8 @@ vcs_write(struct file *file, const char __user *buf, size_t count, loff_t *ppos)
- 	}
- 	*ppos += written;
- 	ret = written;
-+	if (written)
-+		vcs_scr_updated(vc);
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3480822..a675fd6 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -7752,10 +7752,9 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 	unsigned long flags;
+ 	struct rq *rq;
  
- unlock_out:
- 	release_console_sem();
-diff --git a/drivers/char/vt.c b/drivers/char/vt.c
-index 281aada..a8ec48e 100644
---- a/drivers/char/vt.c
-+++ b/drivers/char/vt.c
-@@ -4182,6 +4182,11 @@ void vcs_scr_writew(struct vc_data *vc, u16 val, u16 *org)
- 	}
- }
+-	switch (action) {
++	switch (action & ~CPU_TASKS_FROZEN) {
  
-+void vcs_scr_updated(struct vc_data *vc)
-+{
-+	notify_update(vc);
-+}
-+
- /*
-  *	Visible symbols for modules
-  */
-diff --git a/include/linux/selection.h b/include/linux/selection.h
-index 8cdaa11..85193aa 100644
---- a/include/linux/selection.h
-+++ b/include/linux/selection.h
-@@ -39,5 +39,6 @@ extern void putconsxy(struct vc_data *vc, unsigned char *p);
+ 	case CPU_UP_PREPARE:
+-	case CPU_UP_PREPARE_FROZEN:
+ 		p = kthread_create(migration_thread, hcpu, "migration/%d", cpu);
+ 		if (IS_ERR(p))
+ 			return NOTIFY_BAD;
+@@ -7770,7 +7769,6 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
  
- extern u16 vcs_scr_readw(struct vc_data *vc, const u16 *org);
- extern void vcs_scr_writew(struct vc_data *vc, u16 val, u16 *org);
-+extern void vcs_scr_updated(struct vc_data *vc);
+ 	case CPU_ONLINE:
+-	case CPU_ONLINE_FROZEN:
+ 		/* Strictly unnecessary, as first user will wake it. */
+ 		wake_up_process(cpu_rq(cpu)->migration_thread);
  
- #endif
+@@ -7787,7 +7785,6 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	case CPU_UP_CANCELED:
+-	case CPU_UP_CANCELED_FROZEN:
+ 		if (!cpu_rq(cpu)->migration_thread)
+ 			break;
+ 		/* Unbind it from offline cpu so it can run. Fall thru. */
+@@ -7812,7 +7809,6 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
+ 
+ 	case CPU_DEAD:
+-	case CPU_DEAD_FROZEN:
+ 		migrate_live_tasks(cpu);
+ 		rq = cpu_rq(cpu);
+ 		/* Idle task back to normal (off runqueue, low prio) */
+@@ -7846,7 +7842,6 @@ migration_call(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		break;
+ 
+ 	case CPU_DYING:
+-	case CPU_DYING_FROZEN:
+ 		/* Update our root-domain */
+ 		rq = cpu_rq(cpu);
+ 		spin_lock_irqsave(&rq->lock, flags);
+-- 
+1.7.1
+
+
 
