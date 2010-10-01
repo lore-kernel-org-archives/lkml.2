@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab0JAVJb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 17:09:31 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36392 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753999Ab0JAVJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 17:09:29 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [git pull request] ACPI patches for Linux 2.6.36-rc6
-Date: Fri, 1 Oct 2010 23:08:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-acpi@vger.kernel.org, stable@kernel.org,
-        "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <alpine.LFD.2.00.1010010142470.7033@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1010010142470.7033@localhost.localdomain>
+	id S1754752Ab0JAVL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 17:11:58 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42503 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753125Ab0JAVL4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 17:11:56 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010012308.12897.rjw@sisk.pl>
+In-Reply-To: <1285965973.2463.129.camel@pasglop>
+References: <20100930221351.682772535@linutronix.de> <20100930221743.014571381@linutronix.de>
+ <1285893737.2463.4.camel@pasglop> <alpine.LFD.2.00.1010011504380.2416@localhost6.localdomain6>
+ <1285965973.2463.129.camel@pasglop>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sat, 2 Oct 2010 06:11:33 +0900
+X-Google-Sender-Auth: _gZpSanF8yi0Jy91B0wyZ4cZyFM
+Message-ID: <AANLkTi=C+tti-08iti=o-fJG2rj7W5EGvB75u6njz2w9@mail.gmail.com>
+Subject: Re: [patch 46/47] powerpc: Use new irq allocator
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 01, 2010, Len Brown wrote:
-> Hi Linus,
-> 
-> please pull from: 
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-acpi-2.6.git release
-> 
-...
-> commit 573b638158029898caf9470c8214b7ddd29751e3
-> Author: Colin Ian King <colin.king@canonical.com>
-> Date:   Mon Aug 2 15:14:43 2010 +0000
+On Sat, Oct 2, 2010 at 5:46 AM, Benjamin Herrenschmidt
+<benh@kernel.crashing.org> wrote:
+> On Fri, 2010-10-01 at 15:07 +0200, Thomas Gleixner wrote:
+>> On Fri, 1 Oct 2010, Benjamin Herrenschmidt wrote:
+>>
+>> > On Thu, 2010-09-30 at 23:18 +0000, Thomas Gleixner wrote:
+>> > > plain text document attachment (powerpc-use-new-allocator.patch)
+>> > > Use the new functions and free the descriptor when the virq is
+>> > > destroyed.
+>> >
+>> > Looks ok as a first pass, but we should go further and replace the
+>> > allocator we have in powerpc to use yours instead.
+>> >
+>> > Then I should get rid of my big irq_map that maps virq to HW number &
+>> > domain pointers and instead put those in the irq data. Any objection to
+>> > me sticking some archdata there for that purpose ?
+>>
+>> No, though if we can avoid another void pointer and have a sensible
+>> data structure for it would be nice.
+>
+> Yes, I'm thinking about an arch defined structure like I did for struct
+> device.
 
-This one should go to -stable, shouldn't it?
+Before doing that, I'd like to see what data members are still needed.
+ The powerpc use-case is quite sane, and it may turn out to be common
+code after all.  I certainly want to port the PowerPC functionality to
+ARM.
 
->     ACPI: enable repeated PCIEXP wakeup by clearing PCIEXP_WAKE_STS on resume
->     
->     Section 4.7.3.1.1 (PM1 Status Registers) of version 4.0 of
->     the ACPI spec concerning PCIEXP_WAKE_STS points out in
->     in the final note field in table 4-11 that if this bit is
->     set to 1 and the system is put into a sleeping state then
->     the system will not automatically wake.
->     
->     This bit gets set by hardware to indicate that the system
->     woke up due to a PCI Express wakeup event, so clear it during
->     acpi_hw_clear_acpi_status() calls to enable subsequent
->     resumes to work.
->     
->     BugLink: http://bugs.launchpad.net/bugs/613381
->     
->     Signed-off-by: Colin Ian King <colin.king@canonical.com>
->     Signed-off-by: Len Brown <len.brown@intel.com>
-
-Thanks,
-Rafael
+g.
