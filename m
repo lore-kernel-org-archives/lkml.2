@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753556Ab0JAGXK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 02:23:10 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35858 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752349Ab0JAGXI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 02:23:08 -0400
-Date: Thu, 30 Sep 2010 23:23:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/17] fs: icache lock i_count
-Message-Id: <20100930232339.32ed3b38.akpm@linux-foundation.org>
-In-Reply-To: <20101001061602.GA19107@infradead.org>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-	<1285762729-17928-6-git-send-email-david@fromorbit.com>
-	<20100929215229.160c7bce.akpm@linux-foundation.org>
-	<20101001055536.GD32349@infradead.org>
-	<20100930230416.868e6468.akpm@linux-foundation.org>
-	<20101001061602.GA19107@infradead.org>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754659Ab0JAGYi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 02:24:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753215Ab0JAGYh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 02:24:37 -0400
+Message-ID: <4CA57F93.8010101@redhat.com>
+Date: Fri, 01 Oct 2010 14:28:35 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+MIME-Version: 1.0
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: linux-kbuild@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] Fix wrong source path in scripts/namespace.pl
+References: <1285828138-5873-1-git-send-email-amwang@redhat.com> <20101001145618.613e3e1f@s6510>
+In-Reply-To: <20101001145618.613e3e1f@s6510>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Oct 2010 02:16:02 -0400 Christoph Hellwig <hch@infradead.org> wrote:
+On 10/01/10 13:56, Stephen Hemminger wrote:
+> On Thu, 30 Sep 2010 14:28:55 +0800
+> Amerigo Wang<amwang@redhat.com>  wrote:
+>
+>> File::Find will do chdir automatically, so we need to get
+>> the absolute patch with $File::Find::dir.
+>>
+>> Reported-by: Stephen Hemminger<shemminger@vyatta.com>
+>> Signed-off-by: Amerigo Wang<amwang@redhat.com>
+>> ---
+>>   scripts/namespace.pl |    8 ++++----
+>>   1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> How did you test this? I tried your patches and when I run
+> it on a compiled kernel in a way that most developers would
+> do it:
+>   $ make allmodconfig
+>   $ make
+>   $ ./scripts/namespace.pl
 
-> On Thu, Sep 30, 2010 at 11:04:16PM -0700, Andrew Morton wrote:
-> > No, we've run into problems *frequently*.  A common case is where we
-> > convert a mutex to a spinlock or vice versa.  If you don't rename the
-> > lock, the code still compiles (with warnings) and crashes horridly at
-> > runtime.
-> 
-> Sorry, if you run code with that obvious warnings you beg for trouble.
-> If you really believe your advanced users arw too stupid to read
-> compiler warnings enforcing -Werror is for sure better than obsfucating
-> the code.
 
-Well, it has happened, fairly regularly.  A common scenario is where
-someone has done a conversion in one tree and someone else has touched
-overlapping code in another tree and when the two meet in linux-next,
-splat.  Renaming the field simply eliminates this.
+I use 'make namespacecheck'.
 
-Of course, the warnings don't get noticed because of the enormous
-warning storm which a kernel build produces (generally much worse on
-non-x86, btw).
+>
+> With your patch it still doesn't find the kernel source files.
+> I find it frustrating because my patch worked, yours didn't.
+>
+> --------
+> No source file found for arch/x86/crypto/aes-i586-asm_32.o
+> No source file found for arch/x86/crypto/aes_glue.o
+...
 
-Another reason for remaining a field is when we desire that it
-henceforth be accessed via accessor functions - renaming it will
-reliably break any unconverted code.
+Actually, this shows it is working. :)
+
+There are two reasons why you got so many of these:
+
+1) You didn't do a 'make mrproper', so some source file may be
+deleted or renamed in git repo;
+
+2) There are no path/to/foo.c for path/to/foo.o which is
+normal, we should add those files to exception list.
+
+I got much fewer of such warning when I tested it.
