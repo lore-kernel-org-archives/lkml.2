@@ -1,63 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756063Ab0I3XjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Sep 2010 19:39:25 -0400
-Received: from smtp.kponet.fi ([213.145.209.38]:34480 "EHLO smtp.kponet.fi"
+	id S1753188Ab0JAAAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Sep 2010 20:00:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:55218 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753750Ab0I3XjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Sep 2010 19:39:23 -0400
-Date: Fri, 1 Oct 2010 02:39:21 +0300
-From: Sami Farin <hvtaifwkbgefbaei@gmail.com>
-To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
-        Sami Farin <hvtaifwkbgefbaei@gmail.com>, linux-kernel@vger.kernel.org,
-        e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
-Subject: Re: [E1000-devel] Something wrong with tx/rx/sg/gso with dhclient
- etc (Was: Linux 2.6.35.6/e1000e does not receive replies  from DHCP server,
- 2.6.33 works)
-Message-ID: <20100930233921.vc4yfsa5qcgtquje@m.safari.iki.fi>
-Mail-Followup-To: "Tantilov, Emil S" <emil.s.tantilov@intel.com>,
-	Sami Farin <hvtaifwkbgefbaei@gmail.com>,
-	linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-	netdev@vger.kernel.org
-References: <20100927131935.d5f2ghpfaufiq6yx@m.safari.iki.fi>
- <20100927160731.ehcljyewa5b5wrbm@m.safari.iki.fi>
- <EA929A9653AAE14F841771FB1DE5A13660222E867B@rrsmsx501.amr.corp.intel.com>
- <20100930094417.r6jgrljaer2opekv@m.safari.iki.fi>
+	id S1751823Ab0JAAAx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Sep 2010 20:00:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,262,1283756400"; 
+   d="scan'208";a="612113747"
+From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "mst@redhat.com" <mst@redhat.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "davem@davemloft.net" <davem@davemloft.net>,
+        "herbert@gondor.apana.org.au" <herbert@gondor.hengli.com.au>,
+        "jdike@linux.intel.com" <jdike@linux.intel.com>
+Date: Fri, 1 Oct 2010 08:00:48 +0800
+Subject: RE: [PATCH v12 00/17] Provide a zero-copy method on KVM virtio-net.
+Thread-Topic: [PATCH v12 00/17] Provide a zero-copy method on KVM virtio-net.
+Thread-Index: Actgp8PYr1uMewA6QLWKzg76a2USrwAU7vYg
+Message-ID: <F2E9EB7348B8264F86B6AB8151CE2D792F6A003726@shsmsx502.ccr.corp.intel.com>
+References: <1285855474-12110-1-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1285855474-12110-1-git-send-email-xiaohui.xin@intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100930094417.r6jgrljaer2opekv@m.safari.iki.fi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 12:44:17 +0300, Sami Farin wrote:
-> On Wed, Sep 29, 2010 at 17:40:08 -0600, Tantilov, Emil S wrote:
-> > Sami Farin wrote:
-> > > False alarm, 2.6.35.6+latest git e1000e does not work any better.
-> > > I was just lucky.
-> > 
-> > Is your `latest git` from Linus or net-next tree? 
-> 
-> Linus.
-> 
-> >All of our latest patches go into net-next, so if you haven't already - give it a try and see if it resolves your issue.
-> 
-> Maybe later =)
+Will be on leave during 10/01 ~ 10/07, and slow or no response to the comments.
 
-I now tried net-next 6d0722a2cec2c23db3b0855ff8bb433175a16b44, it works fine,
-with ethtool -K tx/rx on and off.
-I used the same .config as with 2.6.35.6 (make oldconfig).
-I retested 2.6.33.7, it's still okay.
+Thanks
+Xiaohui
 
-And unfortunately 2.6.35.6 did not work very well after rebooting,
-I had to waste a lot of time playing with -K tx off rx off, -K tx on rx on, etc.
-Before it started working, eth0 had interrupts occurring only on CPU0.
-CPU1 started getting some usage only after dhclient started working..
-Probably irrelevant, but I am running out of ideas.
-I have tried e1000e param IntMode 0, 1, 2, no luck.
-
--- 
-Do what you love because life is too short for anything else.
-
+>-----Original Message-----
+>From: netdev-owner@vger.kernel.org [mailto:netdev-owner@vger.kernel.org] On Behalf Of
+>xiaohui.xin@intel.com
+>Sent: Thursday, September 30, 2010 10:04 PM
+>To: netdev@vger.kernel.org; kvm@vger.kernel.org; linux-kernel@vger.kernel.org;
+>mst@redhat.com; mingo@elte.hu; davem@davemloft.net; herbert@gondor.apana.org.au;
+>jdike@linux.intel.com
+>Subject: [PATCH v12 00/17] Provide a zero-copy method on KVM virtio-net.
+>
+>We provide an zero-copy method which driver side may get external
+>buffers to DMA. Here external means driver don't use kernel space
+>to allocate skb buffers. Currently the external buffer can be from
+>guest virtio-net driver.
+>
+>The idea is simple, just to pin the guest VM user space and then
+>let host NIC driver has the chance to directly DMA to it.
+>The patches are based on vhost-net backend driver. We add a device
+>which provides proto_ops as sendmsg/recvmsg to vhost-net to
+>send/recv directly to/from the NIC driver. KVM guest who use the
+>vhost-net backend may bind any ethX interface in the host side to
+>get copyless data transfer thru guest virtio-net frontend.
+>
+>patch 01-10:  	net core and kernel changes.
+>patch 11-13:  	new device as interface to mantpulate external buffers.
+>patch 14: 	for vhost-net.
+>patch 15:	An example on modifying NIC driver to using napi_gro_frags().
+>patch 16:	An example how to get guest buffers based on driver
+>		who using napi_gro_frags().
+>patch 17:	It's a patch to address comments from Michael S. Thirkin
+>		to add 2 new ioctls in mp device.
+>		We split it out here to make easier reiewer.
+>		Need to revise.
+>
+>The guest virtio-net driver submits multiple requests thru vhost-net
+>backend driver to the kernel. And the requests are queued and then
+>completed after corresponding actions in h/w are done.
+>
+>For read, user space buffers are dispensed to NIC driver for rx when
+>a page constructor API is invoked. Means NICs can allocate user buffers
+>from a page constructor. We add a hook in netif_receive_skb() function
+>to intercept the incoming packets, and notify the zero-copy device.
+>
+>For write, the zero-copy deivce may allocates a new host skb and puts
+>payload on the skb_shinfo(skb)->frags, and copied the header to skb->data.
+>The request remains pending until the skb is transmitted by h/w.
+>
+>We provide multiple submits and asynchronous notifiicaton to
+>vhost-net too.
+>
+>Our goal is to improve the bandwidth and reduce the CPU usage.
+>Exact performance data will be provided later.
+>
+>What we have not done yet:
+>	Performance tuning
+>
+>what we have done in v1:
+>	polish the RCU usage
+>	deal with write logging in asynchroush mode in vhost
+>	add notifier block for mp device
+>	rename page_ctor to mp_port in netdevice.h to make it looks generic
+>	add mp_dev_change_flags() for mp device to change NIC state
+>	add CONIFG_VHOST_MPASSTHRU to limit the usage when module is not load
+>	a small fix for missing dev_put when fail
+>	using dynamic minor instead of static minor number
+>	a __KERNEL__ protect to mp_get_sock()
+>
+>what we have done in v2:
+>
+>	remove most of the RCU usage, since the ctor pointer is only
+>	changed by BIND/UNBIND ioctl, and during that time, NIC will be
+>	stopped to get good cleanup(all outstanding requests are finished),
+>	so the ctor pointer cannot be raced into wrong situation.
+>
+>	Remove the struct vhost_notifier with struct kiocb.
+>	Let vhost-net backend to alloc/free the kiocb and transfer them
+>	via sendmsg/recvmsg.
+>
+>	use get_user_pages_fast() and set_page_dirty_lock() when read.
+>
+>	Add some comments for netdev_mp_port_prep() and handle_mpassthru().
+>
+>what we have done in v3:
+>	the async write logging is rewritten
+>	a drafted synchronous write function for qemu live migration
+>	a limit for locked pages from get_user_pages_fast() to prevent Dos
+>	by using RLIMIT_MEMLOCK
+>
+>
+>what we have done in v4:
+>	add iocb completion callback from vhost-net to queue iocb in mp device
+>	replace vq->receiver by mp_sock_data_ready()
+>	remove stuff in mp device which access structures from vhost-net
+>	modify skb_reserve() to ignore host NIC driver reserved space
+>	rebase to the latest vhost tree
+>	split large patches into small pieces, especially for net core part.
+>
+>
+>what we have done in v5:
+>	address Arnd Bergmann's comments
+>		-remove IFF_MPASSTHRU_EXCL flag in mp device
+>		-Add CONFIG_COMPAT macro
+>		-remove mp_release ops
+>	move dev_is_mpassthru() as inline func
+>	fix a bug in memory relinquish
+>	Apply to current git (2.6.34-rc6) tree.
+>
+>what we have done in v6:
+>	move create_iocb() out of page_dtor which may happen in interrupt context
+>	-This remove the potential issues which lock called in interrupt context
+>	make the cache used by mp, vhost as static, and created/destoryed during
+>	modules init/exit functions.
+>	-This makes multiple mp guest created at the same time.
+>
+>what we have done in v7:
+>	some cleanup prepared to suppprt PS mode
+>
+>what we have done in v8:
+>	discarding the modifications to point skb->data to guest buffer directly.
+>	Add code to modify driver to support napi_gro_frags() with Herbert's comments.
+>	To support PS mode.
+>	Add mergeable buffer support in mp device.
+>	Add GSO/GRO support in mp deice.
+>	Address comments from Eric Dumazet about cache line and rcu usage.
+>
+>what we have done in v9:
+>	v8 patch is based on a fix in dev_gro_receive().
+>	But Herbert did not agree with the fix we have sent out.
+>	And he suggest another fix. v9 is modified to base on that fix.
+>
+>
+>what we have done in v10:
+>	Fix a partial csum error.
+>	Cleanup some unused fields with struct page_info{} in mp device.
+>	Modify kmem_cache_zalloc() to kmem_cache_alloc() based on Michael S. Thirkin.
+>
+>what we have done in v11:
+>	Address comments from Michael S. Thirkin to add two new ioctls in mp device.
+>	But still need to revise.
+>
+>what we have done in v11:
+>	Address most comments from Ben Hutchings, except the compat ioctls.
+>	As the comments are sparse, so do not make a split patch.
+>	Change struct mpassthru_port to struct mp_port, and struct page_ctor
+>	to struct page_pool.
+>
+>Performance:
+>	We have seen the performance data request from mailling-list.
+>	And we are now looking into this.
+>--
+>To unsubscribe from this list: send the line "unsubscribe netdev" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
