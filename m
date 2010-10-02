@@ -1,127 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932223Ab0JBPOK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 11:14:10 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37400 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755698Ab0JBPOI (ORCPT
+	id S1755870Ab0JBP1G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 11:27:06 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:16196 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752719Ab0JBP1E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 11:14:08 -0400
+	Sat, 2 Oct 2010 11:27:04 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=ktiyWL7E/STuAvONrlk5j8iOTLQX3bQbXV6mM8oU1FrFkEkKfgmrWQwUYUABT7Q+Ju
-         veI08i1io0lpNu4PLBGVSqIryGD7TPU634/+/HmRJZndWNq7hMkGkRJvhcLOmSNmmxvr
-         x/yAWqKXTHqBzuCW6DgnYf1roBbEuLjCVkkAw=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UXq/n9ZBXhPd68l0r+9EQEpmW/2Z1FbOiWWImEP5FyTNyRSHOUi3sI0zMOXaCA8pxi
+         d9q9vNIypj205BZsQbZA==
 MIME-Version: 1.0
-In-Reply-To: <1286032307-3350-1-git-send-email-rahul.ruikar@gmail.com>
-References: <1286032307-3350-1-git-send-email-rahul.ruikar@gmail.com>
-From: Rahul Ruikar <rahul.ruikar@gmail.com>
-Date: Sat, 2 Oct 2010 20:43:44 +0530
-Message-ID: <AANLkTin57LWwuxjXB3ORt4+hzHeDBatWP2K+H7JDsTkm@mail.gmail.com>
-Subject: Re: [RESEND/PATCH] usb: gadget: dummy_hcd: Fix error path
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rahul Ruikar <rahul.ruikar@gmail.com>
-Content-Type: multipart/mixed; boundary=0016364164e907bd930491a3c3e9
+In-Reply-To: <1286016835.2144.86.camel@laptop>
+References: <1285788096-29471-1-git-send-email-venki@google.com>
+	<1285788096-29471-4-git-send-email-venki@google.com>
+	<1285844768.2144.11.camel@laptop>
+	<AANLkTi=r5DX52+735OtGHmJCS38n1P_WxEkKzLVf1E_m@mail.gmail.com>
+	<AANLkTikHfyjjZfDcoO-yDW+JTnpDb42VxRMckk55Xp+O@mail.gmail.com>
+	<1285933569.2144.57.camel@laptop>
+	<AANLkTinmgCmozNMQyesaTxrAfzgJ7bKEAeyNRWh7ceZ5@mail.gmail.com>
+	<AANLkTi=b2NaXOS05tT69hdmddxPPc5OxxnZ0qG0ZZZYe@mail.gmail.com>
+	<1285974873.2144.65.camel@laptop>
+	<AANLkTikcPX6m01F1rg--AKkSj_69kJJVsTrqB_FF6sJf@mail.gmail.com>
+	<1286016835.2144.86.camel@laptop>
+Date: Sat, 2 Oct 2010 08:26:59 -0700
+Message-ID: <AANLkTim4w6i0ASSbs_3PJvTQXxpDUcdRZz7c4A7_A6qv@mail.gmail.com>
+Subject: Re: [PATCH 3/7] Add IRQ_TIME_ACCOUNTING, finer accounting of irq time -v3
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, Len Brown <len.brown@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016364164e907bd930491a3c3e9
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
-
-updated patch attached here.
-
-- Rahul Ruikar
-
-
-
-
-
-On 2 October 2010 20:41, Rahul Ruikar <rahul.ruikar@gmail.com> wrote:
-> In function dummy_udc_probe()
-> call put_device() when device_register() fails.
-> also usb_get_hcd() put before device_register() after review comment
-> from Alan Stern.
+On Sat, Oct 2, 2010 at 3:53 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-10-01 at 16:32 -0700, Venkatesh Pallipadi wrote:
+>> On Fri, Oct 1, 2010 at 4:14 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Fri, 2010-10-01 at 10:29 -0700, Venkatesh Pallipadi wrote:
+>> >> So, on x86, sched_clock_stable is not set on all other kind of CPUs
+>> >> and my test system happens to be one of them. So, sched_clock_cpu()
+>> >> falls back to tick based even when TSC is not marked unstable and
+>> >> clocksource is using TSC for timing.
+>> >
+>> > It is never tick based!! It's tick augmented! Because TSC is such a
+>> > piece of crap we use external (slow) means of determining a window in
+>> > which the TSC should live and then use the TSC to generate high
+>> > resolution offsets inside that.
+>> >
+>> > So even if your usage is in the hardirq context that moves that window
+>> > it should all work out.
+>> >
+>>
+>> You mean there should not be any "jumps" noticed with
+>> sched_clock_cpu() when we are idle and get a interrupt?
+>> Atleast thats what I am seeing. May be there is some other bug
+>> somewhere causing that.
+>>
+>> Loooking at one snapshot from my earlier log
+>>
+>> <idle>-0     []  1697.915040: : START 1700899887146
+>> // We were idle and got an interrupt and recorded sched_clock_cpu() as
+>> 1700899887146
+>> <idle>-0     []  1697.915047: : HARD STOP 1700902008678, delta 2121532
+>> // We finished handling the interrupt and recorded sched_clock_cpu()
+>> as 1700902008678
+>> // So, delta we see is > 2ms
+>> // This is trace_printk based on local clock, which is using sched_clock()
+>> // So, the trace timing shows delta of 7 us, which is kind of expected time here
 >
-> Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
-> ---
-> =A0drivers/usb/gadget/dummy_hcd.c | =A0 =A08 +++++---
-> =A01 files changed, 5 insertions(+), 3 deletions(-)
+> Egads, yes that would be a kernel/sched_clock.c buglet..
 >
-> diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hc=
-d.c
-> index dc65462..9b30483 100644
-> --- a/drivers/usb/gadget/dummy_hcd.c
-> +++ b/drivers/usb/gadget/dummy_hcd.c
-> @@ -874,6 +874,8 @@ static int dummy_udc_probe (struct platform_device *p=
-dev)
-> =A0 =A0 =A0 =A0struct dummy =A0 =A0*dum =3D the_controller;
-> =A0 =A0 =A0 =A0int =A0 =A0 =A0 =A0 =A0 =A0 rc;
+> So we're in NOHZ and an IRQ/NMI happens that ends up calling
+> sched_clock_cpu() and friends without us leaving NOHZ.
 >
-> + =A0 =A0 =A0 usb_get_hcd(dummy_to_hcd(dum));
-> +
-> =A0 =A0 =A0 =A0dum->gadget.name =3D gadget_name;
-> =A0 =A0 =A0 =A0dum->gadget.ops =3D &dummy_ops;
-> =A0 =A0 =A0 =A0dum->gadget.is_dualspeed =3D 1;
-> @@ -885,10 +887,10 @@ static int dummy_udc_probe (struct platform_device =
-*pdev)
-> =A0 =A0 =A0 =A0dum->gadget.dev.parent =3D &pdev->dev;
-> =A0 =A0 =A0 =A0dum->gadget.dev.release =3D dummy_gadget_release;
-> =A0 =A0 =A0 =A0rc =3D device_register (&dum->gadget.dev);
-> - =A0 =A0 =A0 if (rc < 0)
-> + =A0 =A0 =A0 if (rc < 0) {
-> + =A0 =A0 =A0 =A0 =A0 =A0 =A0 put_device(&dum->gadget.dev);
-> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0return rc;
-> -
-> - =A0 =A0 =A0 usb_get_hcd (dummy_to_hcd (dum));
-> + =A0 =A0 =A0 }
->
-> =A0 =A0 =A0 =A0platform_set_drvdata (pdev, dum);
-> =A0 =A0 =A0 =A0rc =3D device_create_file (&dum->gadget.dev, &dev_attr_fun=
-ction);
-> --
-> 1.7.2.3
->
+> drivers/acpi/processor_idle.c:acpi_idle_enter_simple() calls
+> sched_clock_idle_{sleep,wakeup}_event() around the idle loop -- are
+> there idle methods missing this, and or do we handle the interrupt
+> before the wakeup event?
 >
 
---0016364164e907bd930491a3c3e9
-Content-Type: text/x-patch; charset=US-ASCII; 
-	name="0001-usb-gadget-dummy_hcd-Fix-error-path.patch"
-Content-Disposition: attachment; 
-	filename="0001-usb-gadget-dummy_hcd-Fix-error-path.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gesmh8kd0
+Yes. My test machine is using basic mwait_idle from x86 process.c and
+that code path does not have these sleep wakeup events. Also, these
+basic idle (both halt and mwait) go into idle after enabling
+interrupts and so on the way out handle interrupt before doing
+anything else.
 
-RnJvbSA1MDg4M2Q0ZGY3ZjM2YmY5Yjg3Yzg4MzZlYmQ3ZGUxNWZjN2FjOTAwIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBSYWh1bCBSdWlrYXIgPHJhaHVsLnJ1aWthckBnbWFpbC5jb20+
-CkRhdGU6IFNhdCwgMiBPY3QgMjAxMCAyMDozNDozNCArMDUzMApTdWJqZWN0OiBbUkVTRU5EL1BB
-VENIXSB1c2I6IGdhZGdldDogZHVtbXlfaGNkOiBGaXggZXJyb3IgcGF0aAoKSW4gZnVuY3Rpb24g
-ZHVtbXlfdWRjX3Byb2JlKCkKY2FsbCBwdXRfZGV2aWNlKCkgd2hlbiBkZXZpY2VfcmVnaXN0ZXIo
-KSBmYWlscy4KYWxzbyB1c2JfZ2V0X2hjZCgpIHB1dCBiZWZvcmUgZGV2aWNlX3JlZ2lzdGVyKCkg
-YWZ0ZXIgcmV2aWV3IGNvbW1lbnQKZnJvbSBBbGFuIFN0ZXJuLgoKU2lnbmVkLW9mZi1ieTogUmFo
-dWwgUnVpa2FyIDxyYWh1bC5ydWlrYXJAZ21haWwuY29tPgotLS0KIGRyaXZlcnMvdXNiL2dhZGdl
-dC9kdW1teV9oY2QuYyB8ICAgIDggKysrKystLS0KIDEgZmlsZXMgY2hhbmdlZCwgNSBpbnNlcnRp
-b25zKCspLCAzIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvdXNiL2dhZGdldC9k
-dW1teV9oY2QuYyBiL2RyaXZlcnMvdXNiL2dhZGdldC9kdW1teV9oY2QuYwppbmRleCBkYzY1NDYy
-Li45YjMwNDgzIDEwMDY0NAotLS0gYS9kcml2ZXJzL3VzYi9nYWRnZXQvZHVtbXlfaGNkLmMKKysr
-IGIvZHJpdmVycy91c2IvZ2FkZ2V0L2R1bW15X2hjZC5jCkBAIC04NzQsNiArODc0LDggQEAgc3Rh
-dGljIGludCBkdW1teV91ZGNfcHJvYmUgKHN0cnVjdCBwbGF0Zm9ybV9kZXZpY2UgKnBkZXYpCiAJ
-c3RydWN0IGR1bW15CSpkdW0gPSB0aGVfY29udHJvbGxlcjsKIAlpbnQJCXJjOwogCisJdXNiX2dl
-dF9oY2QoZHVtbXlfdG9faGNkKGR1bSkpOworCiAJZHVtLT5nYWRnZXQubmFtZSA9IGdhZGdldF9u
-YW1lOwogCWR1bS0+Z2FkZ2V0Lm9wcyA9ICZkdW1teV9vcHM7CiAJZHVtLT5nYWRnZXQuaXNfZHVh
-bHNwZWVkID0gMTsKQEAgLTg4NSwxMCArODg3LDEwIEBAIHN0YXRpYyBpbnQgZHVtbXlfdWRjX3By
-b2JlIChzdHJ1Y3QgcGxhdGZvcm1fZGV2aWNlICpwZGV2KQogCWR1bS0+Z2FkZ2V0LmRldi5wYXJl
-bnQgPSAmcGRldi0+ZGV2OwogCWR1bS0+Z2FkZ2V0LmRldi5yZWxlYXNlID0gZHVtbXlfZ2FkZ2V0
-X3JlbGVhc2U7CiAJcmMgPSBkZXZpY2VfcmVnaXN0ZXIgKCZkdW0tPmdhZGdldC5kZXYpOwotCWlm
-IChyYyA8IDApCisJaWYgKHJjIDwgMCkgeworCQlwdXRfZGV2aWNlKCZkdW0tPmdhZGdldC5kZXYp
-OwogCQlyZXR1cm4gcmM7Ci0KLQl1c2JfZ2V0X2hjZCAoZHVtbXlfdG9faGNkIChkdW0pKTsKKwl9
-CiAKIAlwbGF0Zm9ybV9zZXRfZHJ2ZGF0YSAocGRldiwgZHVtKTsKIAlyYyA9IGRldmljZV9jcmVh
-dGVfZmlsZSAoJmR1bS0+Z2FkZ2V0LmRldiwgJmRldl9hdHRyX2Z1bmN0aW9uKTsKLS0gCjEuNy4y
-LjMKCg==
---0016364164e907bd930491a3c3e9--
+> Also, in irq_enter() we call __irq_enter() which does
+> account_system_vtime() before tick_check_idle() which restarts various
+> timers and resets jiffies and in fact already calls
+> sched_clock_idle_wakeup_event().
+>
+
+Ah. The reason for this jump is account_system_vtime being called
+before wakeup_event.
+
+> Gah what a mess.. we could try a code shuffle to restart timer/clock
+> bits before calling into account_system_vtime(), although I bet that'll
+> be interesting. But I see no way to fix the NMI during NOHZ problem, its
+> not like we can actually do GTOD from NMI context :/
+>
+> The thing is, I really do _NOT_ trust TSC to be sane enough to use like
+> you want to do, its really proven itself to be reliably crap.
+>
+
+I agree with reliably crap part :). Though TSC usage in this case is
+somewhat limited as we always compare timings only from same CPU.
+May be above code shuffle + somehow skipping the time accounting in
+account_system_vtime is a good way to proceed? I will look at this
+change next. Is it OK to use sched_clock() here until that time? I
+really want to get some wider testing feedback on this before spending
+more time.
+
+Thanks,
+Venki
