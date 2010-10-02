@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab0JBG1N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 02:27:13 -0400
-Received: from webbox4.loswebos.de ([213.187.93.205]:46809 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751648Ab0JBG1M (ORCPT
+	id S1751852Ab0JBGgT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 02:36:19 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:39510 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab0JBGgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 02:27:12 -0400
-X-Greylist: delayed 483 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Oct 2010 02:27:12 EDT
-Date: Sat, 2 Oct 2010 10:19:08 +0200
-From: Marc Koschewski <marc@osknowledge.org>
-To: Linux-LKLM <linux-kernel@vger.kernel.org>
-Subject: [i8k] GIT current's i8k module does not load on Inspiron 8200
- laptops
-Message-ID: <20101002081811.GA9024@marc.osknowledge.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E  38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://www.osknowledge.org/~marc/pubkey.asc
-X-Operating-System: Linux marc 2.6.35-marc-05390-g4a386c3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sat, 2 Oct 2010 02:36:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=WcuCV2HulJsjTo4yM13lJqD9xkFzIhGxr8jtdtkL0TlQMdibd05m/Z1JXT7HjwuFt4
+         eXzYMHeU33KZEtCRInMOoqQln5AoiSC1zFjnkq3Whg+Y1Zdqjmc4rfICUxlDZxajhwM4
+         DpbJ1Fxvudt5OHmNhOHjJ5sDhGyUut9H08fyU=
+From: Rahul Ruikar <rahul.ruikar@gmail.com>
+To: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Ming Lei <tom.leiming@gmail.com>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        Mike Frysinger <vapier@gentoo.org>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rahul Ruikar <rahul.ruikar@gmail.com>
+Subject: [PATCH] usb: musb: musb_gadget: Fix error path
+Date: Sat,  2 Oct 2010 12:05:48 +0530
+Message-Id: <1286001348-3645-1-git-send-email-rahul.ruikar@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey folks,
+In function musb_gadget_setup()
+call put_device() when device_register() fails.
 
-the i8k module does no longer load on my DELL Inspiron 8200 laptops. It says this on one machine:
+Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+---
+ drivers/usb/musb/musb_gadget.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Oct  2 10:06:01 marc kernel: [   16.239867] i8k: unable to get SMM Dell
-signature
-
-Due to git log there's nothing changed for a while and I cannot figure out, what's the problem. Does anyone of you?
-
-Cheers,
-	Marc
-
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index d065e23..9fdd852 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1676,8 +1676,10 @@ int __init musb_gadget_setup(struct musb *musb)
+ 	musb_platform_try_idle(musb, 0);
+ 
+ 	status = device_register(&musb->g.dev);
+-	if (status != 0)
++	if (status != 0) {
++		put_device(&musb->g.dev);
+ 		the_gadget = NULL;
++	}
+ 	return status;
+ }
+ 
 -- 
-Marc Koschewski
+1.7.2.3
+
