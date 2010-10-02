@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab0JBKGM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 06:06:12 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56186 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754153Ab0JBKGL (ORCPT
+	id S1752576Ab0JBKO0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 06:14:26 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46410 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab0JBKOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 06:06:11 -0400
+	Sat, 2 Oct 2010 06:14:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ff0Uq2NJN9z5i5RR24y+086wuoTE6yzWAh+rB552Ej8QgAiWydb/UvIXoBc2utJwe4
-         mpohbP+nEmJxmJOl+7jg8NVmokcaRLJe2LC5Ebi+F49OwwivwH33l0gUaw1/IX+gxjML
-         i/ziFpO5fgrE1TIJ3BgqzzhnFqKcvX95EAHPU=
-Date: Sat, 2 Oct 2010 12:05:03 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: airlied@redhat.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Ben Skeggs <bskeggs@redhat.com>
-Subject: Re: [PATCH 1/1] nouveau: ratelimit IRQ messages
-Message-ID: <20101002100503.GA2760@joi.lan>
-References: <1286006336-24651-1-git-send-email-jslaby@suse.cz>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=M7RbVyu/XFr70HOple/n48r01v5dFR5hIZ0FlbjGFaX75rSz4+UJDBvzvYKPi4oTZt
+         Pt9AbQLIT2QgD/ilbg9znCVRiBtbUYze/SDc7q0+4vDwkwKarFhbINP8kvudghRE1C5Y
+         T0mzop8DSwL9QH4LaFTqw8Rt6YJc2DV1GpMQk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286006336-24651-1-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTinq16F1oh=gj_hs=w8fMWo7VuArC3m4-SUWp+Nr@mail.gmail.com>
+References: <1286002121-3694-1-git-send-email-rahul.ruikar@gmail.com>
+ <AANLkTi=8LGCVqchpQrB+31FRqK04+3xLFCuak0S1FHpK@mail.gmail.com>
+ <AANLkTimnSzAWJW417_XR60umT_k47AFWDdDPPD3yhbLG@mail.gmail.com> <AANLkTinq16F1oh=gj_hs=w8fMWo7VuArC3m4-SUWp+Nr@mail.gmail.com>
+From: Rahul Ruikar <rahul.ruikar@gmail.com>
+Date: Sat, 2 Oct 2010 15:44:03 +0530
+Message-ID: <AANLkTi=cfyBTUHfxXBDf_mAdsfz=Fw01rxxFeeR7WANn@mail.gmail.com>
+Subject: Re: [PATCH] usb: core: endpoint: Fix error path
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
+        asanchez@neurowork.net, rjw@sisk.pl, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 09:58:56AM +0200, Jiri Slaby wrote:
-> There are two messages in the ISR of nouvea which might be printed out
-> hundred times in a second. Ratelimit them.
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Ben Skeggs <bskeggs@redhat.com>
-> ---
->  drivers/gpu/drm/nouveau/nouveau_irq.c |    9 ++++++---
->  1 files changed, 6 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
-> index 794b0ee..c6d57eb 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_irq.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
-> @@ -200,7 +200,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
->  		}
->  
->  		if (status & NV_PFIFO_INTR_DMA_PUSHER) {
-> -			NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n", chid);
-> +			if (printk_ratelimit())
-> +				NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n",
-> +						chid);
+Thanks Ming.
+I have certain doubts related to device_unregister()
 
-There's nouveau_ratelimit() for this.
-  
->  			status &= ~NV_PFIFO_INTR_DMA_PUSHER;
->  			nv_wr32(dev, NV03_PFIFO_INTR_0,
-> @@ -227,8 +229,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
->  		}
->  
->  		if (status) {
-> -			NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
-> -				status, chid);
-> +			if (printk_ratelimit())
-> +				NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
-> +					status, chid);
->  			nv_wr32(dev, NV03_PFIFO_INTR_0, status);
->  			status = 0;
->  		}
-> -- 
-> 1.7.3.1
-> 
-> 
+In some of USB related code..
+kfree() is called after device_unregister() ...  device_unregister()
+also internally calls put_device()... is that correct behavior or I'm
+missing something here..
+ex.
+file : drivers/usb/gadget/fsl_udc_core.c
+function : static int __init fsl_udc_probe(struct platform_device *pdev)
+
+
+- Rahul Ruikar
+
+
+
+
+
+On 2 October 2010 15:28, Ming Lei <tom.leiming@gmail.com> wrote:
+> 2010/10/2 Rahul Ruikar <rahul.ruikar@gmail.com>:
+>> revised patch attached.
+>
+> Acked-by: Ming Lei <tom.leiming@gmail.com>
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Lei Ming
+>
