@@ -1,73 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751574Ab0JBGPZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 02:15:25 -0400
-Received: from in.cluded.net ([195.159.98.120]:36225 "EHLO in.cluded.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751423Ab0JBGPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 02:15:24 -0400
-Message-ID: <4CA6CD79.80804@uw.no>
-Date: Sat, 02 Oct 2010 06:13:13 +0000
-From: "Daniel K." <dk@uw.no>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9a1) Gecko/20060307 SeaMonkey/1.5a
+	id S1751740Ab0JBG1N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 02:27:13 -0400
+Received: from webbox4.loswebos.de ([213.187.93.205]:46809 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751648Ab0JBG1M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 02:27:12 -0400
+X-Greylist: delayed 483 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Oct 2010 02:27:12 EDT
+Date: Sat, 2 Oct 2010 10:19:08 +0200
+From: Marc Koschewski <marc@osknowledge.org>
+To: Linux-LKLM <linux-kernel@vger.kernel.org>
+Subject: [i8k] GIT current's i8k module does not load on Inspiron 8200
+ laptops
+Message-ID: <20101002081811.GA9024@marc.osknowledge.org>
 MIME-Version: 1.0
-To: Namhyung Kim <namhyung@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH RESEND v3 09/24] ptrace: cleanup arch_ptrace() on frv
-References: <1285838880-4977-1-git-send-email-namhyung@gmail.com>	 <1285838880-4977-10-git-send-email-namhyung@gmail.com>	 <4CA6A484.8000109@uw.no>  <1285991879.1696.4.camel@leonhard> <1285995551.1696.19.camel@leonhard>
-In-Reply-To: <1285995551.1696.19.camel@leonhard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E  38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.osknowledge.org/~marc/pubkey.asc
+X-Operating-System: Linux marc 2.6.35-marc-05390-g4a386c3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Namhyung Kim wrote:
-> 2010-10-02 (토), 12:57 +0900, Namhyung Kim:
->> 2010-10-02 (토), 03:18 +0000, Daniel K.:
->>> Namhyung Kim wrote:
->>>>       case PTRACE_POKEUSR: /* write the word at location addr in the USER area */
->>>>             ret = -EIO;
->>> -             if ((addr & 3) || addr < 0)
->>> +             if (addr & 3)
->>>                     break;
->>>
->>>> -		ret = 0;
->>>> -		switch (addr >> 2) {
->>>> +		switch (regno) {
->>>>  		case 0 ... PT__END - 1:
->>>> -			ret = put_reg(child, addr >> 2, data);
->>>> -			break;
->>>> -
->>>> -		default:
->>>> -			ret = -EIO;
->>>> +			ret = put_reg(child, regno, data);
->>>>  			break;
->>>>  		}
->>>>  		break;
->>> With this, you remove the default case, and no longer return -EIO in the
->>> cases of PT__END + n, as in the PTRACE_PEEKUSR section above.
->>>
->>> This is a change of behaviour as far as I can tell, and not just a cleanup.
-> 
-> It would not be a change of behaviour. Because 'ret' was initialized
-> with -EIO and only changed in the switch case. So assignment before
-> switch can be removed and then will return -EIO in default case.
+Hey folks,
 
-You are right, I was thrown by the piles of needless code here.
+the i8k module does no longer load on my DELL Inspiron 8200 laptops. It says this on one machine:
 
-In fact, the whole switch can now be replaced with:
+Oct  2 10:06:01 marc kernel: [   16.239867] i8k: unable to get SMM Dell
+signature
 
-	if (regno < PT__END)
-		ret = put_reg(child, regno, data);
+Due to git log there's nothing changed for a while and I cannot figure out, what's the problem. Does anyone of you?
 
-but it is perhaps better to use the switch-style, for symmetry with
-the PTRACE_PEEKUSR case directly above it?
+Cheers,
+	Marc
 
-
-Sorry to cause alarm.
-
-
-Daniel K.
+-- 
+Marc Koschewski
