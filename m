@@ -1,54 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751823Ab0JBV7x (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 17:59:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:38052 "EHLO ogre.sisk.pl"
+	id S1751927Ab0JBXAK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 19:00:10 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:41871 "EHLO vps.mortis.eu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751202Ab0JBV7v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 17:59:51 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Ted Ts'o" <tytso@mit.edu>, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Bug #19062] Dirtiable inode bdi default != sb bdi btrfs
-Date: Sat, 2 Oct 2010 23:58:35 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>, Tejun Heo <tj@kernel.org>,
-        Jens Axboe <axboe@kernel.dk>
-References: <MEG5YPP-fxC.A.vnD.So6nMB@chimera> <sQALkqF1FWE.A.15D.bo6nMB@chimera> <20101002165433.GL21129@thunk.org>
-In-Reply-To: <20101002165433.GL21129@thunk.org>
+	id S1751798Ab0JBXAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 19:00:08 -0400
+Date: Sun, 3 Oct 2010 00:59:58 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Hans de Goede <hdegoede@redhat.com>
+Cc: Laurens Leemans <laurens@signips.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Jean Delvare <khali@linux-fr.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>,
+        Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, 597820@bugs.debian.org
+Subject: Re: [PATCH 1/2] hwmon: f71882fg: use a muxed resource lock for the
+ Super I/O port
+Message-ID: <20101002225958.GA18605@salidar.me.mortis.eu>
+References: <20100801132226.GE3711@salidar.me.mortis.eu>
+ <1280669455-31283-1-git-send-email-me@mortis.eu>
+ <4C59514A.7090401@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010022358.35972.rjw@sisk.pl>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Disposition: inline
+In-Reply-To: <4C59514A.7090401@redhat.com>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, October 02, 2010, Ted Ts'o wrote:
-> On Sun, Sep 26, 2010 at 10:04:15PM +0200, Rafael J. Wysocki wrote:
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19062
-> > Subject		: Dirtiable inode bdi default != sb bdi btrfs
-> > Submitter	: Cesar Eduardo Barros <cesarb@cesarb.net>
-> > Date		: 2010-09-23 0:54 (4 days old)
-> > Message-ID	: <4C9AA546.6050201@cesarb.net>
-> > References	: http://marc.info/?l=linux-kernel&m=128520328929595&w=2
-> 
-> Note: I'm seeing this warning (Dirtiable inode bdi default != sb bdi)
-> when I moved from 2.6.36-rc3 to 2.6.36-rc6, using ext4 as a root
-> partition, and running mke2fs and e2fsck on ext2, ext3, and ext4 file
-> systems.  So I'm seeing this as a known regression from rc3 to rc6.
-> Maybe it's different bug with ext4, but in any case, it's highly
-> annoying.
 
-Thanks for the info.  I wonder who should see this report.
+--X1bOJ3K7DJ5YkBrT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Andrew, do you know whose area that is?
+On Wed, Aug 04, 2010 at 01:38:50PM +0200, Hans de Goede wrote:
+> Ack!
+>=20
+> Acked-by: Hans de Goede <hdegoede@redhat.com>
+>=20
+> On 08/01/2010 03:30 PM, Giel van Schijndel wrote:
+>> Sleep while acquiring a resource lock on the Super I/O port. This should
+>> prevent collisions from causing the hardware probe to fail with -EBUSY.
+>>=20
+>> Signed-off-by: Giel van Schijndel<me@mortis.eu>
+
+Would anyone please apply this patch?  It's been sitting for quite some
+time now collecting dust (none of that fictional bit-rot thus far
+however).  If this patch needs to be resubmitted or requires me to poke
+a specific individual please let me know (and what individual to poke).
+
+FYI the Message-ID of that patch is:
+<1280669455-31283-1-git-send-email-me@mortis.eu>
+
+PS I've added Guenter Roeck and Andrew Morton to the CC list because
+   between now and the original submission date they got appended to
+   scripts/get_maintainer.pl's output.
+
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
+--
+"It would seem that perfection is attained not when no more can be
+ added, but when no more can be removed."
+  -- Antoine de Saint Exup=C3=A9ry
+
+--X1bOJ3K7DJ5YkBrT
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkynuWsACgkQZBYm/87l50LG4ACaA+M3Mw18quNSpk88jmT3kk+U
+zCoAoJsIgV+UNmHv/ED/wwQtWEJKVAHc
+=DLEW
+-----END PGP SIGNATURE-----
+
+--X1bOJ3K7DJ5YkBrT--
