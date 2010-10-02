@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab0JAXcZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 19:32:25 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:54078 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754120Ab0JAXcX (ORCPT
+	id S1753858Ab0JBADS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 20:03:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57270 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752363Ab0JBADR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 19:32:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QnBjzmddYs6tr67AKDYO7KfJ+sf3OyI7JDLJHgKke4OnxYIQGpENBnVly7Dy7j9Mxy
-         1VTiGaUlo5mBtD1QOo0Q==
+	Fri, 1 Oct 2010 20:03:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <1285974873.2144.65.camel@laptop>
-References: <1285788096-29471-1-git-send-email-venki@google.com>
-	<1285788096-29471-4-git-send-email-venki@google.com>
-	<1285844768.2144.11.camel@laptop>
-	<AANLkTi=r5DX52+735OtGHmJCS38n1P_WxEkKzLVf1E_m@mail.gmail.com>
-	<AANLkTikHfyjjZfDcoO-yDW+JTnpDb42VxRMckk55Xp+O@mail.gmail.com>
-	<1285933569.2144.57.camel@laptop>
-	<AANLkTinmgCmozNMQyesaTxrAfzgJ7bKEAeyNRWh7ceZ5@mail.gmail.com>
-	<AANLkTi=b2NaXOS05tT69hdmddxPPc5OxxnZ0qG0ZZZYe@mail.gmail.com>
-	<1285974873.2144.65.camel@laptop>
-Date: Fri, 1 Oct 2010 16:32:15 -0700
-Message-ID: <AANLkTikcPX6m01F1rg--AKkSj_69kJJVsTrqB_FF6sJf@mail.gmail.com>
-Subject: Re: [PATCH 3/7] Add IRQ_TIME_ACCOUNTING, finer accounting of irq time -v3
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>
+In-Reply-To: <AANLkTi=3hscMOo6Ho_RbCT82eUZ_Scz_e_9KGQAdKwAs@mail.gmail.com>
+References: <1285909484-30958-1-git-send-email-walken@google.com>
+ <1285909484-30958-3-git-send-email-walken@google.com> <AANLkTinGgZC7eHW_Q-aR5Vmur4yjv_kKSJ8z3MX60e-r@mail.gmail.com>
+ <AANLkTi=3hscMOo6Ho_RbCT82eUZ_Scz_e_9KGQAdKwAs@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Fri, 1 Oct 2010 17:02:43 -0700
+Message-ID: <AANLkTinf6GKjw0AJjr7768eMU8+yzuE+UeEao2frsdmk@mail.gmail.com>
+Subject: Re: [PATCH 2/2] Release mmap_sem when page fault blocks on disk transfer.
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm@kvack.org, Ying Han <yinghan@google.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@suse.de>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 1, 2010 at 4:14 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-10-01 at 10:29 -0700, Venkatesh Pallipadi wrote:
->> So, on x86, sched_clock_stable is not set on all other kind of CPUs
->> and my test system happens to be one of them. So, sched_clock_cpu()
->> falls back to tick based even when TSC is not marked unstable and
->> clocksource is using TSC for timing.
+On Fri, Oct 1, 2010 at 4:06 PM, Michel Lespinasse <walken@google.com> wrote:
 >
-> It is never tick based!! It's tick augmented! Because TSC is such a
-> piece of crap we use external (slow) means of determining a window in
-> which the TSC should live and then use the TSC to generate high
-> resolution offsets inside that.
->
-> So even if your usage is in the hardirq context that moves that window
-> it should all work out.
->
+> To be clear, is it about the helper function or about the comment
+> location ? I think the code block is actually short and simple, so
+> maybe if I just moved the comment up to the /* Lock the page */
+> location it'd also look that way ?
 
-You mean there should not be any "jumps" noticed with
-sched_clock_cpu() when we are idle and get a interrupt?
-Atleast thats what I am seeing. May be there is some other bug
-somewhere causing that.
+I suspect that if the comment had been up-front rather than mixed deep
+in the code, I wouldn't have reacted so much to it.
 
-Loooking at one snapshot from my earlier log
+That said, if something can be cleanly abstracted out as a separate
+operation, and a big function be split into smaller ones where the
+helper functions do clearly defined things, I think that's generally a
+good idea.
 
-<idle>-0     []  1697.915040: : START 1700899887146
-// We were idle and got an interrupt and recorded sched_clock_cpu() as
-1700899887146
-<idle>-0     []  1697.915047: : HARD STOP 1700902008678, delta 2121532
-// We finished handling the interrupt and recorded sched_clock_cpu()
-as 1700902008678
-// So, delta we see is > 2ms
-// This is trace_printk based on local clock, which is using sched_clock()
-// So, the trace timing shows delta of 7 us, which is kind of expected time here
+Personally, I tend to like comments in front of code - preferably at
+the head of a function. If the function is so complex that it needs
+comments inside of it, to me that's a sign that perhaps it should be
+split up.
+
+That's not _always_ true, of course. Sometimes some particular detail
+in a function is what is really specific ("we don't need to use an
+atomic instruction here, because xyz"). So it's not a hard rule, but
+the "please explain the code _before_ it happens rather than as it
+happens" is still a good guideline.
+
+The thing I reacted to in your patch was that in both cases the
+comment really explained the _conditional_, not the code inside the
+conditional. So putting it inside the conditional was really at the
+wrong level, and too late.
+
+                     Linus
