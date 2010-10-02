@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753Ab0JBUo5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 16:44:57 -0400
-Received: from tuxonice.net ([74.207.252.127]:45272 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751638Ab0JBUo4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 16:44:56 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CA799C5.3060106@tuxonice.net>
-Date: Sun, 03 Oct 2010 07:44:53 +1100
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+	id S1751839Ab0JBVDX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 17:03:23 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50309 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751689Ab0JBVDW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 17:03:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ihGLWe/CGNGYrw3WQINDbX0b9KvHS7mimOtTl5219a1fxSaS5WhhxRPvI6sV6z7S4j
+         dCfBqrZPKaqjXz4YLXuZaHFI1UwedLj4UkACBhT0Rh0WDGZKf5AYwXD3uP4ij5EkMg2A
+         OUKYJrANPJWOR/0n//TprydMsN6MHlnCnfdWk=
+Date: Sat, 2 Oct 2010 23:03:17 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Sitsofe Wheeler <sitsofe@yahoo.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Corentin Chary <corentincj@iksaif.net>
+Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
+Message-ID: <20101002210314.GA5373@nowhere>
+References: <20100912102854.GA7359@sucs.org> <1284289027.2251.95.camel@laptop> <20100912112105.GA28420@sucs.org> <20100912124653.GA5342@nowhere> <20100912162141.GB30698@sucs.org> <20100917030125.GA5389@nowhere> <20100921172711.GA31352@sucs.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] PM / Hibernate: Modify signature used to mark swap
-References: <201009292313.23601.rjw@sisk.pl> <4CA3ADED.6090908@tuxonice.net> <201009300002.03412.rjw@sisk.pl>
-In-Reply-To: <201009300002.03412.rjw@sisk.pl>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921172711.GA31352@sucs.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Tue, Sep 21, 2010 at 06:27:11PM +0100, Sitsofe Wheeler wrote:
+> On Fri, Sep 17, 2010 at 05:01:28AM +0200, Frederic Weisbecker wrote:
+> > 
+> > Ok, can you please send me your config?
+> > 
+> > I hope I can reproduce that.
 
-On 30/09/10 08:02, Rafael J. Wysocki wrote:
-> On Wednesday, September 29, 2010, Nigel Cunningham wrote:
->> Hi.
->>
->> On 30/09/10 07:13, Rafael J. Wysocki wrote:
->>> From: Rafael J. Wysocki<rjw@sisk.pl>
->>> Subject: PM / Hibernate: Modify signature used to mark swap
->>>
->>> Since we are adding compression to the kernel's hibernate code,
->>> change signature used by it to mark swap spaces, so that earlier
->>> kernels don't attempt to restore compressed images they cannot
->>> handle.
->>>
->>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
->>> ---
->>>    kernel/power/swap.c |    6 +++---
->>>    1 file changed, 3 insertions(+), 3 deletions(-)
->>>
->>> Index: linux-2.6/kernel/power/swap.c
->>> ===================================================================
->>> --- linux-2.6.orig/kernel/power/swap.c
->>> +++ linux-2.6/kernel/power/swap.c
->>> @@ -29,7 +29,7 @@
->>>
->>>    #include "power.h"
->>>
->>> -#define SWSUSP_SIG	"S1SUSPEND"
->>> +#define HIBERNATE_SIG	"LINHIB0001"
->>>
->>>    /*
->>>     *	The swap map is a data structure used for keeping track of each page
->>> @@ -195,7 +195,7 @@ static int mark_swapfiles(struct swap_ma
->>>    	if (!memcmp("SWAP-SPACE",swsusp_header->sig, 10) ||
->>>    	    !memcmp("SWAPSPACE2",swsusp_header->sig, 10)) {
->>>    		memcpy(swsusp_header->orig_sig,swsusp_header->sig, 10);
->>
->> if no compression
->>
->>> -		memcpy(swsusp_header->sig,SWSUSP_SIG, 10);
->>
->> else
->>
->>> +		memcpy(swsusp_header->sig, HIBERNATE_SIG, 10);
->>
->> ??
->
-> I thought about that, but we'll need to drop the old signature when the image
-> format changes (I think it will after your patch series) anyway.  And the
-> benefit is not really worth it IMO (it only affects people using the in-kernel
-> hibernation on x86-64).
 
-Okay. I'm just a little weary because if everything I want to get in 
-gets in, we're going to then be changing this signature multiple times. 
-I want to eventually reach a situation where we have a 'proper' header 
-section to the image that stores (among other things) whether 
-compression is enabled and which cryptoapi algorithm is used, allowing a 
-person to en/disable compression at runtime without recompiling or 
-rebooting. I suppose if I seek to put that stuff in earlier rather than 
-later, that will simplify things.
+I've been unable to reproduce with your config in latest tip:/perf/core,
+I haven't tested in a eeepc though.
 
-Oh, while I'm writing to you: let's not worry about getting my patches 
-in for 2.6.37. I won't be working on them much today, and want to put 
-the time into making sure they're right before they get merged. As you 
-said - let's seek to get things right first time.
+Did you check with 2.6.36-rc4 or with a tip branch?
 
-Regards,
+Thanks.
 
-Nigel
