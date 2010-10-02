@@ -1,145 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754120Ab0JBAKI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 20:10:08 -0400
-Received: from waste.org ([173.11.57.241]:54437 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753172Ab0JBAKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 20:10:07 -0400
-Subject: Re: [PATCH] drm: Prune GEM vma entries
-From: Matt Mackall <mpm@selenic.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>, Paul Rolland <rol@as2917.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org, Dave Airlie <airlied@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
-References: <20100927115207.633024b1.akpm@linux-foundation.org>
-	 <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
+	id S1754570Ab0JBAwp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 20:52:45 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:41303 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab0JBAwn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 20:52:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=HGUUrQGRbKMg0ejcCtHO6Sg6sKJoinYaWkTVylogs/aeB/C8NrcojLnr+tWl4cyn/5
+         EFBpG63UBGcVkDKuQpmskIYehgNPJG2HRIPHPjvRJYqUayuQlr7IEHaHMg9F8mGX7FrV
+         x+J1kEiTvsCMeureOSsI/Nv720IUzb8iffTZ8=
+Subject: linux-kernel 0.11 bochs testing
+From: runcoderen <runcoderzhcn@gmail.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Oct 2010 19:09:56 -0500
-Message-ID: <1285978196.16634.1392.camel@calx>
+Date: Sat, 02 Oct 2010 08:52:38 +0800
+Message-ID: <1285980758.2473.8.camel@bencharluo-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-09-27 at 21:08 +0100, Chris Wilson wrote:
-> Hook the GEM vm open/close ops into the generic drm vm open/close so
-> that the vma entries are created and destroy appropriately.
-> 
-> Reported-by: Matt Mackall <mpm@selenic.com>
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+hi all:
+when I am using bochs to install linux-kernel 0.11.
+It notes: "Loading System..."
+then the cursor flashing infinite.
 
-All signs point to this being the correct fix, but I won't have time to
-test it while I'm in Japan.
+I use the command:
+bochs -q -f tools/bochs/bochsrc/bochsrc-hd.bxrc
 
-Paul, does this work for you?
-
-> ---
->  drivers/gpu/drm/drm_gem.c |    9 ++++++++-
->  drivers/gpu/drm/drm_vm.c  |   28 ++++++++++++++++++----------
->  include/drm/drmP.h        |    1 +
->  3 files changed, 27 insertions(+), 11 deletions(-)
-> 
-> diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
-> index bf92d07..6fe2cd2 100644
-> --- a/drivers/gpu/drm/drm_gem.c
-> +++ b/drivers/gpu/drm/drm_gem.c
-> @@ -528,6 +528,10 @@ void drm_gem_vm_open(struct vm_area_struct *vma)
->  	struct drm_gem_object *obj = vma->vm_private_data;
->  
->  	drm_gem_object_reference(obj);
-> +
-> +	mutex_lock(&obj->dev->struct_mutex);
-> +	drm_vm_open_locked(vma);
-> +	mutex_unlock(&obj->dev->struct_mutex);
->  }
->  EXPORT_SYMBOL(drm_gem_vm_open);
->  
-> @@ -535,7 +539,10 @@ void drm_gem_vm_close(struct vm_area_struct *vma)
->  {
->  	struct drm_gem_object *obj = vma->vm_private_data;
->  
-> -	drm_gem_object_unreference_unlocked(obj);
-> +	mutex_lock(&obj->dev->struct_mutex);
-> +	drm_vm_close_locked(vma);
-> +	drm_gem_object_unreference(obj);
-> +	mutex_unlock(&obj->dev->struct_mutex);
->  }
->  EXPORT_SYMBOL(drm_gem_vm_close);
->  
-> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
-> index fda6746..5df4506 100644
-> --- a/drivers/gpu/drm/drm_vm.c
-> +++ b/drivers/gpu/drm/drm_vm.c
-> @@ -433,15 +433,7 @@ static void drm_vm_open(struct vm_area_struct *vma)
->  	mutex_unlock(&dev->struct_mutex);
->  }
->  
-> -/**
-> - * \c close method for all virtual memory types.
-> - *
-> - * \param vma virtual memory area.
-> - *
-> - * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
-> - * free it.
-> - */
-> -static void drm_vm_close(struct vm_area_struct *vma)
-> +void drm_vm_close_locked(struct vm_area_struct *vma)
->  {
->  	struct drm_file *priv = vma->vm_file->private_data;
->  	struct drm_device *dev = priv->minor->dev;
-> @@ -451,7 +443,6 @@ static void drm_vm_close(struct vm_area_struct *vma)
->  		  vma->vm_start, vma->vm_end - vma->vm_start);
->  	atomic_dec(&dev->vma_count);
->  
-> -	mutex_lock(&dev->struct_mutex);
->  	list_for_each_entry_safe(pt, temp, &dev->vmalist, head) {
->  		if (pt->vma == vma) {
->  			list_del(&pt->head);
-> @@ -459,6 +450,23 @@ static void drm_vm_close(struct vm_area_struct *vma)
->  			break;
->  		}
->  	}
-> +}
-> +
-> +/**
-> + * \c close method for all virtual memory types.
-> + *
-> + * \param vma virtual memory area.
-> + *
-> + * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
-> + * free it.
-> + */
-> +static void drm_vm_close(struct vm_area_struct *vma)
-> +{
-> +	struct drm_file *priv = vma->vm_file->private_data;
-> +	struct drm_device *dev = priv->minor->dev;
-> +
-> +	mutex_lock(&dev->struct_mutex);
-> +	drm_vm_close_locked(vma);
->  	mutex_unlock(&dev->struct_mutex);
->  }
->  
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index 7809d23..774e1d4 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -1175,6 +1175,7 @@ extern int drm_release(struct inode *inode, struct file *filp);
->  extern int drm_mmap(struct file *filp, struct vm_area_struct *vma);
->  extern int drm_mmap_locked(struct file *filp, struct vm_area_struct *vma);
->  extern void drm_vm_open_locked(struct vm_area_struct *vma);
-> +extern void drm_vm_close_locked(struct vm_area_struct *vma);
->  extern resource_size_t drm_core_get_map_ofs(struct drm_local_map * map);
->  extern resource_size_t drm_core_get_reg_ofs(struct drm_device *dev);
->  extern unsigned int drm_poll(struct file *filp, struct poll_table_struct *wait);
-
+It can create Image file by compiling the linux-0.11 kernel.
+andone can help me to solve the problem?
+                           runcoderen
 
 -- 
-Mathematics is the supreme nostalgia of our time.
 
+/****************************************
+http://runcoderen.wordpress.com
+****************************************/
 
