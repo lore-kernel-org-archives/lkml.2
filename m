@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751927Ab0JBXAK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 19:00:10 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:41871 "EHLO vps.mortis.eu"
+	id S1751951Ab0JBXSW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 19:18:22 -0400
+Received: from fisica.ufpr.br ([200.17.209.129]:54886 "EHLO fisica.ufpr.br"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751798Ab0JBXAI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 19:00:08 -0400
-Date: Sun, 3 Oct 2010 00:59:58 +0200
-From: Giel van Schijndel <me@mortis.eu>
-To: Hans de Goede <hdegoede@redhat.com>
-Cc: Laurens Leemans <laurens@signips.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, 597820@bugs.debian.org
-Subject: Re: [PATCH 1/2] hwmon: f71882fg: use a muxed resource lock for the
- Super I/O port
-Message-ID: <20101002225958.GA18605@salidar.me.mortis.eu>
-References: <20100801132226.GE3711@salidar.me.mortis.eu>
- <1280669455-31283-1-git-send-email-me@mortis.eu>
- <4C59514A.7090401@redhat.com>
+	id S1751846Ab0JBXSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 19:18:20 -0400
+X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Oct 2010 19:18:20 EDT
+From: Carlos Carvalho <carlos@fisica.ufpr.br>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
-Content-Disposition: inline
-In-Reply-To: <4C59514A.7090401@redhat.com>
-OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19623.48074.873182.970865@fisica.ufpr.br>
+Date: Sat, 2 Oct 2010 20:10:02 -0300
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/17] fs: Inode cache scalability
+In-Reply-To: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
+X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We have serious problems with 34.6 in a machine with ~11TiB xfs, with
+a lot of simultaneous IO, particularly hundreds of rm and a sync
+afterwards. Maybe they're related to these issues.
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The machine is a file server (almost all via http/apache) and has
+several thousand connections all the time. It behaves quite well for
+at most 4 days; from then on kswapd's start appearing on the display
+of top consuming ever increasing percentages of cpu. This is no
+problem, the machine has 16 nearly idle cores. However, after about
+5-7 days there's an abrupt transition: in about 30s the load goes to
+several thousand, apache shows up consuming all possible cpu and
+downloads nearly stop. I have to reboot the machine to get service
+back. It manages to unmount the filesystems and reboot properly.
 
-On Wed, Aug 04, 2010 at 01:38:50PM +0200, Hans de Goede wrote:
-> Ack!
->=20
-> Acked-by: Hans de Goede <hdegoede@redhat.com>
->=20
-> On 08/01/2010 03:30 PM, Giel van Schijndel wrote:
->> Sleep while acquiring a resource lock on the Super I/O port. This should
->> prevent collisions from causing the hardware probe to fail with -EBUSY.
->>=20
->> Signed-off-by: Giel van Schijndel<me@mortis.eu>
+Stopping/restarting apache restores the situation but only for
+a short while; after about 2-3h the problem reappears. That's why I
+have to reboot.
 
-Would anyone please apply this patch?  It's been sitting for quite some
-time now collecting dust (none of that fictional bit-rot thus far
-however).  If this patch needs to be resubmitted or requires me to poke
-a specific individual please let me know (and what individual to poke).
+With 35.6 the behaviour seems to have changed: now often
+CONFIG_DETECT_HUNG_TASK produces this kind of call trace in the log:
 
-FYI the Message-ID of that patch is:
-<1280669455-31283-1-git-send-email-me@mortis.eu>
+[<ffffffff81098578>] ? igrab+0x10/0x30
+[<ffffffff811160fe>] ? xfs_sync_inode_valid+0x4c/0x76
+[<ffffffff81116241>] ? xfs_sync_inode_data+0x1b/0xa8
+[<ffffffff811163e0>] ? xfs_inode_ag_walk+0x96/0xe4
+[<ffffffff811163dd>] ? xfs_inode_ag_walk+0x93/0xe4
+[<ffffffff81116226>] ? xfs_sync_inode_data+0x0/0xa8
+[<ffffffff81116495>] ? xfs_inode_ag_iterator+0x67/0xc4
+[<ffffffff81116226>] ? xfs_sync_inode_data+0x0/0xa8
+[<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
+[<ffffffff81116712>] ? xfs_sync_data+0x22/0x42
+[<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
+[<ffffffff8111678b>] ? xfs_quiesce_data+0x2b/0x94
+[<ffffffff81113f03>] ? xfs_fs_sync_fs+0x2d/0xd7
+[<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
+[<ffffffff810a48c4>] ? __sync_filesystem+0x62/0x7b
+[<ffffffff8108993e>] ? iterate_supers+0x60/0x9d
+[<ffffffff810a493a>] ? sys_sync+0x3f/0x53
+[<ffffffff81001dab>] ? system_call_fastpath+0x16/0x1b
 
-PS I've added Guenter Roeck and Andrew Morton to the CC list because
-   between now and the original submission date they got appended to
-   scripts/get_maintainer.pl's output.
-
---=20
-Met vriendelijke groet,
-With kind regards,
-Giel van Schijndel
---
-"It would seem that perfection is attained not when no more can be
- added, but when no more can be removed."
-  -- Antoine de Saint Exup=C3=A9ry
-
---X1bOJ3K7DJ5YkBrT
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkynuWsACgkQZBYm/87l50LG4ACaA+M3Mw18quNSpk88jmT3kk+U
-zCoAoJsIgV+UNmHv/ED/wwQtWEJKVAHc
-=DLEW
------END PGP SIGNATURE-----
-
---X1bOJ3K7DJ5YkBrT--
+It doesn't seem to cause service disruption (at least the flux graphs
+don't show drops). I didn't see it happen while I was watching so it
+may be that service degrades for short intervals. Uptime with 35.6 is
+only 3d8h so it's still not sure that the breakdown of 34.6 is gone
+but kswapd's cpu usages are very small, less than with 34.6 for a
+similar uptime. There are only 2 filesystems, and the big one has 256
+AGs. They're not mounted with delaylog.
