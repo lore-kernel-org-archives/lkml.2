@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab0JBHfv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 03:35:51 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36754 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab0JBHfu (ORCPT
+	id S1752198Ab0JBHkp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 03:40:45 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61973 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab0JBHkn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 03:35:50 -0400
+	Sat, 2 Oct 2010 03:40:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=cgrom9D1e5f/mSbvPoMXc66Hv0Dk2Vp7hkM6lH/p+8zokrAA9730bk9ciYJx0GSE2q
-         h2lDYZ5Z3qe5KmKfLuIzAK8kQckPI1WLWPw0x2M/qXkU1D1mZD75Sx0tKm4wbeBK4Onv
-         J+fLBsU20Ndt0e8WB8IalrUOv+jo+uhX2cJRc=
-From: Rahul Ruikar <rahul.ruikar@gmail.com>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Harro Haan <hrhaan@gmail.com>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Ryan Mallon <ryan@bluewatersys.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rahul Ruikar <rahul.ruikar@gmail.com>
-Subject: [PATCH] usb: gadget: at91_udc: Fix error path
-Date: Sat,  2 Oct 2010 13:05:16 +0530
-Message-Id: <1286004916-3948-1-git-send-email-rahul.ruikar@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:cc:content-type;
+        b=IlGrXExfp4wGhDZp8PwJs26ETjcGfIPT8jcg0gT6Z9WLXHYdLHIgFoHNuW2nOYsrGU
+         xcUZprNHL0WQiS8cEvqIJ/9rlX+A/Ewl5eeTNvV6W02XLRdB5BPmIvtvwugv1vxqnsHa
+         pEXlUujocN/8l1WmtBDk8PDixYylXaL8+eDts=
+MIME-Version: 1.0
+In-Reply-To: <4CA653F0.1010008@vlnb.net>
+References: <4CA653F0.1010008@vlnb.net>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Sat, 2 Oct 2010 09:40:21 +0200
+X-Google-Sender-Auth: kSLhTDHcMuvduyE0uwOYEXE7bao
+Message-ID: <AANLkTi=bfGuL-wrdjYotQFH3x5e+-3H7jzmic9YNppbx@mail.gmail.com>
+Subject: Re: [PATCHv4 0/19]: New SCSI target framework (SCST) with dev
+ handlers and 2 target drivers
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        Vladislav Bolkhovitin <vst@vlnb.net>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        James Smart <James.Smart@emulex.com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In function at91udc_probe()
-call put_device() when device_register() fails.
+On Fri, Oct 1, 2010 at 11:34 PM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
+>
+> Hi All,
+>
+> Please review the next iteration of the patch set of the new (although,
+> in fact, the oldest) SCSI target framework for Linux SCST with a set of
+> dev handlers and 3 target drivers: for local access (scst_local), for
+> Infiniband SRP (srpt) and IBM POWER Virtual SCSI .
+>
+> [ ... ]
 
-Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
----
- drivers/usb/gadget/at91_udc.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Note: as far as I know currently SCST is the first and only in-kernel
+target storage framework that satisfies both criteria (1) and (2) as
+defined during the LSF 2010 summit storage track (see also
+http://lwn.net/Articles/400589/):
 
-diff --git a/drivers/usb/gadget/at91_udc.c b/drivers/usb/gadget/at91_udc.c
-index 93ead19..43178e5 100644
---- a/drivers/usb/gadget/at91_udc.c
-+++ b/drivers/usb/gadget/at91_udc.c
-@@ -1798,8 +1798,10 @@ static int __init at91udc_probe(struct platform_device *pdev)
- 	}
- 
- 	retval = device_register(&udc->gadget.dev);
--	if (retval < 0)
-+	if (retval < 0) {
-+		put_device(&udc->gadget.dev);
- 		goto fail0b;
-+	}
- 
- 	/* don't do anything until we have both gadget driver and VBUS */
- 	clk_enable(udc->iclk);
--- 
-1.7.2.3
+1. Being a drop in replacement for STGT (the current in-kernel target
+mode driver).
+2. Using a modern sysfs based control and configuration plane.
 
+Regarding criterion (3), that the code was reviewed as clean enough
+for inclusion: any feedback is welcome.
+
+Bart.
