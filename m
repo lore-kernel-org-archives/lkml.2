@@ -1,45 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753452Ab0JBCWp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 22:22:45 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:51439 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752659Ab0JBCWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 22:22:44 -0400
-Date: Fri, 1 Oct 2010 19:24:54 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: Re: linux-next: Tree for October 1 (staging/olpc_dcon)
-Message-ID: <20101001192454.0a427cb0@debxo>
-In-Reply-To: <20101001154531.997630a2.randy.dunlap@oracle.com>
-References: <20101001153756.47b52566.sfr@canb.auug.org.au>
-	<20101001154531.997630a2.randy.dunlap@oracle.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754933Ab0JBDCY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 23:02:24 -0400
+Received: from web53703.mail.re2.yahoo.com ([206.190.37.24]:41911 "HELO
+	web53703.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752567Ab0JBDCW convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 23:02:22 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 23:02:22 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=yUJUGMhyt6LUMZE+yNFFWf7bWxIdPy7TqHesVGKV0g247IqSnMRSqpxW+7BcisDkh7mgICX8w8sVL/1nFbQE0en0zWaCY2HmCnUQy1cGRhcLO+nODfNdjfaayS0jt/sm2tAZMRbzkocWAunNB0Kl4IJAtdU1A8wdfzDr6+6ElEc=;
+Message-ID: <563428.39597.qm@web53703.mail.re2.yahoo.com>
+X-YMail-OSG: 5dkGvRAVM1me2QVa2bNIyh9BWOIEGMTrkY488nR5oop6Lbq
+ goiP6HIS5keV5f0yNTDDqnO0QPlg50fZluMPiSFyoPhePZRN7rwBs_f6AAAm
+ yRHOz3BZSG5jCFbAE75bvJ4bCZS.dXfgHscOjoMXuiEN6tOucUJ5Sd0Bera6
+ .B.IdPd3hF501QYI.3CFEpIhzOiFMoD41igIzcQo94tgluDM2cE4V.88_sHK
+ ZvIFS7p73Xe8EvmX2Yb8DmojKVC48lrOXrSTGLOTPBrT7zt_5F6MaQ964HeQ
+ BmcLKxPnERotryCE85DRmx9u5Fw54gqSABRX1pe0-
+X-Mailer: YahooMailRC/497 YahooMailWebService/0.8.105.279950
+Date: Fri, 1 Oct 2010 19:55:42 -0700 (PDT)
+From: Nagendra Tomar <tomer_iisc@yahoo.com>
+Subject: [PATCH 2.6.35.7] net: Fix the condition passed to sk_wait_event()
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Oct 2010 15:45:31 -0700
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-> On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > Changes since 20100930:
-> 
-> 
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
-> declaration of function 'geode_gpio_event_irq'
-> drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
-> declaration of function 'geode_gpio'
 
-Yep, it's pending a cs5535-gpio patch
-(https://patchwork.kernel.org/patch/209482/).
+The condition (3rd arg) passed to sk_wait_event() in sk_stream_wait_memory() and 
+sk_stream_wait_connect() are incorrect.
+The incorrect check in sk_stream_wait_memory() causes the following soft lockup 
+in tcp_sendmsg() when the global tcp memory pool has exhausted. The check in 
+sk_stream_wait_connect() was found by code audit.
+   
+>>> snip <<<
+localhost kernel: BUG: soft lockup - CPU#3 stuck for 11s! [sshd:6429]
+localhost kernel: CPU 3:
+localhost kernel: 
+localhost kernel: Call Trace:
+localhost kernel:  [sk_stream_wait_memory+0x1b1/0x200] 
+sk_stream_wait_memory+0x1b1/0x200
+localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
+localhost kernel:  [ipv6:tcp_sendmsg+0x6e6/0xe90] tcp_sendmsg+0x6e6/0xce0
+localhost kernel:  [sock_aio_write+0x126/0x140] sock_aio_write+0x126/0x140
+localhost kernel:  [xfs:do_sync_write+0xf1/0x130] do_sync_write+0xf1/0x130
+localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
+localhost kernel:  [hrtimer_start+0xe3/0x170] hrtimer_start+0xe3/0x170
+localhost kernel:  [vfs_write+0x185/0x190] vfs_write+0x185/0x190
+localhost kernel:  [sys_write+0x50/0x90] sys_write+0x50/0x90
+localhost kernel:  [system_call+0x7e/0x83] system_call+0x7e/0x83
+>>> snip <<<
+
+What is happening is, that the sk_wait_event() condition passed from
+sk_stream_wait_memory() evaluates to true for the case of tcp global memory
+exhaustion. This is because both sk_stream_memory_free() and vm_wait are true
+which causes sk_wait_event() to *not* call schedule_timeout(). 
+Hence sk_stream_wait_memory() returns immediately to the caller w/o sleeping.
+This causes the caller to again try allocation, which again fails and again
+calls sk_stream_wait_memory(), and so on.
+
+Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
+---
+--- linux-2.6.35.7/net/core/stream.c.orig 2010-03-23 23:46:45.000000000 +0530
++++ linux-2.6.35.7/net/core/stream.c 2010-03-24 00:21:09.000000000 +0530
+@@ -73,9 +73,8 @@ int sk_stream_wait_connect(struct sock *
+   prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
+   sk->sk_write_pending++;
+   done = sk_wait_event(sk, timeo_p,
+-         !sk->sk_err &&
+-         !((1 << sk->sk_state) &
+-           ~(TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
++         ((1 << sk->sk_state) &
++           (TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
+   finish_wait(sk_sleep(sk), &wait);
+   sk->sk_write_pending--;
+  } while (!done);
+@@ -144,10 +143,9 @@ int sk_stream_wait_memory(struct sock *s
+ 
+   set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
+   sk->sk_write_pending++;
+-  sk_wait_event(sk, &current_timeo, !sk->sk_err &&
+-        !(sk->sk_shutdown & SEND_SHUTDOWN) &&
+-        sk_stream_memory_free(sk) &&
+-        vm_wait);
++  sk_wait_event(sk, &current_timeo, sk->sk_err ||
++        (sk->sk_shutdown & SEND_SHUTDOWN) ||
++        (sk_stream_memory_free(sk) && !vm_wait));
+   sk->sk_write_pending--;
+ 
+   if (vm_wait) {
+
+
+
+      
