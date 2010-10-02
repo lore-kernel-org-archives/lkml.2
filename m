@@ -1,145 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754781Ab0JBDVI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 23:21:08 -0400
-Received: from heily.com ([69.56.173.59]:38412 "EHLO heily.com"
+	id S1754163Ab0JBD0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 23:26:12 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:57155 "EHLO imr3.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753184Ab0JBDVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 23:21:07 -0400
-X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 23:21:07 EDT
-Message-ID: <4CA6A2E3.2060306@heily.com>
-Date: Fri, 01 Oct 2010 23:11:31 -0400
-From: Mark Heily <mark@heily.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1751180Ab0JBD0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 23:26:11 -0400
+Date: Fri, 1 Oct 2010 20:26:03 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Chen Gong <gong.chen@linux.intel.com>
+CC: lm-sensors@lm-sensors.org, JBeulich@novell.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [1/2] hwmon: uniform the init style of pkgtemp
+Message-ID: <20101002032603.GA25998@ericsson.com>
+References: <1285480800-14558-2-git-send-email-gong.chen@linux.intel.com>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: setgroups(2) does not update all threads in a process
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1285480800-14558-2-git-send-email-gong.chen@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Sep 26, 2010 at 05:59:59AM -0000, Chen Gong wrote:
+> pkgtemp is derived from coretemp, so some reasonable
+> logics should be applied onto pkgtemp, too. Such as
+> the init logic here.
+> 
+> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+> Acked-by: Jan Beulich <jbeulich@novell.com>
+> 
+Hi,
 
-The setgroups(2) system call does not update the credentials for all threads 
-in a process. Instead, it only updates the credentials for the currently 
-executing thread. Any threads that were created before setgroups() was 
-called are not affected.
+this patch, when applied with CONFIG_HOTPLUG_CPU undefined, causes a compile failure
+because it tries to access pkgtemp_cpu_notifier which is not defined in this case.
+ 
+For that reason, I have removed the patch from the list of applied patches for -next.
+Please re-submit a version which compiles for all combinations of HOTPLUG_CPU and SMP
+defined/undefined.
 
-This is not the expected behavior according to the manpage, which states:
-
-     "setgroups()  sets  the supplementary group IDs for the calling process."
-
-See below for a small test case that demonstrates the problem. This program 
-runs successfully on FreeBSD 8 and Solaris 10, but fails on Linux 2.6.32.
-
-I'm not subscribed to LKML, so please CC: all replies to my personal email 
-address (mark@heily.com).
-
-Cheers,
-
-  - Mark
-
-
-/*
-  * Copyright (c) 2010 Mark Heily <mark@heily.com>
-  *
-  * Permission to use, copy, modify, and distribute this software for any
-  * purpose with or without fee is hereby granted, provided that the above
-  * copyright notice and this permission notice appear in all copies.
-  *
-  * THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  * WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  * MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  * ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-  */
-
-/*
-
-    Test if setgroups(3) has process or thread scope.
-
-    Example usage:
-
-       gcc -Wall check_setgroups.c -lpthread && sudo ./a.out
-
-  */
-
-#include <err.h>
-#include <errno.h>
-#include <grp.h>
-#include <pthread.h>
-#include <sys/types.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-
-pthread_mutex_t mtx = PTHREAD_MUTEX_INITIALIZER;
-
-void print_cred(void);
-void drop_privs(void);
-
-void drop_privs(void) {
-     gid_t gid = 1;
-
-     if (setgid(1) != 0) err(1, "setgid");
-     if (setgroups(1, &gid) != 0) err(1, "setgroups");
-     if (setuid(1) != 0) err(1, "setuid");
-     printf("dropped privileges: ");
-     print_cred();
-}
-
-void cmp_privs(uid_t uid, gid_t gid, gid_t groups) {
-     gid_t buf;
-
-     if (getgid() != gid) errx(1, "wrong gid");
-     if (getuid() != uid) errx(1, "wrong uid");
-     if (getgroups(1, &buf) != 1) err(1, "getgroups");
-     if (buf != groups)
-         errx(1, "ERROR: getgroups() returned %d but expected %d\n", buf, 
-groups);
-}
-
-void print_cred(void) {
-     gid_t groups[100];
-     int   i, ngroups;
-
-     ngroups = getgroups(100, groups);
-     if (ngroups < 0)
-         err(1, "getgroups");
-     printf("uid=%d gid=%d groups=", getuid(), getgid());
-     for (i = 0; i <ngroups; i++) {
-         printf("%d ", groups[i]);
-     }
-     printf("\n");
-}
-
-void * thread_main(void *unused) {
-     pthread_mutex_lock(&mtx);
-     cmp_privs(1,1,1);
-     return (NULL);
-}
-
-int main() {
-     pthread_t tid;
-     pthread_attr_t attr;
-
-     if (getuid() != 0)
-         errx(1, "ERROR: this must be run as root");
-
-     pthread_mutex_lock(&mtx);
-     pthread_attr_init(&attr);
-     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-     pthread_create(&tid, &attr, thread_main, NULL);
-
-     drop_privs();
-     cmp_privs(1,1,1);
-     pthread_mutex_unlock(&mtx);
-     pthread_join(tid, NULL);
-
-     puts("+OK");
-     exit(0);
-}
+Thanks,
+Guenter
