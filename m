@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752198Ab0JBHkp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 03:40:45 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61973 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751960Ab0JBHkn (ORCPT
+	id S1752235Ab0JBHqm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 03:46:42 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:61221 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751722Ab0JBHql convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 03:40:43 -0400
+	Sat, 2 Oct 2010 03:46:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:cc:content-type;
-        b=IlGrXExfp4wGhDZp8PwJs26ETjcGfIPT8jcg0gT6Z9WLXHYdLHIgFoHNuW2nOYsrGU
-         xcUZprNHL0WQiS8cEvqIJ/9rlX+A/Ewl5eeTNvV6W02XLRdB5BPmIvtvwugv1vxqnsHa
-         pEXlUujocN/8l1WmtBDk8PDixYylXaL8+eDts=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TXFkW6rTg+6EFrPsZZJvUgRXCQJlQlBsHdA4k7KEXifzaolhUXeSM2eIWWszHXUhOR
+         G5NYW4N+KPM+OFzfVC3bwRW7W1FkZ1UjLOPTI9qM18kO+r9cKWl286mYPgI8Pks6NRIq
+         0N8l1WnBLi5i9/rQRvU/OWrSj5iJ7i8T73KdU=
 MIME-Version: 1.0
-In-Reply-To: <4CA653F0.1010008@vlnb.net>
-References: <4CA653F0.1010008@vlnb.net>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Sat, 2 Oct 2010 09:40:21 +0200
-X-Google-Sender-Auth: kSLhTDHcMuvduyE0uwOYEXE7bao
-Message-ID: <AANLkTi=bfGuL-wrdjYotQFH3x5e+-3H7jzmic9YNppbx@mail.gmail.com>
-Subject: Re: [PATCHv4 0/19]: New SCSI target framework (SCST) with dev
- handlers and 2 target drivers
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        Vladislav Bolkhovitin <vst@vlnb.net>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        James Smart <James.Smart@emulex.com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
+In-Reply-To: <1286002121-3694-1-git-send-email-rahul.ruikar@gmail.com>
+References: <1286002121-3694-1-git-send-email-rahul.ruikar@gmail.com>
+Date: Sat, 2 Oct 2010 15:45:50 +0800
+Message-ID: <AANLkTi=8LGCVqchpQrB+31FRqK04+3xLFCuak0S1FHpK@mail.gmail.com>
+Subject: Re: [PATCH] usb: core: endpoint: Fix error path
+From: Ming Lei <tom.leiming@gmail.com>
+To: Rahul Ruikar <rahul.ruikar@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
+        asanchez@neurowork.net, rjw@sisk.pl, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-To: unlisted-recipients:; (no To-header on input)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 1, 2010 at 11:34 PM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
+2010/10/2 Rahul Ruikar <rahul.ruikar@gmail.com>:
+> In function usb_create_ep_devs()
+> call put_device() when device_register() fails.
 >
-> Hi All,
+> Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+> ---
+>  drivers/usb/core/endpoint.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
 >
-> Please review the next iteration of the patch set of the new (although,
-> in fact, the oldest) SCSI target framework for Linux SCST with a set of
-> dev handlers and 3 target drivers: for local access (scst_local), for
-> Infiniband SRP (srpt) and IBM POWER Virtual SCSI .
+> diff --git a/drivers/usb/core/endpoint.c b/drivers/usb/core/endpoint.c
+> index 3788e73..cab126d 100644
+> --- a/drivers/usb/core/endpoint.c
+> +++ b/drivers/usb/core/endpoint.c
+> @@ -195,8 +195,10 @@ int usb_create_ep_devs(struct device *parent,
+>        device_enable_async_suspend(&ep_dev->dev);
 >
-> [ ... ]
+>        retval = device_register(&ep_dev->dev);
+> -       if (retval)
+> +       if (retval) {
+> +               put_device(&ep_dev->dev);
+>                goto error_register;
+> +       }
+>
+>        endpoint->ep_dev = ep_dev;
+>        return retval;
+> --
 
-Note: as far as I know currently SCST is the first and only in-kernel
-target storage framework that satisfies both criteria (1) and (2) as
-defined during the LSF 2010 summit storage track (see also
-http://lwn.net/Articles/400589/):
+You should replace kfree(ep_dev) with put_device(&ep_dev->dev),
+otherwise double free will be triggered.
 
-1. Being a drop in replacement for STGT (the current in-kernel target
-mode driver).
-2. Using a modern sysfs based control and configuration plane.
+So you need to revise the patch...
 
-Regarding criterion (3), that the code was reviewed as clean enough
-for inclusion: any feedback is welcome.
-
-Bart.
+-- 
+Lei Ming
