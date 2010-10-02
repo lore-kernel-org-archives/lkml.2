@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab0JBSDi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 14:03:38 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:37960 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab0JBSDh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 14:03:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=CqaII/80o1RkjWaBO/z5/uzKYcE6l/o2m5aVQe1/CpafKqONQNEApbz9UyhgqZqnBC
-         KYTGUIjU4RR0FopR+2uHQIFzlkjq4Q6GvrdB0XYdzuFky8No3X5UdOBOmp/7LeU5yN52
-         fNiezzhZPbei5/xS6u84YI5y1kIplVzx1A7fA=
+	id S1751480Ab0JBSyS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 14:54:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56682 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751412Ab0JBSyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 14:54:16 -0400
+Date: Sat, 2 Oct 2010 11:51:54 -0700
+From: Greg KH <gregkh@suse.de>
+To: Andres Salomon <dilinger@queued.net>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: Re: linux-next: Tree for October 1 (staging/olpc_dcon)
+Message-ID: <20101002185154.GA18020@suse.de>
+References: <20101001153756.47b52566.sfr@canb.auug.org.au> <20101001154531.997630a2.randy.dunlap@oracle.com> <20101001192454.0a427cb0@debxo>
 MIME-Version: 1.0
-In-Reply-To: <1285901335-26354-2-git-send-email-ccross@android.com>
-References: <1285901335-26354-1-git-send-email-ccross@android.com>
-	<1285901335-26354-2-git-send-email-ccross@android.com>
-Date: Sat, 2 Oct 2010 20:03:36 +0200
-Message-ID: <AANLkTinSgSWakhXaHN9svA7ruRF6w4tbOugdd5g+xF2i@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gic: Export irq chip functions
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Colin Cross <ccross@android.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101001192454.0a427cb0@debxo>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/1 Colin Cross <ccross@android.com>:
+On Fri, Oct 01, 2010 at 07:24:54PM -0700, Andres Salomon wrote:
+> On Fri, 1 Oct 2010 15:45:31 -0700
+> Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> 
+> > On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > Changes since 20100930:
+> > 
+> > 
+> > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
+> > declaration of function 'geode_gpio_event_irq'
+> > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
+> > declaration of function 'geode_gpio'
+> 
+> Yep, it's pending a cs5535-gpio patch
+> (https://patchwork.kernel.org/patch/209482/).
 
-> Some systems combine the GIC with an external interrupt controller.
+Wait, as I didn't apply the later patches, what I did apply should have
+still built properly (remember our rule, no breakage at any point in a
+patch series.)  So, should I revert the last olpc patch that caused this
+problem?
 
-Which ones?
+thanks,
 
-In-tree systems (in which case it would be natural to include these changes
-the patch series) or stuff you plan to submit later?
-
-Linus Walleij
+greg k-h
