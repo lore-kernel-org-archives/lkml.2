@@ -1,53 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab0JBIeK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 04:34:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61307 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab0JBIeI (ORCPT
+	id S1752999Ab0JBIkH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 04:40:07 -0400
+Received: from correo.corpivensa.gob.ve ([200.44.112.148]:50546 "EHLO
+	correo.corpivensa.gob.ve" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab0JBIkC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 04:34:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=klv0+B1d+vVym2b8XyojseU2RzthdmrZ1B/XFa7rmNmJxUqNDvGXfaG68XopGZKSHk
-         WhFtN/y6606reirN0GI47h2reoPXTTNGiMO5bFg40BhJYgYeaQpfpyNeLPoajg/rbTyl
-         6UAMAxT4U67Sjr7SyTcwFr9/0ZbL6Wv0eLN2U=
-Subject: Re: [PATCH 2.6.35.7] net: Fix the condition passed to
- sk_wait_event()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nagendra Tomar <tomer_iisc@yahoo.com>
-Cc: netdev@vger.kernel.org, davem@davemloft.net, linux-kernel@vger.kernel.org
-In-Reply-To: <1286008051.2582.846.camel@edumazet-laptop>
-References: <667106.4951.qm@web53706.mail.re2.yahoo.com>
-	 <1286008051.2582.846.camel@edumazet-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Oct 2010 10:34:01 +0200
-Message-ID: <1286008441.2582.851.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Sat, 2 Oct 2010 04:40:02 -0400
+Date: Sat, 2 Oct 2010 04:16:06 -0430 (VET)
+From: Faraddin Bin <saltuve@corpivensa.gob.ve>
+Reply-To: Faraddin Bin <timiala@voila.fr>
+Message-ID: <6199017.351931286009166377.JavaMail.root@correo>
+Subject: GOLD DEAL
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [60.53.52.170]
+X-Mailer: Zimbra 5.0.16_GA_2921.DEBIAN4.0 (ZimbraWebClient - IE6 (Win)/5.0.16_GA_2921.DEBIAN4.0)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 02 octobre 2010 à 10:27 +0200, Eric Dumazet a écrit :
+I have 110 kg of Switz refined gold, 99.99(24 karat).
 
-> Just wondering why you remove the test on sk->err ?
-> 
-> We want to break the loop If sk->sk_err is set, or state is ESTABLISHED
-> or CLOSE_WAIT.
+Should you be interested to buy it, please reply me for more and better arrangement on the method of transaction;
 
-Hmm, reading the code again, I can see sk_err is tested in the loop, so
-your code is better (sk_stream_wait_connect() returns an error after
-your patch, instead of returning 0)
+I will offer you cheaper than the international gold price. 
 
-Could you please split your patch in two patches ?
+If we can develop a certain level of trust between us, I will consider letting you lift it to your country and sell, then pay me based on the price we will agree on as I am only interested to sell it to a capable client instead of selling per kilo.
 
-The sk_stream_wait_connect() problems comes from commit
-c1cbe4b7ad0bc4b1d9 ([NET]: Avoid atomic xchg() for non-error case)
-
-
-
-
+Please get back to me.
