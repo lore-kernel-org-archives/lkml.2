@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0JBDCY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 23:02:24 -0400
-Received: from web53703.mail.re2.yahoo.com ([206.190.37.24]:41911 "HELO
-	web53703.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752567Ab0JBDCW convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 23:02:22 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 23:02:22 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=yUJUGMhyt6LUMZE+yNFFWf7bWxIdPy7TqHesVGKV0g247IqSnMRSqpxW+7BcisDkh7mgICX8w8sVL/1nFbQE0en0zWaCY2HmCnUQy1cGRhcLO+nODfNdjfaayS0jt/sm2tAZMRbzkocWAunNB0Kl4IJAtdU1A8wdfzDr6+6ElEc=;
-Message-ID: <563428.39597.qm@web53703.mail.re2.yahoo.com>
-X-YMail-OSG: 5dkGvRAVM1me2QVa2bNIyh9BWOIEGMTrkY488nR5oop6Lbq
- goiP6HIS5keV5f0yNTDDqnO0QPlg50fZluMPiSFyoPhePZRN7rwBs_f6AAAm
- yRHOz3BZSG5jCFbAE75bvJ4bCZS.dXfgHscOjoMXuiEN6tOucUJ5Sd0Bera6
- .B.IdPd3hF501QYI.3CFEpIhzOiFMoD41igIzcQo94tgluDM2cE4V.88_sHK
- ZvIFS7p73Xe8EvmX2Yb8DmojKVC48lrOXrSTGLOTPBrT7zt_5F6MaQ964HeQ
- BmcLKxPnERotryCE85DRmx9u5Fw54gqSABRX1pe0-
-X-Mailer: YahooMailRC/497 YahooMailWebService/0.8.105.279950
-Date: Fri, 1 Oct 2010 19:55:42 -0700 (PDT)
-From: Nagendra Tomar <tomer_iisc@yahoo.com>
-Subject: [PATCH 2.6.35.7] net: Fix the condition passed to sk_wait_event()
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net
+	id S1754285Ab0JBDEO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 23:04:14 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:45142 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab0JBDEN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 23:04:13 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Robin Holt <holt@sgi.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-kernel@vger.kernel.org
+References: <20101001200143.GR14064@sgi.com>
+	<alpine.DEB.2.00.1010011335400.2305@ubuntu>
+Date: Fri, 01 Oct 2010 20:04:06 -0700
+In-Reply-To: <alpine.DEB.2.00.1010011335400.2305@ubuntu> (Davide Libenzi's
+	message of "Fri, 1 Oct 2010 13:37:08 -0700 (PDT)")
+Message-ID: <m1vd5ll2hl.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 98.207.157.188
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Davide Libenzi <davidel@xmailserver.org>
+X-Spam-Relay-Country: 
+Subject: Re: max_user_watches overflows on 16TB system.
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Davide Libenzi <davidel@xmailserver.org> writes:
 
+> On Fri, 1 Oct 2010, Robin Holt wrote:
+>
+>> 
+>> Following a boot of a 16TB system, we noticed that the max_user_watches
+>> sysctl was negative.  Is there any downside to converting that to a
+>> static long and handling the fallout from the change?  I believe that
+>> fallout includes changing the definition of epoll_watches over to an
+>> atomic_long_t as well.
+>> 
+>> Alternatively should we just limit max_user_watches to INT_MAX?
+>
+> 2B watches looks an acceptable limit to me, at least for now.
+> Nobody complained about not having enough of them so far.
 
-The condition (3rd arg) passed to sk_wait_event() in sk_stream_wait_memory() and 
-sk_stream_wait_connect() are incorrect.
-The incorrect check in sk_stream_wait_memory() causes the following soft lockup 
-in tcp_sendmsg() when the global tcp memory pool has exhausted. The check in 
-sk_stream_wait_connect() was found by code audit.
-   
->>> snip <<<
-localhost kernel: BUG: soft lockup - CPU#3 stuck for 11s! [sshd:6429]
-localhost kernel: CPU 3:
-localhost kernel: 
-localhost kernel: Call Trace:
-localhost kernel:  [sk_stream_wait_memory+0x1b1/0x200] 
-sk_stream_wait_memory+0x1b1/0x200
-localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
-localhost kernel:  [ipv6:tcp_sendmsg+0x6e6/0xe90] tcp_sendmsg+0x6e6/0xce0
-localhost kernel:  [sock_aio_write+0x126/0x140] sock_aio_write+0x126/0x140
-localhost kernel:  [xfs:do_sync_write+0xf1/0x130] do_sync_write+0xf1/0x130
-localhost kernel:  [<ffffffff802557c0>] autoremove_wake_function+0x0/0x40
-localhost kernel:  [hrtimer_start+0xe3/0x170] hrtimer_start+0xe3/0x170
-localhost kernel:  [vfs_write+0x185/0x190] vfs_write+0x185/0x190
-localhost kernel:  [sys_write+0x50/0x90] sys_write+0x50/0x90
-localhost kernel:  [system_call+0x7e/0x83] system_call+0x7e/0x83
->>> snip <<<
+Which suggests that we need to force the boot time calculation to not
+exceed 2B.
 
-What is happening is, that the sk_wait_event() condition passed from
-sk_stream_wait_memory() evaluates to true for the case of tcp global memory
-exhaustion. This is because both sk_stream_memory_free() and vm_wait are true
-which causes sk_wait_event() to *not* call schedule_timeout(). 
-Hence sk_stream_wait_memory() returns immediately to the caller w/o sleeping.
-This causes the caller to again try allocation, which again fails and again
-calls sk_stream_wait_memory(), and so on.
+>From the sysctl interface perspective now that all of it is exported as
+ascii strings I don't see a problem there.
 
-Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
----
---- linux-2.6.35.7/net/core/stream.c.orig 2010-03-23 23:46:45.000000000 +0530
-+++ linux-2.6.35.7/net/core/stream.c 2010-03-24 00:21:09.000000000 +0530
-@@ -73,9 +73,8 @@ int sk_stream_wait_connect(struct sock *
-   prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
-   sk->sk_write_pending++;
-   done = sk_wait_event(sk, timeo_p,
--         !sk->sk_err &&
--         !((1 << sk->sk_state) &
--           ~(TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
-+         ((1 << sk->sk_state) &
-+           (TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
-   finish_wait(sk_sleep(sk), &wait);
-   sk->sk_write_pending--;
-  } while (!done);
-@@ -144,10 +143,9 @@ int sk_stream_wait_memory(struct sock *s
- 
-   set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
-   sk->sk_write_pending++;
--  sk_wait_event(sk, &current_timeo, !sk->sk_err &&
--        !(sk->sk_shutdown & SEND_SHUTDOWN) &&
--        sk_stream_memory_free(sk) &&
--        vm_wait);
-+  sk_wait_event(sk, &current_timeo, sk->sk_err ||
-+        (sk->sk_shutdown & SEND_SHUTDOWN) ||
-+        (sk_stream_memory_free(sk) && !vm_wait));
-   sk->sk_write_pending--;
- 
-   if (vm_wait) {
-
-
-
-      
+Eric
