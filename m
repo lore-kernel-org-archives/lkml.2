@@ -1,50 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab0JBUVi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 16:21:38 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:52077 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab0JBUVh (ORCPT
+	id S1751606Ab0JBU0j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 16:26:39 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52662
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751362Ab0JBU0i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 16:21:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=GAF4/kzvenQUn4YsDGe/x0Jw8KExGjB5kWAcgdVTAf6txEXfDETPCjZYYkMvEQLetd
-         Q8Svf/rDazARbhCXs2dg==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinSgSWakhXaHN9svA7ruRF6w4tbOugdd5g+xF2i@mail.gmail.com>
-References: <1285901335-26354-1-git-send-email-ccross@android.com>
-	<1285901335-26354-2-git-send-email-ccross@android.com>
-	<AANLkTinSgSWakhXaHN9svA7ruRF6w4tbOugdd5g+xF2i@mail.gmail.com>
-Date: Sat, 2 Oct 2010 13:21:28 -0700
-X-Google-Sender-Auth: 6CgFhwDT49UBP6aNabmNNgefeQE
-Message-ID: <AANLkTikTLgNe+JSeBAumsAsDvDxUzepf62CgFqWaq8LY@mail.gmail.com>
-Subject: Re: [PATCH 2/2] gic: Export irq chip functions
-From: Colin Cross <ccross@android.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Gary King <gking@nvidia.com>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Sat, 2 Oct 2010 16:26:38 -0400
+Date: Sat, 02 Oct 2010 13:26:59 -0700 (PDT)
+Message-Id: <20101002.132659.71124680.davem@davemloft.net>
+To: tomer_iisc@yahoo.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] net: Fix the condition passed to sk_wait_event()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <590816.4455.qm@web53707.mail.re2.yahoo.com>
+References: <590816.4455.qm@web53707.mail.re2.yahoo.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 2, 2010 at 11:03 AM, Linus Walleij
-<linus.ml.walleij@gmail.com> wrote:
-> 2010/10/1 Colin Cross <ccross@android.com>:
->
->> Some systems combine the GIC with an external interrupt controller.
->
-> Which ones?
->
-> In-tree systems (in which case it would be natural to include these changes
-> the patch series) or stuff you plan to submit later?
 
-Tegra, these patches are a precursor to the Tegra suspend support
-series.  If there's nothing obviously wrong with these, I'll repost
-them along with the rest of the series.
+Your patch is still corrupted, your email client is splitting up
+long lines.
+
+Please, save us a lot of time by test emailing the patch to yourself,
+and then trying to apply the patch as you receive it.  Do this until
+you're fixed all of the formatting problems and then you can send it
+here.
+
+Do not resend the patch by simply replying again to this thread,
+send a fresh posting so that "Re: " doesn't show up in the subject
+and this way I can apply it directly without any editing.
+
+Thank you.
