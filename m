@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab0JBNWh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 09:22:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57084 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755511Ab0JBNWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 09:22:36 -0400
-Subject: Re: [PATCH] regulator: max8649 - fix setting extclk_freq
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Haojian Zhuang <haojian.zhuang@marvell.com>
-In-Reply-To: <20101001173643.GB21157@opensource.wolfsonmicro.com>
-References: <1285912587.12422.2.camel@mola>
-	 <20101001071906.GC20529@opensource.wolfsonmicro.com>
-	 <AANLkTi=4Bv72d56XU+4jXZ8wHp+R_1VfaKOrvp_PtG4M@mail.gmail.com>
-	 <20101001173643.GB21157@opensource.wolfsonmicro.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Oct 2010 14:22:33 +0100
-Message-ID: <1286025753.3125.25.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932079Ab0JBNy7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 09:54:59 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:52932 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754659Ab0JBNy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 09:54:57 -0400
+From: Julia Lawall <julia@diku.dk>
+To: Eric Moore <Eric.Moore@lsi.com>
+Cc: kernel-janitors@vger.kernel.org, support@lsi.com,
+        DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] drivers/message/fusion/mptctl.c: Add missing error handling code
+Date: Sat,  2 Oct 2010 15:59:16 +0200
+Message-Id: <1286027958-7333-2-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-01 at 10:36 -0700, Mark Brown wrote:
-> On Fri, Oct 01, 2010 at 07:18:14PM +0800, Axel Lin wrote:
-> > 2010/10/1 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> 
-> > > Are there existing users of the driver?  It's not always 100% clear if
-> > > people are expecting bitfield values that will be shifted in or values
-> > > that can be ored directly in.  I don't really mind either way but I'd
-> > > rather be careful.
-> 
-> > I think I should explain this way:
-> 
-> > In max8649.h , we have
-> > enum {
-> >         MAX8649_EXTCLK_26MHZ = 0,
-> >         MAX8649_EXTCLK_13MHZ,
-> >         MAX8649_EXTCLK_19MHZ,   /* 19.2MHz */
-> > };
-> 
-> OK, that's clearer.  When changing the interpretation of existing
-> platform data like this it's good to note this sort of thing in the
-> changelog since merge issues can be a real pain.
-> 
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> --
+karg is allocated using kmalloc and is completely local to this function.
+It should thus be freed before exiting the function in an error case.
 
-Applied.
+A simplified version of the sematic match that finds this problem is as
+follows: (http://coccinelle.lip6.fr/)
 
-Thanks
+// <smpl>
+@r exists@
+@r@
+statement S1,S2,S3;
+constant C1,C2,C3;
+@@
 
-Liam
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+*if (...)
+ {... S1 return -C1;}
+...
+*if (...)
+ {... when != S1
+    return -C2;}
+...
+*if (...)
+ {... S1 return -C3;}
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/message/fusion/mptctl.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/message/fusion/mptctl.c b/drivers/message/fusion/mptctl.c
+index a3856ed..1dcc13a 100644
+--- a/drivers/message/fusion/mptctl.c
++++ b/drivers/message/fusion/mptctl.c
+@@ -1307,8 +1307,10 @@ mptctl_getiocinfo (unsigned long arg, unsigned int data_size)
+ 	else
+ 		karg->adapterType = MPT_IOCTL_INTERFACE_SCSI;
+ 
+-	if (karg->hdr.port > 1)
++	if (karg->hdr.port > 1) {
++		kfree(karg);
+ 		return -EINVAL;
++	}
+ 	port = karg->hdr.port;
+ 
+ 	karg->port = port;
 
