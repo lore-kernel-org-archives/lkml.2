@@ -1,58 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751488Ab0JBFmK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 01:42:10 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61904 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab0JBFmJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 01:42:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ErL1bgT7LAWmkQeN5sqjmETn0KN9RlE7zyADEPerIPF4ENmF7r3u7hzg3lbJnjMIDJ
-         9EkrMmrop26nNxgfjnJj82t+OrXVqV28yCCUVvfvcYbnWyDf9mTKbYJQzOMgnnMa/AaX
-         4EqR/T65Qw1JRhf7sUQtudKYr+IMenjL3M06Y=
-From: Rahul Ruikar <rahul.ruikar@gmail.com>
-To: Li Yang <leoli@freescale.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>,
-        Anton Vorontsov <avorontsov@ru.mvista.com>
-Cc: linux-usb@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
-        linux-kernel@vger.kernel.org, Rahul Ruikar <rahul.ruikar@gmail.com>,
-        Rahul Ruikar <raul.ruikar@gmail.com>
-Subject: [PATCH] usb: gadget: fsl_udc_core: Fix error path
-Date: Sat,  2 Oct 2010 11:11:36 +0530
-Message-Id: <1285998096-3385-1-git-send-email-rahul.ruikar@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1751574Ab0JBGPZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 02:15:25 -0400
+Received: from in.cluded.net ([195.159.98.120]:36225 "EHLO in.cluded.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751423Ab0JBGPY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 02:15:24 -0400
+Message-ID: <4CA6CD79.80804@uw.no>
+Date: Sat, 02 Oct 2010 06:13:13 +0000
+From: "Daniel K." <dk@uw.no>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9a1) Gecko/20060307 SeaMonkey/1.5a
+MIME-Version: 1.0
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH RESEND v3 09/24] ptrace: cleanup arch_ptrace() on frv
+References: <1285838880-4977-1-git-send-email-namhyung@gmail.com>	 <1285838880-4977-10-git-send-email-namhyung@gmail.com>	 <4CA6A484.8000109@uw.no>  <1285991879.1696.4.camel@leonhard> <1285995551.1696.19.camel@leonhard>
+In-Reply-To: <1285995551.1696.19.camel@leonhard>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-call put_device() when device_register() fails.
+Namhyung Kim wrote:
+> 2010-10-02 (토), 12:57 +0900, Namhyung Kim:
+>> 2010-10-02 (토), 03:18 +0000, Daniel K.:
+>>> Namhyung Kim wrote:
+>>>>       case PTRACE_POKEUSR: /* write the word at location addr in the USER area */
+>>>>             ret = -EIO;
+>>> -             if ((addr & 3) || addr < 0)
+>>> +             if (addr & 3)
+>>>                     break;
+>>>
+>>>> -		ret = 0;
+>>>> -		switch (addr >> 2) {
+>>>> +		switch (regno) {
+>>>>  		case 0 ... PT__END - 1:
+>>>> -			ret = put_reg(child, addr >> 2, data);
+>>>> -			break;
+>>>> -
+>>>> -		default:
+>>>> -			ret = -EIO;
+>>>> +			ret = put_reg(child, regno, data);
+>>>>  			break;
+>>>>  		}
+>>>>  		break;
+>>> With this, you remove the default case, and no longer return -EIO in the
+>>> cases of PT__END + n, as in the PTRACE_PEEKUSR section above.
+>>>
+>>> This is a change of behaviour as far as I can tell, and not just a cleanup.
+> 
+> It would not be a change of behaviour. Because 'ret' was initialized
+> with -EIO and only changed in the switch case. So assignment before
+> switch can be removed and then will return -EIO in default case.
 
-Signed-off-by: Rahul Ruikar <raul.ruikar@gmail.com>
----
- drivers/usb/gadget/fsl_udc_core.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+You are right, I was thrown by the piles of needless code here.
 
-diff --git a/drivers/usb/gadget/fsl_udc_core.c b/drivers/usb/gadget/fsl_udc_core.c
-index 08a9a62..491fc7a 100644
---- a/drivers/usb/gadget/fsl_udc_core.c
-+++ b/drivers/usb/gadget/fsl_udc_core.c
-@@ -2340,8 +2340,10 @@ static int __init fsl_udc_probe(struct platform_device *pdev)
- 	udc_controller->gadget.dev.release = fsl_udc_release;
- 	udc_controller->gadget.dev.parent = &pdev->dev;
- 	ret = device_register(&udc_controller->gadget.dev);
--	if (ret < 0)
-+	if (ret < 0) {
-+		put_device(&udc_controller->gadget.dev);
- 		goto err_free_irq;
-+	}
- 
- 	/* setup QH and epctrl for ep0 */
- 	ep0_setup(udc_controller);
--- 
-1.7.2.3
+In fact, the whole switch can now be replaced with:
 
+	if (regno < PT__END)
+		ret = put_reg(child, regno, data);
+
+but it is perhaps better to use the switch-style, for symmetry with
+the PTRACE_PEEKUSR case directly above it?
+
+
+Sorry to cause alarm.
+
+
+Daniel K.
