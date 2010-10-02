@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755296Ab0JBMdM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 08:33:12 -0400
-Received: from mailrelay010.isp.belgacom.be ([195.238.6.177]:53745 "EHLO
-	mailrelay010.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753532Ab0JBMdL (ORCPT
+	id S1755430Ab0JBNR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 09:17:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53719 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754378Ab0JBNR5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 08:33:11 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEANLDpkxR8Uhp/2dsb2JhbACiPXLBQw2FNwQ
-Date: Sat, 2 Oct 2010 14:33:09 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Giel van Schijndel <me@mortis.eu>
-Cc: Lutz Ballaschke <vegan.grindcore@googlemail.com>,
-        Wim van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv3 0/3] watchdog: add f71862fg support
-Message-ID: <20101002123308.GG3823@infomag.iguana.be>
-References: <20100926140629.GA2150@kreios.titan> <20100926151155.GB7185@salidar.me.mortis.eu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100926151155.GB7185@salidar.me.mortis.eu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 2 Oct 2010 09:17:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=HWwcFK9oxYLj9qxpzh/Zq6dkBkQkF1HygzlAtMRmqwQCf51NtO2s7nJ6Yu6P3J6bbO
+         bRDIbxewJAKvKr2+iGkf481TasmDnZKxHRgzy6cKLgWi+Y74vKL3suNSaTIaYqwGqKi7
+         uRD3TTTu8wi5xp4mjOXnXXO6217QMhD1vDlJ4=
+Subject: [PATCH] sysctl: fix min/max handling in
+ __do_proc_doulongvec_minmax()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Robin Holt <holt@sgi.com>,
+        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>, netdev@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Oct 2010 15:17:49 +0200
+Message-ID: <1286025469.2582.1806.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+When proc_doulongvec_minmax() is used with an array of longs,
+and no min/max check requested (.extra1 or .extra2 being NULL), we
+dereference a NULL pointer for the second element of the array.
 
-> On Sun, Sep 26, 2010 at 04:06:29PM +0200, Lutz Ballaschke wrote:
-> > Furthermore i was thinking about modifying the WDIOC_GETTIMELEFT
-> > helper function since it simply returns the content of the WDT timer 
-> > register without regarding whether the driver runs in minute-mode or not
-> > (thanks to Giel for pointing that out). This means if the driver is loaded 
-> > with a timeout of >255 seconds (and switches to minute-mode) WDIOC_GETTIMELEFT
-> > ioctl returns minutes instead of seconds and thus doesn't comply with 
-> > watchdog-api (e.g. ioctl returns 6(min) not 360(sec)). It might be 
-> > confusing if one loads the driver with a timeout of let's say 360 seconds 
-> > and gets 6 minutes returned by ioctl. But imho it's not very accurate to
-> > return a value of seconds if the wdt doesn't count in seconds. That might
-> > be even more confusing. This inconsistency on the part of the hardware 
-> > maybe can't get satisfyingly compensated by the driver. So i'd prefer the 
-> > most simple solution.
-> 
-> IMO the worst option would be to just return minutes.  Returning
-> 'minutes * 60 = seconds' would be significantly less bad.  So if these
-> are your options I'd suggest going with the lesser evil.
-> 
-> One other possible option could be returning '(minutes - 1) * 60 + 1'.
-> That way bad timing decisions based on the (wrong) assumption, that
-> there are still 60 seconds left until reset, can be averted.
-> 
-> I would however like Wim's opinion on this, as this affects the
-> Watchdog API's usage.
+Noticed while doing some changes in network stack for the "16TB problem"
 
-The return value should be the seconds before the watchdog will reboot.
-So value should be seconds, not minutes and is best the safest value
-(so (minutes - 1) * 60 + 1 in this case ).
-Secondly: the WDIOC_GETTIMELEFT should only be a DEBUGging ioctl.
-The reason I created it, is to check if certain drivers are working
-or not. We should not use it in normal operations imho.
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ kernel/sysctl.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Kind regards,
-Wim.
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index f88552c..4fba86d 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2500,7 +2500,8 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+ 				break;
+ 			if (neg)
+ 				continue;
+-			if ((min && val < *min) || (max && val > *max))
++			if ((table->extra1 && val < *min) ||
++			    (table->extra2 && val > *max))
+ 				continue;
+ 			*i = val;
+ 		} else {
+
 
