@@ -1,72 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751951Ab0JBXSW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 19:18:22 -0400
-Received: from fisica.ufpr.br ([200.17.209.129]:54886 "EHLO fisica.ufpr.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751846Ab0JBXSU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 19:18:20 -0400
-X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Oct 2010 19:18:20 EDT
-From: Carlos Carvalho <carlos@fisica.ufpr.br>
+	id S1752035Ab0JBXtS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 19:49:18 -0400
+Received: from web53706.mail.re2.yahoo.com ([206.190.37.27]:43503 "HELO
+	web53706.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751915Ab0JBXtR convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 19:49:17 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=LEMZpK6FE1NDmkJdp9erKZY67QgMECYnWcq7+lSTw7mWoOamukiBEHkJYA5gzxFUIV/ORxgInjslz0L80e5V5WyOEB36EwTOZrXPItkboztcQXA+s+Tb3zJGM85Jr6q81AEhxKXDBXZI49I/U3yFeUVNx9Sl/IOfwJ7hdzuo3yw=;
+Message-ID: <339313.23381.qm@web53706.mail.re2.yahoo.com>
+X-YMail-OSG: _ZVY0rMVM1nwviEyF6d_H47D804nEw98bnZHNpQI6FAlngT
+ WS_J.C6wwVrqmS.eY0IKD_w36JNVTLRXTJYQ3DQVlyWFue_GHDBRx5H5Ygpj
+ fUjcHP.qCAkemLPeEZBjU69KrULJKeHoPZQyNHZU4sG1TDZlxDAPIg3BuGZm
+ LDBYEfGY3Vj.InsweM1J88L5WsUmONP1XJ9GoXNYD.XEpdiAP7RauOIzFctL
+ ueXlkRsMQvJbBBXGnYqKxpm9EkwoAIsyjyu1dZbj4e4U9n9OjwgWYycZigtK
+ tVXbpm9w33qWNuLFZktxiRzeP5LyWNEX8s_s-
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
+Date: Sat, 2 Oct 2010 16:49:16 -0700 (PDT)
+From: Nagendra Tomar <tomer_iisc@yahoo.com>
+Subject: [PATCH 1/2] net: Fix the condition passed to sk_wait_event()
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19623.48074.873182.970865@fisica.ufpr.br>
-Date: Sat, 2 Oct 2010 20:10:02 -0300
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/17] fs: Inode cache scalability
-In-Reply-To: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
-X-Mailer: VM 8.1.0 under 23.2.1 (i486-pc-linux-gnu)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have serious problems with 34.6 in a machine with ~11TiB xfs, with
-a lot of simultaneous IO, particularly hundreds of rm and a sync
-afterwards. Maybe they're related to these issues.
+This patch fixes the sk_wait_event() condition in the sk_stream_wait_connect() 
+function. With this change, we correctly check for the TCPF_ESTABLISHED and 
+TCPF_CLOSE_WAIT states and avoid potentially returning success when there
+might be an error on the socket.
 
-The machine is a file server (almost all via http/apache) and has
-several thousand connections all the time. It behaves quite well for
-at most 4 days; from then on kswapd's start appearing on the display
-of top consuming ever increasing percentages of cpu. This is no
-problem, the machine has 16 nearly idle cores. However, after about
-5-7 days there's an abrupt transition: in about 30s the load goes to
-several thousand, apache shows up consuming all possible cpu and
-downloads nearly stop. I have to reboot the machine to get service
-back. It manages to unmount the filesystems and reboot properly.
+Signed-off-by: Nagendra Singh Tomar <tomer_iisc@xxxxxxxxx>
+---
+--- linux-2.6.35.7/net/core/stream.c.orig	2010-03-24 09:30:00.000000000 +0530
++++ linux-2.6.35.7/net/core/stream.c	2010-03-24 09:30:17.000000000 +0530
+@@ -73,9 +73,8 @@ int sk_stream_wait_connect(struct sock *
+ 		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
+ 		sk->sk_write_pending++;
+ 		done = sk_wait_event(sk, timeo_p,
+-				     !sk->sk_err &&
+-				     !((1 << sk->sk_state) &
+-				       ~(TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
++				     ((1 << sk->sk_state) &
++				       (TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
+ 		finish_wait(sk_sleep(sk), &wait);
+ 		sk->sk_write_pending--;
+ 	} while (!done);
 
-Stopping/restarting apache restores the situation but only for
-a short while; after about 2-3h the problem reappears. That's why I
-have to reboot.
+---
 
-With 35.6 the behaviour seems to have changed: now often
-CONFIG_DETECT_HUNG_TASK produces this kind of call trace in the log:
 
-[<ffffffff81098578>] ? igrab+0x10/0x30
-[<ffffffff811160fe>] ? xfs_sync_inode_valid+0x4c/0x76
-[<ffffffff81116241>] ? xfs_sync_inode_data+0x1b/0xa8
-[<ffffffff811163e0>] ? xfs_inode_ag_walk+0x96/0xe4
-[<ffffffff811163dd>] ? xfs_inode_ag_walk+0x93/0xe4
-[<ffffffff81116226>] ? xfs_sync_inode_data+0x0/0xa8
-[<ffffffff81116495>] ? xfs_inode_ag_iterator+0x67/0xc4
-[<ffffffff81116226>] ? xfs_sync_inode_data+0x0/0xa8
-[<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
-[<ffffffff81116712>] ? xfs_sync_data+0x22/0x42
-[<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
-[<ffffffff8111678b>] ? xfs_quiesce_data+0x2b/0x94
-[<ffffffff81113f03>] ? xfs_fs_sync_fs+0x2d/0xd7
-[<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
-[<ffffffff810a48c4>] ? __sync_filesystem+0x62/0x7b
-[<ffffffff8108993e>] ? iterate_supers+0x60/0x9d
-[<ffffffff810a493a>] ? sys_sync+0x3f/0x53
-[<ffffffff81001dab>] ? system_call_fastpath+0x16/0x1b
 
-It doesn't seem to cause service disruption (at least the flux graphs
-don't show drops). I didn't see it happen while I was watching so it
-may be that service degrades for short intervals. Uptime with 35.6 is
-only 3d8h so it's still not sure that the breakdown of 34.6 is gone
-but kswapd's cpu usages are very small, less than with 34.6 for a
-similar uptime. There are only 2 filesystems, and the big one has 256
-AGs. They're not mounted with delaylog.
+      
