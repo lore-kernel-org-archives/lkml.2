@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751480Ab0JBSyS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 14:54:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56682 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751412Ab0JBSyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 14:54:16 -0400
-Date: Sat, 2 Oct 2010 11:51:54 -0700
-From: Greg KH <gregkh@suse.de>
-To: Andres Salomon <dilinger@queued.net>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: Re: linux-next: Tree for October 1 (staging/olpc_dcon)
-Message-ID: <20101002185154.GA18020@suse.de>
-References: <20101001153756.47b52566.sfr@canb.auug.org.au> <20101001154531.997630a2.randy.dunlap@oracle.com> <20101001192454.0a427cb0@debxo>
+	id S1751460Ab0JBTQV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 15:16:21 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60746 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab0JBTQU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 15:16:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:cc:content-type;
+        b=R8zihf2FCFZLaOkpgEqwx8YMUWTEWu0D91Z13ZB8/3RvfUG2g68nG6iL64+NS2TqDw
+         2/F8GVnIaaor3WYHmZ7Xj0Y/BTrLco6fsdFcD/3sEkfVZzkRKcy0XeJCIt/9wG384S5J
+         h10pSKf9f/szdq1NMC4KATB3Z4QtTtWPmhwG8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101001192454.0a427cb0@debxo>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Date: Sat, 2 Oct 2010 20:16:19 +0100
+X-Google-Sender-Auth: lgPQk0o1zxVpaE4HlZuVzomBQP0
+Message-ID: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
+Subject: Dynamic nop selection breaks boot on Geode LX
+From: Daniel Drake <dsd@laptop.org>
+To: jbaron@redhat.com
+Cc: Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 07:24:54PM -0700, Andres Salomon wrote:
-> On Fri, 1 Oct 2010 15:45:31 -0700
-> Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> 
-> > On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Changes since 20100930:
-> > 
-> > 
-> > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
-> > declaration of function 'geode_gpio_event_irq'
-> > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
-> > declaration of function 'geode_gpio'
-> 
-> Yep, it's pending a cs5535-gpio patch
-> (https://patchwork.kernel.org/patch/209482/).
+Hi,
 
-Wait, as I didn't apply the later patches, what I did apply should have
-still built properly (remember our rule, no breakage at any point in a
-patch series.)  So, should I revert the last olpc patch that caused this
-problem?
+linux-next fails to boot on OLPC's XO-1 laptop based on Geode LX processor.
 
-thanks,
+This is because of
 
-greg k-h
+commit f49aa448561fe9215f43405cac6f31eb86317792
+Author: Jason Baron <jbaron@redhat.com>
+Date:   Fri Sep 17 11:08:51 2010 -0400
+
+    jump label: Make dynamic no-op selection available outside of ftrace
+
+http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a=commitdiff;h=f49aa44
+
+The Geode hangs inside the asm() statement inside arch_init_ideal_nop5.
+
+Any thoughts?
+
+I'm a bit out of my depth debugging assembly code, but will happily
+take pointers and patches to help diagnose.
+
+cheers
+Daniel
