@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab0JERTT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 13:19:19 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:65263 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754425Ab0JERTR (ORCPT
+	id S1755021Ab0JERWX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 13:22:23 -0400
+Received: from s198-166-43-81.ab.hsia.telus.net ([198.166.43.81]:58342 "EHLO
+	[198.166.43.81]" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751129Ab0JERWW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 13:19:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=BpwvEF5blxjIbbzP6ZGkpzAG/YGET3RGctmBtmh77/8OU0GNV7ZKsZv14HUSCEppxz
-         VeOAQ+5i6Uwvr/yoowexhpk+xPt5o2sZ5bVAiDGoD3ruq0QEqtxH0lChfrHNmvCLq8+3
-         WbzyV+ApPibsNfSofFDmt8URgOBoSCmK8QsGY=
-Date: Tue, 5 Oct 2010 20:19:11 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: jovi zhang <bookjovi@gmail.com>
-Cc: andre.goddard@gmail.com, hedi@sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] pid: remove unused include
-Message-ID: <20101005171911.GA6075@core2.telecom.by>
-References: <AANLkTikcRppGD592yth-xaea961OczDhXX1Hj+qQ6fJH@mail.gmail.com>
+	Tue, 5 Oct 2010 13:22:22 -0400
+X-Greylist: delayed 2546 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 13:22:21 EDT
+X-Spam-CTCH-RefID: 
+Reply-To: <lottosuntaxseguros@gmx.com>
+From: "Super Enalotto International**" <lottosuntaxseguros@gmx.com>
+Subject: Email Notification**
+Date: Sat, 2 Oct 2010 23:46:32 +0200
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikcRppGD592yth-xaea961OczDhXX1Hj+qQ6fJH@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-ID: <MONACO-DC01tMVhEUse0000e7b3@mail.monacoconstruction.com>
+X-OriginalArrivalTime: 02 Oct 2010 23:41:30.0953 (UTC) FILETIME=[56FC1B90:01CB628B]
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 07:20:26PM +0800, jovi zhang wrote:
-> remove unused include of pid.c
+Attention: Winner**
 
-> --- a/kernel/pid.c
-> +++ b/kernel/pid.c
-> @@ -27,15 +27,12 @@
->  */
-> 
-> #include <linux/mm.h>
-> -#include <linux/module.h>
+Your e-mail address was selected as winner of the Spanish Email Lottery
+International, Spain.You have won the sum of 615,810.00Euros
+credited to lucky batch number EGL/417331247/03
+To file for your claim, contact Carlos Fabregas of International Lotto
+Commission S.A,on Tel: +34 672 518 447-Email:carlofabregas01@gmx.com
+or cfabregas@gmx.com.
 
-This one is needed for EXPORT_SYMBOL_GPL.
+Congratulations once again from all our staff.
 
-> -#include <linux/slab.h>
+Yours Sincerely,
+Mrs.Maria Lopes
+Secretary
 
-
-This one is for kzalloc()
-
-> #include <linux/init.h>
-> #include <linux/rculist.h>
-> #include <linux/bootmem.h>
-> #include <linux/hash.h>
-> #include <linux/pid_namespace.h>
-> #include <linux/init_task.h>
-> -#include <linux/syscalls.h>
-
-This one can go, sys_wait4() usage was removed.
-Have you checked compilation?
