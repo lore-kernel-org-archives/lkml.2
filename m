@@ -1,128 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab0JBVNu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 17:13:50 -0400
-Received: from mtagate7.de.ibm.com ([195.212.17.167]:46707 "EHLO
-	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751558Ab0JBVNr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 17:13:47 -0400
-Message-ID: <4CA7A07C.5030504@free.fr>
-Date: Sat, 02 Oct 2010 23:13:32 +0200
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1751529Ab0JBVmy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 17:42:54 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38021 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751255Ab0JBVmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 17:42:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [RFC][PATCH] PM / Hibernate: Modify signature used to mark swap
+Date: Sat, 2 Oct 2010 23:41:30 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201009292313.23601.rjw@sisk.pl> <201009300002.03412.rjw@sisk.pl> <4CA799C5.3060106@tuxonice.net>
+In-Reply-To: <4CA799C5.3060106@tuxonice.net>
 MIME-Version: 1.0
-To: Pavel Emelyanov <xemul@parallels.com>
-CC: hadi@cyberus.ca, "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH 8/8] net: Implement socketat.
-References: <m1ocborgq7.fsf@fess.ebiederm.org>	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com> <1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>
-In-Reply-To: <4C9B3F9C.8080506@parallels.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010022341.30789.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/23/2010 01:53 PM, Pavel Emelyanov wrote:
-> On 09/23/2010 03:40 PM, jamal wrote:
->    
->> On Thu, 2010-09-23 at 15:33 +0400, Pavel Emelyanov wrote:
->>
->>      
->>> This particular usecase is unneeded once you have the "enter" ability.
->>>        
->> Is that cheaper from a syscall count/cost?
->>      
-> Why does it matter? You told, that the usage scenario was to
-> add routes to container. If I do 2 syscalls instead of 1, is
-> it THAT worse?
->
->    
->> i.e do I have to enter every time i want to write/read this fd?
->>      
-> No - you enter once, create a socket and do whatever you need
-> withing the enterned namespace.
->    
+On Saturday, October 02, 2010, Nigel Cunningham wrote:
+> Hi.
+> 
+> On 30/09/10 08:02, Rafael J. Wysocki wrote:
+> > On Wednesday, September 29, 2010, Nigel Cunningham wrote:
+> >> Hi.
+> >>
+> >> On 30/09/10 07:13, Rafael J. Wysocki wrote:
+> >>> From: Rafael J. Wysocki<rjw@sisk.pl>
+> >>> Subject: PM / Hibernate: Modify signature used to mark swap
+> >>>
+> >>> Since we are adding compression to the kernel's hibernate code,
+> >>> change signature used by it to mark swap spaces, so that earlier
+> >>> kernels don't attempt to restore compressed images they cannot
+> >>> handle.
+> >>>
+> >>> Signed-off-by: Rafael J. Wysocki<rjw@sisk.pl>
+> >>> ---
+> >>>    kernel/power/swap.c |    6 +++---
+> >>>    1 file changed, 3 insertions(+), 3 deletions(-)
+> >>>
+> >>> Index: linux-2.6/kernel/power/swap.c
+> >>> ===================================================================
+> >>> --- linux-2.6.orig/kernel/power/swap.c
+> >>> +++ linux-2.6/kernel/power/swap.c
+> >>> @@ -29,7 +29,7 @@
+> >>>
+> >>>    #include "power.h"
+> >>>
+> >>> -#define SWSUSP_SIG	"S1SUSPEND"
+> >>> +#define HIBERNATE_SIG	"LINHIB0001"
+> >>>
+> >>>    /*
+> >>>     *	The swap map is a data structure used for keeping track of each page
+> >>> @@ -195,7 +195,7 @@ static int mark_swapfiles(struct swap_ma
+> >>>    	if (!memcmp("SWAP-SPACE",swsusp_header->sig, 10) ||
+> >>>    	    !memcmp("SWAPSPACE2",swsusp_header->sig, 10)) {
+> >>>    		memcpy(swsusp_header->orig_sig,swsusp_header->sig, 10);
+> >>
+> >> if no compression
+> >>
+> >>> -		memcpy(swsusp_header->sig,SWSUSP_SIG, 10);
+> >>
+> >> else
+> >>
+> >>> +		memcpy(swsusp_header->sig, HIBERNATE_SIG, 10);
+> >>
+> >> ??
+> >
+> > I thought about that, but we'll need to drop the old signature when the image
+> > format changes (I think it will after your patch series) anyway.  And the
+> > benefit is not really worth it IMO (it only affects people using the in-kernel
+> > hibernation on x86-64).
+> 
+> Okay. I'm just a little weary because if everything I want to get in 
+> gets in, we're going to then be changing this signature multiple times. 
 
-Just to clarify this point. You enter the namespace, create the socket 
-and go back to the initial namespace (or create a new one). Further 
-operations can be made against this fd because it is the network 
-namespace stored in the sock struct which is used, not the current 
-process network namespace which is used at the socket creation only.
+That most likely is correct.
 
-We can actually already do that by unsharing and then create a socket. 
-This socket will pin the namespace and can be used as a control socket 
-for the namespace (assuming the socket domain will be ok for all the 
-operations).
+> I want to eventually reach a situation where we have a 'proper' header 
+> section to the image that stores (among other things) whether 
+> compression is enabled and which cryptoapi algorithm is used, allowing a 
+> person to en/disable compression at runtime without recompiling or 
+> rebooting. I suppose if I seek to put that stuff in earlier rather than 
+> later, that will simplify things.
 
-Jamal, I don't know what kind of application you want to use but if I 
-assume you want to create a process controlling 1024 netns, let's try to 
-identificate what happen with setns and with socketat :
+I don't have a problem with changing the signature.  If the image format
+changes, it's probably the best we can do.
 
-With setns:
+> Oh, while I'm writing to you: let's not worry about getting my patches 
+> in for 2.6.37. I won't be working on them much today, and want to put 
+> the time into making sure they're right before they get merged. As you 
+> said - let's seek to get things right first time.
 
-     * open /proc/self/ns/net (1)
-     * unshare the netns
-     * open /proc/self/ns/net (2)
-     * setns (1)
-     * create a virtual network device
-     * move the virtual device to (2) (using the set netns by fd)
-     * unshare the netns
-     ...
+OK
 
-With socketat:
-
-     * open a socket (1)
-     * unshare the netns
-     * open a netlink with socketat(1) => (2)
-     * create a virtual device using (2) (at this point it is init_net_ns)
-     * move the virtual device to the current netns (using the set netns 
-by pid)
-     * open a socket (3)
-     * unshare the netns
-     ...
-
-We have the same number of file descriptors kept opened. Except, with 
-setns we can bind mount the directory somewhere, that will pin the 
-namespace and then we can close the /proc/self/ns/net file descriptors 
-and reopen them later.
-
-If your application has to do a lot of specific network processing, 
-during its life cycle, in different namespaces, the socketat syscall 
-will be better because it will reduce the number of syscalls but at the 
-cost of keeping the file descriptors opened (potentially a big number). 
-Otherwise, setns should fit your needs.
-
-
-
->> How does poll/select work in that enter scenario?
->>      
-> Just like it used to before the enter.
->
->    
->> cheers,
->> jamal
->>
->>
->>      
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->    
-
+Thanks,
+Rafael
