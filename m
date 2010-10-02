@@ -1,44 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab0JBD0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Oct 2010 23:26:12 -0400
-Received: from imr3.ericy.com ([198.24.6.13]:57155 "EHLO imr3.ericy.com"
+	id S1754888Ab0JBD1U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Oct 2010 23:27:20 -0400
+Received: from in.cluded.net ([195.159.98.120]:36219 "EHLO in.cluded.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751180Ab0JBD0L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Oct 2010 23:26:11 -0400
-Date: Fri, 1 Oct 2010 20:26:03 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Chen Gong <gong.chen@linux.intel.com>
-CC: lm-sensors@lm-sensors.org, JBeulich@novell.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [1/2] hwmon: uniform the init style of pkgtemp
-Message-ID: <20101002032603.GA25998@ericsson.com>
-References: <1285480800-14558-2-git-send-email-gong.chen@linux.intel.com>
+	id S1753184Ab0JBD1S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Oct 2010 23:27:18 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Oct 2010 23:27:18 EDT
+Message-ID: <4CA6A484.8000109@uw.no>
+Date: Sat, 02 Oct 2010 03:18:28 +0000
+From: "Daniel K." <dk@uw.no>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9a1) Gecko/20060307 SeaMonkey/1.5a
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1285480800-14558-2-git-send-email-gong.chen@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Namhyung Kim <namhyung@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH RESEND v3 09/24] ptrace: cleanup arch_ptrace() on frv
+References: <1285838880-4977-1-git-send-email-namhyung@gmail.com> <1285838880-4977-10-git-send-email-namhyung@gmail.com>
+In-Reply-To: <1285838880-4977-10-git-send-email-namhyung@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 05:59:59AM -0000, Chen Gong wrote:
-> pkgtemp is derived from coretemp, so some reasonable
-> logics should be applied onto pkgtemp, too. Such as
-> the init logic here.
+Namhyung Kim wrote:
+> Use new 'regno', 'datap' variables in order to remove duplicated
+> expressions and unnecessary castings. Alse remove checking @addr
+> less than 0 because addr is now unsigned.
 > 
-> Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
-> Acked-by: Jan Beulich <jbeulich@novell.com>
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> Cc: David Howells <dhowells@redhat.com>
+> ---
+>  arch/frv/kernel/ptrace.c |   29 +++++++++++++----------------
+>  1 files changed, 13 insertions(+), 16 deletions(-)
 > 
-Hi,
+> diff --git a/arch/frv/kernel/ptrace.c b/arch/frv/kernel/ptrace.c
+> index e9dbfad..9d68f7f 100644
+> --- a/arch/frv/kernel/ptrace.c
+> +++ b/arch/frv/kernel/ptrace.c
+> @@ -259,19 +259,21 @@ long arch_ptrace(struct task_struct *child, long request,
+>  {
+>  	unsigned long tmp;
+>  	int ret;
+> +	int regno = addr >> 2;
+> +	unsigned long __user *datap = (unsigned long __user *) data;
+>  
+>  	switch (request) {
+>  		/* read the word at location addr in the USER area. */
+>  	case PTRACE_PEEKUSR: {
+>  		tmp = 0;
+>  		ret = -EIO;
+> -		if ((addr & 3) || addr < 0)
+> +		if (addr & 3)
+>  			break;
+>  
+>  		ret = 0;
+> -		switch (addr >> 2) {
+> +		switch (regno) {
+>  		case 0 ... PT__END - 1:
+> -			tmp = get_reg(child, addr >> 2);
+> +			tmp = get_reg(child, regno);
+>  			break;
+>  
+>  		case PT__END + 0:
+> @@ -300,23 +302,18 @@ long arch_ptrace(struct task_struct *child, long request,
+>  		}
+>  
+>  		if (ret == 0)
+> -			ret = put_user(tmp, (unsigned long *) data);
+> +			ret = put_user(tmp, datap);
+>  		break;
+>  	}
+>  
+>  	case PTRACE_POKEUSR: /* write the word at location addr in the USER area */
+>  		ret = -EIO;
+> -		if ((addr & 3) || addr < 0)
+> +		if (addr & 3)
+>  			break;
+>  
+> -		ret = 0;
+> -		switch (addr >> 2) {
+> +		switch (regno) {
+>  		case 0 ... PT__END - 1:
+> -			ret = put_reg(child, addr >> 2, data);
+> -			break;
+> -
+> -		default:
+> -			ret = -EIO;
+> +			ret = put_reg(child, regno, data);
+>  			break;
+>  		}
+>  		break;
 
-this patch, when applied with CONFIG_HOTPLUG_CPU undefined, causes a compile failure
-because it tries to access pkgtemp_cpu_notifier which is not defined in this case.
- 
-For that reason, I have removed the patch from the list of applied patches for -next.
-Please re-submit a version which compiles for all combinations of HOTPLUG_CPU and SMP
-defined/undefined.
+With this, you remove the default case, and no longer return -EIO in the
+cases of PT__END + n, as in the PTRACE_PEEKUSR section above.
 
-Thanks,
-Guenter
+This is a change of behaviour as far as I can tell, and not just a cleanup.
+
+
+Daniel K.
