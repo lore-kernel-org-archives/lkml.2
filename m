@@ -1,155 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab0JBME7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 08:04:59 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55504 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753236Ab0JBME6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 08:04:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=cTAuU8yTMDQHs6pXNIWUJjrUeBwxvdD3wIcy/INLY/gdssvm+AGypKVjqG+ZzyrTK0
-         g+UesjwJWnMRg7UkajKNF2XAb8IH3MHRB1gjWO0ItaHiRszCQ5nkXtRAuNVU3Rj0miPV
-         2fT+QUHA/chTFP3eSCICVPLEfK9x9mhLtGHsc=
+	id S1755441Ab0JBMIP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 08:08:15 -0400
+Received: from web53707.mail.re2.yahoo.com ([206.190.37.28]:23904 "HELO
+	web53707.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753091Ab0JBMIO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 08:08:14 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=cCQIMETqBsF6Eb8fG6i5xTUNaRBOaOO1P/TU6EiGHjG+PCMn3tcBK14Gb7pZt/6SQ/WPk+eHzE/5jkW2BPVge0UoOhD48Z3ZY6tF405rGNvmJ2obgziUPfzcIc0kUiXyVFDLIR6FV6E6wFyiB9OQ+UOVtiOzyb6OoDncqXNS04c=;
+Message-ID: <590816.4455.qm@web53707.mail.re2.yahoo.com>
+X-YMail-OSG: RY1NOmoVM1kQtWF0gMcKSKRztvpK_rj24zBTiGPuuSsgsys
+ raWW_Taar.12Gwcj4HuOKJbAGfxamjr_bQByYF7J9LkVZBYddP4V72ctj0.W
+ 3st7dnM8DNBapT21COIN.VNTgMDQNGh7O1VFempv4pqVxK2I4jZOq6gv0w0A
+ 8bM3hefJJM6G39eT1KmwSFy4R46Sq5cEFElLZ0Q4MCzAJGD1BQGxw03zurbX
+ DWHk2U_Vy_t8GjTSMLCnEG3CFls83A9353cFEuvWogBnkPsW6yf342yeJmzn
+ QMdtdzFo2.NEo0qetW1NN83YE_hDwWN7Z0m4EiJvKdg--
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
+Date: Sat, 2 Oct 2010 05:08:13 -0700 (PDT)
+From: Nagendra Tomar <tomer_iisc@yahoo.com>
+Subject: Re: [PATCH 1/2] net: Fix the condition passed to sk_wait_event()
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, davem@davemloft.net
 MIME-Version: 1.0
-Date: Sat, 2 Oct 2010 20:04:57 +0800
-Message-ID: <AANLkTimF+zy-qTmbtchGu_0Td7fZUsrsd7PNgkAdM8fA@mail.gmail.com>
-Subject: Ask For Comment: add routines for exchanging data between sock buffer
- and scatter list
-From: Hillf Danton <dhillf@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>, Jens Axboe <axboe@kernel.dk>,
-        Robert Love <robert.w.love@intel.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There seems no routines provided for exchanging data directly
-between sock buffer and scatter list in both scatterlist.c and skbuff.c,
-so comes this work.
-And it is hard to determine into which file these routines should be added,
-so a head file is added.
+This is the first part of the split up patch submitted in http://www.spinics.net/lists/netdev/msg142617.html
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
+This patch fixes the sk_wait_event() condition in the sk_stream_wait_connect() function. With this change, we correctly check for the TCPF_ESTABLISHED and TCPF_CLOSE_WAIT states and avoid potentially returning success when there is an error on the socket.
+
+Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
 ---
+--- linux-2.6.35.7/net/core/stream.c.orig	2010-03-24 09:30:00.000000000 +0530
++++ linux-2.6.35.7/net/core/stream.c	2010-03-24 09:30:17.000000000 +0530
+@@ -73,9 +73,8 @@ int sk_stream_wait_connect(struct sock *
+ 		prepare_to_wait(sk_sleep(sk), &wait, TASK_INTERRUPTIBLE);
+ 		sk->sk_write_pending++;
+ 		done = sk_wait_event(sk, timeo_p,
+-				     !sk->sk_err &&
+-				     !((1 << sk->sk_state) &
+-				       ~(TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
++				     ((1 << sk->sk_state) &
++				       (TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
+ 		finish_wait(sk_sleep(sk), &wait);
+ 		sk->sk_write_pending--;
+ 	} while (!done);
 
-diff -Npur o/linux-2.6.36-rc4/include/skb_sg.h
-m/linux-2.6.36-rc4/include/skb_sg.h
---- o/linux-2.6.36-rc4/include/skb_sg.h	1970-01-01 08:00:00.000000000 +0800
-+++ m/linux-2.6.36-rc4/include/skb_sg.h	2010-10-02 19:21:18.000000000 +0800
-@@ -0,0 +1,110 @@
-+/*
-+    Definition for exchanging data between sock buffer and scatter list
-+
-+    Copyright (C) Oct 2010 Hillf Danton <dhillf@gmail.com>
-+
-+    This program is free software; you can redistribute it and/or modify
-+    it under the terms of the GNU General Public License as published by
-+    the Free Software Foundation; either version 2 of the License, or
-+    (at your option) any later version.
-+
-+    This program is distributed in the hope that it will be useful,
-+    but WITHOUT ANY WARRANTY; without even the implied warranty of
-+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+    GNU General Public License for more details.
-+
-+    You should have received a copy of the GNU General Public License
-+    along with this program; if not, write to the Free Software
-+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-+    MA 02110-1301  USA
-+*/
-+
-+#ifndef __LINUX_SKB_SG_H
-+#define __LINUX_SKB_SG_H
-+
-+#include <linux/scatterlist.h>
-+#include <linux/skbuff.h>
-+
-+/*
-+ * skb_copy_bits_to_sg - copy data from skb to sg list
-+ * @len	length of data to be copied
-+ *
-+ * return the number of copied bytes
-+ */
-+
-+static int skb_copy_bits_to_sg(struct sk_buff *skb, int offset_in_skb,
-+                                             struct scatterlist *sg,
-int offset_in_sg,
-+                                             int len)
-+{
-+	int old = len;
-+	struct sg_mapping_iter miter;
-+
-+	if (offset_in_skb >= skb->len)
-+		return 0;
-+	
-+	/* skip offset in sg */
-+	while (sg && offset_in_sg >= sg->length) {
-+		offset_in_sg -= sg->length;
-+		sg = sg_next(sg);
-+	}
-+	if (! sg)
-+		return 0;
-+
-+	/* and go thru sg list */
-+	while (len > 0 && sg) {
-+		int this_len;
-+		int err;
-+		
-+		sg_miter_start(&miter, sg, 1, SG_MITER_ATOMIC|SG_MITER_TO_SG);
-+
-+		if (offset_in_sg) {
-+			/* we have to count this residual */
-+			miter.__offset = offset_in_sg;
-+			offset_in_sg = 0;
-+		}
-+
-+		if (! sg_miter_next(&miter))
-+			break;
-+		
-+		this_len = min(miter.length, len);
-+		
-+		err = skb_copy_bits(skb, offset_in_skb, miter.addr, this_len);
-+
-+		sg_miter_stop(&miter);
-+
-+		if (err)
-+			break;
-+
-+		offset_in_skb += this_len;
-+		len -= this_len;
-+
-+		sg = sg_next(sg);
-+	}
-+
-+	return old - len;	
-+}
-+
-+/*
-+ * sg_fill_skb_page_desc - fill skb frags with info in sg list
-+ * @index  the start index to fill
-+ *
-+ * return the number of filled frags
-+ */
-+
-+static int sg_fill_skb_page_desc(struct sk_buff *skb, int index,
-+                                                struct scatterlist *sg)
-+{
-+	int old = index;
-+	struct page *page;
-+	
-+	for (; sg && index < MAX_SKB_FRAGS; index++) {
-+		page = sg_page(sg);
-+		get_page(page);
-+		skb_add_rx_frag(skb, index, page, sg->offset, sg->length);
-+		sg = sg_next(sg);
-+	}
-+	
-+	return index - old;
-+}
-+
-+#endif /* __LINUX_SKB_SG_H */
+
+
