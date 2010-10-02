@@ -1,48 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751839Ab0JBVDX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 17:03:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50309 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751689Ab0JBVDW (ORCPT
+	id S1751895Ab0JBVNu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 17:13:50 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:46707 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751558Ab0JBVNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 17:03:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ihGLWe/CGNGYrw3WQINDbX0b9KvHS7mimOtTl5219a1fxSaS5WhhxRPvI6sV6z7S4j
-         dCfBqrZPKaqjXz4YLXuZaHFI1UwedLj4UkACBhT0Rh0WDGZKf5AYwXD3uP4ij5EkMg2A
-         OUKYJrANPJWOR/0n//TprydMsN6MHlnCnfdWk=
-Date: Sat, 2 Oct 2010 23:03:17 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Sitsofe Wheeler <sitsofe@yahoo.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Corentin Chary <corentincj@iksaif.net>
-Subject: Re: EeePC 900 reboots/hangs when using using perf -a -f -g
-Message-ID: <20101002210314.GA5373@nowhere>
-References: <20100912102854.GA7359@sucs.org> <1284289027.2251.95.camel@laptop> <20100912112105.GA28420@sucs.org> <20100912124653.GA5342@nowhere> <20100912162141.GB30698@sucs.org> <20100917030125.GA5389@nowhere> <20100921172711.GA31352@sucs.org>
+	Sat, 2 Oct 2010 17:13:47 -0400
+Message-ID: <4CA7A07C.5030504@free.fr>
+Date: Sat, 02 Oct 2010 23:13:32 +0200
+From: Daniel Lezcano <daniel.lezcano@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100921172711.GA31352@sucs.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Pavel Emelyanov <xemul@parallels.com>
+CC: hadi@cyberus.ca, "Eric W. Biederman" <ebiederm@xmission.com>,
+        linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+Subject: Re: [PATCH 8/8] net: Implement socketat.
+References: <m1ocborgq7.fsf@fess.ebiederm.org>	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com> <1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>
+In-Reply-To: <4C9B3F9C.8080506@parallels.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Sep 21, 2010 at 06:27:11PM +0100, Sitsofe Wheeler wrote:
-> On Fri, Sep 17, 2010 at 05:01:28AM +0200, Frederic Weisbecker wrote:
-> > 
-> > Ok, can you please send me your config?
-> > 
-> > I hope I can reproduce that.
+On 09/23/2010 01:53 PM, Pavel Emelyanov wrote:
+> On 09/23/2010 03:40 PM, jamal wrote:
+>    
+>> On Thu, 2010-09-23 at 15:33 +0400, Pavel Emelyanov wrote:
+>>
+>>      
+>>> This particular usecase is unneeded once you have the "enter" ability.
+>>>        
+>> Is that cheaper from a syscall count/cost?
+>>      
+> Why does it matter? You told, that the usage scenario was to
+> add routes to container. If I do 2 syscalls instead of 1, is
+> it THAT worse?
+>
+>    
+>> i.e do I have to enter every time i want to write/read this fd?
+>>      
+> No - you enter once, create a socket and do whatever you need
+> withing the enterned namespace.
+>    
+
+Just to clarify this point. You enter the namespace, create the socket 
+and go back to the initial namespace (or create a new one). Further 
+operations can be made against this fd because it is the network 
+namespace stored in the sock struct which is used, not the current 
+process network namespace which is used at the socket creation only.
+
+We can actually already do that by unsharing and then create a socket. 
+This socket will pin the namespace and can be used as a control socket 
+for the namespace (assuming the socket domain will be ok for all the 
+operations).
+
+Jamal, I don't know what kind of application you want to use but if I 
+assume you want to create a process controlling 1024 netns, let's try to 
+identificate what happen with setns and with socketat :
+
+With setns:
+
+     * open /proc/self/ns/net (1)
+     * unshare the netns
+     * open /proc/self/ns/net (2)
+     * setns (1)
+     * create a virtual network device
+     * move the virtual device to (2) (using the set netns by fd)
+     * unshare the netns
+     ...
+
+With socketat:
+
+     * open a socket (1)
+     * unshare the netns
+     * open a netlink with socketat(1) => (2)
+     * create a virtual device using (2) (at this point it is init_net_ns)
+     * move the virtual device to the current netns (using the set netns 
+by pid)
+     * open a socket (3)
+     * unshare the netns
+     ...
+
+We have the same number of file descriptors kept opened. Except, with 
+setns we can bind mount the directory somewhere, that will pin the 
+namespace and then we can close the /proc/self/ns/net file descriptors 
+and reopen them later.
+
+If your application has to do a lot of specific network processing, 
+during its life cycle, in different namespaces, the socketat syscall 
+will be better because it will reduce the number of syscalls but at the 
+cost of keeping the file descriptors opened (potentially a big number). 
+Otherwise, setns should fit your needs.
 
 
-I've been unable to reproduce with your config in latest tip:/perf/core,
-I haven't tested in a eeepc though.
 
-Did you check with 2.6.36-rc4 or with a tip branch?
-
-Thanks.
+>> How does poll/select work in that enter scenario?
+>>      
+> Just like it used to before the enter.
+>
+>    
+>> cheers,
+>> jamal
+>>
+>>
+>>      
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>    
 
