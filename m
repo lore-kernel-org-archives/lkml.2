@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab0JBHyl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 03:54:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45044 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751207Ab0JBHyk convert rfc822-to-8bit (ORCPT
+	id S1752505Ab0JBH7Y (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 03:59:24 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:53355 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab0JBH7X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 03:54:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PFBc3Z/dKM66lrNSvtgu7rch3gWApg23jYdY7Ai2tdxNDiYNnzHa8gSy4/iPHqTVX5
-         lFh/G1aQEoFs2BF+tQ+d8v8QbCHo2o+VXMEZ0fiIWiOhiAxZZoLG/tKPg2s5MVLaJjek
-         3WZ3zzxxrA03zFd1FB4/lbQWeVcqrYtEkwOxc=
-MIME-Version: 1.0
-In-Reply-To: <1286001348-3645-1-git-send-email-rahul.ruikar@gmail.com>
-References: <1286001348-3645-1-git-send-email-rahul.ruikar@gmail.com>
-Date: Sat, 2 Oct 2010 15:54:38 +0800
-Message-ID: <AANLkTi=W=8Gi9NDRy1MqFC6nuoQ5nymSsZU0Z2zE_cag@mail.gmail.com>
-Subject: Re: [PATCH] usb: musb: musb_gadget: Fix error path
-From: Ming Lei <tom.leiming@gmail.com>
-To: Rahul Ruikar <rahul.ruikar@gmail.com>
-Cc: Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
-        Mike Frysinger <vapier@gentoo.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 2 Oct 2010 03:59:23 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: airlied@redhat.com
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        jirislaby@gmail.com, Ben Skeggs <bskeggs@redhat.com>
+Subject: [PATCH 1/1] nouveau: ratelimit IRQ messages
+Date: Sat,  2 Oct 2010 09:58:56 +0200
+Message-Id: <1286006336-24651-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/2 Rahul Ruikar <rahul.ruikar@gmail.com>:
-> In function musb_gadget_setup()
-> call put_device() when device_register() fails.
->
-> Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
-> ---
->  drivers/usb/musb/musb_gadget.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
-> index d065e23..9fdd852 100644
-> --- a/drivers/usb/musb/musb_gadget.c
-> +++ b/drivers/usb/musb/musb_gadget.c
-> @@ -1676,8 +1676,10 @@ int __init musb_gadget_setup(struct musb *musb)
->        musb_platform_try_idle(musb, 0);
->
->        status = device_register(&musb->g.dev);
-> -       if (status != 0)
-> +       if (status != 0) {
-> +               put_device(&musb->g.dev);
+There are two messages in the ISR of nouvea which might be printed out
+hundred times in a second. Ratelimit them.
 
-This doe make sense, otherwise device_private may be leaked.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Ben Skeggs <bskeggs@redhat.com>
+---
+ drivers/gpu/drm/nouveau/nouveau_irq.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
->                the_gadget = NULL;
-> +       }
->        return status;
->  }
->
-> --
-> 1.7.2.3
->
->
-
-Acked-by: Ming Lei <tom.leiming@gmail.com>
-
+diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
+index 794b0ee..c6d57eb 100644
+--- a/drivers/gpu/drm/nouveau/nouveau_irq.c
++++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
+@@ -200,7 +200,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
+ 		}
+ 
+ 		if (status & NV_PFIFO_INTR_DMA_PUSHER) {
+-			NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n", chid);
++			if (printk_ratelimit())
++				NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n",
++						chid);
+ 
+ 			status &= ~NV_PFIFO_INTR_DMA_PUSHER;
+ 			nv_wr32(dev, NV03_PFIFO_INTR_0,
+@@ -227,8 +229,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
+ 		}
+ 
+ 		if (status) {
+-			NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
+-				status, chid);
++			if (printk_ratelimit())
++				NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
++					status, chid);
+ 			nv_wr32(dev, NV03_PFIFO_INTR_0, status);
+ 			status = 0;
+ 		}
 -- 
-Lei Ming
+1.7.3.1
+
+
