@@ -1,93 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0JBOJr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 10:09:47 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:42483 "EHLO mx01.sz.bfs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755547Ab0JBOJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 10:09:45 -0400
-Message-ID: <4CA73D26.7090109@bfs.de>
-Date: Sat, 02 Oct 2010 16:09:42 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1755654Ab0JBOP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 10:15:27 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:60810 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755512Ab0JBOP0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 10:15:26 -0400
+Date: Sat, 2 Oct 2010 10:15:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: linux-pm@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PM / Runtime: Reduce code duplication in core helper
+ functions (was: Re: [linux-pm] [PATCH] PM: add synchronous ...)
+In-Reply-To: <201010020037.55277.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1010021012590.15874-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Chas Williams <chas@cmf.nrl.navy.mil>, kernel-janitors@vger.kernel.org,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] drivers/atm/idt77252.c: Remove unnecessary error
- check
-References: <1286027958-7333-4-git-send-email-julia@diku.dk>
-In-Reply-To: <1286027958-7333-4-git-send-email-julia@diku.dk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2 Oct 2010, Rafael J. Wysocki wrote:
 
+> > > > BTW, I like some changes made by your patch that aren't really related to
+> > > > the issue at hand, so I think the patch below can be applied regardless of
+> > > > the other changes, unless I made a mistake I can see now.
+> > > 
+> > > It looks like a good change, but you forgot to preserve the assignments 
+> > > to dev->power.runtime_error.
+> > 
+> > That's correct and there's a difference betwee _idle and the other cases
+> > because of that.  I'll send updated patch with a changelog shortly.
+> 
+> Appended as promised.
 
-Julia Lawall schrieb:
-> This code does not call deinit_card(card); in an error case, as done in
-> other error-handling code in the same function.  But actually, the called
-> function init_sram can only return 0, so there is no need for the error
-> check at all.
-> 
+This looks okay.  In principle you could tell rpm_callback whether or 
+not to store the return value in dev->power.runtime_error (by passing 
+an extra argument), but it's probably not worthwhile.
 
+Alan Stern
 
-did you set init_sram() to void ?
-re,
- wh
-
-
-
-
-> A simplified version of the sematic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> @r@
-> statement S1,S2,S3;
-> constant C1,C2,C3;
-> @@
-> 
-> *if (...)
->  {... S1 return -C1;}
-> ...
-> *if (...)
->  {... when != S1
->     return -C2;}
-> ...
-> *if (...)
->  {... S1 return -C3;}
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/atm/idt77252.c |    3 +--
->  1 file changed, 1 insertion(+), 2 deletions(-)
-> 
-> diff --git a/drivers/atm/idt77252.c b/drivers/atm/idt77252.c
-> index 1679cbf..08ccde6 100644
-> --- a/drivers/atm/idt77252.c
-> +++ b/drivers/atm/idt77252.c
-> @@ -3410,8 +3410,7 @@ init_card(struct atm_dev *dev)
->  
->  	writel(readl(SAR_REG_CFG) | conf, SAR_REG_CFG);
->  
-> -	if (init_sram(card) < 0)
-> -		return -1;
-> +	init_sram(card);
->  
->  /********************************************************************/
->  /*  A L L O C   R A M   A N D   S E T   V A R I O U S   T H I N G S */
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
-> 
