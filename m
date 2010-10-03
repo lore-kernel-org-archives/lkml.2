@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab0JCBDf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 21:03:35 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:44402 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752395Ab0JCBDd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 21:03:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=lFqVLo3NCrVjKwOi01mu2R79ziAylRM3gVJ9LpjmuFxaGUHe+TAzuh3YjTzzpeoXux
-         zobMprqtFRGj3lZZ+upg==
-Date: Sat, 2 Oct 2010 18:03:25 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@kernel.org>
-cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux.com>
-Subject: Re: [RFC/PATCH] SLUB: Optimize slab_free() debug check
-In-Reply-To: <1286008825-5567-1-git-send-email-penberg@kernel.org>
-Message-ID: <alpine.DEB.2.00.1010021802120.20855@chino.kir.corp.google.com>
-References: <1286008825-5567-1-git-send-email-penberg@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	id S1752337Ab0JCBD3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 21:03:29 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:56190 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752076Ab0JCBD2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Oct 2010 21:03:28 -0400
+Date: Sat, 2 Oct 2010 18:03:34 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: Greg KH <gregkh@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: Re: linux-next: Tree for October 1 (staging/olpc_dcon)
+Message-ID: <20101002180334.7894bdfe@debxo>
+In-Reply-To: <20101002185154.GA18020@suse.de>
+References: <20101001153756.47b52566.sfr@canb.auug.org.au>
+	<20101001154531.997630a2.randy.dunlap@oracle.com>
+	<20101001192454.0a427cb0@debxo>
+	<20101002185154.GA18020@suse.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Oct 2010, Pekka Enberg wrote:
+On Sat, 2 Oct 2010 11:51:54 -0700
+Greg KH <gregkh@suse.de> wrote:
 
-> This patch optimizes slab_free() debug check to use "c->node != NUMA_NO_NODE"
-> instead of "c->node >= 0" because the former generates smaller code on x86-64:
+> On Fri, Oct 01, 2010 at 07:24:54PM -0700, Andres Salomon wrote:
+> > On Fri, 1 Oct 2010 15:45:31 -0700
+> > Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > 
+> > > On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
+> > > 
+> > > > Hi all,
+> > > > 
+> > > > Changes since 20100930:
+> > > 
+> > > 
+> > > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
+> > > declaration of function 'geode_gpio_event_irq'
+> > > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
+> > > declaration of function 'geode_gpio'
+> > 
+> > Yep, it's pending a cs5535-gpio patch
+> > (https://patchwork.kernel.org/patch/209482/).
 > 
->   Before:
+> Wait, as I didn't apply the later patches, what I did apply should
+> have still built properly (remember our rule, no breakage at any
+> point in a patch series.)  So, should I revert the last olpc patch
+> that caused this problem?
 > 
->     4736:       48 39 70 08             cmp    %rsi,0x8(%rax)
->     473a:       75 26                   jne    4762 <kfree+0xa2>
->     473c:       44 8b 48 10             mov    0x10(%rax),%r9d
->     4740:       45 85 c9                test   %r9d,%r9d
->     4743:       78 1d                   js     4762 <kfree+0xa2>
-> 
->   After:
-> 
->     4736:       48 39 70 08             cmp    %rsi,0x8(%rax)
->     473a:       75 23                   jne    475f <kfree+0x9f>
->     473c:       83 78 10 ff             cmpl   $0xffffffffffffffff,0x10(%rax)
->     4740:       74 1d                   je     475f <kfree+0x9f>
-> 
-> This patch also cleans up __slab_alloc() to use NUMA_NO_NODE instead of "-1"
-> for enabling debugging for a per-CPU cache.
-> 
-> Cc: Christoph Lameter <cl@linux.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Signed-off-by: Pekka Enberg <penberg@kernel.org>
 
-Acked-by: David Rientjes <rientjes@google.com>
+Sorry, I thought that was made clear by the "this patch is necessary
+for building the driver" comments in each patch description.  The
+original driver that was submitted doesn't build unless all patches are
+applied (the only which touches external APIs is the pending
+cs5535-gpio one).
 
-You could compare to NUMA_NO_NODE in show_slab_objects(), as well, for the 
-same optimization.
+
