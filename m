@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab0JCMkI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 08:40:08 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:61477 "EHLO mx01.sz.bfs.de"
+	id S1753429Ab0JCMmv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 08:42:51 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:6474 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753324Ab0JCMkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 08:40:07 -0400
-Message-ID: <4CA879A1.3070400@bfs.de>
-Date: Sun, 03 Oct 2010 14:40:01 +0200
+	id S1751046Ab0JCMmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 08:42:49 -0400
+Message-ID: <4CA87A47.6030007@bfs.de>
+Date: Sun, 03 Oct 2010 14:42:47 +0200
 From: walter harms <wharms@bfs.de>
 Reply-To: wharms@bfs.de
 User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
@@ -15,10 +15,10 @@ MIME-Version: 1.0
 To: Tracey Dent <tdent48227@gmail.com>
 CC: greg@kroah.com, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org, sam@ravnborg.org
-Subject: Re: [PATCH v3 01/20] Staging: cx25821: Makefile: cleaned up Makefile
+Subject: Re: [PATCH v3 11/20] Staging: rtl8192su: Makefile: cleaned up Makefile
  cflag lines
-References: <1286037489-28439-1-git-send-email-tdent48227@gmail.com>
-In-Reply-To: <1286037489-28439-1-git-send-email-tdent48227@gmail.com>
+References: <1286037489-28439-1-git-send-email-tdent48227@gmail.com> <1286037489-28439-11-git-send-email-tdent48227@gmail.com>
+In-Reply-To: <1286037489-28439-11-git-send-email-tdent48227@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,28 +32,38 @@ Tracey Dent schrieb:
 > 
 > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 > ---
->  drivers/staging/cx25821/Makefile |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
+>  drivers/staging/rtl8192su/Makefile |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
 > 
-> diff --git a/drivers/staging/cx25821/Makefile b/drivers/staging/cx25821/Makefile
-> index d0eb16e..6448364 100644
-> --- a/drivers/staging/cx25821/Makefile
-> +++ b/drivers/staging/cx25821/Makefile
-> @@ -7,7 +7,7 @@ cx25821-objs   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
->  obj-$(CONFIG_VIDEO_CX25821) += cx25821.o
->  obj-$(CONFIG_VIDEO_CX25821_ALSA) += cx25821-alsa.o
+> diff --git a/drivers/staging/rtl8192su/Makefile b/drivers/staging/rtl8192su/Makefile
+> index 7133894..1120c04 100644
+> --- a/drivers/staging/rtl8192su/Makefile
+> +++ b/drivers/staging/rtl8192su/Makefile
+> @@ -1,12 +1,12 @@
+>  NIC_SELECT = RTL8192SU
 >  
-> -EXTRA_CFLAGS += -Idrivers/media/video
-> -EXTRA_CFLAGS += -Idrivers/media/common/tuners
-> -EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
-> -EXTRA_CFLAGS += -Idrivers/media/dvb/frontends
-> +ccflags-y := -Idrivers/media/video
-> +ccflags-y += -Idrivers/media/common/tuners
-> +ccflags-y += -Idrivers/media/dvb/dvb-core
-> +ccflags-y += -Idrivers/media/dvb/frontends
+> -EXTRA_CFLAGS += -std=gnu89
+> -EXTRA_CFLAGS += -O2
+> +ccflags-y := -std=gnu89
+> +ccflags-y += -O2
+>  
 
-they have invented vpath for this, did they ?
-note: I am not familiar with the linux makefile.
+
+I still do not think that -O2 belongs here.
+it should simply be removed.
 
 re,
  wh
+
+
+
+> -EXTRA_CFLAGS += -DJACKSON_NEW_RX
+> -EXTRA_CFLAGS += -DTHOMAS_BEACON
+> +ccflags-y += -DJACKSON_NEW_RX
+> +ccflags-y += -DTHOMAS_BEACON
+>  
+> -#EXTRA_CFLAGS += -DMUTIPLE_BULK_OUT
+> +#ccflags-y += -DMUTIPLE_BULK_OUT
+>  
+>  r8192s_usb-objs :=		\
+>  	r8192U_wx.o		\
