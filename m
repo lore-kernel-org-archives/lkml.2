@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754743Ab0JCTfx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 15:35:53 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:47117 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751381Ab0JCTfw (ORCPT
+	id S1754783Ab0JCTg3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 15:36:29 -0400
+Received: from n3-vm0.bullet.mail.gq1.yahoo.com ([67.195.23.156]:28245 "HELO
+	n3-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751597Ab0JCTg2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 15:35:52 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] perf: Detach group events when removing event from ctx
-Date: Sun,  3 Oct 2010 20:35:50 +0100
-Message-Id: <8e7ce03ad7d5f94290a4e865c1fe5f7f7279e27f.1286134285.git.matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.1
+	Sun, 3 Oct 2010 15:36:28 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 837984.42669.bm@omp127.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=V5tY8iC3qZtcaKvB3zbHhjo+llXCfwm+csnJ4cq11zYcXZOSBHrNeaOn/q4STj44Fm6xB/3wM9jZivlSZnObl2VhnzjWbtInQ7hlouEMCXsol52vJFOMkq9G78UhWsJe76T2NeVT80aC9D00rnJ1ltUDNR8ocui8iysDgBXeMQU=;
+Message-ID: <594730.42296.qm@web180308.mail.gq1.yahoo.com>
+X-YMail-OSG: OvoRy18VM1n.qypiFcSf0gkmxTArRjlKVh9gOUnaqeA28mw
+ e_42SxJd_ukhbaf0HUQ5tKhFo_jp2At2H7_PHU2q3uWkYHIWMMs2zxHNQpAB
+ CTfItP7_exVW.LrkNTB1YM9tQFRjB9HYs.GNjXFxv2dqtEXOP0U.K4WXXx3o
+ Nc0AfthLxuhMQlo1JR__sjswJFrJUhVKZSAu8dzODltZkeNlw.MNtHReWKPm
+ 11VCR87trIFfnuDBWzsVZGyLtN9XgWc2G4LSy4590g1hsbUNtaM43PVTLPTK
+ 3AvThZ0FiWI1Nz68erLgOwCGIaYkRpgg2E1bj3_3DNsKWp3jfvwcD_2E-
+X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
+Date: Sun, 3 Oct 2010 12:36:27 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the Gadget Framework
+To: linux-usb@vger.kernel.org, tlinder <tlinder@codeaurora.org>
+Cc: Tatyana Linder <tlinder@codeaurora.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Robert Lukassen <robert.lukassen@tomtom.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Fabien Chouteau <fabien.chouteau@barco.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <1286092937-29191-1-git-send-email-tlinder@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When removing an event from a task's list of events we need to make sure
-that we also detach all group events. If we don't, then when we later
-call perf_group_attach() we'll hit the WARN_ON_ONCE() like so,
+I seem to have missed any posting of a SuperSpeed
+capable USB Device Controller driver, even as RFC.
 
-[ 1200.449161] ------------[ cut here ]------------
-[ 1200.449171] WARNING: at kernel/perf_event.c:313 add_event_to_ctx+0xe1/0x159()
-[ 1200.449174] Hardware name: MacBook2,1
-[ 1200.449176] Modules linked in: dm_mod sg sd_mod
-[ 1200.449183] Pid: 7619, comm: perf Not tainted 2.6.36-rc6-tip+ #2
-[ 1200.449186] Call Trace:
-[ 1200.449193]  [<ffffffff8103b71e>] warn_slowpath_common+0x85/0x9d
-[ 1200.449197]  [<ffffffff8103b750>] warn_slowpath_null+0x1a/0x1c
-[ 1200.449201]  [<ffffffff810a16fb>] add_event_to_ctx+0xe1/0x159
-[ 1200.449206]  [<ffffffff810a2f01>] perf_install_in_context+0x85/0x99
-[ 1200.449210]  [<ffffffff810a7811>] sys_perf_event_open+0x4da/0x633
-[ 1200.449216]  [<ffffffff81002b1b>] system_call_fastpath+0x16/0x1b
-[ 1200.449218] ---[ end trace 9df38c30c6cacb50 ]---
+So these patches can't actually achieve what their
+subjects say.
 
-Signed-off-by: Matt Fleming <matt@console-pimps.org>
----
- kernel/perf_event.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+I'd rather hold off such interface changes until
+there's a orking vertical slice through the stack,
+complete enough to test and evaluate the changes.
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index c16158c..c13d869 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -550,8 +550,11 @@ retry:
- 	 * can remove the event safely, if the call above did not
- 	 * succeed.
- 	 */
--	if (!list_empty(&event->group_entry))
-+	if (!list_empty(&event->group_entry)) {
-+		perf_group_detach(event);
- 		list_del_event(event, ctx);
-+	}
-+
- 	raw_spin_unlock_irq(&ctx->lock);
- }
- 
--- 
-1.7.1
+That said:  yes, propose the interface changes first
+before diving into the rest.
+
+- Dave
+
+
+
 
