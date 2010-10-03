@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab0JCS7p (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 14:59:45 -0400
-Received: from smtp.witbe.net ([81.88.96.48]:41699 "EHLO smtp.witbe.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754525Ab0JCS7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 14:59:44 -0400
-Date: Sun, 3 Oct 2010 20:59:11 +0200
-From: Paul Rolland <rol@as2917.net>
-To: Matt Mackall <mpm@selenic.com>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] drm: Prune GEM vma entries
-Message-ID: <20101003205911.073883c3@tux.DEF.witbe.net>
-In-Reply-To: <1285978196.16634.1392.camel@calx>
-References: <20100927115207.633024b1.akpm@linux-foundation.org>
-	<1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
-	<1285978196.16634.1392.camel@calx>
-Organization: AS2917.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754690Ab0JCTAS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 15:00:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:50393 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754525Ab0JCTAQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 15:00:16 -0400
+Date: Sun, 3 Oct 2010 21:00:12 +0200
+From: Heinz Diehl <htd@fritha.org>
+To: linux-kernel@vger.kernel.org
+Cc: trenn@suse.de
+Subject: [cpufreq] ondemand: Intel i5-450M gets stuck in lowest state
+Message-ID: <20101003190012.GA29952@fritha.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Wanderlust/2.15.7 (Almost =?utf-8?Q?Unreal?=
+ =?utf-8?B?KSBTRU1JLzEuMTQuNiAoTWFydW9rYSkgRkxJTS8xLjE0LjkgKEdvasWNKSBB?=
+ =?utf-8?Q?PEL=2F10=2E7?= Emacs/22.3 (x86_64-pc-linux-gnu) MULE/5.0 (SAKAKI)
+X-Provags-ID: V02:K0:JJplhh08pJDVsRM1Hfacq44acMetG2AGEBWCVC6JQ+l
+ wvJfJG4dytYae/EDB5dCMhnhSaNnIdiqGVfmOOW6Jm4DQtyQcS
+ /7cSZZnarHipDw5/Krh+dRzfN9HYgeWONqAensmdaE6XVE0sbf
+ J1HHdUa5LBcmK9e3+eXFnok+RB+WxchD1iEu/6X6rGfEN5GDI8
+ yKZh01lOsHj0v3DXSGO4w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi,
 
-On Fri, 01 Oct 2010 19:09:56 -0500
-Matt Mackall <mpm@selenic.com> wrote:
+I own a brand new ASUS U45JC laptop with an Intel i5-450M CPU built in.
+During the first compile on it, I noticed that the CPU reached max. 1.33 GHz
+using governor "ondemand". Kicking the CPU with a kernel compile using
+"make -j4" didn't help either, max. frequency was nailed at 1.33 GHz.
+Both the latest stable 2.6.35.7 and release candidate 2.6.36-rc6-git2 are
+affected.
 
-> On Mon, 2010-09-27 at 21:08 +0100, Chris Wilson wrote:
-> > Hook the GEM vm open/close ops into the generic drm vm open/close so
-> > that the vma entries are created and destroy appropriately.
-> > 
-> > Reported-by: Matt Mackall <mpm@selenic.com>
-> > Cc: Dave Airlie <airlied@redhat.com>
-> > Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> > Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> 
-> All signs point to this being the correct fix, but I won't have time to
-> test it while I'm in Japan.
-> 
-> Paul, does this work for you?
+After 2 days investigating (I'm not primarily a kernel programmer/developer), 
+I came across the solution, and there was already a patch available from
+Thomas Renninger @suse, which I have included in this mail. I blindly
+guess now that a lot of people own a notebook with an Intel i5 inside, and
+maybe (could) have the same problem.
 
-I've just finished building a kernel with this patch applied.
-I now need to keep it running for at least one day to make sure that the
-leak is gone for good.
+Any chance to get this included in the kernel, or is it just me who
+encounters this problem? The patch applies cleanly against the latest rc,
+and I can confirm that it also fixes the above mentioned problem in
+2.6.35.7 (I backported it and did try).
 
-I'll keep you updated on that.
+Thanks,
+Heinz.
 
-Regards,
-Paul
+
+---
+ drivers/cpufreq/cpufreq_ondemand.c |   24 ++++++++++++++++++++++++
+ 1 file changed, 24 insertions(+)
+
+--- a/drivers/cpufreq/cpufreq_ondemand.c
++++ b/drivers/cpufreq/cpufreq_ondemand.c
+@@ -35,6 +35,7 @@
+ #define MICRO_FREQUENCY_MIN_SAMPLE_RATE		(10000)
+ #define MIN_FREQUENCY_UP_THRESHOLD		(11)
+ #define MAX_FREQUENCY_UP_THRESHOLD		(100)
++#define MAX_DEFAULT_SAMPLING_RATE		(300 * 1000U)
+ 
+ /*
+  * The polling frequency of this governor depends on the capability of
+@@ -736,6 +737,29 @@ static int cpufreq_governor_dbs(struct c
+ 			dbs_tuners_ins.sampling_rate =
+ 				max(min_sampling_rate,
+ 				    latency * LATENCY_MULTIPLIER);
++			/*
++			 * Cut def_sampling rate to 300ms if it was above,
++			 * still consider to not set it above latency
++			 * transition * 100
++			 */
++			if (dbs_tuners_ins.sampling_rate > MAX_DEFAULT_SAMPLING_RATE) {
++				dbs_tuners_ins.sampling_rate =
++					max(min_sampling_rate, MAX_DEFAULT_SAMPLING_RATE);
++				printk(KERN_INFO "CPUFREQ: ondemand sampling "
++				       "rate set to %d ms\n",
++				       dbs_tuners_ins.sampling_rate / 1000);
++			}
++			/*
++			 * Be conservative in respect to performance.
++			 * If an application calculates using two threads
++			 * depending on each other, they will be run on several
++			 * CPU cores resulting on 50% load on both.
++			 * SLED might still want to prefer 80% up_threshold
++			 * by default, but we cannot differ that here.
++			 */
++			if (num_online_cpus() > 1)
++				dbs_tuners_ins.up_threshold =
++					DEF_FREQUENCY_UP_THRESHOLD / 2;
+ 			dbs_tuners_ins.io_is_busy = should_io_be_busy();
+ 		}
+ 		mutex_unlock(&dbs_mutex);
