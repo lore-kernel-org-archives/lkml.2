@@ -1,825 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752660Ab0JCICd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 04:02:33 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:13181 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab0JCICa (ORCPT
+	id S1752722Ab0JCINA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 04:13:00 -0400
+Received: from mxout12.netvision.net.il ([194.90.6.37]:44716 "EHLO
+	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab0JCIM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 04:02:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6124"; a="56532710"
-From: tlinder <tlinder@codeaurora.org>
-To: linux-usb@vger.kernel.org
-Cc: Tatyana Linder <tlinder@codeaurora.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Robert Lukassen <robert.lukassen@tomtom.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Fabien Chouteau <fabien.chouteau@barco.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the Gadget Framework
-Date: Sun,  3 Oct 2010 10:02:15 +0200
-Message-Id: <1286092937-29191-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.6.3.3
+	Sun, 3 Oct 2010 04:12:58 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Oct 2010 04:12:58 EDT
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_VhxdUXx9p0rToYiafiQMcw)"
+From: Micki Balanga <micki@n-trig.com>
+To: "gregkh@suse.de" <gregkh@suse.de>,
+        "jim.collar@eqware.net" <jim.collar@eqware.net>,
+        Micki Balanga <micki@n-trig.com>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] USB: misc: Add N-trig firmware driver
+Thread-topic: [PATCH] USB: misc: Add N-trig firmware driver
+Thread-index: Acti0OWpN7rr5r0+RhetTRfWBmmSEQ==
+Date: Sun, 03 Oct 2010 07:56:55 +0000
+Message-id: <6EF693376E00E2458E26FEC229232B128A8D39@Exchange2010-IL.n-trig.com>
+Accept-Language: en-US
+Content-language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+X-Originating-IP: [172.16.1.1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tatyana Linder <tlinder@codeaurora.org>
 
-This patch adds the SuperSpeed functionality to the gadget framework.
-In order not to force all the FDs to supply SuperSpeed descriptors when
-operating in SuperSpeed mode the following approach was taken:
-If we're operating in SuperSpeed mode and the FD didn't supply SuperSpeed
-descriptors, the composite layer will automatically create SuperSpeed
-descriptors with default values.
-Support for new SuperSpeed BOS descriptor was added.
-Support for SET_FEATURE and GET_STATUS requests in SuperSpeed mode was
-added.
+--Boundary_(ID_VhxdUXx9p0rToYiafiQMcw)
+Content-type: text/plain; CHARSET=US-ASCII
+Content-transfer-encoding: 7BIT
 
-Signed-off-by: Tatyana Linder <tlinder@codeaurora.org>
----
-This patch was verified by USBCV 3.0 and 2.0.
 
- drivers/usb/gadget/Kconfig     |   20 ++-
- drivers/usb/gadget/composite.c |  319 +++++++++++++++++++++++++++++++++++++---
- include/linux/usb/ch9.h        |   54 +++++++-
- include/linux/usb/composite.h  |   24 +++
- include/linux/usb/gadget.h     |   19 +++
- 5 files changed, 407 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/usb/gadget/Kconfig b/drivers/usb/gadget/Kconfig
-index cd27f9b..9afdd08 100644
---- a/drivers/usb/gadget/Kconfig
-+++ b/drivers/usb/gadget/Kconfig
-@@ -520,11 +520,11 @@ config USB_GADGET_DUMMY_HCD
- 	  side is the master; the gadget side is the slave.  Gadget drivers
- 	  can be high, full, or low speed; and they have access to endpoints
- 	  like those from NET2280, PXA2xx, or SA1100 hardware.
--	  
-+
- 	  This may help in some stages of creating a driver to embed in a
- 	  Linux device, since it lets you debug several parts of the gadget
- 	  driver without its hardware or drivers being involved.
--	  
-+
- 	  Since such a gadget side driver needs to interoperate with a host
- 	  side Linux-USB device driver, this may help to debug both sides
- 	  of a USB protocol stack.
-@@ -552,6 +552,18 @@ config USB_GADGET_DUALSPEED
- 	  Means that gadget drivers should include extra descriptors
- 	  and code to handle dual-speed controllers.
- 
-+config USB_GADGET_SUPERSPEED
-+	boolean "Gadget opperating in Super Speed"
-+	depends on USB_GADGET
-+	depends on USB_GADGET_DUALSPEED
-+	default n
-+	help
-+	  Enabling this feature enables Super Speed support in the Gadget
-+	  driver. It means that gadget drivers should include extra (SuperSpeed)
-+	  descriptors.
-+	  For composite devices: if SupeSpeed descriptors weren't supplied by
-+	  the FD, they will be automatically generated with default values.
-+
- #
- # USB Gadget Drivers
- #
-@@ -633,7 +645,7 @@ config USB_ETH
- 	help
- 	  This driver implements Ethernet style communication, in one of
- 	  several ways:
--	  
-+
- 	   - The "Communication Device Class" (CDC) Ethernet Control Model.
- 	     That protocol is often avoided with pure Ethernet adapters, in
- 	     favor of simpler vendor-specific hardware, but is widely
-@@ -673,7 +685,7 @@ config USB_ETH_RNDIS
- 	   If you say "y" here, the Ethernet gadget driver will try to provide
- 	   a second device configuration, supporting RNDIS to talk to such
- 	   Microsoft USB hosts.
--	   
-+
- 	   To make MS-Windows work with this, use Documentation/usb/linux.inf
- 	   as the "driver info file".  For versions of MS-Windows older than
- 	   XP, you'll need to download drivers from Microsoft's website; a URL
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index c619c80..a5dcfe1 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -70,6 +70,102 @@ static char *iSerialNumber;
- module_param(iSerialNumber, charp, 0);
- MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
- 
-+/** Default endpoint companion descriptor */
-+static struct usb_ss_ep_comp_descriptor ep_comp_desc = {
-+		.bDescriptorType = USB_DT_SS_ENDPOINT_COMP,
-+		.bLength = 0x06,
-+		.bMaxBurst = 0, /*the default is we don't support bursting*/
-+		.bmAttributes = 0, /*2^0 streams supported*/
-+		.wBytesPerInterval = 0,
-+};
-+
-+/**This function receives a pointer to usb_function and adds
-+ * missing super speed descriptors in the ss_descriptor field
-+ * according to its hs_descriptors field.
-+ *
-+ * In more details: this function copies f->hs_descriptors while
-+ * updating the endpoint descriptor and adding endpoint
-+ * companion descriptor
-+ */
-+static void create_ss_descriptors(struct usb_function *f)
-+{
-+	unsigned bytes; /*number of bytes to allocate*/
-+	unsigned n_desc;    /* number of descriptors*/
-+	void *mem; /*allocated memory to copy to*/
-+	struct usb_descriptor_header **tmp;
-+	struct usb_endpoint_descriptor	*ep_desc ;
-+	struct usb_descriptor_header **src = f->hs_descriptors;
-+
-+	if (!f->hs_descriptors)
-+		return;
-+
-+	/* Count number of EPs (in order to know how many SS_EP_COMPANION
-+	   descriptors to add), the total number of descriptors and the sum of
-+	   each descriptor bLength field in order to know how much memory to
-+	   allocate*/
-+	for (bytes = 0, n_desc = 0, tmp = src; *tmp; tmp++, n_desc++) {
-+		if ((*tmp)->bDescriptorType == USB_DT_ENDPOINT) {
-+			bytes += ep_comp_desc.bLength;
-+			n_desc++;
-+		}
-+		bytes += (*tmp)->bLength;
-+	}
-+
-+	bytes += (n_desc + 1) * sizeof(*tmp);
-+	mem = kmalloc(bytes, GFP_KERNEL);
-+	if (!mem)
-+		return;
-+
-+	/* fill in pointers starting at "tmp",
-+	 * to descriptors copied starting at "mem";
-+	 * and return "ret"
-+	 */
-+	tmp = mem;
-+	f->ss_descriptors  = mem;
-+	mem += (n_desc + 1) * sizeof(*tmp);
-+	while (*src) {
-+		/*Copy the original descriptor*/
-+		memcpy(mem, *src, (*src)->bLength);
-+		switch ((*src)->bDescriptorType) {
-+		case USB_DT_ENDPOINT:
-+			/*update ep descriptor*/
-+			ep_desc = (struct usb_endpoint_descriptor *)mem;
-+			switch (ep_desc->bmAttributes &
-+				USB_ENDPOINT_XFERTYPE_MASK) {
-+			case USB_ENDPOINT_XFER_CONTROL:
-+				ep_desc->wMaxPacketSize = 512;
-+				ep_desc->bInterval = 0;
-+				break;
-+			case USB_ENDPOINT_XFER_BULK:
-+				ep_desc->wMaxPacketSize = 1024;
-+				ep_desc->bInterval = 0;
-+				break;
-+			case USB_ENDPOINT_XFER_INT:
-+			case USB_ENDPOINT_XFER_ISOC:
-+				break;
-+			}
-+			*tmp = mem;
-+			tmp++;
-+			mem += (*src)->bLength;
-+			/*add ep companion descriptor*/
-+			memcpy(mem, &ep_comp_desc, ep_comp_desc.bLength);
-+			*tmp = mem;
-+			tmp++;
-+			mem += ep_comp_desc.bLength;
-+			break;
-+		default:
-+			*tmp = mem;
-+			tmp++;
-+			mem += (*src)->bLength;
-+			break;
-+		}
-+		src++;
-+	}
-+	*tmp = NULL; /*The last (struct usb_descriptor_header *) in the
-+			descriptors vector is NULL*/
-+	f->ss_desc_allocated = true;
-+}
-+
- /*-------------------------------------------------------------------------*/
- /**
-  * next_ep_desc - advance to the next EP descriptor
-@@ -110,6 +206,9 @@ int ep_choose(struct usb_gadget *g, struct usb_function *f, struct usb_ep *_ep)
- 	struct usb_endpoint_descriptor *chosen_desc = NULL;
- 	struct usb_descriptor_header **speed_desc = NULL;
- 
-+	struct usb_ss_ep_comp_descriptor *comp_desc = NULL;
-+	int want_comp_desc = 0;
-+
- 	struct usb_descriptor_header **d_spd; /* cursor for speed desc */
- 
- 	if (!g || !f || !_ep)
-@@ -117,6 +216,13 @@ int ep_choose(struct usb_gadget *g, struct usb_function *f, struct usb_ep *_ep)
- 
- 	/* select desired speed */
- 	switch (g->speed) {
-+	case USB_SPEED_SUPER:
-+		if (gadget_is_superspeed(g)) {
-+			speed_desc = f->ss_descriptors;
-+			want_comp_desc = 1;
-+			break;
-+		}
-+		/*else: Fall trough*/
- 	case USB_SPEED_HIGH:
- 		if (gadget_is_dualspeed(g)) {
- 			speed_desc = f->hs_descriptors;
-@@ -143,7 +249,18 @@ ep_found:
- 	/* commit results */
- 	_ep->maxpacket = chosen_desc->wMaxPacketSize;
- 	_ep->desc = chosen_desc;
--
-+	_ep->comp_desc = NULL;
-+	if (want_comp_desc) {
-+		/**
-+		 * Companion descriptor should follow EP descriptor
-+		 * USB 3.0 spec, #9.6.7
-+		 */
-+		comp_desc = (struct usb_ss_ep_comp_descriptor *)*(++d_spd);
-+		if (!comp_desc ||
-+		    (comp_desc->bDescriptorType != USB_DT_SS_ENDPOINT_COMP))
-+			return -EIO;
-+		_ep->comp_desc = comp_desc;
-+	}
- 	return 0;
- }
- 
-@@ -185,6 +302,12 @@ int usb_add_function(struct usb_configuration *config,
- 			list_del(&function->list);
- 			function->config = NULL;
- 		}
-+		/*Add SS descriptors if there are any. This has to be done
-+		  after the bind since we need the hs_descriptors to be set in
-+		  usb_function and some of the FDs does it in the bind. */
-+		if ((gadget_is_superspeed(config->cdev->gadget)) &&
-+		    (!function->ss_not_capable) && (!function->ss_descriptors))
-+			create_ss_descriptors(function);
- 	} else
- 		value = 0;
- 
-@@ -197,6 +320,8 @@ int usb_add_function(struct usb_configuration *config,
- 		config->fullspeed = true;
- 	if (!config->highspeed && function->hs_descriptors)
- 		config->highspeed = true;
-+	if (!config->superspeed && function->ss_descriptors)
-+		config->superspeed = true;
- 
- done:
- 	if (value)
-@@ -340,7 +465,9 @@ static int config_buf(struct usb_configuration *config,
- 	list_for_each_entry(f, &config->functions, list) {
- 		struct usb_descriptor_header **descriptors;
- 
--		if (speed == USB_SPEED_HIGH)
-+		if (speed == USB_SPEED_SUPER)
-+			descriptors = f->ss_descriptors;
-+		else if (speed == USB_SPEED_HIGH)
- 			descriptors = f->hs_descriptors;
- 		else
- 			descriptors = f->descriptors;
-@@ -366,23 +493,26 @@ static int config_desc(struct usb_composite_dev *cdev, unsigned w_value)
- 	u8				type = w_value >> 8;
- 	enum usb_device_speed		speed = USB_SPEED_UNKNOWN;
- 
--	if (gadget_is_dualspeed(gadget)) {
--		int			hs = 0;
--
-+	if (gadget->speed == USB_SPEED_SUPER)
-+		speed = gadget->speed;
-+	else if (gadget_is_dualspeed(gadget)) {
-+		int	hs = 0;
- 		if (gadget->speed == USB_SPEED_HIGH)
- 			hs = 1;
- 		if (type == USB_DT_OTHER_SPEED_CONFIG)
- 			hs = !hs;
- 		if (hs)
- 			speed = USB_SPEED_HIGH;
--
- 	}
- 
- 	/* This is a lookup by config *INDEX* */
- 	w_value &= 0xff;
- 	list_for_each_entry(c, &cdev->configs, list) {
- 		/* ignore configs that won't work at this speed */
--		if (speed == USB_SPEED_HIGH) {
-+		if (speed == USB_SPEED_SUPER) {
-+			if (!c->superspeed)
-+				continue;
-+		} else if (speed == USB_SPEED_HIGH) {
- 			if (!c->highspeed)
- 				continue;
- 		} else {
-@@ -402,16 +532,22 @@ static int count_configs(struct usb_composite_dev *cdev, unsigned type)
- 	struct usb_configuration	*c;
- 	unsigned			count = 0;
- 	int				hs = 0;
-+	int				ss = 0;
- 
- 	if (gadget_is_dualspeed(gadget)) {
- 		if (gadget->speed == USB_SPEED_HIGH)
- 			hs = 1;
-+		if (gadget->speed == USB_SPEED_SUPER)
-+			ss = 1;
- 		if (type == USB_DT_DEVICE_QUALIFIER)
- 			hs = !hs;
- 	}
- 	list_for_each_entry(c, &cdev->configs, list) {
- 		/* ignore configs that won't work at this speed */
--		if (hs) {
-+		if (ss) {
-+			if (!c->superspeed)
-+				continue;
-+		} else if (hs) {
- 			if (!c->highspeed)
- 				continue;
- 		} else {
-@@ -423,6 +559,55 @@ static int count_configs(struct usb_composite_dev *cdev, unsigned type)
- 	return count;
- }
- 
-+/**
-+ * bos() - prepares the BOS (Binary Device Object) descriptor
-+ * and its device capabilities descriptors. The bos descriptor
-+ * should be supported by a Superspeed device.
-+ */
-+static int bos(struct usb_composite_dev *cdev)
-+{
-+	struct usb_bos_descriptor	*bos = cdev->req->buf;
-+	struct usb_ext_cap_descriptor	*usb_ext = NULL;
-+	struct ss_usb_cap_descriptor	*ss_cap = NULL;
-+
-+	bos->bLength = USB_DT_BOS_SIZE;
-+	bos->bDescriptorType = USB_DT_BOS;
-+
-+	bos->wTotalLength = USB_DT_BOS_SIZE;
-+	bos->bNumDeviceCaps = 0;
-+
-+	/* A SuperSpeed device shall include the USB2.0 extension descriptor and
-+	   shall support LPM when operating in USB2.0 HS mode.*/
-+	usb_ext = (struct usb_ext_cap_descriptor *)
-+			(cdev->req->buf+bos->wTotalLength);
-+	bos->bNumDeviceCaps++;
-+	bos->wTotalLength += USB_DT_USB_EXT_CAP_SIZE;
-+	usb_ext->bLength = USB_DT_USB_EXT_CAP_SIZE;
-+	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
-+	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
-+	usb_ext->bmAttributes = USB_LPM_SUPPORT;
-+
-+	/* The Superspeed USB Capability descriptor shall be implemented by all
-+	   Superspeed devices. */
-+	ss_cap = (struct ss_usb_cap_descriptor *)
-+		(cdev->req->buf+bos->wTotalLength);
-+	bos->bNumDeviceCaps++;
-+	bos->wTotalLength += USB_DT_SS_USB_CAP_SIZE;
-+	ss_cap->bLength = USB_DT_SS_USB_CAP_SIZE;
-+	ss_cap->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
-+	ss_cap->bDevCapabilityType = SS_USB_CAP_TYPE;
-+	ss_cap->bmAttributes = 0; /*LTM is not supported yet*/
-+	ss_cap->wSpeedSupported = USB_LOW_SPEED_OPERATION |
-+				USB_FULL_SPEED_OPERATION |
-+				USB_HIGH_SPEED_OPERATION |
-+				USB_5GBPS_OPERATION;
-+	ss_cap->bFunctionalitySupport = USB_LOW_SPEED_OPERATION;
-+	ss_cap->bU1devExitLat = 0;
-+	ss_cap->bU2DevExitLat = 0;
-+
-+	return bos->wTotalLength;
-+}
-+
- static void device_qual(struct usb_composite_dev *cdev)
- {
- 	struct usb_qualifier_descriptor	*qual = cdev->req->buf;
-@@ -466,27 +651,40 @@ static int set_config(struct usb_composite_dev *cdev,
- 	unsigned		power = gadget_is_otg(gadget) ? 8 : 100;
- 	int			tmp;
- 
--	if (cdev->config)
--		reset_config(cdev);
--
- 	if (number) {
- 		list_for_each_entry(c, &cdev->configs, list) {
- 			if (c->bConfigurationValue == number) {
-+				/* Need to disable the FDs of the previous
-+				   configuration */
-+				if (cdev->config)
-+					reset_config(cdev);
- 				result = 0;
- 				break;
- 			}
- 		}
- 		if (result < 0)
- 			goto done;
--	} else
-+	} else { /* Zero configuration value - need to reset the config */
-+		if (cdev->config)
-+			reset_config(cdev);
- 		result = 0;
-+	}
- 
- 	INFO(cdev, "%s speed config #%d: %s\n",
- 		({ char *speed;
- 		switch (gadget->speed) {
--		case USB_SPEED_LOW:	speed = "low"; break;
--		case USB_SPEED_FULL:	speed = "full"; break;
--		case USB_SPEED_HIGH:	speed = "high"; break;
-+		case USB_SPEED_LOW:
-+			speed = "low";
-+			break;
-+		case USB_SPEED_FULL:
-+			speed = "full";
-+			break;
-+		case USB_SPEED_HIGH:
-+			speed = "high";
-+			break;
-+		case USB_SPEED_SUPER:
-+			speed = "super";
-+			break;
- 		default:		speed = "?"; break;
- 		} ; speed; }), number, c ? c->label : "unconfigured");
- 
-@@ -509,7 +707,9 @@ static int set_config(struct usb_composite_dev *cdev,
- 		 * function's setup callback instead of the current
- 		 * configuration's setup callback.
- 		 */
--		if (gadget->speed == USB_SPEED_HIGH)
-+		if (gadget->speed == USB_SPEED_SUPER)
-+			descriptors = f->ss_descriptors;
-+		else if (gadget->speed == USB_SPEED_HIGH)
- 			descriptors = f->hs_descriptors;
- 		else
- 			descriptors = f->descriptors;
-@@ -592,14 +792,14 @@ int usb_add_config(struct usb_composite_dev *cdev,
- 	} else {
- 		unsigned	i;
- 
--		DBG(cdev, "cfg %d/%p speeds:%s%s\n",
-+		DBG(cdev, "cfg %d/%p speeds:%s%s%s\n",
- 			config->bConfigurationValue, config,
-+			config->superspeed ? " super" : "",
- 			config->highspeed ? " high" : "",
- 			config->fullspeed
- 				? (gadget_is_dualspeed(cdev->gadget)
- 					? " full"
--					: " full/low")
--				: "");
-+					: " full/low") : "");
- 
- 		for (i = 0; i < MAX_CONFIG_INTERFACES; i++) {
- 			struct usb_function	*f = config->interface[i];
-@@ -851,6 +1051,7 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 	struct usb_composite_dev	*cdev = get_gadget_data(gadget);
- 	struct usb_request		*req = cdev->req;
- 	int				value = -EOPNOTSUPP;
-+	int				status = 0;
- 	u16				w_index = le16_to_cpu(ctrl->wIndex);
- 	u8				intf = w_index & 0xFF;
- 	u16				w_value = le16_to_cpu(ctrl->wValue);
-@@ -878,18 +1079,30 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 		case USB_DT_DEVICE:
- 			cdev->desc.bNumConfigurations =
- 				count_configs(cdev, USB_DT_DEVICE);
-+			cdev->desc.bMaxPacketSize0 =
-+				cdev->gadget->ep0->maxpacket;
-+			if (gadget->speed >= USB_SPEED_SUPER)
-+				cdev->desc.bcdUSB = cpu_to_le16(0x0300);
-+			else if ((gadget_is_superspeed(gadget)) &&
-+				 (gadget->speed <= USB_SPEED_HIGH))
-+				cdev->desc.bcdUSB = cpu_to_le16(0x0210);
-+
- 			value = min(w_length, (u16) sizeof cdev->desc);
- 			memcpy(req->buf, &cdev->desc, value);
- 			break;
-+
- 		case USB_DT_DEVICE_QUALIFIER:
--			if (!gadget_is_dualspeed(gadget))
-+			if (!gadget_is_dualspeed(gadget) ||
-+			    gadget->speed >= USB_SPEED_SUPER)
- 				break;
-+
- 			device_qual(cdev);
- 			value = min_t(int, w_length,
- 				sizeof(struct usb_qualifier_descriptor));
- 			break;
- 		case USB_DT_OTHER_SPEED_CONFIG:
--			if (!gadget_is_dualspeed(gadget))
-+			if (!gadget_is_dualspeed(gadget) ||
-+			    gadget->speed >= USB_SPEED_SUPER)
- 				break;
- 			/* FALLTHROUGH */
- 		case USB_DT_CONFIG:
-@@ -903,6 +1116,12 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 			if (value >= 0)
- 				value = min(w_length, (u16) value);
- 			break;
-+		case USB_DT_BOS:
-+			if (gadget_is_superspeed(gadget)) {
-+				value = bos(cdev);
-+				value = min(w_length, (u16) value);
-+			}
-+			break;
- 		}
- 		break;
- 
-@@ -962,6 +1181,55 @@ composite_setup(struct usb_gadget *gadget, const struct usb_ctrlrequest *ctrl)
- 		*((u8 *)req->buf) = value;
- 		value = min(w_length, (u16) 1);
- 		break;
-+
-+		/*USB 3.0 additions*/
-+	/* Function driver should handle get_status request. If such cb
-+	  wasn't supplied we respond with default value = 0
-+	  Note: FD should supply such cb only for the first interface
-+	  of the function*/
-+	case USB_REQ_GET_STATUS:
-+		if (!gadget_is_superspeed(gadget))
-+			goto unknown;
-+		if (ctrl->bRequestType != (USB_DIR_IN | USB_RECIP_INTERFACE))
-+			goto unknown;
-+		value = 2;	/*This is the length of the get_status reply*/
-+		*((u16 *)req->buf) = 0;
-+		if (!cdev->config || w_index >= MAX_CONFIG_INTERFACES)
-+			break;
-+		f = cdev->config->interface[intf];
-+		if (!f)
-+			break;
-+		status = f->get_status ? f->get_status(f) : 0;
-+		if (status < 0)
-+			break;
-+		*((u16 *)req->buf) = status & 0x0000ffff;
-+		break;
-+	/*Function drivers should handle SetFeature(FUNCTION_SUSPEND) request.
-+	  function_suspend cb should be supplied only for the first interface
-+	  of the function*/
-+	case USB_REQ_SET_FEATURE:
-+		if (!gadget_is_superspeed(gadget))
-+			goto unknown;
-+		if (ctrl->bRequestType != (USB_DIR_IN | USB_RECIP_INTERFACE))
-+			goto unknown;
-+		switch (w_value) {
-+		case USB_INTRF_FUNC_SUSPEND:
-+			if (!cdev->config || w_index >= MAX_CONFIG_INTERFACES)
-+				break;
-+			f = cdev->config->interface[intf];
-+			if (!f)
-+				break;
-+			value = f->func_suspend ? f->func_suspend(f) : 0;
-+			if (value < 0) {
-+				ERROR(cdev, "func_suspend() returned "
-+					    "error %d\n", value);
-+				value = 0;
-+			}
-+			break;
-+		default:
-+			break;
-+		}
-+		break;
- 	default:
- unknown:
- 		VDBG(cdev,
-@@ -1080,8 +1348,11 @@ composite_unbind(struct usb_gadget *gadget)
- 				DBG(cdev, "unbind function '%s'/%p\n",
- 						f->name, f);
- 				f->unbind(c, f);
--				/* may free memory for "f" */
- 			}
-+			/*Free memory allocated for ss descriptors*/
-+			if (f->ss_desc_allocated && f->ss_descriptors)
-+				usb_free_descriptors(f->ss_descriptors);
-+			/* may free memory for "f" */
- 		}
- 		list_del(&c->list);
- 		if (c->unbind) {
-@@ -1254,7 +1525,6 @@ composite_resume(struct usb_gadget *gadget)
- 
- static struct usb_gadget_driver composite_driver = {
- 	.speed		= USB_SPEED_HIGH,
--
- 	.bind		= composite_bind,
- 	.unbind		= composite_unbind,
- 
-@@ -1293,6 +1563,9 @@ int usb_composite_register(struct usb_composite_driver *driver)
- 		driver->name = "composite";
- 	composite_driver.function =  (char *) driver->name;
- 	composite_driver.driver.name = driver->name;
-+#ifdef CONFIG_USB_GADGET_SUPERSPEED
-+	composite_driver.speed = USB_SPEED_SUPER;
-+#endif /*CONFIG_USB_GADGET_SUPERSPEED*/
- 	composite = driver;
- 
- 	return usb_gadget_register_driver(&composite_driver);
-diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
-index da2ed77..69e528a 100644
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -125,6 +125,20 @@
- 
- #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
- 
-+/**
-+ * New Feature Selectors as added by USB 3.0
-+ * See USB 3.0 spec Table 9-6
-+ */
-+#define USB_DEVICE_U1_ENABLE		48	/*enables the upstream port to
-+						initiate requests for transition
-+						into U1 state*/
-+#define USB_DEVICE_U2_ENABLE		49	/*enables the upstream port to
-+						initiate requests for transition
-+						into U2 state*/
-+#define USB_DEVICE_LTM_ENABLE		50	/*enables the devise to send
-+						Latency tolerance messages.*/
-+#define USB_INTRF_FUNC_SUSPEND		0	/*function suspend*/
-+
- 
- /**
-  * struct usb_ctrlrequest - SETUP data for a USB device control request
-@@ -675,6 +689,7 @@ struct usb_bos_descriptor {
- 	__u8  bNumDeviceCaps;
- } __attribute__((packed));
- 
-+#define USB_DT_BOS_SIZE		5
- /*-------------------------------------------------------------------------*/
- 
- /* USB_DT_DEVICE_CAPABILITY:  grouped with BOS */
-@@ -712,16 +727,51 @@ struct usb_wireless_cap_descriptor {	/* Ultra Wide Band */
- 	__u8  bReserved;
- } __attribute__((packed));
- 
-+/*USB 2.0 Extension descriptor*/
- #define	USB_CAP_TYPE_EXT		2
--
- struct usb_ext_cap_descriptor {		/* Link Power Management */
- 	__u8  bLength;
- 	__u8  bDescriptorType;
- 	__u8  bDevCapabilityType;
--	__u8  bmAttributes;
-+	__u32 bmAttributes;
- #define USB_LPM_SUPPORT			(1 << 1)	/* supports LPM */
- } __attribute__((packed));
- 
-+#define USB_DT_USB_EXT_CAP_SIZE	7
-+
-+/*SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed USB
-+  specific device level capabilities*/
-+#define	SS_USB_CAP_TYPE		3
-+struct ss_usb_cap_descriptor {		/* Link Power Management */
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u8  bDevCapabilityType;
-+	__u8  bmAttributes;
-+#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
-+	__u16 wSpeedSupported;
-+#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
-+#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
-+#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
-+#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
-+	__u8  bFunctionalitySupport;
-+	__u8  bU1devExitLat;
-+	__u16 bU2DevExitLat;
-+} __attribute__((packed));
-+
-+#define USB_DT_SS_USB_CAP_SIZE	10
-+
-+/*Container ID Capability descriptor: Defines the instance unique ID used to
-+  identify the instance across all operating modes*/
-+#define	CONTAINER_ID_TYPE	4
-+struct ss_usb_container_id_descriptor {
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u8  bDevCapabilityType;
-+	__u8  bReserved;
-+	__u8  ContainerID[16]; /*128-bit number*/
-+} __attribute__((packed));
-+
-+#define USB_DT_SS_CONTN_ID_SIZE	20
- /*-------------------------------------------------------------------------*/
- 
- /* USB_DT_WIRELESS_ENDPOINT_COMP:  companion descriptor associated with
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index c623bed..36ab1d0 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -52,6 +52,18 @@ struct usb_configuration;
-  * @hs_descriptors: Table of high speed descriptors, using interface and
-  *	string identifiers assigned during @bind().  If this pointer is null,
-  *	the function will not be available at high speed.
-+ * @ss_descriptors: Table of super speed descriptors. If
-+ *	wasnt supplied by the FD during @bind() and
-+ *	!ss_not_capble, will be generated automaticly with
-+ *	default values while working in superspeed mode. If this
-+ *	pointer is null after initiation, the function will not
-+ *	be available at super speed.
-+ * @ss_not_capable: This flag is used by the FD to indicate if
-+ *	this function is SS capble. Meaning: if SS descriptors
-+ *	weren't supplied by the FD, and the flag is set ss
-+ *	descriptors will NOT be automatically generated
-+ * @ss_desc_allocated: This flag indicates whether the ss descriptors were
-+ *	dynamically allocated (and needs to be released).
-  * @config: assigned when @usb_add_function() is called; this is the
-  *	configuration with which this function is associated.
-  * @bind: Before the gadget can register, all of its functions bind() to the
-@@ -70,6 +82,10 @@ struct usb_configuration;
-  * @setup: Used for interface-specific control requests.
-  * @suspend: Notifies functions when the host stops sending USB traffic.
-  * @resume: Notifies functions when the host restarts USB traffic.
-+ * @get_status: Returns function status as a reply to
-+ *	GetStatus() request when the recepient is Interface.
-+ * @func_suspend: callback to be called when
-+ *	SetFeature(FUNCTION_SUSPEND) is reseived
-  *
-  * A single USB function uses one or more interfaces, and should in most
-  * cases support operation at both full and high speeds.  Each function is
-@@ -99,6 +115,10 @@ struct usb_function {
- 	struct usb_gadget_strings	**strings;
- 	struct usb_descriptor_header	**descriptors;
- 	struct usb_descriptor_header	**hs_descriptors;
-+	struct usb_descriptor_header	**ss_descriptors;
-+
-+	unsigned			ss_desc_allocated:1;
-+	unsigned			ss_not_capable:1;
- 
- 	struct usb_configuration	*config;
- 
-@@ -125,6 +145,9 @@ struct usb_function {
- 	void			(*suspend)(struct usb_function *);
- 	void			(*resume)(struct usb_function *);
- 
-+	/* USB 3.0 additions */
-+	int			(*get_status)(struct usb_function *);
-+	int			(*func_suspend)(struct usb_function *);
- 	/* private: */
- 	/* internals */
- 	struct list_head		list;
-@@ -229,6 +252,7 @@ struct usb_configuration {
- 	struct list_head	list;
- 	struct list_head	functions;
- 	u8			next_interface_id;
-+	unsigned		superspeed:1;
- 	unsigned		highspeed:1;
- 	unsigned		fullspeed:1;
- 	struct usb_function	*interface[MAX_CONFIG_INTERFACES];
-diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-index bf7dc0b..40329b0 100644
---- a/include/linux/usb/gadget.h
-+++ b/include/linux/usb/gadget.h
-@@ -139,6 +139,8 @@ struct usb_ep_ops {
-  * @desc:endpoint descriptor.  this pointer set before endpoint is enabled and
-  *	remains valid until the endpoint is disabled; the data byte order
-  *	is little-endian (usb-standard).
-+ * @comp_desc: In case of SuperSpeed support, this is the
-+ *	endpoint companion descriptor that is used to configure the endpoint
-  *
-  * the bus controller driver lists all the general purpose endpoints in
-  * gadget->ep_list.  the control endpoint (gadget->ep0) is not in that list,
-@@ -153,6 +155,7 @@ struct usb_ep {
- 	unsigned			maxpacket:16;
- 	u8				bEndpointAddress;
- 	struct usb_endpoint_descriptor	*desc;
-+	struct usb_ss_ep_comp_descriptor	*comp_desc;
- };
- 
- /*-------------------------------------------------------------------------*/
-@@ -525,6 +528,22 @@ static inline int gadget_is_dualspeed(struct usb_gadget *g)
- }
- 
- /**
-+ * gadget_is_superspeed - return true if the hardware handles
-+ * supperspeed
-+ */
-+static inline int gadget_is_superspeed(struct usb_gadget *g)
-+{
-+#ifdef CONFIG_USB_GADGET_SUPERSPEED
-+	/* runtime test would check "g->is_superspeed" ... that might be
-+	 * useful to work around hardware bugs, but is mostly pointless
-+	 */
-+	return 1;
-+#else
-+	return 0;
-+#endif
-+}
-+
-+/**
-  * gadget_is_otg - return true iff the hardware is OTG-ready
-  * @g: controller that might have a Mini-AB connector
-  *
--- 
-1.6.3.3
+--Boundary_(ID_VhxdUXx9p0rToYiafiQMcw)
+Content-type: application/octet-stream;
+ name=0001-USB-misc-Add-N-trig-firmware-driver.patch
+Content-transfer-encoding: base64
+Content-disposition: attachment;
+ filename=0001-USB-misc-Add-N-trig-firmware-driver.patch; size=16514;
+ creation-date="Sun, 03 Oct 2010 07:58:30 GMT";
+ modification-date="Sun, 03 Oct 2010 07:48:57 GMT"
+Content-description: 0001-USB-misc-Add-N-trig-firmware-driver.patch
 
---
-Sent by an  consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+RnJvbSBhY2M2MzczYTFkMzRhODk3M2Y1YTQwNWRkZTQ3NDRjZTY4YTg4OWFmIE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBtaWNraSA8bWlja2lAbnRyaWcuY29tPgpEYXRlOiBTdW4sIDMg
+T2N0IDIwMTAgMDg6NDI6MTMgKzAyMDAKU3ViamVjdDogW1BBVENIXSBVU0I6IG1pc2M6IEFkZCBO
+LXRyaWcgZmlybXdhcmUgZHJpdmVyCgpBZGQgTi10cmlnIEZpcm13YXJlIHVwZ3JhZGUgY2FwYWJp
+bGl0eS4KClNpZ25lZC1vZmYtYnk6IE1pY2tpIEJhbGFuZ2EgPG1pY2tpQG4tdHJpZy5jb20+Ci0t
+LQogZHJpdmVycy91c2IvbWlzYy9NYWtlZmlsZSAgICB8ICAgIDEgKwogZHJpdmVycy91c2IvbWlz
+Yy9udHJpZ19kZnUuYyB8ICA1MTkgKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysr
+KysrKysrCiAyIGZpbGVzIGNoYW5nZWQsIDUyMCBpbnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygt
+KQogY3JlYXRlIG1vZGUgMTAwNzU1IGRyaXZlcnMvdXNiL21pc2MvbnRyaWdfZGZ1LmMKCmRpZmYg
+LS1naXQgYS9kcml2ZXJzL3VzYi9taXNjL01ha2VmaWxlIGIvZHJpdmVycy91c2IvbWlzYy9NYWtl
+ZmlsZQppbmRleCA3MTc3MDNlLi41MGM0MmEzIDEwMDY0NAotLS0gYS9kcml2ZXJzL3VzYi9taXNj
+L01ha2VmaWxlCisrKyBiL2RyaXZlcnMvdXNiL21pc2MvTWFrZWZpbGUKQEAgLTIyLDYgKzIyLDcg
+QEAgb2JqLSQoQ09ORklHX1VTQl9URVNUKQkJKz0gdXNidGVzdC5vCiBvYmotJChDT05GSUdfVVNC
+X1RSQU5DRVZJQlJBVE9SKQkrPSB0cmFuY2V2aWJyYXRvci5vCiBvYmotJChDT05GSUdfVVNCX1VT
+UzcyMCkJKz0gdXNzNzIwLm8KIG9iai0kKENPTkZJR19VU0JfU0VWU0VHKQkrPSB1c2JzZXZzZWcu
+bworb2JqLSQoQ09ORklHX1VTQl9ERlVfTlRSSUcpCSs9IG50cmlnX2RmdS5vCiAKIG9iai0kKENP
+TkZJR19VU0JfU0lTVVNCVkdBKQkrPSBzaXN1c2J2Z2EvCiAKZGlmZiAtLWdpdCBhL2RyaXZlcnMv
+dXNiL21pc2MvbnRyaWdfZGZ1LmMgYi9kcml2ZXJzL3VzYi9taXNjL250cmlnX2RmdS5jCm5ldyBm
+aWxlIG1vZGUgMTAwNzU1CmluZGV4IDAwMDAwMDAuLjRlMGMxZTgKLS0tIC9kZXYvbnVsbAorKysg
+Yi9kcml2ZXJzL3VzYi9taXNjL250cmlnX2RmdS5jCkBAIC0wLDAgKzEsNTE5IEBACisvKgorICog
+IERGVSBkcml2ZXIgaW50ZXJmYWNlIGZvciBmaXJtd2FyZSB1cGdyYWRlCisgKgorICogIENvcHly
+aWdodCAoYykgMjAxMCBOLVRSSUcKKyAqCisgKiBUaGlzIHByb2dyYW0gaXMgZnJlZSBzb2Z0d2Fy
+ZTsgeW91IGNhbiByZWRpc3RyaWJ1dGUgaXQgYW5kL29yIG1vZGlmeSBpdAorICogdW5kZXIgdGhl
+IHRlcm1zIG9mIHRoZSBHTlUgR2VuZXJhbCBQdWJsaWMgTGljZW5zZSBhcyBwdWJsaXNoZWQgYnkg
+dGhlIEZyZWUKKyAqIFNvZnR3YXJlIEZvdW5kYXRpb247IGVpdGhlciB2ZXJzaW9uIDIgb2YgdGhl
+IExpY2Vuc2UsIG9yIChhdCB5b3VyIG9wdGlvbikKKyAqIGFueSBsYXRlciB2ZXJzaW9uLgorICov
+CisKKworI2luY2x1ZGUgPGxpbnV4L21vZHVsZS5oPgorI2luY2x1ZGUgPGxpbnV4L2tlcm5lbC5o
+PgorI2luY2x1ZGUgPGxpbnV4L2luaXQuaD4KKyNpbmNsdWRlIDxsaW51eC9zbGFiLmg+CisjaW5j
+bHVkZSA8bGludXgvc21wX2xvY2suaD4KKyNpbmNsdWRlIDxsaW51eC9lcnJuby5oPgorI2luY2x1
+ZGUgPGxpbnV4L211dGV4Lmg+CisjaW5jbHVkZSA8bGludXgvdWFjY2Vzcy5oPgorI2luY2x1ZGUg
+PGxpbnV4L3VzYi5oPgorCisKKyNkZWZpbmUgRFJJVkVSX1ZFUlNJT04gIk4tVFJJRyBCdWxrIERy
+aXZlciBWZXJzaW9uIDEuMDAiCisKKyNpZmRlZiBDT05GSUdfVVNCX0RZTkFNSUNfTUlOT1JTCisj
+ZGVmaW5lIFVTQl9OVFJJR19NSU5PUl9CQVNFCQkwCisjZWxzZQorLyogRklYTUUgMTg2IC0gaXMg
+YW5vdGhlciBkcml2ZXIncyBtaW5vciAtIGFwcGx5IGZvciB0aGF0ICovCisjZGVmaW5lIFVTQl9O
+VFJJR19NSU5PUl9CQVNFCQkxODYKKyNlbmRpZgorCisjZGVmaW5lIE5fVFJJR19CT09UX0xPQURF
+Ul9JRAkJMHgwMgorI2RlZmluZSBCVUxLX0lOX01BWF9NU0dfTEVOCQkxMDI0CisjZGVmaW5lIElP
+Q1RMX0dFVF9IQVJEX1ZFUlNJT04JMQorI2RlZmluZSBJT0NUTF9HRVRfRFJWX1ZFUlNJT04JMgor
+LyoqCisgKiBDdHJsIEVuZHBvaW50IGhlYWRlciBkZWNsYXJhdGlvbgorICovCisjZGVmaW5lIFJF
+UVVFU1RfQ01ECQkJMAorI2RlZmluZSBCVUxLX0dST1VQX0lECQkJMQorI2RlZmluZSBCVUxLX0NP
+REUJCQkyCisjZGVmaW5lIEJVTEtfTEVOX0xTQgkJCTMKKyNkZWZpbmUgQlVMS19MRU5fTVNCCQkJ
+NAorI2RlZmluZSBCVUxLX0RBVEEJCQk1CisKKyNkZWZpbmUgQ01EX1dSSVRFX01FU1NBR0UJCTB4
+MEYKKyNkZWZpbmUgQ01EX0dPMl9CT09UX0xPQURFUgkJMHgwQgorCisjZGVmaW5lIENUTF9SRVFV
+RVNUX1RZUEUJCTB4NDAKKyNkZWZpbmUgTlRSSUdfSU5UX1BBQ0tFVF9MRU5HVEgJCTEwCisjZGVm
+aW5lIE1BWF9UUkFOU01JVF9GUkFHTUVOVF9TSVpFCTY0CitzdGF0aWMgc3RydWN0IHVzYl9kZXZp
+Y2VfaWQgaWRfdGFibGVbXSA9IHsKKwl7IC5pZFZlbmRvciA9IDB4MWI5NiwgLm1hdGNoX2ZsYWdz
+ID0gVVNCX0RFVklDRV9JRF9NQVRDSF9WRU5ET1IsIH0sCisJeyB9LAorfTsKK01PRFVMRV9ERVZJ
+Q0VfVEFCTEUodXNiLCBpZF90YWJsZSk7CisKK3N0YXRpYyBERUZJTkVfTVVURVgob3Blbl9kaXNj
+X211dGV4KTsKKworCitzdHJ1Y3QgdXNiX250cmlnIHsKKwlzdHJ1Y3QgdXNiX2RldmljZQkqdWRl
+djsKKwlzdHJ1Y3QgdXNiX2ludGVyZmFjZQkqaW50ZXJmYWNlOworCXVuc2lnbmVkIGNoYXIJCSpi
+dWxrX2luX2J1ZmZlcjsKKwlzaXplX3QJCWJ1bGtfaW5fc2l6ZTsKKwlfX3U4CQlidWxrX2luX2Vu
+ZHBvaW50QWRkcjsKKwlfX3U4CQlidWxrX291dF9lbmRwb2ludEFkZHI7CisJX191OAkJcHJvZHVj
+dF9pZDsKKwlzdHJ1Y3Qga3JlZglrcmVmOworCXN0cnVjdCB1c2JfYW5jaG9yCXN1Ym1pdHRlZDsK
+K307CisjZGVmaW5lIHRvX250cmlnX2RldihkKSBjb250YWluZXJfb2YoZCwgc3RydWN0IHVzYl9u
+dHJpZywga3JlZikKKworCisKK3N0YXRpYyBzdHJ1Y3QgdXNiX2RyaXZlciBudHJpZ19kcml2ZXI7
+CisKKworc3RhdGljIHZvaWQgbnRyaWdfZGVsZXRlKHN0cnVjdCBrcmVmICprcmVmKQoreworCXN0
+cnVjdCB1c2JfbnRyaWcgKmRldiA9IHRvX250cmlnX2RldihrcmVmKTsKKwl1c2JfcHV0X2Rldihk
+ZXYtPnVkZXYpOworCS8qIFdlIGRvbid0IHdhbnQgdG8gZW5hYmxlIEF1dG9zdXNwZW5kIHdoaWxl
+ICovCisJLyogRmlybXdhcmUgdXBncmFkZSBwcm9jZWR1cmUgKi8KKwlrZnJlZShkZXYtPmJ1bGtf
+aW5fYnVmZmVyKTsKKwlrZnJlZShkZXYpOworfQorCisKK3N0YXRpYyBpbnQgbnRyaWdfb3Blbihz
+dHJ1Y3QgaW5vZGUgKmlub2RlLCBzdHJ1Y3QgZmlsZSAqZmlsZSkKK3sKKwlzdHJ1Y3QgdXNiX250
+cmlnICpkZXY7CisJc3RydWN0IHVzYl9pbnRlcmZhY2UgKmludGVyZmFjZTsKKwlpbnQgc3VibWlu
+b3IsIHI7CisJc3VibWlub3IgPSBpbWlub3IoaW5vZGUpOworCWludGVyZmFjZSA9IHVzYl9maW5k
+X2ludGVyZmFjZSgmbnRyaWdfZHJpdmVyLCBzdWJtaW5vcik7CisJaWYgKCFpbnRlcmZhY2UpIHsK
+KwkJZXJyKCJOLXRyaWcgYnVsazogJXMgLSBlcnJvciwgY2FuJ3QgZmluZCBkZXZpY2UgZm9yIG1p
+bm9yICVkIiwKKwkJICAgICBfX2Z1bmNfXywgc3VibWlub3IpOworCQlyZXR1cm4gLUVOT0RFVjsK
+Kwl9CisJbXV0ZXhfbG9jaygmb3Blbl9kaXNjX211dGV4KTsKKwlkZXYgPSB1c2JfZ2V0X2ludGZk
+YXRhKGludGVyZmFjZSk7CisJaWYgKCFkZXYpIHsKKwkJbXV0ZXhfdW5sb2NrKCZvcGVuX2Rpc2Nf
+bXV0ZXgpOworCQlyZXR1cm4gLUVOT0RFVjsKKwl9CisJLyogaW5jcmVtZW50IG91ciB1c2FnZSBj
+b3VudCBmb3IgdGhlIGRldmljZSAqLworCWtyZWZfZ2V0KCZkZXYtPmtyZWYpOworCW11dGV4X3Vu
+bG9jaygmb3Blbl9kaXNjX211dGV4KTsKKwkvKiBncmFiIGEgcG93ZXIgcmVmZXJlbmNlICovCisJ
+ciA9IHVzYl9hdXRvcG1fZ2V0X2ludGVyZmFjZShpbnRlcmZhY2UpOworCWlmIChyIDwgMCkgewor
+CQlrcmVmX3B1dCgmZGV2LT5rcmVmLCBudHJpZ19kZWxldGUpOworCQlyZXR1cm4gcjsKKwl9CisJ
+Lyogc2F2ZSBvdXIgb2JqZWN0IGluIHRoZSBmaWxlJ3MgcHJpdmF0ZSBzdHJ1Y3R1cmUgKi8KKwlm
+aWxlLT5wcml2YXRlX2RhdGEgPSBkZXY7CisJcmV0dXJuIDA7Cit9CisKK3N0YXRpYyBpbnQgbnRy
+aWdfcmVsZWFzZShzdHJ1Y3QgaW5vZGUgKmlub2RlLCBzdHJ1Y3QgZmlsZSAqZmlsZSkKK3sKKwlz
+dHJ1Y3QgdXNiX250cmlnICpkZXY7CisJZGV2ID0gKHN0cnVjdCB1c2JfbnRyaWcgKilmaWxlLT5w
+cml2YXRlX2RhdGE7CisJaWYgKGRldiA9PSBOVUxMKQorCQlyZXR1cm4gLUVOT0RFVjsKKwkvKmRl
+Y3JlbWVudCB0aGUgY291bnQgb24gb3VyIGRldmljZSovCisJLypXZSBDYW4ndCBCdXQgdGhlcmUg
+aXMgc3RpbGwgbnRyaWctZGZ1IGNvbW11bmljYXRlIHdpdGggaGltKi8KKwkvKldlIGRvbid0IHdh
+bnQgdG8gZW5hYmxlIGF1dG9zdXNwcGVuZCovCisJLypiZWN1YXNlIHdlIGRvbid0IHdoZW4gd2Ug
+ZmluaXNoIHdvcmsgd2UgZHJpdmVyIHdlIHRha2UgaXQgb3V0Ki8KKwlrcmVmX3B1dCgmZGV2LT5r
+cmVmLCBudHJpZ19kZWxldGUpOworCXJldHVybiAwOworfQorCitzdGF0aWMgc3NpemVfdCBudHJp
+Z19yZWFkKHN0cnVjdCBmaWxlICpmaWxlLCBjaGFyIF9fdXNlciAqIGJ1ZmZlciwgc2l6ZV90IGNv
+dW50LCBsb2ZmX3QgKnBwb3MpCit7CisJc3RydWN0IHVzYl9udHJpZyAqZGV2OworCWludCByZXR2
+YWwgPSAwOworCWludCBieXRlc19yZWFkOworCWRldiA9IChzdHJ1Y3QgdXNiX250cmlnICopZmls
+ZS0+cHJpdmF0ZV9kYXRhOworCS8qIGRvIGEgYmxvY2tpbmcgYnVsayByZWFkIHRvIGdldCBkYXRh
+IGZyb20gdGhlIGRldmljZSAqLworCXJldHZhbCA9IHVzYl9idWxrX21zZyhkZXYtPnVkZXYsCisJ
+CSAgICAgIHVzYl9yY3ZidWxrcGlwZShkZXYtPnVkZXYsIGRldi0+YnVsa19pbl9lbmRwb2ludEFk
+ZHIpLAorCQkgICAgICBkZXYtPmJ1bGtfaW5fYnVmZmVyLAorCQkgICAgICBtaW4oZGV2LT5idWxr
+X2luX3NpemUsIGNvdW50KSwKKwkJICAgICAgJmJ5dGVzX3JlYWQsIDEwMDAwKTsKKwkvKiBpZiB0
+aGUgcmVhZCB3YXMgc3VjY2Vzc2Z1bCwgY29weSB0aGUgZGF0YSB0byB1c2Vyc3BhY2UgKi8KKwlp
+ZiAoIXJldHZhbCkgeworCQlpZiAoY29weV90b191c2VyKGJ1ZmZlciwgZGV2LT5idWxrX2luX2J1
+ZmZlciwgYnl0ZXNfcmVhZCkpCisJCQlyZXR2YWwgPSAtRUZBVUxUOworCQllbHNlCisJCQlyZXR2
+YWwgPSBieXRlc19yZWFkOworCX0KKwlyZXR1cm4gcmV0dmFsOworfQorCitzdGF0aWMgbG9uZyBu
+dHJpZ19pb2N0bChzdHJ1Y3QgZmlsZSAqZmlsZSwgdW5zaWduZWQgaW50IGNtZCwgdW5zaWduZWQg
+bG9uZyBhcmcpCit7CisJc3RydWN0IHVzYl9udHJpZyAqZGV2OworCXUxNiBiY2REZXZpY2U7CisJ
+Y2hhciBidWZbMzBdOworCWRldiA9IChzdHJ1Y3QgdXNiX250cmlnICopZmlsZS0+cHJpdmF0ZV9k
+YXRhOworCWlmIChkZXYgPT0gTlVMTCkKKwkJcmV0dXJuIC1FTk9ERVY7CisJc3dpdGNoIChjbWQp
+IHsKKwljYXNlIElPQ1RMX0dFVF9IQVJEX1ZFUlNJT046CisJCWxvY2tfa2VybmVsKCk7CisJCWJj
+ZERldmljZSA9IGxlMTZfdG9fY3B1KChkZXYtPnVkZXYpLT5kZXNjcmlwdG9yLmJjZERldmljZSk7
+CisJCXNwcmludGYoYnVmLCAiJTFkJTFkLiUxZCUxZCIsCisJCQkoYmNkRGV2aWNlICYgMHhGMDAw
+KT4+MTIsCisJCQkoYmNkRGV2aWNlICYgMHhGMDApPj44LAorCQkJKGJjZERldmljZSAmIDB4RjAp
+Pj40LAorCQkJKGJjZERldmljZSAmIDB4RikpOworCQl1bmxvY2tfa2VybmVsKCk7CisJCWlmIChj
+b3B5X3RvX3VzZXIoKHZvaWQgX191c2VyICopYXJnLCBidWYsIHN0cmxlbihidWYpKSAhPSAwKQor
+CQkJcmV0dXJuIC1FRkFVTFQ7CisJCWJyZWFrOworCWNhc2UgSU9DVExfR0VUX0RSVl9WRVJTSU9O
+OgorCQlzcHJpbnRmKGJ1ZiwgRFJJVkVSX1ZFUlNJT04pOworCQlpZiAoY29weV90b191c2VyKCh2
+b2lkIF9fdXNlciAqKWFyZywgYnVmLCBzdHJsZW4oYnVmKSkgIT0gMCkKKwkJCXJldHVybiAtRUZB
+VUxUOworCQlicmVhazsKKwlkZWZhdWx0OgorCQlyZXR1cm4gLUVOT1RUWTsKKwkJYnJlYWs7CisJ
+fQorCXJldHVybiAwOworfQorCitzdGF0aWMgdm9pZCBudHJpZ193cml0ZV9idWxrX2NhbGxiYWNr
+KHN0cnVjdCB1cmIgKnVyYikKK3sKKwlzdHJ1Y3QgdXNiX250cmlnICpkZXY7CisJaW50IHN0YXR1
+cyA9IHVyYi0+c3RhdHVzOworCWRldiA9IHVyYi0+Y29udGV4dDsKKwkvKiBzeW5jL2FzeW5jIHVu
+bGluayBmYXVsdHMgYXJlbid0IGVycm9ycyAqLworCWlmIChzdGF0dXMgJiYKKwkgICAgIShzdGF0
+dXMgPT0gLUVOT0VOVCB8fAorCSAgICAgIHN0YXR1cyA9PSAtRUNPTk5SRVNFVCB8fAorCSAgICAg
+IHN0YXR1cyA9PSAtRVNIVVRET1dOKSkgeworCQlkYmcoIk4tdHJpZyBidWxrOiAlcyAtIG5vbnpl
+cm8gd3JpdGUgYnVsayBzdGF0dXMgcmVjZWl2ZWQ6ICVkIiwKKwkJICAgIF9fZnVuY19fLCBzdGF0
+dXMpOworCX0KKwkvKiBmcmVlIHVwIG91ciBhbGxvY2F0ZWQgYnVmZmVyICovCisJdXNiX2J1ZmZl
+cl9mcmVlKHVyYi0+ZGV2LCB1cmItPnRyYW5zZmVyX2J1ZmZlcl9sZW5ndGgsCisJCQl1cmItPnRy
+YW5zZmVyX2J1ZmZlciwgdXJiLT50cmFuc2Zlcl9kbWEpOworfQorCisvKioKKyAqIGN0bF9wcm9i
+ZV90aW1lb3V0IC0gVGltZW91dCBXYWl0IGZvciBjb250cm9sIG1lc3NhZ2UgdG8gYmUgc2VudAor
+ICovCitzdGF0aWMgdm9pZCBjdGxfcHJvYmVfdGltZW91dCh1bnNpZ25lZCBsb25nIGFyZykKK3sK
+KwlzdHJ1Y3QgY29tcGxldGlvbiAqY29wID0gKHN0cnVjdCBjb21wbGV0aW9uICopIGFyZzsKKwlj
+b21wbGV0ZShjb3ApOworCWVycigiJXMoKSBFUlIgdGltZW91dCBvY2N1cmVkIGZvciBjb250cm9s
+IG1lc3NhZ2UiLCBfX2Z1bmNfXyk7Cit9CisKKy8qKgorICogU3VwcG9ydCBTZW5zb3Igd2l0aG91
+dCBidWxrIG91dCBlbmRwb2ludAorICogSW5mb3JtYXRpb24gbmVlZCB0byBiZSBzZW5kIHZpYSBj
+b250cm9sIGVucG9pbnQKKyAqLworc3RhdGljIGludCBudHJpZ19jdHJsX3dyaXRlKHN0cnVjdCBm
+aWxlICpmaWxlLCBjb25zdCBjaGFyIF9fdXNlciAqIHVzZXJfYnVmZmVyLCBzaXplX3QgY291bnQs
+IGxvZmZfdCAqcHBvcykKK3sKKwlzdHJ1Y3QgdXNiX250cmlnICpkZXY7CisJc3RydWN0IHVzYl9j
+dHJscmVxdWVzdCAqY3RsX3dyaXRlOworCXN0cnVjdCB1cmIgKnVyYiA9IE5VTEw7CisJc3RydWN0
+IGNvbXBsZXRpb24gY29tcGw7CisJc3RydWN0IHRpbWVyX2xpc3QgdGltZXI7CisJaW50IHJldHZh
+bCA9IDAsIG5MZW5ndGggPSAwLCBuTnVtT2ZGcmFnbWVudHMgPSAwLAorCSAgbkZyYWdtZW50TnVt
+ID0gMCwgbkJ5dGVzTGVmdCA9IDAsIG5GcmFnbWVudFNpemUgPSAwOworCXVuc2lnbmVkIGNoYXIg
+KnBEYXRhID0gTlVMTDsKKwkvKgorCSAqIGNvbXBsZXRpb24gc3R1Y3QgLSBmb3Igc3luY2hyb25p
+emF0aW9uIG1lY2hhbmlzbQorCSAqIFdhaXQgZm9yIGN0cmwgbWVzc2FnZSB0byBiZSBzZW5kCisJ
+ICovCisJaW5pdF9jb21wbGV0aW9uKCZjb21wbCk7CisJZGV2ID0gKHN0cnVjdCB1c2JfbnRyaWcg
+KilmaWxlLT5wcml2YXRlX2RhdGE7CisJLyogdmVyaWZ5IHRoYXQgd2UgYWN0dWFsbHkgaGF2ZSBz
+b21lIGRhdGEgdG8gd3JpdGUgKi8KKwlpZiAoMCA9PSBjb3VudCkKKwkJcmV0dXJuIDA7CisJY3Rs
+X3dyaXRlID0ga21hbGxvYyhzaXplb2Yoc3RydWN0IHVzYl9jdHJscmVxdWVzdCksIEdGUF9LRVJO
+RUwpOworCWlmICghY3RsX3dyaXRlKSB7CisJCWVycigiJXMoKSBNZW1vcnkgQWxsb2NhdGlvbiBG
+YWlsZWQgdXNiX2N0cmxyZXF1ZXN0IiwgX19mdW5jX18pOworCQlyZXR1cm4gLUVOT01FTTsKKwl9
+CisJdXJiID0gdXNiX2FsbG9jX3VyYigwLCBHRlBfS0VSTkVMKTsKKwlpZiAoIXVyYikgeworCQll
+cnIoIiVzKCkgVVJCIE1lbW9yeSBBbGxvY2F0aW9uIEZhaWxlZCIsIF9fZnVuY19fKTsKKwkJZ290
+byB1cmJfYWxsb2NfZmFpbGVkOworCX0KKwkvKldvcnN0IENhc2Ugc2NlbmFyaW8gd2UgYWxsb2Nh
+dGUgNCBieXRlcyovCisJcERhdGEgPSBrbWFsbG9jKGNvdW50LCBHRlBfS0VSTkVMKTsKKwlpZiAo
+Y29weV9mcm9tX3VzZXIocERhdGEsIHVzZXJfYnVmZmVyLCBjb3VudCkpIHsKKwkJZXJyKCIlcygp
+IFdyaXRlIFVzZXIgQnVmZmVyIEZhaWxlZCIsIF9fZnVuY19fKTsKKwkJZ290byBtZW1fYWxsb2Nf
+ZmFpbGVkOworCX0KKwkvKiBVcGRhdGUgU2V0dXAgRmllbGQgLSBBY2NvcmRpbmcgVG8gQnVmZmVy
+IFJlY2VpdmVkIGZyb20gVXNlciAqLworCWN0bF93cml0ZS0+YlJlcXVlc3RUeXBlICA9IENUTF9S
+RVFVRVNUX1RZUEU7CisJY3RsX3dyaXRlLT5iUmVxdWVzdCAgICAgID0gKENNRF9XUklURV9NRVNT
+QUdFID09IHBEYXRhW1JFUVVFU1RfQ01EXSkgPyBDTURfV1JJVEVfTUVTU0FHRSA6IENNRF9HTzJf
+Qk9PVF9MT0FERVI7CisJLypHcm91cElEICsgQ29kZSAqLworCWN0bF93cml0ZS0+d1ZhbHVlICAg
+ICAgICA9IChwRGF0YVtCVUxLX0dST1VQX0lEXSAqIDB4MTAwKSArIHBEYXRhW0JVTEtfQ09ERV07
+CisJbkxlbmd0aCA9IChwRGF0YVtCVUxLX0xFTl9MU0JdICogMHgxMDApICsgcERhdGFbQlVMS19M
+RU5fTVNCXTsKKwlpZiAoKG5MZW5ndGggIT0gMCkgJiYgKDAgPT0gKG5MZW5ndGggJSA2NCkpKQor
+CSAgICBuTnVtT2ZGcmFnbWVudHMgPSBuTGVuZ3RoIC8gTUFYX1RSQU5TTUlUX0ZSQUdNRU5UX1NJ
+WkU7CisJZWxzZQorCSAgICBuTnVtT2ZGcmFnbWVudHMgPSBuTGVuZ3RoIC8gTUFYX1RSQU5TTUlU
+X0ZSQUdNRU5UX1NJWkUgKyAxOworCWlmIChuTnVtT2ZGcmFnbWVudHMgPiAweEZGKQorCQlnb3Rv
+IG1lbV9hbGxvY19mYWlsZWQ7CisJcERhdGEgKz0gQlVMS19EQVRBOyAvKlBvaW50IFRvIERhdGEg
+RmllbGQqLworCW5CeXRlc0xlZnQgPSBuTGVuZ3RoOworCXdoaWxlIChuQnl0ZXNMZWZ0ID49IDAp
+IHsKKwkJaWYgKG5CeXRlc0xlZnQgPiBNQVhfVFJBTlNNSVRfRlJBR01FTlRfU0laRSkKKwkJICAg
+IG5GcmFnbWVudFNpemUgPSBNQVhfVFJBTlNNSVRfRlJBR01FTlRfU0laRTsKKwkJZWxzZQorCQkg
+IG5GcmFnbWVudFNpemUgPSBuQnl0ZXNMZWZ0OworCQljdGxfd3JpdGUtPndJbmRleCAgPSBuTnVt
+T2ZGcmFnbWVudHMqMHgxMDAgLypNU0IqLysgbkZyYWdtZW50TnVtIC8qTFNCKi87CisJCWN0bF93
+cml0ZS0+d0xlbmd0aCA9IGNwdV90b19sZTE2KG5GcmFnbWVudFNpemUpOworCQl1c2JfZmlsbF9j
+b250cm9sX3VyYih1cmIsIGRldi0+dWRldiwgdXNiX3NuZGN0cmxwaXBlKGRldi0+dWRldiwgMC8q
+RW5kcG9pbnQgQWRkcmVzcyovKSwKKwkJKHVuc2lnbmVkIGNoYXIgKiljdGxfd3JpdGUsICZwRGF0
+YVtuRnJhZ21lbnROdW0gKiBNQVhfVFJBTlNNSVRfRlJBR01FTlRfU0laRV0sCisJCW5GcmFnbWVu
+dFNpemUsIG50cmlnX3dyaXRlX2J1bGtfY2FsbGJhY2ssICZjb21wbCk7CisJCXJldHZhbCA9IHVz
+Yl9zdWJtaXRfdXJiKHVyYiwgR0ZQX0tFUk5FTCk7CisJCWlmIChyZXR2YWwgPCAwKSB7CisJCQll
+cnIoIk4tdHJpZyBidWxrOiAlcygpIC0gZmFpbGVkIHN1Ym1pdHRpbmcgd3JpdGUgdXJiLCBlcnJv
+ciAlZCIsCisJCQkgICAgX19mdW5jX18sIHJldHZhbCk7CisJCQlnb3RvIG1lbV9hbGxvY19mYWls
+ZWQ7CisJCX0KKwkJLyogSW5pdGlhbGl6ZSB0aW1lciB3YWl0IGZvciBjb250cm9sIG1lc3NhZ2Ug
+Y29tcGxldGlvbnMgKi8KKwkJaW5pdF90aW1lcigmdGltZXIpOworCQl0aW1lci5mdW5jdGlvbiA9
+IGN0bF9wcm9iZV90aW1lb3V0OworCQl0aW1lci5kYXRhID0gKHVuc2lnbmVkIGxvbmcpICZjb21w
+bDsKKwkJdGltZXIuZXhwaXJlcyA9IGppZmZpZXMgKyA1MDAgLyowLjUgc2VjKi87CisJCWFkZF90
+aW1lcigmdGltZXIpOworCQl3YWl0X2Zvcl9jb21wbGV0aW9uKCZjb21wbCk7CisJCWRlbF90aW1l
+cl9zeW5jKCZ0aW1lcik7CisJCW5GcmFnbWVudE51bSsrOworCQluQnl0ZXNMZWZ0IC09IE1BWF9U
+UkFOU01JVF9GUkFHTUVOVF9TSVpFOworCX0KKwlyZXR1cm4gY291bnQ7CittZW1fYWxsb2NfZmFp
+bGVkOgorCXVzYl9mcmVlX3VyYih1cmIpOworCWtmcmVlKHBEYXRhKTsKKwlrZnJlZSh1cmIpOwor
+dXJiX2FsbG9jX2ZhaWxlZDoKKwlrZnJlZShjdGxfd3JpdGUpOworCXJldHVybiAtRU5PTUVNOwor
+Cit9CitzdGF0aWMgc3NpemVfdCBudHJpZ193cml0ZShzdHJ1Y3QgZmlsZSAqZmlsZSwgY29uc3Qg
+Y2hhciBfX3VzZXIgKiB1c2VyX2J1ZmZlciwgc2l6ZV90IGNvdW50LCBsb2ZmX3QgKnBwb3MpCit7
+CisJc3RydWN0IHVzYl9udHJpZyAqZGV2OworCWludCByZXR2YWwgPSAwOworCXN0cnVjdCB1cmIg
+KnVyYiA9IE5VTEw7CisJY2hhciAqYnVmID0gTlVMTDsKKwlkZXYgPSAoc3RydWN0IHVzYl9udHJp
+ZyAqKWZpbGUtPnByaXZhdGVfZGF0YTsKKwkvKiB2ZXJpZnkgdGhhdCB3ZSBhY3R1YWxseSBoYXZl
+IHNvbWUgZGF0YSB0byB3cml0ZSAqLworCWlmIChjb3VudCA9PSAwKQorCQlnb3RvIGV4aXQ7CisJ
+aWYgKE5fVFJJR19CT09UX0xPQURFUl9JRCAhPSBkZXYtPnByb2R1Y3RfaWQpIHsKKwkgICAgY291
+bnQgPSBudHJpZ19jdHJsX3dyaXRlKGZpbGUsIHVzZXJfYnVmZmVyLCBjb3VudCwgcHBvcyk7CisJ
+ICAgIGdvdG8gZXhpdDsKKwl9CisJLyogY3JlYXRlIGEgdXJiLCBhbmQgYSBidWZmZXIgZm9yIGl0
+LCBhbmQgY29weSB0aGUgZGF0YSB0byB0aGUgdXJiICovCisJdXJiID0gdXNiX2FsbG9jX3VyYigw
+LCBHRlBfS0VSTkVMKTsKKwlpZiAoIXVyYikgeworCQlyZXR2YWwgPSAtRU5PTUVNOworCQlnb3Rv
+IGVycl9ub19idWY7CisJfQorCWJ1ZiA9IHVzYl9idWZmZXJfYWxsb2MoZGV2LT51ZGV2LCBjb3Vu
+dCwgR0ZQX0tFUk5FTCwgJnVyYi0+dHJhbnNmZXJfZG1hKTsKKwlpZiAoIWJ1ZikgeworCQlyZXR2
+YWwgPSAtRU5PTUVNOworCQlnb3RvIGVycm9yOworCX0KKwlpZiAoY29weV9mcm9tX3VzZXIoYnVm
+LCB1c2VyX2J1ZmZlciwgY291bnQpKSB7CisJCXJldHZhbCA9IC1FRkFVTFQ7CisJCWdvdG8gZXJy
+b3I7CisJfQorCS8qIGluaXRpYWxpemUgdGhlIHVyYiBwcm9wZXJseSAqLworCXVzYl9maWxsX2J1
+bGtfdXJiKHVyYiwgZGV2LT51ZGV2LAorCQkJICB1c2Jfc25kYnVsa3BpcGUoZGV2LT51ZGV2LCBk
+ZXYtPmJ1bGtfb3V0X2VuZHBvaW50QWRkciksCisJCQkgIGJ1ZiwgY291bnQsIG50cmlnX3dyaXRl
+X2J1bGtfY2FsbGJhY2ssIGRldik7CisJdXJiLT50cmFuc2Zlcl9mbGFncyB8PSBVUkJfTk9fVFJB
+TlNGRVJfRE1BX01BUDsKKwl1c2JfYW5jaG9yX3VyYih1cmIsICZkZXYtPnN1Ym1pdHRlZCk7CisJ
+Lyogc2VuZCB0aGUgZGF0YSBvdXQgdGhlIGJ1bGsgcG9ydCAqLworCXJldHZhbCA9IHVzYl9zdWJt
+aXRfdXJiKHVyYiwgR0ZQX0tFUk5FTCk7CisJaWYgKHJldHZhbCkgeworCQllcnIoIk4tdHJpZyBi
+dWxrOiAlcygpIC0gZmFpbGVkIHN1Ym1pdHRpbmcgd3JpdGUgdXJiLCBlcnJvciAlZCIsCisJCSAg
+ICBfX2Z1bmNfXywgcmV0dmFsKTsKKwkJZ290byBlcnJvcl91bmFuY2hvcjsKKwl9CisJLypSZWxl
+YXNlIG91ciByZWZlcmVuY2UgdG8gdGhpcyB1cmIqLworCS8qVVNCIGNvcmUgd2lsbCBldmVudHVh
+bGx5IGZyZWUgaXQgZW50aXJlbHkgKi8KKwl1c2JfZnJlZV91cmIodXJiKTsKK2V4aXQ6CisJcmV0
+dXJuIGNvdW50OworZXJyb3JfdW5hbmNob3I6CisJdXNiX3VuYW5jaG9yX3VyYih1cmIpOworZXJy
+b3I6CisJdXNiX2J1ZmZlcl9mcmVlKGRldi0+dWRldiwgY291bnQsIGJ1ZiwgdXJiLT50cmFuc2Zl
+cl9kbWEpOworCXVzYl9mcmVlX3VyYih1cmIpOworZXJyX25vX2J1ZjoKKwlyZXR1cm4gcmV0dmFs
+OworfQorCitzdGF0aWMgY29uc3Qgc3RydWN0IGZpbGVfb3BlcmF0aW9ucyBudHJpZ19mb3BzID0g
+eworCS5vd25lciA9ICAgICAgICBUSElTX01PRFVMRSwKKwkucmVhZCA9ICAgICAgICAgbnRyaWdf
+cmVhZCwKKwkud3JpdGUgPSAgICAgICAgbnRyaWdfd3JpdGUsCisJLm9wZW4gPSAgICAgICAgIG50
+cmlnX29wZW4sCisJLnVubG9ja2VkX2lvY3RsID0gbnRyaWdfaW9jdGwsCisJLnJlbGVhc2UgPSAg
+ICAgIG50cmlnX3JlbGVhc2UsCit9OworCisvKgorICogdXNiIGNsYXNzIGRyaXZlciBpbmZvIGlu
+IG9yZGVyIHRvIGdldCBhIG1pbm9yIG51bWJlciBmcm9tIHRoZSB1c2IgY29yZSwKKyAqIGFuZCB0
+byBoYXZlIHRoZSBkZXZpY2UgcmVnaXN0ZXJlZCB3aXRoIHRoZSBkcml2ZXIgY29yZQorICovCitz
+dGF0aWMgc3RydWN0IHVzYl9jbGFzc19kcml2ZXIgbnRyaWdfY2xhc3MgPSB7CisJLm5hbWUgPSAg
+ICAgICAgICJudHJpZyVkIiwKKwkuZm9wcyA9ICAgICAgICAgJm50cmlnX2ZvcHMsCisJLm1pbm9y
+X2Jhc2UgPSAgIFVTQl9OVFJJR19NSU5PUl9CQVNFLAorfTsKKworc3RhdGljIGludCBudHJpZ19w
+cm9iZShzdHJ1Y3QgdXNiX2ludGVyZmFjZSAqaW50ZXJmYWNlLCBjb25zdCBzdHJ1Y3QgdXNiX2Rl
+dmljZV9pZCAqaWQpCit7CisJc3RydWN0IHVzYl9udHJpZyAqZGV2ID0gTlVMTDsKKwlzdHJ1Y3Qg
+dXNiX2hvc3RfaW50ZXJmYWNlICppZmFjZV9kZXNjOworCXN0cnVjdCB1c2JfZW5kcG9pbnRfZGVz
+Y3JpcHRvciAqZW5kcG9pbnQ7CisJaW50IGk7CisJaW50IHJldHZhbCA9IC1FTk9NRU07CisJLyog
+YWxsb2NhdGUgbWVtb3J5IGZvciBvdXIgZGV2aWNlIHN0YXRlIGFuZCBpbml0aWFsaXplIGl0ICov
+CisJZGV2ID0ga3phbGxvYyhzaXplb2YoKmRldiksIEdGUF9LRVJORUwpOworCWlmIChkZXYgPT0g
+TlVMTCkgeworCQllcnIoIiVzKCkgT3V0IG9mIG1lbW9yeSIsIF9fZnVuY19fKTsKKwkJZ290byBl
+cnJvcjsKKwl9CisJa3JlZl9pbml0KCZkZXYtPmtyZWYpOworCWluaXRfdXNiX2FuY2hvcigmZGV2
+LT5zdWJtaXR0ZWQpOworCWRldi0+dWRldiA9IHVzYl9nZXRfZGV2KGludGVyZmFjZV90b191c2Jk
+ZXYoaW50ZXJmYWNlKSk7CisJZGV2LT5pbnRlcmZhY2UgPSBpbnRlcmZhY2U7CisJZGV2LT5wcm9k
+dWN0X2lkID0gbGUxNl90b19jcHUoZGV2LT51ZGV2LT5kZXNjcmlwdG9yLmlkUHJvZHVjdCk7CisJ
+Lyogc2V0IHVwIHRoZSBlbmRwb2ludCBpbmZvcm1hdGlvbiAqLworCS8qIHVzZSBvbmx5IHRoZSBm
+aXJzdCBidWxrLWluIGFuZCBidWxrLW91dCBlbmRwb2ludHMgKi8KKwlpZmFjZV9kZXNjID0gaW50
+ZXJmYWNlLT5jdXJfYWx0c2V0dGluZzsKKwlmb3IgKGkgPSAwOyBpIDwgaWZhY2VfZGVzYy0+ZGVz
+Yy5iTnVtRW5kcG9pbnRzOyArK2kpIHsKKwkJZW5kcG9pbnQgPSAmaWZhY2VfZGVzYy0+ZW5kcG9p
+bnRbaV0uZGVzYzsKKwkJaWYgKCFkZXYtPmJ1bGtfaW5fZW5kcG9pbnRBZGRyICYmCisJCSAgICB1
+c2JfZW5kcG9pbnRfaXNfYnVsa19pbihlbmRwb2ludCkpIHsKKwkJCS8qIHdlIGZvdW5kIGEgYnVs
+ayBpbiBlbmRwb2ludCovCisJCQkvKldlIGlnbm9yZSBidWZmZXIgc2l6ZSBmcm9tIGRlc2NyaXB0
+b3IqLworCQkJZGV2LT5idWxrX2luX3NpemUgPSBCVUxLX0lOX01BWF9NU0dfTEVOOworCQkJZGV2
+LT5idWxrX2luX2VuZHBvaW50QWRkciA9IGVuZHBvaW50LT5iRW5kcG9pbnRBZGRyZXNzOworCQkJ
+ZGV2LT5idWxrX2luX2J1ZmZlciA9IGttYWxsb2MoZGV2LT5idWxrX2luX3NpemUsIEdGUF9LRVJO
+RUwpOworCQkJaWYgKCFkZXYtPmJ1bGtfaW5fYnVmZmVyKSB7CisJCQkJZXJyKCIlcygpIENvdWxk
+IG5vdCBhbGxvY2F0ZSBidWxrX2luX2J1ZmZlciIsCisJCQkJICAgIF9fZnVuY19fKTsKKwkJCQln
+b3RvIGVycm9yOworCQkJfQorCQl9CisJCWlmICghZGV2LT5idWxrX291dF9lbmRwb2ludEFkZHIg
+JiYKKwkJICAgIHVzYl9lbmRwb2ludF9pc19idWxrX291dChlbmRwb2ludCkpIHsKKwkJCS8qIHdl
+IGZvdW5kIGEgYnVsayBvdXQgZW5kcG9pbnQgKi8KKwkJCWRldi0+YnVsa19vdXRfZW5kcG9pbnRB
+ZGRyID0gZW5kcG9pbnQtPmJFbmRwb2ludEFkZHJlc3M7CisJCX0KKwl9CisJLyogc2F2ZSBvdXIg
+ZGF0YSBwb2ludGVyIGluIHRoaXMgaW50ZXJmYWNlIGRldmljZSAqLworCXVzYl9zZXRfaW50ZmRh
+dGEoaW50ZXJmYWNlLCBkZXYpOworCS8qIHdlIGNhbiByZWdpc3RlciB0aGUgZGV2aWNlIG5vdywg
+YXMgaXQgaXMgcmVhZHkgKi8KKwlyZXR2YWwgPSB1c2JfcmVnaXN0ZXJfZGV2KGludGVyZmFjZSwg
+Jm50cmlnX2NsYXNzKTsKKwlpZiAocmV0dmFsKSB7CisJCS8qIHNvbWV0aGluZyBwcmV2ZW50ZWQg
+dXMgZnJvbSByZWdpc3RlcmluZyB0aGlzIGRyaXZlciAqLworCQllcnIoIiVzKCkgTm90IGFibGUg
+dG8gZ2V0IGEgbWlub3IgZm9yIHRoaXMgZGV2aWNlLiIsIF9fZnVuY19fKTsKKwkJdXNiX3NldF9p
+bnRmZGF0YShpbnRlcmZhY2UsIE5VTEwpOworCQlnb3RvIGVycm9yOworCX0KKwlpID0gbGUxNl90
+b19jcHUoZGV2LT51ZGV2LT5kZXNjcmlwdG9yLmJjZERldmljZSk7CisJZGV2X2luZm8oJmludGVy
+ZmFjZS0+ZGV2LCAiTi10cmlnIGJ1bGsgVmVyc2lvbiAlMWQlMWQuJTFkJTFkIGZvdW5kICIKKwkJ
+ICJhdCBhZGRyZXNzICVkXG4iLCAoaSAmIDB4RjAwMCk+PjEyLCAoaSAmIDB4RjAwKT4+OCwKKwkJ
+IChpICYgMHhGMCk+PjQsIChpICYgMHhGKSwgZGV2LT51ZGV2LT5kZXZudW0pOworCS8qIGxldCB0
+aGUgdXNlciBrbm93IHdoYXQgbm9kZSB0aGlzIGRldmljZSBpcyBub3cgYXR0YWNoZWQgdG8gKi8K
+KwlkZXZfaW5mbygmaW50ZXJmYWNlLT5kZXYsICJVU0IgTi10cmlnIGRldmljZSBub3cgYXR0YWNo
+ZWQgdG8gTi10cmlnIGJ1bGstJWRcbiIsCisJCSBpbnRlcmZhY2UtPm1pbm9yKTsKKwlyZXR1cm4g
+MDsKK2Vycm9yOgorCWlmIChkZXYpCisJCWtyZWZfcHV0KCZkZXYtPmtyZWYsIG50cmlnX2RlbGV0
+ZSk7CisJcmV0dXJuIHJldHZhbDsKK30KKworc3RhdGljIHZvaWQgbnRyaWdfZHJhd19kb3duKHN0
+cnVjdCB1c2JfbnRyaWcgKmRldikKK3sKKwlpbnQgdGltZTsKKwl0aW1lID0gdXNiX3dhaXRfYW5j
+aG9yX2VtcHR5X3RpbWVvdXQoJmRldi0+c3VibWl0dGVkLCAxMDAwKTsKKwlpZiAoIXRpbWUpCisJ
+CXVzYl9raWxsX2FuY2hvcmVkX3VyYnMoJmRldi0+c3VibWl0dGVkKTsKK30KKworc3RhdGljIGlu
+dCBudHJpZ19zdXNwZW5kKHN0cnVjdCB1c2JfaW50ZXJmYWNlICppbnRmLCBwbV9tZXNzYWdlX3Qg
+bWVzc2FnZSkKK3sKKwlzdHJ1Y3QgdXNiX250cmlnICpkZXYgPSB1c2JfZ2V0X2ludGZkYXRhKGlu
+dGYpOworCWlmICghZGV2KQorCQlyZXR1cm4gMDsKKwludHJpZ19kcmF3X2Rvd24oZGV2KTsKKwly
+ZXR1cm4gMDsKK30KKworc3RhdGljIGludCBudHJpZ19yZXN1bWUoc3RydWN0IHVzYl9pbnRlcmZh
+Y2UgKmludGYpCit7CisJcmV0dXJuIDA7Cit9CisKK3N0YXRpYyB2b2lkIG50cmlnX2Rpc2Nvbm5l
+Y3Qoc3RydWN0IHVzYl9pbnRlcmZhY2UgKmludGVyZmFjZSkKK3sKKwlzdHJ1Y3QgdXNiX250cmln
+ICpkZXY7CisJaW50IG1pbm9yID0gaW50ZXJmYWNlLT5taW5vcjsKKwltdXRleF9sb2NrKCZvcGVu
+X2Rpc2NfbXV0ZXgpOworCWRldiA9IHVzYl9nZXRfaW50ZmRhdGEoaW50ZXJmYWNlKTsKKwl1c2Jf
+c2V0X2ludGZkYXRhKGludGVyZmFjZSwgTlVMTCk7CisJbXV0ZXhfdW5sb2NrKCZvcGVuX2Rpc2Nf
+bXV0ZXgpOworCS8qIGdpdmUgYmFjayBvdXIgbWlub3IgKi8KKwl1c2JfZGVyZWdpc3Rlcl9kZXYo
+aW50ZXJmYWNlLCAmbnRyaWdfY2xhc3MpOworCS8qIGRlY3JlbWVudCBvdXIgdXNhZ2UgY291bnQg
+Ki8KKwlrcmVmX3B1dCgmZGV2LT5rcmVmLCBudHJpZ19kZWxldGUpOworCWRldl9pbmZvKCZpbnRl
+cmZhY2UtPmRldiwgIlVTQiBOLXRyaWcgIyVkIG5vdyBkaXNjb25uZWN0ZWRcbiIsIG1pbm9yKTsK
+K30KKworc3RhdGljIHN0cnVjdCB1c2JfZHJpdmVyIG50cmlnX2RyaXZlciA9IHsKKwkubmFtZSA9
+CQkidXNibnRyaWciLAorCS5wcm9iZSA9CW50cmlnX3Byb2JlLAorCS5kaXNjb25uZWN0ID0JbnRy
+aWdfZGlzY29ubmVjdCwKKwkuc3VzcGVuZCA9CW50cmlnX3N1c3BlbmQsCisJLnJlc3VtZSA9CW50
+cmlnX3Jlc3VtZSwKKwkuaWRfdGFibGUgPQlpZF90YWJsZSwKKwkuc3VwcG9ydHNfYXV0b3N1c3Bl
+bmQgPSAxLAorfTsKKworc3RhdGljIGludCBfX2luaXQgdXNiX250cmlnX2luaXQodm9pZCkKK3sK
+KwlpbnQgcmVzdWx0OworCXJlc3VsdCA9IHVzYl9yZWdpc3RlcigmbnRyaWdfZHJpdmVyKTsKKwlp
+ZiAocmVzdWx0KQorCQllcnIoIiVzKCkgdXNiX3JlZ2lzdGVyIGZhaWxlZC4gRXJyb3IgbnVtYmVy
+ICVkIiwKKwkJICAgIF9fZnVuY19fLCByZXN1bHQpOworCXJldHVybiByZXN1bHQ7Cit9CisKKwor
+c3RhdGljIHZvaWQgX19leGl0IHVzYl9udHJpZ19leGl0KHZvaWQpCit7CisJdXNiX2RlcmVnaXN0
+ZXIoJm50cmlnX2RyaXZlcik7Cit9CisKK21vZHVsZV9pbml0KHVzYl9udHJpZ19pbml0KTsKK21v
+ZHVsZV9leGl0KHVzYl9udHJpZ19leGl0KTsKKworTU9EVUxFX0FVVEhPUigiTWlja2kgQmFsYW5n
+YSA8bWlja2lAbi10cmlnLmNvbT4iKTsKK01PRFVMRV9ERVNDUklQVElPTihEUklWRVJfVkVSU0lP
+Tik7CitNT0RVTEVfTElDRU5TRSgiR1BMIik7Ci0tIAoxLjYuMy4zCgo=
 
+--Boundary_(ID_VhxdUXx9p0rToYiafiQMcw)--
