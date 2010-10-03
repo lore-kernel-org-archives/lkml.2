@@ -1,85 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752583Ab0JCDC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 23:02:59 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45281 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab0JCDC6 (ORCPT
+	id S1752600Ab0JCDKR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 23:10:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55512 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752440Ab0JCDKP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 23:02:58 -0400
+	Sat, 2 Oct 2010 23:10:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vfRRQuiEng+cwmYVLOU5KK9+Lx/7KcsAAahY8Nt4hF0PsbVU5jZnyzhLrPB4BU8wV5
-         IUyxDkoZDzrJaeEl3nlPELKnGbpjgZf1cq9Xi8xKdpRzKQLMr1MV9IKZNxumM953e2RA
-         tx9S3GHtpI+XmuwSNdlIPJAt4MsH2tgaktr7k=
-Date: Sat, 2 Oct 2010 23:02:54 -0400
-From: tmhikaru@gmail.com
-To: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
-        Greg KH <gregkh@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: PROBLEM: Unusually high load average when idle in 2.6.35, 2.6.35.1 and later
-Message-ID: <20101003030254.GA4901@roll>
-References: <20101001035321.GA2360@roll> <20101001094814.GA5029@roll>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="k1lZvvs/B4yU6o8G"
-Content-Disposition: inline
-In-Reply-To: <20101001094814.GA5029@roll>
-User-Agent: Mutt/1.4.2.3i
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Upe+4EqUlV+ezdSXjtq/RxCMsMMdIISbG7kxzexXYMtYmPTfh4VrHtJTwguZKedFf3
+         PrsUiV469UGsFiK1ecMWW2MOUzbAA0tvNbu+2X/LionqOIqEErvcP7iMnp7FI8nNZ+xy
+         hgtsRVtiEh4KCoy8ChnWGkQr08dYYMVYJZr4s=
+MIME-Version: 1.0
+In-Reply-To: <20101002.132056.226767861.davem@davemloft.net>
+References: <AANLkTimF+zy-qTmbtchGu_0Td7fZUsrsd7PNgkAdM8fA@mail.gmail.com>
+	<20101002.132056.226767861.davem@davemloft.net>
+Date: Sun, 3 Oct 2010 11:10:14 +0800
+Message-ID: <AANLkTikF7uz8QHVQB=GMgeFNwsr+u7J0a06a5KAnxkTb@mail.gmail.com>
+Subject: Re: Ask For Comment: add routines for exchanging data between sock
+ buffer and scatter list
+From: Hillf Danton <dhillf@gmail.com>
+To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, robert.w.love@intel.com,
+        James.Bottomley@suse.de
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There seems no routines provided for exchanging data
+directly between sock buffer and scatter list in
+both scatterlist.c and skbuff.c, so comes this work.
 
---k1lZvvs/B4yU6o8G
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+And it is hard to determine into which file these
+routines should be added, then a header file is added.
 
-	These final tests I think conclusively prove that I've been on a
-wild goose chase. The load average statistic is indeed broken somehow, and I
-did bisect it down to where the problem began, however there seems to be no
-performance problem related to it I can find. Somehow I must have made a
-mistake I didn't catch when I did the original build that led me to believe
-on top of the statistic being broken, that it was causing a performance
-problem.
+Signed-off-by: Hillf Danton <dhillf@gmail.com>
+---
 
-	All of the make allnoconfig test results finish within a second of
-eachother, with four different kernels tested. I think if there really was a
-performance problem it would have reared its head sometime during the
-multiple compile tests on different kernels I took. I apologize for wasting
-everyones time, especially my own :)
-
-Anyway, the results:
-
-2.6.35.6:
-make mrproper && XZ_OPT="" CCACHE_DISABLE="1" time make allnoconfig
-5.46user 0.51system 0:07.08elapsed 84%CPU (0avgtext+0avgdata 95888maxresident)k
-0inputs+1920outputs (0major+126585minor)pagefaults 0swaps
-
-2.6.35:
-make mrproper && XZ_OPT="" CCACHE_DISABLE="1" time make allnoconfig
-5.42user 0.50system 0:06.24elapsed 95%CPU (0avgtext+0avgdata 95888maxresident)k
-0inputs+1920outputs (0major+126585minor)pagefaults 0swaps
-
-Tim McGrath
-
---k1lZvvs/B4yU6o8G
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEVAwUBTKfyXpEncCrqzVruAQJNdgf/aXHKwjE73AVOq1QdQoYzBkvIL+nGfyMb
-A2l+U5ku+/COyT00ucZmt9EoGkz1UyN5a62mUF96qLZC6k1UHChhJ3+I+55hpFyb
-cTEzEVmxxJx2RUoTwQQFzrkd+2XMhfo1V8AJdexZsdafD+iladTJyokQirhLYq7B
-xbOpjIoGLoIMXsBPrsl0cKZJlfitjWQq1sAKAibR22a7Fa2jJ0l37EW1wsTQxvoP
-5ANLDFkYoU6UMpM9IyYm91PFPfArMh11DUa33ug8ebg/wYLWsvV/UT3Lmae9JQ5q
-dI+hexMjj+cPIzSOzQkEOplLue+ANbzZhB6rPYj+Hf9rLa6E+8ugHA==
-=noy5
------END PGP SIGNATURE-----
-
---k1lZvvs/B4yU6o8G--
+diff -Npur o/linux-2.6.36-rc4/include/skb_sg.h
+m/linux-2.6.36-rc4/include/skb_sg.h
+--- o/linux-2.6.36-rc4/include/skb_sg.h	1970-01-01 08:00:00.000000000 +0800
++++ m/linux-2.6.36-rc4/include/skb_sg.h	2010-10-03 10:03:54.000000000 +0800
+@@ -0,0 +1,113 @@
++/*
++    Definition for exchanging data between sock buffer and scatter list
++
++    Copyright (C) Oct 2010 Hillf Danton <dhillf@gmail.com>
++
++    This program is free software; you can redistribute it and/or modify
++    it under the terms of the GNU General Public License as published by
++    the Free Software Foundation; either version 2 of the License, or
++    (at your option) any later version.
++
++    This program is distributed in the hope that it will be useful,
++    but WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++    GNU General Public License for more details.
++
++    You should have received a copy of the GNU General Public License
++    along with this program; if not, write to the Free Software
++    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
++    MA 02110-1301  USA
++*/
++
++#ifndef __LINUX_SKB_SG_H
++#define __LINUX_SKB_SG_H
++
++#include <linux/scatterlist.h>
++#include <linux/skbuff.h>
++
++/*
++ * sg_fill_skb_page_desc - fill skb frags with info in sg list
++ * @index  the start index to fill
++ *
++ * return the number of filled frags
++ */
++
++static int sg_fill_skb_page_desc(struct sk_buff *skb, int index,
++                                 struct scatterlist *sg)
++{
++	int old = index;
++	struct page *page;
++	
++	for (; sg && index < MAX_SKB_FRAGS; index++) {
++		page = sg_page(sg);
++		get_page(page);
++		skb_add_rx_frag(skb, index, page, sg->offset, sg->length);
++		sg = sg_next(sg);
++	}
++	
++	return index - old;
++}
++
++/*
++ * skb_copy_bits_to_sg - copy data from skb to sg list
++ * @len	length of data to be copied
++ *
++ * return the number of copied bytes
++ */
++
++static int skb_copy_bits_to_sg(struct sk_buff *skb, int offset_in_skb,
++                               struct scatterlist *sg, int offset_in_sg,
++                               int len)
++{
++	int old = len;
++	struct sg_mapping_iter miter;
++
++	if (offset_in_skb >= skb->len)
++		return 0;
++	
++	if (len > skb->len - offset_in_skb)
++		old = len = skb->len - offset_in_skb;
++	
++	/* skip offset in sg */
++	while (sg && offset_in_sg >= sg->length) {
++		offset_in_sg -= sg->length;
++		sg = sg_next(sg);
++	}
++	if (! sg)
++		return 0;
++
++	/* and go thru sg list */
++	while (len > 0 && sg) {
++		int this_len;
++		int err;
++		
++		sg_miter_start(&miter, sg, 1, SG_MITER_ATOMIC|SG_MITER_TO_SG);
++
++		if (offset_in_sg) {
++			/* we have to count this residual */
++			miter.__offset = offset_in_sg;
++			offset_in_sg = 0;
++		}
++
++		if (! sg_miter_next(&miter))
++			break;
++		
++		this_len = min(miter.length, len);
++		
++		err = skb_copy_bits(skb, offset_in_skb, miter.addr, this_len);
++
++		sg_miter_stop(&miter);
++
++		if (err)
++			break;
++
++		offset_in_skb += this_len;
++		len -= this_len;
++
++		sg = sg_next(sg);
++	}
++
++	return old - len;	
++}
++
++#endif /* __LINUX_SKB_SG_H */
