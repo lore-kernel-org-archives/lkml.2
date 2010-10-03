@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab0JCWXt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 18:23:49 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:59954 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751195Ab0JCWXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 18:23:48 -0400
-X-User-Agent: K-9 Mail for Android
-References: <20101003093701.GB3733@liondog.tnic> <4CA89681.8000202@zytor.com> <20101003152212.GA13233@liondog.tnic> <a3fce0e5-e6c5-4bf0-b8c0-4954825a7065@email.android.com> <20101003201139.GA16532@liondog.tnic>
-In-Reply-To: <20101003201139.GA16532@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] x86, cpu: X86_FEATURE_NOPL should be disabled on 32-bit only
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Sun, 03 Oct 2010 15:22:13 -0700
-To: Borislav Petkov <bp@alien8.de>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>
-Message-ID: <dc1a5ce2-0414-4f15-9e7b-fcfa4435adb5@email.android.com>
+	id S1754899Ab0JCW23 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 18:28:29 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34191 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754317Ab0JCW22 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 18:28:28 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Meelis Roos <mroos@linux.ee>
+In-Reply-To: <-jYMINoCtaK.A.F5.8CPqMB@chimera>
+References: <-jYMINoCtaK.A.F5.8CPqMB@chimera>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-fBUJNKuSza/4ej1qR+F2"
+Date: Sun, 03 Oct 2010 23:27:51 +0100
+Message-ID: <1286144871.3916.185.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: 2.6.36-rc6-git2: Reported regressions from 2.6.35
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sort of... only if the input is a constant.
 
-"Borislav Petkov" <bp@alien8.de> wrote:
+--=-fBUJNKuSza/4ej1qR+F2
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
->From: "H. Peter Anvin" <hpa@zytor.com>
->Date: Sun, Oct 03, 2010 at 11:19:18AM -0700
->
->> I think we actually need to set it on 64 bits.
->
->Ok, correct me if I'm wrong but I think it is already "indirectly" set
->on 64-bits through REQUIRED_MASK3:
->
->#define REQUIRED_MASK3  (NEED_NOPL)
->
->which is defined as
->
->#define NEED_NOPL      (1<<(X86_FEATURE_NOPL & 31))
->
->when either CONFIG_X86_P6_NOP or CONFIG_X86_64 are selected.
->
->and cpu_has() does
->
->#define cpu_has(c, bit)                                                 \
->        (__builtin_constant_p(bit) &&                                   \
->	...
->           (((bit)>>5)==3 && (1UL<<((bit)&31) & REQUIRED_MASK3)) ||     \
->	...
->	? 1 : test_cpu_cap(c, bit))
->
->which returns 1 when testing for X86_FEATURE_NOPL, no?
->
->-- 
->Regards/Gruss,
->    Boris.
+On Sun, 2010-10-03 at 23:15 +0200, Rafael J. Wysocki wrote:
+[...]
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D16971
+> Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and w=
+riteq
+> Submitter	: Meelis Roos <mroos@linux.ee>
+> Date		: 2010-08-19 21:03 (46 days old)
+> Message-ID	: <alpine.SOC.1.00.1008192359310.19654@math.ut.ee>
+> References	: http://marc.info/?l=3Dlinux-kernel&m=3D128225184900892&w=3D2
+[...]
 
--- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+A patch is available:
+
+http://thread.gmane.org/gmane.linux.scsi/62561
+
+Ben.
+
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-fBUJNKuSza/4ej1qR+F2
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATKkDYue/yOyVhhEJAQKblBAAjncdfMylRLqk6G6EN0CQsT6IevllWggW
+BkxJYAyuQZFB3CxYGxXwebXBE5Kg88dFbQGY28oYV23mWZ5ZFmp1MxThcG3Si3bH
+V1Jd1thw2917fcJMA3TGaMr4Fg1WbmJeKUfdBUSpGjPq0/xuljkrWLPYYVbFNISl
+wse4+LMyuuOecd4lUJ6J8Dzl2qbXw1X3F73NcEmiBJeinxiDfHezCB47gFRtPAcb
+Da2YpNEqaTm1JljEz3Z3d0Lhf6mLMukJ5uLe2IuWG+Ga5oetVOzypYXlwvjRkiCY
+Dk794Ueirudmp3SS/WjQeTF9dKrDSGmBRXJ5KCufe5ntwdwpmBQ2ymXLKSKYWZE+
+k2o3vwljZh1OvDBOx7L4/jy1gb3Q+kEjtNprKmWPErV1zvQlaJfyeZvbj1Zl0wLa
+MAp6taMX/FsIrkhq8ZE13XRqT+vS4OqSKOTQygxp0hio5ko5oKOqxyJt/1xdYVOr
+8I+/n+hzVni2e3fYJsg8RN+En+aidT4gFVl6GualpxuYXuAcs33fZ7618bexAN1g
+BHRn4kZ/M/cSQqL7QVx81vElE5+lvnXVVPsKLx3Ri72NC5mqvd9a9FRajNU7hXhJ
+8GET3xASMunXPFzV0B0fuFWvQNxeUCx8Kx6W1Lv9AilpV+6HYuNDv0MLinZMLLwT
+r9gcajv5zHU=
+=qFxZ
+-----END PGP SIGNATURE-----
+
+--=-fBUJNKuSza/4ej1qR+F2--
