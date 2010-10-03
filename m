@@ -1,80 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab0JCTlB (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 15:41:01 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:36903 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab0JCTlA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 15:41:00 -0400
-Message-ID: <4CA8DC47.5070003@vflare.org>
-Date: Sun, 03 Oct 2010 15:40:55 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1754865Ab0JCTlm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 15:41:42 -0400
+Received: from mail04.svc.cra.dublin.eircom.net ([159.134.118.20]:40012 "HELO
+	mail04.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754776Ab0JCTlk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 15:41:40 -0400
+Date: Sun, 3 Oct 2010 20:41:29 +0100 (IST)
+From: Huss Ejvet <tubberclair.ias@eircom.net>
+Reply-To: Huss Ejvet <mar101@w.cn>
+Message-ID: <2240570.104361286134889892.JavaMail.root@webmailbox303.eircom.net>
+Subject: Reply Urgent Message
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Greg KH - Meetings <ghartman@us.ibm.com>
-Subject: Re: OOM panics with zram
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>	 <1284053081.7586.7910.camel@nimitz>  <4CA8CE45.9040207@vflare.org> <1286134073.9970.11.camel@nimitz>
-In-Reply-To: <1286134073.9970.11.camel@nimitz>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.184.112.49]
+X-Mailer: Zimbra 5.0.21_GA_3151.RHEL4 (zclient/5.0.21_GA_3151.RHEL4)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/3/2010 3:27 PM, Dave Hansen wrote:
-> On Sun, 2010-10-03 at 14:41 -0400, Nitin Gupta wrote:
->> Ability to write out zram (compressed) memory to a backing disk seems
->> really useful. However considering lkml reviews, I had to drop this
->> feature. Anyways, I guess I will try to push this feature again.
-> 
-> I'd argue that zram is pretty useless without some ability to write to a
-> backing store, unless you *really* know what is going to be stored in it
-> and you trust the user.  Otherwise, it's just too easy to OOM the
-> system.
->
-> I've been investigating backing the xvmalloc space with a tmpfs file.
-> Instead of keeping page/offset pairs, you just keep a linear address
-> inside the tmpfile file.  There's an extra step needed to look up and
-> lock the page cache page into place each time you go into the xvmalloc
-> store, but it does seem to basically work.  The patches are really rough
-> and not quite functional, but I'm happy to share if you want to see them
-> now.
->
 
-Yes, I would be really interested to look at them. Thanks.
-
- 
->> Also, please do not use linux-next/mainline version of compcache. Instead
->> just use version in the project repository here:
->> hg clone https://compcache.googlecode.com/hg/ compcache 
->>
->> This is updated much more frequently and has many more bug fixes over
->> the mainline. It will also be easier to fix bugs/add features much more
->> quickly in this repo rather than sending them to lkml which can take
->> long time.
-> 
-> That looks like just a clone of the code needed to build the module.  
-> 
-> Kernel developers are pretty used to _some_ kernel tree being the
-> authoritative source.  Also, having it in a kernel tree makes it
-> possible to get testing in places like linux-next, and it makes it
-> easier for people to make patches or kernel trees on top of your work. 
-> 
-> There's not really a point to the code being in -staging if it isn't
-> somewhat up-to-date or people can't generate patches to it.  It sounds
-> to me like we need to take it out of -staging.
-> 
-
-I will try sending patches to sync mainline and hg code (along with
-some changes in pipeline), or maybe just take it out of -staging and
-send fresh patch series.
-
-Thanks,
-Nitin
+-- 
+I am Ejvet a Manager in AKBank NV,I have a confidential proposal for you which I need you to execute with me.The sum of GBP£25,000,000.00(Twenty Five Million Pounds Sterling's)please provide me details if you are interested :
+1.Full Name
+2.Telephone Number
+3.Contact Address
+ Thank
+Huss Ejvet
