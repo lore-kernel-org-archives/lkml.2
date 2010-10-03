@@ -1,80 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754899Ab0JCW23 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 18:28:29 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:34191 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754317Ab0JCW22 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 18:28:28 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Meelis Roos <mroos@linux.ee>
-In-Reply-To: <-jYMINoCtaK.A.F5.8CPqMB@chimera>
-References: <-jYMINoCtaK.A.F5.8CPqMB@chimera>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-fBUJNKuSza/4ej1qR+F2"
-Date: Sun, 03 Oct 2010 23:27:51 +0100
-Message-ID: <1286144871.3916.185.camel@localhost>
+	id S1755032Ab0JCWzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 18:55:43 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60103 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752874Ab0JCWzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 18:55:42 -0400
+Subject: Re: [patch 46/47] powerpc: Use new irq allocator
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+In-Reply-To: <m1bp7bfc9n.fsf@fess.ebiederm.org>
+References: <20100930221351.682772535@linutronix.de>
+	 <20100930221743.014571381@linutronix.de> <1285893737.2463.4.camel@pasglop>
+	 <alpine.LFD.2.00.1010011504380.2416@localhost6.localdomain6>
+	 <m1bp7bfc9n.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Oct 2010 09:54:19 +1100
+Message-ID: <1286146459.2463.308.camel@pasglop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: 2.6.36-rc6-git2: Reported regressions from 2.6.35
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2010-10-03 at 09:53 -0700, Eric W. Biederman wrote:
+> Thomas Gleixner <tglx@linutronix.de> writes:
+> 
+> >> That would make things much cleaner and in fact move one large step
+> >> toward being able to make powerpc virq scheme generic, which seems to be
+> >> a good idea from what I've heard :-)
+> >
+> > Yep.
+> 
+> I'm not certain about making the ppc virq scheme generic.  Maybe it is
+> just my distorted impression but I have the understanding that ppc irq
+> numbers mean nothing and are totally unstable whereas on x86 irq numbers
+> in general are stable (across kernel upgrades and changes in device
+> probe order) and the irq number has a useful hardware meaning.  Which
+> means you don't have to go through several layers of translation tables
+> to figure out which hardware pin you are talking about.
 
---=-fBUJNKuSza/4ej1qR+F2
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+In addition to Thomas comments, it's actually more complex than that :-)
 
-On Sun, 2010-10-03 at 23:15 +0200, Rafael J. Wysocki wrote:
-[...]
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=3D16971
-> Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and w=
-riteq
-> Submitter	: Meelis Roos <mroos@linux.ee>
-> Date		: 2010-08-19 21:03 (46 days old)
-> Message-ID	: <alpine.SOC.1.00.1008192359310.19654@math.ut.ee>
-> References	: http://marc.info/?l=3Dlinux-kernel&m=3D128225184900892&w=3D2
-[...]
+Even assuming that what you say is true (and last I looked at my x86
+machine, it's not ... x86 remaps "GSI" numbers and the results doesn't
+seem always entirely predictible. HT interrupts makes it worse and MSIs
+just completely kill your argument :-)
 
-A patch is available:
+Some setups have stable numbers, some don't. Hypervisors can return your
+crazy HW interrupt numbers, etc...
 
-http://thread.gmane.org/gmane.linux.scsi/62561
+However, remapping arbitrary crazy HW number is only one aspect of the
+powerpc virq scheme (typically for IRQ domains using the radix tree
+based reverse-map).
 
+The main deal I'd say is that in embedded land (and to some extent I
+suspect that's going to happen more with x86), you quickly end up with
+multiple interrupt domains, via cascaded controllers of all kinds etc...
+
+In fact, I've been in situations where I want to be able to hot plug
+entire PICs.
+
+At this point, you end up having -some- kind of scheme to map the linux
+IRQ numbers to HW numbers. The "old way" to do that tends to be by
+assigning fixed ranges of numbers. This somewhat works, but it is a bit
+clumsy and not very dynamic nor suited for hotpluggable stuff. It
+generally requires the platform code to know about everything and
+declare such ranges, etc...
+
+Now, if the stability of the numbers is a problem for you, there's a few
+easy things to do to solve that:
+
+ - First, and we do that today on powerpc, we reserve 1...15 as "legacy"
+and only a PIC that claims to be "legacy" can claim them (for us that
+means some kind of 8259). So your old style legacy x86 IRQs can remain
+there if you want to.
+
+ - In systems with one domain, we tend to often end up with virq ==
+hwirq since we try to allocate the same number "by default". Probably
+what happens today with GSI on my x86 box here.
+
+ - Then, while powerpc allocates virq numbers when irqs are mapped, that
+can be quite "late", it could be perfectly kosher to imagine a way for
+"child" PICs to instead instanciate the mapping of their whole range
+early. That way, their virq numbers remain contiguous, providing a
+simpler 1:N mapping, and in embedded systems, you'll probably end up
+with the same mapping on every boot.
+
+ - Appart from the risk of breaking crap that parses /proc/interrupts,
+adding the HW irq information there would be trivial and solve your
+problem.
+
+So overall, I don't see a problem at all. And it makes handling of
+arbitrary combinations of interrupt domains (cascaded PICs) very very
+easy indeed.
+
+Cheers,
 Ben.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
-
---=-fBUJNKuSza/4ej1qR+F2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUATKkDYue/yOyVhhEJAQKblBAAjncdfMylRLqk6G6EN0CQsT6IevllWggW
-BkxJYAyuQZFB3CxYGxXwebXBE5Kg88dFbQGY28oYV23mWZ5ZFmp1MxThcG3Si3bH
-V1Jd1thw2917fcJMA3TGaMr4Fg1WbmJeKUfdBUSpGjPq0/xuljkrWLPYYVbFNISl
-wse4+LMyuuOecd4lUJ6J8Dzl2qbXw1X3F73NcEmiBJeinxiDfHezCB47gFRtPAcb
-Da2YpNEqaTm1JljEz3Z3d0Lhf6mLMukJ5uLe2IuWG+Ga5oetVOzypYXlwvjRkiCY
-Dk794Ueirudmp3SS/WjQeTF9dKrDSGmBRXJ5KCufe5ntwdwpmBQ2ymXLKSKYWZE+
-k2o3vwljZh1OvDBOx7L4/jy1gb3Q+kEjtNprKmWPErV1zvQlaJfyeZvbj1Zl0wLa
-MAp6taMX/FsIrkhq8ZE13XRqT+vS4OqSKOTQygxp0hio5ko5oKOqxyJt/1xdYVOr
-8I+/n+hzVni2e3fYJsg8RN+En+aidT4gFVl6GualpxuYXuAcs33fZ7618bexAN1g
-BHRn4kZ/M/cSQqL7QVx81vElE5+lvnXVVPsKLx3Ri72NC5mqvd9a9FRajNU7hXhJ
-8GET3xASMunXPFzV0B0fuFWvQNxeUCx8Kx6W1Lv9AilpV+6HYuNDv0MLinZMLLwT
-r9gcajv5zHU=
-=qFxZ
------END PGP SIGNATURE-----
-
---=-fBUJNKuSza/4ej1qR+F2--
