@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753123Ab0JCKzG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 06:55:06 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:43385 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751706Ab0JCKzE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 06:55:04 -0400
-Date: Sun, 3 Oct 2010 04:55:00 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 16/47] genirq: Implement sane enumeration
-Message-ID: <20101003105500.GA9844@angua.secretlab.ca>
-References: <20100930221351.682772535@linutronix.de>
- <20100930221740.055804558@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100930221740.055804558@linutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753149Ab0JCLEJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 07:04:09 -0400
+Received: from sh.osrg.net ([192.16.179.4]:34740 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752990Ab0JCLEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 07:04:08 -0400
+Date: Sun, 3 Oct 2010 20:02:52 +0900
+To: linux@arm.linux.org.uk
+Cc: x0095840@ti.com, linux-arm-kernel@lists.infradead.org,
+        Hiroshi.DOYU@nokia.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scatterlist: define SG chain for arm architecture
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20101001163958.GA22533@n2100.arm.linux.org.uk>
+References: <1285950521-8093-1-git-send-email-x0095840@ti.com>
+	<20101001163958.GA22533@n2100.arm.linux.org.uk>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20101003195758B.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 03 Oct 2010 20:02:54 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 11:15:51PM -0000, Thomas Gleixner wrote:
-> Use the allocator bitmap to lookup active interrupts.
+On Fri, 1 Oct 2010 17:39:58 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+> On Fri, Oct 01, 2010 at 11:28:41AM -0500, Fernando Guzman Lugo wrote:
+> > Define SG chain for ARM architecture in order to work
+> > with big buffers. This patch is needed in order to
+> > iovmm users can pass a big buffer to map it and ARM
+> > architecture has not issues using SG chain.
+> > 
+> > This change was suggested by FUJITA Tomonori.
 > 
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
-[...]
-> Index: linux-2.6-tip/kernel/irq/irqdesc.c
-> ===================================================================
-> --- linux-2.6-tip.orig/kernel/irq/irqdesc.c
-> +++ linux-2.6-tip/kernel/irq/irqdesc.c
-> @@ -470,6 +470,23 @@ err:
->  	return ret;
->  }
->  
-> +/**
-> + * irq_get_next_irq - get next allocated irq number
-> + * @offset:	where to start the search
-> + *
-> + * Returns next irq number after offset or nr_irqs if none is found.
-> + */
-> +unsigned int irq_get_next_irq(unsigned int offset)
-> +{
-> +	unsigned long flags;
-> +	unsigned int res;
-> +
-> +	raw_spin_lock_irqsave(&sparse_irq_lock, flags);
-> +	res = find_next_bit_set(allocated_irqs, nr_irqs, offset);
-> +	raw_spin_unlock_irqsave(&sparse_irq_lock, flags);
-> +	return res;
-> +}
+> Have you audited all places where SG lists are used in the ARM
+> architecture to ensure that SG chain support is safe?  (That
+> goes for ARM generic code and ARM specific drivers.)
 
-Where is the bitmap defined?  I don't see it in the queue; but I also
-notice that patch #14 is missing.  Is it defined there?
+As far as I know, only SCSI actually uses SG chain feature (that is,
+sending chained scatter lists). All SCSI drivers were converted when
+we added SG chain feature. So what you need to care about is the dma
+code.
 
-g.
+There are only several files that actually use scatter list under
+arch/arm.
 
+>From a quick look, arch/arm/mm/dma-mapping.c,
+arch/arm/common/dmabounce.c, arch/arm/kernel/dma.c, and
+arch/arm/include/asm/dma-mapping.h looks fine.
+
+arm/mach-imx/dma-v1.c also looks like to use chained sg API properly
+(but this isn't used with SCSI, right?).
+
+Seems that arch/arm/plat-omap/iovmm.c can handle the chained SG
+too. It doesn't allocate the chained SG now though.
