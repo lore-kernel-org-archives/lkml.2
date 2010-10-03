@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab0JCAqP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 20:46:15 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37993 "EHLO
+	id S1752218Ab0JCAtK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 20:49:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:31383 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752047Ab0JCAqO (ORCPT
+	with ESMTP id S1752076Ab0JCAtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 20:46:14 -0400
+	Sat, 2 Oct 2010 20:49:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
          :mime-version:content-type;
-        b=CNv06aRfIc4IC/xvRabXFghSG1gmfiWgaPVxl5bXrtS+lmYM+tpFzTBkSLc4/q/3oU
-         ObOCYC9ep3wn1Db18iSg==
-Date: Sat, 2 Oct 2010 17:46:06 -0700 (PDT)
+        b=LeoloZlqTgtP4ObjFuRH3WA75aSLPg7W8fqo2wVFI/yP8tTEK2uD1ExgLF6VdbfTBm
+         74wPZeOszHhY1HqRLi6g==
+Date: Sat, 2 Oct 2010 17:49:08 -0700 (PDT)
 From: Hugh Dickins <hughd@google.com>
 X-X-Sender: hugh@sister.anvils
 To: Linus Torvalds <torvalds@linux-foundation.org>
 cc: Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, linux-mm@kvack.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH] ksm: fix page_address_in_vma anon_vma oops
-Message-ID: <alpine.LSU.2.00.1010021742070.27679@sister.anvils>
+Subject: [PATCH] ksm: fix bad user data when swapping
+Message-ID: <alpine.LSU.2.00.1010021746180.27679@sister.anvils>
 User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -30,46 +30,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.36-rc1 commit 21d0d443cdc1658a8c1484fdcece4803f0f96d0e "rmap:
-resurrect page_address_in_vma anon_vma check" was right to resurrect
-that check; but now that it's comparing anon_vma->roots instead of
-just anon_vmas, there's a danger of oopsing on a NULL anon_vma.
+Building under memory pressure, with KSM on 2.6.36-rc5, collapsed with
+an internal compiler error: typically indicating an error in swapping.
 
-In most cases no NULL anon_vma ever gets here; but it turns out that
-occasionally KSM, when enabled on a forked or forking process, will
-itself call page_address_in_vma() on a "half-KSM" page left over from
-an earlier failed attempt to merge - whose page_anon_vma() is NULL.
+Perhaps there's a timing issue which makes it now more likely, perhaps
+it's just a long time since I tried for so long: this bug goes back to
+KSM swapping in 2.6.33.
 
-It's my bug that those should be getting here at all: I thought they
-were already dealt with, this oops proves me wrong, I'll fix it in
-the next release - such pages are effectively pinned until their
-process exits, since rmap cannot find their ptes (though swapoff can).
+Notice how reuse_swap_page() allows an exclusive page to be reused, but
+only does SetPageDirty if it can delete it from swap cache right then -
+if it's currently under Writeback, it has to be left in cache and we
+don't SetPageDirty, but the page can be reused.  Fine, the dirty bit
+will get set in the pte; but notice how zap_pte_range() does not bother
+to transfer pte_dirty to page_dirty when unmapping a PageAnon.
 
-For now just work around it by making page_address_in_vma() safe (and
-add a comment on why that check is wanted anyway).  A similar check
-in __page_check_anon_rmap() is safe because do_page_add_anon_rmap()
-already excluded KSM pages.
+If KSM chooses to share such a page, it will look like a clean copy of
+swapcache, and not be written out to swap when its memory is needed;
+then stale data read back from swap when it's needed again.
+
+We could fix this in reuse_swap_page() (or even refuse to reuse a
+page under writeback), but it's more honest to fix my oversight in
+KSM's write_protect_page().  Several days of testing on three machines
+confirms that this fixes the issue they showed.
 
 Signed-off-by: Hugh Dickins <hughd@google.com>
+Cc: stable@kernel.org
 ---
 
- mm/rmap.c |    8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ mm/ksm.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
---- 2.6.36-rc6/mm/rmap.c	2010-09-28 22:42:43.000000000 -0700
-+++ linux/mm/rmap.c	2010-09-28 23:27:05.000000000 -0700
-@@ -381,7 +381,13 @@ vma_address(struct page *page, struct vm
- unsigned long page_address_in_vma(struct page *page, struct vm_area_struct *vma)
- {
- 	if (PageAnon(page)) {
--		if (vma->anon_vma->root != page_anon_vma(page)->root)
-+		struct anon_vma *page__anon_vma = page_anon_vma(page);
-+		/*
-+		 * Note: swapoff's unuse_vma() is more efficient with this
-+		 * check, and needs it to match anon_vma when KSM is active.
-+		 */
-+		if (!vma->anon_vma || !page__anon_vma ||
-+		    vma->anon_vma->root != page__anon_vma->root)
- 			return -EFAULT;
- 	} else if (page->mapping && !(vma->vm_flags & VM_NONLINEAR)) {
- 		if (!vma->vm_file ||
+--- 2.6.36-rc6/mm/ksm.c	2010-09-12 17:34:03.000000000 -0700
++++ linux/mm/ksm.c	2010-09-28 23:27:05.000000000 -0700
+@@ -712,7 +712,7 @@ static int write_protect_page(struct vm_
+ 	if (!ptep)
+ 		goto out;
+ 
+-	if (pte_write(*ptep)) {
++	if (pte_write(*ptep) || pte_dirty(*ptep)) {
+ 		pte_t entry;
+ 
+ 		swapped = PageSwapCache(page);
+@@ -735,7 +735,9 @@ static int write_protect_page(struct vm_
+ 			set_pte_at(mm, addr, ptep, entry);
+ 			goto out_unlock;
+ 		}
+-		entry = pte_wrprotect(entry);
++		if (pte_dirty(entry))
++			set_page_dirty(page);
++		entry = pte_mkclean(pte_wrprotect(entry));
+ 		set_pte_at_notify(mm, addr, ptep, entry);
+ 	}
+ 	*orig_pte = *ptep;
