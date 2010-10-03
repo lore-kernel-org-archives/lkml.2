@@ -1,78 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab0JCRKV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 13:10:21 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33016 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754104Ab0JCRKU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 13:10:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=naP8DXaPRYosVkkk3c3KkI0/9L0WtkdYwm1qQyiEgkPABsrOgvX4/Tx5zhffLFgcEM
-         I47Xkb8PWMm2KiOBTZF1RulyHrhdsrPgobFEL1XB3skkcp639kH47d3q56bkqvnHhUgS
-         fGEiCSn6fmFFwS619rNRB2T23slsNu6wp5uT0=
-Date: Sun, 3 Oct 2010 13:10:15 -0400
-From: tmhikaru@gmail.com
-To: Florian Mickler <florian@mickler.org>
-Cc: linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: PROBLEM: Unusually high load average when idle in 2.6.35, 2.6.35.1 and later
-Message-ID: <20101003170912.GA18972@roll>
-References: <20101001035321.GA2360@roll> <20101001094814.GA5029@roll> <20101003030254.GA4901@roll> <20101003122143.69cd3b9a@schatten.dmk.lab>
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="/NkBOFFp2J2Af1nK"
+	id S1754228Ab0JCRM2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 13:12:28 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:49049 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754104Ab0JCRM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 13:12:27 -0400
+Date: Sun, 3 Oct 2010 19:12:21 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel Drake <dsd@laptop.org>
+Cc: jbaron@redhat.com, Andres Salomon <dilinger@queued.net>,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org
+Subject: Re: Dynamic nop selection breaks boot on Geode LX
+Message-ID: <20101003171221.GB13233@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Daniel Drake <dsd@laptop.org>, jbaron@redhat.com,
+	Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+	linux-kernel@vger.kernel.org, rostedt@goodmis.org
+References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
+ <20101003055013.GB25397@liondog.tnic>
+ <AANLkTikhJ6sE=CZ9HytG0p9DN9A0D+kqYB-sP8EfBN85@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20101003122143.69cd3b9a@schatten.dmk.lab>
-User-Agent: Mutt/1.4.2.3i
+In-Reply-To: <AANLkTikhJ6sE=CZ9HytG0p9DN9A0D+kqYB-sP8EfBN85@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Daniel Drake <dsd@laptop.org>
+Date: Sun, Oct 03, 2010 at 05:32:12PM +0100
 
---/NkBOFFp2J2Af1nK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On 3 October 2010 06:50, Borislav Petkov <bp@alien8.de> wrote:
+> > maybe because the Geode doesn't have both the
+> > P6_NOP5 and the NOP with 4 0x66 prefixes:
+> > http://kerneltrap.org/mailarchive/linux-kernel/2010/8/27/4612336
+> >
+> > and for some reason the trap can't find the fixup address. You say
+> > "hangs" so you don't even get an "invalid opcode" OOPS?
+> 
+> The XO doesn't have standard VGA, so it is difficult to debug such
+> early crashes. This is crashing so early that kernel messages don't
+> even start to get sent over serial.
+> 
+> To debug these things, I checkpoint the code with various calls which
+> send individual characters over serial:
+> 
+> static void log_serial(char c)
+> {
+>    while ((inb(0x3fd) & 0x20) == 0) ;
+>    outb(c, 0x3f8);
+>    while ((inb(0x3fd) & 0x40) == 0) ;
+> }
+> 
+> So, I'm not really sure if/how it crashed or oops'd. However, I can
+> confirm that panic() does not get reached, since I put a character log
+> in there and it doesn't get sent. Let me know if you want me to put
+> character logging in other places.
 
-On Sun, Oct 03, 2010 at 12:21:43PM +0200, Florian Mickler wrote:
-> Don't apologize, it's heroic. Do you still see the performance
-> regression you reported in your original bug report? I don't exactly
-> know if you are at the moment just talking about the bisected commit or
-> if the performance regression you saw earlier was just some cosmic ray
-> kind of thing...
->=20
-> If the load-average thing was just a red herring, it would probably
->  still be worthwile to bisect the performance regression.
+Nice! Debugging a machine like that looks like a lot of jumping through
+hoops. But let me ask you this: did you bisect linux-next to come up
+with the offending patch in your other mail?
 
-No, I do not see the performance regression anymore, which is why I did all
-that extra testing with the timed compiles - it proves that somewhere along
-the line I made a mistake, and tricked myself into believing the load
-average glitch *also* was causing performance issues. I was wrong.
+> I applied your two patches by hand and it doesn't solve the
+> issue, because the init_amd_k6() code is called long after
+> arch_init_ideal_nop5()
 
-Given I only started digging into the problem as far as I did because I
-thought it was slowing things down, it's annoying. However, at least I did
-find a real problem.
+Dang, we'll have to push the CPUID feature check into the early-routine
+which runs before than arch_init_ideal_nop5() in setup_arch(), updated
+patch is below. Just to make sure we're matching the right model, does
+/proc/cpuinfo say family 5, model 10 on the machine?
 
-Tim McGrath
---/NkBOFFp2J2Af1nK
-Content-Type: application/pgp-signature
-Content-Disposition: inline
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+--
+From: Borislav Petkov <bp@alien8.de>
+Date: Sun, 3 Oct 2010 11:11:54 +0200
+Subject: [PATCH] jmp label: Fix boot hang on Geode LX
 
-iQEVAwUBTKi495EncCrqzVruAQLt+Af/aUe4/z7UvWVGvOXcR9o37QyjfNMb6iXf
-zJrIp7+xY/dJsOS0SvR4r+/c310boekJtnRX66NwMH6hKAeGa/D2dqoLGoptiYeR
-oNxw6G+31IiGQZVeieEyCHz/1pO7rCYTC6x5kfJI2hFUjBu4FXVxUZzHBDU+9uGM
-gI5CX08X4uTSPwJzfmrFhNzL7m7ZPYeXwNRLu8HIRukGVG7ki06SL38U3nzgqP7t
-oP6tnBP9l0u8/aPo81niTV9OoNeWol6CUb1fXZVfvSiEcKl8DqEmB8XT4n5w7YIa
-2YKV7lK6rgD0TgFb0TrjmsLiWKjEJY9PZegmJJApsUHU8oUdl93Mpw==
-=zCQB
------END PGP SIGNATURE-----
+Since Geode LX doesn't implement the NOPL versions of NOP, fallback to
+using JMP as a NOP on it.
 
---/NkBOFFp2J2Af1nK--
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ arch/x86/include/asm/cpufeature.h |    2 +-
+ arch/x86/kernel/alternative.c     |    6 ++++++
+ arch/x86/kernel/cpu/amd.c         |   12 ++++++------
+ 3 files changed, 13 insertions(+), 7 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 220e2ea..e2ef56c 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -89,7 +89,7 @@
+ #define X86_FEATURE_LFENCE_RDTSC (3*32+18) /* "" Lfence synchronizes RDTSC */
+ #define X86_FEATURE_11AP	(3*32+19) /* "" Bad local APIC aka 11AP */
+ #define X86_FEATURE_NOPL	(3*32+20) /* The NOPL (0F 1F) instructions */
+-					  /* 21 available, was AMD_C1E */
++#define X86_FEATURE_NO_NOPL	(3*32+21) /* "" Missing NOPL (e.g. Geode LX) */
+ #define X86_FEATURE_XTOPOLOGY	(3*32+22) /* cpu topology enum extensions */
+ #define X86_FEATURE_TSC_RELIABLE (3*32+23) /* TSC is known to be reliable */
+ #define X86_FEATURE_NONSTOP_TSC	(3*32+24) /* TSC does not stop in C states */
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index cb0e6d3..d5fad2b 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -666,6 +666,11 @@ void __init arch_init_ideal_nop5(void)
+ 	 *
+ 	 * TODO: check the cpuid to determine the best nop.
+ 	 */
++	if (boot_cpu_has(X86_FEATURE_NO_NOPL)) {
++		faulted = 2;
++		goto early_done;
++	}
++
+ 	asm volatile (
+ 		"ftrace_test_jmp:"
+ 		"jmp ftrace_test_p6nop\n"
+@@ -688,6 +693,7 @@ void __init arch_init_ideal_nop5(void)
+ 		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+ 		: "=r"(faulted) : "0" (faulted));
+ 
++early_done:
+ 	switch (faulted) {
+ 	case 0:
+ 		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 7b875fd..8931977 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -136,12 +136,6 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ 
+ 		return;
+ 	}
+-
+-	if (c->x86_model == 10) {
+-		/* AMD Geode LX is model 10 */
+-		/* placeholder for any needed mods */
+-		return;
+-	}
+ }
+ 
+ static void __cpuinit amd_k7_smp_check(struct cpuinfo_x86 *c)
+@@ -413,6 +407,12 @@ static void __cpuinit early_init_amd(struct cpuinfo_x86 *c)
+ 	}
+ #endif
+ 
++	if (c->x86 == 5 && c->x86_model == 10) {
++		/* AMD Geode LX is model 10 */
++		set_cpu_cap(c, X86_FEATURE_NO_NOPL);
++		return;
++	}
++
+ 	/* We need to do the following only once */
+ 	if (c != &boot_cpu_data)
+ 		return;
+-- 
+1.7.2.3
+
+
+-- 
+Regards/Gruss,
+    Boris.
