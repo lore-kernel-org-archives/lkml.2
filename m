@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab0JCLQV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 07:16:21 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:56034 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753056Ab0JCLQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 07:16:19 -0400
-Date: Sun, 3 Oct 2010 06:16:16 -0500
-From: Robin Holt <holt@sgi.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>
-Subject: Re: [Patch] Limit sysctl_tcp_mem and sysctl_udp_mem initializers
- to prevent integer overflows.
-Message-ID: <20101003111616.GS14064@sgi.com>
-References: <20101002112405.951704198@gulag1.americas.sgi.com>
- <20101002112419.248437367@gulag1.americas.sgi.com>
- <1286025736.2582.1827.camel@edumazet-laptop>
+	id S1753216Ab0JCLTH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 07:19:07 -0400
+Received: from einstein.cca.ufscar.br ([189.109.33.210]:58363 "EHLO
+	einstein.cca.ufscar.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab0JCLTG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 07:19:06 -0400
+X-Greylist: delayed 7650 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Oct 2010 07:19:05 EDT
+Message-ID: <1358.82.128.14.195.1286103661.squirrel@www.cca.ufscar.br>
+Date: Sun, 3 Oct 2010 08:01:01 -0300 (BRT)
+Subject: Attention Please!!
+From: "Sergeant Jared Fletsher" <jared@army.com>
+Reply-To: Sgt.Jared.Fletsher@live.com
+User-Agent: SquirrelMail/1.4.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1286025736.2582.1827.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 03:22:16PM +0200, Eric Dumazet wrote:
-> Le samedi 02 octobre 2010 à 06:24 -0500, Robin Holt a écrit :
-...
-> Strange, you mention sctp in changelog but I cant see the patch.
 
-After looking at the patch, I realized it really belonged in a separate
-change and sent that to the sctp mailing list without noticing I forgot
-to Cc: lkml.
 
-> We can switch infrastructure to use long "instead" of "int", now
-> atomic_long_t primitives are available for free.
-> 
-> Reported-by: Robin Holt <holt@sgi.com>
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Reviewed-by: Robin Holt <holt@sgi.com>
+Attention Please,
+
+I, Staff Sergeant Jared Fletsher, I have an urgent proposition Involving an
+investment initiative in your country's economy to discuss with you, It will be
+of mutual benefit to both of us and I believe you can handle it once we have a
+common understanding and mutual cooperation in the execution of the modalities.
+I work with US Air Defense Artillery Company Task Force here in Baqubah al
+Jadidah, Iraq.
+
+Should you be interested, please email back to me through this email address:
+(Sgt.Jared.Fletsher@live.com) for details: And I must asure you that this
+transactions is 100% risk free and you have nothing to fear in any way. I await
+your earliest response.
+
+Yours Sincerely,
+SSgt.Jared Fletsher.
+
