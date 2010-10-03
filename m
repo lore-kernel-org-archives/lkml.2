@@ -1,135 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753901Ab0JCNoK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 09:44:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:49349 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753736Ab0JCNoH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 09:44:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
-         :content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=DJlXhLhTIXhlPFtuIfCVoImPbHNGwjLHXwOGqqf1w/uNzN/9BKta7KoJjkBXMB4hcg
-         kPhwsjf+qYEWRzcSuFgvd+D6eUGRbG5lupVg7f1gXCtqoLk7hH1U8RZD0emoZ3hLX4rq
-         79Ygc/CqtiAy0iz24N4QLSAfj0MILywGhSRZ4=
-Subject: Re: [PATCH 8/8] net: Implement socketat.
-From: jamal <hadi@cyberus.ca>
-Reply-To: hadi@cyberus.ca
-To: Daniel Lezcano <daniel.lezcano@free.fr>
-Cc: Pavel Emelyanov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-In-Reply-To: <4CA7A07C.5030504@free.fr>
-References: <m1ocborgq7.fsf@fess.ebiederm.org>
-	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>
-	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>
-	 <1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>
-	 <4CA7A07C.5030504@free.fr>
-Content-Type: text/plain
-Date: Sun, 03 Oct 2010 09:44:01 -0400
-Message-Id: <1286113441.3812.229.camel@bigi>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1
-Content-Transfer-Encoding: 7bit
+	id S1753915Ab0JCNtM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 09:49:12 -0400
+Received: from www.tglx.de ([62.245.132.106]:56665 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753844Ab0JCNtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 09:49:10 -0400
+Date: Sun, 3 Oct 2010 15:48:18 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+In-Reply-To: <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-1081961718-1286113700=:14550"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Thanks for clarifying this ..
+---1463795968-1081961718-1286113700=:14550
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-On Sat, 2010-10-02 at 23:13 +0200, Daniel Lezcano wrote:
-> Just to clarify this point. You enter the namespace, create the socket
-> and go back to the initial namespace (or create a new one). Further 
-> operations can be made against this fd because it is the network 
-> namespace stored in the sock struct which is used, not the current 
-> process network namespace which is used at the socket creation only.
+On Sun, 3 Oct 2010, Grant Likely wrote:
+
+> On Sun, Oct 3, 2010 at 5:29 AM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > On Sun, Oct 03, 2010 at 05:23:12AM -0600, Grant Likely wrote:
+> >> On Thu, Sep 30, 2010 at 11:14:27PM -0000, Thomas Gleixner wrote:
+> >> > The following patch series cleans up and mostly reimplements the core
+> >> > sparse irq implementation and sanitizes the most complex (ab)user:
+> >> > arch/x86
+> >>
+> >> Hoy Thomas,
+> >>
+> >> patches 1-13 & 15 all look fine to me.  Feel free to add my Acked-by:
+> >> line.
+> >>
+> >> Patch 14 seems to be missing, and by inference it appears that the
+> >> all important new allocator is added by patch 14.  All of the rest of
+> >> the series seems to be fine, but I'm forced to make assumptions about
+> >> what the new allocator looks like, so I cannot be positive.
+> >
+> > Patch 14 was present, you were even CC'd on it.
 > 
-> We can actually already do that by unsharing and then create a
-> socket. 
-> This socket will pin the namespace and can be used as a control socket
-> for the namespace (assuming the socket domain will be ok for all the 
-> operations).
->
-> Jamal, I don't know what kind of application you want to use but if I 
-> assume you want to create a process controlling 1024 netns, 
-
-At the moment i am looking at 8K on a Nehalem with lots of RAM. They
-will mostly be created at startup but some could be created afterwards.
-Each will have its own netdevs etc. also created at startup (and some
-other config that may happen later). 
-Because startup time may accumulate, it is clearly important to me
-to pick whatever scheme that reduces the number of calls...
-
-> let's try to identificate what happen with setns and with socketat :
+> Hmmm... found it now.  I'm not sure what happened there, but I
+> couldn't find it the first time I looked.  Most likely it is a PEBKAC
+> failure.  Sorry for the noise.
 > 
-> With setns:
-> 
->      * open /proc/self/ns/net (1)
->      * unshare the netns
->      * open /proc/self/ns/net (2)
->      * setns (1)
->      * create a virtual network device
->      * move the virtual device to (2) (using the set netns by fd)
->      * unshare the netns
->      ...
-> 
-> With socketat:
-> 
->      * open a socket (1)
->      * unshare the netns
->      * open a netlink with socketat(1) => (2)
->      * create a virtual device using (2) (at this point it is
-> init_net_ns)
->      * move the virtual device to the current netns (using the set
-> netns 
-> by pid)
->      * open a socket (3)
->      * unshare the netns
->      ...
-> 
-> We have the same number of file descriptors kept opened. Except, with 
-> setns we can bind mount the directory somewhere, that will pin the 
-> namespace and then we can close the /proc/self/ns/net file descriptors
-> and reopen them later.
-> 
+> Okay, patch 14 looks good to me too (including Yinghai's comment).
+> The new allocator seems sane, and I didn't see any obvious errors in
+> patches 16-47.  I've not tested any of this yet.  Hopefully I'll be
+> able to carve out some time to do so early this week.
 
-Ok, so a wrapper such as: create_socket_on(namespaceid)
-will have generally less system calls with socketat()
+Wait until I pushed out a fixed tree. In meantime I found out how I
+managed to screw up the quilt series :(
 
-> If your application has to do a lot of specific network processing, 
-> during its life cycle, in different namespaces, the socketat syscall 
-> will be better because it will reduce the number of syscalls but at
-> the cost of keeping the file descriptors opened (potentially a big
-> number). Otherwise, setns should fit your needs.
+Will post, once it's ready.
 
-Makes sense. 
+Thanks,
 
-One thing still confuses me...
-The app control point is in namespace0. I still want to be able to
-"boot" namespaces first and maybe a few seconds later do a socketat()...
-and create devices, tcp sockets etc. I suspect create_ns(namespace-name)
-would involve:
-     * open /proc/self/ns/net (namespace-name)
-     * unshare the netns
-Is this correct?
-
-cheers,
-jamal
-
+	tglx
+---1463795968-1081961718-1286113700=:14550--
