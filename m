@@ -1,52 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754231Ab0JCRWz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 13:22:55 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:34873 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754037Ab0JCRWx (ORCPT
+	id S1754277Ab0JCRzN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 13:55:13 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:56874 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752182Ab0JCRzK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 13:22:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=p6JUoROqd0chwjhXrHNU0D0cMSABGmeitUyW6TkaTwNXTWHWVaBrExmD8gfpgb9UVv
-         6wBmUlP4jX6+Zx7p+nbMieaQfCfZL5Ye8UVAdCIigvCvvvknjxO6z7/3i5HryRTmOPpE
-         wqyys53xMmKAaM2fX6fI3FOI07hGQ4yAV9WAE=
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v2] staging: ft1000: fix kernel info leak to userland for statistics
-Date: Sun,  3 Oct 2010 21:22:48 +0400
-Message-Id: <1286126569-20666-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 3 Oct 2010 13:55:10 -0400
+Date: Sun, 3 Oct 2010 23:25:00 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, Greg KH <greg@kroah.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Robin Holt <holt@sgi.com>, steiner@sgi.com
+Subject: Re: [PATCH 7/9] v3 Define memory_block_size_bytes for powerpc/pseries
+Message-ID: <20101003175500.GE7896@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <4CA62700.7010809@austin.ibm.com>
+ <4CA62A0A.4050406@austin.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4CA62A0A.4050406@austin.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-get_stat_data is not fully initialized before copy_to_user() call,
-e.g. LedStat is not always set.
+* Nathan Fontenot <nfont@austin.ibm.com> [2010-10-01 13:35:54]:
 
-Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Define a version of memory_block_size_bytes() for powerpc/pseries such that
+> a memory block spans an entire lmb.
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-index 65087ce..b666ae6 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c
-@@ -623,7 +623,7 @@ static int ft1000_ChIoctl (struct file *File, unsigned int Command,
-         break;
-     case IOCTL_GET_DSP_STAT_CMD:
-         //DEBUG("FT1000:ft1000_ChIoctl: IOCTL_FT1000_GET_DSP_STAT called\n");
--
-+	memset(&get_stat_data, 0, sizeof(get_stat_data));
-         memcpy(get_stat_data.DspVer, info->DspVer, DSPVERSZ);
-         memcpy(get_stat_data.HwSerNum, info->HwSerNum, HWSERNUMSZ);
-         memcpy(get_stat_data.Sku, info->Sku, SKUSZ);
+I hope I am not missing anything obvious, but why not just call it
+lmb_size, why do we need memblock_size?
+
+Is lmb_size == memblock_size after your changes true for all
+platforms?
+
+> 
+> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+> 
+> ---
+>  arch/powerpc/platforms/pseries/hotplug-memory.c |   66 +++++++++++++++++++-----
+>  1 file changed, 53 insertions(+), 13 deletions(-)
+> 
+> Index: linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c
+> ===================================================================
+> --- linux-next.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-30 14:44:37.000000000 -0500
+> +++ linux-next/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-09-30 14:47:04.000000000 -0500
+> @@ -17,6 +17,54 @@
+>  #include <asm/pSeries_reconfig.h>
+>  #include <asm/sparsemem.h>
+> 
+> +static unsigned long get_memblock_size(void)
+> +{
+> +	struct device_node *np;
+> +	unsigned int memblock_size = 0;
+> +
+> +	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
+> +	if (np) {
+> +		const unsigned long *size;
+> +
+> +		size = of_get_property(np, "ibm,lmb-size", NULL);
+> +		memblock_size = size ? *size : 0;
+> +
+> +		of_node_put(np);
+> +	} else {
+> +		unsigned int memzero_size = 0;
+> +		const unsigned int *regs;
+> +
+> +		np = of_find_node_by_path("/memory@0");
+> +		if (np) {
+> +			regs = of_get_property(np, "reg", NULL);
+> +			memzero_size = regs ? regs[3] : 0;
+> +			of_node_put(np);
+> +		}
+> +
+> +		if (memzero_size) {
+> +			/* We now know the size of memory@0, use this to find
+> +			 * the first memoryblock and get its size.
+> +			 */
+
+Nit: comment style is not correct
+
+> +			char buf[64];
+> +
+> +			sprintf(buf, "/memory@%x", memzero_size);
+> +			np = of_find_node_by_path(buf);
+> +			if (np) {
+> +				regs = of_get_property(np, "reg", NULL);
+> +				memblock_size = regs ? regs[3] : 0;
+> +				of_node_put(np);
+> +			}
+> +		}
+> +	}
+
+
+
+> +
+> +	return memblock_size;
+> +}
+> +
+> +unsigned long memory_block_size_bytes(void)
+> +{
+> +	return get_memblock_size();
+> +}
+> +
+>  static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
+>  {
+>  	unsigned long start, start_pfn;
+> @@ -127,30 +175,22 @@
+> 
+>  static int pseries_drconf_memory(unsigned long *base, unsigned int action)
+>  {
+> -	struct device_node *np;
+> -	const unsigned long *lmb_size;
+> +	unsigned long memblock_size;
+>  	int rc;
+> 
+> -	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
+> -	if (!np)
+> +	memblock_size = get_memblock_size();
+> +	if (!memblock_size)
+>  		return -EINVAL;
+> 
+> -	lmb_size = of_get_property(np, "ibm,lmb-size", NULL);
+> -	if (!lmb_size) {
+> -		of_node_put(np);
+> -		return -EINVAL;
+> -	}
+> -
+>  	if (action == PSERIES_DRCONF_MEM_ADD) {
+> -		rc = memblock_add(*base, *lmb_size);
+> +		rc = memblock_add(*base, memblock_size);
+>  		rc = (rc < 0) ? -EINVAL : 0;
+>  	} else if (action == PSERIES_DRCONF_MEM_REMOVE) {
+> -		rc = pseries_remove_memblock(*base, *lmb_size);
+> +		rc = pseries_remove_memblock(*base, memblock_size);
+>  	} else {
+>  		rc = -EINVAL;
+>  	}
+> 
+> -	of_node_put(np);
+>  	return rc;
+>  }
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
 -- 
-1.7.0.4
-
+	Three Cheers,
+	Balbir
