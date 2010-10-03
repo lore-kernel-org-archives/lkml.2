@@ -1,161 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752600Ab0JCDKR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Oct 2010 23:10:17 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55512 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752440Ab0JCDKP (ORCPT
+	id S1752621Ab0JCDQA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Oct 2010 23:16:00 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61262 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab0JCDP7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Oct 2010 23:10:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Upe+4EqUlV+ezdSXjtq/RxCMsMMdIISbG7kxzexXYMtYmPTfh4VrHtJTwguZKedFf3
-         PrsUiV469UGsFiK1ecMWW2MOUzbAA0tvNbu+2X/LionqOIqEErvcP7iMnp7FI8nNZ+xy
-         hgtsRVtiEh4KCoy8ChnWGkQr08dYYMVYJZr4s=
+	Sat, 2 Oct 2010 23:15:59 -0400
+Date: Sat, 2 Oct 2010 21:15:55 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Wolfram Sang <w.sang@pengutronix.de>, Michal Simek <monstr@monstr.eu>,
+        Jeremy Kerr <jeremy.kerr@canonical.com>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 09/18] powerpc: Support device tree regardless of CPU
+ endianness
+Message-ID: <20101003031555.GB28565@angua.secretlab.ca>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+ <1285916771-18033-10-git-send-email-imunsie@au1.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <20101002.132056.226767861.davem@davemloft.net>
-References: <AANLkTimF+zy-qTmbtchGu_0Td7fZUsrsd7PNgkAdM8fA@mail.gmail.com>
-	<20101002.132056.226767861.davem@davemloft.net>
-Date: Sun, 3 Oct 2010 11:10:14 +0800
-Message-ID: <AANLkTikF7uz8QHVQB=GMgeFNwsr+u7J0a06a5KAnxkTb@mail.gmail.com>
-Subject: Re: Ask For Comment: add routines for exchanging data between sock
- buffer and scatter list
-From: Hillf Danton <dhillf@gmail.com>
-To: David Miller <davem@davemloft.net>, netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, robert.w.love@intel.com,
-        James.Bottomley@suse.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285916771-18033-10-git-send-email-imunsie@au1.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There seems no routines provided for exchanging data
-directly between sock buffer and scatter list in
-both scatterlist.c and skbuff.c, so comes this work.
+On Fri, Oct 01, 2010 at 05:06:02PM +1000, Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
+> 
+> On PowerPC the device tree is always big endian, but the CPU could be
+> either, so add be32_to_cpu where appropriate and change the types of
+> device tree data to __be32 etc to allow sparse to locate endian issues.
+> 
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 
-And it is hard to determine into which file these
-routines should be added, then a header file is added.
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
 
-Signed-off-by: Hillf Danton <dhillf@gmail.com>
----
+But I won't merge this through my tree unless Ben asks me to.
 
-diff -Npur o/linux-2.6.36-rc4/include/skb_sg.h
-m/linux-2.6.36-rc4/include/skb_sg.h
---- o/linux-2.6.36-rc4/include/skb_sg.h	1970-01-01 08:00:00.000000000 +0800
-+++ m/linux-2.6.36-rc4/include/skb_sg.h	2010-10-03 10:03:54.000000000 +0800
-@@ -0,0 +1,113 @@
-+/*
-+    Definition for exchanging data between sock buffer and scatter list
-+
-+    Copyright (C) Oct 2010 Hillf Danton <dhillf@gmail.com>
-+
-+    This program is free software; you can redistribute it and/or modify
-+    it under the terms of the GNU General Public License as published by
-+    the Free Software Foundation; either version 2 of the License, or
-+    (at your option) any later version.
-+
-+    This program is distributed in the hope that it will be useful,
-+    but WITHOUT ANY WARRANTY; without even the implied warranty of
-+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+    GNU General Public License for more details.
-+
-+    You should have received a copy of the GNU General Public License
-+    along with this program; if not, write to the Free Software
-+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
-+    MA 02110-1301  USA
-+*/
-+
-+#ifndef __LINUX_SKB_SG_H
-+#define __LINUX_SKB_SG_H
-+
-+#include <linux/scatterlist.h>
-+#include <linux/skbuff.h>
-+
-+/*
-+ * sg_fill_skb_page_desc - fill skb frags with info in sg list
-+ * @index  the start index to fill
-+ *
-+ * return the number of filled frags
-+ */
-+
-+static int sg_fill_skb_page_desc(struct sk_buff *skb, int index,
-+                                 struct scatterlist *sg)
-+{
-+	int old = index;
-+	struct page *page;
-+	
-+	for (; sg && index < MAX_SKB_FRAGS; index++) {
-+		page = sg_page(sg);
-+		get_page(page);
-+		skb_add_rx_frag(skb, index, page, sg->offset, sg->length);
-+		sg = sg_next(sg);
-+	}
-+	
-+	return index - old;
-+}
-+
-+/*
-+ * skb_copy_bits_to_sg - copy data from skb to sg list
-+ * @len	length of data to be copied
-+ *
-+ * return the number of copied bytes
-+ */
-+
-+static int skb_copy_bits_to_sg(struct sk_buff *skb, int offset_in_skb,
-+                               struct scatterlist *sg, int offset_in_sg,
-+                               int len)
-+{
-+	int old = len;
-+	struct sg_mapping_iter miter;
-+
-+	if (offset_in_skb >= skb->len)
-+		return 0;
-+	
-+	if (len > skb->len - offset_in_skb)
-+		old = len = skb->len - offset_in_skb;
-+	
-+	/* skip offset in sg */
-+	while (sg && offset_in_sg >= sg->length) {
-+		offset_in_sg -= sg->length;
-+		sg = sg_next(sg);
-+	}
-+	if (! sg)
-+		return 0;
-+
-+	/* and go thru sg list */
-+	while (len > 0 && sg) {
-+		int this_len;
-+		int err;
-+		
-+		sg_miter_start(&miter, sg, 1, SG_MITER_ATOMIC|SG_MITER_TO_SG);
-+
-+		if (offset_in_sg) {
-+			/* we have to count this residual */
-+			miter.__offset = offset_in_sg;
-+			offset_in_sg = 0;
-+		}
-+
-+		if (! sg_miter_next(&miter))
-+			break;
-+		
-+		this_len = min(miter.length, len);
-+		
-+		err = skb_copy_bits(skb, offset_in_skb, miter.addr, this_len);
-+
-+		sg_miter_stop(&miter);
-+
-+		if (err)
-+			break;
-+
-+		offset_in_skb += this_len;
-+		len -= this_len;
-+
-+		sg = sg_next(sg);
-+	}
-+
-+	return old - len;	
-+}
-+
-+#endif /* __LINUX_SKB_SG_H */
+g.
+
+> ---
+>  arch/powerpc/kernel/prom.c |   60 ++++++++++++++++++++++----------------------
+>  1 files changed, 30 insertions(+), 30 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
+> index fed9bf6..9b9ebb2 100644
+> --- a/arch/powerpc/kernel/prom.c
+> +++ b/arch/powerpc/kernel/prom.c
+> @@ -188,16 +188,16 @@ static void __init check_cpu_pa_features(unsigned long node)
+>  #ifdef CONFIG_PPC_STD_MMU_64
+>  static void __init check_cpu_slb_size(unsigned long node)
+>  {
+> -	u32 *slb_size_ptr;
+> +	__be32 *slb_size_ptr;
+>  
+>  	slb_size_ptr = of_get_flat_dt_prop(node, "slb-size", NULL);
+>  	if (slb_size_ptr != NULL) {
+> -		mmu_slb_size = *slb_size_ptr;
+> +		mmu_slb_size = be32_to_cpup(slb_size_ptr);
+>  		return;
+>  	}
+>  	slb_size_ptr = of_get_flat_dt_prop(node, "ibm,slb-size", NULL);
+>  	if (slb_size_ptr != NULL) {
+> -		mmu_slb_size = *slb_size_ptr;
+> +		mmu_slb_size = be32_to_cpup(slb_size_ptr);
+>  	}
+>  }
+>  #else
+> @@ -252,11 +252,11 @@ static void __init check_cpu_feature_properties(unsigned long node)
+>  {
+>  	unsigned long i;
+>  	struct feature_property *fp = feature_properties;
+> -	const u32 *prop;
+> +	const __be32 *prop;
+>  
+>  	for (i = 0; i < ARRAY_SIZE(feature_properties); ++i, ++fp) {
+>  		prop = of_get_flat_dt_prop(node, fp->name, NULL);
+> -		if (prop && *prop >= fp->min_value) {
+> +		if (prop && be32_to_cpup(prop) >= fp->min_value) {
+>  			cur_cpu_spec->cpu_features |= fp->cpu_feature;
+>  			cur_cpu_spec->cpu_user_features |= fp->cpu_user_ftr;
+>  		}
+> @@ -269,8 +269,8 @@ static int __init early_init_dt_scan_cpus(unsigned long node,
+>  {
+>  	static int logical_cpuid = 0;
+>  	char *type = of_get_flat_dt_prop(node, "device_type", NULL);
+> -	const u32 *prop;
+> -	const u32 *intserv;
+> +	const __be32 *prop;
+> +	const __be32 *intserv;
+>  	int i, nthreads;
+>  	unsigned long len;
+>  	int found = 0;
+> @@ -297,9 +297,9 @@ static int __init early_init_dt_scan_cpus(unsigned long node,
+>  		 * version 2 of the kexec param format adds the phys cpuid of
+>  		 * booted proc.
+>  		 */
+> -		if (initial_boot_params && initial_boot_params->version >= 2) {
+> -			if (intserv[i] ==
+> -					initial_boot_params->boot_cpuid_phys) {
+> +		if (initial_boot_params && be32_to_cpu(initial_boot_params->version) >= 2) {
+> +			if (be32_to_cpu(intserv[i]) ==
+> +					be32_to_cpu(initial_boot_params->boot_cpuid_phys)) {
+>  				found = 1;
+>  				break;
+>  			}
+> @@ -324,9 +324,9 @@ static int __init early_init_dt_scan_cpus(unsigned long node,
+>  
+>  	if (found) {
+>  		DBG("boot cpu: logical %d physical %d\n", logical_cpuid,
+> -			intserv[i]);
+> +			be32_to_cpu(intserv[i]));
+>  		boot_cpuid = logical_cpuid;
+> -		set_hard_smp_processor_id(boot_cpuid, intserv[i]);
+> +		set_hard_smp_processor_id(boot_cpuid, be32_to_cpu(intserv[i]));
+>  
+>  		/*
+>  		 * PAPR defines "logical" PVR values for cpus that
+> @@ -343,8 +343,8 @@ static int __init early_init_dt_scan_cpus(unsigned long node,
+>  		 * it uses 0x0f000001.
+>  		 */
+>  		prop = of_get_flat_dt_prop(node, "cpu-version", NULL);
+> -		if (prop && (*prop & 0xff000000) == 0x0f000000)
+> -			identify_cpu(0, *prop);
+> +		if (prop && (be32_to_cpup(prop) & 0xff000000) == 0x0f000000)
+> +			identify_cpu(0, be32_to_cpup(prop));
+>  
+>  		identical_pvr_fixup(node);
+>  	}
+> @@ -365,7 +365,7 @@ static int __init early_init_dt_scan_cpus(unsigned long node,
+>  
+>  void __init early_init_dt_scan_chosen_arch(unsigned long node)
+>  {
+> -	unsigned long *lprop;
+> +	unsigned long *lprop; /* All these set by kernel, so no need to convert endian */
+>  
+>  #ifdef CONFIG_PPC64
+>  	/* check if iommu is forced on or off */
+> @@ -524,16 +524,16 @@ void __init early_init_dt_setup_initrd_arch(unsigned long start,
+>  static void __init early_reserve_mem(void)
+>  {
+>  	u64 base, size;
+> -	u64 *reserve_map;
+> +	__be64 *reserve_map;
+>  	unsigned long self_base;
+>  	unsigned long self_size;
+>  
+> -	reserve_map = (u64 *)(((unsigned long)initial_boot_params) +
+> -					initial_boot_params->off_mem_rsvmap);
+> +	reserve_map = (__be64 *)(((unsigned long)initial_boot_params) +
+> +			be32_to_cpu(initial_boot_params->off_mem_rsvmap));
+>  
+>  	/* before we do anything, lets reserve the dt blob */
+>  	self_base = __pa((unsigned long)initial_boot_params);
+> -	self_size = initial_boot_params->totalsize;
+> +	self_size = be32_to_cpu(initial_boot_params->totalsize);
+>  	memblock_reserve(self_base, self_size);
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> @@ -547,13 +547,13 @@ static void __init early_reserve_mem(void)
+>  	 * Handle the case where we might be booting from an old kexec
+>  	 * image that setup the mem_rsvmap as pairs of 32-bit values
+>  	 */
+> -	if (*reserve_map > 0xffffffffull) {
+> +	if (be64_to_cpup(reserve_map) > 0xffffffffull) {
+>  		u32 base_32, size_32;
+> -		u32 *reserve_map_32 = (u32 *)reserve_map;
+> +		__be32 *reserve_map_32 = (__be32 *)reserve_map;
+>  
+>  		while (1) {
+> -			base_32 = *(reserve_map_32++);
+> -			size_32 = *(reserve_map_32++);
+> +			base_32 = be32_to_cpup(reserve_map_32++);
+> +			size_32 = be32_to_cpup(reserve_map_32++);
+>  			if (size_32 == 0)
+>  				break;
+>  			/* skip if the reservation is for the blob */
+> @@ -566,8 +566,8 @@ static void __init early_reserve_mem(void)
+>  	}
+>  #endif
+>  	while (1) {
+> -		base = *(reserve_map++);
+> -		size = *(reserve_map++);
+> +		base = be64_to_cpup(reserve_map++);
+> +		size = be64_to_cpup(reserve_map++);
+>  		if (size == 0)
+>  			break;
+>  		DBG("reserving: %llx -> %llx\n", base, size);
+> @@ -860,7 +860,7 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+>  	hardid = get_hard_smp_processor_id(cpu);
+>  
+>  	for_each_node_by_type(np, "cpu") {
+> -		const u32 *intserv;
+> +		const __be32 *intserv;
+>  		unsigned int plen, t;
+>  
+>  		/* Check for ibm,ppc-interrupt-server#s. If it doesn't exist
+> @@ -869,10 +869,10 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+>  		intserv = of_get_property(np, "ibm,ppc-interrupt-server#s",
+>  				&plen);
+>  		if (intserv == NULL) {
+> -			const u32 *reg = of_get_property(np, "reg", NULL);
+> +			const __be32 *reg = of_get_property(np, "reg", NULL);
+>  			if (reg == NULL)
+>  				continue;
+> -			if (*reg == hardid) {
+> +			if (be32_to_cpup(reg) == hardid) {
+>  				if (thread)
+>  					*thread = 0;
+>  				return np;
+> @@ -880,7 +880,7 @@ struct device_node *of_get_cpu_node(int cpu, unsigned int *thread)
+>  		} else {
+>  			plen /= sizeof(u32);
+>  			for (t = 0; t < plen; t++) {
+> -				if (hardid == intserv[t]) {
+> +				if (hardid == be32_to_cpu(intserv[t])) {
+>  					if (thread)
+>  						*thread = t;
+>  					return np;
+> @@ -900,7 +900,7 @@ static int __init export_flat_device_tree(void)
+>  	struct dentry *d;
+>  
+>  	flat_dt_blob.data = initial_boot_params;
+> -	flat_dt_blob.size = initial_boot_params->totalsize;
+> +	flat_dt_blob.size = be32_to_cpu(initial_boot_params->totalsize);
+>  
+>  	d = debugfs_create_blob("flat-device-tree", S_IFREG | S_IRUSR,
+>  				powerpc_debugfs_root, &flat_dt_blob);
+> -- 
+> 1.7.1
+> 
