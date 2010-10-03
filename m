@@ -1,464 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab0JCPAM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 11:00:12 -0400
-Received: from mail.atheros.com ([12.19.149.2]:24231 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab0JCPAK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 11:00:10 -0400
-From: Bala Shanmugam <sbalashanmugam@atheros.com>
-To: <linux-wireless@vger.kernel.org>
-CC: <marcel@holtmann.org>, <linux-bluetooth@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>,
-        Bala Shanmugam <sbalashanmugam@atheros.com>
-Subject: [PATCH] Added firmware load patch to crap directory.
-Date: Sun, 3 Oct 2010 20:30:02 +0530
-Message-ID: <1286118002-2354-1-git-send-email-sbalashanmugam@atheros.com>
-X-Mailer: git-send-email 1.6.3.3
-MIME-Version: 1.0
-Content-Type: text/plain
+	id S1754026Ab0JCPDp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 11:03:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:36335 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753502Ab0JCPDi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 11:03:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:to:cc:subject:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=mCDGUSazkfDZPAEppc6QD6beysHIrYHftzGPfzCV7gwN+1nz2bol3H+HBxttCZ/agc
+         9dJDWtQd+7CVeZzbTY3Wf8RTNHYenXjFDGzSo4XH44BJxfpNphX8yEQL7mao8PDwfqKe
+         MEqNIFntxauMgYqLw8r6dh2GbzfYzLhyh7/T0=
+Message-ID: <4ca89b47.893ae30a.2b4d.ffff8a21@mx.google.com>
+Date: Sun, 3 Oct 2010 17:03:31 +0200
+From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: wuzhangjin@gmail.com, linux-mips@linux-mips.org, alex@digriz.org.uk,
+        manuel.lauss@googlemail.com, sam@ravnborg.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MIPS: Fix vmlinuz to flush the caches after kernel
+ decompression
+In-Reply-To: <20100921101105.GA32343@linux-mips.org>
+References: <4c7e1a3a.c83ddf0a.5918.ffffcf6a@mx.google.com>
+	<20100921101105.GA32343@linux-mips.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.18.3; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch in crap directory enables btusb to load firmware 
-to device RAM when it is plugged in.
- Signed-off-by: Bala Shanmugam <sbalashanmugam@atheros.com>
----
- crap/0003-btusb-Add-fw-load-support.patch |  424 +++++++++++++++++++++++++++++
- 1 files changed, 424 insertions(+), 0 deletions(-)
- create mode 100644 crap/0003-btusb-Add-fw-load-support.patch
+On Tue, 21 Sep 2010 11:11:05 +0100, Ralf Baechle <ralf@linux-mips.org> wrote:
 
-diff --git a/crap/0003-btusb-Add-fw-load-support.patch b/crap/0003-btusb-Add-fw-load-support.patch
-new file mode 100644
-index 0000000..6642d6b
---- /dev/null
-+++ b/crap/0003-btusb-Add-fw-load-support.patch
-@@ -0,0 +1,424 @@
-+Reason for not yet publishing: Marcel feels that Atheros sflash based BT device
-+doesn't follow bluetooth H:2 specification and HCI commands should be supported
-+in firmware if it is detected as bluetooth device. Using HCI command, firmware
-+should be loaded.
-+
-+In sflash based device there is not enough memory to support HCI commands in firmware.
-+So load firmware from btusb when the device comes up.
-+
-+From 4ac276c14578b380d0c6a27658eeaa364efe6432 Mon Sep 17 00:00:00 2001
-+From: Bala Shanmugam <sbalashanmugam@atheros.com>
-+Date: Fri, 1 Oct 2010 15:18:02 +0530
-+Subject: [PATCH] Added support to load firmware to target RAM from btusb transport driver.
-+ Each BT device vendor can add their product ID, firmware file, load and unload function
-+ to btusb_fwcbs array. When the device is inserted btusb will call appropriate
-+ firmware load function.  This support will significantly reduce cost of
-+ BT chip because of RAM based firmware.
-+ Signed-off-by: Bala Shanmugam <sbalashanmugam@atheros.com>
-+
-+---
-+ drivers/bluetooth/Makefile |    1 +
-+ drivers/bluetooth/btusb.c  |   67 +++++++++++++++
-+ drivers/bluetooth/fwload.c |  199 ++++++++++++++++++++++++++++++++++++++++++++
-+ drivers/bluetooth/fwload.h |   39 +++++++++
-+ 4 files changed, 306 insertions(+), 0 deletions(-)
-+ create mode 100644 drivers/bluetooth/fwload.c
-+ create mode 100644 drivers/bluetooth/fwload.h
-+
-+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
-+index 71bdf13..5a55cbb 100644
-+--- a/drivers/bluetooth/Makefile
-++++ b/drivers/bluetooth/Makefile
-+@@ -13,6 +13,7 @@ obj-$(CONFIG_BT_HCIBLUECARD)	+= bluecard_cs.o
-+ obj-$(CONFIG_BT_HCIBTUART)	+= btuart_cs.o
-+
-+ obj-$(CONFIG_BT_HCIBTUSB)	+= btusb.o
-++obj-$(CONFIG_BT_HCIBTUSB)	+= fwload.o
-+ obj-$(CONFIG_BT_HCIBTSDIO)	+= btsdio.o
-+
-+ obj-$(CONFIG_BT_ATH3K)		+= ath3k.o
-+diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-+index d22ce3c..13e0fb8 100644
-+--- a/drivers/bluetooth/btusb.c
-++++ b/drivers/bluetooth/btusb.c
-+@@ -34,6 +34,7 @@
-+
-+ #include <net/bluetooth/bluetooth.h>
-+ #include <net/bluetooth/hci_core.h>
-++#include "fwload.h"
-+
-+ #define VERSION "0.6"
-+
-+@@ -55,6 +56,26 @@ static struct usb_driver btusb_driver;
-+ #define BTUSB_BROKEN_ISOC	0x20
-+ #define BTUSB_WRONG_SCO_MTU	0x40
-+
-++static struct usb_device_id ath_table[] = {
-++	/* Atheros AR3011 */
-++	{ USB_DEVICE(0x0CF3, 0x3002) },
-++	{ USB_DEVICE(0x13D3, 0x3304) },
-++	{ }	/* Terminating entry */
-++};
-++
-++/* Add firmware file, load and unload function
-++ * to download the firmware to target RAM
-++ */
-++static struct fw_cb_config btusb_fwcbs[] = {
-++	{
-++		.fwfile = "ath3k-1.fw",
-++		.usb_id_table = ath_table,
-++		.fwload = ath_fw_load,
-++		.fwunload = ath_fw_unload
-++	},
-++	{}
-++};
-++
-+ static struct usb_device_id btusb_table[] = {
-+ 	/* Generic Bluetooth USB device */
-+ 	{ USB_DEVICE_INFO(0xe0, 0x01, 0x01) },
-+@@ -863,6 +884,7 @@ static int btusb_probe(struct usb_interface *intf,
-+ 	struct btusb_data *data;
-+ 	struct hci_dev *hdev;
-+ 	int i, err;
-++	const struct usb_device_id *match;
-+
-+ 	BT_DBG("intf %p id %p", intf, id);
-+
-+@@ -922,6 +944,19 @@ static int btusb_probe(struct usb_interface *intf,
-+ 	data->udev = interface_to_usbdev(intf);
-+ 	data->intf = intf;
-+
-++	for (i = 0; btusb_fwcbs[i].fwfile; i++) {
-++		match = usb_match_id(intf, btusb_fwcbs[i].usb_id_table);
-++		if (match) {
-++			if (btusb_fwcbs[i].fwload) {
-++				btusb_fwcbs[i].data =
-++					btusb_fwcbs[i].fwload(intf,
-++						btusb_fwcbs[i].fwfile,
-++						&btusb_fwcbs[i].bsuspend);
-++			}
-++			break;
-++		}
-++	}
-++
-+ 	spin_lock_init(&data->lock);
-+
-+ 	INIT_WORK(&data->work, btusb_work);
-+@@ -1030,12 +1065,26 @@ static void btusb_disconnect(struct usb_interface *intf)
-+ {
-+ 	struct btusb_data *data = usb_get_intfdata(intf);
-+ 	struct hci_dev *hdev;
-++	const struct usb_device_id *match;
-++	int i;
-+
-+ 	BT_DBG("intf %p", intf);
-+
-+ 	if (!data)
-+ 		return;
-+
-++	for (i = 0; btusb_fwcbs[i].fwfile; i++) {
-++		match = usb_match_id(intf, btusb_fwcbs[i].usb_id_table);
-++		if (match) {
-++			if (btusb_fwcbs[i].fwunload) {
-++				btusb_fwcbs[i].fwunload(btusb_fwcbs[i].data,
-++						btusb_fwcbs[i].bsuspend);
-++				btusb_fwcbs[i].data = NULL;
-++			}
-++			break;
-++		}
-++	}
-++
-+ 	hdev = data->hdev;
-+
-+ 	__hci_dev_hold(hdev);
-+@@ -1061,12 +1110,22 @@ static void btusb_disconnect(struct usb_interface *intf)
-+ static int btusb_suspend(struct usb_interface *intf, pm_message_t message)
-+ {
-+ 	struct btusb_data *data = usb_get_intfdata(intf);
-++	const struct usb_device_id *match;
-++	int i;
-+
-+ 	BT_DBG("intf %p", intf);
-+
-+ 	if (data->suspend_count++)
-+ 		return 0;
-+
-++	for (i = 0; btusb_fwcbs[i].fwfile; i++) {
-++		match = usb_match_id(intf, btusb_fwcbs[i].usb_id_table);
-++		if (match) {
-++			btusb_fwcbs[i].bsuspend = 1;
-++			break;
-++		}
-++	}
-++
-+ 	spin_lock_irq(&data->txlock);
-+ 	if (!((message.event & PM_EVENT_AUTO) && data->tx_in_flight)) {
-+ 		set_bit(BTUSB_SUSPENDING, &data->flags);
-+@@ -1179,6 +1238,14 @@ static int __init btusb_init(void)
-+
-+ static void __exit btusb_exit(void)
-+ {
-++	int i;
-++	for (i = 0; btusb_fwcbs[i].fwfile; i++) {
-++		if (btusb_fwcbs[i].fwunload && btusb_fwcbs[i].data) {
-++			btusb_fwcbs[i].fwunload(btusb_fwcbs[i].data,
-++					btusb_fwcbs[i].bsuspend);
-++			btusb_fwcbs[i].data = NULL;
-++		}
-++	}
-+ 	usb_deregister(&btusb_driver);
-+ }
-+
-+diff --git a/drivers/bluetooth/fwload.c b/drivers/bluetooth/fwload.c
-+new file mode 100644
-+index 0000000..a9a586a
-+--- /dev/null
-++++ b/drivers/bluetooth/fwload.c
-+@@ -0,0 +1,199 @@
-++/*
-++ *
-++ *  Generic Bluetooth USB DFU driver to download firmware to target RAM
-++ *
-++ *  Copyright (c) 2009-2010 Atheros Communications Inc.
-++ *
-++ *  This program is free software; you can redistribute it and/or modify
-++ *  it under the terms of the GNU General Public License as published by
-++ *  the Free Software Foundation; either version 2 of the License, or
-++ *  (at your option) any later version.
-++ *
-++ *  This program is distributed in the hope that it will be useful,
-++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-++ *  GNU General Public License for more details.
-++ *
-++ *  You should have received a copy of the GNU General Public License
-++ *  along with this program; if not, write to the Free Software
-++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-++ *
-++ */
-++
-++#include <linux/module.h>
-++#include <linux/kernel.h>
-++#include <linux/init.h>
-++#include <linux/slab.h>
-++#include <linux/types.h>
-++#include <linux/device.h>
-++#include <linux/firmware.h>
-++#include <linux/usb.h>
-++#include <net/bluetooth/bluetooth.h>
-++
-++#define USB_REQ_DFU_DNLOAD	1
-++#define USB_REQ_GET_STATE	5
-++#define USB_FIRMWARE_RAM_MODE 11
-++#define USB_FIRMWARE_FLASH_MODE 12
-++#define BULK_SIZE		4096
-++#define VERSION "1.0"
-++
-++struct firmware_data {
-++	struct usb_device *udev;
-++	u8 *fw_data;
-++	u32 fw_size;
-++	u32 fw_sent;
-++};
-++
-++static int load_firmware(struct firmware_data *data,
-++				unsigned char *firmware,
-++				int count)
-++{
-++	u8 *send_buf;
-++	int err, pipe, len, size, sent = 0;
-++	char ucFirmware = 0;
-++
-++	BT_DBG("ath3k %p udev %p", data, data->udev);
-++
-++	if ((usb_control_msg(data->udev, usb_rcvctrlpipe(data->udev, 0),
-++				USB_REQ_GET_STATE,
-++				USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
-++				&ucFirmware, 1, USB_CTRL_SET_TIMEOUT)) < 0) {
-++		BT_ERR("Can't change to loading configuration err");
-++		return -EBUSY;
-++	}
-++
-++	if (ucFirmware == USB_FIRMWARE_RAM_MODE) {
-++		/* RAM based firmware is available in the target.
-++		 * No need to load the firmware to RAM */
-++		BT_DBG("RAM based firmware is available");
-++		return 0;
-++	}
-++
-++	pipe = usb_sndctrlpipe(data->udev, 0);
-++	if ((usb_control_msg(data->udev, pipe,
-++				USB_REQ_DFU_DNLOAD,
-++				USB_TYPE_VENDOR, 0, 0,
-++				firmware, 20, USB_CTRL_SET_TIMEOUT)) < 0) {
-++		BT_ERR("Can't change to loading configuration err");
-++		return -EBUSY;
-++	}
-++	sent += 20;
-++	count -= 20;
-++
-++	send_buf = kmalloc(BULK_SIZE, GFP_ATOMIC);
-++	if (!send_buf) {
-++		BT_ERR("Can't allocate memory chunk for firmware");
-++		return -ENOMEM;
-++	}
-++
-++	while (count) {
-++		size = min_t(uint, count, BULK_SIZE);
-++		pipe = usb_sndbulkpipe(data->udev, 0x02);
-++		memcpy(send_buf, firmware + sent, size);
-++
-++		err = usb_bulk_msg(data->udev, pipe, send_buf, size,
-++					&len, 3000);
-++
-++		if (err || (len != size)) {
-++			BT_ERR("Error in firmware loading err = %d,"
-++				"len = %d, size = %d", err, len, size);
-++			goto error;
-++		}
-++
-++		sent  += size;
-++		count -= size;
-++	}
-++
-++	kfree(send_buf);
-++	return 0;
-++
-++error:
-++	kfree(send_buf);
-++	return err;
-++}
-++
-++void *ath_fw_load(struct usb_interface *intf,
-++			const char *fwfile, bool *suspend)
-++{
-++	const struct firmware *firmware;
-++	struct usb_device *udev = interface_to_usbdev(intf);
-++	static struct firmware_data *data;
-++	int size;
-++
-++	BT_DBG("\nintf %p suspend %d\n", intf, *suspend);
-++
-++	if (*suspend) {
-++		load_firmware(data, data->fw_data, data->fw_size);
-++		*suspend = 0;
-++		return data;
-++	}
-++
-++	if (intf->cur_altsetting->desc.bInterfaceNumber != 0)
-++		return NULL;
-++
-++	data = kzalloc(sizeof(*data), GFP_KERNEL);
-++	if (!data)
-++		return NULL;
-++	data->udev = udev;
-++
-++	if (request_firmware(&firmware, fwfile, &udev->dev) < 0) {
-++		kfree(data);
-++		return NULL;
-++	}
-++
-++	size = max_t(uint, firmware->size, 4096);
-++	data->fw_data = kmalloc(size, GFP_KERNEL);
-++	if (!data->fw_data) {
-++		release_firmware(firmware);
-++		kfree(data);
-++		return NULL;
-++	}
-++
-++	memcpy(data->fw_data, firmware->data, firmware->size);
-++	data->fw_size = firmware->size;
-++	data->fw_sent = 0;
-++	release_firmware(firmware);
-++
-++	if (load_firmware(data, data->fw_data, data->fw_size)) {
-++		kfree(data->fw_data);
-++		kfree(data);
-++		return NULL;
-++	}
-++	return data;
-++}
-++EXPORT_SYMBOL(ath_fw_load);
-++
-++void ath_fw_unload(void *pdata, bool bsuspend)
-++{
-++	struct firmware_data *data = (struct firmware_data *)pdata;
-++
-++	if (data == NULL)
-++		return;
-++
-++	/* do not free the data on suspend as we will
-++	 * use it on resume */
-++	if (!bsuspend) {
-++		kfree(data->fw_data);
-++		kfree(data);
-++	}
-++}
-++EXPORT_SYMBOL(ath_fw_unload);
-++
-++static int __init fwload_init(void)
-++{
-++	BT_INFO("Firmware load driver init. Version:%s", VERSION);
-++	return 0;
-++}
-++
-++static void __exit fwload_deinit(void)
-++{
-++	BT_INFO("Firmware load driver deinit");
-++}
-++
-++module_init(fwload_init);
-++module_exit(fwload_deinit);
-++
-++MODULE_AUTHOR("Atheros Communications");
-++MODULE_DESCRIPTION("Firmware load driver");
-++MODULE_VERSION(VERSION);
-++MODULE_LICENSE("GPL");
-+diff --git a/drivers/bluetooth/fwload.h b/drivers/bluetooth/fwload.h
-+new file mode 100644
-+index 0000000..5c1136a
-+--- /dev/null
-++++ b/drivers/bluetooth/fwload.h
-+@@ -0,0 +1,39 @@
-++/*
-++ *
-++ *  Generic Bluetooth USB DFU driver to download firmware to target RAM
-++ *
-++ *  Copyright (c) 2009-2010 Atheros Communications Inc.
-++ *
-++ *  This program is free software; you can redistribute it and/or modify
-++ *  it under the terms of the GNU General Public License as published by
-++ *  the Free Software Foundation; either version 2 of the License, or
-++ *  (at your option) any later version.
-++ *
-++ *  This program is distributed in the hope that it will be useful,
-++ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-++ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-++ *  GNU General Public License for more details.
-++ *
-++ *  You should have received a copy of the GNU General Public License
-++ *  along with this program; if not, write to the Free Software
-++ *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-++ *
-++ */
-++#ifndef _FWLOAD_H_
-++#define _FWLOAD_H_
-++
-++/* callbacks to load firmware to BT device RAM
-++ * when it is inserted */
-++struct fw_cb_config {
-++	const char *fwfile;
-++	void * (*fwload)(struct usb_interface *intf, const char *fwfile,
-++			 bool *bsuspend);
-++	void (*fwunload)(void *, bool);
-++	const struct usb_device_id *usb_id_table;
-++	void *data;
-++	bool bsuspend;
-++};
-++void *ath_fw_load(struct usb_interface *intf, const char *, bool *);
-++void ath_fw_unload(void *pdata, bool bsuspend);
-++
-++#endif /* _FWLOAD_H_ */
-+--
-+1.6.3.3
-+
+> 
+> Correct - but it's also a can of worms which is why I intentionally
+> ignored the issue so far.  An I-cache is refilled from L2/L3 (if available)
+> or memory.  The large amounts of data written by the CPU during
+> decompression of the kernel virtually guarantee that all code will be
+> written back to L2/L3 or memory and the I-cache has been flushed by
+> firmware before the decompressor was entered.
+> 
+> Does this assumption fail for you?
+
+Yes.
+Indeed, decompressed code has been written-back to memory.
+However, there was no flushing of the I-cache by the firmware; actually, there
+was no firmware involved - I've tried to boot a kernel from a running kernel
+(the "first" kernel acting as a bootloader).
+The first kernel could have flushed the I-cache before passing execution to
+the decompressor; however I thought it's more appropriate if the decompressor
+takes care of that, as the decompressor is the one who actually writes the
+instructions of the "second" kernel.
+
+> > The patch implements L1 cache flushing, for r4k style caches - suitable for
+> > all MIPS32 CPUs (and probably for other CPUs too).
+> 
+> No - you only compile the code for MIPS32 CPUs and check for MIPS_CONF_M
+> which - at least with this meaning - only exists on MIPS32 and MIPS64 CPUs.
+
+Ok, will fix Makefile and git log appropriately in V2.
+
+> > +#define INDEX_BASE CKSEG0
+> > +
+> > +extern void puts(const char *s);
+> > +extern void puthex(unsigned long long val);
+> > +
+> > +#define cache_op(op, addr)			\
+> > +	__asm__ __volatile__(			\
+> > +	"	.set push		\n"	\
+> > +	"	.set noreorder		\n"	\
+> > +	"	.set mips3		\n"	\
+> > +	"	cache %1, 0(%0)		\n"	\
+> > +	"	.set pop		\n"	\
+> > +	:					\
+> > +	: "r" (addr), "i" (op))
+> 
+> This duplicates the definition of arch/mips/include/asm/r4kcache.h.  Why?
+
+Ok, will include r4kcache.h instead.
+
+Actually, I really wanted to use the blast_XXX macros of r4kcache.h instead
+of re-implementing, but it required an initialized 'cpu_data' structure
+and overloaded 'smp_processor_id' (or some other trick to have a valid
+'current_cpu_data'); IMO this was not suitable for a small decompressor
+executable.
+
+> > +#define cache_all_index_op(cachesz, linesz, op) do {			\
+> > +	unsigned long addr = INDEX_BASE;				\
+> > +	for (; addr < INDEX_BASE + (cachesz); addr += (linesz))		\
+> > +		cache_op(op, addr);					\
+> > +} while (0)
+> 
+> For consistence in formatting please move the "do {" to the beginning of
+> the next line.
+
+Ok.
+
+> > +void cache_flush(void)
+> > +{
+> > +	volatile unsigned long config1;
+> 
+> I don't know why you're using volatile here - but it won't work as you
+> intended.  Just drop the keyword.
+
+Ok, will remove volatile keyword.
+My intention was to avoid any compilation optimization of read_c0_config1,
+as sometimes, when code was organized differently, I got 0xffffffff.
+
+> > +	unsigned long tmp;
+> > +	unsigned long line_size;
+> > +	unsigned long ways;
+> > +	unsigned long sets;
+> > +	unsigned long cache_size;
+> 
+> Make these int variables.  The code here is fine for MIPS64 as well but
+> there is no point in having 64-bit variables and multiplies.
+
+Ok.
+
+> Eww...  You copied (my ...) old sin from c-r4k.c and use all the magic
+> numbers.
+
+I didn't feel well about it either; there's no simple way to refactor the
+c-r4k.c code.
+
+> Anyway, does this actually fix a bug for you or is it more a theoretical
+> convern?
+
+Yes, this was necessary, but could have been solved differently - as described
+in my first comment. 
+If it's guaranteed that the entity executing the decompressor (firmware,
+bootloader, etc...) is resposible for flushing the caches, then this fix is
+not needed.
+Please let me know your approach on this; I'll resubmit a V2 of the patch if
+necessary.
+
 -- 
-1.6.3.3
-
+Shmulik Ladkani
