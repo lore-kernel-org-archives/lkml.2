@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab0JCJBu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 05:01:50 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:15164 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752512Ab0JCJBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 05:01:49 -0400
-Date: Sun, 3 Oct 2010 11:01:10 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Giel van Schijndel <me@mortis.eu>, Hans de Goede <hdegoede@redhat.com>,
-        Laurens Leemans <laurens@signips.com>,
-        Jonathan Cameron <jic23@cam.ac.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "597820@bugs.debian.org" <597820@bugs.debian.org>
-Subject: Re: [PATCH 1/2] hwmon: f71882fg: use a muxed resource lock for the
-  Super I/O port
-Message-ID: <20101003110110.49b3caf4@endymion.delvare>
-In-Reply-To: <20101003010635.GB29454@ericsson.com>
-References: <20100801132226.GE3711@salidar.me.mortis.eu>
-	<1280669455-31283-1-git-send-email-me@mortis.eu>
-	<4C59514A.7090401@redhat.com>
-	<20101002225958.GA18605@salidar.me.mortis.eu>
-	<20101003010635.GB29454@ericsson.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752870Ab0JCJ0S (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 05:26:18 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:41010 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752840Ab0JCJ0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 05:26:17 -0400
+Date: Sun, 3 Oct 2010 11:26:12 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Daniel Drake <dsd@laptop.org>
+Cc: jbaron@redhat.com, Andres Salomon <dilinger@queued.net>,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        rostedt@goodmis.org
+Subject: Re: Dynamic nop selection breaks boot on Geode LX
+Message-ID: <20101003092612.GA3733@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Daniel Drake <dsd@laptop.org>, jbaron@redhat.com,
+	Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+	linux-kernel@vger.kernel.org, rostedt@goodmis.org
+References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
+ <20101003055013.GB25397@liondog.tnic>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20101003055013.GB25397@liondog.tnic>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2 Oct 2010 18:06:35 -0700, Guenter Roeck wrote:
-> On Sat, Oct 02, 2010 at 06:59:58PM -0400, Giel van Schijndel wrote:
-> > On Wed, Aug 04, 2010 at 01:38:50PM +0200, Hans de Goede wrote:
-> > > Ack!
-> > > 
-> > > Acked-by: Hans de Goede <hdegoede@redhat.com>
-> > > 
-> > > On 08/01/2010 03:30 PM, Giel van Schijndel wrote:
-> > >> Sleep while acquiring a resource lock on the Super I/O port. This should
-> > >> prevent collisions from causing the hardware probe to fail with -EBUSY.
-> > >> 
-> > >> Signed-off-by: Giel van Schijndel<me@mortis.eu>
-> > 
-> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> 
-> Jean, if it is ok with you, I can apply it to my tree.
+From: Borislav Petkov <bp@alien8.de>
+Date: Sun, Oct 03, 2010 at 07:50:13AM +0200
 
-I have no objection. I never had the time to look at these patches, and
-won't have it any time soon. So I'm very happy if you can handle them.
+> Maybe on a Geode jmp label should use the 2-byte jmp + 3 1-byte nops
+> unconditionally after adding a synthetic CPUID flag in init_amd_k6(), in
+> the Geode part.
 
-> I tried to find the patch on the web in downloadable form, but didn't find
-> the correct version of it. So it would be great if you could re-send it.
+Maybe something like the following? (only tested in kvm)
+
+--
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index 220e2ea..e2ef56c 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -89,7 +89,7 @@
+ #define X86_FEATURE_LFENCE_RDTSC (3*32+18) /* "" Lfence synchronizes RDTSC */
+ #define X86_FEATURE_11AP	(3*32+19) /* "" Bad local APIC aka 11AP */
+ #define X86_FEATURE_NOPL	(3*32+20) /* The NOPL (0F 1F) instructions */
+-					  /* 21 available, was AMD_C1E */
++#define X86_FEATURE_NO_NOPL	(3*32+21) /* "" Missing NOPL (e.g. Geode LX) */
+ #define X86_FEATURE_XTOPOLOGY	(3*32+22) /* cpu topology enum extensions */
+ #define X86_FEATURE_TSC_RELIABLE (3*32+23) /* TSC is known to be reliable */
+ #define X86_FEATURE_NONSTOP_TSC	(3*32+24) /* TSC does not stop in C states */
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index cb0e6d3..3e1fa13 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -666,6 +666,9 @@ void __init arch_init_ideal_nop5(void)
+ 	 *
+ 	 * TODO: check the cpuid to determine the best nop.
+ 	 */
++	if (boot_cpu_has(X86_FEATURE_NO_NOPL))
++		goto early_done;
++
+ 	asm volatile (
+ 		"ftrace_test_jmp:"
+ 		"jmp ftrace_test_p6nop\n"
+@@ -688,6 +691,7 @@ void __init arch_init_ideal_nop5(void)
+ 		_ASM_EXTABLE(ftrace_test_nop5, 3b)
+ 		: "=r"(faulted) : "0" (faulted));
+ 
++early_done:
+ 	switch (faulted) {
+ 	case 0:
+ 		pr_info("converting mcount calls to 0f 1f 44 00 00\n");
+diff --git a/arch/x86/kernel/cpu/amd.c b/arch/x86/kernel/cpu/amd.c
+index 7b875fd..d1e5cf4 100644
+--- a/arch/x86/kernel/cpu/amd.c
++++ b/arch/x86/kernel/cpu/amd.c
+@@ -139,7 +139,7 @@ static void __cpuinit init_amd_k6(struct cpuinfo_x86 *c)
+ 
+ 	if (c->x86_model == 10) {
+ 		/* AMD Geode LX is model 10 */
+-		/* placeholder for any needed mods */
++		set_cpu_cap(c, X86_FEATURE_NO_NOPL);
+ 		return;
+ 	}
+ }
 
 -- 
-Jean Delvare
+Regards/Gruss,
+    Boris.
