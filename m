@@ -1,41 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab0JCIUi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 04:20:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49632 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab0JCIUe (ORCPT
+	id S1752787Ab0JCIlk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 04:41:40 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34232 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752512Ab0JCIlj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 04:20:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ug1zlPzPF5fKOMn/ulISItDLaQC3wi4eDYgLnrNefDW/wYjG1WjeJ6R19Q9xtWfb5o
-         SjBVHsIMYVIS4nZ50n40e4Vcb7t3sK3q53Zlj/1FzcSGPbjUYbCu6/jjPJJwICEk1wKz
-         q00qxEeSTT7FlKluAYrgfZhvIrdaAPBOAkVS4=
-MIME-Version: 1.0
-In-Reply-To: <20101001203022.GA28486@1wt.eu>
-References: <20101001193958.GP14068@sgi.com>
-	<20101001203022.GA28486@1wt.eu>
-Date: Sun, 3 Oct 2010 01:20:32 -0700
-Message-ID: <AANLkTin5wPvFQDFrupqGs_Jbh1rgrTjMupbPUFnvrBrv@mail.gmail.com>
-Subject: Re: sysctl_{tcp,udp,sctp}_mem overflow on 16TB system.
-From: =?UTF-8?Q?Maciej_=C5=BBenczykowski?= <zenczykowski@gmail.com>
-To: Willy Tarreau <w@1wt.eu>
-Cc: Robin Holt <holt@sgi.com>, "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        Patrick McHardy <kaber@trash.net>,
-        Vlad Yasevich <vladislav.yasevich@hp.com>,
-        Sridhar Samudrala <sri@us.ibm.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-decnet-user@lists.sourceforge.net,
-        linux-sctp@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Sun, 3 Oct 2010 04:41:39 -0400
+Subject: Re: PROBLEM: Unusually high load average when idle in 2.6.35,
+ 2.6.35.1 and later
+From: Peter Zijlstra <peterz@infradead.org>
+To: tmhikaru@gmail.com
+Cc: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
+        Greg KH <gregkh@suse.de>, Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20101003030254.GA4901@roll>
+References: <20101001035321.GA2360@roll> <20101001094814.GA5029@roll>
+	 <20101003030254.GA4901@roll>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sun, 03 Oct 2010 10:41:08 +0200
+Message-ID: <1286095268.2144.119.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Isn't INT_MAX/2 just 1GB, which is only ~0.9 seconds at 10 Gbps?
+On Sat, 2010-10-02 at 23:02 -0400, tmhikaru@gmail.com wrote:
+>  The load average statistic is indeed broken somehow, and I
+> did bisect it down to where the problem began, however there seems to be no
+> performance problem related to it I can find. 
+
+Chase, anything you can see broken with this stuff?
