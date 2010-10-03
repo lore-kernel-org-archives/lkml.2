@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754926Ab0JCT7b (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 15:59:31 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52092 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754939Ab0JCT72 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 15:59:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Nr/ZYmyyyq2kGLOapHjJ7ob+rWw9teTeqZ03ZbEA3CstFekRl44VEXdfj79NKaa0oB
-         JDfbFaiNBsmeQK5wqbRrIVCOs3RuD9Rfbzhmj/VpTC5RKpqk+ecK+DJcgBJd192pdh9a
-         1usqQBEh929TK/oIjP2G1P9meHUvKpfXnleg0=
-From: Rahul Ruikar <rahul.ruikar@gmail.com>
-To: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Dan Carpenter <error27@gmail.com>,
-        nm127@freemail.hu
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rahul Ruikar <rahul.ruikar@gmail.com>
-Subject: [RESEND/PATCH] usb: gadget: goku_udc: Fix error path
-Date: Mon,  4 Oct 2010 01:29:00 +0530
-Message-Id: <1286135940-2364-1-git-send-email-rahul.ruikar@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1754932Ab0JCUFS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 16:05:18 -0400
+Received: from www.tglx.de ([62.245.132.106]:42361 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754609Ab0JCUFQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 16:05:16 -0400
+Date: Sun, 3 Oct 2010 22:04:50 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [patch 46/47] powerpc: Use new irq allocator
+In-Reply-To: <alpine.LFD.2.00.1010032033090.14550@localhost6.localdomain6>
+Message-ID: <alpine.LFD.2.00.1010032202570.14550@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <20100930221743.014571381@linutronix.de> <1285893737.2463.4.camel@pasglop> <alpine.LFD.2.00.1010011504380.2416@localhost6.localdomain6> <m1bp7bfc9n.fsf@fess.ebiederm.org>
+ <alpine.LFD.2.00.1010032033090.14550@localhost6.localdomain6>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-call put_device() when device_register() fails.
 
-Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
----
- drivers/usb/gadget/goku_udc.c |   12 ++++++++++--
- drivers/usb/gadget/goku_udc.h |    3 ++-
- 2 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
-index 1088d08..bb70125 100644
---- a/drivers/usb/gadget/goku_udc.c
-+++ b/drivers/usb/gadget/goku_udc.c
-@@ -1744,7 +1744,10 @@ static void goku_remove(struct pci_dev *pdev)
- 				pci_resource_len (pdev, 0));
- 	if (dev->enabled)
- 		pci_disable_device(pdev);
--	device_unregister(&dev->gadget.dev);
-+	if (dev->reg_status == 2)
-+		device_unregister(&dev->gadget.dev);
-+	else if (dev->reg_status == 1)
-+		put_device(&dev->gadget.dev);
- 
- 	pci_set_drvdata(pdev, NULL);
- 	dev->regs = NULL;
-@@ -1847,8 +1850,13 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
- 	/* done */
- 	the_controller = dev;
- 	retval = device_register(&dev->gadget.dev);
--	if (retval == 0)
-+	if (retval != 0) {
-+		dev->reg_status = 2;
-+		goto done;
-+	} else {
-+		dev->reg_status = 1;
- 		return 0;
-+	}
- 
- done:
- 	if (dev)
-diff --git a/drivers/usb/gadget/goku_udc.h b/drivers/usb/gadget/goku_udc.h
-index 566cb23..64f2bfb 100644
---- a/drivers/usb/gadget/goku_udc.h
-+++ b/drivers/usb/gadget/goku_udc.h
-@@ -251,7 +251,8 @@ struct goku_udc {
- 					got_region:1,
- 					req_config:1,
- 					configured:1,
--					enabled:1;
-+					enabled:1,
-+					reg_status:2;
- 
- 	/* pci state used to access those endpoints */
- 	struct pci_dev			*pdev;
--- 
-1.7.2.3
+On Sun, 3 Oct 2010, Thomas Gleixner wrote:
+
+> On Sun, 3 Oct 2010, Eric W. Biederman wrote:
+> 
+> > Thomas Gleixner <tglx@linutronix.de> writes:
+> > 
+> > >> That would make things much cleaner and in fact move one large step
+> > >> toward being able to make powerpc virq scheme generic, which seems to be
+> > >> a good idea from what I've heard :-)
+> > >
+> > > Yep.
+> > 
+> > I'm not certain about making the ppc virq scheme generic.  Maybe it is
+> > just my distorted impression but I have the understanding that ppc irq
+> > numbers mean nothing and are totally unstable whereas on x86 irq numbers
+> > in general are stable (across kernel upgrades and changes in device
+> > probe order) and the irq number has a useful hardware meaning.  Which
+> > means you don't have to go through several layers of translation tables
+> > to figure out which hardware pin you are talking about.
+> 
+> Nobody is forced to use it, but we have already several instances of
+> virq mapping implementations in arch/*. Having a generic
+> infrastructure for this makes a ton of sense.
+
+Forgot to say: With MSI and dynamic allocated irqs the stable numbers
+are completely meaningless. So where is the point ?
+
+Thanks,
+
+	tglx
+
 
