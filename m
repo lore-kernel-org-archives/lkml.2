@@ -1,143 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754026Ab0JCPDp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 11:03:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36335 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753502Ab0JCPDi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 11:03:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:to:cc:subject:in-reply-to:references:x-mailer
-         :mime-version:content-type:content-transfer-encoding;
-        b=mCDGUSazkfDZPAEppc6QD6beysHIrYHftzGPfzCV7gwN+1nz2bol3H+HBxttCZ/agc
-         9dJDWtQd+7CVeZzbTY3Wf8RTNHYenXjFDGzSo4XH44BJxfpNphX8yEQL7mao8PDwfqKe
-         MEqNIFntxauMgYqLw8r6dh2GbzfYzLhyh7/T0=
-Message-ID: <4ca89b47.893ae30a.2b4d.ffff8a21@mx.google.com>
-Date: Sun, 3 Oct 2010 17:03:31 +0200
-From: Shmulik Ladkani <shmulik.ladkani@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: wuzhangjin@gmail.com, linux-mips@linux-mips.org, alex@digriz.org.uk,
-        manuel.lauss@googlemail.com, sam@ravnborg.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] MIPS: Fix vmlinuz to flush the caches after kernel
- decompression
-In-Reply-To: <20100921101105.GA32343@linux-mips.org>
-References: <4c7e1a3a.c83ddf0a.5918.ffffcf6a@mx.google.com>
-	<20100921101105.GA32343@linux-mips.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.18.3; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753925Ab0JCPSI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 11:18:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46399 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751328Ab0JCPSH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 11:18:07 -0400
+Message-ID: <4CA89E63.4080907@kernel.org>
+Date: Sun, 03 Oct 2010 17:16:51 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "Ted Ts'o" <tytso@mit.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [Bug #19062] Dirtiable inode bdi default != sb bdi btrfs
+References: <MEG5YPP-fxC.A.vnD.So6nMB@chimera> <sQALkqF1FWE.A.15D.bo6nMB@chimera> <20101002165433.GL21129@thunk.org> <201010022358.35972.rjw@sisk.pl> <20101003022707.GN21129@thunk.org>
+In-Reply-To: <20101003022707.GN21129@thunk.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 03 Oct 2010 15:17:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 21 Sep 2010 11:11:05 +0100, Ralf Baechle <ralf@linux-mips.org> wrote:
+(cc'in Jan and quoting the whole body for him)
 
+Jan, any chance this is caused by the recent bdi change?
+
+On 10/03/2010 04:27 AM, Ted Ts'o wrote:
+> On Sat, Oct 02, 2010 at 11:58:35PM +0200, Rafael J. Wysocki wrote:
+>> On Saturday, October 02, 2010, Ted Ts'o wrote:
+>>> On Sun, Sep 26, 2010 at 10:04:15PM +0200, Rafael J. Wysocki wrote:
+>>>> The following bug entry is on the current list of known regressions
+>>>> from 2.6.35.  Please verify if it still should be listed and let the tracking team
+>>>> know (either way).
+>>>>
+>>>>
+>>>> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19062
+>>>> Subject		: Dirtiable inode bdi default != sb bdi btrfs
+>>>> Submitter	: Cesar Eduardo Barros <cesarb@cesarb.net>
+>>>> Date		: 2010-09-23 0:54 (4 days old)
+>>>> Message-ID	: <4C9AA546.6050201@cesarb.net>
+>>>> References	: http://marc.info/?l=linux-kernel&m=128520328929595&w=2
+>>>
+>>> Note: I'm seeing this warning (Dirtiable inode bdi default != sb bdi)
+>>> when I moved from 2.6.36-rc3 to 2.6.36-rc6, using ext4 as a root
+>>> partition, and running mke2fs and e2fsck on ext2, ext3, and ext4 file
+>>> systems.  So I'm seeing this as a known regression from rc3 to rc6.
+>>> Maybe it's different bug with ext4, but in any case, it's highly
+>>> annoying.
+>>
+>> Thanks for the info.  I wonder who should see this report.
 > 
-> Correct - but it's also a can of worms which is why I intentionally
-> ignored the issue so far.  An I-cache is refilled from L2/L3 (if available)
-> or memory.  The large amounts of data written by the CPU during
-> decompression of the kernel virtually guarantee that all code will be
-> written back to L2/L3 or memory and the I-cache has been flushed by
-> firmware before the decompressor was entered.
+> Oops, correction, the correct warning that I'm seeing is:
 > 
-> Does this assumption fail for you?
-
-Yes.
-Indeed, decompressed code has been written-back to memory.
-However, there was no flushing of the I-cache by the firmware; actually, there
-was no firmware involved - I've tried to boot a kernel from a running kernel
-(the "first" kernel acting as a bootloader).
-The first kernel could have flushed the I-cache before passing execution to
-the decompressor; however I thought it's more appropriate if the decompressor
-takes care of that, as the decompressor is the one who actually writes the
-instructions of the "second" kernel.
-
-> > The patch implements L1 cache flushing, for r4k style caches - suitable for
-> > all MIPS32 CPUs (and probably for other CPUs too).
+> Dirtiable inode bdi block != sb bdi block
+>                     ^^^^^           ^^^^^
 > 
-> No - you only compile the code for MIPS32 CPUs and check for MIPS_CONF_M
-> which - at least with this meaning - only exists on MIPS32 and MIPS64 CPUs.
-
-Ok, will fix Makefile and git log appropriately in V2.
-
-> > +#define INDEX_BASE CKSEG0
-> > +
-> > +extern void puts(const char *s);
-> > +extern void puthex(unsigned long long val);
-> > +
-> > +#define cache_op(op, addr)			\
-> > +	__asm__ __volatile__(			\
-> > +	"	.set push		\n"	\
-> > +	"	.set noreorder		\n"	\
-> > +	"	.set mips3		\n"	\
-> > +	"	cache %1, 0(%0)		\n"	\
-> > +	"	.set pop		\n"	\
-> > +	:					\
-> > +	: "r" (addr), "i" (op))
-> 
-> This duplicates the definition of arch/mips/include/asm/r4kcache.h.  Why?
-
-Ok, will include r4kcache.h instead.
-
-Actually, I really wanted to use the blast_XXX macros of r4kcache.h instead
-of re-implementing, but it required an initialized 'cpu_data' structure
-and overloaded 'smp_processor_id' (or some other trick to have a valid
-'current_cpu_data'); IMO this was not suitable for a small decompressor
-executable.
-
-> > +#define cache_all_index_op(cachesz, linesz, op) do {			\
-> > +	unsigned long addr = INDEX_BASE;				\
-> > +	for (; addr < INDEX_BASE + (cachesz); addr += (linesz))		\
-> > +		cache_op(op, addr);					\
-> > +} while (0)
-> 
-> For consistence in formatting please move the "do {" to the beginning of
-> the next line.
-
-Ok.
-
-> > +void cache_flush(void)
-> > +{
-> > +	volatile unsigned long config1;
-> 
-> I don't know why you're using volatile here - but it won't work as you
-> intended.  Just drop the keyword.
-
-Ok, will remove volatile keyword.
-My intention was to avoid any compilation optimization of read_c0_config1,
-as sometimes, when code was organized differently, I got 0xffffffff.
-
-> > +	unsigned long tmp;
-> > +	unsigned long line_size;
-> > +	unsigned long ways;
-> > +	unsigned long sets;
-> > +	unsigned long cache_size;
-> 
-> Make these int variables.  The code here is fine for MIPS64 as well but
-> there is no point in having 64-bit variables and multiplies.
-
-Ok.
-
-> Eww...  You copied (my ...) old sin from c-r4k.c and use all the magic
-> numbers.
-
-I didn't feel well about it either; there's no simple way to refactor the
-c-r4k.c code.
-
-> Anyway, does this actually fix a bug for you or is it more a theoretical
-> convern?
-
-Yes, this was necessary, but could have been solved differently - as described
-in my first comment. 
-If it's guaranteed that the entity executing the decompressor (firmware,
-bootloader, etc...) is resposible for flushing the caches, then this fix is
-not needed.
-Please let me know your approach on this; I'll resubmit a V2 of the patch if
-necessary.
+> ------------[ cut here ]------------
+> WARNING: at /usr/projects/linux/ext4/fs/fs-writeback.c:87 inode_to_bdi+0x4e/0x5c()
+> Hardware name: 
+> Dirtiable inode bdi block != sb bdi block
+> Modules linked in:
+> Pid: 21649, comm: mkfs.ext4 Tainted: G        W   2.6.36-rc6-00016-gcc25699 #735
+> Call Trace:
+>  [<c015a2e2>] warn_slowpath_common+0x6a/0x7f
+>  [<c020a762>] ? inode_to_bdi+0x4e/0x5c
+>  [<c015a36a>] warn_slowpath_fmt+0x2b/0x2f
+>  [<c020a762>] inode_to_bdi+0x4e/0x5c
+>  [<c020b6c3>] __mark_inode_dirty+0xaf/0x162
+>  [<c0202305>] file_update_time+0xcc/0xe9
+>  [<c01c68dd>] __generic_file_aio_write+0x136/0x28f
+>  [<c02145a4>] blkdev_aio_write+0x33/0x72
+>  [<c01f20da>] do_sync_write+0x8f/0xca
+>  [<c0647678>] ? mutex_unlock+0xd/0xf
+>  [<c030d528>] ? security_file_permission+0x27/0x2b
+>  [<c01f227c>] ? rw_verify_area+0x9d/0xc0
+>  [<c01f204b>] ? do_sync_write+0x0/0xca
+>  [<c01f2629>] vfs_write+0x85/0xe3
+>  [<c01f2725>] sys_write+0x40/0x62
+>  [<c064915d>] syscall_call+0x7/0xb
+> ---[ end trace 1f39401760ab3a42 ]---
 
 -- 
-Shmulik Ladkani
+tejun
