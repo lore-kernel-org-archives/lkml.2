@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753276Ab0JCL3m (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 07:29:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40281 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753056Ab0JCL3l (ORCPT
+	id S1753294Ab0JCLbE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 07:31:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64243 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab0JCLbC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 07:29:41 -0400
-Date: Sun, 3 Oct 2010 12:29:20 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 00/47] Sparse irq rework
-Message-ID: <20101003112920.GB32736@n2100.arm.linux.org.uk>
-References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca>
+	Sun, 3 Oct 2010 07:31:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=Dvp8jA1It1JFvKq49ecXv7bCb4bTcBOuKpn/+rnkN3Cc0oCOlglTUPs9U0nZpKPCfg
+         PbAtedGcIVQJ0oVyEZfQ78SyVzJLjI00UfWXcx6d3yCn43pm0veXCZwoh1wei+Dg/DNL
+         HiTcQebogbTikE9quf3sg9/TWCCP8KF4XrLTY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101003112312.GB9844@angua.secretlab.ca>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Date: Sun, 3 Oct 2010 15:31:01 +0400
+Message-ID: <AANLkTi=fH924fybfmSpxyOu5Vm8Ny9cSyMGWcQN3dvvD@mail.gmail.com>
+Subject: gcc compile kernel 2.6 module
+From: Frank Coldwell <junkdnaseq@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 03, 2010 at 05:23:12AM -0600, Grant Likely wrote:
-> On Thu, Sep 30, 2010 at 11:14:27PM -0000, Thomas Gleixner wrote:
-> > The following patch series cleans up and mostly reimplements the core
-> > sparse irq implementation and sanitizes the most complex (ab)user:
-> > arch/x86
-> 
-> Hoy Thomas,
-> 
-> patches 1-13 & 15 all look fine to me.  Feel free to add my Acked-by:
-> line.
-> 
-> Patch 14 seems to be missing, and by inference it appears that the
-> all important new allocator is added by patch 14.  All of the rest of
-> the series seems to be fine, but I'm forced to make assumptions about
-> what the new allocator looks like, so I cannot be positive.
+Hi all,
 
-Patch 14 was present, you were even CC'd on it.
+Does anybody know how should look gcc compilation line
+to compile kernel module for kernel 2.6
+
+In 2.4 it looks like this:
+----------------------------------------------------
+TARGET := hello-1
+WARN := -W -Wall -Wstrict-prototypes -Wmissing-prototypes
+INCLUDE := -isystem /lib/modules/`uname -r`/build/include
+CFLAGS := -O2 -DMODULE -D__KERNEL__ ${WARN} ${INCLUDE}
+CC := gcc-3.0
+
+${TARGET}.o: ${TARGET}.c
+
+.PHONY: clean
+
+clean:
+rm -rf ${TARGET}.o
+----------------------------------------------------
+
+and for multiple source files, like this:
+----------------------------------------------------
+CC=gcc
+MODCFLAGS := -O -Wall -DMODULE -D__KERNEL__
+
+hello.o: hello2_start.o hello2_stop.o
+ld -m elf_i386 -r -o hello2.o hello2_start.o hello2_stop.o
+
+start.o: hello2_start.c
+${CC} ${MODCFLAGS} -c hello2_start.c
+
+stop.o: hello2_stop.c
+${CC} ${MODCFLAGS} -c hello2_stop.c
+----------------------------------------------------
+
+Kind regards,
+
+Dragoslav Zaric
+MSc Astrophysics
+Professional programmer
