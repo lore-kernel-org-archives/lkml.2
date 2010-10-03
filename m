@@ -1,68 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754538Ab0JCS1D (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 14:27:03 -0400
-Received: from www.tglx.de ([62.245.132.106]:32925 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751789Ab0JCS1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 14:27:01 -0400
-Date: Sun, 3 Oct 2010 20:26:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [patch 20/47] x86: Remove useless reinitialization of irq
- descriptors
-In-Reply-To: <m14od3l2th.fsf@fess.ebiederm.org>
-Message-ID: <alpine.LFD.2.00.1010032014180.14550@localhost6.localdomain6>
-References: <20100930221351.682772535@linutronix.de> <20100930221740.449419120@linutronix.de> <m14od3l2th.fsf@fess.ebiederm.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754532Ab0JCSdR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 14:33:17 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:47510 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752107Ab0JCSdR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 14:33:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=EgdAkthnCcBn16kD2R2vXDbY08ePWEnPpBuQJ6OnHwAvEgY23+anXclawXOOV5HCsr
+         m9MT8Q+1KyziyDVhs9cguqzHM5OiE1SPaHW8/CSoKUB5F9f/ZCI+xyh6nwZpb4YUt9zF
+         pUvk4ON08nscjnRA5guydncgIRT8eTj4RLsLw=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Heinz Diehl <htd@fritha.org>
+Subject: Re: 2.6.36-rc6: modprobe Not tainted warning
+Date: Sun, 3 Oct 2010 20:33:09 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20100930182516.GA15089@fritha.org>
+In-Reply-To: <20100930182516.GA15089@fritha.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010032033.10295.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Oct 2010, Eric W. Biederman wrote:
-
-> Thomas Gleixner <tglx@linutronix.de> writes:
+On czwartek, 30 września 2010 o 20:25:16 Heinz Diehl wrote:
+> Hi,
 > 
-> > The descriptors are already initialized in exaclty this way.
+> on my brand new Asus U45JC, I get the following while booting 2.6.36-rc6:
 > 
-> They aren't only status is initialized exactly that way.
 
-Err.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=19632
+for your bug report, please add your address to the CC list in there, thanks!
 
-SPARSE_IRQ=n:
-
-struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
-        [0 ... NR_IRQS-1] = {
-                .status = IRQ_DISABLED,
-		.chip = &no_irq_chip,
-                .handle_irq = handle_bad_irq,
-                .depth = 1,
-                .lock = __RAW_SPIN_LOCK_UNLOCKED(irq_desc->lock),
-        }
-};
-
-So action == NULL and depth == 1
-
-SPARSE_IRQ=y:
-
-allocates with kzalloc which makes action == NULL and depth is set in
-the init function to 1.
-
-That's true for mainline and after the rework as well.
-
-Thanks,
-
-	tglx
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
