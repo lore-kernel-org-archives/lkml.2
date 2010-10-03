@@ -1,27 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab0JCQfK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 12:35:10 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:58617 "HELO
+	id S1754121Ab0JCQmD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 12:42:03 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:44586 "HELO
 	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754013Ab0JCQfJ (ORCPT
+	with SMTP id S1753618Ab0JCQmB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 12:35:09 -0400
-Date: Sun, 3 Oct 2010 12:35:07 -0400 (EDT)
+	Sun, 3 Oct 2010 12:42:01 -0400
+Date: Sun, 3 Oct 2010 12:41:59 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@netrider.rowland.org
 To: tlinder <tlinder@codeaurora.org>
 cc: USB list <linux-usb@vger.kernel.org>,
-        Tatyana Linder <tlinder@codeaurora.org>,
         David Brownell <dbrownell@users.sourceforge.net>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH 1/2] Add usb_endpoint_descriptor to be part of the
- struct usb_ep
-In-Reply-To: <1286092800-29107-1-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1010031201050.26676-100000@netrider.rowland.org>
+Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the Gadget
+ Framework
+In-Reply-To: <1286092937-29191-1-git-send-email-tlinder@codeaurora.org>
+Message-ID: <Pine.LNX.4.44L0.1010031236540.26676-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,107 +30,85 @@ On Sun, 3 Oct 2010, tlinder wrote:
 
 > From: Tatyana Linder <tlinder@codeaurora.org>
 > 
-> Change ep_choose() and usb_ep_enable() prototypes to use endpoint
-> descriptor from usb_ep. This optimization prevents the FDs from handling
-> the endpoint chosen descriptor.
-> This optimization is not full though. To fully exploit this change one
-> needs to update all the UDCs as well since in the current implementation
-> each of them saves the endpoint descriptor in it's internal (and extended)
-> endpoint structure.
-> This patch is a preparation for adding SuperSpeed support to the gadget
-> framework.
-> 
-> Signed-off-by: Tatyana Linder <tlinder@codeaurora.org>
+> This patch adds the SuperSpeed functionality to the gadget framework.
+> In order not to force all the FDs to supply SuperSpeed descriptors when
+> operating in SuperSpeed mode the following approach was taken:
+> If we're operating in SuperSpeed mode and the FD didn't supply SuperSpeed
+> descriptors, the composite layer will automatically create SuperSpeed
+> descriptors with default values.
+> Support for new SuperSpeed BOS descriptor was added.
+> Support for SET_FEATURE and GET_STATUS requests in SuperSpeed mode was
+> added.
 
 ...
 
-> diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-> index a857b7a..6264fba 100644
-> --- a/drivers/usb/gadget/file_storage.c
-> +++ b/drivers/usb/gadget/file_storage.c
-> @@ -3,6 +3,7 @@
->   *
->   * Copyright (C) 2003-2008 Alan Stern
->   * All rights reserved.
-> + * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
->   *
->   * Redistribution and use in source and binary forms, with or without
->   * modification, are permitted provided that the following conditions
-
-Speaking for myself only, I don't think people should add their own 
-copyright notices in files to which they have not made substantial 
-changes.  A little code motion and a small API adjustment don't seem 
-like large enough changes to justify this.  Some of the other files in 
-this patch have even smaller changes!
-
-> diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-> index 484acfb..d5612ed 100644
-> --- a/drivers/usb/gadget/storage_common.c
-> +++ b/drivers/usb/gadget/storage_common.c
-> @@ -2,7 +2,8 @@
->   * storage_common.c -- Common definitions for mass storage functionality
->   *
->   * Copyright (C) 2003-2008 Alan Stern
-> - * Copyeight (C) 2009 Samsung Electronics
-> + * Copyright (C) 2009 Samsung Electronics
-> + * Copyright (C) 2010 Code Aurora Forum. All rights reserved.
->   * Author: Michal Nazarewicz (m.nazarewicz@samsung.com)
->   *
->   * This program is free software; you can redistribute it and/or modify
-> @@ -536,17 +537,6 @@ static struct usb_descriptor_header *fsg_hs_function[] = {
->  	NULL,
->  };
+> diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
+> index da2ed77..69e528a 100644
+> --- a/include/linux/usb/ch9.h
+> +++ b/include/linux/usb/ch9.h
+> @@ -125,6 +125,20 @@
 >  
-> -/* Maxpacket and other transfer characteristics vary by speed. */
-> -static struct usb_endpoint_descriptor *
-> -fsg_ep_desc(struct usb_gadget *g, struct usb_endpoint_descriptor *fs,
-> -		struct usb_endpoint_descriptor *hs)
-> -{
-> -	if (gadget_is_dualspeed(g) && g->speed == USB_SPEED_HIGH)
-> -		return hs;
-> -	return fs;
-> -}
-> -
-> -
->  /* Static strings, in UTF-8 (for simplicity we use only ASCII characters) */
->  static struct usb_string		fsg_strings[] = {
->  #ifndef FSG_NO_DEVICE_STRINGS
+>  #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
+>  
+> +/**
+> + * New Feature Selectors as added by USB 3.0
+> + * See USB 3.0 spec Table 9-6
+> + */
+> +#define USB_DEVICE_U1_ENABLE		48	/*enables the upstream port to
+> +						initiate requests for transition
+> +						into U1 state*/
+> +#define USB_DEVICE_U2_ENABLE		49	/*enables the upstream port to
+> +						initiate requests for transition
+> +						into U2 state*/
+> +#define USB_DEVICE_LTM_ENABLE		50	/*enables the devise to send
+> +						Latency tolerance messages.*/
+> +#define USB_INTRF_FUNC_SUSPEND		0	/*function suspend*/
+> +
 
-This is a good example.  You have contributed _nothing_ to this file --
-all you did was _move_ some code to a different file.  This hardly
-seems to justify adding a copyright notice.
+Since these are device and interface features, they belong before the
+endpoint feature above, not after it.
 
-> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> index d3ef42d..bf7dc0b 100644
-> --- a/include/linux/usb/gadget.h
-> +++ b/include/linux/usb/gadget.h
-> @@ -7,6 +7,7 @@
->   *
->   *
->   * (C) Copyright 2002-2004 by David Brownell
-> + * (C) Copyright 2010 Code Aurora Forum.
->   * All Rights Reserved.
->   *
->   * This software is licensed under the GNU GPL version 2.
-> @@ -133,18 +134,25 @@ struct usb_ep_ops {
->   *      the endpoint descriptor used to configure the endpoint.
->   * @driver_data:for use by the gadget driver.  all other fields are
->   *	read-only to gadget drivers.
-> + * @bEndpointAddress: used to identify ep when finding descriptor that matches
-> + *	connection speed
+> +/*SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed USB
+> +  specific device level capabilities*/
+> +#define	SS_USB_CAP_TYPE		3
 
-This comment isn't very good.  Don't say what bEndpointAddress is 
-_used_ for, say what it _is_.
+This should be USB_SS_CAP_TYPE.
 
-> + * @desc:endpoint descriptor.  this pointer set before endpoint is enabled and
-> + *	remains valid until the endpoint is disabled; the data byte order
-> + *	is little-endian (usb-standard).
->   *
+> +struct ss_usb_cap_descriptor {		/* Link Power Management */
+> +	__u8  bLength;
+> +	__u8  bDescriptorType;
+> +	__u8  bDevCapabilityType;
+> +	__u8  bmAttributes;
+> +#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
+> +	__u16 wSpeedSupported;
+> +#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
+> +#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
+> +#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
+> +#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
+> +	__u8  bFunctionalitySupport;
+> +	__u8  bU1devExitLat;
+> +	__u16 bU2DevExitLat;
+> +} __attribute__((packed));
 
-In addition, you need to point out in the kerneldoc for usb_ep_enable,
-that the gadget driver must set these two fields before calling
-usb_ep_enable, and you need to change the comment immediately above,
-which states that these fields are read-only to gadget drivers!
+Similarly, this should usb_ss_cap_descriptor (by analogy with 
+usb_otg_descriptor or usb_wireless_cap_descriptor).
+
+> +#define USB_DT_SS_USB_CAP_SIZE	10
+> +
+> +/*Container ID Capability descriptor: Defines the instance unique ID used to
+> +  identify the instance across all operating modes*/
+> +#define	CONTAINER_ID_TYPE	4
+> +struct ss_usb_container_id_descriptor {
+> +	__u8  bLength;
+> +	__u8  bDescriptorType;
+> +	__u8  bDevCapabilityType;
+> +	__u8  bReserved;
+> +	__u8  ContainerID[16]; /*128-bit number*/
+> +} __attribute__((packed));
+> +
+> +#define USB_DT_SS_CONTN_ID_SIZE	20
+
+And this should be usb_ss_container_id_descriptor.
 
 Alan Stern
 
