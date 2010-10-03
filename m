@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753519Ab0JCMuu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 08:50:50 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:28253 "EHLO mx01.sz.bfs.de"
+	id S1753554Ab0JCNGU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 09:06:20 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:7791 "EHLO mx01.sz.bfs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753324Ab0JCMut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 08:50:49 -0400
-Message-ID: <4CA87C24.8040403@bfs.de>
-Date: Sun, 03 Oct 2010 14:50:44 +0200
+	id S1751419Ab0JCNGT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 09:06:19 -0400
+Message-ID: <4CA87FC6.40208@bfs.de>
+Date: Sun, 03 Oct 2010 15:06:14 +0200
 From: walter harms <wharms@bfs.de>
 Reply-To: wharms@bfs.de
 User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
@@ -15,10 +15,10 @@ MIME-Version: 1.0
 To: Tracey Dent <tdent48227@gmail.com>
 CC: greg@kroah.com, linux-kernel@vger.kernel.org,
         kernel-janitors@vger.kernel.org, sam@ravnborg.org
-Subject: Re: [PATCH v3 13/20] Staging: rtl8192u: Makefile: cleaned up Makefile
- cflag lines
-References: <1286037489-28439-1-git-send-email-tdent48227@gmail.com> <1286037489-28439-13-git-send-email-tdent48227@gmail.com>
-In-Reply-To: <1286037489-28439-13-git-send-email-tdent48227@gmail.com>
+Subject: Re: [PATCH v3 14/20] Staging: rtl8192u: ieee80211: Makefile: cleaned
+ up Makefile cflag lines
+References: <1286037489-28439-1-git-send-email-tdent48227@gmail.com> <1286037489-28439-14-git-send-email-tdent48227@gmail.com>
+In-Reply-To: <1286037489-28439-14-git-send-email-tdent48227@gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,49 +32,64 @@ Tracey Dent schrieb:
 > 
 > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 > ---
->  drivers/staging/rtl8192u/Makefile |   20 ++++++++++----------
->  1 files changed, 10 insertions(+), 10 deletions(-)
+>  drivers/staging/rtl8192u/ieee80211/Makefile |   16 ++++++++--------
+>  1 files changed, 8 insertions(+), 8 deletions(-)
 > 
-> diff --git a/drivers/staging/rtl8192u/Makefile b/drivers/staging/rtl8192u/Makefile
-> index 738f4a8..cba4344 100644
-> --- a/drivers/staging/rtl8192u/Makefile
-> +++ b/drivers/staging/rtl8192u/Makefile
-> @@ -1,16 +1,16 @@
->  NIC_SELECT = RTL8192U
+> diff --git a/drivers/staging/rtl8192u/ieee80211/Makefile b/drivers/staging/rtl8192u/ieee80211/Makefile
+> index 71ca5d9..45704f8 100644
+> --- a/drivers/staging/rtl8192u/ieee80211/Makefile
+> +++ b/drivers/staging/rtl8192u/ieee80211/Makefile
+> @@ -5,22 +5,22 @@ MODDESTDIR := /lib/modules/$(KVER)/kernel/drivers/net/wireless/$(NIC_SELECT)
 >  
-> -EXTRA_CFLAGS += -std=gnu89
+>  CC = gcc
+
+does this mean we can compile with gcc only ? where are the icc users ?
+
+>  ifneq ($(shell uname -r|cut -d. -f1,2), 2.4)
+
+I can guess what the author intended but this will only check *on*
+what system i am compiling, not what linux version i try *to conpile*.
+see: KERNEL_VERSION macro
+
+
+
+> -EXTRA_CFLAGS += -I$(TOPDIR)/drivers/net/wireless
 > -EXTRA_CFLAGS += -O2
-> +ccflags-y := -std=gnu89
-> +ccflags-y += -O2
->  
 
-no optimisation please,
-
-> -EXTRA_CFLAGS += -DCONFIG_FORCE_HARD_FLOAT=y
-
-these CONFIG_FORCE_HARD_FLOAT again, why do they call it
-config when they need it ?
-
-re,
- wh
-
-
+no optimisation, please
 
 > -EXTRA_CFLAGS += -DJACKSON_NEW_8187 -DJACKSON_NEW_RX
-> -EXTRA_CFLAGS += -DTHOMAS_BEACON -DTHOMAS_TASKLET -DTHOMAS_SKB -DTHOMAS_TURBO
+> +ccflags-y := -I$(TOPDIR)/drivers/net/wireless
+> +ccflags-y += -O2
+> +ccflags-y += -DJACKSON_NEW_8187 -DJACKSON_NEW_RX
+>  
+>  #it will fail to compile in suse linux enterprise 10 sp2. This flag is to solve this problem.
+>  ifeq ($(shell uname -r | cut -d. -f1,2,3,4), 2.6.16.60-0)
+> -EXTRA_CFLAGS += -DOPENSUSE_SLED
+> +ccflags-y := -DOPENSUSE_SLED
+>  endif
+
+this should be something like .....
+
+# if LINUX_VERSION_CODE = KERNEL_VERSION(2,6,16)
+#define OPENSUSE_SLED
+#endif
+
+>  ifeq ($(NIC_SELECT),RTL8192U)
 > -#EXTRA_CFLAGS += -DUSB_TX_DRIVER_AGGREGATION_ENABLE
 > -#EXTRA_CFLAGS += -DUSB_RX_AGGREGATION_SUPPORT
-> -EXTRA_CFLAGS += -DUSE_ONE_PIPE
+> +#ccflags-y := -DUSB_TX_DRIVER_AGGREGATION_ENABLE
+> +#ccflags-y := -DUSB_RX_AGGREGATION_SUPPORT
+>  endif
+> -#EXTRA_CFLAGS += -DJOHN_NOCPY
+> +#ccflags-y := -DJOHN_NOCPY
+>  #flags to enable or disble 80211D feature
 > -EXTRA_CFLAGS += -DENABLE_DOT11D
-> -EXTRA_CFLAGS += -Idrivers/staging/rtl8192u/ieee80211
-> +ccflags-y += -DCONFIG_FORCE_HARD_FLOAT=y
-> +ccflags-y += -DJACKSON_NEW_8187 -DJACKSON_NEW_RX
-> +ccflags-y += -DTHOMAS_BEACON -DTHOMAS_TASKLET -DTHOMAS_SKB -DTHOMAS_TURBO
-> +#ccflags-y += -DUSB_TX_DRIVER_AGGREGATION_ENABLE
-> +#ccflags-y += -DUSB_RX_AGGREGATION_SUPPORT
-> +ccflags-y += -DUSE_ONE_PIPE
 > +ccflags-y += -DENABLE_DOT11D
-> +ccflags-y += -Idrivers/staging/rtl8192u/ieee80211
->  
->  r8192u_usb-objs := r8192U_core.o r8180_93cx6.o r8192U_wx.o		\
->  		  r8190_rtl8256.o r819xU_phy.o r819xU_firmware.o	\
+>  ieee80211-rsl-objs := ieee80211_rx.o \
+>  		      ieee80211_softmac.o \
+>  		      ieee80211_tx.o \
+
+
+just my 2 cents,
+ wh
