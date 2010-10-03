@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754392Ab0JCSKt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 14:10:49 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:43581 "EHLO e1.ny.us.ibm.com"
+	id S1754344Ab0JCSLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 14:11:09 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:47656 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab0JCSKs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 14:10:48 -0400
-Date: Sun, 3 Oct 2010 23:40:44 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Steve Magnani <steve@digidescorp.com>
-Cc: David Howells <dhowells@redhat.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, kamezawa.hiroyu@jp.fujitsu.com
-Subject: Re: [PATCH][RESEND] nommu: add anonymous page memcg accounting
-Message-ID: <20101003181044.GG7896@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1285929315-2856-1-git-send-email-steve@digidescorp.com>
- <5206.1285943095@redhat.com>
- <WC20101001143139.810346@digidescorp.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <WC20101001143139.810346@digidescorp.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754377Ab0JCSLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 14:11:05 -0400
+Subject: Re: [PATCH 7/9] v3 Define memory_block_size_bytes for
+ powerpc/pseries
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Robin Holt <holt@sgi.com>
+Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org,
+        Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, steiner@sgi.com
+In-Reply-To: <20101003180731.GT14064@sgi.com>
+References: <4CA62700.7010809@austin.ibm.com>
+	 <4CA62A0A.4050406@austin.ibm.com> <20101003175500.GE7896@balbir.in.ibm.com>
+	 <20101003180731.GT14064@sgi.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Sun, 03 Oct 2010 11:11:01 -0700
+Message-ID: <1286129461.9970.1.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steve Magnani <steve@digidescorp.com> [2010-10-01 09:31:39]:
-
-> David Howells <dhowells@redhat.com> wrote:
+On Sun, 2010-10-03 at 13:07 -0500, Robin Holt wrote:
+> On Sun, Oct 03, 2010 at 11:25:00PM +0530, Balbir Singh wrote:
+> > * Nathan Fontenot <nfont@austin.ibm.com> [2010-10-01 13:35:54]:
 > > 
-> > Do we really need to do memcg accounting in NOMMU mode?  Might it be
-> > better to just apply the attached patch instead?
+> > > Define a version of memory_block_size_bytes() for powerpc/pseries such that
+> > > a memory block spans an entire lmb.
 > > 
-> > David
-> > ---
-> > diff --git a/init/Kconfig b/init/Kconfig
-> > index 2de5b1c..aecff10 100644
-> > --- a/init/Kconfig
-> > +++ b/init/Kconfig
-> > @@ -555,7 +555,7 @@ config RESOURCE_COUNTERS
-> >  
-> >  config CGROUP_MEM_RES_CTLR
-> >  	bool "Memory Resource Controller for Control Groups"
-> > -	depends on CGROUPS && RESOURCE_COUNTERS
-> > +	depends on CGROUPS && RESOURCE_COUNTERS && MMU
-> >  	select MM_OWNER
-> >  	help
-> >  	  Provides a memory resource controller that manages both anonymous
+> > I hope I am not missing anything obvious, but why not just call it
+> > lmb_size, why do we need memblock_size?
+> > 
+> > Is lmb_size == memblock_size after your changes true for all
+> > platforms?
 > 
-> If anything I think nommu is one of the better applications of memcg. Since nommu typically == 
-> embedded, being able to put potential memory pigs in a sandbox so they can't destabilize the 
-> system is a Good Thing. That was my motivation for doing this in the first place and it works 
-> quite well.
+> What is an lmb?  I don't recall anything like lmb being referred to in
+> the rest of the kernel.
 
-Good to know, but I want to point out that I never explictly tested it
-for NOMMU when I created memcg. I thought like the rest that not
-having reclaim capability would limit memcg usage in the NOMMU world.
+Heh.  It's the OpenFirmware name for a Logical Memory Block.  Basically
+what we use to determine the SECTION_SIZE on powerpc.  Probably not the
+best terminology to use elsewhere in the kernel.
 
+-- Dave
 
--- 
-	Three Cheers,
-	Balbir
