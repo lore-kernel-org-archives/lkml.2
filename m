@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755487Ab0JCV4O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 17:56:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39461 "EHLO ogre.sisk.pl"
+	id S1755362Ab0JCV4q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 17:56:46 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39444 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754740Ab0JCVwy convert rfc822-to-8bit (ORCPT
+	id S1753354Ab0JCVwl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 17:52:54 -0400
+	Sun, 3 Oct 2010 17:52:41 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "MadLoisae@gmx.net" <MadLoisae@gmx.net>,
-        "Peter Zijlstra" <a.p.zijlstra@chello.nl>, 2010-04-22@ogre.sisk.pl,
-        "21:50:19"@ogre.sisk.pl
+        "Bjorn Helgaas" <bjorn.helgaas@hp.com>,
+        "Brian Bloniarz" <brian.bloniarz@gmail.com>,
+        "Yinghai Lu" <yinghai@kernel.org>
 References: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera>
 In-Reply-To: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -20,10 +20,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <N9RAiGGLCfN.A.5bD.HVPqMB@chimera>
-Subject: [Bug #16525] unexpected high load since 2.6.35
+Message-ID: <N9RAiGGLCfN.A.gZE.HYPqMB@chimera>
+Subject: [Bug #16228] BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  3 Oct 2010 23:53:01 +0200 (CEST)
+Date: Sun,  3 Oct 2010 23:53:00 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -36,13 +36,14 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16525
-Subject		: unexpected high load since 2.6.35
-Submitter	: MadLoisae@gmx.net <MadLoisae@gmx.net>
-Date		: 2010-08-02 20:53 (63 days old)
-Message-ID	: <4C573041.1070103@gmx.net>
-References	: http://marc.info/?l=linux-kernel&m=128078243726655&w=2
-		  http://lkml.org/lkml/2010/9/14/105
-		  http://lkml.org/lkml/2010/9/27/328
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16228
+Subject		: BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
+Submitter	: Brian Bloniarz <brian.bloniarz@gmail.com>
+Date		: 2010-06-16 17:57 (110 days old)
+Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Patch		: https://patchwork.kernel.org/patch/189182/
+		  https://patchwork.kernel.org/patch/189232/
+		  https://patchwork.kernel.org/patch/189242/
+		  https://patchwork.kernel.org/patch/189252/
 
 
