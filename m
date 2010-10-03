@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab0JCTWv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 15:22:51 -0400
-Received: from n1-vm1.bullet.mail.gq1.yahoo.com ([67.195.23.153]:44737 "HELO
-	n1-vm1.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754020Ab0JCTWt convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 15:22:49 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 843717.66725.bm@omp118.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=KEUQgLn9lFO/XKlTsCYfoUn/KZ+pBqynT3tqDdRTYtqHxHwPJMrOQacEA9iOnbIs2rtQujYqFtEW738zJM8+V+hqoT9OYI054ZNKWeLt99o2vk9yTA/fSELaQ2nKd2zdfZShe/TRAkC/td7Js02X/yqwVdjRrN7PgYPh5ysKCMs=;
-Message-ID: <695950.71255.qm@web180315.mail.gq1.yahoo.com>
-X-YMail-OSG: mbntKLUVM1mJAiO1mGsITXg1KAixWKhbwoFJqb6gG1NW9nk
- _8m84_xhHOHGoHh8ux.hjH4zVzSEMUEdBb9oEScN8ZMozxryg7Z4DLD2kJ4J
- Ke2QjKF9YwcyZDzTXd5pgz_09Mx6Y46_0rNCvrQqE0nDQuTxD0d6Wj0GH84c
- YqkuJWy.fFSlKYlNrV25g5CZjhcApkrNYtjRt6tB7iJ2TGxXNaRCxv5sIdHy
- zzB_xqVr9M1T2t6PnKUaJeSAwO8E8GjCpqi7hrT_nl_aGPh7WmREuKcJjk7l
- ztmMGboQs8wDdCgQYwvOMt7vxHNK5Vp3eL_f1IGARysB4IoArJRrbXA--
-X-Mailer: YahooMailClassic/11.4.9 YahooMailWebService/0.8.105.279950
-Date: Sun, 3 Oct 2010 12:22:47 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [RFC/PATCH 1/2] Add usb_endpoint_descriptor to be part of the struct usb_ep
-To: tlinder <tlinder@codeaurora.org>, Alan Stern <stern@rowland.harvard.edu>
-Cc: USB list <linux-usb@vger.kernel.org>,
-        Tatyana Linder <tlinder@codeaurora.org>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-In-Reply-To: <Pine.LNX.4.44L0.1010031201050.26676-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754733Ab0JCT2A (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 15:28:00 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43376 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753373Ab0JCT17 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 15:27:59 -0400
+Subject: Re: OOM panics with zram
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Greg KH - Meetings <ghartman@us.ibm.com>
+In-Reply-To: <4CA8CE45.9040207@vflare.org>
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
+	 <1284053081.7586.7910.camel@nimitz>  <4CA8CE45.9040207@vflare.org>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Sun, 03 Oct 2010 12:27:53 -0700
+Message-ID: <1286134073.9970.11.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2010-10-03 at 14:41 -0400, Nitin Gupta wrote:
+> Ability to write out zram (compressed) memory to a backing disk seems
+> really useful. However considering lkml reviews, I had to drop this
+> feature. Anyways, I guess I will try to push this feature again.
 
+I'd argue that zram is pretty useless without some ability to write to a
+backing store, unless you *really* know what is going to be stored in it
+and you trust the user.  Otherwise, it's just too easy to OOM the
+system.
 
---- On Sun, 10/3/10, Alan Stern <stern@rowland.harvard.edu> wrote:
+I've been investigating backing the xvmalloc space with a tmpfs file.
+Instead of keeping page/offset pairs, you just keep a linear address
+inside the tmpfile file.  There's an extra step needed to look up and
+lock the page cache page into place each time you go into the xvmalloc
+store, but it does seem to basically work.  The patches are really rough
+and not quite functional, but I'm happy to share if you want to see them
+now.
 
+> Also, please do not use linux-next/mainline version of compcache. Instead
+> just use version in the project repository here:
+> hg clone https://compcache.googlecode.com/hg/ compcache 
 > 
+> This is updated much more frequently and has many more bug fixes over
+> the mainline. It will also be easier to fix bugs/add features much more
+> quickly in this repo rather than sending them to lkml which can take
+> long time.
 
+That looks like just a clone of the code needed to build the module.  
 
-> Speaking for myself only,
+Kernel developers are pretty used to _some_ kernel tree being the
+authoritative source.  Also, having it in a kernel tree makes it
+possible to get testing in places like linux-next, and it makes it
+easier for people to make patches or kernel trees on top of your work. 
 
-... and me too, for that matter.
+There's not really a point to the code being in -staging if it isn't
+somewhat up-to-date or people can't generate patches to it.  It sounds
+to me like we need to take it out of -staging.
 
-
- I don't think people should add
-> their own 
-> copyright notices in files to which they have not made
-> substantial 
-> changes.  A little code motion and a small API
-> adjustment don't seem 
-> like large enough changes to justify this.  Some of
-> the other files in 
-> this patch have even smaller changes!
-
-It's pretty routine that very small patches
-get merged without attribution, for that matter,
-beyond GIT history.
-
-- Dave
-
-> 
+-- Dave
 
