@@ -1,19 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab0JCVw6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 17:52:58 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39466 "EHLO ogre.sisk.pl"
+	id S1755202Ab0JCVxR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 17:53:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39489 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754850Ab0JCVwz convert rfc822-to-8bit (ORCPT
+	id S1755071Ab0JCVxA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 17:52:55 -0400
+	Sun, 3 Oct 2010 17:53:00 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Albert Gall" <ss3vdr@gmail.com>,
-        "Alex Deucher" <alexdeucher@gmail.com>,
-        "Dave Airlie" <airlied@redhat.com>,
-        "Jerome Glisse" <jglisse@redhat.com>
+        "Dan Dart" <dandart@googlemail.com>
 References: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera>
 In-Reply-To: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -21,10 +18,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <N9RAiGGLCfN.A.DjD.MVPqMB@chimera>
-Subject: [Bug #16515] [bisected] Radeon rv280 can't boot on kernel 2.6.35.
+Message-ID: <N9RAiGGLCfN.A.w4C.UUPqMB@chimera>
+Subject: [Bug #17261] Freezes on bootup
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun,  3 Oct 2010 23:53:01 +0200 (CEST)
+Date: Sun,  3 Oct 2010 23:53:03 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -37,11 +34,9 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
-Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
-Submitter	: Albert Gall <ss3vdr@gmail.com>
-Date		: 2010-08-04 16:10 (61 days old)
-First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
-Handled-By	: Alex Deucher <alexdeucher@gmail.com>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17261
+Subject		: Freezes on bootup
+Submitter	: Dan Dart <dandart@googlemail.com>
+Date		: 2010-08-29 09:00 (36 days old)
 
 
