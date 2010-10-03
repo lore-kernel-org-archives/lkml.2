@@ -1,63 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753952Ab0JCP7s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 11:59:48 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:49277 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752495Ab0JCP7r (ORCPT
+	id S1754071Ab0JCQVb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 12:21:31 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34359 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab0JCQVa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 11:59:47 -0400
-Date: Sun, 3 Oct 2010 11:59:46 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
+	Sun, 3 Oct 2010 12:21:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=D5BFluNEBjJkQkfzYYHoG3iaPHQaWRwVayeIjRtgBxxjtBNQAqogSN5LWTslLmWwJI
+         rL70GG1TbKOz6QzKsNq5hVpKIaUhETsWAgUSmY3m7oNHCN9U5Paf0ZLpYMf7I+shdJAs
+         mVKdNsmJ+RMuwfPf0finFZE8mnyGzahDnRNDI=
+Date: Sun, 3 Oct 2010 18:17:01 +0200
+From: Dan Carpenter <error27@gmail.com>
 To: Rahul Ruikar <rahul.ruikar@gmail.com>
-cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Andrew Morton <akpm@linux-foundation.org>, <linux-usb@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usb: gadget: file_storage: Fix error path
-In-Reply-To: <1286081717-2757-1-git-send-email-rahul.ruikar@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1010031155150.26676-100000@netrider.rowland.org>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, nm127@freemail.hu,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: gadget: goku_udc: Fix error path
+Message-ID: <20101003161700.GA5646@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Rahul Ruikar <rahul.ruikar@gmail.com>,
+	David Brownell <dbrownell@users.sourceforge.net>,
+	Greg Kroah-Hartman <gregkh@suse.de>, nm127@freemail.hu,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1286115016-2759-1-git-send-email-rahul.ruikar@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286115016-2759-1-git-send-email-rahul.ruikar@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Oct 2010, Rahul Ruikar wrote:
-
+On Sun, Oct 03, 2010 at 07:40:16PM +0530, Rahul Ruikar wrote:
 > call put_device() when device_register() fails.
 > 
+
+Huh?  I don't see any calls to put_device() in your patch.
+
+regards,
+dan carpenter
+
+
 > Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
 > ---
->  drivers/usb/gadget/file_storage.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  drivers/usb/gadget/goku_udc.c |    7 ++++++-
+>  drivers/usb/gadget/goku_udc.h |    3 ++-
+>  2 files changed, 8 insertions(+), 2 deletions(-)
 > 
-> diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-> index a857b7a..2c94318 100644
-> --- a/drivers/usb/gadget/file_storage.c
-> +++ b/drivers/usb/gadget/file_storage.c
-> @@ -3413,6 +3413,7 @@ static int __ref fsg_bind(struct usb_gadget *gadget)
+> diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
+> index 1088d08..080779b 100644
+> --- a/drivers/usb/gadget/goku_udc.c
+> +++ b/drivers/usb/gadget/goku_udc.c
+> @@ -1847,8 +1847,13 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+>  	/* done */
+>  	the_controller = dev;
+>  	retval = device_register(&dev->gadget.dev);
+> -	if (retval == 0)
+> +	if (retval != 0) {
+> +		dev_reg_status = 2;
+> +		goto done;
+> +	} else {
+> +		dev_reg_status = 1;
+>  		return 0;
+> +	}
 >  
->  		if ((rc = device_register(&curlun->dev)) != 0) {
->  			INFO(fsg, "failed to register LUN%d: %d\n", i, rc);
-> +			put_device(&curlun->dev);
->  			goto out;
->  		}
->  		if ((rc = device_create_file(&curlun->dev,
-
-I'm afraid this is wrong as well.  You need to move the 
-"kref_get(&fsg->ref);" line up before the device_register call; 
-otherwise the lun_release routine will do an unbalanced kref_put.  In 
-fact there is a similar bug in the original code, in the failure path 
-for the device_create_file calls.
-
-This seems to be a common pattern of mistakes in your patches.  Maybe
-you should go through and check all of them; make sure that everything
-the release routine _undoes_ is certain to be _done_ before the
-device_register call.
-
-Alan Stern
-
+>  done:
+>  	if (dev)
+> diff --git a/drivers/usb/gadget/goku_udc.h b/drivers/usb/gadget/goku_udc.h
+> index 566cb23..c27b9e2 100644
+> --- a/drivers/usb/gadget/goku_udc.h
+> +++ b/drivers/usb/gadget/goku_udc.h
+> @@ -251,7 +251,8 @@ struct goku_udc {
+>  					got_region:1,
+>  					req_config:1,
+>  					configured:1,
+> -					enabled:1;
+> +					enabled:1,
+> +					dev_reg_status:2;
+>  
+>  	/* pci state used to access those endpoints */
+>  	struct pci_dev			*pdev;
+> -- 
+> 1.7.2.3
