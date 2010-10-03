@@ -1,247 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab0JCVfk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 17:35:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39394 "EHLO ogre.sisk.pl"
+	id S1752863Ab0JCVgU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 17:36:20 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:60211 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751912Ab0JCVfb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 17:35:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: 2.6.36-rc6-git2: Reported regressions 2.6.34 -> 2.6.35
-Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Network Development <netdev@vger.kernel.org>,
-        Linux ACPI <linux-acpi@vger.kernel.org>,
-        Linux PM List <linux-pm@lists.linux-foundation.org>,
-        Linux SCSI List <linux-scsi@vger.kernel.org>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        DRI <dri-devel@lists.freedesktop.org>
+	id S1751647Ab0JCVgT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 17:36:19 -0400
 MIME-Version: 1.0
-Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera>
-Date: Sun,  3 Oct 2010 23:36:05 +0200 (CEST)
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19624.63312.156073.410319@pilspetsen.it.uu.se>
+Date: Sun, 3 Oct 2010 23:36:16 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.36-rc regression] occasional complete system hangs on sparc64 SMP
+In-Reply-To: <19611.34846.813757.309183@pilspetsen.it.uu.se>
+References: <19611.34846.813757.309183@pilspetsen.it.uu.se>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message contains a list of some post-2.6.34 regressions introduced before
-2.6.35, for which there are no fixes in the mainline known to the tracking team.
-If any of them have been fixed already, please let us know.
+Mikael Pettersson writes:
+ > On my Sun Blade 2500 (2 CPUs), post 2.6.35 kernels sometimes hang
+ > completely without visible messages on either the console or in
+ > the kernel logs.
+ > 
+ > The first two times (with -rc1 or -rc3) it happended during gcc
+ > bootstraps + regression test runs, today (with -rc4) it happended
+ > while compiling the 2.6.36-rc5 kernel.  It's very sporadic, perhaps
+ > one of ten boots will eventually hang like this.
+ > 
+ > With 2.6.35 the machine is rock solid.
+ > 
+ > The 2.6.36-rc kernels do appear to be solid on a UP Ultra5, but that
+ > one no longer does any gcc builds or tests, only kernel builds.
+ > 
+ > Any ideas, or do I have to try to bisect this?
 
-If you know of any other unresolved post-2.6.34 regressions, please let us know
-either and we'll add them to the list.  Also, please let us know if any
-of the entries below are invalid.
+I've been testing older kernels and can now say that 2.6.35-git5
+and newer kernels are definitely affected, but 2.6.35-git4 seems
+solid.  I'll dig deeper into the .35-git4->git5 changes towards
+the end of next week.
 
-Each entry from the list will be sent additionally in an automatic reply to
-this message with CCs to the people involved in reporting and handling the
-issue.
+I never got any data out of sysrq-y or any other sysrq when a hang
+occurs; usually they'd just print the name of the command but no data,
+sometimes they'd oops and crash the kernel even harder.
 
-
-Listed regressions statistics:
-
-  Date          Total  Pending  Unresolved
-  ----------------------------------------
-  2010-10-03      141       21          17
-  2010-09-26      139       24          21
-  2010-09-20      137       27          25
-  2010-09-12      135       26          25
-  2010-08-30      124       38          34
-  2010-08-01      100       27          23
-  2010-07-23       94       33          25
-  2010-07-09       79       45          37
-  2010-06-21       46       37          26
-  2010-06-09       15       13          10
-
-
-Unresolved regressions
-----------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19612
-Subject		: Computer fails to hibernate - problem idling SMP CPU's
-Submitter	:  <tempo444z@gmail.com>
-Date		: 2010-10-02 22:26 (2 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19302
-Subject		: PROBLEM: kernel crash on USB-modem (Huawei E1750) hangup.
-Submitter	: O01eg <O01eg@yandex.ru>
-Date		: 2010-09-26 19:50 (8 days old)
-Message-ID	: <op.vjnn1up1yohvy1@localhost>
-References	: http://marc.info/?l=linux-kernel&m=128553111709569&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=18522
-Subject		: cdrom drive doesn't detect removal
-Submitter	: Maxim Levitsky <maximlevitsky@gmail.com>
-Date		: 2010-09-12 9:49 (22 days old)
-First-Bad-Commit: http://git.kernel.org/linus/6b4517a7913a09d3259bb1d21c9cb300f12294bd
-Message-ID	: <1284284969.2928.18.camel@maxim-laptop>
-References	: http://marc.info/?l=linux-kernel&m=128428499013930&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17812
-Subject		: Kernel completely frozen when memory is full
-Submitter	: Mickey86 <mikael.cordon@gmail.com>
-Date		: 2010-09-05 13:09 (29 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17261
-Subject		: Freezes on bootup
-Submitter	: Dan Dart <dandart@googlemail.com>
-Date		: 2010-08-29 09:00 (36 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16891
-Subject		: Kernel panic while loading intel module during boot
-Submitter	: Anisse Astier <anisse@astier.eu>
-Date		: 2010-08-24 13:19 (41 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16691
-Subject		: IPW5100: iwlagn broken with 2.6.34.x to 2.6.35.2 update
-Submitter	: Can Celasun <dcelasun@gmail.com>
-Date		: 2010-08-21 08:28 (44 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16614
-Subject		: [2.6.35] usb 2.0 em28xx  kernel panic general protection fault: 0000 [#1] SMP          RIP: 0010:[<ffffffffa004fbc5>]  [<ffffffffa004fbc5>] em28xx_isoc_copy_vbi+0x62e/0x812 [em28xx]
-Submitter	: Sander Eikelenboom <linux@eikelenboom.it>
-Date		: 2010-08-10 22:12 (55 days old)
-Message-ID	: <61936849.20100811001257@eikelenboom.it>
-References	: http://marc.info/?l=linux-kernel&m=128152075830927&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16562
-Subject		: 2.6.35: cpu_idle bug report / on i7 870 cpu (x86_64)
-Submitter	: Justin Piszcz <jpiszcz@lucidpixels.com>
-Date		: 2010-08-06 22:09 (59 days old)
-Message-ID	: <alpine.DEB.2.00.1008061800530.5241@p34.internal.lan>
-References	: http://marc.info/?l=linux-kernel&m=128113260904048&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16549
-Subject		: 2.6.35: suspicious rcu_dereference_check() usage
-Submitter	: Vladislav Bolkhovitin <vst@vlnb.net>
-Date		: 2010-08-04 10:56 (61 days old)
-Message-ID	: <4C594740.1090608@vlnb.net>
-References	: http://marc.info/?l=linux-kernel&m=128091938215177&w=2
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16525
-Subject		: unexpected high load since 2.6.35
-Submitter	: MadLoisae@gmx.net <MadLoisae@gmx.net>
-Date		: 2010-08-02 20:53 (63 days old)
-Message-ID	: <4C573041.1070103@gmx.net>
-References	: http://marc.info/?l=linux-kernel&m=128078243726655&w=2
-		  http://lkml.org/lkml/2010/9/14/105
-		  http://lkml.org/lkml/2010/9/27/328
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
-Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
-Submitter	: Albert Gall <ss3vdr@gmail.com>
-Date		: 2010-08-04 16:10 (61 days old)
-First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
-Handled-By	: Alex Deucher <alexdeucher@gmail.com>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16488
-Subject		: [i915] Framebuffer ID error after suspend/hibernate leading to X crash
-Submitter	: Milan Bouchet-Valat <nalimilan@club.fr>
-Date		: 2010-08-01 08:55 (64 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16458
-Subject		: Bluetooth disabled after resume
-Submitter	: AttilaN <attila123456@gmail.com>
-Date		: 2010-07-25 09:33 (71 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16380
-Subject		: Loop devices act strangely in 2.6.35
-Submitter	: Artem S. Tashkinov <t.artem@mailcity.com>
-Date		: 2010-07-13 23:21 (83 days old)
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16265
-Subject		: Why is kslowd accumulating so much CPU time?
-Submitter	: Theodore Ts'o <tytso@mit.edu>
-Date		: 2010-06-09 18:36 (117 days old)
-First-Bad-Commit: http://git.kernel.org/linus/fbf81762e385d3d45acad057b654d56972acf58c
-Message-ID	: <E1OMQ88-0002a1-Gb@closure.thunk.org>
-References	: http://marc.info/?l=linux-kernel&m=127610857819033&w=4
-		  http://bugs.freedesktop.org/show_bug.cgi?id=29536
-Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16221
-Subject		: 2.6.35-rc2-git5 -- [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
-Submitter	: Miles Lane <miles.lane@gmail.com>
-Date		: 2010-06-11 20:31 (115 days old)
-Message-ID	: <AANLkTim0jVRyqkwlGOcrg_XTvUQwcBYfWJX-aRzkkrLG@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=127628828119623&w=2
-
-
-Regressions with patches
-------------------------
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17772
-Subject		: Unable to locate IOAPIC for GSI *
-Submitter	: zersaa <zersaa@gmail.com>
-Date		: 2010-09-04 21:28 (30 days old)
-Handled-By	: Eric W. Biederman <ebiederm@xmission.com>
-Patch		: https://patchwork.kernel.org/patch/104501/
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16462
-Subject		: unable to connect to hidden SSID AP on legal channel 13
-Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
-Date		: 2010-07-25 17:06 (71 days old)
-Handled-By	: Johannes Berg <johannes.berg@intel.com>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=31862
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16312
-Subject		: WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
-Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-Date		: 2010-06-28 9:40 (98 days old)
-Message-ID	: <AANLkTin24fr5O4_q5Xbo9Y_NKkEmtcp6Hgmr9_4qXaFz@mail.gmail.com>
-References	: http://marc.info/?l=linux-kernel&m=127771804806465&w=2
-		  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/00884.html
-Handled-By	: Jan Kara <jack@suse.cz>
-		  Jan Kara <jack@suse.cz>
-Patch		: https://bugzilla.kernel.org/attachment.cgi?id=30282
-
-
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16228
-Subject		: BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
-Submitter	: Brian Bloniarz <brian.bloniarz@gmail.com>
-Date		: 2010-06-16 17:57 (110 days old)
-Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Patch		: https://patchwork.kernel.org/patch/189182/
-		  https://patchwork.kernel.org/patch/189232/
-		  https://patchwork.kernel.org/patch/189242/
-		  https://patchwork.kernel.org/patch/189252/
-
-
-For details, please visit the bug entries and follow the links given in
-references.
-
-As you can see, there is a Bugzilla entry for each of the listed regressions.
-There also is a Bugzilla entry used for tracking the regressions introduced
-between 2.6.34 and 2.6.35, unresolved as well as resolved, at:
-
-http://bugzilla.kernel.org/show_bug.cgi?id=16055
-
-Please let the tracking team know if there are any Bugzilla entries that
-should be added to the list in there.
-
-Thanks!
-
+/Mikael
