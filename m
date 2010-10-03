@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab0JCEzq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 00:55:46 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40575 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750989Ab0JCEzp (ORCPT
+	id S1752228Ab0JCFM0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 01:12:26 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:41513 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751330Ab0JCFMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 00:55:45 -0400
+	Sun, 3 Oct 2010 01:12:25 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ttTpkp9nEEoQAEdIIH341h6sYe1Eqx1LdYk/ro4oSWlX3hUWDF6PHneD+cBp9CWjH0
-         qHV//F3TTl2x6WNYoAYqtBi6pp8iS1djGu+MXRdozjkYGLr6SRgC12UYXem2G43HQDdO
-         VhDmpKWAAcyeHbADTaCLcrBJaiLDvmWuelJmg=
+        b=jNhUTkZ1+i6Bo264wUy8P6SSElUM/hxZaRxhc0dZMyEW93PuxiEhbkkVKTtEdZjEHy
+         lji/4gOspDd7ILbTab3PLIONwEamy2er5yNMC5GEXFOdMel1gJIdOQhAg5Pq3CdBwDrV
+         htPz4RTory6WVKYA7r4Bc1HCc7U4OC94gXSFM=
 From: Rahul Ruikar <rahul.ruikar@gmail.com>
 To: David Brownell <dbrownell@users.sourceforge.net>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Christoph Hellwig <hch@lst.de>, Alan Stern <stern@rowland.harvard.edu>,
-        Andrew Morton <akpm@linux-foundation.org>
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Peter Korsgaard <jacmet@sunsite.dk>
 Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
         Rahul Ruikar <rahul.ruikar@gmail.com>
-Subject: [PATCH] usb: gadget: file_storage: Fix error path
-Date: Sun,  3 Oct 2010 10:25:17 +0530
-Message-Id: <1286081717-2757-1-git-send-email-rahul.ruikar@gmail.com>
+Subject: [PATCH] usb: gadget: f_mass_storage: Fix error path
+Date: Sun,  3 Oct 2010 10:41:58 +0530
+Message-Id: <1286082718-2874-1-git-send-email-rahul.ruikar@gmail.com>
 X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -33,21 +33,21 @@ call put_device() when device_register() fails.
 
 Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
 ---
- drivers/usb/gadget/file_storage.c |    1 +
+ drivers/usb/gadget/f_mass_storage.c |    1 +
  1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index a857b7a..2c94318 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -3413,6 +3413,7 @@ static int __ref fsg_bind(struct usb_gadget *gadget)
- 
- 		if ((rc = device_register(&curlun->dev)) != 0) {
- 			INFO(fsg, "failed to register LUN%d: %d\n", i, rc);
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 32cce02..fd634e1 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -2759,6 +2759,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 		if (rc) {
+ 			INFO(common, "failed to register LUN%d: %d\n", i, rc);
+ 			common->nluns = i;
 +			put_device(&curlun->dev);
- 			goto out;
+ 			goto error_release;
  		}
- 		if ((rc = device_create_file(&curlun->dev,
+ 
 -- 
 1.7.2.3
 
