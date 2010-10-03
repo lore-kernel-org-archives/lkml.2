@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754582Ab0JCSoS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 14:44:18 -0400
-Received: from mailfe08.swip.net ([212.247.154.225]:37621 "EHLO swip.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754427Ab0JCSoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 14:44:17 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Oct 2010 14:44:16 EDT
-X-Cloudmark-Score: 0.000000 []
-X-Cloudmark-Analysis: v=1.1 cv=4dE6tNKVm/0afO7MQGRPv7y2YwMo4emTIiDjbh74onY= c=1 sm=1 a=Dyoqhi_TatcA:10 a=M58Ut_zYM0YA:10 a=Cfj4BQAnxiAA:10 a=c1kLzvCsic8A:10 a=Ng2Mm9f4QvPNWBYCxxCRfA==:17 a=Ng2Mm9f4QvPNWBYCxxCRfA==:117
-Reply-To: <untrustfund099@aol.com>
-From: "UNITED NATION TRUST FUND" <info@info.com>
-Subject: You Have Won $650,000,00
-Date: Mon, 4 Oct 2010 02:39:15 +0800
+	id S1754646Ab0JCS6N (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 14:58:13 -0400
+Received: from mail12.svc.cra.dublin.eircom.net ([159.134.118.28]:30097 "HELO
+	mail12.svc.cra.dublin.eircom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754600Ab0JCS6M convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 14:58:12 -0400
+Date: Sun, 3 Oct 2010 19:58:00 +0100 (IST)
+From: Huss Ejvet <tubberclair.ias@eircom.net>
+Reply-To: Huss Ejvet <mar101@w.cn>
+Message-ID: <29144955.95401286132280802.JavaMail.root@webmailbox303.eircom.net>
+Subject: Reply Urgent Message
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <auto-000029975661@mailfe08.swip.net>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Originating-IP: [41.184.112.49]
+X-Mailer: Zimbra 5.0.21_GA_3151.RHEL4 (zclient/5.0.21_GA_3151.RHEL4)
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+I am Ejvet a Manager in AKBank NV,I have a confidential proposal for you which I need you to execute with me.The sum of GBP£25,000,000.00(Twenty Five Million Pounds Sterling's)please provide me details if you are interested :
+1.Full Name
+2.Telephone Number
+3.Contact Address
+ Thank
+Huss Ejvet
