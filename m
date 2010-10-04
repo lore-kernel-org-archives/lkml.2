@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab0JDRcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 13:32:12 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:33713 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754340Ab0JDRcK (ORCPT
+	id S1756091Ab0JDRds (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 13:33:48 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:60378 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751033Ab0JDRdq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 13:32:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=ro2ivyLPvDM91GBkmOZIifAaM/WVL41hXFCDQGrGlhpR61V5ezBfLBVH+BS/Z0iFvS
-         A9ROdV9Ha94La4kTkmWuN3RYS9nT5jBn4tKj4UPmwFq4mgnDadOzav9gHZK7EpUWjo31
-         hn0cYhuYRKpjgI17S20ONrMu1NZKXbkfMvulI=
-From: Sami Kerola <kerolasa@iki.fi>
-To: linux-doc@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, davem@davemloft.net,
-        Sami Kerola <kerolasa@iki.fi>
-Subject: [PATCH] Documentation/networking/ip-sysctl.txt tcp_tw_recycle & tcp_tw_reuse
-Date: Mon,  4 Oct 2010 19:32:04 +0200
-Message-Id: <1286213524-4659-1-git-send-email-kerolasa@iki.fi>
-X-Mailer: git-send-email 1.7.3.1
+	Mon, 4 Oct 2010 13:33:46 -0400
+Date: Mon, 4 Oct 2010 18:33:43 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: overlayfs: BUG in ovl_whiteout
+Message-ID: <20101004173343.GA19733@agent57>
+References: <20101001180702.GD2832@shadowen.org>
+ <E1P2hGO-0001kL-Gw@pomaz-ex.szeredi.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1P2hGO-0001kL-Gw@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sami Kerola <kerolasa@iki.fi>
+On Mon, Oct 04, 2010 at 11:23:16AM +0200, Miklos Szeredi wrote:
+> On Fri, 1 Oct 2010, Andy Whitcroft wrote:
+> > I have been playing with overlayfs for a bit now and there seems to
+> > be something a little dodgy when unmounting and remounting an overlay.
+> > I modified some files in the overlay, immediatly unmounted the overlay and
+> > again immediatly remounted it.  On touching the same files in the overlay
+> > I triggered the following BUG (dmesg fragment at the bottom of this email).
+> > When trying to reproduce this I also triggered a hard hang.
+> 
+> Thanks for the bug report, Andy.
+> 
+> Please change that BUG_ON to a WARN_ON.  This will make this a
+> harmless error message in the log instead of a hang.
 
-Instead of saying 'consult your technical export' the
-documentation needs to assist an export to decide whether to keep
-these settings off or set them on.
+Applied your patch to move these to WARN_ON.  Now I get a WARN_ON after
+the remount.  Now that we don't explode I get the following error from
+the triggering command.  I assume that this is the rename which has
+triggered the issue:
 
-Signed-off-by: Sami Kerola <kerolasa@iki.fi>
----
- Documentation/networking/ip-sysctl.txt |   20 +++++++++++++-------
- 1 files changed, 13 insertions(+), 7 deletions(-)
+W: Failed to fetch http://192.168.0.60:3142/archive.ubuntu.com/ubuntu/dists/maverick/Release rename failed, File exists (/var/lib/apt/lists/192.168.0.60:3142_archive.ubuntu.com_ubuntu_dists_maverick_Release -> /var/lib/apt/lists/192.168.0.60:3142_archive.ubuntu.com_ubuntu_dists_maverick_Release).
 
-diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
-index f350c69..01e2948 100644
---- a/Documentation/networking/ip-sysctl.txt
-+++ b/Documentation/networking/ip-sysctl.txt
-@@ -444,15 +444,21 @@ tcp_tso_win_divisor - INTEGER
- 	Default: 3
- 
- tcp_tw_recycle - BOOLEAN
--	Enable fast recycling TIME-WAIT sockets. Default value is 0.
--	It should not be changed without advice/request of technical
--	experts.
-+	Enable fast recycling TIME-WAIT sockets. See also caution
-+	wrote to tcp_tw_reuse. Default value is 0.
- 
- tcp_tw_reuse - BOOLEAN
--	Allow to reuse TIME-WAIT sockets for new connections when it is
--	safe from protocol viewpoint. Default value is 0.
--	It should not be changed without advice/request of technical
--	experts.
-+	Allow to reuse TIME-WAIT sockets for new connections when it is safe
-+	from protocol viewpoint. One should enable also tcp_timestamps when
-+	this is enabled. Default value is 0.
-+
-+	Caution. Both tcp_tw_recycle and tcp_tw_reuse can cause problems. You
-+	should not enable either without being sure about network topology in
-+	between node(s) which are using, or used by, the node(s) where the
-+	parameter is enabled. Connections that go via TCP state aware nodes,
-+	such as firewalls, NAT devices or load balancers may start drop frames
-+	because of the setting. The more there are connections the greater is
-+	the likelyhood you will see this issue.
- 
- tcp_window_scaling - BOOLEAN
- 	Enable window scaling as defined in RFC1323.
--- 
-1.7.3.1
+I note that the file does indeed exist as a real file in both layers.  I
+have not as yet managed to generate a naive test that also triggers
+this.
 
+-apw
