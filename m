@@ -1,51 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756446Ab0JDPzL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 11:55:11 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:53373 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756406Ab0JDPzJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 11:55:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=NyOOaOYKQwXT9wO5G9kqPbSsHSj6Tcb43XCuBnHudafUBT8/37/sTK7EtYyLNIol2H
-         fe0BWF+5HXg0EV5TQrBxxYOGLU0sGXyfI1xa9H6Ll8jVhtIsO/mor4o75em6HduaYocT
-         wztJjvTR+e0LPaHnQkPJajnW4xBkWvGKkvQlA=
-Date: Mon, 4 Oct 2010 17:54:44 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH] workqueue: Add a trace event for works enqueuing
-Message-ID: <20101004155410.GA5381@nowhere>
-References: <1285861140-5948-1-git-send-regression-fweisbec@gmail.com> <4CA9E8E0.7040503@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA9E8E0.7040503@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756084Ab0JDP46 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 11:56:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2373 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273Ab0JDP45 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 11:56:57 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: [PATCH v6 11/12] Let host know whether the guest can handle async PF in non-userspace context.
+Date: Mon,  4 Oct 2010 17:56:33 +0200
+Message-Id: <1286207794-16120-12-git-send-email-gleb@redhat.com>
+In-Reply-To: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 04:46:56PM +0200, Tejun Heo wrote:
-> Sorry about the delay.  I was off last week.
-> 
-> How about something like this?  It probably needs to be split into two
-> patches.  It provides more information on which CPU was requested and
-> eventually chosen and separates queueing and activation which can be
-> useful for analyzing latency or freezer issues.
-> 
-> Thanks.
+If guest can detect that it runs in non-preemptable context it can
+handle async PFs at any time, so let host know that it can send async
+PF even if guest cpu is not in userspace.
 
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+ Documentation/kvm/msr.txt       |    5 +++--
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/include/asm/kvm_para.h |    1 +
+ arch/x86/kernel/kvm.c           |    3 +++
+ arch/x86/kvm/x86.c              |    5 +++--
+ 5 files changed, 11 insertions(+), 4 deletions(-)
 
-
-Yep looks good. I hadn't thought about frozen works.
-
-Thanks.
-
-(I think this should go through your tree rather than the tracing tree).
+diff --git a/Documentation/kvm/msr.txt b/Documentation/kvm/msr.txt
+index d64e723..918f9ad 100644
+--- a/Documentation/kvm/msr.txt
++++ b/Documentation/kvm/msr.txt
+@@ -153,9 +153,10 @@ MSR_KVM_SYSTEM_TIME: 0x12
+ 
+ MSR_KVM_ASYNC_PF_EN: 0x4b564d02
+ 	data: Bits 63-6 hold 64-byte aligned physical address of a 32bit memory
+-	area which must be in guest RAM. Bits 5-1 are reserved and should be
++	area which must be in guest RAM. Bits 5-2 are reserved and should be
+ 	zero. Bit 0 is 1 when asynchronous page faults are enabled on the vcpu
+-	0 when disabled.
++	0 when disabled. Bit 2 is 1 if asynchronous page faults can be injected
++	when vcpu is in kernel mode.
+ 
+ 	Physical address points to 32 bit memory location that will be written
+ 	to by the hypervisor at the time of asynchronous page fault injection to
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 2f6fc87..81c1a4f 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -420,6 +420,7 @@ struct kvm_vcpu_arch {
+ 		struct gfn_to_hva_cache data;
+ 		u64 msr_val;
+ 		u32 id;
++		bool send_user_only;
+ 	} apf;
+ };
+ 
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index bcc5022..bf3dab3 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -38,6 +38,7 @@
+ #define KVM_MAX_MMU_OP_BATCH           32
+ 
+ #define KVM_ASYNC_PF_ENABLED			(1 << 0)
++#define KVM_ASYNC_PF_SEND_ALWAYS		(1 << 1)
+ 
+ /* Operations for KVM_HC_MMU_OP */
+ #define KVM_MMU_OP_WRITE_PTE            1
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index f73946f..d5877bf 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -449,6 +449,9 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
+ 		u64 pa = __pa(&__get_cpu_var(apf_reason));
+ 
++#ifdef CONFIG_PREEMPT
++		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
++#endif
+ 		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
+ 					  pa | KVM_ASYNC_PF_ENABLED, pa >> 32))
+ 			return;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 0e69d37..cad4412 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1429,8 +1429,8 @@ static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+ {
+ 	gpa_t gpa = data & ~0x3f;
+ 
+-	/* Bits 1:5 are resrved, Should be zero */
+-	if (data & 0x3e)
++	/* Bits 2:5 are resrved, Should be zero */
++	if (data & 0x3c)
+ 		return 1;
+ 
+ 	vcpu->arch.apf.msr_val = data;
+@@ -1444,6 +1444,7 @@ static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+ 	if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.apf.data, gpa))
+ 		return 1;
+ 
++	vcpu->arch.apf.send_user_only = !(data & KVM_ASYNC_PF_SEND_ALWAYS);
+ 	kvm_async_pf_wakeup_all(vcpu);
+ 	return 0;
+ }
+-- 
+1.7.1
 
