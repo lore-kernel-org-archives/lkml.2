@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab0JDI06 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:26:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58630 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab0JDI05 (ORCPT
+	id S1753446Ab0JDI3r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 04:29:47 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51828 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab0JDI3q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:26:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=gXXfL37lGqwxVxYi1r9HZbEgehSakPer9anHS6PLpFF6tfLmgkd4BZ/7+X4wSm/sSN
-         F612ZDKri8IzW3RCPZvGqns+HcTW2k+D4xp2JQCMacVBcElE2uGKnkwSCRH2TX/YtOsW
-         MoRPNQvrhFKSKgPMUq+rN+nPdx+O2gBbVCyCA=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] jbd: Move debug message into #ifdef area
-Date: Mon,  4 Oct 2010 17:26:53 +0900
-Message-Id: <1286180813-4653-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 4 Oct 2010 04:29:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for October 1 (staging/ft1000)
+Date: Mon, 4 Oct 2010 10:29:31 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Marek Belisko <marek.belisko@gmail.com>, gregkh@suse.de,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        driverdevel <devel@driverdev.osuosl.org>
+References: <20101001153756.47b52566.sfr@canb.auug.org.au> <20101001154119.ec81d975.randy.dunlap@oracle.com>
+In-Reply-To: <20101001154119.ec81d975.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010041029.31249.arnd@arndb.de>
+X-Provags-ID: V02:K0:sjYXmN2RZWDesnUjTwYoKoy8E4DDURmaj2MTVfe6H2R
+ Hn7SQD1fsE9Pk7LShgn8eAJ8zP52lsU1N+ZWZ2jj01Hxw30pkN
+ gs/zmGvXTPItz9EplHjCDhWM2PxRlexhO+te8ZPCgr2MRNaELS
+ NhgKlI/B1RV9/57PLKartHKLbVTTjUtX4pFZAvmM0K4TeXzYly
+ 8hMrDBSm45SqzmlAYNdcw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move call to jbd_debug() into #ifdef CONFIG_JBD_DEBUG block because
-'dropped' is declared there. The code could be compiled without this
-change anyway, simply because jbd_debug() expands to nothing if
-!CONFIG_JBD_DEBUG but IMHO it doesn't look good in general.
+On Saturday 02 October 2010 00:41:19 Randy Dunlap wrote:
+> On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20100930:
+> 
+> 
+> drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c:84: warning: initialization from incompatible pointer type
+> drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c:880: warning: the frame size of 2064 bytes is larger than 2048 bytes
+> 
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/jbd/recovery.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I already sent a patch for this
 
-diff --git a/fs/jbd/recovery.c b/fs/jbd/recovery.c
-index 81051da..5b43e96 100644
---- a/fs/jbd/recovery.c
-+++ b/fs/jbd/recovery.c
-@@ -296,10 +296,10 @@ int journal_skip_recovery(journal_t *journal)
- #ifdef CONFIG_JBD_DEBUG
- 		int dropped = info.end_transaction -
- 			      be32_to_cpu(journal->j_superblock->s_sequence);
--#endif
- 		jbd_debug(1,
- 			  "JBD: ignoring %d transaction%s from the journal.\n",
- 			  dropped, (dropped == 1) ? "" : "s");
-+#endif
- 		journal->j_transaction_sequence = ++info.end_transaction;
- 	}
- 
--- 
-1.7.0.4
-
+	Arnd
