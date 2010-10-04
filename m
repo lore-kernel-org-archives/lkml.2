@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab0JDVmQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 17:42:16 -0400
-Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:36488 "EHLO
-	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751020Ab0JDVmO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 17:42:14 -0400
-X-Greylist: delayed 5320 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Oct 2010 17:42:13 EDT
-Message-ID: <51036.41.184.5.155.1286220591.squirrel@41.184.5.155>
-Date: Mon, 4 Oct 2010 17:29:51 -0200 (FNT)
-Subject: Congratulations: You Have Won!
-From: "MICROSOFT EMAIL PROMO TEAM" <e-contact@microsoft.com>
-Reply-To: ivannickerson04@live.co.uk
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S1752144Ab0JDVsm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 17:48:42 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36732 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750978Ab0JDVsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 17:48:41 -0400
+Date: Mon, 4 Oct 2010 23:48:38 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, cpu: Fix X86_FEATURE_NOPL
+Message-ID: <20101004214838.GA26084@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <4CA89681.8000202@zytor.com>
+ <20101003152212.GA13233@liondog.tnic>
+ <a3fce0e5-e6c5-4bf0-b8c0-4954825a7065@email.android.com>
+ <20101003201139.GA16532@liondog.tnic>
+ <dc1a5ce2-0414-4f15-9e7b-fcfa4435adb5@email.android.com>
+ <20101004073127.GA20305@liondog.tnic>
+ <AANLkTikBs5R2KmGfDSXyi5y-cKuZepZCdr0KOVe5-MX6@mail.gmail.com>
+ <4CAA4102.3070205@zytor.com>
+ <AANLkTimXj+5ixx=xoVYOCmM4+W6CGR1XOi6CHDTZzns0@mail.gmail.com>
+ <4CAA455D.8000902@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4CAA455D.8000902@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Congratulations: You Have Won!
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, Oct 04, 2010 at 02:21:33PM -0700
 
-The MICROSOFT EMAIL PROMO TEAM is glad to announce that
-after a successful completion of the PROMO DRAWS held on the
-04th Oct 2010,your e-mail address,attached to winning
-numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
-lottery category.
+> On 10/04/2010 02:12 PM, Linus Torvalds wrote:
+> > On Mon, Oct 4, 2010 at 2:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> >>
+> >> Actually, cpu_has() depends on:
+> >> #if defined(CONFIG_X86_P6_NOP) || defined(CONFIG_X86_64)
+> > 
+> > Ahh. Right you are. The place that depends on just P6_NOP is the
+> > default NOP choice logic in <asm/nops.h>
+> > 
+> > But the end result ends up being the same: can we please clean this
+> > all up so that it isn't so confusing? Rather than add to the
+> > confusion?
+> > 
+> 
+> Agreed that this should be cleaned up.  However, in the meantime I'd
+> like to keep Borislav's patch in the tree since it makes the code
+> technically correct at least.
 
-You have therefore been approved to claim a total sum of
-£450,000,00 Pounds Sterling in cash credited to REF NO:MICRO-L/2009-END10.
+I think the cleanup should be easy: on 64-bit unconditionally return
+p6_nops in find_nop_table() since every 64-bit processor should support
+them and on 32-bit never return p6_nops since X86_FEATURE_NOPL is not
+set there and fall back to intel_nops on non-AMD. Which means we can get
+rid of X86_FEATURE_NOPL altogether. Too radical?
 
-All participants were selected through our Microsoft computer
-ballot system drawn from 167,000 Names,as part of our
-International  "E-MAIL" Promotion Program for our prominent
-MS-WORD users all over the world and for the continuous use
-of the internet. You are advised to contact the claims
-processor with the details below via his e-mail address :
+Hmmm...
 
-NAME: Glenn Bradley
-EMAIL:ivannickerson04@live.co.uk
-
-PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO CLAIM YOUR PRIZE:
-1.Full Name:... 2.Address:... 3.Phone:... 4.Country:... 5.Sex/Gender:...
-
-
-YOURS SINCERELY,
-Eileen Quincy.
-
-
+-- 
+Regards/Gruss,
+    Boris.
