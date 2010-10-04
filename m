@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab0JDJRT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 05:17:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:38756 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752814Ab0JDJRS (ORCPT
+	id S1754222Ab0JDJVS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 05:21:18 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:45287 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754088Ab0JDJVQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 05:17:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=kVAiqQTbDFk/wWtoE3mxymhnEbkdcrFe5ulQBvok0uAY062mc2hXRrzjwB6OhNev2J
-         vckokTzSWpiTH/q2PzXgIr0b2SFW/3r61boRH4ypyzOs2aDgveC7MZjkS2BjZnrD7uEZ
-         ULMTvySlGYDzIvTjWEz5WZi9fP4ln5iw7yBm8=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] jbd: Use printk_ratelimit() in journal_alloc_journal_head()
-Date: Mon,  4 Oct 2010 18:17:14 +0900
-Message-Id: <1286183834-10548-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 4 Oct 2010 05:21:16 -0400
+Date: Mon, 4 Oct 2010 20:21:07 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Yang Ruirui <ruirui.r.yang@tieto.com>,
+        Andrew Morton <akpm@linux-foundation.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
+Subject: Re: -mm: xfs lockdep warning
+Message-ID: <20101004092107.GJ4681@dastard>
+References: <201009161546.16909.ruirui.r.yang@tieto.com>
+ <20100917005227.GJ24409@dastard>
+ <20100920191355.GA28443@infradead.org>
+ <AANLkTi=45J+=ytj=NC4bYTVJFRakNQQiFd35K7mrf+Gq@mail.gmail.com>
+ <4CA997DF.5030008@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CA997DF.5030008@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use printk_ratelimit() instead of doing it manually.
+On Mon, Oct 04, 2010 at 11:01:19AM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 09/25/2010 03:08 PM, Torsten Kaiser wrote:
+> > [adding Tejun Heo, because I'm partly blaming his workqueues]
+> 
+> :-) Sorry about the delay.  I was away the last week.
+> 
+> > After that I enabled lockdep and retried the same update: This time no
+> > hang, only the same lockdep report that Yang Ruirui had.
+> > 
+> > So I'm currently at a loss how I should continue from here. The XFS
+> > false positive drowns any other lockdep problems, but XFS had some
+> > hang problems with the new workqueues. (Personally I had no other hang
+> > with earlier 2.6.36-rcs)
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/jbd/journal.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+What XFS hang problem? I've seen temporary livelocks from the new
+workqueue code, but thay have been fixed. I haven't come across any
+deadlocks or hangs. Do you have a pointer to a bug report in case my
+memory is failing me?
 
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 6f20a75..d66dd36 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -1718,7 +1718,6 @@ static void journal_destroy_journal_head_cache(void)
- static struct journal_head *journal_alloc_journal_head(void)
- {
- 	struct journal_head *ret;
--	static unsigned long last_warning;
- 
- #ifdef CONFIG_JBD_DEBUG
- 	atomic_inc(&nr_journal_heads);
-@@ -1726,11 +1725,10 @@ static struct journal_head *journal_alloc_journal_head(void)
- 	ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
- 	if (ret == NULL) {
- 		jbd_debug(1, "out of memory for journal_head\n");
--		if (time_after(jiffies, last_warning + 5*HZ)) {
-+		if (printk_ratelimit())
- 			printk(KERN_NOTICE "ENOMEM in %s, retrying.\n",
- 			       __func__);
--			last_warning = jiffies;
--		}
-+
- 		while (ret == NULL) {
- 			yield();
- 			ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
+> If workqueue lockdep annotations are triggering spuriously, just nuke
+> all lockdep annotations in workqueue.c.  Currently the annotations are
+> the same as before and trigger even when an actual deadlock won't
+> happen anymore around flushes (but then again all the current users
+> should be operating under the same constraints as before).  I'm
+> looking into how to improve the lockdep annotations but in the end it
+> might be best to leave it as it is.  I'll try to analyze the warnings.
+
+It looks like there's been some discussion that has been private so
+I'm clueless as to the context being discussed here.  Can someone
+fill me in on whatever is going on?
+
+Cheers,
+
+Dave.
 -- 
-1.7.0.4
-
+Dave Chinner
+david@fromorbit.com
