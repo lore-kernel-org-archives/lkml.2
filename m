@@ -1,43 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756094Ab0JDRqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 13:46:22 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:33592 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754189Ab0JDRqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 13:46:21 -0400
-Message-ID: <4CAA12F2.10405@kernel.dk>
-Date: Mon, 04 Oct 2010 19:46:26 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1756067Ab0JDRvQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 13:51:16 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:34298 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753798Ab0JDRvP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 13:51:15 -0400
+Date: Mon, 4 Oct 2010 19:51:04 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [linux-pm] [PATCH 07/23] Hiberation: Fix speed display.
+Message-ID: <20101004175104.GA1518@ucw.cz>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net>
+ <1285566238-10966-8-git-send-email-nigel@tuxonice.net>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Jan Kara <jack@suse.cz>, Tejun Heo <tj@kernel.org>,
-        "Ted Ts'o" <tytso@mit.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Cesar Eduardo Barros <cesarb@cesarb.net>
-Subject: Re: [Bug #19062] Dirtiable inode bdi default != sb bdi btrfs
-References: <MEG5YPP-fxC.A.vnD.So6nMB@chimera> <sQALkqF1FWE.A.15D.bo6nMB@chimera> <20101002165433.GL21129@thunk.org> <201010022358.35972.rjw@sisk.pl> <20101003022707.GN21129@thunk.org> <4CA89E63.4080907@kernel.org> <20101004095943.GE3589@quack.suse.cz> <20101004101212.GA25617@infradead.org>
-In-Reply-To: <20101004101212.GA25617@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285566238-10966-8-git-send-email-nigel@tuxonice.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-04 12:12, Christoph Hellwig wrote:
-> On Mon, Oct 04, 2010 at 11:59:44AM +0200, Jan Kara wrote:
->>   Yes, it's caused by one of my fixes. It's harmless (the warning I've
->> added is just too strict). Christoph has a patch that also fixes this
->> - http://lkml.org/lkml/2010/9/29/76. I hope he'll push it soon.
+On Mon 2010-09-27 15:43:42, Nigel Cunningham wrote:
+> Correct the situation where, if an error occurs while writing an image,
+> the speed display still uses the number of pages that should have been
+> written, rather than the number of pages that were written.
 > 
-> Jens is the writeback maintainer, so he will have to pick it up.
+> Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 
-It's in, will push it asap.
+Ack.
 
 -- 
-Jens Axboe
-
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
