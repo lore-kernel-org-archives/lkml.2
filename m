@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756885Ab0JDSPz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 14:15:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31610 "EHLO
+	id S1756748Ab0JDSN6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 14:13:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31413 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756834Ab0JDSOF (ORCPT
+	with ESMTP id S1755256Ab0JDSN5 (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 4 Oct 2010 14:14:05 -0400
+	Mon, 4 Oct 2010 14:13:57 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH 16/22] x86: Introduce x86_msi_ops
-Date: Mon,  4 Oct 2010 14:13:29 -0400
-Message-Id: <1286216015-9710-17-git-send-email-konrad.wilk@oracle.com>
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 10/22] xen: Provide a variant of xen_poll_irq with timeout.
+Date: Mon,  4 Oct 2010 14:13:23 -0400
+Message-Id: <1286216015-9710-11-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com>
 References: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com>
@@ -23,150 +22,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+The 'xen_poll_irq_timeout' provides a method to pass in
+the poll timeout for IRQs if requested. We also export
+those two poll functions as Xen PCI fronted uses them.
 
-Introduce an x86 specific indirect mechanism to setup MSIs.
-The MSI setup functions become function pointers in an x86_msi_ops
-struct, that defaults to the implementation in io_apic.c
-
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/pci.h      |   26 +++++++++++++++++++++++---
- arch/x86/include/asm/x86_init.h |    9 +++++++++
- arch/x86/kernel/apic/io_apic.c  |    8 ++++----
- arch/x86/kernel/x86_init.c      |    6 ++++++
- 4 files changed, 42 insertions(+), 7 deletions(-)
+ drivers/xen/events.c |   17 ++++++++++++-----
+ include/xen/events.h |    4 ++++
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/pci.h b/arch/x86/include/asm/pci.h
-index 79d6ada..5b0f853 100644
---- a/arch/x86/include/asm/pci.h
-+++ b/arch/x86/include/asm/pci.h
-@@ -7,6 +7,7 @@
- #include <linux/string.h>
- #include <asm/scatterlist.h>
- #include <asm/io.h>
-+#include <asm/x86_init.h>
- 
- #ifdef __KERNEL__
- 
-@@ -94,9 +95,28 @@ static inline void early_quirks(void) { }
- 
- extern void pci_iommu_alloc(void);
- 
--/* MSI arch hook */
--#define arch_setup_msi_irqs arch_setup_msi_irqs
--#define arch_teardown_msi_irqs arch_teardown_msi_irqs
-+/* MSI arch specific hooks */
-+static inline int x86_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+{
-+	return x86_msi.setup_msi_irqs(dev, nvec, type);
-+}
-+
-+static inline void x86_teardown_msi_irqs(struct pci_dev *dev)
-+{
-+	x86_msi.teardown_msi_irqs(dev);
-+}
-+
-+static inline void x86_teardown_msi_irq(unsigned int irq)
-+{
-+	x86_msi.teardown_msi_irq(irq);
-+}
-+
-+#define arch_setup_msi_irqs x86_setup_msi_irqs
-+#define arch_teardown_msi_irqs x86_teardown_msi_irqs
-+#define arch_teardown_msi_irq x86_teardown_msi_irq
-+int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type);
-+void native_teardown_msi_irq(unsigned int irq);
-+void native_teardown_msi_irqs(struct pci_dev *dev);
- 
- #define PCI_DMA_BUS_IS_PHYS (dma_ops->is_phys)
- 
-diff --git a/arch/x86/include/asm/x86_init.h b/arch/x86/include/asm/x86_init.h
-index baa579c..64642ad 100644
---- a/arch/x86/include/asm/x86_init.h
-+++ b/arch/x86/include/asm/x86_init.h
-@@ -154,9 +154,18 @@ struct x86_platform_ops {
- 	int (*i8042_detect)(void);
- };
- 
-+struct pci_dev;
-+
-+struct x86_msi_ops {
-+	int (*setup_msi_irqs)(struct pci_dev *dev, int nvec, int type);
-+	void (*teardown_msi_irq)(unsigned int irq);
-+	void (*teardown_msi_irqs)(struct pci_dev *dev);
-+};
-+
- extern struct x86_init_ops x86_init;
- extern struct x86_cpuinit_ops x86_cpuinit;
- extern struct x86_platform_ops x86_platform;
-+extern struct x86_msi_ops x86_msi;
- 
- extern void x86_init_noop(void);
- extern void x86_init_uint_noop(unsigned int unused);
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index 4132eea..af80132 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -3533,7 +3533,7 @@ static int setup_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int irq)
- 	return 0;
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 385734f..791932d 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1133,7 +1133,7 @@ void xen_clear_irq_pending(int irq)
+ 	if (VALID_EVTCHN(evtchn))
+ 		clear_evtchn(evtchn);
  }
- 
--int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
-+int native_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+-
++EXPORT_SYMBOL(xen_clear_irq_pending);
+ void xen_set_irq_pending(int irq)
  {
- 	unsigned int irq;
- 	int ret, sub_handle;
-@@ -3594,12 +3594,12 @@ error:
+ 	int evtchn = evtchn_from_irq(irq);
+@@ -1153,9 +1153,9 @@ bool xen_test_irq_pending(int irq)
  	return ret;
  }
  
--void arch_teardown_msi_irq(unsigned int irq)
-+void native_teardown_msi_irq(unsigned int irq)
+-/* Poll waiting for an irq to become pending.  In the usual case, the
+-   irq will be disabled so it won't deliver an interrupt. */
+-void xen_poll_irq(int irq)
++/* Poll waiting for an irq to become pending with timeout.  In the usual case,
++ * the irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq_timeout(int irq, u64 timeout)
  {
- 	destroy_irq(irq);
- }
+ 	evtchn_port_t evtchn = evtchn_from_irq(irq);
  
--void arch_teardown_msi_irqs(struct pci_dev *dev)
-+void native_teardown_msi_irqs(struct pci_dev *dev)
- {
- 	struct msi_desc *entry;
+@@ -1163,13 +1163,20 @@ void xen_poll_irq(int irq)
+ 		struct sched_poll poll;
  
-@@ -3609,7 +3609,7 @@ void arch_teardown_msi_irqs(struct pci_dev *dev)
- 			continue;
- 		nvec = 1 << entry->msi_attrib.multiple;
- 		for (i = 0; i < nvec; i++)
--			arch_teardown_msi_irq(entry->irq + i);
-+			x86_msi.teardown_msi_irq(entry->irq + i);
+ 		poll.nr_ports = 1;
+-		poll.timeout = 0;
++		poll.timeout = timeout;
+ 		set_xen_guest_handle(poll.ports, &evtchn);
+ 
+ 		if (HYPERVISOR_sched_op(SCHEDOP_poll, &poll) != 0)
+ 			BUG();
  	}
  }
++EXPORT_SYMBOL(xen_poll_irq_timeout);
++/* Poll waiting for an irq to become pending.  In the usual case, the
++ * irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq(int irq)
++{
++	xen_poll_irq_timeout(irq, 0 /* no timeout */);
++}
  
-diff --git a/arch/x86/kernel/x86_init.c b/arch/x86/kernel/x86_init.c
-index cd6da6b..91b5209 100644
---- a/arch/x86/kernel/x86_init.c
-+++ b/arch/x86/kernel/x86_init.c
-@@ -6,6 +6,7 @@
- #include <linux/init.h>
- #include <linux/ioport.h>
- #include <linux/module.h>
-+#include <linux/pci.h>
+ void xen_irq_resume(void)
+ {
+diff --git a/include/xen/events.h b/include/xen/events.h
+index 8227da8..2532f8b 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -53,6 +53,10 @@ bool xen_test_irq_pending(int irq);
+    irq will be disabled so it won't deliver an interrupt. */
+ void xen_poll_irq(int irq);
  
- #include <asm/bios_ebda.h>
- #include <asm/paravirt.h>
-@@ -99,3 +100,8 @@ struct x86_platform_ops x86_platform = {
- };
++/* Poll waiting for an irq to become pending with a timeout.  In the usual case,
++ * the irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq_timeout(int irq, u64 timeout);
++
+ /* Determine the IRQ which is bound to an event channel */
+ unsigned irq_from_evtchn(unsigned int evtchn);
  
- EXPORT_SYMBOL_GPL(x86_platform);
-+struct x86_msi_ops x86_msi = {
-+	.setup_msi_irqs = native_setup_msi_irqs,
-+	.teardown_msi_irq = native_teardown_msi_irq,
-+	.teardown_msi_irqs = native_teardown_msi_irqs,
-+};
 -- 
 1.7.0.4
 
