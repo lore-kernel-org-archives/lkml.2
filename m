@@ -1,123 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab0JDJy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 05:54:29 -0400
-Received: from www.tglx.de ([62.245.132.106]:41093 "EHLO www.tglx.de"
+	id S1754524Ab0JDKAk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 06:00:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56323 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753061Ab0JDJy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 05:54:28 -0400
-Date: Mon, 4 Oct 2010 11:56:06 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg KH <greg@kroah.com>, Greg KH <gregkh@suse.de>,
-        "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 4/5] libunload: A library to help remove open files
-Message-ID: <20101004095606.GB1867@silverbox.local>
-References: <20100917205946.GF2522@local>
- <m139t451b4.fsf_-_@fess.ebiederm.org>
- <20100924104555.GC1819@silverbox.local>
- <m1hbhfcbdo.fsf@fess.ebiederm.org>
- <20100924173106.GA4966@silverbox.local>
- <m14ode662q.fsf@fess.ebiederm.org>
- <20100925003308.GA29910@suse.de>
- <m1wrqa4mg5.fsf@fess.ebiederm.org>
- <20100926192142.GA7252@kroah.com>
- <m1ocbk86k3.fsf_-_@fess.ebiederm.org>
+	id S1753102Ab0JDKAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 06:00:39 -0400
+Date: Mon, 4 Oct 2010 11:59:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Ted Ts'o" <tytso@mit.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@infradead.org>
+Subject: Re: [Bug #19062] Dirtiable inode bdi default != sb bdi btrfs
+Message-ID: <20101004095943.GE3589@quack.suse.cz>
+References: <MEG5YPP-fxC.A.vnD.So6nMB@chimera>
+ <sQALkqF1FWE.A.15D.bo6nMB@chimera>
+ <20101002165433.GL21129@thunk.org>
+ <201010022358.35972.rjw@sisk.pl>
+ <20101003022707.GN21129@thunk.org>
+ <4CA89E63.4080907@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1ocbk86k3.fsf_-_@fess.ebiederm.org>
+In-Reply-To: <4CA89E63.4080907@kernel.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 03:48:44PM -0700, Eric W. Biederman wrote:
+On Sun 03-10-10 17:16:51, Tejun Heo wrote:
+> On 10/03/2010 04:27 AM, Ted Ts'o wrote:
+> > WARNING: at /usr/projects/linux/ext4/fs/fs-writeback.c:87 inode_to_bdi+0x4e/0x5c()
+> > Hardware name: 
+> > Dirtiable inode bdi block != sb bdi block
+> > Modules linked in:
+> > Pid: 21649, comm: mkfs.ext4 Tainted: G        W   2.6.36-rc6-00016-gcc25699 #735
+> > Call Trace:
+> >  [<c015a2e2>] warn_slowpath_common+0x6a/0x7f
+> >  [<c020a762>] ? inode_to_bdi+0x4e/0x5c
+> >  [<c015a36a>] warn_slowpath_fmt+0x2b/0x2f
+> >  [<c020a762>] inode_to_bdi+0x4e/0x5c
+> >  [<c020b6c3>] __mark_inode_dirty+0xaf/0x162
+> >  [<c0202305>] file_update_time+0xcc/0xe9
+> >  [<c01c68dd>] __generic_file_aio_write+0x136/0x28f
+> >  [<c02145a4>] blkdev_aio_write+0x33/0x72
+> >  [<c01f20da>] do_sync_write+0x8f/0xca
+> >  [<c0647678>] ? mutex_unlock+0xd/0xf
+> >  [<c030d528>] ? security_file_permission+0x27/0x2b
+> >  [<c01f227c>] ? rw_verify_area+0x9d/0xc0
+> >  [<c01f204b>] ? do_sync_write+0x0/0xca
+> >  [<c01f2629>] vfs_write+0x85/0xe3
+> >  [<c01f2725>] sys_write+0x40/0x62
+> >  [<c064915d>] syscall_call+0x7/0xb
+> > ---[ end trace 1f39401760ab3a42 ]---
+  Yes, it's caused by one of my fixes. It's harmless (the warning I've
+added is just too strict). Christoph has a patch that also fixes this
+- http://lkml.org/lkml/2010/9/29/76. I hope he'll push it soon.
 
-This doesn't build, see below.
-
-Thanks,
-Hans
-
-[...]
-> +}
-> +EXPORT_SYMBOL_GPL(unload_release_unlock);
-> +
-> +
-> +void unload_barrier(struct unload *unload)
-> +{
-> +	struct unload_barrier barrier;
-> +	struct unload_file *ufile;
-> +	struct hlist_node *pos;
-> +
-> +	/* Guarantee that when this function returns I am not
-> +	 * executing any code protected by the unload_lock or
-> +	 * unload_releas_lock, and that I will never again execute
-> +	 * code protected by those locks.
-> +	 *
-> +	 * Also guarantee the file count for every file remaining on
-> +	 * the unload ufiles list has been incremented.  The increment
-> +	 * of the file count guarantees __fput will not be called.
-> +	 */
-> +	init_completion(&barrier.completion);
-> +	barrier.releasers = 0;
-> +
-> +	spin_lock(&unload->lock);
-> +	unload->barrier = &barrier;
-> +
-> +	hlist_for_each_entry(ufile, pos, &unload->ufiles, list)
-> +		if (!atomic_long_inc_not_zero(&ufile->file->f_count))
-> +			barrier.releasers++;
-> +	unload->active--;
-> +	if (unload->active || barrier.releasers) {
-> +		spin_unlock(&unload->lock);
-> +		wait_for_completion(&barrier.completion);
-> +		spin_lock(&unload->lock);
-> +	}
-> +	spin_unlock(&unload->lock);
-> +}
-
-There's an EXPORT_SYMBOL_GPL(unload_barrier) missing here...
-
-> diff --git a/include/linux/unload.h b/include/linux/unload.h
-> new file mode 100644
-> index 0000000..fc1b4f6
-> --- /dev/null
-> +++ b/include/linux/unload.h
-> @@ -0,0 +1,33 @@
-> +#ifndef _LINUX_UNLOAD_H
-> +#define _LINUX_UNLOAD_H
-> +
-> +#include <linux/list.h>
-> +
-> +struct file;
-> +struct vm_operations_struct;
-> +struct unload_barrier;
-> +
-> +struct unload {
-> +	struct hlist_head	ufiles;
-> +	struct unload_barrier	*barrier;
-> +	spinlock_t		lock;
-> +	int			active;
-> +};
-> +
-> +struct unload_file {
-> +	struct unload		*unload;
-> +	struct hlist_node	list;
-> +	struct file 		*file;
-> +};
-> +
-> +void unload_init(struct unload *unload);
-> +void unload_file_init(struct unload_file *ufile, struct file *file, struct unload *unload);
-> +bool unload_trylock(struct unload *unload);
-> +void unload_unlock(struct unload *unload);
-> +bool unload_release_trylock(struct unload_file *ufile);
-> +void unload_release_unlock(struct unload_file *ufile);
-> +void unload_file_attach(struct unload_file *ufile, struct unload *unload);
-> +void unload_file_detach(struct unload_file *ufile);
-> +struct unload_file *find_unload_file(struct unload *unload, struct file *file);
-> +void unload_barrier(struct unload *unload);
-> +#endif /* _LINUX_UNLOAD_H */
-> -- 
-> 1.7.2.2
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
