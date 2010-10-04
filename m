@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab0JDDEo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 23:04:44 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54204 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751403Ab0JDDEm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 23:04:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vd6Vh5oKiTJrbherT595Ea7ocxprB3ilE/Wy4jEG9lZzBjTlEhUkG731XG5WkHd/Cp
-         TYH2eBLiKIwoVT1SpfBqY+cPJeXtWbJOIsnAExcmXqq47DgiLeLlyeJXMB4DgUS6q8hw
-         3tS7voZPIi9laKRCvX4ylBxcc5qqMjWG7YPCQ=
-Date: Mon, 4 Oct 2010 11:09:15 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Robin Holt <holt@sgi.com>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Subject: Re: [PATCH] sysctl: fix min/max handling in
- __do_proc_doulongvec_minmax()
-Message-ID: <20101004030915.GC5189@cr0.nay.redhat.com>
-References: <1286025469.2582.1806.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286025469.2582.1806.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751607Ab0JDDIm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 23:08:42 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:45136 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751506Ab0JDDIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 23:08:41 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/jXNRODb/j9Lh4k6xbn/S2eOQmw5c8xYMBQL5Z0D
+	3DEAkmsFe0tc+r
+Subject: Re: [PATCH 0/3][RFC] Improve load balancing when tasks have large
+ weight differential
+From: Mike Galbraith <efault@gmx.de>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTi=TQnYGLPC=Pi0o1As83W6VdWdjvimZNSrGT4qW@mail.gmail.com>
+References: <1285633798-26886-1-git-send-email-ncrao@google.com>
+	 <1285682273.7469.3.camel@marge.simson.net>
+	 <AANLkTin=Dic2UE55yUaam8NzGHTib=9s=x-wyzk03BU0@mail.gmail.com>
+	 <1285724758.7440.11.camel@marge.simson.net>
+	 <AANLkTi=TQnYGLPC=Pi0o1As83W6VdWdjvimZNSrGT4qW@mail.gmail.com>
+Content-Type: text/plain
+Date: Mon, 04 Oct 2010 05:08:37 +0200
+Message-Id: <1286161717.7410.12.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 03:17:49PM +0200, Eric Dumazet wrote:
->When proc_doulongvec_minmax() is used with an array of longs,
->and no min/max check requested (.extra1 or .extra2 being NULL), we
->dereference a NULL pointer for the second element of the array.
->
->Noticed while doing some changes in network stack for the "16TB problem"
->
->Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->---
-> kernel/sysctl.c |    3 ++-
-> 1 file changed, 2 insertions(+), 1 deletion(-)
->
->diff --git a/kernel/sysctl.c b/kernel/sysctl.c
->index f88552c..4fba86d 100644
->--- a/kernel/sysctl.c
->+++ b/kernel/sysctl.c
->@@ -2500,7 +2500,8 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
-> 				break;
-> 			if (neg)
-> 				continue;
->-			if ((min && val < *min) || (max && val > *max))
->+			if ((table->extra1 && val < *min) ||
->+			    (table->extra2 && val > *max))
-> 				continue;
+Sorry for the late reply.  (fired up your patchlet bright and early so
+it didn't rot in my inbox any longer;)
 
+On Wed, 2010-09-29 at 12:32 -0700, Nikhil Rao wrote:
+> On Tue, Sep 28, 2010 at 6:45 PM, Mike Galbraith <efault@gmx.de> wrote:
+> > On Tue, 2010-09-28 at 14:15 -0700, Nikhil Rao wrote:
+> >
+> >> Thanks for running this. I've not been able to reproduce what you are
+> >> seeing on the few test machines that I have (different combinations of
+> >> MC, CPU and NODE domains). Can you please give me more info about
+> >> your setup?
+> >
+> > It's a plain-jane Q6600 box, so has only MC and CPU domains.
+> >
+> > It doesn't necessarily _instantly_ "stick", can take a couple tries, or
+> > a little time.
+> 
+> The closest I have is a quad-core dual-socket machine (MC, CPU
+> domains). And I'm having trouble reproducing it on that machine as
+> well :-( I ran 5 soaker threads (one of them niced to -15) for a few
+> hours and didn't see the problem. Can you please give me some trace
+> data & schedstats to work with?
 
-Yes? This is wrong for me, min and max are pointers to ->extra{1,2},
-they are increased within the for loop, you are only checking the
-the pointer to the first element of ->extra{1,2}.
+Booting with isolcpus or offlining the excess should help.
+
+> Looking at the patch/code, I suspect active migration on the CPU
+> scheduling domain pushes the nice 0 task (running on the same socket
+> as the nice -15 task) to the other socket. This leaves you with an
+> idle core on the nice -15 socket, and with soaker threads there is no
+> way to come back to a 100% utilized state. One possible explanation is
+> the group capacity for a sched group in the CPU sched domain is
+> rounded to 1 (instead of 2). I have a patch below that throws a hammer
+> at the problem and uses group weight instead of group capacity (this
+> is experimental, will refine it if it works). Can you please see if
+> that solves the problem?
+
+Nope, didn't help.  I'll poke at it, but am squabbling elsewhere atm.
+
+	-Mike
+
