@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932072Ab0JDP7D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 11:59:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15129 "EHLO mx1.redhat.com"
+	id S932109Ab0JDP7i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 11:59:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21706 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756444Ab0JDP5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756418Ab0JDP5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Oct 2010 11:57:04 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
@@ -12,120 +12,37 @@ Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
         mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
         mtosatti@redhat.com
-Subject: [PATCH v6 10/12] Handle async PF in non preemptable context
-Date: Mon,  4 Oct 2010 17:56:32 +0200
-Message-Id: <1286207794-16120-11-git-send-email-gleb@redhat.com>
+Subject: [PATCH v6 12/12] Send async PF when guest is not in userspace too.
+Date: Mon,  4 Oct 2010 17:56:34 +0200
+Message-Id: <1286207794-16120-13-git-send-email-gleb@redhat.com>
 In-Reply-To: <1286207794-16120-1-git-send-email-gleb@redhat.com>
 References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If async page fault is received by idle task or when preemp_count is
-not zero guest cannot reschedule, so do sti; hlt and wait for page to be
-ready. vcpu can still process interrupts while it waits for the page to
-be ready.
+If guest indicates that it can handle async pf in kernel mode too send
+it, but only if interrupts are enabled.
 
-Acked-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/kernel/kvm.c |   40 ++++++++++++++++++++++++++++++++++------
- 1 files changed, 34 insertions(+), 6 deletions(-)
+ arch/x86/kvm/x86.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index 36fb3e4..f73946f 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -37,6 +37,7 @@
- #include <asm/cpu.h>
- #include <asm/traps.h>
- #include <asm/desc.h>
-+#include <asm/tlbflush.h>
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index cad4412..30b1cd1 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -6244,7 +6244,8 @@ void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
+ 		kvm_add_async_pf_gfn(vcpu, work->arch.gfn);
  
- #define MMU_QUEUE_SIZE 1024
- 
-@@ -78,6 +79,8 @@ struct kvm_task_sleep_node {
- 	wait_queue_head_t wq;
- 	u32 token;
- 	int cpu;
-+	bool halted;
-+	struct mm_struct *mm;
- };
- 
- static struct kvm_task_sleep_head {
-@@ -106,6 +109,11 @@ void kvm_async_pf_task_wait(u32 token)
- 	struct kvm_task_sleep_head *b = &async_pf_sleepers[key];
- 	struct kvm_task_sleep_node n, *e;
- 	DEFINE_WAIT(wait);
-+	int cpu, idle;
-+
-+	cpu = get_cpu();
-+	idle = idle_cpu(cpu);
-+	put_cpu();
- 
- 	spin_lock(&b->lock);
- 	e = _find_apf_task(b, token);
-@@ -119,19 +127,33 @@ void kvm_async_pf_task_wait(u32 token)
- 
- 	n.token = token;
- 	n.cpu = smp_processor_id();
-+	n.mm = current->active_mm;
-+	n.halted = idle || preempt_count() > 1;
-+	atomic_inc(&n.mm->mm_count);
- 	init_waitqueue_head(&n.wq);
- 	hlist_add_head(&n.link, &b->list);
- 	spin_unlock(&b->lock);
- 
- 	for (;;) {
--		prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
-+		if (!n.halted)
-+			prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
- 		if (hlist_unhashed(&n.link))
- 			break;
--		local_irq_enable();
--		schedule();
--		local_irq_disable();
-+
-+		if (!n.halted) {
-+			local_irq_enable();
-+			schedule();
-+			local_irq_disable();
-+		} else {
-+			/*
-+			 * We cannot reschedule. So halt.
-+			 */
-+			native_safe_halt();
-+			local_irq_disable();
-+		}
- 	}
--	finish_wait(&n.wq, &wait);
-+	if (!n.halted)
-+		finish_wait(&n.wq, &wait);
- 
- 	return;
- }
-@@ -140,7 +162,12 @@ EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
- static void apf_task_wake_one(struct kvm_task_sleep_node *n)
- {
- 	hlist_del_init(&n->link);
--	if (waitqueue_active(&n->wq))
-+	if (!n->mm)
-+		return;
-+	mmdrop(n->mm);
-+	if (n->halted)
-+		smp_send_reschedule(n->cpu);
-+	else if (waitqueue_active(&n->wq))
- 		wake_up(&n->wq);
- }
- 
-@@ -193,6 +220,7 @@ again:
- 		}
- 		n->token = token;
- 		n->cpu = smp_processor_id();
-+		n->mm = NULL;
- 		init_waitqueue_head(&n->wq);
- 		hlist_add_head(&n->link, &b->list);
- 	} else
+ 		if (!(vcpu->arch.apf.msr_val & KVM_ASYNC_PF_ENABLED) ||
+-		    kvm_x86_ops->get_cpl(vcpu) == 0)
++		    (vcpu->arch.apf.send_user_only &&
++		     kvm_x86_ops->get_cpl(vcpu) == 0))
+ 			vcpu->arch.mp_state = KVM_MP_STATE_HALTED;
+ 		else if (!apf_put_user(vcpu, KVM_PV_REASON_PAGE_NOT_PRESENT)) {
+ 			vcpu->arch.fault.error_code = 0;
 -- 
 1.7.1
 
