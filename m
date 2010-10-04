@@ -1,204 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754862Ab0JDKOb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 06:14:31 -0400
-Received: from mtagate7.de.ibm.com ([195.212.17.167]:36894 "EHLO
-	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab0JDKO2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 06:14:28 -0400
-Message-ID: <4CA9A8E6.8070600@free.fr>
-Date: Mon, 04 Oct 2010 12:13:58 +0200
-From: Daniel Lezcano <daniel.lezcano@free.fr>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1754879Ab0JDKW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 06:22:26 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:50780 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754495Ab0JDKWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 06:22:25 -0400
+Date: Mon, 4 Oct 2010 12:22:13 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Alex Elder <aelder@sgi.com>, xfs@oss.sgi.com,
+        John Hawley <warthog9@kernel.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [patch] xfs: properly account for reclaimed inodes
+Message-ID: <20101004102213.GJ2618@cmpxchg.org>
+References: <20101001074354.GF2618@cmpxchg.org>
+ <1285953443.2422.4.camel@doink>
+ <20101004071904.GH4681@dastard>
 MIME-Version: 1.0
-To: hadi@cyberus.ca
-CC: Pavel Emelyanov <xemul@parallels.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Michael Kerrisk <mtk.manpages@gmail.com>,
-        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
-        David Miller <davem@davemloft.net>,
-        "Serge E. Hallyn" <serge@hallyn.com>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Ben Greear <greearb@candelatech.com>,
-        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
-Subject: Re: [PATCH 8/8] net: Implement socketat.
-References: <m1ocborgq7.fsf@fess.ebiederm.org>	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>	 <1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>	 <4CA7A07C.5030504@free.fr> <1286113441.3812.229.camel@bigi>
-In-Reply-To: <1286113441.3812.229.camel@bigi>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101004071904.GH4681@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/03/2010 03:44 PM, jamal wrote:
-> Hi Daniel,
->
-> Thanks for clarifying this ..
->
-> On Sat, 2010-10-02 at 23:13 +0200, Daniel Lezcano wrote:
->    
->> Just to clarify this point. You enter the namespace, create the socket
->> and go back to the initial namespace (or create a new one). Further
->> operations can be made against this fd because it is the network
->> namespace stored in the sock struct which is used, not the current
->> process network namespace which is used at the socket creation only.
->>
->> We can actually already do that by unsharing and then create a
->> socket.
->> This socket will pin the namespace and can be used as a control socket
->> for the namespace (assuming the socket domain will be ok for all the
->> operations).
->>
->> Jamal, I don't know what kind of application you want to use but if I
->> assume you want to create a process controlling 1024 netns,
->>      
-> At the moment i am looking at 8K on a Nehalem with lots of RAM. They
-> will mostly be created at startup but some could be created afterwards.
-> Each will have its own netdevs etc. also created at startup (and some
-> other config that may happen later).
-> Because startup time may accumulate, it is clearly important to me
-> to pick whatever scheme that reduces the number of calls...
->    
+Hi,
 
-8K ! whow ! :)
+On Mon, Oct 04, 2010 at 06:19:04PM +1100, Dave Chinner wrote:
+> On Fri, Oct 01, 2010 at 12:17:23PM -0500, Alex Elder wrote:
+> > On Fri, 2010-10-01 at 09:43 +0200, Johannes Weiner wrote:
+> > > When marking an inode reclaimable, a per-AG counter is increased, the
+> > > inode is tagged reclaimable in its per-AG tree, and, when this is the
+> > > first reclaimable inode in the AG, the AG entry in the per-mount tree
+> > > is also tagged.
+> > > 
+> > > When an inode is finally reclaimed, however, it is only deleted from
+> > > the per-AG tree.  Neither the counter is decreased, nor is the parent
+> > > tree's AG entry untagged properly.
+> > > 
+> > > Since the tags in the per-mount tree are not cleared, the inode
+> > > shrinker iterates over all AGs that have had reclaimable inodes at one
+> > > point in time.
+> > > 
+> > > The counters on the other hand signal an increasing amount of slab
+> > > objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
+> > > per-filesystem context" this is not a real issue anymore because the
+> > > shrinker bails out after one iteration.
+> > > 
+> > > But the problem was observable on a machine running v2.6.34, where the
+> > > reclaimable work increased and each process going into direct reclaim
+> > > eventually got stuck on the xfs inode shrinking path, trying to scan
+> > > several million objects.
+> > > 
+> > > Fix this by properly unwinding the reclaimable-state tracking of an
+> > > inode when it is reclaimed.
+> > > 
+> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > Cc: stable@kernel.org
+> > 
+> > Yes, this looks right to me.  The state was correctly
+> > adjusted in xfs_iget_cache_hit() when a RECLAIMABLE
+> > inode is found in the cache, but it was not done when
+> > reclaim completes.
+> > 
+> > Reviewed-by: Alex Elder <aelder@sgi.com>
+> 
+> Alex, can you push this to Linus ASAP? This needs to go back to
+> stable kernels as well..
 
+Here is my suggestion of a backport to .34.  Dave, Alex, do you
+approve?
 
->> let's try to identificate what happen with setns and with socketat :
->>
->> With setns:
->>
->>       * open /proc/self/ns/net (1)
->>       * unshare the netns
->>       * open /proc/self/ns/net (2)
->>       * setns (1)
->>       * create a virtual network device
->>       * move the virtual device to (2) (using the set netns by fd)
->>       * unshare the netns
->>       ...
->>
->> With socketat:
->>
->>       * open a socket (1)
->>       * unshare the netns
->>       * open a netlink with socketat(1) =>  (2)
->>       * create a virtual device using (2) (at this point it is
->> init_net_ns)
->>       * move the virtual device to the current netns (using the set
->> netns
->> by pid)
->>       * open a socket (3)
->>       * unshare the netns
->>       ...
->>
->> We have the same number of file descriptors kept opened. Except, with
->> setns we can bind mount the directory somewhere, that will pin the
->> namespace and then we can close the /proc/self/ns/net file descriptors
->> and reopen them later.
->>
->>      
-> Ok, so a wrapper such as: create_socket_on(namespaceid)
-> will have generally less system calls with socketat()
->    
+	Hannes
 
-Yes, I think so.
-
->> If your application has to do a lot of specific network processing,
->> during its life cycle, in different namespaces, the socketat syscall
->> will be better because it will reduce the number of syscalls but at
->> the cost of keeping the file descriptors opened (potentially a big
->> number). Otherwise, setns should fit your needs.
->>      
-> Makes sense.
->
-> One thing still confuses me...
-> The app control point is in namespace0. I still want to be able to
-> "boot" namespaces first and maybe a few seconds later do a socketat()...
-> and create devices, tcp sockets etc. I suspect create_ns(namespace-name)
-> would involve:
->       * open /proc/self/ns/net (namespace-name)
->       * unshare the netns
-> Is this correct?
->    
-
-Maybe I misunderstanding but you are trying to save some syscalls, you 
-should use socketat only and keep app control namespace0 socket for it. 
-The process will be in the last netns you unshared (maybe you can use 
-here one setns syscall to return back to the namespace0).
-
-     (1) socketat  :
-         * pros : 1 syscall to create a socket
-         * cons : a file descriptor per namespace, namespace is only 
-manageable via a socket
-
-     (2) setns :
-         * pros : namespace is fully manageable with a generic code
-         * cons : 2 syscall (or 3 if we want to return to the initial 
-netns) to create a socket(setns + socket [ + setns ]), a file descriptor 
-per namespace
-
-     (3) setns + bind mount :
-         * pros : no file descriptor need to be kept opened
-         * cons : startup longer, (unshare + mount --bind), 4 syscalls 
-to create a socket in the namespace (open, setns, socket, close), (may 
-be 5 syscalls if we want to return to the initial netns).
-
-Depending of the scheme you choose the startup will be for:
-
-     (1) socketat :
-          * open /proc/self/ns/net (one time to 'save' and pin the 
-initial netns)
-         and then
-
-         int create_ns(void)
-         {
-             unshare(CLONE_NEWNET);
-             return socket(...)
-         }
-
-         and,
-
-          for (i = 0; i < 8192; i++)
-                  mynsfd[i] = create_ns();
-
-     (2) setns :
-          * open /proc/self/ns/net (one time to 'save' and pin the 
-initial netns)
-           and then
-
-         int create_ns(void)
-         {
-             unshare(CLONE_NEWNET);
-             return open("/proc/self/ns/net");
-         }
-
-         and,
-
-         for (i = 0; i < 8192; i++)
-               mynsfd[i] = create_ns();
-
-     (3) setns + mount :
-
-          * open /proc/self/ns/net (one time to 'save' and pin the 
-initial netns)
-           and then
-
-             int create_ns(const char *nspath)
-             {
-                unshare(CLONE_NEWNET);
-                creat(nspath);
-                mount("/proc/self/ns/net", nspath, MS_BIND);
-             }
-
-             for (i  = 0; i < 8192; i++)
-                     create_ns(mynspath[i]);
-
-Hope that helps.
-
-   -- Daniel
+diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
+index 6845db9..3314f2a 100644
+--- a/fs/xfs/xfs_iget.c
++++ b/fs/xfs/xfs_iget.c
+@@ -499,6 +499,7 @@ xfs_ireclaim(
+ 	write_lock(&pag->pag_ici_lock);
+ 	if (!radix_tree_delete(&pag->pag_ici_root, agino))
+ 		ASSERT(0);
++	pag->pag_ici_reclaimable--;
+ 	write_unlock(&pag->pag_ici_lock);
+ 	xfs_perag_put(pag);
+ 
