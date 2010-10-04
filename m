@@ -1,92 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab0JDNL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 09:11:56 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:59005 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1754461Ab0JDNLz (ORCPT
+	id S1755796Ab0JDNP6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 09:15:58 -0400
+Received: from smtp.tele.fi ([192.89.123.25]:47845 "EHLO
+	vulpes-int.media.sonera.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755564Ab0JDNP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 09:11:55 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: airlied@redhat.com
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Ben Skeggs <bskeggs@redhat.com>,
-        Marcin Slusarz <marcin.slusarz@gmail.com>
-Subject: [PATCH v2 1/1] nouveau: ratelimit IRQ messages
-Date: Mon,  4 Oct 2010 15:11:30 +0200
-Message-Id: <1286197890-23227-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
+	Mon, 4 Oct 2010 09:15:57 -0400
+X-Greylist: delayed 2855 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Oct 2010 09:15:57 EDT
+X-Originating-Ip: [194.89.68.22]
+Date: Mon, 4 Oct 2010 15:27:52 +0300
+From: Pasi =?iso-8859-1?Q?K=E4rkk=E4inen?= <pasik@iki.fi>
+To: "Mr. Teo En Ming (Zhang Enming) ????????? of Singapore" 
+	<space.time.universe@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "teoenming@hotmail.com" <teoenming@hotmail.com>,
+        zhang_enming@lavabit.com
+Subject: Re: Linux Kernel 2.6.36 Status
+Message-ID: <20101004122752.GZ2804@reaktio.net>
+References: <4C95BC88.9050301@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C95BC88.9050301@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are two messages in the ISR of nouveau which might be printed out
-hundred times in a second. Ratelimit them. (We need to move
-nouveau_ratelimit to the top of the file.)
+On Sun, Sep 19, 2010 at 03:32:24PM +0800, "Mr. Teo En Ming (Zhang Enming) ????????? of Singapore" wrote:
+> Dear Linus Torvalds,
+>
+> May I know if Linux kernel 2.6.36 is Xen pv-ops dom0 ready?
+>
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Ben Skeggs <bskeggs@redhat.com>
-Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
----
- drivers/gpu/drm/nouveau/nouveau_irq.c |   23 +++++++++++++----------
- 1 files changed, 13 insertions(+), 10 deletions(-)
+Linux 2.6.36 will not contain pv-ops dom0 code. 
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
-index 794b0ee..5b097b4 100644
---- a/drivers/gpu/drm/nouveau/nouveau_irq.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
-@@ -41,6 +41,13 @@
- #include "nouveau_connector.h"
- #include "nv50_display.h"
- 
-+static DEFINE_RATELIMIT_STATE(nouveau_ratelimit_state, 3 * HZ, 20);
-+
-+static int nouveau_ratelimit(void)
-+{
-+	return __ratelimit(&nouveau_ratelimit_state);
-+}
-+
- void
- nouveau_irq_preinstall(struct drm_device *dev)
- {
-@@ -200,7 +207,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
- 		}
- 
- 		if (status & NV_PFIFO_INTR_DMA_PUSHER) {
--			NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n", chid);
-+			if (nouveau_ratelimit())
-+				NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n",
-+						chid);
- 
- 			status &= ~NV_PFIFO_INTR_DMA_PUSHER;
- 			nv_wr32(dev, NV03_PFIFO_INTR_0,
-@@ -227,8 +236,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
- 		}
- 
- 		if (status) {
--			NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
--				status, chid);
-+			if (nouveau_ratelimit())
-+				NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
-+					status, chid);
- 			nv_wr32(dev, NV03_PFIFO_INTR_0, status);
- 			status = 0;
- 		}
-@@ -505,13 +515,6 @@ nouveau_pgraph_intr_notify(struct drm_device *dev, uint32_t nsource)
- 		nouveau_graph_dump_trap_info(dev, "PGRAPH_NOTIFY", &trap);
- }
- 
--static DEFINE_RATELIMIT_STATE(nouveau_ratelimit_state, 3 * HZ, 20);
--
--static int nouveau_ratelimit(void)
--{
--	return __ratelimit(&nouveau_ratelimit_state);
--}
--
- 
- static inline void
- nouveau_pgraph_intr_error(struct drm_device *dev, uint32_t nsource)
--- 
-1.7.3.1
+The RFC request about initial dom0 patches was sent recently, 
+and once reviewd/ack'd, the code can go into later kernel version.
 
+-- Pasi
 
+> Thank you very much.
+>
+> -- 
+> Yours sincerely,
+>
+> Mr. Teo En Ming (Zhang Enming) ????????? Dip(Mechatronics) BEng(Hons)(Mechanical Engineering)
+> Citizenship: Singapore Citizen/Singaporean
+> Alma Maters:
+> [1] Singapore Polytechnic (Graduated 1998)
+> [2] National University of Singapore (Graduated 2006)
+> Facebook account: Teo En Ming (Zhang Enming)
+> Facebook link: http://www.facebook.com/profile.php?id=100000750083982
+> Facebook photos: http://www.facebook.com/profile.php?id=100000750083982#!/profile.php?id=100000750083982&v=photos
+> Facebook videos: http://www.facebook.com/profile.php?id=100000750083982&v=app_2392950137
+> Mobile Phone (Starhub pre-paid): +65-8369-2618
+> Windows Live Messenger: teoenming-at-hotmail.com
+> Location: Bedok Reservoir Road, Singapore
+> ZIP: 470103
+> My Open Letter (Plea for Medical Help/Assistance) to World Leaders (Updated 28 August 2010):-
+> http://lists.mcs.anl.gov/pipermail/mpich-discuss/2010-August/007811.html
+> http://mythtv.org/pipermail/mythtv-users/2010-August/295952.html
+> http://archives.gentoo.org/gentoo-user/msg_f6a341d9623fda17880159b137c07335.xml
+> Photo of Mr. Teo En Ming (Zhang Enming) ????????? of Singapore: http://i53.tinypic.com/207tamp.jpg
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
