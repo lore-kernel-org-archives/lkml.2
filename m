@@ -1,82 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753865Ab0JDIxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:53:39 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:45726 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753812Ab0JDIxi (ORCPT
+	id S1753820Ab0JDIzK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 04:55:10 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:58815 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753652Ab0JDIzI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:53:38 -0400
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: mszeredi@suse.cz, fuse-devel@lists.sourceforge.net,
-        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-In-reply-to: <alpine.DEB.2.00.1009302205420.3131@ayla.of.borg> (message from
-	Geert Uytterhoeven on Thu, 30 Sep 2010 22:06:21 +0200 (CEST))
-Subject: Re: [fuse-devel] [PATCH] fuse: Initialize total_len in fuse_retrieve()
-References: <alpine.DEB.2.00.1009302205420.3131@ayla.of.borg>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Message-Id: <E1P2gnQ-0001hA-8R@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Mon, 04 Oct 2010 10:53:20 +0200
+	Mon, 4 Oct 2010 04:55:08 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Subject: Re: [linux-pm] Swsusp patches applied to suspend-2.6#linux-next
+Date: Mon, 4 Oct 2010 10:55:03 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-tp42-suspend-next-vmembase-0-00253-gab9b069-dirty; KDE/4.5.1; i686; ; )
+Cc: linux-pm@lists.linux-foundation.org,
+        Nigel Cunningham <nigelc@hera.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201010041000.33653.Martin@lichtvoll.de> <4CA990FA.2070005@tuxonice.net> (sfid-20101004_103932_056526_9342061E)
+In-Reply-To: <4CA990FA.2070005@tuxonice.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010041055.04973.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Sep 2010, Geert Uytterhoeven wrote:
-> fs/fuse/dev.c:1357: warning: ‘total_len’ may be used uninitialized in this
-> function
-> 
-> Initialize total_len to zero, else its value will be undefined.
+Am Montag 04 Oktober 2010 schrieb Nigel Cunningham:
+> Hi Martin.
 
-Good catch, thanks.  Pushed to for-next branch of fuse tree.
+Hi Nigel,
+
+> On 04/10/10 19:00, Martin Steigerwald wrote:
+> > Am Samstag 02 Oktober 2010 schrieb Martin Steigerwald:
+> >> Am Montag 27 September 2010 schrieb Nigel Cunningham:
+> >>> Hi again Rafael.
+> >> 
+> >> Hi Nigel and Rafael,
+> >> 
+> >>> As discussed, here are the patches, modified to apply against your
+> >>> current linux-next tree. A new first patch splits compression
+> >>> support out into its own file, removing the need to have two
+> >>> versions of the load_image and save_image routines, minimising the
+> >>> changes to the remainder of the patches and making things cleaner
+> >>> than would otherwise be the case.
+> >>> 
+> >>> On my laptop, single-threaded compression actually slows writing
+> >>> down from 175MB/s to around 100-120MB/s (depending on how well the
+> >>> image compresses). Reading speed improves from 218MB/s to around
+> >>> 245MB/s. I expect that multithreaded writing would bring the
+> >>> writing (and reading) speeds back up. It's on my swsusp to do list
+> >>> :)
+> >> 
+> >> Testing this now
+> >> (2.6.36-rc4-tp42-suspend-next-vmembase-0-00253-gab9b069- dirty).
+> > 
+> > Two times I had the rather strange issue that the machine booted
+> > freshly instead of resuming! First I thought I maybe didn't wait
+> > until the image was saved, before turning the laptop off. But now it
+> > happened a second time and also the ThinkPad T42 has a battery in
+> > it, thus it should always be able to complete writing the image.
+> > 
+> > For resuming I found this in the syslog:
+> > 
+> > Oct  4 09:19:10 shambhala kernel: end_request: I/O error, dev fd0,
+> > sector 0
+> > Oct  4 09:19:10 shambhala kernel: PM: Starting manual resume from
+> > disk Oct  4 09:19:10 shambhala kernel: PM: Resume from partition 8:2
+> > Oct  4 09:19:10 shambhala kernel: PM: Checking hibernation image.
+> > Oct  4 09:19:10 shambhala kernel: PM: Error -22 checking image file
+> > Oct  4 09:19:10 shambhala kernel: PM: Resume from disk failed. Oct 
+> > 4 09:19:10 shambhala kernel: PM: Marking nosave pages:
+> > 000000000009f000 - 0000000000100000
+> > Oct  4 09:19:10 shambhala kernel: PM: Basic memory bitmaps created
+> > Oct  4 09:19:10 shambhala kernel: PM: Basic memory bitmaps freed
+> > 
+> > What does error -22 mean?
+> 
+> -22 is -EINVAL. There are a few reasons that it could occur, but rather
+> than chasing our tails, how about if I just tell you that I've been
+> working on a new version of the patches that will provide more detailed
+> debugging of issues like this (printks that can be enabled/disabled at
+> run time) - and hopefully address your issue so it won't happen anyway.
+
+Ok, then I switch back to a stable kernel for the time being.
+
+Please notify me when you have something to test for me.
+
+> > For hibernating:
+> > 
+> > Oct  4 00:13:09 shambhala ifplugd(eth0)[15127]: Link beat lost.
+> > Oct  4 00:13:10 shambhala NetworkManager[2146]:<info>  (eth0):
+> > carrier now OFF (device state 1)
+[...]
+> > Which is not complete. It seems the last log messages prior to
+> > hibernating have not fully been written by rsyslog.
+> 
+> That's not unusual - after we do the atomic copy, nothing gets logged.
+
+I thought so. I think its usually logged after resume?
 
 Thanks,
-Miklos
-
-
-> 
-> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
-> ---
->  fs/fuse/dev.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/fuse/dev.c b/fs/fuse/dev.c
-> index d367af1..cde755c 100644
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -1354,7 +1354,7 @@ static int fuse_retrieve(struct fuse_conn *fc, struct inode *inode,
->  	loff_t file_size;
->  	unsigned int num;
->  	unsigned int offset;
-> -	size_t total_len;
-> +	size_t total_len = 0;
->  
->  	req = fuse_get_req(fc);
->  	if (IS_ERR(req))
-> -- 
-> 1.7.0.4
-> 
-> Gr{oetje,eeting}s,
-> 
-> 						Geert
-> 
-> --
-> Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-> 
-> In personal conversations with technical people, I call myself a hacker. But
-> when I'm talking to journalists I just say "programmer" or something like that.
-> 							    -- Linus Torvalds
-> 
-> ------------------------------------------------------------------------------
-> Start uncovering the many advantages of virtual appliances
-> and start using them to simplify application deployment and
-> accelerate your shift to cloud computing.
-> http://p.sf.net/sfu/novell-sfdev2dev
-> _______________________________________________
-> fuse-devel mailing list
-> fuse-devel@lists.sourceforge.net
-> https://lists.sourceforge.net/lists/listinfo/fuse-devel
-> 
-> 
+-- 
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
