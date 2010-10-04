@@ -1,61 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab0JDWlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:41:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44093 "EHLO ogre.sisk.pl"
+	id S1755984Ab0JDWn7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:43:59 -0400
+Received: from www.tglx.de ([62.245.132.106]:40289 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751558Ab0JDWlq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:41:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Anisse Astier <anisse@astier.eu>, "Greg Kroah-Hartman" <gregkh@suse.de>
-Subject: Re: [Bug #16891] Kernel panic while loading intel module during boot
-Date: Tue, 5 Oct 2010 00:40:59 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Eric Anholt <eric@anholt.net>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
-References: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera> <201010042142.29402.rjw@sisk.pl> <AANLkTinsc=DqQwnR18McRP8fLei=GHWV1yykCcYDUCzv@mail.gmail.com>
-In-Reply-To: <AANLkTinsc=DqQwnR18McRP8fLei=GHWV1yykCcYDUCzv@mail.gmail.com>
+	id S1751233Ab0JDWn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:43:58 -0400
+Date: Tue, 5 Oct 2010 00:43:38 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
+        Kay Sievers <kay.sievers@vrfy.org>, Brandon Philips <brandon@ifup.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
+In-Reply-To: <201010041300.15234.arnd@arndb.de>
+Message-ID: <alpine.LFD.2.00.1010050026170.2556@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6> <201010041300.15234.arnd@arndb.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010050040.59281.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 04, 2010, Anisse Astier wrote:
-> On Mon, Oct 4, 2010 at 9:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> I'll provide this patch here in the meantime in case anyone is interested.
-> >
-> > Thanks for the update and the patch.
-> >
-> > Well, I wonder who's going to merge it?
-> >
-> 
-> I'm not sure is going to be merged because most of this code has been
-> re-written and has been sitting in drm-intel-next for a few weeks now.
-> This (welcome) rewrite will likely be merged in 2.6.37 (but I can't
-> speak for Chris).
-> 
-> This is a port of this patch:
-> http://git.kernel.org/?p=linux/kernel/git/ickle/drm-intel.git;a=commit;h=e5e408fc94595aab897f613b6f4e2f5b36870a6f
-> , but on completely different code.
-> 
-> Also this patch is new and didn't see much testing (I tested on 4
-> different Intel GPUs, belonging only to 2 different families); if it's
-> not merged for 2.6.36, it won't be for 2.6.37 (the new code will land
-> first). If that happens, it might not meet conditions to be accepted
-> in -stable (being in linus' tree first).
+On Mon, 4 Oct 2010, Arnd Bergmann wrote:
 
-It's a panic fix, so I think it is -stable material anyway.  Greg?
+> On Sunday 03 October 2010, Thomas Gleixner wrote:
+> > Current mainline triggers a list corruption bug in
+> > module_bug_finalize(). dmesg excerpt below.
+> > 
+> > The corresponding code says:
+> > 
+> >         /*
+> >          * Strictly speaking this should have a spinlock to protect against
+> >          * traversals, but since we only traverse on BUG()s, a spinlock
+> >          * could potentially lead to deadlock and thus be counter-productive.
+> >          */
+> >         list_add(&mod->bug_list, &module_bug_list);
+> > 
+> > I can see the traversal problem vs. BUG(), but what's protecting the
+> > list_add() ? BKL probably did, but is that true anymore ?
+> 
+> BKL hasn't been in this code path since before git.
+
+Fair enough. I have to admit that I did not even look. :)
+ 
+> I think this relatively recent change caused module_finalize to be
+> called without module_mutex held:
+
+Yeah.
+
+> commit 75676500f8298f0ee89db12db97294883c4b768e
+> Author: Rusty Russell <rusty@rustcorp.com.au>
+> Date:   Sat Jun 5 11:17:36 2010 -0600
+> 
+>     module: make locking more fine-grained.
+>     
+>     Kay Sievers <kay.sievers@vrfy.org> reports that we still have some
+>     contention over module loading which is slowing boot.
+>     
+>     Linus also disliked a previous "drop lock and regrab" patch to fix the
+>     bne2 "gave up waiting for init of module libcrc32c" message.
+>     
+>     This is more ambitious: we only grab the lock where we need it.
+>     
+>     Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>     Cc: Brandon Philips <brandon@ifup.org>
+>     Cc: Kay Sievers <kay.sievers@vrfy.org>
+>     Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> 	Arnd
+
+The patch below cures it.
 
 Thanks,
-Rafael
+
+	tglx
+
+---->
+diff --git a/lib/bug.c b/lib/bug.c
+index 7cdfad8..40f32d8 100644
+--- a/lib/bug.c
++++ b/lib/bug.c
+@@ -92,18 +92,21 @@ int module_bug_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
+ 	}
+ 
+ 	/*
+-	 * Strictly speaking this should have a spinlock to protect against
+-	 * traversals, but since we only traverse on BUG()s, a spinlock
+-	 * could potentially lead to deadlock and thus be counter-productive.
++	 * We need to take module_mutex here to protect the list add, though
++	 * it won't protect against a concurrent BUG().
+ 	 */
++	mutex_lock(&module_mutex);
+ 	list_add(&mod->bug_list, &module_bug_list);
++	mutex_unlock(&module_mutex);
+ 
+ 	return 0;
+ }
+ 
+ void module_bug_cleanup(struct module *mod)
+ {
++	mutex_lock(&module_mutex);
+ 	list_del(&mod->bug_list);
++	mutex_unlock(&module_mutex);
+ }
+ 
+ #else
