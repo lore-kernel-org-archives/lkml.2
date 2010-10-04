@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab0JDT0m (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 15:26:42 -0400
-Received: from nic.NetDirect.CA ([216.16.235.2]:44220 "EHLO
-	rubicon.netdirect.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756078Ab0JDT0l (ORCPT
+	id S932488Ab0JDTmH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 15:42:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33556 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab0JDTmF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 15:26:41 -0400
-X-Originating-Ip: 216.16.235.2
-Date: Mon, 4 Oct 2010 15:26:31 -0400
-From: Chris Frey <cdfrey@foursquare.net>
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [uml-devel] um: rcu_sched_state detected stall on CPU 0
-Message-ID: <20101004192631.GA30065@foursquare.net>
-References: <AANLkTimmwViVHMy-7S3N9Ps1Vj_n_TfJLvwzoupsFPnp@mail.gmail.com>
+	Mon, 4 Oct 2010 15:42:05 -0400
+Subject: [GIT PULL] regulator fixes for 2.6.36
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Oct 2010 20:42:05 +0100
+Message-ID: <1286221325.3148.134.camel@odin>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimmwViVHMy-7S3N9Ps1Vj_n_TfJLvwzoupsFPnp@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 12:03:04AM +0200, richard -rw- weinberger wrote:
-> Hi,
-> 
-> I'm seeing often messages like this one on my UML:
-> ...
-> INFO: rcu_sched_state detected stall on CPU 0 (t=7348 jiffies)
-> ...
-> 
-> The system often seems to be frozen.
-> When I press a button it wakes up immediately and continues to run.
-> 
-> Any ideas?
-> Config is attached.
+Hi Linus,
 
-I saw this too, but I thought it was because I was overloading my machine.
-I only seem to see it when the guest is starved for CPU due to IO on the
-host.
+Please pull the following regulator fixes.
 
-- Chris
+Thanks
+
+Liam
+
+---
+
+The following changes since commit c6ea21e35bf3691cad59647c771e6606067f627d:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../sfrench/cifs-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
+
+Axel Lin (1):
+      regulator: max8649 - fix setting extclk_freq
+
+Cyril Chemparathy (1):
+      regulator: fix typo in current units
+
+Vasiliy Kulikov (1):
+      regulator: fix device_register() error handling
+
+ drivers/regulator/core.c    |    6 ++++--
+ drivers/regulator/max8649.c |    2 +-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
+
 
