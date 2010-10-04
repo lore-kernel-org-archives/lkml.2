@@ -1,99 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753285Ab0JDIHP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:07:15 -0400
-Received: from www.tglx.de ([62.245.132.106]:57242 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752624Ab0JDIHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:07:13 -0400
-Date: Mon, 4 Oct 2010 10:05:43 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [patch 00/47] Sparse irq rework
-In-Reply-To: <m162xibx3k.fsf@fess.ebiederm.org>
-Message-ID: <alpine.LFD.2.00.1010040952460.14550@localhost6.localdomain6>
-References: <20100930221351.682772535@linutronix.de> <m1wrpzfctu.fsf@fess.ebiederm.org> <alpine.LFD.2.00.1010032034420.14550@localhost6.localdomain6> <m162xibx3k.fsf@fess.ebiederm.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753380Ab0JDIX4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 04:23:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57993 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753115Ab0JDIXy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 04:23:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Christoph Hellwig <hch@lst.de>
+Subject: Re: linux-next: manual merge of the bkl-trivial tree with the hfsplus tree
+Date: Mon, 4 Oct 2010 10:23:45 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+References: <20101004104740.822b987d.sfr@canb.auug.org.au> <20101004033441.GA6867@lst.de>
+In-Reply-To: <20101004033441.GA6867@lst.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010041023.45694.arnd@arndb.de>
+X-Provags-ID: V02:K0:+UVruKwOGOHUVYMjQ0nV4pGY/i6ndrSxZAhP9XhSPxJ
+ VFBY7+NTj7QLvqFj1OSvBUe7VpOkiIB9KefihTzUAgZTLRgx8W
+ fnMfRTI88RMtY6GOvDZAGD3zDDrFlG43DBGKkIpx+PDmVkAofP
+ 9AbWDKXtHKK05L5Jvga3P/qrvb2Xkpy8kpTuK3Nd6LAtEMRcPA
+ 7HF50L7djWHp6iqRgf9wQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Oct 2010, Eric W. Biederman wrote:
-> Thomas Gleixner <tglx@linutronix.de> writes:
-> >> I believe you have distored the design when aiming for migration
-> >> of active irq descriptors (which you have not even implemented yet).
-> >> 
-> >> How do you plan to remove the radix tree lookup from the irq
-> >> handling path?
-> >
-> > Not at all and it's not even even a requirement to remove the lookup
-> > for implementing live migration.
+On Monday 04 October 2010 05:34:41 Christoph Hellwig wrote:
+> On Mon, Oct 04, 2010 at 10:47:40AM +1100, Stephen Rothwell wrote:
+> > Hi Arnd,
+> > 
+> > The second of the hfsplus tree commits seems to supercede the bkl-trivial
+> > one, so I used that.
 > 
-> It sounds like it is a requirement to *keep* the lookup for supporting
-> live migration.  *Keeping* the lookup I see as a serious problem.  If we
-> do this right the only users of the radix tree will be drivers using the
-> functions in interrupt.h.
+> Yes, the hfsplus tree contains a proper BKL removal for hfsplus.
 
-Oh well. I said that it's not a requirement to remove the lookup from
-the entry code, but we can remove it for optimizaiton reasons.
+Ok. I've removed the pushdown into hfsplus and subsequent removal from my
+tree now, thanks! I've also removed the pushdown from other file systems
+that are already BKL-free.
 
-That is the same problem vs. migration as we have a reference to
-irq_desc either by lookup or by storage in vector data on x86.
+Christoph, are you planning to take care of freevxfs, too? I can't figure
+out whether readdir and lookup actually need locking there.
 
-> >> Those files provide the genirq irq chip implementation especially
-> >> drivers/pci/msi.c.  Of course they will do what every other irq_chip
-> >> implementation does to get access to data.  There is an unpleasant
-> >> difference between which generic irq data field htirq.c uses and msi.c
-> >> which may be worth cleaning up.  But otherwise I don't see any
-> >> fundamental problems.
-> >
-> > The fundamental problem I hit, was the hack which handed down irq_desc
-> > to avoid the lookup. If it had been msi_desc in the first place, then
-> > I would not even need to touch the msi code to cleanup x86.
-> 
-> Just because you intend to rename the irq_desc irq_data...
-
-No, I'm not renaming it. I'm cleaning up the mess which was created
-with references to irq_desc all over the place. I need to change core
-code and I cant w/o breaking the world and some more, just because
-everyone fiddles in irq_desc directly. So I want to hand down irq_data
-which is right now inside of irq_desc until the irq_desc users outside
-of kernel/irq are gone. Then irq_data is not necessarily a part of
-irq_desc anymore.
- 
-> It isn't a hack for an irq method to look at irq_desc.  At least not
-> until your irq_data changes go through.  This has nothing to do with
-> how x86 is structured and everything to do with your irq_data
-> ``cleanup'' which appears to be mostly about code churn, for very little
-> apparent benefit.
-
-I tend to disagree. The sparse_irq optimizations to get rid of the
-redundant irq_desc lookups to gain access to the irq_data should have
-been done in exactly that way.
-
-And I call something which removes 500 lines of code hardly useless
-code churn.
-
-> In the current state of the kernel I find it very hard to swallow that
-> having a genirq client using irq_desc (which is the only way to
-> implement somethings) is a hack.
-
-This could have been done 2 years ago by those who pushed sparse_irq
-including the resulting "optimization".
-
-Thanks,
-
-	tglx
+	Arnd
