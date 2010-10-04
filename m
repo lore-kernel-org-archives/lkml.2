@@ -1,65 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932065Ab0JDRvy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 13:51:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38113 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756293Ab0JDRvx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 13:51:53 -0400
-Date: Mon, 4 Oct 2010 13:50:39 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Rabin Vincent <rabin@rab.in>, linux-mips@linux-mips.org,
-        ralf@linux-mips.org, linux-kernel@vger.kernel.org, rostedt@goodmis.org,
-        David Miller <davem@davemloft.net>
-Subject: Re: [PATCH] jump label: Add MIPS support.
-Message-ID: <20101004175039.GC2900@redhat.com>
-References: <1285697432-29244-1-git-send-email-ddaney@caviumnetworks.com> <AANLkTimEJQE3i9Wa1X=Rkw1goJA9c5Sso-iWV=hLG6KF@mail.gmail.com> <4CAA122B.40502@caviumnetworks.com>
+	id S1756342Ab0JDRyd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 13:54:33 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57616 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755022Ab0JDRyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 13:54:32 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+zX7uwjM1N2oFW2itvAaNM
+Date: Mon, 4 Oct 2010 10:54:29 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Nicolas Kaiser <nikai@nikai.net>
+Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-fbdev@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] video/omap: remove duplicated include
+Message-ID: <20101004175429.GW3117@atomide.com>
+References: <20101004174344.21577085@absol.kitzblitz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CAA122B.40502@caviumnetworks.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101004174344.21577085@absol.kitzblitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 10:43:07AM -0700, David Daney wrote:
-> On 10/03/2010 11:15 AM, Rabin Vincent wrote:
->> On Tue, Sep 28, 2010 at 11:40 PM, David Daney<ddaney@caviumnetworks.com>  wrote:
->>> +void arch_jump_label_text_poke_early(jump_label_t addr)
->>> +{
->>> +       union mips_instruction *insn_p =
->>> +               (union mips_instruction *)(unsigned long)addr;
->>> +
->>> +       insn_p->word = 0; /* nop */
->>> +       flush_icache_range((unsigned long)insn_p,
->>> +                          (unsigned long)insn_p + sizeof(*insn_p));
->>> +}
->>
->> Can't this function be a no-op on MIPS?  This seems to be
->> used on x86 to patch in the optimal nop instruction, but
->> on MIPS the optimal/only nop instruction should already
->> be in place at build time.  Same thing for the SPARC
->> implementation.
->>
->
-> Yes, I think you are correct.
->
-> On MIPS the NOP is already optimal.  I will respin the MIPS patch to  
-> make arch_jump_label_text_poke_early() be empty.
->
-> davem wasn't CCed on the original message, so I added him.  I would  
-> defer to him on the SPARC version.
->
->
+* Nicolas Kaiser <nikai@nikai.net> [101004 08:35]:
+> Remove duplicated include.
+> 
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> ---
+>  drivers/video/omap/lcd_omap3beagle.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/video/omap/lcd_omap3beagle.c b/drivers/video/omap/lcd_omap3beagle.c
+> index ca75cc2..ac715f9 100644
+> --- a/drivers/video/omap/lcd_omap3beagle.c
+> +++ b/drivers/video/omap/lcd_omap3beagle.c
+> @@ -26,7 +26,6 @@
+>  #include <linux/i2c/twl.h>
+>  
+>  #include <plat/mux.h>
+> -#include <plat/mux.h>
+>  #include <asm/mach-types.h>
+>  
+>  #include "omapfb.h"
 
-that's right, arch_jump_label_text_poke_early() can probably be a no-op
-for most arches.
+Can you please updated this to remove both mux.h entries?
 
-We can also look at adding an empty definition into the generic
-header. So that arches don't have to provide an empty definition.
+Including mux.h should no longer be needed for omap2/3/4 SoCs
+outside arch/arm/mach-omap2 files. For omap1 machines those are still
+needed in some drivers..
 
-thanks,
+Regards,
 
--Jason
+Tony
