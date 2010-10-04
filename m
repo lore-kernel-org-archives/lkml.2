@@ -1,51 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab0JDVGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 17:06:50 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49706 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756474Ab0JDVGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 17:06:49 -0400
-Message-ID: <4CAA41B4.5030902@zytor.com>
-Date: Mon, 04 Oct 2010 14:05:56 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S932762Ab0JDVJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 17:09:17 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39034 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932119Ab0JDVJP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 17:09:15 -0400
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Arnd Bergmann <arnd@arndb.de>, autofs@linux.kernel.org,
-        Ian Kent <raven@themaw.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH, RFC] autofs3: move to drivers/staging
-References: <201010042228.10642.arnd@arndb.de> <4CAA3A69.9040709@zytor.com> <20101004204057.GA28669@suse.de>
-In-Reply-To: <20101004204057.GA28669@suse.de>
+In-Reply-To: <201010042142.29402.rjw@sisk.pl>
+References: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera> <N9RAiGGLCfN.A.v9C.bUPqMB@chimera>
+ <20101004172509.0aded2ba@destiny.ordissimo> <201010042142.29402.rjw@sisk.pl>
+From: Anisse Astier <anisse@astier.eu>
+Date: Mon, 4 Oct 2010 23:08:46 +0200
+Message-ID: <AANLkTinsc=DqQwnR18McRP8fLei=GHWV1yykCcYDUCzv@mail.gmail.com>
+Subject: Re: [Bug #16891] Kernel panic while loading intel module during boot
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>, Eric Anholt <eric@anholt.net>,
+        Tim Gardner <tim.gardner@canonical.com>,
+        Daniel Vetter <daniel.vetter@ffwll.ch>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2010 01:40 PM, Greg KH wrote:
-> On Mon, Oct 04, 2010 at 01:34:49PM -0700, H. Peter Anvin wrote:
->> On 10/04/2010 01:28 PM, Arnd Bergmann wrote:
->>> Nobody appears to be interested in fixing autofs3 bugs
->>> any more and it uses the BKL, which is going away.
->>>
->>> Move this to staging for retirement. Unless someone
->>> complains until 2.6.38, we can remove it for good.
->>>
->>> The include/linux/auto_fs.h header file is still used
->>> by autofs4, so it remains in place.
->>
->> I say we should just delete it.
-> 
-> Give it the 6 months period to phase out of the kernel, I'll handle this
-> and if someone comes back and wants to maintain it, it can easily be
-> added back.
-> 
+On Mon, Oct 4, 2010 at 9:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> I'll provide this patch here in the meantime in case anyone is interested.
+>
+> Thanks for the update and the patch.
+>
+> Well, I wonder who's going to merge it?
+>
 
-OK, feel free to add my
+I'm not sure is going to be merged because most of this code has been
+re-written and has been sitting in drm-intel-next for a few weeks now.
+This (welcome) rewrite will likely be merged in 2.6.37 (but I can't
+speak for Chris).
 
-Acked-by: H. Peter Anvin <hpa@zytor.com>
+This is a port of this patch:
+http://git.kernel.org/?p=linux/kernel/git/ickle/drm-intel.git;a=commit;h=e5e408fc94595aab897f613b6f4e2f5b36870a6f
+, but on completely different code.
 
-... for both the move to staging and its eventual deletion.
+Also this patch is new and didn't see much testing (I tested on 4
+different Intel GPUs, belonging only to 2 different families); if it's
+not merged for 2.6.36, it won't be for 2.6.37 (the new code will land
+first). If that happens, it might not meet conditions to be accepted
+in -stable (being in linus' tree first).
 
-	-hpa
+
+
+Anisse
