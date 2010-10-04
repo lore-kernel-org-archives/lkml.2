@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757405Ab0JDXd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 19:33:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:39961 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752439Ab0JDXd1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 19:33:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sPFlNO+zx0yJpH95THRrrv/OdXfx155s6sObK+cM0on9AyWn1BAz39WJjAHY6/2zmm
-         n4J/KMmXjZzdBH4qq4Uip4KE7xlJPpwh4kgsOx8QXzpr/p5W09jKy2JejZ+4l/ruieE6
-         FEWleb2sf+hyPaUMRy9riQPrVUMGKbqdiYs/o=
-MIME-Version: 1.0
-In-Reply-To: <20101004161600.8cdf4e0c.akpm@linux-foundation.org>
-References: <201009282344.o8SNiliN024981@imap1.linux-foundation.org>
-	<AANLkTikapE3RaVVFS3yBSGmCkMGUvfZECJq5eOmayWhZ@mail.gmail.com>
-	<4CA4D61C.2010909@gmail.com>
-	<4CA4E76E.1050602@gmail.com>
-	<20101004161600.8cdf4e0c.akpm@linux-foundation.org>
-Date: Tue, 5 Oct 2010 01:33:25 +0200
-Message-ID: <AANLkTimmQmQU4fE9ku_wc8x_dPEfnjgOHWSM18O0=coa@mail.gmail.com>
-Subject: Re: mmotm 2010-09-28-16-13 uploaded
-From: Zimny Lech <napohybelskurwysynom2010@gmail.com>
+	id S1757421Ab0JDXeI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 19:34:08 -0400
+Received: from mail.perches.com ([173.55.12.10]:2647 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757409Ab0JDXeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 19:34:07 -0400
+Subject: Re: [PATCH] serial8250: ratelimit "too much work" error
+From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: Daniel Drake <dsd@laptop.org>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <greg@kroah.com>
+In-Reply-To: <20101004161139.2a988b85.akpm@linux-foundation.org>
+References: <20101002110438.801F49D401B@zog.reactivated.net>
+	 <20101004145101.b28fdc0a.akpm@linux-foundation.org>
+	 <20101004150238.fbc1b6cf.akpm@linux-foundation.org>
+	 <1286230259.10512.81.camel@Joe-Laptop>
+	 <20101004152102.1e04f30a.akpm@linux-foundation.org>
+	 <1286233169.10512.85.camel@Joe-Laptop>
+	 <20101004161139.2a988b85.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Oct 2010 16:34:05 -0700
+Message-ID: <1286235245.10512.91.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/5 Andrew Morton <akpm@linux-foundation.org>:
-> Removal of duplicated includes is a somewhat dangerous thing.  If
-> someone else says "hey, there's a duplicated include" and then fixes
-> it, and if this patch removes the other include then whoops, we broke
-> the build.  This has happened before.
+On Mon, 2010-10-04 at 16:11 -0700, Andrew Morton wrote:
+> On Mon, 04 Oct 2010 15:59:29 -0700
+> Joe Perches <joe@perches.com> wrote:
+> > On Mon, 2010-10-04 at 15:21 -0700, Andrew Morton wrote:
+> > > On Mon, 04 Oct 2010 15:10:59 -0700
+> > > Joe Perches <joe@perches.com> wrote:
+> > > > On Mon, 2010-10-04 at 15:02 -0700, Andrew Morton wrote:
+> > > > > On Mon, 4 Oct 2010 14:51:01 -0700
+> > > > > Andrew Morton <akpm@linux-foundation.org> wrote:
+> > > > > I'll give up and pronounce that users of printk_ratelimited() need to
+> > > > > include ratelimit.h as well.
+> > > > What I suggested several months ago was to move the
+> > > > macro definitions to ratelimit.h
+> > > > http://lkml.org/lkml/2010/2/18/377
+> > > That's a bit nasty because at present ratelimit.h is purely about
+> > > ratelimiting and knowns nothing about any of its clients.  At present
+> > > it has only one client (printk), but it could have more in the future!
+> > 
+> > Look at the structure, it's very specific to
+> > message logging functionality.
+> > 
+> > struct ratelimit_state {
+> > 	spinlock_t	lock;		/* protect the state */
+> > 
+> > 	int		interval;
+> > 	int		burst;
+> > 	int		printed;
+> > 	int		missed;
+> > 	unsigned long	begin;
+> > };
+> 
+> s/printed/hit/there,fixed
+> 
+> This is at present a quite general facility.
+> 
+> > I think it's likely that the current ratelimit
+> > will not be used for any other function.
+> 
+> Filling it up with printk-specific stuff will help ensure that.
 
-Yeah, right.
+Interval too because it is in seconds and likely
+should be in timespec or jiffies.
 
->
-> So I'd ask that you redo and resend this patch shortly after 2.6.36 is
-> released please, so I can get it into mainline quickly thus minimising
-> the opportunity for such breakage.
+For what other facility could you see ratelimit_state
+be used for?
 
-Ok. Do you want patch against 2.6.36 mainline, -next or -mmotm?
+Putting the printk specific uses in the .h file
+would make sure that the users of ratelimit use
+the proper file and reduce the #include dependencies.
 
->
->> Signed-off-by: N.P.S. <napohybelskurwysynom2010@gmail.com>
->
-> We prefer that signoffs have real names in them, please.
->
 
-Do "Zimny Lech" sounds real enough? :)
 
--- 
-Slawa!
-N.P.S.
-
-Les fleurs du mal unfold
-Comme les fleurs du mal
-Dark demons of my soul
-Un amour fatal
