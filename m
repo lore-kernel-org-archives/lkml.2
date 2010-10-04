@@ -1,84 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0JDN4C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 09:56:02 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51425 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756091Ab0JDN4A (ORCPT
+	id S1756141Ab0JDN5U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 09:57:20 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:28566 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755913Ab0JDN5R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 09:56:00 -0400
-Date: Mon, 4 Oct 2010 14:55:52 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        "x86@kernel.org" <x86@kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "stable@kernel.org" <stable@kernel.org>
-Subject: Re: [PATCH] x86: Reenable the AMD IOMMU if it's mysteriously
-	vanished over suspend
-Message-ID: <20101004135552.GA5063@srcf.ucam.org>
-References: <1285941683-7445-1-git-send-email-mjg@redhat.com> <20101004134339.GT9817@amd.com>
+	Mon, 4 Oct 2010 09:57:17 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6125"; a="56507902"
+Message-ID: <4b3ddcee66c62d34bd9cb8fb3bf0c447.squirrel@www.codeaurora.org>
+In-Reply-To: <568203.56459.qm@web180308.mail.gq1.yahoo.com>
+References: <568203.56459.qm@web180308.mail.gq1.yahoo.com>
+Date: Mon, 4 Oct 2010 06:57:09 -0700 (PDT)
+Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the 
+     Gadget Framework
+From: tlinder@codeaurora.org
+To: "David Brownell" <david-b@pacbell.net>
+Cc: linux-usb@vger.kernel.org, "tlinder" <tlinder@codeaurora.org>,
+        "David Brownell" <dbrownell@users.sourceforge.net>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Michal Nazarewicz" <m.nazarewicz@samsung.com>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Robert Lukassen" <robert.lukassen@tomtom.com>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        "Matthew Wilcox" <willy@linux.intel.com>,
+        "Fabien Chouteau" <fabien.chouteau@barco.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101004134339.GT9817@amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 03:43:39PM +0200, Roedel, Joerg wrote:
-> > +	pci_read_config_dword(iommu->dev, 0x44, &iommu->stored_addr_lo);
-> > +	pci_read_config_dword(iommu->dev, 0x48, &iommu->stored_addr_hi);
-> 
-> Can you use iommu->cap_ptr here? This variant should be safe too but the
-> magic numbers are non-descriptive.
+>
+>
+> --- On Sun, 10/3/10, tlinder <tlinder@codeaurora.org> wrote:
+>
+>> In order not to force all the FDs to supply
+>
+> What do File Descriptors have to do with this?
+>
+> If you don't mean FD == File Descriptor, then
+> please spell out what you do mean, instead of
+> trying to repurpose a widely used abbreviation.
 
-Sure.
+By FD we meant Function Drivers. We'll update the patch description.
 
-> > +	/* There may be one iommu per bus, so find the appropriate bridge */
-> > +	while (pdev && (pdev->bus->number != iommu->dev->bus->number)) {
-> > +		pci_dev_put(pdev);
-> > +		pdev = pci_get_device(PCI_VENDOR_ID_ATI, device_id, pdev);
-> > +	}
-> 
-> This does not work reliably with more than one IOMMU in the system. I
-> suggest to get the NB device by using the bus/dev/fn of the IOMMU
-> device. The IOMMU in RD890 is always function 2 of the NB device. So
-> just take the bus/dev/fn of the IOMMU device, set fn to zero and get the
-> NB device for re-enabling function two.
+>
+>
+> SuperSpeed
+>> descriptors when
+>> operating in SuperSpeed mode the following approach was
+>> taken:
+>> If we're operating in SuperSpeed mode and the FD didn't
+>> supply SuperSpeed
+>> descriptors, the composite layer will automatically create
+>> SuperSpeed
+>> descriptors with default values.
+>
+> That bothers me in two ways.  First, I want to
+> see a solution that maintains today's policy where
+> the composite framework is optional for all gadget
+> drivers.
 
-The docs imply that the northbridge will always be device 0 on a given 
-bus, so this ought to work? On the other hand, your approach is simpler.
+This policy is maintained. Gadget drivers are not required to use the
+composite framework in order to work in SuperSpeed mode. If a certain
+driver wishes to do so, without using the composite framework, it should
+add definitions of SuperSpeed descriptors and support of new SuperSpeed
+features. If a driver wishes to work in High/Low speeds then no changes
+are needed.
+Please note that this change is backward compatible.
+In order to test a non composite gadget driver we used the File storage.
+We managed to load the file_storage gadget driver (while the SuperSpeed
+gadget flag is enabled) and the File Storage successfully registered as a
+high speed driver and enumerated with a super speed host.
+We also tested a composite gadget driver (mass storage) that defines the
+descriptors and doesn't use the automatic and it worked successfully.
+All the other gadget drivers were also tested using the automatic
+composite framework and managed to enumerate.
 
-> >  	for_each_iommu(iommu) {
-> >  		iommu_disable(iommu);
-> > -		iommu_apply_quirks(iommu);
-> >  		iommu_init_flags(iommu);
-> >  		iommu_set_device_table(iommu);
-> >  		iommu_enable_command_buffer(iommu);
-> > @@ -1173,6 +1278,11 @@ static void disable_iommus(void)
-> >  
-> >  static int amd_iommu_resume(struct sys_device *dev)
-> >  {
-> > +	struct amd_iommu *iommu;
-> > +
-> > +	for_each_iommu(iommu)
-> > +		iommu_apply_quirks(iommu);
-> > +
-> >  	/* re-load the hardware */
-> >  	enable_iommus();
-> 
-> Why have you moved this out of the enable_iommus() loop?
 
-enable_iommus() is called on init, whereas this should only be performed 
-on resume.
+>
+> Second, that kind of automagic bothers me.
+>
+> What could be wrong with expecting gadget
+> drivers to provide all the descriptors they need,
+> instead of introducing automagic?
 
-I'll send out an updated patch later today.
+In the current implementation a gadget driver can still provide his own
+SuperSpeed descriptors as it provides HighSpeed descriptors and not use
+the automation.
+Implementing the automatic creation of the SuperSpeed descriptors approach
+has several benefits:
+1. All existing gadget drivers (that use the composite framework) are
+operational in SuperSpeed mode without any modifications to their code
+2. Code duplication, of the additional SuperSpeed descriptors in each
+existing gadget driver, is spared: A gadget driver that doesn't wish to
+exploit the SuperSpeed capabilities (such as streaming for example) but
+wishes to operate in a SuperSpeed mode is not required to provide
+additional SuperSpeed descriptors with default values (meaning, that none
+of the SuperSpeed capabilities are supported by it). Such will be created
+for it automatically.
+2. Single snippet of code tested for all existing gadget drivers
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
+>
+>
+>> Support for new SuperSpeed BOS descriptor was
+>
+> Wireless USB BOS descriptors exist too, yes?  Does
+> this approach cover them, or just SuperSpeed?  (We
+> may someday want to support Wireless USB on the
+> peripheral/gadget side too...
+
+In the current implementation the composite framework supports
+GetDescriptor(BOS) request only if the gadget driver supports SuperSpeed.
+In order to extend this functionality for wireless USB one should add
+another condition (is_wireless_USB()) to the existing if().
+
+>
+>
+>
+>> +++++++++++++++++++++++++++++++++++++---
+>>  include/linux/usb/ch9.h
+>
+> I like to see patches related to USB-IF formats
+> and protocols be separate from functional changes
+> in the USB stack or its drivers. which may rely
+> on those formats/protocols; less entanglement.
+
+We will divide this patch into two patches.
+
+>        
+>> +
+>
+>> +config USB_GADGET_SUPERSPEED
+>> +    boolean "Gadget opperating in Super
+>> Speed"
+>> +    depends on USB_GADGET
+>> +    depends on USB_GADGET_DUALSPEED
+>> +    default n
+>> +    help
+>> +      Enabling this feature enables
+>> Super Speed support in the Gadget
+>> +      driver. It means that gadget
+>> drivers should include extra (SuperSpeed)
+>> +      descriptors.
+>
+> That is:  the automagic isn't needed.  The
+> concepts in this patch seem to be a bit on
+> the self-contradictory side...
+
+You are correct. We should change the comment as follows;
+"...It means that gadget drivers should provide extra (SuperSpeed)
+descriptors to the host."
+
+>
+> ep_comp_desc = {
+>> +        .bDescriptorType =
+>> USB_DT_SS_ENDPOINT_COMP,
+>> +        .bLength = 0x06,
+>> +        .bMaxBurst = 0,
+>> /*the default is we don't support bursting*/
+>
+> I've not followed the SuperSpeed stuff as closely
+> as I might, but ... doesn't bursting require some
+> hardware support?  So that not all UDC + driver
+> stacks can support it?   (That'd be a case, if so,
+> for more sanity checks ... and the gadget driver to
+> explicitly say if it handles bursting.
+
+You're right. Bursting and streaming functionality support is defined by
+the UDC and not the gadget framework.
+Due to the above, the create_ss_descriptors() is used for providing
+default SuperSpeed descriptors, meaning that streaming and bursting is not
+supported.
+
+
+>
+>
+>
+>
+
+
