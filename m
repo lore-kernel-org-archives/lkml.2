@@ -1,95 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab0JDLIe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 07:08:34 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:59540 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754588Ab0JDLId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 07:08:33 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: Nitin Gupta <ngupta@vflare.org>
-Subject: Re: OOM panics with zram
-Date: Mon, 4 Oct 2010 07:08:27 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-crc+; KDE/4.5.1; x86_64; ; )
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        "linux-mm" <linux-mm@kvack.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "Greg KH - Meetings" <ghartman@us.ibm.com>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org> <1286134073.9970.11.camel@nimitz> <4CA8DC47.5070003@vflare.org>
-In-Reply-To: <4CA8DC47.5070003@vflare.org>
+	id S1754476Ab0JDL2B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 07:28:01 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:14830 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753678Ab0JDL17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 07:27:59 -0400
+X-IronPort-AV: E=Sophos;i="4.57,278,1283731200"; 
+   d="scan'208";a="2173475"
+Date: Mon, 4 Oct 2010 12:27:29 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: <linux-kernel@vger.kernel.org>
+CC: <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH v2 00/10] xen: initial domain support
+Message-ID: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010040708.27939.edt@aei.ca>
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 03 October 2010 15:40:55 Nitin Gupta wrote:
-> On 10/3/2010 3:27 PM, Dave Hansen wrote:
-> > On Sun, 2010-10-03 at 14:41 -0400, Nitin Gupta wrote:
-> >> Ability to write out zram (compressed) memory to a backing disk seems
-> >> really useful. However considering lkml reviews, I had to drop this
-> >> feature. Anyways, I guess I will try to push this feature again.
-> > 
-> > I'd argue that zram is pretty useless without some ability to write to a
-> > backing store, unless you *really* know what is going to be stored in it
-> > and you trust the user.  Otherwise, it's just too easy to OOM the
-> > system.
-> >
-> > I've been investigating backing the xvmalloc space with a tmpfs file.
-> > Instead of keeping page/offset pairs, you just keep a linear address
-> > inside the tmpfile file.  There's an extra step needed to look up and
-> > lock the page cache page into place each time you go into the xvmalloc
-> > store, but it does seem to basically work.  The patches are really rough
-> > and not quite functional, but I'm happy to share if you want to see them
-> > now.
-> >
-> 
-> Yes, I would be really interested to look at them. Thanks.
-> 
->  
-> >> Also, please do not use linux-next/mainline version of compcache. Instead
-> >> just use version in the project repository here:
-> >> hg clone https://compcache.googlecode.com/hg/ compcache 
-> >>
-> >> This is updated much more frequently and has many more bug fixes over
-> >> the mainline. It will also be easier to fix bugs/add features much more
-> >> quickly in this repo rather than sending them to lkml which can take
-> >> long time.
-> > 
-> > That looks like just a clone of the code needed to build the module.  
-> > 
-> > Kernel developers are pretty used to _some_ kernel tree being the
-> > authoritative source.  Also, having it in a kernel tree makes it
-> > possible to get testing in places like linux-next, and it makes it
-> > easier for people to make patches or kernel trees on top of your work. 
-> > 
-> > There's not really a point to the code being in -staging if it isn't
-> > somewhat up-to-date or people can't generate patches to it.  It sounds
-> > to me like we need to take it out of -staging.
-> > 
-> 
-> I will try sending patches to sync mainline and hg code (along with
-> some changes in pipeline), or maybe just take it out of -staging and
-> send fresh patch series.
+Hi all,
+this series implements the basic support needed to boot Linux as initial
+domain on Xen: the target is not to add full featured dom0 support in
+the kernel but to be able to boot Linux on Xen on native.
+We tried to minimize the impact to generic x86 code and interfaces and
+since v2 of the series we were able to eliminate all the modifications
+to non-Xen specific code.
 
-Or move it to a git tree.  Then generating patches becomes tivial for all of
-us and keeping staging upto date becomes easier for you.
 
-Ed
+Changes compared to v1:
 
-> Thanks,
-> Nitin
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
+- the last three patches that added Xen mtrr support have been removed;
+
+- a new patch to mask the cpu mtrr feature from the cpuid on Xen has
+been added instead.
+
+
+This series depends on two other patch series not yet applied but
+already sent to the list for comments a little while back:
+
+Konrad's "Xen PCI frontend driver" series
+http://lkml.org/lkml/2010/8/4/374
+
+my "PV on HVM: receive interrupts as xen events" series
+http://lkml.org/lkml/2010/8/30/170
+
+
+The list of patches with a diffstat follows:
+
+Ian Campbell (1):
+      xen: use host E820 map for dom0
+
+Jeremy Fitzhardinge (3):
+      xen: remap GSIs as pirqs when running as initial domain
+      xen: map a dummy page for local apic and ioapic in xen_set_fixmap
+      xen: make hvc_xen console work for dom0.
+
+Juan Quintela (2):
+      xen: Initialize xenbus for dom0.
+      xen: add the direct mapping area for ISA bus access
+
+Qing He (1):
+      xen: remap MSIs into pirqs when running as initial domain
+
+Stefano Stabellini (3):
+      xen: use vcpu_ops to setup cpu masks
+      xen: introduce XEN_DOM0 as a silent option
+      xen: mask the MTRR feature from the cpuid
+
+ arch/x86/pci/xen.c                |  199 +++++++++++++++++++++++++++++++++----
+ arch/x86/xen/Kconfig              |    5 +
+ arch/x86/xen/enlighten.c          |    2 +
+ arch/x86/xen/mmu.c                |   47 ++++++++-
+ arch/x86/xen/setup.c              |   46 ++++++++-
+ arch/x86/xen/smp.c                |    8 ++-
+ drivers/char/hvc_xen.c            |   98 ++++++++++++------
+ drivers/xen/events.c              |   73 +++++++++++++-
+ drivers/xen/xenbus/xenbus_probe.c |   29 +++++-
+ include/xen/events.h              |    5 +
+ include/xen/interface/memory.h    |   28 +++++
+ include/xen/interface/physdev.h   |   10 ++
+ 12 files changed, 489 insertions(+), 61 deletions(-)
+
+
+A git tree with this and the other two series on top of Linux 2.6.36-rc1
+is available here:
+
+git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.36-rc1-initial-domain-v2
+
+Cheers,
+
+Stefano Stabellini
+
