@@ -1,90 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab0JDBvA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 21:51:00 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:56135 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750939Ab0JDBu7 (ORCPT
+	id S1751330Ab0JDB71 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 21:59:27 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55615 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab0JDB70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 21:50:59 -0400
+	Sun, 3 Oct 2010 21:59:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=K68TFrPeU878aANKAam8rHpVv87XIIcsJ3A/QdLUlDOXM7p8iT/Sj5SnV3bohOJlGe
-         1GYn6Y4mr3EAKByczRiiP2h7SpCm12fmPC2VOUA5FATWPnIBqhXN/QeBhGSYye/cmUnP
-         5tDz76ThixqfohF+HTVTf3P856f0miW/NRW14=
-Date: Sun, 3 Oct 2010 18:50:56 -0700
-From: Brian Harring <ferringb@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: sameo@linux.intel.com, richard.rojfors@pelagicore.com
-Subject: [PATCH] add platform_data only if non NULL
-Message-ID: <20101004015056.GA22095@hrair>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lfYKa4G9a8cNu41B0gn7Kw2bo1c4fPuLoOmZ+8t5TA6xDNLYtEW8RhVtwYaDKXtQ72
+         t/6wX7B/XF0Xx/HmLiEhAO8ls/KUFVDMmTQfvi/WUdttmUp5AOfVAjfixoEcjYnpPHq0
+         sFm6+si+z/9jIodAFzUf6zPZSuO6xIfgr0bKU=
+Date: Mon, 4 Oct 2010 10:03:57 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Frank Coldwell <junkdnaseq@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: gcc compile kernel 2.6 module
+Message-ID: <20101004020357.GA5189@cr0.nay.redhat.com>
+References: <AANLkTi=fH924fybfmSpxyOu5Vm8Ny9cSyMGWcQN3dvvD@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="X1bOJ3K7DJ5YkBrT"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <AANLkTi=fH924fybfmSpxyOu5Vm8Ny9cSyMGWcQN3dvvD@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Oct 03, 2010 at 03:31:01PM +0400, Frank Coldwell wrote:
+>Hi all,
+>
+>Does anybody know how should look gcc compilation line
+>to compile kernel module for kernel 2.6
+>
+>In 2.4 it looks like this:
+>----------------------------------------------------
+>TARGET := hello-1
+>WARN := -W -Wall -Wstrict-prototypes -Wmissing-prototypes
+>INCLUDE := -isystem /lib/modules/`uname -r`/build/include
+>CFLAGS := -O2 -DMODULE -D__KERNEL__ ${WARN} ${INCLUDE}
+>CC := gcc-3.0
+>
+>${TARGET}.o: ${TARGET}.c
+>
+>.PHONY: clean
+>
+>clean:
+>rm -rf ${TARGET}.o
 
---X1bOJ3K7DJ5YkBrT
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+In 2.6, it would be much simpiler, kbuild has some pre-defined
+variables for you to use, so you don't need to, e.g. specify
+INCLUDE and CFLAGS in this way.
 
-If a NULL or 0 size platform_data is added, the underlying dup results in a=
- pointer into nullspace- meaning drivers can't do null checks for platform_=
-data.
-
-This fixes an oops during probing for drivers/net/ks8842, and drivers/mmc/h=
-ost/sdhci-pltform when the mfd is timberdale
-
-Signed-off-by: Brian Harring <ferringb@gmail.com>
----
- drivers/mfd/mfd-core.c |   13 +++++++++----
- 1 files changed, 9 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
-index 1823a57..eee73a8 100644
---- a/drivers/mfd/mfd-core.c
-+++ b/drivers/mfd/mfd-core.c
-@@ -38,10 +38,15 @@ static int mfd_add_device(struct device *parent, int id,
- 	pdev->dev.parent =3D parent;
- 	platform_set_drvdata(pdev, cell->driver_data);
-=20
--	ret =3D platform_device_add_data(pdev,
--			cell->platform_data, cell->data_size);
--	if (ret)
--		goto fail_res;
-+	if (cell->data_size) {
-+		ret =3D platform_device_add_data(pdev,
-+				cell->platform_data, cell->data_size);
-+		if (ret)
-+			goto fail_res;
-+	} else {
-+		/* potentially nulled already, just being paranoid. */
-+		pdev->dev.platform_data =3D NULL;
-+	}
-=20
- 	for (r =3D 0; r < cell->num_resources; r++) {
- 		res[r].name =3D cell->resources[r].name;
---=20
-1.7.2
-
-
---X1bOJ3K7DJ5YkBrT
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.15 (GNU/Linux)
-
-iEYEARECAAYFAkypMwAACgkQsiLx3HvNzgfy3gCgwh50x3WcuaGozGb2A/xnfbMc
-Xj4AnA7J1Z7voMpmIEHUGPkTRDrcg7yG
-=XmOU
------END PGP SIGNATURE-----
-
---X1bOJ3K7DJ5YkBrT--
+Please read Documentation/kbuild/*.
