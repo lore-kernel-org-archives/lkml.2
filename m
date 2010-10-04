@@ -1,39 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756866Ab0JDSkG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 14:40:06 -0400
-Received: from smtp-out002.kontent.com ([81.88.40.216]:40690 "EHLO
-	smtp-out002.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab0JDSkE (ORCPT
+	id S932210Ab0JDSkv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 14:40:51 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:57817 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755029Ab0JDSkt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 14:40:04 -0400
-X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Oct 2010 14:40:04 EDT
-From: Oliver Neukum <oliver@neukum.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
-Date: Mon, 4 Oct 2010 20:33:53 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, pingc@wacom.com,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org
-References: <4C8E180D.4020309@suse.cz> <201009140807.39977.oliver@neukum.org> <20101004161320.GA14180@core.coreip.homeip.net>
-In-Reply-To: <20101004161320.GA14180@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Mon, 4 Oct 2010 14:40:49 -0400
+Date: Mon, 4 Oct 2010 20:38:42 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-fbdev@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] video/omap: remove mux.h include
+Message-ID: <20101004203842.088b0cb2@absol.kitzblitz>
+In-Reply-To: <20101004175429.GW3117@atomide.com>
+References: <20101004174344.21577085@absol.kitzblitz>
+	<20101004175429.GW3117@atomide.com>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010042033.53453.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag, 4. Oktober 2010, 18:13:20 schrieb Dmitry Torokhov:
-> Lost track of this issue for a while. So I think we still need to fix
-> the deadlock for .36 and I think that the following will do that. Then
-> we'll adjust the driver to actually enable runtime PM for .37.
+Including mux.h should no longer be needed for omap2/3/4 SoCs
+outside arch/arm/mach-omap2 files.
 
-That's a viable plan.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/video/omap/lcd_omap3beagle.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-	Regards
-		Oliver
+diff --git a/drivers/video/omap/lcd_omap3beagle.c b/drivers/video/omap/lcd_omap3beagle.c
+index ca75cc2..d7c6c3e 100644
+--- a/drivers/video/omap/lcd_omap3beagle.c
++++ b/drivers/video/omap/lcd_omap3beagle.c
+@@ -25,8 +25,6 @@
+ #include <linux/gpio.h>
+ #include <linux/i2c/twl.h>
+ 
+-#include <plat/mux.h>
+-#include <plat/mux.h>
+ #include <asm/mach-types.h>
+ 
+ #include "omapfb.h"
+-- 
+1.7.2.2
