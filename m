@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755593Ab0JDMQT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 08:16:19 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:33720 "EHLO
+	id S1755623Ab0JDMQV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 08:16:21 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:33721 "EHLO
 	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755565Ab0JDMQS (ORCPT
+	by vger.kernel.org with ESMTP id S1755567Ab0JDMQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Oct 2010 08:16:18 -0400
-Date: Mon, 4 Oct 2010 14:08:12 +0200
+Date: Mon, 4 Oct 2010 14:10:45 +0200
 From: Nicolas Kaiser <nikai@nikai.net>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/3] staging/lirc: remove duplicated include
-Message-ID: <20101004140812.57008d93@absol.kitzblitz>
+Subject: [PATCH 2/3] staging/spectra: remove duplicated includes
+Message-ID: <20101004141045.0454ad66@absol.kitzblitz>
 In-Reply-To: <20101004140610.2c8fb91a@absol.kitzblitz>
 References: <20101004140610.2c8fb91a@absol.kitzblitz>
 Organization: -
@@ -26,24 +26,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove duplicated include.
+Remove duplicated includes.
 
 Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
 ---
- drivers/staging/lirc/lirc_parallel.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/staging/spectra/lld_emu.c |   10 ++++------
+ drivers/staging/spectra/lld_mtd.c |    8 ++------
+ 2 files changed, 6 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/lirc/lirc_parallel.c b/drivers/staging/lirc/lirc_parallel.c
-index 6da4a8c..0c831f5 100644
---- a/drivers/staging/lirc/lirc_parallel.c
-+++ b/drivers/staging/lirc/lirc_parallel.c
-@@ -40,7 +40,6 @@
- #include <linux/delay.h>
+diff --git a/drivers/staging/spectra/lld_emu.c b/drivers/staging/spectra/lld_emu.c
+index 60eb0f6..6733bbf 100644
+--- a/drivers/staging/spectra/lld_emu.c
++++ b/drivers/staging/spectra/lld_emu.c
+@@ -25,6 +25,10 @@
+ #include "lld.h"
+ #if CMD_DMA
+ #include "lld_cdma.h"
++#if FLASH_EMU
++u32 totalUsedBanks;
++u32 valid_banks[MAX_CHANS];
++#endif
+ #endif
  
- #include <linux/io.h>
--#include <linux/signal.h>
- #include <linux/irq.h>
- #include <linux/uaccess.h>
- #include <asm/div64.h>
+ #define GLOB_LLD_PAGES           64
+@@ -32,12 +36,6 @@
+ #define GLOB_LLD_PAGE_DATA_SIZE  512
+ #define GLOB_LLD_BLOCKS          2048
+ 
+-#if (CMD_DMA  && FLASH_EMU)
+-#include "lld_cdma.h"
+-u32 totalUsedBanks;
+-u32 valid_banks[MAX_CHANS];
+-#endif
+-
+ #if FLASH_EMU			/* This is for entire module */
+ 
+ static u8 *flash_memory[GLOB_LLD_BLOCKS * GLOB_LLD_PAGES];
+diff --git a/drivers/staging/spectra/lld_mtd.c b/drivers/staging/spectra/lld_mtd.c
+index 0de05b1..2bd3466 100644
+--- a/drivers/staging/spectra/lld_mtd.c
++++ b/drivers/staging/spectra/lld_mtd.c
+@@ -26,6 +26,8 @@
+ #include "lld.h"
+ #if CMD_DMA
+ #include "lld_cdma.h"
++u32 totalUsedBanks;
++u32 valid_banks[MAX_CHANS];
+ #endif
+ 
+ #define GLOB_LLD_PAGES           64
+@@ -33,12 +35,6 @@
+ #define GLOB_LLD_PAGE_DATA_SIZE  512
+ #define GLOB_LLD_BLOCKS          2048
+ 
+-#if CMD_DMA
+-#include "lld_cdma.h"
+-u32 totalUsedBanks;
+-u32 valid_banks[MAX_CHANS];
+-#endif
+-
+ static struct mtd_info *spectra_mtd;
+ static int mtddev = -1;
+ module_param(mtddev, int, 0);
 -- 
 1.7.2.2
