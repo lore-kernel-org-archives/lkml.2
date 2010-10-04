@@ -1,104 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753306Ab0JDHko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 03:40:44 -0400
-Received: from mail.southpole.se ([193.12.106.18]:41064 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753174Ab0JDHkn (ORCPT
+	id S1753356Ab0JDHpf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 03:45:35 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47797 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab0JDHpe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 03:40:43 -0400
-From: Jonas Bonn <jonas@southpole.se>
-To: linux-kernel@vger.kernel.org
-Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [RFC] Add IO primitives for Wishbone bus
-Date: Mon,  4 Oct 2010 09:40:37 +0200
-Message-Id: <1286178037-17337-1-git-send-email-jonas@southpole.se>
-X-Mailer: git-send-email 1.7.1
+	Mon, 4 Oct 2010 03:45:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=c73/3HrdvlUsEF2BcjpFVcInhpi6CibkMXqegaS0Aw0GaIumSLDDrNPSJsJfzCMTed
+         WG1hIgOTV3FOBynHJJ8KvcZlbFJo1pNg2+BpMSZ2fXvBfTvxkXglBzmCyqmcy+Rc4xmJ
+         wMSi4kYD3/dAyGyDtb/8weouk0gJuy56QIzCg=
+MIME-Version: 1.0
+In-Reply-To: <N9RAiGGLCfN.A.3rD.tVPqMB@chimera>
+References: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera>
+	<N9RAiGGLCfN.A.3rD.tVPqMB@chimera>
+Date: Mon, 4 Oct 2010 08:45:33 +0100
+Message-ID: <AANLkTim_fBnuVX94zKH_u6mOx4pPZK4BfSn1qexj6_wd@mail.gmail.com>
+Subject: Re: [Bug #16462] unable to connect to hidden SSID AP on legal channel 13
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Johannes Berg <johannes.berg@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The Wishbone bus is an open source hardware bus intended to let the parts of an
-integrated circuit communicate with each other.  This bus is primarily used by
-the cores hosted by the OpenCores project.
+Hi Rafael,
 
-The Linux device I/O model assumes that devices have fixed endianess; however,
-as the endianess of the OpenCores cores is determined at synthesis time, these
-devices may exist in both little and big endian versions.  Effectively, the
-endianess selected at synthesis time sets an implicit bus endianess to which
-drivers for these devices must comply.
+On 3 October 2010 22:53, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.34 and 2.6.35.
+>
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16462
+> Subject         : unable to connect to hidden SSID AP on legal channel 13
+> Submitter       : Daniel J Blueman <daniel.blueman@gmail.com>
+> Date            : 2010-07-25 17:06 (71 days old)
+> Handled-By      : Johannes Berg <johannes.berg@intel.com>
+> Patch           : https://bugzilla.kernel.org/attachment.cgi?id=31862
 
-This patch adds I/O primitives of the form wb_io[read|write][8|16|32] which map
-to the underlying io[read|write] functions of the correct endianess.  It is
-intended that devices connecting to a Wishbone bus use these primitives for
-device I/O in order that the correct endianess be automatically applied.
+This patch addresses the issue, though it hasn't been pulled to mainline yet.
 
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
----
-
-Is this an acceptable solution or is there another way that would be
-better?  The problem at hand is how best to write a driver for a device
-when the device has the same endianess as the CPU and that endianess is
-arbitrary... for soft cores (OpenRISC in my case), this is a relevant problem,
-as the device endianess is determined along with the CPU core endianess
-at synthesis time...
-
-/Jonas
-
- include/linux/wishbone.h |   44 ++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 44 insertions(+), 0 deletions(-)
- create mode 100644 include/linux/wishbone.h
-
-diff --git a/include/linux/wishbone.h b/include/linux/wishbone.h
-new file mode 100644
-index 0000000..05c5f57
---- /dev/null
-+++ b/include/linux/wishbone.h
-@@ -0,0 +1,44 @@
-+/*
-+ * Copyright 2010 South Pole AB.  All Rights Reserved.
-+ *
-+ * This file is free software; you can redistribute it and/or modify
-+ * it under the terms of version 2 of the GNU General Public License
-+ * as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software Foundation,
-+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
-+ */
-+
-+#include <asm/io.h>
-+
-+#ifndef _LINUX_WISHBONE_H
-+#define _LINUX_WISHBONE_H
-+
-+#ifdef CONFIG_WISHBONE_BIG_ENDIAN
-+#define wb_ioread8(p)  ioread8(p)
-+#define wb_ioread16(p) ioread16be(p)
-+#define wb_ioread32(p) ioread32be(p)
-+
-+#define wb_iowrite8(p)  iowrite8(p)
-+#define wb_iowrite16(p) iowrite16be(p)
-+#define wb_iowrite32(p) iowrite32be(p)
-+
-+#else
-+
-+#define wb_ioread8(p)  ioread8(p)
-+#define wb_ioread16(p) ioread16(p)
-+#define wb_ioread32(p) ioread32(p)
-+
-+#define wb_iowrite8(p)  iowrite8(p)
-+#define wb_iowrite16(p) iowrite16(p)
-+#define wb_iowrite32(p) iowrite32(p)
-+
-+#endif /* CONFIG_WISHBONE_BIG_ENDIAN */
-+
-+#endif /* _LINUX_WISHBONE_H */
+Many thanks,
+  Daniel
 -- 
-1.7.1
-
+Daniel J Blueman
