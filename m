@@ -1,57 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752764Ab0JDG7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 02:59:47 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51496 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab0JDG7p (ORCPT
+	id S1752813Ab0JDHAC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 03:00:02 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:43559 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab0JDHAA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 02:59:45 -0400
-Date: Mon, 4 Oct 2010 08:59:35 +0200
-From: Heinz Diehl <htd@fritha.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #19632] 2.6.36-rc6: modprobe Not tainted warning
-Message-ID: <20101004065935.GD7237@fritha.org>
-References: <-jYMINoCtaK.A.F5.8CPqMB@chimera>
- <TPWomcQcd8K.A.sHB.DDPqMB@chimera>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <TPWomcQcd8K.A.sHB.DDPqMB@chimera>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Wanderlust/2.15.7 (Almost =?utf-8?Q?Unreal?=
- =?utf-8?B?KSBTRU1JLzEuMTQuNiAoTWFydW9rYSkgRkxJTS8xLjE0LjkgKEdvasWNKSBB?=
- =?utf-8?Q?PEL=2F10=2E7?= Emacs/22.3 (x86_64-pc-linux-gnu) MULE/5.0 (SAKAKI)
-X-Provags-ID: V02:K0:fDR1HuxEAtBsxzuq8KX6maOCtGZ2xxk+E7blnzwKQkr
- tpiYzWjhX6SzQnOHjjo7kc0WpQaj6TeLPb919YS6b4d480c38s
- rH9EI9FNA7q5y8T40XAg1VCM+xFcZs+SlhGPur561HIkU9nnRN
- QH8PbQOaMVIrbqUNJykXB0QNajCuuucq6Rnk3OKQmtVx8V9FON
- Kd99EjSBd1tgYq0pi7jYg==
+	Mon, 4 Oct 2010 03:00:00 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=lD7QYAnZGvDJN4BcHSufr5zfrOsIlkq+md8YqmO+R39hWBoa5upUs2Lputi0Cksp3
+	8aWEzwFdu9nO7EhgT9ATA==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Greg Thelen <gthelen@google.com>
+Subject: [PATCH 00/10] memcg: per cgroup dirty page accounting
+Date: Sun,  3 Oct 2010 23:57:55 -0700
+Message-Id: <1286175485-30643-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.10.2010, Rafael J. Wysocki wrote: 
+This patch set provides the ability for each cgroup to have independent dirty
+page limits.
 
-> The following bug entry is on the current list of known regressions
-> from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> know (either way).
- 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19632
-> Subject		: 2.6.36-rc6: modprobe Not tainted warning
-> Submitter	: Heinz Diehl <htd@fritha.org>
-> Date		: 2010-09-30 18:25 (4 days old)
-> Message-ID	: <20100930182516.GA15089@fritha.org>
-> References	: http://marc.info/?l=linux-kernel&m=128587114004680&w=2
+Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+not be able to consume more than their designated share of dirty pages and will
+be forced to perform write-out if they cross that limit.
 
-This should still be listed, yes. It is also present in the latest rc from
-git repository.
+These patches were developed and tested on mmotm 2010-09-28-16-13.  The patches
+are based on a series proposed by Andrea Righi in Mar 2010.
+
+Overview:
+- Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+  unstable.
+- Extend mem_cgroup to record the total number of pages in each of the 
+  interesting dirty states (dirty, writeback, unstable_nfs).  
+- Add dirty parameters similar to the system-wide  /proc/sys/vm/dirty_*
+  limits to mem_cgroup.  The mem_cgroup dirty parameters are accessible
+  via cgroupfs control files.
+- Consider both system and per-memcg dirty limits in page writeback when
+  deciding to queue background writeback or block for foreground writeback.
+
+Known shortcomings:
+- When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+  writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+  just inodes contributing dirty pages to the cgroup exceeding its limit.  
+
+Performance measurements:
+- kernel builds are unaffected unless run with a small dirty limit.
+- all data collected with CONFIG_CGROUP_MEM_RES_CTLR=y.
+- dd has three data points (in secs) for three data sizes (100M, 200M, and 1G).  
+  As expected, dd slows when it exceed its cgroup dirty limit.
+
+               kernel_build          dd
+mmotm             2:37        0.18, 0.38, 1.65
+  root_memcg
+
+mmotm             2:37        0.18, 0.35, 1.66
+  non-root_memcg
+
+mmotm+patches     2:37        0.18, 0.35, 1.68
+  root_memcg
+
+mmotm+patches     2:37        0.19, 0.35, 1.69
+  non-root_memcg
+
+mmotm+patches     2:37        0.19, 2.34, 22.82
+  non-root_memcg
+  150 MiB memcg dirty limit
+
+mmotm+patches     3:58        1.71, 3.38, 17.33
+  non-root_memcg
+  1 MiB memcg dirty limit
+
+Greg Thelen (10):
+  memcg: add page_cgroup flags for dirty page tracking
+  memcg: document cgroup dirty memory interfaces
+  memcg: create extensible page stat update routines
+  memcg: disable local interrupts in lock_page_cgroup()
+  memcg: add dirty page accounting infrastructure
+  memcg: add kernel calls for memcg dirty page stats
+  memcg: add dirty limits to mem_cgroup
+  memcg: add cgroupfs interface to memcg dirty limits
+  writeback: make determine_dirtyable_memory() static.
+  memcg: check memcg dirty limits in page writeback
+
+ Documentation/cgroups/memory.txt |   37 ++++
+ fs/nfs/write.c                   |    4 +
+ include/linux/memcontrol.h       |   78 +++++++-
+ include/linux/page_cgroup.h      |   31 +++-
+ include/linux/writeback.h        |    2 -
+ mm/filemap.c                     |    1 +
+ mm/memcontrol.c                  |  426 ++++++++++++++++++++++++++++++++++----
+ mm/page-writeback.c              |  211 ++++++++++++-------
+ mm/rmap.c                        |    4 +-
+ mm/truncate.c                    |    1 +
+ 10 files changed, 672 insertions(+), 123 deletions(-)
 
