@@ -1,78 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab0JDIqQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:46:16 -0400
-Received: from vps.mortis.eu ([79.99.135.181]:42929 "EHLO vps.mortis.eu"
+	id S1753703Ab0JDIqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 04:46:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14901 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753414Ab0JDIqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:46:15 -0400
-From: Giel van Schijndel <me@mortis.eu>
-To: linux-kernel@vger.kernel.org
-Cc: Mike Hommey <mh@glandium.org>, Debian Bug #597820 <597820@bugs.debian.org>,
-        Giel van Schijndel <me@mortis.eu>, Wim Van Sebroeck <wim@iguana.be>,
-        Ralf Baechle <ralf@linux-mips.org>, dann frazier <dannf@hp.com>,
-        Tony Lindgren <tony@atomide.com>, linux-watchdog@vger.kernel.org
-Subject: [PATCH] watchdog: f71808e_wdt: add support for the F71889FG
-Date: Mon,  4 Oct 2010 10:45:28 +0200
-Message-Id: <1286181928-4010-1-git-send-email-me@mortis.eu>
-X-Mailer: git-send-email 1.6.4.4
+	id S1753656Ab0JDIq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 04:46:29 -0400
+Message-ID: <4CA99462.5050707@redhat.com>
+Date: Mon, 04 Oct 2010 10:46:26 +0200
+From: Zdenek Kabelac <zkabelac@redhat.com>
+Organization: Red Hat
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100908 Fedora/3.1.3-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.3
+MIME-Version: 1.0
+To: chich21@mail.com
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Linux kernel 2.6.34.7 lvm error
+References: <8CD30F86F2A0A2B-BE8-179A8@web-mmc-m02.sysops.aol.com>
+In-Reply-To: <8CD30F86F2A0A2B-BE8-179A8@web-mmc-m02.sysops.aol.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Giel van Schijndel <me@mortis.eu>
----
- drivers/watchdog/Kconfig       |    4 ++--
- drivers/watchdog/f71808e_wdt.c |   10 +++++++++-
- 2 files changed, 11 insertions(+), 3 deletions(-)
+Dne 3.10.2010 11:56, chich21@mail.com napsal(a):
+> With Linux kernel 2.6.34.7 from www.kernel.org the following error occurs.
+> 
+> Issuing this command produces error.
+> 
+> vgchange -ay
+> 
+> outputs:
+> Internal error: Maps lock 14317216 < unlock 14321312
+> 
+> vgchange is part of lvm-tools.
+> 
+> This doesn't happen with kernel 2.6.34 or 2.6.34.1 from www.kernel.org.
+> 
+> Is there a patch for 2.6.34.x series coming for this error. As there is one
+> for 2.6.35.x series.
+> 
+> Please CC email me related posts.
 
-diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
-index 24efd8e..0fcbb87 100644
---- a/drivers/watchdog/Kconfig
-+++ b/drivers/watchdog/Kconfig
-@@ -409,11 +409,11 @@ config ALIM7101_WDT
- 	  Most people will say N.
- 
- config F71808E_WDT
--	tristate "Fintek F71808E and F71882FG Watchdog"
-+	tristate "Fintek F71808E, F71882FG and F71889FG Watchdog"
- 	depends on X86 && EXPERIMENTAL
- 	help
- 	  This is the driver for the hardware watchdog on the Fintek
--	  F71808E and F71882FG Super I/O controllers.
-+	  F71808E, F71882FG and F71889FG Super I/O controllers.
- 
- 	  You can compile this driver directly into the kernel, or use
- 	  it as a module.  The module will be called f71808e_wdt.
-diff --git a/drivers/watchdog/f71808e_wdt.c b/drivers/watchdog/f71808e_wdt.c
-index 7e5c266..65e5796 100644
---- a/drivers/watchdog/f71808e_wdt.c
-+++ b/drivers/watchdog/f71808e_wdt.c
-@@ -308,6 +308,12 @@ static int watchdog_start(void)
- 		superio_set_bit(watchdog.sioaddr, 0x29, 1);
- 		break;
- 
-+	case f71889fg:
-+		/* set pin 40 to WDTRST# */
-+		superio_outb(watchdog.sioaddr, 0x2b,
-+				superio_inb(watchdog.sioaddr, 0x2b) & 0xcf);
-+		break;
-+
- 	default:
- 		/*
- 		 * 'default' label to shut up the compiler and catch
-@@ -708,8 +714,10 @@ static int __init f71808e_find(int sioaddr)
- 	case SIO_F71882_ID:
- 		watchdog.type = f71882fg;
- 		break;
--	case SIO_F71862_ID:
- 	case SIO_F71889_ID:
-+		watchdog.type = f71889fg;
-+		break;
-+	case SIO_F71862_ID:
- 		/* These have a watchdog, though it isn't implemented (yet). */
- 		err = -ENOSYS;
- 		goto exit;
--- 
-1.6.4.4
+
+Bug is related to stack guard fix - kernel 2.6.36-rc4 has this problem fixed.
+Bug is present in 2.6.36-rc3 - so something between them fixes the problem.
+
+It looks like the [stack] mapping loses 1 page after each mlock/munlock cycle.
+I'm probably going to play bisect game to find out missing fix.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=638525
+
+Meanwhile lvm tools were also updated to read whole mapping table before
+locking pages to avoid reading some mapping lines twice.
+
+Zdenek.
 
