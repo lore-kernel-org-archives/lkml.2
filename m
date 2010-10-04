@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757392Ab0JDX0r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 19:26:47 -0400
-Received: from ms01.sssup.it ([193.205.80.99]:56864 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752194Ab0JDX0q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 19:26:46 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Oct 2010 19:26:46 EDT
-Message-ID: <4CAA54A1.6050507@sssup.it>
-Date: Tue, 05 Oct 2010 00:26:41 +0200
-From: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+	id S1757352Ab0JDXca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 19:32:30 -0400
+Received: from ozlabs.org ([203.10.76.45]:41287 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752242Ab0JDXc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 19:32:28 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: matt mooney <mfm@muteddisk.com>
+Subject: Re: [PATCH v4 2/2] bsearch: prevent overflow when computing middle comparison element
+Date: Tue, 5 Oct 2010 10:02:20 +1030
+User-Agent: KMail/1.13.2 (Linux/2.6.32-24-generic; KDE/4.4.2; i686; ; )
+Cc: =?iso-8859-1?q?Andr=E9_Goddard_Rosa?= <andre.goddard@gmail.com>,
+        linux-kernel@vger.kernel.org,
+        Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+        Tim Abbott <tabbott@ksplice.com>
+References: <cover.1257864802.git.andre.goddard@gmail.com> <201009231056.11938.rusty@rustcorp.com.au> <20100924055012.GC18432@haskell.muteddisk.com>
+In-Reply-To: <20100924055012.GC18432@haskell.muteddisk.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Dhaval Giani <dhaval.giani@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Dario Faggioli <faggioli@gandalf.sssup.it>,
-        Fabio Checconi <fabio@gandalf.sssup.it>, linux-kernel@vger.kernel.org
-Subject: 1 RT task blocks 4-core machine ?
-References: <AANLkTim2icGqFWB1S6TVcQwmo+sCcGdNDPO3s8LFqzR=@mail.gmail.com>
-In-Reply-To: <AANLkTim2icGqFWB1S6TVcQwmo+sCcGdNDPO3s8LFqzR=@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010051002.21609.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 24 Sep 2010 03:20:12 pm matt mooney wrote:
+> > + * bsearch - binary search an array of elements
+> > + * @key: pointer to item being searched for
+> > + * @base: pointer to data to sort
+> 
+> The comment for "@base" seems wrong. It appears that it should say "pointer to
+> sorted data" or "pointer to search data" instead.
 
-I noticed that I can loose control of a 2.6.35 kernel running on a 
-4-core system in a way which I find quite unexpected:
+Thanks, fixed:
 
-   chrt -r 1 /usr/bin/yes > /dev/null
++ * @base: pointer to first element to search
 
-(default 95% per-cpu throttling). Ok, with rt bandwidth migration
-among cores, my yes process will take undisturbed 100% of *one* core,
-but I would be supposed to keep controlling the system using the
-other three ones, wouldn't I ?
-
-Instead, If I'm from a terminal, then I loose control of it, console
-switching does not work anymore. Apparently I cannot do anything, but
-sometimes I can log via ssh from another system.
-A similar behavior happens if I try from ssh or from X.
-
-Sometimes, my key presses (e.g., Alt-F2) are followed many many second
-later. Except Alt-Sys-rq, which keep working, unless I come up with the
-very bad idea of trying to "Nice all RT Tasks". This causes a real
-freeze.
-
-A possible explanation might be that the CFS load balancing logic sees
-my only active task (e.g., the ssh server or shell etc.) as running
-alone on its core, and does not detect that it is inhibited to actually
-run due to RT tasks on the same core. Therefore, it will not migrate
-the task to the free cores. Does this explanation make sense
-or is it completely wrong ?
-
-Also, I'd like to hear whether this is considered the "normal/desired"
-behavior of intermixing RT and non-RT tasks.
-
-Thanks and regards,
-
-	Tommaso
--- 
-Tommaso Cucinotta, Computer Engineering PhD, Researcher
-ReTiS Lab, Scuola Superiore Sant'Anna, Pisa, Italy
-Tel +39 050 882 024, Fax +39 050 882 003
-http://retis.sssup.it/people/tommaso
+Cheers,
+Rusty.
