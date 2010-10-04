@@ -1,198 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab0JDDmW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 23:42:22 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43977
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751540Ab0JDDmV (ORCPT
+	id S1751547Ab0JDEeD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 00:34:03 -0400
+Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:45989 "EHLO
+	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751065Ab0JDEeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 23:42:21 -0400
-Date: Sun, 03 Oct 2010 20:42:42 -0700 (PDT)
-Message-Id: <20101003.204242.71124568.davem@davemloft.net>
-To: tomer_iisc@yahoo.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net: Fix the condition passed to sk_wait_event()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <316201.7438.qm@web53706.mail.re2.yahoo.com>
-References: <316201.7438.qm@web53706.mail.re2.yahoo.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Oct 2010 00:34:01 -0400
+From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
+To: Greg KH <gregkh@suse.de>,
+        Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: Regarding USB-to-serial device driver
+Date: Mon, 4 Oct 2010 10:03:40 +0530
+Message-Id: <20101004042924.M50398@admin-gateway.ncra.tifr.res.in>
+In-Reply-To: <20100928120743.GA15807@suse.de>
+References: <20100913154843.GA27496@suse.de> <20100914060649.M96376@admin-gateway.ncra.tifr.res.in> <20100914131925.GC375@suse.de> <20100922052107.M44650@admin-gateway.ncra.tifr.res.in> <20100922145607.GB26309@suse.de> <20100923100127.M64470@admin-gateway.ncra.tifr.res.in> <20100923140236.GB31394@suse.de> <20100928091520.M79654@admin-gateway.ncra.tifr.res.in> <20100928113036.GA15024@suse.de> <20100928115204.M46802@admin-gateway.ncra.tifr.res.in> <20100928120743.GA15807@suse.de>
+X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
+X-OriginatingIP: 158.144.12.129
+MIME-Version: 1.0
+Content-Type: multipart/mixed;
+	boundary="----=OPENWEBMAIL_ATT_0.136613861980976"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nagendra Tomar <tomer_iisc@yahoo.com>
-Date: Sun, 3 Oct 2010 02:45:06 -0700 (PDT)
+This is a multi-part message in MIME format.
 
-> This patch fixes the condition (3rd arg) passed to sk_wait_event() in 
-> sk_stream_wait_memory(). The incorrect check in sk_stream_wait_memory() 
-> causes the following soft lockup in tcp_sendmsg() when the global tcp 
-> memory pool has exhausted. 
- ...
-> What is happening is, that the sk_wait_event() condition passed from
-> sk_stream_wait_memory() evaluates to true for the case of tcp global memory
-> exhaustion. This is because both sk_stream_memory_free() and vm_wait are true
-> which causes sk_wait_event() to *not* call schedule_timeout(). 
-> Hence sk_stream_wait_memory() returns immediately to the caller w/o sleeping.
-> This causes the caller to again try allocation, which again fails and again
-> calls sk_stream_wait_memory(), and so on.
+------=OPENWEBMAIL_ATT_0.136613861980976
+Content-Type: text/plain;
+	charset=utf-8
+
+
+Hi Greg,
+
+> > Is it possible to control RTS line from user space.
 > 
-> 
-> Signed-off-by: Nagendra Singh Tomar <tomer_iisc@yahoo.com>
+> Yes.
+ 
+It's  possible to control RTS line for standard UART serial port like ttyS0 and ttyS1
+from userspace.
 
-Applied, thanks.
+But for USB-to-serial port like ttyUSB0, the program is not able to control RTS line
+from userspace.
 
-This bug was introduced by the following commit, which I made
-a note of in the commit message for the fix:
+I have attached the userspace program for enable/disable of RTS line.
 
---------------------
-commit c1cbe4b7ad0bc4b1d98ea708a3fecb7362aa4088
-Author: Benjamin LaHaise <benjamin.c.lahaise@intel.com>
-Date:   Tue Dec 13 23:22:19 2005 -0800
+Thanks-
 
-    [NET]: Avoid atomic xchg() for non-error case
-    
-    It also looks like there were 2 places where the test on sk_err was
-    missing from the event wait logic (in sk_stream_wait_connect and
-    sk_stream_wait_memory), while the rest of the sock_error() users look
-    to be doing the right thing.  This version of the patch fixes those,
-    and cleans up a few places that were testing ->sk_err directly.
-    
-    Signed-off-by: Benjamin LaHaise <benjamin.c.lahaise@intel.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+Raj
 
-diff --git a/include/net/sock.h b/include/net/sock.h
-index 982b4ec..0fbae85 100644
---- a/include/net/sock.h
-+++ b/include/net/sock.h
-@@ -1166,7 +1166,10 @@ static inline int sock_queue_err_skb(struct sock *sk, struct sk_buff *skb)
-  
- static inline int sock_error(struct sock *sk)
- {
--	int err = xchg(&sk->sk_err, 0);
-+	int err;
-+	if (likely(!sk->sk_err))
-+		return 0;
-+	err = xchg(&sk->sk_err, 0);
- 	return -err;
- }
- 
-diff --git a/net/bluetooth/af_bluetooth.c b/net/bluetooth/af_bluetooth.c
-index ea616e3..fb031fe 100644
---- a/net/bluetooth/af_bluetooth.c
-+++ b/net/bluetooth/af_bluetooth.c
-@@ -287,10 +287,9 @@ int bt_sock_wait_state(struct sock *sk, int state, unsigned long timeo)
- 		timeo = schedule_timeout(timeo);
- 		lock_sock(sk);
- 
--		if (sk->sk_err) {
--			err = sock_error(sk);
-+		err = sock_error(sk);
-+		if (err)
- 			break;
--		}
- 	}
- 	set_current_state(TASK_RUNNING);
- 	remove_wait_queue(sk->sk_sleep, &wait);
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index e3bb11c..95f33cc 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -767,8 +767,9 @@ static int l2cap_sock_sendmsg(struct kiocb *iocb, struct socket *sock, struct ms
- 
- 	BT_DBG("sock %p, sk %p", sock, sk);
- 
--	if (sk->sk_err)
--		return sock_error(sk);
-+	err = sock_error(sk);
-+	if (err)
-+		return err;
- 
- 	if (msg->msg_flags & MSG_OOB)
- 		return -EOPNOTSUPP;
-diff --git a/net/bluetooth/sco.c b/net/bluetooth/sco.c
-index 9cb00dc..6481814 100644
---- a/net/bluetooth/sco.c
-+++ b/net/bluetooth/sco.c
-@@ -637,8 +637,9 @@ static int sco_sock_sendmsg(struct kiocb *iocb, struct socket *sock,
- 
- 	BT_DBG("sock %p, sk %p", sock, sk);
- 
--	if (sk->sk_err)
--		return sock_error(sk);
-+	err = sock_error(sk);
-+	if (err)
-+		return err;
- 
- 	if (msg->msg_flags & MSG_OOB)
- 		return -EOPNOTSUPP;
-diff --git a/net/core/stream.c b/net/core/stream.c
-index 15bfd03..35e2525 100644
---- a/net/core/stream.c
-+++ b/net/core/stream.c
-@@ -55,8 +55,9 @@ int sk_stream_wait_connect(struct sock *sk, long *timeo_p)
- 	int done;
- 
- 	do {
--		if (sk->sk_err)
--			return sock_error(sk);
-+		int err = sock_error(sk);
-+		if (err)
-+			return err;
- 		if ((1 << sk->sk_state) & ~(TCPF_SYN_SENT | TCPF_SYN_RECV))
- 			return -EPIPE;
- 		if (!*timeo_p)
-@@ -67,6 +68,7 @@ int sk_stream_wait_connect(struct sock *sk, long *timeo_p)
- 		prepare_to_wait(sk->sk_sleep, &wait, TASK_INTERRUPTIBLE);
- 		sk->sk_write_pending++;
- 		done = sk_wait_event(sk, timeo_p,
-+				     !sk->sk_err &&
- 				     !((1 << sk->sk_state) & 
- 				       ~(TCPF_ESTABLISHED | TCPF_CLOSE_WAIT)));
- 		finish_wait(sk->sk_sleep, &wait);
-@@ -137,7 +139,9 @@ int sk_stream_wait_memory(struct sock *sk, long *timeo_p)
- 
- 		set_bit(SOCK_NOSPACE, &sk->sk_socket->flags);
- 		sk->sk_write_pending++;
--		sk_wait_event(sk, &current_timeo, sk_stream_memory_free(sk) &&
-+		sk_wait_event(sk, &current_timeo, !sk->sk_err && 
-+						  !(sk->sk_shutdown & SEND_SHUTDOWN) &&
-+						  sk_stream_memory_free(sk) &&
- 						  vm_wait);
- 		sk->sk_write_pending--;
- 
-diff --git a/net/irda/af_irda.c b/net/irda/af_irda.c
-index 6f92f9c..f121f7d 100644
---- a/net/irda/af_irda.c
-+++ b/net/irda/af_irda.c
-@@ -1438,8 +1438,9 @@ static int irda_recvmsg_stream(struct kiocb *iocb, struct socket *sock,
- 			/*
- 			 *	POSIX 1003.1g mandates this order.
- 			 */
--			if (sk->sk_err)
--				ret = sock_error(sk);
-+			ret = sock_error(sk);
-+			if (ret)
-+				break;
- 			else if (sk->sk_shutdown & RCV_SHUTDOWN)
- 				;
- 			else if (noblock)
-diff --git a/net/llc/af_llc.c b/net/llc/af_llc.c
-index c3f0b07..b6d3df5 100644
---- a/net/llc/af_llc.c
-+++ b/net/llc/af_llc.c
-@@ -566,10 +566,9 @@ static int llc_wait_data(struct sock *sk, long timeo)
- 		/*
- 		 * POSIX 1003.1g mandates this order.
- 		 */
--		if (sk->sk_err) {
--			rc = sock_error(sk);
-+		rc = sock_error(sk);
-+		if (rc)
- 			break;
--		}
- 		rc = 0;
- 		if (sk->sk_shutdown & RCV_SHUTDOWN)
- 			break;
+------=OPENWEBMAIL_ATT_0.136613861980976
+Content-Type: text/x-csrc;
+	name="Test.c"
+Content-Disposition: attachment; filename="Test.c"
+Content-Transfer-Encoding: base64
+
+I2luY2x1ZGUgPHN0ZGlvLmg+CiNpbmNsdWRlIDxzdGRsaWIuaD4KI2luY2x1ZGUgPHRlcm1pb3Mu
+aD4KI2luY2x1ZGUgPHVuaXN0ZC5oPgojaW5jbHVkZSA8c3lzL2lvY3RsLmg+CiNpbmNsdWRlIDxz
+eXMvdHlwZXMuaD4KI2luY2x1ZGUgPHN5cy9zdGF0Lmg+CiNpbmNsdWRlIDxmY250bC5oPgoKCnN0
+YXRpYyBzdHJ1Y3QgdGVybWlvcyBvbGR0ZXJtaW5mbzsKCgp2b2lkIGNsb3Nlc2VyaWFsKGludCBm
+ZCkKewogICAgdGNzZXRhdHRyKGZkLCBUQ1NBTk9XLCAmb2xkdGVybWluZm8pOwogICAgaWYgKGNs
+b3NlKGZkKSA8IDApCiAgICAgICAgcGVycm9yKCJjbG9zZXNlcmlhbCgpIik7Cn0KCgppbnQgb3Bl
+bnNlcmlhbChjaGFyICpkZXZpY2VuYW1lKQp7CiAgICBpbnQgZmQ7CiAgICBzdHJ1Y3QgdGVybWlv
+cyBhdHRyOwoKICAgIGlmICgoZmQgPSBvcGVuKGRldmljZW5hbWUsIE9fUkRXUikpID09IC0xKSB7
+CiAgICAgICAgcGVycm9yKCJvcGVuc2VyaWFsKCk6IG9wZW4oKSIpOwogICAgICAgIHJldHVybiAw
+OwogICAgfQogICAgaWYgKHRjZ2V0YXR0cihmZCwgJm9sZHRlcm1pbmZvKSA9PSAtMSkgewogICAg
+ICAgIHBlcnJvcigib3BlbnNlcmlhbCgpOiB0Y2dldGF0dHIoKSIpOwogICAgICAgIHJldHVybiAw
+OwogICAgfQogICAgYXR0ciA9IG9sZHRlcm1pbmZvOwogICAgYXR0ci5jX2NmbGFnIHw9IENSVFND
+VFMgfCBDTE9DQUw7CiAgICBhdHRyLmNfb2ZsYWcgPSAwOwogICAgaWYgKHRjZmx1c2goZmQsIFRD
+SU9GTFVTSCkgPT0gLTEpIHsKICAgICAgICBwZXJyb3IoIm9wZW5zZXJpYWwoKTogdGNmbHVzaCgp
+Iik7CiAgICAgICAgcmV0dXJuIDA7CiAgICB9CiAgICBpZiAodGNzZXRhdHRyKGZkLCBUQ1NBTk9X
+LCAmYXR0cikgPT0gLTEpIHsKICAgICAgICBwZXJyb3IoImluaXRzZXJpYWwoKTogdGNzZXRhdHRy
+KCkiKTsKICAgICAgICByZXR1cm4gMDsKICAgIH0KICAgIHJldHVybiBmZDsKfQoKCmludCBzZXRS
+VFMoaW50IGZkLCBpbnQgbGV2ZWwpCnsKICAgIGludCBzdGF0dXM7CgogICAgaWYgKGlvY3RsKGZk
+LCBUSU9DTUdFVCwgJnN0YXR1cykgPT0gLTEpIHsKICAgICAgICBwZXJyb3IoInNldFJUUygpOiBU
+SU9DTUdFVCIpOwogICAgICAgIHJldHVybiAwOwogICAgfQogICAgaWYgKGxldmVsKQogICAgICAg
+IHN0YXR1cyB8PSBUSU9DTV9SVFM7CiAgICBlbHNlCiAgICAgICAgc3RhdHVzICY9IH5USU9DTV9S
+VFM7CiAgICBpZiAoaW9jdGwoZmQsIFRJT0NNU0VULCAmc3RhdHVzKSA9PSAtMSkgewogICAgICAg
+IHBlcnJvcigic2V0UlRTKCk6IFRJT0NNU0VUIik7CiAgICAgICAgcmV0dXJuIDA7CiAgICB9CiAg
+ICByZXR1cm4gMTsKfQoKCmludCBtYWluKCkKewogICAgaW50IGZkOwogICAgY2hhciAqc2VyaWFs
+ZGV2ID0gIi9kZXYvdHR5VVNCMCI7CgogICAgZmQgPSBvcGVuc2VyaWFsKHNlcmlhbGRldik7CiAg
+ICBpZiAoIWZkKSB7CiAgICAgICAgZnByaW50ZihzdGRlcnIsICJFcnJvciB3aGlsZSBpbml0aWFs
+aXppbmcgJXMuXG4iLCBzZXJpYWxkZXYpOwogICAgICAgIHJldHVybiAxOwogICAgfQoKICAgIHNl
+dFJUUyhmZCwxKTsKICAgIHVzbGVlcCgxKTsgICAgICAKICAgIHNldFJUUyhmZCwgMCk7CgogICAg
+Y2xvc2VzZXJpYWwoZmQpOwogICAgcmV0dXJuIDA7Cn0=
+
+------=OPENWEBMAIL_ATT_0.136613861980976--
