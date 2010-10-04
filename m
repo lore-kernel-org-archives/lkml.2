@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab0JDNre (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 09:47:34 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:62911 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755914Ab0JDNrc convert rfc822-to-8bit (ORCPT
+	id S1755991Ab0JDNsy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 09:48:54 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:58040 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752754Ab0JDNsx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 09:47:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WhQZFmydDd2ZbH/VH2L7x9uy/VNkummQo12vFvk5mknKzrRmCO9xK46ZxwT98bIBNa
-         SHlUWr98wwYb+0eHDBpSU0E5tVrMOui4I+qKUG+6X+y9QmA/Nr9GNoF9AkRW3VEtowtl
-         4u+oNGqP4gA9B5NxmauUKHyaXMTOa8JmD5iVY=
+	Mon, 4 Oct 2010 09:48:53 -0400
+Message-ID: <4CA9DB3E.6020106@linux.vnet.ibm.com>
+Date: Mon, 04 Oct 2010 19:18:46 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-In-Reply-To: <4CA9D97A.7020109@suse.cz>
-References: <AANLkTinwXj92VLVYqDhvUAusY_MdBQPAYnGBKVgfNLrO@mail.gmail.com>
-	<20100924093206.GD5453@cr0.nay.redhat.com>
-	<AANLkTi=ykH+gTujw+x1c107V6wXfZUT66uHBQ1o6NgK+@mail.gmail.com>
-	<4CA9D97A.7020109@suse.cz>
-Date: Mon, 4 Oct 2010 14:47:26 +0100
-Message-ID: <AANLkTinp4TfW4DecdZJ7X_mSjSqwO0UMmr64v9-27YSX@mail.gmail.com>
-Subject: Re: [PATCH] kconfig: Use PATH_MAX instead of 128 for path buffer sizes.
-From: Will Newton <will.newton@gmail.com>
-To: Michal Marek <mmarek@suse.cz>
-Cc: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Greg Thelen <gthelen@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>
+Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
+References: <1286175485-30643-1-git-send-email-gthelen@google.com> <1286175485-30643-4-git-send-email-gthelen@google.com>
+In-Reply-To: <1286175485-30643-4-git-send-email-gthelen@google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 4, 2010 at 2:41 PM, Michal Marek <mmarek@suse.cz> wrote:
-> On 4.10.2010 15:00, Will Newton wrote:
->> On Fri, Sep 24, 2010 at 10:32 AM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
->>> On Wed, Sep 22, 2010 at 03:59:13PM +0100, Will Newton wrote:
->>>> This prevents the buffers being overflowed when using a config
->>>> file with a long name. PATH_MAX is used elsewhere in the same
->>>> file, so use it here as well.
->>>>
->>>> Signed-off-by: Will Newton <will.newton@imgtec.com>
->>>
->>> Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
->>>
->>> Thanks!
->>
->> Ping!
->>
->> Could someone take this please?
+Greg Thelen wrote:
+> Replace usage of the mem_cgroup_update_file_mapped() memcg
+> statistic update routine with two new routines:
+> * mem_cgroup_inc_page_stat()
+> * mem_cgroup_dec_page_stat()
 >
-> Sorry, applied now. BTW, please do not send patches inline _and_ as
-> attachments at the same time, it confuses git am.
+> As before, only the file_mapped statistic is managed.  However,
+> these more general interfaces allow for new statistics to be
+> more easily added.  New statistics are added with memcg dirty
+> page accounting.
+>
+>
+>
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 512cb12..f4259f4 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
+>   * possibility of race condition. If there is, we take a lock.
+>   */
+>
+>   
+> -static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+>   
+Not seeing this function in mmotm 28/09. So not able to apply this patch.
+Am I missing anything?
+> +void mem_cgroup_update_page_stat(struct page *page,
+> +				 enum mem_cgroup_write_page_stat_item idx,
+> +				 int val)
+>  {
+>  	struct mem_cgroup *mem;
+>
+>   
 
-Thanks!
-
-The reason I send the patches in both ways is because last time I
-checked the gmail web interface will mangle an inline patch, but not
-an attached one, and most people like an inline patch for review
-purposes. I'll have to check to see if there's another way to avo
