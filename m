@@ -1,57 +1,207 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757093Ab0JDSzG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 14:55:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37850 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757031Ab0JDSzA (ORCPT
+	id S932290Ab0JDS5K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 14:57:10 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:19544 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932244Ab0JDS5G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 14:55:00 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Kusanagi Kouichi <slash@ac.auone-net.jp>,
-        Bernd Petrovitsch <bernd@sysprog.at>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/3] perf tools: Fix build breakage
-Date: Mon,  4 Oct 2010 15:54:41 -0300
-Message-Id: <1286218483-7219-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1286218483-7219-1-git-send-email-acme@infradead.org>
-References: <1286218483-7219-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 4 Oct 2010 14:57:06 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, jbaron@redhat.com
+Cc: David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH v2 2/2] jump label: Add MIPS support.
+Date: Mon,  4 Oct 2010 11:56:55 -0700
+Message-Id: <1286218615-24011-3-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1286218615-24011-1-git-send-email-ddaney@caviumnetworks.com>
+References: <1286218615-24011-1-git-send-email-ddaney@caviumnetworks.com>
+X-OriginalArrivalTime: 04 Oct 2010 18:57:10.0123 (UTC) FILETIME=[F2C38BB0:01CB63F5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kusanagi Kouichi <slash@ac.auone-net.jp>
+When in Rome...
 
-The patch ecafda6 introduced a problem where all object files would be
-always rebuilt, fix it by using:
+In order not to be left behind, we add jump label support for MIPS.
 
-http://www.gnu.org/software/make/manual/html_node/Prerequisite-Types.html
+Tested on 64-bit big endian (Octeon), and 32-bit little endian
+(malta/qemu).
 
-Reported-by: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Bernd Petrovitsch <bernd@sysprog.at>
-Signed-off-by: Kusanagi Kouichi <slash@ac.auone-net.jp>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Ralf Baechle <ralf@linux-mips.org>
 ---
- tools/perf/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/mips/Kconfig                  |    1 +
+ arch/mips/include/asm/jump_label.h |   48 ++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/Makefile          |    3 +-
+ arch/mips/kernel/jump_label.c      |   50 ++++++++++++++++++++++++++++++++++++
+ arch/mips/kernel/module.c          |    5 +++
+ 5 files changed, 106 insertions(+), 1 deletions(-)
+ create mode 100644 arch/mips/include/asm/jump_label.h
+ create mode 100644 arch/mips/kernel/jump_label.c
 
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4f1fa77..1950e19 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -1017,7 +1017,7 @@ builtin-revert.o wt-status.o: wt-status.h
- # we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
- # we depend the various files onto their directories.
- DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
--$(DIRECTORY_DEPS): $(sort $(dir $(DIRECTORY_DEPS)))
-+$(DIRECTORY_DEPS): | $(sort $(dir $(DIRECTORY_DEPS)))
- # In the second step, we make a rule to actually create these directories
- $(sort $(dir $(DIRECTORY_DEPS))):
- 	$(QUIET_MKDIR)$(MKDIR) -p $@ 2>/dev/null
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 3ad59dd..6b3bdb5 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -13,6 +13,7 @@ config MIPS
+ 	select HAVE_KPROBES
+ 	select HAVE_KRETPROBES
+ 	select RTC_LIB if !MACH_LOONGSON
++	select HAVE_ARCH_JUMP_LABEL
+ 
+ mainmenu "Linux/MIPS Kernel Configuration"
+ 
+diff --git a/arch/mips/include/asm/jump_label.h b/arch/mips/include/asm/jump_label.h
+new file mode 100644
+index 0000000..7622ccf
+--- /dev/null
++++ b/arch/mips/include/asm/jump_label.h
+@@ -0,0 +1,48 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (c) 2010 Cavium Networks, Inc.
++ */
++#ifndef _ASM_MIPS_JUMP_LABEL_H
++#define _ASM_MIPS_JUMP_LABEL_H
++
++#include <linux/types.h>
++
++#ifdef __KERNEL__
++
++#define JUMP_LABEL_NOP_SIZE 4
++
++#ifdef CONFIG_64BIT
++#define WORD_INSN ".dword"
++#else
++#define WORD_INSN ".word"
++#endif
++
++#define JUMP_LABEL(key, label)						\
++	do {								\
++		asm goto("1:\tnop\n\t"					\
++			"nop\n\t"					\
++			".pushsection __jump_table,  \"a\"\n\t"		\
++			WORD_INSN " 1b, %l[" #label "], %0\n\t"		\
++			".popsection\n\t"				\
++			: :  "i" (key) :  : label);			\
++	} while (0)
++
++
++#endif /* __KERNEL__ */
++
++#ifdef CONFIG_64BIT
++typedef u64 jump_label_t;
++#else
++typedef u32 jump_label_t;
++#endif
++
++struct jump_entry {
++	jump_label_t code;
++	jump_label_t target;
++	jump_label_t key;
++};
++
++#endif /* _ASM_MIPS_JUMP_LABEL_H */
+diff --git a/arch/mips/kernel/Makefile b/arch/mips/kernel/Makefile
+index 06f8482..db4feb9 100644
+--- a/arch/mips/kernel/Makefile
++++ b/arch/mips/kernel/Makefile
+@@ -6,7 +6,8 @@ extra-y		:= head.o init_task.o vmlinux.lds
+ 
+ obj-y		+= cpu-probe.o branch.o entry.o genex.o irq.o process.o \
+ 		   ptrace.o reset.o setup.o signal.o syscall.o \
+-		   time.o topology.o traps.o unaligned.o watch.o vdso.o
++		   time.o topology.o traps.o unaligned.o watch.o vdso.o \
++		   jump_label.o
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ CFLAGS_REMOVE_ftrace.o = -pg
+diff --git a/arch/mips/kernel/jump_label.c b/arch/mips/kernel/jump_label.c
+new file mode 100644
+index 0000000..52d3c70
+--- /dev/null
++++ b/arch/mips/kernel/jump_label.c
+@@ -0,0 +1,50 @@
++/*
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ *
++ * Copyright (c) 2010 Cavium Networks, Inc.
++ */
++
++#include <linux/jump_label.h>
++#include <linux/kernel.h>
++#include <linux/memory.h>
++#include <linux/mutex.h>
++#include <linux/types.h>
++#include <linux/cpu.h>
++
++#include <asm/cacheflush.h>
++#include <asm/inst.h>
++
++#define J_RANGE_MASK ((1ul << 28) - 1)
++
++void arch_jump_label_transform(struct jump_entry *e,
++			       enum jump_label_type type)
++{
++	union mips_instruction insn;
++	union mips_instruction *insn_p =
++		(union mips_instruction *)(unsigned long)e->code;
++
++	/* Jump only works within a 256MB aligned region. */
++	BUG_ON((e->target & ~J_RANGE_MASK) != (e->code & ~J_RANGE_MASK));
++
++	/* Target must have 4 byte alignment. */
++	BUG_ON((e->target & 3) != 0);
++
++	if (type == JUMP_LABEL_ENABLE) {
++		insn.j_format.opcode = j_op;
++		insn.j_format.target = (e->target & J_RANGE_MASK) >> 2;
++	} else {
++		insn.word = 0; /* nop */
++	}
++
++	get_online_cpus();
++	mutex_lock(&text_mutex);
++	*insn_p = insn;
++
++	flush_icache_range((unsigned long)insn_p,
++			   (unsigned long)insn_p + sizeof(*insn_p));
++
++	mutex_unlock(&text_mutex);
++	put_online_cpus();
++}
+diff --git a/arch/mips/kernel/module.c b/arch/mips/kernel/module.c
+index 6f51dda..bb9cde4 100644
+--- a/arch/mips/kernel/module.c
++++ b/arch/mips/kernel/module.c
+@@ -30,6 +30,8 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
++#include <linux/jump_label.h>
++
+ #include <asm/pgtable.h>	/* MODULE_START */
+ 
+ struct mips_hi16 {
+@@ -390,6 +392,9 @@ int module_finalize(const Elf_Ehdr *hdr,
+ 	const Elf_Shdr *s;
+ 	char *secstrings = (void *)hdr + sechdrs[hdr->e_shstrndx].sh_offset;
+ 
++	/* Make jump label nops. */
++	jump_label_apply_nops(me);
++
+ 	INIT_LIST_HEAD(&me->arch.dbe_list);
+ 	for (s = sechdrs; s < sechdrs + hdr->e_shnum; s++) {
+ 		if (strcmp("__dbe_table", secstrings + s->sh_name) != 0)
 -- 
-1.6.2.5
+1.7.2.2
 
