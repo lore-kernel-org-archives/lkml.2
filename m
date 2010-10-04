@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752577Ab0JDGhE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 02:37:04 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51825 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752408Ab0JDGhB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 02:37:01 -0400
-Date: Mon, 4 Oct 2010 08:36:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org, Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Yinghai Lu <yinghai@kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [patch 00/47] Sparse irq rework
-Message-ID: <20101004063634.GA2230@elte.hu>
-References: <20100930221351.682772535@linutronix.de>
- <m1wrpzfctu.fsf@fess.ebiederm.org>
- <alpine.LFD.2.00.1010032034420.14550@localhost6.localdomain6>
- <m11v8692vo.fsf@fess.ebiederm.org>
+	id S1752677Ab0JDGrp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 02:47:45 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:58710 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752596Ab0JDGrp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 02:47:45 -0400
+Date: Mon, 4 Oct 2010 08:47:43 +0200
+From: Heinz Diehl <htd@fritha.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [cpufreq] ondemand: Intel i5-450M gets stuck in lowest state
+Message-ID: <20101004064743.GA7237@fritha.org>
+References: <20101003190012.GA29952@fritha.org>
+ <201010032316.52532.trenn@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m11v8692vo.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <201010032316.52532.trenn@suse.de>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Wanderlust/2.15.7 (Almost =?utf-8?Q?Unreal?=
+ =?utf-8?B?KSBTRU1JLzEuMTQuNiAoTWFydW9rYSkgRkxJTS8xLjE0LjkgKEdvasWNKSBB?=
+ =?utf-8?Q?PEL=2F10=2E7?= Emacs/22.3 (x86_64-pc-linux-gnu) MULE/5.0 (SAKAKI)
+X-Provags-ID: V02:K0:E+G6+80rWNQBRrnvVA95iXfVJEfInfL5lK314L155kw
+ zFG3bi1F1iGvoeiL/tRczNMVL+vkS2N3vMlol5lR2DZVMVD3lF
+ jdLg8vw1FXxMXVo3f0stgAlSTDt2lH+Wyb2XcYyUjqehLU5uDA
+ 8NTeTxBezlbiJDGe7eCovuPfLsEtte0KF+IaZlZ2TCdtuhpru2
+ P/06LfDMI1hLX/3kdkR+w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 04.10.2010, Thomas Renninger wrote: 
 
-* Eric W. Biederman <ebiederm@xmission.com> wrote:
+> best you open a bug on:
+> https://bugzilla.kernel.org
+> attach acpidump and dmesg and paste below as description.
 
-> Looking at this objectively I see a bitmap sized to the formula 
-> 32*NR_CPUS with NR_CPUS expected to double every 18-24 months. Which 
-> means in a decade our worst case will be 2M not 64k.
+Ok, did it:
+https://bugzilla.kernel.org/show_bug.cgi?id=19702
 
-On a 16 TB box? Noise.
+> The root cause should be ACPI related, the patch is in the cpufreq subsystem,
+> can you assign the bug against ACPI and also CC myself and the cpufreqlist:
+> cpufreq@vger.kernel.org
 
-> Can we please build this with scalable interfaces so we don't have to 
-> do this again in a couple of years, and so we don't have to have 
-> little machines paying the price for big machines, and so that big 
-> machines aren't hamstrung because of data structures built for little 
-> machines.
+Done.
 
-Bitmaps are rather scalable, we use them all around the place.
+> Eh, best you also check for a BIOS update, this could fix it.
 
-> Perhaps this just requires using ida instead of a bitmap.
+There's no update per today, it's the latest Bios 207 for this machine.
 
-Erm, IDA/IDR uses a bitmap ...
-
-IDA is a dynamically allocated bitmap - but for something as critical as 
-IRQs i'd rather like to see a preallocated bitmap and platform control 
-over the max (nr_irqs). We dont want to allow crappy drivers to install 
-irq 0x12345678 and blow up the bitmap size to dozens of MB, etc.
-
-Bitmaps are simple - and that's a virtue.
-
-Thanks,
-
-	Ingo
+Thanks, Heinz.
