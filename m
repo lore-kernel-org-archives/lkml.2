@@ -1,148 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab0JDIAi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:00:38 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:59153 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752936Ab0JDIAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:00:37 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: linux-pm@lists.linux-foundation.org
-Subject: Re: [linux-pm] Swsusp patches applied to suspend-2.6#linux-next
-Date: Mon, 4 Oct 2010 10:00:24 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc4-tp42-suspend-next-vmembase-0-00253-gab9b069-dirty; KDE/4.5.1; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>,
-        Nigel Cunningham <nigelc@hera.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <201010021849.54682.Martin@lichtvoll.de> (sfid-20101002_195937_024324_44E143FB)
-In-Reply-To: <201010021849.54682.Martin@lichtvoll.de>
+	id S1753285Ab0JDIHP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 04:07:15 -0400
+Received: from www.tglx.de ([62.245.132.106]:57242 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752624Ab0JDIHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 04:07:13 -0400
+Date: Mon, 4 Oct 2010 10:05:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+cc: LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Yinghai Lu <yinghai@kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [patch 00/47] Sparse irq rework
+In-Reply-To: <m162xibx3k.fsf@fess.ebiederm.org>
+Message-ID: <alpine.LFD.2.00.1010040952460.14550@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <m1wrpzfctu.fsf@fess.ebiederm.org> <alpine.LFD.2.00.1010032034420.14550@localhost6.localdomain6> <m162xibx3k.fsf@fess.ebiederm.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1519253.Fe5bjli7KG";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010041000.33653.Martin@lichtvoll.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1519253.Fe5bjli7KG
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: quoted-printable
+On Sun, 3 Oct 2010, Eric W. Biederman wrote:
+> Thomas Gleixner <tglx@linutronix.de> writes:
+> >> I believe you have distored the design when aiming for migration
+> >> of active irq descriptors (which you have not even implemented yet).
+> >> 
+> >> How do you plan to remove the radix tree lookup from the irq
+> >> handling path?
+> >
+> > Not at all and it's not even even a requirement to remove the lookup
+> > for implementing live migration.
+> 
+> It sounds like it is a requirement to *keep* the lookup for supporting
+> live migration.  *Keeping* the lookup I see as a serious problem.  If we
+> do this right the only users of the radix tree will be drivers using the
+> functions in interrupt.h.
 
-Am Samstag 02 Oktober 2010 schrieb Martin Steigerwald:
-> Am Montag 27 September 2010 schrieb Nigel Cunningham:
-> > Hi again Rafael.
->=20
-> Hi Nigel and Rafael,
->=20
-> > As discussed, here are the patches, modified to apply against your
-> > current linux-next tree. A new first patch splits compression support
-> > out into its own file, removing the need to have two versions of the
-> > load_image and save_image routines, minimising the changes to the
-> > remainder of the patches and making things cleaner than would
-> > otherwise be the case.
-> >=20
-> > On my laptop, single-threaded compression actually slows writing down
-> > from 175MB/s to around 100-120MB/s (depending on how well the image
-> > compresses). Reading speed improves from 218MB/s to around 245MB/s. I
-> > expect that multithreaded writing would bring the writing (and
-> > reading) speeds back up. It's on my swsusp to do list :)
->=20
-> Testing this now
-> (2.6.36-rc4-tp42-suspend-next-vmembase-0-00253-gab9b069- dirty).
+Oh well. I said that it's not a requirement to remove the lookup from
+the entry code, but we can remove it for optimizaiton reasons.
 
-Two times I had the rather strange issue that the machine booted freshly=20
-instead of resuming! First I thought I maybe didn't wait until the image=20
-was saved, before turning the laptop off. But now it happened a second time=
-=20
-and also the ThinkPad T42 has a battery in it, thus it should always be=20
-able to complete writing the image.
+That is the same problem vs. migration as we have a reference to
+irq_desc either by lookup or by storage in vector data on x86.
 
-=46or resuming I found this in the syslog:
+> >> Those files provide the genirq irq chip implementation especially
+> >> drivers/pci/msi.c.  Of course they will do what every other irq_chip
+> >> implementation does to get access to data.  There is an unpleasant
+> >> difference between which generic irq data field htirq.c uses and msi.c
+> >> which may be worth cleaning up.  But otherwise I don't see any
+> >> fundamental problems.
+> >
+> > The fundamental problem I hit, was the hack which handed down irq_desc
+> > to avoid the lookup. If it had been msi_desc in the first place, then
+> > I would not even need to touch the msi code to cleanup x86.
+> 
+> Just because you intend to rename the irq_desc irq_data...
 
-Oct  4 09:19:10 shambhala kernel: end_request: I/O error, dev fd0, sector=20
-0
-Oct  4 09:19:10 shambhala kernel: PM: Starting manual resume from disk
-Oct  4 09:19:10 shambhala kernel: PM: Resume from partition 8:2
-Oct  4 09:19:10 shambhala kernel: PM: Checking hibernation image.
-Oct  4 09:19:10 shambhala kernel: PM: Error -22 checking image file
-Oct  4 09:19:10 shambhala kernel: PM: Resume from disk failed.
-Oct  4 09:19:10 shambhala kernel: PM: Marking nosave pages:=20
-000000000009f000 - 0000000000100000
-Oct  4 09:19:10 shambhala kernel: PM: Basic memory bitmaps created
-Oct  4 09:19:10 shambhala kernel: PM: Basic memory bitmaps freed
+No, I'm not renaming it. I'm cleaning up the mess which was created
+with references to irq_desc all over the place. I need to change core
+code and I cant w/o breaking the world and some more, just because
+everyone fiddles in irq_desc directly. So I want to hand down irq_data
+which is right now inside of irq_desc until the irq_desc users outside
+of kernel/irq are gone. Then irq_data is not necessarily a part of
+irq_desc anymore.
+ 
+> It isn't a hack for an irq method to look at irq_desc.  At least not
+> until your irq_data changes go through.  This has nothing to do with
+> how x86 is structured and everything to do with your irq_data
+> ``cleanup'' which appears to be mostly about code churn, for very little
+> apparent benefit.
 
-What does error -22 mean?
+I tend to disagree. The sparse_irq optimizations to get rid of the
+redundant irq_desc lookups to gain access to the irq_data should have
+been done in exactly that way.
 
-=46or hibernating:
+And I call something which removes 500 lines of code hardly useless
+code churn.
 
-Oct  4 00:13:09 shambhala ifplugd(eth0)[15127]: Link beat lost.
-Oct  4 00:13:10 shambhala NetworkManager[2146]: <info> (eth0): carrier now=
-=20
-OFF (device state 1)
-Oct  4 00:13:12 shambhala ifplugd(eth0)[15127]: Exiting.
-Oct  4 00:13:14 shambhala postfix/master[2589]: reload -- version 2.7.1,=20
-configuration /etc/postfix
-Oct  4 00:13:14 shambhala dhclient: Internet Systems Consortium DHCP=20
-Client 4.1.1-P1
-Oct  4 00:13:14 shambhala dhclient: Copyright 2004-2010 Internet Systems=20
-Consortium.
-Oct  4 00:13:14 shambhala dhclient: All rights reserved.
-Oct  4 00:13:14 shambhala dhclient: For info, please visit=20
-https://www.isc.org/software/dhcp/
-Oct  4 00:13:14 shambhala dhclient:=20
-Oct  4 00:13:14 shambhala dhclient: Listening on=20
-LPF/eth0/00:11:25:46:ec:a5
-Oct  4 00:13:14 shambhala dhclient: Sending on  =20
-LPF/eth0/00:11:25:46:ec:a5
-Oct  4 00:13:14 shambhala dhclient: Sending on   Socket/fallback
-Oct  4 00:13:15 shambhala dhclient: DHCPRELEASE on eth0 to 10.0.0.9 port=20
-67
-Oct  4 00:13:18 shambhala kernel: PM: Marking nosave pages:=20
-000000000009f000 - 0000000000100000
-Oct  4 00:13:18 shambhala kernel: PM: Basic memory bitmaps created
-Oct  4 00:13:18 shambhala kernel: PM: Syncing filesystems ... done.
-Oct  4 09:19:10 shambhala kernel: imklog 4.6.4, log source =3D /proc/kmsg=20
-started.
-Oct  4 09:19:10 shambhala rsyslogd: [origin software=3D"rsyslogd"=20
-swVersion=3D"4.6.4" x-pid=3D"1964" x-info=3D"http://www.rsyslog.com"] (re)s=
-tart
-Oct  4 09:19:10 shambhala kernel: r hub
-Oct  4 09:19:10 shambhala kernel: usbcore: registered new device driver=20
-usb
+> In the current state of the kernel I find it very hard to swallow that
+> having a genirq client using irq_desc (which is the only way to
+> implement somethings) is a hack.
 
-Which is not complete. It seems the last log messages prior to hibernating=
-=20
-have not fully been written by rsyslog.
+This could have been done 2 years ago by those who pushed sparse_irq
+including the resulting "optimization".
 
-Whats going on there? I didn't see this with Nigel's patches without the=20
-readahead patch. But then now I am testing suspend next + his patches,=20
-which may well contain other patches, as far as I understand.
+Thanks,
 
-Any change to test with some newer state of suspend-next?
-
-Rafael did you integrate Nigel's patches in your tree?
-
-Ciao,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart1519253.Fe5bjli7KG
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkypiZkACgkQmRvqrKWZhMd/NACeKzG9+0/upvcT0u4lSzZz7nmQ
-Z7cAoLhA/YxiAbFKxz+IC65Pr6s6CVWN
-=lwdf
------END PGP SIGNATURE-----
-
---nextPart1519253.Fe5bjli7KG--
+	tglx
