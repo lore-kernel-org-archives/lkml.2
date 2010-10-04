@@ -1,80 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754623Ab0JDKaw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 06:30:52 -0400
-Received: from darkcity.gna.ch ([195.226.6.51]:50283 "EHLO mail.gna.ch"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752840Ab0JDKav convert rfc822-to-8bit (ORCPT
+	id S1754910Ab0JDKbN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 06:31:13 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45481 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754797Ab0JDKbL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 06:30:51 -0400
-X-Quarantine-ID: <3Yzzvgh3nGCw>
-X-Amavis-Alert: BAD HEADER, Improper folded header field made up entirely of
-	whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n jycPrvgA\n\t\n
-	R1goSzOnkp14Y[...]
-Subject: Re: Introduce support for little endian PowerPC
-From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        Ian Munsie <imunsie@au1.ibm.com>
-In-Reply-To: <1285966204.2463.137.camel@pasglop>
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
-	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
-	 <1285935283.2463.78.camel@pasglop>  <1285950041.15020.272.camel@thor.local>
-	 <1285966204.2463.137.camel@pasglop>
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
- jycPrvgA	
- R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 04 Oct 2010 12:30:42 +0200
-Message-ID: <1286188242.15020.349.camel@thor.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 4 Oct 2010 06:31:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=xi4NJbPNxjxtYe7QDtxhhnncgfoE58LVtB6qarXPYWn/nm+3qt0QZ+2jPBZO/UgqTE
+         f80IfFudRo0F/3uVaxuqfbekGJR221W9nZh6vsrN2BsVQ42oWNadt3LBHajiLyFvJhzI
+         Jb7jyCmpxf2xLFXYutkBc14AXndRvT/ELc9ic=
+Date: Mon, 4 Oct 2010 18:35:45 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Subject: Re: [PATCH] sysctl: fix min/max handling in
+ __do_proc_doulongvec_minmax()
+Message-ID: <20101004103545.GJ5189@cr0.nay.redhat.com>
+References: <1286025469.2582.1806.camel@edumazet-laptop>
+ <20101004085913.GR14068@sgi.com>
+ <1286183058.18293.26.camel@edumazet-laptop>
+ <20101004093439.GG5189@cr0.nay.redhat.com>
+ <1286187030.18293.33.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286187030.18293.33.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sam, 2010-10-02 at 06:50 +1000, Benjamin Herrenschmidt wrote: 
-> On Fri, 2010-10-01 at 18:20 +0200, Michel Dänzer wrote:
-> > On Fre, 2010-10-01 at 22:14 +1000, Benjamin Herrenschmidt wrote: 
-> > > 
-> > > Now, the main reasons in practice are anything touching graphics.
-> > > 
-> > > There's quite a few IP cores out there for SoCs that don't have HW
-> > > swappers, and -tons- of more or less ugly code that can't deal with non
-> > > native pixel ordering (hell, even Xorg isn't good at it, we really only
-> > > support cards that have HW swappers today).
-> > 
-> > That's not true. Even the radeon driver doesn't really need the HW
-> > swappers anymore with KMS.
-> 
-> And last I looked X still pukes if you give it a pixmap in non native
-> byte order but that might have been fixed.
+On Mon, Oct 04, 2010 at 12:10:30PM +0200, Eric Dumazet wrote:
+>Le lundi 04 octobre 2010 à 17:34 +0800, Américo Wang a écrit :
+>> On Mon, Oct 04, 2010 at 11:04:18AM +0200, Eric Dumazet wrote:
+>> >Le lundi 04 octobre 2010 à 03:59 -0500, Robin Holt a écrit :
+>> >> On Sat, Oct 02, 2010 at 03:17:49PM +0200, Eric Dumazet wrote:
+>> >> > When proc_doulongvec_minmax() is used with an array of longs,
+>> >> > and no min/max check requested (.extra1 or .extra2 being NULL), we
+>> >> > dereference a NULL pointer for the second element of the array.
+>> >> > 
+>> >> > Noticed while doing some changes in network stack for the "16TB problem"
+>> >> > 
+>> >> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> >> > ---
+>> >> >  kernel/sysctl.c |    3 ++-
+>> >> >  1 file changed, 2 insertions(+), 1 deletion(-)
+>> >> > 
+>> >> > diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>> >> > index f88552c..4fba86d 100644
+>> >> > --- a/kernel/sysctl.c
+>> >> > +++ b/kernel/sysctl.c
+>> >> > @@ -2500,7 +2500,8 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+>> >> >  				break;
+>> >> >  			if (neg)
+>> >> >  				continue;
+>> >> > -			if ((min && val < *min) || (max && val > *max))
+>> >> > +			if ((table->extra1 && val < *min) ||
+>> >> > +			    (table->extra2 && val > *max))
+>> >> 
+>> >> How about changing:
+>> >>         for (; left && vleft--; i++, min++, max++, first=0) {
+>> >> into:
+>> >>         for (; left && vleft--; i++, min = min ? min + 1 : NULL, max = max ? max + 1: NULL, first=0) {
+>> >> 
+>> >> That would make min and max correct and reduce the chances somebody in
+>> >> the future overlooks the fact they are currently filled with garbage.
+>> >
+>> >I prefer my solution, because the check is done only in the 'write'
+>> >case, while its done also for 'read' in your solution, not counting the
+>> >for (;;) is really ugly...
+>> >
+>> 
+>> Sorry, I still don't get the point here, min and max
+>> are pointers, they are already checked before dereferenced.
+>> After your patch, min and max will be still increased, while
+>> you are still checking ->extra{1,2} which is wrong.
+>> 
+>> I see no problem with the original code, or I must have missed something?
+>
+>Please re-read again. I had crashes, so original code is bugyy.
+>
+>Say you call __do_proc_doulongvec_minmax() with an array of three
+>elements. And .extra1 = NULL, .extra2 = NULL (no range checks, this is a
+>valid use case)
+>
+>First element, min = NULL OK. no problem so far.
+>
+>Second element, min = (long *)(NULL + sizeof(long))   -> BUG 
+>
+>Third element, min = (long *)(NULL + 2*sizeof(long)) -> BUG 
+>
+>After my patch, min/max increases normally (they are only pointers after
+>all)
+>
+>But they are _dereferenced_ only if they were _not_ NULL at the
+>beginning (extra1 not NULL for *min, extra2 not NULL for *max)
+>
 
-I'm not sure what exactly you mean by that, but I'm not aware of any
-such issues offhand.
+Hmm, I see, thanks for explanation.
 
+Your patch does fix the problem, but seems not a good solution,
+we should skip all min/max checking if ->extra(1|2) is NULL,
+instead of checking it every time within the loop.
 
-> > > There's an even bigger pile of application code that deals with graphics
-> > > without any regard for endianness and is essentially unfixable.
-> > 
-> > Out of curiosity, what kind of APIs are those apps using? X11 and OpenGL
-> > have well-defined semantics wrt endianness, allowing the drivers to
-> > handle any necessary byte swapping internally, and IME the vast majority
-> > of apps handle this correctly.
-> 
-> So why is it so hard to get any video card working on ppc ? :-)
+Thanks.
 
-I didn't say anything about that, just that IME it should be mostly
-possible to deal with endianness within the driver stack.
-
-
-Note that I'm not arguing against these changes, just pointing out some
-apparent inaccuracies in the reasoning for them.
-
-
--- 
-Earthling Michel Dänzer           |                http://www.vmware.com
-Libre software enthusiast         |          Debian, X and DRI developer
