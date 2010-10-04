@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754792Ab0JDKi2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 06:38:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39821 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751163Ab0JDKi0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 06:38:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Su3ILgNI8GLVLKbtToPQwUH3q/9Han4m4mK+pBusbnSst5szPAs+eXmEIE6QKNeeqP
-         WGC4rgfmI9fM4nY7RIFVbmavg+doNYb6eb+5ymXQ3NF7dXvEXim+DpS9ZMhnPwSkzGL+
-         zH+y3YqPavoyp9QdSdET73DuGtAu/4qR4Zo+0=
-Subject: Re: [PATCH] sysctl: fix min/max handling in
- __do_proc_doulongvec_minmax()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-In-Reply-To: <20101004103545.GJ5189@cr0.nay.redhat.com>
-References: <1286025469.2582.1806.camel@edumazet-laptop>
-	 <20101004085913.GR14068@sgi.com>
-	 <1286183058.18293.26.camel@edumazet-laptop>
-	 <20101004093439.GG5189@cr0.nay.redhat.com>
-	 <1286187030.18293.33.camel@edumazet-laptop>
-	 <20101004103545.GJ5189@cr0.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Oct 2010 12:38:21 +0200
-Message-ID: <1286188701.18293.57.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1754941Ab0JDKqE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 06:46:04 -0400
+Received: from www.tglx.de ([62.245.132.106]:60330 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754368Ab0JDKqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 06:46:02 -0400
+Date: Mon, 4 Oct 2010 12:47:39 +0200
+From: "Hans J. Koch" <hjk@linutronix.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg KH <greg@kroah.com>, Greg KH <gregkh@suse.de>,
+        "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 5/5] uio: Implement hotunplug support, using libunload
+Message-ID: <20101004104739.GA9961@silverbox.local>
+References: <20100917205946.GF2522@local>
+ <m139t451b4.fsf_-_@fess.ebiederm.org>
+ <20100924104555.GC1819@silverbox.local>
+ <m1hbhfcbdo.fsf@fess.ebiederm.org>
+ <20100924173106.GA4966@silverbox.local>
+ <m14ode662q.fsf@fess.ebiederm.org>
+ <20100925003308.GA29910@suse.de>
+ <m1wrqa4mg5.fsf@fess.ebiederm.org>
+ <20100926192142.GA7252@kroah.com>
+ <m1iq1s86jk.fsf_-_@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1iq1s86jk.fsf_-_@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 04 octobre 2010 à 18:35 +0800, Américo Wang a écrit :
+On Sun, Sep 26, 2010 at 03:49:03PM -0700, Eric W. Biederman wrote:
 
-> Your patch does fix the problem, but seems not a good solution,
-> we should skip all min/max checking if ->extra(1|2) is NULL,
-> instead of checking it every time within the loop.
+Checkpatch reports one error, see below.
 
-Please do submit a patch, we'll see if you come to a better solution,
-with no added code size (this is slow path, I dont care for checking it
-'every time winthin the loop')
+Thanks,
+Hans
 
+> 
+> +	/*
+> +	 * Take the users lock before opening the file to ensure the
+> +	 * file is not unregistered while it is being opened.
+> +	 */
+> +	ret = -EIO;
+> +	if (!unload_trylock(&idev->unload))
+> +		goto err_out;
+> +
+> +	ret = 0;
+> +	if (idev->info->open)
+>  		ret = idev->info->open(idev->info, inode);
+> -		if (ret)
+> -			goto err_infoopen;
+> +	
 
+The above line adds trailing whitespace.
 
-
-
-
-
+> +	/*
+> +	 * Add to the listener list only if the open succeeds.
+> +	 * This ensures that uio_unregister_device won't call
+> +	 * release unless open has succeeded.
+> +	 */
