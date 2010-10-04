@@ -1,88 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab0JDWaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:30:23 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54115 "EHLO mx1.suse.de"
+	id S1756563Ab0JDWdX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:33:23 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36626 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755246Ab0JDWaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:30:22 -0400
-Date: Tue, 5 Oct 2010 00:30:20 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: Fix Kconfig dependencies
-Message-ID: <20101004223020.GA14702@sepie.suse.cz>
-References: <1286199093-3576-1-git-send-email-mmarek@suse.cz>
- <20101004180346.59b10af7@endymion.delvare>
+	id S1751842Ab0JDWdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:33:22 -0400
+Message-ID: <4CAA55F9.90503@zytor.com>
+Date: Mon, 04 Oct 2010 15:32:25 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101004180346.59b10af7@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Nick Lowe <nick.lowe@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>, Jason Baron <jbaron@redhat.com>,
+        Daniel Drake <dsd@laptop.org>, Andres Salomon <dilinger@queued.net>,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, Borislav Petkov <bp@alien8.de>
+Subject: Re: Dynamic nop selection breaks boot on Geode LX
+References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>	<20101004154633.GA2900@redhat.com>	<4CAA4C7D.8040006@zytor.com>	<1286230518.6750.76.camel@gandalf.stny.rr.com>	<4CAA53A2.6070703@zytor.com> <AANLkTikCkwF+yd4kdad8Bcz-6YX+STiy1wgrFfJxsfRg@mail.gmail.com>
+In-Reply-To: <AANLkTikCkwF+yd4kdad8Bcz-6YX+STiy1wgrFfJxsfRg@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry, I missed the patch in your message before)
+On 10/04/2010 03:25 PM, Nick Lowe wrote:
+> > As far as I'm aware, the check is just broken in VMs that trace their
+> > lineage to Connectix's VirtualPC that Microsoft acquired back in 2006.
+> > Is this correct? On balance, is this really to be cared about?
+If it was a huge win from using NOPL, then it would perhaps not be -- or
+we'd go through more effort at detecting the broken cases.  However,
+since it's not, it's easier to just avoid it.
 
-On Mon, Oct 04, 2010 at 06:03:46PM +0200, Jean Delvare wrote:
-> On Mon,  4 Oct 2010 15:31:33 +0200, Michal Marek wrote:
-> [...] selects I2C_ALGOBIT which has unmet direct dependencies (I2C && !I2C_HELPER_AUTO)
-> > [...]
-> 
-> This message is obscure. The actual problem is that I2C_ALGOBIT is
-> selected but doesn't exist, isn't it?.
-
-I2C_ALGOBIT does exist, but depends on a false value if I2C_HELPER_AUTO
-is set. Yes, in this case it does not matter, there won't be any
-unresolved symbols during link, but Kconfig has no way to find out what
-are hard dependencies and what are tricks to improve the user
-experience. 
-
-
-> I would prefer the fix below, which seems to work for me (but I am no
-> Kconfig expert) and preserves the submenu for algo drivers. Only the
-> indentation is missing, would be nice to solve.
-> 
-> ---
->  drivers/i2c/Kconfig       |    3 ++-
->  drivers/i2c/algos/Kconfig |   15 ++++++++++++---
->  2 files changed, 14 insertions(+), 4 deletions(-)
-> 
-> --- linux-2.6.36-rc6.orig/drivers/i2c/algos/Kconfig	2010-08-02 00:11:14.000000000 +0200
-> +++ linux-2.6.36-rc6/drivers/i2c/algos/Kconfig	2010-10-04 17:33:10.000000000 +0200
-> @@ -2,16 +2,25 @@
->  # I2C algorithm drivers configuration
->  #
->  
-> +config I2C_ALGOBIT
-> +	tristate
-> +
-> +config I2C_ALGOPCF
-> +	tristate
-> +
-> +config I2C_ALGOPCA
-> +	tristate
-> +
->  menu "I2C Algorithms"
->  	depends on !I2C_HELPER_AUTO
->  
->  config I2C_ALGOBIT
-> -	tristate "I2C bit-banging interfaces"
-> +	prompt "I2C bit-banging interfaces"
->  
->  config I2C_ALGOPCF
-> -	tristate "I2C PCF 8584 interfaces"
-> +	prompt "I2C PCF 8584 interfaces"
->  
->  config I2C_ALGOPCA
-> -	tristate "I2C PCA 9564 interfaces"
-> +	prompt "I2C PCA 9564 interfaces"
->  
->  endmenu
-
-Unfortunatelly, this fix does not help. Symbol properties are merged
-together, so this just first defines three tristate symbols and later
-makes them depend on !I2C_HELPER_AUTO :-(.
-
-Michal
+	-hpa
