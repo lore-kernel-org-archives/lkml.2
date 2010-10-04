@@ -1,34 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab0JDLdB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 07:33:01 -0400
-Received: from relay.pcl-ipout01.plus.net ([212.159.7.99]:11364 "EHLO
-	relay.pcl-ipout01.plus.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753831Ab0JDLdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 07:33:00 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlU+AEtYqUzUnwYz/2dsb2JhbACTFI5KgVKGFqssjjWFRwSVZQI
-Message-ID: <9023c3c08ee0b66151646d481c788d50.squirrel@webmail.plus.net>
-Date: Mon, 4 Oct 2010 12:32:58 +0100
-Subject: Payment.
-From: Western =?iso-8859-1?Q?Union=AE?= <noreply@westernu.com>
-Reply-To: funds@westernu.co.uk
-User-Agent: SquirrelMail
+	id S1755410Ab0JDLis (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 07:38:48 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59654 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754094Ab0JDLir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 07:38:47 -0400
+Date: Mon, 4 Oct 2010 13:37:52 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH UPDATED] jbd: Use printk_ratelimited() in
+ journal_alloc_journal_head()
+Message-ID: <20101004113751.GA7982@quack.suse.cz>
+References: <20101004094331.GC3589@quack.suse.cz>
+ <1286187133-12475-1-git-send-email-namhyung@gmail.com>
+ <20101004103145.GG3589@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101004103145.GG3589@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon 04-10-10 12:31:45, Jan Kara wrote:
+> On Mon 04-10-10 19:12:13, Namhyung Kim wrote:
+> > Use printk_ratelimited() instead of doing it manually.
+>   Thanks. I've merged the patch into my tree.
+  Grumble, you apparently didn't try to compile the thing... The patch
+was missing #include <linux/ratelimit.h>. I've fixed that up now. Please be
+more careful next time. Thanks.
 
-
-
-You have earned $1,000,000.00 USD from Western Union. To receive your
-funds, send your details: Full Names, Age, Country, Phone Number
-to:(funds@westernu.co.uk)
-
+ 								Honza
+> 
+> > 
+> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> > ---
+> >  fs/jbd/journal.c |    9 +++------
+> >  1 files changed, 3 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+> > index 6f20a75..f79767d 100644
+> > --- a/fs/jbd/journal.c
+> > +++ b/fs/jbd/journal.c
+> > @@ -1718,7 +1718,6 @@ static void journal_destroy_journal_head_cache(void)
+> >  static struct journal_head *journal_alloc_journal_head(void)
+> >  {
+> >  	struct journal_head *ret;
+> > -	static unsigned long last_warning;
+> >  
+> >  #ifdef CONFIG_JBD_DEBUG
+> >  	atomic_inc(&nr_journal_heads);
+> > @@ -1726,11 +1725,9 @@ static struct journal_head *journal_alloc_journal_head(void)
+> >  	ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
+> >  	if (ret == NULL) {
+> >  		jbd_debug(1, "out of memory for journal_head\n");
+> > -		if (time_after(jiffies, last_warning + 5*HZ)) {
+> > -			printk(KERN_NOTICE "ENOMEM in %s, retrying.\n",
+> > -			       __func__);
+> > -			last_warning = jiffies;
+> > -		}
+> > +		printk_ratelimited(KERN_NOTICE "ENOMEM in %s, retrying.\n",
+> > +				   __func__);
+> > +
+> >  		while (ret == NULL) {
+> >  			yield();
+> >  			ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
+> > -- 
+> > 1.7.0.4
+> > 
+> -- 
+> Jan Kara <jack@suse.cz>
+> SUSE Labs, CR
