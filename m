@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755190Ab0JDLA0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 07:00:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60438 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab0JDLAZ (ORCPT
+	id S1755285Ab0JDLE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 07:04:27 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:35285 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755062Ab0JDLE0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 07:00:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
-Date: Mon, 4 Oct 2010 13:00:14 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Kay Sievers <kay.sievers@vrfy.org>, Brandon Philips <brandon@ifup.org>
-References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6>
+	Mon, 4 Oct 2010 07:04:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Z7nNbwIGpbTgp2wcK+PTRtkwvRcQ7RnTboktVK+hWoIbHdGIIXBz1d0iRIXO1miODd
+         sI/miYFf00FFkOavIkDpP8H0Hfo9FllDsL/OpWJpThfpGooutcZbWjF5FX7GSxRVDTz+
+         /+R3EsTtcDilLE80fg4k2cJuU+YMBtpsy5hMI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010041300.15234.arnd@arndb.de>
-X-Provags-ID: V02:K0:KiI878lOVxXHWayDmDkSszpX0YixcJzq2JYcrlVWmQt
- AazVFD7wmCloUv/9JkZA64KMqGuJB2ddI0FRmZGbjzFbnWgbvj
- Ux7s2XaPJs0xC9YSpDFzbP9zoelhiRZnaxVDDYmmGhYwl8cd1t
- OTz2qWvcs7gIjN5q1TQp/eaer0PIu+xBSbsrvAw4+7W1uyUHlo
- Yw/ydm3QgH59yZWzWugXw==
+In-Reply-To: <20101004101200.GI5189@cr0.nay.redhat.com>
+References: <AANLkTik-RXPfDK12m5OFmLf=gVL1x-h-aDcKX2nz6O3P@mail.gmail.com>
+	<20101004101200.GI5189@cr0.nay.redhat.com>
+Date: Mon, 4 Oct 2010 08:04:24 -0300
+Message-ID: <AANLkTi=UDned6J0SbcFAfsiF1rg=E-+ZUE2TN=KOg0-f@mail.gmail.com>
+Subject: Re: Information From Buffers
+From: Artur Baruchi <mail.baruchi@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 03 October 2010, Thomas Gleixner wrote:
-> Current mainline triggers a list corruption bug in
-> module_bug_finalize(). dmesg excerpt below.
-> 
-> The corresponding code says:
-> 
->         /*
->          * Strictly speaking this should have a spinlock to protect against
->          * traversals, but since we only traverse on BUG()s, a spinlock
->          * could potentially lead to deadlock and thus be counter-productive.
->          */
->         list_add(&mod->bug_list, &module_bug_list);
-> 
-> I can see the traversal problem vs. BUG(), but what's protecting the
-> list_add() ? BKL probably did, but is that true anymore ?
+Hi Wang.
 
-BKL hasn't been in this code path since before git.
+Thanks for your reply.
 
-I think this relatively recent change caused module_finalize to be
-called without module_mutex held:
+No, inside /proc/meminfo there are just high level information (macro)
+about what is going on inside the memory. I need do get more details
+about page cache, things like, what files are being buffered, how much
+files are being buffered, size of this files, etc. This information
+can be reach using buffer_head linked list, but I dont know how to
+walk through this list.
 
-commit 75676500f8298f0ee89db12db97294883c4b768e
-Author: Rusty Russell <rusty@rustcorp.com.au>
-Date:   Sat Jun 5 11:17:36 2010 -0600
+Thanks.
 
-    module: make locking more fine-grained.
-    
-    Kay Sievers <kay.sievers@vrfy.org> reports that we still have some
-    contention over module loading which is slowing boot.
-    
-    Linus also disliked a previous "drop lock and regrab" patch to fix the
-    bne2 "gave up waiting for init of module libcrc32c" message.
-    
-    This is more ambitious: we only grab the lock where we need it.
-    
-    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-    Cc: Brandon Philips <brandon@ifup.org>
-    Cc: Kay Sievers <kay.sievers@vrfy.org>
-    Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Att.
+Artur Baruchi
 
-	Arnd
+
+On Mon, Oct 4, 2010 at 7:12 AM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
+> On Fri, Oct 01, 2010 at 03:27:04PM -0300, Artur Baruchi wrote:
+>>Hi Guys.
+>>
+>>I would like to get more information about how cache/buffers are being
+>>used by kernel. Is there a way to walk through the buffer_head list
+>>and get these details ?
+>>
+>
+> In /proc/meminfo, there are "Buffers" and "Cached" fields, are they
+> what you are looking for?
+>
