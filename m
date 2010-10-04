@@ -1,59 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab0JDVJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 17:09:17 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:39034 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932119Ab0JDVJP convert rfc822-to-8bit (ORCPT
+	id S932786Ab0JDVNJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 17:13:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38400 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932743Ab0JDVNI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 17:09:15 -0400
+	Mon, 4 Oct 2010 17:13:08 -0400
 MIME-Version: 1.0
-In-Reply-To: <201010042142.29402.rjw@sisk.pl>
-References: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera> <N9RAiGGLCfN.A.v9C.bUPqMB@chimera>
- <20101004172509.0aded2ba@destiny.ordissimo> <201010042142.29402.rjw@sisk.pl>
-From: Anisse Astier <anisse@astier.eu>
-Date: Mon, 4 Oct 2010 23:08:46 +0200
-Message-ID: <AANLkTinsc=DqQwnR18McRP8fLei=GHWV1yykCcYDUCzv@mail.gmail.com>
-Subject: Re: [Bug #16891] Kernel panic while loading intel module during boot
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, Eric Anholt <eric@anholt.net>,
-        Tim Gardner <tim.gardner@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <4CAA4102.3070205@zytor.com>
+References: <20101003093701.GB3733@liondog.tnic> <4CA89681.8000202@zytor.com>
+ <20101003152212.GA13233@liondog.tnic> <a3fce0e5-e6c5-4bf0-b8c0-4954825a7065@email.android.com>
+ <20101003201139.GA16532@liondog.tnic> <dc1a5ce2-0414-4f15-9e7b-fcfa4435adb5@email.android.com>
+ <20101004073127.GA20305@liondog.tnic> <AANLkTikBs5R2KmGfDSXyi5y-cKuZepZCdr0KOVe5-MX6@mail.gmail.com>
+ <4CAA4102.3070205@zytor.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 4 Oct 2010 14:12:16 -0700
+Message-ID: <AANLkTimXj+5ixx=xoVYOCmM4+W6CGR1XOi6CHDTZzns0@mail.gmail.com>
+Subject: Re: [PATCH] x86, cpu: Fix X86_FEATURE_NOPL
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 4, 2010 at 9:42 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> I'll provide this patch here in the meantime in case anyone is interested.
+On Mon, Oct 4, 2010 at 2:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
 >
-> Thanks for the update and the patch.
->
-> Well, I wonder who's going to merge it?
->
+> Actually, cpu_has() depends on:
+> #if defined(CONFIG_X86_P6_NOP) || defined(CONFIG_X86_64)
 
-I'm not sure is going to be merged because most of this code has been
-re-written and has been sitting in drm-intel-next for a few weeks now.
-This (welcome) rewrite will likely be merged in 2.6.37 (but I can't
-speak for Chris).
+Ahh. Right you are. The place that depends on just P6_NOP is the
+default NOP choice logic in <asm/nops.h>
 
-This is a port of this patch:
-http://git.kernel.org/?p=linux/kernel/git/ickle/drm-intel.git;a=commit;h=e5e408fc94595aab897f613b6f4e2f5b36870a6f
-, but on completely different code.
+But the end result ends up being the same: can we please clean this
+all up so that it isn't so confusing? Rather than add to the
+confusion?
 
-Also this patch is new and didn't see much testing (I tested on 4
-different Intel GPUs, belonging only to 2 different families); if it's
-not merged for 2.6.36, it won't be for 2.6.37 (the new code will land
-first). If that happens, it might not meet conditions to be accepted
-in -stable (being in linus' tree first).
-
-
-
-Anisse
+                         Linus
