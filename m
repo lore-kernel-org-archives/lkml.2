@@ -1,69 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757324Ab0JDWvC (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:51:02 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39541 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752580Ab0JDWvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:51:01 -0400
-Subject: Re: Introduce support for little endian PowerPC
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
-Cc: Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org,
-        paulus@samba.org, linux-kernel@vger.kernel.org,
-        Ian Munsie <imunsie@au1.ibm.com>
-In-Reply-To: <1286188242.15020.349.camel@thor.local>
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
-	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
-	 <1285935283.2463.78.camel@pasglop>  <1285950041.15020.272.camel@thor.local>
-	 <1285966204.2463.137.camel@pasglop> <1286188242.15020.349.camel@thor.local>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Oct 2010 09:50:32 +1100
-Message-ID: <1286232632.2463.324.camel@pasglop>
+	id S1757344Ab0JDWza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:55:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57212 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751952Ab0JDWz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:55:29 -0400
+Date: Mon, 4 Oct 2010 15:54:54 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: lkml <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 1/2] vcs: add poll/fasync support
+Message-Id: <20101004155454.771f7b70.akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
+References: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-04 at 12:30 +0200, Michel Dänzer wrote:
+On Fri, 01 Oct 2010 00:10:23 -0400 (EDT)
+Nicolas Pitre <nico@fluxnic.net> wrote:
 
-> > And last I looked X still pukes if you give it a pixmap in non native
-> > byte order but that might have been fixed.
+> The /dev/vcs* devices are used, amongst other things, by accessibility
+> applications such as BRLTTY to display the screen content onto refreshable
+> braille displays.  Currently this is performed by constantly reading from
+> /dev/vcsa0 whether or not the screen content has changed.  Given the
+> default braille refresh rate of 25 times per second, this easily qualifies
+> as the biggest source of wake-up events preventing laptops from entering
+> deeper power saving states.
 > 
-> I'm not sure what exactly you mean by that, but I'm not aware of any
-> such issues offhand.
+> To avoid this periodic polling, let's add support for select()/poll() and
+> SIGIO with the /dev/vcs* devices.  The implemented semantic is to report
+> data availability whenever the corresponding vt has seen some update after
+> the last read() operation.  The application still has to lseek() back
+> as usual in order to read() the new data.
+> 
+> Not to create unwanted overhead, the needed data structure is allocated
+> and the vt notification callback is registered only when the poll or
+> fasync method is invoked for the first time per file instance.
+> 
+> ...
+> 
+> diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
+> index bcce46c..9013573 100644
+> --- a/drivers/char/vc_screen.c
+> +++ b/drivers/char/vc_screen.c
+> @@ -35,6 +35,10 @@
+>  #include <linux/console.h>
+>  #include <linux/device.h>
+>  #include <linux/smp_lock.h>
+> +#include <linux/sched.h>
+> +#include <linux/poll.h>
+> +#include <linux/signal.h>
+> +#include <linux/slab.h>
 
-Hrm, I meant on the DDX side. Anyways, doesn't matter. Even if it works
-fine on X side. Fact is, there's tons and tons of existing SW stack and
-drivers on the field that are totally incapable of doing BE and
-essentially unfixable without major work that the customer(s) is(are)
-unwilling to do at this stage.
+Formally, we need fs.h and notifier.h (at lesat).  I'll fix that up.
 
-(Think embedded gfx IP cores mostly, including codecs etc...)
+>  #include <asm/uaccess.h>
+>  #include <asm/byteorder.h>
+> @@ -45,6 +49,78 @@
+>  #undef addr
+>  #define HEADER_SIZE	4
+>  
+> +struct vcs_poll_data {
+> +	struct notifier_block notifier;
+> +	unsigned int cons_num;
+> +	int has_read;
 
-> I didn't say anything about that, just that IME it should be mostly
-> possible to deal with endianness within the driver stack.
+It would be nice to document the meaning of has_read.  And consider
+using the more appropriate `bool' type?
 
-To some extent yes. Completely, I'm not sure. Apps manipulating pixels,
-such as video players doing hand-made overlay etc... will potentially
-have issues. It's more than actual pixel byte ordering. It's anything
-that accesses a quantity in memory using different size accessors, ie,
-storing a u32 and then expecting to find the LSB at u8* of the same
-address etc... that sort of stuff happens more often in gfx-oriented
-code than anywhere else in my experience.
+> +	wait_queue_head_t waitq;
+> +	struct fasync_struct *fasync;
+> +};
+> +
+> +static int
+> +vcs_notifier(struct notifier_block *nb, unsigned long code, void *_param)
+> +{
+> +	struct vt_notifier_param *param = _param;
+> +	struct vc_data *vc = param->vc;
+> +	struct vcs_poll_data *poll =
+> +		container_of(nb, struct vcs_poll_data, notifier);
+> +	int currcons = poll->cons_num;
+> +
+> +	if (code != VT_UPDATE)
+> +		return NOTIFY_DONE;
+> +
+> +	if (currcons == 0)
+> +		currcons = fg_console;
+> +	else
+> +		currcons--;
+> +	if (currcons != vc->vc_num)
+> +		return NOTIFY_DONE;
+> +
+> +	poll->has_read = 0;
+> +	wake_up_interruptible(&poll->waitq);
+> +	kill_fasync(&poll->fasync, SIGIO, POLL_IN);
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static void
+> +vcs_poll_data_free(struct vcs_poll_data *poll)
+> +{
+> +	unregister_vt_notifier(&poll->notifier);
+> +	kfree(poll);
+> +}
+> +
+> +static struct vcs_poll_data *
+> +vcs_poll_data_get(struct file *file)
+> +{
+> +	struct vcs_poll_data *poll = file->private_data;
+> +
+> +	if (poll)
+> +		return poll;
+> +
+> +	poll = kzalloc(sizeof(*poll), GFP_KERNEL);
+> +	if (!poll)
+> +		return NULL;
+> +	poll->cons_num = iminor(file->f_path.dentry->d_inode) & 127;
+> +	init_waitqueue_head(&poll->waitq);
+> +	poll->notifier.notifier_call = vcs_notifier;
+> +	if (register_vt_notifier(&poll->notifier) != 0) {
+> +		kfree(poll);
+> +		return NULL;
+> +	}
+> +
+> +	spin_lock(&file->f_lock);
+> +	if (!file->private_data) {
+> +		file->private_data = poll;
+> +	} else {
+> +		/* someone else raced ahead of us */
+> +		vcs_poll_data_free(poll);
+> +		poll = file->private_data;
+> +	}
+> +	spin_unlock(&file->f_lock);
 
-> Note that I'm not arguing against these changes, just pointing out some
-> apparent inaccuracies in the reasoning for them.
+What's the race-handling code here all about?
 
-Right, I possibly made an incorrect statement relative to Xorg (I had
-assumed the fb layer only worked properly in native endian format), but
-that doesn't matter much since the problem here is existing code &
-drivers and goes way beyond X (probably no X on the target setups
-anyways).
-
-Cheers,
-Ben
-
+> +	return poll;
+> +}
+> +
+>
+> ...
+>
