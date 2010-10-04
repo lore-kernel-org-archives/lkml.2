@@ -1,135 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab0JDIb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:31:59 -0400
-Received: from tuxonice.net ([74.207.252.127]:54101 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753038Ab0JDIb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:31:58 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CA990FA.2070005@tuxonice.net>
-Date: Mon, 04 Oct 2010 19:31:54 +1100
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+	id S1753570Ab0JDIht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 04:37:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55697 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab0JDIhs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 04:37:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Bonn <jonas@southpole.se>
+Subject: Re: [RFC] Add IO primitives for Wishbone bus
+Date: Mon, 4 Oct 2010 10:37:43 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <1286178037-17337-1-git-send-email-jonas@southpole.se>
+In-Reply-To: <1286178037-17337-1-git-send-email-jonas@southpole.se>
 MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: linux-pm@lists.linux-foundation.org,
-        Nigel Cunningham <nigelc@hera.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [linux-pm] Swsusp patches applied to suspend-2.6#linux-next
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net>	<201010021849.54682.Martin@lichtvoll.de>	(sfid-20101002_195937_024324_44E143FB) <201010041000.33653.Martin@lichtvoll.de>
-In-Reply-To: <201010041000.33653.Martin@lichtvoll.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010041037.43477.arnd@arndb.de>
+X-Provags-ID: V02:K0:ErNSD1pD8ByLB1IZ9tLkJk22Yf9WMbaYgMYeDEf7ee7
+ uUAKuXMBQ6r/9NbDQA3Jj2C6uOiWLUl8enCQmB9u59945EQ5hv
+ gdwTOsEt7m/xT4/aOG+lQ6I3IjXBX0RmUPe0t3Ica51L1t11Y6
+ rssLUhdTHQcl2AG/94gt4TIQc0dS/KEFwtis6kv76cvx+xXccG
+ sqZDPA9wMxPkT/2oNpjig==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin.
+On Monday 04 October 2010 09:40:37 Jonas Bonn wrote:
+> Is this an acceptable solution or is there another way that would be
+> better?  The problem at hand is how best to write a driver for a device
+> when the device has the same endianess as the CPU and that endianess is
+> arbitrary... for soft cores (OpenRISC in my case), this is a relevant problem,
+> as the device endianess is determined along with the CPU core endianess
+> at synthesis time...
 
-On 04/10/10 19:00, Martin Steigerwald wrote:
-> Am Samstag 02 Oktober 2010 schrieb Martin Steigerwald:
->> Am Montag 27 September 2010 schrieb Nigel Cunningham:
->>> Hi again Rafael.
->>
->> Hi Nigel and Rafael,
->>
->>> As discussed, here are the patches, modified to apply against your
->>> current linux-next tree. A new first patch splits compression support
->>> out into its own file, removing the need to have two versions of the
->>> load_image and save_image routines, minimising the changes to the
->>> remainder of the patches and making things cleaner than would
->>> otherwise be the case.
->>>
->>> On my laptop, single-threaded compression actually slows writing down
->>> from 175MB/s to around 100-120MB/s (depending on how well the image
->>> compresses). Reading speed improves from 218MB/s to around 245MB/s. I
->>> expect that multithreaded writing would bring the writing (and
->>> reading) speeds back up. It's on my swsusp to do list :)
->>
->> Testing this now
->> (2.6.36-rc4-tp42-suspend-next-vmembase-0-00253-gab9b069- dirty).
->
-> Two times I had the rather strange issue that the machine booted freshly
-> instead of resuming! First I thought I maybe didn't wait until the image
-> was saved, before turning the laptop off. But now it happened a second time
-> and also the ThinkPad T42 has a battery in it, thus it should always be
-> able to complete writing the image.
->
-> For resuming I found this in the syslog:
->
-> Oct  4 09:19:10 shambhala kernel: end_request: I/O error, dev fd0, sector
-> 0
-> Oct  4 09:19:10 shambhala kernel: PM: Starting manual resume from disk
-> Oct  4 09:19:10 shambhala kernel: PM: Resume from partition 8:2
-> Oct  4 09:19:10 shambhala kernel: PM: Checking hibernation image.
-> Oct  4 09:19:10 shambhala kernel: PM: Error -22 checking image file
-> Oct  4 09:19:10 shambhala kernel: PM: Resume from disk failed.
-> Oct  4 09:19:10 shambhala kernel: PM: Marking nosave pages:
-> 000000000009f000 - 0000000000100000
-> Oct  4 09:19:10 shambhala kernel: PM: Basic memory bitmaps created
-> Oct  4 09:19:10 shambhala kernel: PM: Basic memory bitmaps freed
->
-> What does error -22 mean?
+Looks good in principle, the only possible problem I can see is if you
+have both little-endian and big-endian wishbone devices in the same
+system, which I assume could happen at some point.
 
--22 is -EINVAL. There are a few reasons that it could occur, but rather 
-than chasing our tails, how about if I just tell you that I've been 
-working on a new version of the patches that will provide more detailed 
-debugging of issues like this (printks that can be enabled/disabled at 
-run time) - and hopefully address your issue so it won't happen anyway.
+If you want to be able to handle that cleanly, you should pass the device
+into the accessor function as well.
 
-> For hibernating:
->
-> Oct  4 00:13:09 shambhala ifplugd(eth0)[15127]: Link beat lost.
-> Oct  4 00:13:10 shambhala NetworkManager[2146]:<info>  (eth0): carrier now
-> OFF (device state 1)
-> Oct  4 00:13:12 shambhala ifplugd(eth0)[15127]: Exiting.
-> Oct  4 00:13:14 shambhala postfix/master[2589]: reload -- version 2.7.1,
-> configuration /etc/postfix
-> Oct  4 00:13:14 shambhala dhclient: Internet Systems Consortium DHCP
-> Client 4.1.1-P1
-> Oct  4 00:13:14 shambhala dhclient: Copyright 2004-2010 Internet Systems
-> Consortium.
-> Oct  4 00:13:14 shambhala dhclient: All rights reserved.
-> Oct  4 00:13:14 shambhala dhclient: For info, please visit
-> https://www.isc.org/software/dhcp/
-> Oct  4 00:13:14 shambhala dhclient:
-> Oct  4 00:13:14 shambhala dhclient: Listening on
-> LPF/eth0/00:11:25:46:ec:a5
-> Oct  4 00:13:14 shambhala dhclient: Sending on
-> LPF/eth0/00:11:25:46:ec:a5
-> Oct  4 00:13:14 shambhala dhclient: Sending on   Socket/fallback
-> Oct  4 00:13:15 shambhala dhclient: DHCPRELEASE on eth0 to 10.0.0.9 port
-> 67
-> Oct  4 00:13:18 shambhala kernel: PM: Marking nosave pages:
-> 000000000009f000 - 0000000000100000
-> Oct  4 00:13:18 shambhala kernel: PM: Basic memory bitmaps created
-> Oct  4 00:13:18 shambhala kernel: PM: Syncing filesystems ... done.
-> Oct  4 09:19:10 shambhala kernel: imklog 4.6.4, log source = /proc/kmsg
-> started.
-> Oct  4 09:19:10 shambhala rsyslogd: [origin software="rsyslogd"
-> swVersion="4.6.4" x-pid="1964" x-info="http://www.rsyslog.com"] (re)start
-> Oct  4 09:19:10 shambhala kernel: r hub
-> Oct  4 09:19:10 shambhala kernel: usbcore: registered new device driver
-> usb
->
-> Which is not complete. It seems the last log messages prior to hibernating
-> have not fully been written by rsyslog.
+It would also be good to provide a matching wb_iomap() function that
+returns an iomem token you can use here (see pci_iomap).
 
-That's not unusual - after we do the atomic copy, nothing gets logged.
+A more complex implementation would detect the endianess at wb_iomap
+time and return a token that encodes the endianess, which the regular
+ioread/iowrite multiplexors can handle then. You probably don't need
+to go that far, unless you expect wishbone to become ubiquitous in
+the near future.
 
-> Whats going on there? I didn't see this with Nigel's patches without the
-> readahead patch. But then now I am testing suspend next + his patches,
-> which may well contain other patches, as far as I understand.
->
-> Any change to test with some newer state of suspend-next?
->
-> Rafael did you integrate Nigel's patches in your tree?
-
-We agreed not to yet - I'm splitting the compression support out 
-properly, and will then post another version.
-
-Regards,
-
-Nigel
+	Arnd
