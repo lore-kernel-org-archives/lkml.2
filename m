@@ -1,100 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754476Ab0JDL2B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 07:28:01 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:14830 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753678Ab0JDL17 (ORCPT
+	id S1755033Ab0JDL3d (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 07:29:33 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:45605 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754825Ab0JDL3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 07:27:59 -0400
-X-IronPort-AV: E=Sophos;i="4.57,278,1283731200"; 
-   d="scan'208";a="2173475"
-Date: Mon, 4 Oct 2010 12:27:29 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: <linux-kernel@vger.kernel.org>
-CC: <xen-devel@lists.xensource.com>,
+	Mon, 4 Oct 2010 07:29:32 -0400
+X-IronPort-AV: E=Sophos;i="4.57,278,1283745600"; 
+   d="scan'208";a="116520277"
+From: stefano.stabellini@eu.citrix.com
+To: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com,
         Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: [PATCH v2 00/10] xen: initial domain support
-Message-ID: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        Qing He <qing.he@intel.com>, Yunhong Jiang <yunhong.jiang@intel.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v2 02/10] xen: remap MSIs into pirqs when running as initial domain
+Date: Mon,  4 Oct 2010 12:28:42 +0100
+Message-Id: <1286191730-3188-2-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop>
+References: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop>
+X-OriginalArrivalTime: 04 Oct 2010 11:29:13.0008 (UTC) FILETIME=[5EC14300:01CB63B7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this series implements the basic support needed to boot Linux as initial
-domain on Xen: the target is not to add full featured dom0 support in
-the kernel but to be able to boot Linux on Xen on native.
-We tried to minimize the impact to generic x86 code and interfaces and
-since v2 of the series we were able to eliminate all the modifications
-to non-Xen specific code.
+From: Qing He <qing.he@intel.com>
 
+Implement xen_create_msi_irq to create an msi and remap it as pirq.
+Use xen_create_msi_irq to implement an initial domain specific version
+of setup_msi_irqs.
 
-Changes compared to v1:
+Signed-off-by: Qing He <qing.he@intel.com>
+Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/x86/pci/xen.c   |   55 +++++++++++++++++++++++++++++++---------------
+ drivers/xen/events.c |   58 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/xen/events.h |    2 +
+ 3 files changed, 97 insertions(+), 18 deletions(-)
 
-- the last three patches that added Xen mtrr support have been removed;
-
-- a new patch to mask the cpu mtrr feature from the cpuid on Xen has
-been added instead.
-
-
-This series depends on two other patch series not yet applied but
-already sent to the list for comments a little while back:
-
-Konrad's "Xen PCI frontend driver" series
-http://lkml.org/lkml/2010/8/4/374
-
-my "PV on HVM: receive interrupts as xen events" series
-http://lkml.org/lkml/2010/8/30/170
-
-
-The list of patches with a diffstat follows:
-
-Ian Campbell (1):
-      xen: use host E820 map for dom0
-
-Jeremy Fitzhardinge (3):
-      xen: remap GSIs as pirqs when running as initial domain
-      xen: map a dummy page for local apic and ioapic in xen_set_fixmap
-      xen: make hvc_xen console work for dom0.
-
-Juan Quintela (2):
-      xen: Initialize xenbus for dom0.
-      xen: add the direct mapping area for ISA bus access
-
-Qing He (1):
-      xen: remap MSIs into pirqs when running as initial domain
-
-Stefano Stabellini (3):
-      xen: use vcpu_ops to setup cpu masks
-      xen: introduce XEN_DOM0 as a silent option
-      xen: mask the MTRR feature from the cpuid
-
- arch/x86/pci/xen.c                |  199 +++++++++++++++++++++++++++++++++----
- arch/x86/xen/Kconfig              |    5 +
- arch/x86/xen/enlighten.c          |    2 +
- arch/x86/xen/mmu.c                |   47 ++++++++-
- arch/x86/xen/setup.c              |   46 ++++++++-
- arch/x86/xen/smp.c                |    8 ++-
- drivers/char/hvc_xen.c            |   98 ++++++++++++------
- drivers/xen/events.c              |   73 +++++++++++++-
- drivers/xen/xenbus/xenbus_probe.c |   29 +++++-
- include/xen/events.h              |    5 +
- include/xen/interface/memory.h    |   28 +++++
- include/xen/interface/physdev.h   |   10 ++
- 12 files changed, 489 insertions(+), 61 deletions(-)
-
-
-A git tree with this and the other two series on top of Linux 2.6.36-rc1
-is available here:
-
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git 2.6.36-rc1-initial-domain-v2
-
-Cheers,
-
-Stefano Stabellini
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index cb8d5be..8453e36 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -229,14 +229,12 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 	if (!v)
+ 		return -ENOMEM;
+ 
+-	if (!xen_initial_domain()) {
+-		if (type == PCI_CAP_ID_MSIX)
+-			ret = xen_pci_frontend_enable_msix(dev, &v, nvec);
+-		else
+-			ret = xen_pci_frontend_enable_msi(dev, &v);
+-		if (ret)
+-			goto error;
+-	}
++	if (type == PCI_CAP_ID_MSIX)
++		ret = xen_pci_frontend_enable_msix(dev, &v, nvec);
++	else
++		ret = xen_pci_frontend_enable_msi(dev, &v);
++	if (ret)
++		goto error;
+ 	i = 0;
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		irq = xen_allocate_pirq(v[i], 0, /* not sharable */
+@@ -266,23 +264,40 @@ error:
+ 
+ static void xen_teardown_msi_irqs(struct pci_dev *dev)
+ {
+-	/* Only do this when were are in non-privileged mode.*/
+-	if (!xen_initial_domain()) {
+-		struct msi_desc *msidesc;
+-
+-		msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+-		if (msidesc->msi_attrib.is_msix)
+-			xen_pci_frontend_disable_msix(dev);
+-		else
+-			xen_pci_frontend_disable_msi(dev);
+-	}
++	struct msi_desc *msidesc;
+ 
++	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
++	if (msidesc->msi_attrib.is_msix)
++		xen_pci_frontend_disable_msix(dev);
++	else
++		xen_pci_frontend_disable_msi(dev);
+ }
+ 
+ static void xen_teardown_msi_irq(unsigned int irq)
+ {
+ 	xen_destroy_irq(irq);
+ }
++
++int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++{
++	int irq, ret;
++	struct msi_desc *msidesc;
++
++	list_for_each_entry(msidesc, &dev->msi_list, list) {
++		irq = xen_create_msi_irq(dev, msidesc, type);
++		if (irq < 0)
++			return -1;
++
++		ret = set_irq_msi(irq, msidesc);
++		if (ret)
++			goto error;
++	}
++	return 0;
++
++error:
++	xen_destroy_irq(irq);
++	return ret;
++}
+ #endif
+ 
+ static int xen_pcifront_enable_irq(struct pci_dev *dev)
+@@ -351,6 +366,10 @@ int __init pci_xen_init(void)
+ 
+ static int __init pci_xen_initial_domain(void)
+ {
++#ifdef CONFIG_PCI_MSI
++	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
++	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
++#endif
+ 	xen_setup_acpi_sci();
+ 	__acpi_register_gsi = acpi_register_gsi_xen;
+ 
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 27e4b70..b83918a 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -29,6 +29,8 @@
+ #include <linux/bootmem.h>
+ #include <linux/slab.h>
+ #include <linux/irqnr.h>
++#include <linux/pci.h>
++#include <linux/msi.h>
+ 
+ #include <asm/desc.h>
+ #include <asm/ptrace.h>
+@@ -49,6 +51,8 @@
+ #include <xen/interface/hvm/hvm_op.h>
+ #include <xen/interface/hvm/params.h>
+ 
++#include "../pci/msi.h"
++
+ /*
+  * This lock protects updates to the following mapping and reference-count
+  * arrays. The lock does not need to be acquired to read the mapping tables.
+@@ -704,6 +708,60 @@ out:
+ 	return rc;
+ }
+ 
++int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type)
++{
++	int irq = 0;
++	struct physdev_map_pirq map_irq;
++	int rc;
++	int pos;
++	u32 table_offset, bir;
++
++	memset(&map_irq, 0, sizeof(map_irq));
++	map_irq.domid = DOMID_SELF;
++	map_irq.type = MAP_PIRQ_TYPE_MSI;
++	map_irq.index = -1;
++	map_irq.pirq = -1;
++	map_irq.bus = dev->bus->number;
++	map_irq.devfn = dev->devfn;
++
++	if (type == PCI_CAP_ID_MSIX) {
++		pos = pci_find_capability(dev, PCI_CAP_ID_MSIX);
++
++		pci_read_config_dword(dev, msix_table_offset_reg(pos),
++					&table_offset);
++		bir = (u8)(table_offset & PCI_MSIX_FLAGS_BIRMASK);
++
++		map_irq.table_base = pci_resource_start(dev, bir);
++		map_irq.entry_nr = msidesc->msi_attrib.entry_nr;
++	}
++
++	spin_lock(&irq_mapping_update_lock);
++
++	irq = find_unbound_irq();
++
++	if (irq == -1)
++		goto out;
++
++	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
++	if (rc) {
++		printk(KERN_WARNING "xen map irq failed %d\n", rc);
++
++		dynamic_irq_cleanup(irq);
++
++		irq = -1;
++		goto out;
++	}
++	irq_info[irq] = mk_pirq_info(0, map_irq.pirq, 0, map_irq.index);
++
++	set_irq_chip_and_handler_name(irq, &xen_pirq_chip,
++			handle_level_irq,
++			(type == PCI_CAP_ID_MSIX) ? "msi-x":"msi");
++
++out:
++	spin_unlock(&irq_mapping_update_lock);
++	return irq;
++}
++
+ int xen_vector_from_irq(unsigned irq)
+ {
+ 	return vector_from_irq(irq);
+diff --git a/include/xen/events.h b/include/xen/events.h
+index 9853fce..8cd18a5 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -78,6 +78,8 @@ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq);
+ /* De-allocates the above mentioned physical interrupt. */
+ int xen_destroy_irq(int irq);
+ 
++int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type);
++
+ /* Return vector allocated to pirq */
+ int xen_vector_from_irq(unsigned pirq);
+ 
+-- 
+1.5.6.5
 
