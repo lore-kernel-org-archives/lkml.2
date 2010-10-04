@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754779Ab0JDKMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 06:12:21 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:36175 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754580Ab0JDKMT (ORCPT
+	id S1754826Ab0JDKM5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 06:12:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44765 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754580Ab0JDKM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 06:12:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Dilg7+at4Eca4eQdVcWj2/R5dmLBYDaV2aht/bO70Or6b3OvV4/z//RNMZv7IljOO5
-         LNCKmrgCiovbQnsbIG36l46doQ3gy6F546epfGesMNQq1yhQw1F9y6xfvHDz/k5+b/i3
-         XhxyCtzNQ1vKWC5jfaQV3q1s0wr/QgdhKNWyQ=
-From: Namhyung Kim <namhyung@gmail.com>
+	Mon, 4 Oct 2010 06:12:56 -0400
+Date: Mon, 4 Oct 2010 06:12:12 -0400
+From: Christoph Hellwig <hch@infradead.org>
 To: Jan Kara <jack@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH UPDATED] jbd: Use printk_ratelimited() in journal_alloc_journal_head()
-Date: Mon,  4 Oct 2010 19:12:13 +0900
-Message-Id: <1286187133-12475-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20101004094331.GC3589@quack.suse.cz>
-References: <20101004094331.GC3589@quack.suse.cz>
+Cc: Tejun Heo <tj@kernel.org>, "Ted Ts'o" <tytso@mit.edu>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>, Jens Axboe <axboe@kernel.dk>,
+        Christoph Hellwig <hch@infradead.org>
+Subject: Re: [Bug #19062] Dirtiable inode bdi default != sb bdi btrfs
+Message-ID: <20101004101212.GA25617@infradead.org>
+References: <MEG5YPP-fxC.A.vnD.So6nMB@chimera>
+ <sQALkqF1FWE.A.15D.bo6nMB@chimera>
+ <20101002165433.GL21129@thunk.org>
+ <201010022358.35972.rjw@sisk.pl>
+ <20101003022707.GN21129@thunk.org>
+ <4CA89E63.4080907@kernel.org>
+ <20101004095943.GE3589@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101004095943.GE3589@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use printk_ratelimited() instead of doing it manually.
+On Mon, Oct 04, 2010 at 11:59:44AM +0200, Jan Kara wrote:
+>   Yes, it's caused by one of my fixes. It's harmless (the warning I've
+> added is just too strict). Christoph has a patch that also fixes this
+> - http://lkml.org/lkml/2010/9/29/76. I hope he'll push it soon.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- fs/jbd/journal.c |    9 +++------
- 1 files changed, 3 insertions(+), 6 deletions(-)
-
-diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-index 6f20a75..f79767d 100644
---- a/fs/jbd/journal.c
-+++ b/fs/jbd/journal.c
-@@ -1718,7 +1718,6 @@ static void journal_destroy_journal_head_cache(void)
- static struct journal_head *journal_alloc_journal_head(void)
- {
- 	struct journal_head *ret;
--	static unsigned long last_warning;
- 
- #ifdef CONFIG_JBD_DEBUG
- 	atomic_inc(&nr_journal_heads);
-@@ -1726,11 +1725,9 @@ static struct journal_head *journal_alloc_journal_head(void)
- 	ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
- 	if (ret == NULL) {
- 		jbd_debug(1, "out of memory for journal_head\n");
--		if (time_after(jiffies, last_warning + 5*HZ)) {
--			printk(KERN_NOTICE "ENOMEM in %s, retrying.\n",
--			       __func__);
--			last_warning = jiffies;
--		}
-+		printk_ratelimited(KERN_NOTICE "ENOMEM in %s, retrying.\n",
-+				   __func__);
-+
- 		while (ret == NULL) {
- 			yield();
- 			ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
--- 
-1.7.0.4
+Jens is the writeback maintainer, so he will have to pick it up.
 
