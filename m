@@ -1,165 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab0JDQD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 12:03:59 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:31251 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756524Ab0JDQD6 (ORCPT
+	id S1756549Ab0JDQJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 12:09:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48812 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756506Ab0JDQJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 12:03:58 -0400
-Date: Mon, 4 Oct 2010 18:03:46 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: Fix Kconfig dependencies
-Message-ID: <20101004180346.59b10af7@endymion.delvare>
-In-Reply-To: <1286199093-3576-1-git-send-email-mmarek@suse.cz>
-References: <1286199093-3576-1-git-send-email-mmarek@suse.cz>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Oct 2010 12:09:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=TTiwEsxAHCl0txkagw0zV0K8deDHgJEk0JEVuB0KMegWGrdvxBYwvQvsg6ElSXeWMr
+         T6OieY/TrEynn1sqmvYT/EVFvZz1QpNYYTUkzlxIQIBDpNMFiH+HgWtWA3ie65kveiBA
+         QlLOvEgBWrEPnVZ7GIw7Zm2eiKOOqcl5AxvJw=
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>
+Cc: Greg KH <greg@kroah.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>,
+        Hiroshi Doyu <hiroshi.doyu@nokia.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+Subject: [PATCH 1/2] omap: add dsp platform device
+Date: Mon,  4 Oct 2010 19:09:14 +0300
+Message-Id: <1286208555-8829-2-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.7.3.1.2.g7fe2b
+In-Reply-To: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
+References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+Otherwise tidspbridge cannot work.
 
-On Mon,  4 Oct 2010 15:31:33 +0200, Michal Marek wrote:
-> drivers/i2c/algos/Kconfig makes all the algorithms dependent on
-> !I2C_HELPER_AUTO, which triggers a Kconfig warning about broken
-> dependencies when some driver selects one of the algorithms. Make only
-> the prompts dependent on !I2C_HELPER_AUTO, not the complete symbols.
-> This moves the entries out of the "I2C Algorithms" submenu, but most
-> users do not unset I2C_HELPER_AUTO, so they will not see it anyway.
+It looks like this was dropped in the conversion to staging. I took the
+liberty of doing some cleaning up.
 
-You have bad luck, I'm afraid. Sure, most users do not unset
-I2C_HELPER_AUTO, so they will not see the extra entries in the main I2C
-menu, however _I_ unset it and guess what, _I_ am the one deciding
-whether your patch can be applied or not ;)
-
-I don't want the algo drivers listed in the main I2C menu, sorry. It is
-much clearer the way it is now.
-
-> 
-> Signed-off-by: Michal Marek <mmarek@suse.cz>
-> ---
-> 
-> Please consider for 2.6.36, as the warning is caused by a kconfig fix
-> that I'm about to send to Linus for 2.6.36. And it is triggered by a
-> simple 'make defconfig' in i386/x84_64:
-
-You should reconsider then. Kernel 2.6.36 will be released in a few
-days, is your fix so important that it has to go in, even when you have
-evidence that it breaks other parts of the configuration, which in turn
-will have to be fixed?
-
-It would help if you could explain in detail what your fix is doing and
-why it is urgently needed (if it really is.)
-
-I borrowed the idea of I2C_HELPER_AUTO from
-CONFIG_VIDEO_HELPER_CHIPS_AUTO, so that part will break too, and these
-are a lot more configuration options and drivers.
-
-Also look at I2C_SMBUS, I presume it needs a fix too if selecting
-undeclared symbols is no longer allowed. 
-
-> $ make defconfig
-> *** Default configuration is based on 'x86_64_defconfig'
-> warning: (IEEE1394_PCILYNX && (PCI || BROKEN) && PCI && IEEE1394 && I2C || SFC && NETDEVICES && NETDEV_10000 && PCI && INET || I2C_VIA && I2C && PCI && EXPERIMENTAL || I2C_HYDRA && I2C && PCI && PPC_CHRP && EXPERIMENTAL || I2C_GPIO && I2C && GENERIC_GPIO || I2C_IXP2000 && I2C && ARCH_IXP2000 || I2C_SIMTEC && I2C || I2C_VERSATILE && I2C && (ARCH_VERSATILE || ARCH_REALVIEW || ARCH_VEXPRESS) || I2C_PARPORT && I2C && PARPORT || I2C_PARPORT_LIGHT && I2C || I2C_ACORN && I2C && ARCH_ACORN || SCx200_I2C && I2C && SCx200_GPIO || VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT && VIDEO_IR || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT && VIDEO_IR || VIDEO_CX23885 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && IR_CORE || VIDEO_AU0828 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && I2C && INPUT && DVB_CORE && USB && VI
->  DEO_V4L2 || VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR || VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT && VIDEO_IR || VIDEO_SAA7164 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C || DVB_PLUTO2 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C || DRM && HAS_IOMEM && (AGP || AGP=n) && !EMULATED_CMPXCHG && MMU || FB_DDC && HAS_IOMEM && FB || FB_VIA && HAS_IOMEM && FB && PCI && X86 || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT) selects I2C_ALGOBIT which has unmet direct dependencies (I2C && !I2C_HELPER_AUTO)
-> [...]
-
-This message is obscure. The actual problem is that I2C_ALGOBIT is
-selected but doesn't exist, isn't it?.
-
-> 
-> ---
->  drivers/i2c/algos/Kconfig |   13 ++++++-------
->  1 files changed, 6 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/i2c/algos/Kconfig b/drivers/i2c/algos/Kconfig
-> index 7b2ce4a..9ced1a0 100644
-> --- a/drivers/i2c/algos/Kconfig
-> +++ b/drivers/i2c/algos/Kconfig
-> @@ -2,16 +2,15 @@
->  # I2C algorithm drivers configuration
->  #
->  
-> -menu "I2C Algorithms"
-> -	depends on !I2C_HELPER_AUTO
-> -
->  config I2C_ALGOBIT
-> -	tristate "I2C bit-banging interfaces"
-> +	tristate
-> +	prompt "I2C bit-banging interfaces" if !I2C_HELPER_AUTO
->  
->  config I2C_ALGOPCF
-> -	tristate "I2C PCF 8584 interfaces"
-> +	tristate
-> +	prompt "I2C PCF 8584 interfaces" if !I2C_HELPER_AUTO
->  
->  config I2C_ALGOPCA
-> -	tristate "I2C PCA 9564 interfaces"
-> +	tristate
-> +	prompt "I2C PCA 9564 interfaces" if !I2C_HELPER_AUTO
->  
-> -endmenu
-
-I would prefer the fix below, which seems to work for me (but I am no
-Kconfig expert) and preserves the submenu for algo drivers. Only the
-indentation is missing, would be nice to solve.
-
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
 ---
- drivers/i2c/Kconfig       |    3 ++-
- drivers/i2c/algos/Kconfig |   15 ++++++++++++---
- 2 files changed, 14 insertions(+), 4 deletions(-)
+ arch/arm/mach-omap2/Makefile          |    4 ++
+ arch/arm/mach-omap2/dsp.c             |   85 +++++++++++++++++++++++++++++++++
+ arch/arm/plat-omap/common.c           |    2 +
+ arch/arm/plat-omap/devices.c          |   30 ++++++++++++
+ arch/arm/plat-omap/include/plat/dsp.h |   31 ++++++++++++
+ 5 files changed, 152 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/dsp.c
+ create mode 100644 arch/arm/plat-omap/include/plat/dsp.h
 
---- linux-2.6.36-rc6.orig/drivers/i2c/algos/Kconfig	2010-08-02 00:11:14.000000000 +0200
-+++ linux-2.6.36-rc6/drivers/i2c/algos/Kconfig	2010-10-04 17:33:10.000000000 +0200
-@@ -2,16 +2,25 @@
- # I2C algorithm drivers configuration
- #
+diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+index 88d3a1e..58288a4 100644
+--- a/arch/arm/mach-omap2/Makefile
++++ b/arch/arm/mach-omap2/Makefile
+@@ -102,6 +102,10 @@ obj-y					+= $(iommu-m) $(iommu-y)
+ i2c-omap-$(CONFIG_I2C_OMAP)		:= i2c.o
+ obj-y					+= $(i2c-omap-m) $(i2c-omap-y)
  
-+config I2C_ALGOBIT
-+	tristate
++ifneq ($(CONFIG_TIDSPBRIDGE),)
++obj-y					+= dsp.o
++endif
 +
-+config I2C_ALGOPCF
-+	tristate
+ # Specific board support
+ obj-$(CONFIG_MACH_OMAP_GENERIC)		+= board-generic.o
+ obj-$(CONFIG_MACH_OMAP_H4)		+= board-h4.o
+diff --git a/arch/arm/mach-omap2/dsp.c b/arch/arm/mach-omap2/dsp.c
+new file mode 100644
+index 0000000..6feeeae
+--- /dev/null
++++ b/arch/arm/mach-omap2/dsp.c
+@@ -0,0 +1,85 @@
++/*
++ * TI's OMAP DSP platform device registration
++ *
++ * Copyright (C) 2005-2006 Texas Instruments, Inc.
++ * Copyright (C) 2009 Nokia Corporation
++ *
++ * Written by Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+config I2C_ALGOPCA
-+	tristate
++#include <linux/platform_device.h>
++#include "prm.h"
++#include "cm.h"
++#ifdef CONFIG_BRIDGE_DVFS
++#include <plat/omap-pm.h>
++#endif
 +
- menu "I2C Algorithms"
- 	depends on !I2C_HELPER_AUTO
++#include <plat/dsp.h>
++
++extern phys_addr_t omap_dsp_get_mempool_base(void);
++
++static struct platform_device *omap_dsp_pdev;
++
++static struct omap_dsp_platform_data omap_dsp_pdata __initdata = {
++#ifdef CONFIG_BRIDGE_DVFS
++	.dsp_set_min_opp = omap_pm_dsp_set_min_opp,
++	.dsp_get_opp = omap_pm_dsp_get_opp,
++	.cpu_set_freq = omap_pm_cpu_set_freq,
++	.cpu_get_freq = omap_pm_cpu_get_freq,
++#endif
++	.dsp_prm_read = prm_read_mod_reg,
++	.dsp_prm_write = prm_write_mod_reg,
++	.dsp_prm_rmw_bits = prm_rmw_mod_reg_bits,
++	.dsp_cm_read = cm_read_mod_reg,
++	.dsp_cm_write = cm_write_mod_reg,
++	.dsp_cm_rmw_bits = cm_rmw_mod_reg_bits,
++};
++
++static int __init omap_dsp_init(void)
++{
++	struct platform_device *pdev;
++	int err = -ENOMEM;
++	struct omap_dsp_platform_data *pdata = &omap_dsp_pdata;
++
++	pdata->phys_mempool_base = omap_dsp_get_mempool_base();
++
++	if (pdata->phys_mempool_base) {
++		pdata->phys_mempool_size = CONFIG_TIDSPBRIDGE_MEMPOOL_SIZE;
++		pr_info("%s: %x bytes @ %x\n", __func__,
++			pdata->phys_mempool_size, pdata->phys_mempool_base);
++	}
++
++	pdev = platform_device_alloc("omap-dsp", -1);
++	if (!pdev)
++		goto err_out;
++
++	err = platform_device_add_data(pdev, pdata, sizeof(*pdata));
++	if (err)
++		goto err_out;
++
++	err = platform_device_add(pdev);
++	if (err)
++		goto err_out;
++
++	omap_dsp_pdev = pdev;
++	return 0;
++
++err_out:
++	platform_device_put(pdev);
++	return err;
++}
++module_init(omap_dsp_init);
++
++static void __exit omap_dsp_exit(void)
++{
++	platform_device_unregister(omap_dsp_pdev);
++}
++module_exit(omap_dsp_exit);
++
++MODULE_AUTHOR("Hiroshi DOYU");
++MODULE_DESCRIPTION("TI's OMAP DSP platform device registration");
++MODULE_LICENSE("GPL");
+diff --git a/arch/arm/plat-omap/common.c b/arch/arm/plat-omap/common.c
+index 3008e71..57205a4 100644
+--- a/arch/arm/plat-omap/common.c
++++ b/arch/arm/plat-omap/common.c
+@@ -37,6 +37,7 @@
+ #include <plat/fpga.h>
+ #include <plat/serial.h>
+ #include <plat/vram.h>
++#include <plat/dsp.h>
  
- config I2C_ALGOBIT
--	tristate "I2C bit-banging interfaces"
-+	prompt "I2C bit-banging interfaces"
+ #include <plat/clock.h>
  
- config I2C_ALGOPCF
--	tristate "I2C PCF 8584 interfaces"
-+	prompt "I2C PCF 8584 interfaces"
+@@ -87,6 +88,7 @@ void __init omap_reserve(void)
+ {
+ 	omapfb_reserve_sdram_memblock();
+ 	omap_vram_reserve_sdram_memblock();
++	omap_dsp_reserve_sdram_memblock();
+ }
  
- config I2C_ALGOPCA
--	tristate "I2C PCA 9564 interfaces"
-+	prompt "I2C PCA 9564 interfaces"
+ /*
+diff --git a/arch/arm/plat-omap/devices.c b/arch/arm/plat-omap/devices.c
+index d1920be..4c8f9b9 100644
+--- a/arch/arm/plat-omap/devices.c
++++ b/arch/arm/plat-omap/devices.c
+@@ -15,6 +15,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
+ #include <linux/slab.h>
++#include <linux/memblock.h>
  
- endmenu
---- linux-2.6.36-rc6.orig/drivers/i2c/Kconfig	2010-09-21 11:07:14.000000000 +0200
-+++ linux-2.6.36-rc6/drivers/i2c/Kconfig	2010-10-04 17:54:29.000000000 +0200
-@@ -75,7 +75,8 @@ config I2C_HELPER_AUTO
- 	  In doubt, say Y.
+ #include <mach/hardware.h>
+ #include <asm/mach-types.h>
+@@ -272,6 +273,35 @@ static void omap_init_wdt(void)
+ static inline void omap_init_wdt(void) {}
+ #endif
  
- config I2C_SMBUS
--	tristate "SMBus-specific protocols" if !I2C_HELPER_AUTO
-+	tristate
-+	prompt "SMBus-specific protocols" if !I2C_HELPER_AUTO
- 	help
- 	  Say Y here if you want support for SMBus extensions to the I2C
- 	  specification. At the moment, the only supported extension is
-
-
-
++#if defined(CONFIG_TIDSPBRIDGE) || defined(CONFIG_TIDSPBRIDGE_MODULE)
++
++static phys_addr_t omap_dsp_phys_mempool_base;
++
++void __init omap_dsp_reserve_sdram_memblock(void)
++{
++	phys_addr_t size = CONFIG_TIDSPBRIDGE_MEMPOOL_SIZE;
++	phys_addr_t paddr;
++
++	if (!size)
++		return;
++
++	paddr = __memblock_alloc_base(size, SZ_1M, MEMBLOCK_REAL_LIMIT);
++	if (!paddr) {
++		pr_err("%s: failed to reserve %x bytes\n",
++				__func__, size);
++		return;
++	}
++
++	omap_dsp_phys_mempool_base = paddr;
++}
++
++phys_addr_t omap_dsp_get_mempool_base(void)
++{
++	return omap_dsp_phys_mempool_base;
++}
++EXPORT_SYMBOL(omap_dsp_get_mempool_base);
++#endif
++
+ /*
+  * This gets called after board-specific INIT_MACHINE, and initializes most
+  * on-chip peripherals accessible on this board (except for few like USB):
+diff --git a/arch/arm/plat-omap/include/plat/dsp.h b/arch/arm/plat-omap/include/plat/dsp.h
+new file mode 100644
+index 0000000..9c604b3
+--- /dev/null
++++ b/arch/arm/plat-omap/include/plat/dsp.h
+@@ -0,0 +1,31 @@
++#ifndef __OMAP_DSP_H__
++#define __OMAP_DSP_H__
++
++#include <linux/types.h>
++
++struct omap_dsp_platform_data {
++	void (*dsp_set_min_opp) (u8 opp_id);
++	u8 (*dsp_get_opp) (void);
++	void (*cpu_set_freq) (unsigned long f);
++	unsigned long (*cpu_get_freq) (void);
++	unsigned long mpu_speed[6];
++
++	/* functions to write and read PRCM registers */
++	void (*dsp_prm_write)(u32, s16 , u16);
++	u32 (*dsp_prm_read)(s16 , u16);
++	u32 (*dsp_prm_rmw_bits)(u32, u32, s16, s16);
++	void (*dsp_cm_write)(u32, s16 , u16);
++	u32 (*dsp_cm_read)(s16 , u16);
++	u32 (*dsp_cm_rmw_bits)(u32, u32, s16, s16);
++
++	phys_addr_t phys_mempool_base;
++	phys_addr_t phys_mempool_size;
++};
++
++#if defined(CONFIG_TIDSPBRIDGE) || defined(CONFIG_TIDSPBRIDGE_MODULE)
++extern void omap_dsp_reserve_sdram_memblock(void);
++#else
++static inline void omap_dsp_reserve_sdram_memblock(void) { }
++#endif
++
++#endif
 -- 
-Jean Delvare
+1.7.3.1.2.g7fe2b
+
