@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab0JDUpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 16:45:44 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:46786 "EHLO
+	id S932805Ab0JDUqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 16:46:16 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46753 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757175Ab0JDUoa (ORCPT
+	by vger.kernel.org with ESMTP id S1757145Ab0JDUo3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 16:44:30 -0400
+	Mon, 4 Oct 2010 16:44:29 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Robert Richter <robert.richter@amd.com>
 Cc: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
@@ -17,9 +17,9 @@ Cc: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org, Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
         Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 4/7] ARM: oprofile: Move non-ARM code into separate init/exit
-Date: Mon,  4 Oct 2010 21:44:22 +0100
-Message-Id: <74092b0d162aafc21e408033cec6146e227363b5.1286222593.git.matt@console-pimps.org>
+Subject: [PATCH 2/7] perf: New helper function for pmu name
+Date: Mon,  4 Oct 2010 21:44:20 +0100
+Message-Id: <59a8e68894a2e755232189abbe9b1a3b892e309c.1286222593.git.matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <cover.1286222593.git.matt@console-pimps.org>
 References: <cover.1286222593.git.matt@console-pimps.org>
@@ -29,65 +29,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for moving the majority of this oprofile code into an
-architecture-neutral place separate the architecture-independent code
-into oprofile_perf_init() and oprofile_perf_exit().
+Introduce perf_pmu_name() helper function that returns the name of the
+pmu. This gives us a generic way to get the name of a pmu regardless of
+how an architecture identifies it internally, e.g. ARM uses an id
+whereas SH currently uses a string.
 
 Signed-off-by: Matt Fleming <matt@console-pimps.org>
-Tested-by: Will Deacon <will.deacon@arm.com>
 ---
- arch/arm/oprofile/common.c |   17 ++++++++++++++---
- 1 files changed, 14 insertions(+), 3 deletions(-)
+ arch/arm/kernel/perf_event.c |   23 +++++++++++++++++++++++
+ arch/arm/oprofile/common.c   |   22 +---------------------
+ arch/sh/kernel/perf_event.c  |   14 ++++++++++++++
+ include/linux/perf_event.h   |    1 +
+ kernel/perf_event.c          |    5 +++++
+ 5 files changed, 44 insertions(+), 21 deletions(-)
 
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index ef3bc33..3bff24d 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -123,6 +123,29 @@ armpmu_get_max_events(void)
+ }
+ EXPORT_SYMBOL_GPL(armpmu_get_max_events);
+ 
++const char *perf_pmu_name(void)
++{
++	enum arm_perf_pmu_ids id = armpmu_get_pmu_id();
++
++	switch (id) {
++	case ARM_PERF_PMU_ID_XSCALE1:
++		return "arm/xscale1";
++	case ARM_PERF_PMU_ID_XSCALE2:
++		return "arm/xscale2";
++	case ARM_PERF_PMU_ID_V6:
++		return "arm/armv6";
++	case ARM_PERF_PMU_ID_V6MP:
++		return "arm/mpcore";
++	case ARM_PERF_PMU_ID_CA8:
++		return "arm/armv7";
++	case ARM_PERF_PMU_ID_CA9:
++		return "arm/armv7-ca9";
++	default:
++		return NULL;
++	}
++}
++EXPORT_SYMBOL_GPL(perf_pmu_name);
++
+ int perf_num_counters(void)
+ {
+ 	return armpmu_get_max_events();
 diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index 86df75f..e4cd332 100644
+index 23f18a0..cb224ee 100644
 --- a/arch/arm/oprofile/common.c
 +++ b/arch/arm/oprofile/common.c
-@@ -327,7 +327,7 @@ static void arm_backtrace(struct pt_regs * const regs, unsigned int depth)
- 		tail = user_backtrace(tail);
+@@ -155,26 +155,6 @@ static void op_perf_stop(void)
  }
  
--int __init oprofile_arch_init(struct oprofile_operations *ops)
-+int __init oprofile_perf_init(struct oprofile_operations *ops)
+ 
+-static char *op_name_from_perf_id(enum arm_perf_pmu_ids id)
+-{
+-	switch (id) {
+-	case ARM_PERF_PMU_ID_XSCALE1:
+-		return "arm/xscale1";
+-	case ARM_PERF_PMU_ID_XSCALE2:
+-		return "arm/xscale2";
+-	case ARM_PERF_PMU_ID_V6:
+-		return "arm/armv6";
+-	case ARM_PERF_PMU_ID_V6MP:
+-		return "arm/mpcore";
+-	case ARM_PERF_PMU_ID_CA8:
+-		return "arm/armv7";
+-	case ARM_PERF_PMU_ID_CA9:
+-		return "arm/armv7-ca9";
+-	default:
+-		return NULL;
+-	}
+-}
+-
+ static int op_arm_create_files(struct super_block *sb, struct dentry *root)
  {
- 	int cpu, ret = 0;
+ 	unsigned int i;
+@@ -391,7 +371,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 	ops->start		= op_arm_start;
+ 	ops->stop		= op_arm_stop;
+ 	ops->shutdown		= op_arm_stop;
+-	ops->cpu_type		= op_name_from_perf_id(armpmu_get_pmu_id());
++	ops->cpu_type		= perf_pmu_name();
  
-@@ -365,7 +365,6 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 		}
- 	}
- 
--	ops->backtrace		= arm_backtrace;
- 	ops->create_files	= oprofile_perf_create_files;
- 	ops->setup		= oprofile_perf_setup;
- 	ops->start		= oprofile_perf_start;
-@@ -388,7 +387,14 @@ out:
- 	return ret;
+ 	if (!ops->cpu_type)
+ 		ret = -ENODEV;
+diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+index 2cb9ad5..e065a1d 100644
+--- a/arch/sh/kernel/perf_event.c
++++ b/arch/sh/kernel/perf_event.c
+@@ -59,6 +59,20 @@ static inline int sh_pmu_initialized(void)
+ 	return !!sh_pmu;
  }
  
--void __exit oprofile_arch_exit(void)
-+int __init oprofile_arch_init(struct oprofile_operations *ops)
++const char *perf_pmu_name(void)
 +{
-+	ops->backtrace		= arm_backtrace;
++	if (!sh_pmu)
++		return NULL;
 +
-+	return oprofile_perf_init(ops);
++	if (!strcmp(sh_pmu->name, "SH7750"))
++		return "sh/sh7750";
++	if (!strcmp(sh_pmu->name, "SH-4A"))
++		return "sh/sh4a";
++
++	return NULL;
++}
++EXPORT_SYMBOL_GPL(perf_pmu_name);
++
+ int perf_num_counters(void)
+ {
+ 	if (!sh_pmu)
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 1a02192..33f08da 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -850,6 +850,7 @@ extern int perf_max_events;
+ extern const struct pmu *hw_perf_event_init(struct perf_event *event);
+ 
+ extern int perf_num_counters(void);
++extern const char *perf_pmu_name(void);
+ extern void perf_event_task_sched_in(struct task_struct *task);
+ extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
+ extern void perf_event_task_tick(struct task_struct *task);
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index db5b560..fc51268 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -85,6 +85,11 @@ void __weak hw_perf_enable(void)		{ barrier(); }
+ 
+ void __weak perf_event_print_debug(void)	{ }
+ 
++extern __weak const char *perf_pmu_name(void)
++{
++	return "pmu";
 +}
 +
-+void __exit oprofile_perf_exit(void)
- {
- 	int cpu, id;
- 	struct perf_event *event;
-@@ -406,6 +412,11 @@ void __exit oprofile_arch_exit(void)
- 	kfree(counter_config);
- 	exit_driverfs();
- }
-+
-+void __exit oprofile_arch_exit(void)
-+{
-+	oprofile_perf_exit();
-+}
- #else
- int __init oprofile_arch_init(struct oprofile_operations *ops)
- {
+ static DEFINE_PER_CPU(int, perf_disable_count);
+ 
+ void perf_disable(void)
 -- 
 1.7.1
 
