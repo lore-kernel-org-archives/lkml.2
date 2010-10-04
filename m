@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757017Ab0JDSvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 14:51:18 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:59107 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756974Ab0JDSvR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 14:51:17 -0400
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-Cc: Lennart Poettering <lennart@poettering.net>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH] AF_UNIX: Implement SO_TIMESTAMP and SO_TIMETAMPNS on Unix sockets
-Date: Mon,  4 Oct 2010 19:48:28 +0100
-Message-Id: <1286218109-30771-1-git-send-email-alban.crequy@collabora.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101004194734.6a1caf3e@chocolatine.cbg.collabora.co.uk>
-References: <20101004194734.6a1caf3e@chocolatine.cbg.collabora.co.uk>
-To: unlisted-recipients:; (no To-header on input)
+	id S932220Ab0JDSxC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 14:53:02 -0400
+Received: from graze.net ([71.162.143.10]:33524 "HELO graze.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755543Ab0JDSxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 14:53:01 -0400
+X-Greylist: delayed 762 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Oct 2010 14:53:00 EDT
+Date: Mon, 4 Oct 2010 14:39:36 -0400
+From: "Brian C. Huffman" <bhuffman@graze.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org
+Message-ID: <4CAA1F68.4080402@graze.net>
+In-Reply-To: <20100924142924.cf074205.akpm@linux-foundation.org>
+References: <4C759125.8030008@graze.net>
+References: <20100924142924.cf074205.akpm@linux-foundation.org>
+Subject: Re: Intel DP43BF MB - No PCI Devices detected
+x-scalix-Hops: 1
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII";
+	format="flowed"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace applications can already request to receive timestamps with:
-setsockopt(sockfd, SOL_SOCKET, SO_TIMESTAMP, ...)
+  On 09/24/2010 05:29 PM, Andrew Morton wrote:
+> On Wed, 25 Aug 2010 17:54:45 -0400
+> "Brian C. Huffman"<bhuffman@graze.net>  wrote:
+>
+>>    I have searched and found no previous posts on this topic.  Using the
+>> 2.6.36-rc2-git3 (and many before that rev), the kernel doesn't see my
+>> PCI devices.  They can be seen with dmidecode but do not show up with
+>> lspci (and are not mentioned on boot up).
+> Is this still happening?
+>
+> Do you know when it started happening?  Was 2.6.35 OK?  2.6.34?
+>
+Thanks.
 
-Although setsockopt() returns zero (success), timestamps are not added to the
-ancillary data. This patch fixes that on SOCK_DGRAM and SOCK_SEQPACKET Unix
-sockets.
+Unfortunately I no longer have this board to help test.  I posted the 
+same message on the linux-pci list and we got so far as to determine 
+that somehow the kernel is getting the wrong primary / secondary bus 
+number.  Using pci=assign-busses worked around it, but even after 
+recognizing the cards, they didn't work properly and I had to send the 
+board back.  Here's the pertinent excerpt from linux-pci:
 
-Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
----
- net/unix/af_unix.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
-
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 617bea4..b03baa8 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1484,6 +1484,8 @@ restart:
- 		goto restart;
- 	}
- 
-+	if (sock_flag(other, SOCK_RCVTSTAMP))
-+		__net_timestamp(skb);
- 	skb_queue_tail(&other->sk_receive_queue, skb);
- 	unix_state_unlock(other);
- 	other->sk_data_ready(other, len);
-@@ -1697,6 +1699,9 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (err)
- 		goto out_free;
- 
-+	if (sock_flag(sk, SOCK_RCVTSTAMP))
-+		__sock_recv_timestamp(msg, sk, skb);
-+
- 	if (!siocb->scm) {
- 		siocb->scm = &tmp_scm;
- 		memset(&tmp_scm, 0, sizeof(tmp_scm));
--- 
-1.7.1
-
+On 09/10/2010 02:38 PM, Bjorn Helgaas wrote:
+>
+>> pci 0000:00:1e.0: PCI bridge to [bus 20-08] (subtractive decode)
+> There's something wrong here because the [20-08] bus number range is
+> backwards.  Maybe the secondary bus is really 08, but we scan bus 20
+> instead?
+>
+> The "pci=assign-busses" parameter might work around this for now.
+> Maybe Windows is smart enough to notice this problem and reprogram
+> the bridge to something sensible automatically.
