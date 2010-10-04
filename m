@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756871Ab0JDSOF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 14:14:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31556 "EHLO
+	id S932150Ab0JDSPI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 14:15:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31664 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756324Ab0JDSOD (ORCPT
+	with ESMTP id S1756885Ab0JDSOH (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 4 Oct 2010 14:14:03 -0400
+	Mon, 4 Oct 2010 14:14:07 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com
 Cc: Jeremy Fitzhardinge <jeremy@goop.org>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Gerd Hoffmann <kraxel@xeni.home.kraxel.org>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 07/22] xen: set pirq name to something useful.
-Date: Mon,  4 Oct 2010 14:13:20 -0400
-Message-Id: <1286216015-9710-8-git-send-email-konrad.wilk@oracle.com>
+Subject: [PATCH 05/22] xen: identity map gsi->irqs
+Date: Mon,  4 Oct 2010 14:13:18 -0400
+Message-Id: <1286216015-9710-6-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com>
 References: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com>
@@ -23,55 +22,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Impact: cleanup
+Impact: preserve compat with native
 
-Make pirq show useful information in /proc/interrupts
+Reserve the lower irq range for use for hardware interrupts so we
+can identity-map them.
 
-[v2: Removed the parts for arch/x86/xen/pci.c ]
-
-Signed-off-by: Gerd Hoffmann <kraxel@xeni.home.kraxel.org>
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/xen/events.c |    4 ++--
- include/xen/events.h |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/xen/events.c |   23 +++++++++++++++++------
+ 1 files changed, 17 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 25412ef..a98e720 100644
+index b8f030a..8eeb808 100644
 --- a/drivers/xen/events.c
 +++ b/drivers/xen/events.c
-@@ -546,7 +546,7 @@ static int find_irq_by_gsi(unsigned gsi)
-  * event channel until the irq actually started up.  Return an
-  * existing irq if we've already got one for the gsi.
-  */
--int xen_allocate_pirq(unsigned gsi)
-+int xen_allocate_pirq(unsigned gsi, char *name)
+@@ -33,6 +33,7 @@
+ #include <asm/ptrace.h>
+ #include <asm/irq.h>
+ #include <asm/idle.h>
++#include <asm/io_apic.h>
+ #include <asm/sync_bitops.h>
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/hypervisor.h>
+@@ -46,9 +47,6 @@
+ #include <xen/interface/hvm/hvm_op.h>
+ #include <xen/interface/hvm/params.h>
+ 
+-/* Leave low irqs free for identity mapping */
+-#define LEGACY_IRQS	16
+-
+ /*
+  * This lock protects updates to the following mapping and reference-count
+  * arrays. The lock does not need to be acquired to read the mapping tables.
+@@ -351,12 +349,24 @@ static void unmask_evtchn(int port)
+ 	put_cpu();
+ }
+ 
++static int get_nr_hw_irqs(void)
++{
++	int ret = 1;
++
++#ifdef CONFIG_X86_IO_APIC
++	ret = get_nr_irqs_gsi();
++#endif
++
++	return ret;
++}
++
+ static int find_unbound_irq(void)
  {
  	int irq;
- 	struct physdev_irq irq_op;
-@@ -568,7 +568,7 @@ int xen_allocate_pirq(unsigned gsi)
+ 	struct irq_desc *desc;
++	int start = get_nr_hw_irqs();
+ 
+-	for (irq = 0; irq < nr_irqs; irq++) {
++	for (irq = start; irq < nr_irqs; irq++) {
+ 		desc = irq_to_desc(irq);
+ 		/* only 0->15 have init'd desc; handle irq > 16 */
+ 		if (desc == NULL)
+@@ -383,8 +393,8 @@ static int find_unbound_irq(void)
+ 
+ static bool identity_mapped_irq(unsigned irq)
+ {
+-	/* only identity map legacy irqs */
+-	return irq < LEGACY_IRQS;
++	/* identity map all the hardware irqs */
++	return irq < get_nr_hw_irqs();
+ }
+ 
+ static void pirq_unmask_notify(int irq)
+@@ -553,6 +563,7 @@ int xen_allocate_pirq(unsigned gsi)
+ 
+ 	if (identity_mapped_irq(gsi)) {
+ 		irq = gsi;
++		irq_to_desc_alloc_node(irq, 0);
+ 		dynamic_irq_init(irq);
+ 	} else
  		irq = find_unbound_irq();
- 
- 	set_irq_chip_and_handler_name(irq, &xen_pirq_chip,
--				      handle_level_irq, "pirq");
-+				      handle_level_irq, name);
- 
- 	irq_op.irq = irq;
- 	if (HYPERVISOR_physdev_op(PHYSDEVOP_alloc_irq_vector, &irq_op)) {
-diff --git a/include/xen/events.h b/include/xen/events.h
-index 8f62320..8227da8 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -66,7 +66,7 @@ void xen_hvm_evtchn_do_upcall(void);
- /* Allocate an irq for a physical interrupt, given a gsi.  "Legacy"
-  * GSIs are identity mapped; others are dynamically allocated as
-  * usual. */
--int xen_allocate_pirq(unsigned gsi);
-+int xen_allocate_pirq(unsigned gsi, char *name);
- 
- /* Return vector allocated to pirq */
- int xen_vector_from_irq(unsigned pirq);
 -- 
 1.7.0.4
 
