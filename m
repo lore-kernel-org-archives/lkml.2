@@ -1,77 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755410Ab0JDLis (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 07:38:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59654 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754094Ab0JDLir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 07:38:47 -0400
-Date: Mon, 4 Oct 2010 13:37:52 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH UPDATED] jbd: Use printk_ratelimited() in
- journal_alloc_journal_head()
-Message-ID: <20101004113751.GA7982@quack.suse.cz>
-References: <20101004094331.GC3589@quack.suse.cz>
- <1286187133-12475-1-git-send-email-namhyung@gmail.com>
- <20101004103145.GG3589@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101004103145.GG3589@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755395Ab0JDLq5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 07:46:57 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:59456 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754587Ab0JDLq4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 07:46:56 -0400
+X-ClientAddr: 91.119.0.188
+Date: Mon, 4 Oct 2010 12:39:47 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: davinci-linux-open-source@linux.davincidsp.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 5/5] arm/davinci: remove duplicated include
+Message-ID: <20101004123947.1e89128f@absol.kitzblitz>
+In-Reply-To: <20101004122436.7092868f@absol.kitzblitz>
+References: <20101004122436.7092868f@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-m2soft-MailScanner-Information: Please contact the ISP for more information
+X-m2soft-MailScanner-ID: o94AXLMR020440
+X-m2soft-MailScanner: Not scanned: please contact your Internet E-Mail Service Provider for details
+X-m2soft-MailScanner-From: nikai@nikai.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 04-10-10 12:31:45, Jan Kara wrote:
-> On Mon 04-10-10 19:12:13, Namhyung Kim wrote:
-> > Use printk_ratelimited() instead of doing it manually.
->   Thanks. I've merged the patch into my tree.
-  Grumble, you apparently didn't try to compile the thing... The patch
-was missing #include <linux/ratelimit.h>. I've fixed that up now. Please be
-more careful next time. Thanks.
+Remove duplicated include.
 
- 								Honza
-> 
-> > 
-> > Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> > ---
-> >  fs/jbd/journal.c |    9 +++------
-> >  1 files changed, 3 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
-> > index 6f20a75..f79767d 100644
-> > --- a/fs/jbd/journal.c
-> > +++ b/fs/jbd/journal.c
-> > @@ -1718,7 +1718,6 @@ static void journal_destroy_journal_head_cache(void)
-> >  static struct journal_head *journal_alloc_journal_head(void)
-> >  {
-> >  	struct journal_head *ret;
-> > -	static unsigned long last_warning;
-> >  
-> >  #ifdef CONFIG_JBD_DEBUG
-> >  	atomic_inc(&nr_journal_heads);
-> > @@ -1726,11 +1725,9 @@ static struct journal_head *journal_alloc_journal_head(void)
-> >  	ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
-> >  	if (ret == NULL) {
-> >  		jbd_debug(1, "out of memory for journal_head\n");
-> > -		if (time_after(jiffies, last_warning + 5*HZ)) {
-> > -			printk(KERN_NOTICE "ENOMEM in %s, retrying.\n",
-> > -			       __func__);
-> > -			last_warning = jiffies;
-> > -		}
-> > +		printk_ratelimited(KERN_NOTICE "ENOMEM in %s, retrying.\n",
-> > +				   __func__);
-> > +
-> >  		while (ret == NULL) {
-> >  			yield();
-> >  			ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
-> > -- 
-> > 1.7.0.4
-> > 
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ arch/arm/mach-davinci/board-da850-evm.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mach-davinci/board-da850-evm.c b/arch/arm/mach-davinci/board-da850-evm.c
+index fdc2cc5..851cc45 100644
+--- a/arch/arm/mach-davinci/board-da850-evm.c
++++ b/arch/arm/mach-davinci/board-da850-evm.c
+@@ -26,7 +26,6 @@
+ #include <linux/mtd/physmap.h>
+ #include <linux/regulator/machine.h>
+ #include <linux/regulator/tps6507x.h>
+-#include <linux/mfd/tps6507x.h>
+ #include <linux/input/tps6507x-ts.h>
+ 
+ #include <asm/mach-types.h>
+-- 
+1.7.2.2
