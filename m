@@ -1,74 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751607Ab0JDDIm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 23:08:42 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:45136 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1751506Ab0JDDIl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 23:08:41 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/jXNRODb/j9Lh4k6xbn/S2eOQmw5c8xYMBQL5Z0D
-	3DEAkmsFe0tc+r
-Subject: Re: [PATCH 0/3][RFC] Improve load balancing when tasks have large
- weight differential
-From: Mike Galbraith <efault@gmx.de>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTi=TQnYGLPC=Pi0o1As83W6VdWdjvimZNSrGT4qW@mail.gmail.com>
-References: <1285633798-26886-1-git-send-email-ncrao@google.com>
-	 <1285682273.7469.3.camel@marge.simson.net>
-	 <AANLkTin=Dic2UE55yUaam8NzGHTib=9s=x-wyzk03BU0@mail.gmail.com>
-	 <1285724758.7440.11.camel@marge.simson.net>
-	 <AANLkTi=TQnYGLPC=Pi0o1As83W6VdWdjvimZNSrGT4qW@mail.gmail.com>
-Content-Type: text/plain
-Date: Mon, 04 Oct 2010 05:08:37 +0200
-Message-Id: <1286161717.7410.12.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1751814Ab0JDDRO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 23:17:14 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46474 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751540Ab0JDDRM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 23:17:12 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: David Cohen <david.cohen@nokia.com>
+CC: "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
+        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
+        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Sun, 3 Oct 2010 22:17:05 -0500
+Subject: RE: [PATCH 2/4] iovmm: fix roundup for next area and end check for
+ the last area
+Thread-Topic: [PATCH 2/4] iovmm: fix roundup for next area and end check for
+ the last area
+Thread-Index: ActiB8d7tnPIcK5AT2WR0eZugYS0lwBZsauL
+Message-ID: <496565EC904933469F292DDA3F1663E602F3E074E3@dlee06.ent.ti.com>
+References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
+ <1285902536-7043-2-git-send-email-x0095840@ti.com>
+ <1285902536-7043-3-git-send-email-x0095840@ti.com>
+ <20101001105711.GA11617@esdhcp036161.research.nokia.com>
+ <496565EC904933469F292DDA3F1663E602F46544F9@dlee06.ent.ti.com>
+ <20101001175327.GA13657@esdhcp036161.research.nokia.com>
+ <496565EC904933469F292DDA3F1663E602F465461A@dlee06.ent.ti.com>,<20101002074944.GB14377@esdhcp036161.research.nokia.com>
+In-Reply-To: <20101002074944.GB14377@esdhcp036161.research.nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry for the late reply.  (fired up your patchlet bright and early so
-it didn't rot in my inbox any longer;)
 
-On Wed, 2010-09-29 at 12:32 -0700, Nikhil Rao wrote:
-> On Tue, Sep 28, 2010 at 6:45 PM, Mike Galbraith <efault@gmx.de> wrote:
-> > On Tue, 2010-09-28 at 14:15 -0700, Nikhil Rao wrote:
-> >
-> >> Thanks for running this. I've not been able to reproduce what you are
-> >> seeing on the few test machines that I have (different combinations of
-> >> MC, CPU and NODE domains). Can you please give me more info about
-> >> your setup?
-> >
-> > It's a plain-jane Q6600 box, so has only MC and CPU domains.
-> >
-> > It doesn't necessarily _instantly_ "stick", can take a couple tries, or
-> > a little time.
+> ________________________________________
+> From: David Cohen [david.cohen@nokia.com]
+> Sent: Saturday, October 02, 2010 2:49 AM
+> To: Guzman Lugo, Fernando
+> Cc: Doyu Hiroshi (Nokia-MS/Espoo); Contreras Felipe (Nokia-MS/Helsinki);
+>  Palande Ameya (Nokia-MS/Helsinki); linux-kernel@vger.kernel.org;
+>  andy.shevchenko@gmail.com; linux-omap@vger.kernel.org
+> Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and end check for
+>  the last area
 > 
-> The closest I have is a quad-core dual-socket machine (MC, CPU
-> domains). And I'm having trouble reproducing it on that machine as
-> well :-( I ran 5 soaker threads (one of them niced to -15) for a few
-> hours and didn't see the problem. Can you please give me some trace
-> data & schedstats to work with?
+> On Fri, Oct 01, 2010 at 09:21:36PM +0200, ext Guzman Lugo, Fernando wrote:
+> >
+> > > On Fri, Oct 01, 2010 at 06:10:30PM +0200, ext Guzman Lugo,
+> > > Fernando wrote:
+> > > >
+> > >
+> > > [snip]
+> > >
+> > > > > >  arch/arm/plat-omap/iovmm.c |    6 +++---
+> > > > > >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > > > > >
+> > > > > > diff --git a/arch/arm/plat-omap/iovmm.c
+> > > > > b/arch/arm/plat-omap/iovmm.c
+> > > > > > index 24ca9c4..fc6b109 100644
+> > > > > > --- a/arch/arm/plat-omap/iovmm.c
+> > > > > > +++ b/arch/arm/plat-omap/iovmm.c
+> > > > > > @@ -289,19 +289,19 @@ static struct iovm_struct
+> > > > > *alloc_iovm_area(struct iommu *obj, u32 da,
+> > > > > >       prev_end = 0;
+> > > > > >       list_for_each_entry(tmp, &obj->mmap, list) {
+> > > > > >
+> > > > > > -             if (prev_end >= start)
+> > > > > > +             if (prev_end > start)
+> > > > > >                       break;
+> > > > > >
+> > > > > >               if (start + bytes <= tmp->da_start)
+> > > > > >                       goto found;
+> > > > > >
+> > > > > >               if (flags & IOVMF_DA_ANON)
+> > > > > > -                     start = roundup(tmp->da_end +
+> > > 1, alignement);
+> > > > > > +                     start = roundup(tmp->da_end,
+> > > alignement);
+> > > > >
+> > > > > There's a lack of comment here, but the purpose of
+> > > > > tmp->da_end + 1 is to create a gap between iovm areas to
+> > > > > force to trigger iommu faults when some access exceeds a
+> > > valid area.
+> > > > > Without this gap, such situation may produce data
+> > > corruption which
+> > > > > is much more difficult to track.
+> > > >
+> > > > That only works when you are accessing sequencially beyond
+> > > the End of
+> > > > the vm_area. However if you are accessing a random address
+> > > Which is in
+> > > > the mmu tables you still can corrupt memory which does Not
+> > > belong to
+> > > > you. That looks not very effective then why waste Memory?
+> > >
+> > > The main intention is to detect sequential access beyond the
+> > > end of the vm area and it is effective for that purpose.
+> > > i.e., OMAP3 ISP has a hw issue which makes its H3A submodule,
+> > > responsible to produce statistics data for the captured
+> > > image, to write more data than it should. The workaround
+> > > described in the errata wasn't enough to avoid error
+> > > conditions, so a different approach was implemented. This gap
+> > > did help me to make sure the new workaround is valid and no
+> > > data corruption was occurring anymore.
+> > > Anyway, I can't see why memory is being wasted.
+> > >
+> >
+> > I was taking about vitual memory waste (maybe not so important).
+> > Is ok for me then keep the gap. Do other changes look good to
+> > You?
+> 
+> Do you mean in this patch?
+> All changes make sense only if you're removing the gap, except for the
+> fix below.
 
-Booting with isolcpus or offlining the excess should help.
+The thing is, the dspbridge needs to map some register in order to DSP 
+can read and configure some of them. We need to map some pages
+with fix addresses and to do that I use iommu_kmap. So when some
+of that pages are contiguous I get his error:
 
-> Looking at the patch/code, I suspect active migration on the CPU
-> scheduling domain pushes the nice 0 task (running on the same socket
-> as the nice -15 task) to the other socket. This leaves you with an
-> idle core on the nice -15 socket, and with soaker threads there is no
-> way to come back to a 100% utilized state. One possible explanation is
-> the group capacity for a sched group in the CPU sched domain is
-> rounded to 1 (instead of 2). I have a patch below that throws a hammer
-> at the problem and uses group weight instead of group capacity (this
-> is experimental, will refine it if it works). Can you please see if
-> that solves the problem?
+"%s: no space to fit %08x(%x) flags: %08x\n"
 
-Nope, didn't help.  I'll poke at it, but am squabbling elsewhere atm.
+Which is not true. The page to page perfectly fix, but the check with 1 byte
+more avoid that it could be mapped and I am getting the error.
 
-	-Mike
+I am not agree with the gap, but I am ok when it is not fixed address as 
+below code
 
+if (flags & IOVMF_DA_ANON)
+        start = roundup(tmp->da_end + 1, alignement);
+
+But it is breaking the tidspbridge when the gap is used for fixed addresses.
+
+It should not fail when we want to map a page what is freed just because of the gap.
+Please let me know what you thing.
+
+Thanks,
+Fernando.
+
+> 
+> [snip]
+> 
+> > > > > >
+> > > > > >               prev_end = tmp->da_end;
+> > > > > >       }
+> > > > > >
+> > > > > > -     if ((start > prev_end) && (ULONG_MAX - start >= bytes))
+> > > > > > +     if ((start >= prev_end) && (ULONG_MAX - start +
+> > > 1 >= bytes))
+> 
+> This fix is partially valid. The correct change must be only:
+> -       if ((start > prev_end) && (ULONG_MAX - start >= bytes))
+> +       if ((start > prev_end) && (ULONG_MAX - start + 1 >= bytes))
+> 
+> Otherwise you wouldn't guarantee the gap for fixed da.
+> 
+> Br,
+> 
+> David
