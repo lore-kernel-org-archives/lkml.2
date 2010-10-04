@@ -1,93 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab0JDWsc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:48:32 -0400
-Received: from newpeace.netnation.com ([204.174.223.7]:52170 "EHLO
-	peace.netnation.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751558Ab0JDWsb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:48:31 -0400
-Date: Mon, 4 Oct 2010 15:48:30 -0700
-From: Simon Kirby <sim@hostway.ca>
-To: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-Subject: 2.6.35.6 XFS: Inconsistent lock state
-Message-ID: <20101004224830.GJ30524@hostway.ca>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1757324Ab0JDWvC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:51:02 -0400
+Received: from gate.crashing.org ([63.228.1.57]:39541 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752580Ab0JDWvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:51:01 -0400
+Subject: Re: Introduce support for little endian PowerPC
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+Cc: Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        Ian Munsie <imunsie@au1.ibm.com>
+In-Reply-To: <1286188242.15020.349.camel@thor.local>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
+	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
+	 <1285935283.2463.78.camel@pasglop>  <1285950041.15020.272.camel@thor.local>
+	 <1285966204.2463.137.camel@pasglop> <1286188242.15020.349.camel@thor.local>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Oct 2010 09:50:32 +1100
+Message-ID: <1286232632.2463.324.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Out of the blue, while running postfix+mailscanner:
+On Mon, 2010-10-04 at 12:30 +0200, Michel Dänzer wrote:
 
-=================================
-[ INFO: inconsistent lock state ]
-2.6.35.6-hw #1
----------------------------------
-inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-MailScanner/28712 [HC0[0]:SC0[0]:HE1:SE1] takes:
- (&(&ip->i_iolock)->mr_lock#2){++++?+}, at: [<ffffffff8129de35>] xfs_ilock+0xf5/0x100
-{RECLAIM_FS-ON-W} state was registered at:
-  [<ffffffff81083694>] mark_held_locks+0x74/0xa0
-  [<ffffffff810837a5>] lockdep_trace_alloc+0xe5/0xf0
-  [<ffffffff810cfc77>] __alloc_pages_nodemask+0x77/0x6d0
-  [<ffffffff810c97a5>] grab_cache_page_write_begin+0x85/0xd0
-  [<ffffffff8112bd4a>] block_write_begin_newtrunc+0x8a/0xe0
-  [<ffffffff8112c16e>] block_write_begin+0x3e/0x80
-  [<ffffffff812c18a5>] xfs_vm_write_begin+0x25/0x30
-  [<ffffffff810c8436>] generic_file_buffered_write+0x106/0x230
-  [<ffffffff812c6d62>] xfs_file_aio_write+0x842/0x8c0
-  [<ffffffff81100c91>] do_sync_write+0xd1/0x120
-  [<ffffffff8110182b>] vfs_write+0xcb/0x1a0
-  [<ffffffff811019f0>] sys_write+0x50/0x90
-  [<ffffffff81009f82>] system_call_fastpath+0x16/0x1b
-irq event stamp: 34471
-hardirqs last  enabled at (34471): [<ffffffff81697d8f>] _raw_spin_unlock_irqrestore+0x3f/0x70
-hardirqs last disabled at (34470): [<ffffffff816974cd>] _raw_spin_lock_irqsave+0x2d/0x90
-softirqs last  enabled at (34314): [<ffffffff810585ff>] __do_softirq+0x19f/0x1f0
-softirqs last disabled at (34309): [<ffffffff8100ae9c>] call_softirq+0x1c/0x30
+> > And last I looked X still pukes if you give it a pixmap in non native
+> > byte order but that might have been fixed.
+> 
+> I'm not sure what exactly you mean by that, but I'm not aware of any
+> such issues offhand.
 
-other info that might help us debug this:
-2 locks held by MailScanner/28712:
- #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff8169b8c7>] do_page_fault+0xe7/0x430
- #1:  (shrinker_rwsem){++++..}, at: [<ffffffff810d67d8>] shrink_slab+0x38/0x180
+Hrm, I meant on the DDX side. Anyways, doesn't matter. Even if it works
+fine on X side. Fact is, there's tons and tons of existing SW stack and
+drivers on the field that are totally incapable of doing BE and
+essentially unfixable without major work that the customer(s) is(are)
+unwilling to do at this stage.
 
-stack backtrace:
-Pid: 28712, comm: MailScanner Not tainted 2.6.35.6-hw #1
-Call Trace:
- [<ffffffff81082f00>] print_usage_bug+0x190/0x1f0
- [<ffffffff81083410>] mark_lock+0x4b0/0x6c0
- [<ffffffff81083e50>] ? check_usage_forwards+0x0/0x120
- [<ffffffff8108520d>] __lock_acquire+0x89d/0x1e20
- [<ffffffff810112f0>] ? native_sched_clock+0x20/0x80
- [<ffffffff81370819>] ? radix_tree_delete+0x1c9/0x2e0
- [<ffffffff81086879>] lock_acquire+0xe9/0x120
- [<ffffffff8129de35>] ? xfs_ilock+0xf5/0x100
- [<ffffffff810811fd>] ? trace_hardirqs_off+0xd/0x10
- [<ffffffff81074792>] down_write_nested+0x42/0x90
- [<ffffffff8129de35>] ? xfs_ilock+0xf5/0x100
- [<ffffffff8129de35>] xfs_ilock+0xf5/0x100
- [<ffffffff8129e038>] xfs_ireclaim+0xa8/0xe0
- [<ffffffff812cd14f>] xfs_reclaim_inode+0x18f/0x260
- [<ffffffff812cdf54>] xfs_inode_ag_walk+0x74/0x140
- [<ffffffff812ccfc0>] ? xfs_reclaim_inode+0x0/0x260
- [<ffffffff812ce0a0>] xfs_inode_ag_iterator+0x80/0xd0
- [<ffffffff812ccfc0>] ? xfs_reclaim_inode+0x0/0x260
- [<ffffffff812ce175>] xfs_reclaim_inode_shrink+0x85/0x90
- [<ffffffff810d68c5>] shrink_slab+0x125/0x180
- [<ffffffff810d759e>] try_to_free_pages+0x23e/0x480
- [<ffffffff810cffdb>] __alloc_pages_nodemask+0x3db/0x6d0
- [<ffffffff810e219e>] do_wp_page+0x1ae/0x7f0
- [<ffffffff810e40de>] handle_mm_fault+0x5be/0x840
- [<ffffffff8169b8c7>] ? do_page_fault+0xe7/0x430
- [<ffffffff8169b9cb>] do_page_fault+0x1eb/0x430
- [<ffffffff81697d3b>] ? _raw_spin_unlock_irq+0x2b/0x40
- [<ffffffff810489f4>] ? finish_task_switch+0x74/0xf0
- [<ffffffff81048980>] ? finish_task_switch+0x0/0xf0
- [<ffffffff81694388>] ? schedule+0x4c8/0x820
- [<ffffffff816970e1>] ? trace_hardirqs_off_thunk+0x3a/0x3c
- [<ffffffff816983b5>] page_fault+0x25/0x30
+(Think embedded gfx IP cores mostly, including codecs etc...)
 
-Simon-
+> I didn't say anything about that, just that IME it should be mostly
+> possible to deal with endianness within the driver stack.
+
+To some extent yes. Completely, I'm not sure. Apps manipulating pixels,
+such as video players doing hand-made overlay etc... will potentially
+have issues. It's more than actual pixel byte ordering. It's anything
+that accesses a quantity in memory using different size accessors, ie,
+storing a u32 and then expecting to find the LSB at u8* of the same
+address etc... that sort of stuff happens more often in gfx-oriented
+code than anywhere else in my experience.
+
+> Note that I'm not arguing against these changes, just pointing out some
+> apparent inaccuracies in the reasoning for them.
+
+Right, I possibly made an incorrect statement relative to Xorg (I had
+assumed the fb layer only worked properly in native endian format), but
+that doesn't matter much since the problem here is existing code &
+drivers and goes way beyond X (probably no X on the target setups
+anyways).
+
+Cheers,
+Ben
+
