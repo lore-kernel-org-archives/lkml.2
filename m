@@ -1,65 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753856Ab0JDI7T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:59:19 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:44307 "EHLO relay.sgi.com"
+	id S1753909Ab0JDJCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 05:02:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34010 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753630Ab0JDI7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:59:18 -0400
-Date: Mon, 4 Oct 2010 03:59:13 -0500
-From: Robin Holt <holt@sgi.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Robin Holt <holt@sgi.com>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Subject: Re: [PATCH] sysctl: fix min/max handling in
- __do_proc_doulongvec_minmax()
-Message-ID: <20101004085913.GR14068@sgi.com>
-References: <1286025469.2582.1806.camel@edumazet-laptop>
+	id S1753739Ab0JDJCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 05:02:14 -0400
+Message-ID: <4CA997DF.5030008@kernel.org>
+Date: Mon, 04 Oct 2010 11:01:19 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286025469.2582.1806.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        Yang Ruirui <ruirui.r.yang@tieto.com>,
+        Andrew Morton <akpm@linux-foundation.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
+Subject: Re: -mm: xfs lockdep warning
+References: <201009161546.16909.ruirui.r.yang@tieto.com>	<20100917005227.GJ24409@dastard>	<20100920191355.GA28443@infradead.org> <AANLkTi=45J+=ytj=NC4bYTVJFRakNQQiFd35K7mrf+Gq@mail.gmail.com>
+In-Reply-To: <AANLkTi=45J+=ytj=NC4bYTVJFRakNQQiFd35K7mrf+Gq@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 04 Oct 2010 09:01:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 03:17:49PM +0200, Eric Dumazet wrote:
-> When proc_doulongvec_minmax() is used with an array of longs,
-> and no min/max check requested (.extra1 or .extra2 being NULL), we
-> dereference a NULL pointer for the second element of the array.
-> 
-> Noticed while doing some changes in network stack for the "16TB problem"
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  kernel/sysctl.c |    3 ++-
->  1 file changed, 2 insertions(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index f88552c..4fba86d 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -2500,7 +2500,8 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
->  				break;
->  			if (neg)
->  				continue;
-> -			if ((min && val < *min) || (max && val > *max))
-> +			if ((table->extra1 && val < *min) ||
-> +			    (table->extra2 && val > *max))
+Hello,
 
-How about changing:
-        for (; left && vleft--; i++, min++, max++, first=0) {
-into:
-        for (; left && vleft--; i++, min = min ? min + 1 : NULL, max = max ? max + 1: NULL, first=0) {
+On 09/25/2010 03:08 PM, Torsten Kaiser wrote:
+> [adding Tejun Heo, because I'm partly blaming his workqueues]
 
-That would make min and max correct and reduce the chances somebody in
-the future overlooks the fact they are currently filled with garbage.
+:-) Sorry about the delay.  I was away the last week.
 
-Robin
+> After that I enabled lockdep and retried the same update: This time no
+> hang, only the same lockdep report that Yang Ruirui had.
+> 
+> So I'm currently at a loss how I should continue from here. The XFS
+> false positive drowns any other lockdep problems, but XFS had some
+> hang problems with the new workqueues. (Personally I had no other hang
+> with earlier 2.6.36-rcs)
+
+If workqueue lockdep annotations are triggering spuriously, just nuke
+all lockdep annotations in workqueue.c.  Currently the annotations are
+the same as before and trigger even when an actual deadlock won't
+happen anymore around flushes (but then again all the current users
+should be operating under the same constraints as before).  I'm
+looking into how to improve the lockdep annotations but in the end it
+might be best to leave it as it is.  I'll try to analyze the warnings.
+
+Thanks.
+
+-- 
+tejun
