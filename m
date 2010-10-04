@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab0JDJHi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 05:07:38 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56925 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753384Ab0JDJHh (ORCPT
+	id S1754102Ab0JDJRT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 05:17:19 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:38756 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752814Ab0JDJRS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 05:07:37 -0400
-Date: Mon, 4 Oct 2010 11:07:28 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>, Huang Ying <ying.huang@intel.com>,
-        Don Zickus <dzickus@redhat.com>, Cyrill Gorcunov <gorcunov@gmail.com>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        "peterz@infradead.org" <peterz@infradead.org>,
-        "fweisbec@gmail.com" <fweisbec@gmail.com>,
-        "ming.m.lin@intel.com" <ming.m.lin@intel.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [tip:perf/urgent] perf, x86: Catch spurious interrupts after
- disabling counters
-Message-ID: <20101004090728.GC20013@basil.fritz.box>
-References: <20100929170924.GR13563@erda.amd.com>
- <20100929181207.GW26290@redhat.com>
- <AANLkTimp=+1GzBOYaUZWtDF6teGt6FZe+RTpb9fAyOyd@mail.gmail.com>
- <20100930091246.GV13563@erda.amd.com>
- <20100930194451.GI26290@redhat.com>
- <20101001071750.GB13563@erda.amd.com>
- <AANLkTimUyLaVaBigjm0-CwRsdh4UXWDiss2ffX53S+k_@mail.gmail.com>
- <AANLkTik4KmzqeHTGXZAcQtg80YkBRPDqegLOaMvTvDAQ@mail.gmail.com>
- <20101002093524.GJ13563@erda.amd.com>
- <AANLkTi=YNhc0g+Cwcwg=DdoYJUxO7sb6GZSAEC-qvEU+@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=YNhc0g+Cwcwg=DdoYJUxO7sb6GZSAEC-qvEU+@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 4 Oct 2010 05:17:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=kVAiqQTbDFk/wWtoE3mxymhnEbkdcrFe5ulQBvok0uAY062mc2hXRrzjwB6OhNev2J
+         vckokTzSWpiTH/q2PzXgIr0b2SFW/3r61boRH4ypyzOs2aDgveC7MZjkS2BjZnrD7uEZ
+         ULMTvySlGYDzIvTjWEz5WZi9fP4ln5iw7yBm8=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] jbd: Use printk_ratelimit() in journal_alloc_journal_head()
+Date: Mon,  4 Oct 2010 18:17:14 +0900
+Message-Id: <1286183834-10548-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I haven't seen Andi's suggestion. But I am guessing he is suggesting
-> adding a new chain that would be called first and where there would
-> ONLY be the perf_event subsystem. To handle the spurious PMU
+Use printk_ratelimit() instead of doing it manually.
 
-I was thinking of a separate NMI chain 
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/jbd/journal.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-(and longer term really splitting the die chains into separate chains,
-that would solve other problems e.g. with page fault performance
-too) 
-
-Possibly that NMI chain could be split up too, but not sure
-this is really needed.
-
--Andi
-
+diff --git a/fs/jbd/journal.c b/fs/jbd/journal.c
+index 6f20a75..d66dd36 100644
+--- a/fs/jbd/journal.c
++++ b/fs/jbd/journal.c
+@@ -1718,7 +1718,6 @@ static void journal_destroy_journal_head_cache(void)
+ static struct journal_head *journal_alloc_journal_head(void)
+ {
+ 	struct journal_head *ret;
+-	static unsigned long last_warning;
+ 
+ #ifdef CONFIG_JBD_DEBUG
+ 	atomic_inc(&nr_journal_heads);
+@@ -1726,11 +1725,10 @@ static struct journal_head *journal_alloc_journal_head(void)
+ 	ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
+ 	if (ret == NULL) {
+ 		jbd_debug(1, "out of memory for journal_head\n");
+-		if (time_after(jiffies, last_warning + 5*HZ)) {
++		if (printk_ratelimit())
+ 			printk(KERN_NOTICE "ENOMEM in %s, retrying.\n",
+ 			       __func__);
+-			last_warning = jiffies;
+-		}
++
+ 		while (ret == NULL) {
+ 			yield();
+ 			ret = kmem_cache_alloc(journal_head_cache, GFP_NOFS);
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+1.7.0.4
+
