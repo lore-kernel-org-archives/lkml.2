@@ -1,204 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab0JDUl3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 16:41:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43870 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753985Ab0JDUl1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 16:41:27 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Anisse Astier <anisse@astier.eu>, Chris Wilson <chris@chris-wilson.co.uk>
-Subject: Re: [Bug #16891] Kernel panic while loading intel module during boot
-Date: Mon, 4 Oct 2010 22:40:30 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "Eric Anholt" <eric@anholt.net>,
-        "Tim Gardner" <tim.gardner@canonical.com>,
-        Daniel Vetter <daniel.vetter@ffwll.ch>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <OjxVjYbf_EJ.A.ReC.pTPqMB@chimera> <20101004172509.0aded2ba@destiny.ordissimo> <201010042142.29402.rjw@sisk.pl>
-In-Reply-To: <201010042142.29402.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010042240.31110.rjw@sisk.pl>
+	id S932577Ab0JDUob (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 16:44:31 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:46744 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757140Ab0JDUo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 16:44:29 -0400
+From: Matt Fleming <matt@console-pimps.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH 1/7] perf: Add helper function to return number of counters
+Date: Mon,  4 Oct 2010 21:44:19 +0100
+Message-Id: <c4eb88b09da564fe093cc6571ed747971425e69a.1286222593.git.matt@console-pimps.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <cover.1286222593.git.matt@console-pimps.org>
+References: <cover.1286222593.git.matt@console-pimps.org>
+In-Reply-To: <cover.1286222593.git.matt@console-pimps.org>
+References: <cover.1286222593.git.matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 04, 2010, Rafael J. Wysocki wrote:
-> On Monday, October 04, 2010, Anisse Astier wrote:
-> > On Sun,  3 Oct 2010 23:53:02 +0200 (CEST), "Rafael J. Wysocki" <rjw@sisk.pl> wrote :
-> > 
-> > > This message has been generated automatically as a part of a report
-> > > of regressions introduced between 2.6.34 and 2.6.35.
-> > > 
-> > > The following bug entry is on the current list of known regressions
-> > > introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> > > be listed and let the tracking team know (either way).
-> > > 
-> > > 
-> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16891
-> > > Subject		: Kernel panic while loading intel module during boot
-> > > Submitter	: Anisse Astier <anisse@astier.eu>
-> > > Date		: 2010-08-24 13:19 (41 days old)
-> > > 
-> > > 
-> > 
-> > This bug is still valid, and should be listed as a regression.
-> > I tried to upload on bugzilla a patch authored by Daniel Vetter that fixes
-> > the problem, but then bugzilla went into blackhole mode.
-> > 
-> > I'll provide this patch here in the meantime in case anyone is interested.
-> 
-> Thanks for the update and the patch.
-> 
-> Well, I wonder who's going to merge it?
+The number of counters for the registered pmu is needed in a few places
+so provide a helper function that returns this number.
 
-Chris, can you please have a look?
+Signed-off-by: Matt Fleming <matt@console-pimps.org>
+Tested-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/kernel/perf_event.c |    6 ++++++
+ arch/arm/oprofile/common.c   |   31 ++++++++++++++++++-------------
+ arch/sh/kernel/perf_event.c  |    9 +++++++++
+ include/linux/perf_event.h   |    1 +
+ 4 files changed, 34 insertions(+), 13 deletions(-)
 
-Thanks,
-Rafael
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index ecbb028..ef3bc33 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -123,6 +123,12 @@ armpmu_get_max_events(void)
+ }
+ EXPORT_SYMBOL_GPL(armpmu_get_max_events);
+ 
++int perf_num_counters(void)
++{
++	return armpmu_get_max_events();
++}
++EXPORT_SYMBOL_GPL(perf_num_counters);
++
+ #define HW_OP_UNSUPPORTED		0xFFFF
+ 
+ #define C(_x) \
+diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+index d660cb8..23f18a0 100644
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@ -43,7 +43,7 @@ static DEFINE_MUTEX(op_arm_mutex);
+ 
+ static struct op_counter_config *counter_config;
+ static struct perf_event **perf_events[nr_cpumask_bits];
+-static int perf_num_counters;
++static int perf_nr_counters;
+ 
+ /*
+  * Overflow callback for oprofile.
+@@ -54,11 +54,11 @@ static void op_overflow_handler(struct perf_event *event, int unused,
+ 	int id;
+ 	u32 cpu = smp_processor_id();
+ 
+-	for (id = 0; id < perf_num_counters; ++id)
++	for (id = 0; id < perf_nr_counters; ++id)
+ 		if (perf_events[cpu][id] == event)
+ 			break;
+ 
+-	if (id != perf_num_counters)
++	if (id != perf_nr_counters)
+ 		oprofile_add_sample(regs, id);
+ 	else
+ 		pr_warning("oprofile: ignoring spurious overflow "
+@@ -76,7 +76,7 @@ static void op_perf_setup(void)
+ 	u32 size = sizeof(struct perf_event_attr);
+ 	struct perf_event_attr *attr;
+ 
+-	for (i = 0; i < perf_num_counters; ++i) {
++	for (i = 0; i < perf_nr_counters; ++i) {
+ 		attr = &counter_config[i].attr;
+ 		memset(attr, 0, size);
+ 		attr->type		= PERF_TYPE_RAW;
+@@ -131,7 +131,7 @@ static int op_perf_start(void)
+ 	int cpu, event, ret = 0;
+ 
+ 	for_each_online_cpu(cpu) {
+-		for (event = 0; event < perf_num_counters; ++event) {
++		for (event = 0; event < perf_nr_counters; ++event) {
+ 			ret = op_create_counter(cpu, event);
+ 			if (ret)
+ 				goto out;
+@@ -150,7 +150,7 @@ static void op_perf_stop(void)
+ 	int cpu, event;
+ 
+ 	for_each_online_cpu(cpu)
+-		for (event = 0; event < perf_num_counters; ++event)
++		for (event = 0; event < perf_nr_counters; ++event)
+ 			op_destroy_counter(cpu, event);
+ }
+ 
+@@ -179,7 +179,7 @@ static int op_arm_create_files(struct super_block *sb, struct dentry *root)
+ {
+ 	unsigned int i;
+ 
+-	for (i = 0; i < perf_num_counters; i++) {
++	for (i = 0; i < perf_nr_counters; i++) {
+ 		struct dentry *dir;
+ 		char buf[4];
+ 
+@@ -353,14 +353,19 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 
+ 	memset(&perf_events, 0, sizeof(perf_events));
+ 
+-	perf_num_counters = armpmu_get_max_events();
++	perf_nr_counters = perf_num_counters();
++	if (perf_nr_counters <= 0) {
++		pr_info("oprofile: no performance counters\n");
++		ret = -ENODEV;
++		goto out;
++	}
+ 
+-	counter_config = kcalloc(perf_num_counters,
++	counter_config = kcalloc(perf_nr_counters,
+ 			sizeof(struct op_counter_config), GFP_KERNEL);
+ 
+ 	if (!counter_config) {
+ 		pr_info("oprofile: failed to allocate %d "
+-				"counters\n", perf_num_counters);
++				"counters\n", perf_nr_counters);
+ 		ret = -ENOMEM;
+ 		goto out;
+ 	}
+@@ -370,11 +375,11 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 		goto out;
+ 
+ 	for_each_possible_cpu(cpu) {
+-		perf_events[cpu] = kcalloc(perf_num_counters,
++		perf_events[cpu] = kcalloc(perf_nr_counters,
+ 				sizeof(struct perf_event *), GFP_KERNEL);
+ 		if (!perf_events[cpu]) {
+ 			pr_info("oprofile: failed to allocate %d perf events "
+-					"for cpu %d\n", perf_num_counters, cpu);
++					"for cpu %d\n", perf_nr_counters, cpu);
+ 			ret = -ENOMEM;
+ 			goto out;
+ 		}
+@@ -409,7 +414,7 @@ void __exit oprofile_arch_exit(void)
+ 	struct perf_event *event;
+ 
+ 	for_each_possible_cpu(cpu) {
+-		for (id = 0; id < perf_num_counters; ++id) {
++		for (id = 0; id < perf_nr_counters; ++id) {
+ 			event = perf_events[cpu][id];
+ 			if (event)
+ 				perf_event_release_kernel(event);
+diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+index 7a3dc35..2cb9ad5 100644
+--- a/arch/sh/kernel/perf_event.c
++++ b/arch/sh/kernel/perf_event.c
+@@ -59,6 +59,15 @@ static inline int sh_pmu_initialized(void)
+ 	return !!sh_pmu;
+ }
+ 
++int perf_num_counters(void)
++{
++	if (!sh_pmu)
++		return 0;
++
++	return sh_pmu->num_events;
++}
++EXPORT_SYMBOL_GPL(perf_num_counters);
++
+ /*
+  * Release the PMU if this is the last perf_event.
+  */
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 716f99b..1a02192 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -849,6 +849,7 @@ extern int perf_max_events;
+ 
+ extern const struct pmu *hw_perf_event_init(struct perf_event *event);
+ 
++extern int perf_num_counters(void);
+ extern void perf_event_task_sched_in(struct task_struct *task);
+ extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
+ extern void perf_event_task_tick(struct task_struct *task);
+-- 
+1.7.1
 
-
-> > ---
-> > From: Daniel Vetter <daniel.vetter@ffwll.ch>
-> > Date: Fri, 1 Oct 2010 19:52:09 +0200
-> > Subject: [PATCH] intel-gtt: fix 2.6.35 regression
-> > 
-> > Port of commit "intel-gtt: fix gtt_total_entries detection" to 2.6.35.
-> > 
-> > Also adds PINEVIEW_IG to IS_G33 detection list
-> > 
-> > Signed-off-by: Anisse Astier <anisse@astier.eu>
-> > ---
-> >  drivers/char/agp/intel-agp.h |    1 +
-> >  drivers/char/agp/intel-gtt.c |   63 ++++++++++++++++++------------------------
-> >  2 files changed, 28 insertions(+), 36 deletions(-)
-> > 
-> > diff --git a/drivers/char/agp/intel-agp.h b/drivers/char/agp/intel-agp.h
-> > index bc9a4ad..2fbbe63 100644
-> > --- a/drivers/char/agp/intel-agp.h
-> > +++ b/drivers/char/agp/intel-agp.h
-> > @@ -226,6 +226,7 @@
-> >  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_Q35_HB || \
-> >  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_Q33_HB || \
-> >  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_PINEVIEW_M_HB || \
-> > +		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_PINEVIEW_IG || \
-> >  		agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_PINEVIEW_HB)
-> >  
-> >  #define IS_PINEVIEW (agp_bridge->dev->device == PCI_DEVICE_ID_INTEL_PINEVIEW_M_HB || \
-> > diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-> > index ed11c77..ea18f64 100644
-> > --- a/drivers/char/agp/intel-gtt.c
-> > +++ b/drivers/char/agp/intel-gtt.c
-> > @@ -501,7 +501,7 @@ static void intel_i830_init_gtt_entries(void)
-> >  
-> >  	pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
-> >  
-> > -	if (IS_I965) {
-> > +	if (IS_G33 || IS_I965) {
-> >  		u32 pgetbl_ctl;
-> >  		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
-> >  
-> > @@ -534,22 +534,6 @@ static void intel_i830_init_gtt_entries(void)
-> >  			size = 512;
-> >  		}
-> >  		size += 4; /* add in BIOS popup space */
-> > -	} else if (IS_G33 && !IS_PINEVIEW) {
-> > -	/* G33's GTT size defined in gmch_ctrl */
-> > -		switch (gmch_ctrl & G33_PGETBL_SIZE_MASK) {
-> > -		case G33_PGETBL_SIZE_1M:
-> > -			size = 1024;
-> > -			break;
-> > -		case G33_PGETBL_SIZE_2M:
-> > -			size = 2048;
-> > -			break;
-> > -		default:
-> > -			dev_info(&agp_bridge->dev->dev,
-> > -				 "unknown page table size 0x%x, assuming 512KB\n",
-> > -				(gmch_ctrl & G33_PGETBL_SIZE_MASK));
-> > -			size = 512;
-> > -		}
-> > -		size += 4;
-> >  	} else if (IS_G4X || IS_PINEVIEW) {
-> >  		/* On 4 series hardware, GTT stolen is separate from graphics
-> >  		 * stolen, ignore it in stolen gtt entries counting.  However,
-> > @@ -1220,24 +1204,31 @@ static int intel_i915_get_gtt_size(void)
-> >  	int size;
-> >  
-> >  	if (IS_G33) {
-> > -		u16 gmch_ctrl;
-> > +		u32 pgetbl_ctl;
-> > +		pgetbl_ctl = readl(intel_private.registers+I810_PGETBL_CTL);
-> >  
-> > -		/* G33's GTT size defined in gmch_ctrl */
-> > -		pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
-> > -		switch (gmch_ctrl & I830_GMCH_GMS_MASK) {
-> > -		case I830_GMCH_GMS_STOLEN_512:
-> > +		switch (pgetbl_ctl & I965_PGETBL_SIZE_MASK) {
-> > +		case I965_PGETBL_SIZE_128KB:
-> > +			size = 128;
-> > +			break;
-> > +		case I965_PGETBL_SIZE_256KB:
-> > +			size = 256;
-> > +			break;
-> > +		case I965_PGETBL_SIZE_512KB:
-> >  			size = 512;
-> >  			break;
-> > -		case I830_GMCH_GMS_STOLEN_1024:
-> > +		case I965_PGETBL_SIZE_1MB:
-> >  			size = 1024;
-> >  			break;
-> > -		case I830_GMCH_GMS_STOLEN_8192:
-> > -			size = 8*1024;
-> > +		case I965_PGETBL_SIZE_2MB:
-> > +			size = 2048;
-> > +			break;
-> > +		case I965_PGETBL_SIZE_1_5MB:
-> > +			size = 1024 + 512;
-> >  			break;
-> >  		default:
-> > -			dev_info(&agp_bridge->dev->dev,
-> > -				 "unknown page table size 0x%x, assuming 512KB\n",
-> > -				(gmch_ctrl & I830_GMCH_GMS_MASK));
-> > +			dev_info(&intel_private.pcidev->dev,
-> > +				 "unknown page table size, assuming 512KB\n");
-> >  			size = 512;
-> >  		}
-> >  	} else {
-> > @@ -1269,14 +1260,6 @@ static int intel_i915_create_gatt_table(struct agp_bridge_data *bridge)
-> >  	pci_read_config_dword(intel_private.pcidev, I915_MMADDR, &temp);
-> >  	pci_read_config_dword(intel_private.pcidev, I915_PTEADDR, &temp2);
-> >  
-> > -	gtt_map_size = intel_i915_get_gtt_size();
-> > -
-> > -	intel_private.gtt = ioremap(temp2, gtt_map_size);
-> > -	if (!intel_private.gtt)
-> > -		return -ENOMEM;
-> > -
-> > -	intel_private.gtt_total_size = gtt_map_size / 4;
-> > -
-> >  	temp &= 0xfff80000;
-> >  
-> >  	intel_private.registers = ioremap(temp, 128 * 4096);
-> > @@ -1285,6 +1268,14 @@ static int intel_i915_create_gatt_table(struct agp_bridge_data *bridge)
-> >  		return -ENOMEM;
-> >  	}
-> >  
-> > +	gtt_map_size = intel_i915_get_gtt_size();
-> > +
-> > +	intel_private.gtt = ioremap(temp2, gtt_map_size);
-> > +	if (!intel_private.gtt)
-> > +		return -ENOMEM;
-> > +
-> > +	intel_private.gtt_total_size = gtt_map_size / 4;
-> > +
-> >  	temp = readl(intel_private.registers+I810_PGETBL_CTL) & 0xfffff000;
-> >  	global_cache_flush();	/* FIXME: ? */
-> >  
-> > 
