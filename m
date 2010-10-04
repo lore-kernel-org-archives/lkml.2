@@ -1,196 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932759Ab0JDUft (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 16:35:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:30870 "EHLO mga09.intel.com"
+	id S932769Ab0JDUgA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 16:36:00 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38429 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753825Ab0JDUfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 16:35:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,280,1283756400"; 
-   d="scan'208";a="663984459"
-From: Seth Heasley <seth.heasley@intel.com>
-Organization: Intel Corporation
-To: jbarnes@virtuousgeek.org
-Subject: Re: [PATCH 2.6.35.4] irq: irq and pci_ids patch for Intel Patsburg
-Date: Mon, 4 Oct 2010 13:27:14 -0700
-User-Agent: KMail/1.10.3 (Linux/2.6.27.7-9-default; KDE/4.1.3; x86_64; ; )
-Cc: khali@linux-fr.org, linux-kernel@vger.kernel.org,
-        linux-pci@vger.kernel.org, linux-i2c@vger.kernel.org,
-        seth.heasley@intel.com
-References: <201009241606.11840.seth.heasley@intel.com>
-In-Reply-To: <201009241606.11840.seth.heasley@intel.com>
+	id S932574Ab0JDUf6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 16:35:58 -0400
+Date: Mon, 4 Oct 2010 20:35:31 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
+        mingo@redhat.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4ca9a5d1.e8e9d80a.3dbb.ffff8f2e@mx.google.com>
+References: <4ca9a5d1.e8e9d80a.3dbb.ffff8f2e@mx.google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf_events: Fix invalid pointer when pid is invalid
+Message-ID: <tip-540804b5c52065a87d826f7714b18a3ec0b269f9@git.kernel.org>
+Git-Commit-ID: 540804b5c52065a87d826f7714b18a3ec0b269f9
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Message-Id: <201010041327.15170.seth.heasley@intel.com>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 04 Oct 2010 20:35:31 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> --- linux-2.6.35.4/drivers/i2c/busses/Kconfig.orig   2010-09-24
->14:59:23.000000000 -0700
->> +++ linux-2.6.35.4/drivers/i2c/busses/Kconfig        2010-09-24
->14:59:42.000000000 -0700
->> @@ -95,7 +95,7 @@
->>          ESB2
->>          ICH8
->>          ICH9
->> -        Tolapai
->> +        EP80579
->>          ICH10
->>          3400/5 Series (PCH)
->
->How did this become "5_3400_SERIES" in the symbol names? Shouldn't it
->be 3400_5_SERIES instead?
+Commit-ID:  540804b5c52065a87d826f7714b18a3ec0b269f9
+Gitweb:     http://git.kernel.org/tip/540804b5c52065a87d826f7714b18a3ec0b269f9
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Mon, 4 Oct 2010 12:00:02 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 4 Oct 2010 12:47:20 +0200
 
-The approved branding in pci.ids is 5/3400 Series, so I wanted to reflect that here.  I've changed it in Kconfig as well as i2c-i801.c to be consistent.
+perf_events: Fix invalid pointer when pid is invalid
 
->> --- linux-2.6.35.4/drivers/i2c/busses/i2c-i801.c.orig        2010-09-24
->14:57:55.000000000 -0700
->> +++ linux-2.6.35.4/drivers/i2c/busses/i2c-i801.c     2010-09-24
->14:59:13.000000000 -0700
->> @@ -38,7 +38,7 @@
->>    82801G   (ICH7)       0x27da     32     hard     yes     yes
->yes
->>    82801H   (ICH8)       0x283e     32     hard     yes     yes
->yes
->>    82801I   (ICH9)       0x2930     32     hard     yes     yes
->yes
->> -  Tolapai               0x5032     32     hard     yes     yes
->yes
->> +  EP80579               0x5032     32     hard     yes     yes
->yes
->
->Maybe keep "Tolapai" inside parentheses, as people may know the
->platform by that name by now?
+This patch fixes an error in perf_event_open() when the pid
+provided by the user is invalid. find_lively_task_by_vpid()
+does not return NULL on error but an error code. Without the
+fix the error code was silently passed to find_get_context()
+which would eventually cause a invalid pointer dereference.
 
-Agreed.  I've updated that in both places it's referenced.  Final (hopefully) patch below:
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Cc: peterz@infradead.org
+Cc: paulus@samba.org
+Cc: davem@davemloft.net
+Cc: fweisbec@gmail.com
+Cc: perfmon2-devel@lists.sf.net
+Cc: eranian@gmail.com
+Cc: robert.richter@amd.com
+LKML-Reference: <4ca9a5d1.e8e9d80a.3dbb.ffff8f2e@mx.google.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
 
-This patch updates the defines for Intel devices in include/linux/pci_ids.h, referenced in arch/x86/pci/irq.c and drivers/i2c/busses/i2c-i801.c, reflecting approved legal branding, and using fuller code-names for products under development.
- 
-Signed-off-by: Seth Heasley <seth.heasley@intel.com>
-
---- linux-2.6.35.4/include/linux/pci_ids.h.orig	2010-08-26 16:47:12.000000000 -0700
-+++ linux-2.6.35.4/include/linux/pci_ids.h	2010-09-24 13:56:47.000000000 -0700
-@@ -2420,9 +2420,10 @@
- #define PCI_DEVICE_ID_INTEL_82840_HB	0x1a21
- #define PCI_DEVICE_ID_INTEL_82845_HB	0x1a30
- #define PCI_DEVICE_ID_INTEL_IOAT	0x1a38
--#define PCI_DEVICE_ID_INTEL_CPT_SMBUS	0x1c22
--#define PCI_DEVICE_ID_INTEL_CPT_LPC_MIN	0x1c41
--#define PCI_DEVICE_ID_INTEL_CPT_LPC_MAX	0x1c5f
-+#define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
-+#define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN	0x1c41
-+#define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
-+#define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
- #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
- #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
- #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
-@@ -2628,9 +2629,9 @@
- #define PCI_DEVICE_ID_INTEL_ICH10_3	0x3a1a
- #define PCI_DEVICE_ID_INTEL_ICH10_4	0x3a30
- #define PCI_DEVICE_ID_INTEL_ICH10_5	0x3a60
--#define PCI_DEVICE_ID_INTEL_PCH_LPC_MIN	0x3b00
--#define PCI_DEVICE_ID_INTEL_PCH_LPC_MAX	0x3b1f
--#define PCI_DEVICE_ID_INTEL_PCH_SMBUS	0x3b30
-+#define PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN	0x3b00
-+#define PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX	0x3b1f
-+#define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
- #define PCI_DEVICE_ID_INTEL_IOAT_SNB	0x402f
- #define PCI_DEVICE_ID_INTEL_5100_16	0x65f0
- #define PCI_DEVICE_ID_INTEL_5100_21	0x65f5
-@@ -2639,8 +2640,8 @@
- #define PCI_DEVICE_ID_INTEL_5400_FBD0	0x4035
- #define PCI_DEVICE_ID_INTEL_5400_FBD1	0x4036
- #define PCI_DEVICE_ID_INTEL_IOAT_SCNB	0x65ff
--#define PCI_DEVICE_ID_INTEL_TOLAPAI_0	0x5031
--#define PCI_DEVICE_ID_INTEL_TOLAPAI_1	0x5032
-+#define PCI_DEVICE_ID_INTEL_EP80579_0	0x5031
-+#define PCI_DEVICE_ID_INTEL_EP80579_1	0x5032
- #define PCI_DEVICE_ID_INTEL_82371SB_0	0x7000
- #define PCI_DEVICE_ID_INTEL_82371SB_1	0x7010
- #define PCI_DEVICE_ID_INTEL_82371SB_2	0x7020
---- linux-2.6.35.4/arch/x86/pci/irq.c.orig	2010-09-24 13:59:39.000000000 -0700
-+++ linux-2.6.35.4/arch/x86/pci/irq.c	2010-09-24 14:02:07.000000000 -0700
-@@ -584,28 +584,28 @@
- 	case PCI_DEVICE_ID_INTEL_ICH9_3:
- 	case PCI_DEVICE_ID_INTEL_ICH9_4:
- 	case PCI_DEVICE_ID_INTEL_ICH9_5:
--	case PCI_DEVICE_ID_INTEL_TOLAPAI_0:
-+	case PCI_DEVICE_ID_INTEL_EP80579_0:
- 	case PCI_DEVICE_ID_INTEL_ICH10_0:
- 	case PCI_DEVICE_ID_INTEL_ICH10_1:
- 	case PCI_DEVICE_ID_INTEL_ICH10_2:
- 	case PCI_DEVICE_ID_INTEL_ICH10_3:
--	case PCI_DEVICE_ID_INTEL_PBG_LPC:
-+	case PCI_DEVICE_ID_INTEL_PATSBURG_LPC:
- 		r->name = "PIIX/ICH";
- 		r->get = pirq_piix_get;
- 		r->set = pirq_piix_set;
- 		return 1;
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index c16158c..64507ea 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -5616,8 +5616,13 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		}
  	}
  
--	if ((device >= PCI_DEVICE_ID_INTEL_PCH_LPC_MIN) && 
--		(device <= PCI_DEVICE_ID_INTEL_PCH_LPC_MAX)) {
-+	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN) && 
-+		(device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)) {
- 		r->name = "PIIX/ICH";
- 		r->get = pirq_piix_get;
- 		r->set = pirq_piix_set;
- 		return 1;
- 	}
+-	if (pid != -1)
++	if (pid != -1) {
+ 		task = find_lively_task_by_vpid(pid);
++		if (IS_ERR(task)) {
++			err = PTR_ERR(task);
++			goto err_group_fd;
++		}
++	}
  
--	if ((device >= PCI_DEVICE_ID_INTEL_CPT_LPC_MIN) && 
--		(device <= PCI_DEVICE_ID_INTEL_CPT_LPC_MAX)) {
-+	if ((device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN) && 
-+		(device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)) {
- 		r->name = "PIIX/ICH";
- 		r->get = pirq_piix_get;
- 		r->set = pirq_piix_set;
---- linux-2.6.35.4/drivers/i2c/busses/Kconfig.orig	2010-09-24 14:59:23.000000000 -0700
-+++ linux-2.6.35.4/drivers/i2c/busses/Kconfig	2010-10-04 13:10:44.000000000 -0700
-@@ -95,9 +95,9 @@
- 	    ESB2
- 	    ICH8
- 	    ICH9
--	    Tolapai
-+	    EP80579 (Tolapai)
- 	    ICH10
--	    3400/5 Series (PCH)
-+	    5/3400 Series (PCH)
- 	    Cougar Point (PCH)
- 
- 	  This driver can also be built as a module.  If so, the module
---- linux-2.6.35.4/drivers/i2c/busses/i2c-i801.c.orig	2010-09-24 14:57:55.000000000 -0700
-+++ linux-2.6.35.4/drivers/i2c/busses/i2c-i801.c	2010-10-04 13:12:00.000000000 -0700
-@@ -38,10 +38,10 @@
-   82801G   (ICH7)       0x27da     32     hard     yes     yes     yes
-   82801H   (ICH8)       0x283e     32     hard     yes     yes     yes
-   82801I   (ICH9)       0x2930     32     hard     yes     yes     yes
--  Tolapai               0x5032     32     hard     yes     yes     yes
-+  EP80579 (Tolapai)     0x5032     32     hard     yes     yes     yes
-   ICH10                 0x3a30     32     hard     yes     yes     yes
-   ICH10                 0x3a60     32     hard     yes     yes     yes
--  3400/5 Series (PCH)   0x3b30     32     hard     yes     yes     yes
-+  5/3400 Series (PCH)   0x3b30     32     hard     yes     yes     yes
-   Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
- 
-   Features supported by this driver:
-@@ -587,11 +587,11 @@
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_17) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_5) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_6) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_TOLAPAI_1) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_EP80579_1) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_4) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_5) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PCH_SMBUS) },
--	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CPT_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS) },
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS) },
- 	{ 0, }
- };
- 
+ 	/*
+ 	 * Get the target context (task or percpu):
