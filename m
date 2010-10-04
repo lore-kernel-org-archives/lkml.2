@@ -1,44 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932486Ab0JDTVG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 15:21:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:44452 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932411Ab0JDTVD (ORCPT
+	id S932503Ab0JDTVd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 15:21:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36687 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932411Ab0JDTVb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 15:21:03 -0400
-Message-ID: <4CAA2905.3090805@kernel.org>
-Date: Mon, 04 Oct 2010 12:20:37 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.7
+	Mon, 4 Oct 2010 15:21:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=iy9ZMTETEJbQ9GAGvHH9tkKY12i4fGMkh+4Y7TwRnO6l9GtQgOpJtf5o+AbtrBfNeE
+         CuJLL/s4LkFZ3IPAUVu/bu1YZHUdliMXp4Np8hcHI0prmyiW58d37Afe4B/79Ujr1weL
+         Jx3kdKCuyLObIXKTZKTR0D+w1w6vBxRR85EQk=
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>, users@kernel.org
-Subject: master - reboot
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Mon, 04 Oct 2010 12:21:01 -0700 (PDT)
+In-Reply-To: <20100930.115828.57462004.davem@davemloft.net>
+References: <1285838880-4977-1-git-send-email-namhyung@gmail.com>
+	<1285838880-4977-4-git-send-email-namhyung@gmail.com>
+	<20100930.115828.57462004.davem@davemloft.net>
+Date: Mon, 4 Oct 2010 21:21:24 +0200
+X-Google-Sender-Auth: YZ0nk2Mc33pqAGoVFoXRwpJbwzk
+Message-ID: <AANLkTik1TKERMvPT=p7wQhqmgG6ucX08o3dDZUQMM5vF@mail.gmail.com>
+Subject: Re: [PATCH RESEND v3 03/24] ptrace: change signature of arch_ptrace()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: namhyung@gmail.com
+Cc: akpm@linux-foundation.org, roland@redhat.com, oleg@redhat.com,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+On Thu, Sep 30, 2010 at 20:58, David Miller <davem@davemloft.net> wrote:
+> From: Namhyung Kim <namhyung@gmail.com>
+> Date: Thu, 30 Sep 2010 18:27:38 +0900
+>
+>> Fix up the arguments to arch_ptrace() to take account of the fact that
+>> @addr and @data are now unsigned long rather than long as of a preceding
+>> patch in this series.
+>>
+>> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+>> Cc: linux-arch@vger.kernel.org
+>> Acked-by: Roland McGrath <roland@redhat.com>
+>> Acked-by: David Howells <dhowells@redhat.com>
+>
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Afternoon everyone,
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-We are going to do a quick reboot of the master backend server again in
-about 2 hours at 2PM Pacific time or Mon Oct  4 21:00:00 UTC 2010.  This
-is to fix the XFS reclaim bug that is currently present on the box.
-Downtime should be less than 5 minutes.
+Gr{oetje,eeting}s,
 
-- - John 'Warthog9' Hawley
-Chief Kernel.org Administrator
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
+                        Geert
 
-iEYEARECAAYFAkyqKQUACgkQ/E3kyWU9die7WACfZ2ElF0hEtxpqCRJ3JwgauA+s
-8ccAnRjdfnCDbzRZSBVCrYNxZeVUXdNo
-=sXue
------END PGP SIGNATURE-----
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
