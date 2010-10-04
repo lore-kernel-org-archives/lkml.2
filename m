@@ -1,149 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab0JDHIM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 03:08:12 -0400
-Received: from smtp.witbe.net ([81.88.96.48]:47503 "EHLO smtp.witbe.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752186Ab0JDHIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 03:08:11 -0400
-Date: Mon, 4 Oct 2010 09:07:11 +0200
-From: Paul Rolland <rol@as2917.net>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Matt Mackall <mpm@selenic.com>, Andrew Morton <akpm@linux-foundation.org>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Dave Airlie <airlied@redhat.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] drm: Prune GEM vma entries
-Message-ID: <20101004090711.23e872f4@tux.DEF.witbe.net>
-In-Reply-To: <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
-References: <20100927115207.633024b1.akpm@linux-foundation.org>
-	<1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
-Organization: AS2917.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752916Ab0JDHTP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 03:19:15 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:38900 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751156Ab0JDHTO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 03:19:14 -0400
+Date: Mon, 4 Oct 2010 18:19:04 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Alex Elder <aelder@sgi.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, xfs@oss.sgi.com,
+        John Hawley <warthog9@kernel.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org
+Subject: Re: [patch] xfs: properly account for reclaimed inodes
+Message-ID: <20101004071904.GH4681@dastard>
+References: <20101001074354.GF2618@cmpxchg.org>
+ <1285953443.2422.4.camel@doink>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285953443.2422.4.camel@doink>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-You can add a: 
-Tested-by: Paul Rolland <rol@as2917.net>
-
-This is indeed fixing the memory leak in size-32 pool on my machine.
-
-Thanks a lot,
-Paul
-
-On Mon, 27 Sep 2010 21:08:36 +0100
-Chris Wilson <chris@chris-wilson.co.uk> wrote:
-
-> Hook the GEM vm open/close ops into the generic drm vm open/close so
-> that the vma entries are created and destroy appropriately.
+On Fri, Oct 01, 2010 at 12:17:23PM -0500, Alex Elder wrote:
+> On Fri, 2010-10-01 at 09:43 +0200, Johannes Weiner wrote:
+> > When marking an inode reclaimable, a per-AG counter is increased, the
+> > inode is tagged reclaimable in its per-AG tree, and, when this is the
+> > first reclaimable inode in the AG, the AG entry in the per-mount tree
+> > is also tagged.
+> > 
+> > When an inode is finally reclaimed, however, it is only deleted from
+> > the per-AG tree.  Neither the counter is decreased, nor is the parent
+> > tree's AG entry untagged properly.
+> > 
+> > Since the tags in the per-mount tree are not cleared, the inode
+> > shrinker iterates over all AGs that have had reclaimable inodes at one
+> > point in time.
+> > 
+> > The counters on the other hand signal an increasing amount of slab
+> > objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
+> > per-filesystem context" this is not a real issue anymore because the
+> > shrinker bails out after one iteration.
+> > 
+> > But the problem was observable on a machine running v2.6.34, where the
+> > reclaimable work increased and each process going into direct reclaim
+> > eventually got stuck on the xfs inode shrinking path, trying to scan
+> > several million objects.
+> > 
+> > Fix this by properly unwinding the reclaimable-state tracking of an
+> > inode when it is reclaimed.
+> > 
+> > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > Cc: stable@kernel.org
 > 
-> Reported-by: Matt Mackall <mpm@selenic.com>
-> Cc: Dave Airlie <airlied@redhat.com>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-> ---
->  drivers/gpu/drm/drm_gem.c |    9 ++++++++-
->  drivers/gpu/drm/drm_vm.c  |   28 ++++++++++++++++++----------
->  include/drm/drmP.h        |    1 +
->  3 files changed, 27 insertions(+), 11 deletions(-)
+> Yes, this looks right to me.  The state was correctly
+> adjusted in xfs_iget_cache_hit() when a RECLAIMABLE
+> inode is found in the cache, but it was not done when
+> reclaim completes.
 > 
-> diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
-> index bf92d07..6fe2cd2 100644
-> --- a/drivers/gpu/drm/drm_gem.c
-> +++ b/drivers/gpu/drm/drm_gem.c
-> @@ -528,6 +528,10 @@ void drm_gem_vm_open(struct vm_area_struct *vma)
->  	struct drm_gem_object *obj = vma->vm_private_data;
->  
->  	drm_gem_object_reference(obj);
-> +
-> +	mutex_lock(&obj->dev->struct_mutex);
-> +	drm_vm_open_locked(vma);
-> +	mutex_unlock(&obj->dev->struct_mutex);
->  }
->  EXPORT_SYMBOL(drm_gem_vm_open);
->  
-> @@ -535,7 +539,10 @@ void drm_gem_vm_close(struct vm_area_struct *vma)
->  {
->  	struct drm_gem_object *obj = vma->vm_private_data;
->  
-> -	drm_gem_object_unreference_unlocked(obj);
-> +	mutex_lock(&obj->dev->struct_mutex);
-> +	drm_vm_close_locked(vma);
-> +	drm_gem_object_unreference(obj);
-> +	mutex_unlock(&obj->dev->struct_mutex);
->  }
->  EXPORT_SYMBOL(drm_gem_vm_close);
->  
-> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
-> index fda6746..5df4506 100644
-> --- a/drivers/gpu/drm/drm_vm.c
-> +++ b/drivers/gpu/drm/drm_vm.c
-> @@ -433,15 +433,7 @@ static void drm_vm_open(struct vm_area_struct *vma)
->  	mutex_unlock(&dev->struct_mutex);
->  }
->  
-> -/**
-> - * \c close method for all virtual memory types.
-> - *
-> - * \param vma virtual memory area.
-> - *
-> - * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
-> - * free it.
-> - */
-> -static void drm_vm_close(struct vm_area_struct *vma)
-> +void drm_vm_close_locked(struct vm_area_struct *vma)
->  {
->  	struct drm_file *priv = vma->vm_file->private_data;
->  	struct drm_device *dev = priv->minor->dev;
-> @@ -451,7 +443,6 @@ static void drm_vm_close(struct vm_area_struct *vma)
->  		  vma->vm_start, vma->vm_end - vma->vm_start);
->  	atomic_dec(&dev->vma_count);
->  
-> -	mutex_lock(&dev->struct_mutex);
->  	list_for_each_entry_safe(pt, temp, &dev->vmalist, head) {
->  		if (pt->vma == vma) {
->  			list_del(&pt->head);
-> @@ -459,6 +450,23 @@ static void drm_vm_close(struct vm_area_struct *vma)
->  			break;
->  		}
->  	}
-> +}
-> +
-> +/**
-> + * \c close method for all virtual memory types.
-> + *
-> + * \param vma virtual memory area.
-> + *
-> + * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
-> + * free it.
-> + */
-> +static void drm_vm_close(struct vm_area_struct *vma)
-> +{
-> +	struct drm_file *priv = vma->vm_file->private_data;
-> +	struct drm_device *dev = priv->minor->dev;
-> +
-> +	mutex_lock(&dev->struct_mutex);
-> +	drm_vm_close_locked(vma);
->  	mutex_unlock(&dev->struct_mutex);
->  }
->  
-> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
-> index 7809d23..774e1d4 100644
-> --- a/include/drm/drmP.h
-> +++ b/include/drm/drmP.h
-> @@ -1175,6 +1175,7 @@ extern int drm_release(struct inode *inode, struct file *filp);
->  extern int drm_mmap(struct file *filp, struct vm_area_struct *vma);
->  extern int drm_mmap_locked(struct file *filp, struct vm_area_struct *vma);
->  extern void drm_vm_open_locked(struct vm_area_struct *vma);
-> +extern void drm_vm_close_locked(struct vm_area_struct *vma);
->  extern resource_size_t drm_core_get_map_ofs(struct drm_local_map * map);
->  extern resource_size_t drm_core_get_reg_ofs(struct drm_device *dev);
->  extern unsigned int drm_poll(struct file *filp, struct poll_table_struct *wait);
+> Reviewed-by: Alex Elder <aelder@sgi.com>
 
+Alex, can you push this to Linus ASAP? This needs to go back to
+stable kernels as well..
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
