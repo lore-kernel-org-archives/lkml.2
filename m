@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756210Ab0JDOgx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 10:36:53 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:60019 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752532Ab0JDOgw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 10:36:52 -0400
-Date: Mon, 4 Oct 2010 16:35:39 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Sjur Braendeland <sjur.brandeland@stericsson.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] caif: remove duplicated include
-Message-ID: <20101004163539.5e879211@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756229Ab0JDOpV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 10:45:21 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:38714 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751670Ab0JDOpV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 10:45:21 -0400
+Message-ID: <4CA9E87A.3000807@austin.ibm.com>
+Date: Mon, 04 Oct 2010 09:45:14 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
+MIME-Version: 1.0
+To: balbir@linux.vnet.ibm.com
+CC: Dave Hansen <dave@linux.vnet.ibm.com>, Robin Holt <holt@sgi.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, Greg KH <greg@kroah.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, steiner@sgi.com
+Subject: Re: [PATCH 7/9] v3 Define memory_block_size_bytes for powerpc/pseries
+References: <4CA62700.7010809@austin.ibm.com> <4CA62A0A.4050406@austin.ibm.com> <20101003175500.GE7896@balbir.in.ibm.com> <20101003180731.GT14064@sgi.com> <1286129461.9970.1.camel@nimitz> <20101003182701.GI7896@balbir.in.ibm.com>
+In-Reply-To: <20101003182701.GI7896@balbir.in.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove duplicated include.
+On 10/03/2010 01:27 PM, Balbir Singh wrote:
+> * Dave Hansen <dave@linux.vnet.ibm.com> [2010-10-03 11:11:01]:
+> 
+>> On Sun, 2010-10-03 at 13:07 -0500, Robin Holt wrote:
+>>> On Sun, Oct 03, 2010 at 11:25:00PM +0530, Balbir Singh wrote:
+>>>> * Nathan Fontenot <nfont@austin.ibm.com> [2010-10-01 13:35:54]:
+>>>>
+>>>>> Define a version of memory_block_size_bytes() for powerpc/pseries such that
+>>>>> a memory block spans an entire lmb.
+>>>>
+>>>> I hope I am not missing anything obvious, but why not just call it
+>>>> lmb_size, why do we need memblock_size?
+>>>>
+>>>> Is lmb_size == memblock_size after your changes true for all
+>>>> platforms?
+>>>
+>>> What is an lmb?  I don't recall anything like lmb being referred to in
+>>> the rest of the kernel.
+>>
+>> Heh.  It's the OpenFirmware name for a Logical Memory Block.  Basically
+>> what we use to determine the SECTION_SIZE on powerpc.  Probably not the
+>> best terminology to use elsewhere in the kernel.
+> 
+> Agreed for the kernel, this patch was for powerpc/pseries, hence was
+> checking in this context.
+> 
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- net/caif/caif_socket.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+I don't really see a reason to name it lmb_size, it seems easier
+to stick with the naming used by the rest of the kernel.
 
-diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
-index 8ce9047..7a09fb6 100644
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -15,7 +15,6 @@
- #include <linux/poll.h>
- #include <linux/tcp.h>
- #include <linux/uaccess.h>
--#include <linux/mutex.h>
- #include <linux/debugfs.h>
- #include <linux/caif/caif_socket.h>
- #include <asm/atomic.h>
--- 
-1.7.2.2
+-Nathan
