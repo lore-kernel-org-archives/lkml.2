@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab0JDV0w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 17:26:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62364 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751155Ab0JDV0u (ORCPT
+	id S1751859Ab0JDVmQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 17:42:16 -0400
+Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:36488 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751020Ab0JDVmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 17:26:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=MnpZ7X7mDmCevpFPjw1SGSTVtjzQdNDjyUtGrHDRaGVBYNNxmLWOYhl10mqIgWBYXr
-         pL8LX5wuh5+fBsCxLiYqtB+AlNWN/3w7qI+U3tlkQh3VrMtW5gsGVGkABfaVerZ1r8PB
-         W7FwbGiEJY8kryVuvSI0o9fG8uWJRQXY2eIEw=
-From: Nicolas Palix <npalix.work@gmail.com>
-To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        cocci@diku.dk, linux-kernel@vger.kernel.org
-Subject: [PATCH V2] Coccinelle: Use the -no-show-diff option for org and report mode
-Date: Mon,  4 Oct 2010 23:26:35 +0200
-Message-Id: <1286227595-22488-1-git-send-email-npalix.work@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 4 Oct 2010 17:42:14 -0400
+X-Greylist: delayed 5320 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Oct 2010 17:42:13 EDT
+Message-ID: <51036.41.184.5.155.1286220591.squirrel@41.184.5.155>
+Date: Mon, 4 Oct 2010 17:29:51 -0200 (FNT)
+Subject: Congratulations: You Have Won!
+From: "MICROSOFT EMAIL PROMO TEAM" <e-contact@microsoft.com>
+Reply-To: ivannickerson04@live.co.uk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This allows to write the semantic patches with code sharing
-for the matching parts.
+Congratulations: You Have Won!
 
-Signed-off-by: Nicolas Palix <npalix.work@gmail.com>
-Signed-off-by: Julia Lawall <julia@diku.dk>
----
-First submission contains -no_show-diff whereas it  
-should be -no_show_diff
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+04th Oct 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-scripts/coccicheck |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+You have therefore been approved to claim a total sum of
+£450,000,00 Pounds Sterling in cash credited to REF NO:MICRO-L/2009-END10.
 
-diff --git a/scripts/coccicheck b/scripts/coccicheck
-index efaf108..2803e75 100755
---- a/scripts/coccicheck
-+++ b/scripts/coccicheck
-@@ -31,6 +31,8 @@ if [ "$MODE" = "" ] ; then
- 	echo 'You can specify the mode with "make coccicheck MODE=<mode>"'
-     fi
-     MODE="chain"
-+elif [ "$MODE" = "report" -o "$MODE" = "org" ] ; then
-+    FLAGS="$FLAGS -no_show_diff"    
- fi
- 
- if [ "$ONLINE" = "0" ] ; then
-@@ -72,10 +74,10 @@ coccinelle () {
-     fi
- 
-     if [ "$MODE" = "chain" ] ; then
--	$SPATCH -D patch   $FLAGS -sp_file $COCCI $OPT $OPTIONS || \
--	$SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS || \
--	$SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS || \
--	$SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
-+	$SPATCH -D patch   $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
-+	$SPATCH -D report  $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || \
-+	$SPATCH -D context $FLAGS -sp_file $COCCI $OPT $OPTIONS               || \
-+	$SPATCH -D org     $FLAGS -sp_file $COCCI $OPT $OPTIONS -no_show_diff || exit 1
-     else
- 	$SPATCH -D $MODE   $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
-     fi
--- 
-1.7.0.4
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
+
+NAME: Glenn Bradley
+EMAIL:ivannickerson04@live.co.uk
+
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:... 5.Sex/Gender:...
+
+
+YOURS SINCERELY,
+Eileen Quincy.
+
 
