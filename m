@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753570Ab0JDIht (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 04:37:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55697 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753105Ab0JDIhs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 04:37:48 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: [RFC] Add IO primitives for Wishbone bus
-Date: Mon, 4 Oct 2010 10:37:43 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <1286178037-17337-1-git-send-email-jonas@southpole.se>
-In-Reply-To: <1286178037-17337-1-git-send-email-jonas@southpole.se>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010041037.43477.arnd@arndb.de>
-X-Provags-ID: V02:K0:ErNSD1pD8ByLB1IZ9tLkJk22Yf9WMbaYgMYeDEf7ee7
- uUAKuXMBQ6r/9NbDQA3Jj2C6uOiWLUl8enCQmB9u59945EQ5hv
- gdwTOsEt7m/xT4/aOG+lQ6I3IjXBX0RmUPe0t3Ica51L1t11Y6
- rssLUhdTHQcl2AG/94gt4TIQc0dS/KEFwtis6kv76cvx+xXccG
- sqZDPA9wMxPkT/2oNpjig==
+	id S1753607Ab0JDIqQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 04:46:16 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:42929 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753414Ab0JDIqP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 04:46:15 -0400
+From: Giel van Schijndel <me@mortis.eu>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Hommey <mh@glandium.org>, Debian Bug #597820 <597820@bugs.debian.org>,
+        Giel van Schijndel <me@mortis.eu>, Wim Van Sebroeck <wim@iguana.be>,
+        Ralf Baechle <ralf@linux-mips.org>, dann frazier <dannf@hp.com>,
+        Tony Lindgren <tony@atomide.com>, linux-watchdog@vger.kernel.org
+Subject: [PATCH] watchdog: f71808e_wdt: add support for the F71889FG
+Date: Mon,  4 Oct 2010 10:45:28 +0200
+Message-Id: <1286181928-4010-1-git-send-email-me@mortis.eu>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 October 2010 09:40:37 Jonas Bonn wrote:
-> Is this an acceptable solution or is there another way that would be
-> better?  The problem at hand is how best to write a driver for a device
-> when the device has the same endianess as the CPU and that endianess is
-> arbitrary... for soft cores (OpenRISC in my case), this is a relevant problem,
-> as the device endianess is determined along with the CPU core endianess
-> at synthesis time...
+Signed-off-by: Giel van Schijndel <me@mortis.eu>
+---
+ drivers/watchdog/Kconfig       |    4 ++--
+ drivers/watchdog/f71808e_wdt.c |   10 +++++++++-
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
-Looks good in principle, the only possible problem I can see is if you
-have both little-endian and big-endian wishbone devices in the same
-system, which I assume could happen at some point.
+diff --git a/drivers/watchdog/Kconfig b/drivers/watchdog/Kconfig
+index 24efd8e..0fcbb87 100644
+--- a/drivers/watchdog/Kconfig
++++ b/drivers/watchdog/Kconfig
+@@ -409,11 +409,11 @@ config ALIM7101_WDT
+ 	  Most people will say N.
+ 
+ config F71808E_WDT
+-	tristate "Fintek F71808E and F71882FG Watchdog"
++	tristate "Fintek F71808E, F71882FG and F71889FG Watchdog"
+ 	depends on X86 && EXPERIMENTAL
+ 	help
+ 	  This is the driver for the hardware watchdog on the Fintek
+-	  F71808E and F71882FG Super I/O controllers.
++	  F71808E, F71882FG and F71889FG Super I/O controllers.
+ 
+ 	  You can compile this driver directly into the kernel, or use
+ 	  it as a module.  The module will be called f71808e_wdt.
+diff --git a/drivers/watchdog/f71808e_wdt.c b/drivers/watchdog/f71808e_wdt.c
+index 7e5c266..65e5796 100644
+--- a/drivers/watchdog/f71808e_wdt.c
++++ b/drivers/watchdog/f71808e_wdt.c
+@@ -308,6 +308,12 @@ static int watchdog_start(void)
+ 		superio_set_bit(watchdog.sioaddr, 0x29, 1);
+ 		break;
+ 
++	case f71889fg:
++		/* set pin 40 to WDTRST# */
++		superio_outb(watchdog.sioaddr, 0x2b,
++				superio_inb(watchdog.sioaddr, 0x2b) & 0xcf);
++		break;
++
+ 	default:
+ 		/*
+ 		 * 'default' label to shut up the compiler and catch
+@@ -708,8 +714,10 @@ static int __init f71808e_find(int sioaddr)
+ 	case SIO_F71882_ID:
+ 		watchdog.type = f71882fg;
+ 		break;
+-	case SIO_F71862_ID:
+ 	case SIO_F71889_ID:
++		watchdog.type = f71889fg;
++		break;
++	case SIO_F71862_ID:
+ 		/* These have a watchdog, though it isn't implemented (yet). */
+ 		err = -ENOSYS;
+ 		goto exit;
+-- 
+1.6.4.4
 
-If you want to be able to handle that cleanly, you should pass the device
-into the accessor function as well.
-
-It would also be good to provide a matching wb_iomap() function that
-returns an iomem token you can use here (see pci_iomap).
-
-A more complex implementation would detect the endianess at wb_iomap
-time and return a token that encodes the endianess, which the regular
-ioread/iowrite multiplexors can handle then. You probably don't need
-to go that far, unless you expect wishbone to become ubiquitous in
-the near future.
-
-	Arnd
