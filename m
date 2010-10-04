@@ -1,128 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab0JDW1S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:27:18 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:44352 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751793Ab0JDW1R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:27:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wWVgycaTcDyzbvWvs3iebVi7YcQTYjeAJY0gC6+KyzLIxTI6JCj1KzCDr1mLshC17A
-         H5Y++F84s6kd50LDunmpziGsDRheOdCJB1dpx0jVmAsCHYUUbJCcuzM2u5Uzv/Ijy+Ts
-         UNqVwuA9mYg8aE/UE9D64iLMk7/nb89owmZ24=
+	id S1756305Ab0JDWaX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:30:23 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54115 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755246Ab0JDWaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:30:22 -0400
+Date: Tue, 5 Oct 2010 00:30:20 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c: Fix Kconfig dependencies
+Message-ID: <20101004223020.GA14702@sepie.suse.cz>
+References: <1286199093-3576-1-git-send-email-mmarek@suse.cz>
+ <20101004180346.59b10af7@endymion.delvare>
 MIME-Version: 1.0
-In-Reply-To: <4CAA53A2.6070703@zytor.com>
-References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
-	<20101004154633.GA2900@redhat.com>
-	<4CAA4C7D.8040006@zytor.com>
-	<1286230518.6750.76.camel@gandalf.stny.rr.com>
-	<4CAA53A2.6070703@zytor.com>
-Date: Mon, 4 Oct 2010 23:27:16 +0100
-Message-ID: <AANLkTimw4TgH_PXbmNVgGsH30F5x=GyinmpSjLZTx4xn@mail.gmail.com>
-Subject: Re: Dynamic nop selection breaks boot on Geode LX
-From: Nick Lowe <nick.lowe@gmail.com>
-To: nick.lowe@gmail.com
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101004180346.59b10af7@endymion.delvare>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As far as I'm aware, the check is just broken in VMs that trace their
-lineage to Connectix's VirtualPC that Microsoft acquired back in 2006.
-Is this correct? On balance, is this really to be cared about?
-As far as 'common' processors that don't play nicely with NOPL...
+(Sorry, I missed the patch in your message before)
 
-VIA Edens based on the 'Samuel 2' design do not support CMOV or NOPL.
-All VIA Edens based on the 'Nehemiah' design support CMOV but not
-NOPL. (Introduced in
-2003.)
+On Mon, Oct 04, 2010 at 06:03:46PM +0200, Jean Delvare wrote:
+> On Mon,  4 Oct 2010 15:31:33 +0200, Michal Marek wrote:
+> [...] selects I2C_ALGOBIT which has unmet direct dependencies (I2C && !I2C_HELPER_AUTO)
+> > [...]
+> 
+> This message is obscure. The actual problem is that I2C_ALGOBIT is
+> selected but doesn't exist, isn't it?.
 
-Via C3s based on the 'Samuel 2'or 'Ezra'/'Ezra-T' design do not
-support CMOV or NOPL.
-All C3s based on the 'Nehemiah' design support CMOV but not NOPL.
-(Introduced in 2003)
+I2C_ALGOBIT does exist, but depends on a false value if I2C_HELPER_AUTO
+is set. Yes, in this case it does not matter, there won't be any
+unresolved symbols during link, but Kconfig has no way to find out what
+are hard dependencies and what are tricks to improve the user
+experience. 
 
-National Semi's GXm, GXLV and GX1 do not support CMOV or NOPL.
-All Geodes since and including National Semi's GX2 support CMOV but
-not NOPL. (Introduced in
-2002)
-The AMD branded Geodes (GX and LX) support CMOV but not NOPL.
 
-The Cyrix 6x86 processors do not support CMOV or NOPL.
-The Cyrix 8x86MX / Cyrix MII do support CMOV but not NOPL.
+> I would prefer the fix below, which seems to work for me (but I am no
+> Kconfig expert) and preserves the submenu for algo drivers. Only the
+> indentation is missing, would be nice to solve.
+> 
+> ---
+>  drivers/i2c/Kconfig       |    3 ++-
+>  drivers/i2c/algos/Kconfig |   15 ++++++++++++---
+>  2 files changed, 14 insertions(+), 4 deletions(-)
+> 
+> --- linux-2.6.36-rc6.orig/drivers/i2c/algos/Kconfig	2010-08-02 00:11:14.000000000 +0200
+> +++ linux-2.6.36-rc6/drivers/i2c/algos/Kconfig	2010-10-04 17:33:10.000000000 +0200
+> @@ -2,16 +2,25 @@
+>  # I2C algorithm drivers configuration
+>  #
+>  
+> +config I2C_ALGOBIT
+> +	tristate
+> +
+> +config I2C_ALGOPCF
+> +	tristate
+> +
+> +config I2C_ALGOPCA
+> +	tristate
+> +
+>  menu "I2C Algorithms"
+>  	depends on !I2C_HELPER_AUTO
+>  
+>  config I2C_ALGOBIT
+> -	tristate "I2C bit-banging interfaces"
+> +	prompt "I2C bit-banging interfaces"
+>  
+>  config I2C_ALGOPCF
+> -	tristate "I2C PCF 8584 interfaces"
+> +	prompt "I2C PCF 8584 interfaces"
+>  
+>  config I2C_ALGOPCA
+> -	tristate "I2C PCA 9564 interfaces"
+> +	prompt "I2C PCA 9564 interfaces"
+>  
+>  endmenu
 
-The AMD K6 and K6-2 do not support CMOV or NOPL.
+Unfortunatelly, this fix does not help. Symbol properties are merged
+together, so this just first defines three tristate symbols and later
+makes them depend on !I2C_HELPER_AUTO :-(.
 
-There are probably a few more I've forgotten about...
-Nick
-
-On Mon, Oct 4, 2010 at 11:22 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->
-> On 10/04/2010 03:15 PM, Steven Rostedt wrote:
-> >>
-> >> We tried exactly this type of dynamic selection before, and it doesn't
-> >> work on broken virtualizers; in particular Microsoft VirtualPC can pass
-> >> the exception test and yet fail later.
-> >
-> > So the code is broken because of broken virtualizers??
-> >
->
-> Yup.  Fun, isn't it?  :(  Unfortunately, broken virtualizers appear as
-> broken CPUs to us.  We used to do the #UD probe for NOPL, but it didn't
-> work.
->
-> >>
-> >> The end result is very simple: you can always use NOPL on 64 bits, you
-> >> can never use NOPL on 32 bits.
-> >>
-> >> 66 66 66 66 90 will always *work* (as in, it will never fail) but it's
-> >> pretty slow on older CPUs which took a hit on handle prefixes -- but it
-> >> might still be faster than a jump on those.  Thus, in your code the JMP
-> >> case will never be reached anyway.
-> >
-> > The jmp was there because of paranoia, and I never expected it to be
-> > reached.
-> >
-> >>
-> >> There isn't, of course, a classic 5-byte sequence, although the sequence:
-> >>
-> >>      2E 8D 75 26 00
-> >>
-> >> ... should work (leal %ds:0(,%esi,1),%esi).  However, 66 ... 90 is
-> >> likely to work better on modern processors (although I haven't measured it.)
-> >
-> > The point is, this nop will be at _every_ function call (it replaces the
-> > mcount call). Not just scattered throughout the kernel. It is imperative
-> > that we have the best nop available.
-> >
-> > So what would you recommend?
-> >
->
-> NOPL is special, because it's the only NOP sequence that isn't actually
-> *supported* on all processors (and we have found that we can't even use
-> it on 32 bits, even though the vast majority of all real-life 32-bit
-> processors do support it.)
->
-> Borislav is just checking to see if we can just use NOPL unconditionally
-> on 64 bits; as far as 32 bits is concerned the only option for picking
-> what is "best" is probably to benchmark some set of sequences on the set
-> of processors we care about.  However, I suspect that on any modern
-> processors either 66 66 66 66 90 or 2E 8D 75 26 00 will work equally well.
->
-> With a bit of benchmarking I think we could adopt the policy of using
-> NOPL on 64 bits and one of the above sequences on 32 bits.
->
->        -hpa
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Michal
