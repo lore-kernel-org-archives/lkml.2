@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab0JDMQX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 08:16:23 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:33723 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755570Ab0JDMQS (ORCPT
+	id S1755577Ab0JDMUO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 08:20:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38319 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab0JDMUM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 08:16:18 -0400
-Date: Mon, 4 Oct 2010 14:12:39 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] staging/tidspbridge: remove duplicated include
-Message-ID: <20101004141239.2766affa@absol.kitzblitz>
-In-Reply-To: <20101004140610.2c8fb91a@absol.kitzblitz>
-References: <20101004140610.2c8fb91a@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
+	Mon, 4 Oct 2010 08:20:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=c536ZBk+yxo/ffQRcGd3VCxZFifSdkdyXb+4c1dQmhHJl6dNQZEdv+DtSeYsgS6fLG
+         n/1FN9y5rmVJOIWkMjFMLxf/0lMjxnqk3taYi6+jCxUHk+PZGuKAmi+y1kVd1svmIc2t
+         uLhYLj1xU0mcpy/2LLvCMH0+uDWZYhoZvUFUQ=
+Subject: Re: [PATCH UPDATED] jbd: Use printk_ratelimited() in
+ journal_alloc_journal_head()
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101004113751.GA7982@quack.suse.cz>
+References: <20101004094331.GC3589@quack.suse.cz>
+	 <1286187133-12475-1-git-send-email-namhyung@gmail.com>
+	 <20101004103145.GG3589@quack.suse.cz> <20101004113751.GA7982@quack.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Oct 2010 21:20:04 +0900
+Message-ID: <1286194804.1664.7.camel@leonhard>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove duplicated include.
+2010-10-04 (월), 13:37 +0200, Jan Kara:
+>   Grumble, you apparently didn't try to compile the thing... The patch
+> was missing #include <linux/ratelimit.h>. I've fixed that up now. Please be
+> more careful next time. Thanks.
+> 
+>  								Honza
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/staging/tidspbridge/gen/gs.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+Egads, I did compile-test but I forgot I did make allnoconfig before.
+(And then I added ext3 support manually.) I'll double check a patch
+before sending it in the future. Sorry for the inconvenience.
 
-diff --git a/drivers/staging/tidspbridge/gen/gs.c b/drivers/staging/tidspbridge/gen/gs.c
-index 9fc6144..8335bf5 100644
---- a/drivers/staging/tidspbridge/gen/gs.c
-+++ b/drivers/staging/tidspbridge/gen/gs.c
-@@ -19,7 +19,6 @@
- #include <linux/types.h>
- /*  ----------------------------------- DSP/BIOS Bridge */
- #include <dspbridge/dbdefs.h>
--#include <linux/types.h>
- 
- /*  ----------------------------------- This */
- #include <dspbridge/gs.h>
+Thanks.
+
 -- 
-1.7.2.2
+Regards,
+Namhyung Kim
+
+
