@@ -1,150 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757344Ab0JDWza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:55:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57212 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751952Ab0JDWz3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:55:29 -0400
-Date: Mon, 4 Oct 2010 15:54:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/2] vcs: add poll/fasync support
-Message-Id: <20101004155454.771f7b70.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
-References: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757354Ab0JDW5e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:57:34 -0400
+Received: from tuxonice.net ([74.207.252.127]:43384 "EHLO mail.tuxonice.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756072Ab0JDW5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:57:33 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4CAA5BDA.7080705@tuxonice.net>
+Date: Tue, 05 Oct 2010 09:57:30 +1100
+From: Nigel Cunningham <nigel@tuxonice.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+MIME-Version: 1.0
+To: Dave Airlie <airlied@linux.ie>,
+        dri-devel <dri-devel@lists.freedesktop.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [BUG][PATCH] 2.6.36-rc showstopper (at least for me) in vmwgfx
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Oct 2010 00:10:23 -0400 (EDT)
-Nicolas Pitre <nico@fluxnic.net> wrote:
+Running a kernel based on the Rafael's -next tree, under VMware, I get the following oops while booting:
 
-> The /dev/vcs* devices are used, amongst other things, by accessibility
-> applications such as BRLTTY to display the screen content onto refreshable
-> braille displays.  Currently this is performed by constantly reading from
-> /dev/vcsa0 whether or not the screen content has changed.  Given the
-> default braille refresh rate of 25 times per second, this easily qualifies
-> as the biggest source of wake-up events preventing laptops from entering
-> deeper power saving states.
-> 
-> To avoid this periodic polling, let's add support for select()/poll() and
-> SIGIO with the /dev/vcs* devices.  The implemented semantic is to report
-> data availability whenever the corresponding vt has seen some update after
-> the last read() operation.  The application still has to lseek() back
-> as usual in order to read() the new data.
-> 
-> Not to create unwanted overhead, the needed data structure is allocated
-> and the vt notification callback is registered only when the poll or
-> fasync method is invoked for the first time per file instance.
-> 
-> ...
-> 
-> diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
-> index bcce46c..9013573 100644
-> --- a/drivers/char/vc_screen.c
-> +++ b/drivers/char/vc_screen.c
-> @@ -35,6 +35,10 @@
->  #include <linux/console.h>
->  #include <linux/device.h>
->  #include <linux/smp_lock.h>
-> +#include <linux/sched.h>
-> +#include <linux/poll.h>
-> +#include <linux/signal.h>
-> +#include <linux/slab.h>
+Entering kdb (current=0xd73e2f70, pid 1024) on processor 0 Oops: (null)
+due to oops @ 0xc108bc94
+<d>Modules linked in: ext4 jbd2 crc16 mptspi mptscsih mptbase
+<c>
+<d>Pid: 1024, comm: plymouthd Not tainted 2.6.36-rc4+ #60 440BX Desktop Reference Platform/VMware Virtual Platform
+<d>EIP: 0060:[<c108bc94>] EFLAGS: 00010246 CPU: 0
+EIP is at kfree+0x36/0x88
+<d>EAX: c146ccbd EBX: dc46e980 ECX: 40000400 EDX: c182cd80
+<d>ESI: dfabf800 EDI: dfabf8c0 EBP: dfa7befc ESP: dfa7beec
+<d> DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+<0>Process plymouthd (pid: 1024, ti=dfa7a000 task=d73e2f70 task.ti=dfa7a000)
+<0>Stack:
+ dfabf800 dc46e980 dfabf800 dfabf8c0 dfa7bf18 c11c4ea0 c11d237c dfabf8c0
+<0> dc46e980 c11c4e13 c11d5bd9 dfa7bf28 c113d3d1 dc437468 dc46e780 dfa7bf34
+<0> c11c4d9d dc437468 dfa7bf40 c11d5f35 dfabf800 dfa7bf68 c11c1e3e dfabf800
+<0>Call Trace:
+<0> [<c11c4ea0>] ? drm_master_destroy+0x8d/0xf0
+<0> [<c11d237c>] ? ttm_object_file_destroy+0x0/0xd
+<0> [<c11c4e13>] ? drm_master_destroy+0x0/0xf0
+<0> [<c11d5bd9>] ? vmw_master_drop+0x0/0x76
+<0> [<c113d3d1>] ? kref_put+0x39/0x42
+<0> [<c11c4d9d>] ? drm_master_put+0x12/0x1b
+[0]more>
+Only 'q' or 'Q' are processed at more prompt, input ignored
+<0> [<c11d5f35>] ? vmw_postclose+0x1b/0x25
+<0> [<c11c1e3e>] ? drm_release+0x459/0x4cb
+<0> [<c1091274>] ? fput+0xcc/0x1b1
+<0> [<c108ec5b>] ? filp_close+0x51/0x5b
+<0> [<c108ecbf>] ? sys_close+0x5a/0x88
+<0> [<c1002690>] ? sysenter_do_call+0x12/0x26
+<0>Code: 10 76 72 8d 90 00 00 00 40 c1 ea 0c c1 e2 05 03 15 00 1b 7e c1 66 83 3a 00 79 03 8b 52 0c 8b 0a 84 c9 78 14 66 f7 c1 00 c0 75 04 <0f> 0b eb fe 89 d0 e8 0a 3a fe ff eb 3d 8b 75 04 8b 5a 0c 9c 8f
+Call Trace:
+ [<c11c4ea0>] drm_master_destroy+0x8d/0xf0
+ [<c11d237c>] ? ttm_object_file_destroy+0x0/0xd
+ [<c11c4e13>] ? drm_master_destroy+0x0/0xf0
+ [<c11d5bd9>] ? vmw_master_drop+0x0/0x76
+ [<c113d3d1>] kref_put+0x39/0x42
+ [<c11c4d9d>] drm_master_put+0x12/0x1b
+ [<c11d5f35>] vmw_postclose+0x1b/0x25
+ [<c11c1e3e>] drm_release+0x459/0x4cb
+ [<c1091274>] fput+0xcc/0x1b1
+ [<c108ec5b>] filp_close+0x51/0x5b
+ [<c108ecbf>] sys_close+0x5a/0x88
+ [<c1002690>] sysenter_do_call+0x12/0x26
 
-Formally, we need fs.h and notifier.h (at lesat).  I'll fix that up.
+This oops is caused by vmwgfx setting it's dev->devicename to a static char * instead of kmallocing memory. The kfree that's done in drm_master_destroy then explodes :)
 
->  #include <asm/uaccess.h>
->  #include <asm/byteorder.h>
-> @@ -45,6 +49,78 @@
->  #undef addr
->  #define HEADER_SIZE	4
->  
-> +struct vcs_poll_data {
-> +	struct notifier_block notifier;
-> +	unsigned int cons_num;
-> +	int has_read;
+Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 
-It would be nice to document the meaning of has_read.  And consider
-using the more appropriate `bool' type?
+diff --git a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+index 72ec2e2..1ca0ebc 100644
+--- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
++++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
+@@ -343,8 +343,16 @@ static int vmw_driver_load(struct drm_device *dev, unsigned long chipset)
+ 
+        dev->dev_private = dev_priv;
+ 
+-       if (!dev->devname)
+-               dev->devname = vmw_devname;
++       if (!dev->devname) {
++               dev->devname = kmalloc(strlen(vmw_devname) + 1, GFP_KERNEL);
++               if (!dev->devname) {
++                       DRM_ERROR("Unable to allocate memory for device "
++                                       "name.\n");
++                       ret = -ENOMEM;
++                       goto out_err4;
++               }
++               strcpy(dev->devname, vmw_devname);
++       }
+ 
+        if (dev_priv->capabilities & SVGA_CAP_IRQMASK) {
+                ret = drm_irq_install(dev);
 
-> +	wait_queue_head_t waitq;
-> +	struct fasync_struct *fasync;
-> +};
-> +
-> +static int
-> +vcs_notifier(struct notifier_block *nb, unsigned long code, void *_param)
-> +{
-> +	struct vt_notifier_param *param = _param;
-> +	struct vc_data *vc = param->vc;
-> +	struct vcs_poll_data *poll =
-> +		container_of(nb, struct vcs_poll_data, notifier);
-> +	int currcons = poll->cons_num;
-> +
-> +	if (code != VT_UPDATE)
-> +		return NOTIFY_DONE;
-> +
-> +	if (currcons == 0)
-> +		currcons = fg_console;
-> +	else
-> +		currcons--;
-> +	if (currcons != vc->vc_num)
-> +		return NOTIFY_DONE;
-> +
-> +	poll->has_read = 0;
-> +	wake_up_interruptible(&poll->waitq);
-> +	kill_fasync(&poll->fasync, SIGIO, POLL_IN);
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static void
-> +vcs_poll_data_free(struct vcs_poll_data *poll)
-> +{
-> +	unregister_vt_notifier(&poll->notifier);
-> +	kfree(poll);
-> +}
-> +
-> +static struct vcs_poll_data *
-> +vcs_poll_data_get(struct file *file)
-> +{
-> +	struct vcs_poll_data *poll = file->private_data;
-> +
-> +	if (poll)
-> +		return poll;
-> +
-> +	poll = kzalloc(sizeof(*poll), GFP_KERNEL);
-> +	if (!poll)
-> +		return NULL;
-> +	poll->cons_num = iminor(file->f_path.dentry->d_inode) & 127;
-> +	init_waitqueue_head(&poll->waitq);
-> +	poll->notifier.notifier_call = vcs_notifier;
-> +	if (register_vt_notifier(&poll->notifier) != 0) {
-> +		kfree(poll);
-> +		return NULL;
-> +	}
-> +
-> +	spin_lock(&file->f_lock);
-> +	if (!file->private_data) {
-> +		file->private_data = poll;
-> +	} else {
-> +		/* someone else raced ahead of us */
-> +		vcs_poll_data_free(poll);
-> +		poll = file->private_data;
-> +	}
-> +	spin_unlock(&file->f_lock);
-
-What's the race-handling code here all about?
-
-> +	return poll;
-> +}
-> +
->
-> ...
->
