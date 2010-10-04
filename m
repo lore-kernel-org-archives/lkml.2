@@ -1,181 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab0JDMLM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 08:11:12 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:65040 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755078Ab0JDMLK convert rfc822-to-8bit (ORCPT
+	id S1755514Ab0JDMOU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 08:14:20 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:35251 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab0JDMOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 08:11:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dlHXk6HOGqRHtcAqliZ8n7MtiLh0f+HJ33dET1qnNTnPO77vNkVc+uL1awZC1USmi0
-         ftT5rjyscmYmg5caGD4eB2vgMVZuNyLTprpgNbP8Y6Td9xdDb0omu0yMwpfGXnaZU93w
-         IEfk/RGbMT7efcQosomXOwdTSBaTaykGP9hZ4=
+	Mon, 4 Oct 2010 08:14:19 -0400
+Date: Mon, 4 Oct 2010 15:14:10 +0300
+From: Amit Kucheria <amit.kucheria@canonical.com>
+To: Lothar =?utf-8?Q?Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+Cc: Dinh.Nguyen@freescale.com, s.hauer@pengutronix.de,
+        linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de,
+        xiao-lizhang@freescale.com, r.schwebel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: imx: Add iram allocator functions
+Message-ID: <20101004121410.GC2529@matterhorn.lan>
+Mail-Followup-To: Lothar =?utf-8?Q?Wa=C3=9Fmann?= <LW@KARO-electronics.de>,
+	Dinh.Nguyen@freescale.com, s.hauer@pengutronix.de,
+	linux-kernel@vger.kernel.org, grant.likely@secretlab.ca,
+	valentin.longchamp@epfl.ch, daniel@caiaq.de,
+	xiao-lizhang@freescale.com, r.schwebel@pengutronix.de,
+	linux-arm-kernel@lists.infradead.org
+References: <1285966279-27719-1-git-send-email-Dinh.Nguyen@freescale.com>
+ <20101004114921.GB2529@matterhorn.lan>
+ <19625.49548.968542.149572@ipc1.ka-ro>
 MIME-Version: 1.0
-In-Reply-To: <496565EC904933469F292DDA3F1663E602F3E074E3@dlee06.ent.ti.com>
-References: <1285902536-7043-1-git-send-email-x0095840@ti.com>
-	<1285902536-7043-2-git-send-email-x0095840@ti.com>
-	<1285902536-7043-3-git-send-email-x0095840@ti.com>
-	<20101001105711.GA11617@esdhcp036161.research.nokia.com>
-	<496565EC904933469F292DDA3F1663E602F46544F9@dlee06.ent.ti.com>
-	<20101001175327.GA13657@esdhcp036161.research.nokia.com>
-	<496565EC904933469F292DDA3F1663E602F465461A@dlee06.ent.ti.com>
-	<20101002074944.GB14377@esdhcp036161.research.nokia.com>
-	<496565EC904933469F292DDA3F1663E602F3E074E3@dlee06.ent.ti.com>
-Date: Mon, 4 Oct 2010 15:11:09 +0300
-Message-ID: <AANLkTin1p=WqRQvoXvtcVrhEUx5wK8R_bDwUOE+-sD2M@mail.gmail.com>
-Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and end check for
- the last area
-From: David Cohen <dacohen@gmail.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: David Cohen <david.cohen@nokia.com>,
-        "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
-        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <19625.49548.968542.149572@ipc1.ka-ro>
+X-URL: http://www.verdurent.com/
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 10 Oct 04, Lothar Waßmann wrote:
+> Amit Kucheria writes:
+> > On 10 Oct 01, Dinh.Nguyen@freescale.com wrote:
+> > > From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> > > 
+> > > Add iram allocation functions using GENERIC_ALLOCATOR. The
+> > > allocation size is 4KB multiples to guarantee alignment. The
+> > > idea for these functions is for i.MX platforms to use them
+> > > to dynamically allocate IRAM usage.
+> > > 
+> > > Applies on 2.6.36-rc6
+> > > 
+> > > Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> > > ---
+> > >  arch/arm/plat-mxc/Kconfig                   |    5 ++
+> > >  arch/arm/plat-mxc/Makefile                  |    1 +
+> > >  arch/arm/plat-mxc/include/mach/iram_alloc.h |   35 +++++++++++++++
+> > >  arch/arm/plat-mxc/iram.c                    |   62 +++++++++++++++++++++++++++
+> > >  4 files changed, 103 insertions(+), 0 deletions(-)
+> > >  create mode 100644 arch/arm/plat-mxc/include/mach/iram_alloc.h
+> > >  create mode 100644 arch/arm/plat-mxc/iram.c
+> > > 
+> > > diff --git a/arch/arm/plat-mxc/Kconfig b/arch/arm/plat-mxc/Kconfig
+> > > index 6785db4..283d5bc 100644
+> > > --- a/arch/arm/plat-mxc/Kconfig
+> > > +++ b/arch/arm/plat-mxc/Kconfig
+> > > @@ -57,6 +57,11 @@ source "arch/arm/mach-mx5/Kconfig"
+> > >  
+> > >  endmenu
+> > >  
+> > > +config IRAM_ALLOC
+> > > +	bool
+> > 
+> > If it is a bool, shouldn't it need a description entry so it shows up in the
+> > menuconfig?
+> > 
+> > It can't be disabled currently.
+> > 
+> > > +	default y
+> > > +	select GENERIC_ALLOCATOR
+> > > +
+> > >  config MXC_IRQ_PRIOR
+> > >  	bool "Use IRQ priority"
+> > >  	help
+> > > diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+> > > index 78d405e..35cf07b 100644
+> > > --- a/arch/arm/plat-mxc/Makefile
+> > > +++ b/arch/arm/plat-mxc/Makefile
+> > > @@ -10,6 +10,7 @@ obj-$(CONFIG_MXC_TZIC) += tzic.o
+> > >  
+> > >  obj-$(CONFIG_IMX_HAVE_IOMUX_V1) += iomux-v1.o
+> > >  obj-$(CONFIG_ARCH_MXC_IOMUX_V3) += iomux-v3.o
+> > > +obj-$(CONFIG_IRAM_ALLOC) += iram.o
+> > >  obj-$(CONFIG_MXC_PWM)  += pwm.o
+> > >  obj-$(CONFIG_USB_EHCI_MXC) += ehci.o
+> > >  obj-$(CONFIG_MXC_ULPI) += ulpi.o
+> > > diff --git a/arch/arm/plat-mxc/include/mach/iram_alloc.h b/arch/arm/plat-mxc/include/mach/iram_alloc.h
+> > > new file mode 100644
+> > > index 0000000..12881aa
+> > > --- /dev/null
+> > > +++ b/arch/arm/plat-mxc/include/mach/iram_alloc.h
+> > > @@ -0,0 +1,35 @@
+> > > +/*
+> > > + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
+> > > + *
+> > > + * This program is free software; you can redistribute it and/or
+> > > + * modify it under the terms of the GNU General Public License
+> > > + * as published by the Free Software Foundation; either version 2
+> > > + * of the License, or (at your option) any later version.
+> > > + *
+> > > + * This program is distributed in the hope that it will be useful,
+> > > + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> > > + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> > > + * GNU General Public License for more details.
+> > > + *
+> > > + * You should have received a copy of the GNU General Public License
+> > > + * along with this program; if not, write to the Free Software
+> > > + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+> > > + * MA 02110-1301, USA.
+> > > + */
+> > > +
+> > > +#ifdef CONFIG_IRAM_ALLOC
+> > > +int __init iram_init(unsigned long base, unsigned long size);
+> > > +void *iram_alloc(unsigned int size, unsigned long *dma_addr);
+> > > +void iram_free(unsigned long dma_addr, unsigned int size);
+> > > +#else
+> > > +static inline int __init iram_init(unsigned long base, unsigned long size)
+> > > +{
+> > > +	return -ENOMEM;
+> > > +}
+> > > +static inline void *iram_alloc(unsigned int size, unsigned long *dma_addr)
+>                         ^
+> > > +{
+> > > +	return NULL;
+> > 
+> > Return for a void function
+> > 
+> Not quite. You obviously missed the one and only star in the void. ;)
 
-I have no access to my @nokia.com e-mail at this moment, so I'm
-replying using my personal one.
+Heh :) Indeed.
 
-On Mon, Oct 4, 2010 at 6:17 AM, Guzman Lugo, Fernando
-<fernando.lugo@ti.com> wrote:
->
->> On Fri, Oct 01, 2010 at 09:21:36PM +0200, ext Guzman Lugo, Fernando wrote:
->> >
->> > > On Fri, Oct 01, 2010 at 06:10:30PM +0200, ext Guzman Lugo,
->> > > Fernando wrote:
->> > > >
->> > >
->> > > [snip]
->> > >
->> > > > > >  arch/arm/plat-omap/iovmm.c |    6 +++---
->> > > > > >  1 files changed, 3 insertions(+), 3 deletions(-)
->> > > > > >
->> > > > > > diff --git a/arch/arm/plat-omap/iovmm.c
->> > > > > b/arch/arm/plat-omap/iovmm.c
->> > > > > > index 24ca9c4..fc6b109 100644
->> > > > > > --- a/arch/arm/plat-omap/iovmm.c
->> > > > > > +++ b/arch/arm/plat-omap/iovmm.c
->> > > > > > @@ -289,19 +289,19 @@ static struct iovm_struct
->> > > > > *alloc_iovm_area(struct iommu *obj, u32 da,
->> > > > > >       prev_end = 0;
->> > > > > >       list_for_each_entry(tmp, &obj->mmap, list) {
->> > > > > >
->> > > > > > -             if (prev_end >= start)
->> > > > > > +             if (prev_end > start)
->> > > > > >                       break;
->> > > > > >
->> > > > > >               if (start + bytes <= tmp->da_start)
->> > > > > >                       goto found;
->> > > > > >
->> > > > > >               if (flags & IOVMF_DA_ANON)
->> > > > > > -                     start = roundup(tmp->da_end +
->> > > 1, alignement);
->> > > > > > +                     start = roundup(tmp->da_end,
->> > > alignement);
->> > > > >
->> > > > > There's a lack of comment here, but the purpose of
->> > > > > tmp->da_end + 1 is to create a gap between iovm areas to
->> > > > > force to trigger iommu faults when some access exceeds a
->> > > valid area.
->> > > > > Without this gap, such situation may produce data
->> > > corruption which
->> > > > > is much more difficult to track.
->> > > >
->> > > > That only works when you are accessing sequencially beyond
->> > > the End of
->> > > > the vm_area. However if you are accessing a random address
->> > > Which is in
->> > > > the mmu tables you still can corrupt memory which does Not
->> > > belong to
->> > > > you. That looks not very effective then why waste Memory?
->> > >
->> > > The main intention is to detect sequential access beyond the
->> > > end of the vm area and it is effective for that purpose.
->> > > i.e., OMAP3 ISP has a hw issue which makes its H3A submodule,
->> > > responsible to produce statistics data for the captured
->> > > image, to write more data than it should. The workaround
->> > > described in the errata wasn't enough to avoid error
->> > > conditions, so a different approach was implemented. This gap
->> > > did help me to make sure the new workaround is valid and no
->> > > data corruption was occurring anymore.
->> > > Anyway, I can't see why memory is being wasted.
->> > >
->> >
->> > I was taking about vitual memory waste (maybe not so important).
->> > Is ok for me then keep the gap. Do other changes look good to
->> > You?
->>
->> Do you mean in this patch?
->> All changes make sense only if you're removing the gap, except for the
->> fix below.
->
-> The thing is, the dspbridge needs to map some register in order to DSP
-> can read and configure some of them. We need to map some pages
-> with fix addresses and to do that I use iommu_kmap. So when some
-> of that pages are contiguous I get his error:
->
-> "%s: no space to fit %08x(%x) flags: %08x\n"
->
-> Which is not true. The page to page perfectly fix, but the check with 1 byte
-> more avoid that it could be mapped and I am getting the error.
->
-> I am not agree with the gap, but I am ok when it is not fixed address as
-> below code
->
-> if (flags & IOVMF_DA_ANON)
->        start = roundup(tmp->da_end + 1, alignement);
->
-> But it is breaking the tidspbridge when the gap is used for fixed addresses.
->
-> It should not fail when we want to map a page what is freed just because of the gap.
-> Please let me know what you thing.
+Dinh, you can add a reviewed-by after addressing the Kconfig entry.
 
-I got your point. I agree the gap shouldn't be forced for fixed da.
-IMO you can apply this change when !(flags & IOVMF_DA_ANON).
-
-Regards,
-
-David
-
->
-> Thanks,
-> Fernando.
->
->>
->> [snip]
->>
->> > > > > >
->> > > > > >               prev_end = tmp->da_end;
->> > > > > >       }
->> > > > > >
->> > > > > > -     if ((start > prev_end) && (ULONG_MAX - start >= bytes))
->> > > > > > +     if ((start >= prev_end) && (ULONG_MAX - start +
->> > > 1 >= bytes))
->>
->> This fix is partially valid. The correct change must be only:
->> -       if ((start > prev_end) && (ULONG_MAX - start >= bytes))
->> +       if ((start > prev_end) && (ULONG_MAX - start + 1 >= bytes))
->>
->> Otherwise you wouldn't guarantee the gap for fixed da.
->>
->> Br,
->>
->> David
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+/Amit
