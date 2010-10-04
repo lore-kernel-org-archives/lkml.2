@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755939Ab0JDWUq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:20:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58115 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753934Ab0JDWUp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:20:45 -0400
-Message-ID: <4CAA52EF.3030302@zytor.com>
-Date: Mon, 04 Oct 2010 15:19:27 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Hugh Dickins <hughd@google.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, cpu: Fix X86_FEATURE_NOPL
-References: <20101003093701.GB3733@liondog.tnic>	<4CA89681.8000202@zytor.com>	<20101003152212.GA13233@liondog.tnic>	<a3fce0e5-e6c5-4bf0-b8c0-4954825a7065@email.android.com>	<20101003201139.GA16532@liondog.tnic>	<dc1a5ce2-0414-4f15-9e7b-fcfa4435adb5@email.android.com>	<20101004073127.GA20305@liondog.tnic>	<AANLkTikBs5R2KmGfDSXyi5y-cKuZepZCdr0KOVe5-MX6@mail.gmail.com>	<4CAA4102.3070205@zytor.com>	<AANLkTimXj+5ixx=xoVYOCmM4+W6CGR1XOi6CHDTZzns0@mail.gmail.com>	<4CAA455D.8000902@zytor.com> <AANLkTiniYToWCeVvMXmyUFTudW9g_mpGXRMwQ20kxXUk@mail.gmail.com>
-In-Reply-To: <AANLkTiniYToWCeVvMXmyUFTudW9g_mpGXRMwQ20kxXUk@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756034Ab0JDWVo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:21:44 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40048 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751560Ab0JDWVm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:21:42 -0400
+Date: Mon, 4 Oct 2010 15:21:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: Daniel Drake <dsd@laptop.org>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] serial8250: ratelimit "too much work" error
+Message-Id: <20101004152102.1e04f30a.akpm@linux-foundation.org>
+In-Reply-To: <1286230259.10512.81.camel@Joe-Laptop>
+References: <20101002110438.801F49D401B@zog.reactivated.net>
+	<20101004145101.b28fdc0a.akpm@linux-foundation.org>
+	<20101004150238.fbc1b6cf.akpm@linux-foundation.org>
+	<1286230259.10512.81.camel@Joe-Laptop>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2010 03:17 PM, Hugh Dickins wrote:
-> On Mon, Oct 4, 2010 at 2:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 10/04/2010 02:12 PM, Linus Torvalds wrote:
->>> On Mon, Oct 4, 2010 at 2:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
->>>>
->>>> Actually, cpu_has() depends on:
->>>> #if defined(CONFIG_X86_P6_NOP) || defined(CONFIG_X86_64)
->>>
->>> Ahh. Right you are. The place that depends on just P6_NOP is the
->>> default NOP choice logic in <asm/nops.h>
->>>
->>> But the end result ends up being the same: can we please clean this
->>> all up so that it isn't so confusing? Rather than add to the
->>> confusion?
->>>
->>
->> Agreed that this should be cleaned up.  However, in the meantime I'd
->> like to keep Borislav's patch in the tree since it makes the code
->> technically correct at least.
+On Mon, 04 Oct 2010 15:10:59 -0700
+Joe Perches <joe@perches.com> wrote:
+
+> On Mon, 2010-10-04 at 15:02 -0700, Andrew Morton wrote:
+> > On Mon, 4 Oct 2010 14:51:01 -0700
+> > Andrew Morton <akpm@linux-foundation.org> wrote:
+> > 
+> > > someone stuck a
+> > > DEFINE_RATELIMIT_STATE() in include/linux/kernel.h and it ain't defined
+> > > anywhere.  Let me fix that up...
+> > 
+> > Well that's a PITA.  Can't include ratelimit.h into kernel.h because a)
+> > it'll slow everyone's compiels down and b) ratelimit.h needs spinlock.h
+> > which surely needs kernel.h.  Fixable by adding a new
+> > printk_ratelimit.h and including that from 135 source files, blah.
+> > 
+> > I'll give up and pronounce that users of printk_ratelimited() need to
+> > include ratelimit.h as well.
 > 
-> Another piece of the confusion I noticed a couple of days ago:
-> X86_MINIMUM_CPU_FAMILY defaults to "6" if X86_32 &&
-> X86_P6_NOP; whereas X86_P6_NOP depends on X86_64.
+> What I suggested several months ago was to move the
+> macro definitions to ratelimit.h
+> 
+> http://lkml.org/lkml/2010/2/18/377
 > 
 
-Again, it's completely consistent -- if you keep in mind that
-CONFIG_X86_P6_NOP depending on X86_64 is a policy decision; that policy
-can theoretically be changed.  However, it really doesn't seem worth it
-to ever contemplate at this point.
-
-	-hpa
+That's a bit nasty because at present ratelimit.h is purely about
+ratelimiting and knowns nothing about any of its clients.  At present
+it has only one client (printk), but it could have more in the future!
