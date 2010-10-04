@@ -1,175 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab0JDOeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 10:34:17 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:44302 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756184Ab0JDOeQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 10:34:16 -0400
-Date: Mon, 4 Oct 2010 09:34:15 -0500
-From: Jack Steiner <steiner@sgi.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: yinghai@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: Problem: scaling of /proc/stat on large systems
-Message-ID: <20101004143414.GA4261@sgi.com>
-References: <20100929122206.GA30317@sgi.com> <20100930140901.037f9dc7.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100930140901.037f9dc7.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1756210Ab0JDOgx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 10:36:53 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:60019 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752532Ab0JDOgw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 10:36:52 -0400
+Date: Mon, 4 Oct 2010 16:35:39 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Sjur Braendeland <sjur.brandeland@stericsson.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] caif: remove duplicated include
+Message-ID: <20101004163539.5e879211@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 02:09:01PM +0900, KAMEZAWA Hiroyuki wrote:
-> On Wed, 29 Sep 2010 07:22:06 -0500
-> Jack Steiner <steiner@sgi.com> wrote:
+Remove duplicated include.
 
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ net/caif/caif_socket.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-I was able to run on the 4096p system over the weekend. The patch is a 
-definite improvement & partially fixes the problem:
-
-A "cat /proc/stat >/dev/null" improved:
-
-        OLD:    real    12.627s
-        NEW:    real     2.459
-
-
-A large part of the remaining overhead is in the second summation 
- of irq information:
-
-
-    static int show_stat(struct seq_file *p, void *v)
-        ...
-        /* sum again ? it could be updated? */
-        for_each_irq_nr(j) {
-                per_irq_sum = 0;
-                for_each_possible_cpu(i)
-                        per_irq_sum += kstat_irqs_cpu(j, i);
-
-                seq_printf(p, " %u", per_irq_sum);
-        }
-
-Can this be fixed using the same approach as in the current patch?
-
-
---- jack
-
-> 
-> > I'm looking for suggestions on how to fix a scaling problem with access to
-> > /proc/stat.
-> > 
-> > On a large x86_64 system (4096p, 256 nodes, 5530 IRQs), access to
-> > /proc/stat takes too long -  more than 12 sec:
-> > 
-> > 	# time cat /proc/stat >/dev/null
-> > 	real	12.630s
-> > 	user	 0.000s
-> > 	sys	12.629s
-> > 
-> > This affects top, ps (some variants), w, glibc (sysconf) and much more.
-> > 
-> > 
-> > One of the items reported in /proc/stat is a total count of interrupts that
-> > have been received. This calculation requires summation of the interrupts
-> > received on each cpu (kstat_irqs_cpu()).
-> > 
-> > The data is kept in per-cpu arrays linked to each irq_desc. On a
-> > 4096p/5530IRQ system summing this data requires accessing ~90MB.
-> > 
-> Wow.
-> 
-> > 
-> > Deleting the summation of the kstat_irqs_cpu data eliminates the high
-> > access time but is an API breakage that I assume is unacceptible.
-> > 
-> > Another possibility would be using delayed work (similar to vmstat_update)
-> > that periodically sums the data into a single array. The disadvantage in
-> > this approach is that there would be a delay between receipt of an
-> > interrupt & it's count appearing /proc/stat. Is this an issue for anyone?
-> > Another disadvantage is that it adds to the overall "noise" introduced by
-> > kernel threads.
-> > 
-> > Is there a better approach to take?
-> > 
-> 
-> Hmm, this ? 
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> 
-> /proc/stat shows the total number of all interrupts to each cpu. But when
-> the number of IRQs are very large, it take very long time and 'cat /proc/stat'
-> takes more than 10 secs. This is because sum of all irq events are counted
-> when /proc/stat is read. This patch adds "sum of all irq" counter percpu
-> and reduce read costs.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  fs/proc/stat.c              |    4 +---
->  include/linux/kernel_stat.h |   14 ++++++++++++--
->  2 files changed, 13 insertions(+), 5 deletions(-)
-> 
-> Index: mmotm-0922/fs/proc/stat.c
-> ===================================================================
-> --- mmotm-0922.orig/fs/proc/stat.c
-> +++ mmotm-0922/fs/proc/stat.c
-> @@ -52,9 +52,7 @@ static int show_stat(struct seq_file *p,
->  		guest = cputime64_add(guest, kstat_cpu(i).cpustat.guest);
->  		guest_nice = cputime64_add(guest_nice,
->  			kstat_cpu(i).cpustat.guest_nice);
-> -		for_each_irq_nr(j) {
-> -			sum += kstat_irqs_cpu(j, i);
-> -		}
-> +		sum = kstat_cpu_irqs_sum(i);
->  		sum += arch_irq_stat_cpu(i);
->  
->  		for (j = 0; j < NR_SOFTIRQS; j++) {
-> Index: mmotm-0922/include/linux/kernel_stat.h
-> ===================================================================
-> --- mmotm-0922.orig/include/linux/kernel_stat.h
-> +++ mmotm-0922/include/linux/kernel_stat.h
-> @@ -33,6 +33,7 @@ struct kernel_stat {
->  #ifndef CONFIG_GENERIC_HARDIRQS
->         unsigned int irqs[NR_IRQS];
->  #endif
-> +	unsigned long irqs_sum;
->  	unsigned int softirqs[NR_SOFTIRQS];
->  };
->  
-> @@ -54,6 +55,7 @@ static inline void kstat_incr_irqs_this_
->  					    struct irq_desc *desc)
->  {
->  	kstat_this_cpu.irqs[irq]++;
-> +	kstat_this_cpu.irqs_sum++;
->  }
->  
->  static inline unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
-> @@ -65,8 +67,9 @@ static inline unsigned int kstat_irqs_cp
->  extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
->  #define kstat_irqs_this_cpu(DESC) \
->  	((DESC)->kstat_irqs[smp_processor_id()])
-> -#define kstat_incr_irqs_this_cpu(irqno, DESC) \
-> -	((DESC)->kstat_irqs[smp_processor_id()]++)
-> +#define kstat_incr_irqs_this_cpu(irqno, DESC) do {\
-> +	((DESC)->kstat_irqs[smp_processor_id()]++);\
-> +	kstat_this_cpu.irqs_sum++;} while (0)
->  
->  #endif
->  
-> @@ -94,6 +97,13 @@ static inline unsigned int kstat_irqs(un
->  	return sum;
->  }
->  
-> +/*
-> + * Number of interrupts per cpu, since bootup
-> + */
-> +static inline unsigned long kstat_cpu_irqs_sum(unsigned int cpu)
-> +{
-> +	return kstat_cpu(cpu).irqs_sum;
-> +}
->  
->  /*
->   * Lock/unlock the current runqueue - to extract task statistics:
-> 
+diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
+index 8ce9047..7a09fb6 100644
+--- a/net/caif/caif_socket.c
++++ b/net/caif/caif_socket.c
+@@ -15,7 +15,6 @@
+ #include <linux/poll.h>
+ #include <linux/tcp.h>
+ #include <linux/uaccess.h>
+-#include <linux/mutex.h>
+ #include <linux/debugfs.h>
+ #include <linux/caif/caif_socket.h>
+ #include <asm/atomic.h>
+-- 
+1.7.2.2
