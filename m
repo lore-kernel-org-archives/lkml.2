@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab0JDMdL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 08:33:11 -0400
-Received: from www.tglx.de ([62.245.132.106]:38568 "EHLO www.tglx.de"
+	id S1755663Ab0JDMlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 08:41:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21228 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755744Ab0JDMdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 08:33:09 -0400
-Date: Mon, 4 Oct 2010 14:34:47 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg KH <greg@kroah.com>, Greg KH <gregkh@suse.de>,
-        "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 5/5] uio: Implement hotunplug support, using libunload
-Message-ID: <20101004123447.GB9961@silverbox.local>
-References: <20100917205946.GF2522@local>
- <m139t451b4.fsf_-_@fess.ebiederm.org>
- <20100924104555.GC1819@silverbox.local>
- <m1hbhfcbdo.fsf@fess.ebiederm.org>
- <20100924173106.GA4966@silverbox.local>
- <m14ode662q.fsf@fess.ebiederm.org>
- <20100925003308.GA29910@suse.de>
- <m1wrqa4mg5.fsf@fess.ebiederm.org>
- <20100926192142.GA7252@kroah.com>
- <m1iq1s86jk.fsf_-_@fess.ebiederm.org>
+	id S1755226Ab0JDMlj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 08:41:39 -0400
+Date: Mon, 4 Oct 2010 09:40:59 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] use a stable clock reference in vdso vgetns
+Message-ID: <20101004124059.GD1230@mothafucka.localdomain>
+References: <1285938596-2186-1-git-send-email-glommer@redhat.com>
+ <AANLkTimdukAnwtPooFJYTxtzoT+Scy9JwWoxkkj3g0zO@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1iq1s86jk.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimdukAnwtPooFJYTxtzoT+Scy9JwWoxkkj3g0zO@mail.gmail.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 03:49:03PM -0700, Eric W. Biederman wrote:
+On Fri, Oct 01, 2010 at 10:49:53AM -0700, john stultz wrote:
+> On Fri, Oct 1, 2010 at 6:09 AM, Glauber Costa <glommer@redhat.com> wrote:
+> > When using vdso services for clock_gettime, we test for the ability
+> > of a fine-grained measurement through the existance of a vread() function.
+> >
+> > However, from the time we test it, to the time we use it, vread() reference
+> > may not be valid anymore. It happens, for example, when we change the current
+> > clocksource from one that provides vread (say tsc) to one that lacks it
+> > (say acpi_pm), in the middle of clock_gettime routine.
+> >
+> > seqlock does not really protect us, since readers here won't stop the writers
+> > to change references. The proposed solution is to grab a copy of the clock
+> > structure early, and use it as a stable reference onwards.
 > 
-> With this change it is possible to remove a module that implements
-> a uio device, or to remove the underlying hardware device of a uio
-> device withot crashing the kernel, or causing user space more problems
-> than just an I/O error.
+> Ah. Good find! The fix looks reasonable to me. However, its likely the
+> similar code in arch/x86/kernel/vsyscall_64.c will need a similar fix.
+> 
+> Awhile back there was some motivation to merge the two vdso/vsyscall
+> implementations to avoid the duplication, but my memory is failing on
+> why that didn't happen. I feel like it had to do with complication
+> with the way the two implementations are mapped out to userland. Even
+> so, it seems a shared forced inline method would resolve the issue, so
+> maybe it just fell off the todo list?
 
-Well, that I/O error can also be a segfault if userspace accesses
-memory previously mmap'ed. So a userspace program needs to properly
-handle -EIO from read(), and has to handle SIG_SEGV. This should also
-be mentioned in Documentation/DocBook/uio-howto.tmpl.
-Or do you have a better solution?
+Actually vsyscall updates seem to be covered by update_vsyscall() already.
+I tried hard and can't reproduce this behaviour.
 
-Thanks,
-Hans
+Now that I am thinking, maybe we could come up something similar to vsyscall?
 
+If we start by making vsyscall data point to the same object, we may get it
+for free. Or am I missing something ?
