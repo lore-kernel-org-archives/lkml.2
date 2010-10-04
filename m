@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751167Ab0JDBUu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Oct 2010 21:20:50 -0400
-Received: from kroah.org ([198.145.64.141]:58586 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750939Ab0JDBUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 21:20:49 -0400
-Date: Sun, 3 Oct 2010 18:19:49 -0700
-From: Greg KH <greg@kroah.com>
-To: Micki Balanga <micki@n-trig.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "jim.collar@eqware.net" <jim.collar@eqware.net>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] USB: misc: Add N-trig firmware driver
-Message-ID: <20101004011949.GA23855@kroah.com>
-References: <6EF693376E00E2458E26FEC229232B128A8D39@Exchange2010-IL.n-trig.com>
+	id S1751213Ab0JDBni (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Oct 2010 21:43:38 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:45223 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750939Ab0JDBnh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Oct 2010 21:43:37 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: QYf_WjsVM1k9tUalVzZyodH_JZut1hqyG5Wszi8wCDMpkhr
+ cM7jwbxPRIV630owd3aWZuV9X6hHGoPWJJ3bD2cEbFn.mJ8t7xId0W__GxPE
+ iAM6d5Sh9_WKzrIr._rzr70wp5Rqsja3_0WvaLhhlTOMpmP.Wm_nkJGYT9qh
+ s4CeZ2TPtwTzpBumwIOItiPzfwal9su4kNrlX92Spf1MoO9Dzn._ER4TyV4I
+ .Juv9zr9olqRNSKXkiqNrfAq83xI3AU91sJmaLRud6buSDtp7EGSccA3KIDg
+ hFRMU2A--
+X-Yahoo-Newman-Property: ymail-3
+Date: Sun, 3 Oct 2010 20:43:33 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: David Rientjes <rientjes@google.com>
+cc: Pekka Enberg <penberg@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH] SLUB: Optimize slab_free() debug check
+In-Reply-To: <alpine.DEB.2.00.1010021802120.20855@chino.kir.corp.google.com>
+Message-ID: <alpine.DEB.2.00.1010032043240.23180@router.home>
+References: <1286008825-5567-1-git-send-email-penberg@kernel.org> <alpine.DEB.2.00.1010021802120.20855@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <6EF693376E00E2458E26FEC229232B128A8D39@Exchange2010-IL.n-trig.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 03, 2010 at 07:56:55AM +0000, Micki Balanga wrote:
-> 
 
-Can you please attach this in a non-base64 format so it can be properly
-reviewed, and then, applied if applicable?
+Acked-by: Christoph Lameter <cl@linux.com>
 
-Note, please run the patch through the scripts/checkpatch.pl tool first
-before sending it out, so we don't just say the same things it finds :)
 
-thanks,
-
-greg k-h
