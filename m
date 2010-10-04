@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab0JDSE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 14:04:26 -0400
-Received: from bhuna.collabora.co.uk ([93.93.128.226]:43830 "EHLO
-	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756725Ab0JDSEY (ORCPT
+	id S1756686Ab0JDSGG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 14:06:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56691 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756312Ab0JDSGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 14:04:24 -0400
-From: Alban Crequy <alban.crequy@collabora.co.uk>
-Cc: Lennart Poettering <lennart@poettering.net>,
-        Alban Crequy <alban.crequy@collabora.co.uk>,
-        "David S. Miller" <davem@davemloft.net>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Alexey Dobriyan <adobriyan@gmail.com>, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCH] AF_UNIX: Implement SO_TIMESTAMP and SO_TIMETAMPNS on Unix sockets
-Date: Mon,  4 Oct 2010 19:01:34 +0100
-Message-Id: <1286215294-29166-1-git-send-email-alban.crequy@collabora.co.uk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101004190049.783f14ab@chocolatine.cbg.collabora.co.uk>
-References: <20101004190049.783f14ab@chocolatine.cbg.collabora.co.uk>
-To: unlisted-recipients:; (no To-header on input)
+	Mon, 4 Oct 2010 14:06:04 -0400
+X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=YGL2JzEyuHAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=m0bHr2FCAAAA:8 a=Bhn4MsX01p6lHTWtHNAA:9 a=nOf8ap5cqWRMM9gcg7AA:7 a=dlTi2a-qfZwgjI9CCO_U17Vmlq8A:4 a=PUjeQqilurYA:10 a=1JvJEtVdGvUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Dynamic nop selection breaks boot on Geode LX
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Borislav Petkov <bp@alien8.de>, jbaron@redhat.com,
+        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikhJ6sE=CZ9HytG0p9DN9A0D+kqYB-sP8EfBN85@mail.gmail.com>
+References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
+	 <20101003055013.GB25397@liondog.tnic>
+	 <AANLkTikhJ6sE=CZ9HytG0p9DN9A0D+kqYB-sP8EfBN85@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 04 Oct 2010 14:06:00 -0400
+Message-ID: <1286215560.6750.64.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Userspace applications can already request to receive timestamps with:
-setsockopt(sockfd, SOL_SOCKET, SO_TIMESTAMP, ...)
+On Sun, 2010-10-03 at 17:32 +0100, Daniel Drake wrote:
+> On 3 October 2010 06:50, Borislav Petkov <bp@alien8.de> wrote:
+> > maybe because the Geode doesn't have both the
+> > P6_NOP5 and the NOP with 4 0x66 prefixes:
+> > http://kerneltrap.org/mailarchive/linux-kernel/2010/8/27/4612336
+> >
+> > and for some reason the trap can't find the fixup address. You say
+> > "hangs" so you don't even get an "invalid opcode" OOPS?
+> 
+> The XO doesn't have standard VGA, so it is difficult to debug such
+> early crashes. This is crashing so early that kernel messages don't
+> even start to get sent over serial.
+> 
+> To debug these things, I checkpoint the code with various calls which
+> send individual characters over serial:
+> 
+> static void log_serial(char c)
+> {
+>    while ((inb(0x3fd) & 0x20) == 0) ;
+>    outb(c, 0x3f8);
+>    while ((inb(0x3fd) & 0x40) == 0) ;
+> }
 
-Although setsockopt() returns zero (success), timestamps are not added to the
-ancillary data. This patch fixes that on SOCK_DGRAM and SOCK_SEQPACKET Unix
-sockets.
+Did you try earlyprintk? That is, on the kernel command line add:
 
-Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
----
- net/unix/af_unix.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+	earlyprintk=ttyS0,115200
 
-diff --git a/net/unix/af_unix.c b/net/unix/af_unix.c
-index 617bea4..bca0c1e 100644
---- a/net/unix/af_unix.c
-+++ b/net/unix/af_unix.c
-@@ -1697,6 +1697,9 @@ static int unix_dgram_recvmsg(struct kiocb *iocb, struct socket *sock,
- 	if (err)
- 		goto out_free;
- 
-+	if (sock_flag(sk, SOCK_RCVTSTAMP))
-+		__sock_recv_timestamp(msg, sk, skb);
-+
- 	if (!siocb->scm) {
- 		siocb->scm = &tmp_scm;
- 		memset(&tmp_scm, 0, sizeof(tmp_scm));
--- 
-1.7.1
+or whatever the tty and baud rate is. This will start printing out the
+serial right at kernel startup. Even before printk is configured.
+
+-- Steve
+
+> 
+> So, I'm not really sure if/how it crashed or oops'd. However, I can
+> confirm that panic() does not get reached, since I put a character log
+> in there and it doesn't get sent. Let me know if you want me to put
+> character logging in other places.
+> 
+> I applied your two patches by hand and it doesn't solve the issue,
+> because the init_amd_k6() code is called long after
+> arch_init_ideal_nop5()
+> 
+
 
