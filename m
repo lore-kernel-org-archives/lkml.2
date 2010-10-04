@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab0JDRyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 13:54:33 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57616 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755022Ab0JDRyc (ORCPT
+	id S1756407Ab0JDRzH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 13:55:07 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57924 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755911Ab0JDRzG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 13:54:32 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+zX7uwjM1N2oFW2itvAaNM
-Date: Mon, 4 Oct 2010 10:54:29 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-fbdev@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] video/omap: remove duplicated include
-Message-ID: <20101004175429.GW3117@atomide.com>
-References: <20101004174344.21577085@absol.kitzblitz>
+	Mon, 4 Oct 2010 13:55:06 -0400
+Date: Mon, 4 Oct 2010 19:54:58 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Nigel Cunningham <nigel@tuxonice.net>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux PM <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [linux-pm] [PATCH 03/23] Hibernation: Swap iteration functions.
+Message-ID: <20101004175457.GC1518@ucw.cz>
+References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net>
+ <1285566238-10966-4-git-send-email-nigel@tuxonice.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101004174344.21577085@absol.kitzblitz>
+In-Reply-To: <1285566238-10966-4-git-send-email-nigel@tuxonice.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nicolas Kaiser <nikai@nikai.net> [101004 08:35]:
-> Remove duplicated include.
+On Mon 2010-09-27 15:43:38, Nigel Cunningham wrote:
+> Add the data structure 'storage_position' and routines that allow
+> a caller to iterate over swap in sector order. Note that calling
+> reset_storage_pos only resets the position. next_swapdev_block
+> must also be called to get the address of the first (and subsequent
+> sectors).
 > 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
-> ---
->  drivers/video/omap/lcd_omap3beagle.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/video/omap/lcd_omap3beagle.c b/drivers/video/omap/lcd_omap3beagle.c
-> index ca75cc2..ac715f9 100644
-> --- a/drivers/video/omap/lcd_omap3beagle.c
-> +++ b/drivers/video/omap/lcd_omap3beagle.c
-> @@ -26,7 +26,6 @@
->  #include <linux/i2c/twl.h>
->  
->  #include <plat/mux.h>
-> -#include <plat/mux.h>
->  #include <asm/mach-types.h>
->  
->  #include "omapfb.h"
+> Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 
-Can you please updated this to remove both mux.h entries?
+Merge this with 8/23? AFAICT, this creates unused functions here only
+to move them in later patch.
 
-Including mux.h should no longer be needed for omap2/3/4 SoCs
-outside arch/arm/mach-omap2 files. For omap1 machines those are still
-needed in some drivers..
-
-Regards,
-
-Tony
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
