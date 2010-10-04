@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932530Ab0JDUVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 16:21:21 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60034 "EHLO mail.zytor.com"
+	id S932565Ab0JDUX1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 16:23:27 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42620 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756005Ab0JDUVU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 16:21:20 -0400
-Message-ID: <4CAA3717.9060008@zytor.com>
-Date: Mon, 04 Oct 2010 13:20:39 -0700
+	id S1756322Ab0JDUX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 16:23:26 -0400
+Message-ID: <4CAA379C.2050803@zytor.com>
+Date: Mon, 04 Oct 2010 13:22:52 -0700
 From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
@@ -40,8 +40,10 @@ On 10/04/2010 01:04 PM, Borislav Petkov wrote:
 > This is probably unrelated but the tip-bot notifications are missing
 > from lkml for a couple of days now. Any insight, Ingo, Peter?
 > 
+> Thanks.
+> 
 
-I'll look at it.
+Looks like a stale lockfile.
 
 	-hpa
 
