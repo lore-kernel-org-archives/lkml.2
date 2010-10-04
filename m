@@ -1,50 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab0JDPog (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 11:44:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50144 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756394Ab0JDPof (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 11:44:35 -0400
-Message-ID: <4CA9F625.7090709@zytor.com>
-Date: Mon, 04 Oct 2010 08:43:33 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1756433Ab0JDPpO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 11:45:14 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:46419 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751581Ab0JDPpN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 11:45:13 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=QZ4St5YMZmzNT0HfFLFiRQ8sekhNC1T6I3Zxcs57NHdpup9OpU+xTwRlxRzDXlxWo
+	51clsgqamaODfmcrblYZQ==
+From: Greg Thelen <gthelen@google.com>
+To: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-4-git-send-email-gthelen@google.com>
+	<4CA9DB3E.6020106@linux.vnet.ibm.com>
+Date: Mon, 04 Oct 2010 08:43:46 -0700
+In-Reply-To: <4CA9DB3E.6020106@linux.vnet.ibm.com> (Ciju Rajan K.'s message of
+	"Mon, 04 Oct 2010 19:18:46 +0530")
+Message-ID: <xr93y6ae2cb1.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
-        heukelum@fastmail.fm, tglx@linutronix.de, akpm@linux-foundation.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
-References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org> <4C91F07E0200007800016B50@vpn.id2.novell.com> <20100916082816.GA25681@elte.hu> <4C91F3A30200007800016B64@vpn.id2.novell.com> <20100916101355.GA31458@elte.hu> <4C9219BC0200007800016C53@vpn.id2.novell.com> <4CA52AA5.5040402@zytor.com> <4CA9A69F.8000006@redhat.com>
-In-Reply-To: <4CA9A69F.8000006@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2010 03:04 AM, Avi Kivity wrote:
->  On 10/01/2010 02:26 AM, H. Peter Anvin wrote:
->> ... but that doesn't work with the macros like movq_cfi.  On those, we
->> could argue that at least people won't put $ on them, but cpp will still
->> split them apart with spaces; this apparently causes problems at least
->> as soon as there is an expression more complicated than addition
->> involved (apparently plus signs are okay, but minus signs aren't!)
-> 
-> Likely due to the fact that a minus sign can later join with a number
-> and become a new token, but a plug sign cannot.
-> 
+Ciju Rajan K <ciju@linux.vnet.ibm.com> writes:
 
-... except the same thing applies to other operators, other than the
-plus sign.  This kind of characterization is insanely frustrating, and
-really doesn't seem to follow logical rules ... we had a previous one
-where changing a macro name from upper case to lower case made gas 2.16
-work...
-	
-	-hpa
+> Greg Thelen wrote:
+>> Replace usage of the mem_cgroup_update_file_mapped() memcg
+>> statistic update routine with two new routines:
+>> * mem_cgroup_inc_page_stat()
+>> * mem_cgroup_dec_page_stat()
+>>
+>> As before, only the file_mapped statistic is managed.  However,
+>> these more general interfaces allow for new statistics to be
+>> more easily added.  New statistics are added with memcg dirty
+>> page accounting.
+>>
+>>
+>>
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 512cb12..f4259f4 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
+>>   * possibility of race condition. If there is, we take a lock.
+>>   */
+>>
+>>   -static void mem_cgroup_update_file_stat(struct page *page, int idx, int
+>> val)
+>>   
+> Not seeing this function in mmotm 28/09. So not able to apply this patch.
+> Am I missing anything?
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+How are you getting mmotm?
 
+I see the mem_cgroup_update_file_stat() routine added in mmotm
+(stamp-2010-09-28-16-13) using patch file:
+  http://userweb.kernel.org/~akpm/mmotm/broken-out/memcg-generic-filestat-update-interface.patch
+
+  Author: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+  Date:   Tue Sep 28 21:48:19 2010 -0700
+  
+      This patch extracts the core logic from mem_cgroup_update_file_mapped() as
+      mem_cgroup_update_file_stat() and adds a wrapper.
+  
+      As a planned future update, memory cgroup has to count dirty pages to
+      implement dirty_ratio/limit.  And more, the number of dirty pages is
+      required to kick flusher thread to start writeback.  (Now, no kick.)
+  
+      This patch is preparation for it and makes other statistics implementation
+      clearer.  Just a clean up.
+  
+      Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+      Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+      Reviewed-by: Greg Thelen <gthelen@google.com>
+      Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+
+If you are using the zen mmotm repository,
+git://zen-kernel.org/kernel/mmotm.git, the commit id of
+memcg-generic-filestat-update-interface.patch is
+616960dc0cb0172a5e5adc9e2b83e668e1255b50.
+
+>> +void mem_cgroup_update_page_stat(struct page *page,
+>> +				 enum mem_cgroup_write_page_stat_item idx,
+>> +				 int val)
+>>  {
+>>  	struct mem_cgroup *mem;
+>>
+>>   
