@@ -1,79 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab0JDQQP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 12:16:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22478 "EHLO mx1.redhat.com"
+	id S1756388Ab0JDQVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 12:21:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab0JDQQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 12:16:13 -0400
-Date: Mon, 4 Oct 2010 13:15:56 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] use a stable clock reference in vdso vgetns
-Message-ID: <20101004161555.GG1230@mothafucka.localdomain>
-References: <1285938596-2186-1-git-send-email-glommer@redhat.com>
- <AANLkTimdukAnwtPooFJYTxtzoT+Scy9JwWoxkkj3g0zO@mail.gmail.com>
+	id S1756149Ab0JDQVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 12:21:47 -0400
+Message-ID: <4CA9FEE2.7000900@redhat.com>
+Date: Mon, 04 Oct 2010 18:20:50 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimdukAnwtPooFJYTxtzoT+Scy9JwWoxkkj3g0zO@mail.gmail.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jan Beulich <JBeulich@novell.com>, Ingo Molnar <mingo@elte.hu>,
+        heukelum@fastmail.fm, tglx@linutronix.de, akpm@linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
+References: <201009152110.o8FLAJeJ015584@imap1.linux-foundation.org> <4C91F07E0200007800016B50@vpn.id2.novell.com> <20100916082816.GA25681@elte.hu> <4C91F3A30200007800016B64@vpn.id2.novell.com> <20100916101355.GA31458@elte.hu> <4C9219BC0200007800016C53@vpn.id2.novell.com> <4CA52AA5.5040402@zytor.com> <4CA9A69F.8000006@redhat.com> <4CA9F625.7090709@zytor.com>
+In-Reply-To: <4CA9F625.7090709@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 10:49:53AM -0700, john stultz wrote:
-> On Fri, Oct 1, 2010 at 6:09 AM, Glauber Costa <glommer@redhat.com> wrote:
-> > When using vdso services for clock_gettime, we test for the ability
-> > of a fine-grained measurement through the existance of a vread() function.
+  On 10/04/2010 05:43 PM, H. Peter Anvin wrote:
+> On 10/04/2010 03:04 AM, Avi Kivity wrote:
+> >   On 10/01/2010 02:26 AM, H. Peter Anvin wrote:
+> >>  ... but that doesn't work with the macros like movq_cfi.  On those, we
+> >>  could argue that at least people won't put $ on them, but cpp will still
+> >>  split them apart with spaces; this apparently causes problems at least
+> >>  as soon as there is an expression more complicated than addition
+> >>  involved (apparently plus signs are okay, but minus signs aren't!)
 > >
-> > However, from the time we test it, to the time we use it, vread() reference
-> > may not be valid anymore. It happens, for example, when we change the current
-> > clocksource from one that provides vread (say tsc) to one that lacks it
-> > (say acpi_pm), in the middle of clock_gettime routine.
+> >  Likely due to the fact that a minus sign can later join with a number
+> >  and become a new token, but a plug sign cannot.
 > >
-> > seqlock does not really protect us, since readers here won't stop the writers
-> > to change references. The proposed solution is to grab a copy of the clock
-> > structure early, and use it as a stable reference onwards.
-> 
-> Ah. Good find! The fix looks reasonable to me. However, its likely the
-> similar code in arch/x86/kernel/vsyscall_64.c will need a similar fix.
-> 
-> Awhile back there was some motivation to merge the two vdso/vsyscall
-> implementations to avoid the duplication, but my memory is failing on
-> why that didn't happen. I feel like it had to do with complication
-> with the way the two implementations are mapped out to userland. Even
-> so, it seems a shared forced inline method would resolve the issue, so
-> maybe it just fell off the todo list?
-Ok, I just stated that vsyscall is safe because of update_vsyscall. This is
-just not the case. Update vsyscall will update the timer structures but leave
-us with the problem that it will do it regardless of any readers. What makes
-vsyscall "safe", is this:
+>
+> ... except the same thing applies to other operators, other than the
+> plus sign.  This kind of characterization is insanely frustrating, and
+> really doesn't seem to follow logical rules ... we had a previous one
+> where changing a macro name from upper case to lower case made gas 2.16
+> work...
+> 	
 
-                vread = __vsyscall_gtod_data.clock.vread; 
-                ^
-                |--- saves reference to vread                    uses --.
-                if (unlikely(!__vsyscall_gtod_data.sysctl_enabled || !vread)) {
-                        gettimeofday(tv,NULL);
-                        return;
-                }
+Well, / and * do join.  % doesn't.  In a way, + does.
 
-                now = vread(); <=== uses again
+cpp is not a pure text processing language.  It's specifically geared to 
+C, and is fairly creaky when applying it to something other than C (and 
+is only somewhat creaky when applying it to C).
 
-This was, actually, my first idea on how to solve the problem for vdso. If we are
-always reading this inside the seqlock, it should be okay.
-
-In the way vdso's clock_gettime is structured, however, it would involve passing
-down the expected seq + vread pointer down the function call chain, or wrapping
-all callees inside the lock. Honestly, I believe the solution I posted is cleaner
-than both, even having a slight difference wrt vsyscall's today implementation.
-
-What do you think ?
-
-
+-- 
+error compiling committee.c: too many arguments to function
 
