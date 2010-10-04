@@ -1,88 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754879Ab0JDKW0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 06:22:26 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:50780 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754495Ab0JDKWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 06:22:25 -0400
-Date: Mon, 4 Oct 2010 12:22:13 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Alex Elder <aelder@sgi.com>, xfs@oss.sgi.com,
-        John Hawley <warthog9@kernel.org>, linux-kernel@vger.kernel.org,
-        stable@kernel.org
-Subject: Re: [patch] xfs: properly account for reclaimed inodes
-Message-ID: <20101004102213.GJ2618@cmpxchg.org>
-References: <20101001074354.GF2618@cmpxchg.org>
- <1285953443.2422.4.camel@doink>
- <20101004071904.GH4681@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101004071904.GH4681@dastard>
+	id S1754623Ab0JDKaw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 06:30:52 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:50283 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752840Ab0JDKav convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 06:30:51 -0400
+X-Quarantine-ID: <3Yzzvgh3nGCw>
+X-Amavis-Alert: BAD HEADER, Improper folded header field made up entirely of
+	whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n jycPrvgA\n\t\n
+	R1goSzOnkp14Y[...]
+Subject: Re: Introduce support for little endian PowerPC
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Josh Boyer <jwboyer@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        paulus@samba.org, linux-kernel@vger.kernel.org,
+        Ian Munsie <imunsie@au1.ibm.com>
+In-Reply-To: <1285966204.2463.137.camel@pasglop>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+	 <2C5357FA-F87F-457E-B5C1-0DCC5A842DE7@kernel.crashing.org>
+	 <AANLkTinSDMvBb7rnnfwYMkEVOgDUqRetZg86rh-UmSAg@mail.gmail.com>
+	 <1285935283.2463.78.camel@pasglop>  <1285950041.15020.272.camel@thor.local>
+	 <1285966204.2463.137.camel@pasglop>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 04 Oct 2010 12:30:42 +0200
+Message-ID: <1286188242.15020.349.camel@thor.local>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Mon, Oct 04, 2010 at 06:19:04PM +1100, Dave Chinner wrote:
-> On Fri, Oct 01, 2010 at 12:17:23PM -0500, Alex Elder wrote:
-> > On Fri, 2010-10-01 at 09:43 +0200, Johannes Weiner wrote:
-> > > When marking an inode reclaimable, a per-AG counter is increased, the
-> > > inode is tagged reclaimable in its per-AG tree, and, when this is the
-> > > first reclaimable inode in the AG, the AG entry in the per-mount tree
-> > > is also tagged.
+On Sam, 2010-10-02 at 06:50 +1000, Benjamin Herrenschmidt wrote: 
+> On Fri, 2010-10-01 at 18:20 +0200, Michel Dänzer wrote:
+> > On Fre, 2010-10-01 at 22:14 +1000, Benjamin Herrenschmidt wrote: 
 > > > 
-> > > When an inode is finally reclaimed, however, it is only deleted from
-> > > the per-AG tree.  Neither the counter is decreased, nor is the parent
-> > > tree's AG entry untagged properly.
+> > > Now, the main reasons in practice are anything touching graphics.
 > > > 
-> > > Since the tags in the per-mount tree are not cleared, the inode
-> > > shrinker iterates over all AGs that have had reclaimable inodes at one
-> > > point in time.
-> > > 
-> > > The counters on the other hand signal an increasing amount of slab
-> > > objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
-> > > per-filesystem context" this is not a real issue anymore because the
-> > > shrinker bails out after one iteration.
-> > > 
-> > > But the problem was observable on a machine running v2.6.34, where the
-> > > reclaimable work increased and each process going into direct reclaim
-> > > eventually got stuck on the xfs inode shrinking path, trying to scan
-> > > several million objects.
-> > > 
-> > > Fix this by properly unwinding the reclaimable-state tracking of an
-> > > inode when it is reclaimed.
-> > > 
-> > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > Cc: stable@kernel.org
+> > > There's quite a few IP cores out there for SoCs that don't have HW
+> > > swappers, and -tons- of more or less ugly code that can't deal with non
+> > > native pixel ordering (hell, even Xorg isn't good at it, we really only
+> > > support cards that have HW swappers today).
 > > 
-> > Yes, this looks right to me.  The state was correctly
-> > adjusted in xfs_iget_cache_hit() when a RECLAIMABLE
-> > inode is found in the cache, but it was not done when
-> > reclaim completes.
-> > 
-> > Reviewed-by: Alex Elder <aelder@sgi.com>
+> > That's not true. Even the radeon driver doesn't really need the HW
+> > swappers anymore with KMS.
 > 
-> Alex, can you push this to Linus ASAP? This needs to go back to
-> stable kernels as well..
+> And last I looked X still pukes if you give it a pixmap in non native
+> byte order but that might have been fixed.
 
-Here is my suggestion of a backport to .34.  Dave, Alex, do you
-approve?
+I'm not sure what exactly you mean by that, but I'm not aware of any
+such issues offhand.
 
-	Hannes
 
-diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
-index 6845db9..3314f2a 100644
---- a/fs/xfs/xfs_iget.c
-+++ b/fs/xfs/xfs_iget.c
-@@ -499,6 +499,7 @@ xfs_ireclaim(
- 	write_lock(&pag->pag_ici_lock);
- 	if (!radix_tree_delete(&pag->pag_ici_root, agino))
- 		ASSERT(0);
-+	pag->pag_ici_reclaimable--;
- 	write_unlock(&pag->pag_ici_lock);
- 	xfs_perag_put(pag);
- 
+> > > There's an even bigger pile of application code that deals with graphics
+> > > without any regard for endianness and is essentially unfixable.
+> > 
+> > Out of curiosity, what kind of APIs are those apps using? X11 and OpenGL
+> > have well-defined semantics wrt endianness, allowing the drivers to
+> > handle any necessary byte swapping internally, and IME the vast majority
+> > of apps handle this correctly.
+> 
+> So why is it so hard to get any video card working on ppc ? :-)
+
+I didn't say anything about that, just that IME it should be mostly
+possible to deal with endianness within the driver stack.
+
+
+Note that I'm not arguing against these changes, just pointing out some
+apparent inaccuracies in the reasoning for them.
+
+
+-- 
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
