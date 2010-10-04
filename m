@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755798Ab0JDWPV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:15:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38185 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755298Ab0JDWPU (ORCPT
+	id S1755655Ab0JDWRe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:17:34 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34478 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751642Ab0JDWRd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:15:20 -0400
-X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=YGL2JzEyuHAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=RAfyifOLct42CDp3T5kA:9 a=1pWAtavq9qsyLWeYzNUA:7 a=7qCiEFKXTSvcpdedIGh7dZQbk6sA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Dynamic nop selection breaks boot on Geode LX
-From: Steven Rostedt <rostedt@goodmis.org>
+	Mon, 4 Oct 2010 18:17:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Wf1J5dDx3xnN+l0FBUOx9ueU+M5zUjU5vHuiWFsa5WyxXt+yaorgTsvSSpNfa5Pio+
+         tiq/X2ux0DmqoIhr9Zxg==
+MIME-Version: 1.0
+In-Reply-To: <4CAA455D.8000902@zytor.com>
+References: <20101003093701.GB3733@liondog.tnic>
+	<4CA89681.8000202@zytor.com>
+	<20101003152212.GA13233@liondog.tnic>
+	<a3fce0e5-e6c5-4bf0-b8c0-4954825a7065@email.android.com>
+	<20101003201139.GA16532@liondog.tnic>
+	<dc1a5ce2-0414-4f15-9e7b-fcfa4435adb5@email.android.com>
+	<20101004073127.GA20305@liondog.tnic>
+	<AANLkTikBs5R2KmGfDSXyi5y-cKuZepZCdr0KOVe5-MX6@mail.gmail.com>
+	<4CAA4102.3070205@zytor.com>
+	<AANLkTimXj+5ixx=xoVYOCmM4+W6CGR1XOi6CHDTZzns0@mail.gmail.com>
+	<4CAA455D.8000902@zytor.com>
+Date: Mon, 4 Oct 2010 15:17:28 -0700
+Message-ID: <AANLkTiniYToWCeVvMXmyUFTudW9g_mpGXRMwQ20kxXUk@mail.gmail.com>
+Subject: Re: [PATCH] x86, cpu: Fix X86_FEATURE_NOPL
+From: Hugh Dickins <hughd@google.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Jason Baron <jbaron@redhat.com>, Daniel Drake <dsd@laptop.org>,
-        Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
-        linux-kernel@vger.kernel.org, mingo@elte.hu
-In-Reply-To: <4CAA4C7D.8040006@zytor.com>
-References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
-	 <20101004154633.GA2900@redhat.com>  <4CAA4C7D.8040006@zytor.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 04 Oct 2010 18:15:18 -0400
-Message-ID: <1286230518.6750.76.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Borislav Petkov <bp@alien8.de>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-04 at 14:51 -0700, H. Peter Anvin wrote:
-> On 10/04/2010 08:46 AM, Jason Baron wrote:
-> > 
-> > move arch_init_ideal_nop5 later
-> > 
-> > arch_init_ideal_nop5() was being called from setup_arch() before
-> > the exception table was setup. Move it later into
-> > alternative_instructions().
-> > 
-> > Fixes a boot hang on OLPC's XO-1 laptop based on Geode LX
-> > processor.
-> > 
-> 
-> This code is fundamentally toxic and needs to be scrapped completely --
-> it is simply broken beyond repair.
-> 
-> We tried exactly this type of dynamic selection before, and it doesn't
-> work on broken virtualizers; in particular Microsoft VirtualPC can pass
-> the exception test and yet fail later.
+On Mon, Oct 4, 2010 at 2:21 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 10/04/2010 02:12 PM, Linus Torvalds wrote:
+>> On Mon, Oct 4, 2010 at 2:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>
+>>> Actually, cpu_has() depends on:
+>>> #if defined(CONFIG_X86_P6_NOP) || defined(CONFIG_X86_64)
+>>
+>> Ahh. Right you are. The place that depends on just P6_NOP is the
+>> default NOP choice logic in <asm/nops.h>
+>>
+>> But the end result ends up being the same: can we please clean this
+>> all up so that it isn't so confusing? Rather than add to the
+>> confusion?
+>>
+>
+> Agreed that this should be cleaned up.  However, in the meantime I'd
+> like to keep Borislav's patch in the tree since it makes the code
+> technically correct at least.
 
-So the code is broken because of broken virtualizers??
+Another piece of the confusion I noticed a couple of days ago:
+X86_MINIMUM_CPU_FAMILY defaults to "6" if X86_32 &&
+X86_P6_NOP; whereas X86_P6_NOP depends on X86_64.
 
-> 
-> The end result is very simple: you can always use NOPL on 64 bits, you
-> can never use NOPL on 32 bits.
-> 
-> 66 66 66 66 90 will always *work* (as in, it will never fail) but it's
-> pretty slow on older CPUs which took a hit on handle prefixes -- but it
-> might still be faster than a jump on those.  Thus, in your code the JMP
-> case will never be reached anyway.
-
-The jmp was there because of paranoia, and I never expected it to be
-reached.
-
-> 
-> There isn't, of course, a classic 5-byte sequence, although the sequence:
-> 
-> 	2E 8D 75 26 00
-> 
-> ... should work (leal %ds:0(,%esi,1),%esi).  However, 66 ... 90 is
-> likely to work better on modern processors (although I haven't measured it.)
-
-The point is, this nop will be at _every_ function call (it replaces the
-mcount call). Not just scattered throughout the kernel. It is imperative
-that we have the best nop available.
-
-So what would you recommend?
-
--- Steve
-
-
+Hugh
