@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab0JDWLD (ORCPT <rfc822;w@1wt.eu>);
+	id S1754893Ab0JDWLF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:11:05 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35024 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab0JDWLD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Oct 2010 18:11:03 -0400
-Received: from mail.perches.com ([173.55.12.10]:2637 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752886Ab0JDWLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:11:01 -0400
-Subject: Re: [PATCH] serial8250: ratelimit "too much work" error
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Drake <dsd@laptop.org>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@kroah.com>
-In-Reply-To: <20101004150238.fbc1b6cf.akpm@linux-foundation.org>
-References: <20101002110438.801F49D401B@zog.reactivated.net>
-	 <20101004145101.b28fdc0a.akpm@linux-foundation.org>
-	 <20101004150238.fbc1b6cf.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Oct 2010 15:10:59 -0700
-Message-ID: <1286230259.10512.81.camel@Joe-Laptop>
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=YGL2JzEyuHAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ASFZG9o2GaUVeqMjKpwA:9 a=5rnckDwLwzkjo8AuBWqDDK9aUHMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: Dynamic nop selection breaks boot on Geode LX
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jason Baron <jbaron@redhat.com>
+Cc: Daniel Drake <dsd@laptop.org>, Andres Salomon <dilinger@queued.net>,
+        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
+        mingo@elte.hu
+In-Reply-To: <20101004203921.GG2900@redhat.com>
+References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
+	 <20101004154633.GA2900@redhat.com>
+	 <1286224272.6750.70.camel@gandalf.stny.rr.com>
+	 <20101004203921.GG2900@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Mon, 04 Oct 2010 18:11:00 -0400
+Message-ID: <1286230260.6750.71.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-04 at 15:02 -0700, Andrew Morton wrote:
-> On Mon, 4 Oct 2010 14:51:01 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
+On Mon, 2010-10-04 at 16:39 -0400, Jason Baron wrote:
+> On Mon, Oct 04, 2010 at 04:31:12PM -0400, Steven Rostedt wrote:
+> > On Mon, 2010-10-04 at 11:46 -0400, Jason Baron wrote:
+> > 
+> > >  	restart_nmi();
+> > > +
+> > > +	local_irq_save(flags);
+> > > +	arch_init_ideal_nop5();
+> > > +	local_irq_restore(flags);
+> > >  }
+> > >  
+> > >  /**
+> > 
+> > BTW, why the irq disabling around the call?
+> > 
+> > -- Steve
+> > 
+> > 
 > 
-> > someone stuck a
-> > DEFINE_RATELIMIT_STATE() in include/linux/kernel.h and it ain't defined
-> > anywhere.  Let me fix that up...
-> 
-> Well that's a PITA.  Can't include ratelimit.h into kernel.h because a)
-> it'll slow everyone's compiels down and b) ratelimit.h needs spinlock.h
-> which surely needs kernel.h.  Fixable by adding a new
-> printk_ratelimit.h and including that from 135 source files, blah.
-> 
-> I'll give up and pronounce that users of printk_ratelimited() need to
-> include ratelimit.h as well.
+> Only b/c the selection of the nop was originally done by
+> 'ftrace_dyn_arch_init()' which had irq's disabled around it. So maybe
+> that can be dropped now?
 
-What I suggested several months ago was to move the
-macro definitions to ratelimit.h
+Yeah, that disable is there for legacy reasons. It can be scrapped.
 
-http://lkml.org/lkml/2010/2/18/377
+I'll remove it.
+
+Thanks!
+
+-- Steve
 
 
