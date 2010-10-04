@@ -1,199 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab0JDHEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 03:04:38 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:33330 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab0JDHEg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 03:04:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=wJpiWxMLa8rocNAT7OdESYTgsan6airsvCvFC9e7N0xkBqDDaTSO7vI9TeNAJgv40
-	SB1YkWjFf8SgJ14Y1EPbw==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Greg Thelen <gthelen@google.com>
-Subject: [PATCH 09/10] writeback: make determine_dirtyable_memory() static.
-Date: Sun,  3 Oct 2010 23:58:04 -0700
-Message-Id: <1286175485-30643-10-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1286175485-30643-1-git-send-email-gthelen@google.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	id S1752866Ab0JDHIM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 03:08:12 -0400
+Received: from smtp.witbe.net ([81.88.96.48]:47503 "EHLO smtp.witbe.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752186Ab0JDHIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 03:08:11 -0400
+Date: Mon, 4 Oct 2010 09:07:11 +0200
+From: Paul Rolland <rol@as2917.net>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Matt Mackall <mpm@selenic.com>, Andrew Morton <akpm@linux-foundation.org>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        Dave Airlie <airlied@redhat.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH] drm: Prune GEM vma entries
+Message-ID: <20101004090711.23e872f4@tux.DEF.witbe.net>
+In-Reply-To: <1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
+References: <20100927115207.633024b1.akpm@linux-foundation.org>
+	<1285618116-10086-1-git-send-email-chris@chris-wilson.co.uk>
+Organization: AS2917.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWsjH1VRjFydFciEg3a1tJxUEM6OCB1zdsDAAACcElEQVQ4jV2Tu3LcMAxFEY7SG/KQNYlY2685Zi1rmF5kQteBNcL/f0JAacfZDUscARePK9itY3Q4Qu5vplJKIFsrvI0t7Ii/8/nmQsERtgJpHAtiGW4ggylOAwhXTxPi0xfIcxDrZIc3qhMGD/kfKdwBExZrAf6l5PeC/Al7cAGfAGD+AgvL5yckcsxegVmG+QZRPgnYXnFUMAC8DLd6QZhAxj6dRo6vT/JNkmZQmPyDtoroMkD2VlaVgHsw2QrCAf1jPM+ou2Ju1j/G8+xINfZT+zGDPDjr7H/xnKewgi6SO4D7zloYoRDafSoogmirP0t9YIOJnN2ibDEKK6zDoSEjTIFXDcYYkwizoO/AjkATm3g+JVsSXPOCZIHwj7uBo2Bi97RMOoflJ4n3b3dvS2kVXDQupjvAk7zvaMEJlu0OJDFy4SsCusRbL95jRynY0LIA/rpyxCMkJ1ie+bWoEy+MG7pzDE3k8Z2C1a5eUdxmi0adGi2mdVjyUr2uvamrW9EeuLTCY84/AUjBj40LtqYbbM23vqolA2mpj5g03gparH45DqBgmsBK2hU0x662+QQLVYJLitxTnHB7yf0es4rraS/xqKW/hF1zPg9lOijpmtIBVrWKOQ6oTSkQjh3YtnarHQc0RrtS1XjtbQnScPrLeNKM6iS+6Qz6e9mVoPvaHHPU6eP5aKu1Ifd2QQvp6EA1bLaP3VREwewXY73xgLppBR2tg4LFg9lXzegHQlusWuxwogLCaswJ+qunQ2cyfuziX6B1p0E26nQazR3Qn2jQarRXVVZT9zP3uB5FV6pNjQG+u03ugbalEsEXqo7/AjAH60VpvOMvAAAAAElFTkSuQmCC
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The determine_dirtyable_memory() function is not used outside of
-page writeback.  Make the routine static.  No functional change.
-Just a cleanup in preparation for a change that adds memcg dirty
-limits consideration into global_dirty_limits().
+Hello,
 
-Signed-off-by: Andrea Righi <arighi@develer.com>
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- include/linux/writeback.h |    2 -
- mm/page-writeback.c       |  122 ++++++++++++++++++++++----------------------
- 2 files changed, 61 insertions(+), 63 deletions(-)
+You can add a: 
+Tested-by: Paul Rolland <rol@as2917.net>
 
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 72a5d64..9eacdca 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -105,8 +105,6 @@ extern int vm_highmem_is_dirtyable;
- extern int block_dump;
- extern int laptop_mode;
- 
--extern unsigned long determine_dirtyable_memory(void);
--
- extern int dirty_background_ratio_handler(struct ctl_table *table, int write,
- 		void __user *buffer, size_t *lenp,
- 		loff_t *ppos);
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 820eb66..a0bb3e2 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -132,6 +132,67 @@ static struct prop_descriptor vm_completions;
- static struct prop_descriptor vm_dirties;
- 
- /*
-+ * Work out the current dirty-memory clamping and background writeout
-+ * thresholds.
-+ *
-+ * The main aim here is to lower them aggressively if there is a lot of mapped
-+ * memory around.  To avoid stressing page reclaim with lots of unreclaimable
-+ * pages.  It is better to clamp down on writers than to start swapping, and
-+ * performing lots of scanning.
-+ *
-+ * We only allow 1/2 of the currently-unmapped memory to be dirtied.
-+ *
-+ * We don't permit the clamping level to fall below 5% - that is getting rather
-+ * excessive.
-+ *
-+ * We make sure that the background writeout level is below the adjusted
-+ * clamping level.
-+ */
-+
-+static unsigned long highmem_dirtyable_memory(unsigned long total)
-+{
-+#ifdef CONFIG_HIGHMEM
-+	int node;
-+	unsigned long x = 0;
-+
-+	for_each_node_state(node, N_HIGH_MEMORY) {
-+		struct zone *z =
-+			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
-+
-+		x += zone_page_state(z, NR_FREE_PAGES) +
-+		     zone_reclaimable_pages(z);
-+	}
-+	/*
-+	 * Make sure that the number of highmem pages is never larger
-+	 * than the number of the total dirtyable memory. This can only
-+	 * occur in very strange VM situations but we want to make sure
-+	 * that this does not occur.
-+	 */
-+	return min(x, total);
-+#else
-+	return 0;
-+#endif
-+}
-+
-+/**
-+ * determine_dirtyable_memory - amount of memory that may be used
-+ *
-+ * Returns the numebr of pages that can currently be freed and used
-+ * by the kernel for direct mappings.
-+ */
-+static unsigned long determine_dirtyable_memory(void)
-+{
-+	unsigned long x;
-+
-+	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
-+
-+	if (!vm_highmem_is_dirtyable)
-+		x -= highmem_dirtyable_memory(x);
-+
-+	return x + 1;	/* Ensure that we never return 0 */
-+}
-+
-+/*
-  * couple the period to the dirty_ratio:
-  *
-  *   period/2 ~ roundup_pow_of_two(dirty limit)
-@@ -337,67 +398,6 @@ int bdi_set_max_ratio(struct backing_dev_info *bdi, unsigned max_ratio)
- EXPORT_SYMBOL(bdi_set_max_ratio);
- 
- /*
-- * Work out the current dirty-memory clamping and background writeout
-- * thresholds.
-- *
-- * The main aim here is to lower them aggressively if there is a lot of mapped
-- * memory around.  To avoid stressing page reclaim with lots of unreclaimable
-- * pages.  It is better to clamp down on writers than to start swapping, and
-- * performing lots of scanning.
-- *
-- * We only allow 1/2 of the currently-unmapped memory to be dirtied.
-- *
-- * We don't permit the clamping level to fall below 5% - that is getting rather
-- * excessive.
-- *
-- * We make sure that the background writeout level is below the adjusted
-- * clamping level.
-- */
--
--static unsigned long highmem_dirtyable_memory(unsigned long total)
--{
--#ifdef CONFIG_HIGHMEM
--	int node;
--	unsigned long x = 0;
--
--	for_each_node_state(node, N_HIGH_MEMORY) {
--		struct zone *z =
--			&NODE_DATA(node)->node_zones[ZONE_HIGHMEM];
--
--		x += zone_page_state(z, NR_FREE_PAGES) +
--		     zone_reclaimable_pages(z);
--	}
--	/*
--	 * Make sure that the number of highmem pages is never larger
--	 * than the number of the total dirtyable memory. This can only
--	 * occur in very strange VM situations but we want to make sure
--	 * that this does not occur.
--	 */
--	return min(x, total);
--#else
--	return 0;
--#endif
--}
--
--/**
-- * determine_dirtyable_memory - amount of memory that may be used
-- *
-- * Returns the numebr of pages that can currently be freed and used
-- * by the kernel for direct mappings.
-- */
--unsigned long determine_dirtyable_memory(void)
--{
--	unsigned long x;
--
--	x = global_page_state(NR_FREE_PAGES) + global_reclaimable_pages();
--
--	if (!vm_highmem_is_dirtyable)
--		x -= highmem_dirtyable_memory(x);
--
--	return x + 1;	/* Ensure that we never return 0 */
--}
--
--/*
-  * global_dirty_limits - background-writeback and dirty-throttling thresholds
-  *
-  * Calculate the dirty thresholds based on sysctl parameters
--- 
-1.7.1
+This is indeed fixing the memory leak in size-32 pool on my machine.
+
+Thanks a lot,
+Paul
+
+On Mon, 27 Sep 2010 21:08:36 +0100
+Chris Wilson <chris@chris-wilson.co.uk> wrote:
+
+> Hook the GEM vm open/close ops into the generic drm vm open/close so
+> that the vma entries are created and destroy appropriately.
+> 
+> Reported-by: Matt Mackall <mpm@selenic.com>
+> Cc: Dave Airlie <airlied@redhat.com>
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+> ---
+>  drivers/gpu/drm/drm_gem.c |    9 ++++++++-
+>  drivers/gpu/drm/drm_vm.c  |   28 ++++++++++++++++++----------
+>  include/drm/drmP.h        |    1 +
+>  3 files changed, 27 insertions(+), 11 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/drm_gem.c b/drivers/gpu/drm/drm_gem.c
+> index bf92d07..6fe2cd2 100644
+> --- a/drivers/gpu/drm/drm_gem.c
+> +++ b/drivers/gpu/drm/drm_gem.c
+> @@ -528,6 +528,10 @@ void drm_gem_vm_open(struct vm_area_struct *vma)
+>  	struct drm_gem_object *obj = vma->vm_private_data;
+>  
+>  	drm_gem_object_reference(obj);
+> +
+> +	mutex_lock(&obj->dev->struct_mutex);
+> +	drm_vm_open_locked(vma);
+> +	mutex_unlock(&obj->dev->struct_mutex);
+>  }
+>  EXPORT_SYMBOL(drm_gem_vm_open);
+>  
+> @@ -535,7 +539,10 @@ void drm_gem_vm_close(struct vm_area_struct *vma)
+>  {
+>  	struct drm_gem_object *obj = vma->vm_private_data;
+>  
+> -	drm_gem_object_unreference_unlocked(obj);
+> +	mutex_lock(&obj->dev->struct_mutex);
+> +	drm_vm_close_locked(vma);
+> +	drm_gem_object_unreference(obj);
+> +	mutex_unlock(&obj->dev->struct_mutex);
+>  }
+>  EXPORT_SYMBOL(drm_gem_vm_close);
+>  
+> diff --git a/drivers/gpu/drm/drm_vm.c b/drivers/gpu/drm/drm_vm.c
+> index fda6746..5df4506 100644
+> --- a/drivers/gpu/drm/drm_vm.c
+> +++ b/drivers/gpu/drm/drm_vm.c
+> @@ -433,15 +433,7 @@ static void drm_vm_open(struct vm_area_struct *vma)
+>  	mutex_unlock(&dev->struct_mutex);
+>  }
+>  
+> -/**
+> - * \c close method for all virtual memory types.
+> - *
+> - * \param vma virtual memory area.
+> - *
+> - * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
+> - * free it.
+> - */
+> -static void drm_vm_close(struct vm_area_struct *vma)
+> +void drm_vm_close_locked(struct vm_area_struct *vma)
+>  {
+>  	struct drm_file *priv = vma->vm_file->private_data;
+>  	struct drm_device *dev = priv->minor->dev;
+> @@ -451,7 +443,6 @@ static void drm_vm_close(struct vm_area_struct *vma)
+>  		  vma->vm_start, vma->vm_end - vma->vm_start);
+>  	atomic_dec(&dev->vma_count);
+>  
+> -	mutex_lock(&dev->struct_mutex);
+>  	list_for_each_entry_safe(pt, temp, &dev->vmalist, head) {
+>  		if (pt->vma == vma) {
+>  			list_del(&pt->head);
+> @@ -459,6 +450,23 @@ static void drm_vm_close(struct vm_area_struct *vma)
+>  			break;
+>  		}
+>  	}
+> +}
+> +
+> +/**
+> + * \c close method for all virtual memory types.
+> + *
+> + * \param vma virtual memory area.
+> + *
+> + * Search the \p vma private data entry in drm_device::vmalist, unlink it, and
+> + * free it.
+> + */
+> +static void drm_vm_close(struct vm_area_struct *vma)
+> +{
+> +	struct drm_file *priv = vma->vm_file->private_data;
+> +	struct drm_device *dev = priv->minor->dev;
+> +
+> +	mutex_lock(&dev->struct_mutex);
+> +	drm_vm_close_locked(vma);
+>  	mutex_unlock(&dev->struct_mutex);
+>  }
+>  
+> diff --git a/include/drm/drmP.h b/include/drm/drmP.h
+> index 7809d23..774e1d4 100644
+> --- a/include/drm/drmP.h
+> +++ b/include/drm/drmP.h
+> @@ -1175,6 +1175,7 @@ extern int drm_release(struct inode *inode, struct file *filp);
+>  extern int drm_mmap(struct file *filp, struct vm_area_struct *vma);
+>  extern int drm_mmap_locked(struct file *filp, struct vm_area_struct *vma);
+>  extern void drm_vm_open_locked(struct vm_area_struct *vma);
+> +extern void drm_vm_close_locked(struct vm_area_struct *vma);
+>  extern resource_size_t drm_core_get_map_ofs(struct drm_local_map * map);
+>  extern resource_size_t drm_core_get_reg_ofs(struct drm_device *dev);
+>  extern unsigned int drm_poll(struct file *filp, struct poll_table_struct *wait);
 
