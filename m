@@ -1,103 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756433Ab0JDPpO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 11:45:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:46419 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751581Ab0JDPpN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 11:45:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=QZ4St5YMZmzNT0HfFLFiRQ8sekhNC1T6I3Zxcs57NHdpup9OpU+xTwRlxRzDXlxWo
-	51clsgqamaODfmcrblYZQ==
-From: Greg Thelen <gthelen@google.com>
-To: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-4-git-send-email-gthelen@google.com>
-	<4CA9DB3E.6020106@linux.vnet.ibm.com>
-Date: Mon, 04 Oct 2010 08:43:46 -0700
-In-Reply-To: <4CA9DB3E.6020106@linux.vnet.ibm.com> (Ciju Rajan K.'s message of
-	"Mon, 04 Oct 2010 19:18:46 +0530")
-Message-ID: <xr93y6ae2cb1.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1756450Ab0JDPqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 11:46:21 -0400
+Received: from smtp.nokia.com ([147.243.1.47]:46115 "EHLO mgw-sa01.nokia.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756336Ab0JDPqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 11:46:20 -0400
+Date: Mon, 4 Oct 2010 18:35:46 +0300
+From: David Cohen <david.cohen@nokia.com>
+To: "ext Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: David Cohen <dacohen@gmail.com>,
+        "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
+        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
+        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and end check for
+ the last area
+Message-ID: <20101004153546.GA16610@esdhcp036161.research.nokia.com>
+References: <1285902536-7043-2-git-send-email-x0095840@ti.com>
+ <1285902536-7043-3-git-send-email-x0095840@ti.com>
+ <20101001105711.GA11617@esdhcp036161.research.nokia.com>
+ <496565EC904933469F292DDA3F1663E602F46544F9@dlee06.ent.ti.com>
+ <20101001175327.GA13657@esdhcp036161.research.nokia.com>
+ <496565EC904933469F292DDA3F1663E602F465461A@dlee06.ent.ti.com>
+ <20101002074944.GB14377@esdhcp036161.research.nokia.com>
+ <496565EC904933469F292DDA3F1663E602F3E074E3@dlee06.ent.ti.com>
+ <AANLkTin1p=WqRQvoXvtcVrhEUx5wK8R_bDwUOE+-sD2M@mail.gmail.com>
+ <496565EC904933469F292DDA3F1663E602F471BB0C@dlee06.ent.ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <496565EC904933469F292DDA3F1663E602F471BB0C@dlee06.ent.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ciju Rajan K <ciju@linux.vnet.ibm.com> writes:
+On Mon, Oct 04, 2010 at 05:37:04PM +0200, ext Guzman Lugo, Fernando wrote:
+>  
+> 
+> > -----Original Message-----
+> > From: David Cohen [mailto:dacohen@gmail.com] 
+> > Sent: Monday, October 04, 2010 7:11 AM
+> > To: Guzman Lugo, Fernando
+> > Cc: David Cohen; Doyu Hiroshi (Nokia-MS/Espoo); Contreras 
+> > Felipe (Nokia-MS/Helsinki); Palande Ameya 
+> > (Nokia-MS/Helsinki); linux-kernel@vger.kernel.org; 
+> > andy.shevchenko@gmail.com; linux-omap@vger.kernel.org
+> > Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and 
+> > end check for the last area
+> > 
+> > Hi,
+> > 
+> > I have no access to my @nokia.com e-mail at this moment, so 
+> > I'm replying using my personal one.
+> > 
+> > On Mon, Oct 4, 2010 at 6:17 AM, Guzman Lugo, Fernando 
+> > <fernando.lugo@ti.com> wrote:
+> > >
+> > >> On Fri, Oct 01, 2010 at 09:21:36PM +0200, ext Guzman Lugo, 
+> > Fernando wrote:
+> > >> >
+> > >> > > On Fri, Oct 01, 2010 at 06:10:30PM +0200, ext Guzman Lugo, 
+> > >> > > Fernando wrote:
+> > >> > > >
+> > >> > >
+> > >> > > [snip]
+> > >> > >
+> > >> > > > > >  arch/arm/plat-omap/iovmm.c |    6 +++---
+> > >> > > > > >  1 files changed, 3 insertions(+), 3 deletions(-)
+> > >> > > > > >
+> > >> > > > > > diff --git a/arch/arm/plat-omap/iovmm.c
+> > >> > > > > b/arch/arm/plat-omap/iovmm.c
+> > >> > > > > > index 24ca9c4..fc6b109 100644
+> > >> > > > > > --- a/arch/arm/plat-omap/iovmm.c
+> > >> > > > > > +++ b/arch/arm/plat-omap/iovmm.c
+> > >> > > > > > @@ -289,19 +289,19 @@ static struct iovm_struct
+> > >> > > > > *alloc_iovm_area(struct iommu *obj, u32 da,
+> > >> > > > > >       prev_end = 0;
+> > >> > > > > >       list_for_each_entry(tmp, &obj->mmap, list) {
+> > >> > > > > >
+> > >> > > > > > -             if (prev_end >= start)
+> > >> > > > > > +             if (prev_end > start)
+> > >> > > > > >                       break;
+> > >> > > > > >
+> > >> > > > > >               if (start + bytes <= tmp->da_start)
+> > >> > > > > >                       goto found;
+> > >> > > > > >
+> > >> > > > > >               if (flags & IOVMF_DA_ANON)
+> > >> > > > > > -                     start = roundup(tmp->da_end +
+> > >> > > 1, alignement);
+> > >> > > > > > +                     start = roundup(tmp->da_end,
+> > >> > > alignement);
+> > >> > > > >
+> > >> > > > > There's a lack of comment here, but the purpose of
+> > >> > > > > tmp->da_end + 1 is to create a gap between iovm areas to
+> > >> > > > > force to trigger iommu faults when some access exceeds a
+> > >> > > valid area.
+> > >> > > > > Without this gap, such situation may produce data
+> > >> > > corruption which
+> > >> > > > > is much more difficult to track.
+> > >> > > >
+> > >> > > > That only works when you are accessing sequencially beyond
+> > >> > > the End of
+> > >> > > > the vm_area. However if you are accessing a random address
+> > >> > > Which is in
+> > >> > > > the mmu tables you still can corrupt memory which does Not
+> > >> > > belong to
+> > >> > > > you. That looks not very effective then why waste Memory?
+> > >> > >
+> > >> > > The main intention is to detect sequential access 
+> > beyond the end 
+> > >> > > of the vm area and it is effective for that purpose.
+> > >> > > i.e., OMAP3 ISP has a hw issue which makes its H3A submodule, 
+> > >> > > responsible to produce statistics data for the 
+> > captured image, to 
+> > >> > > write more data than it should. The workaround 
+> > described in the 
+> > >> > > errata wasn't enough to avoid error conditions, so a different 
+> > >> > > approach was implemented. This gap did help me to make 
+> > sure the 
+> > >> > > new workaround is valid and no data corruption was occurring 
+> > >> > > anymore.
+> > >> > > Anyway, I can't see why memory is being wasted.
+> > >> > >
+> > >> >
+> > >> > I was taking about vitual memory waste (maybe not so important).
+> > >> > Is ok for me then keep the gap. Do other changes look 
+> > good to You?
+> > >>
+> > >> Do you mean in this patch?
+> > >> All changes make sense only if you're removing the gap, except for 
+> > >> the fix below.
+> > >
+> > > The thing is, the dspbridge needs to map some register in 
+> > order to DSP 
+> > > can read and configure some of them. We need to map some pages with 
+> > > fix addresses and to do that I use iommu_kmap. So when some of that 
+> > > pages are contiguous I get his error:
+> > >
+> > > "%s: no space to fit %08x(%x) flags: %08x\n"
+> > >
+> > > Which is not true. The page to page perfectly fix, but the 
+> > check with 
+> > > 1 byte more avoid that it could be mapped and I am getting 
+> > the error.
+> > >
+> > > I am not agree with the gap, but I am ok when it is not 
+> > fixed address 
+> > > as below code
+> > >
+> > > if (flags & IOVMF_DA_ANON)
+> > >        start = roundup(tmp->da_end + 1, alignement);
+> > >
+> > > But it is breaking the tidspbridge when the gap is used for 
+> > fixed addresses.
+> > >
+> > > It should not fail when we want to map a page what is freed 
+> > just because of the gap.
+> > > Please let me know what you thing.
+> > 
+> > I got your point. I agree the gap shouldn't be forced for fixed da.
+> > IMO you can apply this change when !(flags & IOVMF_DA_ANON).
+> 
+> As for not fixed address it always travers the list from the
+> Beginning. The only change need to revert in my patch is when
+> We roundup. That means keeping:
+> 
+> if (flags & IOVMF_DA_ANON)
+>         start = roundup(tmp->da_end + 1, alignement);
+> 
+> Is enough to create the gap for not fixed address. I will
+> Update the patch and send them again.
 
-> Greg Thelen wrote:
->> Replace usage of the mem_cgroup_update_file_mapped() memcg
->> statistic update routine with two new routines:
->> * mem_cgroup_inc_page_stat()
->> * mem_cgroup_dec_page_stat()
->>
->> As before, only the file_mapped statistic is managed.  However,
->> these more general interfaces allow for new statistics to be
->> more easily added.  New statistics are added with memcg dirty
->> page accounting.
->>
->>
->>
->> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> index 512cb12..f4259f4 100644
->> --- a/mm/memcontrol.c
->> +++ b/mm/memcontrol.c
->> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
->>   * possibility of race condition. If there is, we take a lock.
->>   */
->>
->>   -static void mem_cgroup_update_file_stat(struct page *page, int idx, int
->> val)
->>   
-> Not seeing this function in mmotm 28/09. So not able to apply this patch.
-> Am I missing anything?
+Sounds fine for me. Please, update the patch and I'll ack it.
 
-How are you getting mmotm?
+Br,
 
-I see the mem_cgroup_update_file_stat() routine added in mmotm
-(stamp-2010-09-28-16-13) using patch file:
-  http://userweb.kernel.org/~akpm/mmotm/broken-out/memcg-generic-filestat-update-interface.patch
+David
 
-  Author: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-  Date:   Tue Sep 28 21:48:19 2010 -0700
-  
-      This patch extracts the core logic from mem_cgroup_update_file_mapped() as
-      mem_cgroup_update_file_stat() and adds a wrapper.
-  
-      As a planned future update, memory cgroup has to count dirty pages to
-      implement dirty_ratio/limit.  And more, the number of dirty pages is
-      required to kick flusher thread to start writeback.  (Now, no kick.)
-  
-      This patch is preparation for it and makes other statistics implementation
-      clearer.  Just a clean up.
-  
-      Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-      Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-      Reviewed-by: Greg Thelen <gthelen@google.com>
-      Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-      Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-If you are using the zen mmotm repository,
-git://zen-kernel.org/kernel/mmotm.git, the commit id of
-memcg-generic-filestat-update-interface.patch is
-616960dc0cb0172a5e5adc9e2b83e668e1255b50.
-
->> +void mem_cgroup_update_page_stat(struct page *page,
->> +				 enum mem_cgroup_write_page_stat_item idx,
->> +				 int val)
->>  {
->>  	struct mem_cgroup *mem;
->>
->>   
+> 
+> Thanks,
+> Fernando.
+> 
+> > 
+> > Regards,
+> > 
+> > David
+> > 
+> > >
+> > > Thanks,
+> > > Fernando.
+> > >
+> > >>
+> > >> [snip]
+> > >>
+> > >> > > > > >
+> > >> > > > > >               prev_end = tmp->da_end;
+> > >> > > > > >       }
+> > >> > > > > >
+> > >> > > > > > -     if ((start > prev_end) && (ULONG_MAX - start >= 
+> > >> > > > > > bytes))
+> > >> > > > > > +     if ((start >= prev_end) && (ULONG_MAX - start +
+> > >> > > 1 >= bytes))
+> > >>
+> > >> This fix is partially valid. The correct change must be only:
+> > >> -       if ((start > prev_end) && (ULONG_MAX - start >= bytes))
+> > >> +       if ((start > prev_end) && (ULONG_MAX - start + 1 >= bytes))
+> > >>
+> > >> Otherwise you wouldn't guarantee the gap for fixed da.
+> > >>
+> > >> Br,
+> > >>
+> > >> David
+> > > --
+> > > To unsubscribe from this list: send the line "unsubscribe 
+> > linux-omap" 
+> > > in the body of a message to majordomo@vger.kernel.org More 
+> > majordomo 
+> > > info at  http://vger.kernel.org/majordomo-info.html
+> > >
+> > 
