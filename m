@@ -1,57 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab0JDP6s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 11:58:48 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42133 "EHLO mx1.suse.de"
+	id S932072Ab0JDP7D (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 11:59:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15129 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756552Ab0JDP6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 11:58:46 -0400
-Date: Mon, 4 Oct 2010 17:57:52 +0200
-From: Jan Kara <jack@suse.cz>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] jbd: Remove unnecessary goto statement
-Message-ID: <20101004155752.GA11422@quack.suse.cz>
-References: <1286205239-2662-1-git-send-email-namhyung@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286205239-2662-1-git-send-email-namhyung@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756444Ab0JDP5E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 11:57:04 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: [PATCH v6 10/12] Handle async PF in non preemptable context
+Date: Mon,  4 Oct 2010 17:56:32 +0200
+Message-Id: <1286207794-16120-11-git-send-email-gleb@redhat.com>
+In-Reply-To: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 05-10-10 00:13:59, Namhyung Kim wrote:
-> Remove goto statement which jumps to very next line. Also remove
-> target label because it is no longer used anywhere.
-  Thanks. Merged into my tree.
+If async page fault is received by idle task or when preemp_count is
+not zero guest cannot reschedule, so do sti; hlt and wait for page to be
+ready. vcpu can still process interrupts while it waits for the page to
+be ready.
 
-								Honza
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  fs/jbd/transaction.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/jbd/transaction.c b/fs/jbd/transaction.c
-> index 5ae71e7..981449c 100644
-> --- a/fs/jbd/transaction.c
-> +++ b/fs/jbd/transaction.c
-> @@ -293,9 +293,7 @@ handle_t *journal_start(journal_t *journal, int nblocks)
->  		jbd_free_handle(handle);
->  		current->journal_info = NULL;
->  		handle = ERR_PTR(err);
-> -		goto out;
->  	}
-> -out:
->  	return handle;
->  }
->  
-> -- 
-> 1.7.0.4
-> 
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+ arch/x86/kernel/kvm.c |   40 ++++++++++++++++++++++++++++++++++------
+ 1 files changed, 34 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 36fb3e4..f73946f 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -37,6 +37,7 @@
+ #include <asm/cpu.h>
+ #include <asm/traps.h>
+ #include <asm/desc.h>
++#include <asm/tlbflush.h>
+ 
+ #define MMU_QUEUE_SIZE 1024
+ 
+@@ -78,6 +79,8 @@ struct kvm_task_sleep_node {
+ 	wait_queue_head_t wq;
+ 	u32 token;
+ 	int cpu;
++	bool halted;
++	struct mm_struct *mm;
+ };
+ 
+ static struct kvm_task_sleep_head {
+@@ -106,6 +109,11 @@ void kvm_async_pf_task_wait(u32 token)
+ 	struct kvm_task_sleep_head *b = &async_pf_sleepers[key];
+ 	struct kvm_task_sleep_node n, *e;
+ 	DEFINE_WAIT(wait);
++	int cpu, idle;
++
++	cpu = get_cpu();
++	idle = idle_cpu(cpu);
++	put_cpu();
+ 
+ 	spin_lock(&b->lock);
+ 	e = _find_apf_task(b, token);
+@@ -119,19 +127,33 @@ void kvm_async_pf_task_wait(u32 token)
+ 
+ 	n.token = token;
+ 	n.cpu = smp_processor_id();
++	n.mm = current->active_mm;
++	n.halted = idle || preempt_count() > 1;
++	atomic_inc(&n.mm->mm_count);
+ 	init_waitqueue_head(&n.wq);
+ 	hlist_add_head(&n.link, &b->list);
+ 	spin_unlock(&b->lock);
+ 
+ 	for (;;) {
+-		prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
++		if (!n.halted)
++			prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
+ 		if (hlist_unhashed(&n.link))
+ 			break;
+-		local_irq_enable();
+-		schedule();
+-		local_irq_disable();
++
++		if (!n.halted) {
++			local_irq_enable();
++			schedule();
++			local_irq_disable();
++		} else {
++			/*
++			 * We cannot reschedule. So halt.
++			 */
++			native_safe_halt();
++			local_irq_disable();
++		}
+ 	}
+-	finish_wait(&n.wq, &wait);
++	if (!n.halted)
++		finish_wait(&n.wq, &wait);
+ 
+ 	return;
+ }
+@@ -140,7 +162,12 @@ EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
+ static void apf_task_wake_one(struct kvm_task_sleep_node *n)
+ {
+ 	hlist_del_init(&n->link);
+-	if (waitqueue_active(&n->wq))
++	if (!n->mm)
++		return;
++	mmdrop(n->mm);
++	if (n->halted)
++		smp_send_reschedule(n->cpu);
++	else if (waitqueue_active(&n->wq))
+ 		wake_up(&n->wq);
+ }
+ 
+@@ -193,6 +220,7 @@ again:
+ 		}
+ 		n->token = token;
+ 		n->cpu = smp_processor_id();
++		n->mm = NULL;
+ 		init_waitqueue_head(&n->wq);
+ 		hlist_add_head(&n->link, &b->list);
+ 	} else
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.1
+
