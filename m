@@ -1,73 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab0JDKsJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 06:48:09 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:42738 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab0JDKsH (ORCPT
+	id S1755090Ab0JDKuD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 06:50:03 -0400
+Received: from mga11.intel.com ([192.55.52.93]:40958 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754677Ab0JDKuB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 06:48:07 -0400
-Message-ID: <4CA9B07D.8080202@ru.mvista.com>
-Date: Mon, 04 Oct 2010 14:46:21 +0400
-From: Sergei Shtylyov <sshtylyov@mvista.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	Mon, 4 Oct 2010 06:50:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,277,1283756400"; 
+   d="scan'208";a="613061048"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@linux.intel.com>,
+        "K V, Ramesh B" <ramesh.b.k.v@intel.com>,
+        Yong Wang <yong.y.wang@linux.intel.com>
+Date: Mon, 4 Oct 2010 16:18:36 +0530
+Subject: [PATCH 0/6] intel_mid_dma updates
+Thread-Topic: [PATCH 0/6] intel_mid_dma updates
+Thread-Index: ActjsbI+Z1n8MTC0QJaqnZSyot3PCw==
+Message-ID: <438BB0150E931F4B9CE701519A44630104B74BDBBC@bgsmsx502.gar.corp.intel.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Rahul Ruikar <rahul.ruikar@gmail.com>
-CC: David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Dan Carpenter <error27@gmail.com>,
-        nm127@freemail.hu, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: gadget: goku_udc: Fix error path
-References: <1286115016-2759-1-git-send-email-rahul.ruikar@gmail.com>
-In-Reply-To: <1286115016-2759-1-git-send-email-rahul.ruikar@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Hi Dan,
 
-On 03-10-2010 18:10, Rahul Ruikar wrote:
+Please find attached 6 patches for intel_mid_dma driver, below gives brief 
+summary of each patch
 
-> call put_device() when device_register() fails.
+1/6: This adds runtime PM support in dma driver, this also adds the driver PCI 
+suspend and resume
 
-> Signed-off-by: Rahul Ruikar<rahul.ruikar@gmail.com>
-[...]
-> diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
-> index 1088d08..080779b 100644
-> --- a/drivers/usb/gadget/goku_udc.c
-> +++ b/drivers/usb/gadget/goku_udc.c
-> @@ -1847,8 +1847,13 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
->   	/* done */
->   	the_controller = dev;
->   	retval = device_register(&dev->gadget.dev);
-> -	if (retval == 0)
-> +	if (retval != 0) {
-> +		dev_reg_status = 2;
-> +		goto done;
-> +	} else {
-> +		dev_reg_status = 1;
+2/6 & 3/6: These two patches are from Yong Wang: These enable the irq to be 
+Shared which is required on some platforms.
 
-    Did you mean 'dev->dev_reg_status'?
+4/6: This adds sg list support in dma driver. This is enabled for only two of 4 
+devices it supports due to hw support (rest of the two controller don't support 
+this in hardware)
+In order to support a circular link list approach which we use in our devices, 
+we have added a flag DMA_PREP_CIRCULAR_LIST in dma driver header file.
+If you agree to this we can move it to dmaengine header file, currently this 
+patch adds this in driver header. I will send a new patch for that.
 
->   		return 0;
-> +	}
->
->   done:
->   	if (dev)
-> diff --git a/drivers/usb/gadget/goku_udc.h b/drivers/usb/gadget/goku_udc.h
-> index 566cb23..c27b9e2 100644
-> --- a/drivers/usb/gadget/goku_udc.h
-> +++ b/drivers/usb/gadget/goku_udc.h
-> @@ -251,7 +251,8 @@ struct goku_udc {
->   					got_region:1,
->   					req_config:1,
->   					configured:1,
-> -					enabled:1;
-> +					enabled:1,
-> +					dev_reg_status:2;
+5/6: This is in WARN_ON fix you had request last time
 
-    I don't see where this new field is read in your patch...
+6/6: Last patch moves the new driver to dma_slave_config structure, as agreed 
+upon when you accepted last patchset
 
-WBR, Sergei
+Thanks
+Vinod Koul
+Intel Corp.
