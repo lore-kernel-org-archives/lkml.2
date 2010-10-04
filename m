@@ -1,231 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756600Ab0JDQJn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 12:09:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48812 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756552Ab0JDQJk (ORCPT
+	id S1756134Ab0JDQNe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 12:13:34 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60183 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab0JDQNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 12:09:40 -0400
+	Mon, 4 Oct 2010 12:13:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=GkuBfI04cP69XEgPL/jDqd19UejUHPhbbOr3NOH4xxg70acq5iFe46z1cY/uSCoiNL
-         L3e26iA6The/M98phff2aLptaetQyUIr8anJS2sKW6UruqrNCHoPWd9XhMc0OkY1n+Ia
-         Wd8Rt0wgJvH4jsmalPVph+YI1ZDbI4JsVjGpk=
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>
-Cc: Greg KH <greg@kroah.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Hiroshi Doyu <hiroshi.doyu@nokia.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [PATCH 2/2] staging: tidspbridge: use omap_dsp_platform_data
-Date: Mon,  4 Oct 2010 19:09:15 +0300
-Message-Id: <1286208555-8829-3-git-send-email-felipe.contreras@gmail.com>
-X-Mailer: git-send-email 1.7.3.1.2.g7fe2b
-In-Reply-To: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
-References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QcodzvhhoMVTxGXVu9jXNrt0ZrSFX+FMmk+SQZ4XSC2VMOGCBXvRAtiJLwAYko3AOV
+         Tjqedt1hvxOw2jkvONRg+aXxjmOknUIXksASMGldqbOTJB8lmd9HryvfqxhbowyEg+du
+         0XyrcZ/8gyIaSqG50WCszy7hOYWfD86mba0/Y=
+Date: Mon, 4 Oct 2010 09:13:20 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: linux-pm@lists.linux-foundation.org, pingc@wacom.com,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+Message-ID: <20101004161320.GA14180@core.coreip.homeip.net>
+References: <4C8E180D.4020309@suse.cz>
+ <201009132120.23372.oliver@neukum.org>
+ <20100914005209.GB27540@core.coreip.homeip.net>
+ <201009140807.39977.oliver@neukum.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009140807.39977.oliver@neukum.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
----
- drivers/staging/tidspbridge/core/tiomap3430.c      |   14 ++++++++------
- drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |   14 ++++++++------
- drivers/staging/tidspbridge/core/tiomap_io.c       |    4 +++-
- .../tidspbridge/include/dspbridge/host_os.h        |   19 -------------------
- drivers/staging/tidspbridge/rmgr/drv_interface.c   |   10 ++++++----
- 5 files changed, 25 insertions(+), 36 deletions(-)
+On Tue, Sep 14, 2010 at 08:07:39AM +0200, Oliver Neukum wrote:
+> Am Dienstag, 14. September 2010, 02:52:10 schrieb Dmitry Torokhov:
+> > On Mon, Sep 13, 2010 at 09:20:23PM +0200, Oliver Neukum wrote:
+> > > Am Montag, 13. September 2010, 19:10:47 schrieb Dmitry Torokhov:
+> > > 
+> > > > I think this introduces significant change in behavior though - before
+> > > > we did not do usb_autopm_put_interface() on successful open, basically
+> > > > disabling autopm facilities, right?
+> > > 
+> > > Right. Which makes no sense at all. You'd better remove anything related
+> > > to runtime PM and not set supports_autosuspend for that.
+> > > 
+> > 
+> > That not what I meant, I do not want to remove autopm, it's just it was
+> > effectively disabled and if we fix it we might start getting some
+> > regression reports ;)
+> 
+> True. So currently we have
+> 
+> - a deadlock
+> - disabled runtime power management
+> 
+> We need to fix the deadlock. We can fix it retaining a disabled
+> runtime power management. Or we can fix it fixing the runtime
+> power management at the same time. However this opens
+> the door to regressions. So for now I really suggest removing
+> it from the driver and reintroduce it properly for the next merge
+> window.
+> 
 
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index f914829..5aefc95 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -16,6 +16,8 @@
-  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-  */
- 
-+#include <plat/dsp.h>
-+
- #include <linux/types.h>
- /*  ----------------------------------- Host OS */
- #include <dspbridge/host_os.h>
-@@ -264,8 +266,8 @@ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt)
- {
- 	struct bridge_dev_context *dev_context = dev_ctxt;
- 	u32 temp;
--	struct dspbridge_platform_data *pdata =
--				    omap_dspbridge_dev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata =
-+		omap_dspbridge_dev->dev.platform_data;
- 
- 	temp = (*pdata->dsp_prm_read)(OMAP3430_IVA2_MOD, OMAP2_PM_PWSTST) &
- 					OMAP_POWERSTATEST_MASK;
-@@ -374,8 +376,8 @@ static int bridge_brd_start(struct bridge_dev_context *dev_ctxt,
- 	u32 clk_cmd;
- 	struct io_mgr *hio_mgr;
- 	u32 ul_load_monitor_timer;
--	struct dspbridge_platform_data *pdata =
--				omap_dspbridge_dev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata =
-+		omap_dspbridge_dev->dev.platform_data;
- 
- 	/* The device context contains all the mmu setup info from when the
- 	 * last dsp base image was loaded. The first entry is always
-@@ -627,8 +629,8 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_ctxt)
- 	struct pg_table_attrs *pt_attrs;
- 	u32 dsp_pwr_state;
- 	int clk_status;
--	struct dspbridge_platform_data *pdata =
--				omap_dspbridge_dev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata =
-+		omap_dspbridge_dev->dev.platform_data;
- 
- 	if (dev_context->dw_brd_state == BRD_STOPPED)
- 		return status;
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-index b789f8f..1bea23f 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-@@ -16,6 +16,8 @@
-  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-  */
- 
-+#include <plat/dsp.h>
-+
- /*  ----------------------------------- DSP/BIOS Bridge */
- #include <dspbridge/dbdefs.h>
- #include <dspbridge/cfg.h>
-@@ -54,8 +56,8 @@ int handle_constraints_set(struct bridge_dev_context *dev_context,
- {
- #ifdef CONFIG_TIDSPBRIDGE_DVFS
- 	u32 *constraint_val;
--	struct dspbridge_platform_data *pdata =
--	    omap_dspbridge_dev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata =
-+		omap_dspbridge_dev->dev.platform_data;
- 
- 	constraint_val = (u32 *) (pargs);
- 	/* Read the target value requested by DSP */
-@@ -83,8 +85,8 @@ int handle_hibernation_from_dsp(struct bridge_dev_context *dev_context)
- 	u32 opplevel;
- 	struct io_mgr *hio_mgr;
- #endif
--	struct dspbridge_platform_data *pdata =
--	    omap_dspbridge_dev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata =
-+		omap_dspbridge_dev->dev.platform_data;
- 
- 	pwr_state = (*pdata->dsp_prm_read)(OMAP3430_IVA2_MOD, OMAP2_PM_PWSTST) &
- 						OMAP_POWERSTATEST_MASK;
-@@ -152,8 +154,8 @@ int sleep_dsp(struct bridge_dev_context *dev_context, u32 dw_cmd,
- #endif /* CONFIG_TIDSPBRIDGE_NTFY_PWRERR */
- 	u16 timeout = PWRSTST_TIMEOUT / 10;
- 	u32 pwr_state, target_pwr_state;
--	struct dspbridge_platform_data *pdata =
--				omap_dspbridge_dev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata =
-+		omap_dspbridge_dev->dev.platform_data;
- 
- 	/* Check if sleep code is valid */
- 	if ((dw_cmd != PWR_DEEPSLEEP) && (dw_cmd != PWR_EMERGENCYDEEPSLEEP))
-diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
-index 190c028..2a3cd45 100644
---- a/drivers/staging/tidspbridge/core/tiomap_io.c
-+++ b/drivers/staging/tidspbridge/core/tiomap_io.c
-@@ -16,6 +16,8 @@
-  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-  */
- 
-+#include <plat/dsp.h>
-+
- /*  ----------------------------------- DSP/BIOS Bridge */
- #include <dspbridge/dbdefs.h>
- 
-@@ -388,7 +390,7 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
- #ifdef CONFIG_TIDSPBRIDGE_DVFS
- 	u32 opplevel = 0;
- #endif
--	struct dspbridge_platform_data *pdata =
-+	struct omap_dsp_platform_data *pdata =
- 		omap_dspbridge_dev->dev.platform_data;
- 	struct cfg_hostres *resources = dev_context->resources;
- 	int status = 0;
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/host_os.h b/drivers/staging/tidspbridge/include/dspbridge/host_os.h
-index 6b4feb4..6549898 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/host_os.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/host_os.h
-@@ -52,25 +52,6 @@
- /* TODO -- Remove, once BP defines them */
- #define INT_DSP_MMU_IRQ        28
- 
--struct dspbridge_platform_data {
--	void (*dsp_set_min_opp) (u8 opp_id);
--	 u8(*dsp_get_opp) (void);
--	void (*cpu_set_freq) (unsigned long f);
--	unsigned long (*cpu_get_freq) (void);
--	unsigned long mpu_speed[6];
--
--	/* functions to write and read PRCM registers */
--	void (*dsp_prm_write)(u32, s16 , u16);
--	u32 (*dsp_prm_read)(s16 , u16);
--	u32 (*dsp_prm_rmw_bits)(u32, u32, s16, s16);
--	void (*dsp_cm_write)(u32, s16 , u16);
--	u32 (*dsp_cm_read)(s16 , u16);
--	u32 (*dsp_cm_rmw_bits)(u32, u32, s16, s16);
--
--	u32 phys_mempool_base;
--	u32 phys_mempool_size;
--};
--
- #define PRCM_VDD1 1
- 
- extern struct platform_device *omap_dspbridge_dev;
-diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-index 7ee8949..b5b3a08 100644
---- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
-@@ -18,6 +18,8 @@
- 
- /*  ----------------------------------- Host OS */
- 
-+#include <plat/dsp.h>
-+
- #include <dspbridge/host_os.h>
- #include <linux/types.h>
- #include <linux/platform_device.h>
-@@ -171,7 +173,7 @@ const struct omap_opp vdd1_rate_table_bridge[] = {
- #endif
- #endif
- 
--struct dspbridge_platform_data *omap_dspbridge_pdata;
-+struct omap_dsp_platform_data *omap_dspbridge_pdata;
- 
- u32 vdd1_dsp_freq[6][4] = {
- 	{0, 0, 0, 0},
-@@ -218,8 +220,8 @@ void bridge_recover_schedule(void)
- static int dspbridge_scale_notification(struct notifier_block *op,
- 		unsigned long val, void *ptr)
- {
--	struct dspbridge_platform_data *pdata =
--					omap_dspbridge_dev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata =
-+		omap_dspbridge_dev->dev.platform_data;
- 
- 	if (CPUFREQ_POSTCHANGE == val && pdata->dsp_get_opp)
- 		pwr_pm_post_scale(PRCM_VDD1, pdata->dsp_get_opp());
-@@ -242,7 +244,7 @@ static struct notifier_block iva_clk_notifier = {
-  */
- static int omap3_bridge_startup(struct platform_device *pdev)
- {
--	struct dspbridge_platform_data *pdata = pdev->dev.platform_data;
-+	struct omap_dsp_platform_data *pdata = pdev->dev.platform_data;
- 	struct drv_data *drv_datap = NULL;
- 	u32 phys_membase, phys_memsize;
- 	int err;
+Lost track of this issue for a while. So I think we still need to fix
+the deadlock for .36 and I think that the following will do that. Then
+we'll adjust the driver to actually enable runtime PM for .37.
+
+Thanks.
+
 -- 
-1.7.3.1.2.g7fe2b
+Dmitry
 
+Input: wacom - fix runtime PM related deadlock
+
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+When runtime PM is enabled by default for input devices, X hangs in
+wacom open:
+[<ffffffff814a00ea>] mutex_lock+0x1a/0x40
+[<ffffffffa02bc94b>] wacom_resume+0x3b/0x90 [wacom]
+[<ffffffff81327a32>] usb_resume_interface+0xd2/0x190
+[<ffffffff81327b5d>] usb_resume_both+0x6d/0x110
+[<ffffffff81327c24>] usb_runtime_resume+0x24/0x40
+[<ffffffff8130a2cf>] __pm_runtime_resume+0x26f/0x450
+[<ffffffff8130a23a>] __pm_runtime_resume+0x1da/0x450
+[<ffffffff8130a53a>] pm_runtime_resume+0x2a/0x50
+[<ffffffff81328176>] usb_autopm_get_interface+0x26/0x60
+[<ffffffffa02bc626>] wacom_open+0x36/0x90 [wacom]
+
+wacom_open() takes wacom->lock and calls usb_autopm_get_interface(),
+which in turn calls wacom_resume() which tries to acquire the lock
+again.
+
+The fix is to call usb_autopm_get_interface() first, before we take
+the lock.
+
+Since we do not do usb_autopm_put_interface() until wacom_close()
+is called runtime PM is effectively disabled for the driver, however
+changing it now would risk regressions so the complete fix will
+have to wait till the next merge window.
+
+Reported-by: Jiri Slaby <jslaby@suse.cz>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ drivers/input/tablet/wacom_sys.c |   23 ++++++++++++-----------
+ 1 files changed, 12 insertions(+), 11 deletions(-)
+
+
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 1e3af29..02de653 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -103,27 +103,26 @@ static void wacom_sys_irq(struct urb *urb)
+ static int wacom_open(struct input_dev *dev)
+ {
+ 	struct wacom *wacom = input_get_drvdata(dev);
++	int retval = 0;
+ 
+-	mutex_lock(&wacom->lock);
+-
+-	wacom->irq->dev = wacom->usbdev;
+-
+-	if (usb_autopm_get_interface(wacom->intf) < 0) {
+-		mutex_unlock(&wacom->lock);
++	if (usb_autopm_get_interface(wacom->intf) < 0)
+ 		return -EIO;
+-	}
++
++	mutex_lock(&wacom->lock);
+ 
+ 	if (usb_submit_urb(wacom->irq, GFP_KERNEL)) {
+-		usb_autopm_put_interface(wacom->intf);
+-		mutex_unlock(&wacom->lock);
+-		return -EIO;
++		retval = -EIO;
++		goto out;
+ 	}
+ 
+ 	wacom->open = true;
+ 	wacom->intf->needs_remote_wakeup = 1;
+ 
++out:
+ 	mutex_unlock(&wacom->lock);
+-	return 0;
++	if (retval)
++		usb_autopm_put_interface(wacom->intf);
++	return retval;
+ }
+ 
+ static void wacom_close(struct input_dev *dev)
+@@ -135,6 +134,8 @@ static void wacom_close(struct input_dev *dev)
+ 	wacom->open = false;
+ 	wacom->intf->needs_remote_wakeup = 0;
+ 	mutex_unlock(&wacom->lock);
++
++	usb_autopm_put_interface(wacom->intf);
+ }
+ 
+ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hid_desc,
