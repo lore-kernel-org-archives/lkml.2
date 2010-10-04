@@ -1,146 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757136Ab0JDUab (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 16:30:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53353 "EHLO hera.kernel.org"
+	id S1757217Ab0JDUbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 16:31:03 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43802 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756947Ab0JDUa3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 16:30:29 -0400
-Date: Mon, 4 Oct 2010 20:29:58 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100927121841.742126604@linutronix.de>
-References: <20100927121841.742126604@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:irq/core] genirq: Provide advanced irq chip functions
-Message-ID: <tip-f8822657e799b02c55556c99a601261e207a299d@git.kernel.org>
-Git-Commit-ID: f8822657e799b02c55556c99a601261e207a299d
-X-Mailer: tip-git-log-daemon
+	id S1756334Ab0JDUbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 16:31:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [linux-pm] [PATCH 0/2] PM: Wakeup sources and async suspend error path bug fix
+Date: Mon, 4 Oct 2010 22:30:04 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+References: <201009201957.40995.rjw@sisk.pl> <201010040104.09789.rjw@sisk.pl> <20101004032903.GC4439@gvim.org>
+In-Reply-To: <20101004032903.GC4439@gvim.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 04 Oct 2010 20:29:58 +0000 (UTC)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010042230.04579.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f8822657e799b02c55556c99a601261e207a299d
-Gitweb:     http://git.kernel.org/tip/f8822657e799b02c55556c99a601261e207a299d
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Mon, 27 Sep 2010 12:44:32 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Mon, 4 Oct 2010 12:43:32 +0200
+On Monday, October 04, 2010, mark gross wrote:
+> On Mon, Oct 04, 2010 at 01:04:09AM +0200, Rafael J. Wysocki wrote:
+> > On Monday, October 04, 2010, mark gross wrote:
+> > > On Mon, Sep 20, 2010 at 07:57:40PM +0200, Rafael J. Wysocki wrote:
+> > > > Hi,
+> > > > 
+> > > > The following two patches are ready to go into linux-next from my point of
+> > > > view, so please let me know if there are any objections:
+> > > > 
+> > > > [1/2] - PM / Wakeup: Introduce wakeup source objects and event statistics (v3)
+> > > > 
+> > > > [2/2] - PM: Fix potential issue with failing asynchronous suspend
+> > > > 
+> > > > Thanks,
+> > > > Rafael
+> > > 
+> > > Sorry for the late response but, what user feed back will this provide
+> > > to the OS stack looking to put the system in a low power state?
+> > > 
+> > > There are 2 cases I can think of:
+> > > 1) system wakes from an event that user mode needs to handle (i.e. key
+> > > press or phone ring or alarm events)
+> > > 2) system wakes (or more likely, is blocked from suspending) by a
+> > > kernel critical section, say if USB-OTG is connected.
+> > > 
+> > > When wake's are of the type 1, then the power manager service could
+> > > simply wait for a user mode wake lock be taken and released from the
+> > > usermode before re-attempting to suspend.
+> > > 
+> > > When the wakes are of type 2, a power manager service thread would need
+> > > to do a select on a system file and be woken up to re-try the suspend
+> > > after the suspend-blocking is no longer needed.
+> > 
+> > IMO it is more convenient to implement that in a different way, but
+> > generally I think you're right.
+> > 
+> > > Do you think I should cobble together an android PM driver that plugs
+> > > into your code to expose an ABI for the 2 cases listed above?
+> > 
+> > Well, I'm not sure if I understand correctly, can you elaborate a bit, please?
+> 
+> Well, before I saw your patch I was thinking about implementing an
+> Android PM driver that would request a pm_qos active request that would
+> be notified and interface with your wake event code.  It would also
+> expose a misc /dev/susped_blocked node that would be signaled when the
+> pm_qos active request went to zero.
+> 
+> Now I'm sort of making things up as I go but, some sort of non-poling
+> mechanism to re-attempt the suspend, for type 2, is needed but I'm not
+> sure where to put it now.
 
-genirq: Provide advanced irq chip functions
+There always will be some kind of "polling" involved, because some operations
+will have to be retried, but that should still be fine as long as the power
+manager puts itself to sleep whenever it sees that suspend is "blocked".
 
-The low level irq chip functions want access to irq_desc->irq_data.
-Provide new functions which hand down irq_data instead of the irq
-number so these functions avoid to call irq_to_desc() which is a radix
-tree lookup in case of sparse irq.
+Reading from /sys/power/wakeup_count blocks until events_in_progress is zero
+and there should be some IPC between the power manager and the user space
+tasks allowed to "block suspend" that will put the power manager to sleep
+until it's OK to try suspending.
 
-This provides all the old functions except one: end(). end() is a
-relict of __do_IRQ() and will just go away with the __do_IRQ() code.
+> Also, we may want to think about registering events that user mode will
+> handle, and all others are treated as type 2 events.
+> 
+> 
+> > > Also, with this do we want to revisit a pm_qos class for "active"
+> > > systems?  Or do you think thats redundant now?
+> > 
+> > I don't really think the pm_qos for "active" systems is really necessary at
+> > this point.
+> >
+> 
+> I'm still studying the patch but, you are likely right.  I need to look
+> at how much overhead changing the suspend blocking/unblocking is
+> handled.  I expect that some drivers will be hitting it on hot code
+> paths.
 
-The replacement for set_affinity() has an extra argument "bool
-force". The reason for this is to notify the low level code, that the
-move has to be done right away and cannot be delayed until the next
-interrupt happens. That's necessary to handle the irq fixup on cpu
-unplug in the generic code.
+That involves taking two spinlocks that shouldn't be contended for
+(one in struct  dev_pm_info and one in struct wakeup_source) and one (for
+blocking) or two (for unblocking) atomic variables.   For unblocking there
+also is a spinlock to take in del_timer() if the timer is pending, but that
+only happens if there's a timeout.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-LKML-Reference: <20100927121841.742126604@linutronix.de>
-Reviewed-by: H. Peter Anvin <hpa@zytor.com>
-Reviewed-by: Ingo Molnar <mingo@elte.hu>
----
- include/linux/irq.h |   66 ++++++++++++++++++++++++++++++++++++++------------
- 1 files changed, 50 insertions(+), 16 deletions(-)
-
-diff --git a/include/linux/irq.h b/include/linux/irq.h
-index 002351d..0c83cbd 100644
---- a/include/linux/irq.h
-+++ b/include/linux/irq.h
-@@ -118,23 +118,38 @@ struct irq_data {
-  * struct irq_chip - hardware interrupt chip descriptor
-  *
-  * @name:		name for /proc/interrupts
-- * @startup:		start up the interrupt (defaults to ->enable if NULL)
-- * @shutdown:		shut down the interrupt (defaults to ->disable if NULL)
-- * @enable:		enable the interrupt (defaults to chip->unmask if NULL)
-- * @disable:		disable the interrupt
-- * @ack:		start of a new interrupt
-- * @mask:		mask an interrupt source
-- * @mask_ack:		ack and mask an interrupt source
-- * @unmask:		unmask an interrupt source
-- * @eoi:		end of interrupt - chip level
-- * @end:		end of interrupt - flow level
-- * @set_affinity:	set the CPU affinity on SMP machines
-- * @retrigger:		resend an IRQ to the CPU
-- * @set_type:		set the flow type (IRQ_TYPE_LEVEL/etc.) of an IRQ
-- * @set_wake:		enable/disable power-management wake-on of an IRQ
-+ * @startup:		deprecated, replaced by irq_startup
-+ * @shutdown:		deprecated, replaced by irq_shutdown
-+ * @enable:		deprecated, replaced by irq_enable
-+ * @disable:		deprecated, replaced by irq_disable
-+ * @ack:		deprecated, replaced by irq_ack
-+ * @mask:		deprecated, replaced by irq_mask
-+ * @mask_ack:		deprecated, replaced by irq_mask_ack
-+ * @unmask:		deprecated, replaced by irq_unmask
-+ * @eoi:		deprecated, replaced by irq_eoi
-+ * @end:		deprecated, will go away with __do_IRQ()
-+ * @set_affinity:	deprecated, replaced by irq_set_affinity
-+ * @retrigger:		deprecated, replaced by irq_retrigger
-+ * @set_type:		deprecated, replaced by irq_set_type
-+ * @set_wake:		deprecated, replaced by irq_wake
-+ * @bus_lock:		deprecated, replaced by irq_bus_lock
-+ * @bus_sync_unlock:	deprecated, replaced by irq_bus_sync_unlock
-  *
-- * @bus_lock:		function to lock access to slow bus (i2c) chips
-- * @bus_sync_unlock:	function to sync and unlock slow bus (i2c) chips
-+ * @irq_startup:	start up the interrupt (defaults to ->enable if NULL)
-+ * @irq_shutdown:	shut down the interrupt (defaults to ->disable if NULL)
-+ * @irq_enable:		enable the interrupt (defaults to chip->unmask if NULL)
-+ * @irq_disable:	disable the interrupt
-+ * @irq_ack:		start of a new interrupt
-+ * @irq_mask:		mask an interrupt source
-+ * @irq_mask_ack:	ack and mask an interrupt source
-+ * @irq_unmask:		unmask an interrupt source
-+ * @irq_eoi:		end of interrupt
-+ * @irq_set_affinity:	set the CPU affinity on SMP machines
-+ * @irq_retrigger:	resend an IRQ to the CPU
-+ * @irq_set_type:	set the flow type (IRQ_TYPE_LEVEL/etc.) of an IRQ
-+ * @irq_set_wake:	enable/disable power-management wake-on of an IRQ
-+ * @irq_bus_lock:	function to lock access to slow bus (i2c) chips
-+ * @irq_bus_sync_unlock:function to sync and unlock slow bus (i2c) chips
-  *
-  * @release:		release function solely used by UML
-  */
-@@ -161,6 +176,25 @@ struct irq_chip {
- 	void		(*bus_lock)(unsigned int irq);
- 	void		(*bus_sync_unlock)(unsigned int irq);
- 
-+	unsigned int	(*irq_startup)(struct irq_data *data);
-+	void		(*irq_shutdown)(struct irq_data *data);
-+	void		(*irq_enable)(struct irq_data *data);
-+	void		(*irq_disable)(struct irq_data *data);
-+
-+	void		(*irq_ack)(struct irq_data *data);
-+	void		(*irq_mask)(struct irq_data *data);
-+	void		(*irq_mask_ack)(struct irq_data *data);
-+	void		(*irq_unmask)(struct irq_data *data);
-+	void		(*irq_eoi)(struct irq_data *data);
-+
-+	int		(*irq_set_affinity)(struct irq_data *data, const struct cpumask *dest, bool force);
-+	int		(*irq_retrigger)(struct irq_data *data);
-+	int		(*irq_set_type)(struct irq_data *data, unsigned int flow_type);
-+	int		(*irq_set_wake)(struct irq_data *data, unsigned int on);
-+
-+	void		(*irq_bus_lock)(struct irq_data *data);
-+	void		(*irq_bus_sync_unlock)(struct irq_data *data);
-+
- 	/* Currently used only by UML, might disappear one day.*/
- #ifdef CONFIG_IRQ_RELEASE_METHOD
- 	void		(*release)(unsigned int irq, void *dev_id);
+Thanks,
+Rafael
