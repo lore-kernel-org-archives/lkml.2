@@ -1,51 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754289Ab0JDJYy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 05:24:54 -0400
-Received: from www.tglx.de ([62.245.132.106]:37628 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753118Ab0JDJYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 05:24:53 -0400
-Date: Mon, 4 Oct 2010 11:26:26 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Greg KH <greg@kroah.com>, Greg KH <gregkh@suse.de>,
-        "Hans J. Koch" <hjk@linutronix.de>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH 3/5] uio: Remove unused uio_info mmap method.
-Message-ID: <20101004092625.GA1867@silverbox.local>
-References: <20100917205946.GF2522@local>
- <m139t451b4.fsf_-_@fess.ebiederm.org>
- <20100924104555.GC1819@silverbox.local>
- <m1hbhfcbdo.fsf@fess.ebiederm.org>
- <20100924173106.GA4966@silverbox.local>
- <m14ode662q.fsf@fess.ebiederm.org>
- <20100925003308.GA29910@suse.de>
- <m1wrqa4mg5.fsf@fess.ebiederm.org>
- <20100926192142.GA7252@kroah.com>
- <m1tylc86ks.fsf_-_@fess.ebiederm.org>
+	id S1754284Ab0JDJ2V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 05:28:21 -0400
+Received: from mailfe01.swip.net ([212.247.154.1]:51920 "EHLO swip.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753061Ab0JDJ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 05:28:19 -0400
+X-Cloudmark-Score: 0.000000 []
+X-Cloudmark-Analysis: v=1.1 cv=omSrwDgyMf70S47Fr5SNr0rQzcmIOo0IafWlB/wSLLo= c=1 sm=1 a=Dyoqhi_TatcA:10 a=zIh5TbQSvd8A:10 a=Cfj4BQAnxiAA:10 a=6Z7PY8i_cQEA:10 a=nFOYj1EvJoz7QedlNtHkMA==:17 a=kyK1HbDiAeSm2soGT0UA:9 a=smjE4CaIkW28XMnPVhXa6gW4RlIA:4 a=Ft8UYL4EG9YA:10 a=s_fe0DE4VTKAkqQo:21 a=XVNy3gfYUAJzC4Pi:21 a=nFOYj1EvJoz7QedlNtHkMA==:117
+Reply-To: <cmoclaimsdirector_2010@kimo.com>
+From: "Dr R L Bhatia, CEO" <cmopromo@gmail.com>
+Subject: WINNING NOTIFICATION
+Date: Mon, 4 Oct 2010 17:28:05 +0800
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1tylc86ks.fsf_-_@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 1
+X-MSMail-Priority: High
+X-Mailer: Microsoft Outlook Express 6.00.2800.1081
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1081
+Message-ID: <auto-000030852582@mailfe01.swip.net>
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Sep 26, 2010 at 03:48:19PM -0700, Eric W. Biederman wrote:
-> 
-> There are no drivers in the kernel that implement the uio_info mmap
-> method there is no point in keeping it.
-> 
-> Further keeping the mmap method would necessiate wrapping all of the
-> methods in vm_operations_struct to successfully implement suppport
-> for hotunplugable hardware, and it I have yet to find a correct way to
-> wrap the the vm_operations_struct close method.
-
-I have no objections, but please update Documentation/DocBook/uio-howto.tmpl
-accordingly.
-
-Thanks,
-Hans
-
+2010 WINNING NOTIFICATION OF $1.1 MILLION USD CMO AWARD
