@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756725Ab0JDWqW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:46:22 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44122 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751672Ab0JDWqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:46:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH v5] power: introduce library for device-specific OPPs
-Date: Tue, 5 Oct 2010 00:45:27 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: "linux-pm" <linux-pm@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
-        "linux-omap" <linux-omap@vger.kernel.org>,
-        Paul <paulmck@linux.vnet.ibm.com>,
-        Kevin H <khilman@deeprootsystems.com>
-References: <1285933174-24053-1-git-send-email-nm@ti.com> <201010050036.23179.rjw@sisk.pl>
-In-Reply-To: <201010050036.23179.rjw@sisk.pl>
+	id S1757214Ab0JDWsc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:48:32 -0400
+Received: from newpeace.netnation.com ([204.174.223.7]:52170 "EHLO
+	peace.netnation.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751558Ab0JDWsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:48:31 -0400
+Date: Mon, 4 Oct 2010 15:48:30 -0700
+From: Simon Kirby <sim@hostway.ca>
+To: linux-kernel@vger.kernel.org, xfs@oss.sgi.com
+Subject: 2.6.35.6 XFS: Inconsistent lock state
+Message-ID: <20101004224830.GJ30524@hostway.ca>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010050045.27969.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 05, 2010, Rafael J. Wysocki wrote:
-> On Friday, October 01, 2010, Nishanth Menon wrote:
-...
-> > +int opp_init_cpufreq_table(struct device *dev,
-> > +			    struct cpufreq_frequency_table **table)
-> > +{
-> > +	struct device_opp *dev_opp;
-> > +	struct opp *opp;
-> > +	struct cpufreq_frequency_table *freq_table;
-> > +	int i = 0;
-> > +
-> > +	rcu_read_lock();
-> 
-> I would pretend I'm an updater here and acquire dev_opp_list_lock instead.
-> 
-> > +	dev_opp = find_device_opp(dev);
-> > +	if (IS_ERR(dev_opp)) {
-> > +		rcu_read_unlock();
-> 
-> So that won't be necessary.
+Out of the blue, while running postfix+mailscanner:
 
-Or rather the lock will have to be dropped here instead.
+=================================
+[ INFO: inconsistent lock state ]
+2.6.35.6-hw #1
+---------------------------------
+inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+MailScanner/28712 [HC0[0]:SC0[0]:HE1:SE1] takes:
+ (&(&ip->i_iolock)->mr_lock#2){++++?+}, at: [<ffffffff8129de35>] xfs_ilock+0xf5/0x100
+{RECLAIM_FS-ON-W} state was registered at:
+  [<ffffffff81083694>] mark_held_locks+0x74/0xa0
+  [<ffffffff810837a5>] lockdep_trace_alloc+0xe5/0xf0
+  [<ffffffff810cfc77>] __alloc_pages_nodemask+0x77/0x6d0
+  [<ffffffff810c97a5>] grab_cache_page_write_begin+0x85/0xd0
+  [<ffffffff8112bd4a>] block_write_begin_newtrunc+0x8a/0xe0
+  [<ffffffff8112c16e>] block_write_begin+0x3e/0x80
+  [<ffffffff812c18a5>] xfs_vm_write_begin+0x25/0x30
+  [<ffffffff810c8436>] generic_file_buffered_write+0x106/0x230
+  [<ffffffff812c6d62>] xfs_file_aio_write+0x842/0x8c0
+  [<ffffffff81100c91>] do_sync_write+0xd1/0x120
+  [<ffffffff8110182b>] vfs_write+0xcb/0x1a0
+  [<ffffffff811019f0>] sys_write+0x50/0x90
+  [<ffffffff81009f82>] system_call_fastpath+0x16/0x1b
+irq event stamp: 34471
+hardirqs last  enabled at (34471): [<ffffffff81697d8f>] _raw_spin_unlock_irqrestore+0x3f/0x70
+hardirqs last disabled at (34470): [<ffffffff816974cd>] _raw_spin_lock_irqsave+0x2d/0x90
+softirqs last  enabled at (34314): [<ffffffff810585ff>] __do_softirq+0x19f/0x1f0
+softirqs last disabled at (34309): [<ffffffff8100ae9c>] call_softirq+0x1c/0x30
 
-> > +		pr_warning("Unable to find device\n");
-> > +		return PTR_ERR(dev_opp);
-> > +	}
-> > +
+other info that might help us debug this:
+2 locks held by MailScanner/28712:
+ #0:  (&mm->mmap_sem){++++++}, at: [<ffffffff8169b8c7>] do_page_fault+0xe7/0x430
+ #1:  (shrinker_rwsem){++++..}, at: [<ffffffff810d67d8>] shrink_slab+0x38/0x180
 
-Thanks,
-Rafael
+stack backtrace:
+Pid: 28712, comm: MailScanner Not tainted 2.6.35.6-hw #1
+Call Trace:
+ [<ffffffff81082f00>] print_usage_bug+0x190/0x1f0
+ [<ffffffff81083410>] mark_lock+0x4b0/0x6c0
+ [<ffffffff81083e50>] ? check_usage_forwards+0x0/0x120
+ [<ffffffff8108520d>] __lock_acquire+0x89d/0x1e20
+ [<ffffffff810112f0>] ? native_sched_clock+0x20/0x80
+ [<ffffffff81370819>] ? radix_tree_delete+0x1c9/0x2e0
+ [<ffffffff81086879>] lock_acquire+0xe9/0x120
+ [<ffffffff8129de35>] ? xfs_ilock+0xf5/0x100
+ [<ffffffff810811fd>] ? trace_hardirqs_off+0xd/0x10
+ [<ffffffff81074792>] down_write_nested+0x42/0x90
+ [<ffffffff8129de35>] ? xfs_ilock+0xf5/0x100
+ [<ffffffff8129de35>] xfs_ilock+0xf5/0x100
+ [<ffffffff8129e038>] xfs_ireclaim+0xa8/0xe0
+ [<ffffffff812cd14f>] xfs_reclaim_inode+0x18f/0x260
+ [<ffffffff812cdf54>] xfs_inode_ag_walk+0x74/0x140
+ [<ffffffff812ccfc0>] ? xfs_reclaim_inode+0x0/0x260
+ [<ffffffff812ce0a0>] xfs_inode_ag_iterator+0x80/0xd0
+ [<ffffffff812ccfc0>] ? xfs_reclaim_inode+0x0/0x260
+ [<ffffffff812ce175>] xfs_reclaim_inode_shrink+0x85/0x90
+ [<ffffffff810d68c5>] shrink_slab+0x125/0x180
+ [<ffffffff810d759e>] try_to_free_pages+0x23e/0x480
+ [<ffffffff810cffdb>] __alloc_pages_nodemask+0x3db/0x6d0
+ [<ffffffff810e219e>] do_wp_page+0x1ae/0x7f0
+ [<ffffffff810e40de>] handle_mm_fault+0x5be/0x840
+ [<ffffffff8169b8c7>] ? do_page_fault+0xe7/0x430
+ [<ffffffff8169b9cb>] do_page_fault+0x1eb/0x430
+ [<ffffffff81697d3b>] ? _raw_spin_unlock_irq+0x2b/0x40
+ [<ffffffff810489f4>] ? finish_task_switch+0x74/0xf0
+ [<ffffffff81048980>] ? finish_task_switch+0x0/0xf0
+ [<ffffffff81694388>] ? schedule+0x4c8/0x820
+ [<ffffffff816970e1>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+ [<ffffffff816983b5>] page_fault+0x25/0x30
+
+Simon-
