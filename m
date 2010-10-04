@@ -1,84 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab0JDXeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 19:34:08 -0400
-Received: from mail.perches.com ([173.55.12.10]:2647 "EHLO mail.perches.com"
+	id S1756833Ab0JDXkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 19:40:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46702 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757409Ab0JDXeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 19:34:07 -0400
-Subject: Re: [PATCH] serial8250: ratelimit "too much work" error
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Drake <dsd@laptop.org>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@kroah.com>
-In-Reply-To: <20101004161139.2a988b85.akpm@linux-foundation.org>
-References: <20101002110438.801F49D401B@zog.reactivated.net>
-	 <20101004145101.b28fdc0a.akpm@linux-foundation.org>
-	 <20101004150238.fbc1b6cf.akpm@linux-foundation.org>
-	 <1286230259.10512.81.camel@Joe-Laptop>
-	 <20101004152102.1e04f30a.akpm@linux-foundation.org>
-	 <1286233169.10512.85.camel@Joe-Laptop>
-	 <20101004161139.2a988b85.akpm@linux-foundation.org>
+	id S1751024Ab0JDXkf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 19:40:35 -0400
+Subject: Re: [PATCH v2 1/1] nouveau: ratelimit IRQ messages
+From: Ben Skeggs <bskeggs@redhat.com>
+Reply-To: bskeggs@redhat.com
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: airlied@redhat.com, linux-kernel@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, jirislaby@gmail.com
+In-Reply-To: <1286197890-23227-1-git-send-email-jslaby@suse.cz>
+References: <1286197890-23227-1-git-send-email-jslaby@suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Oct 2010 16:34:05 -0700
-Message-ID: <1286235245.10512.91.camel@Joe-Laptop>
+Date: Tue, 05 Oct 2010 09:40:06 +1000
+Message-ID: <1286235606.3660.4.camel@nisroch>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-04 at 16:11 -0700, Andrew Morton wrote:
-> On Mon, 04 Oct 2010 15:59:29 -0700
-> Joe Perches <joe@perches.com> wrote:
-> > On Mon, 2010-10-04 at 15:21 -0700, Andrew Morton wrote:
-> > > On Mon, 04 Oct 2010 15:10:59 -0700
-> > > Joe Perches <joe@perches.com> wrote:
-> > > > On Mon, 2010-10-04 at 15:02 -0700, Andrew Morton wrote:
-> > > > > On Mon, 4 Oct 2010 14:51:01 -0700
-> > > > > Andrew Morton <akpm@linux-foundation.org> wrote:
-> > > > > I'll give up and pronounce that users of printk_ratelimited() need to
-> > > > > include ratelimit.h as well.
-> > > > What I suggested several months ago was to move the
-> > > > macro definitions to ratelimit.h
-> > > > http://lkml.org/lkml/2010/2/18/377
-> > > That's a bit nasty because at present ratelimit.h is purely about
-> > > ratelimiting and knowns nothing about any of its clients.  At present
-> > > it has only one client (printk), but it could have more in the future!
-> > 
-> > Look at the structure, it's very specific to
-> > message logging functionality.
-> > 
-> > struct ratelimit_state {
-> > 	spinlock_t	lock;		/* protect the state */
-> > 
-> > 	int		interval;
-> > 	int		burst;
-> > 	int		printed;
-> > 	int		missed;
-> > 	unsigned long	begin;
-> > };
-> 
-> s/printed/hit/there,fixed
-> 
-> This is at present a quite general facility.
-> 
-> > I think it's likely that the current ratelimit
-> > will not be used for any other function.
-> 
-> Filling it up with printk-specific stuff will help ensure that.
+On Mon, 2010-10-04 at 15:11 +0200, Jiri Slaby wrote:
+> There are two messages in the ISR of nouveau which might be printed out
+> hundred times in a second. Ratelimit them. (We need to move
+> nouveau_ratelimit to the top of the file.)
+Looks good to me.  If you could rebase this on nouveau git
+(git.freedesktop.org/git/nouveau/linux-2.6), I'll push it.
 
-Interval too because it is in seconds and likely
-should be in timespec or jiffies.
-
-For what other facility could you see ratelimit_state
-be used for?
-
-Putting the printk specific uses in the .h file
-would make sure that the users of ratelimit use
-the proper file and reduce the #include dependencies.
-
+Thanks,
+Ben.
+> 
+> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+> Cc: Ben Skeggs <bskeggs@redhat.com>
+> Cc: Marcin Slusarz <marcin.slusarz@gmail.com>
+> ---
+>  drivers/gpu/drm/nouveau/nouveau_irq.c |   23 +++++++++++++----------
+>  1 files changed, 13 insertions(+), 10 deletions(-)
+> 
+> diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
+> index 794b0ee..5b097b4 100644
+> --- a/drivers/gpu/drm/nouveau/nouveau_irq.c
+> +++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
+> @@ -41,6 +41,13 @@
+>  #include "nouveau_connector.h"
+>  #include "nv50_display.h"
+>  
+> +static DEFINE_RATELIMIT_STATE(nouveau_ratelimit_state, 3 * HZ, 20);
+> +
+> +static int nouveau_ratelimit(void)
+> +{
+> +	return __ratelimit(&nouveau_ratelimit_state);
+> +}
+> +
+>  void
+>  nouveau_irq_preinstall(struct drm_device *dev)
+>  {
+> @@ -200,7 +207,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
+>  		}
+>  
+>  		if (status & NV_PFIFO_INTR_DMA_PUSHER) {
+> -			NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n", chid);
+> +			if (nouveau_ratelimit())
+> +				NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d\n",
+> +						chid);
+>  
+>  			status &= ~NV_PFIFO_INTR_DMA_PUSHER;
+>  			nv_wr32(dev, NV03_PFIFO_INTR_0,
+> @@ -227,8 +236,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
+>  		}
+>  
+>  		if (status) {
+> -			NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
+> -				status, chid);
+> +			if (nouveau_ratelimit())
+> +				NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
+> +					status, chid);
+>  			nv_wr32(dev, NV03_PFIFO_INTR_0, status);
+>  			status = 0;
+>  		}
+> @@ -505,13 +515,6 @@ nouveau_pgraph_intr_notify(struct drm_device *dev, uint32_t nsource)
+>  		nouveau_graph_dump_trap_info(dev, "PGRAPH_NOTIFY", &trap);
+>  }
+>  
+> -static DEFINE_RATELIMIT_STATE(nouveau_ratelimit_state, 3 * HZ, 20);
+> -
+> -static int nouveau_ratelimit(void)
+> -{
+> -	return __ratelimit(&nouveau_ratelimit_state);
+> -}
+> -
+>  
+>  static inline void
+>  nouveau_pgraph_intr_error(struct drm_device *dev, uint32_t nsource)
 
 
