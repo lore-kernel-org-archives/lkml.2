@@ -1,109 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755984Ab0JDWn7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:43:59 -0400
-Received: from www.tglx.de ([62.245.132.106]:40289 "EHLO www.tglx.de"
+	id S1756725Ab0JDWqW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:46:22 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44122 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751233Ab0JDWn6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:43:58 -0400
-Date: Tue, 5 Oct 2010 00:43:38 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-cc: LKML <linux-kernel@vger.kernel.org>, Rusty Russell <rusty@rustcorp.com.au>,
-        Kay Sievers <kay.sievers@vrfy.org>, Brandon Philips <brandon@ifup.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
-In-Reply-To: <201010041300.15234.arnd@arndb.de>
-Message-ID: <alpine.LFD.2.00.1010050026170.2556@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6> <201010041300.15234.arnd@arndb.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751672Ab0JDWqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:46:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH v5] power: introduce library for device-specific OPPs
+Date: Tue, 5 Oct 2010 00:45:27 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: "linux-pm" <linux-pm@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "linux-arm" <linux-arm-kernel@lists.infradead.org>,
+        "linux-omap" <linux-omap@vger.kernel.org>,
+        Paul <paulmck@linux.vnet.ibm.com>,
+        Kevin H <khilman@deeprootsystems.com>
+References: <1285933174-24053-1-git-send-email-nm@ti.com> <201010050036.23179.rjw@sisk.pl>
+In-Reply-To: <201010050036.23179.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010050045.27969.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Oct 2010, Arnd Bergmann wrote:
-
-> On Sunday 03 October 2010, Thomas Gleixner wrote:
-> > Current mainline triggers a list corruption bug in
-> > module_bug_finalize(). dmesg excerpt below.
-> > 
-> > The corresponding code says:
-> > 
-> >         /*
-> >          * Strictly speaking this should have a spinlock to protect against
-> >          * traversals, but since we only traverse on BUG()s, a spinlock
-> >          * could potentially lead to deadlock and thus be counter-productive.
-> >          */
-> >         list_add(&mod->bug_list, &module_bug_list);
-> > 
-> > I can see the traversal problem vs. BUG(), but what's protecting the
-> > list_add() ? BKL probably did, but is that true anymore ?
+On Tuesday, October 05, 2010, Rafael J. Wysocki wrote:
+> On Friday, October 01, 2010, Nishanth Menon wrote:
+...
+> > +int opp_init_cpufreq_table(struct device *dev,
+> > +			    struct cpufreq_frequency_table **table)
+> > +{
+> > +	struct device_opp *dev_opp;
+> > +	struct opp *opp;
+> > +	struct cpufreq_frequency_table *freq_table;
+> > +	int i = 0;
+> > +
+> > +	rcu_read_lock();
 > 
-> BKL hasn't been in this code path since before git.
-
-Fair enough. I have to admit that I did not even look. :)
- 
-> I think this relatively recent change caused module_finalize to be
-> called without module_mutex held:
-
-Yeah.
-
-> commit 75676500f8298f0ee89db12db97294883c4b768e
-> Author: Rusty Russell <rusty@rustcorp.com.au>
-> Date:   Sat Jun 5 11:17:36 2010 -0600
+> I would pretend I'm an updater here and acquire dev_opp_list_lock instead.
 > 
->     module: make locking more fine-grained.
->     
->     Kay Sievers <kay.sievers@vrfy.org> reports that we still have some
->     contention over module loading which is slowing boot.
->     
->     Linus also disliked a previous "drop lock and regrab" patch to fix the
->     bne2 "gave up waiting for init of module libcrc32c" message.
->     
->     This is more ambitious: we only grab the lock where we need it.
->     
->     Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
->     Cc: Brandon Philips <brandon@ifup.org>
->     Cc: Kay Sievers <kay.sievers@vrfy.org>
->     Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> > +	dev_opp = find_device_opp(dev);
+> > +	if (IS_ERR(dev_opp)) {
+> > +		rcu_read_unlock();
 > 
-> 	Arnd
+> So that won't be necessary.
 
-The patch below cures it.
+Or rather the lock will have to be dropped here instead.
+
+> > +		pr_warning("Unable to find device\n");
+> > +		return PTR_ERR(dev_opp);
+> > +	}
+> > +
 
 Thanks,
-
-	tglx
-
----->
-diff --git a/lib/bug.c b/lib/bug.c
-index 7cdfad8..40f32d8 100644
---- a/lib/bug.c
-+++ b/lib/bug.c
-@@ -92,18 +92,21 @@ int module_bug_finalize(const Elf_Ehdr *hdr, const Elf_Shdr *sechdrs,
- 	}
- 
- 	/*
--	 * Strictly speaking this should have a spinlock to protect against
--	 * traversals, but since we only traverse on BUG()s, a spinlock
--	 * could potentially lead to deadlock and thus be counter-productive.
-+	 * We need to take module_mutex here to protect the list add, though
-+	 * it won't protect against a concurrent BUG().
- 	 */
-+	mutex_lock(&module_mutex);
- 	list_add(&mod->bug_list, &module_bug_list);
-+	mutex_unlock(&module_mutex);
- 
- 	return 0;
- }
- 
- void module_bug_cleanup(struct module *mod)
- {
-+	mutex_lock(&module_mutex);
- 	list_del(&mod->bug_list);
-+	mutex_unlock(&module_mutex);
- }
- 
- #else
+Rafael
