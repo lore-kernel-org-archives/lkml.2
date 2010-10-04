@@ -1,89 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753058Ab0JDHWS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 03:22:18 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:47971 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752675Ab0JDHWR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 03:22:17 -0400
-Date: Mon, 4 Oct 2010 18:22:13 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Carlos Carvalho <carlos@fisica.ufpr.br>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/17] fs: Inode cache scalability
-Message-ID: <20101004072213.GI4681@dastard>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
- <19623.48074.873182.970865@fisica.ufpr.br>
+	id S1753196Ab0JDH0H (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 03:26:07 -0400
+Received: from mga11.intel.com ([192.55.52.93]:46760 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753012Ab0JDH0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 03:26:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,277,1283756400"; 
+   d="scan'208";a="613008612"
+Date: Mon, 4 Oct 2010 03:26:02 -0400
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: tlinder <tlinder@codeaurora.org>
+Cc: linux-usb@vger.kernel.org,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Robert Lukassen <robert.lukassen@tomtom.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Fabien Chouteau <fabien.chouteau@barco.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the
+ Gadget Framework
+Message-ID: <20101004072602.GB2256@xanatos>
+References: <1286092937-29191-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <19623.48074.873182.970865@fisica.ufpr.br>
+In-Reply-To: <1286092937-29191-1-git-send-email-tlinder@codeaurora.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 08:10:02PM -0300, Carlos Carvalho wrote:
-> We have serious problems with 34.6 in a machine with ~11TiB xfs, with
-> a lot of simultaneous IO, particularly hundreds of rm and a sync
-> afterwards. Maybe they're related to these issues.
-> 
-> The machine is a file server (almost all via http/apache) and has
-> several thousand connections all the time. It behaves quite well for
-> at most 4 days; from then on kswapd's start appearing on the display
-> of top consuming ever increasing percentages of cpu. This is no
-> problem, the machine has 16 nearly idle cores. However, after about
-> 5-7 days there's an abrupt transition: in about 30s the load goes to
-> several thousand, apache shows up consuming all possible cpu and
-> downloads nearly stop. I have to reboot the machine to get service
-> back. It manages to unmount the filesystems and reboot properly.
-> 
-> Stopping/restarting apache restores the situation but only for
-> a short while; after about 2-3h the problem reappears. That's why I
-> have to reboot.
-> 
-> With 35.6 the behaviour seems to have changed: now often
-> CONFIG_DETECT_HUNG_TASK produces this kind of call trace in the log:
-> 
-> [<ffffffff81098578>] ? igrab+0x10/0x30
-> [<ffffffff811160fe>] ? xfs_sync_inode_valid+0x4c/0x76
-> [<ffffffff81116241>] ? xfs_sync_inode_data+0x1b/0xa8
-> [<ffffffff811163e0>] ? xfs_inode_ag_walk+0x96/0xe4
-> [<ffffffff811163dd>] ? xfs_inode_ag_walk+0x93/0xe4
-> [<ffffffff81116226>] ? xfs_sync_inode_data+0x0/0xa8
-> [<ffffffff81116495>] ? xfs_inode_ag_iterator+0x67/0xc4
-> [<ffffffff81116226>] ? xfs_sync_inode_data+0x0/0xa8
-> [<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
-> [<ffffffff81116712>] ? xfs_sync_data+0x22/0x42
-> [<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
-> [<ffffffff8111678b>] ? xfs_quiesce_data+0x2b/0x94
-> [<ffffffff81113f03>] ? xfs_fs_sync_fs+0x2d/0xd7
-> [<ffffffff810a48dd>] ? sync_one_sb+0x0/0x1e
-> [<ffffffff810a48c4>] ? __sync_filesystem+0x62/0x7b
-> [<ffffffff8108993e>] ? iterate_supers+0x60/0x9d
-> [<ffffffff810a493a>] ? sys_sync+0x3f/0x53
-> [<ffffffff81001dab>] ? system_call_fastpath+0x16/0x1b
-> 
-> It doesn't seem to cause service disruption (at least the flux graphs
-> don't show drops). I didn't see it happen while I was watching so it
-> may be that service degrades for short intervals. Uptime with 35.6 is
-> only 3d8h so it's still not sure that the breakdown of 34.6 is gone
-> but kswapd's cpu usages are very small, less than with 34.6 for a
-> similar uptime. There are only 2 filesystems, and the big one has 256
-> AGs. They're not mounted with delaylog.
+Hi Tatyana,
 
-Apply this:
+Comments inline.  I'm not familiar with the gadget framework; I'm just
+curious about some descriptor choices.
 
-http://www.oss.sgi.com/archives/xfs/2010-10/msg00000.html
+On Sun, Oct 03, 2010 at 10:02:15AM +0200, tlinder wrote:
+> diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
+> index c619c80..a5dcfe1 100644
+> --- a/drivers/usb/gadget/composite.c
+> +++ b/drivers/usb/gadget/composite.c
+> @@ -70,6 +70,102 @@ static char *iSerialNumber;
+>  module_param(iSerialNumber, charp, 0);
+>  MODULE_PARM_DESC(iSerialNumber, "SerialNumber string");
+>  
+> +/** Default endpoint companion descriptor */
+> +static struct usb_ss_ep_comp_descriptor ep_comp_desc = {
+> +		.bDescriptorType = USB_DT_SS_ENDPOINT_COMP,
+> +		.bLength = 0x06,
+> +		.bMaxBurst = 0, /*the default is we don't support bursting*/
+> +		.bmAttributes = 0, /*2^0 streams supported*/
+> +		.wBytesPerInterval = 0,
+> +};
 
-And in future, can you please report bugs in a new thread to the
-appropriate lists (xfs@oss.sgi.com), not as a reply to a completely
-unrelated development thread....
+Can you please set wBytesPerInterval to something sane for periodic
+endpoints?  Perhaps have it set to the maximum packet size times the max
+burst size times Mult plus one, or less if the device *knows* it's going
+to send less data.  It's used for xHC host controller scheduling, so
+it's important to get right for maximum bandwidth usage.
 
-Cheers,
+> +/**This function receives a pointer to usb_function and adds
+> + * missing super speed descriptors in the ss_descriptor field
+> + * according to its hs_descriptors field.
+> + *
+> + * In more details: this function copies f->hs_descriptors while
+> + * updating the endpoint descriptor and adding endpoint
+> + * companion descriptor
+> + */
+> +static void create_ss_descriptors(struct usb_function *f)
+> +{
+> +	unsigned bytes; /*number of bytes to allocate*/
+> +	unsigned n_desc;    /* number of descriptors*/
+> +	void *mem; /*allocated memory to copy to*/
+> +	struct usb_descriptor_header **tmp;
+> +	struct usb_endpoint_descriptor	*ep_desc ;
+> +	struct usb_descriptor_header **src = f->hs_descriptors;
+> +
+> +	if (!f->hs_descriptors)
+> +		return;
+> +
+> +	/* Count number of EPs (in order to know how many SS_EP_COMPANION
+> +	   descriptors to add), the total number of descriptors and the sum of
+> +	   each descriptor bLength field in order to know how much memory to
+> +	   allocate*/
+> +	for (bytes = 0, n_desc = 0, tmp = src; *tmp; tmp++, n_desc++) {
+> +		if ((*tmp)->bDescriptorType == USB_DT_ENDPOINT) {
+> +			bytes += ep_comp_desc.bLength;
+> +			n_desc++;
+> +		}
+> +		bytes += (*tmp)->bLength;
+> +	}
+> +
+> +	bytes += (n_desc + 1) * sizeof(*tmp);
+> +	mem = kmalloc(bytes, GFP_KERNEL);
+> +	if (!mem)
+> +		return;
+> +
+> +	/* fill in pointers starting at "tmp",
+> +	 * to descriptors copied starting at "mem";
+> +	 * and return "ret"
+> +	 */
+> +	tmp = mem;
+> +	f->ss_descriptors  = mem;
+> +	mem += (n_desc + 1) * sizeof(*tmp);
+> +	while (*src) {
+> +		/*Copy the original descriptor*/
+> +		memcpy(mem, *src, (*src)->bLength);
+> +		switch ((*src)->bDescriptorType) {
+> +		case USB_DT_ENDPOINT:
+> +			/*update ep descriptor*/
+> +			ep_desc = (struct usb_endpoint_descriptor *)mem;
+> +			switch (ep_desc->bmAttributes &
+> +				USB_ENDPOINT_XFERTYPE_MASK) {
+> +			case USB_ENDPOINT_XFER_CONTROL:
+> +				ep_desc->wMaxPacketSize = 512;
+> +				ep_desc->bInterval = 0;
+> +				break;
+> +			case USB_ENDPOINT_XFER_BULK:
+> +				ep_desc->wMaxPacketSize = 1024;
+> +				ep_desc->bInterval = 0;
+> +				break;
+> +			case USB_ENDPOINT_XFER_INT:
+> +			case USB_ENDPOINT_XFER_ISOC:
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Why are you not setting wMaxPacketSize for periodic endpoints?  Does it
+get set later?  (I can't tell from this snippet.)
+
+> +				break;
+> +			}
+> +			*tmp = mem;
+> +			tmp++;
+> +			mem += (*src)->bLength;
+> +			/*add ep companion descriptor*/
+> +			memcpy(mem, &ep_comp_desc, ep_comp_desc.bLength);
+> +			*tmp = mem;
+> +			tmp++;
+> +			mem += ep_comp_desc.bLength;
+> +			break;
+> +		default:
+> +			*tmp = mem;
+> +			tmp++;
+> +			mem += (*src)->bLength;
+> +			break;
+> +		}
+> +		src++;
+> +	}
+> +	*tmp = NULL; /*The last (struct usb_descriptor_header *) in the
+> +			descriptors vector is NULL*/
+> +	f->ss_desc_allocated = true;
+> +}
+> +
+
+...
+
+> +/**
+> + * bos() - prepares the BOS (Binary Device Object) descriptor
+> + * and its device capabilities descriptors. The bos descriptor
+> + * should be supported by a Superspeed device.
+> + */
+> +static int bos(struct usb_composite_dev *cdev)
+> +{
+> +	struct usb_bos_descriptor	*bos = cdev->req->buf;
+> +	struct usb_ext_cap_descriptor	*usb_ext = NULL;
+> +	struct ss_usb_cap_descriptor	*ss_cap = NULL;
+> +
+> +	bos->bLength = USB_DT_BOS_SIZE;
+> +	bos->bDescriptorType = USB_DT_BOS;
+> +
+> +	bos->wTotalLength = USB_DT_BOS_SIZE;
+> +	bos->bNumDeviceCaps = 0;
+> +
+> +	/* A SuperSpeed device shall include the USB2.0 extension descriptor and
+> +	   shall support LPM when operating in USB2.0 HS mode.*/
+> +	usb_ext = (struct usb_ext_cap_descriptor *)
+> +			(cdev->req->buf+bos->wTotalLength);
+> +	bos->bNumDeviceCaps++;
+> +	bos->wTotalLength += USB_DT_USB_EXT_CAP_SIZE;
+> +	usb_ext->bLength = USB_DT_USB_EXT_CAP_SIZE;
+> +	usb_ext->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
+> +	usb_ext->bDevCapabilityType = USB_CAP_TYPE_EXT;
+> +	usb_ext->bmAttributes = USB_LPM_SUPPORT;
+> +
+> +	/* The Superspeed USB Capability descriptor shall be implemented by all
+> +	   Superspeed devices. */
+> +	ss_cap = (struct ss_usb_cap_descriptor *)
+> +		(cdev->req->buf+bos->wTotalLength);
+> +	bos->bNumDeviceCaps++;
+> +	bos->wTotalLength += USB_DT_SS_USB_CAP_SIZE;
+> +	ss_cap->bLength = USB_DT_SS_USB_CAP_SIZE;
+> +	ss_cap->bDescriptorType = USB_DT_DEVICE_CAPABILITY;
+> +	ss_cap->bDevCapabilityType = SS_USB_CAP_TYPE;
+> +	ss_cap->bmAttributes = 0; /*LTM is not supported yet*/
+> +	ss_cap->wSpeedSupported = USB_LOW_SPEED_OPERATION |
+> +				USB_FULL_SPEED_OPERATION |
+> +				USB_HIGH_SPEED_OPERATION |
+> +				USB_5GBPS_OPERATION;
+
+So this gadget will be able to support all speeds?
+
+> +	ss_cap->bFunctionalitySupport = USB_LOW_SPEED_OPERATION;
+> +	ss_cap->bU1devExitLat = 0;
+> +	ss_cap->bU2DevExitLat = 0;
+
+Are you really sure you want to set the exit latency for low power
+states to less than 1 microsecond?  Without real hardware it would be
+difficult to test, but this seems overly optimistic.
+
+
+> diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
+> index da2ed77..69e528a 100644
+> --- a/include/linux/usb/ch9.h
+> +++ b/include/linux/usb/ch9.h
+
+...
+
+> +/*Container ID Capability descriptor: Defines the instance unique ID used to
+> +  identify the instance across all operating modes*/
+> +#define	CONTAINER_ID_TYPE	4
+> +struct ss_usb_container_id_descriptor {
+> +	__u8  bLength;
+> +	__u8  bDescriptorType;
+> +	__u8  bDevCapabilityType;
+> +	__u8  bReserved;
+> +	__u8  ContainerID[16]; /*128-bit number*/
+> +} __attribute__((packed));
+> +
+> +#define USB_DT_SS_CONTN_ID_SIZE	20
+
+I don't see generation of a container ID in the code.  Are you going to
+implement it?  It's only required for USB 3.0 hubs, and I'm not sure if
+the gadget framework supports hubs.  Nothing else in your code seems to
+use this definition.
+
+Sarah
