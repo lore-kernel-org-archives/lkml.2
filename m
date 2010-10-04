@@ -1,102 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755550Ab0JDLa6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 07:30:58 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:45605 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755222Ab0JDL3g (ORCPT
+	id S1755572Ab0JDLbD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 07:31:03 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:17265 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755222Ab0JDLbA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 07:29:36 -0400
-X-IronPort-AV: E=Sophos;i="4.57,278,1283745600"; 
-   d="scan'208";a="116520285"
-From: stefano.stabellini@eu.citrix.com
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>,
-        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        Juan Quintela <quintela@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v2 05/10] xen: Initialize xenbus for dom0.
-Date: Mon,  4 Oct 2010 12:28:45 +0100
-Message-Id: <1286191730-3188-5-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop>
-References: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop>
-X-OriginalArrivalTime: 04 Oct 2010 11:29:17.0648 (UTC) FILETIME=[61854500:01CB63B7]
+	Mon, 4 Oct 2010 07:31:00 -0400
+Date: Mon, 04 Oct 2010 13:33:06 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH] usb: gadget: file_storage: Fix error path
+In-reply-to: <op.vj1o4pqf7p4s8u@pikus>
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Christoph Hellwig <hch@lst.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Rahul Ruikar <rahul.ruikar@gmail.com>,
+        =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Message-id: <op.vj1udgde7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.62 (Linux)
+References: <1286081717-2757-1-git-send-email-rahul.ruikar@gmail.com>
+ <op.vj1o4pqf7p4s8u@pikus>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Juan Quintela <quintela@redhat.com>
+On Mon, 04 Oct 2010 11:39:51 +0200, Michał Nazarewicz <m.nazarewicz@samsung.com> wrote:
+> The same problem is with f_mass_storage.c.  I'd be nice if you'd resubmit your
+> patch with the below included as well:
 
-Do initial xenbus/xenstore setup in dom0.  In dom0 we need to actually
-allocate the xenstore resources, rather than being given them from
-outside.
+I've noticed that you've send is as a separate file.  Disregard this comment then
+(even though I still think the two might be squashed together).
 
-[ Impact: initialize Xenbus ]
 
-Signed-off-by: Juan Quintela <quintela@redhat.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- drivers/xen/xenbus/xenbus_probe.c |   29 ++++++++++++++++++++++++++++-
- 1 files changed, 28 insertions(+), 1 deletions(-)
+Moreover, disregard my mail, as I was wrong acking.  Alan is of course
+correct.
 
-diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-index 29bac51..df0049e 100644
---- a/drivers/xen/xenbus/xenbus_probe.c
-+++ b/drivers/xen/xenbus/xenbus_probe.c
-@@ -798,6 +798,7 @@ device_initcall(xenbus_probe_initcall);
- static int __init xenbus_init(void)
- {
- 	int err = 0;
-+	unsigned long page = 0;
- 
- 	DPRINTK("");
- 
-@@ -818,7 +819,31 @@ static int __init xenbus_init(void)
- 	 * Domain0 doesn't have a store_evtchn or store_mfn yet.
- 	 */
- 	if (xen_initial_domain()) {
--		/* dom0 not yet supported */
-+		struct evtchn_alloc_unbound alloc_unbound;
-+
-+		/* Allocate Xenstore page */
-+		page = get_zeroed_page(GFP_KERNEL);
-+		if (!page)
-+			goto out_error;
-+
-+		xen_store_mfn = xen_start_info->store_mfn =
-+			pfn_to_mfn(virt_to_phys((void *)page) >>
-+				   PAGE_SHIFT);
-+
-+		/* Next allocate a local port which xenstored can bind to */
-+		alloc_unbound.dom        = DOMID_SELF;
-+		alloc_unbound.remote_dom = 0;
-+
-+		err = HYPERVISOR_event_channel_op(EVTCHNOP_alloc_unbound,
-+						  &alloc_unbound);
-+		if (err == -ENOSYS)
-+			goto out_error;
-+
-+		BUG_ON(err);
-+		xen_store_evtchn = xen_start_info->store_evtchn =
-+			alloc_unbound.port;
-+
-+		xen_store_interface = mfn_to_virt(xen_store_mfn);
- 	} else {
- 		if (xen_hvm_domain()) {
- 			uint64_t v = 0;
-@@ -864,6 +889,8 @@ static int __init xenbus_init(void)
- 	bus_unregister(&xenbus_frontend.bus);
- 
-   out_error:
-+	if (page != 0)
-+		free_page(page);
- 	return err;
- }
- 
 -- 
-1.5.6.5
-
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
