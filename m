@@ -1,52 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756091Ab0JDRds (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 13:33:48 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:60378 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751033Ab0JDRdq (ORCPT
+	id S1756215Ab0JDRfX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 13:35:23 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39456 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755486Ab0JDRfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 13:33:46 -0400
-Date: Mon, 4 Oct 2010 18:33:43 +0100
-From: Andy Whitcroft <apw@canonical.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: overlayfs: BUG in ovl_whiteout
-Message-ID: <20101004173343.GA19733@agent57>
-References: <20101001180702.GD2832@shadowen.org>
- <E1P2hGO-0001kL-Gw@pomaz-ex.szeredi.hu>
+	Mon, 4 Oct 2010 13:35:22 -0400
+Message-ID: <4CAA104C.3000708@linux.vnet.ibm.com>
+Date: Mon, 04 Oct 2010 23:05:08 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1P2hGO-0001kL-Gw@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg Thelen <gthelen@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
+References: <1286175485-30643-1-git-send-email-gthelen@google.com> <1286175485-30643-4-git-send-email-gthelen@google.com> <4CA9DB3E.6020106@linux.vnet.ibm.com> <xr93y6ae2cb1.fsf@ninji.mtv.corp.google.com>
+In-Reply-To: <xr93y6ae2cb1.fsf@ninji.mtv.corp.google.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 11:23:16AM +0200, Miklos Szeredi wrote:
-> On Fri, 1 Oct 2010, Andy Whitcroft wrote:
-> > I have been playing with overlayfs for a bit now and there seems to
-> > be something a little dodgy when unmounting and remounting an overlay.
-> > I modified some files in the overlay, immediatly unmounted the overlay and
-> > again immediatly remounted it.  On touching the same files in the overlay
-> > I triggered the following BUG (dmesg fragment at the bottom of this email).
-> > When trying to reproduce this I also triggered a hard hang.
-> 
-> Thanks for the bug report, Andy.
-> 
-> Please change that BUG_ON to a WARN_ON.  This will make this a
-> harmless error message in the log instead of a hang.
+Greg Thelen wrote:
+> Ciju Rajan K <ciju@linux.vnet.ibm.com> writes:
+>
+>   
+>> Greg Thelen wrote:
+>>     
+>>> Replace usage of the mem_cgroup_update_file_mapped() memcg
+>>> statistic update routine with two new routines:
+>>> * mem_cgroup_inc_page_stat()
+>>> * mem_cgroup_dec_page_stat()
+>>>
+>>> As before, only the file_mapped statistic is managed.  However,
+>>> these more general interfaces allow for new statistics to be
+>>> more easily added.  New statistics are added with memcg dirty
+>>> page accounting.
+>>>
+>>>
+>>>
+>>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>>> index 512cb12..f4259f4 100644
+>>> --- a/mm/memcontrol.c
+>>> +++ b/mm/memcontrol.c
+>>> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
+>>>   * possibility of race condition. If there is, we take a lock.
+>>>   */
+>>>
+>>>   -static void mem_cgroup_update_file_stat(struct page *page, int idx, int
+>>> val)
+>>>   
+>>>       
+>> Not seeing this function in mmotm 28/09. So not able to apply this patch.
+>> Am I missing anything?
+>>     
+>
+> How are you getting mmotm?
+>
+> I see the mem_cgroup_update_file_stat() routine added in mmotm
+> (stamp-2010-09-28-16-13) using patch file:
+>   http://userweb.kernel.org/~akpm/mmotm/broken-out/memcg-generic-filestat-update-interface.patch
+>   
+Sorry for the noise Greg. It was a mistake at my end. Corrected now.
+Thanks!
+>   Author: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>   Date:   Tue Sep 28 21:48:19 2010 -0700
+>   
+>       This patch extracts the core logic from mem_cgroup_update_file_mapped() as
+>       mem_cgroup_update_file_stat() and adds a wrapper.
+>   
+>       As a planned future update, memory cgroup has to count dirty pages to
+>       implement dirty_ratio/limit.  And more, the number of dirty pages is
+>       required to kick flusher thread to start writeback.  (Now, no kick.)
+>   
+>       This patch is preparation for it and makes other statistics implementation
+>       clearer.  Just a clean up.
+>   
+>       Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>       Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+>       Reviewed-by: Greg Thelen <gthelen@google.com>
+>       Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+>       Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>
+> If you are using the zen mmotm repository,
+> git://zen-kernel.org/kernel/mmotm.git, the commit id of
+> memcg-generic-filestat-update-interface.patch is
+> 616960dc0cb0172a5e5adc9e2b83e668e1255b50.
+>
+>   
+>>> +void mem_cgroup_update_page_stat(struct page *page,
+>>> +				 enum mem_cgroup_write_page_stat_item idx,
+>>> +				 int val)
+>>>  {
+>>>  	struct mem_cgroup *mem;
+>>>
+>>>   
+>>>       
 
-Applied your patch to move these to WARN_ON.  Now I get a WARN_ON after
-the remount.  Now that we don't explode I get the following error from
-the triggering command.  I assume that this is the rename which has
-triggered the issue:
-
-W: Failed to fetch http://192.168.0.60:3142/archive.ubuntu.com/ubuntu/dists/maverick/Release rename failed, File exists (/var/lib/apt/lists/192.168.0.60:3142_archive.ubuntu.com_ubuntu_dists_maverick_Release -> /var/lib/apt/lists/192.168.0.60:3142_archive.ubuntu.com_ubuntu_dists_maverick_Release).
-
-I note that the file does indeed exist as a real file in both layers.  I
-have not as yet managed to generate a naive test that also triggers
-this.
-
--apw
