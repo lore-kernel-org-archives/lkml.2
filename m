@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752144Ab0JDVsm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 17:48:42 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:36732 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750978Ab0JDVsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 17:48:41 -0400
-Date: Mon, 4 Oct 2010 23:48:38 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, cpu: Fix X86_FEATURE_NOPL
-Message-ID: <20101004214838.GA26084@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <4CA89681.8000202@zytor.com>
- <20101003152212.GA13233@liondog.tnic>
- <a3fce0e5-e6c5-4bf0-b8c0-4954825a7065@email.android.com>
- <20101003201139.GA16532@liondog.tnic>
- <dc1a5ce2-0414-4f15-9e7b-fcfa4435adb5@email.android.com>
- <20101004073127.GA20305@liondog.tnic>
- <AANLkTikBs5R2KmGfDSXyi5y-cKuZepZCdr0KOVe5-MX6@mail.gmail.com>
- <4CAA4102.3070205@zytor.com>
- <AANLkTimXj+5ixx=xoVYOCmM4+W6CGR1XOi6CHDTZzns0@mail.gmail.com>
- <4CAA455D.8000902@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4CAA455D.8000902@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752662Ab0JDVvn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 17:51:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48604 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751152Ab0JDVvm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 17:51:42 -0400
+Date: Mon, 4 Oct 2010 14:51:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Drake <dsd@laptop.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] serial8250: ratelimit "too much work" error
+Message-Id: <20101004145101.b28fdc0a.akpm@linux-foundation.org>
+In-Reply-To: <20101002110438.801F49D401B@zog.reactivated.net>
+References: <20101002110438.801F49D401B@zog.reactivated.net>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Mon, Oct 04, 2010 at 02:21:33PM -0700
+On Sat,  2 Oct 2010 12:04:38 +0100 (BST)
+Daniel Drake <dsd@laptop.org> wrote:
 
-> On 10/04/2010 02:12 PM, Linus Torvalds wrote:
-> > On Mon, Oct 4, 2010 at 2:02 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> >>
-> >> Actually, cpu_has() depends on:
-> >> #if defined(CONFIG_X86_P6_NOP) || defined(CONFIG_X86_64)
-> > 
-> > Ahh. Right you are. The place that depends on just P6_NOP is the
-> > default NOP choice logic in <asm/nops.h>
-> > 
-> > But the end result ends up being the same: can we please clean this
-> > all up so that it isn't so confusing? Rather than add to the
-> > confusion?
-> > 
+> Running a serial console, if too many kernel messages are generated within
+> a short time causing a lot of serial I/O, the 8250 driver will generate
+> another kernel message reporting this, which just adds to the I/O. It has
+> a cascading effect and quickly results the system being brought to its knees
+> by a flood of "too much work" messages.
 > 
-> Agreed that this should be cleaned up.  However, in the meantime I'd
-> like to keep Borislav's patch in the tree since it makes the code
-> technically correct at least.
+> Ratelimit the error message to avoid this.
+> 
+> Signed-off-by: Daniel Drake <dsd@laptop.org>
+> ---
+>  drivers/serial/8250.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
+> index 24110f6..d3c5855 100644
+> --- a/drivers/serial/8250.c
+> +++ b/drivers/serial/8250.c
+> @@ -1606,8 +1606,9 @@ static irqreturn_t serial8250_interrupt(int irq, void *dev_id)
+>  
+>  		if (l == i->head && pass_counter++ > PASS_LIMIT) {
+>  			/* If we hit this, we're dead. */
+> -			printk(KERN_ERR "serial8250: too much work for "
+> -				"irq%d\n", irq);
+> +			if (printk_ratelimit())
+> +				printk(KERN_ERR "serial8250: too much work for "
+> +					"irq%d\n", irq);
+>  			break;
+>  		}
+>  	} while (l != end);
 
-I think the cleanup should be easy: on 64-bit unconditionally return
-p6_nops in find_nop_table() since every 64-bit processor should support
-them and on 32-bit never return p6_nops since X86_FEATURE_NOPL is not
-set there and fall back to intel_nops on non-AMD. Which means we can get
-rid of X86_FEATURE_NOPL altogether. Too radical?
+printk_ratelimit() shares a common ratelimiting state between all
+callers of printk_ratelimit().  This is pretty sucky because if one
+printk_ratelimit() caller is going crazy then this can cause punishment
+of other unrelated printk_ratelimit() callers who *aren't* going crazy.
 
-Hmmm...
+So it's generally better to use printk_ratelimited(), which will
+ratelimit this printkand no other printk, without affecting other
+printk_ratelimit[ed]() users.
 
--- 
-Regards/Gruss,
-    Boris.
+So, this:
+
+--- a/drivers/serial/8250.c~serial8250-ratelimit-too-much-work-error-fix
++++ a/drivers/serial/8250.c
+@@ -1606,9 +1606,8 @@ static irqreturn_t serial8250_interrupt(
+ 
+ 		if (l == i->head && pass_counter++ > PASS_LIMIT) {
+ 			/* If we hit this, we're dead. */
+-			if (printk_ratelimit())
+-				printk(KERN_ERR "serial8250: too much work for "
+-					"irq%d\n", irq);
++			printk_ratelimited(KERN_ERR
++				"serial8250: too much work for irq%d\n", irq);
+ 			break;
+ 		}
+ 	} while (l != end);
+_
+
+which, interestingly, doesn't compile because someone stuck a
+DEFINE_RATELIMIT_STATE() in include/linux/kernel.h and it ain't defined
+anywhere.  Let me fix that up...
+
