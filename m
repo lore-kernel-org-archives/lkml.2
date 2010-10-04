@@ -1,227 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab0JDPqV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 11:46:21 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:46115 "EHLO mgw-sa01.nokia.com"
+	id S1756472Ab0JDPrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 11:47:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60177 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756336Ab0JDPqU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 11:46:20 -0400
-Date: Mon, 4 Oct 2010 18:35:46 +0300
-From: David Cohen <david.cohen@nokia.com>
-To: "ext Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: David Cohen <dacohen@gmail.com>,
-        "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
-        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and end check for
- the last area
-Message-ID: <20101004153546.GA16610@esdhcp036161.research.nokia.com>
-References: <1285902536-7043-2-git-send-email-x0095840@ti.com>
- <1285902536-7043-3-git-send-email-x0095840@ti.com>
- <20101001105711.GA11617@esdhcp036161.research.nokia.com>
- <496565EC904933469F292DDA3F1663E602F46544F9@dlee06.ent.ti.com>
- <20101001175327.GA13657@esdhcp036161.research.nokia.com>
- <496565EC904933469F292DDA3F1663E602F465461A@dlee06.ent.ti.com>
- <20101002074944.GB14377@esdhcp036161.research.nokia.com>
- <496565EC904933469F292DDA3F1663E602F3E074E3@dlee06.ent.ti.com>
- <AANLkTin1p=WqRQvoXvtcVrhEUx5wK8R_bDwUOE+-sD2M@mail.gmail.com>
- <496565EC904933469F292DDA3F1663E602F471BB0C@dlee06.ent.ti.com>
+	id S1756387Ab0JDPrD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 11:47:03 -0400
+Date: Mon, 4 Oct 2010 11:46:33 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Daniel Drake <dsd@laptop.org>
+Cc: Andres Salomon <dilinger@queued.net>, Chris Ball <cjb@laptop.org>,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, mingo@elte.hu
+Subject: Re: Dynamic nop selection breaks boot on Geode LX
+Message-ID: <20101004154633.GA2900@redhat.com>
+References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <496565EC904933469F292DDA3F1663E602F471BB0C@dlee06.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
+In-Reply-To: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 05:37:04PM +0200, ext Guzman Lugo, Fernando wrote:
->  
+On Sat, Oct 02, 2010 at 08:16:19PM +0100, Daniel Drake wrote:
+> Hi,
 > 
-> > -----Original Message-----
-> > From: David Cohen [mailto:dacohen@gmail.com] 
-> > Sent: Monday, October 04, 2010 7:11 AM
-> > To: Guzman Lugo, Fernando
-> > Cc: David Cohen; Doyu Hiroshi (Nokia-MS/Espoo); Contreras 
-> > Felipe (Nokia-MS/Helsinki); Palande Ameya 
-> > (Nokia-MS/Helsinki); linux-kernel@vger.kernel.org; 
-> > andy.shevchenko@gmail.com; linux-omap@vger.kernel.org
-> > Subject: Re: [PATCH 2/4] iovmm: fix roundup for next area and 
-> > end check for the last area
-> > 
-> > Hi,
-> > 
-> > I have no access to my @nokia.com e-mail at this moment, so 
-> > I'm replying using my personal one.
-> > 
-> > On Mon, Oct 4, 2010 at 6:17 AM, Guzman Lugo, Fernando 
-> > <fernando.lugo@ti.com> wrote:
-> > >
-> > >> On Fri, Oct 01, 2010 at 09:21:36PM +0200, ext Guzman Lugo, 
-> > Fernando wrote:
-> > >> >
-> > >> > > On Fri, Oct 01, 2010 at 06:10:30PM +0200, ext Guzman Lugo, 
-> > >> > > Fernando wrote:
-> > >> > > >
-> > >> > >
-> > >> > > [snip]
-> > >> > >
-> > >> > > > > >  arch/arm/plat-omap/iovmm.c |    6 +++---
-> > >> > > > > >  1 files changed, 3 insertions(+), 3 deletions(-)
-> > >> > > > > >
-> > >> > > > > > diff --git a/arch/arm/plat-omap/iovmm.c
-> > >> > > > > b/arch/arm/plat-omap/iovmm.c
-> > >> > > > > > index 24ca9c4..fc6b109 100644
-> > >> > > > > > --- a/arch/arm/plat-omap/iovmm.c
-> > >> > > > > > +++ b/arch/arm/plat-omap/iovmm.c
-> > >> > > > > > @@ -289,19 +289,19 @@ static struct iovm_struct
-> > >> > > > > *alloc_iovm_area(struct iommu *obj, u32 da,
-> > >> > > > > >       prev_end = 0;
-> > >> > > > > >       list_for_each_entry(tmp, &obj->mmap, list) {
-> > >> > > > > >
-> > >> > > > > > -             if (prev_end >= start)
-> > >> > > > > > +             if (prev_end > start)
-> > >> > > > > >                       break;
-> > >> > > > > >
-> > >> > > > > >               if (start + bytes <= tmp->da_start)
-> > >> > > > > >                       goto found;
-> > >> > > > > >
-> > >> > > > > >               if (flags & IOVMF_DA_ANON)
-> > >> > > > > > -                     start = roundup(tmp->da_end +
-> > >> > > 1, alignement);
-> > >> > > > > > +                     start = roundup(tmp->da_end,
-> > >> > > alignement);
-> > >> > > > >
-> > >> > > > > There's a lack of comment here, but the purpose of
-> > >> > > > > tmp->da_end + 1 is to create a gap between iovm areas to
-> > >> > > > > force to trigger iommu faults when some access exceeds a
-> > >> > > valid area.
-> > >> > > > > Without this gap, such situation may produce data
-> > >> > > corruption which
-> > >> > > > > is much more difficult to track.
-> > >> > > >
-> > >> > > > That only works when you are accessing sequencially beyond
-> > >> > > the End of
-> > >> > > > the vm_area. However if you are accessing a random address
-> > >> > > Which is in
-> > >> > > > the mmu tables you still can corrupt memory which does Not
-> > >> > > belong to
-> > >> > > > you. That looks not very effective then why waste Memory?
-> > >> > >
-> > >> > > The main intention is to detect sequential access 
-> > beyond the end 
-> > >> > > of the vm area and it is effective for that purpose.
-> > >> > > i.e., OMAP3 ISP has a hw issue which makes its H3A submodule, 
-> > >> > > responsible to produce statistics data for the 
-> > captured image, to 
-> > >> > > write more data than it should. The workaround 
-> > described in the 
-> > >> > > errata wasn't enough to avoid error conditions, so a different 
-> > >> > > approach was implemented. This gap did help me to make 
-> > sure the 
-> > >> > > new workaround is valid and no data corruption was occurring 
-> > >> > > anymore.
-> > >> > > Anyway, I can't see why memory is being wasted.
-> > >> > >
-> > >> >
-> > >> > I was taking about vitual memory waste (maybe not so important).
-> > >> > Is ok for me then keep the gap. Do other changes look 
-> > good to You?
-> > >>
-> > >> Do you mean in this patch?
-> > >> All changes make sense only if you're removing the gap, except for 
-> > >> the fix below.
-> > >
-> > > The thing is, the dspbridge needs to map some register in 
-> > order to DSP 
-> > > can read and configure some of them. We need to map some pages with 
-> > > fix addresses and to do that I use iommu_kmap. So when some of that 
-> > > pages are contiguous I get his error:
-> > >
-> > > "%s: no space to fit %08x(%x) flags: %08x\n"
-> > >
-> > > Which is not true. The page to page perfectly fix, but the 
-> > check with 
-> > > 1 byte more avoid that it could be mapped and I am getting 
-> > the error.
-> > >
-> > > I am not agree with the gap, but I am ok when it is not 
-> > fixed address 
-> > > as below code
-> > >
-> > > if (flags & IOVMF_DA_ANON)
-> > >        start = roundup(tmp->da_end + 1, alignement);
-> > >
-> > > But it is breaking the tidspbridge when the gap is used for 
-> > fixed addresses.
-> > >
-> > > It should not fail when we want to map a page what is freed 
-> > just because of the gap.
-> > > Please let me know what you thing.
-> > 
-> > I got your point. I agree the gap shouldn't be forced for fixed da.
-> > IMO you can apply this change when !(flags & IOVMF_DA_ANON).
+> linux-next fails to boot on OLPC's XO-1 laptop based on Geode LX processor.
 > 
-> As for not fixed address it always travers the list from the
-> Beginning. The only change need to revert in my patch is when
-> We roundup. That means keeping:
+> This is because of
 > 
-> if (flags & IOVMF_DA_ANON)
->         start = roundup(tmp->da_end + 1, alignement);
+> commit f49aa448561fe9215f43405cac6f31eb86317792
+> Author: Jason Baron <jbaron@redhat.com>
+> Date:   Fri Sep 17 11:08:51 2010 -0400
 > 
-> Is enough to create the gap for not fixed address. I will
-> Update the patch and send them again.
+>     jump label: Make dynamic no-op selection available outside of ftrace
+> 
+> http://git.kernel.org/?p=linux/kernel/git/mingo/linux-2.6-x86.git;a=commitdiff;h=f49aa44
+> 
+> The Geode hangs inside the asm() statement inside arch_init_ideal_nop5.
+> 
+> Any thoughts?
+> 
+> I'm a bit out of my depth debugging assembly code, but will happily
+> take pointers and patches to help diagnose.
+> 
+> cheers
+> Daniel
 
-Sounds fine for me. Please, update the patch and I'll ack it.
+Hi Daniel,
 
-Br,
+looks like I moved dynamic no-op selection way too early in the boot -
+before the exception tables required to select invalid opcodes were
+even set up. The patch belows moves them later and should resolve this
+issue for you. thanks for narrowing it down!
 
-David
+thanks,
 
-> 
-> Thanks,
-> Fernando.
-> 
-> > 
-> > Regards,
-> > 
-> > David
-> > 
-> > >
-> > > Thanks,
-> > > Fernando.
-> > >
-> > >>
-> > >> [snip]
-> > >>
-> > >> > > > > >
-> > >> > > > > >               prev_end = tmp->da_end;
-> > >> > > > > >       }
-> > >> > > > > >
-> > >> > > > > > -     if ((start > prev_end) && (ULONG_MAX - start >= 
-> > >> > > > > > bytes))
-> > >> > > > > > +     if ((start >= prev_end) && (ULONG_MAX - start +
-> > >> > > 1 >= bytes))
-> > >>
-> > >> This fix is partially valid. The correct change must be only:
-> > >> -       if ((start > prev_end) && (ULONG_MAX - start >= bytes))
-> > >> +       if ((start > prev_end) && (ULONG_MAX - start + 1 >= bytes))
-> > >>
-> > >> Otherwise you wouldn't guarantee the gap for fixed da.
-> > >>
-> > >> Br,
-> > >>
-> > >> David
-> > > --
-> > > To unsubscribe from this list: send the line "unsubscribe 
-> > linux-omap" 
-> > > in the body of a message to majordomo@vger.kernel.org More 
-> > majordomo 
-> > > info at  http://vger.kernel.org/majordomo-info.html
-> > >
-> > 
+-Jason
+
+
+move arch_init_ideal_nop5 later
+
+arch_init_ideal_nop5() was being called from setup_arch() before
+the exception table was setup. Move it later into
+alternative_instructions().
+
+Fixes a boot hang on OLPC's XO-1 laptop based on Geode LX
+processor.
+
+
+Reported-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ arch/x86/kernel/alternative.c |    5 +++++
+ arch/x86/kernel/setup.c       |    6 ------
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index cb0e6d3..d8b5b21 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -454,6 +454,7 @@ extern struct paravirt_patch_site __start_parainstructions[],
+ 
+ void __init alternative_instructions(void)
+ {
++	unsigned long flags;
+ 	/* The patching is not fully atomic, so try to avoid local interruptions
+ 	   that might execute the to be patched code.
+ 	   Other CPUs are not running. */
+@@ -508,6 +509,10 @@ void __init alternative_instructions(void)
+ 				(unsigned long)__smp_locks_end);
+ 
+ 	restart_nmi();
++
++	local_irq_save(flags);
++	arch_init_ideal_nop5();
++	local_irq_restore(flags);
+ }
+ 
+ /**
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 468ccd2..85b02b6 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -112,7 +112,6 @@
+ #include <asm/numa_64.h>
+ #endif
+ #include <asm/mce.h>
+-#include <asm/alternative.h>
+ 
+ /*
+  * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+@@ -690,7 +689,6 @@ void __init setup_arch(char **cmdline_p)
+ {
+ 	int acpi = 0;
+ 	int k8 = 0;
+-	unsigned long flags;
+ 
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+@@ -1038,10 +1036,6 @@ void __init setup_arch(char **cmdline_p)
+ 	x86_init.oem.banner();
+ 
+ 	mcheck_init();
+-
+-	local_irq_save(flags);
+-	arch_init_ideal_nop5();
+-	local_irq_restore(flags);
+ }
+ 
+ #ifdef CONFIG_X86_32
+-- 
+1.7.1
+
