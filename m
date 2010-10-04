@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754893Ab0JDWLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 18:11:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35024 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab0JDWLD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 18:11:03 -0400
-X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=YGL2JzEyuHAA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=ASFZG9o2GaUVeqMjKpwA:9 a=5rnckDwLwzkjo8AuBWqDDK9aUHMA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Dynamic nop selection breaks boot on Geode LX
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jason Baron <jbaron@redhat.com>
-Cc: Daniel Drake <dsd@laptop.org>, Andres Salomon <dilinger@queued.net>,
-        Chris Ball <cjb@laptop.org>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu
-In-Reply-To: <20101004203921.GG2900@redhat.com>
-References: <AANLkTimF2tcksBkww50MhiO0YY=MCt4rcnfDR+tJhTUJ@mail.gmail.com>
-	 <20101004154633.GA2900@redhat.com>
-	 <1286224272.6750.70.camel@gandalf.stny.rr.com>
-	 <20101004203921.GG2900@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Mon, 04 Oct 2010 18:11:00 -0400
-Message-ID: <1286230260.6750.71.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1754689Ab0JDWPD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 18:15:03 -0400
+Received: from www.tglx.de ([62.245.132.106]:41299 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751629Ab0JDWPB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 18:15:01 -0400
+Date: Tue, 5 Oct 2010 00:13:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 0/3] Basic support for LWP
+In-Reply-To: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com>
+Message-ID: <alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6>
+References: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-04 at 16:39 -0400, Jason Baron wrote:
-> On Mon, Oct 04, 2010 at 04:31:12PM -0400, Steven Rostedt wrote:
-> > On Mon, 2010-10-04 at 11:46 -0400, Jason Baron wrote:
-> > 
-> > >  	restart_nmi();
-> > > +
-> > > +	local_irq_save(flags);
-> > > +	arch_init_ideal_nop5();
-> > > +	local_irq_restore(flags);
-> > >  }
-> > >  
-> > >  /**
-> > 
-> > BTW, why the irq disabling around the call?
-> > 
-> > -- Steve
-> > 
-> > 
-> 
-> Only b/c the selection of the nop was originally done by
-> 'ftrace_dyn_arch_init()' which had irq's disabled around it. So maybe
-> that can be dropped now?
+On Mon, 4 Oct 2010, Hans Rosenfeld wrote:
 
-Yeah, that disable is there for legacy reasons. It can be scrapped.
+> LWP (Light-Weight Profiling) is a new profiling mechanism that allows
+> user mode processes to gather performance data about themselves with
+> very low overhead. The specification can be found here:
+>         http://developer.amd.com/cpu/LWP/Pages/default.aspx
 
-I'll remove it.
+All I can see there is marketing blurb. The spec pdf does not tell me
+either how the end result of your patches will look like.
 
-Thanks!
+> This code adds basic support for LWP to the context switch code, which
+> is the minimum needed to use LWP. Support for other LWP features like
+> interrupts will be added later.
 
--- Steve
+Oh no. We are not going to merge that and give you a card blanche to
+come up with another profiling/performance monitoring facility which
+is completely disconnected to everything else.
 
+Please provide either the full patch of this facility or at least a
+reasonable explanation how it will look like when your code is
+ready. What's the user space interface, how does it hook into perf,
+etc ...
 
+Thanks,
+
+	tglx
