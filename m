@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0JDRfX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 13:35:23 -0400
-Received: from e23smtp04.au.ibm.com ([202.81.31.146]:39456 "EHLO
-	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486Ab0JDRfW (ORCPT
+	id S1756104Ab0JDRnJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 13:43:09 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:16867 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754687Ab0JDRnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 13:35:22 -0400
-Message-ID: <4CAA104C.3000708@linux.vnet.ibm.com>
-Date: Mon, 04 Oct 2010 23:05:08 +0530
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Mon, 4 Oct 2010 13:43:07 -0400
+Message-ID: <4CAA122B.40502@caviumnetworks.com>
+Date: Mon, 04 Oct 2010 10:43:07 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100720 Fedora/3.0.6-1.fc12 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Greg Thelen <gthelen@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
-References: <1286175485-30643-1-git-send-email-gthelen@google.com> <1286175485-30643-4-git-send-email-gthelen@google.com> <4CA9DB3E.6020106@linux.vnet.ibm.com> <xr93y6ae2cb1.fsf@ninji.mtv.corp.google.com>
-In-Reply-To: <xr93y6ae2cb1.fsf@ninji.mtv.corp.google.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+To: Rabin Vincent <rabin@rab.in>
+CC: linux-mips@linux-mips.org, ralf@linux-mips.org,
+        linux-kernel@vger.kernel.org, rostedt@goodmis.org, jbaron@redhat.com,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH] jump label: Add MIPS support.
+References: <1285697432-29244-1-git-send-email-ddaney@caviumnetworks.com> <AANLkTimEJQE3i9Wa1X=Rkw1goJA9c5Sso-iWV=hLG6KF@mail.gmail.com>
+In-Reply-To: <AANLkTimEJQE3i9Wa1X=Rkw1goJA9c5Sso-iWV=hLG6KF@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Oct 2010 17:43:12.0896 (UTC) FILETIME=[9DF87000:01CB63EB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg Thelen wrote:
-> Ciju Rajan K <ciju@linux.vnet.ibm.com> writes:
+On 10/03/2010 11:15 AM, Rabin Vincent wrote:
+> On Tue, Sep 28, 2010 at 11:40 PM, David Daney<ddaney@caviumnetworks.com>  wrote:
+>> +void arch_jump_label_text_poke_early(jump_label_t addr)
+>> +{
+>> +       union mips_instruction *insn_p =
+>> +               (union mips_instruction *)(unsigned long)addr;
+>> +
+>> +       insn_p->word = 0; /* nop */
+>> +       flush_icache_range((unsigned long)insn_p,
+>> +                          (unsigned long)insn_p + sizeof(*insn_p));
+>> +}
 >
->   
->> Greg Thelen wrote:
->>     
->>> Replace usage of the mem_cgroup_update_file_mapped() memcg
->>> statistic update routine with two new routines:
->>> * mem_cgroup_inc_page_stat()
->>> * mem_cgroup_dec_page_stat()
->>>
->>> As before, only the file_mapped statistic is managed.  However,
->>> these more general interfaces allow for new statistics to be
->>> more easily added.  New statistics are added with memcg dirty
->>> page accounting.
->>>
->>>
->>>
->>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->>> index 512cb12..f4259f4 100644
->>> --- a/mm/memcontrol.c
->>> +++ b/mm/memcontrol.c
->>> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
->>>   * possibility of race condition. If there is, we take a lock.
->>>   */
->>>
->>>   -static void mem_cgroup_update_file_stat(struct page *page, int idx, int
->>> val)
->>>   
->>>       
->> Not seeing this function in mmotm 28/09. So not able to apply this patch.
->> Am I missing anything?
->>     
+> Can't this function be a no-op on MIPS?  This seems to be
+> used on x86 to patch in the optimal nop instruction, but
+> on MIPS the optimal/only nop instruction should already
+> be in place at build time.  Same thing for the SPARC
+> implementation.
 >
-> How are you getting mmotm?
->
-> I see the mem_cgroup_update_file_stat() routine added in mmotm
-> (stamp-2010-09-28-16-13) using patch file:
->   http://userweb.kernel.org/~akpm/mmotm/broken-out/memcg-generic-filestat-update-interface.patch
->   
-Sorry for the noise Greg. It was a mistake at my end. Corrected now.
-Thanks!
->   Author: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->   Date:   Tue Sep 28 21:48:19 2010 -0700
->   
->       This patch extracts the core logic from mem_cgroup_update_file_mapped() as
->       mem_cgroup_update_file_stat() and adds a wrapper.
->   
->       As a planned future update, memory cgroup has to count dirty pages to
->       implement dirty_ratio/limit.  And more, the number of dirty pages is
->       required to kick flusher thread to start writeback.  (Now, no kick.)
->   
->       This patch is preparation for it and makes other statistics implementation
->       clearer.  Just a clean up.
->   
->       Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->       Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
->       Reviewed-by: Greg Thelen <gthelen@google.com>
->       Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
->       Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->
-> If you are using the zen mmotm repository,
-> git://zen-kernel.org/kernel/mmotm.git, the commit id of
-> memcg-generic-filestat-update-interface.patch is
-> 616960dc0cb0172a5e5adc9e2b83e668e1255b50.
->
->   
->>> +void mem_cgroup_update_page_stat(struct page *page,
->>> +				 enum mem_cgroup_write_page_stat_item idx,
->>> +				 int val)
->>>  {
->>>  	struct mem_cgroup *mem;
->>>
->>>   
->>>       
 
+Yes, I think you are correct.
+
+On MIPS the NOP is already optimal.  I will respin the MIPS patch to 
+make arch_jump_label_text_poke_early() be empty.
+
+davem wasn't CCed on the original message, so I added him.  I would 
+defer to him on the SPARC version.
+
+
+Thanks,
+David Daney
