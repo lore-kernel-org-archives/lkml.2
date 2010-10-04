@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757328Ab0JDUtN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 16:49:13 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:65396 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757308Ab0JDUtF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 16:49:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:message-id:x-mailer;
-        b=tYbDBCUG3H0CpX++Vg1XwoZVQ+EWVmF92tkEcrGKFbqfcZM11W5x1IKDJfyeYa/pOx
-         qlk+P0R8F3DrQJLH3UXO5IxPL01qp42C0PUnYthm6O2jt6IO+1lnJ3hfo2RBSTSd7V6y
-         2S35P4mKa5DcnmXqFpej/GYAiP86ovKir7zLk=
-From: Nicolas Palix <npalix.work@gmail.com>
-To: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>,
-        Sam Ravnborg <sam@ravnborg.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        cocci@diku.dk, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] Coccinelle: Use new comment format to explain kfree.cocci
-Date: Mon,  4 Oct 2010 22:48:38 +0200
-Message-Id: <1286225320-22156-1-git-send-email-npalix.work@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S932608Ab0JDUtI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 16:49:08 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56535 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757158Ab0JDUtE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 16:49:04 -0400
+From: Fernando Guzman Lugo <x0095840@ti.com>
+To: <Hiroshi.DOYU@nokia.com>, <david.cohen@nokia.com>
+Cc: <felipe.contreras@nokia.com>, <ameya.palande@nokia.com>,
+        <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
+        <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCHv2 1/3] iovmm: no gap checking for fixed address
+Date: Mon,  4 Oct 2010 16:02:15 -0500
+Message-Id: <1286226137-1233-2-git-send-email-x0095840@ti.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1286226137-1233-1-git-send-email-x0095840@ti.com>
+References: <1286226137-1233-1-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use new comment format to separate proposed commit message
-and information about generated false positive
+If some fixed da address is wanted to be mapped and the page
+is freed but it is used as gap, the mapping will fail.
+This patch is fixing that and olny keeps the gap for
+not fixed address.
 
-Signed-off-by: Nicolas Palix <npalix.work@gmail.com>
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
 ---
- scripts/coccinelle/free/kfree.cocci |    9 +++++----
- 1 files changed, 5 insertions(+), 4 deletions(-)
+ arch/arm/plat-omap/iovmm.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/coccinelle/free/kfree.cocci b/scripts/coccinelle/free/kfree.cocci
-index c13a539..f9f79d9 100644
---- a/scripts/coccinelle/free/kfree.cocci
-+++ b/scripts/coccinelle/free/kfree.cocci
-@@ -1,7 +1,8 @@
--/// Find a use after free.  Values of variables may imply that some
--/// execution paths are not possible, resulting in false positives.
--/// Another source of false positives are macros such as
--/// SCTP_DBG_OBJCNT_DEC that do not actually evaluate their argument
-+/// Find a use after free.
-+//# Values of variables may imply that some
-+//# execution paths are not possible, resulting in false positives.
-+//# Another source of false positives are macros such as
-+//# SCTP_DBG_OBJCNT_DEC that do not actually evaluate their argument
- ///
- // Confidence: Moderate
- // Copyright: (C) 2010 Nicolas Palix, DIKU.  GPLv2.
+diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+index 24ca9c4..34f0012 100644
+--- a/arch/arm/plat-omap/iovmm.c
++++ b/arch/arm/plat-omap/iovmm.c
+@@ -289,7 +289,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
+ 	prev_end = 0;
+ 	list_for_each_entry(tmp, &obj->mmap, list) {
+ 
+-		if (prev_end >= start)
++		if (prev_end > start)
+ 			break;
+ 
+ 		if (start + bytes <= tmp->da_start)
+@@ -301,7 +301,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
+ 		prev_end = tmp->da_end;
+ 	}
+ 
+-	if ((start > prev_end) && (ULONG_MAX - start >= bytes))
++	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
+ 		goto found;
+ 
+ 	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
 -- 
-1.7.0.4
+1.6.3.3
 
