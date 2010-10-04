@@ -1,41 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab0JDN53 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 09:57:29 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59170 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab0JDN52 (ORCPT
+	id S1753976Ab0JDOKm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 10:10:42 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:57463 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752532Ab0JDOKk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 09:57:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Belisko Marek <marek.belisko@gmail.com>
-Subject: Re: [PATCH 4/6] staging/ft1000-usb: fix problems found by sparse
-Date: Mon, 4 Oct 2010 15:56:52 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <greg@kroah.com>, linux-kernel@vger.kernel.org
-References: <1285835052-11880-1-git-send-email-arnd@arndb.de> <1285835052-11880-5-git-send-email-arnd@arndb.de> <AANLkTikvMWnDQRjqCaMddkRCvhSdij7sN7XPfzNSSYW-@mail.gmail.com>
-In-Reply-To: <AANLkTikvMWnDQRjqCaMddkRCvhSdij7sN7XPfzNSSYW-@mail.gmail.com>
+	Mon, 4 Oct 2010 10:10:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=aexF3znRNsC/ykGUSxjExcyibsuDunyiMk5Np0GnBvqyUnwfN+W4vbg2LhTfvku7mI
+         Z4t10IQDxmYmzIy2+UtucEfBsRz2XomKXRAXR5OGehk5O1xD/qwvZZmfKRhE4sPLhc1x
+         4ShvEMJN73aW2KnyfasSv7Xm8FNptWgWC/cP8=
+Date: Mon, 4 Oct 2010 16:10:17 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Rahul Ruikar <rahul.ruikar@gmail.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, nm127@freemail.hu,
+        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RESEND/PATCH] usb: gadget: goku_udc: Fix error path
+Message-ID: <20101004141017.GD5692@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Rahul Ruikar <rahul.ruikar@gmail.com>,
+	David Brownell <dbrownell@users.sourceforge.net>,
+	Greg Kroah-Hartman <gregkh@suse.de>, nm127@freemail.hu,
+	linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1286135940-2364-1-git-send-email-rahul.ruikar@gmail.com> <20101004122214.GA5692@bicker> <AANLkTi=K25BbWjsnVNny-9YOVEE1xNsDFMoMfc+P8sWQ@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010041556.53007.arnd@arndb.de>
-X-Provags-ID: V02:K0:o30S27zkoLKlF6UCFj3ffcRiFuD4KqcbRXXfxYMxrtF
- vTkJD0FNJch26wwcRN1WP+QLB73f+g9uJD2g5//zK4Ew2IeJXe
- v0qazV2cU2dgpSw0DprQEwGVsDj72/7iDTdUoVe2LwNWFGhuoQ
- WMuy1By7IElYjF0w7jNGdCDDMruQMvu0ontWtemM82laGfZlsA
- AkyjmrHxrQ71WLU+IZX6Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=K25BbWjsnVNny-9YOVEE1xNsDFMoMfc+P8sWQ@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 October 2010, Belisko Marek wrote:
-> I couldn't apply this patch with git. After manual patching it produce
-> compilation errors.
-> Did you test it?
+On Mon, Oct 04, 2010 at 06:54:00PM +0530, Rahul Ruikar wrote:
+> Dan,
+> 
+> Following things I tried to do with this change.
+> there can be 3 cases where one need to handle device_register()
+> 1) reaching error path but device_register() is never called..( ie,
+> error occurred before calling device_register() function call, in this
+> case "dev->reg_status" will have value "0" and in error handler
+> device_unregister() or put_device() will not be called.
+> 
 
-Of course I tested it, otherwise I would not have found the build warnings!
+Good point.  This is a bug in the original code.
 
-Still applies and builds fine here.
+> 2) error occurred at device_register() ( ie. it fails and calls error
+> handler, this way "dev->reg_status" will have value "2" and in error
+> handler, based on this value "put_device() will be called.
+> 
 
-	Arnd
+Yeah.  But device_register() sucks.  It shouldn't require such byzantine
+error handling.  Someone is working on this.
+
+regards,
+dan carpenter
+
+> 3) error occured after device_register() success. ( ie, error occured
+> due to some other function, ) in this case "dev->reg_status" will have
+> value "1" and in error handler, based on this value
+> "device_unregister" will be called.
+> 
+> but anyways someone has now proposed to change it to new usb
+> interface, so this patch is of no use now.
+> 
+> Thanks
+> Rahul Ruikar
+> 
+
