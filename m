@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab0JDNqn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 09:46:43 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:52988 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755820Ab0JDNql convert rfc822-to-8bit (ORCPT
+	id S1755996Ab0JDNqv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 09:46:51 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:47115 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755925Ab0JDNqt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 09:46:41 -0400
+	Mon, 4 Oct 2010 09:46:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=Hs+X748epIALlIftxli/iayjIahnA+jwLb3qXlnB9rJpqBPf8VIQ1bf8ZW/aK9qizA
-         vaET6R5aomvxHofCuP8MjSEzZWBSn30MBIU+bKmnsxEOFlWGhZ+OLAhRttiVnzjNy8j5
-         iRLpSBgU/qja4eFkpJ12AiHjt2VA8mKNz8trc=
+        b=Xu7lUUiq50H8FkNKSGwWe0vq5q0gV/pm/AJhUzlE8i2lZ5tdJf3nB8nBtk0zQtOmmo
+         BUZ/+6TEDHSLe60km5Wh68wQuDVpMD6/a/+J20kNHb5sU3RNK95gA1Gl9pvHOTYE4X0T
+         7pPbjZUxqwu/dGhd4fAdiunEZSKVyU3oj8NLU=
 MIME-Version: 1.0
 In-Reply-To: <4CA9D97A.7020109@suse.cz>
 References: <AANLkTinwXj92VLVYqDhvUAusY_MdBQPAYnGBKVgfNLrO@mail.gmail.com>
 	<20100924093206.GD5453@cr0.nay.redhat.com>
 	<AANLkTi=ykH+gTujw+x1c107V6wXfZUT66uHBQ1o6NgK+@mail.gmail.com>
 	<4CA9D97A.7020109@suse.cz>
-Date: Mon, 4 Oct 2010 14:46:15 +0100
-Message-ID: <AANLkTik8gppo7cRw-5qGaUXDHg1D1CzLcEU5JKx5A0oG@mail.gmail.com>
+Date: Mon, 4 Oct 2010 14:46:48 +0100
+Message-ID: <AANLkTim5cNUT+pN7Ay3Wf-VxTrfUc2h=G=tYPtBn=tsU@mail.gmail.com>
 Subject: Re: [PATCH] kconfig: Use PATH_MAX instead of 128 for path buffer sizes.
 From: Will Newton <will.newton@gmail.com>
 To: Michal Marek <mmarek@suse.cz>
