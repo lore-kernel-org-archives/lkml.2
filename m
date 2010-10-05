@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab0JENjz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 09:39:55 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:55163 "EHLO minas.ics.muni.cz"
+	id S1752406Ab0JEODw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 10:03:52 -0400
+Received: from kroah.org ([198.145.64.141]:52657 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753115Ab0JENjy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 09:39:54 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: mingo@elte.hu
-Cc: akpm@linux-foundation.org, jirislaby@gmail.com,
-        linux-kernel@vger.kernel.org, x86@kernel.org,
-        Jiri Slaby <jslaby@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 1/1] softirq: cleanup preempt check
-Date: Tue,  5 Oct 2010 15:35:46 +0200
-Message-Id: <1286285746-3917-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <20101005074554.GB23608@elte.hu>
-References: <20101005074554.GB23608@elte.hu>
-X-Muni-Spam-TestIP: 147.251.48.3
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Tue, 05 Oct 2010 15:35:48 +0200 (CEST)
+	id S1751129Ab0JEODv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 10:03:51 -0400
+Date: Tue, 5 Oct 2010 06:57:50 -0700
+From: Greg KH <greg@kroah.com>
+To: Kent Overstreet <kent.overstreet@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] Potential kobject functionality (two stage delete,
+ single delete)
+Message-ID: <20101005135750.GA4414@kroah.com>
+References: <4CAB26C7.2020109@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CAB26C7.2020109@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The preempt debugging check in the softirq code is ugly. The print is
-lenghty and spread over several lines which makes the code difficult
-to read. This was also the reason for the wrong spacing in the message.
+On Tue, Oct 05, 2010 at 06:23:19AM -0700, Kent Overstreet wrote:
+> I've been working on reference counting in my own code, and it
+> seemed to me that some of this stuff would be best added to the
+> generic code - I can't be the only one who's needed to solve these
+> particular problems. But kobjects aren't new, maybe someone knows if
+> any of this has been tried before?
 
-So move the check into a separate inlined function and make the print
-text a one-liner for easier grepping.
+Oh yeah, it's come up lots of times before, see the lkml archives :)
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- kernel/softirq.c |   21 +++++++++++++--------
- 1 files changed, 13 insertions(+), 8 deletions(-)
+> The easy one would be a flag marking an object as deleted when
+> there's still references. The idea is if you've got multiple
+> unserialized ways of closing/deleting something - error handling
+> paths and/or a way for a user to request that it be closed - you
+> need to make sure you drop only one reference.
 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 2bf4cd5..4366370 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -177,6 +177,17 @@ void local_bh_enable_ip(unsigned long ip)
- }
- EXPORT_SYMBOL(local_bh_enable_ip);
- 
-+static inline void softirq_preempt_check(struct softirq_action *h,
-+		int prev_count)
-+{
-+	if (unlikely(prev_count != preempt_count())) {
-+		printk(KERN_ERR "huh, entered softirq %td %s %pf with preempt_count %08x, exited with %08x?\n",
-+			h - softirq_vec, softirq_to_name[h - softirq_vec],
-+			h->action, prev_count, preempt_count());
-+		preempt_count() = prev_count;
-+	}
-+}
-+
- /*
-  * We restart softirq processing MAX_SOFTIRQ_RESTART times,
-  * and we fall back to softirqd after that.
-@@ -218,14 +229,8 @@ restart:
- 			trace_softirq_entry(h, softirq_vec);
- 			h->action(h);
- 			trace_softirq_exit(h, softirq_vec);
--			if (unlikely(prev_count != preempt_count())) {
--				printk(KERN_ERR "huh, entered softirq %td %s "
--				       "%pf with preempt_count %08x,"
--				       " exited with %08x?\n", h - softirq_vec,
--				       softirq_to_name[h - softirq_vec],
--				       h->action, prev_count, preempt_count());
--				preempt_count() = prev_count;
--			}
-+
-+			softirq_preempt_check(h, prev_count);
- 
- 			rcu_bh_qs(cpu);
- 		}
--- 
-1.7.3.1
+Yes, very common.
 
+> This is trivial to handle without adding to the kobject code,
+
+Yes, and in the end, it should be handled by the code needing it, not in
+the kobject code itself.  That's why it hasn't been added.
+
+> but it
+> seems to me it ought to be common enough to warrant adding it - I
+> wouldn't be surprised if there's driver code that doesn't handle it
+> correctly, it's easy enough to miss if you don't think about the
+> particular case. We need to add an atomic bitflag to struct kobject;
+> another callback in struct kobj_type might be useful too. Then
+> something like the following should be it:
+> 
+> void kobject_delete(struct kobject *k)
+> {
+> 	if (!test_and_set_bit(deleted)) {
+> 		if (delete_fn)
+> 			delete_fn(k);
+> 		kobject_put(k);
+> 	}
+> }
+
+Every time we have tried to do something like this, it ends up not being
+correct, and missused, so we don't.
+
+> The more annoying one is two stage delete. Unless my google-fu has
+> failed me, I don't see a reasonable way of using kobject refcounting
+> if you need to drop a refcount from atomic context.
+
+You can't call kfree from atomic context?
+
+Anyway, code does handle this properly, look at the scsi code for
+example, we have a waitqueue-like infrastructure to do this somewhere,
+perhaps it's within the driver core, I can't remember it this early in
+the morning.
+
+thanks,
+
+greg k-h
