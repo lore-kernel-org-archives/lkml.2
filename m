@@ -1,58 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757924Ab0JEIXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 04:23:08 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:44605 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755460Ab0JEIXG (ORCPT
+	id S1757941Ab0JEIY3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 04:24:29 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:33801 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757894Ab0JEIYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 04:23:06 -0400
-Subject: Re: RFC: btusb firmware load help
-From: Marcel Holtmann <holtmann@linux.intel.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>
-In-Reply-To: <20100924230730.GB6566@tux>
-References: <20100924230730.GB6566@tux>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Oct 2010 10:23:01 +0200
-Message-ID: <1286266981.17473.33.camel@aeonflux>
+	Tue, 5 Oct 2010 04:24:25 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 5 Oct 2010 17:19:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Jack Steiner <steiner@sgi.com>, yinghai@kernel.org, mingo@elte.hu,
+        akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: Problem: scaling of /proc/stat on large systems
+Message-Id: <20101005171907.23c75102.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101005103650.7ebe64f0.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100929122206.GA30317@sgi.com>
+	<20100930140901.037f9dc7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101004143414.GA4261@sgi.com>
+	<20101005103650.7ebe64f0.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+On Tue, 5 Oct 2010 10:36:50 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> Marcel, I was just poked about this thread:
+> I guess this requres different approarch as per-cpu counter + threshould.
+> like vmstat[] or lib/percpu_counter. 
+> Maybe people don't like to access shared counter in IRQ.
 > 
-> http://www.spinics.net/lists/linux-bluetooth/msg06087.html
+> But, this seems to call radixtree-lookup for the # of possible cpus.
+> I guess impleimenting a call to calculate a sum of irqs in a radix-tree
+> lookup will reduce overhead. If it's not enough, we'll have to make the
+> counter not-precise. I'll write an another patch.
 > 
-> The hack is required because our BT hardware does not accept HCI commands
-> when the device is plugged in. If I understood your position you did not
-> want to accept the patch because our BT USB devices are violating the
-> specification by not acceping HCI commands and yet claiming to be BT
-> devices, is that right?
 
-you don't have to accept HCI commands when your device has no firmware
-loaded. That is just fine. However at that point you should not claim to
-be a Bluetooth H:2 device with USB Bluetooth descriptors.
+How about this ? This is an add-on patch.
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Just having different USB PIDs for without firmware and with firmware
-stages would have been fine. The ancient Broadcom 203x devices even got
-that part right.
+In /proc/stat, the number of per-IRQ event is shown by making a sum
+each irq's events on all cpus. But we can make use of kstat_irqs().
 
-So what about sticking with the current VID:PID for the device without
-firmware and we blacklist it in btusb driver. And then the firmware
-loading ensures that after reset it uses a different PID for the device
-with valid HCI firmware.
+kstat_irqs() make a sum of IRQ events per cpu, if !CONFIG_GENERIC_HARDIRQ,
+it's not a big cost. (Both of the number of cpus and irqs are small.)
 
-Regards
+If a system is very big, it does
 
-Marcel
+	for_each_irq()
+		for_each_cpu()
+			- look up a radix tree
+			- read desc->irq_stat[cpu]
+This seems not efficient. This patch adds kstat_irqs() for CONFIG_GENRIC_HARDIRQ
+and change the calculation as
 
+	for_each_irq()
+		look up radix tree
+		for_each_cpu()
+			- read desc->irq_stat[cpu]
+
+and reduces cost.
+
+Signged-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ fs/proc/stat.c              |    9 ++-------
+ include/linux/kernel_stat.h |    5 +++++
+ kernel/irq/handle.c         |   16 ++++++++++++++++
+ 3 files changed, 23 insertions(+), 7 deletions(-)
+
+Index: mmotm-0928/fs/proc/stat.c
+===================================================================
+--- mmotm-0928.orig/fs/proc/stat.c
++++ mmotm-0928/fs/proc/stat.c
+@@ -108,13 +108,8 @@ static int show_stat(struct seq_file *p,
+ 	seq_printf(p, "intr %llu", (unsigned long long)sum);
+ 
+ 	/* sum again ? it could be updated? */
+-	for_each_irq_nr(j) {
+-		per_irq_sum = 0;
+-		for_each_possible_cpu(i)
+-			per_irq_sum += kstat_irqs_cpu(j, i);
+-
+-		seq_printf(p, " %u", per_irq_sum);
+-	}
++	for_each_irq_nr(j)
++		seq_printf(p, " %u", kstat_irqs(j));
+ 
+ 	seq_printf(p,
+ 		"\nctxt %llu\n"
+Index: mmotm-0928/include/linux/kernel_stat.h
+===================================================================
+--- mmotm-0928.orig/include/linux/kernel_stat.h
++++ mmotm-0928/include/linux/kernel_stat.h
+@@ -62,6 +62,7 @@ static inline unsigned int kstat_irqs_cp
+ {
+        return kstat_cpu(cpu).irqs[irq];
+ }
++
+ #else
+ #include <linux/irq.h>
+ extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
+@@ -86,6 +87,7 @@ static inline unsigned int kstat_softirq
+ /*
+  * Number of interrupts per specific IRQ source, since bootup
+  */
++#ifndef CONFIG_GENERIC_HARDIRQS
+ static inline unsigned int kstat_irqs(unsigned int irq)
+ {
+ 	unsigned int sum = 0;
+@@ -96,6 +98,9 @@ static inline unsigned int kstat_irqs(un
+ 
+ 	return sum;
+ }
++#else
++extern unsigned int unsigned int kstat_irqs(unsigned int irq);
++#endif
+ 
+ /*
+  * Number of interrupts per cpu, since bootup
+Index: mmotm-0928/kernel/irq/handle.c
+===================================================================
+--- mmotm-0928.orig/kernel/irq/handle.c
++++ mmotm-0928/kernel/irq/handle.c
+@@ -553,3 +553,19 @@ unsigned int kstat_irqs_cpu(unsigned int
+ }
+ EXPORT_SYMBOL(kstat_irqs_cpu);
+ 
++#ifdef CONFIG_GENERIC_HARDIRQS
++unsigned int kstat_irqs(unsigned int irq)
++{
++	struct irq_desc *desc = irq_to_desc(irq);
++	int cpu;
++	int sum = 0;
++
++	if (!desc)
++		return 0;
++
++	for_each_possible_cpu(cpu)
++		sum += desc->kstat_irqs[cpu];
++	return sum;
++}
++EXPORT_SYMBOL(kstat_irqs);
++#endif
 
