@@ -1,110 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757347Ab0JEFlt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 01:41:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60036 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756959Ab0JEFlr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 01:41:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JlKAegWI5xqf/iUltrSWBlAogiH7SY5YSeM7GqVIRpeqb5PI4GWiyX5qPdyNGJgCtB
-         zlHyLLbGcvRTsDl6gVpd243RkOw/p2RUt4spxzz38GiJm7kgN3UlNmOPh4PwKcSlIPL/
-         ir1mRP4SAD5KZcASA5Y6JXJ5n0X3m7yDw8J9Q=
-Date: Mon, 4 Oct 2010 22:41:40 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Oliver Neukum <oliver@neukum.org>
-Cc: linux-pm@lists.linux-foundation.org, pingc@wacom.com,
-        Jiri Slaby <jslaby@suse.cz>,
-        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org
-Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
-Message-ID: <20101005054139.GC15355@core.coreip.homeip.net>
-References: <4C8E180D.4020309@suse.cz>
- <201010042033.53453.oliver@neukum.org>
- <20101004183848.GG8321@core.coreip.homeip.net>
- <201010042124.24253.oliver@neukum.org>
+	id S1757455Ab0JEFqX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 01:46:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33047 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754483Ab0JEFqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 01:46:21 -0400
+Message-ID: <4CAABC0E.3030700@kernel.org>
+Date: Tue, 05 Oct 2010 07:47:58 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010042124.24253.oliver@neukum.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the lost-spurious-irq tree with the
+ tip tree
+References: <20101005141334.6a0f15fd.sfr@canb.auug.org.au>
+In-Reply-To: <20101005141334.6a0f15fd.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 05:45:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 09:24:24PM +0200, Oliver Neukum wrote:
-> Am Montag, 4. Oktober 2010, 20:38:49 schrieb Dmitry Torokhov:
-> > On Mon, Oct 04, 2010 at 08:33:53PM +0200, Oliver Neukum wrote:
-> > > Am Montag, 4. Oktober 2010, 18:13:20 schrieb Dmitry Torokhov:
-> > > > Lost track of this issue for a while. So I think we still need to fix
-> > > > the deadlock for .36 and I think that the following will do that. Then
-> > > > we'll adjust the driver to actually enable runtime PM for .37.
-> > > 
-> > > That's a viable plan.
-> > > 
-> > 
-> > I take it as an "acked-by" for this patch, right?
-> 
-> Sure. Just in case:
-> 
-> Acked-by: Oliver Neukum <oneukum@suse.de>
-> 
+Hello, Stephen.
 
-Thanks Oliver. And the patch below is for .37 properly enabling runtime
-PM for wacom.
+On 10/05/2010 05:13 AM, Stephen Rothwell wrote:
+> Hi Tejun,
+> 
+> Today's linux-next merge of the lost-spurious-irq tree got a conflict in
+> kernel/irq/spurious.c between commits
+> 6b8ff3120c758340505dddf08ad685ebb841d5d5 ("genirq: Convert core code to
+> irq_data") and bd151412263a67b5321e9dd1d5b4bf6d96fdebf3 ("genirq: Provide
+> config option to disable deprecated code") from the tip tree and commits
+> 32b5d378f49485f3ae172eb0ac2bfc4ebbbdb060 ("irq: cleanup irqfixup") and
+> 80f97e2b33c3e66c11b10abd2890506a3abeb320 ("irq: make spurious poll timer
+> per desc") from the lost-spurious-irq tree.
+> 
+> I think I fixed it all up (see below).  I can carry this fix (or a better
+> one) as necessary.
+
+Can you please drop lost-spurious-irq for now?  It needs to be
+reimplemented.  I'll send a merge request again when it's ready.
+
+Thank you.
 
 -- 
-Dmitry
-
-Input: wacom - properly enable runtime PM
-
-We need to always call usb_autopm_put_interface() in wacom_open(),
-not only when initialization fails, otherwise the device will be
-marked as PM-busy and will never be put in suspended state.
-
-Based on patch by Oliver Neukum.
-
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
-
- drivers/input/tablet/wacom_sys.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
-
-
-diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
-index 02de653..fc38149 100644
---- a/drivers/input/tablet/wacom_sys.c
-+++ b/drivers/input/tablet/wacom_sys.c
-@@ -120,14 +120,16 @@ static int wacom_open(struct input_dev *dev)
- 
- out:
- 	mutex_unlock(&wacom->lock);
--	if (retval)
--		usb_autopm_put_interface(wacom->intf);
-+	usb_autopm_put_interface(wacom->intf);
- 	return retval;
- }
- 
- static void wacom_close(struct input_dev *dev)
- {
- 	struct wacom *wacom = input_get_drvdata(dev);
-+	int autopm_error;
-+
-+	autopm_error = usb_autopm_get_interface(wacom->intf);
- 
- 	mutex_lock(&wacom->lock);
- 	usb_kill_urb(wacom->irq);
-@@ -135,7 +137,8 @@ static void wacom_close(struct input_dev *dev)
- 	wacom->intf->needs_remote_wakeup = 0;
- 	mutex_unlock(&wacom->lock);
- 
--	usb_autopm_put_interface(wacom->intf);
-+	if (!autopm_error)
-+		usb_autopm_put_interface(wacom->intf);
- }
- 
- static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hid_desc,
+tejun
