@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab0JEQKh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:10:37 -0400
-Received: from kroah.org ([198.145.64.141]:56010 "EHLO coco.kroah.org"
+	id S1755555Ab0JEQL3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:11:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43937 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755315Ab0JEQK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:10:27 -0400
-Date: Tue, 5 Oct 2010 08:56:56 -0700
-From: Greg KH <greg@kroah.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Hiroshi Doyu <hiroshi.doyu@nokia.com>
-Subject: Re: [PATCH 1/2] omap: add dsp platform device
-Message-ID: <20101005155656.GA27130@kroah.com>
-References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
- <1286208555-8829-2-git-send-email-felipe.contreras@gmail.com>
+	id S1750724Ab0JEQL2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 12:11:28 -0400
+Message-ID: <4CAB4EB3.50001@kernel.org>
+Date: Tue, 05 Oct 2010 18:13:39 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286208555-8829-2-git-send-email-felipe.contreras@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Namhyung Kim <namhyung@gmail.com>
+CC: lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Build failure on CONFIG_DEBUG_FORCE_WEAK_PER_CPU?
+References: <874od1w1ao.fsf@gmail.com>  <4CAAEF08.2090101@kernel.org> <1286277111.1663.14.camel@leonhard>
+In-Reply-To: <1286277111.1663.14.camel@leonhard>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 16:11:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 07:09:14PM +0300, Felipe Contreras wrote:
-> Otherwise tidspbridge cannot work.
+Hello,
+
+On 10/05/2010 01:11 PM, Namhyung Kim wrote:
+> I am using system default toolchain which is:
 > 
-> It looks like this was dropped in the conversion to staging. I took the
-> liberty of doing some cleaning up.
-> 
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> ---
->  arch/arm/mach-omap2/Makefile          |    4 ++
->  arch/arm/mach-omap2/dsp.c             |   85 +++++++++++++++++++++++++++++++++
->  arch/arm/plat-omap/common.c           |    2 +
->  arch/arm/plat-omap/devices.c          |   30 ++++++++++++
->  arch/arm/plat-omap/include/plat/dsp.h |   31 ++++++++++++
+>  $ gcc --version
+>  gcc (Ubuntu 4.4.3-4ubuntu5) 4.4.3
+>  
+>  $ ld -v
+>  GNU gold (GNU Binutils for Ubuntu 2.20.1-system.20100303) 1.9
 
-I need an ack from some omap maintainers before I can take this into the
-staging tree.
+Hmmm... mines are
 
-thanks,
+$ gcc --version
+gcc (SUSE Linux) 4.5.0 20100604 [gcc-4_5-branch revision 160292]
+Copyright (C) 2010 Free Software Foundation, Inc.
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-greg k-h
+$ ld -v
+GNU ld (GNU Binutils; openSUSE 11.3) 2.20.0.20100122-6
+
+
+> A minimal .config can be made easily by doing make allnoconfig and
+> selecting CONFIG_DEBUG_INFO and CONFIG_DEBUG_FORCE_WEAK_PER_CPU.
+> Attached mine for your convenience. Thanks :-)
+
+and the same config builds just fine.  Can you please try newer
+compiler / linker?  The config option hasn't caused any trouble till
+now and allyesconfig is something which get regularly tested so I'm
+skeptical this is a wide spread problem.
+
+Thanks.
+
+-- 
+tejun
