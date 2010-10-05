@@ -1,103 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758147Ab0JELOh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 07:14:37 -0400
-Received: from filtteri2.pp.htv.fi ([213.243.153.185]:40160 "EHLO
-	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab0JELOg (ORCPT
+	id S1758158Ab0JELPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 07:15:38 -0400
+Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:50510 "EHLO
+	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758117Ab0JELPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 07:14:36 -0400
-X-Greylist: delayed 362 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 07:14:36 EDT
-Date: Tue, 5 Oct 2010 14:08:30 +0300
-From: Adrian Bunk <bunk@kernel.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Andrew Morton <akpm@osdl.org>
-Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
-Message-ID: <20101005110830.GA30583@localhost.pp.htv.fi>
-References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6>
- <201010051448.34984.rusty@rustcorp.com.au>
+	Tue, 5 Oct 2010 07:15:37 -0400
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Subject: [net-2.6 PATCH] MAINTAINERS: update Intel LAN Ethernet info
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        bphilips@novell.com, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Date: Tue, 05 Oct 2010 04:15:17 -0700
+Message-ID: <20101005111438.22968.15130.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201010051448.34984.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 02:48:34PM +1030, Rusty Russell wrote:
-> On Mon, 4 Oct 2010 06:21:08 am Thomas Gleixner wrote:
-> > Current mainline triggers a list corruption bug in
-> > module_bug_finalize(). dmesg excerpt below.
-> > 
-> > The corresponding code says:
-> > 
-> >         /*
-> >          * Strictly speaking this should have a spinlock to protect against
-> >          * traversals, but since we only traverse on BUG()s, a spinlock
-> >          * could potentially lead to deadlock and thus be counter-productive.
-> >          */
-> >         list_add(&mod->bug_list, &module_bug_list);
-> > 
-> > I can see the traversal problem vs. BUG(), but what's protecting the
-> > list_add() ? BKL probably did, but is that true anymore ?
-> 
-> I've never even *seen* this code before :(
-> 
-> Looks like it went through Adrian Bunk to Andrew,
->...
+- Add ixgbevf and docs files to the maintainers file
 
-    [bunk@stusta.de: include/linux/bug.h must always #include <linux/module.h]
-    Signed-off-by: Adrian Bunk <bunk@stusta.de>
+Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+---
 
-The commit did not went through me, and I did never review or forward it.
+ MAINTAINERS |   16 ++++++++++++++--
+ 1 files changed, 14 insertions(+), 2 deletions(-)
 
-My Signed-off-by: was for the change I sent against the original patch, 
-and it was added to the commit when Andrew included my change into the
-original patch.
-
-> but despite the fact that
-> it (foolishly) doesn't touch kernel/module.c, it's generic code and I should
-> have seen it.  It did change the linux/module.h header.
->...
-
-The commit says
-    Cc: Rusty Russell <rusty@rustcorp.com.au>
-
-When Andrew submitted it to Linus that should have resulted in an email
-to you by the script Andrew uses for submitting patches.
-
-And according to my mail archives that did happen:
-
-Message-Id: <200612081036.kB8AaJDK016473@shell0.pdx.osdl.net>
-Subject: [patch 027/368] Generic BUG implementation
-To: torvalds@osdl.org
-Cc: akpm@osdl.org,
-    jeremy@goop.org,
-    ak@muc.de,
-    benh@kernel.crashing.org,
-    bunk@stusta.de,
-    hugh@veritas.com,
-    michael@ellerman.id.au,
-    paulus@samba.org,
-    rusty@rustcorp.com.au
-From: akpm@osdl.org
-Date: Fri, 08 Dec 2006 02:36:19 -0800
-
-
-> Nice catch!
-> Rusty.
-
-cu
-Adrian
-
--- 
-
-       "Is there not promise of rain?" Ling Tan asked suddenly out
-        of the darkness. There had been need of rain for many days.
-       "Only a promise," Lao Er said.
-                                       Pearl S. Buck - Dragon Seed
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 44e6595..20a03b9 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3050,16 +3050,27 @@ L:	netdev@vger.kernel.org
+ S:	Maintained
+ F:	drivers/net/ixp2000/
+ 
+-INTEL ETHERNET DRIVERS (e100/e1000/e1000e/igb/igbvf/ixgb/ixgbe)
++INTEL ETHERNET DRIVERS (e100/e1000/e1000e/igb/igbvf/ixgb/ixgbe/ixgbevf)
+ M:	Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+ M:	Jesse Brandeburg <jesse.brandeburg@intel.com>
+ M:	Bruce Allan <bruce.w.allan@intel.com>
+-M:	Alex Duyck <alexander.h.duyck@intel.com>
++M:	Carolyn Wyborny <carolyn.wyborny@intel.com>
++M:	Don Skidmore <donald.c.skidmore@intel.com>
++M:	Greg Rose <gregory.v.rose@intel.com>
+ M:	PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>
++M:	Alex Duyck <alexander.h.duyck@intel.com>
+ M:	John Ronciak <john.ronciak@intel.com>
+ L:	e1000-devel@lists.sourceforge.net
+ W:	http://e1000.sourceforge.net/
+ S:	Supported
++F:	Documentation/networking/e100.txt
++F:	Documentation/networking/e1000.txt
++F:	Documentation/networking/e1000e.txt
++F:	Documentation/networking/igb.txt
++F:	Documentation/networking/igbvf.txt
++F:	Documentation/networking/ixgb.txt
++F:	Documentation/networking/ixgbe.txt
++F:	Documentation/networking/ixgbevf.txt
+ F:	drivers/net/e100.c
+ F:	drivers/net/e1000/
+ F:	drivers/net/e1000e/
+@@ -3067,6 +3078,7 @@ F:	drivers/net/igb/
+ F:	drivers/net/igbvf/
+ F:	drivers/net/ixgb/
+ F:	drivers/net/ixgbe/
++F:	drivers/net/ixgbevf/
+ 
+ INTEL PRO/WIRELESS 2100 NETWORK CONNECTION SUPPORT
+ L:	linux-wireless@vger.kernel.org
 
