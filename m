@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756875Ab0JEVMH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 17:12:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:41899 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756526Ab0JEVME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 17:12:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=xSKbd1S9ksV5LKMPEQWxfbIXH9ii8c3XRxao7qrB1xc6t5Gu1wb25/h4a3d9x4l6RY
-         tbWsJfydDgGM3QMlhjK/jXcxTYnzR2l4i1y2VUqljpyTgaD2uMiELIme1cLsx4EqNULA
-         0GJ5x6XZoAT5d45rY7cubYrtufTn6u0q6luXA=
-Message-ID: <4CAB94A0.8040402@gmail.com>
-Date: Tue, 05 Oct 2010 23:12:00 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
+	id S1757116Ab0JEVRa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 17:17:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44091 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757027Ab0JEVR3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 17:17:29 -0400
+Message-ID: <4CAB957B.1030202@zytor.com>
+Date: Tue, 05 Oct 2010 14:15:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Antonio Ospite <ospite@studenti.unina.it>
-CC: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Alan Ott <alan@signal11.us>, Oliver Neukum <oliver@neukum.name>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 0/2] HID: hidraw, fix two NULL pointer dereferences
-References: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz> <1286292017-6746-1-git-send-email-ospite@studenti.unina.it>
-In-Reply-To: <1286292017-6746-1-git-send-email-ospite@studenti.unina.it>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Vivek Goyal <vgoyal@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
+Subject: Re: [PATCH 2/4] x86, memblock: Fix crashkernel allocation
+References: <4CAA4BD5.4020505@kernel.org> <4CAA4DE2.1020406@kernel.org>
+In-Reply-To: <4CAA4DE2.1020406@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2010 05:20 PM, Antonio Ospite wrote:
-> here are some fixes to hidraw.
-> 
-> Patches are against 2.6.36-rc6, but they should be ported to other
-> maintained stable kernels as well.
-> 
-> Antonio Ospite (2):
->   HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
->   HID: hidraw, fix a NULL pointer dereference in hidraw_write
+On 10/04/2010 02:57 PM, Yinghai Lu wrote:
+>
+> +#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
+>  static void __init reserve_crashkernel(void)
+>  {
+>  	unsigned long long total_mem;
+> @@ -518,17 +519,28 @@ static void __init reserve_crashkernel(v
+>  	if (crash_base <= 0) {
+>  		const unsigned long long alignment = 16<<20;	/* 16M */
+>  
+> -		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
+> -				 alignment);
+> +		/*
+> +		 * Assume half crash_size is for bzImage
+> +		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
+> +		 */
+> +		crash_base = memblock_find_in_range(alignment,
+> +				DEFAULT_BZIMAGE_ADDR_MAX + crash_size/2,
+> +				crash_size, alignment);
+> +
+>  		if (crash_base == MEMBLOCK_ERROR) {
+> -			pr_info("crashkernel reservation failed - No suitable area found.\n");
+> -			return;
+> +			crash_base = memblock_find_in_range(alignment,
+> +					 ULONG_MAX, crash_size, alignment);
+> +
+> +			if (crash_base == MEMBLOCK_ERROR) {
+> +				pr_info("crashkernel reservation failed - No suitable area found.\n");
+> +				return;
+> +			}
+>  		}
+>  
 
-Hi, please fix also the window in hidraw_release.
+Okay, this *really* doesn't make sense.
 
-thanks,
--- 
-js
+It's bad enough that kexec doesn't know what memory is safe for it, but
+why the heck the heuristic that "half is for bzImage and the rest can go
+beyond the heuristic limit"?  Can't we at least simply cap the region to
+the default, unless the kexec system has passed in some knowable
+alternative?  Furthermore, why bother having the "fallback" at all
+(certainly without having a message!?)  If we don't get the memory area
+we need we're likely to randomly fail anyway.
+
+Let me be completely clear -- it's obvious from all of this that kexec
+is fundamentally broken by design: if kexec can't communicate the safe
+memory to use it's busted seven ways to Sunday and it needs to be fixed.
+ However, in the meantime I can see capping the memory available to it
+as a temporary band-aid, but a fallback to picking random memory is
+nuts, especially on the motivation that "a future kexec version might be
+able to use it."  If so, the "future kexec tools" should SAY SO.
+
+This is beyond crazy -- it's complete and total bonkers.
+
+	-hpa
