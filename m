@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751719Ab0JEMxY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 08:53:24 -0400
-Received: from kroah.org ([198.145.64.141]:52160 "EHLO coco.kroah.org"
+	id S1752052Ab0JEMx0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 08:53:26 -0400
+Received: from kroah.org ([198.145.64.141]:52164 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751522Ab0JEMxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 08:53:23 -0400
-Date: Fri, 1 Oct 2010 15:54:46 -0700
+	id S1751545Ab0JEMxZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 08:53:25 -0400
+Date: Tue, 5 Oct 2010 05:46:37 -0700
 From: Greg KH <greg@kroah.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "stable@kernel.org" <stable@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [stable] Please promote to stable
-Message-ID: <20101001225446.GA13750@kroah.com>
-References: <4CA64CC1.5050702@zytor.com>
- <20101001221615.GA12589@kroah.com>
- <4CA662E2.4040509@zytor.com>
+To: Micki Balanga <micki@n-trig.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, "gregkh@suse.de" <gregkh@suse.de>,
+        "jim.collar@eqware.net" <jim.collar@eqware.net>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: misc: Add N-trig firmware driver
+Message-ID: <20101005124637.GB2943@kroah.com>
+References: <6EF693376E00E2458E26FEC229232B128A8D39@Exchange2010-IL.n-trig.com>
+ <20101004011949.GA23855@kroah.com>
+ <alpine.LRH.2.00.1010041458010.12867@twin.jikos.cz>
+ <6EF693376E00E2458E26FEC229232B128AAE23@Exchange2010-IL.n-trig.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CA662E2.4040509@zytor.com>
+In-Reply-To: <6EF693376E00E2458E26FEC229232B128AAE23@Exchange2010-IL.n-trig.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 03:38:26PM -0700, H. Peter Anvin wrote:
-> On 10/01/2010 03:16 PM, Greg KH wrote:
-> > On Fri, Oct 01, 2010 at 02:04:01PM -0700, H. Peter Anvin wrote:
-> >> Please promote the following x86 patches to stable:
-> >>
-> >> 1dedefd1a066a795a87afca9c0236e1a94de9bf6
-> >> d900329e20f4476db6461752accebcf7935a8055 [as soon as Linus merges it]
-> >>
-> >> The latter is already tagged stable.
-> >>
-> >> These two patches are needed to resolve kernel bugzilla 16322.
-> > 
-> > For .35 and .32, or only .35?
-> > 
+On Tue, Oct 05, 2010 at 06:59:43AM +0000, Micki Balanga wrote:
 > 
-> Both.
+> 
+> > -----Original Message-----
+> > From: Jiri Kosina [mailto:jkosina@suse.cz]
+> > Sent: Monday, October 04, 2010 2:58 PM
+> > To: Greg KH
+> > Cc: Micki Balanga; gregkh@suse.de; jim.collar@eqware.net; linux-
+> > usb@vger.kernel.org; linux-kernel@vger.kernel.org
+> > Subject: Re: [PATCH] USB: misc: Add N-trig firmware driver
+> > 
+> > On Sun, 3 Oct 2010, Greg KH wrote:
+> > 
+> > > >
+> > >
+> > > Can you please attach this in a non-base64 format so it can be
+> > properly
+> > > reviewed, and then, applied if applicable?
+> > >
+> > > Note, please run the patch through the scripts/checkpatch.pl tool
+> > first
+> > > before sending it out, so we don't just say the same things it finds
+> > :)
+> > 
+> > As we already have HID driver for n-trig, could this whole thing
+> > perhaps
+> > be made part of it?
+> > 
+> > --
+> > Jiri Kosina
+> > SUSE Labs, Novell Inc.
+> 
+> The driver communicates with the bulk in/out endpoint. 
 
-Thanks, will do.
+Why does it have to be a driver at all?  Why can't you just use libusb
+or usbfs to implement this?
+
+> It was written as a standalone module, because it does not use any HID
+> subsystem services, and to ensure that the HID driver would not be too
+> complex. 
+> 
+> The driver has been tested over several weeks at our company.
+> The  patch was prepared and checked using the Checkpatch utility.
+
+You might want to check that last step, it didn't seem to work properly
+as the patch you sent could not be applied, due to it being base64
+encoded :)
+
+thanks,
+
+greg k-h
