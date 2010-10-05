@@ -1,77 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab0JEB2w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 21:28:52 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:55421 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab0JEB2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 21:28:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: Re: Is it legal to return positive value when do_execve() succeeds?
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <201010042231.EEG13079.OFSFtOMJHVFLQO@I-love.SAKURA.ne.jp>
-References: <20101004135524.E8A5.A69D9226@jp.fujitsu.com> <201010042231.EEG13079.OFSFtOMJHVFLQO@I-love.SAKURA.ne.jp>
-Message-Id: <20101005102446.28C3.A69D9226@jp.fujitsu.com>
+	id S932066Ab0JEBam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 21:30:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48294 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752104Ab0JEBak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 21:30:40 -0400
+Message-ID: <4CAA7F77.7010605@redhat.com>
+Date: Mon, 04 Oct 2010 21:29:27 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, hpa@zytor.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to provide
+ fast guest write interface
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com> <1286207794-16120-5-git-send-email-gleb@redhat.com>
+In-Reply-To: <1286207794-16120-5-git-send-email-gleb@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  5 Oct 2010 10:28:44 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> KOSAKI Motohiro wrote:
-> > > fs/binfmt_elf.c:
-> > >  77 #define BAD_ADDR(x) ((unsigned long)(x) >= TASK_SIZE)
-> > Can do_brk() return BAD_ADDR() _and_ !IS_ERR_VALUE() value? when?
-> 
-> For example, arch/mips/include/asm/processor.h has below definitions
-> which is smaller than INT_MAX
-> 
->  47 #ifdef CONFIG_32BIT
-> (...snipped...)
->  52 #define TASK_SIZE       0x7fff8000UL
-> (...snipped...)
->  63 #endif
->  64 
->  65 #ifdef CONFIG_64BIT
-> (...snipped...)
->  74 #define TASK_SIZE       0x10000000000UL
-> (...snipped...)
->  91 #endif
-> 
-> Also, several architectures define TASK_SIZE as
-> 
->   #define TASK_SIZE               PAGE_OFFSET
-> 
-> and PAGE_OFFSET could be 0 if CONFIG_KERNEL_RAM_BASE_ADDRESS is not defined.
-> 
-> include/asm-generic/page.h
->  68 #ifdef CONFIG_KERNEL_RAM_BASE_ADDRESS
->  69 #define PAGE_OFFSET             (CONFIG_KERNEL_RAM_BASE_ADDRESS)
->  70 #else
->  71 #define PAGE_OFFSET             (0)
->  72 #endif
-> 
-> If TASK_SIZE == 0, BAD_ADDR(x) is always true and !IS_ERR_VALUE(x) can be true.
-> Although I don't know which combination makes such environment,
-> I think "BAD_ADDR() _and_ !IS_ERR_VALUE()" can happen.
+On 10/04/2010 11:56 AM, Gleb Natapov wrote:
+> Keep track of memslots changes by keeping generation number in memslots
+> structure. Provide kvm_write_guest_cached() function that skips
+> gfn_to_hva() translation if memslots was not changed since previous
+> invocation.
+>
+> Signed-off-by: Gleb Natapov<gleb@redhat.com>
 
-I think you should read do_brk() itself. the spec is
+Acked-by: Rik van Riel <riel@redhat.com>
 
-success case:
-	return addr argument
-
-error case: 
-	return error code
-
-When does it return invalid address?
-
-
-
-
+-- 
+All rights reversed
