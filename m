@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab0JEAD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 20:03:59 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:32576 "EHLO
+	id S1757502Ab0JEAEI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 20:04:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:23970 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab0JEAD4 (ORCPT
+	with ESMTP id S1757463Ab0JEAD6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 20:03:56 -0400
+	Mon, 4 Oct 2010 20:03:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=evYiKMGnRMSQImiBodaNPnNXPPddDoo3h18lok7i6dirzSl37wOgVU4UiR7FLrDqET
-         pFb/BT7IU46lIaIv/3Pw==
+        b=kPuZ5JP9eOFbS+C4ronbuf+Dq+JKnw25hkaMimOEO6wXMqdIcFil4bFecLM18VHdm3
+         18ZF0WkzPtepvaANOL3g==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -20,9 +20,9 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
 Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 3/8] Add a PF flag for ksoftirqd identification
-Date: Mon,  4 Oct 2010 17:03:18 -0700
-Message-Id: <1286237003-12406-4-git-send-email-venki@google.com>
+Subject: [PATCH 5/8] x86: Add IRQ_TIME_ACCOUNTING in x86 -v4
+Date: Mon,  4 Oct 2010 17:03:20 -0700
+Message-Id: <1286237003-12406-6-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286237003-12406-1-git-send-email-venki@google.com>
 References: <1286237003-12406-1-git-send-email-venki@google.com>
@@ -31,124 +31,93 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To account softirq time cleanly in scheduler, we need to identify whether
-softirq is invoked in ksoftirqd context or softirq at hardirq tail context.
-Add PF_KSOFTIRQD for that purpose.
+This patch adds IRQ_TIME_ACCOUNTING option on x86 and runtime enables it
+when TSC is enabled.
 
-As all PF flag bits are currently taken, create space by moving one of the
-infrequently used bits (PF_THREAD_BOUND) down in task_struct to be along
-with some other state fields.
+This change just enables fine grained irq time accounting, isn't used yet.
+Following patches use it for different purposes.
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
- include/linux/sched.h |    3 ++-
- kernel/cpuset.c       |    2 +-
- kernel/kthread.c      |    2 +-
- kernel/sched.c        |    2 +-
- kernel/softirq.c      |    1 +
- kernel/workqueue.c    |    6 +++---
- 6 files changed, 9 insertions(+), 7 deletions(-)
+ Documentation/kernel-parameters.txt |    4 ++++
+ arch/x86/Kconfig                    |   11 +++++++++++
+ arch/x86/kernel/tsc.c               |    8 ++++++++
+ 3 files changed, 23 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 126457e..43064cd 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1234,6 +1234,7 @@ struct task_struct {
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 8dd7248..ed05a4a 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -2435,6 +2435,10 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			disables clocksource verification at runtime.
+ 			Used to enable high-resolution timer mode on older
+ 			hardware, and in virtualized environment.
++			[x86] noirqtime: Do not use TSC to do irq accounting.
++			Used to run time disable IRQ_TIME_ACCOUNTING on any
++			platforms where RDTSC is slow and this accounting
++			can add overhead.
  
- 	/* Revert to default priority/policy when forking */
- 	unsigned sched_reset_on_fork:1;
-+	unsigned sched_thread_bound:1;	/* Thread bound to specific cpu */
+ 	turbografx.map[2|3]=	[HW,JOY]
+ 			TurboGraFX parallel port interface
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cea0cd9..f4c70c2 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -795,6 +795,17 @@ config SCHED_MC
+ 	  making when dealing with multi-core CPU chips at a cost of slightly
+ 	  increased overhead in some places. If unsure say N here.
  
- 	pid_t pid;
- 	pid_t tgid;
-@@ -1708,7 +1709,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
- #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
- #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
- #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
--#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
-+#define PF_KSOFTIRQD	0x04000000	/* I am ksoftirqd */
- #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
- #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
- #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index b23c097..8a2eb02 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1394,7 +1394,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
- 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
- 	 * be changed.
- 	 */
--	if (tsk->flags & PF_THREAD_BOUND)
-+	if (tsk->sched_thread_bound)
- 		return -EINVAL;
++config IRQ_TIME_ACCOUNTING
++	bool "Fine granularity task level IRQ time accounting"
++	default n
++	---help---
++	  Select this option to enable fine granularity task irq time
++	  accounting. This is done by reading a timestamp on each
++	  transitions between softirq and hardirq state, so there can be a
++	  small performance impact.
++
++	  If in doubt, say N here.
++
+ source "kernel/Kconfig.preempt"
  
- 	ret = security_task_setscheduler(tsk, 0, NULL);
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 2dc3786..6b51a4c 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -185,7 +185,7 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
+ config X86_UP_APIC
+diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
+index 26a863a..a1c2cd7 100644
+--- a/arch/x86/kernel/tsc.c
++++ b/arch/x86/kernel/tsc.c
+@@ -104,10 +104,14 @@ int __init notsc_setup(char *str)
  
- 	p->cpus_allowed = cpumask_of_cpu(cpu);
- 	p->rt.nr_cpus_allowed = 1;
--	p->flags |= PF_THREAD_BOUND;
-+	p->sched_thread_bound = 1;
- }
- EXPORT_SYMBOL(kthread_bind);
+ __setup("notsc", notsc_setup);
  
-diff --git a/kernel/sched.c b/kernel/sched.c
-index b6e714b..c13fae6 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5464,7 +5464,7 @@ again:
- 		goto out;
- 	}
- 
--	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current &&
-+	if (unlikely(p->sched_thread_bound && p != current &&
- 		     !cpumask_equal(&p->cpus_allowed, new_mask))) {
- 		ret = -EINVAL;
- 		goto out;
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 988dfbe..267f7b7 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -713,6 +713,7 @@ static int run_ksoftirqd(void * __bind_cpu)
++static int no_sched_irq_time;
++
+ static int __init tsc_setup(char *str)
  {
- 	set_current_state(TASK_INTERRUPTIBLE);
+ 	if (!strcmp(str, "reliable"))
+ 		tsc_clocksource_reliable = 1;
++	if (!strncmp(str, "noirqtime", 9))
++		no_sched_irq_time = 1;
+ 	return 1;
+ }
  
-+	current->flags |= PF_KSOFTIRQD;
- 	while (!kthread_should_stop()) {
- 		preempt_disable();
- 		if (!local_softirq_pending()) {
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index f77afd9..7146ee6 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1340,12 +1340,12 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
- 	/*
- 	 * A rogue worker will become a regular one if CPU comes
- 	 * online later on.  Make sure every worker has
--	 * PF_THREAD_BOUND set.
-+	 * sched_thread_bound set.
- 	 */
- 	if (bind && !on_unbound_cpu)
- 		kthread_bind(worker->task, gcwq->cpu);
- 	else {
--		worker->task->flags |= PF_THREAD_BOUND;
-+		worker->task->sched_thread_bound = 1;
- 		if (on_unbound_cpu)
- 			worker->flags |= WORKER_UNBOUND;
- 	}
-@@ -2817,7 +2817,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
- 		if (IS_ERR(rescuer->task))
- 			goto err;
+@@ -801,6 +805,7 @@ void mark_tsc_unstable(char *reason)
+ 	if (!tsc_unstable) {
+ 		tsc_unstable = 1;
+ 		sched_clock_stable = 0;
++		disable_sched_clock_irqtime();
+ 		printk(KERN_INFO "Marking TSC unstable due to %s\n", reason);
+ 		/* Change only the rating, when not registered */
+ 		if (clocksource_tsc.mult)
+@@ -987,6 +992,9 @@ void __init tsc_init(void)
+ 	/* now allow native_sched_clock() to use rdtsc */
+ 	tsc_disabled = 0;
  
--		rescuer->task->flags |= PF_THREAD_BOUND;
-+		rescuer->task->sched_thread_bound = 1;
- 		wake_up_process(rescuer->task);
- 	}
- 
++	if (!no_sched_irq_time)
++		enable_sched_clock_irqtime();
++
+ 	lpj = ((u64)tsc_khz * 1000);
+ 	do_div(lpj, HZ);
+ 	lpj_fine = lpj;
 -- 
 1.7.1
 
