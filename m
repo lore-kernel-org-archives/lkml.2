@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab0JEVzF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 17:55:05 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46761
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757040Ab0JEVzD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 17:55:03 -0400
-Date: Tue, 05 Oct 2010 14:55:24 -0700 (PDT)
-Message-Id: <20101005.145524.35829931.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: alban.crequy@collabora.co.uk, lennart@poettering.net,
-        shemminger@vyatta.com, gorcunov@openvz.org, adobriyan@gmail.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH] AF_UNIX: Implement SO_TIMESTAMP and SO_TIMETAMPNS on
- Unix sockets
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1286220052.2381.70.camel@edumazet-laptop>
-References: <20101004194734.6a1caf3e@chocolatine.cbg.collabora.co.uk>
-	<1286218109-30771-1-git-send-email-alban.crequy@collabora.co.uk>
-	<1286220052.2381.70.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1757253Ab0JEWDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 18:03:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59301 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756117Ab0JEWDC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 18:03:02 -0400
+Date: Tue, 5 Oct 2010 15:02:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Samu Onkalo <samu.p.onkalo@nokia.com>
+Cc: rpurdie@linux.intel.com, linux-i2c@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 1/4] leds: driver for National Semiconductor LP5521
+ chip
+Message-Id: <20101005150256.7769a8c7.akpm@linux-foundation.org>
+In-Reply-To: <1285751405-22039-2-git-send-email-samu.p.onkalo@nokia.com>
+References: <1285751405-22039-1-git-send-email-samu.p.onkalo@nokia.com>
+	<1285751405-22039-2-git-send-email-samu.p.onkalo@nokia.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 04 Oct 2010 21:20:52 +0200
+On Wed, 29 Sep 2010 12:10:02 +0300
+Samu Onkalo <samu.p.onkalo@nokia.com> wrote:
 
-> Le lundi 04 octobre 2010 à 19:48 +0100, Alban Crequy a écrit :
->> Userspace applications can already request to receive timestamps with:
->> setsockopt(sockfd, SOL_SOCKET, SO_TIMESTAMP, ...)
->> 
->> Although setsockopt() returns zero (success), timestamps are not added to the
->> ancillary data. This patch fixes that on SOCK_DGRAM and SOCK_SEQPACKET Unix
->> sockets.
->> 
->> Signed-off-by: Alban Crequy <alban.crequy@collabora.co.uk>
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> +#define cdev_to_led(c)		container_of(c, struct lp5521_led, cdev)
+> +#define engine_to_lp5521(eng)	container_of((eng), struct lp5521_chip, \
+> +						engines[(eng)->id - 1])
+> +#define led_to_lp5521(led)	container_of((led), struct lp5521_chip, \
+> +						leds[(led)->id])
 
-Applied.
+It would be better if these were implemented as C functions.  That would
+make them cqearer, cleaner and more type-safe (container_of uses
+typecasts in a way which makes it possible to misuse).
+
+Also that would fix the bug which cdev_to_led(foo++) adds.
+
+Similar improvements can be made to the other driver.  Also
+SHIFT_MASK() and LE_ACTIVE() could become regular old lower-case C
+functions, I think.
+
