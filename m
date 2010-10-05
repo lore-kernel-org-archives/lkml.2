@@ -1,39 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756140Ab0JEBjS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 21:39:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55351 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751324Ab0JEBjR (ORCPT
+	id S1756624Ab0JEBmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 21:42:15 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:33650 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752556Ab0JEBmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 21:39:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:content-type;
-        b=nY5dUjNytIq0CaN/mXDaS9uHmjKsVvoJqRlOlciwvTrfFpu4UGMBvsGwy796mZ1sjR
-         CZ5WFDMBuRWoJpPzL9xd6Q0a6gTSseNqyKruhs/CigNGSAcLbuIbQkKgA4EVnHaHnW8B
-         R+USwJ//8ap5P8fDIEH1WvsvQUBP1i36nvOoI=
-MIME-Version: 1.0
-Date: Mon, 4 Oct 2010 21:39:16 -0400
-X-Google-Sender-Auth: vJfBYoRTprwFyCbo7F9gVPZjmMQ
-Message-ID: <AANLkTimKpVR5UVYLetwt=S4PSkMEJTBpUk7Q-o=ha_ds@mail.gmail.com>
-Subject: Detecting runnable process?
-From: Philip Wernersbach <philip.wernersbach@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Oct 2010 21:42:14 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 5 Oct 2010 10:36:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Jack Steiner <steiner@sgi.com>
+Cc: yinghai@kernel.org, mingo@elte.hu, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Problem: scaling of /proc/stat on large systems
+Message-Id: <20101005103650.7ebe64f0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101004143414.GA4261@sgi.com>
+References: <20100929122206.GA30317@sgi.com>
+	<20100930140901.037f9dc7.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101004143414.GA4261@sgi.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm writing some kernel code that given a task's task_struct must
-decide if it is runnable, and hasn't crashed or exited. So far here's
-what I've come up with:
+On Mon, 4 Oct 2010 09:34:15 -0500
+Jack Steiner <steiner@sgi.com> wrote:
 
-struct task_struct *my_task;
-... snip ...
-if(likely(my_task != NULL && pid_alive(my_task) == true)) { return my_task; }
+> On Thu, Sep 30, 2010 at 02:09:01PM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 29 Sep 2010 07:22:06 -0500
+> > Jack Steiner <steiner@sgi.com> wrote:
+> 
+> 
+> I was able to run on the 4096p system over the weekend. The patch is a 
+> definite improvement & partially fixes the problem:
+> 
+> A "cat /proc/stat >/dev/null" improved:
+> 
+>         OLD:    real    12.627s
+>         NEW:    real     2.459
+> 
+> 
+Thank you.
 
-Is this correct?
+> A large part of the remaining overhead is in the second summation 
+>  of irq information:
+> 
+> 
+>     static int show_stat(struct seq_file *p, void *v)
+>         ...
+>         /* sum again ? it could be updated? */
+>         for_each_irq_nr(j) {
+>                 per_irq_sum = 0;
+>                 for_each_possible_cpu(i)
+>                         per_irq_sum += kstat_irqs_cpu(j, i);
+> 
+>                 seq_printf(p, " %u", per_irq_sum);
+>         }
+> 
+> Can this be fixed using the same approach as in the current patch?
+> 
+> 
 
--Phil
+I guess this requres different approarch as per-cpu counter + threshould.
+like vmstat[] or lib/percpu_counter. 
+Maybe people don't like to access shared counter in IRQ.
+
+But, this seems to call radixtree-lookup for the # of possible cpus.
+I guess impleimenting a call to calculate a sum of irqs in a radix-tree
+lookup will reduce overhead. If it's not enough, we'll have to make the
+counter not-precise. I'll write an another patch.
+
+
+Thanks,
+-Kame
+
