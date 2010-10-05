@@ -1,85 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932944Ab0JELGc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 07:06:32 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:46082 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab0JELGb (ORCPT
+	id S932968Ab0JELIs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 07:08:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38721 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755268Ab0JELIq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 07:06:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=rXkJLRZZev7tL01fcQYVZxLe8Zsnx5sG8JePyEjS7BHzBbZCGzJUBOc9OIiSSWb13n
-         1QSrG/+kLkJL0gtZb4nvILPnfB0xQqC9eYo3nQW4ZNsLYgqQ5ezqdgV6vPFQnX5qLvJs
-         i7FatQ4Md38Z8xFUe6YDSHToJQ4gRWvKxexKw=
-Date: Tue, 5 Oct 2010 04:06:22 -0700
-From: Kent Overstreet <kent.overstreet@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Bcache version 8
-Message-ID: <20101005110622.GA2473@moria>
+	Tue, 5 Oct 2010 07:08:46 -0400
+Message-ID: <4CAB0732.3010400@pengutronix.de>
+Date: Tue, 05 Oct 2010 13:08:34 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+CC: Wolfgang Grandegger <wg@grandegger.com>, andrew.chih.howe.khor@intel.com,
+        qi.wang@intel.com, margie.foster@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
+        socketcan-core@lists.berlios.de, kok.howg.ewe@intel.com,
+        joel.clark@intel.com, Tomoya MORINAGA <morinaga526@dsn.okisemi.com>,
+        meego-dev@meego.com, "David S. Miller" <davem@davemloft.net>,
+        Christian Pellegrin <chripell@fsfe.org>,
+        Samuel Ortiz <sameo@linux.intel.com>
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
+References: <4C9C7C6F.1000003@dsn.okisemi.com>	<4CA4541F.5040804@grandegger.com>	<000401cb614f$c932c750$66f8800a@maildom.okisemi.com>	<4CA5D6D7.3010608@grandegger.com> <000401cb6477$25a0eba0$66f8800a@maildom.okisemi.com>
+In-Reply-To: <000401cb6477$25a0eba0$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigF5F5E8C1BBEF943F73724D22"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bcache is a patch to cache arbitrary block devices with an SSD. It's got
-writeback caching, it uses a hybrid btree/log for the index, and it's
-designed around avoiding random writes. It's fast, on benchmarks that
-test random IO it's faster than just using the SSD (with my corsair
-nova) - at least with bonnie++ and sysbench's mysql benchmark.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigF5F5E8C1BBEF943F73724D22
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-It should be about beta quality now - provided you've got backups (this
-is highly complicated code that handles your data, after all) you should
-be able to use it on non critical machines. It needs more testers
-though, proceed with caution until you've tested it on your own setup.
-Patch is currently against 2.6.35, alas I need to backport before I can
-go back to targeting mainline.
+On 10/05/2010 12:21 PM, Masayuki Ohtake wrote:
+> Hi Wolfgang,
+>=20
+> I could confirm below.
+> With FIFO mode, it is able to receive packet with in-order.
+> We are now implementing FIFO mode.
 
-There are some important caveats, the main one being that the ordering
-constraints of barriers are are ignored - worse, silently (due to the
-way it hooks into existing block devices instead of providing its own).
-You must explicitly disable barriers when you mount your filesystem if
-you don't want filesystem corruption after you reboot (writes are never
-returned as completed before everything's on disk though - it doesn't
-act like a disk that caches writes, it's just the ordering that's
-problematic).
+If FIFO is working you might also think about NAPI.
 
-Besides that, IO error handling is working, and recovering from unclean
-shutdown appears to be working reliably - there's one race that I know
-of left so it shouldn't be trusted, but in practice it's very hard to
-hit. I've been kill -9ing VMs while they're running dbench/bonnie/etc.
-and not finding any errors.
+cheers, Marc
 
-Biggest thing left is making memory allocation deadlock proof - in
-particular for the btree, which I'm currently using the page cache for.
-The current code works, but I doubt it's entirely correct or sane - if
-any reviewers would be willing to take a look at what I'm trying to do
-there, that's probably what needs it most.
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
 
-Also, anyone have any opinion on whether I should inline a 6k line
-patch? Given that there's not much I can do to usefully break it up, I
-don't know that it'd help - suggestions are welcome.
 
-Git repo is up at:
-git://evilpiepirate.org/~kent/linux-bcache.git
-Wiki is up at http://bcache.evilpiepirate.org
+--------------enigF5F5E8C1BBEF943F73724D22
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
- Documentation/bcache.txt |   75 +
- block/Kconfig            |   14 +
- block/Makefile           |    4 +
- block/bcache.c           | 5279 ++++++++++++++++++++++++++++++++++++++++++++++
- block/bcache_util.c      |  140 ++
- block/bcache_util.h      |  297 +++
- block/blk-core.c         |   10 +-
- fs/bio.c                 |   17 +-
- include/linux/bio.h      |    4 +
- include/linux/blkdev.h   |    2 +
- include/linux/fs.h       |    5 +
- include/linux/sched.h    |    4 +
- kernel/fork.c            |    3 +
-13 files changed, 5850 insertions(+), 4 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
+
+iEYEARECAAYFAkyrBzUACgkQjTAFq1RaXHPxgQCeLYKY3I9Bin2bJxzI1eMcNj/7
+LucAnix4ygjGlt1exbjpdaMuuuY4zdbw
+=2fP0
+-----END PGP SIGNATURE-----
+
+--------------enigF5F5E8C1BBEF943F73724D22--
