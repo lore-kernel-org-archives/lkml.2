@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab0JEGsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 02:48:11 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:56049 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754729Ab0JEGsK (ORCPT
+	id S1757600Ab0JEGtY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 02:49:24 -0400
+Received: from compulab.co.il ([67.18.134.219]:34003 "EHLO compulab.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752278Ab0JEGtW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 02:48:10 -0400
-X-Nat-Received: from [202.181.97.72]:50178 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1286261288.24245
-Message-Id: <201010050648.o956m7r6094121@www262.sakura.ne.jp>
-Subject: Re: Is it legal to return positive value when do_execve() succeeds?
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: kosaki.motohiro@jp.fujitsu.com
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+	Tue, 5 Oct 2010 02:49:22 -0400
+Message-ID: <4CAACA63.6090202@compulab.co.il>
+Date: Tue, 05 Oct 2010 08:49:07 +0200
+From: Igor Grinberg <grinberg@compulab.co.il>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.7) Gecko/20100816 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Tue, 05 Oct 2010 15:48:07 +0900
-References: <20101005102446.28C3.A69D9226@jp.fujitsu.com> <201010050224.o952Oaso040307@www262.sakura.ne.jp> <20101005121511.28D4.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20101005121511.28D4.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 05102010 #4286695, status: clean
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
+        vapier@gentoo.org, khilman@deeprootsystems.com,
+        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org, pavel@ucw.cz,
+        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH v2] Input: Make ADS7846 independent on regulator
+References: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com> <4C862EB3.4080006@compulab.co.il> <20100907125335.GD25830@sirena.org.uk> <201009091027.18176.marek.vasut@gmail.com> <20100909094120.GB1988@rakim.wolfsonmicro.main>
+In-Reply-To: <20100909094120.GB1988@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-ACL-Warn: {
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - compulab.site5.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KOSAKI Motohiro wrote:
-> > Thus, I think retval could be
-> > ELF_PAGEALIGN(elf_bss + load_bias) if elf_bss + load_bias is bogus.
-> 
-> What's mean bogus?
-> do_brk() call get_unmapped_area() and it check an argument is correctly
-> unmapped and userland address. If elf_bss + load_bias point to invalid
-> address, set_brk doesn't return elf_bss+load_bias.
-> 
-> 
-> > I'm OK with this if it is guaranteed that elf_bss + load_bias is always valid
-> > and set_brk() never returns ELF_PAGEALIGN(elf_bss + load_bias).
-> 
-> I think elf_bss + load_bias could be invalid (i.e. >TASK_SIZE). 
-> but set_brk can detect it.
-> 
+ On 09/09/10 12:41, Mark Brown wrote:
+> On Thu, Sep 09, 2010 at 10:27:17AM +0200, Marek Vasut wrote:
+>> Dne Út 7. září 2010 14:53:35 Mark Brown napsal(a):
+>>> From a regulator API usage point of view a separate implementation of
+>>> the same thing was nacked - there are regulator API facilties for hiding
+>>> missing regulators from drivers when needed to get systems going, unless
+>>> the device genuinely can cope without supplies it should be relying on
+>>> those.
 
-Indeed. Then, we can replace BAD_ADDR() with IS_ERR_VALUE() as you proposed.
+I actually, don't see why ads7846 is strictly relying on the regulator
+and I don't understand, why ads7846 driver has to bail out if the regulator
+is not found? Why shouldn't the driver try to continue?
+I think it should bail out only in case communicating with the device failed.
 
+>> Maybe these platforms should have been fixed prior to applying the patch adding 
+>> regulator goo into ads7846 driver then. What's the way to go now then ?
+> Fix the platforms and use the dummy regulators to keep them going until
+> that happens.  It's trivial to do the hookup in the platforms.
 
+You want each platform, that does not have a special regulated power supply
+for the ads7846, to define a dummy regulator just to cope with that artificial
+dependency of the device driver?
+I think it is a waste and big code duplication in each platform
+that does not have that special regulator.
 
-Well... who returns positive value when do_execve() succeeds? Nobody?
-Then, I wonder why search_binary_handler() is designed to return positive value...
+-- 
+Regards,
+Igor.
+
