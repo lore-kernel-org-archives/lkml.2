@@ -1,98 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab0JEODx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 10:03:53 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:29495 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab0JEODv (ORCPT
+	id S1753193Ab0JEOFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 10:05:22 -0400
+Received: from eu1sys200aog109.obsmtp.com ([207.126.144.127]:50202 "EHLO
+	eu1sys200aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751233Ab0JEOFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 10:03:51 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2] DMI: log system, BIOS, and board information
-Date: Tue, 5 Oct 2010 08:02:46 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <20100930164905.13154.33194.stgit@bob.kio> <20101005024529.GA20805@helgaas.com> <20101004195406.96d71305.akpm@linux-foundation.org>
-In-Reply-To: <20101004195406.96d71305.akpm@linux-foundation.org>
+	Tue, 5 Oct 2010 10:05:21 -0400
+Message-ID: <4CAB3074.5010106@stericsson.com>
+Date: Tue, 5 Oct 2010 16:04:36 +0200
+From: Linus Walleij <linus.walleij@stericsson.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Colin Cross <ccross@android.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Gary King <gking@nvidia.com>, Russell King <linux@arm.linux.org.uk>,
+        Rabin VINCENT <rabin.vincent@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Rickard ANDERSSON <rickard.andersson@stericsson.com>
+Subject: Re: [PATCH 1/2] gic: Add functions to save and restore gic state
+References: <1285901335-26354-1-git-send-email-ccross@android.com>
+In-Reply-To: <1285901335-26354-1-git-send-email-ccross@android.com>
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010050802.49055.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 04, 2010 08:54:06 pm Andrew Morton wrote:
-> On Mon, 4 Oct 2010 20:45:29 -0600 Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> 
-> > On Mon, Oct 04, 2010 at 04:19:26PM -0700, Andrew Morton wrote:
-> > > On Thu, 30 Sep 2010 10:49:05 -0600
-> > > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> > > 
-> > > > 
-> > > > Put basic system information in the dmesg log.  There are lots of dmesg
-> > > > logs on the web, and it would be useful if they contained this information
-> > > > for debugging platform problems.
-> > > > 
-> > > > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > > > ---
-> > > > 
-> > > >  drivers/firmware/dmi_scan.c |   35 ++++++++++++++++++++++++++++++++++-
-> > > >  1 files changed, 34 insertions(+), 1 deletions(-)
-> > > > 
-> > > > 
-> > > > diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-> > > > index b3d22d6..d625e53 100644
-> > > > --- a/drivers/firmware/dmi_scan.c
-> > > > +++ b/drivers/firmware/dmi_scan.c
-> > > > @@ -2,6 +2,7 @@
-> > > >  #include <linux/string.h>
-> > > >  #include <linux/init.h>
-> > > >  #include <linux/module.h>
-> > > > +#include <linux/ctype.h>
-> > > >  #include <linux/dmi.h>
-> > > >  #include <linux/efi.h>
-> > > >  #include <linux/bootmem.h>
-> > > > @@ -361,6 +362,36 @@ static void __init dmi_decode(const struct dmi_header *dm, void *dummy)
-> > > >  	}
-> > > >  }
-> > > >  
-> > > > +static const char * __init dmi_printable_system_info(int field)
-> > > > +{
-> > > > +	const char *info, *p;
-> > > > +
-> > > > +	info = dmi_get_system_info(field);
-> > > > +	if (!info)
-> > > > +		return NULL;
-> > > > +
-> > > > +	for (p = info; *p; p++)
-> > > > +		if (!isprint(*p))
-> > > > +			return "<...>";
-> > > > +
-> > > > +	return info;
-> > > > +}
-> > > 
-> > > So if the string contains any non-printable character, we suppress the
-> > > whole string.
-> > > 
-> > > Is that the best thing to do?  Would it be better to present the
-> > > oddball character as \xNN or such?
-> > 
-> > I would definitely prefer to do that, but that would mean allocating
-> > memory, and this happens so early that it looked like it would be
-> > more trouble than it's worth.  I'm not saying I couldn't be convinced,
-> > though.
-> 
-> Well, one could print the data one char at a time.  If we're running
-> early in boot with a single CPU up then that wouldn't make too big a
-> mess.
-> 
-> Is there some upper bound to the length of a DMI string?  If so, use a
-> static initdata buffer dimensioned to 4x that?
+Colin Cross wrote:
 
-Yeah, good ideas.  I'll push on that a little bit more.
+> on systems with idle states which power-gate the logic including
+> the gic, such as tegra, the gic distributor needs to be shut down
+> and restored on entry and exit from the architecture idle code
 
-Bjorn
+Nice!
+
+> +
+> +#ifdef CONFIG_PM
+> +void gic_dist_save(unsigned int gic_nr)
+> +{
+> +	unsigned int max_irq = gic_data[gic_nr].max_irq;
+> +	void __iomem *dist_base = gic_data[gic_nr].dist_base;
+> +	int i;
+> +
+> +	if (gic_nr >= MAX_GIC_NR)
+> +		BUG();
+> +
+> +	_gic_dist_exit(gic_nr);
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 16); i++)
+> +		gic_data[gic_nr].saved_conf[i] =
+> +			readl(dist_base + GIC_DIST_CONFIG + i * 4);
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
+> +		gic_data[gic_nr].saved_pri[i] =
+> +			readl(dist_base + GIC_DIST_PRI + i * 4);
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
+> +		gic_data[gic_nr].saved_target[i] =
+> +			readl(dist_base + GIC_DIST_TARGET + i * 4);
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 32); i++)
+> +		gic_data[gic_nr].saved_enable[i] =
+> +			readl(dist_base + GIC_DIST_ENABLE_SET + i * 4);
+> +}
+> +
+> +void gic_dist_restore(unsigned int gic_nr)
+> +{
+> +	unsigned int max_irq;
+> +	unsigned int i;
+> +	void __iomem *dist_base;
+> +	void __iomem *cpu_base;
+> +
+> +	if (gic_nr >= MAX_GIC_NR)
+> +		BUG();
+> +
+> +	_gic_dist_init(gic_nr);
+> +
+> +	max_irq = gic_data[gic_nr].max_irq;
+> +	dist_base = gic_data[gic_nr].dist_base;
+> +	cpu_base = gic_data[gic_nr].cpu_base;
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 16); i++)
+> +		writel(gic_data[gic_nr].saved_conf[i],
+> +			dist_base + GIC_DIST_CONFIG + i * 4);
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
+> +		writel(gic_data[gic_nr].saved_pri[i],
+> +			dist_base + GIC_DIST_PRI + i * 4);
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 4); i++)
+> +		writel(gic_data[gic_nr].saved_target[i],
+> +			dist_base + GIC_DIST_TARGET + i * 4);
+> +
+> +	for (i = 0; i < DIV_ROUND_UP(max_irq, 32); i++)
+> +		writel(gic_data[gic_nr].saved_enable[i],
+> +			dist_base + GIC_DIST_ENABLE_SET + i * 4);
+> +
+> +	writel(1, dist_base + GIC_DIST_CTRL);
+> +	writel(0xf0, cpu_base + GIC_CPU_PRIMASK);
+> +	writel(1, cpu_base + GIC_CPU_CTRL);
+> +}
+> +#endif
+
+For gic_dist_save()/gic_dist_restore() can you write some
+comment to each function about the implicit semantics for
+calling them?
+
+If I *guess* correctly gic_dist_save() must be called in
+something like a platform idle function after disabling all
+IRQs but before sleeping, conversely gic_dist_restort()
+must be called after sleeping but before re-enabling the
+IRQs.
+
+Apart from that it looks good to me so with this
+simple comment-fix it's:
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+
+Yours,
+Linus Walleij
