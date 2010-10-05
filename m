@@ -1,58 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab0JEIwc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 04:52:32 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:17151 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753336Ab0JEIwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 04:52:31 -0400
-From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-To: akpm@linux-foundation.org, torvalds@linux-foundation.org
-Cc: m.nazarewicz@samsung.com, mingo@elte.hu, gregkh@suse.de,
-        a.p.zijlstra@chello.nl, xiaosuo@gmail.com,
-        linux-kernel@vger.kernel.org, ext-eugeny.kuznetsov@nokia.com
-Subject: [PATCH 1/1] wait: using uninitialized member of wait queue
-Date: Tue,  5 Oct 2010 12:47:57 +0400
-Message-Id: <dfd3348b7971bee89360efb85f8d622e6574b003.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <cover.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
-References: <cover.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
-In-Reply-To: <cover.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
-References: <cover.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
-X-OriginalArrivalTime: 05 Oct 2010 08:51:34.0508 (UTC) FILETIME=[837672C0:01CB646A]
-X-Nokia-AV: Clean
+	id S932304Ab0JEIzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 04:55:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21037 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753317Ab0JEIzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 04:55:49 -0400
+Date: Tue, 5 Oct 2010 10:57:17 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: stable@kernel.org,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
+        "Chatre, Reinette" <reinette.chatre@intel.com>,
+        Intel Linux Wireless <ilw@linux.intel.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "Cahill, Ben M" <ben.m.cahill@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Fw: [PATCH] iwl3945: queue the right work if the scan needs to
+ be aborted
+Message-ID: <20101005085717.GA18012@redhat.com>
+References: <20101005084305.52a31ed4@schatten.dmk.lab>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101005084305.52a31ed4@schatten.dmk.lab>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Evgeny Kuznetsov <ext-eugeny.kuznetsov@nokia.com>
+On Tue, Oct 05, 2010 at 08:43:05AM +0200, Florian Mickler wrote:
+> commit e7ee762cf074b0fd8eec483d0cef8fdbf0d04b81
+> 
+> 
+> Begin forwarded message:
+> On Fri, 2010-09-24 at 09:22 -0700, Florian Mickler wrote:
+> > iwl3945's scan_completed calls into the mac80211 stack which triggers a
+> > warn on if there is no scan outstanding.
+> > 
+> > This can be avoided by not calling scan_completed but abort_scan in
+> > iwl3945_request_scan  in the done: branch of the function which is used
+> > as an error out.
+> > 
+> > The done: branch seems to be an error-out branch, as, for example, if
+> > iwl_is_ready(priv) returns false  the done: branch is executed.
+> > 
+> > NOTE:
+> > I'm not familiar with the driver at all.
+> > I just quickly scanned as a reaction to
+> > 
+> > https://bugzilla.kernel.org/show_bug.cgi?id=17722
+> > 
+> > the users of scan_completed in the  iwl3945 driver and noted the odd
+> > discrepancy between the comment above this instance and the comment in
+> > mac80211 scan_completed function.
+> > Signed-off-by: Florian Mickler <florian@mickler.org>
+> Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+> > ---
+> go into wireless-2.6 and stable only, scan fix already in
+> wireless-next-2.6
 
-Member "flags" of "wait_queue_t" struct  is used in several places in
-kernel code without beeing initialized. "flags" is used in bitwise operations.
-If "flags" not initialized then unexpected behaviour may have place.
-Incorrect flags maybe used later in code.
-Struct "wait_queue_t" is initialized in function "init_wait()". But
-"init_wait()" do not initialize "flag" member.
-Added initialization of "wait_queue_t.flags" with zero value into "init_wait".
+> 
+> Thanks
+> Wey
+> 
+> >  drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |    2 +-
+> >  drivers/net/wireless/iwlwifi/iwl3945-base.c |    2 +-
+> >  2 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> > index 9dd9e64..8fd00a6 100644
+> > --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> > +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> > @@ -1411,7 +1411,7 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+> >  	clear_bit(STATUS_SCAN_HW, &priv->status);
+> >  	clear_bit(STATUS_SCANNING, &priv->status);
+> >  	/* inform mac80211 scan aborted */
+> > -	queue_work(priv->workqueue, &priv->scan_completed);
+> > +	queue_work(priv->workqueue, &priv->abort_scan);
 
-Signed-off-by: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
----
- include/linux/wait.h |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Unfortunately this patch is not right thing to do. If you look at
+abort_scan work, it do nothing if STATUS_SCAN_ABORTING bit is not set.
+That's wrong because we have to complete scan (with abort == true).
+If STATUS_SCAN_ABORTING will be set, abort_work will send scan cancel
+commands to hardware what is wrong if scan was not started yet.
 
-diff --git a/include/linux/wait.h b/include/linux/wait.h
-index 0836ccc..3efc9f3 100644
---- a/include/linux/wait.h
-+++ b/include/linux/wait.h
-@@ -614,6 +614,7 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
- 		(wait)->private = current;				\
- 		(wait)->func = autoremove_wake_function;		\
- 		INIT_LIST_HEAD(&(wait)->task_list);			\
-+		(wait)->flags = 0;					\
- 	} while (0)
+What we can eventually do, except apply iwl-scan rewrite from
+wireless-testing, is something like that:
  
- /**
--- 
-1.6.3.3
+iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
 
+  clear_bit(STATUS_SCAN_HW, &priv->status); 
+  clear_bit(STATUS_SCANNING, &priv->status); 
+  /* inform mac80211 scan aborted */ 
+  set_bit(STATUS_SCAN_ABORTING, &priv->status);
+  queue_work(priv->workqueue, &priv->scan_completed);
+
+ieee80211_scan_completed
+  
+  if (!internal) {
+     bool aborted = test_bit(STATUS_SCAN_ABORTING, &priv->status);
+     ieee80211_scan_completed(priv->hw, aborted);
+
+  }
+
+However, I do not think we should go with that to -stable (below
+2.6.36). IIRC warnings showed up in current 2.6.36-rc, because of
+some other changes in the code.
+
+Stanislaw
