@@ -1,190 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab0JEOts (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 10:49:48 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56868 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab0JEOtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 10:49:47 -0400
-Date: Tue, 5 Oct 2010 16:49:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] perf fixes
-Message-ID: <20101005144929.GA8517@elte.hu>
+	id S1752525Ab0JEOxL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 10:53:11 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:26972
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751210Ab0JEOxK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 10:53:10 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz1432N98dNzz1202hzz8275bhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0L9TNYK-02-771-02
+X-M-MSG: 
+Date: Tue, 5 Oct 2010 16:51:55 +0200
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: <robert.richter@amd.com>, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 0/3] Basic support for LWP
+Message-ID: <20101005145155.GD173@escobedo.osrc.amd.com>
+References: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com>
+ <alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_b=2E_M=FCnchen=3B_Ges?=
+	=?iso-8859-1?Q?ch=E4ftsf=FChrer=3A_Andrew_Bowd=2C_Alberto_Bozzo=3B_Sitz?=
+	=?iso-8859-1?Q?=3A_Dornach=2C_Gemeinde_Aschheim=2C_Landkreis_M=FCnchen=3B?=
+	=?iso-8859-1?Q?_Registergericht_M=FCnchen=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+[ adding Robert ]
 
-Please pull the latest perf-fixes-for-linus git tree from:
+On Mon, Oct 04, 2010 at 06:13:46PM -0400, Thomas Gleixner wrote:
+> > LWP (Light-Weight Profiling) is a new profiling mechanism that allows
+> > user mode processes to gather performance data about themselves with
+> > very low overhead. The specification can be found here:
+> >         http://developer.amd.com/cpu/LWP/Pages/default.aspx
+> 
+> All I can see there is marketing blurb. The spec pdf does not tell me
+> either how the end result of your patches will look like.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
+Well, you should get a basic understanding of how LWP works from the
+spec. I'm pretty sure there is more than that blurb in there.
 
- Thanks,
+What I sent _is_ the end result. Supporting LWP in the task switching
+code is the only thing necessary to use the LWP instructions in user
+space. And that is also what I'd like to get some comments on.
 
-	Ingo
+> > This code adds basic support for LWP to the context switch code, which
+> > is the minimum needed to use LWP. Support for other LWP features like
+> > interrupts will be added later.
+> 
+> Oh no. We are not going to merge that and give you a card blanche to
+> come up with another profiling/performance monitoring facility which
+> is completely disconnected to everything else.
 
------------------->
-Cyrill Gorcunov (1):
-      perf, x86: Handle in flight NMIs on P4 platform
+I think you got something wrong here, probably because I wasn't clear
+enough :)
 
-Frederik Deweerdt (1):
-      perf ui hist browser: Fix segfault on 'a' for annotate
+What I sent was just the basic kernel support, which means
+saving/restoring the LWP state in task switches. Technically no other
+kernel changes are necessary to use LWP in user space programs. No
+kernel framework of any kind is necessary to use LWP. Additionally,
+Robert is checking whether and how LWP support could be integrated
+into perf. This of course depends on having basic LWP task switching
+support in the kernel.
 
-Jiri Olsa (1):
-      oprofile: Add Support for Intel CPU Family 6 / Model 29
+> Please provide either the full patch of this facility or at least a
+> reasonable explanation how it will look like when your code is
+> ready. What's the user space interface, how does it hook into perf,
+> etc ...
 
-Kusanagi Kouichi (1):
-      perf tools: Fix build breakage
+The basic principle of LWP is that a user program reserves some memory
+for a LWP control block and a ring buffer, writes the ring buffer
+address and some setup bits into the control block, and executes the
+LLWPCB instruction to load the control block into the CPU. While the
+program runs it can periodically read the samples from the ring buffer
+and do something useful with them. The program being profiled needs to
+include support for LWP to do that. In case you can't or don't want to
+modify the program being profiled, a small LWP library would have to
+be written that would have to be LD_PRELOADed. I don't really know
+what it will look like in the end and how it will be integrated into
+perf. The tool/library developers will probably know best how to make
+use of LWP.
 
-Robert Richter (1):
-      oprofile, ARM: Release resources on failure
+The point is that LWP is supposed to be controlled and used from user
+space without any kernel interaction, provided that the kernel
+saves/restores the LWP context. That's also how I tested it, using a
+small test program that just uses the LWP instructions.
 
-Stephane Eranian (1):
-      perf trace scripting: Fix extern struct definitions
+Technically LWP is quite similar to the FPU, it even uses the same
+facilities for OS support. Just like FPU support, the kernel doesn't
+have to care at all about what user space is going to do with it. It
+just has to make sure state is saved and restored when necessary.
 
 
- arch/arm/oprofile/common.c              |    7 +++++--
- arch/x86/kernel/cpu/perf_event_p4.c     |    6 +++++-
- arch/x86/oprofile/nmi_int.c             |    1 +
- tools/perf/Makefile                     |    2 +-
- tools/perf/util/trace-event-scripting.c |    4 ++--
- tools/perf/util/ui/browsers/hists.c     |    2 +-
- 6 files changed, 15 insertions(+), 7 deletions(-)
+Hans
 
-diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index 0691176..72e09eb 100644
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -102,6 +102,7 @@ static int op_create_counter(int cpu, int event)
- 	if (IS_ERR(pevent)) {
- 		ret = PTR_ERR(pevent);
- 	} else if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
-+		perf_event_release_kernel(pevent);
- 		pr_warning("oprofile: failed to enable event %d "
- 				"on CPU %d\n", event, cpu);
- 		ret = -EBUSY;
-@@ -365,6 +366,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 	ret = init_driverfs();
- 	if (ret) {
- 		kfree(counter_config);
-+		counter_config = NULL;
- 		return ret;
- 	}
- 
-@@ -402,7 +404,6 @@ void oprofile_arch_exit(void)
- 	struct perf_event *event;
- 
- 	if (*perf_events) {
--		exit_driverfs();
- 		for_each_possible_cpu(cpu) {
- 			for (id = 0; id < perf_num_counters; ++id) {
- 				event = perf_events[cpu][id];
-@@ -413,8 +414,10 @@ void oprofile_arch_exit(void)
- 		}
- 	}
- 
--	if (counter_config)
-+	if (counter_config) {
- 		kfree(counter_config);
-+		exit_driverfs();
-+	}
- }
- #else
- int __init oprofile_arch_init(struct oprofile_operations *ops)
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index b560db3..2490151 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -660,8 +660,12 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
- 		int overflow;
- 
--		if (!test_bit(idx, cpuc->active_mask))
-+		if (!test_bit(idx, cpuc->active_mask)) {
-+			/* catch in-flight IRQs */
-+			if (__test_and_clear_bit(idx, cpuc->running))
-+				handled++;
- 			continue;
-+		}
- 
- 		event = cpuc->events[idx];
- 		hwc = &event->hw;
-diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
-index 009b819..f1575c9 100644
---- a/arch/x86/oprofile/nmi_int.c
-+++ b/arch/x86/oprofile/nmi_int.c
-@@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_type)
- 	case 0x0f:
- 	case 0x16:
- 	case 0x17:
-+	case 0x1d:
- 		*cpu_type = "i386/core_2";
- 		break;
- 	case 0x1a:
-diff --git a/tools/perf/Makefile b/tools/perf/Makefile
-index 4f1fa77..1950e19 100644
---- a/tools/perf/Makefile
-+++ b/tools/perf/Makefile
-@@ -1017,7 +1017,7 @@ builtin-revert.o wt-status.o: wt-status.h
- # we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
- # we depend the various files onto their directories.
- DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
--$(DIRECTORY_DEPS): $(sort $(dir $(DIRECTORY_DEPS)))
-+$(DIRECTORY_DEPS): | $(sort $(dir $(DIRECTORY_DEPS)))
- # In the second step, we make a rule to actually create these directories
- $(sort $(dir $(DIRECTORY_DEPS))):
- 	$(QUIET_MKDIR)$(MKDIR) -p $@ 2>/dev/null
-diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
-index 7ea983a..f7af2fc 100644
---- a/tools/perf/util/trace-event-scripting.c
-+++ b/tools/perf/util/trace-event-scripting.c
-@@ -97,7 +97,7 @@ void setup_python_scripting(void)
- 	register_python_scripting(&python_scripting_unsupported_ops);
- }
- #else
--struct scripting_ops python_scripting_ops;
-+extern struct scripting_ops python_scripting_ops;
- 
- void setup_python_scripting(void)
- {
-@@ -158,7 +158,7 @@ void setup_perl_scripting(void)
- 	register_perl_scripting(&perl_scripting_unsupported_ops);
- }
- #else
--struct scripting_ops perl_scripting_ops;
-+extern struct scripting_ops perl_scripting_ops;
- 
- void setup_perl_scripting(void)
- {
-diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
-index dafdf67..6866aa4 100644
---- a/tools/perf/util/ui/browsers/hists.c
-+++ b/tools/perf/util/ui/browsers/hists.c
-@@ -773,7 +773,7 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
- 
- 			switch (key) {
- 			case 'a':
--				if (browser->selection->map == NULL &&
-+				if (browser->selection->map == NULL ||
- 				    browser->selection->map->dso->annotate_warned)
- 					continue;
- 				goto do_annotate;
+
+-- 
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+
