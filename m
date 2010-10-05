@@ -1,72 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756217Ab0JESXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 14:23:23 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:49070 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754093Ab0JESXW convert rfc822-to-8bit (ORCPT
+	id S1754269Ab0JES1y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 14:27:54 -0400
+Received: from am1ehsobe004.messaging.microsoft.com ([213.199.154.207]:15961
+	"EHLO AM1EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750821Ab0JES1x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 14:23:22 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: "Savoy, Pavan" <pavan_savoy@ti.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-CC: "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 5 Oct 2010 23:53:02 +0530
-Subject: RE: [PATCH 0/3] prepare TI_ST to move out of staging
-Thread-Topic: [PATCH 0/3] prepare TI_ST to move out of staging
-Thread-Index: Actg0eelrWOljxKJRuWLYfI5qDDUmgD6GBeQ
-Message-ID: <19F8576C6E063C45BE387C64729E739404AA21CB11@dbde02.ent.ti.com>
-References: <1285877610-3043-1-git-send-email-pavan_savoy@ti.com>
-In-Reply-To: <1285877610-3043-1-git-send-email-pavan_savoy@ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Oct 2010 14:27:53 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9TXY6-01-1ME-02
+X-M-MSG: 
+Date: Tue, 5 Oct 2010 20:27:39 +0200
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: "Richter, Robert" <robert.richter@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 0/3] Basic support for LWP
+Message-ID: <20101005182739.GE173@escobedo.osrc.amd.com>
+References: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com>
+ <alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6>
+ <20101005145155.GD173@escobedo.osrc.amd.com>
+ <alpine.LFD.2.00.1010051730060.2556@localhost6.localdomain6>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1010051730060.2556@localhost6.localdomain6>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_b=2E_M=FCnchen=3B_Ges?=
+	=?iso-8859-1?Q?ch=E4ftsf=FChrer=3A_Andrew_Bowd=2C_Alberto_Bozzo=3B_Sitz?=
+	=?iso-8859-1?Q?=3A_Dornach=2C_Gemeinde_Aschheim=2C_Landkreis_M=FCnchen=3B?=
+	=?iso-8859-1?Q?_Registergericht_M=FCnchen=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Tue, Oct 05, 2010 at 11:34:11AM -0400, Thomas Gleixner wrote:
+> So it's the end result. Ok, then explain the following sentence:
+>  
+> > > > This code adds basic support for LWP to the context switch code, which
+> > > > is the minimum needed to use LWP. Support for other LWP features like
+> > > > interrupts will be added later.
+> 
+> If your patch _IS_ the end result then there are no other LWP
+> features, right ?
 
-> -----Original Message-----
-> From: Savoy, Pavan
-> Sent: Thursday, September 30, 2010 3:13 PM
-> To: gregkh@suse.de; alan@lxorguk.ukuu.org.uk
-> Cc: devel@driverdev.osuosl.org; linux-kernel@vger.kernel.org; Savoy, Pavan
-> Subject: [PATCH 0/3] prepare TI_ST to move out of staging
-> 
-> From: Pavan Savoy <pavan_savoy@ti.com>
+Ok, you got me there. I should have checked again before I wrote this.
 
-I hope you can get some time to review this week.
+There is at one other optional feature. Thats the support for a
+thresholding interrupt, which the OS should relay to the user process
+in one way or another.
 
-> Greg,
-> 
-> As suggested, the patch has been modified to set of 3 patches.
-> 1. to add the new line discipline number to tty.h
-> 2. rm the __KERNEL__ since the header is no more required for user-space
-> 3. mv the header file to include/linux/
-> 
-> Please review.
-> 
-> Pavan Savoy (3):
->   include:linux: tty.h: new ldisc for TI WiLink ST
->   drivers:staging:ti-st: drop the __KERNEL__
->   drivers:staging:ti-st: mv ti_wilink_st header
-> 
->  drivers/staging/ti-st/bt_drv.c       |    2 +-
->  drivers/staging/ti-st/st_core.c      |    2 +-
->  drivers/staging/ti-st/st_kim.c       |    2 +-
->  drivers/staging/ti-st/st_ll.c        |    2 +-
->  drivers/staging/ti-st/ti_wilink_st.h |  409 ---------------------------------
-> -
->  include/linux/ti_wilink_st.h         |  402 +++++++++++++++++++++++++++++++++
->  include/linux/tty.h                  |    1 +
->  7 files changed, 407 insertions(+), 413 deletions(-)
->  delete mode 100644 drivers/staging/ti-st/ti_wilink_st.h
->  create mode 100644 include/linux/ti_wilink_st.h
+But thats not required to use LWP instructions. Maybe Robert will add
+it to perf some day, or maybe not. It is completely optional, and how
+it is implemented at some point in the future is completely irrelevant
+to the basic support of LWP.
+
+> If there are, then your patch is _NOT_ the end result and we really
+> want to know what is coming.
+
+As far as I am concerned, it _is_ the end result. It implements the
+necessary changes to make LWP usable, and that's it.
+
+Whatever support for optional features Robert or anybody else may be
+going to implement or not affects in no way the necessity of managing
+the LWP state for user processes. Those are two completely unrelated
+issues.
+
+Now, since this was obviously not made clear enough before:
+
+  Don't merge this code anywhere yet. This is an RFC and nothing else.
+  It implements a basic change necessary to support a new instruction
+  set, which just so happens to be a profiling mechanism, too. Please
+  review the code and flame me for anything that you don't like in it.
+  
+
+Hans
+
+
+
+PS: The patches were not delivered to LKML previously, so I'll resend
+them.
+
+-- 
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
 
