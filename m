@@ -1,237 +1,395 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755832Ab0JET27 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 15:28:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58755 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754568Ab0JET25 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 15:28:57 -0400
-Date: Tue, 5 Oct 2010 12:22:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Arun Murthy <arun.murthy@stericsson.com>
-Cc: <lars@metafoo.de>, <kernel@pengutronix.de>, <philipp.zabel@gmail.com>,
-        <robert.jarzmik@free.fr>, <marek.vasut@gmail.com>,
-        <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>, <sameo@linux.intel.com>,
-        <kgene.kim@samsung.com>, <linux-omap@vger.kernel.org>,
-        <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
-        <linux-mips@linux-mips.org>, <STEricsson_nomadik_linux@list.st.com>,
-        <bgat@billgatliff.com>
-Subject: Re: [PATCHv2 1/7] pwm: Add pwm core driver
-Message-Id: <20101005122225.6dda30ff.akpm@linux-foundation.org>
-In-Reply-To: <1286280002-1636-2-git-send-email-arun.murthy@stericsson.com>
-References: <1286280002-1636-1-git-send-email-arun.murthy@stericsson.com>
-	<1286280002-1636-2-git-send-email-arun.murthy@stericsson.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755416Ab0JETdF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 15:33:05 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:51538 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755047Ab0JETdD convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 15:33:03 -0400
+Date: Tue, 5 Oct 2010 15:32:57 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: linux-kernel@vger.kernel.org, systemtap@sources.redhat.com,
+        ltt-dev@lists.casi.polymtl.ca
+Cc: Steven Rostedt <rostedt@goodmis.org>, mingo@elte.hu,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Elena Zannoni <elena.zannoni@oracle.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Aaron Spear <aaron_spear@mentor.com>,
+        Tasneem Brutch - SISA <t.brutch@sisa.samsung.com>,
+        Tim Bird <tim.bird@am.sony.com>, dominique.toupin@ericsson.com,
+        Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Philippe Maisonneuve <Philippe.Maisonneuve@windriver.com>,
+        Felix Burton <Felix.Burton@windriver.com>,
+        Andrew McDermott <Andrew.McDermott@windriver.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Subject: [RFC] Common Trace Format Requirements (v1.4)
+Message-ID: <20101005193257.GA25605@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:24:39 up 12 days, 23:26,  7 users,  load average: 0.21, 0.15,
+	0.10
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Oct 2010 17:29:56 +0530
-Arun Murthy <arun.murthy@stericsson.com> wrote:
+Mathieu Desnoyers, EfficiOS Inc.
 
-> The existing pwm based led and backlight driver makes use of the
-> pwm(include/linux/pwm.h). So all the board specific pwm drivers will
-> be exposing the same set of function name as in include/linux/pwm.h.
-> Consder a platform with multi Soc or having more than one pwm module, in
-> such a case, there exists more than one pwm driver for a platform. Each
-> of these pwm drivers export the same set of function and hence leads to
-> re-declaration build error.
-> 
-> In order to overcome this issue all the pwm drivers must register to
-> some core pwm driver with function pointers for pwm operations (i.e
-> pwm_config, pwm_enable, pwm_disable).
-> 
-> The clients of pwm device will have to call pwm_request, wherein
-> they will get the pointer to struct pwm_ops. This structure include
-> function pointers for pwm_config, pwm_enable and pwm_disable.
-> 
+  The goal of the present document is to gather the trace format requirements
+from the embedded, telecom, high-performance and kernel communities. It consists
+of an overview of the trace format, tracer and trace analyzer requirements to
+consider for a Common Trace Format proposal.
 
-Have we worked out who will be merging this work, if it gets merged?
+This document includes requirements from:
 
->
-> ...
->
-> +struct pwm_dev_info {
-> +	struct pwm_device *pwm_dev;
-> +	struct list_head list;
-> +};
-> +static struct pwm_dev_info *di;
+Steven Rostedt <rostedt@goodmis.org>
+Dominique Toupin <dominique.toupin@ericsson.com>
+Aaron Spear <aaron_spear@mentor.com>
+Philippe Maisonneuve <Philippe.Maisonneuve@windriver.com>
+Felix Burton <Felix.Burton@windriver.com>
+Andrew McDermott <Andrew.McDermott@windriver.com>
+"Frank Ch. Eigler" <fche@redhat.com>
+Michel Dagenais <michel.dagenais@polymtl.ca>
+Stefan Hajnoczi <stefanha@gmail.com>
+Multi-Core Association Tool Infrastructure Workgroup
+   (http://www.multicore-association.org/workgroup/tiwg.php)
 
-We could just do
 
-	static struct pwm_dev_info {
-		...
-	} *di;
+* Trace Format Requirements
 
-> +DECLARE_RWSEM(pwm_list_lock);
+  These are requirements on the trace format per se. This section discusses the
+layout of data in the trace, explaining the rationale behind the choices. The
+rationale for the trace format choices may refer to the tracer and trace
+analyzer requirements stated below. This section starts by presenting the common
+trace model, and then specifies the requirements of an instance of this model
+specifically tailored to efficient kernel- and user-space tracing requirements.
 
-This can/should be static.
 
-> +void __deprecated pwm_free(struct pwm_device *pwm)
-> +{
-> +}
+1) Architecture
 
-Why are we adding a new function and already deprecating it?
+This high-level model is meant to be an industry-wide, common model, fulfilling
+the tracing requirements. It is meant to be application-, architecture-, and
+language-agnostic.
 
-Probably this was already addressed in earlier review, but I'm asking
-again, because there's no comment explaining the reasons.  Lesson
-learned, please add a comment.
+1.1) Core model
 
-Oh, I see that pwm_free() already exists.  This patch adds a new copy
-and doesn't remove the old function.  Does this all actually work?
+- Event
 
-It still needs a comment explaining why it's deprecated.
+An event is an information record contained within the trace.
 
-> +int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-> +{
-> +	if (!pwm->pops)
-> +		-EFAULT;
-> +	return pwm->pops->pwm_config(pwm, duty_ns, period_ns);
-> +}
-> +EXPORT_SYMBOL(pwm_config);
-> +
-> +int pwm_enable(struct pwm_device *pwm)
-> +{
-> +	if (!pwm->pops)
-> +		-EFAULT;
-> +	return pwm->pops->pwm_enable(pwm);
-> +}
-> +EXPORT_SYMBOL(pwm_enable);
-> +
-> +void pwm_disable(struct pwm_device *pwm)
-> +{
-> +	if (!pwm->pops)
-> +		-EFAULT;
-> +	pwm->pops->pwm_disable(pwm);
-> +}
-> +EXPORT_SYMBOL(pwm_disable);
-> +
-> +int pwm_device_register(struct pwm_device *pwm_dev)
-> +{
-> +	struct pwm_dev_info *pwm;
-> +
-> +	down_write(&pwm_list_lock);
-> +	pwm = kzalloc(sizeof(struct pwm_dev_info), GFP_KERNEL);
-> +	if (!pwm) {
-> +		up_write(&pwm_list_lock);
-> +		return -ENOMEM;
-> +	}
+  - Events must be in physical order within a section. Their physical position
+    relative to other events within the section specify their order relative to
+    other events within the same section.
+  - Event type (numeric identifier: maps to metadata)
+    - Unique ID assigned within a section.
+  - Event payload
+    - Variable event size
+    - Size limitations: maximum event size should be configurable.
+    - Size information available through metadata.
+    - Support various data alignment for architectures, standards, and
+      languages:
+      - Natural alignment of data for architectures with slow non-aligned
+        writes.
+      - Packed layout of headers for architecture with efficient non-aligned
+        writes.
 
-The allocation attempt can be moved outside the lock, making the code
-faster, cleaner and shorter.
+- Section
 
-> +	pwm->pwm_dev = pwm_dev;
-> +	list_add_tail(&pwm->list, &di->list);
-> +	up_write(&pwm_list_lock);
-> +
-> +	return 0;
-> +}
-> +EXPORT_SYMBOL(pwm_device_register);
-> +
-> +int pwm_device_unregister(struct pwm_device *pwm_dev)
-> +{
-> +	struct pwm_dev_info *tmp;
-> +	struct list_head *pos, *tmp_lst;
-> +
-> +	down_write(&pwm_list_lock);
-> +	list_for_each_safe(pos, tmp_lst, &di->list) {
-> +		tmp = list_entry(pos, struct pwm_dev_info, list);
-> +		if (tmp->pwm_dev == pwm_dev) {
-> +			list_del(pos);
-> +			kfree(tmp);
-> +			up_write(&pwm_list_lock);
-> +			return 0;
-> +		}
-> +	}
-> +	up_write(&pwm_list_lock);
-> +	return -ENOENT;
-> +}
-> +EXPORT_SYMBOL(pwm_device_unregister);
-> +
-> +struct pwm_device *pwm_request(int pwm_id, const char *name)
-> +{
-> +	struct pwm_dev_info *pwm;
-> +	struct list_head *pos;
-> +
-> +	down_read(&pwm_list_lock);
-> +	list_for_each(pos, &di->list) {
-> +		pwm = list_entry(pos, struct pwm_dev_info, list);
-> +		if ((!strcmp(pwm->pwm_dev->pops->name, name)) &&
-> +				(pwm->pwm_dev->pwm_id == pwm_id)) {
-> +			up_read(&pwm_list_lock);
-> +			return pwm->pwm_dev;
-> +		}
-> +	}
-> +	up_read(&pwm_list_lock);
-> +	return ERR_PTR(-ENOENT);
-> +}
-> +EXPORT_SYMBOL(pwm_request);
+A section within the trace can be thought of as the ELF sections in a ELF
+binary. They contain a sequence of physically contiguous event records.
 
-We have a new kernel-wide exported-to-modules formal API.  We prefer
-that such things be fully documented, please.  kerneldoc is a suitable
-way but please avoid falling into the kerneldoc trap of filling out
-fields with obvious boilerplate and not actually telling people
-anything interesting or useful.
+  - Multi-level section identifier
+    - e.g.: section name / CPU number
+  - Contains a subset of event types
 
-> +static int __init pwm_init(void)
-> +{
-> +	struct pwm_dev_info *pwm;
-> +
-> +	pwm = kzalloc(sizeof(struct pwm_dev_info), GFP_KERNEL);
-> +	if (!pwm)
-> +		return -ENOMEM;
-> +	INIT_LIST_HEAD(&pwm->list);
-> +	di = pwm;
-> +	return 0;
-> +}
+The parallel with ELF sections is used here to conceptually demonstrate the idea
+of section, but the similarity stops there. A trace is peculiar in that we have
+to continuously append to each sections, and we need to have ideally no
+interaction between sections. Therefore, for storage, recording all sections
+into a single file is not recommended; a directory made of one file per section
+is better suited.
 
-OK, this looks wrong.
 
-AFACIT you've created a dummy pwm_dev_info as a singleton, kernel-wide
-anchor for a list of all pwm_dev_info's.  So this "anchor" pwm_dev_info
-never actually gets used for anything.
+- Metadata
 
-The way to do this is to remove `di' altogether and instead use a
-singleton, kernel-wide list_head as the anchor for all the
-dynamically-allocated pwm_dev_info's.
+Metadata is the description of the setting of the environment of the
+application. Defines the basic types of the domains. Will define the mapping
+between the event, and the type of the event fields. The metadata scope (what it
+describes) is a whole trace, which consists of one or many sections.
 
-> +subsys_initcall(pwm_init);
-> +
-> +static void __exit pwm_exit(void)
-> +{
-> +	kfree(di);
-> +}
-> +
-> +module_exit(pwm_exit);
-> +
-> +MODULE_LICENSE("GPL v2");
-> +MODULE_AUTHOR("Arun R Murthy");
-> +MODULE_ALIAS("core:pwm");
-> +MODULE_DESCRIPTION("Core pwm driver");
-> diff --git a/include/linux/pwm.h b/include/linux/pwm.h
-> index 7c77575..6e7da1f 100644
-> --- a/include/linux/pwm.h
-> +++ b/include/linux/pwm.h
-> @@ -3,6 +3,13 @@
->  
->  struct pwm_device;
->  
-> +struct pwm_ops {
-> +	int (*pwm_config)(struct pwm_device *pwm, int duty_ns, int period_ns);
-> +	int (*pwm_enable)(struct pwm_device *pwm);
-> +	int (*pwm_disable)(struct pwm_device *pwm);
-> +	char *name;
-> +};
+The metadata can be either contained in the trace (better usability for telecom
+scenarios) or added alongside the trace data by a separate module (for DSP
+scenarios). Metadata checksumming (only for statically generated metadata)
+and/or versioning can be used to ensure consistency between sections and
+metadata in the latter.
 
-This also should be documented.
+  - Trace version
+    - Major number (increment breaks compabilility)
+    - Minor number (increment keeps compatibility)
+  - Describe the invariant properties of the environment where the trace was
+    generated.
+    - Contain unique domain identifier (kernel, process ID and timestamp,
+      hypervisor)
+    - Describes the runtime environment.
+    - Report target bitness
+    - Report target byte order
+    - Data types (see section 1.2 Extensions below)
+  - Architecture-agnostic (text-based)
+  - Ought to be parsed with a regular grammar
+  - Mapping to event types, e.g. (section, event) tuples, with:
+      ( section identifier, event numerical identifier )
+  - Description of event context fields (per section)
+  - Can be streamed along with the trace as a trace section
+  - Support dynamic addition of new event types while trace is active (required
+    to support module/shared object loading and dynamic probes)
+  - Metadata section should be efficient and reliable. Additional information
+    could be kept in separate sections, outside of metadata.
+  - Metadata description language not imposed by standard
+    - Metadata format identifier placed at the beginning of the metadata.
 
->
-> ...
->
 
-I suggest that you work on Kevin's comments before making any code
-changes though.
+1.2) Extensions (optional capabilities)
+
+- Event
+  - Optional context (thread id, virtual cpu id, execution mode (irq/bh/thread),
+                      CPU/board/node id, event ordering identifier, timestamp,
+                      current hardware performance counter information, event
+                      size)
+    - Optional ordering capability across sections:
+      - Ordering identifier required for trace containing many event streams
+      - Either timestamp-based or based on unique sequence numbers
+    - Optional time-flow capability: per-event timestamps
+  - It should be possible to have context information only in some event records
+    within a section. E.g., timestamp written every few events.
+
+- Section
+  - Optional context applying to all events contained in that section
+    (thread id, virtual cpu id, execution mode (irq/bh/thread), CPU/board/node
+     id)
+  - Support piece-wise compression
+  - Support checksumming
+
+- Metadata
+  - Execution environment information
+    - Data types available: integer, strings, arrays, sequence, floats,
+      structures, maps (aka enumerations), bitfields, ...
+      - Describe type alignment.
+      - Describe type size.
+      - Describe type signedness.
+      - Other type examples:
+        - gcc "vector" type. (packed data)
+          http://gcc.gnu.org/onlinedocs/gcc/Vector-Extensions.html
+        - gcc complex type (e.g. complex short, float, double...)
+        - gcc _Fract and _Accum http://gcc.gnu.org/wiki/FixedPointArithmetic
+          http://gcc.gnu.org/onlinedocs/gcc/Fixed_002dPoint.html
+  - Describes trace capabilities, for instance:
+    - Event ordering across sections
+    - Time flow information
+      - In event header
+      - Or possibly payload of pre-specified sections and/or events
+    - Ability to perform event ordering across traces
+
+  - Optional per-event "current state tracking" information.
+
+    This per-event taxonomy allows automated creation of a state machine that
+    keeps track of state updates within the taxonomy tree.
+
+    Described in an file-system path-like taxonomy with additional []
+    operator which indicates a lookup by value, e.g.:
+
+    * For events in the trace stream updating the current state only based on
+      information known from the context (either derived from the per-section or
+      per-event context information):
+
+    E.g., associated with a scheduling change event:
+
+    "cpu[section/cpu]/thread = field/next_pid"
+       Updates the current value of the current section's cpu "thread" attribute
+       (e.g. currently running thread).
+
+    E.g., associated with a system call:
+
+    "thread[cpu[section/cpu]/thread]/syscall[field/syscall_id]/id
+       = field/syscall_id"
+
+       Updates the state value of the current thread "syscall" attribute.
+
+    * For events in the trace stream targeting a path that depends on other
+      fields into that same event (would be common for full system state dump at
+      trace start):
+
+    E.g., associated with a thread listing event:
+    "thread[field/pid]/pid = field/pid"
+
+    E.g., associated with a thread memory maps listing event:
+    "thread[field/pid]/mmap[field/address]/address = field/address"
+    "thread[field/pid]/mmap[field/address]/end = field/end"
+    "thread[field/pid]/mmap[field/address]/flags = field/flags"
+    "thread[field/pid]/mmap[field/address]/pgoff = field/pgoff"
+    "thread[field/pid]/mmap[field/address]/inode = field/inode"
+
+    All per-event context information (e.g. repeating the current PID and CPU
+    for each event) can be represented with this taxonomy, e.g., in the
+    section description:
+
+    "section/pid = field/pid"
+    "section/cpu = field/cpu"
+
+
+2) Linux-specific Model
+
+   (Linux instance, specific to the reference implementation)
+
+Instance of the model specifically tailored to the Linux kernel and C
+programs/libraries requirements. Allows for either packed events, or events
+aligned following the ISO/C standard.
+
+- Event
+  - Payload
+    - Initially support ISO C naturally aligned and packed type layouts.
+
+- Each section represented as a trace stream (typically 1 trace stream per cpu
+  per section) to allow the tracer to easily append to these sections.
+  Identifier: section name / CPU ID
+  Each section has a CPU ID identifier in its context information.
+
+- Trace stream
+  - Should have no hard-coded limit on size of a file generated by saving the
+    trace stream (64 bit file position is fine)
+  - Event lost count should be localized. It should apply to a limited time
+    interval and to a tracefile, hence to a specific section, so the trace
+    analyzer can provide basic information about what kind of events were lost
+    and where they were lost in the trace.
+  - A stream is divided into packets, which each consists of one or many event
+    records.
+  - Should be optionally compressible piece-wise (packet per packet).
+  - Optional checksum on the packet content (except packet header), with a
+    selection of checksum algorithms. Performed on a per-packet basis.
+  - Packet headers should contain a sequence number to help UDP streaming
+    reassembly.
+  - Packet headers should be allowed to contain extra space reserved for
+    encapsulation into a UDP packet encapsulation without copy.
+
+- Compact representation
+  - Minimize the overhead in terms of disk/network/serial port/memory bandwidth.
+  - A compact representation can keep more information in smaller buffers,
+    thus needs less memory to keep the same amount of information around.
+    Also useful to improve cache locality in flight recorder mode.
+
+- Natural alignment of headers for architectures with slow non-aligned writes.
+
+- Packed layout of headers for architecture with efficient non-aligned writes.
+
+- Should have a 1 to 1 mapping between the memory buffers and the generated
+  trace files: allows zero-copy with splice().
+
+- Use target endianness
+
+- Portable across different host target (tracer)/host (analyzer) architectures
+
+- It should be possible to generate metadata from descriptions written in header
+  files (extraction with C preprocessor macros is one solution).
+
+
+* Requirements on the Tracers
+
+Higher-level tracer requirements that seem appropriate to support some of the
+trace format requirements stated above.
+
+Enumerating these higher-level requirements influence the trace format in many
+ways. For instance, a requirement for compactness leads to schemes where all
+information repetition should be eliminated. Thus the need for optional
+per-section context information. Another example is the requirement for speed
+and streaming. The requirement for speed ans treaming leads to zero-copy
+implementations, which imply that the trace format should be written natively by
+the tracer.  The tracer requirements stated in this section are stated to ensure
+that the trace format structure makes it possible for a tracer to cope with the
+requirements, not to require that all tracer do so.
+
+
+*Fast*
+- Low-overhead
+- Handle large trace throughput (multi-GB per minutes)
+- Scalable to high number of cores
+  - Per-cpu memory buffers
+  - Scalability and performance-aware synchronization
+
+*Compact*
+- Environments without filesystem
+  - Need to buffer events in target RAM to send them in group a host for
+    analysis
+- Ability to tune the size of buffers and transmission medium to minimize the
+  impact on the traced system.
+- Streaming (live monitoring)
+  - Through sockets (USB, network)
+  - Through serial ports
+  - There must be a related protocol for streaming this event data.
+
+- Availability of flight recorder (synonym: overwrite) mode
+  - Exclusive ownership of reader data.
+  - Buffer size should be per group of events.
+
+- Output trace to disk
+- Trace buffers available in crash dump to allow post-mortem analysis
+- Fine-grained timestamps
+
+- Lockless (lock-free, ideally wait-free; aka starvation-free)
+
+- Buffer introspection: event written, read and lost counts.
+
+- Ability to iteratively narrow the level of details and traced time window
+  following an initial high level "state" overview provided by an initial trace
+  collecting everything.
+
+- Support kernel module instrumentation
+
+- Standard way(s) for a host to upload/access trace log data from a
+  target/JTAG device/simulator/etc.
+
+- Conditional tracing in kernel space.
+
+- Compatibility with power management subsystem (trace collection shall not be a
+  reason for waking up a device)
+
+- Well defined and stable trace configuration and control API across kernel
+  versions.
+
+- Create and run more than one trace session in parallel at the same time
+  - monitoring from system administrators
+  - field engineered to troubleshoot a specific problem
+
+
+* Trace Analyzer Requirements
+
+The trace analyzer requirements stated in this section are stated to ensure that
+the trace format structure makes it possible for a trace analyzer to cope with
+the requirements, not to require that all trace analyzers do so.
+
+- Ability to cope with huge traces (> 10 GB)
+- Should be possible to do a binary search on the file to find events by time
+  at least. (combined with smart indexing/ summary data perhaps)
+- File format should be as dense as possible, but not at the expense of
+  analysis performance (faster is more important than bigger since disks are
+  getting cheaper)
+- Must not be required to scan through all events in order to start
+  analyzing (by time anyway)
+- Support live viewing of trace streams
+- Standard description of a trace event context.
+  (PERI-XML calls it "Dimensions")
+- Manage system-wide event scoping with the following hierarchy:
+  (address space identifier, section name, event name)
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
