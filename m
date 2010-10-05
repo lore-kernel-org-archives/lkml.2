@@ -1,72 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab0JEKc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:32:28 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:56731 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932923Ab0JEKcZ (ORCPT
+	id S933035Ab0JEKcf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:32:35 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:41821
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932939Ab0JEKcc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:32:25 -0400
-Message-Id: <20101005103137.421669825@szeredi.hu>
-References: <20101005103108.288743609@szeredi.hu>
-User-Agent: quilt/0.46-1
-Date: Tue, 05 Oct 2010 12:31:11 +0200
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: viro@zeniv.linux.org.uk
-Cc: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/9] vfs: fix per mount read-write
-Content-Disposition: inline; filename=vfs-fix-bind-remount-read-write.patch
+	Tue, 5 Oct 2010 06:32:32 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-SS: 0,
+X-WSS-ID: 0L9TBWR-01-C8I-02
+X-M-MSG: 
+Date: Tue, 5 Oct 2010 12:31:39 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>
+Subject: Re: [PATCH 0/5] oprofile updates for v2.6.37
+Message-ID: <20101005103139.GX13563@erda.amd.com>
+References: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1285948587-24521-1-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
+On 01.10.10 17:56:22, Robert Richter wrote:
+> This patch set contains some rework and cleanups of the oprofile code.
+> It also contains changes of the oprofile perf backend that is
+> currently implemented for the ARM architecture, but will be ported to
+> oprofile generic code.
+> 
+> Will, please ack the ARM changes if you are fine with it.
 
-Don't allow remounting the vfsmount read-write if the superblock is
-read-only.  Return -EROFS in this case.
+Will, thanks for your review.
 
-Rename __mnt_unmake_readonly() to mnt_make_writable() to match
-mnt_make_readonly().
+I have applied the patches to oprofile/core.
 
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/namespace.c |   13 ++++++++++---
- 1 file changed, 10 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/fs/namespace.c
-===================================================================
---- linux-2.6.orig/fs/namespace.c	2010-09-30 16:53:30.000000000 +0200
-+++ linux-2.6/fs/namespace.c	2010-09-30 16:57:47.000000000 +0200
-@@ -399,11 +399,18 @@ static int mnt_make_readonly(struct vfsm
- 	return ret;
- }
- 
--static void __mnt_unmake_readonly(struct vfsmount *mnt)
-+static int mnt_make_writable(struct vfsmount *mnt)
- {
-+	int err = 0;
-+
- 	br_write_lock(vfsmount_lock);
--	mnt->mnt_flags &= ~MNT_READONLY;
-+	if (mnt->mnt_sb->s_flags & MS_RDONLY)
-+		err = -EROFS;
-+	else
-+		mnt->mnt_flags &= ~MNT_READONLY;
- 	br_write_unlock(vfsmount_lock);
-+
-+	return err;
- }
- 
- void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb)
-@@ -1600,7 +1607,7 @@ static int change_mount_flags(struct vfs
- 	if (readonly_request)
- 		error = mnt_make_readonly(mnt);
- 	else
--		__mnt_unmake_readonly(mnt);
-+		error = mnt_make_writable(mnt);
- 	return error;
- }
- 
+-Robert
 
 -- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
