@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab0JEFGj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 01:06:39 -0400
-Received: from vms173017pub.verizon.net ([206.46.173.17]:56882 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab0JEFGi (ORCPT
+	id S1753955Ab0JEFGy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 01:06:54 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56165 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753717Ab0JEFGw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 01:06:38 -0400
-Date: Tue, 05 Oct 2010 01:06:15 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-        linux-pci@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot
- hang
-In-reply-to: <20100930222946.GB23084@srcf.ucam.org>
-Message-id: <alpine.LFD.2.00.1010050104450.23209@localhost.localdomain>
-References: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain>
- <20100927135735.GA856@srcf.ucam.org>
- <alpine.LFD.2.00.1009301810380.7033@localhost.localdomain>
- <20100930222946.GB23084@srcf.ucam.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 5 Oct 2010 01:06:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 5 Oct 2010 14:01:10 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linuxppc-dev@lists.ozlabs.org, Greg KH <greg@kroah.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Robin Holt <holt@sgi.com>,
+        steiner@sgi.com
+Subject: Re: [PATCH 1/9] v3 Move find_memory_block routine
+Message-Id: <20101005140110.4bb65741.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4CA62857.4030803@austin.ibm.com>
+References: <4CA62700.7010809@austin.ibm.com>
+	<4CA62857.4030803@austin.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > we check (and clear) that bit only if the acpi tables
-> > tell us to do so.
+On Fri, 01 Oct 2010 13:28:39 -0500
+Nathan Fontenot <nfont@austin.ibm.com> wrote:
+
+> Move the find_memory_block() routine up to avoid needing a forward
+> declaration in subsequent patches.
 > 
-> Do the tables tell us to do so on this platform?
-
-In this configuration, yes, otherwise acpi_idle
-would have failed in exactly the same way.
-
--Len Brown, Intel Open Source Technology Center
+> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+> 
+Reviewd-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
