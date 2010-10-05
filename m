@@ -1,1183 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab0JEAz6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 20:55:58 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:49895 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab0JEAz4 (ORCPT
+	id S1756151Ab0JEBMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 21:12:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57840 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752741Ab0JEBMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 20:55:56 -0400
-Date: Tue, 5 Oct 2010 11:55:43 +1100 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        "Maciej W. Rozycki" <macro@linux-mips.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [RFC v5]Update broken web addresses in arch directory.
-In-Reply-To: <1286225296-10070-1-git-send-email-justinmattock@gmail.com>
-Message-ID: <alpine.OSX.2.00.1010051146260.289@localhost>
-References: <1286225296-10070-1-git-send-email-justinmattock@gmail.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	Mon, 4 Oct 2010 21:12:32 -0400
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="0-1507108083-1286240143=:289"
+In-Reply-To: <AANLkTimbEnwPaAvvNN3NCt7Nzx6FG2hbr4QurT5-YukN@mail.gmail.com>
+References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6>
+ <201010041300.15234.arnd@arndb.de> <alpine.LFD.2.00.1010050026170.2556@localhost6.localdomain6>
+ <AANLkTimbEnwPaAvvNN3NCt7Nzx6FG2hbr4QurT5-YukN@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 4 Oct 2010 18:11:34 -0700
+Message-ID: <AANLkTimzo_Kmm5HdCdGLnnFrpVMKNpvjhO7F357FW+kO@mail.gmail.com>
+Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Kay Sievers <kay.sievers@vrfy.org>, Brandon Philips <brandon@ifup.org>
+Content-Type: multipart/mixed; boundary=0023547c8b93b9925d0491d45890
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+--0023547c8b93b9925d0491d45890
+Content-Type: text/plain; charset=ISO-8859-1
 
---0-1507108083-1286240143=:289
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: QUOTED-PRINTABLE
+On Mon, Oct 4, 2010 at 4:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> It would seem to make most sense to do the module_bug_finalize() in
+> the same location where we add the module to the list of modules.
+>
+> IOW, a patch like the attached. UNTESTED!
 
+That patch is still untested, but reading through it once more I
+noticed that I forgot to add the module_bug_cleanup() call to the
+module exit path.
 
-Thanks, Justin. Looks good to me.
+So here's a trivially fixed version that has the module unload doing
+the bug cleanup too.
 
-Jiri, feel free to add my "reviewed-by" tag.
+I also suspect that the whole 'module_bug_{finalize,cleanup}()' thing
+should probably be moved to kernel/module.c, but that's a separate
+issue entirely.
 
-Finn
+                           Linus
 
-On Mon, 4 Oct 2010, Justin P. Mattock wrote:
+--0023547c8b93b9925d0491d45890
+Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
+Content-Disposition: attachment; filename="patch.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gew2q6a41
 
-> Below is an updated patch to fix broken web addresses in the arch directo=
-ry.
-> Please let me know if I missed anything.(and Thank you vary much for taki=
-ng
-> the time to look at this..)
-> =20
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> Signed-off-by: Maciej W. Rozycki <macro@linux-mips.org>
-> Cc: Finn Thain <fthain@telegraphics.com.au>
-> Cc: Randy Dunlap <rdunlap@xenotime.net>
->=20
-> ---
->  arch/arm/Kconfig                         |    2 +-
->  arch/arm/common/icst.c                   |    2 +-
->  arch/arm/include/asm/hardware/icst.h     |    2 +-
->  arch/arm/mach-at91/Kconfig               |    6 +++---
->  arch/arm/mach-omap1/Kconfig              |    2 +-
->  arch/arm/mach-pxa/am200epd.c             |    2 +-
->  arch/arm/mach-pxa/am300epd.c             |    2 +-
->  arch/arm/mach-s3c2440/mach-at2440evb.c   |    2 +-
->  arch/arm/mach-sa1100/Kconfig             |    6 +++---
->  arch/arm/mach-sa1100/cpu-sa1100.c        |    2 +-
->  arch/arm/nwfpe/milieu.h                  |    4 ++--
->  arch/arm/nwfpe/softfloat-macros          |    4 ++--
->  arch/arm/nwfpe/softfloat-specialize      |    4 ++--
->  arch/arm/nwfpe/softfloat.c               |    4 ++--
->  arch/arm/nwfpe/softfloat.h               |    4 ++--
->  arch/arm/plat-samsung/include/plat/adc.h |    2 +-
->  arch/avr32/Kconfig                       |    2 +-
->  arch/h8300/Kconfig.cpu                   |    8 ++++----
->  arch/h8300/README                        |    1 +
->  arch/m32r/Kconfig                        |    2 +-
->  arch/m68k/mac/macboing.c                 |    3 ++-
->  arch/m68k/q40/README                     |    2 +-
->  arch/mips/Kconfig                        |   12 ++++++++----
->  arch/mips/math-emu/cp1emu.c              |    1 -
->  arch/mips/math-emu/dp_add.c              |    1 -
->  arch/mips/math-emu/dp_cmp.c              |    1 -
->  arch/mips/math-emu/dp_div.c              |    1 -
->  arch/mips/math-emu/dp_fint.c             |    1 -
->  arch/mips/math-emu/dp_flong.c            |    1 -
->  arch/mips/math-emu/dp_frexp.c            |    1 -
->  arch/mips/math-emu/dp_fsp.c              |    1 -
->  arch/mips/math-emu/dp_logb.c             |    1 -
->  arch/mips/math-emu/dp_modf.c             |    1 -
->  arch/mips/math-emu/dp_mul.c              |    1 -
->  arch/mips/math-emu/dp_scalb.c            |    1 -
->  arch/mips/math-emu/dp_simple.c           |    1 -
->  arch/mips/math-emu/dp_sqrt.c             |    1 -
->  arch/mips/math-emu/dp_sub.c              |    1 -
->  arch/mips/math-emu/dp_tint.c             |    1 -
->  arch/mips/math-emu/dp_tlong.c            |    1 -
->  arch/mips/math-emu/ieee754.c             |    1 -
->  arch/mips/math-emu/ieee754.h             |    1 -
->  arch/mips/math-emu/ieee754d.c            |    1 -
->  arch/mips/math-emu/ieee754dp.c           |    1 -
->  arch/mips/math-emu/ieee754dp.h           |    1 -
->  arch/mips/math-emu/ieee754int.h          |    1 -
->  arch/mips/math-emu/ieee754m.c            |    1 -
->  arch/mips/math-emu/ieee754sp.c           |    1 -
->  arch/mips/math-emu/ieee754sp.h           |    1 -
->  arch/mips/math-emu/ieee754xcpt.c         |    1 -
->  arch/mips/math-emu/sp_add.c              |    1 -
->  arch/mips/math-emu/sp_cmp.c              |    1 -
->  arch/mips/math-emu/sp_div.c              |    1 -
->  arch/mips/math-emu/sp_fdp.c              |    1 -
->  arch/mips/math-emu/sp_fint.c             |    1 -
->  arch/mips/math-emu/sp_flong.c            |    1 -
->  arch/mips/math-emu/sp_frexp.c            |    1 -
->  arch/mips/math-emu/sp_logb.c             |    1 -
->  arch/mips/math-emu/sp_modf.c             |    1 -
->  arch/mips/math-emu/sp_mul.c              |    1 -
->  arch/mips/math-emu/sp_scalb.c            |    1 -
->  arch/mips/math-emu/sp_simple.c           |    1 -
->  arch/mips/math-emu/sp_sqrt.c             |    1 -
->  arch/mips/math-emu/sp_sub.c              |    1 -
->  arch/mips/math-emu/sp_tint.c             |    1 -
->  arch/mips/math-emu/sp_tlong.c            |    1 -
->  arch/powerpc/include/asm/hydra.h         |    2 +-
->  arch/x86/kernel/apm_32.c                 |    4 ++--
->  arch/x86/kernel/microcode_core.c         |    2 +-
->  arch/x86/kernel/microcode_intel.c        |    2 +-
->  70 files changed, 48 insertions(+), 85 deletions(-)
->=20
-> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-> index 88c97bc..b79dad3 100644
-> --- a/arch/arm/Kconfig
-> +++ b/arch/arm/Kconfig
-> @@ -1187,7 +1187,7 @@ config SMP
-> =20
->  =09  See also <file:Documentation/i386/IO-APIC.txt>,
->  =09  <file:Documentation/nmi_watchdog.txt> and the SMP-HOWTO available a=
-t
-> -=09  <http://www.linuxdoc.org/docs.html#howto>.
-> +=09  <http://tldp.org/HOWTO/SMP-HOWTO.html>.
-> =20
->  =09  If you don't know what to do here, say N.
-> =20
-> diff --git a/arch/arm/common/icst.c b/arch/arm/common/icst.c
-> index 9a7f09c..2dc6da70 100644
-> --- a/arch/arm/common/icst.c
-> +++ b/arch/arm/common/icst.c
-> @@ -8,7 +8,7 @@
->   * published by the Free Software Foundation.
->   *
->   *  Support functions for calculating clocks/divisors for the ICST307
-> - *  clock generators.  See http://www.icst.com/ for more information
-> + *  clock generators.  See http://www.idt.com/ for more information
->   *  on these devices.
->   *
->   *  This is an almost identical implementation to the ICST525 clock gene=
-rator.
-> diff --git a/arch/arm/include/asm/hardware/icst.h b/arch/arm/include/asm/=
-hardware/icst.h
-> index 10382a3..794220b 100644
-> --- a/arch/arm/include/asm/hardware/icst.h
-> +++ b/arch/arm/include/asm/hardware/icst.h
-> @@ -8,7 +8,7 @@
->   * published by the Free Software Foundation.
->   *
->   *  Support functions for calculating clocks/divisors for the ICST
-> - *  clock generators.  See http://www.icst.com/ for more information
-> + *  clock generators.  See http://www.idt.com/ for more information
->   *  on these devices.
->   */
->  #ifndef ASMARM_HARDWARE_ICST_H
-> diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-> index 939bccd..e5be994 100644
-> --- a/arch/arm/mach-at91/Kconfig
-> +++ b/arch/arm/mach-at91/Kconfig
-> @@ -105,7 +105,7 @@ config MACH_ONEARM
->  =09bool "Ajeco 1ARM Single Board Computer"
->  =09help
->  =09  Select this if you are using Ajeco's 1ARM Single Board Computer.
-> -=09  <http://www.ajeco.fi/products.htm>
-> +=09  <http://www.ajeco.fi/>
-> =20
->  config ARCH_AT91RM9200DK
->  =09bool "Atmel AT91RM9200-DK Development board"
-> @@ -137,7 +137,7 @@ config MACH_CARMEVA
->  =09bool "Conitec ARM&EVA"
->  =09help
->  =09  Select this if you are using Conitec's AT91RM9200-MCU-Module.
-> -=09  <http://www.conitec.net/english/linuxboard.htm>
-> +=09  <http://www.conitec.net/english/linuxboard.php>
-> =20
->  config MACH_ATEB9200
->  =09bool "Embest ATEB9200"
-> @@ -149,7 +149,7 @@ config MACH_KB9200
->  =09bool "KwikByte KB920x"
->  =09help
->  =09  Select this if you are using KwikByte's KB920x board.
-> -=09  <http://kwikbyte.com/KB9202_description_new.htm>
-> +=09  <http://www.kwikbyte.com/KB9202.html>
-> =20
->  config MACH_PICOTUX2XX
->  =09bool "picotux 200"
-> diff --git a/arch/arm/mach-omap1/Kconfig b/arch/arm/mach-omap1/Kconfig
-> index 3b02d3b..5f64963 100644
-> --- a/arch/arm/mach-omap1/Kconfig
-> +++ b/arch/arm/mach-omap1/Kconfig
-> @@ -128,7 +128,7 @@ config MACH_OMAP_PALMTT
->  =09help
->  =09  Support for the Palm Tungsten|T PDA. To boot the kernel, you'll
->  =09  need a PalmOS compatible bootloader (Garux); check out
-> -=09  http://www.hackndev.com/palm/tt/ for more information.
-> +=09  http://garux.sourceforge.net/ for more information.
->  =09  Say Y here if you have this PDA model, say N otherwise.
-> =20
->  config MACH_SX1
-> diff --git a/arch/arm/mach-pxa/am200epd.c b/arch/arm/mach-pxa/am200epd.c
-> index 3499fad..0fd6a08 100644
-> --- a/arch/arm/mach-pxa/am200epd.c
-> +++ b/arch/arm/mach-pxa/am200epd.c
-> @@ -10,7 +10,7 @@
->   * Layout is based on skeletonfb.c by James Simmons and Geert Uytterhoev=
-en.
->   *
->   * This work was made possible by help and equipment support from E-Ink
-> - * Corporation. http://support.eink.com/community
-> + * Corporation. http://www.support.eink.com/
->   *
->   * This driver is written to be used with the Metronome display controll=
-er.
->   * on the AM200 EPD prototype kit/development kit with an E-Ink 800x600
-> diff --git a/arch/arm/mach-pxa/am300epd.c b/arch/arm/mach-pxa/am300epd.c
-> index 993d75e..01aa021 100644
-> --- a/arch/arm/mach-pxa/am300epd.c
-> +++ b/arch/arm/mach-pxa/am300epd.c
-> @@ -8,7 +8,7 @@
->   * more details.
->   *
->   * This work was made possible by help and equipment support from E-Ink
-> - * Corporation. http://support.eink.com/community
-> + * Corporation. http://www.support.eink.com/
->   *
->   * This driver is written to be used with the Broadsheet display control=
-ler.
->   * on the AM300 EPD prototype kit/development kit with an E-Ink 800x600
-> diff --git a/arch/arm/mach-s3c2440/mach-at2440evb.c b/arch/arm/mach-s3c24=
-40/mach-at2440evb.c
-> index 8472579..67b6ba0 100644
-> --- a/arch/arm/mach-s3c2440/mach-at2440evb.c
-> +++ b/arch/arm/mach-s3c2440/mach-at2440evb.c
-> @@ -5,7 +5,7 @@
->   *      and modifications by SBZ <sbz@spgui.org> and
->   *      Weibing <http://weibing.blogbus.com>
->   *
-> - * For product information, visit http://www.arm9e.com/
-> + * For product information, visit http://www.arm.com/
->   *
->   * This program is free software; you can redistribute it and/or modify
->   * it under the terms of the GNU General Public License version 2 as
-> diff --git a/arch/arm/mach-sa1100/Kconfig b/arch/arm/mach-sa1100/Kconfig
-> index fd4c52b..5da8c35 100644
-> --- a/arch/arm/mach-sa1100/Kconfig
-> +++ b/arch/arm/mach-sa1100/Kconfig
-> @@ -90,8 +90,8 @@ config SA1100_JORNADA720
->  =09# FIXME: select CPU_FREQ_SA11x0
->  =09help
->  =09  Say Y here if you want to build a kernel for the HP Jornada 720
-> -=09  handheld computer.  See <http://www.hp.com/jornada/products/720>
-> -=09  for details.
-> +=09  handheld computer.  See=20
-> +=09  <http://h10025.www1.hp.com/ewfrf/wc/product?product=3D61677&cc=3Dus=
-&lc=3Den&dlc=3Den&product=3D61677#>=20
-> =20
->  config SA1100_JORNADA720_SSP
->  =09bool "HP Jornada 720 Extended SSP driver"
-> @@ -145,7 +145,7 @@ config SA1100_SIMPAD
->  =09  FLASH. The SL4 version got 64 MB RAM and 32 MB FLASH and a
->  =09  PCMCIA-Slot. The version for the Germany Telecom (DTAG) is the same
->  =09  like CL4 in additional it has a PCMCIA-Slot. For more information
-> -=09  visit <http://www.my-siemens.com/> or <http://www.siemens.ch/>.
-> +=09  visit <http://www.usa.siemens.com/> or <http://www.siemens.ch/>.
-> =20
->  config SA1100_SSP
->  =09tristate "Generic PIO SSP"
-> diff --git a/arch/arm/mach-sa1100/cpu-sa1100.c b/arch/arm/mach-sa1100/cpu=
--sa1100.c
-> index ef81787..c0a13ef 100644
-> --- a/arch/arm/mach-sa1100/cpu-sa1100.c
-> +++ b/arch/arm/mach-sa1100/cpu-sa1100.c
-> @@ -13,7 +13,7 @@
->   * This software has been developed while working on the LART
->   * computing board (http://www.lartmaker.nl/), which is
->   * sponsored by the Mobile Multi-media Communications
-> - * (http://www.mmc.tudelft.nl/) and Ubiquitous Communications
-> + * (http://www.mobimedia.org/) and Ubiquitous Communications
->   * (http://www.ubicom.tudelft.nl/) projects.
->   *
->   * The authors can be reached at:
-> diff --git a/arch/arm/nwfpe/milieu.h b/arch/arm/nwfpe/milieu.h
-> index a3892ab..09a4f2d 100644
-> --- a/arch/arm/nwfpe/milieu.h
-> +++ b/arch/arm/nwfpe/milieu.h
-> @@ -12,8 +12,8 @@ National Science Foundation under grant MIP-9311980.  T=
-he original version
->  of this code was written as part of a project to build a fixed-point vec=
-tor
->  processor in collaboration with the University of California at Berkeley=
-,
->  overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
-> -is available through the Web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
-> -arithmetic/softfloat.html'.
-> +is available through the Web page
-> +http://www.jhauser.us/arithmetic/SoftFloat-2b/SoftFloat-source.txt
-> =20
->  THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effor=
-t
->  has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
-> diff --git a/arch/arm/nwfpe/softfloat-macros b/arch/arm/nwfpe/softfloat-m=
-acros
-> index 5a060f9..cf2a617 100644
-> --- a/arch/arm/nwfpe/softfloat-macros
-> +++ b/arch/arm/nwfpe/softfloat-macros
-> @@ -12,8 +12,8 @@ National Science Foundation under grant MIP-9311980.  T=
-he original version
->  of this code was written as part of a project to build a fixed-point vec=
-tor
->  processor in collaboration with the University of California at Berkeley=
-,
->  overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
-> -is available through the web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
-> -arithmetic/softfloat.html'.
-> +is available through the web page
-> +http://www.jhauser.us/arithmetic/SoftFloat-2b/SoftFloat-source.txt
-> =20
->  THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effor=
-t
->  has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
-> diff --git a/arch/arm/nwfpe/softfloat-specialize b/arch/arm/nwfpe/softflo=
-at-specialize
-> index d4a4c8e..679a026 100644
-> --- a/arch/arm/nwfpe/softfloat-specialize
-> +++ b/arch/arm/nwfpe/softfloat-specialize
-> @@ -12,8 +12,8 @@ National Science Foundation under grant MIP-9311980.  T=
-he original version
->  of this code was written as part of a project to build a fixed-point vec=
-tor
->  processor in collaboration with the University of California at Berkeley=
-,
->  overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
-> -is available through the Web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
-> -arithmetic/softfloat.html'.
-> +is available through the Web page
-> +http://www.jhauser.us/arithmetic/SoftFloat-2b/SoftFloat-source.txt
-> =20
->  THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effor=
-t
->  has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
-> diff --git a/arch/arm/nwfpe/softfloat.c b/arch/arm/nwfpe/softfloat.c
-> index 0f9656e..ffa6b43 100644
-> --- a/arch/arm/nwfpe/softfloat.c
-> +++ b/arch/arm/nwfpe/softfloat.c
-> @@ -11,8 +11,8 @@ National Science Foundation under grant MIP-9311980.  T=
-he original version
->  of this code was written as part of a project to build a fixed-point vec=
-tor
->  processor in collaboration with the University of California at Berkeley=
-,
->  overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
-> -is available through the web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
-> -arithmetic/softfloat.html'.
-> +is available through the web page
-> +http://www.jhauser.us/arithmetic/SoftFloat-2b/SoftFloat-source.txt
-> =20
->  THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effor=
-t
->  has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
-> diff --git a/arch/arm/nwfpe/softfloat.h b/arch/arm/nwfpe/softfloat.h
-> index 13e479c..df4d243 100644
-> --- a/arch/arm/nwfpe/softfloat.h
-> +++ b/arch/arm/nwfpe/softfloat.h
-> @@ -12,8 +12,8 @@ National Science Foundation under grant MIP-9311980.  T=
-he original version
->  of this code was written as part of a project to build a fixed-point vec=
-tor
->  processor in collaboration with the University of California at Berkeley=
-,
->  overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
-> -is available through the Web page `http://HTTP.CS.Berkeley.EDU/~jhauser/
-> -arithmetic/softfloat.html'.
-> +is available through the Web page
-> +http://www.jhauser.us/arithmetic/SoftFloat-2b/SoftFloat-source.txt
-> =20
->  THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effor=
-t
->  has been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT
-> diff --git a/arch/arm/plat-samsung/include/plat/adc.h b/arch/arm/plat-sam=
-sung/include/plat/adc.h
-> index e8382c7..b258a08 100644
-> --- a/arch/arm/plat-samsung/include/plat/adc.h
-> +++ b/arch/arm/plat-samsung/include/plat/adc.h
-> @@ -1,7 +1,7 @@
->  /* arch/arm/plat-samsung/include/plat/adc.h
->   *
->   * Copyright (c) 2008 Simtec Electronics
-> - *=09http://armlinux.simnte.co.uk/
-> + *=09http://armlinux.simtec.co.uk/=09
->   *=09Ben Dooks <ben@simtec.co.uk>
->   *
->   * S3C ADC driver information
-> diff --git a/arch/avr32/Kconfig b/arch/avr32/Kconfig
-> index f515727..559aca8 100644
-> --- a/arch/avr32/Kconfig
-> +++ b/arch/avr32/Kconfig
-> @@ -145,7 +145,7 @@ config BOARD_HAMMERHEAD
->  =09  will cover even the most exceptional need of memory bandwidth. Toge=
-ther with the onboard
->  =09  video decoder the board is ready for video processing.
-> =20
-> -=09  For more information see: http://www.miromico.com/hammerhead
-> +=09  For more information see: http://www.miromico.ch/index.php/hammerhe=
-ad.html=20
-> =20
->  config BOARD_FAVR_32
->  =09bool "Favr-32 LCD-board"
-> diff --git a/arch/h8300/Kconfig.cpu b/arch/h8300/Kconfig.cpu
-> index 6e2ecff..d236ab4 100644
-> --- a/arch/h8300/Kconfig.cpu
-> +++ b/arch/h8300/Kconfig.cpu
-> @@ -17,7 +17,7 @@ config H8300H_AKI3068NET
->  =09help
->  =09  AKI-H8/3068F / AKI-H8/3069F Flashmicom LAN Board Support
->  =09  More Information. (Japanese Only)
-> -=09  <http://akizukidensi.com/catalog/h8.html>
-> +=09  <http://akizukidenshi.com/catalog/default.aspx>
->  =09  AE-3068/69 Evaluation Board Support
->  =09  More Information.
->  =09  <http://www.microtronique.com/ae3069lan.htm>
-> @@ -36,7 +36,7 @@ config H8300H_SIM
->  =09help
->  =09  GDB Simulator Support
->  =09  More Information.
-> -=09  arch/h8300/Doc/simulator.txt
-> +=09  <http://sourceware.org/sid/>
-> =20
->  config H8S_GENERIC
->  =09bool "H8S Generic"
-> @@ -50,14 +50,14 @@ config H8S_EDOSK2674
->  =09  Renesas EDOSK-2674 Evaluation Board Support
->  =09  More Information.
->  =09  <http://www.azpower.com/H8-uClinux/index.html>
-> - =09  <http://www.eu.renesas.com/tools/edk/support/edosk2674.html>
-> + =09  <http://www.renesas.eu/products/tools/introductory_evaluation_tool=
-s/evaluation_development_os_kits/edosk2674r/edosk2674r_software_tools_root.=
-jsp>
-> =20
->  config H8S_SIM
->  =09bool "H8S Simulator"
->  =09help
->  =09  GDB Simulator Support
->  =09  More Information.
-> -=09  arch/h8300/Doc/simulator.txt
-> +=09  <http://sourceware.org/sid/>
-> =20
->  endchoice
-> =20
-> diff --git a/arch/h8300/README b/arch/h8300/README
-> index 2fd6f6d..637f5a0 100644
-> --- a/arch/h8300/README
-> +++ b/arch/h8300/README
-> @@ -18,6 +18,7 @@ H8/300H and H8S
-> =20
->  4.EDOSK2674
->    see http://www.eu.renesas.com/products/mpumcu/tool/edk/support/edosk26=
-74.html
-> +      http://www.uclinux.org/pub/uClinux/ports/h8/HITACHI-EDOSK2674-HOWT=
-O
->        http://www.azpower.com/H8-uClinux/
-> =20
->  * Toolchain Version
-> diff --git a/arch/m32r/Kconfig b/arch/m32r/Kconfig
-> index 836abbb..3867fd2 100644
-> --- a/arch/m32r/Kconfig
-> +++ b/arch/m32r/Kconfig
-> @@ -315,7 +315,7 @@ config SMP
->  =09  Management" code will be disabled if you say Y here.
-> =20
->  =09  See also the SMP-HOWTO available at
-> -=09  <http://www.linuxdoc.org/docs.html#howto>.
-> +=09  <http://tldp.org/HOWTO/SMP-HOWTO.html>.
-> =20
->  =09  If you don't know what to do here, say N.
-> =20
-> diff --git a/arch/m68k/mac/macboing.c b/arch/m68k/mac/macboing.c
-> index 05285d0..ffaa1f6 100644
-> --- a/arch/m68k/mac/macboing.c
-> +++ b/arch/m68k/mac/macboing.c
-> @@ -114,7 +114,8 @@ static void mac_init_asc( void )
->  =09=09=09 *   16-bit I/O functionality.  The PowerBook 500 series comput=
-ers
->  =09=09=09 *   support 16-bit stereo output, but only mono input."
->  =09=09=09 *
-> -=09=09=09 *   http://til.info.apple.com/techinfo.nsf/artnum/n16405
-> +=09=09=09 *   Technical Information Library (TIL) article number 16405.=
-=20
-> +=09=09=09 *   http://support.apple.com/kb/TA32601=20
->  =09=09=09 *
->  =09=09=09 * --David Kilzer
->  =09=09=09 */
-> diff --git a/arch/m68k/q40/README b/arch/m68k/q40/README
-> index 6bdbf48..f877b72 100644
-> --- a/arch/m68k/q40/README
-> +++ b/arch/m68k/q40/README
-> @@ -3,7 +3,7 @@ Linux for the Q40
-> =20
->  You may try http://www.geocities.com/SiliconValley/Bay/2602/ for
->  some up to date information. Booter and other tools will be also
-> -available from this place or ftp.uni-erlangen.de/linux/680x0/q40/
-> +available from this place or http://ftp.uni-erlangen.de/pub/unix/Linux/6=
-80x0/q40/
->  and mirrors.
-> =20
->  Hints to documentation usually refer to the linux source tree in
-> diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-> index 3ad59dd..4606248 100644
-> --- a/arch/mips/Kconfig
-> +++ b/arch/mips/Kconfig
-> @@ -2175,10 +2175,14 @@ config TC
->  =09bool "TURBOchannel support"
->  =09depends on MACH_DECSTATION
->  =09help
-> -=09  TurboChannel is a DEC (now Compaq (now HP)) bus for Alpha and MIPS
-> -=09  processors.  Documentation on writing device drivers for TurboChann=
-el
-> -=09  is available at:
-> -=09  <http://www.cs.arizona.edu/computer.help/policy/DIGITAL_unix/AA-PS3=
-HD-TET1_html/TITLE.html>.
-> +=09  TURBOchannel is a DEC (now Compaq (now HP)) bus for Alpha and MIPS
-> +=09  processors.  TURBOchannel programming specifications are available
-> +=09  at:
-> +=09  <ftp://ftp.hp.com/pub/alphaserver/archive/triadd/>
-> +=09  and:
-> +=09  <http://www.computer-refuge.org/classiccmp/ftp.digital.com/pub/DEC/=
-TriAdd/>
-> +=09  Linux driver support status is documented at:
-> +=09  <http://www.linux-mips.org/wiki/DECstation>
-> =20
->  #config ACCESSBUS
->  #=09bool "Access.Bus support"
-> diff --git a/arch/mips/math-emu/cp1emu.c b/arch/mips/math-emu/cp1emu.c
-> index 47842b7..ec3faa4 100644
-> --- a/arch/mips/math-emu/cp1emu.c
-> +++ b/arch/mips/math-emu/cp1emu.c
-> @@ -3,7 +3,6 @@
->   *
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * Kevin D. Kissell, kevink@mips.com and Carsten Langgaard, carstenl@mip=
-s.com
->   * Copyright (C) 2000  MIPS Technologies, Inc.
-> diff --git a/arch/mips/math-emu/dp_add.c b/arch/mips/math-emu/dp_add.c
-> index bcf73bb..b422fca 100644
-> --- a/arch/mips/math-emu/dp_add.c
-> +++ b/arch/mips/math-emu/dp_add.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_cmp.c b/arch/mips/math-emu/dp_cmp.c
-> index 8ab4f32..0f32486 100644
-> --- a/arch/mips/math-emu/dp_cmp.c
-> +++ b/arch/mips/math-emu/dp_cmp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_div.c b/arch/mips/math-emu/dp_div.c
-> index 6acedce..a1bce1b 100644
-> --- a/arch/mips/math-emu/dp_div.c
-> +++ b/arch/mips/math-emu/dp_div.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_fint.c b/arch/mips/math-emu/dp_fint.c
-> index 39a71de1..8857128 100644
-> --- a/arch/mips/math-emu/dp_fint.c
-> +++ b/arch/mips/math-emu/dp_fint.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_flong.c b/arch/mips/math-emu/dp_flong.=
-c
-> index f08f223..14fc01e 100644
-> --- a/arch/mips/math-emu/dp_flong.c
-> +++ b/arch/mips/math-emu/dp_flong.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_frexp.c b/arch/mips/math-emu/dp_frexp.=
-c
-> index e650cb1..cb15a5e 100644
-> --- a/arch/mips/math-emu/dp_frexp.c
-> +++ b/arch/mips/math-emu/dp_frexp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_fsp.c b/arch/mips/math-emu/dp_fsp.c
-> index 494d19a..1dfbd92 100644
-> --- a/arch/mips/math-emu/dp_fsp.c
-> +++ b/arch/mips/math-emu/dp_fsp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_logb.c b/arch/mips/math-emu/dp_logb.c
-> index 6033886..151127e 100644
-> --- a/arch/mips/math-emu/dp_logb.c
-> +++ b/arch/mips/math-emu/dp_logb.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_modf.c b/arch/mips/math-emu/dp_modf.c
-> index a8570e5..b01f9cf 100644
-> --- a/arch/mips/math-emu/dp_modf.c
-> +++ b/arch/mips/math-emu/dp_modf.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_mul.c b/arch/mips/math-emu/dp_mul.c
-> index 48908a8..aa566e7 100644
-> --- a/arch/mips/math-emu/dp_mul.c
-> +++ b/arch/mips/math-emu/dp_mul.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_scalb.c b/arch/mips/math-emu/dp_scalb.=
-c
-> index b84e633..6f5df43 100644
-> --- a/arch/mips/math-emu/dp_scalb.c
-> +++ b/arch/mips/math-emu/dp_scalb.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_simple.c b/arch/mips/math-emu/dp_simpl=
-e.c
-> index b909742..79ce267 100644
-> --- a/arch/mips/math-emu/dp_simple.c
-> +++ b/arch/mips/math-emu/dp_simple.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_sqrt.c b/arch/mips/math-emu/dp_sqrt.c
-> index 032328c..a2a51b8 100644
-> --- a/arch/mips/math-emu/dp_sqrt.c
-> +++ b/arch/mips/math-emu/dp_sqrt.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_sub.c b/arch/mips/math-emu/dp_sub.c
-> index a2127d6..0de098c 100644
-> --- a/arch/mips/math-emu/dp_sub.c
-> +++ b/arch/mips/math-emu/dp_sub.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_tint.c b/arch/mips/math-emu/dp_tint.c
-> index 2447862..0ebe859 100644
-> --- a/arch/mips/math-emu/dp_tint.c
-> +++ b/arch/mips/math-emu/dp_tint.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/dp_tlong.c b/arch/mips/math-emu/dp_tlong.=
-c
-> index 0f07ec2..133ce2b 100644
-> --- a/arch/mips/math-emu/dp_tlong.c
-> +++ b/arch/mips/math-emu/dp_tlong.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754.c b/arch/mips/math-emu/ieee754.c
-> index cb1b682..30554e1 100644
-> --- a/arch/mips/math-emu/ieee754.c
-> +++ b/arch/mips/math-emu/ieee754.c
-> @@ -9,7 +9,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754.h b/arch/mips/math-emu/ieee754.h
-> index dd91733..22796e0 100644
-> --- a/arch/mips/math-emu/ieee754.h
-> +++ b/arch/mips/math-emu/ieee754.h
-> @@ -1,7 +1,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   *  This program is free software; you can distribute it and/or modify i=
-t
->   *  under the terms of the GNU General Public License (Version 2) as
-> diff --git a/arch/mips/math-emu/ieee754d.c b/arch/mips/math-emu/ieee754d.=
-c
-> index a032533..9599bdd 100644
-> --- a/arch/mips/math-emu/ieee754d.c
-> +++ b/arch/mips/math-emu/ieee754d.c
-> @@ -4,7 +4,6 @@
->   * MIPS floating point support
->   *
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   *  This program is free software; you can distribute it and/or modify i=
-t
->   *  under the terms of the GNU General Public License (Version 2) as
-> diff --git a/arch/mips/math-emu/ieee754dp.c b/arch/mips/math-emu/ieee754d=
-p.c
-> index 2f22fd7..080b5ca 100644
-> --- a/arch/mips/math-emu/ieee754dp.c
-> +++ b/arch/mips/math-emu/ieee754dp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754dp.h b/arch/mips/math-emu/ieee754d=
-p.h
-> index 7627865..f139c72 100644
-> --- a/arch/mips/math-emu/ieee754dp.h
-> +++ b/arch/mips/math-emu/ieee754dp.h
-> @@ -5,7 +5,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754int.h b/arch/mips/math-emu/ieee754=
-int.h
-> index 1a846c5..2701d95 100644
-> --- a/arch/mips/math-emu/ieee754int.h
-> +++ b/arch/mips/math-emu/ieee754int.h
-> @@ -5,7 +5,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754m.c b/arch/mips/math-emu/ieee754m.=
-c
-> index d66896c..24190f3 100644
-> --- a/arch/mips/math-emu/ieee754m.c
-> +++ b/arch/mips/math-emu/ieee754m.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754sp.c b/arch/mips/math-emu/ieee754s=
-p.c
-> index a19b721..271d00d 100644
-> --- a/arch/mips/math-emu/ieee754sp.c
-> +++ b/arch/mips/math-emu/ieee754sp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754sp.h b/arch/mips/math-emu/ieee754s=
-p.h
-> index d9e3586..754fd54 100644
-> --- a/arch/mips/math-emu/ieee754sp.h
-> +++ b/arch/mips/math-emu/ieee754sp.h
-> @@ -5,7 +5,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/ieee754xcpt.c b/arch/mips/math-emu/ieee75=
-4xcpt.c
-> index e02423a..b99a693 100644
-> --- a/arch/mips/math-emu/ieee754xcpt.c
-> +++ b/arch/mips/math-emu/ieee754xcpt.c
-> @@ -1,7 +1,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_add.c b/arch/mips/math-emu/sp_add.c
-> index d8c4211..ae1a327 100644
-> --- a/arch/mips/math-emu/sp_add.c
-> +++ b/arch/mips/math-emu/sp_add.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_cmp.c b/arch/mips/math-emu/sp_cmp.c
-> index d3eff6b..716cf37 100644
-> --- a/arch/mips/math-emu/sp_cmp.c
-> +++ b/arch/mips/math-emu/sp_cmp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_div.c b/arch/mips/math-emu/sp_div.c
-> index 2b437fc..d774792 100644
-> --- a/arch/mips/math-emu/sp_div.c
-> +++ b/arch/mips/math-emu/sp_div.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_fdp.c b/arch/mips/math-emu/sp_fdp.c
-> index 4093723..e1515aa 100644
-> --- a/arch/mips/math-emu/sp_fdp.c
-> +++ b/arch/mips/math-emu/sp_fdp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_fint.c b/arch/mips/math-emu/sp_fint.c
-> index e88e125..9694d6c 100644
-> --- a/arch/mips/math-emu/sp_fint.c
-> +++ b/arch/mips/math-emu/sp_fint.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_flong.c b/arch/mips/math-emu/sp_flong.=
-c
-> index 26d6919..16a651f 100644
-> --- a/arch/mips/math-emu/sp_flong.c
-> +++ b/arch/mips/math-emu/sp_flong.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_frexp.c b/arch/mips/math-emu/sp_frexp.=
-c
-> index 359c648..5bc993c 100644
-> --- a/arch/mips/math-emu/sp_frexp.c
-> +++ b/arch/mips/math-emu/sp_frexp.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_logb.c b/arch/mips/math-emu/sp_logb.c
-> index 3c33721..9c14e0c 100644
-> --- a/arch/mips/math-emu/sp_logb.c
-> +++ b/arch/mips/math-emu/sp_logb.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_modf.c b/arch/mips/math-emu/sp_modf.c
-> index 7656894..25a0fba 100644
-> --- a/arch/mips/math-emu/sp_modf.c
-> +++ b/arch/mips/math-emu/sp_modf.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_mul.c b/arch/mips/math-emu/sp_mul.c
-> index 3f070f8..c06bb40 100644
-> --- a/arch/mips/math-emu/sp_mul.c
-> +++ b/arch/mips/math-emu/sp_mul.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_scalb.c b/arch/mips/math-emu/sp_scalb.=
-c
-> index 44ceb87..dd76196 100644
-> --- a/arch/mips/math-emu/sp_scalb.c
-> +++ b/arch/mips/math-emu/sp_scalb.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_simple.c b/arch/mips/math-emu/sp_simpl=
-e.c
-> index 2fd53c9..ae4fcfa 100644
-> --- a/arch/mips/math-emu/sp_simple.c
-> +++ b/arch/mips/math-emu/sp_simple.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_sqrt.c b/arch/mips/math-emu/sp_sqrt.c
-> index 8a934b9..fed2017 100644
-> --- a/arch/mips/math-emu/sp_sqrt.c
-> +++ b/arch/mips/math-emu/sp_sqrt.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_sub.c b/arch/mips/math-emu/sp_sub.c
-> index dbb802c..886ed5b 100644
-> --- a/arch/mips/math-emu/sp_sub.c
-> +++ b/arch/mips/math-emu/sp_sub.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_tint.c b/arch/mips/math-emu/sp_tint.c
-> index 352dc3a..0fe9acc 100644
-> --- a/arch/mips/math-emu/sp_tint.c
-> +++ b/arch/mips/math-emu/sp_tint.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/mips/math-emu/sp_tlong.c b/arch/mips/math-emu/sp_tlong.=
-c
-> index 92cd9c5..d0ca6e2 100644
-> --- a/arch/mips/math-emu/sp_tlong.c
-> +++ b/arch/mips/math-emu/sp_tlong.c
-> @@ -4,7 +4,6 @@
->  /*
->   * MIPS floating point support
->   * Copyright (C) 1994-2000 Algorithmics Ltd.
-> - * http://www.algor.co.uk
->   *
->   * #####################################################################=
-###
->   *
-> diff --git a/arch/powerpc/include/asm/hydra.h b/arch/powerpc/include/asm/=
-hydra.h
-> index 1ad4eed..d529a2c 100644
-> --- a/arch/powerpc/include/asm/hydra.h
-> +++ b/arch/powerpc/include/asm/hydra.h
-> @@ -10,7 +10,7 @@
->   *
->   *=09=C2=A9 Copyright 1995 Apple Computer, Inc. All rights reserved.
->   *
-> - *  It's available online from http://chrp.apple.com/MacTech.pdf.
-> + *  It's available online from http://www.cpu.lu/~mlan/ftp/MacTech.pdf.
->   *  You can obtain paper copies of this book from computer bookstores or=
- by
->   *  writing Morgan Kaufmann Publishers, Inc., 340 Pine Street, Sixth Flo=
-or, San
->   *  Francisco, CA 94104. Reference ISBN 1-55860-393-X.
-> diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-> index 4c9c67b..9fed1cc 100644
-> --- a/arch/x86/kernel/apm_32.c
-> +++ b/arch/x86/kernel/apm_32.c
-> @@ -189,8 +189,8 @@
->   *   Intel Order Number 241704-001.  Microsoft Part Number 781-110-X01.
->   *
->   * [This document is available free from Intel by calling 800.628.8686 (=
-fax
-> - * 916.356.6100) or 800.548.4725; or via anonymous ftp from
-> - * ftp://ftp.intel.com/pub/IAL/software_specs/apmv11.doc.  It is also
-> + * 916.356.6100) or 800.548.4725; or from
-> + * http://www.microsoft.com/whdc/archive/amp_12.mspx  It is also
->   * available from Microsoft by calling 206.882.8080.]
->   *
->   * APM 1.2 Reference:
-> diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode=
-_core.c
-> index fa6551d..b9c5c54 100644
-> --- a/arch/x86/kernel/microcode_core.c
-> +++ b/arch/x86/kernel/microcode_core.c
-> @@ -12,7 +12,7 @@
->   *=09Software Developer's Manual
->   *=09Order Number 253668 or free download from:
->   *
-> - *=09http://developer.intel.com/design/pentium4/manuals/253668.htm
-> + *=09http://developer.intel.com/Assets/PDF/manual/253668.pdf=09
->   *
->   *=09For more information, go to http://www.urbanmyth.org/microcode
->   *
-> diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcod=
-e_intel.c
-> index 3561702..dcb65cc 100644
-> --- a/arch/x86/kernel/microcode_intel.c
-> +++ b/arch/x86/kernel/microcode_intel.c
-> @@ -12,7 +12,7 @@
->   *=09Software Developer's Manual
->   *=09Order Number 253668 or free download from:
->   *
-> - *=09http://developer.intel.com/design/pentium4/manuals/253668.htm
-> + *=09http://developer.intel.com/Assets/PDF/manual/253668.pdf=09
->   *
->   *=09For more information, go to http://www.urbanmyth.org/microcode
->   *
->=20
---0-1507108083-1286240143=:289--
+IGFyY2gvYXZyMzIva2VybmVsL21vZHVsZS5jICAgfCAgICAzICstLQogYXJjaC9oODMwMC9rZXJu
+ZWwvbW9kdWxlLmMgICB8ICAgIDMgKy0tCiBhcmNoL21uMTAzMDAva2VybmVsL21vZHVsZS5jIHwg
+ICAgMyArLS0KIGFyY2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYyAgfCAgICAzICstLQogYXJjaC9w
+b3dlcnBjL2tlcm5lbC9tb2R1bGUuYyB8ICAgIDUgLS0tLS0KIGFyY2gvczM5MC9rZXJuZWwvbW9k
+dWxlLmMgICAgfCAgICAzICstLQogYXJjaC9zaC9rZXJuZWwvbW9kdWxlLmMgICAgICB8ICAgIDIg
+LS0KIGFyY2gveDg2L2tlcm5lbC9tb2R1bGUuYyAgICAgfCAgICAzICstLQogaW5jbHVkZS9saW51
+eC9tb2R1bGUuaCAgICAgICB8ICAgIDUgKystLS0KIGtlcm5lbC9tb2R1bGUuYyAgICAgICAgICAg
+ICAgfCAgICA0ICsrKysKIGxpYi9idWcuYyAgICAgICAgICAgICAgICAgICAgfCAgICA2ICsrLS0t
+LQogMTEgZmlsZXMgY2hhbmdlZCwgMTQgaW5zZXJ0aW9ucygrKSwgMjYgZGVsZXRpb25zKC0pCgpk
+aWZmIC0tZ2l0IGEvYXJjaC9hdnIzMi9rZXJuZWwvbW9kdWxlLmMgYi9hcmNoL2F2cjMyL2tlcm5l
+bC9tb2R1bGUuYwppbmRleCA5OGY5NGQwLi5hNzI3ZjU0IDEwMDY0NAotLS0gYS9hcmNoL2F2cjMy
+L2tlcm5lbC9tb2R1bGUuYworKysgYi9hcmNoL2F2cjMyL2tlcm5lbC9tb2R1bGUuYwpAQCAtMzE0
+LDEwICszMTQsOSBAQCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNv
+bnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCXZmcmVlKG1vZHVsZS0+YXJjaC5zeW1pbmZvKTsKIAlt
+b2R1bGUtPmFyY2guc3ltaW5mbyA9IE5VTEw7CiAKLQlyZXR1cm4gbW9kdWxlX2J1Z19maW5hbGl6
+ZShoZHIsIHNlY2hkcnMsIG1vZHVsZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2Fy
+Y2hfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICptb2R1bGUpCiB7Ci0JbW9kdWxlX2J1Z19jbGVhbnVw
+KG1vZHVsZSk7CiB9CmRpZmYgLS1naXQgYS9hcmNoL2g4MzAwL2tlcm5lbC9tb2R1bGUuYyBiL2Fy
+Y2gvaDgzMDAva2VybmVsL21vZHVsZS5jCmluZGV4IDA4NjVlMjkuLmRiNDk1M2QgMTAwNjQ0Ci0t
+LSBhL2FyY2gvaDgzMDAva2VybmVsL21vZHVsZS5jCisrKyBiL2FyY2gvaDgzMDAva2VybmVsL21v
+ZHVsZS5jCkBAIC0xMTIsMTAgKzExMiw5IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxm
+X0VoZHIgKmhkciwKIAkJICAgIGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCQkgICAgc3RydWN0
+IG1vZHVsZSAqbWUpCiB7Ci0JcmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJz
+LCBtZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2FyY2hfY2xlYW51cChzdHJ1Y3Qg
+bW9kdWxlICptb2QpCiB7Ci0JbW9kdWxlX2J1Z19jbGVhbnVwKG1vZCk7CiB9CmRpZmYgLS1naXQg
+YS9hcmNoL21uMTAzMDAva2VybmVsL21vZHVsZS5jIGIvYXJjaC9tbjEwMzAwL2tlcm5lbC9tb2R1
+bGUuYwppbmRleCA2YWVhN2ZkLi4xOTZhMTExIDEwMDY0NAotLS0gYS9hcmNoL21uMTAzMDAva2Vy
+bmVsL21vZHVsZS5jCisrKyBiL2FyY2gvbW4xMDMwMC9rZXJuZWwvbW9kdWxlLmMKQEAgLTIwNiw3
+ICsyMDYsNyBAQCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiAJCSAg
+ICBjb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkJICAgIHN0cnVjdCBtb2R1bGUgKm1lKQogewot
+CXJldHVybiBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOworCXJldHVybiAw
+OwogfQogCiAvKgpAQCAtMjE0LDUgKzIxNCw0IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3Qg
+RWxmX0VoZHIgKmhkciwKICAqLwogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBtb2R1
+bGUgKm1vZCkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlmZiAtLWdpdCBhL2Fy
+Y2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYyBiL2FyY2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYwpp
+bmRleCAxNTlhMmI4Li42ZTgxYmI1IDEwMDY0NAotLS0gYS9hcmNoL3BhcmlzYy9rZXJuZWwvbW9k
+dWxlLmMKKysrIGIvYXJjaC9wYXJpc2Mva2VybmVsL21vZHVsZS5jCkBAIC05NDEsMTEgKzk0MSwx
+MCBAQCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiAJbnN5bXMgPSBu
+ZXdwdHIgLSAoRWxmX1N5bSAqKXN5bWhkci0+c2hfYWRkcjsKIAlERUJVR1AoIk5FVyBudW1fc3lt
+dGFiICVsdVxuIiwgbnN5bXMpOwogCXN5bWhkci0+c2hfc2l6ZSA9IG5zeW1zICogc2l6ZW9mKEVs
+Zl9TeW0pOwotCXJldHVybiBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwor
+CXJldHVybiAwOwogfQogCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAq
+bW9kKQogewogCWRlcmVnaXN0ZXJfdW53aW5kX3RhYmxlKG1vZCk7Ci0JbW9kdWxlX2J1Z19jbGVh
+bnVwKG1vZCk7CiB9CmRpZmYgLS1naXQgYS9hcmNoL3Bvd2VycGMva2VybmVsL21vZHVsZS5jIGIv
+YXJjaC9wb3dlcnBjL2tlcm5lbC9tb2R1bGUuYwppbmRleCA0NzdjNjYzLi40ZWY5M2FlIDEwMDY0
+NAotLS0gYS9hcmNoL3Bvd2VycGMva2VybmVsL21vZHVsZS5jCisrKyBiL2FyY2gvcG93ZXJwYy9r
+ZXJuZWwvbW9kdWxlLmMKQEAgLTY1LDEwICs2NSw2IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29u
+c3QgRWxmX0VoZHIgKmhkciwKIAljb25zdCBFbGZfU2hkciAqc2VjdDsKIAlpbnQgZXJyOwogCi0J
+ZXJyID0gbW9kdWxlX2J1Z19maW5hbGl6ZShoZHIsIHNlY2hkcnMsIG1lKTsKLQlpZiAoZXJyKQot
+CQlyZXR1cm4gZXJyOwotCiAJLyogQXBwbHkgZmVhdHVyZSBmaXh1cHMgKi8KIAlzZWN0ID0gZmlu
+ZF9zZWN0aW9uKGhkciwgc2VjaGRycywgIl9fZnRyX2ZpeHVwIik7CiAJaWYgKHNlY3QgIT0gTlVM
+TCkKQEAgLTEwMSw1ICs5Nyw0IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIg
+KmhkciwKIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsK
+LQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlmZiAtLWdpdCBhL2FyY2gvczM5MC9rZXJu
+ZWwvbW9kdWxlLmMgYi9hcmNoL3MzOTAva2VybmVsL21vZHVsZS5jCmluZGV4IDIyY2ZkNjMuLmY3
+MTY3ZWUgMTAwNjQ0Ci0tLSBhL2FyY2gvczM5MC9rZXJuZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9z
+MzkwL2tlcm5lbC9tb2R1bGUuYwpAQCAtNDA3LDEwICs0MDcsOSBAQCBpbnQgbW9kdWxlX2ZpbmFs
+aXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiB7CiAJdmZyZWUobWUtPmFyY2guc3ltaW5mbyk7CiAJ
+bWUtPmFyY2guc3ltaW5mbyA9IE5VTEw7Ci0JcmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRy
+LCBzZWNoZHJzLCBtZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2FyY2hfY2xlYW51
+cChzdHJ1Y3QgbW9kdWxlICptb2QpCiB7Ci0JbW9kdWxlX2J1Z19jbGVhbnVwKG1vZCk7CiB9CmRp
+ZmYgLS1naXQgYS9hcmNoL3NoL2tlcm5lbC9tb2R1bGUuYyBiL2FyY2gvc2gva2VybmVsL21vZHVs
+ZS5jCmluZGV4IDQzYWRkZGYuLmFlMGJlNjkgMTAwNjQ0Ci0tLSBhL2FyY2gvc2gva2VybmVsL21v
+ZHVsZS5jCisrKyBiL2FyY2gvc2gva2VybmVsL21vZHVsZS5jCkBAIC0xNDksMTMgKzE0OSwxMSBA
+QCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiAJaW50IHJldCA9IDA7
+CiAKIAlyZXQgfD0gbW9kdWxlX2R3YXJmX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwotCXJl
+dCB8PSBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwogCiAJcmV0dXJuIHJl
+dDsKIH0KIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsK
+LQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIAltb2R1bGVfZHdhcmZfY2xlYW51cChtb2QpOwog
+fQpkaWZmIC0tZ2l0IGEvYXJjaC94ODYva2VybmVsL21vZHVsZS5jIGIvYXJjaC94ODYva2VybmVs
+L21vZHVsZS5jCmluZGV4IGUwYmMxODYuLjFjMzU1YzUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2tl
+cm5lbC9tb2R1bGUuYworKysgYi9hcmNoL3g4Ni9rZXJuZWwvbW9kdWxlLmMKQEAgLTIzOSwxMSAr
+MjM5LDEwIEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAkJYXBw
+bHlfcGFyYXZpcnQocHNlZywgcHNlZyArIHBhcmEtPnNoX3NpemUpOwogCX0KIAotCXJldHVybiBt
+b2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOworCXJldHVybiAwOwogfQogCiB2
+b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQogewogCWFsdGVybmF0
+aXZlc19zbXBfbW9kdWxlX2RlbChtb2QpOwotCW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogfQpk
+aWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tb2R1bGUuaCBiL2luY2x1ZGUvbGludXgvbW9kdWxl
+LmgKaW5kZXggOGE2YjlmZC4uYWFjZTA2NiAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9tb2R1
+bGUuaAorKysgYi9pbmNsdWRlL2xpbnV4L21vZHVsZS5oCkBAIC02ODYsMTcgKzY4NiwxNiBAQCBl
+eHRlcm4gaW50IG1vZHVsZV9zeXNmc19pbml0aWFsaXplZDsKIAogCiAjaWZkZWYgQ09ORklHX0dF
+TkVSSUNfQlVHCi1pbnQgIG1vZHVsZV9idWdfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKiwgY29u
+c3QgRWxmX1NoZHIgKiwKK3ZvaWQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBFbGZfRWhkciAq
+LCBjb25zdCBFbGZfU2hkciAqLAogCQkJIHN0cnVjdCBtb2R1bGUgKik7CiB2b2lkIG1vZHVsZV9i
+dWdfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICopOwogCiAjZWxzZQkvKiAhQ09ORklHX0dFTkVSSUNf
+QlVHICovCiAKLXN0YXRpYyBpbmxpbmUgaW50ICBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVs
+Zl9FaGRyICpoZHIsCitzdGF0aWMgaW5saW5lIHZvaWQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25z
+dCBFbGZfRWhkciAqaGRyLAogCQkJCQljb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkJCQkJc3Ry
+dWN0IG1vZHVsZSAqbW9kKQogewotCXJldHVybiAwOwogfQogc3RhdGljIGlubGluZSB2b2lkIG1v
+ZHVsZV9idWdfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICptb2QpIHt9CiAjZW5kaWYJLyogQ09ORklH
+X0dFTkVSSUNfQlVHICovCmRpZmYgLS1naXQgYS9rZXJuZWwvbW9kdWxlLmMgYi9rZXJuZWwvbW9k
+dWxlLmMKaW5kZXggZDBiNWY4ZC4uY2NkNjQxOSAxMDA2NDQKLS0tIGEva2VybmVsL21vZHVsZS5j
+CisrKyBiL2tlcm5lbC9tb2R1bGUuYwpAQCAtMTUzNyw2ICsxNTM3LDcgQEAgc3RhdGljIGludCBf
+X3VubGlua19tb2R1bGUodm9pZCAqX21vZCkKIHsKIAlzdHJ1Y3QgbW9kdWxlICptb2QgPSBfbW9k
+OwogCWxpc3RfZGVsKCZtb2QtPmxpc3QpOworCW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogCXJl
+dHVybiAwOwogfQogCkBAIC0yNjI1LDYgKzI2MjYsNyBAQCBzdGF0aWMgc3RydWN0IG1vZHVsZSAq
+bG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJaWYgKGVyciA8IDApCiAJCWdvdG8gZGRl
+YnVnOwogCisJbW9kdWxlX2J1Z19maW5hbGl6ZShpbmZvLmhkciwgaW5mby5zZWNoZHJzLCBtb2Qp
+OwogCWxpc3RfYWRkX3JjdSgmbW9kLT5saXN0LCAmbW9kdWxlcyk7CiAJbXV0ZXhfdW5sb2NrKCZt
+b2R1bGVfbXV0ZXgpOwogCkBAIC0yNjUwLDYgKzI2NTIsOCBAQCBzdGF0aWMgc3RydWN0IG1vZHVs
+ZSAqbG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJbXV0ZXhfbG9jaygmbW9kdWxlX211
+dGV4KTsKIAkvKiBVbmxpbmsgY2FyZWZ1bGx5OiBrYWxsc3ltcyBjb3VsZCBiZSB3YWxraW5nIGxp
+c3QuICovCiAJbGlzdF9kZWxfcmN1KCZtb2QtPmxpc3QpOworCW1vZHVsZV9idWdfY2xlYW51cCht
+b2QpOworCiAgZGRlYnVnOgogCWlmICghbW9kLT50YWludHMpCiAJCWR5bmFtaWNfZGVidWdfcmVt
+b3ZlKGluZm8uZGVidWcpOwpkaWZmIC0tZ2l0IGEvbGliL2J1Zy5jIGIvbGliL2J1Zy5jCmluZGV4
+IDdjZGZhZDguLjE5NTUyMDkgMTAwNjQ0Ci0tLSBhL2xpYi9idWcuYworKysgYi9saWIvYnVnLmMK
+QEAgLTcyLDggKzcyLDggQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBidWdfZW50cnkgKm1vZHVsZV9m
+aW5kX2J1Zyh1bnNpZ25lZCBsb25nIGJ1Z2FkZHIpCiAJcmV0dXJuIE5VTEw7CiB9CiAKLWludCBt
+b2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVsZl9TaGRyICpz
+ZWNoZHJzLAotCQkJc3RydWN0IG1vZHVsZSAqbW9kKQordm9pZCBtb2R1bGVfYnVnX2ZpbmFsaXpl
+KGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAorCQkJIHN0cnVj
+dCBtb2R1bGUgKm1vZCkKIHsKIAljaGFyICpzZWNzdHJpbmdzOwogCXVuc2lnbmVkIGludCBpOwpA
+QCAtOTcsOCArOTcsNiBAQCBpbnQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBFbGZfRWhkciAq
+aGRyLCBjb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkgKiBjb3VsZCBwb3RlbnRpYWxseSBsZWFk
+IHRvIGRlYWRsb2NrIGFuZCB0aHVzIGJlIGNvdW50ZXItcHJvZHVjdGl2ZS4KIAkgKi8KIAlsaXN0
+X2FkZCgmbW9kLT5idWdfbGlzdCwgJm1vZHVsZV9idWdfbGlzdCk7Ci0KLQlyZXR1cm4gMDsKIH0K
+IAogdm9pZCBtb2R1bGVfYnVnX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQo=
+--0023547c8b93b9925d0491d45890--
