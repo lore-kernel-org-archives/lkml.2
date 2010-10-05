@@ -1,76 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab0JEW4O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 18:56:14 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:50411 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757539Ab0JEW4M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 18:56:12 -0400
-From: pavan_savoy@ti.com
-To: gregkh@suse.de, linux-kernel@vger.kernel.org
-Cc: alan@lxorguk.ukuu.org.uk, devel@driverdev.osuosl.org,
-        Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 3/4] drivers:misc: ti-st: Kconfig & Makefile for TI_ST
-Date: Tue,  5 Oct 2010 20:08:36 -0400
-Message-Id: <1286323717-2925-4-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1286323717-2925-3-git-send-email-pavan_savoy@ti.com>
-References: <1286323717-2925-1-git-send-email-pavan_savoy@ti.com>
- <1286323717-2925-2-git-send-email-pavan_savoy@ti.com>
- <1286323717-2925-3-git-send-email-pavan_savoy@ti.com>
+	id S1757548Ab0JEXGL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 19:06:11 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54968 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754791Ab0JEXGK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 19:06:10 -0400
+Message-ID: <4CABAF2A.5090501@kernel.org>
+Date: Tue, 05 Oct 2010 16:05:14 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Vivek Goyal <vgoyal@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
+Subject: Re: [PATCH 2/4] x86, memblock: Fix crashkernel allocation
+References: <4CAA4BD5.4020505@kernel.org> <4CAA4DE2.1020406@kernel.org> <4CABA6E5.6030601@zytor.com>
+In-Reply-To: <4CABA6E5.6030601@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+On 10/05/2010 03:29 PM, H. Peter Anvin wrote:
+> On 10/04/2010 02:57 PM, Yinghai Lu wrote:
+>>
+>> +#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
+>>  static void __init reserve_crashkernel(void)
+>>  {
+>>  	unsigned long long total_mem;
+>> @@ -518,17 +519,28 @@ static void __init reserve_crashkernel(v
+>>  	if (crash_base <= 0) {
+>>  		const unsigned long long alignment = 16<<20;	/* 16M */
+>>  
+>> -		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
+>> -				 alignment);
+>> +		/*
+>> +		 * Assume half crash_size is for bzImage
+>> +		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
+>> +		 */
+>> +		crash_base = memblock_find_in_range(alignment,
+>> +				DEFAULT_BZIMAGE_ADDR_MAX + crash_size/2,
+>> +				crash_size, alignment);
+>> +
+>>  		if (crash_base == MEMBLOCK_ERROR) {
+>> -			pr_info("crashkernel reservation failed - No suitable area found.\n");
+>> -			return;
+>> +			crash_base = memblock_find_in_range(alignment,
+>> +					 ULONG_MAX, crash_size, alignment);
+>> +
+>> +			if (crash_base == MEMBLOCK_ERROR) {
+>> +				pr_info("crashkernel reservation failed - No suitable area found.\n");
+>> +				return;
+>> +			}
+>>  		}
+>>  
+> 
+> Okay, this *really* doesn't make sense.
+> 
+> It's bad enough that kexec doesn't know what memory is safe for it, but
+> why the heck the heuristic that "half is for bzImage and the rest can go
+> beyond the heuristic limit"?
 
-Add the Kconfig and the Makefile for the TI_ST driver.
-TI_ST driver is the line discipline driver for the Texas Instrument's
-WiLink chipsets.
+kdump want that range half for bzImage or half for initrd.
 
-Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+and kexec only check if bzImage can be put under small range.
+
+>  Can't we at least simply cap the region to
+> the default, unless the kexec system has passed in some knowable
+> alternative?
+
++		crash_base = memblock_find_in_range(alignment,
++				DEFAULT_BZIMAGE_ADDR_MAX,
++				crash_size, alignment);
+
+
+  Furthermore, why bother having the "fallback" at all
+> (certainly without having a message!?)  If we don't get the memory area
+> we need we're likely to randomly fail anyway.
+
+if kexec is fixed to work with bzImage with 64bit entry...
+
+> 
+> Let me be completely clear -- it's obvious from all of this that kexec
+> is fundamentally broken by design: if kexec can't communicate the safe
+> memory to use it's busted seven ways to Sunday and it needs to be fixed.
+>  However, in the meantime I can see capping the memory available to it
+> as a temporary band-aid, but a fallback to picking random memory is
+> nuts, especially on the motivation that "a future kexec version might be
+> able to use it."  If so, the "future kexec tools" should SAY SO.
+
+ok, please check
+
+[PATCH -v6] x86, memblock: Fix crashkernel allocation
+
+Cai Qian found crashkernel is broken with x86 memblock changes
+1. crashkernel=128M@32M always reported that range is used, even first kernel is small
+   no one use that range
+2. always get following report when using "kexec -p"
+	Could not find a free area of memory of a000 bytes...
+	locate_hole failed
+
+The root cause is that generic memblock_find_in_range() will try to get range from top_down.
+But crashkernel do need from low and specified range.
+
+Let's limit the target range with crash_base + crash_size to make sure that
+We get exact range.
+
+-v6: use DEFAULT_BZIMAGE_ADDR_MAX to limit area that could be used by bzImge.
+
+Reported-and-Bisected-by: CAI Qian <caiqian@redhat.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
 ---
- drivers/misc/ti-st/Kconfig  |   17 +++++++++++++++++
- drivers/misc/ti-st/Makefile |    6 ++++++
- 2 files changed, 23 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/ti-st/Kconfig
- create mode 100644 drivers/misc/ti-st/Makefile
+ arch/x86/kernel/setup.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/misc/ti-st/Kconfig b/drivers/misc/ti-st/Kconfig
-new file mode 100644
-index 0000000..2c8c3f3
---- /dev/null
-+++ b/drivers/misc/ti-st/Kconfig
-@@ -0,0 +1,17 @@
-+#
-+# TI's shared transport line discipline and the protocol
-+# drivers (BT, FM and GPS)
-+#
-+menu "Texas Instruments shared transport line discipline"
-+config TI_ST
-+	tristate "Shared transport core driver"
-+	depends on RFKILL
-+	select FW_LOADER
-+	help
-+	  This enables the shared transport core driver for TI
-+	  BT / FM and GPS combo chips. This enables protocol drivers
-+	  to register themselves with core and send data, the responses
-+	  are returned to relevant protocol drivers based on their
-+	  packet types.
+Index: linux-2.6/arch/x86/kernel/setup.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup.c
++++ linux-2.6/arch/x86/kernel/setup.c
+@@ -501,6 +501,7 @@ static inline unsigned long long get_tot
+ 	return total << PAGE_SHIFT;
+ }
+ 
++#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
+ static void __init reserve_crashkernel(void)
+ {
+ 	unsigned long long total_mem;
+@@ -518,8 +519,12 @@ static void __init reserve_crashkernel(v
+ 	if (crash_base <= 0) {
+ 		const unsigned long long alignment = 16<<20;	/* 16M */
+ 
+-		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
+-				 alignment);
++		/*
++		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
++		 */
++		crash_base = memblock_find_in_range(alignment,
++			       DEFAULT_BZIMAGE_ADDR_MAX, crash_size, alignment);
 +
-+endmenu
-diff --git a/drivers/misc/ti-st/Makefile b/drivers/misc/ti-st/Makefile
-new file mode 100644
-index 0000000..78d7ebb
---- /dev/null
-+++ b/drivers/misc/ti-st/Makefile
-@@ -0,0 +1,6 @@
-+#
-+# Makefile for TI's shared transport line discipline
-+# and its protocol drivers (BT, FM, GPS)
-+#
-+obj-$(CONFIG_TI_ST) 		+= st_drv.o
-+st_drv-objs			:= st_core.o st_kim.o st_ll.o
--- 
-1.6.5
-
+ 		if (crash_base == MEMBLOCK_ERROR) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
+ 			return;
+@@ -527,8 +532,8 @@ static void __init reserve_crashkernel(v
+ 	} else {
+ 		unsigned long long start;
+ 
+-		start = memblock_find_in_range(crash_base, ULONG_MAX, crash_size,
+-				 1<<20);
++		start = memblock_find_in_range(crash_base,
++				 crash_base + crash_size, crash_size, 1<<20);
+ 		if (start != crash_base) {
+ 			pr_info("crashkernel reservation failed - memory is in use.\n");
+ 			return;
