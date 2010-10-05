@@ -1,33 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932845Ab0JEKbt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:31:49 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:56684 "EHLO
+	id S932936Ab0JEKb5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:31:57 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:56699 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758003Ab0JEKbs (ORCPT
+	with ESMTP id S1758015Ab0JEKbw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:31:48 -0400
-Message-Id: <20101005103108.288743609@szeredi.hu>
+	Tue, 5 Oct 2010 06:31:52 -0400
+Message-Id: <20101005103146.222588849@szeredi.hu>
+References: <20101005103108.288743609@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Tue, 05 Oct 2010 12:31:08 +0200
+Date: Tue, 05 Oct 2010 12:31:16 +0200
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@zeniv.linux.org.uk
 Cc: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/9] read-only remount fixes
+Subject: [PATCH 8/9] vfs: fs_may_remount_ro: turn unnecessary check into a WARN_ON
+Content-Disposition: inline; filename=vfs-remove-unnecessary-remount-check.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al,
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-This series fixes some of the races and other bugs in the read-only
-remount code.  Please review.
+Now a successful sb_prepare_remount_readonly() should ensure that no
+writable files remain for this superblock.  So turn this check into a
+WARN_ON.
 
-Git tree is here:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/vfs.git read-only-remount-fixes
-
-Thanks,
-Miklos
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
+ fs/file_table.c |    7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/fs/file_table.c
+===================================================================
+--- linux-2.6.orig/fs/file_table.c	2010-10-04 10:44:23.000000000 +0200
++++ linux-2.6/fs/file_table.c	2010-10-04 15:07:29.000000000 +0200
+@@ -437,8 +437,11 @@ int fs_may_remount_ro(struct super_block
+ 		if (inode->i_nlink == 0)
+ 			goto too_bad;
+ 
+-		/* Writeable file? */
+-		if (S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE))
++		/*
++		 * Writable file?
++		 * Should be caught by sb_prepare_remount_readonly().
++		 */
++		if (WARN_ON(S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE)))
+ 			goto too_bad;
+ 	} while_file_list_for_each_entry;
+ 	lg_global_unlock(files_lglock);
+
+-- 
