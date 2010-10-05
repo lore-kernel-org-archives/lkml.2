@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab0JEQwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:52:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38120 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754871Ab0JEQwb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:52:31 -0400
-Date: Tue, 5 Oct 2010 17:51:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, akpm@linux-foundation.org,
-        phillip@lougher.demon.co.uk, hsweeten@visionengravers.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] initramfs: strcpy destination string overflow
-Message-ID: <20101005165159.GQ19804@ZenIV.linux.org.uk>
-References: <cover.1286193211.git.EXT-Eugeny.Kuznetsov@nokia.com>
- <b6cdf32448371a89fdab2f3875ac5b32365bf518.1286193211.git.EXT-Eugeny.Kuznetsov@nokia.com>
- <AANLkTinoCgO56O1kPNW3vjd9Nd1kY2SU34UH2RQa9qkE@mail.gmail.com>
+	id S1755919Ab0JEQxv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:53:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39754 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755776Ab0JEQxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 12:53:50 -0400
+Message-ID: <4CAB5874.9060106@kernel.org>
+Date: Tue, 05 Oct 2010 18:55:16 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinoCgO56O1kPNW3vjd9Nd1kY2SU34UH2RQa9qkE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+CC: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        Yang Ruirui <ruirui.r.yang@tieto.com>,
+        Andrew Morton <akpm@linux-foundation.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
+Subject: Re: -mm: xfs lockdep warning
+References: <201009161546.16909.ruirui.r.yang@tieto.com>	<20100917005227.GJ24409@dastard>	<20100920191355.GA28443@infradead.org>	<AANLkTi=45J+=ytj=NC4bYTVJFRakNQQiFd35K7mrf+Gq@mail.gmail.com>	<4CA997DF.5030008@kernel.org>	<20101004092107.GJ4681@dastard> <AANLkTi=3jjoCtYoK0endt8OM=omygO284WN2ZQZ=jceo@mail.gmail.com> <4CAB5779.5020901@kernel.org>
+In-Reply-To: <4CAB5779.5020901@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 16:53:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 08:55:01AM -0700, Linus Torvalds wrote:
+On 10/05/2010 06:51 PM, Tejun Heo wrote:
+> On 10/05/2010 12:09 PM, Torsten Kaiser wrote:
+>> 2) the hang with 2.6.35-rc5 I have seen twice (triggered probably by
+>> high load while building KOffice on an tmpfs)
+> 
+> The trace doesn't seem to firmly point at xfs locking up.  There are
+> md and dm crypt involved.  Are you sure this is locking up inside xfs?
+> Also, can you please enable frame pointers so that we can get more
+> reliable backtrace?
+> 
+>> 3) the lockdep issue that started this thread and that I am seeing in
+>> mainline 2.6.36-rc5 and -rc6 and that seems to be rather easy to
+>> trigger for me.
+>>
+>> Because 3) is regarded as a false positive, it should not be the cause
+>> of 2)
+> 
+> For now, let's not draw any conclusion or mix the issues.  I'll look
+> up the original thread and look into what the lockdep warning means.
 
-> I think this is wrong.
-> 
-> If the name is too long to fit in the hash table, we should not create
-> a new hash entry at all, because we'd be returning the wrong
-> (truncated) name when we find it next time.
-> 
-> So it would be much better to just do
-> 
->    if (strlen(name) >= sizeof(q->name))
->       return NULL;
-> 
-> in find_link(), because as far as I can tell, the hard-linking is
-> always just an optimization.
-> 
-> Comments? Peter?
+Ah, okay, David already looked into it and concluded it to be a
+spurious one.  Can you please attach full kernel message of the
+lockup?
 
-Take a look at struct hash definition.  That sizeof is PATH_MAX and
-do_header() will reject an entry with name longer than that.  IOW,
-the whole thing is a non-issue; we can add
-	if (strlen(name) >= PATH_MAX)
-		BUG();
-if we really care, but that's it.
+Thanks.
 
-As a side note, it looks like we need a fat warning about blind "improvements"
-of that kind in CodingStyle; cargo-cult replacements like that can easily
-hide real bugs... ;-/
+-- 
+tejun
