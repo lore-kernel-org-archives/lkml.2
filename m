@@ -1,293 +1,451 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756354Ab0JES76 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 14:59:58 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:26145 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754667Ab0JES6U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754738Ab0JES6U (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Oct 2010 14:58:20 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:42224 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752324Ab0JES6S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 14:58:18 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: j12SFZUVM1mBdL2.jCsgzdHdZYfLGXWoyaUqhTbUctEZW1d
- JMXsDPoJQX8EOZKrAqR.YK3DsWVCxyFUjRBfO3M4CsZ44hjosYvYn2227p5s
- 0VHV5tIarpTrJEYbeJh6wbpVXWPX9IZA3DdljMudGU44QtZD2p3WGHgMyOfp
- 14TJPt7rc7t7cP6pJIE8qClA9UZTNfREiHRKjP78CZA6Byf.3MjP96GpMLfO
- iBKjsy9JpvruRRWvoFJ3z1lxF_DhH9R0hkNiFXftus3.KgtNDNOkxHMzsCB2
- bPcIImZasFszZE2wT
+X-YMail-OSG: m97jQpoVM1kqG4fwKJECE3mUs2VxZASdGdh9MR.7EJt3i3q
+ CErb7W2jh9ex0nD.Q165yOZ3sPc9EaOM2BpUL9._Olrax.a5lkb8ZbA22RXh
+ KVCuH5kNsacMxGYFYpe52ifGQM_AS4EdzwYPI2nGjwQ4O._0WtC8RNCfplP4
+ YTPAoV3Nde4d1dbVneM.adh91FYeV_Jsc0bmtNc8r6mitei43i7aZLMo6EQ4
+ SvTCba7inQP1x0Ok5hSFLjSc1Cn5voY87TT7H9QNfKLqrB4.2
 X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101005185818.197815472@linux.com>
+Message-Id: <20101005185815.859324753@linux.com>
 User-Agent: quilt/0.48-1
-Date: Tue, 05 Oct 2010 13:57:36 -0500
+Date: Tue, 05 Oct 2010 13:57:32 -0500
 From: Christoph Lameter <cl@linux.com>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
 Cc: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org
 Cc: David Rientjes <rientjes@google.com>
-Subject: [UnifiedV4 11/16] slub: Add a "touched" state to queues and partial lists
+Subject: [UnifiedV4 07/16] slub: Object based NUMA policies
 References: <20101005185725.088808842@linux.com>
-Content-Disposition: inline; filename=unified_touched
+Content-Disposition: inline; filename=unified_object_based_policies
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a "touched" state in preparation for the implementation of cache
-expiration.
+Slub applies policies and cpuset restriction currently only on the page
+level. The patch here changes that to apply policies to individual allocations
+(like SLAB). This comes with a cost of increased complexiy in the allocator.
+
+The allocation does not build alien queues (later patch) and is a bit
+ineffective since a slab has to be taken from the partial lists (via lock
+and unlock) and possibly shifted back after taking one object out of it.
+
+Memory policies and cpuset redirection is only applied to slabs marked with
+SLAB_MEM_SPREAD (also like SLAB).
+
+Use Lee Schermerhorns new *_mem functionality to always find the nearest
+node in case we are on a memoryless node.
+
+Note that the handling of queues is significantly different from SLAB.
+SLAB has pure queues that only contain objects from the respective nodes
+and therefore has to undergo fallback functions if nodes are exhausted.
+
+The approach here has queues that usually contain objects from the
+corresponding NUMA nodes. If nodes are exhausted then objects from
+foreign nodes may appear in queues as the page allocator falls back
+to other nodes. The foreign objects will be freed back to the
+correct queues though so that these conditions are temporary.
+
+The caching effect of the queues will degrade in situations when memory
+on some nodes is no longer available.
 
 Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 
 ---
- include/linux/slub_def.h |   10 +++++----
- mm/slub.c                |   51 ++++++++++++++++++++++++++++++++++-------------
- 2 files changed, 43 insertions(+), 18 deletions(-)
+ include/linux/slub_def.h |   22 ++++
+ mm/slub.c                |  208 ++++++++++++++++++-----------------------------
+ 2 files changed, 100 insertions(+), 130 deletions(-)
 
-Index: linux-2.6/include/linux/slub_def.h
-===================================================================
---- linux-2.6.orig/include/linux/slub_def.h	2010-10-05 13:36:33.000000000 -0500
-+++ linux-2.6/include/linux/slub_def.h	2010-10-05 13:39:59.000000000 -0500
-@@ -52,11 +52,12 @@ enum stat_item {
-  * the per cpu queue.
-  */
- struct kmem_cache_queue {
--	int objects;		/* Available objects */
--	int max;		/* Queue capacity */
-+	int objects;			/* Available objects */
-+	unsigned short max;		/* Queue capacity */
-+	unsigned short touched;		/* Cache was touched */
- 	union {
- 		struct kmem_cache_queue *shared; /* cpu q -> shared q */
--		spinlock_t lock;	  /* shared queue: lock */
-+		spinlock_t lock;	/* shared queue: lock */
- 		spinlock_t alien_lock;	/* alien cache lock */
- 	};
- 	void *object[];
-@@ -72,7 +73,8 @@ struct kmem_cache_cpu {
- 
- struct kmem_cache_node {
- 	spinlock_t lock;	/* Protocts slab metadata on a node */
--	unsigned long nr_partial;
-+	unsigned touched;
-+	unsigned nr_partial;
- 	struct list_head partial;
- #ifdef CONFIG_SLUB_DEBUG
- 	atomic_long_t nr_slabs;
 Index: linux-2.6/mm/slub.c
 ===================================================================
---- linux-2.6.orig/mm/slub.c	2010-10-05 13:39:26.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-10-05 13:39:59.000000000 -0500
-@@ -1291,12 +1291,14 @@ static void add_partial(struct kmem_cach
- 	else
- 		list_add(&page->lru, &n->partial);
- 	__SetPageSlubPartial(page);
-+	n->touched = 1;
+--- linux-2.6.orig/mm/slub.c	2010-10-04 08:26:09.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-10-04 08:26:27.000000000 -0500
+@@ -1148,10 +1148,7 @@ static inline struct page *alloc_slab_pa
+ 
+ 	flags |= __GFP_NOTRACK;
+ 
+-	if (node == NUMA_NO_NODE)
+-		return alloc_pages(flags, order);
+-	else
+-		return alloc_pages_exact_node(node, flags, order);
++	return alloc_pages_exact_node(node, flags, order);
  }
  
- static inline void remove_partial(struct kmem_cache_node *n,
- 					struct page *page)
+ static struct page *allocate_slab(struct kmem_cache *s, gfp_t flags, int node)
+@@ -1376,14 +1373,15 @@ static inline int lock_and_freeze_slab(s
+ /*
+  * Try to allocate a partial slab from a specific node.
+  */
+-static struct page *get_partial_node(struct kmem_cache_node *n)
++static struct page *get_partial(struct kmem_cache *s, int node)
  {
- 	n->nr_partial--;
-+	n->touched = 1;
- 	list_del(&page->lru);
- 	__ClearPageSlubPartial(page);
- }
-@@ -1445,6 +1447,7 @@ static inline int drain_queue(struct kme
- 	drain_objects(s, q->object, t);
- 
- 	q->objects -= t;
-+	q->touched = 0;
- 	if (q->objects)
- 		memcpy(q->object, q->object + t,
- 					q->objects * sizeof(void *));
-@@ -1553,17 +1556,18 @@ static inline void init_shared_cache(str
- {
- 	spin_lock_init(&q->lock);
- 	q->max = max;
--	q->objects =0;
-+	q->objects = 0;
-+	q->touched = 0;
- }
- 
- static inline void init_alien_cache(struct kmem_cache_queue *q, int max)
- {
- 	spin_lock_init(&q->alien_lock);
- 	q->max = max;
--	q->objects =0;
-+	q->objects = 0;
-+	q->touched = 0;
- }
- 
--
- /* Determine a list of the active shared caches */
- struct kmem_cache_queue **shared_caches(struct kmem_cache *s)
- {
-@@ -2000,6 +2004,7 @@ redo:
- 		spin_lock(&a->lock);
- 		if (likely(!queue_empty(a))) {
- 			object = queue_get(a);
-+			a->touched = 1;
- 			spin_unlock(&a->lock);
- 			stat(s, ALLOC_ALIEN);
- 			return object;
-@@ -2079,20 +2084,21 @@ static void slab_free_alien(struct kmem_
- 	struct kmem_cache_queue *a = alien_cache(s, c, node);
- 
- 	if (a) {
--		int slow = 0;
-+		int touched = 1;
- 
- 		spin_lock(&a->lock);
- 		while (unlikely(queue_full(a))) {
- 			drain_queue(s, a, s->batch);
--			slow = 1;
-+			touched = 0;
- 		}
- 		queue_put(a, object);
- 		spin_unlock(&a->lock);
- 
--		if (slow)
--			stat(s, FREE_SLOWPATH);
--		else
-+		a->touched = touched;
-+		if (touched)
- 			stat(s, FREE_ALIEN);
-+		else
-+			stat(s, FREE_SLOWPATH);
- 
- 	} else {
- 		/* Direct free to the slab */
-@@ -2112,6 +2118,7 @@ static void *slab_alloc(struct kmem_cach
- 	struct kmem_cache_queue *q;
- 	struct kmem_cache_node *n;
  	struct page *page;
-+	int batch;
- 	unsigned long flags;
++	struct kmem_cache_node *n = get_node(s, node);
  
- 	if (slab_pre_alloc_hook(s, gfpflags))
-@@ -2136,6 +2143,7 @@ redo:
- 
- get_object:
- 		object = queue_get(q);
-+		q->touched = 1;
- 
- got_object:
- 		if (kmem_cache_debug(s)) {
-@@ -2152,6 +2160,10 @@ got_object:
- 		return object;
- 	}
- 
-+	batch = s->batch;
-+	if (!q->touched && batch > 16)
-+		batch = 16;
-+
- 	if (q->shared) {
- 		/*
- 		 * Refill the cpu queue with the hottest objects
-@@ -2161,9 +2173,10 @@ got_object:
- 		int d = 0;
- 
- 		spin_lock(&l->lock);
--		d = min(l->objects, s->batch);
-+		d = min(l->objects, batch);
- 
- 		l->objects -= d;
-+		l->touched = 1;
- 		memcpy(q->object, l->object + l->objects,
- 						d * sizeof(void *));
- 		spin_unlock(&l->lock);
-@@ -2180,11 +2193,11 @@ got_object:
- 
- 	/* Refill from partial lists */
- 	spin_lock(&n->lock);
--	while (q->objects < s->batch && !list_empty(&n->partial)) {
-+	while (q->objects < batch && !list_empty(&n->partial)) {
- 		page = list_entry(n->partial.next, struct page, lru);
- 
- 		refill_queue(s, q, page, min(available(page),
--					s->batch - q->objects));
-+					batch - q->objects));
- 
- 		if (all_objects_used(page))
- 			partial_to_full(s, n, page);
-@@ -2199,7 +2212,7 @@ got_object:
- 
- 	gfpflags &= gfp_allowed_mask;
- 	/* Refill from free pages */
--	while (q->objects < s->batch) {
-+	while (q->objects < batch) {
- 		int tail = 0;
- 
- 		if (gfpflags & __GFP_WAIT)
-@@ -2226,7 +2239,7 @@ got_object:
- 		 * the partial list if so.
- 		 */
- 		if (q->objects < s->batch)
--			refill_queue(s, q, page, min_t(int, page->objects, s->batch));
-+			refill_queue(s, q, page, min_t(int, page->objects, batch));
- 		else
- 			tail = 1;
- 
-@@ -2304,6 +2317,7 @@ static void slab_free(struct kmem_cache 
- 	struct kmem_cache_cpu *c;
- 	struct kmem_cache_queue *q;
- 	unsigned long flags;
-+	int touched = 1;
- 
- 	slab_free_hook(s, x);
- 
-@@ -2339,6 +2353,7 @@ static void slab_free(struct kmem_cache 
- 			memcpy(l->object + l->objects, q->object,
- 						d * sizeof(void *));
- 			l->objects += d;
-+			l->touched = 1;
- 			spin_unlock(&l->lock);
- 
- 			q->objects -= d;
-@@ -2353,10 +2368,12 @@ static void slab_free(struct kmem_cache 
- 			drain_queue(s, q, s->batch);
- 			stat(s, FREE_SLOWPATH);
- 		}
-+		touched = 0;
- 	} else
- 		stat(s, FREE_FASTPATH);
- 
- 	queue_put(q, x);
-+	q->touched = touched;
- out:
- 	local_irq_restore(flags);
+ 	/*
+ 	 * Racy check. If we mistakenly see no partial slabs then we
+ 	 * just allocate an empty slab. If we mistakenly try to get a
+-	 * partial slab and there is none available then get_partials()
++	 * partial slab and there is none available then get_partial()
+ 	 * will return NULL.
+ 	 */
+ 	if (!n || !n->nr_partial)
+@@ -1400,76 +1398,6 @@ out:
  }
-@@ -3924,7 +3941,7 @@ static int validate_slab_node(struct kme
- 	}
- 	if (count != n->nr_partial)
- 		printk(KERN_ERR "SLUB %s: %ld partial slabs counted but "
--			"counter=%ld\n", s->name, count, n->nr_partial);
-+			"counter=%d\n", s->name, count, n->nr_partial);
  
- 	if (!(s->flags & SLAB_STORE_USER))
- 		goto out;
-@@ -4549,6 +4566,8 @@ static ssize_t shared_caches_show(struct
- 			x += sprintf(buf + x, "%d", cpu);
+ /*
+- * Get a page from somewhere. Search in increasing NUMA distances.
+- */
+-static struct page *get_any_partial(struct kmem_cache *s, gfp_t flags)
+-{
+-#ifdef CONFIG_NUMA
+-	struct zonelist *zonelist;
+-	struct zoneref *z;
+-	struct zone *zone;
+-	enum zone_type high_zoneidx = gfp_zone(flags);
+-	struct page *page;
+-
+-	/*
+-	 * The defrag ratio allows a configuration of the tradeoffs between
+-	 * inter node defragmentation and node local allocations. A lower
+-	 * defrag_ratio increases the tendency to do local allocations
+-	 * instead of attempting to obtain partial slabs from other nodes.
+-	 *
+-	 * If the defrag_ratio is set to 0 then kmalloc() always
+-	 * returns node local objects. If the ratio is higher then kmalloc()
+-	 * may return off node objects because partial slabs are obtained
+-	 * from other nodes and filled up.
+-	 *
+-	 * If /sys/kernel/slab/xx/defrag_ratio is set to 100 (which makes
+-	 * defrag_ratio = 1000) then every (well almost) allocation will
+-	 * first attempt to defrag slab caches on other nodes. This means
+-	 * scanning over all nodes to look for partial slabs which may be
+-	 * expensive if we do it every time we are trying to find a slab
+-	 * with available objects.
+-	 */
+-	if (!s->remote_node_defrag_ratio ||
+-			get_cycles() % 1024 > s->remote_node_defrag_ratio)
+-		return NULL;
+-
+-	get_mems_allowed();
+-	zonelist = node_zonelist(slab_node(current->mempolicy), flags);
+-	for_each_zone_zonelist(zone, z, zonelist, high_zoneidx) {
+-		struct kmem_cache_node *n;
+-
+-		n = get_node(s, zone_to_nid(zone));
+-
+-		if (n && cpuset_zone_allowed_hardwall(zone, flags) &&
+-				n->nr_partial > s->min_partial) {
+-			page = get_partial_node(n);
+-			if (page) {
+-				put_mems_allowed();
+-				return page;
+-			}
+-		}
+-	}
+-	put_mems_allowed();
+-#endif
+-	return NULL;
+-}
+-
+-/*
+- * Get a partial page, lock it and return it.
+- */
+-static struct page *get_partial(struct kmem_cache *s, gfp_t flags, int node)
+-{
+-	struct page *page;
+-	int searchnode = (node == NUMA_NO_NODE) ? numa_node_id() : node;
+-
+-	page = get_partial_node(get_node(s, searchnode));
+-	if (page || node != -1)
+-		return page;
+-
+-	return get_any_partial(s, flags);
+-}
+-
+-/*
+  * Move the vector of objects back to the slab pages they came from
+  */
+ void drain_objects(struct kmem_cache *s, void **object, int nr)
+@@ -1650,6 +1578,7 @@ struct kmem_cache_cpu *alloc_kmem_cache_
+ 		struct kmem_cache_cpu *c = per_cpu_ptr(k, cpu);
+ 
+ 		c->q.max = max;
++		c->node = cpu_to_mem(cpu);
+ 	}
+ 
+ 	s->cpu_queue = max;
+@@ -1710,19 +1639,6 @@ static void resize_cpu_queue(struct kmem
+ }
+ #endif
+ 
+-/*
+- * Check if the objects in a per cpu structure fit numa
+- * locality expectations.
+- */
+-static inline int node_match(struct kmem_cache_cpu *c, int node)
+-{
+-#ifdef CONFIG_NUMA
+-	if (node != NUMA_NO_NODE && c->node != node)
+-		return 0;
+-#endif
+-	return 1;
+-}
+-
+ static unsigned long count_partial(struct kmem_cache_node *n,
+ 					int (*get_count)(struct page *))
+ {
+@@ -1782,6 +1698,30 @@ slab_out_of_memory(struct kmem_cache *s,
+ }
+ 
+ /*
++ * Determine the final numa node from which the allocation will
++ * be occurring. Allocations can be redirected for slabs marked
++ * with SLAB_MEM_SPREAD by memory policies and cpusets options.
++ */
++static inline int find_numa_node(struct kmem_cache *s,
++				 int node, int local_node)
++{
++#ifdef CONFIG_NUMA
++	if (unlikely(s->flags & SLAB_MEM_SPREAD)) {
++		if (node == NUMA_NO_NODE && !in_interrupt()) {
++			if (cpuset_do_slab_mem_spread())
++				return cpuset_mem_spread_node();
++
++			get_mems_allowed();
++			if (current->mempolicy)
++				local_node = slab_node(current->mempolicy);
++			put_mems_allowed();
++		}
++	}
++#endif
++	return local_node;
++}
++
++/*
+  * Retrieve pointers to nr objects from a slab into the object array.
+  * Slab must be locked.
+  */
+@@ -1839,12 +1779,49 @@ void to_lists(struct kmem_cache *s, stru
+ 
+ /* Handling of objects from other nodes */
+ 
++static void *slab_alloc_node(struct kmem_cache *s, struct kmem_cache_cpu *c,
++						gfp_t gfpflags, int node)
++{
++#ifdef CONFIG_NUMA
++	struct page *page;
++	void *object;
++
++	page = get_partial(s, node);
++	if (!page) {
++		gfpflags &= gfp_allowed_mask;
++
++		if (gfpflags & __GFP_WAIT)
++			local_irq_enable();
++
++		page = new_slab(s, gfpflags, node);
++
++		if (gfpflags & __GFP_WAIT)
++			local_irq_disable();
++
++		if (!page)
++			return NULL;
++
++		slab_lock(page);
++	}
++
++	retrieve_objects(s, page, &object, 1);
++	stat(s, ALLOC_DIRECT);
++
++	to_lists(s, page, 0);
++	slab_unlock(page);
++	return object;
++#else
++	return NULL;
++#endif
++}
++
+ static void slab_free_alien(struct kmem_cache *s,
+ 	struct kmem_cache_cpu *c, struct page *page, void *object, int node)
+ {
+ #ifdef CONFIG_NUMA
+ 	/* Direct free to the slab */
+ 	drain_objects(s, &object, 1);
++	stat(s, FREE_DIRECT);
+ #endif
+ }
+ 
+@@ -1864,18 +1841,21 @@ static void *slab_alloc(struct kmem_cach
+ redo:
+ 	local_irq_save(flags);
+ 	c = __this_cpu_ptr(s->cpu);
+-	q = &c->q;
+-	if (unlikely(queue_empty(q) || !node_match(c, node))) {
+ 
+-		if (unlikely(!node_match(c, node))) {
+-			flush_cpu_objects(s, c);
+-			c->node = node;
+-		}
++	node = find_numa_node(s, node, c->node);
++	if (unlikely(node != c->node)) {
++		object = slab_alloc_node(s, c, gfpflags, node);
++		if (!object)
++			goto oom;
++		goto got_it;
++	}
++	q = &c->q;
++	if (unlikely(queue_empty(q))) {
+ 
+ 		while (q->objects < s->batch) {
+ 			struct page *new;
+ 
+-			new = get_partial(s, gfpflags & ~__GFP_ZERO, node);
++			new = get_partial(s, node);
+ 			if (unlikely(!new)) {
+ 
+ 				gfpflags &= gfp_allowed_mask;
+@@ -1914,6 +1894,7 @@ redo:
+ 
+ 	object = queue_get(q);
+ 
++got_it:
+ 	if (kmem_cache_debug(s)) {
+ 		if (!alloc_debug_processing(s, object, addr))
+ 			goto redo;
+@@ -1998,7 +1979,6 @@ static void slab_free(struct kmem_cache 
+ 
+ 		if (unlikely(node != c->node)) {
+ 			slab_free_alien(s, c, page, x, node);
+-			stat(s, FREE_ALIEN);
+ 			goto out;
  		}
- 		x += sprintf(buf +x, "=%d/%d", q->objects, q->max);
-+		if (!q->touched)
-+			x += sprintf(buf + x,"*");
  	}
- 	up_read(&slub_lock);
- 	kfree(caches);
-@@ -4604,6 +4623,8 @@ static ssize_t per_cpu_caches_show(struc
- 		struct kmem_cache_queue *q = &c->q;
+@@ -2462,9 +2442,6 @@ static int kmem_cache_open(struct kmem_c
+ 	 */
+ 	set_min_partial(s, ilog2(s->size));
+ 	s->refcount = 1;
+-#ifdef CONFIG_NUMA
+-	s->remote_node_defrag_ratio = 1000;
+-#endif
+ 	if (!init_kmem_cache_nodes(s))
+ 		goto error;
  
- 		x += sprintf(buf + x, " C%d=%u/%u", cpu, q->objects, q->max);
-+		if (!q->touched)
-+			x += sprintf(buf + x,"*");
- 	}
- 	up_read(&slub_lock);
- 	kfree(cpus);
-@@ -4772,6 +4793,8 @@ static ssize_t alien_caches_show(struct 
+@@ -4362,30 +4339,6 @@ static ssize_t shrink_store(struct kmem_
+ }
+ SLAB_ATTR(shrink);
  
- 				x += sprintf(buf + x, "N%d=%d/%d",
- 						node, a->objects, a->max);
-+				if (!a->touched)
-+					x += sprintf(buf + x,"*");
- 			}
- 		}
- 		x += sprintf(buf + x, "]");
+-#ifdef CONFIG_NUMA
+-static ssize_t remote_node_defrag_ratio_show(struct kmem_cache *s, char *buf)
+-{
+-	return sprintf(buf, "%d\n", s->remote_node_defrag_ratio / 10);
+-}
+-
+-static ssize_t remote_node_defrag_ratio_store(struct kmem_cache *s,
+-				const char *buf, size_t length)
+-{
+-	unsigned long ratio;
+-	int err;
+-
+-	err = strict_strtoul(buf, 10, &ratio);
+-	if (err)
+-		return err;
+-
+-	if (ratio <= 100)
+-		s->remote_node_defrag_ratio = ratio * 10;
+-
+-	return length;
+-}
+-SLAB_ATTR(remote_node_defrag_ratio);
+-#endif
+-
+ #ifdef CONFIG_SLUB_STATS
+ static int show_stat(struct kmem_cache *s, char *buf, enum stat_item si)
+ {
+@@ -4444,8 +4397,10 @@ static ssize_t text##_store(struct kmem_
+ SLAB_ATTR(text);						\
+ 
+ STAT_ATTR(ALLOC_FASTPATH, alloc_fastpath);
++STAT_ATTR(ALLOC_DIRECT, alloc_direct);
+ STAT_ATTR(ALLOC_SLOWPATH, alloc_slowpath);
+ STAT_ATTR(FREE_FASTPATH, free_fastpath);
++STAT_ATTR(FREE_DIRECT, free_direct);
+ STAT_ATTR(FREE_SLOWPATH, free_slowpath);
+ STAT_ATTR(FREE_ADD_PARTIAL, free_add_partial);
+ STAT_ATTR(FREE_REMOVE_PARTIAL, free_remove_partial);
+@@ -4490,13 +4445,12 @@ static struct attribute *slab_attrs[] = 
+ #ifdef CONFIG_ZONE_DMA
+ 	&cache_dma_attr.attr,
+ #endif
+-#ifdef CONFIG_NUMA
+-	&remote_node_defrag_ratio_attr.attr,
+-#endif
+ #ifdef CONFIG_SLUB_STATS
+ 	&alloc_fastpath_attr.attr,
++	&alloc_direct_attr.attr,
+ 	&alloc_slowpath_attr.attr,
+ 	&free_fastpath_attr.attr,
++	&free_direct_attr.attr,
+ 	&free_slowpath_attr.attr,
+ 	&free_add_partial_attr.attr,
+ 	&free_remove_partial_attr.attr,
+Index: linux-2.6/include/linux/slub_def.h
+===================================================================
+--- linux-2.6.orig/include/linux/slub_def.h	2010-10-04 08:26:02.000000000 -0500
++++ linux-2.6/include/linux/slub_def.h	2010-10-04 08:26:27.000000000 -0500
+@@ -17,20 +17,36 @@
+ 
+ enum stat_item {
+ 	ALLOC_FASTPATH,		/* Allocation from cpu queue */
++	ALLOC_DIRECT,		/* Allocation bypassing queueing */
+ 	ALLOC_SLOWPATH,		/* Allocation required refilling of queue */
+ 	FREE_FASTPATH,		/* Free to cpu queue */
++	FREE_DIRECT,		/* Free bypassing queues */
+ 	FREE_SLOWPATH,		/* Required pushing objects out of the queue */
+ 	FREE_ADD_PARTIAL,	/* Freeing moved slab to partial list */
+ 	FREE_REMOVE_PARTIAL,	/* Freeing removed from partial list */
+ 	ALLOC_FROM_PARTIAL,	/* slab with objects acquired from partial */
+ 	ALLOC_SLAB,		/* New slab acquired from page allocator */
+-	FREE_ALIEN,		/* Free to alien node */
+ 	FREE_SLAB,		/* Slab freed to the page allocator */
+ 	QUEUE_FLUSH,		/* Flushing of the per cpu queue */
+ 	ORDER_FALLBACK,		/* Number of times fallback was necessary */
+ 	NR_SLUB_STAT_ITEMS };
+ 
+-/* Queueing structure used for per cpu, l3 cache and alien queueing */
++/*
++ * Queueing structure used for per cpu, l3 cache and alien queueing.
++ *
++ * Queues contain objects from a particular node.
++ *	Per cpu and shared queues from kmem_cache_cpu->node
++ *	alien caches from other nodes.
++ *
++ * However, this is not strictly enforced if the page allocator redirects
++ * allocation to other nodes because f.e. there is no memory on the node.
++ * Foreign objects will then be on the queue until memory becomes available
++ * again on the node. Freeing objects always occurs to the correct node.
++ *
++ * Which means that queueing is no longer effective since
++ * objects are freed to the alien caches after having been dequeued from
++ * the per cpu queue.
++ */
+ struct kmem_cache_queue {
+ 	int objects;		/* Available objects */
+ 	int max;		/* Queue capacity */
+@@ -41,7 +57,7 @@ struct kmem_cache_cpu {
+ #ifdef CONFIG_SLUB_STATS
+ 	unsigned stat[NR_SLUB_STAT_ITEMS];
+ #endif
+-	int node;		/* objects only from this numa node */
++	int node;		/* The memory node local to the cpu */
+ 	struct kmem_cache_queue q;
+ };
+ 
 
