@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758228Ab0JEMZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 08:25:56 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:28197 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752579Ab0JEMZy (ORCPT
+	id S932790Ab0JEM1q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 08:27:46 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48969 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab0JEM1p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 08:25:54 -0400
-Message-ID: <4CAB1950.8060103@tilera.com>
-Date: Tue, 5 Oct 2010 08:25:52 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: <akpm@linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        <x86@kernel.org>
-Subject: Re: [PATCH 1/2] bitops: make asm-generic/bitops/find.h more generic
-References: <1285751331-29148-1-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1285751331-29148-1-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-1"
+	Tue, 5 Oct 2010 08:27:45 -0400
+Subject: Re: [PATCH] sound/soc/nuc900: remove duplicated include
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Nicolas Kaiser <nikai@nikai.net>
+Cc: Wan ZongShun <mcuos.com@gmail.com>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+In-Reply-To: <20101005141140.0276dc14@absol.kitzblitz>
+References: <20101005141140.0276dc14@absol.kitzblitz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Oct 2010 13:27:42 +0100
+Message-ID: <1286281662.3111.97.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 9/29/2010 5:08 AM, Akinobu Mita wrote:
-> asm-generic/bitops/find.h has the extern declarations of find_next_bit()
-> and find_next_zero_bit() and the macro definitions of find_first_bit()
-> and find_first_zero_bit(). It is only usable by the architectures which
-> enables CONFIG_GENERIC_FIND_NEXT_BIT and disables
-> CONFIG_GENERIC_FIND_FIRST_BIT.
->
-> x86 and tile enable both CONFIG_GENERIC_FIND_NEXT_BIT and
-> CONFIG_GENERIC_FIND_FIRST_BIT. These architectures cannot include
-> asm-generic/bitops/find.h in their asm/bitops.h. So ifdefed extern
-> declarations of find_first_bit and find_first_zero_bit() are put in
-> linux/bitops.h.
->
-> This makes asm-generic/bitops/find.h usable by these architectures
-> and use it. Also this change is needed for the forthcoming duplicated
-> extern declarations cleanup.
+On Tue, 2010-10-05 at 14:11 +0200, Nicolas Kaiser wrote:
+> Remove duplicated include.
+> 
+> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+> ---
+>  sound/soc/nuc900/nuc900-ac97.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/nuc900/nuc900-ac97.c b/sound/soc/nuc900/nuc900-ac97.c
+> index caa7c90..265a950 100644
+> --- a/sound/soc/nuc900/nuc900-ac97.c
+> +++ b/sound/soc/nuc900/nuc900-ac97.c
+> @@ -20,7 +20,6 @@
+>  #include <sound/pcm.h>
+>  #include <sound/initval.h>
+>  #include <sound/soc.h>
+> -#include <linux/device.h>
+>  #include <linux/clk.h>
+>  
+>  #include <mach/mfp.h>
 
-This looks good, thanks.
-
-Acked-by: Chris Metcalf <cmetcalf@tilera.com>
-
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
