@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab0JETpU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 15:45:20 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:48958 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756513Ab0JETpQ (ORCPT
+	id S1755691Ab0JETsW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 15:48:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54776 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750724Ab0JETsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 15:45:16 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: L_azQAUVM1nu26n4IxcBhu8Jcw7nTdwIiVnufsTnbgj1zpX
- dfT73s6BHD3NwQIj2Iip7fKZTh4NhKJ24QTAbn8n7kfbte98a6P6NVr7FoPP
- CiEMpyh21Fj8BpV_TqZNqlfZjzOhE9bKs13VMqyWvfSwu.yC8yAhrCSc0y5Q
- YrnunAoLfRpRBc31_9o.0LkjzQyacXJNYKkPcqtv1SZeIkiXlx18qLqpkFxc
- cc60_QcIxntZENRCkm5tNDL36ORdc4YVv2_jbobdFYb08NPp7jKkZ_MBcwZk
- P9ksu_6duS7euQdqO
-X-Yahoo-Newman-Property: ymail-3
-Message-Id: <20101005185815.287555262@linux.com>
-User-Agent: quilt/0.48-1
-Date: Tue, 05 Oct 2010 13:57:31 -0500
-From: Christoph Lameter <cl@linux.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Cc: David Rientjes <rientjes@google.com>
-Subject: [UnifiedV4 06/16] slub: Drop allocator announcement
-References: <20101005185725.088808842@linux.com>
-Content-Disposition: inline; filename=unified_remove_banner
+	Tue, 5 Oct 2010 15:48:21 -0400
+Date: Tue, 5 Oct 2010 12:48:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+Cc: menage@google.com, lizf@cn.fujitsu.com, kamezawa.hiroyu@jp.fujitsu.com,
+        bblum@andrew.cmu.edu, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, ext-eugeny.kuznetsov@nokia.com
+Subject: Re: [PATCH 1/1] cgroups: strcpy destination string overflow
+Message-Id: <20101005124802.989f6214.akpm@linux-foundation.org>
+In-Reply-To: <2acb25707f916de866aa520b1a9f04f0f48c949c.1286193571.git.EXT-Eugeny.Kuznetsov@nokia.com>
+References: <cover.1286193571.git.EXT-Eugeny.Kuznetsov@nokia.com>
+	<2acb25707f916de866aa520b1a9f04f0f48c949c.1286193571.git.EXT-Eugeny.Kuznetsov@nokia.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-People get confused because the output repeats some basic hardware
-configuration values. Some of the items listed no
-longer have the same relevance in the queued form of SLUB.
+On Tue,  5 Oct 2010 12:38:05 +0400
+Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com> wrote:
 
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+> From: Evgeny Kuznetsov <ext-eugeny.kuznetsov@nokia.com>
+> 
+> Function "strcpy" is used without check for maximum allowed source
+> string length and could cause destination string overflow.
+> Check for string length is added before using "strcpy".
+> Function now is return error if source string length is more than
+> a maximum.
+> 
+> Signed-off-by: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+> ---
+>  kernel/cgroup.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+> index c9483d8..82bbede 100644
+> --- a/kernel/cgroup.c
+> +++ b/kernel/cgroup.c
+> @@ -1883,6 +1883,8 @@ static int cgroup_release_agent_write(struct cgroup *cgrp, struct cftype *cft,
+>  				      const char *buffer)
+>  {
+>  	BUILD_BUG_ON(sizeof(cgrp->root->release_agent_path) < PATH_MAX);
+> +	if (strlen(buffer) >= PATH_MAX)
+> +		return -EINVAL;
+>  	if (!cgroup_lock_live_group(cgrp))
+>  		return -ENODEV;
+>  	strcpy(cgrp->root->release_agent_path, buffer);
 
----
- mm/slub.c |    6 ------
- 1 file changed, 6 deletions(-)
+I don't think this can happen, because cftype.max_write_len is
+PATH_MAX.
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-10-02 18:10:45.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-10-02 18:10:50.000000000 -0500
-@@ -3249,12 +3249,6 @@ void __init kmem_cache_init(void)
- 		}
- 	}
- #endif
--	printk(KERN_INFO
--		"SLUB: Genslabs=%d, HWalign=%d, Order=%d-%d, MinObjects=%d,"
--		" CPUs=%d, Nodes=%d\n",
--		caches, cache_line_size(),
--		slub_min_order, slub_max_order, slub_min_objects,
--		nr_cpu_ids, nr_node_ids);
- }
- 
- void __init kmem_cache_init_late(void)
+But it's pretty unobvious if this is actually true, and the code is
+fragile against future changes.
 
