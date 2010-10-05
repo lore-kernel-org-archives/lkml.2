@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755473Ab0JEVEG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 17:04:06 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:50041 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753571Ab0JEVEE (ORCPT
+	id S1756775Ab0JEVEr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 17:04:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46189 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752136Ab0JEVEp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 17:04:04 -0400
-Message-ID: <4CAB92C2.9060007@candelatech.com>
-Date: Tue, 05 Oct 2010 14:04:02 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Tue, 5 Oct 2010 17:04:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=wqn1aIDUb0A82ZzuaptdxOQxhXXi6zidIDGrhjMsFBlrbDEnZlRebdb6WEMaqYMhxU
+         el+vCBUINuZcRe91FcjvFJdEHJuhR7TmMpBEvq0tjfCsl3FZh8cf9PdS0xqjTliUQjU5
+         usYWAVQpX2urPsrAA6hKT4/seURz4k2MQpf9I=
+Message-ID: <4CAB92E9.7060509@suse.cz>
+Date: Tue, 05 Oct 2010 23:04:41 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: suspicious rcu_dereference_check at kernel/sched.c:618
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ingo Molnar <mingo@elte.hu>
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+Subject: Re: + softirq-cleanup-preempt-check.patch added to -mm tree
+References: <201010051905.o95J5BrS013873@imap1.linux-foundation.org> <20101005193833.GA16493@elte.hu>
+In-Reply-To: <20101005193833.GA16493@elte.hu>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is from a wireless-testing tree (2.6.36-rc6 + wireless hacks).
+On 10/05/2010 09:38 PM, Ingo Molnar wrote:
+> 
+> * akpm@linux-foundation.org <akpm@linux-foundation.org> wrote:
+> 
+>> +static inline void softirq_preempt_check(struct softirq_action *h,
+>> +		int prev_count)
+> 
+> unnecessary linebreak.
 
-I see this fairly often, and would be happy to test patches :)
+How unnecessary is this linebreak:
+$ wc -c
+static inline void softirq_preempt_check(struct softirq_action *h, int
+prev_count)
+83
 
-===================================================
-[ INFO: suspicious rcu_dereference_check() usage. ]
----------------------------------------------------
-/home/greearb/git/linux.wireless-testing/kernel/sched.c:618 invoked rcu_dereference_check() without protection!
+People, including me, still work with 80-col terminals. What I can
+tolerate are undivided strings, because it sucks if one cannot grep for
+anything from the log.
 
-other info that might help us debug this:
+>> +	if (unlikely(prev_count != preempt_count())) {
+> 
+> should be something like:
+> 
+> 	if (prev_count == preempt_count())
+> 		return;
+> 
+> then the rest will look cleaner as well.
 
+Yeah, I thought about that, but it doesn't make sense. Sometime later if
+someone would want to add another check there, they would have to put
+all that stuff back. And also it doesn't help readability in any way.
 
-rcu_scheduler_active = 1, debug_locks = 1
-1 lock held by ifup/23517:
-  #0:  (&rq->lock){-.-.-.}, at: [<c042f782>] task_fork_fair+0x3b/0x108
+>> +		printk(KERN_ERR "huh, entered softirq %td %s %pf with preempt_count %08x, exited with %08x?\n",
+> 
+> Could be pr_err().
 
-stack backtrace:
-Pid: 23517, comm: ifup Not tainted 2.6.36-rc6-wl+ #5
-Call Trace:
-  [<c075e219>] ? printk+0xf/0x16
-  [<c0455842>] lockdep_rcu_dereference+0x74/0x7d
-  [<c0426854>] task_group+0x6d/0x79
-  [<c042686e>] set_task_rq+0xe/0x57
-  [<c042f79e>] task_fork_fair+0x57/0x108
-  [<c042e965>] sched_fork+0x82/0xf9
-  [<c04334b3>] copy_process+0x569/0xe8e
-  [<c0433ef0>] do_fork+0x118/0x262
-  [<c076302f>] ? do_page_fault+0x16a/0x2cf
-  [<c044b80c>] ? up_read+0x16/0x2a
-  [<c04085ae>] sys_clone+0x1b/0x20
-  [<c04030a5>] ptregs_clone+0x15/0x30
-  [<c0402f1c>] ? sysenter_do_call+0x12/0x38
+It could, but I dislike those just because 'pr' doesn't mean 'print'
+anymore and beginners are getting lost like never before. If it only was
+print_err.
 
+>> +			softirq_preempt_check(h, prev_count);
+> 
+> Please put 'debug' in the function name as i suggested - that way people 
+> will only read it if they are interested in debug checks.
+> 
+> softirq_debug_check() would be perfect. (which might even grow new 
+> checks in the future)
 
-Thanks,
-Ben
+Actually, not that perfect. Before I renamed the function to
+softirq_preempt_check, it looked like to me: Hmm, there is a debug
+check. What does it check?
 
+With softirq_preempt_check, it does exactly what the name says. And
+'check' says, it's just a some kind of sanity test. At least to me.
+
+thanks,
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+js
+suse labs
