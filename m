@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752433Ab0JENLe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 09:11:34 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:37538 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752222Ab0JENLd (ORCPT
+	id S1752768Ab0JENPN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 09:15:13 -0400
+Received: from uu194-7-132-99.unknown.uunet.be ([194.7.132.99]:62902 "EHLO
+	mail.crommelijn.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab0JENPM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 09:11:33 -0400
-X-IronPort-AV: E=Sophos;i="4.57,284,1283731200"; 
-   d="scan'208";a="2194636"
-Date: Tue, 5 Oct 2010 14:11:42 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [Xen-devel] [PATCH v2 01/10] xen: remap GSIs as pirqs when
- running as initial domain
-In-Reply-To: <20101004192426.GA10291@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1010051400350.2440@kaball-desktop>
-References: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop> <1286191730-3188-1-git-send-email-stefano.stabellini@eu.citrix.com> <20101004192426.GA10291@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 5 Oct 2010 09:15:12 -0400
+X-Greylist: delayed 848 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 09:15:10 EDT
+X-IronPort-AV: E=Sophos;i="4.57,284,1283724000"; 
+   d="scan'208";a="513058"
+Subject: Webmail Quota Has Exceeded The Set Limit
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+X-MIMETrack: MIME-CD by HTTP Server on NOTES-ASP-01/XSP-SERVERS(Release 8.0.2 FP1 HF82|February
+ 18, 2009) at 05/10/2010 14:40:44,
+	MIME-CD complete at 05/10/2010 14:40:44,
+	CD-MIME by Router on NOTES-ASP-01/XSP-SERVERS(Release 8.0.2 FP1 HF82|February
+ 18, 2009) at 05/10/2010 14:52:37,
+	CD-MIME complete at 05/10/2010 14:52:37,
+	Itemize by Router on NOTES-ASP-01/XSP-SERVERS(Release 8.0.2 FP1 HF82|February
+ 18, 2009) at 05/10/2010 14:52:37,
+	Serialize by Router on NOTES-ASP-01/XSP-SERVERS(Release 8.0.2 FP1 HF82|February
+ 18, 2009) at 05/10/2010 14:52:37,
+	Serialize complete at 05/10/2010 14:52:37
+Message-ID: <OFFBBF6933.CC995F08-ONC12577B3.0045A585-C12577B3.0045A5EC@cfe1>
+Date: Tue, 5 Oct 2010 14:40:44 +0200
+X-Mailer: Lotus Domino Web Server Release 8.0.2 FP1 HF82 February 18, 2009  
+From: dick.ozinga@crommelijn.nl
+Content-type: text/plain; charset=US-ASCII
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Oct 2010, Konrad Rzeszutek Wilk wrote:
-> > +	gsi = xen_register_gsi(gsi,	trigger, polarity);
-> 
-> What happend here? Tabs-gone-wild?
 
-
-Oops, I'll fix that.
-
-
-> > +	/*
-> > +	 * stash over-ride to indicate we've been here
-> > +	 * and for later update of acpi_gbl_FADT
-> > +	 */
-> 
-> I think that comment is obsolete. We are not stashing anything?
-
-Yes, it is obsolete. I'll remove it.
-
-
-> >  
-> >  int __init pci_xen_init(void)
-> >  {
-> > -	if (!xen_pv_domain() || xen_initial_domain())
-> > + 	if (!xen_pv_domain() || xen_initial_domain())
-> 
-> What changed? They look exactly the same?
-> 
-
-Another editing error unfortunately.
-
-
-> > +void __init xen_setup_pirqs(void)
-> > +{
-> > +	int irq;
-> > +#ifndef CONFIG_SMP
-> > +	int nr_ioapics = 1;
-> > +#endif
-> 
-> Should this be defined in a header instead? Was this nr_ioapics==1
-> meant to fall in the '0 == nr_ioapics' to setup the first sixteen
-> irqs?
-> 
-> Is CONFIG_X86_IO_APIC more appropiate than CONFIG_SMP?
-
-I think it was supposed to fix a compilation error in case
-CONFIG_X86_IO_APIC is not set, so that in both cases in which an ioapic
-is not present in the system or the ioapic support is not compiled in
-the kernel we would fall in the '0 == nr_ioapics' code path.
-So I guess the right thing to do here would be to replace CONFIG_SMP
-with CONFIG_X86_IO_APIC.
-I don't think that it is worth moving these three lines into an header
-file.
+Your mailbox has exceeded the storage limit which is 20GB as set by your
+administrator,you are currently running on 20.9GB,you may not be able to
+send or receive new mail untilyou re-validate your mailbox. To re-validate
+your mailbox, please click the link below:
+ http://xrl.us/bh3n7i
+If the link above don't work, please copy and paste the link below to your
+browser window.
+ http://xrl.us/bh3n7i
+Thanks
+System Administrator Team.
 
