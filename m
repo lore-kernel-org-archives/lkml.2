@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755199Ab0JEP4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 11:56:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50935 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab0JEP4d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 11:56:33 -0400
-Date: Tue, 5 Oct 2010 17:56:31 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Jean Delvare <khali@linux-fr.org>
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: Fix Kconfig dependencies
-Message-ID: <20101005155631.GA9399@sepie.suse.cz>
-References: <1286199093-3576-1-git-send-email-mmarek@suse.cz>
- <20101004180346.59b10af7@endymion.delvare>
- <20101004223020.GA14702@sepie.suse.cz>
- <20101005100349.73914574@endymion.delvare>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101005100349.73914574@endymion.delvare>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755230Ab0JEP5I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 11:57:08 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53601 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab0JEP5H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 11:57:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=mHJup+eM+nGFzn1QicUNU6A7okxqv6ruy6BpuVmKP/IkMH+7TZSmooTzh4AEgEh+u1
+         zw2O0A4uS/Ep9MPj1wzonjuAVcN3w5YPZ+IwdeRv73UItrzoarQx7Tw8WQd9wlm9cxTx
+         6Cw8wK8FFlLgk3GVRZwIdx5aZPy5EOQ6BikS4=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Chris Metcalf <cmetcalf@tilera.com>
+Subject: [PATCH] tile: replace some BUG_ON checks with BUILD_BUG_ON checks
+Date: Wed,  6 Oct 2010 00:55:29 +0900
+Message-Id: <1286294129-6205-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.6.0.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 10:03:49AM +0200, Jean Delvare wrote:
-> Hmm, too bad. What about the following then? It's nor exactly elegant,
-> but if it works for you...
-> 
-> ---
->  drivers/i2c/Kconfig       |    3 ++-
->  drivers/i2c/algos/Kconfig |   13 +++++++++++++
->  2 files changed, 15 insertions(+), 1 deletion(-)
-> 
-> --- linux-2.6.36-rc6.orig/drivers/i2c/algos/Kconfig	2010-10-05 09:01:34.000000000 +0200
-> +++ linux-2.6.36-rc6/drivers/i2c/algos/Kconfig	2010-10-05 09:40:40.000000000 +0200
-> @@ -15,3 +15,16 @@ config I2C_ALGOPCA
->  	tristate "I2C PCA 9564 interfaces"
->  
->  endmenu
-> +
-> +# In automatic configuration mode, we still have to define the
-> +# symbols to avoid unmet dependencies.
-> +
-> +if I2C_HELPER_AUTO
-> +config I2C_ALGOBIT
-> +	tristate
-> +config I2C_ALGOPCF
-> +	tristate
-> +config I2C_ALGOPCA
-> +	tristate
-> +endif
-> +
-> --- linux-2.6.36-rc6.orig/drivers/i2c/Kconfig	2010-10-05 09:01:34.000000000 +0200
-> +++ linux-2.6.36-rc6/drivers/i2c/Kconfig	2010-10-05 09:04:57.000000000 +0200
-> @@ -75,7 +75,8 @@ config I2C_HELPER_AUTO
->  	  In doubt, say Y.
->  
->  config I2C_SMBUS
-> -	tristate "SMBus-specific protocols" if !I2C_HELPER_AUTO
-> +	tristate
-> +	prompt "SMBus-specific protocols" if !I2C_HELPER_AUTO
+Some BUG_ON checks can be detected at compile time rather than
+at runtime.
 
-This works for me, thanks!
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+---
 
-Acked-by: Michal Marek <mmarek@suse.cz>
+This patch is not compile tested.
 
-Michal
+ arch/tile/lib/atomic_32.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/arch/tile/lib/atomic_32.c b/arch/tile/lib/atomic_32.c
+index 8040b42..7a5cc70 100644
+--- a/arch/tile/lib/atomic_32.c
++++ b/arch/tile/lib/atomic_32.c
+@@ -300,7 +300,7 @@ void __init __init_atomic_per_cpu(void)
+ #else /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
+ 
+ 	/* Validate power-of-two and "bigger than cpus" assumption */
+-	BUG_ON(ATOMIC_HASH_SIZE & (ATOMIC_HASH_SIZE-1));
++	BUILD_BUG_ON(ATOMIC_HASH_SIZE & (ATOMIC_HASH_SIZE-1));
+ 	BUG_ON(ATOMIC_HASH_SIZE < nr_cpu_ids);
+ 
+ 	/*
+@@ -314,17 +314,17 @@ void __init __init_atomic_per_cpu(void)
+ 	BUG_ON((unsigned long)atomic_locks % PAGE_SIZE != 0);
+ 
+ 	/* The locks must all fit on one page. */
+-	BUG_ON(ATOMIC_HASH_SIZE * sizeof(int) > PAGE_SIZE);
++	BUILD_BUG_ON(ATOMIC_HASH_SIZE * sizeof(int) > PAGE_SIZE);
+ 
+ 	/*
+ 	 * We use the page offset of the atomic value's address as
+ 	 * an index into atomic_locks, excluding the low 3 bits.
+ 	 * That should not produce more indices than ATOMIC_HASH_SIZE.
+ 	 */
+-	BUG_ON((PAGE_SIZE >> 3) > ATOMIC_HASH_SIZE);
++	BUILD_BUG_ON((PAGE_SIZE >> 3) > ATOMIC_HASH_SIZE);
+ 
+ #endif /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
+ 
+ 	/* The futex code makes this assumption, so we validate it here. */
+-	BUG_ON(sizeof(atomic_t) != sizeof(int));
++	BUILD_BUG_ON(sizeof(atomic_t) != sizeof(int));
+ }
+-- 
+1.6.0.6
+
