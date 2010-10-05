@@ -1,82 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab0JEFhY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 01:37:24 -0400
-Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:42545
-	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754281Ab0JEFhW (ORCPT
+	id S1757347Ab0JEFlt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 01:41:49 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60036 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756959Ab0JEFlr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 01:37:22 -0400
-Date: Mon, 4 Oct 2010 22:35:20 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: walter harms <wharms@bfs.de>, Tracey Dent <tdent48227@gmail.com>,
-        greg@kroah.com, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH v3 01/20] Staging: cx25821: Makefile: cleaned up
- Makefile cflag lines
-Message-ID: <20101005053520.GC6369@haskell.muteddisk.com>
-Mail-Followup-To: Sam Ravnborg <sam@ravnborg.org>,
-	walter harms <wharms@bfs.de>, Tracey Dent <tdent48227@gmail.com>,
-	greg@kroah.com, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <1286037489-28439-1-git-send-email-tdent48227@gmail.com>
- <4CA879A1.3070400@bfs.de>
- <20101003205128.GA16185@merkur.ravnborg.org>
+	Tue, 5 Oct 2010 01:41:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=JlKAegWI5xqf/iUltrSWBlAogiH7SY5YSeM7GqVIRpeqb5PI4GWiyX5qPdyNGJgCtB
+         zlHyLLbGcvRTsDl6gVpd243RkOw/p2RUt4spxzz38GiJm7kgN3UlNmOPh4PwKcSlIPL/
+         ir1mRP4SAD5KZcASA5Y6JXJ5n0X3m7yDw8J9Q=
+Date: Mon, 4 Oct 2010 22:41:40 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Oliver Neukum <oliver@neukum.org>
+Cc: linux-pm@lists.linux-foundation.org, pingc@wacom.com,
+        Jiri Slaby <jslaby@suse.cz>,
+        Linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        linux-input@vger.kernel.org
+Subject: Re: [linux-pm] wacom + runtime PM = AA deadlock
+Message-ID: <20101005054139.GC15355@core.coreip.homeip.net>
+References: <4C8E180D.4020309@suse.cz>
+ <201010042033.53453.oliver@neukum.org>
+ <20101004183848.GG8321@core.coreip.homeip.net>
+ <201010042124.24253.oliver@neukum.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101003205128.GA16185@merkur.ravnborg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201010042124.24253.oliver@neukum.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22:51 Sun 03 Oct     , Sam Ravnborg wrote:
-> On Sun, Oct 03, 2010 at 02:40:01PM +0200, walter harms wrote:
-> > 
-> > 
-> > Tracey Dent schrieb:
-> > > Changed to use the proper ccflags-y option
+On Mon, Oct 04, 2010 at 09:24:24PM +0200, Oliver Neukum wrote:
+> Am Montag, 4. Oktober 2010, 20:38:49 schrieb Dmitry Torokhov:
+> > On Mon, Oct 04, 2010 at 08:33:53PM +0200, Oliver Neukum wrote:
+> > > Am Montag, 4. Oktober 2010, 18:13:20 schrieb Dmitry Torokhov:
+> > > > Lost track of this issue for a while. So I think we still need to fix
+> > > > the deadlock for .36 and I think that the following will do that. Then
+> > > > we'll adjust the driver to actually enable runtime PM for .37.
 > > > 
-> > > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
-> > > ---
-> > >  drivers/staging/cx25821/Makefile |    8 ++++----
-> > >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > > That's a viable plan.
 > > > 
-> > > diff --git a/drivers/staging/cx25821/Makefile b/drivers/staging/cx25821/Makefile
-> > > index d0eb16e..6448364 100644
-> > > --- a/drivers/staging/cx25821/Makefile
-> > > +++ b/drivers/staging/cx25821/Makefile
-> > > @@ -7,7 +7,7 @@ cx25821-objs   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
-> > >  obj-$(CONFIG_VIDEO_CX25821) += cx25821.o
-> > >  obj-$(CONFIG_VIDEO_CX25821_ALSA) += cx25821-alsa.o
-> > >  
-> > > -EXTRA_CFLAGS += -Idrivers/media/video
-> > > -EXTRA_CFLAGS += -Idrivers/media/common/tuners
-> > > -EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
-> > > -EXTRA_CFLAGS += -Idrivers/media/dvb/frontends
-> > > +ccflags-y := -Idrivers/media/video
-> > > +ccflags-y += -Idrivers/media/common/tuners
-> > > +ccflags-y += -Idrivers/media/dvb/dvb-core
-> > > +ccflags-y += -Idrivers/media/dvb/frontends
 > > 
-> > they have invented vpath for this, did they ?
-> > note: I am not familiar with the linux makefile.
-> vpath is not the answer here.
+> > I take it as an "acked-by" for this patch, right?
 > 
-> Note that Tracy dent did the simple replacement of EXTRA_CFLAGS with ccflags-y.
-> The Makefiles could in many cases benefit from general cleanups - which many
-> of your futher comments is a good indicator of.
+> Sure. Just in case:
+> 
+> Acked-by: Oliver Neukum <oneukum@suse.de>
+> 
 
-Hi Sam,
+Thanks Oliver. And the patch below is for .37 properly enabling runtime
+PM for wacom.
 
-I happen to have sent out a RFC patch for media/ a little over a week ago.
-Mauro Chehab has not commented on it yet, but I am curious to hear your
-opinion.
+-- 
+Dmitry
 
-http://marc.info/?l=linux-kernel&m=128553496013767&w=2
+Input: wacom - properly enable runtime PM
 
-Thanks,
-mfm
+We need to always call usb_autopm_put_interface() in wacom_open(),
+not only when initialization fails, otherwise the device will be
+marked as PM-busy and will never be put in suspended state.
 
+Based on patch by Oliver Neukum.
+
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ drivers/input/tablet/wacom_sys.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+
+diff --git a/drivers/input/tablet/wacom_sys.c b/drivers/input/tablet/wacom_sys.c
+index 02de653..fc38149 100644
+--- a/drivers/input/tablet/wacom_sys.c
++++ b/drivers/input/tablet/wacom_sys.c
+@@ -120,14 +120,16 @@ static int wacom_open(struct input_dev *dev)
+ 
+ out:
+ 	mutex_unlock(&wacom->lock);
+-	if (retval)
+-		usb_autopm_put_interface(wacom->intf);
++	usb_autopm_put_interface(wacom->intf);
+ 	return retval;
+ }
+ 
+ static void wacom_close(struct input_dev *dev)
+ {
+ 	struct wacom *wacom = input_get_drvdata(dev);
++	int autopm_error;
++
++	autopm_error = usb_autopm_get_interface(wacom->intf);
+ 
+ 	mutex_lock(&wacom->lock);
+ 	usb_kill_urb(wacom->irq);
+@@ -135,7 +137,8 @@ static void wacom_close(struct input_dev *dev)
+ 	wacom->intf->needs_remote_wakeup = 0;
+ 	mutex_unlock(&wacom->lock);
+ 
+-	usb_autopm_put_interface(wacom->intf);
++	if (!autopm_error)
++		usb_autopm_put_interface(wacom->intf);
+ }
+ 
+ static int wacom_parse_hid(struct usb_interface *intf, struct hid_descriptor *hid_desc,
