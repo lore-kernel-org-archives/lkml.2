@@ -1,115 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab0JEUAg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 16:00:36 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:12013 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754433Ab0JEUAf (ORCPT
+	id S1756766Ab0JEUCG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 16:02:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55244 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755640Ab0JEUCE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 16:00:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=BJ7NSbsBc927SUG1NLGJoSu/tPxU4bT2LMf++pGiu/oJMBh9e4Hy46F450EEWzwVR
-	1U42zcwiXH4i+HKDifzlw==
-From: Greg Thelen <gthelen@google.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-4-git-send-email-gthelen@google.com>
-	<20101005154250.GA9515@barrios-desktop>
-Date: Tue, 05 Oct 2010 12:59:37 -0700
-In-Reply-To: <20101005154250.GA9515@barrios-desktop> (Minchan Kim's message of
-	"Wed, 6 Oct 2010 00:42:50 +0900")
-Message-ID: <xr93aamstnpy.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 5 Oct 2010 16:02:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Yl4to2NSLTDlIqPNDnRlAmcmsUZKvKCG/P1f5Y1CLCCLg+1zsJJOQEE8xI7EERjTsz
+         3/a3u8B/VOzA3PgXsyEtM98NCbcXTqmoFgPR2tnrHFlPhYfbKnQtgbd/9iOIT5sL+DmB
+         H7G15CtwqZkReif6LWLiCEohFEcjnalY5nWzU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A5304681D4889@dlee03.ent.ti.com>
+References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
+	<20101005190741.GC20825@kroah.com>
+	<AANLkTikOBWxXh7uVrDxfW3OnwOM58JTXU76KUUoQWBWM@mail.gmail.com>
+	<27F9C60D11D683428E133F85D2BB4A5304681D4889@dlee03.ent.ti.com>
+Date: Tue, 5 Oct 2010 23:02:02 +0300
+Message-ID: <AANLkTin=k07hUq+cLAOsf0aYw5Ey23UOpbpo=+Eb49w9@mail.gmail.com>
+Subject: Re: [PATCH 0/2] omap: dsp: make the driver actually work
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+Cc: Greg KH <greg@kroah.com>, linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Hiroshi Doyu <hiroshi.doyu@nokia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minchan Kim <minchan.kim@gmail.com> writes:
-
-> On Sun, Oct 03, 2010 at 11:57:58PM -0700, Greg Thelen wrote:
->> Replace usage of the mem_cgroup_update_file_mapped() memcg
->> statistic update routine with two new routines:
->> * mem_cgroup_inc_page_stat()
->> * mem_cgroup_dec_page_stat()
->> 
->> As before, only the file_mapped statistic is managed.  However,
->> these more general interfaces allow for new statistics to be
->> more easily added.  New statistics are added with memcg dirty
->> page accounting.
->> 
->> Signed-off-by: Greg Thelen <gthelen@google.com>
->> Signed-off-by: Andrea Righi <arighi@develer.com>
->> ---
->>  include/linux/memcontrol.h |   31 ++++++++++++++++++++++++++++---
->>  mm/memcontrol.c            |   17 ++++++++---------
->>  mm/rmap.c                  |    4 ++--
->>  3 files changed, 38 insertions(+), 14 deletions(-)
->> 
->> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> index 159a076..7c7bec4 100644
->> --- a/include/linux/memcontrol.h
->> +++ b/include/linux/memcontrol.h
->> @@ -25,6 +25,11 @@ struct page_cgroup;
->>  struct page;
->>  struct mm_struct;
->>  
->> +/* Stats that can be updated by kernel. */
->> +enum mem_cgroup_write_page_stat_item {
->> +	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
->> +};
->> +
+On Tue, Oct 5, 2010 at 10:52 PM, Ramirez Luna, Omar <omar.ramirez@ti.com> wrote:
+> Felipe Contreras wrote:
+> ...
+>>
+>> Well, I thought it would be nice if the driver actually worked on
+>> .36, but anyway, I'll rebase the rest of my cleanup patches and send
+>> them. Hopefully I find a way to get rid of the ioremap() issue.
+>>
 >
-> mem_cgrou_"write"_page_stat_item?
-> Does "write" make sense to abstract page_state generally?
+> phys_to_virt instead of ioremap should work fine, still need to try it though.
 
-First I will summarize the portion of the design relevant to this
-comment:
+I tried that... Didn't work. I guess we need to flush at some points
+(since the memory is cacheable).
 
-This patch series introduces two sets of memcg statistics.
-a) the writable set of statistics the kernel updates when pages change
-   state (example: when a page becomes dirty) using:
-     mem_cgroup_inc_page_stat(struct page *page,
-     				enum mem_cgroup_write_page_stat_item idx)
-     mem_cgroup_dec_page_stat(struct page *page,
-     				enum mem_cgroup_write_page_stat_item idx)
-
-b) the read-only set of statistics the kernel queries to measure the
-   amount of dirty memory used by the current cgroup using:
-     s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
-
-   This read-only set of statistics is set of a higher level conceptual
-   counters.  For example, MEMCG_NR_DIRTYABLE_PAGES is the sum of the
-   counts of pages in various states (active + inactive).  mem_cgroup
-   exports this value as a higher level counter rather than individual
-   counters (active & inactive) to minimize the number of calls into
-   mem_cgroup_page_stat().  This avoids extra calls to cgroup tree
-   iteration with for_each_mem_cgroup_tree().
-
-Notice that each of the two sets of statistics are addressed by a
-different type, mem_cgroup_{read vs write}_page_stat_item.
-
-This particular patch (memcg: create extensible page stat update
-routines) introduces part of this design.  A later patch I emailed
-(memcg: add dirty limits to mem_cgroup) added
-mem_cgroup_read_page_stat_item.
-
-
-I think the code would read better if I renamed 
-enum mem_cgroup_write_page_stat_item to 
-enum mem_cgroup_update_page_stat_item.
-
-Would this address your concern?
-
---
-Greg
+-- 
+Felipe Contreras
