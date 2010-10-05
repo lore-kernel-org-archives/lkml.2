@@ -1,55 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757604Ab0JEHEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 03:04:46 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:37244 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754788Ab0JEHEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 03:04:45 -0400
-Date: Tue, 5 Oct 2010 09:01:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the lost-spurious-irq tree with the
- tip tree
-Message-ID: <20101005070123.GF12267@elte.hu>
-References: <20101005141334.6a0f15fd.sfr@canb.auug.org.au>
- <4CAABC0E.3030700@kernel.org>
- <20101005063227.GB12267@elte.hu>
- <20101005174524.b62d14a1.sfr@canb.auug.org.au>
+	id S1757655Ab0JEHLz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 03:11:55 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:3776 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756777Ab0JEHLy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 03:11:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=L+oC191QzhClINvLdY5Nz0Mq/t/OusNWvwXoD0wfCIrY7vfaxw23wzkC1zeSnIlku
+	5q7AuCfZ+UJWbKlHZJ1Cw==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-4-git-send-email-gthelen@google.com>
+	<20101005155142.847b1529.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 05 Oct 2010 00:10:30 -0700
+In-Reply-To: <20101005155142.847b1529.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Tue, 5 Oct 2010 15:51:42 +0900")
+Message-ID: <xr93aamtxggp.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101005174524.b62d14a1.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> On Sun,  3 Oct 2010 23:57:58 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> Replace usage of the mem_cgroup_update_file_mapped() memcg
+>> statistic update routine with two new routines:
+>> * mem_cgroup_inc_page_stat()
+>> * mem_cgroup_dec_page_stat()
+>> 
+>> As before, only the file_mapped statistic is managed.  However,
+>> these more general interfaces allow for new statistics to be
+>> more easily added.  New statistics are added with memcg dirty
+>> page accounting.
+>> 
+>> Signed-off-by: Greg Thelen <gthelen@google.com>
+>> Signed-off-by: Andrea Righi <arighi@develer.com>
+>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> a nitpick. see below.
+>
+>> ---
+>>  include/linux/memcontrol.h |   31 ++++++++++++++++++++++++++++---
+>>  mm/memcontrol.c            |   17 ++++++++---------
+>>  mm/rmap.c                  |    4 ++--
+>>  3 files changed, 38 insertions(+), 14 deletions(-)
+>> 
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 159a076..7c7bec4 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -25,6 +25,11 @@ struct page_cgroup;
+>>  struct page;
+>>  struct mm_struct;
+>>  
+>> +/* Stats that can be updated by kernel. */
+>> +enum mem_cgroup_write_page_stat_item {
+>> +	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
+>> +};
+>> +
+>>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>>  					struct list_head *dst,
+>>  					unsigned long *scanned, int order,
+>> @@ -121,7 +126,22 @@ static inline bool mem_cgroup_disabled(void)
+>>  	return false;
+>>  }
+>>  
+>> -void mem_cgroup_update_file_mapped(struct page *page, int val);
+>> +void mem_cgroup_update_page_stat(struct page *page,
+>> +				 enum mem_cgroup_write_page_stat_item idx,
+>> +				 int val);
+>> +
+>> +static inline void mem_cgroup_inc_page_stat(struct page *page,
+>> +				enum mem_cgroup_write_page_stat_item idx)
+>> +{
+>> +	mem_cgroup_update_page_stat(page, idx, 1);
+>> +}
+>> +
+>> +static inline void mem_cgroup_dec_page_stat(struct page *page,
+>> +				enum mem_cgroup_write_page_stat_item idx)
+>> +{
+>> +	mem_cgroup_update_page_stat(page, idx, -1);
+>> +}
+>> +
+>>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>>  						gfp_t gfp_mask);
+>>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
+>> @@ -293,8 +313,13 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>>  {
+>>  }
+>>  
+>> -static inline void mem_cgroup_update_file_mapped(struct page *page,
+>> -							int val)
+>> +static inline void mem_cgroup_inc_page_stat(struct page *page,
+>> +				enum mem_cgroup_write_page_stat_item idx)
+>> +{
+>> +}
+>> +
+>> +static inline void mem_cgroup_dec_page_stat(struct page *page,
+>> +				enum mem_cgroup_write_page_stat_item idx)
+>>  {
+>>  }
+>>  
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 512cb12..f4259f4 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
+>>   * possibility of race condition. If there is, we take a lock.
+>>   */
+>>  
+>> -static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+>> +void mem_cgroup_update_page_stat(struct page *page,
+>> +				 enum mem_cgroup_write_page_stat_item idx,
+>> +				 int val)
+>>  {
+>>  	struct mem_cgroup *mem;
+>>  	struct page_cgroup *pc = lookup_page_cgroup(page);
+>> @@ -1615,30 +1617,27 @@ static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+>>  			goto out;
+>>  	}
+>>  
+>> -	this_cpu_add(mem->stat->count[idx], val);
+>> -
+>>  	switch (idx) {
+>> -	case MEM_CGROUP_STAT_FILE_MAPPED:
+>> +	case MEMCG_NR_FILE_MAPPED:
+>>  		if (val > 0)
+>>  			SetPageCgroupFileMapped(pc);
+>>  		else if (!page_mapped(page))
+>>  			ClearPageCgroupFileMapped(pc);
+>> +		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+>>  		break;
+>>  	default:
+>>  		BUG();
+>>  	}
+>>  
+>> +	this_cpu_add(mem->stat->count[idx], val);
+>> +
+>
+> Why you move this_cpu_add() placement ?
+> (This placement is ok but I just wonder..)
+>
+> Thanks,
+> -Kame
 
-> Not sure what I can do beyond making sure that all relevant people are 
-> informed about what trees are being merged. [...]
+The reason this_cpu_add() is moved to after the switch is because the
+switch is needed to convert the input parameter from an enum
+mem_cgroup_write_page_stat_item (example: MEMCG_NR_FILE_MAPPED) to enum
+mem_cgroup_stat_index (example: MEM_CGROUP_STAT_FILE_MAPPED) before
+indexing into the count array.
 
-Fortunately there's a really simple solution: wait for an explicit reply 
-from a maintainer before adding a new-feature tree. (Solicite again via 
-a To: email if the Cc: went unanswered by the maintainers.)
-
-Could you please start using that method for all subsystems i 
-co-maintain?
-
-Thanks,
-
-	Ingo
-
+Also in subsequent patches (in this series) "val" is updated depending
+on page_cgroup flags before usage by this_cpu_add().
