@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754741Ab0JEQkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:40:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53462 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754586Ab0JEQk2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:40:28 -0400
-Date: Tue, 5 Oct 2010 09:40:38 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Igor Grinberg <grinberg@compulab.co.il>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, vapier@gentoo.org,
-        khilman@deeprootsystems.com, linux-kernel@vger.kernel.org,
-        pavel@ucw.cz, linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v2] Input: Make ADS7846 independent on regulator
-Message-ID: <20101005164037.GA20555@opensource.wolfsonmicro.com>
-References: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com>
- <4C862EB3.4080006@compulab.co.il>
- <20100907125335.GD25830@sirena.org.uk>
- <201009091027.18176.marek.vasut@gmail.com>
- <20100909094120.GB1988@rakim.wolfsonmicro.main>
- <4CAACA63.6090202@compulab.co.il>
- <20101005161608.GD19730@core.coreip.homeip.net>
+	id S1754501Ab0JEQkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:40:22 -0400
+Received: from thunk.org ([69.25.196.29]:39876 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751802Ab0JEQkU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 12:40:20 -0400
+Date: Tue, 5 Oct 2010 11:59:50 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Cesar Eduardo Barros <cesarb@cesarb.net>, Tejun Heo <tj@kernel.org>,
+        Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: [Bug #19062] Dirtiable inode bdi default != sb bdi btrfs
+Message-ID: <20101005155949.GA18454@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	"Rafael J. Wysocki" <rjw@sisk.pl>,
+	Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	Kernel Testers List <kernel-testers@vger.kernel.org>,
+	Maciej Rutecki <maciej.rutecki@gmail.com>,
+	Florian Mickler <florian@mickler.org>,
+	Cesar Eduardo Barros <cesarb@cesarb.net>, Tejun Heo <tj@kernel.org>,
+	Jens Axboe <axboe@kernel.dk>, Christoph Hellwig <hch@lst.de>,
+	Jan Kara <jack@suse.cz>
+References: <MEG5YPP-fxC.A.vnD.So6nMB@chimera>
+ <sQALkqF1FWE.A.15D.bo6nMB@chimera>
+ <20101002165433.GL21129@thunk.org>
+ <201010022358.35972.rjw@sisk.pl>
+ <20101004130911.1375c6e3.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101005161608.GD19730@core.coreip.homeip.net>
-X-Cookie: Don't Worry, Be Happy.
+In-Reply-To: <20101004130911.1375c6e3.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 09:16:08AM -0700, Dmitry Torokhov wrote:
-> On Tue, Oct 05, 2010 at 08:49:07AM +0200, Igor Grinberg wrote:
+On Mon, Oct 04, 2010 at 01:09:11PM -0700, Andrew Morton wrote:
+> 
+> Christoph had a patch, and Jan had another patch.  Maybe
+> 
+> commit 692ebd17c2905313fff3c504c249c6a0faad16ec
+> Author: Jan Kara <jack@suse.cz>
+> Date:   Tue Sep 21 11:51:01 2010 +0200
+> 
+>     bdi: Fix warnings in __mark_inode_dirty for /dev/zero and friends
+> 
+> already fixed this?
+> 
 
-> > You want each platform, that does not have a special regulated power supply
-> > for the ads7846, to define a dummy regulator just to cope with that artificial
-> > dependency of the device driver?
-> > I think it is a waste and big code duplication in each platform
-> > that does not have that special regulator.
+Actually, I do believe that's the _cause_ of what I was seeing.  The
+fix is:
 
-It's a pretty good fit for most current systems - with current hardware
-you will normally have some software control for the vast majority of
-the regulators on the board if you have regulator control at all since
-that's the way PMICs have gone.  Having a complete map of the regulator
-usage in the system is useful since it allows us to do optimisations
-like powering down idle regulators much more readily.
+	  http://lkml.org/lkml/2010/9/29/76
 
-> I tend to agree, however I think that original patch that simply ignored
-> failures from regulator_get() is not the best option either. Can we have
-> a flag in platform data indicating that the board does not employ a
-> regulator? Then we could retain the hard failure in cases when we expect
-> regulator to be present while allowing to continue on boards that do not
-> have it.
+						- Ted
 
-I really don't think it's a good idea to add this code to every single
-regulator using driver - this seems like an enormous waste of time and
-code complexity cost.  I have suggested several times that we should
-extend the dummy regulator mode so that boards can enable it from code
-as well as users enable it from Kconfig, I'm not sure why everyone is so
-keen on bodging this in drivers.
+
+				
