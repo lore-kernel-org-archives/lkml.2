@@ -1,251 +1,405 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab0JEM44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 08:56:56 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58543 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab0JEM4y (ORCPT
+	id S1752278Ab0JENFp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 09:05:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:35108 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751728Ab0JENFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 08:56:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=RrbK1+BgdWLIHSUuBJNNVhmJk6QxRXjhLN5Y0kFuE/e3NGf8N1V8wzbeCe3w5m9LDn
-         5j1HPn3GHyzvSw+zbSJfqVPl1uhH7/kH78OEB/1KudpatuF8zMcA4O2RLNeG0dlX4chl
-         0GXetf/8sXnM0g8veVC9SVL2GJog8JdMAZbFY=
-Date: Tue, 5 Oct 2010 21:01:17 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Subject: Re: [PATCH] sysctl: fix min/max handling in
- __do_proc_doulongvec_minmax()
-Message-ID: <20101005130117.GK5170@cr0.nay.redhat.com>
-References: <1286025469.2582.1806.camel@edumazet-laptop>
- <20101004085913.GR14068@sgi.com>
- <1286183058.18293.26.camel@edumazet-laptop>
- <20101004093439.GG5189@cr0.nay.redhat.com>
- <1286187030.18293.33.camel@edumazet-laptop>
- <20101004103545.GJ5189@cr0.nay.redhat.com>
- <1286188701.18293.57.camel@edumazet-laptop>
+	Tue, 5 Oct 2010 09:05:44 -0400
+Message-ID: <4CAB228C.7030902@ti.com>
+Date: Tue, 5 Oct 2010 08:05:16 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1286188701.18293.57.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-pm <linux-pm@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        linux-omap <linux-omap@vger.kernel.org>,
+        Paul <paulmck@linux.vnet.ibm.com>,
+        Kevin H <khilman@deeprootsystems.com>
+Subject: Re: [PATCH v5] power: introduce library for device-specific OPPs
+References: <1285933174-24053-1-git-send-email-nm@ti.com> <201010050036.23179.rjw@sisk.pl>
+In-Reply-To: <201010050036.23179.rjw@sisk.pl>
+Content-Type: text/plain; charset="ISO-8859-2"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 12:38:21PM +0200, Eric Dumazet wrote:
->Le lundi 04 octobre 2010 à 18:35 +0800, Américo Wang a écrit :
->
->> Your patch does fix the problem, but seems not a good solution,
->> we should skip all min/max checking if ->extra(1|2) is NULL,
->> instead of checking it every time within the loop.
->
->Please do submit a patch, we'll see if you come to a better solution,
->with no added code size (this is slow path, I dont care for checking it
->'every time winthin the loop')
->
->
+Rafael J. Wysocki had written, on 10/04/2010 05:36 PM, the following:
+> On Friday, October 01, 2010, Nishanth Menon wrote:
+>> SoCs have a standard set of tuples consisting of frequency and
+>> voltage pairs that the device will support per voltage domain. These
+>> are called Operating Performance Points or OPPs. The actual
+>> definitions of OPP varies over silicon versions. For a specific domain,
+>> we can have a set of {frequency, voltage} pairs. As the kernel boots
+>> and more information is available, a default set of these are activated
+>> based on the precise nature of device. Further on operation, based on
+>> conditions prevailing in the system (such as temperature), some OPP
+>> availability may be temporarily controlled by the SoC frameworks.
+>>
+>> To implement an OPP, some sort of power management support is necessary
+>> hence this library depends on CONFIG_PM.
+> 
+> Well, I still have some comments.
+Thanks for the same. Few views below.
 
-I have one, but just did compile test. :)
-I will test it tomorrow.
+> 
+> ...
+>> +/**
+>> + * opp_add()  - Add an OPP table from a table definitions
+>> + * @dev:	device for which we do this operation
+>> + * @freq:	Frequency in Hz for this OPP
+>> + * @u_volt:	Voltage in uVolts for this OPP
+>> + *
+>> + * This function adds an opp definition to the opp list and returns status.
+>> + * The opp is made available by default and it can be controlled using
+>> + * opp_enable/disable functions.
+>> + *
+>> + * Locking: The internal device_opp and opp structures are RCU protected.
+>> + * Hence this function internally uses RCU and mutex locks to keep the
+>> + * integrity of the internal data structures. Callers should ensure that
+>> + * this function is *NOT* called under RCU protection or in contexts where
+>> + * mutex cannot be locked.
+> 
+> I'm not really sure why so many mutexes are needed here.  I don't think you
+> need a separate mutex in every struct device_opp object.  I'd just use
+> dev_opp_list_lock for everything.
 
-NOT-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+I did consider using  dev_opp_list_lock to lock everything *but* here is 
+the contention:
 
----
+dev_opp_list_lock locks modification for addition of domains device. 
+This operation happens usually during init stage.
 
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f88552c..345a193 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -2448,86 +2448,119 @@ int proc_dointvec_minmax(struct ctl_table *table, int write,
- 				do_proc_dointvec_minmax_conv, &param);
- }
- 
--static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
--				     void __user *buffer,
-+static int __doulongvec_minmax_read(void *data, void __user *buffer,
- 				     size_t *lenp, loff_t *ppos,
- 				     unsigned long convmul,
- 				     unsigned long convdiv)
- {
--	unsigned long *i, *min, *max;
--	int vleft, first = 1, err = 0;
--	unsigned long page = 0;
--	size_t left;
--	char *kbuf;
-+	unsigned long *i = (unsigned long *) data;
-+	int err = 0;
-+	bool first = true;
-+	size_t left = *lenp;
- 
--	if (!data || !table->maxlen || !*lenp || (*ppos && !write)) {
--		*lenp = 0;
--		return 0;
-+	for (; left; i++, first=false) {
-+		unsigned long val;
-+
-+		val = convdiv * (*i) / convmul;
-+		if (!first)
-+			err = proc_put_char(&buffer, &left, '\t');
-+		err = proc_put_long(&buffer, &left, val, false);
-+		if (err)
-+			break;
- 	}
- 
--	i = (unsigned long *) data;
--	min = (unsigned long *) table->extra1;
--	max = (unsigned long *) table->extra2;
--	vleft = table->maxlen / sizeof(unsigned long);
--	left = *lenp;
-+	if (!first && left && !err)
-+		err = proc_put_char(&buffer, &left, '\n');
- 
--	if (write) {
--		if (left > PAGE_SIZE - 1)
--			left = PAGE_SIZE - 1;
--		page = __get_free_page(GFP_TEMPORARY);
--		kbuf = (char *) page;
--		if (!kbuf)
--			return -ENOMEM;
--		if (copy_from_user(kbuf, buffer, left)) {
--			err = -EFAULT;
--			goto free;
--		}
--		kbuf[left] = 0;
-+	*lenp -= left;
-+	*ppos += *lenp;
-+	return err;
-+}
-+
-+static int __doulongvec_minmax_write(void *data, void __user *buffer,
-+				     size_t *lenp, loff_t *ppos, int vleft,
-+				     unsigned long min, unsigned long max)
-+{
-+	char *kbuf;
-+	size_t left = *lenp;
-+	unsigned long page = 0;
-+	unsigned long *i = (unsigned long *) data;
-+	int err = 0;
-+	bool first = true;
-+
-+	if (left > PAGE_SIZE - 1)
-+		left = PAGE_SIZE - 1;
-+	page = __get_free_page(GFP_TEMPORARY);
-+	kbuf = (char *) page;
-+	if (!kbuf)
-+		return -ENOMEM;
-+	if (copy_from_user(kbuf, buffer, left)) {
-+		err = -EFAULT;
-+		goto free;
- 	}
-+	kbuf[left] = 0;
- 
--	for (; left && vleft--; i++, min++, max++, first=0) {
-+	for (; left && vleft--; i++, min++, max++, first=false) {
- 		unsigned long val;
-+		bool neg;
- 
--		if (write) {
--			bool neg;
--
--			left -= proc_skip_spaces(&kbuf);
-+		left -= proc_skip_spaces(&kbuf);
- 
--			err = proc_get_long(&kbuf, &left, &val, &neg,
--					     proc_wspace_sep,
--					     sizeof(proc_wspace_sep), NULL);
--			if (err)
--				break;
--			if (neg)
--				continue;
--			if ((min && val < *min) || (max && val > *max))
--				continue;
--			*i = val;
--		} else {
--			val = convdiv * (*i) / convmul;
--			if (!first)
--				err = proc_put_char(&buffer, &left, '\t');
--			err = proc_put_long(&buffer, &left, val, false);
--			if (err)
--				break;
--		}
-+		err = proc_get_long(&kbuf, &left, &val, &neg,
-+				     proc_wspace_sep,
-+				     sizeof(proc_wspace_sep), NULL);
-+		if (err)
-+			break;
-+		if (neg)
-+			continue;
-+		if (val < min || val > max)
-+			continue;
-+		*i = val;
- 	}
- 
--	if (!write && !first && left && !err)
--		err = proc_put_char(&buffer, &left, '\n');
--	if (write && !err)
-+	if (!err)
- 		left -= proc_skip_spaces(&kbuf);
- free:
--	if (write) {
--		free_page(page);
--		if (first)
--			return err ? : -EINVAL;
--	}
-+	free_page(page);
-+	if (first)
-+		return err ? : -EINVAL;
-+
- 	*lenp -= left;
- 	*ppos += *lenp;
- 	return err;
- }
- 
-+static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int write,
-+				     void __user *buffer,
-+				     size_t *lenp, loff_t *ppos,
-+				     unsigned long convmul,
-+				     unsigned long convdiv)
-+{
-+	if (!data || !table->maxlen || !*lenp || (*ppos && !write)) {
-+		*lenp = 0;
-+		return 0;
-+	}
-+
-+	if (write) {
-+		unsigned long min, max;
-+		int vleft;
-+
-+		vleft = table->maxlen / sizeof(unsigned long);
-+		if (table->extra1)
-+			min = *(unsigned long *) table->extra1;
-+		else
-+			min = 0;
-+		if (table->extra2)
-+			max = *(unsigned long *) table->extra2;
-+		else
-+			max = ULONG_MAX;
-+		return __doulongvec_minmax_write(data, buffer, lenp,
-+						  ppos, vleft, min, max);
-+	} else
-+		return __doulongvec_minmax_read(data, buffer, lenp,
-+						 ppos, convmul, convdiv);
-+}
-+
- static int do_proc_doulongvec_minmax(struct ctl_table *table, int write,
- 				     void __user *buffer,
- 				     size_t *lenp, loff_t *ppos,
+each domain device has multiple opps, new opps can be added, but the 
+more often usage will probably be opp_enable and disable. domain are 
+usually modifiable independent of each other - device_opp->lock provides 
+device level lock allowing for each domain device opp list to be 
+modified independent of each other. e.g. on thermal overage we may 
+choose to lower mpu domain while a coprocessor driver in parallel might 
+choose to disable co-processor domain in parallel.
+
+Wondering why you'd like a single lock for all domains and restrict 
+parallelization?
+
+> 
+>> + */
+>> +int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
+>> +{
+>> +	struct device_opp *dev_opp = NULL;
+>> +	struct opp *opp, *new_opp;
+>> +	struct list_head *head;
+>> +
+>> +	/* allocate new OPP node */
+>> +	new_opp = kzalloc(sizeof(struct opp), GFP_KERNEL);
+>> +	if (!new_opp) {
+>> +		pr_warning("Unable to allocate new opp node\n");
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	/* Check for existing list for 'dev' */
+>> +	rcu_read_lock();
+> 
+> If you acquire dev_opp_list_lock here, you won't need the rcu_read_lock(),
+> because every other updater will block on dev_opp_list_lock until you're done.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +	dev_opp = find_device_opp(dev);
+>> +	rcu_read_unlock();
+>> +	if (!dev_opp) {
+> 
+> Now you can drop dev_opp_list_lock temporarily, because the allocation doesn't
+> need synchronization.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +		/* Allocate a new device OPP table */
+>> +		dev_opp = kzalloc(sizeof(struct device_opp), GFP_KERNEL);
+>> +		if (!dev_opp) {
+>> +			kfree(new_opp);
+>> +			pr_warning("Unable to allocate device structure\n");
+>> +			return -ENOMEM;
+>> +		}
+>> +
+>> +		dev_opp->dev = dev;
+>> +		INIT_LIST_HEAD(&dev_opp->opp_list);
+>> +		mutex_init(&dev_opp->lock);
+>> +
+> 
+> Reacquire dev_opp_list_lock at this point and hold it to the end of the routine.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +		/* Secure the device list modification */
+>> +		mutex_lock(&dev_opp_list_lock);
+> 
+> This won't be necessary any more.
+> 
+>> +		list_add_rcu(&dev_opp->node, &dev_opp_list);
+> 
+> Of course, this is still needed.
+> 
+>> +		mutex_unlock(&dev_opp_list_lock);
+> 
+> Not necessary.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +	}
+>> +
+>> +	/* populate the opp table */
+>> +	new_opp->dev_opp = dev_opp;
+>> +	new_opp->rate = freq;
+>> +	new_opp->u_volt = u_volt;
+>> +	new_opp->available = true;
+>> +
+>> +	/* make the dev_opp modification safe */
+>> +	mutex_lock(&dev_opp->lock);
+> 
+> That's not necessary.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +
+>> +	rcu_read_lock();
+> 
+> Ditto.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +	/* Insert new OPP in order of increasing frequency */
+>> +	head = &dev_opp->opp_list;
+>> +	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
+>> +		if (new_opp->rate < opp->rate)
+>> +			break;
+>> +		else
+>> +			head = &opp->node;
+>> +	}
+>> +	rcu_read_unlock();
+> 
+> Ditto.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +	list_add_rcu(&new_opp->node, head);
+>> +	mutex_unlock(&dev_opp->lock);
+> 
+> Now release dev_opp_list_lock instead.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+> And remember to call synchronize_rcu() when you're done.
+
+we dont need synchronize_rcu() for list_add_rcu as Paul pointed out in 
+[1]. quote:
+"
+ > +		mutex_lock(&dev_opp_list_lock);
+ > +		list_add_rcu(&dev_opp->node, &dev_opp_list);
+ > +		mutex_unlock(&dev_opp_list_lock);
+ > +		synchronize_rcu();
+
+You do not need to wait for an RCU grace period when adding objects, 
+only between removing them and freeing them.
+"
+
+in our usage, this points to list_replace_rcu
+
+> 
+>> +	return 0;
+>> +}
+>> +
+>> +/**
+>> + * opp_set_availability() - helper to set the availability of an opp
+>> + * @dev:		device for which we do this operation
+>> + * @freq:		OPP frequency to modify availability
+>> + * @availability_req:	availability status requested for this opp
+>> + *
+>> + * Set the availability of an OPP with an RCU operation, opp_{enable,disable}
+>> + * share a common logic which is isolated here.
+>> + *
+>> + * Returns -EINVAL for bad pointers, -ENOMEM if no memory available for the
+>> + * copy operation, returns 0 if no modifcation was done OR modification was
+>> + * successful.
+>> + *
+>> + * Locking: The internal device_opp and opp structures are RCU protected.
+>> + * Hence this function internally uses RCU and mutex locks to keep the
+>> + * integrity of the internal data structures. Callers should ensure that
+>> + * this function is *NOT* called under RCU protection or in contexts where
+>> + * mutex locking or synchronize_rcu() blocking calls cannot be used.
+>> + */
+>> +static int opp_set_availability(struct device *dev, unsigned long freq,
+>> +		bool availability_req)
+>> +{
+>> +	struct device_opp *tmp_dev_opp, *dev_opp = NULL;
+>> +	struct opp *new_opp, *tmp_opp, *opp = ERR_PTR(-ENODEV);
+>> +	int r = 0;
+>> +
+>> +	/* keep the node allocated */
+>> +	new_opp = kmalloc(sizeof(struct opp), GFP_KERNEL);
+>> +	if (!new_opp) {
+>> +		pr_warning("Unable to allocate opp\n");
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	rcu_read_lock();
+> 
+> Acquire dev_opp_list_lock instead.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +
+>> +	/* Find the device_opp */
+>> +	list_for_each_entry_rcu(tmp_dev_opp, &dev_opp_list, node) {
+> 
+> You can use a normal list_for_each_entry here, because it's under the lock.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +		if (dev == tmp_dev_opp->dev) {
+>> +			dev_opp = tmp_dev_opp;
+>> +			break;
+>> +		}
+>> +	}
+>> +	dev_opp = find_device_opp(dev);
+> 
+> Hmm.  I wonder why this is necessary?
+arrgh.. yep, you are right.. will kick this out..
+
+> 
+>> +	if (IS_ERR(dev_opp)) {
+>> +		r = PTR_ERR(dev_opp);
+>> +		pr_warning("Unable to find device\n");
+>> +		goto err;
+>> +	}
+>> +
+>> +	/* Do we have the frequency? */
+>> +	list_for_each_entry_rcu(tmp_opp, &dev_opp->opp_list, node) {
+> 
+> Use list_for_each_entry here too.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +		if (tmp_opp->rate == freq) {
+>> +			opp = tmp_opp;
+>> +			break;
+>> +		}
+>> +	}
+>> +	if (IS_ERR(opp)) {
+>> +		r = PTR_ERR(opp);
+>> +		goto err;
+>> +	}
+>> +
+>> +	mutex_lock(&opp->dev_opp->lock);
+> 
+> And that won't be necessary any more.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +	tmp_opp = rcu_dereference(opp);
+> 
+> Ditto (we're an updater, not a reader).
+At this point are'nt we still a reader?
+
+> 
+>> +	/* Is update really needed? */
+>> +	if (tmp_opp->available == availability_req)
+>> +		goto out1;
+>> +	/* copy the old data over */
+>> +	*new_opp = *tmp_opp;
+>> +	rcu_read_unlock();
+> 
+> Not necessary.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +	/* plug in new node */
+>> +	new_opp->available = availability_req;
+>> +	list_replace_rcu(&opp->node, &new_opp->node);
+>> +	mutex_unlock(&opp->dev_opp->lock);
+> 
+> Now unlock dev_opp_list_lock instead.
+[contention on using a single lock dev_opp_list_lock as discussed above]
+> 
+>> +	synchronize_rcu();
+>> +
+> 
+> And rework the exit code below accordingly.
+> 
+>> +	/* clean up old opp */
+>> +	new_opp = opp;
+>> +	goto out;
+>> +
+>> +out1:
+>> +	mutex_unlock(&opp->dev_opp->lock);
+>> +err:
+>> +	rcu_read_unlock();
+>> +out:
+>> +	kfree(new_opp);
+>> +	return r;
+>> +}
+>> +
+> ...
+>> +int opp_init_cpufreq_table(struct device *dev,
+>> +			    struct cpufreq_frequency_table **table)
+>> +{
+>> +	struct device_opp *dev_opp;
+>> +	struct opp *opp;
+>> +	struct cpufreq_frequency_table *freq_table;
+>> +	int i = 0;
+>> +
+>> +	rcu_read_lock();
+> 
+> I would pretend I'm an updater here and acquire dev_opp_list_lock instead.
+why?
+> 
+>> +	dev_opp = find_device_opp(dev);
+>> +	if (IS_ERR(dev_opp)) {
+>> +		rcu_read_unlock();
+> 
+> So that won't be necessary.
+
+> 
+>> +		pr_warning("Unable to find device\n");
+>> +		return PTR_ERR(dev_opp);
+>> +	}
+>> +
+> 
+> Now, you can sleep with the mutex held, so GFP_KERNEL may be used below.
+ack. will fix in v6.
+
+> 
+>> +	freq_table = kzalloc(sizeof(struct cpufreq_frequency_table) *
+>> +			     (opp_get_opp_count(dev) + 1), GFP_ATOMIC);
+>> +	if (!freq_table) {
+>> +		rcu_read_unlock();
+> 
+> Drop dev_opp_list_lock instead.
+> 
+>> +		pr_warning("Failed to allocate frequency table\n");
+>> +		return -ENOMEM;
+>> +	}
+>> +
+>> +	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
+> 
+> That may be list_for_each_entry() now.
+> 
+>> +		if (opp->available) {
+>> +			freq_table[i].index = i;
+>> +			freq_table[i].frequency = opp->rate / 1000;
+>> +			i++;
+>> +		}
+>> +	}
+>> +	rcu_read_unlock();
+> 
+> Drop dev_opp_list_lock instead.
+> 
+>> +
+>> +	freq_table[i].index = i;
+>> +	freq_table[i].frequency = CPUFREQ_TABLE_END;
+>> +
+>> +	*table = &freq_table[0];
+>> +
+>> +	return 0;
+>> +}
+> 
+> I think I didn't confuse anything, but surely Paul will fix me if I did. :-)
+
+My contention is the preference for a single lock for everything instead 
+of domain level locks for majority of the usage. i dont see why we 
+should loose parallelization capability.
+
+[1] http://marc.info/?l=linux-omap&m=128535708720191&w=2
+-- 
+Regards,
+Nishanth Menon
