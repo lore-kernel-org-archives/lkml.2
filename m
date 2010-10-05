@@ -1,65 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab0JEIsz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 04:48:55 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56606 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab0JEIsx (ORCPT
+	id S1757968Ab0JEIui (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 04:50:38 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57181 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab0JEIug (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 04:48:53 -0400
-From: Andy Whitcroft <apw@canonical.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Matthew Garrett <mjg@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andy Whitcroft <apw@canonical.com>
-Subject: [PATCH 1/1] intel_ips -- ensure we do not enable gpu turbo mode without driver linkage
-Date: Tue,  5 Oct 2010 09:48:42 +0100
-Message-Id: <1286268522-26337-1-git-send-email-apw@canonical.com>
-X-Mailer: git-send-email 1.7.1
+	Tue, 5 Oct 2010 04:50:36 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: Tree for October 5
+Date: Tue, 5 Oct 2010 10:50:26 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
+Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Valdis.Kletnieks@vt.edu
+References: <20101005161220.0bef433f.sfr@canb.auug.org.au> <AANLkTikF+-0ybP3RMA-7wr8DMit6At=G1W7oB0UO4Mvz@mail.gmail.com> <20101005194232.de733b2b.sfr@canb.auug.org.au>
+In-Reply-To: <20101005194232.de733b2b.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010051050.26543.arnd@arndb.de>
+X-Provags-ID: V02:K0:CEXJQjZ1Mx4FlnvMu5A0f/KPt7LZnNXJVqdSdLel2hS
+ wU98z39n6Q33bp1D+i+p+StyL9uffjKa8kpFyjxit0SCBAxVyC
+ nILP8xmk9J2eA3IuQ0wFaWNxdhBnW5zO+79IgVy8dGsCR6z6rE
+ cJSZz8Vy5vUDKPIymQivvFSkgmJO4KrG/MepWDR7HL9kx/Su4F
+ MXY+Bb+rabg0hvSk21mPA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Both when polling the current turbo status (in poll_turbo_status mode)
-and when handling thermal events (in ips_irq_handler) the current status
-of GPU turbo is updated to match the hardware status.  However if during
-driver initialisation we were unable aquire linkage to the i915 driver
-enabling GPU turbo will lead to an oops on the first attempt to determine
-GPU busy status.
+On Tuesday 05 October 2010, Stephen Rothwell wrote:
+> Hi,
+> 
+> On Tue, 5 Oct 2010 09:38:49 +0200 Zimny Lech <napohybelskurwysynom2010@gmail.com> wrote:
+> >
+> > Also, I saw this
+> > /home/test/linux-2.6/include/linux/fs.h:1274:20: warning: function
+> > declaration isn't a prototype
+> > /home/test/linux-2.6/include/linux/fs.h:1278:20: warning: function
+> > declaration isn't a prototype
+> > 
+> > It was fixed in -mmotm by Valdis Kletnieks.
+> 
+> Yeah, it was fixed in linux-next, but rebroken by a rebase of the bkl-vfs
+> tree since yesterday.
 
-Ensure that we do not enable GPU turbo unless we have driver linkage.
+Ok, fixed it again now. Sorry for messing this up twice.
 
-BugLink: http://bugs.launchpad.net/bugs/632430
-Cc: stable@kernel.org
-Signed-off-by: Andy Whitcroft <apw@canonical.com>
----
- drivers/platform/x86/intel_ips.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-index afe82e5..3ca50b3 100644
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -680,7 +680,8 @@ static void update_turbo_limits(struct ips_driver *ips)
- 	u32 hts = thm_readl(THM_HTS);
- 
- 	ips->cpu_turbo_enabled = !(hts & HTS_PCTD_DIS);
--	ips->gpu_turbo_enabled = !(hts & HTS_GTD_DIS);
-+	if (ips->gpu_busy)
-+		ips->gpu_turbo_enabled = !(hts & HTS_GTD_DIS);
- 	ips->core_power_limit = thm_readw(THM_MPCPC);
- 	ips->mch_power_limit = thm_readw(THM_MMGPC);
- 	ips->mcp_temp_limit = thm_readw(THM_PTL);
-@@ -1150,7 +1151,8 @@ static irqreturn_t ips_irq_handler(int irq, void *arg)
- 				STS_GPL_SHIFT;
- 			/* ignore EC CPU vs GPU pref */
- 			ips->cpu_turbo_enabled = !(sts & STS_PCTD_DIS);
--			ips->gpu_turbo_enabled = !(sts & STS_GTD_DIS);
-+			if (ips->gpu_busy)
-+				ips->gpu_turbo_enabled = !(sts & STS_GTD_DIS);
- 			ips->mcp_temp_limit = (sts & STS_PTL_MASK) >>
- 				STS_PTL_SHIFT;
- 			ips->mcp_power_limit = (tc1 & STS_PPL_MASK) >>
--- 
-1.7.1
-
+	Arnd
