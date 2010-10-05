@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab0JEPVR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 11:21:17 -0400
-Received: from smtp207.alice.it ([82.57.200.103]:47372 "EHLO smtp207.alice.it"
+	id S1754402Ab0JEPVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 11:21:16 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:40417 "EHLO smtp208.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754157Ab0JEPVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754145Ab0JEPVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Oct 2010 11:21:13 -0400
 From: Antonio Ospite <ospite@studenti.unina.it>
 To: linux-input@vger.kernel.org
 Cc: Antonio Ospite <ospite@studenti.unina.it>, Jiri Kosina <jkosina@suse.cz>,
         Alan Ott <alan@signal11.us>, Oliver Neukum <oliver@neukum.name>,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH 2/2] HID: hidraw, fix a NULL pointer dereference in hidraw_write
-Date: Tue,  5 Oct 2010 17:20:17 +0200
-Message-Id: <1286292017-6746-3-git-send-email-ospite@studenti.unina.it>
+Subject: [PATCH 1/2] HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
+Date: Tue,  5 Oct 2010 17:20:16 +0200
+Message-Id: <1286292017-6746-2-git-send-email-ospite@studenti.unina.it>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz>
 References: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz>
@@ -23,17 +23,17 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-IP: [<ffffffffa0f0a625>] hidraw_write+0x3b/0x116 [hid]
+IP: [<ffffffffa02c66b4>] hidraw_ioctl+0xfc/0x32c [hid]
 [...]
 
-This is reproducible by disconnecting the device while userspace writes
-to dev node in a loop and doesn't check return values in order to exit
-the loop, like in the following test program:
+This is reproducible by disconnecting the device while userspace does
+ioctl in a loop and doesn't check return values in order to exit the
+loop, like in the following test program:
 
 int main(int argc, char *argv[])
 {
 	int fd = -1;
-	unsigned char report[2] = {0x01, 0x00};
+	unsigned char name[256];
 	int ret;
 
 	if (argc != 2) {
@@ -48,8 +48,8 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		ret = write(fd, report, sizeof(report));
-		printf("ret: %d\n", ret);
+		ret = ioctl(fd, HIDIOCGRAWNAME(256), name);
+		printf("ret: %d name: %s\n", ret, name);
 	}
 
 	close(fd);
@@ -58,26 +58,32 @@ int main(int argc, char *argv[])
 
 Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
 ---
- drivers/hid/hidraw.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ drivers/hid/hidraw.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 9eaf6ae..a3866b5 100644
+index 47d70c5..9eaf6ae 100644
 --- a/drivers/hid/hidraw.c
 +++ b/drivers/hid/hidraw.c
-@@ -109,6 +109,12 @@ static ssize_t hidraw_write(struct file *file, const char __user *buffer, size_t
- 	int ret = 0;
+@@ -244,6 +244,10 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
  
  	mutex_lock(&minors_lock);
-+
-+	if (!hidraw_table[minor]) {
+ 	dev = hidraw_table[minor];
++	if (!dev) {
 +		ret = -ENODEV;
 +		goto out;
 +	}
-+
- 	dev = hidraw_table[minor]->hid;
  
- 	if (!dev->hid_output_raw_report) {
+ 	switch (cmd) {
+ 		case HIDIOCGRDESCSIZE:
+@@ -317,6 +321,7 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
+ 
+ 		ret = -ENOTTY;
+ 	}
++out:
+ 	mutex_unlock(&minors_lock);
+ 	return ret;
+ }
 -- 
 1.7.1
 
