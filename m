@@ -1,84 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754833Ab0JET03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 15:26:29 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:52723 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133Ab0JET02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 15:26:28 -0400
-Date: Tue, 5 Oct 2010 12:33:02 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Greg KH <greg@kroah.com>
-Cc: Greg KH <gregkh@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
-        Jon Nettleton <jon.nettleton@gmail.com>
-Subject: Re: linux-next: Tree for October 1 (staging/olpc_dcon)
-Message-ID: <20101005123302.399b258f@debxo>
-In-Reply-To: <20101005190818.GD20825@kroah.com>
-References: <20101001153756.47b52566.sfr@canb.auug.org.au>
-	<20101001154531.997630a2.randy.dunlap@oracle.com>
-	<20101001192454.0a427cb0@debxo>
-	<20101002185154.GA18020@suse.de>
-	<20101002180334.7894bdfe@debxo>
-	<20101005190818.GD20825@kroah.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755460Ab0JET0n (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 15:26:43 -0400
+Received: from qmta04.emeryville.ca.mail.comcast.net ([76.96.30.40]:41691 "EHLO
+	qmta04.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755137Ab0JET0l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 15:26:41 -0400
+Date: Tue, 5 Oct 2010 12:24:35 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, linux-media@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [RFC PATCH] media: consolidation of -I flags
+Message-ID: <20101005192435.GA17798@haskell.muteddisk.com>
+Mail-Followup-To: Sam Ravnborg <sam@ravnborg.org>,
+	Mauro Carvalho Chehab <mchehab@infradead.org>,
+	Michal Marek <mmarek@suse.cz>, linux-media@vger.kernel.org,
+	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <1285534847-31463-1-git-send-email-mfm@muteddisk.com>
+ <20101005142906.GA20059@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101005142906.GA20059@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Oct 2010 12:08:18 -0700
-Greg KH <greg@kroah.com> wrote:
-
-> On Sat, Oct 02, 2010 at 06:03:34PM -0700, Andres Salomon wrote:
-> > On Sat, 2 Oct 2010 11:51:54 -0700
-> > Greg KH <gregkh@suse.de> wrote:
+On 16:29 Tue 05 Oct     , Sam Ravnborg wrote:
+> On Sun, Sep 26, 2010 at 02:00:47PM -0700, matt mooney wrote:
+> > I have been doing cleanup of makefiles, namely replacing the older style
+> > compilation flag variables with the newer style. While doing this, I
+> > noticed that the majority of drivers in the media subsystem seem to rely
+> > on a few core header files:
 > > 
-> > > On Fri, Oct 01, 2010 at 07:24:54PM -0700, Andres Salomon wrote:
-> > > > On Fri, 1 Oct 2010 15:45:31 -0700
-> > > > Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > > > 
-> > > > > On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
-> > > > > 
-> > > > > > Hi all,
-> > > > > > 
-> > > > > > Changes since 20100930:
-> > > > > 
-> > > > > 
-> > > > > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
-> > > > > declaration of function 'geode_gpio_event_irq'
-> > > > > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
-> > > > > declaration of function 'geode_gpio'
-> > > > 
-> > > > Yep, it's pending a cs5535-gpio patch
-> > > > (https://patchwork.kernel.org/patch/209482/).
-> > > 
-> > > Wait, as I didn't apply the later patches, what I did apply should
-> > > have still built properly (remember our rule, no breakage at any
-> > > point in a patch series.)  So, should I revert the last olpc patch
-> > > that caused this problem?
-> > > 
+> > 	-Idrivers/media/video
+> > 	-Idrivers/media/common/tuners
+> > 	-Idrivers/media/dvb/dvb-core
+> > 	-Idrivers/media/dvb/frontends
 > > 
-> > Sorry, I thought that was made clear by the "this patch is necessary
-> > for building the driver" comments in each patch description.  The
-> > original driver that was submitted doesn't build unless all patches
-> > are applied (the only which touches external APIs is the pending
-> > cs5535-gpio one).
+> > This patch removes them from the individual makefiles and puts them in
+> > the main makefile under media.
+> Using subdir-ccflags-y has one drawback you need to be aware of.
+> The variable is _not_ picked up if you build individual drivers like
+> this:
 > 
-> Ok, I'll go mark the driver as depending on CONFIG_BROKEN for now,
-> until we get that resolved, as we can't have a driver that breaks the
-> build in the tree.
 > 
-> thanks,
+>      make drivers/media/dvb/b2c2/
 > 
-> greg k-h
+> So with this patch applied it is no longer possible to do so.
+> It is better to accept the duplication rather than breaking
+> the build of individual drivers.
 
+Ah, I was not aware of that, and I forgot to test for that case.
 
-Sounds good.  After the two outstanding patches are applied,
-CONFIG_BROKEN can be safely removed.
+> > 
+> > If neither idea is considered beneficial, I will go ahead and replace
+> > the older variables with the newer ones as is.
+> 
+> This is the right approach.
+> 
+> You could consider to do a more general cleanup:
+> 1) replace EXTRA_CFLAGS with ccflags-y (the one you suggest)
+> 2) replace use of <module>-objs with <module>-y
+> 3) break continued lines into several assignments
+>    People very often uses '\' to break long lines, where a
+>    simple += would be much more readable.
+>    But this topic may be personal - I never uses "\" in my .c code unless in macros,
+>    and I have applied the same rule for Makefiles.
+>    An ugly example is drivers/media/Makefile
+> 4) In general use ":=" instead of "=".
+>    Add using "+=" as first assignment is OK - but it just looks plain wrong
+> 5) some files has a mixture of spaces/tabs (are red in my vim)
+>    dvb-core/Makefile is one such example
+> 6) remove useless stuff
+>    siano/Makefile has some strange assignments to EXTRA_CFLAGS
+> 7) Likely a few more items to look after...
+> 
+> This is more work - but then you finish a Makefile rather than doing a simple
+> conversion.
 
+I agree with all your points above; however, I was unsure of whether a wholesale
+cleanup would be welcomed because I would then end up touching numerous lines
+(and in some cases, possibly all lines). I did notice, though, the need for
+quite a bit of cleanup like you have mentioned, and I have a few patches queued
+up that make a second pass on some files changing <module>-objs to
+<module>-y. You know better than I do, so if you feel I should cleanup the whole
+file in one patch, then that is what I will do although this will take some
+time.
 
+Is the use of <module>-objs deprecated? Some people might wonder why I am
+changing that when they are not building a multisource object.
+
+Thanks,
+mfm
