@@ -1,39 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757031Ab0JECBE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 22:01:04 -0400
-Received: from tuxonice.net ([74.207.252.127]:57499 "EHLO mail.tuxonice.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755522Ab0JECBC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 22:01:02 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CAA86DA.3080601@tuxonice.net>
-Date: Tue, 05 Oct 2010 13:00:58 +1100
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
-MIME-Version: 1.0
-To: Dave Airlie <airlied@gmail.com>
-CC: Dave Airlie <airlied@linux.ie>,
-        dri-devel <dri-devel@lists.freedesktop.org>,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [BUG][PATCH] 2.6.36-rc showstopper (at least for me) in vmwgfx
-References: <4CAA5BDA.7080705@tuxonice.net> <AANLkTikzSQuBOWR=Bf_3xuS+ioyvZ3LLXGuRnN-CHj7p@mail.gmail.com>
-In-Reply-To: <AANLkTikzSQuBOWR=Bf_3xuS+ioyvZ3LLXGuRnN-CHj7p@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757052Ab0JECFE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 22:05:04 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49914 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753191Ab0JECFC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 22:05:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=qkUxtVB7xvHNMaECdnhSaBgBNAxfZBEjoJKu1p6tlTnhpc3zGzlRzqI8xu1D5Q5g1G
+         sv8fiYEXwWQrBCgSuMe3LShbkWiXjoeydc0+zgLYnbPBMvmeZ2CN/+nqeijVyh0ZubEZ
+         pcJHK21R2CLQKey63cXxjpMqbb7g0UuAC4bPs=
+Subject: [PATCH] drivers/power: add missing kfree(di->bus) in
+	bq27x00_battery_remove()
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
+        Rodolfo Giometti <giometti@linux.it>
+Content-Type: text/plain
+Date: Tue, 05 Oct 2010 10:05:34 +0800
+Message-Id: <1286244334.16819.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/power/bq27x00_battery.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-On 05/10/10 12:51, Dave Airlie wrote:
-> On Tue, Oct 5, 2010 at 8:57 AM, Nigel Cunningham<nigel@tuxonice.net>  wrote:
->> Running a kernel based on the Rafael's -next tree, under VMware, I get the following oops while booting:
->
-> Should already be fixed in Linus tree by,
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=f1a28ee238bddfa48c5233543926af65a4445bf6
+diff --git a/drivers/power/bq27x00_battery.c b/drivers/power/bq27x00_battery.c
+index 3ec9c6a..eff0273 100644
+--- a/drivers/power/bq27x00_battery.c
++++ b/drivers/power/bq27x00_battery.c
+@@ -418,6 +418,7 @@ static int bq27x00_battery_remove(struct i2c_client *client)
+ 
+ 	power_supply_unregister(&di->bat);
+ 
++	kfree(di->bus);
+ 	kfree(di->bat.name);
+ 
+ 	mutex_lock(&battery_mutex);
+-- 
+1.7.2
 
-Ah, great. Thanks!
 
-Nigel
+
