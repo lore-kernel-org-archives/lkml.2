@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab0JEMCJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 08:02:09 -0400
-Received: from eu1sys200aog113.obsmtp.com ([207.126.144.135]:46679 "EHLO
-	eu1sys200aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751960Ab0JEMCF (ORCPT
+	id S1757811Ab0JEMD3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 08:03:29 -0400
+Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:45027 "EHLO
+	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754399Ab0JEMD2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 08:02:05 -0400
+	Tue, 5 Oct 2010 08:03:28 -0400
 From: Arun Murthy <arun.murthy@stericsson.com>
 To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
         <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
@@ -16,9 +16,9 @@ To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
 Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
         <linux-mips@linux-mips.org>, <STEricsson_nomadik_linux@list.st.com>,
         <arun.murthy@stericsson.com>, <bgat@billgatliff.com>
-Subject: [PATCHv2 6/7] pwm: move existing pwm driver to drivers/pwm
-Date: Tue, 5 Oct 2010 17:30:01 +0530
-Message-ID: <1286280002-1636-7-git-send-email-arun.murthy@stericsson.com>
+Subject: [PATCHv2 5/7] platform: Update the pwm based led and backlight platform data
+Date: Tue, 5 Oct 2010 17:30:00 +0530
+Message-ID: <1286280002-1636-6-git-send-email-arun.murthy@stericsson.com>
 X-Mailer: git-send-email 1.7.2.dirty
 In-Reply-To: <1286280002-1636-1-git-send-email-arun.murthy@stericsson.com>
 References: <1286280002-1636-1-git-send-email-arun.murthy@stericsson.com>
@@ -28,855 +28,303 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As of now only ab8500 and twl6030 are moved.
+	mxc-pwm: Update the platform data with pwm name for backlight
+	s3c24xx-pwm: update platform data for backlight with pwm name
 
 Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
 Acked-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/mfd/Kconfig       |    9 --
- drivers/mfd/Makefile      |    1 -
- drivers/mfd/twl6030-pwm.c |  196 ---------------------------------------------
- drivers/misc/Kconfig      |    9 --
- drivers/misc/Makefile     |    1 -
- drivers/misc/ab8500-pwm.c |  157 ------------------------------------
- drivers/pwm/Kconfig       |   18 ++++
- drivers/pwm/Makefile      |    3 +
- drivers/pwm/pwm-ab8500.c  |  157 ++++++++++++++++++++++++++++++++++++
- drivers/pwm/pwm-twl6040.c |  196 +++++++++++++++++++++++++++++++++++++++++++++
- 10 files changed, 374 insertions(+), 373 deletions(-)
- delete mode 100644 drivers/mfd/twl6030-pwm.c
- delete mode 100644 drivers/misc/ab8500-pwm.c
- create mode 100644 drivers/pwm/pwm-ab8500.c
- create mode 100644 drivers/pwm/pwm-twl6040.c
+ arch/arm/mach-pxa/cm-x300.c               |    1 +
+ arch/arm/mach-pxa/colibri-pxa270-income.c |    1 +
+ arch/arm/mach-pxa/ezx.c                   |    1 +
+ arch/arm/mach-pxa/hx4700.c                |    1 +
+ arch/arm/mach-pxa/lpd270.c                |    1 +
+ arch/arm/mach-pxa/magician.c              |    1 +
+ arch/arm/mach-pxa/mainstone.c             |    1 +
+ arch/arm/mach-pxa/mioa701.c               |    1 +
+ arch/arm/mach-pxa/palm27x.c               |    1 +
+ arch/arm/mach-pxa/palmtc.c                |    1 +
+ arch/arm/mach-pxa/palmte2.c               |    1 +
+ arch/arm/mach-pxa/pcm990-baseboard.c      |    1 +
+ arch/arm/mach-pxa/raumfeld.c              |    1 +
+ arch/arm/mach-pxa/tavorevb.c              |    2 ++
+ arch/arm/mach-pxa/viper.c                 |    1 +
+ arch/arm/mach-pxa/z2.c                    |    2 ++
+ arch/arm/mach-pxa/zylonite.c              |    1 +
+ arch/arm/mach-s3c2410/mach-h1940.c        |    1 +
+ arch/arm/mach-s3c2440/mach-rx1950.c       |    1 +
+ arch/arm/mach-s3c64xx/mach-hmt.c          |    1 +
+ arch/arm/mach-s3c64xx/mach-smartq.c       |    1 +
+ 21 files changed, 23 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 256fabd..ab1d376 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -186,15 +186,6 @@ config TWL4030_CODEC
- 	select MFD_CORE
- 	default n
+diff --git a/arch/arm/mach-pxa/cm-x300.c b/arch/arm/mach-pxa/cm-x300.c
+index c70e6c2..ddf763b 100644
+--- a/arch/arm/mach-pxa/cm-x300.c
++++ b/arch/arm/mach-pxa/cm-x300.c
+@@ -301,6 +301,7 @@ static inline void cm_x300_init_lcd(void) {}
+ #if defined(CONFIG_BACKLIGHT_PWM) || defined(CONFIG_BACKLIGHT_PWM_MODULE)
+ static struct platform_pwm_backlight_data cm_x300_backlight_data = {
+ 	.pwm_id		= 2,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 100,
+ 	.dft_brightness	= 100,
+ 	.pwm_period_ns	= 10000,
+diff --git a/arch/arm/mach-pxa/colibri-pxa270-income.c b/arch/arm/mach-pxa/colibri-pxa270-income.c
+index 37f0f3e..d5b5874 100644
+--- a/arch/arm/mach-pxa/colibri-pxa270-income.c
++++ b/arch/arm/mach-pxa/colibri-pxa270-income.c
+@@ -234,6 +234,7 @@ static inline void income_lcd_init(void) {}
+ #if defined(CONFIG_BACKLIGHT_PWM) || defined(CONFIG_BACKLIGHT_PWM__MODULE)
+ static struct platform_pwm_backlight_data income_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 0x3ff,
+ 	.dft_brightness	= 0x1ff,
+ 	.pwm_period_ns	= 1000000,
+diff --git a/arch/arm/mach-pxa/ezx.c b/arch/arm/mach-pxa/ezx.c
+index 626c82b..747f217 100644
+--- a/arch/arm/mach-pxa/ezx.c
++++ b/arch/arm/mach-pxa/ezx.c
+@@ -49,6 +49,7 @@
  
--config TWL6030_PWM
--	tristate "TWL6030 PWM (Pulse Width Modulator) Support"
--	depends on TWL4030_CORE
--	select HAVE_PWM
--	default n
--	help
--	  Say yes here if you want support for TWL6030 PWM.
--	  This is used to control charging LED brightness.
--
- config MFD_STMPE
- 	bool "Support STMicroelectronics STMPE"
- 	depends on I2C=y && GENERIC_HARDIRQS
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index d5968cd..1a89dbf 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -37,7 +37,6 @@ obj-$(CONFIG_MENELAUS)		+= menelaus.o
- obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
- obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
- obj-$(CONFIG_TWL4030_CODEC)	+= twl4030-codec.o
--obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
+ static struct platform_pwm_backlight_data ezx_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 1023,
+ 	.dft_brightness	= 1023,
+ 	.pwm_period_ns	= 78770,
+diff --git a/arch/arm/mach-pxa/hx4700.c b/arch/arm/mach-pxa/hx4700.c
+index 848c861..8e4905a 100644
+--- a/arch/arm/mach-pxa/hx4700.c
++++ b/arch/arm/mach-pxa/hx4700.c
+@@ -565,6 +565,7 @@ static struct platform_device hx4700_lcd = {
  
- obj-$(CONFIG_MFD_MC13783)	+= mc13783-core.o
+ static struct platform_pwm_backlight_data backlight_data = {
+ 	.pwm_id         = 1,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness = 200,
+ 	.dft_brightness = 100,
+ 	.pwm_period_ns  = 30923,
+diff --git a/arch/arm/mach-pxa/lpd270.c b/arch/arm/mach-pxa/lpd270.c
+index d279507..91efade 100644
+--- a/arch/arm/mach-pxa/lpd270.c
++++ b/arch/arm/mach-pxa/lpd270.c
+@@ -273,6 +273,7 @@ static struct platform_device lpd270_flash_device[2] = {
  
-diff --git a/drivers/mfd/twl6030-pwm.c b/drivers/mfd/twl6030-pwm.c
-deleted file mode 100644
-index b78324b..0000000
---- a/drivers/mfd/twl6030-pwm.c
-+++ /dev/null
-@@ -1,196 +0,0 @@
--/*
-- * twl6030_pwm.c
-- * Driver for PHOENIX (TWL6030) Pulse Width Modulator
-- *
-- * Copyright (C) 2010 Texas Instruments
-- * Author: Hemanth V <hemanthv@ti.com>
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms of the GNU General Public License version 2 as published by
-- * the Free Software Foundation.
-- *
-- * This program is distributed in the hope that it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program.  If not, see <http://www.gnu.org/licenses/>.
-- */
--
--#include <linux/module.h>
--#include <linux/platform_device.h>
--#include <linux/slab.h>
--#include <linux/pwm.h>
--#include <linux/err.h>
--#include <linux/i2c/twl.h>
--
--#define LED_PWM_CTRL1	0xF4
--#define LED_PWM_CTRL2	0xF5
--
--/* Max value for CTRL1 register */
--#define PWM_CTRL1_MAX	255
--
--/* Pull down disable */
--#define PWM_CTRL2_DIS_PD	(1 << 6)
--
--/* Current control 2.5 milli Amps */
--#define PWM_CTRL2_CURR_02	(2 << 4)
--
--/* LED supply source */
--#define PWM_CTRL2_SRC_VAC	(1 << 2)
--
--/* LED modes */
--#define PWM_CTRL2_MODE_HW	(0 << 0)
--#define PWM_CTRL2_MODE_SW	(1 << 0)
--#define PWM_CTRL2_MODE_DIS	(2 << 0)
--
--#define PWM_CTRL2_MODE_MASK	0x3
--
--int twl6030_pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
--{
--	u8 duty_cycle;
--	int ret = 0;
--
--	if (pwm == NULL || period_ns == 0 || duty_ns > period_ns)
--		return -EINVAL;
--
--	duty_cycle = (duty_ns * PWM_CTRL1_MAX) / period_ns;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, duty_cycle, LED_PWM_CTRL1);
--
--	if (ret < 0) {
--		pr_err("%s: Failed to configure PWM, Error %d\n",
--			pwm->label, ret);
--		return ret;
--	}
--	return 0;
--}
--
--int twl6030_pwm_enable(struct pwm_device *pwm)
--{
--	u8 val;
--	int ret = 0;
--
--	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		pr_err("%s: Failed to enable PWM, Error %d\n", pwm->label, ret);
--		return ret;
--	}
--
--	/* Change mode to software control */
--	val &= ~PWM_CTRL2_MODE_MASK;
--	val |= PWM_CTRL2_MODE_SW;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		pr_err("%s: Failed to enable PWM, Error %d\n", pwm->label, ret);
--		return ret;
--	}
--
--	twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
--	return 0;
--}
--
--int twl6030_pwm_disable(struct pwm_device *pwm)
--{
--	u8 val;
--	int ret = 0;
--
--	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		pr_err("%s: Failed to disable PWM, Error %d\n",
--			pwm->label, ret);
--		return ret;
--	}
--
--	val &= ~PWM_CTRL2_MODE_MASK;
--	val |= PWM_CTRL2_MODE_HW;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		pr_err("%s: Failed to disable PWM, Error %d\n",
--			pwm->label, ret);
--	}
--	return ret;
--}
--
--static int __devinit twl6030_pwm_probe(struct platform_device *pdev)
--{
--	struct pwm_device *pwm;
--	struct pwm_ops *pops;
--	int ret;
--	u8 val;
--
--	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
--	if (pwm == NULL) {
--		dev_err(&pdev->dev, "failed to allocate memory\n");
--		return -ENOMEM;
--	}
--	pops = kzalloc(sizeof(struct pwm_ops), GFP_KERNEL);
--	if (pops == NULL) {
--		dev_err(&pdev->dev, "failed to allocate memory\n");
--		kfree(pwm);
--		return -ENOMEM;
--	}
--
--	pops->pwm_config = twl6030_pwm_config;
--	pops->pwm_enable = twl6030_pwm_enable;
--	pops->pwm_disable = twl6030_pwm_disable;
--	pops->name = &pdev->name;
--	pwm->dev = &pdev->dev;
--	pwm->pwm_id = pdev->id;
--	pwm->pops = pops;
--	ret = pwm_device_register(pwm);
--	if (ret < 0) {
--		dev_err(&pdev->dev, "failed to register pwm device\n");
--		kfree(pwm);
--		kfree(pops);
--		return ret;
--	}
--	platform_set_drvdata(pdev, pwm);
--	/* Configure PWM */
--	val = PWM_CTRL2_DIS_PD | PWM_CTRL2_CURR_02 | PWM_CTRL2_SRC_VAC |
--							PWM_CTRL2_MODE_HW;
--
--	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
--	if (ret < 0) {
--		dev_err(&pdev->dev, "Failed to configure PWM, Error %d\n", ret);
--		return ret;
--	}
--	dev_dbg(&pdev->dev, "pwm probe successful\n");
--	return ret;
--}
--
--static int __devexit twl6030_pwm_remove(struct platform_device *pdev)
--{
--	struct pwm_device *pwm = platform_get_drvdata(pdev);
--
--	pwm_device_unregister(pwm);
--	kfree(pwm->pops);
--	kfree(pwm);
--	dev_dbg(&pdev->dev, "pwm driver removed\n");
--	return 0;
--}
--
--static struct platform_driver twl6030_pwm_driver = {
--	.driver = {
--		.name = "twl6030_pwm",
--		.owner = THIS_MODULE,
--	},
--	.probe = twl6030_pwm_probe,
--	.remove = __devexit_p(twl6030_pwm_remove),
--};
--
--static int __init twl6030_pwm_init(void)
--{
--	return platform_driver_register(&twl6030_pwm_driver);
--}
--
--static void __exit twl6030_pwm_deinit(void)
--{
--	platform_driver_unregister(&twl6030_pwm_driver);
--}
--
--subsys_initcall(twl6030_pwm_init);
--module_exit(twl6030_pwm_deinit);
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index ff8ea55..2c38d4e 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -62,15 +62,6 @@ config ATMEL_PWM
- 	  purposes including software controlled power-efficient backlights
- 	  on LCD displays, motor control, and waveform generation.
+ static struct platform_pwm_backlight_data lpd270_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 1,
+ 	.dft_brightness	= 1,
+ 	.pwm_period_ns	= 78770,
+diff --git a/arch/arm/mach-pxa/magician.c b/arch/arm/mach-pxa/magician.c
+index e81dd0c..bb657a4 100644
+--- a/arch/arm/mach-pxa/magician.c
++++ b/arch/arm/mach-pxa/magician.c
+@@ -382,6 +382,7 @@ static void magician_backlight_exit(struct device *dev)
  
--config AB8500_PWM
--	bool "AB8500 PWM support"
--	depends on AB8500_CORE
--	select HAVE_PWM
--	help
--	  This driver exports functions to enable/disble/config/free Pulse
--	  Width Modulation in the Analog Baseband Chip AB8500.
--	  It is used by led and backlight driver to control the intensity.
--
- config ATMEL_TCLIB
- 	bool "Atmel AT32/AT91 Timer/Counter Library"
- 	depends on (AVR32 || ARCH_AT91)
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 5da82965..21b4761 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -35,5 +35,4 @@ obj-y				+= eeprom/
- obj-y				+= cb710/
- obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
- obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
--obj-$(CONFIG_AB8500_PWM)	+= ab8500-pwm.o
- obj-$(CONFIG_PCH_PHUB)		+= pch_phub.o
-diff --git a/drivers/misc/ab8500-pwm.c b/drivers/misc/ab8500-pwm.c
-deleted file mode 100644
-index d2b23b6..0000000
---- a/drivers/misc/ab8500-pwm.c
-+++ /dev/null
-@@ -1,157 +0,0 @@
--/*
-- * Copyright (C) ST-Ericsson SA 2010
-- *
-- * Author: Arun R Murthy <arun.murthy@stericsson.com>
-- * License terms: GNU General Public License (GPL) version 2
-- */
--#include <linux/err.h>
--#include <linux/platform_device.h>
--#include <linux/slab.h>
--#include <linux/pwm.h>
--#include <linux/mfd/ab8500.h>
--#include <linux/mfd/abx500.h>
--
--/*
-- * PWM Out generators
-- * Bank: 0x10
-- */
--#define AB8500_PWM_OUT_CTRL1_REG	0x60
--#define AB8500_PWM_OUT_CTRL2_REG	0x61
--#define AB8500_PWM_OUT_CTRL7_REG	0x66
--
--/* backlight driver constants */
--#define ENABLE_PWM			1
--#define DISABLE_PWM			0
--
--static LIST_HEAD(pwm_list);
--
--int ab8500_pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
--{
--	int ret = 0;
--	unsigned int higher_val, lower_val;
--	u8 reg;
--
--	/*
--	 * get the first 8 bits that are be written to
--	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
--	 */
--	lower_val = duty_ns & 0x00FF;
--	/*
--	 * get bits [9:10] that are to be written to
--	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
--	 */
--	higher_val = ((duty_ns & 0x0300) >> 8);
--
--	reg = AB8500_PWM_OUT_CTRL1_REG + ((pwm->pwm_id - 1) * 2);
--
--	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
--			reg, (u8)lower_val);
--	if (ret < 0)
--		return ret;
--	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
--			(reg + 1), (u8)higher_val);
--
--	return ret;
--}
--
--int ab8500_pwm_enable(struct pwm_device *pwm)
--{
--	int ret;
--
--	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
--				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
--				1 << (pwm->pwm_id-1), 1 << (pwm->pwm_id-1));
--	if (ret < 0)
--		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
--							pwm->label, ret);
--	return ret;
--}
--
--int ab8500_pwm_disable(struct pwm_device *pwm)
--{
--	int ret;
--
--	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
--				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
--				1 << (pwm->pwm_id-1), DISABLE_PWM);
--	if (ret < 0)
--		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
--							pwm->label, ret);
--	return ret;
--}
--
--static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
--{
--	int ret = 0;
--	struct pwm_ops *pops;
--	struct pwm_device *pwm_dev;
--	/*
--	 * Nothing to be done in probe, this is required to get the
--	 * device which is required for ab8500 read and write
--	 */
--	pops = kzalloc(sizeof(struct pwm_ops), GFP_KERNEL);
--	if (pops == NULL) {
--		dev_err(&pdev->dev, "failed to allocate memory\n");
--		return -ENOMEM;
--	}
--	pwm_dev = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
--	if (pwm_dev == NULL) {
--		dev_err(&pdev->dev, "failed to allocate memory\n");
--		kfree(pops);
--		return -ENOMEM;
--	}
--	pops->pwm_config = ab8500_pwm_config;
--	pops->pwm_enable = ab8500_pwm_enable;
--	pops->pwm_disable = ab8500_pwm_disable;
--	pops->name = "ab8500";
--	pwm_dev->dev = &pdev->dev;
--	pwm_dev->pwm_id = pdev->id;
--	pwm_dev->pops = pops;
--	ret = pwm_device_register(pwm_dev);
--	if (ret < 0) {
--		dev_err(&pdev->dev, "failed to register pwm device\n");
--		kfree(pwm_dev);
--		kfree(pops);
--		return ret;
--	}
--	platform_set_drvdata(pdev, pwm_dev);
--	dev_dbg(&pdev->dev, "pwm probe successful\n");
--	return ret;
--}
--
--static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
--{
--	struct pwm_device *pwm_dev = platform_get_drvdata(pdev);
--
--	pwm_device_unregister(pwm_dev);
--	dev_dbg(&pdev->dev, "pwm driver removed\n");
--	kfree(pwm_dev->pops);
--	kfree(pwm_dev);
--	return 0;
--}
--
--static struct platform_driver ab8500_pwm_driver = {
--	.driver = {
--		.name = "ab8500-pwm",
--		.owner = THIS_MODULE,
--	},
--	.probe = ab8500_pwm_probe,
--	.remove = __devexit_p(ab8500_pwm_remove),
--};
--
--static int __init ab8500_pwm_init(void)
--{
--	return platform_driver_register(&ab8500_pwm_driver);
--}
--
--static void __exit ab8500_pwm_exit(void)
--{
--	platform_driver_unregister(&ab8500_pwm_driver);
--}
--
--subsys_initcall(ab8500_pwm_init);
--module_exit(ab8500_pwm_exit);
--MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
--MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
--MODULE_ALIAS("AB8500 PWM driver");
--MODULE_LICENSE("GPL v2");
-diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-index 5483b7f..e4ef199 100644
---- a/drivers/pwm/Kconfig
-+++ b/drivers/pwm/Kconfig
-@@ -16,4 +16,22 @@ menuconfig PWM_DEVICES
+ static struct platform_pwm_backlight_data backlight_data = {
+ 	.pwm_id         = 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness = 272,
+ 	.dft_brightness = 100,
+ 	.pwm_period_ns  = 30923,
+diff --git a/arch/arm/mach-pxa/mainstone.c b/arch/arm/mach-pxa/mainstone.c
+index 5543c64..cbd359c 100644
+--- a/arch/arm/mach-pxa/mainstone.c
++++ b/arch/arm/mach-pxa/mainstone.c
+@@ -342,6 +342,7 @@ static struct platform_device mst_flash_device[2] = {
+ #if defined(CONFIG_FB_PXA) || defined(CONFIG_FB_PXA_MODULE)
+ static struct platform_pwm_backlight_data mainstone_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 1023,
+ 	.dft_brightness	= 1023,
+ 	.pwm_period_ns	= 78770,
+diff --git a/arch/arm/mach-pxa/mioa701.c b/arch/arm/mach-pxa/mioa701.c
+index dc66942..e442088 100644
+--- a/arch/arm/mach-pxa/mioa701.c
++++ b/arch/arm/mach-pxa/mioa701.c
+@@ -224,6 +224,7 @@ static void mio_gpio_free(struct gpio_ress *gpios, int size)
+ /* LCD Screen and Backlight */
+ static struct platform_pwm_backlight_data mioa701_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 100,
+ 	.dft_brightness	= 50,
+ 	.pwm_period_ns	= 4000 * 1024,	/* Fl = 250kHz */
+diff --git a/arch/arm/mach-pxa/palm27x.c b/arch/arm/mach-pxa/palm27x.c
+index 77ad6d3..46677a4 100644
+--- a/arch/arm/mach-pxa/palm27x.c
++++ b/arch/arm/mach-pxa/palm27x.c
+@@ -321,6 +321,7 @@ static void palm27x_backlight_exit(struct device *dev)
  
- if PWM_DEVICES
+ static struct platform_pwm_backlight_data palm27x_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 0xfe,
+ 	.dft_brightness	= 0x7e,
+ 	.pwm_period_ns	= 3500,
+diff --git a/arch/arm/mach-pxa/palmtc.c b/arch/arm/mach-pxa/palmtc.c
+index ce1104d..385a0b5 100644
+--- a/arch/arm/mach-pxa/palmtc.c
++++ b/arch/arm/mach-pxa/palmtc.c
+@@ -180,6 +180,7 @@ static void palmtc_backlight_exit(struct device *dev)
  
-+config AB8500_PWM
-+	bool "AB8500 PWM support"
-+	depends on AB8500_CORE
-+	select HAVE_PWM
-+	help
-+	  This driver exports functions to enable/disble/config/free Pulse
-+	  Width Modulation in the Analog Baseband Chip AB8500.
-+	  It is used by led and backlight driver to control the intensity.
-+
-+config TWL6030_PWM
-+	tristate "TWL6030 PWM (Pulse Width Modulator) Support"
-+	depends on TWL4030_CORE
-+	select HAVE_PWM
-+	default n
-+	help
-+	  Say yes here if you want support for TWL6030 PWM.
-+	  This is used to control charging LED brightness.
-+
- endif # PWM_DEVICES
-diff --git a/drivers/pwm/Makefile b/drivers/pwm/Makefile
-index 552f969..f35afb4 100644
---- a/drivers/pwm/Makefile
-+++ b/drivers/pwm/Makefile
-@@ -1 +1,4 @@
- obj-$(CONFIG_PWM_DEVICES)	+= pwm-core.o
-+
-+obj-$(CONFIG_AB8500_PWM)	+= pwm-ab8500.o
-+obj-$(CONFIG_TWL6030_PWM)	+= pwm-twl6030.o
-diff --git a/drivers/pwm/pwm-ab8500.c b/drivers/pwm/pwm-ab8500.c
-new file mode 100644
-index 0000000..d2b23b6
---- /dev/null
-+++ b/drivers/pwm/pwm-ab8500.c
-@@ -0,0 +1,157 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * Author: Arun R Murthy <arun.murthy@stericsson.com>
-+ * License terms: GNU General Public License (GPL) version 2
-+ */
-+#include <linux/err.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/pwm.h>
-+#include <linux/mfd/ab8500.h>
-+#include <linux/mfd/abx500.h>
-+
-+/*
-+ * PWM Out generators
-+ * Bank: 0x10
-+ */
-+#define AB8500_PWM_OUT_CTRL1_REG	0x60
-+#define AB8500_PWM_OUT_CTRL2_REG	0x61
-+#define AB8500_PWM_OUT_CTRL7_REG	0x66
-+
-+/* backlight driver constants */
-+#define ENABLE_PWM			1
-+#define DISABLE_PWM			0
-+
-+static LIST_HEAD(pwm_list);
-+
-+int ab8500_pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	int ret = 0;
-+	unsigned int higher_val, lower_val;
-+	u8 reg;
-+
-+	/*
-+	 * get the first 8 bits that are be written to
-+	 * AB8500_PWM_OUT_CTRL1_REG[0:7]
-+	 */
-+	lower_val = duty_ns & 0x00FF;
-+	/*
-+	 * get bits [9:10] that are to be written to
-+	 * AB8500_PWM_OUT_CTRL2_REG[0:1]
-+	 */
-+	higher_val = ((duty_ns & 0x0300) >> 8);
-+
-+	reg = AB8500_PWM_OUT_CTRL1_REG + ((pwm->pwm_id - 1) * 2);
-+
-+	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
-+			reg, (u8)lower_val);
-+	if (ret < 0)
-+		return ret;
-+	ret = abx500_set_register_interruptible(pwm->dev, AB8500_MISC,
-+			(reg + 1), (u8)higher_val);
-+
-+	return ret;
-+}
-+
-+int ab8500_pwm_enable(struct pwm_device *pwm)
-+{
-+	int ret;
-+
-+	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
-+				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
-+				1 << (pwm->pwm_id-1), 1 << (pwm->pwm_id-1));
-+	if (ret < 0)
-+		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
-+							pwm->label, ret);
-+	return ret;
-+}
-+
-+int ab8500_pwm_disable(struct pwm_device *pwm)
-+{
-+	int ret;
-+
-+	ret = abx500_mask_and_set_register_interruptible(pwm->dev,
-+				AB8500_MISC, AB8500_PWM_OUT_CTRL7_REG,
-+				1 << (pwm->pwm_id-1), DISABLE_PWM);
-+	if (ret < 0)
-+		dev_err(pwm->dev, "%s: Failed to disable PWM, Error %d\n",
-+							pwm->label, ret);
-+	return ret;
-+}
-+
-+static int __devinit ab8500_pwm_probe(struct platform_device *pdev)
-+{
-+	int ret = 0;
-+	struct pwm_ops *pops;
-+	struct pwm_device *pwm_dev;
-+	/*
-+	 * Nothing to be done in probe, this is required to get the
-+	 * device which is required for ab8500 read and write
-+	 */
-+	pops = kzalloc(sizeof(struct pwm_ops), GFP_KERNEL);
-+	if (pops == NULL) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+	pwm_dev = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-+	if (pwm_dev == NULL) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		kfree(pops);
-+		return -ENOMEM;
-+	}
-+	pops->pwm_config = ab8500_pwm_config;
-+	pops->pwm_enable = ab8500_pwm_enable;
-+	pops->pwm_disable = ab8500_pwm_disable;
-+	pops->name = "ab8500";
-+	pwm_dev->dev = &pdev->dev;
-+	pwm_dev->pwm_id = pdev->id;
-+	pwm_dev->pops = pops;
-+	ret = pwm_device_register(pwm_dev);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to register pwm device\n");
-+		kfree(pwm_dev);
-+		kfree(pops);
-+		return ret;
-+	}
-+	platform_set_drvdata(pdev, pwm_dev);
-+	dev_dbg(&pdev->dev, "pwm probe successful\n");
-+	return ret;
-+}
-+
-+static int __devexit ab8500_pwm_remove(struct platform_device *pdev)
-+{
-+	struct pwm_device *pwm_dev = platform_get_drvdata(pdev);
-+
-+	pwm_device_unregister(pwm_dev);
-+	dev_dbg(&pdev->dev, "pwm driver removed\n");
-+	kfree(pwm_dev->pops);
-+	kfree(pwm_dev);
-+	return 0;
-+}
-+
-+static struct platform_driver ab8500_pwm_driver = {
-+	.driver = {
-+		.name = "ab8500-pwm",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = ab8500_pwm_probe,
-+	.remove = __devexit_p(ab8500_pwm_remove),
-+};
-+
-+static int __init ab8500_pwm_init(void)
-+{
-+	return platform_driver_register(&ab8500_pwm_driver);
-+}
-+
-+static void __exit ab8500_pwm_exit(void)
-+{
-+	platform_driver_unregister(&ab8500_pwm_driver);
-+}
-+
-+subsys_initcall(ab8500_pwm_init);
-+module_exit(ab8500_pwm_exit);
-+MODULE_AUTHOR("Arun MURTHY <arun.murthy@stericsson.com>");
-+MODULE_DESCRIPTION("AB8500 Pulse Width Modulation Driver");
-+MODULE_ALIAS("AB8500 PWM driver");
-+MODULE_LICENSE("GPL v2");
-diff --git a/drivers/pwm/pwm-twl6040.c b/drivers/pwm/pwm-twl6040.c
-new file mode 100644
-index 0000000..b78324b
---- /dev/null
-+++ b/drivers/pwm/pwm-twl6040.c
-@@ -0,0 +1,196 @@
-+/*
-+ * twl6030_pwm.c
-+ * Driver for PHOENIX (TWL6030) Pulse Width Modulator
-+ *
-+ * Copyright (C) 2010 Texas Instruments
-+ * Author: Hemanth V <hemanthv@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/pwm.h>
-+#include <linux/err.h>
-+#include <linux/i2c/twl.h>
-+
-+#define LED_PWM_CTRL1	0xF4
-+#define LED_PWM_CTRL2	0xF5
-+
-+/* Max value for CTRL1 register */
-+#define PWM_CTRL1_MAX	255
-+
-+/* Pull down disable */
-+#define PWM_CTRL2_DIS_PD	(1 << 6)
-+
-+/* Current control 2.5 milli Amps */
-+#define PWM_CTRL2_CURR_02	(2 << 4)
-+
-+/* LED supply source */
-+#define PWM_CTRL2_SRC_VAC	(1 << 2)
-+
-+/* LED modes */
-+#define PWM_CTRL2_MODE_HW	(0 << 0)
-+#define PWM_CTRL2_MODE_SW	(1 << 0)
-+#define PWM_CTRL2_MODE_DIS	(2 << 0)
-+
-+#define PWM_CTRL2_MODE_MASK	0x3
-+
-+int twl6030_pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	u8 duty_cycle;
-+	int ret = 0;
-+
-+	if (pwm == NULL || period_ns == 0 || duty_ns > period_ns)
-+		return -EINVAL;
-+
-+	duty_cycle = (duty_ns * PWM_CTRL1_MAX) / period_ns;
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, duty_cycle, LED_PWM_CTRL1);
-+
-+	if (ret < 0) {
-+		pr_err("%s: Failed to configure PWM, Error %d\n",
-+			pwm->label, ret);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+int twl6030_pwm_enable(struct pwm_device *pwm)
-+{
-+	u8 val;
-+	int ret = 0;
-+
-+	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
-+	if (ret < 0) {
-+		pr_err("%s: Failed to enable PWM, Error %d\n", pwm->label, ret);
-+		return ret;
-+	}
-+
-+	/* Change mode to software control */
-+	val &= ~PWM_CTRL2_MODE_MASK;
-+	val |= PWM_CTRL2_MODE_SW;
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
-+	if (ret < 0) {
-+		pr_err("%s: Failed to enable PWM, Error %d\n", pwm->label, ret);
-+		return ret;
-+	}
-+
-+	twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
-+	return 0;
-+}
-+
-+int twl6030_pwm_disable(struct pwm_device *pwm)
-+{
-+	u8 val;
-+	int ret = 0;
-+
-+	ret = twl_i2c_read_u8(TWL6030_MODULE_ID1, &val, LED_PWM_CTRL2);
-+	if (ret < 0) {
-+		pr_err("%s: Failed to disable PWM, Error %d\n",
-+			pwm->label, ret);
-+		return ret;
-+	}
-+
-+	val &= ~PWM_CTRL2_MODE_MASK;
-+	val |= PWM_CTRL2_MODE_HW;
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
-+	if (ret < 0) {
-+		pr_err("%s: Failed to disable PWM, Error %d\n",
-+			pwm->label, ret);
-+	}
-+	return ret;
-+}
-+
-+static int __devinit twl6030_pwm_probe(struct platform_device *pdev)
-+{
-+	struct pwm_device *pwm;
-+	struct pwm_ops *pops;
-+	int ret;
-+	u8 val;
-+
-+	pwm = kzalloc(sizeof(struct pwm_device), GFP_KERNEL);
-+	if (pwm == NULL) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		return -ENOMEM;
-+	}
-+	pops = kzalloc(sizeof(struct pwm_ops), GFP_KERNEL);
-+	if (pops == NULL) {
-+		dev_err(&pdev->dev, "failed to allocate memory\n");
-+		kfree(pwm);
-+		return -ENOMEM;
-+	}
-+
-+	pops->pwm_config = twl6030_pwm_config;
-+	pops->pwm_enable = twl6030_pwm_enable;
-+	pops->pwm_disable = twl6030_pwm_disable;
-+	pops->name = &pdev->name;
-+	pwm->dev = &pdev->dev;
-+	pwm->pwm_id = pdev->id;
-+	pwm->pops = pops;
-+	ret = pwm_device_register(pwm);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "failed to register pwm device\n");
-+		kfree(pwm);
-+		kfree(pops);
-+		return ret;
-+	}
-+	platform_set_drvdata(pdev, pwm);
-+	/* Configure PWM */
-+	val = PWM_CTRL2_DIS_PD | PWM_CTRL2_CURR_02 | PWM_CTRL2_SRC_VAC |
-+							PWM_CTRL2_MODE_HW;
-+
-+	ret = twl_i2c_write_u8(TWL6030_MODULE_ID1, val, LED_PWM_CTRL2);
-+	if (ret < 0) {
-+		dev_err(&pdev->dev, "Failed to configure PWM, Error %d\n", ret);
-+		return ret;
-+	}
-+	dev_dbg(&pdev->dev, "pwm probe successful\n");
-+	return ret;
-+}
-+
-+static int __devexit twl6030_pwm_remove(struct platform_device *pdev)
-+{
-+	struct pwm_device *pwm = platform_get_drvdata(pdev);
-+
-+	pwm_device_unregister(pwm);
-+	kfree(pwm->pops);
-+	kfree(pwm);
-+	dev_dbg(&pdev->dev, "pwm driver removed\n");
-+	return 0;
-+}
-+
-+static struct platform_driver twl6030_pwm_driver = {
-+	.driver = {
-+		.name = "twl6030_pwm",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = twl6030_pwm_probe,
-+	.remove = __devexit_p(twl6030_pwm_remove),
-+};
-+
-+static int __init twl6030_pwm_init(void)
-+{
-+	return platform_driver_register(&twl6030_pwm_driver);
-+}
-+
-+static void __exit twl6030_pwm_deinit(void)
-+{
-+	platform_driver_unregister(&twl6030_pwm_driver);
-+}
-+
-+subsys_initcall(twl6030_pwm_init);
-+module_exit(twl6030_pwm_deinit);
+ static struct platform_pwm_backlight_data palmtc_backlight_data = {
+ 	.pwm_id		= 1,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= PALMTC_MAX_INTENSITY,
+ 	.dft_brightness	= PALMTC_MAX_INTENSITY,
+ 	.pwm_period_ns	= PALMTC_PERIOD_NS,
+diff --git a/arch/arm/mach-pxa/palmte2.c b/arch/arm/mach-pxa/palmte2.c
+index 93c11a0..b7e95f4 100644
+--- a/arch/arm/mach-pxa/palmte2.c
++++ b/arch/arm/mach-pxa/palmte2.c
+@@ -177,6 +177,7 @@ static void palmte2_backlight_exit(struct device *dev)
+ 
+ static struct platform_pwm_backlight_data palmte2_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= PALMTE2_MAX_INTENSITY,
+ 	.dft_brightness	= PALMTE2_MAX_INTENSITY,
+ 	.pwm_period_ns	= PALMTE2_PERIOD_NS,
+diff --git a/arch/arm/mach-pxa/pcm990-baseboard.c b/arch/arm/mach-pxa/pcm990-baseboard.c
+index f56ae10..29c7e88 100644
+--- a/arch/arm/mach-pxa/pcm990-baseboard.c
++++ b/arch/arm/mach-pxa/pcm990-baseboard.c
+@@ -138,6 +138,7 @@ static struct pxafb_mach_info pcm990_fbinfo __initdata = {
+ 
+ static struct platform_pwm_backlight_data pcm990_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 1023,
+ 	.dft_brightness	= 1023,
+ 	.pwm_period_ns	= 78770,
+diff --git a/arch/arm/mach-pxa/raumfeld.c b/arch/arm/mach-pxa/raumfeld.c
+index 67e04f4..98dc2e3 100644
+--- a/arch/arm/mach-pxa/raumfeld.c
++++ b/arch/arm/mach-pxa/raumfeld.c
+@@ -535,6 +535,7 @@ static void __init raumfeld_w1_init(void)
+ /* PWM controlled backlight */
+ static struct platform_pwm_backlight_data raumfeld_pwm_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 100,
+ 	.dft_brightness	= 100,
+ 	/* 10000 ns = 10 ms ^= 100 kHz */
+diff --git a/arch/arm/mach-pxa/tavorevb.c b/arch/arm/mach-pxa/tavorevb.c
+index f02dcb5..3164de8 100644
+--- a/arch/arm/mach-pxa/tavorevb.c
++++ b/arch/arm/mach-pxa/tavorevb.c
+@@ -168,6 +168,7 @@ static struct platform_pwm_backlight_data tavorevb_backlight_data[] = {
+ 	[0] = {
+ 		/* primary backlight */
+ 		.pwm_id		= 2,
++		.name		= "pxa25x-pwm",
+ 		.max_brightness	= 100,
+ 		.dft_brightness	= 100,
+ 		.pwm_period_ns	= 100000,
+@@ -175,6 +176,7 @@ static struct platform_pwm_backlight_data tavorevb_backlight_data[] = {
+ 	[1] = {
+ 		/* secondary backlight */
+ 		.pwm_id		= 0,
++		.name		= "pxa25x-pwm",
+ 		.max_brightness	= 100,
+ 		.dft_brightness	= 100,
+ 		.pwm_period_ns	= 100000,
+diff --git a/arch/arm/mach-pxa/viper.c b/arch/arm/mach-pxa/viper.c
+index e90114a..fdb768c 100644
+--- a/arch/arm/mach-pxa/viper.c
++++ b/arch/arm/mach-pxa/viper.c
+@@ -397,6 +397,7 @@ static void viper_backlight_exit(struct device *dev)
+ 
+ static struct platform_pwm_backlight_data viper_backlight_data = {
+ 	.pwm_id		= 0,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 100,
+ 	.dft_brightness	= 100,
+ 	.pwm_period_ns	= 1000000,
+diff --git a/arch/arm/mach-pxa/z2.c b/arch/arm/mach-pxa/z2.c
+index f0d0228..bb3d821 100644
+--- a/arch/arm/mach-pxa/z2.c
++++ b/arch/arm/mach-pxa/z2.c
+@@ -204,6 +204,7 @@ static struct platform_pwm_backlight_data z2_backlight_data[] = {
+ 	[0] = {
+ 		/* Keypad Backlight */
+ 		.pwm_id		= 1,
++		.name		= "pxa25x-pwm",
+ 		.max_brightness	= 1023,
+ 		.dft_brightness	= 512,
+ 		.pwm_period_ns	= 1260320,
+@@ -211,6 +212,7 @@ static struct platform_pwm_backlight_data z2_backlight_data[] = {
+ 	[1] = {
+ 		/* LCD Backlight */
+ 		.pwm_id		= 2,
++		.name		= "pxa25x-pwm",
+ 		.max_brightness	= 1023,
+ 		.dft_brightness	= 512,
+ 		.pwm_period_ns	= 1260320,
+diff --git a/arch/arm/mach-pxa/zylonite.c b/arch/arm/mach-pxa/zylonite.c
+index 5ba9d99..29492bf 100644
+--- a/arch/arm/mach-pxa/zylonite.c
++++ b/arch/arm/mach-pxa/zylonite.c
+@@ -122,6 +122,7 @@ static inline void zylonite_init_leds(void) {}
+ #if defined(CONFIG_FB_PXA) || defined(CONFIG_FB_PXA_MODULE)
+ static struct platform_pwm_backlight_data zylonite_backlight_data = {
+ 	.pwm_id		= 3,
++	.name		= "pxa25x-pwm",
+ 	.max_brightness	= 100,
+ 	.dft_brightness	= 100,
+ 	.pwm_period_ns	= 10000,
+diff --git a/arch/arm/mach-s3c2410/mach-h1940.c b/arch/arm/mach-s3c2410/mach-h1940.c
+index 3ba3bab..357342f 100644
+--- a/arch/arm/mach-s3c2410/mach-h1940.c
++++ b/arch/arm/mach-s3c2410/mach-h1940.c
+@@ -224,6 +224,7 @@ static void h1940_backlight_exit(struct device *dev)
+ 
+ static struct platform_pwm_backlight_data backlight_data = {
+ 	.pwm_id         = 0,
++	.name		= "s3c24xx-pwm",
+ 	.max_brightness = 100,
+ 	.dft_brightness = 50,
+ 	/* tcnt = 0x31 */
+diff --git a/arch/arm/mach-s3c2440/mach-rx1950.c b/arch/arm/mach-s3c2440/mach-rx1950.c
+index 142d1f9..6d993de 100644
+--- a/arch/arm/mach-s3c2440/mach-rx1950.c
++++ b/arch/arm/mach-s3c2440/mach-rx1950.c
+@@ -291,6 +291,7 @@ static int rx1950_backlight_notify(struct device *dev, int brightness)
+ 
+ static struct platform_pwm_backlight_data rx1950_backlight_data = {
+ 	.pwm_id = 0,
++	.name = "s3c24xx-pwm",
+ 	.max_brightness = 24,
+ 	.dft_brightness = 4,
+ 	.pwm_period_ns = 48000,
+diff --git a/arch/arm/mach-s3c64xx/mach-hmt.c b/arch/arm/mach-s3c64xx/mach-hmt.c
+index fba9022..14e9011 100644
+--- a/arch/arm/mach-s3c64xx/mach-hmt.c
++++ b/arch/arm/mach-s3c64xx/mach-hmt.c
+@@ -109,6 +109,7 @@ static void hmt_bl_exit(struct device *dev)
+ 
+ static struct platform_pwm_backlight_data hmt_backlight_data = {
+ 	.pwm_id		= 1,
++	.name		= "s3c24xx-pwm",
+ 	.max_brightness	= 100 * 256,
+ 	.dft_brightness	= 40 * 256,
+ 	.pwm_period_ns	= 1000000000 / (100 * 256 * 20),
+diff --git a/arch/arm/mach-s3c64xx/mach-smartq.c b/arch/arm/mach-s3c64xx/mach-smartq.c
+index cb1ebeb..20999d5 100644
+--- a/arch/arm/mach-s3c64xx/mach-smartq.c
++++ b/arch/arm/mach-s3c64xx/mach-smartq.c
+@@ -145,6 +145,7 @@ static int smartq_bl_init(struct device *dev)
+ 
+ static struct platform_pwm_backlight_data smartq_backlight_data = {
+ 	.pwm_id		= 1,
++	.name		= "s3c24xx-pwm",
+ 	.max_brightness	= 1000,
+ 	.dft_brightness	= 600,
+ 	.pwm_period_ns	= 1000000000 / (1000 * 20),
 -- 
 1.7.2.dirty
 
