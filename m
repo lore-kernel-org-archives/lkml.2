@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755278Ab0JEQFO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:05:14 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:52932 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750818Ab0JEQFN (ORCPT
+	id S1755340Ab0JEQGk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:06:40 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:40817 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755068Ab0JEQGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:05:13 -0400
-X-Greylist: delayed 1744 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 12:05:13 EDT
-Date: Tue, 5 Oct 2010 11:36:04 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-        hch@infradead.org, lnxninja@linux.vnet.ibm.com, axboe@kernel.dk,
-        pbadari@us.ibm.com, Yuri L Volobuev <volobuev@us.ibm.com>
-Subject: Re: [RFC][PATCH] try not to let dirty inodes fester
-Message-ID: <20101005153604.GA25228@lst.de>
-References: <20101001191449.0AA0E233@kernel.beaverton.ibm.com>
- <20101002113238.GF4681@dastard>
- <1286292345.9970.4231.camel@nimitz>
+	Tue, 5 Oct 2010 12:06:38 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [RESEND] [PATCH] Input: add appleir USB driver
+Date: Tue, 5 Oct 2010 18:07:36 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc5-12-desktop+; KDE/4.4.4; x86_64; ; )
+Cc: Bastien Nocera <hadess@hadess.net>,
+        "linux-input" <linux-input@vger.kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <1285844276.26405.26.camel@cookie.hadess.net> <201010050818.35118.oliver@neukum.org> <20101005155552.GB19730@core.coreip.homeip.net>
+In-Reply-To: <20101005155552.GB19730@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286292345.9970.4231.camel@nimitz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010051807.36551.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 08:25:45AM -0700, Dave Hansen wrote:
-> It's GPFS, which is a binary blob to me, unfortunately.
+Am Dienstag, 5. Oktober 2010, 17:55:52 schrieb Dmitry Torokhov:
+> > Yes, but based on sane timing. From the time stamps user space
+> > would conclude that the key had been pressed at an unknown time
+> > before open and released at the time the event indicates. Possibly
+> > it would compute that the key had been held for at least hours.
+> > 
+> 
+> I do not understand. If a client never seen the "press" event and only
+> saw "release" event it can't make any assumptions about timing. Press
+> could be a millisecond ago or an hour ago, it just does not know. And
+> such scenario can easily happen if the client is second to open the
+> device.
 
-Let them fix their junk themselves then.  I'm rather annoyed that you
-actually are brave enough to annoy us with dealing with this.  Seriously,
-if just about IBMer is now a GPFS henchman in disguise I might as well
-stop helping IBM at all.  And in FS land it really looks like that recently.
+As soon as you open a device you see key presses. If you see a release
+without a press, the press must have happened before you opened.
+So if you know when you opened and when a key is released, you'll
+have a lower limit on how long the key must have been held down.
 
-What about contributing to the in-kernel cluster filesystems instead of
-making our lives a pain for your personal gain?
-
+	Regards
+		Oliver
