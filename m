@@ -1,83 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab0JEV2V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 17:28:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50092 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755675Ab0JEV2U (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 17:28:20 -0400
-Date: Tue, 5 Oct 2010 14:27:48 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Namhyung Kim <namhyung@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/12] vmstat: include compaction.h when
- CONFIG_COMPACTION
-Message-Id: <20101005142748.37f186da.akpm@linux-foundation.org>
-In-Reply-To: <1285818621-29890-13-git-send-email-namhyung@gmail.com>
-References: <1285818621-29890-1-git-send-email-namhyung@gmail.com>
-	<1285818621-29890-13-git-send-email-namhyung@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S1755632Ab0JEVfW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 17:35:22 -0400
+Received: from mail.perches.com ([173.55.12.10]:2674 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753098Ab0JEVfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 17:35:21 -0400
+Subject: Re: [PATCH v2] iio: light: Adding driver for ISL29018 ALS
+From: Joe Perches <joe@perches.com>
+To: rklein@nvidia.com
+Cc: jic23@cam.ac.uk, achew@nvidia.com, olof@lixom.net,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, ldewangan@nvidia.com
+In-Reply-To: <1286313561-6456-1-git-send-email-rklein@nvidia.com>
+References: <1286313561-6456-1-git-send-email-rklein@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Oct 2010 14:35:17 -0700
+Message-ID: <1286314517.2156.50.camel@Joe-Laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 2010-10-05 at 14:19 -0700, rklein@nvidia.com wrote:
+> Adding support for the ISL 29018 ambient light and proximity sensor.
 
-Some of these patches do make the code significantly more complex to
-read and follow.  Boy, I hope it's all useful!
+Trivial comments below.
 
-On Thu, 30 Sep 2010 12:50:21 +0900
-Namhyung Kim <namhyung@gmail.com> wrote:
+> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
+[]
+> +static int isl29018_set_range(struct i2c_client *client, unsigned long range,
+> +		unsigned int *new_range)
+> +{
+> +	unsigned long supp_ranges[] = {1000, 4000, 16000, 64000};
 
-> This removes following warning from sparse:
-> 
->  mm/vmstat.c:466:5: warning: symbol 'fragmentation_index' was not declared. Should it be static?
-> 
-> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-> ---
->  mm/vmstat.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmstat.c b/mm/vmstat.c
-> index 355a9e6..30054ea 100644
-> --- a/mm/vmstat.c
-> +++ b/mm/vmstat.c
-> @@ -394,6 +394,8 @@ void zone_statistics(struct zone *preferred_zone, struct zone *z)
->  #endif
->  
->  #ifdef CONFIG_COMPACTION
-> +#include <linux/compaction.h>
+static const
+
+> +static int isl29018_set_resolution(struct i2c_client *client,
+> +			unsigned long adcbit, unsigned int *conf_adc_bit)
+> +{
+> +	unsigned long supp_adcbit[] = {16, 12, 8, 4};
+
+here too
+
+> +static int isl29018_chip_init(struct i2c_client *client)
+> +{
+> +	struct isl29018_chip *chip = i2c_get_clientdata(client);
+> +	int status;
+> +	int i;
+> +	int new_adc_bit;
+> +	unsigned int new_range;
 > +
->  struct contig_page_info {
->  	unsigned long free_pages;
->  	unsigned long free_blocks_total;
+> +	for (i = 0; i < ARRAY_SIZE(chip->reg_cache); i++)
+> +		chip->reg_cache[i] = 0;
 
-This isn't a good idea: there's a good chance that someone will later
-add a #include <linux/compaction.h> at the top of the file to support
-future changes.  So we end up including it twice.
+memset?
 
-So I assume the below will work OK??
-
---- a/mm/vmstat.c~vmstat-include-compactionh-when-config_compaction-fix
-+++ a/mm/vmstat.c
-@@ -18,6 +18,7 @@
- #include <linux/sched.h>
- #include <linux/math64.h>
- #include <linux/writeback.h>
-+#include <linux/compaction.h>
- 
- #ifdef CONFIG_VM_EVENT_COUNTERS
- DEFINE_PER_CPU(struct vm_event_state, vm_event_states) = {{0}};
-@@ -395,7 +396,6 @@ void zone_statistics(struct zone *prefer
- #endif
- 
- #ifdef CONFIG_COMPACTION
--#include <linux/compaction.h>
- 
- struct contig_page_info {
- 	unsigned long free_pages;
-_
 
