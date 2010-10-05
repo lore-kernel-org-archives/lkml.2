@@ -1,208 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab0JEXQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 19:16:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31821 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756284Ab0JEXQT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 19:16:19 -0400
-Message-ID: <4CABB183.1040607@kernel.org>
-Date: Tue, 05 Oct 2010 16:15:15 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	id S1757732Ab0JEXQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 19:16:29 -0400
+Received: from mga03.intel.com ([143.182.124.21]:57405 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757595Ab0JEXQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 19:16:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,287,1283756400"; 
+   d="scan'208";a="332607791"
+Message-ID: <4CABB1B9.4080002@intel.com>
+Date: Tue, 05 Oct 2010 16:16:09 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>, Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 4/4] x86, mm, memblock, 32bit: Make add_highpages honor
- early reserved ranges
-References: <4CAA4BD5.4020505@kernel.org> <4CAA4DF9.9060205@kernel.org> <4CABAB9A.4060007@zytor.com>
-In-Reply-To: <4CABAB9A.4060007@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/4] dmaengine: Add Freescale i.MX1/21/27 DMA driver
+References: <1285854995-6569-1-git-send-email-s.hauer@pengutronix.de> <1285854995-6569-5-git-send-email-s.hauer@pengutronix.de>
+In-Reply-To: <1285854995-6569-5-git-send-email-s.hauer@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2010 03:50 PM, H. Peter Anvin wrote:
-> On 10/04/2010 02:58 PM, Yinghai Lu wrote:
->>  
->> +int __init get_free_all_memory_range(struct range **rangep, int nodeid)
->> +{
->> +	unsigned long end_pfn = -1ULL;
->> +
-> 
-> Uh... I really hope I don't have to explain what's wrong with that...
+On 9/30/2010 6:56 AM, Sascha Hauer wrote:
+> This driver is currently implemented as a user to the old i.MX
+> DMA API. This allows us to convert each user of the old API to
+> the dmaengine API one by one. Once this is done the old DMA
+> driver can be merged into the i.MX dmaengine driver.
+>
+> Signed-off-by: Sascha Hauer<s.hauer@pengutronix.de>
+> ---
+>   drivers/dma/Kconfig   |    8 +
+>   drivers/dma/Makefile  |    1 +
+>   drivers/dma/imx-dma.c |  426 +++++++++++++++++++++++++++++++++++++++++++++++++
+>   3 files changed, 435 insertions(+), 0 deletions(-)
+>   create mode 100644 drivers/dma/imx-dma.c
+[..]
+> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
+> new file mode 100644
+> index 0000000..6ef82ba
+> --- /dev/null
+> +++ b/drivers/dma/imx-dma.c
+> @@ -0,0 +1,426 @@
+> +/*
+> + * drivers/dma/imx-dma.c
+> + *
+> + * This file contains a driver for the Freescale i.MX DMA engine
+> + * found on i.MX1/21/27
+> + *
+> + * Copyright 2010 Sascha Hauer, Pengutronix<s.hauer@pengutronix.de>
+> + *
+> + * The code contained herein is licensed under the GNU General Public
+> + * License. You may obtain a copy of the GNU General Public License
+> + * Version 2 or later at the following locations:
+> + *
+> + * http://www.opensource.org/licenses/gpl-license.html
+> + * http://www.gnu.org/copyleft/gpl.html
+> + */
+> +#include<linux/init.h>
+> +#include<linux/types.h>
+> +#include<linux/mm.h>
+> +#include<linux/interrupt.h>
+> +#include<linux/spinlock.h>
+> +#include<linux/device.h>
+> +#include<linux/dma-mapping.h>
+> +#include<linux/slab.h>
+> +#include<linux/platform_device.h>
+> +#include<linux/dmaengine.h>
+> +
+> +#include<asm/irq.h>
+> +#include<mach/dma-v1.h>
+> +#include<mach/hardware.h>
+> +
+> +struct imxdma_channel {
+> +       struct imxdma_engine            *imxdma;
+> +       unsigned int                    channel;
+> +       unsigned int                    imxdma_channel;
+> +
+> +       enum dma_data_direction         direction;
 
-sorry for that.
+Why does the channel have a direction isn't that a function of the 
+transaction?  It's also unused.
 
-[PATCH -v2] x86, mm, memblock, 32bit: Make add_highpages honor early reserved ranges
+> +       enum dma_slave_buswidth         word_size;
+> +       dma_addr_t                      bd_phys;
 
-Originally the only early reserved range that is overlapped with high pages :
- "KVA RAM", but We do remove them from active ranges.
+unused?
 
-It turns out xen could have that kind of overlapping to support memory bollaon.
+> +       unsigned long                   flags;
 
-So We need to make add_highpage_with_active_regions() to subtract memblock
-reserved just like low ram.
+unused?
 
-In this patch, refactering get_freel_all_memory_range() to make it can be used
-by add_highpage_with_active_regions().
-Also we don't need to remove "KVA RAM" from active ranges.
+> +       dma_addr_t                      per_address;
+> +       u32                             watermark_level;
+> +       struct dma_chan                 chan;
+> +       spinlock_t                      lock;
+> +       struct dma_async_tx_descriptor  desc;
+> +       dma_cookie_t                    last_completed;
+> +       enum dma_status                 status;
+> +       int                             dma_request;
+> +       struct scatterlist              *sg_list;
+> +};
+> +
+> +#define MAX_DMA_CHANNELS 8
+> +
+> +struct imxdma_engine {
+> +       struct device                   *dev;
+> +       struct dma_device               dma_device;
+> +       struct imxdma_channel           channel[MAX_DMA_CHANNELS];
+> +};
+> +
+> +static struct imxdma_channel *to_imxdma_chan(struct dma_chan *chan)
+> +{
+> +       return container_of(chan, struct imxdma_channel, chan);
+> +}
+> +
+> +static void imxdma_handle(struct imxdma_channel *imxdmac)
+> +{
+> +       if (imxdmac->desc.callback)
+> +               imxdmac->desc.callback(imxdmac->desc.callback_param);
+> +       imxdmac->last_completed = imxdmac->desc.cookie;
+> +}
+> +
+> +static void imxdma_irq_handler(int channel, void *data)
+> +{
+> +       struct imxdma_channel *imxdmac = data;
+> +printk("%s\n", __func__);
 
--v2: use -1UL instead of -1ULL
+Debug leftover?
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/include/asm/memblock.h |    2 +
- arch/x86/mm/init_32.c           |   59 ++++++++++++----------------------------
- arch/x86/mm/memblock.c          |   19 ++++++++++--
- arch/x86/mm/numa_32.c           |    2 -
- 4 files changed, 36 insertions(+), 46 deletions(-)
+> +       imxdmac->status = DMA_SUCCESS;
+> +       imxdma_handle(imxdmac);
+> +}
+> +
+> +static void imxdma_err_handler(int channel, void *data, int error)
+> +{
+> +       struct imxdma_channel *imxdmac = data;
+> +printk("%s 0x%08x\n", __func__, error);
+> +dump_stack();
 
-Index: linux-2.6/arch/x86/include/asm/memblock.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/memblock.h
-+++ linux-2.6/arch/x86/include/asm/memblock.h
-@@ -9,6 +9,8 @@ void memblock_x86_to_bootmem(u64 start,
- void memblock_x86_reserve_range(u64 start, u64 end, char *name);
- void memblock_x86_free_range(u64 start, u64 end);
- struct range;
-+int __get_free_all_memory_range(struct range **range, int nodeid,
-+			 unsigned long start_pfn, unsigned long end_pfn);
- int get_free_all_memory_range(struct range **rangep, int nodeid);
- 
- void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
-Index: linux-2.6/arch/x86/mm/init_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/init_32.c
-+++ linux-2.6/arch/x86/mm/init_32.c
-@@ -423,49 +423,28 @@ static void __init add_one_highpage_init
- 	totalhigh_pages++;
- }
- 
--struct add_highpages_data {
--	unsigned long start_pfn;
--	unsigned long end_pfn;
--};
--
--static int __init add_highpages_work_fn(unsigned long start_pfn,
--					 unsigned long end_pfn, void *datax)
-+void __init add_highpages_with_active_regions(int nid,
-+			 unsigned long start_pfn, unsigned long end_pfn)
- {
--	int node_pfn;
--	struct page *page;
--	unsigned long final_start_pfn, final_end_pfn;
--	struct add_highpages_data *data;
--
--	data = (struct add_highpages_data *)datax;
--
--	final_start_pfn = max(start_pfn, data->start_pfn);
--	final_end_pfn = min(end_pfn, data->end_pfn);
--	if (final_start_pfn >= final_end_pfn)
--		return 0;
--
--	for (node_pfn = final_start_pfn; node_pfn < final_end_pfn;
--	     node_pfn++) {
--		if (!pfn_valid(node_pfn))
--			continue;
--		page = pfn_to_page(node_pfn);
--		add_one_highpage_init(page);
-+	struct range *range;
-+	int nr_range;
-+	int i;
-+
-+	nr_range = __get_free_all_memory_range(&range, nid, start_pfn, end_pfn);
-+
-+	for (i = 0; i < nr_range; i++) {
-+		struct page *page;
-+		int node_pfn;
-+
-+		for (node_pfn = range[i].start; node_pfn < range[i].end;
-+		     node_pfn++) {
-+			if (!pfn_valid(node_pfn))
-+				continue;
-+			page = pfn_to_page(node_pfn);
-+			add_one_highpage_init(page);
-+		}
- 	}
--
--	return 0;
--
- }
--
--void __init add_highpages_with_active_regions(int nid, unsigned long start_pfn,
--					      unsigned long end_pfn)
--{
--	struct add_highpages_data data;
--
--	data.start_pfn = start_pfn;
--	data.end_pfn = end_pfn;
--
--	work_with_active_regions(nid, add_highpages_work_fn, &data);
--}
--
- #else
- static inline void permanent_kmaps_init(pgd_t *pgd_base)
- {
-Index: linux-2.6/arch/x86/mm/memblock.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/memblock.c
-+++ linux-2.6/arch/x86/mm/memblock.c
-@@ -139,7 +139,8 @@ static int __init count_early_node_map(i
- 	return data.nr;
- }
- 
--int __init get_free_all_memory_range(struct range **rangep, int nodeid)
-+int __init __get_free_all_memory_range(struct range **rangep, int nodeid,
-+			 unsigned long start_pfn, unsigned long end_pfn)
- {
- 	int count;
- 	struct range *range;
-@@ -155,9 +156,9 @@ int __init get_free_all_memory_range(str
- 	 * at first
- 	 */
- 	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
--#ifdef CONFIG_X86_32
--	subtract_range(range, count, max_low_pfn, -1ULL);
--#endif
-+	subtract_range(range, count, 0, start_pfn);
-+	subtract_range(range, count, end_pfn, -1ULL);
-+
- 	memblock_x86_subtract_reserved(range, count);
- 	nr_range = clean_sort_range(range, count);
- 
-@@ -165,6 +166,16 @@ int __init get_free_all_memory_range(str
- 	return nr_range;
- }
- 
-+int __init get_free_all_memory_range(struct range **rangep, int nodeid)
-+{
-+	unsigned long end_pfn = -1UL;
-+
-+#ifdef CONFIG_X86_32
-+	end_pfn = max_low_pfn;
-+#endif
-+	return __get_free_all_memory_range(rangep, nodeid, 0, end_pfn);
-+}
-+
- static u64 __init __memblock_x86_memory_in_range(u64 addr, u64 limit, bool get_free)
- {
- 	int i, count;
-Index: linux-2.6/arch/x86/mm/numa_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/numa_32.c
-+++ linux-2.6/arch/x86/mm/numa_32.c
-@@ -326,8 +326,6 @@ static __init unsigned long calculate_nu
- 			      "KVA RAM");
- 
- 		node_remap_start_pfn[nid] = node_kva_final>>PAGE_SHIFT;
--		remove_active_range(nid, node_remap_start_pfn[nid],
--					 node_remap_start_pfn[nid] + size);
- 	}
- 	printk(KERN_INFO "Reserving total of %lx pages for numa KVA remap\n",
- 			reserve_pages);
+If you want to keep this I think it is better as a
+
+WARN(1, "%s 0x%08x\n", __func__, error)
+
+...assuming that errors are rare.
+
+--
+Dan
