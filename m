@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756035Ab0JEQy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:54:28 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55931 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754880Ab0JEQyZ (ORCPT
+	id S1755975Ab0JEQ4P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:56:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44574 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752954Ab0JEQ4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:54:25 -0400
+	Tue, 5 Oct 2010 12:56:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:mail-followup-to:references
          :mime-version:content-type:content-disposition:in-reply-to
          :user-agent;
-        b=MK9CUSQFBvsvodOQZfS8DLsjqeYpROnYapRwDsfc8qAnLgxJ7+We4tqAft4nWLCO5x
-         GF2ul9brR4USybJ9pXyWG/pAz2GnCaXCEx/YV8sqZaMVKq0lr1/VMhpO+8nJQ04R66uB
-         IPxaKpl/dwhIFbFPuhvS6w14N51d90I0q1KHs=
-Date: Tue, 5 Oct 2010 18:53:48 +0200
+        b=FyTT/n+tO3FUBzASLDGb8paEmnSp+llLup5AsOXMRnlOQy8kf2iga1lp4PHONEVduw
+         V8XuGiPoAplUWdfJ/DnrvxmRClTGIF5CqA3HokEP8e3sa7Kl4tIPHCoceP1rIG+586UK
+         mr3e/G36xJQFQ0e7ypDAu/8o/tdvVGPBpcaUY=
+Date: Tue, 5 Oct 2010 18:55:34 +0200
 From: Dan Carpenter <error27@gmail.com>
 To: Greg KH <gregkh@suse.de>
 Cc: Rahul Ruikar <rahul.ruikar@gmail.com>,
         David Brownell <dbrownell@users.sourceforge.net>, nm127@freemail.hu,
         linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND/PATCH] usb: gadget: goku_udc: Fix error path
-Message-ID: <20101005165348.GI5692@bicker>
+Subject: [PATCH] usb: gadget: goku_udc: Fix error path
+Message-ID: <20101005165534.GJ5692@bicker>
 Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
 	Greg KH <gregkh@suse.de>, Rahul Ruikar <rahul.ruikar@gmail.com>,
 	David Brownell <dbrownell@users.sourceforge.net>, nm127@freemail.hu,
@@ -37,35 +37,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 06:20:05AM -0700, Greg KH wrote:
-> On Mon, Oct 04, 2010 at 02:22:14PM +0200, Dan Carpenter wrote:
-> > On Mon, Oct 04, 2010 at 01:29:00AM +0530, Rahul Ruikar wrote:
-> > > call put_device() when device_register() fails.
-> > > 
-> > 
-> > Sorry I didn't realize what you were trying to do here.  This is not
-> > correct at all.
-> > 
-> > The right thing is to fix device_register() to call put_device() itself.
-> > It's a bit involved, because all the callers will need to be audited but
-> > someone is working on this I think.
-> 
-> No, no one is working on this, and no, it's not possible to make this
-> type of change to the driver core as discussed in the past due to the
-> way struct device can be embedded within another structure.
+This is based on an initial patch by Rahul Ruikar.
 
-Sorry I guess I lost track of the discussion.  We could write a helper
-macro which added the extra put device on failure?  Isn't that the more
-common case anyway?  To be honest, I'm still not clear on when the extra
-put_device() is appropriate and when it's not.  :/  I'll look through
-the archive.
+The goku_remove() function can be called before device_register() so it
+can call device_unregister() improperly.  Also if the call to 
+device_register() fails we need to call put_device().
 
-Anyway, I would prefer a slightly different patch.  The logic is easier
-to follow if we keep the put_device() right next to the
-device_register().  Also if we keep it in one function and we add a
-helper macro later then coccinelle can rewrite it automatically.
+As I was changing the error handling in goku_probe(), I noticed that
+the label was "done" but actually if the function succeeds we return
+earlier.  I renamed the error path to "err" instead of "done."
 
-I'll send my patch.
+Reported-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-regards,
-dan carpenter
+diff --git a/drivers/usb/gadget/goku_udc.c b/drivers/usb/gadget/goku_udc.c
+index 1088d08..7232018 100644
+--- a/drivers/usb/gadget/goku_udc.c
++++ b/drivers/usb/gadget/goku_udc.c
+@@ -1744,7 +1744,8 @@ static void goku_remove(struct pci_dev *pdev)
+ 				pci_resource_len (pdev, 0));
+ 	if (dev->enabled)
+ 		pci_disable_device(pdev);
+-	device_unregister(&dev->gadget.dev);
++	if (dev->registered)
++		device_unregister(&dev->gadget.dev);
+ 
+ 	pci_set_drvdata(pdev, NULL);
+ 	dev->regs = NULL;
+@@ -1774,7 +1775,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	if (!pdev->irq) {
+ 		printk(KERN_ERR "Check PCI %s IRQ setup!\n", pci_name(pdev));
+ 		retval = -ENODEV;
+-		goto done;
++		goto err;
+ 	}
+ 
+ 	/* alloc, and start init */
+@@ -1782,7 +1783,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	if (dev == NULL){
+ 		pr_debug("enomem %s\n", pci_name(pdev));
+ 		retval = -ENOMEM;
+-		goto done;
++		goto err;
+ 	}
+ 
+ 	spin_lock_init(&dev->lock);
+@@ -1800,7 +1801,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	retval = pci_enable_device(pdev);
+ 	if (retval < 0) {
+ 		DBG(dev, "can't enable, %d\n", retval);
+-		goto done;
++		goto err;
+ 	}
+ 	dev->enabled = 1;
+ 
+@@ -1809,7 +1810,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	if (!request_mem_region(resource, len, driver_name)) {
+ 		DBG(dev, "controller already in use\n");
+ 		retval = -EBUSY;
+-		goto done;
++		goto err;
+ 	}
+ 	dev->got_region = 1;
+ 
+@@ -1817,7 +1818,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	if (base == NULL) {
+ 		DBG(dev, "can't map memory\n");
+ 		retval = -EFAULT;
+-		goto done;
++		goto err;
+ 	}
+ 	dev->regs = (struct goku_udc_regs __iomem *) base;
+ 
+@@ -1833,7 +1834,7 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 			driver_name, dev) != 0) {
+ 		DBG(dev, "request interrupt %d failed\n", pdev->irq);
+ 		retval = -EBUSY;
+-		goto done;
++		goto err;
+ 	}
+ 	dev->got_irq = 1;
+ 	if (use_dma)
+@@ -1844,13 +1845,16 @@ static int goku_probe(struct pci_dev *pdev, const struct pci_device_id *id)
+ 	create_proc_read_entry(proc_node_name, 0, NULL, udc_proc_read, dev);
+ #endif
+ 
+-	/* done */
+ 	the_controller = dev;
+ 	retval = device_register(&dev->gadget.dev);
+-	if (retval == 0)
+-		return 0;
++	if (retval) {
++		put_device(&dev->gadget.dev);
++		goto err;
++	}
++	dev->registered = 1;
++	return 0;
+ 
+-done:
++err:
+ 	if (dev)
+ 		goku_remove (pdev);
+ 	return retval;
