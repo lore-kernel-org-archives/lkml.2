@@ -1,405 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0JENFp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 09:05:45 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:35108 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751728Ab0JENFo (ORCPT
+	id S1752433Ab0JENLe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 09:11:34 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:37538 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752222Ab0JENLd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 09:05:44 -0400
-Message-ID: <4CAB228C.7030902@ti.com>
-Date: Tue, 5 Oct 2010 08:05:16 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Tue, 5 Oct 2010 09:11:33 -0400
+X-IronPort-AV: E=Sophos;i="4.57,284,1283731200"; 
+   d="scan'208";a="2194636"
+Date: Tue, 5 Oct 2010 14:11:42 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v2 01/10] xen: remap GSIs as pirqs when
+ running as initial domain
+In-Reply-To: <20101004192426.GA10291@dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1010051400350.2440@kaball-desktop>
+References: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop> <1286191730-3188-1-git-send-email-stefano.stabellini@eu.citrix.com> <20101004192426.GA10291@dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: linux-pm <linux-pm@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Paul <paulmck@linux.vnet.ibm.com>,
-        Kevin H <khilman@deeprootsystems.com>
-Subject: Re: [PATCH v5] power: introduce library for device-specific OPPs
-References: <1285933174-24053-1-git-send-email-nm@ti.com> <201010050036.23179.rjw@sisk.pl>
-In-Reply-To: <201010050036.23179.rjw@sisk.pl>
-Content-Type: text/plain; charset="ISO-8859-2"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki had written, on 10/04/2010 05:36 PM, the following:
-> On Friday, October 01, 2010, Nishanth Menon wrote:
->> SoCs have a standard set of tuples consisting of frequency and
->> voltage pairs that the device will support per voltage domain. These
->> are called Operating Performance Points or OPPs. The actual
->> definitions of OPP varies over silicon versions. For a specific domain,
->> we can have a set of {frequency, voltage} pairs. As the kernel boots
->> and more information is available, a default set of these are activated
->> based on the precise nature of device. Further on operation, based on
->> conditions prevailing in the system (such as temperature), some OPP
->> availability may be temporarily controlled by the SoC frameworks.
->>
->> To implement an OPP, some sort of power management support is necessary
->> hence this library depends on CONFIG_PM.
+On Mon, 4 Oct 2010, Konrad Rzeszutek Wilk wrote:
+> > +	gsi = xen_register_gsi(gsi,	trigger, polarity);
 > 
-> Well, I still have some comments.
-Thanks for the same. Few views below.
+> What happend here? Tabs-gone-wild?
 
-> 
-> ...
->> +/**
->> + * opp_add()  - Add an OPP table from a table definitions
->> + * @dev:	device for which we do this operation
->> + * @freq:	Frequency in Hz for this OPP
->> + * @u_volt:	Voltage in uVolts for this OPP
->> + *
->> + * This function adds an opp definition to the opp list and returns status.
->> + * The opp is made available by default and it can be controlled using
->> + * opp_enable/disable functions.
->> + *
->> + * Locking: The internal device_opp and opp structures are RCU protected.
->> + * Hence this function internally uses RCU and mutex locks to keep the
->> + * integrity of the internal data structures. Callers should ensure that
->> + * this function is *NOT* called under RCU protection or in contexts where
->> + * mutex cannot be locked.
-> 
-> I'm not really sure why so many mutexes are needed here.  I don't think you
-> need a separate mutex in every struct device_opp object.  I'd just use
-> dev_opp_list_lock for everything.
 
-I did consider using  dev_opp_list_lock to lock everything *but* here is 
-the contention:
+Oops, I'll fix that.
 
-dev_opp_list_lock locks modification for addition of domains device. 
-This operation happens usually during init stage.
 
-each domain device has multiple opps, new opps can be added, but the 
-more often usage will probably be opp_enable and disable. domain are 
-usually modifiable independent of each other - device_opp->lock provides 
-device level lock allowing for each domain device opp list to be 
-modified independent of each other. e.g. on thermal overage we may 
-choose to lower mpu domain while a coprocessor driver in parallel might 
-choose to disable co-processor domain in parallel.
+> > +	/*
+> > +	 * stash over-ride to indicate we've been here
+> > +	 * and for later update of acpi_gbl_FADT
+> > +	 */
+> 
+> I think that comment is obsolete. We are not stashing anything?
 
-Wondering why you'd like a single lock for all domains and restrict 
-parallelization?
+Yes, it is obsolete. I'll remove it.
 
-> 
->> + */
->> +int opp_add(struct device *dev, unsigned long freq, unsigned long u_volt)
->> +{
->> +	struct device_opp *dev_opp = NULL;
->> +	struct opp *opp, *new_opp;
->> +	struct list_head *head;
->> +
->> +	/* allocate new OPP node */
->> +	new_opp = kzalloc(sizeof(struct opp), GFP_KERNEL);
->> +	if (!new_opp) {
->> +		pr_warning("Unable to allocate new opp node\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	/* Check for existing list for 'dev' */
->> +	rcu_read_lock();
-> 
-> If you acquire dev_opp_list_lock here, you won't need the rcu_read_lock(),
-> because every other updater will block on dev_opp_list_lock until you're done.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +	dev_opp = find_device_opp(dev);
->> +	rcu_read_unlock();
->> +	if (!dev_opp) {
-> 
-> Now you can drop dev_opp_list_lock temporarily, because the allocation doesn't
-> need synchronization.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +		/* Allocate a new device OPP table */
->> +		dev_opp = kzalloc(sizeof(struct device_opp), GFP_KERNEL);
->> +		if (!dev_opp) {
->> +			kfree(new_opp);
->> +			pr_warning("Unable to allocate device structure\n");
->> +			return -ENOMEM;
->> +		}
->> +
->> +		dev_opp->dev = dev;
->> +		INIT_LIST_HEAD(&dev_opp->opp_list);
->> +		mutex_init(&dev_opp->lock);
->> +
-> 
-> Reacquire dev_opp_list_lock at this point and hold it to the end of the routine.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +		/* Secure the device list modification */
->> +		mutex_lock(&dev_opp_list_lock);
-> 
-> This won't be necessary any more.
-> 
->> +		list_add_rcu(&dev_opp->node, &dev_opp_list);
-> 
-> Of course, this is still needed.
-> 
->> +		mutex_unlock(&dev_opp_list_lock);
-> 
-> Not necessary.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +	}
->> +
->> +	/* populate the opp table */
->> +	new_opp->dev_opp = dev_opp;
->> +	new_opp->rate = freq;
->> +	new_opp->u_volt = u_volt;
->> +	new_opp->available = true;
->> +
->> +	/* make the dev_opp modification safe */
->> +	mutex_lock(&dev_opp->lock);
-> 
-> That's not necessary.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +
->> +	rcu_read_lock();
-> 
-> Ditto.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +	/* Insert new OPP in order of increasing frequency */
->> +	head = &dev_opp->opp_list;
->> +	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
->> +		if (new_opp->rate < opp->rate)
->> +			break;
->> +		else
->> +			head = &opp->node;
->> +	}
->> +	rcu_read_unlock();
-> 
-> Ditto.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +	list_add_rcu(&new_opp->node, head);
->> +	mutex_unlock(&dev_opp->lock);
-> 
-> Now release dev_opp_list_lock instead.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
-> And remember to call synchronize_rcu() when you're done.
 
-we dont need synchronize_rcu() for list_add_rcu as Paul pointed out in 
-[1]. quote:
-"
- > +		mutex_lock(&dev_opp_list_lock);
- > +		list_add_rcu(&dev_opp->node, &dev_opp_list);
- > +		mutex_unlock(&dev_opp_list_lock);
- > +		synchronize_rcu();
+> >  
+> >  int __init pci_xen_init(void)
+> >  {
+> > -	if (!xen_pv_domain() || xen_initial_domain())
+> > + 	if (!xen_pv_domain() || xen_initial_domain())
+> 
+> What changed? They look exactly the same?
+> 
 
-You do not need to wait for an RCU grace period when adding objects, 
-only between removing them and freeing them.
-"
+Another editing error unfortunately.
 
-in our usage, this points to list_replace_rcu
 
+> > +void __init xen_setup_pirqs(void)
+> > +{
+> > +	int irq;
+> > +#ifndef CONFIG_SMP
+> > +	int nr_ioapics = 1;
+> > +#endif
 > 
->> +	return 0;
->> +}
->> +
->> +/**
->> + * opp_set_availability() - helper to set the availability of an opp
->> + * @dev:		device for which we do this operation
->> + * @freq:		OPP frequency to modify availability
->> + * @availability_req:	availability status requested for this opp
->> + *
->> + * Set the availability of an OPP with an RCU operation, opp_{enable,disable}
->> + * share a common logic which is isolated here.
->> + *
->> + * Returns -EINVAL for bad pointers, -ENOMEM if no memory available for the
->> + * copy operation, returns 0 if no modifcation was done OR modification was
->> + * successful.
->> + *
->> + * Locking: The internal device_opp and opp structures are RCU protected.
->> + * Hence this function internally uses RCU and mutex locks to keep the
->> + * integrity of the internal data structures. Callers should ensure that
->> + * this function is *NOT* called under RCU protection or in contexts where
->> + * mutex locking or synchronize_rcu() blocking calls cannot be used.
->> + */
->> +static int opp_set_availability(struct device *dev, unsigned long freq,
->> +		bool availability_req)
->> +{
->> +	struct device_opp *tmp_dev_opp, *dev_opp = NULL;
->> +	struct opp *new_opp, *tmp_opp, *opp = ERR_PTR(-ENODEV);
->> +	int r = 0;
->> +
->> +	/* keep the node allocated */
->> +	new_opp = kmalloc(sizeof(struct opp), GFP_KERNEL);
->> +	if (!new_opp) {
->> +		pr_warning("Unable to allocate opp\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	rcu_read_lock();
+> Should this be defined in a header instead? Was this nr_ioapics==1
+> meant to fall in the '0 == nr_ioapics' to setup the first sixteen
+> irqs?
 > 
-> Acquire dev_opp_list_lock instead.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +
->> +	/* Find the device_opp */
->> +	list_for_each_entry_rcu(tmp_dev_opp, &dev_opp_list, node) {
-> 
-> You can use a normal list_for_each_entry here, because it's under the lock.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +		if (dev == tmp_dev_opp->dev) {
->> +			dev_opp = tmp_dev_opp;
->> +			break;
->> +		}
->> +	}
->> +	dev_opp = find_device_opp(dev);
-> 
-> Hmm.  I wonder why this is necessary?
-arrgh.. yep, you are right.. will kick this out..
+> Is CONFIG_X86_IO_APIC more appropiate than CONFIG_SMP?
 
-> 
->> +	if (IS_ERR(dev_opp)) {
->> +		r = PTR_ERR(dev_opp);
->> +		pr_warning("Unable to find device\n");
->> +		goto err;
->> +	}
->> +
->> +	/* Do we have the frequency? */
->> +	list_for_each_entry_rcu(tmp_opp, &dev_opp->opp_list, node) {
-> 
-> Use list_for_each_entry here too.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +		if (tmp_opp->rate == freq) {
->> +			opp = tmp_opp;
->> +			break;
->> +		}
->> +	}
->> +	if (IS_ERR(opp)) {
->> +		r = PTR_ERR(opp);
->> +		goto err;
->> +	}
->> +
->> +	mutex_lock(&opp->dev_opp->lock);
-> 
-> And that won't be necessary any more.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +	tmp_opp = rcu_dereference(opp);
-> 
-> Ditto (we're an updater, not a reader).
-At this point are'nt we still a reader?
+I think it was supposed to fix a compilation error in case
+CONFIG_X86_IO_APIC is not set, so that in both cases in which an ioapic
+is not present in the system or the ioapic support is not compiled in
+the kernel we would fall in the '0 == nr_ioapics' code path.
+So I guess the right thing to do here would be to replace CONFIG_SMP
+with CONFIG_X86_IO_APIC.
+I don't think that it is worth moving these three lines into an header
+file.
 
-> 
->> +	/* Is update really needed? */
->> +	if (tmp_opp->available == availability_req)
->> +		goto out1;
->> +	/* copy the old data over */
->> +	*new_opp = *tmp_opp;
->> +	rcu_read_unlock();
-> 
-> Not necessary.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +	/* plug in new node */
->> +	new_opp->available = availability_req;
->> +	list_replace_rcu(&opp->node, &new_opp->node);
->> +	mutex_unlock(&opp->dev_opp->lock);
-> 
-> Now unlock dev_opp_list_lock instead.
-[contention on using a single lock dev_opp_list_lock as discussed above]
-> 
->> +	synchronize_rcu();
->> +
-> 
-> And rework the exit code below accordingly.
-> 
->> +	/* clean up old opp */
->> +	new_opp = opp;
->> +	goto out;
->> +
->> +out1:
->> +	mutex_unlock(&opp->dev_opp->lock);
->> +err:
->> +	rcu_read_unlock();
->> +out:
->> +	kfree(new_opp);
->> +	return r;
->> +}
->> +
-> ...
->> +int opp_init_cpufreq_table(struct device *dev,
->> +			    struct cpufreq_frequency_table **table)
->> +{
->> +	struct device_opp *dev_opp;
->> +	struct opp *opp;
->> +	struct cpufreq_frequency_table *freq_table;
->> +	int i = 0;
->> +
->> +	rcu_read_lock();
-> 
-> I would pretend I'm an updater here and acquire dev_opp_list_lock instead.
-why?
-> 
->> +	dev_opp = find_device_opp(dev);
->> +	if (IS_ERR(dev_opp)) {
->> +		rcu_read_unlock();
-> 
-> So that won't be necessary.
-
-> 
->> +		pr_warning("Unable to find device\n");
->> +		return PTR_ERR(dev_opp);
->> +	}
->> +
-> 
-> Now, you can sleep with the mutex held, so GFP_KERNEL may be used below.
-ack. will fix in v6.
-
-> 
->> +	freq_table = kzalloc(sizeof(struct cpufreq_frequency_table) *
->> +			     (opp_get_opp_count(dev) + 1), GFP_ATOMIC);
->> +	if (!freq_table) {
->> +		rcu_read_unlock();
-> 
-> Drop dev_opp_list_lock instead.
-> 
->> +		pr_warning("Failed to allocate frequency table\n");
->> +		return -ENOMEM;
->> +	}
->> +
->> +	list_for_each_entry_rcu(opp, &dev_opp->opp_list, node) {
-> 
-> That may be list_for_each_entry() now.
-> 
->> +		if (opp->available) {
->> +			freq_table[i].index = i;
->> +			freq_table[i].frequency = opp->rate / 1000;
->> +			i++;
->> +		}
->> +	}
->> +	rcu_read_unlock();
-> 
-> Drop dev_opp_list_lock instead.
-> 
->> +
->> +	freq_table[i].index = i;
->> +	freq_table[i].frequency = CPUFREQ_TABLE_END;
->> +
->> +	*table = &freq_table[0];
->> +
->> +	return 0;
->> +}
-> 
-> I think I didn't confuse anything, but surely Paul will fix me if I did. :-)
-
-My contention is the preference for a single lock for everything instead 
-of domain level locks for majority of the usage. i dont see why we 
-should loose parallelization capability.
-
-[1] http://marc.info/?l=linux-omap&m=128535708720191&w=2
--- 
-Regards,
-Nishanth Menon
