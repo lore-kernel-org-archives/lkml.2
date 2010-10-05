@@ -1,202 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757903Ab0JEHyj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 03:54:39 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29663 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757863Ab0JEHx7 (ORCPT
+	id S1757871Ab0JEHzz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 03:55:55 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56463 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756137Ab0JEHzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 03:53:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=RkQ2et30uYKAnERf1MpuhJSsYQVHqheh+fx6brydDz/Npa1SLc6JojGQU5cyN9Pm8C
-         sxZ8UtGTLZZtyTjeHYYA==
-From: Michel Lespinasse <walken@google.com>
-To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
-        Ying Han <yinghan@google.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH 2/3] Retry page fault when blocking on disk transfer.
-Date: Tue,  5 Oct 2010 00:53:34 -0700
-Message-Id: <1286265215-9025-3-git-send-email-walken@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1286265215-9025-1-git-send-email-walken@google.com>
-References: <1286265215-9025-1-git-send-email-walken@google.com>
-X-System-Of-Record: true
+	Tue, 5 Oct 2010 03:55:54 -0400
+Date: Tue, 5 Oct 2010 09:55:51 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, amit.kucheria@canonical.com,
+        s.hauer@pengutronix.de, grant.likely@secretlab.ca,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de,
+        xiao-lizhang@freescale.com, r.schwebel@pengutronix.de,
+        linux-arm-kernel@lists.infradead.org, kernel@pengutronix.de
+Subject: Re: [PATCH] ARM: imx: Add iram allocator functions
+Message-ID: <20101005075551.GJ11737@pengutronix.de>
+References: <1286237007-8463-1-git-send-email-Dinh.Nguyen@freescale.com> <20101005074423.GI11737@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101005074423.GI11737@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change reduces mmap_sem hold times that are caused by waiting for
-disk transfers when accessing file mapped VMAs. It introduces the
-VM_FAULT_ALLOW_RETRY flag, which indicates that the call site wants
-mmap_sem to be released if blocking on a pending disk transfer.
-In that case, filemap_fault() returns the VM_FAULT_RETRY status bit
-and do_page_fault() will then re-acquire mmap_sem and retry the page fault.
-It is expected that the retry will hit the same page which will now be
-cached, and thus it will complete with a low mmap_sem hold time.
+On Tue, Oct 05, 2010 at 09:44:23AM +0200, Uwe Kleine-König wrote:
+> On Mon, Oct 04, 2010 at 07:03:27PM -0500, Dinh.Nguyen@freescale.com wrote:
+> > From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> > 
+> > Add iram allocation functions using GENERIC_ALLOCATOR. The
+> > allocation size is 4KB multiples to guarantee alignment. The
+> > idea for these functions is for i.MX platforms to use them
+> > to dynamically allocate IRAM usage.
+> > 
+> > Applies on 2.6.36-rc6
+> > 
+> > Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> > Reviewed-by: Amit Kucheria <amit.kucheria@canonical.com>
+> > ---
+> >  arch/arm/plat-mxc/Kconfig                   |   10 ++++
+> >  arch/arm/plat-mxc/Makefile                  |    1 +
+> >  arch/arm/plat-mxc/include/mach/iram_alloc.h |   35 +++++++++++++++
+> >  arch/arm/plat-mxc/iram.c                    |   62 +++++++++++++++++++++++++++
+> >  4 files changed, 108 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/arm/plat-mxc/include/mach/iram_alloc.h
+> >  create mode 100644 arch/arm/plat-mxc/iram.c
+> > 
+> > diff --git a/arch/arm/plat-mxc/Kconfig b/arch/arm/plat-mxc/Kconfig
+> > index 6785db4..5e4ff93 100644
+> > --- a/arch/arm/plat-mxc/Kconfig
+> > +++ b/arch/arm/plat-mxc/Kconfig
+> > @@ -57,6 +57,16 @@ source "arch/arm/mach-mx5/Kconfig"
+> >  
+> >  endmenu
+> >  
+> > +config IRAM_ALLOC
+> > +	bool "Enable IRAM allocator"
+> > +	default y
+> The iram allocator isn't useful taken alone, no?  So I suggest to make
+> it 
+Hmm.  It seems I forgot to finish this sentence, sorry.
 
-Signed-off-by: Michel Lespinasse <walken@google.com>
----
- arch/x86/mm/fault.c |   38 ++++++++++++++++++++++++++------------
- include/linux/mm.h  |    2 ++
- mm/filemap.c        |   23 ++++++++++++++++++++++-
- mm/memory.c         |    3 ++-
- 4 files changed, 52 insertions(+), 14 deletions(-)
+Unless IRAM_ALLOC is an optional feature for new features to come I'd
+not make it user selectible, but let the new features select IRAM_ALLOC.
+If it's optional I wonder if "default y" should really be done.
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 4c4508e..b355b92 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -952,8 +952,10 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	struct task_struct *tsk;
- 	unsigned long address;
- 	struct mm_struct *mm;
--	int write;
- 	int fault;
-+	int write = error_code & PF_WRITE;
-+	unsigned int flags = FAULT_FLAG_ALLOW_RETRY |
-+					(write ? FAULT_FLAG_WRITE : 0);
- 
- 	tsk = current;
- 	mm = tsk->mm;
-@@ -1064,6 +1066,7 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 			bad_area_nosemaphore(regs, error_code, address);
- 			return;
- 		}
-+retry:
- 		down_read(&mm->mmap_sem);
- 	} else {
- 		/*
-@@ -1107,8 +1110,6 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
- 	 * we can handle it..
- 	 */
- good_area:
--	write = error_code & PF_WRITE;
--
- 	if (unlikely(access_error(error_code, write, vma))) {
- 		bad_area_access_error(regs, error_code, address);
- 		return;
-@@ -1119,21 +1120,34 @@ good_area:
- 	 * make sure we exit gracefully rather than endlessly redo
- 	 * the fault:
- 	 */
--	fault = handle_mm_fault(mm, vma, address, write ? FAULT_FLAG_WRITE : 0);
-+	fault = handle_mm_fault(mm, vma, address, flags);
- 
- 	if (unlikely(fault & VM_FAULT_ERROR)) {
- 		mm_fault_error(regs, error_code, address, fault);
- 		return;
- 	}
- 
--	if (fault & VM_FAULT_MAJOR) {
--		tsk->maj_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
--				     regs, address);
--	} else {
--		tsk->min_flt++;
--		perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
--				     regs, address);
-+	/*
-+	 * Major/minor page fault accounting is only done on the
-+	 * initial attempt. If we go through a retry, it is extremely
-+	 * likely that the page will be found in page cache at that point.
-+	 */
-+	if (flags & FAULT_FLAG_ALLOW_RETRY) {
-+		if (fault & VM_FAULT_MAJOR) {
-+			tsk->maj_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MAJ, 1, 0,
-+				      regs, address);
-+		} else {
-+			tsk->min_flt++;
-+			perf_sw_event(PERF_COUNT_SW_PAGE_FAULTS_MIN, 1, 0,
-+				      regs, address);
-+		}
-+		if (fault & VM_FAULT_RETRY) {
-+			/* Clear FAULT_FLAG_ALLOW_RETRY to avoid any risk
-+			 * of starvation. */
-+			flags &= ~FAULT_FLAG_ALLOW_RETRY;
-+			goto retry;
-+		}
- 	}
- 
- 	check_v8086_mode(regs, address, tsk);
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 74949fb..0b4f9b2 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -144,6 +144,7 @@ extern pgprot_t protection_map[16];
- #define FAULT_FLAG_WRITE	0x01	/* Fault was a write access */
- #define FAULT_FLAG_NONLINEAR	0x02	/* Fault was via a nonlinear mapping */
- #define FAULT_FLAG_MKWRITE	0x04	/* Fault was mkwrite of existing pte */
-+#define FAULT_FLAG_ALLOW_RETRY	0x08	/* Retry fault if blocking */
- 
- /*
-  * This interface is used by x86 PAT code to identify a pfn mapping that is
-@@ -722,6 +723,7 @@ static inline int page_mapped(struct page *page)
- 
- #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
- #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
-+#define VM_FAULT_RETRY	0x0400	/* ->fault blocked, must retry */
- 
- #define VM_FAULT_ERROR	(VM_FAULT_OOM | VM_FAULT_SIGBUS | VM_FAULT_HWPOISON)
- 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 8ed709a..7cba9bf 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1501,6 +1501,26 @@ static void do_async_mmap_readahead(struct vm_area_struct *vma,
- 					   page, offset, ra->ra_pages);
- }
- 
-+/*
-+ * Lock the page, unless this would block and the caller indicated that it
-+ * can handle a retry.
-+ */
-+static int lock_page_or_retry(struct page *page,
-+			      struct vm_area_struct *vma, struct vm_fault *vmf)
-+{
-+	if (trylock_page(page))
-+		return 1;
-+	if (!(vmf->flags & FAULT_FLAG_ALLOW_RETRY)) {
-+		__lock_page(page);
-+		return 1;
-+	}
-+
-+	up_read(&vma->vm_mm->mmap_sem);
-+	wait_on_page_locked(page);
-+	page_cache_release(page);
-+	return 0;
-+}
-+
- /**
-  * filemap_fault - read in file data for page fault handling
-  * @vma:	vma in which the fault was taken
-@@ -1550,7 +1570,8 @@ retry_find:
- 			goto no_cached_page;
- 	}
- 
--	lock_page(page);
-+	if (!lock_page_or_retry(page, vma, vmf))
-+		return ret | VM_FAULT_RETRY;
- 
- 	/* Did it get truncated? */
- 	if (unlikely(page->mapping != mapping)) {
-diff --git a/mm/memory.c b/mm/memory.c
-index 0e18b4d..b068c68 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -2926,7 +2926,8 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 	vmf.page = NULL;
- 
- 	ret = vma->vm_ops->fault(vma, &vmf);
--	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE)))
-+	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE |
-+			    VM_FAULT_RETRY)))
- 		return ret;
- 
- 	if (unlikely(PageHWPoison(vmf.page))) {
+Maybe better call the symbol just IRAM?
+
+> > +	iram_pool = gen_pool_create(12, -1);
+> 	if (!iram_pool)
+> 		...
+After rereading the commit log I wondered where the 4 KB are enforced.
+Maybe do
+
+	s/12/PAGE_SHIFT/
+
+to make it more obvious?
+
+Best regards
+Uwe
+
 -- 
-1.7.1
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
