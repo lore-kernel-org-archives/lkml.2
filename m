@@ -1,52 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757968Ab0JEIui (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 04:50:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:57181 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab0JEIug (ORCPT
+	id S1758011Ab0JEIwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 04:52:33 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:17150 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753317Ab0JEIwb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 04:50:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: Tree for October 5
-Date: Tue, 5 Oct 2010 10:50:26 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: Zimny Lech <napohybelskurwysynom2010@gmail.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Valdis.Kletnieks@vt.edu
-References: <20101005161220.0bef433f.sfr@canb.auug.org.au> <AANLkTikF+-0ybP3RMA-7wr8DMit6At=G1W7oB0UO4Mvz@mail.gmail.com> <20101005194232.de733b2b.sfr@canb.auug.org.au>
-In-Reply-To: <20101005194232.de733b2b.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010051050.26543.arnd@arndb.de>
-X-Provags-ID: V02:K0:CEXJQjZ1Mx4FlnvMu5A0f/KPt7LZnNXJVqdSdLel2hS
- wU98z39n6Q33bp1D+i+p+StyL9uffjKa8kpFyjxit0SCBAxVyC
- nILP8xmk9J2eA3IuQ0wFaWNxdhBnW5zO+79IgVy8dGsCR6z6rE
- cJSZz8Vy5vUDKPIymQivvFSkgmJO4KrG/MepWDR7HL9kx/Su4F
- MXY+Bb+rabg0hvSk21mPA==
+	Tue, 5 Oct 2010 04:52:31 -0400
+From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+To: akpm@linux-foundation.org, torvalds@linux-foundation.org
+Cc: m.nazarewicz@samsung.com, mingo@elte.hu, gregkh@suse.de,
+        a.p.zijlstra@chello.nl, xiaosuo@gmail.com,
+        linux-kernel@vger.kernel.org, ext-eugeny.kuznetsov@nokia.com
+Subject: [PATCH 0/1] wait: using uninitialized member of wait queue
+Date: Tue,  5 Oct 2010 12:47:56 +0400
+Message-Id: <cover.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+X-OriginalArrivalTime: 05 Oct 2010 08:51:32.0711 (UTC) FILETIME=[82643F70:01CB646A]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 October 2010, Stephen Rothwell wrote:
-> Hi,
-> 
-> On Tue, 5 Oct 2010 09:38:49 +0200 Zimny Lech <napohybelskurwysynom2010@gmail.com> wrote:
-> >
-> > Also, I saw this
-> > /home/test/linux-2.6/include/linux/fs.h:1274:20: warning: function
-> > declaration isn't a prototype
-> > /home/test/linux-2.6/include/linux/fs.h:1278:20: warning: function
-> > declaration isn't a prototype
-> > 
-> > It was fixed in -mmotm by Valdis Kletnieks.
-> 
-> Yeah, it was fixed in linux-next, but rebroken by a rebase of the bkl-vfs
-> tree since yesterday.
+Hi,
 
-Ok, fixed it again now. Sorry for messing this up twice.
+Here is patch which fixes bug in /include/linux/wait.h file.
+Member "flags" of "wait_queue_t" struct  is used in several places in
+kernel code without beeing initialized. "flags" is used in bitwise
+operations. If it contain dummy data then incorrect flags may be 
+used later in code.
 
-	Arnd
+Thanks,
+Best Regards,
+Evgeny
+
+Evgeny Kuznetsov (1):
+  wait: using uninitialized member of wait queue
+
+ include/linux/wait.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
