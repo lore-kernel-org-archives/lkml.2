@@ -1,45 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755822Ab0JELzY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 07:55:24 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60020 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab0JELzX (ORCPT
+	id S1756053Ab0JEMBV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 08:01:21 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:53006 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751211Ab0JEMBT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 07:55:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kXTCQrlMZag2BbvFVo8ybWsQVce06LQg3Thj75dgmvJp6/CZsYCDr7jFGWMLlkApwj
-         BLSUVj6D6wjWxwIveD1FpBLV5SE/B2+MmEd64CNwpqPsPYibKdMuTlX3VVyupHVSJ4PX
-         Th9QpaZus6iuykyOrfCbiWg9CvXdDExw2VvW0=
-Date: Tue, 5 Oct 2010 19:59:58 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Philip Wernersbach <philip.wernersbach@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Detecting runnable process?
-Message-ID: <20101005115958.GJ5170@cr0.nay.redhat.com>
-References: <AANLkTimKpVR5UVYLetwt=S4PSkMEJTBpUk7Q-o=ha_ds@mail.gmail.com>
+	Tue, 5 Oct 2010 08:01:19 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
+        <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
+        <marek.vasut@gmail.com>, <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>,
+        <sameo@linux.intel.com>, <kgene.kim@samsung.com>,
+        <linux-omap@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <STEricsson_nomadik_linux@list.st.com>,
+        <arun.murthy@stericsson.com>, <bgat@billgatliff.com>
+Subject: [PATCHv2 2/7] backlight:pwm: add an element 'name' to platform data
+Date: Tue, 5 Oct 2010 17:29:57 +0530
+Message-ID: <1286280002-1636-3-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <1286280002-1636-1-git-send-email-arun.murthy@stericsson.com>
+References: <1286280002-1636-1-git-send-email-arun.murthy@stericsson.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimKpVR5UVYLetwt=S4PSkMEJTBpUk7Q-o=ha_ds@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 09:39:16PM -0400, Philip Wernersbach wrote:
->I'm writing some kernel code that given a task's task_struct must
->decide if it is runnable, and hasn't crashed or exited. So far here's
->what I've come up with:
->
->struct task_struct *my_task;
->... snip ...
->if(likely(my_task != NULL && pid_alive(my_task) == true)) { return my_task; }
->
->Is this correct?
->
+A new element 'name' is added to pwm backlight platform data structure.
+This is required to identify the pwm device.
 
-Yes to me, you can also check the functions which call pid_alive() in kernel.
+Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/video/backlight/pwm_bl.c |    4 +++-
+ include/linux/pwm_backlight.h    |    1 +
+ 2 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/video/backlight/pwm_bl.c b/drivers/video/backlight/pwm_bl.c
+index 5504435..b0978a8 100644
+--- a/drivers/video/backlight/pwm_bl.c
++++ b/drivers/video/backlight/pwm_bl.c
+@@ -94,7 +94,9 @@ static int pwm_backlight_probe(struct platform_device *pdev)
+ 	pb->notify = data->notify;
+ 	pb->dev = &pdev->dev;
+ 
+-	pb->pwm = pwm_request(data->pwm_id, "backlight");
++	if (!data->name)
++		data->name = "backlight";
++	pb->pwm = pwm_request(data->pwm_id, data->name);
+ 	if (IS_ERR(pb->pwm)) {
+ 		dev_err(&pdev->dev, "unable to request PWM for backlight\n");
+ 		ret = PTR_ERR(pb->pwm);
+diff --git a/include/linux/pwm_backlight.h b/include/linux/pwm_backlight.h
+index 01b3d75..c2ce8f8 100644
+--- a/include/linux/pwm_backlight.h
++++ b/include/linux/pwm_backlight.h
+@@ -6,6 +6,7 @@
+ 
+ struct platform_pwm_backlight_data {
+ 	int pwm_id;
++	char *name;
+ 	unsigned int max_brightness;
+ 	unsigned int dft_brightness;
+ 	unsigned int pwm_period_ns;
+-- 
+1.7.2.dirty
+
