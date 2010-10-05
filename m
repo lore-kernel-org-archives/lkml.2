@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab0JEGS0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 02:18:26 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42645 "EHLO mx2.mail.elte.hu"
+	id S1757553Ab0JEGTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 02:19:45 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:33294 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753967Ab0JEGSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 02:18:25 -0400
-Date: Tue, 5 Oct 2010 08:18:03 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Bernd Petrovitsch <bernd@sysprog.at>,
-        "David S . Miller" <davem@davemloft.net>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Frederik Deweerdt <frederik.deweerdt@xprog.eu>,
-        Kusanagi Kouichi <slash@ac.auone-net.jp>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/3] perf/urgent fixes
-Message-ID: <20101005061803.GA12267@elte.hu>
-References: <1286218483-7219-1-git-send-email-acme@infradead.org>
+	id S1753967Ab0JEGTo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 02:19:44 -0400
+Date: Tue, 5 Oct 2010 08:19:40 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, cpu: Fix X86_FEATURE_NOPL
+Message-ID: <20101005061939.GB29161@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+	lkml <linux-kernel@vger.kernel.org>
+References: <a3fce0e5-e6c5-4bf0-b8c0-4954825a7065@email.android.com>
+ <20101003201139.GA16532@liondog.tnic>
+ <dc1a5ce2-0414-4f15-9e7b-fcfa4435adb5@email.android.com>
+ <20101004073127.GA20305@liondog.tnic>
+ <AANLkTikBs5R2KmGfDSXyi5y-cKuZepZCdr0KOVe5-MX6@mail.gmail.com>
+ <4CAA4102.3070205@zytor.com>
+ <AANLkTimXj+5ixx=xoVYOCmM4+W6CGR1XOi6CHDTZzns0@mail.gmail.com>
+ <4CAA455D.8000902@zytor.com>
+ <20101004214838.GA26084@liondog.tnic>
+ <4CAA4CCB.5090205@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <1286218483-7219-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4CAA4CCB.5090205@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Mon, Oct 04, 2010 at 02:53:15PM -0700
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> On 10/04/2010 02:48 PM, Borislav Petkov wrote:
+> > 
+> > I think the cleanup should be easy: on 64-bit unconditionally return
+> > p6_nops in find_nop_table() since every 64-bit processor should support
+> > them and on 32-bit never return p6_nops since X86_FEATURE_NOPL is not
+> > set there and fall back to intel_nops on non-AMD. Which means we can get
+> > rid of X86_FEATURE_NOPL altogether. Too radical?
+> > 
+> 
+> FWIW, if P6_NOPs work as well as 66...90 on AMD,
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Frederik Deweerdt (1):
->   perf ui hist browser: Fix segfault on 'a' for annotate
-> 
-> Kusanagi Kouichi (1):
->   perf tools: Fix build breakage
-> 
-> Stephane Eranian (1):
->   perf trace scripting: Fix extern struct definitions
-> 
->  tools/perf/Makefile                     |    2 +-
->  tools/perf/util/trace-event-scripting.c |    4 ++--
->  tools/perf/util/ui/browsers/hists.c     |    2 +-
->  3 files changed, 4 insertions(+), 4 deletions(-)
+Yeah, let me get back to you on that :).
 
-Pulled, thanks a lot Arnaldo!
+>  I'd much rather switch to the fixed sequence for all 64-bit
+> processors.
 
-	Ingo
+-- 
+Regards/Gruss,
+    Boris.
