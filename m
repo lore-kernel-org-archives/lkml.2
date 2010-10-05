@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab0JEAEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 20:04:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23970 "EHLO
+	id S1757516Ab0JEAEK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 20:04:10 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:24039 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757463Ab0JEAD6 (ORCPT
+	with ESMTP id S1757486Ab0JEAEG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 20:03:58 -0400
+	Mon, 4 Oct 2010 20:04:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=kPuZ5JP9eOFbS+C4ronbuf+Dq+JKnw25hkaMimOEO6wXMqdIcFil4bFecLM18VHdm3
-         18ZF0WkzPtepvaANOL3g==
+        b=EKZb6ygRqVXQYgH1mElAwrxZ2AjoVqceVFVOv2TfEvD/1WdBa9cjXvw7w9PmW2N05+
+         fumpPqxB6uVAiIuEIi/Q==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -20,9 +20,9 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
 Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 5/8] x86: Add IRQ_TIME_ACCOUNTING in x86 -v4
-Date: Mon,  4 Oct 2010 17:03:20 -0700
-Message-Id: <1286237003-12406-6-git-send-email-venki@google.com>
+Subject: [PATCH 7/8] sched: Remove irq time from available CPU power -v4
+Date: Mon,  4 Oct 2010 17:03:22 -0700
+Message-Id: <1286237003-12406-8-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286237003-12406-1-git-send-email-venki@google.com>
 References: <1286237003-12406-1-git-send-email-venki@google.com>
@@ -31,93 +31,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds IRQ_TIME_ACCOUNTING option on x86 and runtime enables it
-when TSC is enabled.
+The idea suggested by Peter Zijlstra here.
+http://marc.info/?l=linux-kernel&m=127476934517534&w=2
 
-This change just enables fine grained irq time accounting, isn't used yet.
-Following patches use it for different purposes.
+irq time is technically not available to the tasks running on the CPU.
+This patch removes irq time from CPU power piggybacking on
+sched_rt_avg_update().
+
+Tested this by keeping CPU X busy with a network intensive task having 75%
+oa a single CPU irq processing (hard+soft) on a 4-way system. And start seven
+cycle soakers on the system. Without this change, there will be two tasks on
+each CPU. With this change, there is a single task on irq busy CPU X and
+remaining 7 tasks are spread around among other 3 CPUs.
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
- Documentation/kernel-parameters.txt |    4 ++++
- arch/x86/Kconfig                    |   11 +++++++++++
- arch/x86/kernel/tsc.c               |    8 ++++++++
- 3 files changed, 23 insertions(+), 0 deletions(-)
+ kernel/sched.c          |   18 ++++++++++++++++++
+ kernel/sched_fair.c     |    8 +++++++-
+ kernel/sched_features.h |    5 +++++
+ 3 files changed, 30 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 8dd7248..ed05a4a 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2435,6 +2435,10 @@ and is between 256 and 4096 characters. It is defined in the file
- 			disables clocksource verification at runtime.
- 			Used to enable high-resolution timer mode on older
- 			hardware, and in virtualized environment.
-+			[x86] noirqtime: Do not use TSC to do irq accounting.
-+			Used to run time disable IRQ_TIME_ACCOUNTING on any
-+			platforms where RDTSC is slow and this accounting
-+			can add overhead.
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 12e9d70..6487da4 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -521,6 +521,10 @@ struct rq {
+ 	u64 avg_idle;
+ #endif
  
- 	turbografx.map[2|3]=	[HW,JOY]
- 			TurboGraFX parallel port interface
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cea0cd9..f4c70c2 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -795,6 +795,17 @@ config SCHED_MC
- 	  making when dealing with multi-core CPU chips at a cost of slightly
- 	  increased overhead in some places. If unsure say N here.
- 
-+config IRQ_TIME_ACCOUNTING
-+	bool "Fine granularity task level IRQ time accounting"
-+	default n
-+	---help---
-+	  Select this option to enable fine granularity task irq time
-+	  accounting. This is done by reading a timestamp on each
-+	  transitions between softirq and hardirq state, so there can be a
-+	  small performance impact.
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++	u64 prev_irq_time;
++#endif
 +
-+	  If in doubt, say N here.
-+
- source "kernel/Kconfig.preempt"
+ 	/* calc_load related fields */
+ 	unsigned long calc_load_update;
+ 	long calc_load_active;
+@@ -645,6 +649,7 @@ static inline struct task_group *task_group(struct task_struct *p)
+ #endif /* CONFIG_CGROUP_SCHED */
  
- config X86_UP_APIC
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 26a863a..a1c2cd7 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -104,10 +104,14 @@ int __init notsc_setup(char *str)
+ static u64 irq_time_cpu(int cpu);
++static void sched_irq_time_avg_update(struct rq *rq, u64 irq_time);
  
- __setup("notsc", notsc_setup);
- 
-+static int no_sched_irq_time;
-+
- static int __init tsc_setup(char *str)
+ inline void update_rq_clock(struct rq *rq)
  {
- 	if (!strcmp(str, "reliable"))
- 		tsc_clocksource_reliable = 1;
-+	if (!strncmp(str, "noirqtime", 9))
-+		no_sched_irq_time = 1;
- 	return 1;
+@@ -656,6 +661,8 @@ inline void update_rq_clock(struct rq *rq)
+ 		irq_time = irq_time_cpu(cpu);
+ 		if (rq->clock - irq_time > rq->clock_task)
+ 			rq->clock_task = rq->clock - irq_time;
++
++		sched_irq_time_avg_update(rq, irq_time);
+ 	}
  }
  
-@@ -801,6 +805,7 @@ void mark_tsc_unstable(char *reason)
- 	if (!tsc_unstable) {
- 		tsc_unstable = 1;
- 		sched_clock_stable = 0;
-+		disable_sched_clock_irqtime();
- 		printk(KERN_INFO "Marking TSC unstable due to %s\n", reason);
- 		/* Change only the rating, when not registered */
- 		if (clocksource_tsc.mult)
-@@ -987,6 +992,9 @@ void __init tsc_init(void)
- 	/* now allow native_sched_clock() to use rdtsc */
- 	tsc_disabled = 0;
+@@ -1994,6 +2001,15 @@ void account_system_vtime(struct task_struct *curr)
+ 	local_irq_restore(flags);
+ }
  
-+	if (!no_sched_irq_time)
-+		enable_sched_clock_irqtime();
++static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time)
++{
++	if (sched_clock_irqtime && sched_feat(NONIRQ_POWER)) {
++		u64 delta_irq = curr_irq_time - rq->prev_irq_time;
++		rq->prev_irq_time = curr_irq_time;
++		sched_rt_avg_update(rq, delta_irq);
++	}
++}
 +
- 	lpj = ((u64)tsc_khz * 1000);
- 	do_div(lpj, HZ);
- 	lpj_fine = lpj;
+ #else
+ 
+ static u64 irq_time_cpu(int cpu)
+@@ -2001,6 +2017,8 @@ static u64 irq_time_cpu(int cpu)
+ 	return 0;
+ }
+ 
++static void sched_irq_time_avg_update(struct rq *rq, u64 curr_irq_time) { }
++
+ #endif
+ 
+ #include "sched_idletask.c"
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 0baa696..6d0362a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2268,7 +2268,13 @@ unsigned long scale_rt_power(int cpu)
+ 	u64 total, available;
+ 
+ 	total = sched_avg_period() + (rq->clock - rq->age_stamp);
+-	available = total - rq->rt_avg;
++
++	if (unlikely(total < rq->rt_avg)) {
++		/* Ensures that power won't end up being negative */
++		available = 0;
++	} else {
++		available = total - rq->rt_avg;
++	}
+ 
+ 	if (unlikely((s64)total < SCHED_LOAD_SCALE))
+ 		total = SCHED_LOAD_SCALE;
+diff --git a/kernel/sched_features.h b/kernel/sched_features.h
+index 83c66e8..185f920 100644
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -61,3 +61,8 @@ SCHED_FEAT(ASYM_EFF_LOAD, 1)
+  * release the lock. Decreases scheduling overhead.
+  */
+ SCHED_FEAT(OWNER_SPIN, 1)
++
++/*
++ * Decrement CPU power based on irq activity
++ */
++SCHED_FEAT(NONIRQ_POWER, 1)
 -- 
 1.7.1
 
