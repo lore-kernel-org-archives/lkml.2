@@ -1,55 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab0JERpl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 13:45:41 -0400
-Received: from kroah.org ([198.145.64.141]:50580 "EHLO coco.kroah.org"
+	id S1754563Ab0JERrU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 13:47:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21258 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753292Ab0JERpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 13:45:40 -0400
-Date: Tue, 5 Oct 2010 10:42:00 -0700
-From: Greg KH <greg@kroah.com>
-To: Antonio Ospite <ospite@studenti.unina.it>
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        linux-kernel@vger.kernel.org, Oliver Neukum <oliver@neukum.name>,
-        stable@kernel.org, Alan Ott <alan@signal11.us>
-Subject: Re: [stable] [PATCH 0/2] HID: hidraw, fix two NULL pointer
- dereferences
-Message-ID: <20101005174200.GB29937@kroah.com>
-References: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz>
- <1286292017-6746-1-git-send-email-ospite@studenti.unina.it>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286292017-6746-1-git-send-email-ospite@studenti.unina.it>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753252Ab0JERrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 13:47:19 -0400
+Date: Tue, 5 Oct 2010 13:47:18 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org, x86@kernel.org, sassmann@redhat.com,
+        akataria@vmware.com
+Cc: Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20101005174659.17912.1027.sendpatchset@prarit.bos.redhat.com>
+Subject: [PATCH]: x86: local_irq_save/restore when issuing IPI in early bootup
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 05:20:15PM +0200, Antonio Ospite wrote:
-> Hi,
-> 
-> here are some fixes to hidraw.
-> 
-> Patches are against 2.6.36-rc6, but they should be ported to other
-> maintained stable kernels as well.
-> 
-> Antonio Ospite (2):
->   HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
->   HID: hidraw, fix a NULL pointer dereference in hidraw_write
-> 
->  drivers/hid/hidraw.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> 
-> The first one has been sent already but I am resending it with
-> stable@stable@kernel.org in the recipients list.
+Resending to wider audience.  This was originally posted here
 
-Please read Documentation/stable_kernel_rules.txt which shows you how to
-properly notify the stable developer to pick up the patch (hint, cc:ing
-them on the patch is not the correct way, you need to add the mark to
-the signed-off-by: area.)
+http://marc.info/?l=linux-kernel&m=128162059006512&w=2
 
-thanks,
 
-greg k-h
+
+When sending out an IPI interrupts are masked off.  In the cpu wakeup code, this
+is not the case.  Make the code consistent.
+
+Alok Kataria noticed the following hang:
+
+1.  vcpu1 is doing wakeup_secondary_cpu_via_init() is booting all the other
+processors.  It tries to bring each cpu up by sending an IPI which is done
+by writing the APIC ICR.
+
+The call path is wakeup_secondary_cpu_via_init() which calls apic_icr_write->
+native_apic_icr_write().  native_apic_icr_write() writes APIC_ICR2 and APIC_ICR
+in order to modify the ICRHI and ICRLO values.
+
+The ICRHI is set to the number of online cpus.
+
+The write to APIC_ICR does not happen because
+
+2.  vcpu1's physical cpu *may* take a timer interrupt which does
+lapic_timer_broadcast(), which calls send_IPI_mask().  send_IPI_mask()
+calls default_send_IPI_mask_sequence_phys() which changes the ICRHI value to
+the number of online vcpus -- which is one less than what it was set to in
+step 1.
+
+3.  return to thread in step 1 ... ICRHI is different and one less
+than the previous value.  This results in the IPI being sent TWICE to the
+same vcpu (CPU X-1) instead of once to CPU X-1 and once to CPU X.
+
+It may be that native_apic_icr_write() actually needs it's own irq save/restore,
+however, I cannot see a code path that requires it.  A larger irq save/restore
+seems more appropriate around the IPI code which seems adequate given that
+other code does the same thing (see calls to __default_send_IPI_dest_field() )
+and is not broken.
+
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 8b3bfc4..efa6c98 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -580,6 +580,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ {
+ 	unsigned long send_status, accept_status = 0;
+ 	int maxlvt, num_starts, j;
++	unsigned long flags;
+ 
+ 	maxlvt = lapic_get_maxlvt();
+ 
+@@ -600,6 +601,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 	/*
+ 	 * Send IPI
+ 	 */
++	local_irq_save(flags);
+ 	apic_icr_write(APIC_INT_LEVELTRIG | APIC_INT_ASSERT | APIC_DM_INIT,
+ 		       phys_apicid);
+ 
+@@ -616,6 +618,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 
+ 	pr_debug("Waiting for send to finish...\n");
+ 	send_status = safe_apic_wait_icr_idle();
++	local_irq_restore(flags);
+ 
+ 	mb();
+ 	atomic_set(&init_deasserted, 1);
+@@ -657,6 +660,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 		/* Target chip */
+ 		/* Boot on the stack */
+ 		/* Kick the second */
++		local_irq_save(flags);
+ 		apic_icr_write(APIC_DM_STARTUP | (start_eip >> 12),
+ 			       phys_apicid);
+ 
+@@ -669,6 +673,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
+ 
+ 		pr_debug("Waiting for send to finish...\n");
+ 		send_status = safe_apic_wait_icr_idle();
++		local_irq_restore(flags);
+ 
+ 		/*
+ 		 * Give the other CPU some time to accept the IPI.
