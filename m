@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754266Ab0JESoq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 14:44:46 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57141
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751197Ab0JESop (ORCPT
+	id S1754299Ab0JESqV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 14:46:21 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:47713 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752481Ab0JESqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 14:44:45 -0400
-Date: Tue, 05 Oct 2010 11:45:06 -0700 (PDT)
-Message-Id: <20101005.114506.184852374.davem@davemloft.net>
-To: masa-korg@dsn.okisemi.com
-Cc: mkl@pengutronix.de, sameo@linux.intel.com, chripell@fsfe.org,
-        meego-dev@meego.com, morinaga526@dsn.okisemi.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, socketcan-core@lists.berlios.de,
-        yong.y.wang@intel.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, margie.foster@intel.com, qi.wang@intel.com,
-        andrew.chih.howe.khor@intel.com, wg@grandegger.com
-Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <002e01cb6486$2ed72cc0$66f8800a@maildom.okisemi.com>
-References: <000401cb6477$25a0eba0$66f8800a@maildom.okisemi.com>
-	<4CAB0732.3010400@pengutronix.de>
-	<002e01cb6486$2ed72cc0$66f8800a@maildom.okisemi.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Tue, 5 Oct 2010 14:46:20 -0400
+Date: Tue, 5 Oct 2010 20:41:49 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Jay Vosburgh <fubar@us.ibm.com>
+Cc: bonding-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] bonding: simplify conditionals
+Message-ID: <20101005204149.6a43d080@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Date: Tue, 5 Oct 2010 21:09:30 +0900
+Simplify conditionals:
+ (a || (!a && !b)) => (a || !b)
+ (!(!a && b)) => (a || !b)
 
-> On Tuesday, October 05, 2010 8:08 PM, Marc Kleine-Budde wrote:
->> If FIFO is working you might also think about NAPI.
-> 
-> I think NAPI isn't necessary for our CAN driver.
-> NAPI is for high-speed networking.
-> CAN is NOT high-speed.
-> 
-> In fact, some accepted CAN drivers don't have NAPI.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ drivers/net/bonding/bond_3ad.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-NAPI is not just for performance concerns.
-
-It greatly simplifies the locking since all packet processing paths
-run only in software interrupt context, never in hardware interrupt
-context.
-
-We encourage all new drivers that can use NAPI to do so, just because
-recent driver submissions do not do this doesn't mean we should
-continue such a mistake ;-)
+diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
+index 0ddf4c6..d0ad321 100644
+--- a/drivers/net/bonding/bond_3ad.c
++++ b/drivers/net/bonding/bond_3ad.c
+@@ -1541,10 +1541,9 @@ static void ad_agg_selection_logic(struct aggregator *agg)
+ 		 */
+ 		if (active && active->lag_ports &&
+ 		    active->lag_ports->is_enabled &&
+-		    (__agg_has_partner(active) ||
+-		     (!__agg_has_partner(active) && !__agg_has_partner(best)))) {
+-			if (!(!active->actor_oper_aggregator_key &&
+-			      best->actor_oper_aggregator_key)) {
++		    (__agg_has_partner(active) || !__agg_has_partner(best))) {
++			if (active->actor_oper_aggregator_key ||
++			    !best->actor_oper_aggregator_key) {
+ 				best = NULL;
+ 				active->is_active = 1;
+ 			}
+-- 
+1.7.2.2
