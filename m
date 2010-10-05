@@ -1,114 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932304Ab0JEIzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 04:55:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21037 "EHLO mx1.redhat.com"
+	id S932344Ab0JEI53 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 04:57:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35610 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753317Ab0JEIzt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 04:55:49 -0400
-Date: Tue, 5 Oct 2010 10:57:17 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: stable@kernel.org,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        "Chatre, Reinette" <reinette.chatre@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "Cahill, Ben M" <ben.m.cahill@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: Fw: [PATCH] iwl3945: queue the right work if the scan needs to
- be aborted
-Message-ID: <20101005085717.GA18012@redhat.com>
-References: <20101005084305.52a31ed4@schatten.dmk.lab>
+	id S932206Ab0JEI52 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 04:57:28 -0400
+Message-ID: <4CAAE8E3.5020207@kernel.org>
+Date: Tue, 05 Oct 2010 10:59:15 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101005084305.52a31ed4@schatten.dmk.lab>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: [PATCH wq#for-next 1/2] workqueue: prepare for more tracepoints
+References: <1285861140-5948-1-git-send-regression-fweisbec@gmail.com> <4CA9E8E0.7040503@kernel.org> <20101004155410.GA5381@nowhere>
+In-Reply-To: <20101004155410.GA5381@nowhere>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 08:57:13 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 08:43:05AM +0200, Florian Mickler wrote:
-> commit e7ee762cf074b0fd8eec483d0cef8fdbf0d04b81
-> 
-> 
-> Begin forwarded message:
-> On Fri, 2010-09-24 at 09:22 -0700, Florian Mickler wrote:
-> > iwl3945's scan_completed calls into the mac80211 stack which triggers a
-> > warn on if there is no scan outstanding.
-> > 
-> > This can be avoided by not calling scan_completed but abort_scan in
-> > iwl3945_request_scan  in the done: branch of the function which is used
-> > as an error out.
-> > 
-> > The done: branch seems to be an error-out branch, as, for example, if
-> > iwl_is_ready(priv) returns false  the done: branch is executed.
-> > 
-> > NOTE:
-> > I'm not familiar with the driver at all.
-> > I just quickly scanned as a reaction to
-> > 
-> > https://bugzilla.kernel.org/show_bug.cgi?id=17722
-> > 
-> > the users of scan_completed in the  iwl3945 driver and noted the odd
-> > discrepancy between the comment above this instance and the comment in
-> > mac80211 scan_completed function.
-> > Signed-off-by: Florian Mickler <florian@mickler.org>
-> Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> > ---
-> go into wireless-2.6 and stable only, scan fix already in
-> wireless-next-2.6
+Define workqueue_work event class and use it for workqueue_execute_end
+trace point.  Also, move trace/events/workqueue.h include downwards
+such that all struct definitions are visible to it.  This is to
+prepare for more tracepoints and doesn't cause any functional change.
 
-> 
-> Thanks
-> Wey
-> 
-> >  drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |    2 +-
-> >  drivers/net/wireless/iwlwifi/iwl3945-base.c |    2 +-
-> >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> > index 9dd9e64..8fd00a6 100644
-> > --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> > +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> > @@ -1411,7 +1411,7 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
-> >  	clear_bit(STATUS_SCAN_HW, &priv->status);
-> >  	clear_bit(STATUS_SCANNING, &priv->status);
-> >  	/* inform mac80211 scan aborted */
-> > -	queue_work(priv->workqueue, &priv->scan_completed);
-> > +	queue_work(priv->workqueue, &priv->abort_scan);
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+---
+I'll route these two through wq tree.  Thank you.
 
-Unfortunately this patch is not right thing to do. If you look at
-abort_scan work, it do nothing if STATUS_SCAN_ABORTING bit is not set.
-That's wrong because we have to complete scan (with abort == true).
-If STATUS_SCAN_ABORTING will be set, abort_work will send scan cancel
-commands to hardware what is wrong if scan was not started yet.
+ include/trace/events/workqueue.h |   32 +++++++++++++++++++-------------
+ kernel/workqueue.c               |    6 +++---
+ 2 files changed, 22 insertions(+), 16 deletions(-)
 
-What we can eventually do, except apply iwl-scan rewrite from
-wireless-testing, is something like that:
- 
-iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+diff --git a/include/trace/events/workqueue.h b/include/trace/events/workqueue.h
+index 49682d7..ec9d724 100644
+--- a/include/trace/events/workqueue.h
++++ b/include/trace/events/workqueue.h
+@@ -7,13 +7,7 @@
+ #include <linux/tracepoint.h>
+ #include <linux/workqueue.h>
 
-  clear_bit(STATUS_SCAN_HW, &priv->status); 
-  clear_bit(STATUS_SCANNING, &priv->status); 
-  /* inform mac80211 scan aborted */ 
-  set_bit(STATUS_SCAN_ABORTING, &priv->status);
-  queue_work(priv->workqueue, &priv->scan_completed);
+-/**
+- * workqueue_execute_start - called immediately before the workqueue callback
+- * @work:	pointer to struct work_struct
+- *
+- * Allows to track workqueue execution.
+- */
+-TRACE_EVENT(workqueue_execute_start,
++DECLARE_EVENT_CLASS(workqueue_work,
 
-ieee80211_scan_completed
-  
-  if (!internal) {
-     bool aborted = test_bit(STATUS_SCAN_ABORTING, &priv->status);
-     ieee80211_scan_completed(priv->hw, aborted);
+ 	TP_PROTO(struct work_struct *work),
 
-  }
+@@ -21,24 +15,22 @@ TRACE_EVENT(workqueue_execute_start,
 
-However, I do not think we should go with that to -stable (below
-2.6.36). IIRC warnings showed up in current 2.6.36-rc, because of
-some other changes in the code.
+ 	TP_STRUCT__entry(
+ 		__field( void *,	work	)
+-		__field( void *,	function)
+ 	),
 
-Stanislaw
+ 	TP_fast_assign(
+ 		__entry->work		= work;
+-		__entry->function	= work->func;
+ 	),
+
+-	TP_printk("work struct %p: function %pf", __entry->work, __entry->function)
++	TP_printk("work struct %p", __entry->work)
+ );
+
+ /**
+- * workqueue_execute_end - called immediately before the workqueue callback
++ * workqueue_execute_start - called immediately before the workqueue callback
+  * @work:	pointer to struct work_struct
+  *
+  * Allows to track workqueue execution.
+  */
+-TRACE_EVENT(workqueue_execute_end,
++TRACE_EVENT(workqueue_execute_start,
+
+ 	TP_PROTO(struct work_struct *work),
+
+@@ -46,15 +38,29 @@ TRACE_EVENT(workqueue_execute_end,
+
+ 	TP_STRUCT__entry(
+ 		__field( void *,	work	)
++		__field( void *,	function)
+ 	),
+
+ 	TP_fast_assign(
+ 		__entry->work		= work;
++		__entry->function	= work->func;
+ 	),
+
+-	TP_printk("work struct %p", __entry->work)
++	TP_printk("work struct %p: function %pf", __entry->work, __entry->function)
+ );
+
++/**
++ * workqueue_execute_end - called immediately before the workqueue callback
++ * @work:	pointer to struct work_struct
++ *
++ * Allows to track workqueue execution.
++ */
++DEFINE_EVENT(workqueue_work, workqueue_execute_end,
++
++	TP_PROTO(struct work_struct *work),
++
++	TP_ARGS(work)
++);
+
+ #endif /*  _TRACE_WORKQUEUE_H */
+
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index 19e4bc1..026f778 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -42,9 +42,6 @@
+ #include <linux/lockdep.h>
+ #include <linux/idr.h>
+
+-#define CREATE_TRACE_POINTS
+-#include <trace/events/workqueue.h>
+-
+ #include "workqueue_sched.h"
+
+ enum {
+@@ -257,6 +254,9 @@ EXPORT_SYMBOL_GPL(system_long_wq);
+ EXPORT_SYMBOL_GPL(system_nrt_wq);
+ EXPORT_SYMBOL_GPL(system_unbound_wq);
+
++#define CREATE_TRACE_POINTS
++#include <trace/events/workqueue.h>
++
+ #define for_each_busy_worker(worker, i, pos, gcwq)			\
+ 	for (i = 0; i < BUSY_WORKER_HASH_SIZE; i++)			\
+ 		hlist_for_each_entry(worker, pos, &gcwq->busy_hash[i], hentry)
+-- 
+1.7.1
+
