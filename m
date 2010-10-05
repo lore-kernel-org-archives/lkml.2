@@ -1,135 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab0JEKMq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:12:46 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:45940 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932620Ab0JEKMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:12:45 -0400
-Date: Tue, 5 Oct 2010 12:12:42 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Stanislaw Gruszka <sgruszka@redhat.com>
-Cc: stable@kernel.org,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>,
-        "Chatre, Reinette" <reinette.chatre@intel.com>,
-        Intel Linux Wireless <ilw@linux.intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        "Berg, Johannes" <johannes.berg@intel.com>,
-        "Cahill, Ben M" <ben.m.cahill@intel.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] iwl3945: queue the right work if the scan needs to be
- aborted
-Message-ID: <20101005121242.79cdafc2@schatten.dmk.lab>
-In-Reply-To: <20101005085717.GA18012@redhat.com>
-References: <20101005084305.52a31ed4@schatten.dmk.lab>
-	<20101005085717.GA18012@redhat.com>
-X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932829Ab0JEKWE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:22:04 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:7673 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755244Ab0JEKWB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 06:22:01 -0400
+Message-ID: <000401cb6477$25a0eba0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Wolfgang Grandegger" <wg@grandegger.com>
+Cc: <andrew.chih.howe.khor@intel.com>, <qi.wang@intel.com>,
+        <margie.foster@intel.com>, <netdev@vger.kernel.org>,
+        <yong.y.wang@intel.com>, <linux-kernel@vger.kernel.org>,
+        <socketcan-core@lists.berlios.de>, <kok.howg.ewe@intel.com>,
+        "Christian Pellegrin" <chripell@fsfe.org>,
+        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>, <meego-dev@meego.com>,
+        "David S. Miller" <davem@davemloft.net>, <joel.clark@intel.com>,
+        "Samuel Ortiz" <sameo@linux.intel.com>
+References: <4C9C7C6F.1000003@dsn.okisemi.com>	<4CA4541F.5040804@grandegger.com> <000401cb614f$c932c750$66f8800a@maildom.okisemi.com> <4CA5D6D7.3010608@grandegger.com>
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
+Date: Tue, 5 Oct 2010 19:21:56 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Oct 2010 10:57:17 +0200
-Stanislaw Gruszka <sgruszka@redhat.com> wrote:
+Hi Wolfgang,
 
-> On Tue, Oct 05, 2010 at 08:43:05AM +0200, Florian Mickler wrote:
-> > commit e7ee762cf074b0fd8eec483d0cef8fdbf0d04b81
-> > 
-> > 
-> > Begin forwarded message:
-> > On Fri, 2010-09-24 at 09:22 -0700, Florian Mickler wrote:
-> > > iwl3945's scan_completed calls into the mac80211 stack which triggers a
-> > > warn on if there is no scan outstanding.
-> > > 
-> > > This can be avoided by not calling scan_completed but abort_scan in
-> > > iwl3945_request_scan  in the done: branch of the function which is used
-> > > as an error out.
-> > > 
-> > > The done: branch seems to be an error-out branch, as, for example, if
-> > > iwl_is_ready(priv) returns false  the done: branch is executed.
-> > > 
-> > > NOTE:
-> > > I'm not familiar with the driver at all.
-> > > I just quickly scanned as a reaction to
-> > > 
-> > > https://bugzilla.kernel.org/show_bug.cgi?id=17722
-> > > 
-> > > the users of scan_completed in the  iwl3945 driver and noted the odd
-> > > discrepancy between the comment above this instance and the comment in
-> > > mac80211 scan_completed function.
-> > > Signed-off-by: Florian Mickler <florian@mickler.org>
-> > Acked-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-> > > ---
-> > go into wireless-2.6 and stable only, scan fix already in
-> > wireless-next-2.6
-> 
-> > 
-> > Thanks
-> > Wey
-> > 
-> > >  drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |    2 +-
-> > >  drivers/net/wireless/iwlwifi/iwl3945-base.c |    2 +-
-> > >  2 files changed, 2 insertions(+), 2 deletions(-)
-> > > 
-> > > diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> > > index 9dd9e64..8fd00a6 100644
-> > > --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> > > +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-> > > @@ -1411,7 +1411,7 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
-> > >  	clear_bit(STATUS_SCAN_HW, &priv->status);
-> > >  	clear_bit(STATUS_SCANNING, &priv->status);
-> > >  	/* inform mac80211 scan aborted */
-> > > -	queue_work(priv->workqueue, &priv->scan_completed);
-> > > +	queue_work(priv->workqueue, &priv->abort_scan);
-> 
-> Unfortunately this patch is not right thing to do. If you look at
-> abort_scan work, it do nothing if STATUS_SCAN_ABORTING bit is not set.
-> That's wrong because we have to complete scan (with abort == true).
-> If STATUS_SCAN_ABORTING will be set, abort_work will send scan cancel
-> commands to hardware what is wrong if scan was not started yet.
-> 
-> What we can eventually do, except apply iwl-scan rewrite from
-> wireless-testing, is something like that:
->  
-> iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
-> 
->   clear_bit(STATUS_SCAN_HW, &priv->status); 
->   clear_bit(STATUS_SCANNING, &priv->status); 
->   /* inform mac80211 scan aborted */ 
->   set_bit(STATUS_SCAN_ABORTING, &priv->status);
->   queue_work(priv->workqueue, &priv->scan_completed);
-> 
-> ieee80211_scan_completed
->   
->   if (!internal) {
->      bool aborted = test_bit(STATUS_SCAN_ABORTING, &priv->status);
->      ieee80211_scan_completed(priv->hw, aborted);
-> 
->   }
-> 
-> However, I do not think we should go with that to -stable (below
-> 2.6.36). IIRC warnings showed up in current 2.6.36-rc, because of
-> some other changes in the code.
-> 
-> Stanislaw
+I could confirm below.
+With FIFO mode, it is able to receive packet with in-order.
+We are now implementing FIFO mode.
 
-Thx for looking at this. I suspect you know the code better than I do.. what is about the
-first jump to :done in iwlagn_request_scan()
+Thanks, Ohtake(OKISemi)
 
-         if (!iwl_is_ready(priv)) {
-                 IWL_WARN(priv, "request scan called when driver not ready.\n");
-                 goto done;
-         }
+----- Original Message ----- 
+From: "Wolfgang Grandegger" <wg@grandegger.com>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: <andrew.chih.howe.khor@intel.com>; <qi.wang@intel.com>; <margie.foster@intel.com>; <netdev@vger.kernel.org>;
+<yong.y.wang@intel.com>; <linux-kernel@vger.kernel.org>; <socketcan-core@lists.berlios.de>; <kok.howg.ewe@intel.com>;
+"Christian Pellegrin" <chripell@fsfe.org>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; <meego-dev@meego.com>;
+"David S. Miller" <davem@davemloft.net>; <joel.clark@intel.com>; "Samuel Ortiz" <sameo@linux.intel.com>
+Sent: Friday, October 01, 2010 9:40 PM
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
 
-Does abort_scan need to do anything in that case? 
-I can't see where we set up the hardware for scanning in that case.
-(I've gone through the codepath coming from the mac80211 hw_scan) 
 
-Regards,
-Flo
+> On 10/01/2010 12:02 PM, Masayuki Ohtake wrote:
+> > Hi Wolfgang Grandegger,
+> >
+> > Thank you for your comments.
+> >
+> > We will modify and re-post ASAP.
+> >
+> > I have a comment about below.
+> >> In this driver you are using just *one* RX object. This means that the
+> >> CPU must handle new messages as quickly as possible otherwise message
+> >> losses will happen, right?. For sure, this will not make user's happy.
+> >> Any chance to use more RX objects in FIFO mode?
+> >
+> > In case implementing with FIFO mode,
+> > received packets may be our of order.
+>
+> Hm, FIFO means "First in First out"! It might be tricky to implement,
+> though.
+>
+> > Because our CAN register access is slow.
+> >
+> > I am confirming our CAN HW spec and the possibility of our-of-order.
+>
+> I don't understand?
+>
+> Wolfgang.
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
 
