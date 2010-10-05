@@ -1,29 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932283Ab0JEG5D (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 02:57:03 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46133 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756800Ab0JEG5B (ORCPT
+	id S932316Ab0JEG5X (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 02:57:23 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:34460 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932275Ab0JEG5V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 02:57:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 5 Oct 2010 15:51:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 03/10] memcg: create extensible page stat update
- routines
-Message-Id: <20101005155142.847b1529.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1286175485-30643-4-git-send-email-gthelen@google.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-4-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 5 Oct 2010 02:57:21 -0400
+Date: Tue, 5 Oct 2010 08:57:01 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Seth Heasley <seth.heasley@intel.com>
+Cc: jbarnes@virtuousgeek.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH 2.6.35.4] irq: irq and pci_ids patch for Intel Patsburg
+Message-ID: <20101005085701.3381b236@endymion.delvare>
+In-Reply-To: <201010041327.15170.seth.heasley@intel.com>
+References: <201009241606.11840.seth.heasley@intel.com>
+	<201010041327.15170.seth.heasley@intel.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -31,128 +25,144 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  3 Oct 2010 23:57:58 -0700
-Greg Thelen <gthelen@google.com> wrote:
-
-> Replace usage of the mem_cgroup_update_file_mapped() memcg
-> statistic update routine with two new routines:
-> * mem_cgroup_inc_page_stat()
-> * mem_cgroup_dec_page_stat()
+On Mon, 4 Oct 2010 13:27:14 -0700, Seth Heasley wrote:
+> Agreed.  I've updated that in both places it's referenced.  Final (hopefully) patch below:
 > 
-> As before, only the file_mapped statistic is managed.  However,
-> these more general interfaces allow for new statistics to be
-> more easily added.  New statistics are added with memcg dirty
-> page accounting.
+> This patch updates the defines for Intel devices in include/linux/pci_ids.h, referenced in arch/x86/pci/irq.c and drivers/i2c/busses/i2c-i801.c, reflecting approved legal branding, and using fuller code-names for products under development.
+>  
+> Signed-off-by: Seth Heasley <seth.heasley@intel.com>
+
+Thanks a lot for doing this.
+
+Acked-by: Jean Delvare <khali@linux-fr.org>
+
 > 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-a nitpick. see below.
-
-> ---
->  include/linux/memcontrol.h |   31 ++++++++++++++++++++++++++++---
->  mm/memcontrol.c            |   17 ++++++++---------
->  mm/rmap.c                  |    4 ++--
->  3 files changed, 38 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 159a076..7c7bec4 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -25,6 +25,11 @@ struct page_cgroup;
->  struct page;
->  struct mm_struct;
->  
-> +/* Stats that can be updated by kernel. */
-> +enum mem_cgroup_write_page_stat_item {
-> +	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
-> +};
-> +
->  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->  					struct list_head *dst,
->  					unsigned long *scanned, int order,
-> @@ -121,7 +126,22 @@ static inline bool mem_cgroup_disabled(void)
->  	return false;
->  }
->  
-> -void mem_cgroup_update_file_mapped(struct page *page, int val);
-> +void mem_cgroup_update_page_stat(struct page *page,
-> +				 enum mem_cgroup_write_page_stat_item idx,
-> +				 int val);
-> +
-> +static inline void mem_cgroup_inc_page_stat(struct page *page,
-> +				enum mem_cgroup_write_page_stat_item idx)
-> +{
-> +	mem_cgroup_update_page_stat(page, idx, 1);
-> +}
-> +
-> +static inline void mem_cgroup_dec_page_stat(struct page *page,
-> +				enum mem_cgroup_write_page_stat_item idx)
-> +{
-> +	mem_cgroup_update_page_stat(page, idx, -1);
-> +}
-> +
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  						gfp_t gfp_mask);
->  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
-> @@ -293,8 +313,13 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
->  {
->  }
->  
-> -static inline void mem_cgroup_update_file_mapped(struct page *page,
-> -							int val)
-> +static inline void mem_cgroup_inc_page_stat(struct page *page,
-> +				enum mem_cgroup_write_page_stat_item idx)
-> +{
-> +}
-> +
-> +static inline void mem_cgroup_dec_page_stat(struct page *page,
-> +				enum mem_cgroup_write_page_stat_item idx)
->  {
->  }
->  
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 512cb12..f4259f4 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
->   * possibility of race condition. If there is, we take a lock.
->   */
->  
-> -static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
-> +void mem_cgroup_update_page_stat(struct page *page,
-> +				 enum mem_cgroup_write_page_stat_item idx,
-> +				 int val)
->  {
->  	struct mem_cgroup *mem;
->  	struct page_cgroup *pc = lookup_page_cgroup(page);
-> @@ -1615,30 +1617,27 @@ static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
->  			goto out;
+> --- linux-2.6.35.4/include/linux/pci_ids.h.orig	2010-08-26 16:47:12.000000000 -0700
+> +++ linux-2.6.35.4/include/linux/pci_ids.h	2010-09-24 13:56:47.000000000 -0700
+> @@ -2420,9 +2420,10 @@
+>  #define PCI_DEVICE_ID_INTEL_82840_HB	0x1a21
+>  #define PCI_DEVICE_ID_INTEL_82845_HB	0x1a30
+>  #define PCI_DEVICE_ID_INTEL_IOAT	0x1a38
+> -#define PCI_DEVICE_ID_INTEL_CPT_SMBUS	0x1c22
+> -#define PCI_DEVICE_ID_INTEL_CPT_LPC_MIN	0x1c41
+> -#define PCI_DEVICE_ID_INTEL_CPT_LPC_MAX	0x1c5f
+> +#define PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS	0x1c22
+> +#define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN	0x1c41
+> +#define PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX	0x1c5f
+> +#define PCI_DEVICE_ID_INTEL_PATSBURG_LPC	0x1d40
+>  #define PCI_DEVICE_ID_INTEL_82801AA_0	0x2410
+>  #define PCI_DEVICE_ID_INTEL_82801AA_1	0x2411
+>  #define PCI_DEVICE_ID_INTEL_82801AA_3	0x2413
+> @@ -2628,9 +2629,9 @@
+>  #define PCI_DEVICE_ID_INTEL_ICH10_3	0x3a1a
+>  #define PCI_DEVICE_ID_INTEL_ICH10_4	0x3a30
+>  #define PCI_DEVICE_ID_INTEL_ICH10_5	0x3a60
+> -#define PCI_DEVICE_ID_INTEL_PCH_LPC_MIN	0x3b00
+> -#define PCI_DEVICE_ID_INTEL_PCH_LPC_MAX	0x3b1f
+> -#define PCI_DEVICE_ID_INTEL_PCH_SMBUS	0x3b30
+> +#define PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN	0x3b00
+> +#define PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX	0x3b1f
+> +#define PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS	0x3b30
+>  #define PCI_DEVICE_ID_INTEL_IOAT_SNB	0x402f
+>  #define PCI_DEVICE_ID_INTEL_5100_16	0x65f0
+>  #define PCI_DEVICE_ID_INTEL_5100_21	0x65f5
+> @@ -2639,8 +2640,8 @@
+>  #define PCI_DEVICE_ID_INTEL_5400_FBD0	0x4035
+>  #define PCI_DEVICE_ID_INTEL_5400_FBD1	0x4036
+>  #define PCI_DEVICE_ID_INTEL_IOAT_SCNB	0x65ff
+> -#define PCI_DEVICE_ID_INTEL_TOLAPAI_0	0x5031
+> -#define PCI_DEVICE_ID_INTEL_TOLAPAI_1	0x5032
+> +#define PCI_DEVICE_ID_INTEL_EP80579_0	0x5031
+> +#define PCI_DEVICE_ID_INTEL_EP80579_1	0x5032
+>  #define PCI_DEVICE_ID_INTEL_82371SB_0	0x7000
+>  #define PCI_DEVICE_ID_INTEL_82371SB_1	0x7010
+>  #define PCI_DEVICE_ID_INTEL_82371SB_2	0x7020
+> --- linux-2.6.35.4/arch/x86/pci/irq.c.orig	2010-09-24 13:59:39.000000000 -0700
+> +++ linux-2.6.35.4/arch/x86/pci/irq.c	2010-09-24 14:02:07.000000000 -0700
+> @@ -584,28 +584,28 @@
+>  	case PCI_DEVICE_ID_INTEL_ICH9_3:
+>  	case PCI_DEVICE_ID_INTEL_ICH9_4:
+>  	case PCI_DEVICE_ID_INTEL_ICH9_5:
+> -	case PCI_DEVICE_ID_INTEL_TOLAPAI_0:
+> +	case PCI_DEVICE_ID_INTEL_EP80579_0:
+>  	case PCI_DEVICE_ID_INTEL_ICH10_0:
+>  	case PCI_DEVICE_ID_INTEL_ICH10_1:
+>  	case PCI_DEVICE_ID_INTEL_ICH10_2:
+>  	case PCI_DEVICE_ID_INTEL_ICH10_3:
+> -	case PCI_DEVICE_ID_INTEL_PBG_LPC:
+> +	case PCI_DEVICE_ID_INTEL_PATSBURG_LPC:
+>  		r->name = "PIIX/ICH";
+>  		r->get = pirq_piix_get;
+>  		r->set = pirq_piix_set;
+>  		return 1;
 >  	}
 >  
-> -	this_cpu_add(mem->stat->count[idx], val);
-> -
->  	switch (idx) {
-> -	case MEM_CGROUP_STAT_FILE_MAPPED:
-> +	case MEMCG_NR_FILE_MAPPED:
->  		if (val > 0)
->  			SetPageCgroupFileMapped(pc);
->  		else if (!page_mapped(page))
->  			ClearPageCgroupFileMapped(pc);
-> +		idx = MEM_CGROUP_STAT_FILE_MAPPED;
->  		break;
->  	default:
->  		BUG();
+> -	if ((device >= PCI_DEVICE_ID_INTEL_PCH_LPC_MIN) && 
+> -		(device <= PCI_DEVICE_ID_INTEL_PCH_LPC_MAX)) {
+> +	if ((device >= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MIN) && 
+> +		(device <= PCI_DEVICE_ID_INTEL_5_3400_SERIES_LPC_MAX)) {
+>  		r->name = "PIIX/ICH";
+>  		r->get = pirq_piix_get;
+>  		r->set = pirq_piix_set;
+>  		return 1;
 >  	}
 >  
-> +	this_cpu_add(mem->stat->count[idx], val);
-> +
+> -	if ((device >= PCI_DEVICE_ID_INTEL_CPT_LPC_MIN) && 
+> -		(device <= PCI_DEVICE_ID_INTEL_CPT_LPC_MAX)) {
+> +	if ((device >= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MIN) && 
+> +		(device <= PCI_DEVICE_ID_INTEL_COUGARPOINT_LPC_MAX)) {
+>  		r->name = "PIIX/ICH";
+>  		r->get = pirq_piix_get;
+>  		r->set = pirq_piix_set;
+> --- linux-2.6.35.4/drivers/i2c/busses/Kconfig.orig	2010-09-24 14:59:23.000000000 -0700
+> +++ linux-2.6.35.4/drivers/i2c/busses/Kconfig	2010-10-04 13:10:44.000000000 -0700
+> @@ -95,9 +95,9 @@
+>  	    ESB2
+>  	    ICH8
+>  	    ICH9
+> -	    Tolapai
+> +	    EP80579 (Tolapai)
+>  	    ICH10
+> -	    3400/5 Series (PCH)
+> +	    5/3400 Series (PCH)
+>  	    Cougar Point (PCH)
+>  
+>  	  This driver can also be built as a module.  If so, the module
+> --- linux-2.6.35.4/drivers/i2c/busses/i2c-i801.c.orig	2010-09-24 14:57:55.000000000 -0700
+> +++ linux-2.6.35.4/drivers/i2c/busses/i2c-i801.c	2010-10-04 13:12:00.000000000 -0700
+> @@ -38,10 +38,10 @@
+>    82801G   (ICH7)       0x27da     32     hard     yes     yes     yes
+>    82801H   (ICH8)       0x283e     32     hard     yes     yes     yes
+>    82801I   (ICH9)       0x2930     32     hard     yes     yes     yes
+> -  Tolapai               0x5032     32     hard     yes     yes     yes
+> +  EP80579 (Tolapai)     0x5032     32     hard     yes     yes     yes
+>    ICH10                 0x3a30     32     hard     yes     yes     yes
+>    ICH10                 0x3a60     32     hard     yes     yes     yes
+> -  3400/5 Series (PCH)   0x3b30     32     hard     yes     yes     yes
+> +  5/3400 Series (PCH)   0x3b30     32     hard     yes     yes     yes
+>    Cougar Point (PCH)    0x1c22     32     hard     yes     yes     yes
+>  
+>    Features supported by this driver:
+> @@ -587,11 +587,11 @@
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ESB2_17) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH8_5) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH9_6) },
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_TOLAPAI_1) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_EP80579_1) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_4) },
+>  	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ICH10_5) },
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_PCH_SMBUS) },
+> -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_CPT_SMBUS) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_5_3400_SERIES_SMBUS) },
+> +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_COUGARPOINT_SMBUS) },
+>  	{ 0, }
+>  };
+>  
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-i2c" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-Why you move this_cpu_add() placement ?
-(This placement is ok but I just wonder..)
 
-Thanks,
--Kame
-
+-- 
+Jean Delvare
