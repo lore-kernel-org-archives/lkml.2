@@ -1,175 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab0JEBMd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 21:12:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57840 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752741Ab0JEBMc (ORCPT
+	id S1756425Ab0JEBNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 21:13:14 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:43566 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751546Ab0JEBNN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 21:12:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimbEnwPaAvvNN3NCt7Nzx6FG2hbr4QurT5-YukN@mail.gmail.com>
-References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6>
- <201010041300.15234.arnd@arndb.de> <alpine.LFD.2.00.1010050026170.2556@localhost6.localdomain6>
- <AANLkTimbEnwPaAvvNN3NCt7Nzx6FG2hbr4QurT5-YukN@mail.gmail.com>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 4 Oct 2010 18:11:34 -0700
-Message-ID: <AANLkTimzo_Kmm5HdCdGLnnFrpVMKNpvjhO7F357FW+kO@mail.gmail.com>
-Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Kay Sievers <kay.sievers@vrfy.org>, Brandon Philips <brandon@ifup.org>
-Content-Type: multipart/mixed; boundary=0023547c8b93b9925d0491d45890
+	Mon, 4 Oct 2010 21:13:13 -0400
+Date: Tue, 5 Oct 2010 10:13:04 +0900
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: =?ISO-8859-1?B?xnZhciBBcm5mavZy8A==?= Bjarmason <avarab@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Michal Marek <mmarek@suse.cz>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] namespace.pl : update file exclusion list
+Message-ID: <20101005101304.1aedcec8@s6510>
+In-Reply-To: <AANLkTimtuXbNpXezj8C46KcxRJMYAgRAd2UuqrF2Op_7@mail.gmail.com>
+References: <20100928084400.997539242@vyatta.com>
+	<20100928084528.970713277@vyatta.com>
+	<AANLkTimtuXbNpXezj8C46KcxRJMYAgRAd2UuqrF2Op_7@mail.gmail.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0023547c8b93b9925d0491d45890
-Content-Type: text/plain; charset=ISO-8859-1
+On Sun, 3 Oct 2010 03:29:43 +0000
+Ævar Arnfjörð Bjarmason <avarab@gmail.com> wrote:
 
-On Mon, Oct 4, 2010 at 4:55 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> It would seem to make most sense to do the module_bug_finalize() in
-> the same location where we add the module to the list of modules.
->
-> IOW, a patch like the attached. UNTESTED!
+> On Tue, Sep 28, 2010 at 08:44, Stephen Hemminger <shemminger@vyatta.com> wrote:
+> > The list of exceptions in kernel tree was out of date. Convert
+> > the long list of if clauses to a hashes which is more efficient
+> > and more common in perl.
+> >
+> > Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> >
+> > --- a/scripts/namespace.pl      2010-09-28 09:28:52.251563058 +0900
+> > +++ b/scripts/namespace.pl      2010-09-28 15:13:38.092073114 +0900
+> > @@ -84,6 +84,58 @@ my %ksymtab = ();    # names that appear in
+> >  my %ref = ();          # $ref{$name} exists if there is a true external reference to $name
+> >  my %export = ();       # $export{$name} exists if there is an EXPORT_... of $name
+> >
+> > +my %nmexception = (
+> > +    'fs/ext3/bitmap'                   => 1,
+> > +    'fs/ext4/bitmap'                   => 1,
+> > +    'arch/x86/lib/thunk_32'            => 1,
+> > +    'arch/x86/lib/cmpxchg'             => 1,
+> > +    'arch/x86/vdso/vdso32/note'                => 1,
+> > +    'lib/irq_regs'                     => 1,
+> > +    'usr/initramfs_data'               => 1,
+> > +    'drivers/scsi/aic94xx/aic94xx_dump'        => 1,
+> > +    'drivers/scsi/libsas/sas_dump'     => 1,
+> > +    'lib/dec_and_lock'                 => 1,
+> > +    'drivers/ide/ide-probe-mini'       => 1,
+> > +    'usr/initramfs_data'               => 1,
+> > +    'drivers/acpi/acpia/exdump'                => 1,
+> > +    'drivers/acpi/acpia/rsdump'                => 1,
+> > +    'drivers/acpi/acpia/nsdumpdv'      => 1,
+> > +    'drivers/acpi/acpia/nsdump'                => 1,
+> > +    'arch/ia64/sn/kernel/sn2/io'       => 1,
+> > +    'arch/ia64/kernel/gate-data'       => 1,
+> > +    'security/capability'              => 1,
+> > +    'fs/ntfs/sysctl'                   => 1,
+> > +    'fs/jfs/jfs_debug'                 => 1,
+> > +);
+> > +
+> > +my %nameexception = (
+> > +    'mod_use_count_'    => 1,
+> > +    '__initramfs_end'  => 1,
+> > +    '__initramfs_start'        => 1,
+> > +    '_einittext'       => 1,
+> > +    '_sinittext'       => 1,
+> > +    'kallsyms_names'   => 1,
+> > +    'kallsyms_num_syms'        => 1,
+> > +    'kallsyms_addresses'=> 1,
+> > +    '__this_module'    => 1,
+> > +    '_etext'           => 1,
+> > +    '_edata'           => 1,
+> > +    '_end'             => 1,
+> > +    '__bss_start'      => 1,
+> > +    '_text'            => 1,
+> > +    '_stext'           => 1,
+> > +    '__gp'             => 1,
+> > +    'ia64_unw_start'   => 1,
+> > +    'ia64_unw_end'     => 1,
+> > +    '__init_begin'     => 1,
+> > +    '__init_end'       => 1,
+> > +    '__bss_stop'       => 1,
+> > +    '__nosave_begin'   => 1,
+> > +    '__nosave_end'     => 1,
+> > +    'pg0'              => 1,
+> > +);
+> > +
+> > +
+> >  &find(\&linux_objects, '.');   # find the objects and do_nm on them
+> >  &list_multiply_defined();
+> >  &resolve_external_references();
+> > @@ -272,27 +324,9 @@ sub do_nm
+> >        close($nmdata);
+> >
+> >        if ($#nmdata < 0) {
+> > -               if (
+> > -                       $fullname ne "lib/brlock.o"
+> > -                       && $fullname ne "lib/dec_and_lock.o"
+> > -                       && $fullname ne "fs/xfs/xfs_macros.o"
+> > -                       && $fullname ne "drivers/ide/ide-probe-mini.o"
+> > -                       && $fullname ne "usr/initramfs_data.o"
+> > -                       && $fullname ne "drivers/acpi/executer/exdump.o"
+> > -                       && $fullname ne "drivers/acpi/resources/rsdump.o"
+> > -                       && $fullname ne "drivers/acpi/namespace/nsdumpdv.o"
+> > -                       && $fullname ne "drivers/acpi/namespace/nsdump.o"
+> > -                       && $fullname ne "arch/ia64/sn/kernel/sn2/io.o"
+> > -                       && $fullname ne "arch/ia64/kernel/gate-data.o"
+> > -                       && $fullname ne "drivers/ieee1394/oui.o"
+> > -                       && $fullname ne "security/capability.o"
+> > -                       && $fullname ne "sound/core/wrappers.o"
+> > -                       && $fullname ne "fs/ntfs/sysctl.o"
+> > -                       && $fullname ne "fs/jfs/jfs_debug.o"
+> > -               ) {
+> > -                       printf "No nm data for $fullname\n";
+> > -               }
+> > -               return;
+> > +           printf "No nm data for $fullname\n"
+> > +               unless $nmexception{$fullname};
+> > +           return;
+> 
+> 
+> This would be more readable and easier to update:
+> 
+>     my @nmexception = qw(
+>         fs/ext3/bitmap
+>         fs/ext4/bitmap
+>         arch/x86/lib/thunk_32
+>         arch/x86/lib/cmpxchg
+>         arch/x86/vdso/vdso32/note
+>         lib/irq_regs
+>         usr/initramfs_data
+>         drivers/scsi/aic94xx/aic94xx_dump
+>         drivers/scsi/libsas/sas_dump
+>         lib/dec_and_lock
+>         drivers/ide/ide-probe-mini
+>         usr/initramfs_data
+>         drivers/acpi/acpia/exdump
+>         drivers/acpi/acpia/rsdump
+>         drivers/acpi/acpia/nsdumpdv
+>         drivers/acpi/acpia/nsdump
+>         arch/ia64/sn/kernel/sn2/io
+>         arch/ia64/kernel/gate-data
+>         security/capability
+>         fs/ntfs/sysctl
+>         fs/jfs/jfs_debug
+>     );
+> 
+>     my @nameexception = qw(
+>         mod_use_count_
+>         __initramfs_end
+>         __initramfs_start
+>         _einittext
+>         _sinittext
+>         kallsyms_names
+>         kallsyms_num_syms
+>         kallsyms_addresses
+>         __this_module
+>         _etext
+>         _edata
+>         _end
+>         __bss_start
+>         _text
+>         _stext
+>         __gp
+>         ia64_unw_start
+>         ia64_unw_end
+>         __init_begin
+>         __init_end
+>         __bss_stop
+>         __nosave_begin
+>         __nosave_end
+>         pg0
+>     );
+> 
+>     my (%nmexception, %nameexception);
+>     @nmexception{@nmexception} = ();
+>     @nameexception{@nameexception} = ();
+> 
+> Then later:
+> 
+>     print "No nm data for $fullname\n"
+>         unless exists $nmexception{$fullname};
+> 
+> I.e. use print (not printf) and exists().
 
-That patch is still untested, but reading through it once more I
-noticed that I forgot to add the module_bug_cleanup() call to the
-module exit path.
+But the kernel developers are often not perl wizards
+and like things written out.
 
-So here's a trivially fixed version that has the module unload doing
-the bug cleanup too.
+Maybe use map to simplify?
 
-I also suspect that the whole 'module_bug_{finalize,cleanup}()' thing
-should probably be moved to kernel/module.c, but that's a separate
-issue entirely.
+my %nmexception = map { $_ => 1 } qw (
+);
 
-                           Linus
-
---0023547c8b93b9925d0491d45890
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gew2q6a41
-
-IGFyY2gvYXZyMzIva2VybmVsL21vZHVsZS5jICAgfCAgICAzICstLQogYXJjaC9oODMwMC9rZXJu
-ZWwvbW9kdWxlLmMgICB8ICAgIDMgKy0tCiBhcmNoL21uMTAzMDAva2VybmVsL21vZHVsZS5jIHwg
-ICAgMyArLS0KIGFyY2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYyAgfCAgICAzICstLQogYXJjaC9w
-b3dlcnBjL2tlcm5lbC9tb2R1bGUuYyB8ICAgIDUgLS0tLS0KIGFyY2gvczM5MC9rZXJuZWwvbW9k
-dWxlLmMgICAgfCAgICAzICstLQogYXJjaC9zaC9rZXJuZWwvbW9kdWxlLmMgICAgICB8ICAgIDIg
-LS0KIGFyY2gveDg2L2tlcm5lbC9tb2R1bGUuYyAgICAgfCAgICAzICstLQogaW5jbHVkZS9saW51
-eC9tb2R1bGUuaCAgICAgICB8ICAgIDUgKystLS0KIGtlcm5lbC9tb2R1bGUuYyAgICAgICAgICAg
-ICAgfCAgICA0ICsrKysKIGxpYi9idWcuYyAgICAgICAgICAgICAgICAgICAgfCAgICA2ICsrLS0t
-LQogMTEgZmlsZXMgY2hhbmdlZCwgMTQgaW5zZXJ0aW9ucygrKSwgMjYgZGVsZXRpb25zKC0pCgpk
-aWZmIC0tZ2l0IGEvYXJjaC9hdnIzMi9rZXJuZWwvbW9kdWxlLmMgYi9hcmNoL2F2cjMyL2tlcm5l
-bC9tb2R1bGUuYwppbmRleCA5OGY5NGQwLi5hNzI3ZjU0IDEwMDY0NAotLS0gYS9hcmNoL2F2cjMy
-L2tlcm5lbC9tb2R1bGUuYworKysgYi9hcmNoL2F2cjMyL2tlcm5lbC9tb2R1bGUuYwpAQCAtMzE0
-LDEwICszMTQsOSBAQCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNv
-bnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCXZmcmVlKG1vZHVsZS0+YXJjaC5zeW1pbmZvKTsKIAlt
-b2R1bGUtPmFyY2guc3ltaW5mbyA9IE5VTEw7CiAKLQlyZXR1cm4gbW9kdWxlX2J1Z19maW5hbGl6
-ZShoZHIsIHNlY2hkcnMsIG1vZHVsZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2Fy
-Y2hfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICptb2R1bGUpCiB7Ci0JbW9kdWxlX2J1Z19jbGVhbnVw
-KG1vZHVsZSk7CiB9CmRpZmYgLS1naXQgYS9hcmNoL2g4MzAwL2tlcm5lbC9tb2R1bGUuYyBiL2Fy
-Y2gvaDgzMDAva2VybmVsL21vZHVsZS5jCmluZGV4IDA4NjVlMjkuLmRiNDk1M2QgMTAwNjQ0Ci0t
-LSBhL2FyY2gvaDgzMDAva2VybmVsL21vZHVsZS5jCisrKyBiL2FyY2gvaDgzMDAva2VybmVsL21v
-ZHVsZS5jCkBAIC0xMTIsMTAgKzExMiw5IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxm
-X0VoZHIgKmhkciwKIAkJICAgIGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCQkgICAgc3RydWN0
-IG1vZHVsZSAqbWUpCiB7Ci0JcmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJz
-LCBtZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2FyY2hfY2xlYW51cChzdHJ1Y3Qg
-bW9kdWxlICptb2QpCiB7Ci0JbW9kdWxlX2J1Z19jbGVhbnVwKG1vZCk7CiB9CmRpZmYgLS1naXQg
-YS9hcmNoL21uMTAzMDAva2VybmVsL21vZHVsZS5jIGIvYXJjaC9tbjEwMzAwL2tlcm5lbC9tb2R1
-bGUuYwppbmRleCA2YWVhN2ZkLi4xOTZhMTExIDEwMDY0NAotLS0gYS9hcmNoL21uMTAzMDAva2Vy
-bmVsL21vZHVsZS5jCisrKyBiL2FyY2gvbW4xMDMwMC9rZXJuZWwvbW9kdWxlLmMKQEAgLTIwNiw3
-ICsyMDYsNyBAQCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiAJCSAg
-ICBjb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkJICAgIHN0cnVjdCBtb2R1bGUgKm1lKQogewot
-CXJldHVybiBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOworCXJldHVybiAw
-OwogfQogCiAvKgpAQCAtMjE0LDUgKzIxNCw0IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3Qg
-RWxmX0VoZHIgKmhkciwKICAqLwogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBtb2R1
-bGUgKm1vZCkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlmZiAtLWdpdCBhL2Fy
-Y2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYyBiL2FyY2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYwpp
-bmRleCAxNTlhMmI4Li42ZTgxYmI1IDEwMDY0NAotLS0gYS9hcmNoL3BhcmlzYy9rZXJuZWwvbW9k
-dWxlLmMKKysrIGIvYXJjaC9wYXJpc2Mva2VybmVsL21vZHVsZS5jCkBAIC05NDEsMTEgKzk0MSwx
-MCBAQCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiAJbnN5bXMgPSBu
-ZXdwdHIgLSAoRWxmX1N5bSAqKXN5bWhkci0+c2hfYWRkcjsKIAlERUJVR1AoIk5FVyBudW1fc3lt
-dGFiICVsdVxuIiwgbnN5bXMpOwogCXN5bWhkci0+c2hfc2l6ZSA9IG5zeW1zICogc2l6ZW9mKEVs
-Zl9TeW0pOwotCXJldHVybiBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwor
-CXJldHVybiAwOwogfQogCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAq
-bW9kKQogewogCWRlcmVnaXN0ZXJfdW53aW5kX3RhYmxlKG1vZCk7Ci0JbW9kdWxlX2J1Z19jbGVh
-bnVwKG1vZCk7CiB9CmRpZmYgLS1naXQgYS9hcmNoL3Bvd2VycGMva2VybmVsL21vZHVsZS5jIGIv
-YXJjaC9wb3dlcnBjL2tlcm5lbC9tb2R1bGUuYwppbmRleCA0NzdjNjYzLi40ZWY5M2FlIDEwMDY0
-NAotLS0gYS9hcmNoL3Bvd2VycGMva2VybmVsL21vZHVsZS5jCisrKyBiL2FyY2gvcG93ZXJwYy9r
-ZXJuZWwvbW9kdWxlLmMKQEAgLTY1LDEwICs2NSw2IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29u
-c3QgRWxmX0VoZHIgKmhkciwKIAljb25zdCBFbGZfU2hkciAqc2VjdDsKIAlpbnQgZXJyOwogCi0J
-ZXJyID0gbW9kdWxlX2J1Z19maW5hbGl6ZShoZHIsIHNlY2hkcnMsIG1lKTsKLQlpZiAoZXJyKQot
-CQlyZXR1cm4gZXJyOwotCiAJLyogQXBwbHkgZmVhdHVyZSBmaXh1cHMgKi8KIAlzZWN0ID0gZmlu
-ZF9zZWN0aW9uKGhkciwgc2VjaGRycywgIl9fZnRyX2ZpeHVwIik7CiAJaWYgKHNlY3QgIT0gTlVM
-TCkKQEAgLTEwMSw1ICs5Nyw0IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIg
-KmhkciwKIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsK
-LQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlmZiAtLWdpdCBhL2FyY2gvczM5MC9rZXJu
-ZWwvbW9kdWxlLmMgYi9hcmNoL3MzOTAva2VybmVsL21vZHVsZS5jCmluZGV4IDIyY2ZkNjMuLmY3
-MTY3ZWUgMTAwNjQ0Ci0tLSBhL2FyY2gvczM5MC9rZXJuZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9z
-MzkwL2tlcm5lbC9tb2R1bGUuYwpAQCAtNDA3LDEwICs0MDcsOSBAQCBpbnQgbW9kdWxlX2ZpbmFs
-aXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiB7CiAJdmZyZWUobWUtPmFyY2guc3ltaW5mbyk7CiAJ
-bWUtPmFyY2guc3ltaW5mbyA9IE5VTEw7Ci0JcmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRy
-LCBzZWNoZHJzLCBtZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2FyY2hfY2xlYW51
-cChzdHJ1Y3QgbW9kdWxlICptb2QpCiB7Ci0JbW9kdWxlX2J1Z19jbGVhbnVwKG1vZCk7CiB9CmRp
-ZmYgLS1naXQgYS9hcmNoL3NoL2tlcm5lbC9tb2R1bGUuYyBiL2FyY2gvc2gva2VybmVsL21vZHVs
-ZS5jCmluZGV4IDQzYWRkZGYuLmFlMGJlNjkgMTAwNjQ0Ci0tLSBhL2FyY2gvc2gva2VybmVsL21v
-ZHVsZS5jCisrKyBiL2FyY2gvc2gva2VybmVsL21vZHVsZS5jCkBAIC0xNDksMTMgKzE0OSwxMSBA
-QCBpbnQgbW9kdWxlX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsCiAJaW50IHJldCA9IDA7
-CiAKIAlyZXQgfD0gbW9kdWxlX2R3YXJmX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwotCXJl
-dCB8PSBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwogCiAJcmV0dXJuIHJl
-dDsKIH0KIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsK
-LQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIAltb2R1bGVfZHdhcmZfY2xlYW51cChtb2QpOwog
-fQpkaWZmIC0tZ2l0IGEvYXJjaC94ODYva2VybmVsL21vZHVsZS5jIGIvYXJjaC94ODYva2VybmVs
-L21vZHVsZS5jCmluZGV4IGUwYmMxODYuLjFjMzU1YzUgMTAwNjQ0Ci0tLSBhL2FyY2gveDg2L2tl
-cm5lbC9tb2R1bGUuYworKysgYi9hcmNoL3g4Ni9rZXJuZWwvbW9kdWxlLmMKQEAgLTIzOSwxMSAr
-MjM5LDEwIEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAkJYXBw
-bHlfcGFyYXZpcnQocHNlZywgcHNlZyArIHBhcmEtPnNoX3NpemUpOwogCX0KIAotCXJldHVybiBt
-b2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOworCXJldHVybiAwOwogfQogCiB2
-b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQogewogCWFsdGVybmF0
-aXZlc19zbXBfbW9kdWxlX2RlbChtb2QpOwotCW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogfQpk
-aWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9tb2R1bGUuaCBiL2luY2x1ZGUvbGludXgvbW9kdWxl
-LmgKaW5kZXggOGE2YjlmZC4uYWFjZTA2NiAxMDA2NDQKLS0tIGEvaW5jbHVkZS9saW51eC9tb2R1
-bGUuaAorKysgYi9pbmNsdWRlL2xpbnV4L21vZHVsZS5oCkBAIC02ODYsMTcgKzY4NiwxNiBAQCBl
-eHRlcm4gaW50IG1vZHVsZV9zeXNmc19pbml0aWFsaXplZDsKIAogCiAjaWZkZWYgQ09ORklHX0dF
-TkVSSUNfQlVHCi1pbnQgIG1vZHVsZV9idWdfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKiwgY29u
-c3QgRWxmX1NoZHIgKiwKK3ZvaWQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBFbGZfRWhkciAq
-LCBjb25zdCBFbGZfU2hkciAqLAogCQkJIHN0cnVjdCBtb2R1bGUgKik7CiB2b2lkIG1vZHVsZV9i
-dWdfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICopOwogCiAjZWxzZQkvKiAhQ09ORklHX0dFTkVSSUNf
-QlVHICovCiAKLXN0YXRpYyBpbmxpbmUgaW50ICBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVs
-Zl9FaGRyICpoZHIsCitzdGF0aWMgaW5saW5lIHZvaWQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25z
-dCBFbGZfRWhkciAqaGRyLAogCQkJCQljb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkJCQkJc3Ry
-dWN0IG1vZHVsZSAqbW9kKQogewotCXJldHVybiAwOwogfQogc3RhdGljIGlubGluZSB2b2lkIG1v
-ZHVsZV9idWdfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICptb2QpIHt9CiAjZW5kaWYJLyogQ09ORklH
-X0dFTkVSSUNfQlVHICovCmRpZmYgLS1naXQgYS9rZXJuZWwvbW9kdWxlLmMgYi9rZXJuZWwvbW9k
-dWxlLmMKaW5kZXggZDBiNWY4ZC4uY2NkNjQxOSAxMDA2NDQKLS0tIGEva2VybmVsL21vZHVsZS5j
-CisrKyBiL2tlcm5lbC9tb2R1bGUuYwpAQCAtMTUzNyw2ICsxNTM3LDcgQEAgc3RhdGljIGludCBf
-X3VubGlua19tb2R1bGUodm9pZCAqX21vZCkKIHsKIAlzdHJ1Y3QgbW9kdWxlICptb2QgPSBfbW9k
-OwogCWxpc3RfZGVsKCZtb2QtPmxpc3QpOworCW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogCXJl
-dHVybiAwOwogfQogCkBAIC0yNjI1LDYgKzI2MjYsNyBAQCBzdGF0aWMgc3RydWN0IG1vZHVsZSAq
-bG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJaWYgKGVyciA8IDApCiAJCWdvdG8gZGRl
-YnVnOwogCisJbW9kdWxlX2J1Z19maW5hbGl6ZShpbmZvLmhkciwgaW5mby5zZWNoZHJzLCBtb2Qp
-OwogCWxpc3RfYWRkX3JjdSgmbW9kLT5saXN0LCAmbW9kdWxlcyk7CiAJbXV0ZXhfdW5sb2NrKCZt
-b2R1bGVfbXV0ZXgpOwogCkBAIC0yNjUwLDYgKzI2NTIsOCBAQCBzdGF0aWMgc3RydWN0IG1vZHVs
-ZSAqbG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJbXV0ZXhfbG9jaygmbW9kdWxlX211
-dGV4KTsKIAkvKiBVbmxpbmsgY2FyZWZ1bGx5OiBrYWxsc3ltcyBjb3VsZCBiZSB3YWxraW5nIGxp
-c3QuICovCiAJbGlzdF9kZWxfcmN1KCZtb2QtPmxpc3QpOworCW1vZHVsZV9idWdfY2xlYW51cCht
-b2QpOworCiAgZGRlYnVnOgogCWlmICghbW9kLT50YWludHMpCiAJCWR5bmFtaWNfZGVidWdfcmVt
-b3ZlKGluZm8uZGVidWcpOwpkaWZmIC0tZ2l0IGEvbGliL2J1Zy5jIGIvbGliL2J1Zy5jCmluZGV4
-IDdjZGZhZDguLjE5NTUyMDkgMTAwNjQ0Ci0tLSBhL2xpYi9idWcuYworKysgYi9saWIvYnVnLmMK
-QEAgLTcyLDggKzcyLDggQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBidWdfZW50cnkgKm1vZHVsZV9m
-aW5kX2J1Zyh1bnNpZ25lZCBsb25nIGJ1Z2FkZHIpCiAJcmV0dXJuIE5VTEw7CiB9CiAKLWludCBt
-b2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVsZl9TaGRyICpz
-ZWNoZHJzLAotCQkJc3RydWN0IG1vZHVsZSAqbW9kKQordm9pZCBtb2R1bGVfYnVnX2ZpbmFsaXpl
-KGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAorCQkJIHN0cnVj
-dCBtb2R1bGUgKm1vZCkKIHsKIAljaGFyICpzZWNzdHJpbmdzOwogCXVuc2lnbmVkIGludCBpOwpA
-QCAtOTcsOCArOTcsNiBAQCBpbnQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBFbGZfRWhkciAq
-aGRyLCBjb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkgKiBjb3VsZCBwb3RlbnRpYWxseSBsZWFk
-IHRvIGRlYWRsb2NrIGFuZCB0aHVzIGJlIGNvdW50ZXItcHJvZHVjdGl2ZS4KIAkgKi8KIAlsaXN0
-X2FkZCgmbW9kLT5idWdfbGlzdCwgJm1vZHVsZV9idWdfbGlzdCk7Ci0KLQlyZXR1cm4gMDsKIH0K
-IAogdm9pZCBtb2R1bGVfYnVnX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQo=
---0023547c8b93b9925d0491d45890--
