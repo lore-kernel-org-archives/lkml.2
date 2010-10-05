@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757457Ab0JEADy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 20:03:54 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:32537 "EHLO
+	id S1757473Ab0JEAD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 20:03:59 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:32576 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752283Ab0JEADw (ORCPT
+	with ESMTP id S1752283Ab0JEAD4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 20:03:52 -0400
+	Mon, 4 Oct 2010 20:03:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=B+bWSkNUaCXzAkoIFhTVwJV2lVi8Rm0LBkimoDVO++qVAmQZD1P9eneeRtEiRSR7r0
-         8H3wJHyogTwuZ7rP/9gg==
+        b=evYiKMGnRMSQImiBodaNPnNXPPddDoo3h18lok7i6dirzSl37wOgVU4UiR7FLrDqET
+         pFb/BT7IU46lIaIv/3Pw==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -20,9 +20,9 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
 Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
         Eric Dumazet <eric.dumazet@gmail.com>,
         Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH 1/8] si time accounting accounts bh_disable'd time to si -v4
-Date: Mon,  4 Oct 2010 17:03:16 -0700
-Message-Id: <1286237003-12406-2-git-send-email-venki@google.com>
+Subject: [PATCH 3/8] Add a PF flag for ksoftirqd identification
+Date: Mon,  4 Oct 2010 17:03:18 -0700
+Message-Id: <1286237003-12406-4-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286237003-12406-1-git-send-email-venki@google.com>
 References: <1286237003-12406-1-git-send-email-venki@google.com>
@@ -31,235 +31,124 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Zijlstra found a bug in the way softirq time is accounted in
-VIRT_CPU_ACCOUNTING on this thread.
-http://lkml.indiana.edu/hypermail//linux/kernel/1009.2/01366.html
+To account softirq time cleanly in scheduler, we need to identify whether
+softirq is invoked in ksoftirqd context or softirq at hardirq tail context.
+Add PF_KSOFTIRQD for that purpose.
 
-The problem is, softirq processing uses local_bh_disable internally. There
-is no way, later in the flow, to differentiate between whether softirq is
-being processed or is it just that bh has been disabled. So, a hardirq when bh
-is disabled results in time being wrongly accounted as softirq.
-
-Looking at the code a bit more, the problem exists in !VIRT_CPU_ACCOUNTING
-as well. As account_system_time() in normal tick based accouting also uses
-softirq_count, which will be set even when not in softirq with bh disabled.
-
-Peter also suggested solution of using 2 * SOFTIRQ_OFFSET as irq count
-for local_bh_{disable,enable} and using just SOFTIRQ_OFFSET while softirq
-processing. The patch below does that and adds API in_serving_softirq() which
-returns whether we are currently processing softirq or not.
-
-Also changes one of the usages of softirq_count in net/sched/cls_cgroup.c
-to in_serving_softirq.
-
-Looks like many usages of in_softirq really want in_serving_softirq. Those
-changes can be made individually on a case by case basis.
+As all PF flag bits are currently taken, create space by moving one of the
+infrequently used bits (PF_THREAD_BOUND) down in task_struct to be along
+with some other state fields.
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
- include/linux/hardirq.h |    5 ++++
- include/linux/sched.h   |    6 ++--
- kernel/sched.c          |    2 +-
- kernel/softirq.c        |   51 +++++++++++++++++++++++++++++++---------------
- net/sched/cls_cgroup.c  |    2 +-
- 5 files changed, 44 insertions(+), 22 deletions(-)
+ include/linux/sched.h |    3 ++-
+ kernel/cpuset.c       |    2 +-
+ kernel/kthread.c      |    2 +-
+ kernel/sched.c        |    2 +-
+ kernel/softirq.c      |    1 +
+ kernel/workqueue.c    |    6 +++---
+ 6 files changed, 9 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
-index d5b3876..e37a77c 100644
---- a/include/linux/hardirq.h
-+++ b/include/linux/hardirq.h
-@@ -64,6 +64,8 @@
- #define HARDIRQ_OFFSET	(1UL << HARDIRQ_SHIFT)
- #define NMI_OFFSET	(1UL << NMI_SHIFT)
- 
-+#define SOFTIRQ_DISABLE_OFFSET	(2 * SOFTIRQ_OFFSET)
-+
- #ifndef PREEMPT_ACTIVE
- #define PREEMPT_ACTIVE_BITS	1
- #define PREEMPT_ACTIVE_SHIFT	(NMI_SHIFT + NMI_BITS)
-@@ -82,10 +84,13 @@
- /*
-  * Are we doing bottom half or hardware interrupt processing?
-  * Are we in a softirq context? Interrupt context?
-+ * in_softirq - Are we currently processing softirq or have bh disabled?
-+ * in_serving_softirq - Are we currently processing softirq?
-  */
- #define in_irq()		(hardirq_count())
- #define in_softirq()		(softirq_count())
- #define in_interrupt()		(irq_count())
-+#define in_serving_softirq()	(softirq_count() & SOFTIRQ_OFFSET)
- 
- /*
-  * Are we in NMI context?
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..126457e 100644
+index 126457e..43064cd 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -2367,9 +2367,9 @@ extern int __cond_resched_lock(spinlock_t *lock);
+@@ -1234,6 +1234,7 @@ struct task_struct {
  
- extern int __cond_resched_softirq(void);
+ 	/* Revert to default priority/policy when forking */
+ 	unsigned sched_reset_on_fork:1;
++	unsigned sched_thread_bound:1;	/* Thread bound to specific cpu */
  
--#define cond_resched_softirq() ({				\
--	__might_sleep(__FILE__, __LINE__, SOFTIRQ_OFFSET);	\
--	__cond_resched_softirq();				\
-+#define cond_resched_softirq() ({					\
-+	__might_sleep(__FILE__, __LINE__, SOFTIRQ_DISABLE_OFFSET);	\
-+	__cond_resched_softirq();					\
- })
+ 	pid_t pid;
+ 	pid_t tgid;
+@@ -1708,7 +1709,7 @@ extern void thread_group_times(struct task_struct *p, cputime_t *ut, cputime_t *
+ #define PF_SWAPWRITE	0x00800000	/* Allowed to write to swap */
+ #define PF_SPREAD_PAGE	0x01000000	/* Spread page cache over cpuset */
+ #define PF_SPREAD_SLAB	0x02000000	/* Spread some slab caches over cpuset */
+-#define PF_THREAD_BOUND	0x04000000	/* Thread bound to specific cpu */
++#define PF_KSOFTIRQD	0x04000000	/* I am ksoftirqd */
+ #define PF_MCE_EARLY    0x08000000      /* Early kill for mce process policy */
+ #define PF_MEMPOLICY	0x10000000	/* Non-default NUMA mempolicy */
+ #define PF_MUTEX_TESTER	0x20000000	/* Thread belongs to the rt mutex tester */
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index b23c097..8a2eb02 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1394,7 +1394,7 @@ static int cpuset_can_attach(struct cgroup_subsys *ss, struct cgroup *cont,
+ 	 * set_cpus_allowed_ptr() on all attached tasks before cpus_allowed may
+ 	 * be changed.
+ 	 */
+-	if (tsk->flags & PF_THREAD_BOUND)
++	if (tsk->sched_thread_bound)
+ 		return -EINVAL;
  
- /*
+ 	ret = security_task_setscheduler(tsk, 0, NULL);
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 2dc3786..6b51a4c 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -185,7 +185,7 @@ void kthread_bind(struct task_struct *p, unsigned int cpu)
+ 
+ 	p->cpus_allowed = cpumask_of_cpu(cpu);
+ 	p->rt.nr_cpus_allowed = 1;
+-	p->flags |= PF_THREAD_BOUND;
++	p->sched_thread_bound = 1;
+ }
+ EXPORT_SYMBOL(kthread_bind);
+ 
 diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..b6e714b 100644
+index b6e714b..c13fae6 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -3397,7 +3397,7 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
- 	tmp = cputime_to_cputime64(cputime);
- 	if (hardirq_count() - hardirq_offset)
- 		cpustat->irq = cputime64_add(cpustat->irq, tmp);
--	else if (softirq_count())
-+	else if (in_serving_softirq())
- 		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
- 	else
- 		cpustat->system = cputime64_add(cpustat->system, tmp);
+@@ -5464,7 +5464,7 @@ again:
+ 		goto out;
+ 	}
+ 
+-	if (unlikely((p->flags & PF_THREAD_BOUND) && p != current &&
++	if (unlikely(p->sched_thread_bound && p != current &&
+ 		     !cpumask_equal(&p->cpus_allowed, new_mask))) {
+ 		ret = -EINVAL;
+ 		goto out;
 diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 07b4f1b..988dfbe 100644
+index 988dfbe..267f7b7 100644
 --- a/kernel/softirq.c
 +++ b/kernel/softirq.c
-@@ -77,11 +77,21 @@ void wakeup_softirqd(void)
- }
- 
- /*
-+ * preempt_count and SOFTIRQ_OFFSET usage:
-+ * - preempt_count is changed by SOFTIRQ_OFFSET on entering or leaving
-+ *   softirq processing.
-+ * - preempt_count is changed by SOFTIRQ_DISABLE_OFFSET (= 2 * SOFTIRQ_OFFSET)
-+ *   on local_bh_disable or local_bh_enable.
-+ * This lets us distinguish between whether we are currently processing
-+ * softirq and whether we just have bh disabled.
-+ */
-+
-+/*
-  * This one is for softirq.c-internal use,
-  * where hardirqs are disabled legitimately:
-  */
- #ifdef CONFIG_TRACE_IRQFLAGS
--static void __local_bh_disable(unsigned long ip)
-+static void __local_bh_disable(unsigned long ip, unsigned int cnt)
+@@ -713,6 +713,7 @@ static int run_ksoftirqd(void * __bind_cpu)
  {
- 	unsigned long flags;
+ 	set_current_state(TASK_INTERRUPTIBLE);
  
-@@ -95,32 +105,43 @@ static void __local_bh_disable(unsigned long ip)
- 	 * We must manually increment preempt_count here and manually
- 	 * call the trace_preempt_off later.
- 	 */
--	preempt_count() += SOFTIRQ_OFFSET;
-+	preempt_count() += cnt;
++	current->flags |= PF_KSOFTIRQD;
+ 	while (!kthread_should_stop()) {
+ 		preempt_disable();
+ 		if (!local_softirq_pending()) {
+diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+index f77afd9..7146ee6 100644
+--- a/kernel/workqueue.c
++++ b/kernel/workqueue.c
+@@ -1340,12 +1340,12 @@ static struct worker *create_worker(struct global_cwq *gcwq, bool bind)
  	/*
- 	 * Were softirqs turned off above:
+ 	 * A rogue worker will become a regular one if CPU comes
+ 	 * online later on.  Make sure every worker has
+-	 * PF_THREAD_BOUND set.
++	 * sched_thread_bound set.
  	 */
--	if (softirq_count() == SOFTIRQ_OFFSET)
-+	if (softirq_count() == cnt)
- 		trace_softirqs_off(ip);
- 	raw_local_irq_restore(flags);
+ 	if (bind && !on_unbound_cpu)
+ 		kthread_bind(worker->task, gcwq->cpu);
+ 	else {
+-		worker->task->flags |= PF_THREAD_BOUND;
++		worker->task->sched_thread_bound = 1;
+ 		if (on_unbound_cpu)
+ 			worker->flags |= WORKER_UNBOUND;
+ 	}
+@@ -2817,7 +2817,7 @@ struct workqueue_struct *__alloc_workqueue_key(const char *name,
+ 		if (IS_ERR(rescuer->task))
+ 			goto err;
  
--	if (preempt_count() == SOFTIRQ_OFFSET)
-+	if (preempt_count() == cnt)
- 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
- }
- #else /* !CONFIG_TRACE_IRQFLAGS */
--static inline void __local_bh_disable(unsigned long ip)
-+static inline void __local_bh_disable(unsigned long ip, unsigned int cnt)
- {
--	add_preempt_count(SOFTIRQ_OFFSET);
-+	add_preempt_count(cnt);
- 	barrier();
- }
- #endif /* CONFIG_TRACE_IRQFLAGS */
+-		rescuer->task->flags |= PF_THREAD_BOUND;
++		rescuer->task->sched_thread_bound = 1;
+ 		wake_up_process(rescuer->task);
+ 	}
  
- void local_bh_disable(void)
- {
--	__local_bh_disable((unsigned long)__builtin_return_address(0));
-+	__local_bh_disable((unsigned long)__builtin_return_address(0),
-+				SOFTIRQ_DISABLE_OFFSET);
- }
- 
- EXPORT_SYMBOL(local_bh_disable);
- 
-+static void __local_bh_enable(unsigned int cnt)
-+{
-+	WARN_ON_ONCE(in_irq());
-+	WARN_ON_ONCE(!irqs_disabled());
-+
-+	if (softirq_count() == cnt)
-+		trace_softirqs_on((unsigned long)__builtin_return_address(0));
-+	sub_preempt_count(cnt);
-+}
-+
- /*
-  * Special-case - softirqs can safely be enabled in
-  * cond_resched_softirq(), or by __do_softirq(),
-@@ -128,12 +149,7 @@ EXPORT_SYMBOL(local_bh_disable);
-  */
- void _local_bh_enable(void)
- {
--	WARN_ON_ONCE(in_irq());
--	WARN_ON_ONCE(!irqs_disabled());
--
--	if (softirq_count() == SOFTIRQ_OFFSET)
--		trace_softirqs_on((unsigned long)__builtin_return_address(0));
--	sub_preempt_count(SOFTIRQ_OFFSET);
-+	__local_bh_enable(SOFTIRQ_DISABLE_OFFSET);
- }
- 
- EXPORT_SYMBOL(_local_bh_enable);
-@@ -147,13 +163,13 @@ static inline void _local_bh_enable_ip(unsigned long ip)
- 	/*
- 	 * Are softirqs going to be turned on now:
- 	 */
--	if (softirq_count() == SOFTIRQ_OFFSET)
-+	if (softirq_count() == SOFTIRQ_DISABLE_OFFSET)
- 		trace_softirqs_on(ip);
- 	/*
- 	 * Keep preemption disabled until we are done with
- 	 * softirq processing:
-  	 */
-- 	sub_preempt_count(SOFTIRQ_OFFSET - 1);
-+	sub_preempt_count(SOFTIRQ_DISABLE_OFFSET - 1);
- 
- 	if (unlikely(!in_interrupt() && local_softirq_pending()))
- 		do_softirq();
-@@ -198,7 +214,8 @@ asmlinkage void __do_softirq(void)
- 	pending = local_softirq_pending();
- 	account_system_vtime(current);
- 
--	__local_bh_disable((unsigned long)__builtin_return_address(0));
-+	__local_bh_disable((unsigned long)__builtin_return_address(0),
-+				SOFTIRQ_OFFSET);
- 	lockdep_softirq_enter();
- 
- 	cpu = smp_processor_id();
-@@ -245,7 +262,7 @@ restart:
- 	lockdep_softirq_exit();
- 
- 	account_system_vtime(current);
--	_local_bh_enable();
-+	__local_bh_enable(SOFTIRQ_OFFSET);
- }
- 
- #ifndef __ARCH_HAS_DO_SOFTIRQ
-diff --git a/net/sched/cls_cgroup.c b/net/sched/cls_cgroup.c
-index 78ef2c5..37dff78 100644
---- a/net/sched/cls_cgroup.c
-+++ b/net/sched/cls_cgroup.c
-@@ -123,7 +123,7 @@ static int cls_cgroup_classify(struct sk_buff *skb, struct tcf_proto *tp,
- 	 * calls by looking at the number of nested bh disable calls because
- 	 * softirqs always disables bh.
- 	 */
--	if (softirq_count() != SOFTIRQ_OFFSET) {
-+	if (in_serving_softirq()) {
- 		/* If there is an sk_classid we'll use that. */
- 		if (!skb->sk)
- 			return -1;
 -- 
 1.7.1
 
