@@ -1,103 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751707Ab0JEOkS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 10:40:18 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:42207 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750703Ab0JEOkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 10:40:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=b4LBFT4fkEBjEy3ormhqBchrQyzhtfW0Eo3sCXWB8YlZKQFcGiRqWieZRsz7IPd4iT
-         hLtxLvIT4CBz4ucaRNeietRbj18zyv8ShGW3YEkGDZvMTbkDDJJJkAKxLFMugRBUCX/m
-         QzSzf25lWOK89dg/yNP+GtrHHPjNNn+VzAHGI=
-Message-ID: <4CAB38CC.3060001@gmail.com>
-Date: Tue, 05 Oct 2010 07:40:12 -0700
-From: Kent Overstreet <kent.overstreet@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9pre) Gecko/20100821 Lanikai/3.1.3pre
+	id S1752562Ab0JEOts (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 10:49:48 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:56868 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575Ab0JEOtr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 10:49:47 -0400
+Date: Tue, 5 Oct 2010 16:49:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] perf fixes
+Message-ID: <20101005144929.GA8517@elte.hu>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: Greg KH <greg@kroah.com>
-Subject: Re: [RFC] Potential kobject functionality (two stage delete, single
- delete)
-References: <4CAB26C7.2020109@gmail.com> <20101005135750.GA4414@kroah.com>
-In-Reply-To: <20101005135750.GA4414@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2010 06:57 AM, Greg KH wrote:
-> On Tue, Oct 05, 2010 at 06:23:19AM -0700, Kent Overstreet wrote:
->> I've been working on reference counting in my own code, and it
->> seemed to me that some of this stuff would be best added to the
->> generic code - I can't be the only one who's needed to solve these
->> particular problems. But kobjects aren't new, maybe someone knows if
->> any of this has been tried before?
->
-> Oh yeah, it's come up lots of times before, see the lkml archives :)
+Linus,
 
-Figures :)
+Please pull the latest perf-fixes-for-linus git tree from:
 
->> void kobject_delete(struct kobject *k)
->> {
->> 	if (!test_and_set_bit(deleted)) {
->> 		if (delete_fn)
->> 			delete_fn(k);
->> 		kobject_put(k);
->> 	}
->> }
->
-> Every time we have tried to do something like this, it ends up not being
-> correct, and missused, so we don't.
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git perf-fixes-for-linus
 
-Well, past experience is hard to argue with. I'd be curious what 
-previous implementations looked like, hopefully my google-fu is stronger 
-this time... I just have a hard time seeing a good reason not do it once 
-correctly, if previous interfaces were prone to misuse it still ought to 
-be possible to do it right.
+ Thanks,
 
->> The more annoying one is two stage delete. Unless my google-fu has
->> failed me, I don't see a reasonable way of using kobject refcounting
->> if you need to drop a refcount from atomic context.
->
-> You can't call kfree from atomic context?
+	Ingo
 
-Well, kobject_cleanup() does more than kfree() - thus I don't see how 
-you'd use kobject_put() in atomic context; it seems to me it wouldn't be 
-entirely unreasonable to replace kobject_put with a kref_put wrapper 
-specific to your code, then you could queue up the object somewhere and 
-run kobject_cleanup() yourself - except kobject_cleanup() is static.
+------------------>
+Cyrill Gorcunov (1):
+      perf, x86: Handle in flight NMIs on P4 platform
 
-So unless I've completely missed something, you have to use 
-kobject_put() to free a kobject, but kobject_put() can't be called from 
-atomic context - at least if the kobject was present in sysfs... perhaps 
-that's where the confusion comes from? Going over the code again it 
-looks like kobject_cleanup() doesn't do anything but kfree() if the 
-kobject wasn't in sysfs.
+Frederik Deweerdt (1):
+      perf ui hist browser: Fix segfault on 'a' for annotate
 
-Anyways, in that case the end result is I need my own refcount so when 
-it goes to 0 I can do the right thing - the kobject's refcount then 
-serves no purpose, it's just pointless duplication. Am I making any more 
-sense now?
+Jiri Olsa (1):
+      oprofile: Add Support for Intel CPU Family 6 / Model 29
 
-> Anyway, code does handle this properly, look at the scsi code for
-> example, we have a waitqueue-like infrastructure to do this somewhere,
-> perhaps it's within the driver core, I can't remember it this early in
-> the morning.
+Kusanagi Kouichi (1):
+      perf tools: Fix build breakage
 
-I'm not arguing it can't be done, just would like something cleaner than 
-what I've got now :)
+Robert Richter (1):
+      oprofile, ARM: Release resources on failure
 
-Grepping around for kobject in drivers/scsi and elsewhere isn't getting 
-me anything, will see where googling gets me...
+Stephane Eranian (1):
+      perf trace scripting: Fix extern struct definitions
 
-> thanks,
->
-> greg k-h
 
-Sorry to have to impose upon your time :) Thanks!
+ arch/arm/oprofile/common.c              |    7 +++++--
+ arch/x86/kernel/cpu/perf_event_p4.c     |    6 +++++-
+ arch/x86/oprofile/nmi_int.c             |    1 +
+ tools/perf/Makefile                     |    2 +-
+ tools/perf/util/trace-event-scripting.c |    4 ++--
+ tools/perf/util/ui/browsers/hists.c     |    2 +-
+ 6 files changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+index 0691176..72e09eb 100644
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@ -102,6 +102,7 @@ static int op_create_counter(int cpu, int event)
+ 	if (IS_ERR(pevent)) {
+ 		ret = PTR_ERR(pevent);
+ 	} else if (pevent->state != PERF_EVENT_STATE_ACTIVE) {
++		perf_event_release_kernel(pevent);
+ 		pr_warning("oprofile: failed to enable event %d "
+ 				"on CPU %d\n", event, cpu);
+ 		ret = -EBUSY;
+@@ -365,6 +366,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 	ret = init_driverfs();
+ 	if (ret) {
+ 		kfree(counter_config);
++		counter_config = NULL;
+ 		return ret;
+ 	}
+ 
+@@ -402,7 +404,6 @@ void oprofile_arch_exit(void)
+ 	struct perf_event *event;
+ 
+ 	if (*perf_events) {
+-		exit_driverfs();
+ 		for_each_possible_cpu(cpu) {
+ 			for (id = 0; id < perf_num_counters; ++id) {
+ 				event = perf_events[cpu][id];
+@@ -413,8 +414,10 @@ void oprofile_arch_exit(void)
+ 		}
+ 	}
+ 
+-	if (counter_config)
++	if (counter_config) {
+ 		kfree(counter_config);
++		exit_driverfs();
++	}
+ }
+ #else
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index b560db3..2490151 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -660,8 +660,12 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 	for (idx = 0; idx < x86_pmu.num_counters; idx++) {
+ 		int overflow;
+ 
+-		if (!test_bit(idx, cpuc->active_mask))
++		if (!test_bit(idx, cpuc->active_mask)) {
++			/* catch in-flight IRQs */
++			if (__test_and_clear_bit(idx, cpuc->running))
++				handled++;
+ 			continue;
++		}
+ 
+ 		event = cpuc->events[idx];
+ 		hwc = &event->hw;
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 009b819..f1575c9 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -674,6 +674,7 @@ static int __init ppro_init(char **cpu_type)
+ 	case 0x0f:
+ 	case 0x16:
+ 	case 0x17:
++	case 0x1d:
+ 		*cpu_type = "i386/core_2";
+ 		break;
+ 	case 0x1a:
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index 4f1fa77..1950e19 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -1017,7 +1017,7 @@ builtin-revert.o wt-status.o: wt-status.h
+ # we compile into subdirectories. if the target directory is not the source directory, they might not exists. So
+ # we depend the various files onto their directories.
+ DIRECTORY_DEPS = $(LIB_OBJS) $(BUILTIN_OBJS) $(OUTPUT)PERF-VERSION-FILE $(OUTPUT)common-cmds.h
+-$(DIRECTORY_DEPS): $(sort $(dir $(DIRECTORY_DEPS)))
++$(DIRECTORY_DEPS): | $(sort $(dir $(DIRECTORY_DEPS)))
+ # In the second step, we make a rule to actually create these directories
+ $(sort $(dir $(DIRECTORY_DEPS))):
+ 	$(QUIET_MKDIR)$(MKDIR) -p $@ 2>/dev/null
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 7ea983a..f7af2fc 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -97,7 +97,7 @@ void setup_python_scripting(void)
+ 	register_python_scripting(&python_scripting_unsupported_ops);
+ }
+ #else
+-struct scripting_ops python_scripting_ops;
++extern struct scripting_ops python_scripting_ops;
+ 
+ void setup_python_scripting(void)
+ {
+@@ -158,7 +158,7 @@ void setup_perl_scripting(void)
+ 	register_perl_scripting(&perl_scripting_unsupported_ops);
+ }
+ #else
+-struct scripting_ops perl_scripting_ops;
++extern struct scripting_ops perl_scripting_ops;
+ 
+ void setup_perl_scripting(void)
+ {
+diff --git a/tools/perf/util/ui/browsers/hists.c b/tools/perf/util/ui/browsers/hists.c
+index dafdf67..6866aa4 100644
+--- a/tools/perf/util/ui/browsers/hists.c
++++ b/tools/perf/util/ui/browsers/hists.c
+@@ -773,7 +773,7 @@ int hists__browse(struct hists *self, const char *helpline, const char *ev_name)
+ 
+ 			switch (key) {
+ 			case 'a':
+-				if (browser->selection->map == NULL &&
++				if (browser->selection->map == NULL ||
+ 				    browser->selection->map->dso->annotate_warned)
+ 					continue;
+ 				goto do_annotate;
