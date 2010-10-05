@@ -1,45 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932399Ab0JEG5s (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 02:57:48 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:35627 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932158Ab0JEG5n convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 02:57:43 -0400
-From: Sjur BRENDELAND <sjur.brandeland@stericsson.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 5 Oct 2010 08:34:13 +0200
-Subject: RE: [PATCH] caif: remove duplicated include
-Thread-Topic: [PATCH] caif: remove duplicated include
-Thread-Index: Actj0ZWIjeFPkwYpR8uTaxqKeMIc/wAhYhvg
-Message-ID: <81C3A93C17462B4BBD7E272753C1057919238FAF3A@EXDCVYMBSTM005.EQ1STM.local>
-References: <20101004163539.5e879211@absol.kitzblitz>
-In-Reply-To: <20101004163539.5e879211@absol.kitzblitz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: CdG6 DD4d DpdE FUCz GC6g QyaD S4wD T9+2 UoGN WWYn WcLj
- XrPR Yvrx ZB59 aVCC
- bpVc;3;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AG4AZQB0AGQAZQB2AEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBuAGkAawBhAGkAQABuAGkAawBhAGkALgBuAGUAdAA=;Sosha1_v1;7;{6F0E8775-3054-420F-88DC-34C0642DCB5D};cwBqAHUAcgAuAGIAcgBhAG4AZABlAGwAYQBuAGQAQABzAHQAZQByAGkAYwBzAHMAbwBuAC4AYwBvAG0A;Tue,
- 05 Oct 2010 06:34:13
- GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAYwBhAGkAZgA6ACAAcgBlAG0AbwB2AGUAIABkAHUAcABsAGkAYwBhAHQAZQBkACAAaQBuAGMAbAB1AGQAZQA=
-x-cr-puzzleid: {6F0E8775-3054-420F-88DC-34C0642DCB5D}
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932338Ab0JEG5l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 02:57:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34909 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932276Ab0JEG5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 02:57:39 -0400
+Message-ID: <4CAACCC1.6000000@kernel.org>
+Date: Tue, 05 Oct 2010 08:59:13 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the lost-spurious-irq tree with the
+ tip tree
+References: <20101005141334.6a0f15fd.sfr@canb.auug.org.au> <4CAABC0E.3030700@kernel.org> <20101005063227.GB12267@elte.hu> <4CAACBDA.6090308@kernel.org>
+In-Reply-To: <4CAACBDA.6090308@kernel.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 06:57:07 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Kaiser wrote: 
-> Remove duplicated include.
-> 
-> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+On 10/05/2010 08:55 AM, Tejun Heo wrote:
+> I think Stephen had done enough.  At the time, I wasn't sure which
+> tree it was going to go through and it took some time before Thomas
+> responded, so I was intending to push it through separately.  I should
+> have retracted the tree right after it was determined to be
+> reimplemented but forgot.  That's my mistake not Stephen's.  Sorry
+> about that.
 
-Looks good, thanks. 
-Acked-by: Sjur Braendeland <sjur.brandeland@stericsson.com>
+Oooh, apparently I knew it was gonna go through genirq but expected it
+to go through as-is and wanted to accelerate testing.  FWIW, I'm
+sure everyone involved was notified of the move at the time.  At any
+rate, won't happen again.
+
+Thanks.
+
+-- 
+tejun
