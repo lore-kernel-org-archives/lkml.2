@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab0JEPZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 11:25:59 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:33876 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754309Ab0JEPZ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 11:25:58 -0400
-Subject: Re: [RFC][PATCH] try not to let dirty inodes fester
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, hch@infradead.org,
-        lnxninja@linux.vnet.ibm.com, axboe@kernel.dk, pbadari@us.ibm.com,
-        Yuri L Volobuev <volobuev@us.ibm.com>
-In-Reply-To: <20101002113238.GF4681@dastard>
-References: <20101001191449.0AA0E233@kernel.beaverton.ibm.com>
-	 <20101002113238.GF4681@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Oct 2010 08:25:45 -0700
-Message-ID: <1286292345.9970.4231.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 8bit
+	id S1754660Ab0JEPfY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 11:35:24 -0400
+Received: from www.tglx.de ([62.245.132.106]:58695 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754426Ab0JEPfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 11:35:23 -0400
+Date: Tue, 5 Oct 2010 17:34:11 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+cc: robert.richter@amd.com, LKML <linux-kernel@vger.kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [RFC 0/3] Basic support for LWP
+In-Reply-To: <20101005145155.GD173@escobedo.osrc.amd.com>
+Message-ID: <alpine.LFD.2.00.1010051730060.2556@localhost6.localdomain6>
+References: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com> <alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6> <20101005145155.GD173@escobedo.osrc.amd.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-02 at 21:32 +1000, Dave Chinner wrote:
-> On Fri, Oct 01, 2010 at 12:14:49PM -0700, Dave Hansen wrote:
-> > 
-> > I've got a bug that I've been investigating.  The inode cache for a
-> > certain fs grows and grows, desptite running
-> > 
-> > 	echo 2 > /proc/sys/vm/drop_caches
-> > 
-> > all the time.  Not that running drop_caches is a good idea, but it
-> > _should_ force things to stay under control.  That is, unless the
-> > inodes are dirty.
+On Tue, 5 Oct 2010, Hans Rosenfeld wrote:
+
+> [ adding Robert ]
 > 
-> What's the filesystem, and what's the test case?
-
-It's GPFS, which is a binary blob to me, unfortunately.  I've seen some
-of the same behavior with ext3, but only after changing some of the
-dirty writeout tunables to absurd values.  I think the complication with
-GPFS in particular is that it doesn't use Linux's buffer cache.  We
-don't trigger any of the page-based dirty watermarks since no _pages_
-are being dirtied.
-
-I've seen it happen when creating or touching large numbers of empty
-files.  Yuri (cc'd) has seen it happen when mmap()'ing files but not
-modifying them, since noatime is not set.
-
-The original case that we were seeing was an NFS server serving up a
-GPFS filesystem.
-
-> > I think I'm seeing a case where the inode's dentry goes away, it
-> > hits iput_final().  It is dirty, so it stays off the inode_unused
-> > list waiting around for writeback.
-> 
-> Right - it should be on the bdi->wb->b_dirty list waiting to be
-> expired and written back or already of the expired writeback queueѕ
-> and waiting to be written again.
-> 
-> > Then, the periodic writeback happens, and we end up in
-> > wb_writeback().  One of the first things we do in the loop (before
-> > writing out inodes) is this:
+> On Mon, Oct 04, 2010 at 06:13:46PM -0400, Thomas Gleixner wrote:
+> > > LWP (Light-Weight Profiling) is a new profiling mechanism that allows
+> > > user mode processes to gather performance data about themselves with
+> > > very low overhead. The specification can be found here:
+> > >         http://developer.amd.com/cpu/LWP/Pages/default.aspx
 > > 
-> > 	if (work->for_background && !over_bground_thresh())
-> > 		break;
+> > All I can see there is marketing blurb. The spec pdf does not tell me
+> > either how the end result of your patches will look like.
 > 
-> Sure, but the periodic ->for_kupdate flushing should be writing
-> any inode older than 30s and should be running every 5s. hence the
-> background writeback aborting should not be affecting the cleaning
-> of dirty inodes. Hence I don't think this is the problem your are
-> looking for.
+> Well, you should get a basic understanding of how LWP works from the
+> spec. I'm pretty sure there is more than that blurb in there.
+> 
+> What I sent _is_ the end result. Supporting LWP in the task switching
+> code is the only thing necessary to use the LWP instructions in user
+> space. And that is also what I'd like to get some comments on.
 
-Yeah, I think you're right.  I missed that call site when I was going
-through it.
+So it's the end result. Ok, then explain the following sentence:
+ 
+> > > This code adds basic support for LWP to the context switch code, which
+> > > is the minimum needed to use LWP. Support for other LWP features like
+> > > interrupts will be added later.
 
-> Without knowing what filesystem or what you are doing to grow the
-> inode cache, it's pretty hard to say much more than this....
+If your patch _IS_ the end result then there are no other LWP
+features, right ?
 
-Thanks for looking at it.  I'm trying to see if I can reproduce any of
-this with any of the in-tree fs's.  
+If there are, then your patch is _NOT_ the end result and we really
+want to know what is coming.
 
--- Dave
+Thanks,
 
+	tglx
