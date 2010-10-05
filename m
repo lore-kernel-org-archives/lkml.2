@@ -1,52 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab0JEKWh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:22:37 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:58582 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab0JEKWe (ORCPT
+	id S932856Ab0JEKWs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:22:48 -0400
+Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57781 "EHLO
+	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932845Ab0JEKWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:22:34 -0400
+	Tue, 5 Oct 2010 06:22:46 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
         hooanon05@yahoo.co.jp, bfields@fieldses.org, miklos@szeredi.hu
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH -V21 00/12] Generic name to handle and open by handle syscalls
-Date: Tue,  5 Oct 2010 15:52:08 +0530
-Message-Id: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V21 02/12] vfs: Add name to file handle conversion support
+Date: Tue,  5 Oct 2010 15:52:10 +0530
+Message-Id: <1286274140-26533-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The syscall also return mount id which can be used
+to lookup file system specific information such as uuid
+in /proc/<pid>/mountinfo
 
-The below set of patches implement open by handle support using exportfs
-operations. This allows user space application to map a file name to file
-handle and later open the file using handle. This should be usable
-for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
-XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/open.c                |  135 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/exportfs.h |    3 +
+ include/linux/fs.h       |    7 +++
+ include/linux/syscalls.h |    5 ++-
+ 4 files changed, 149 insertions(+), 1 deletions(-)
 
-[1] http://nfs-ganesha.sourceforge.net/
-[2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
-
-git repo for the patchset at:
-git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-open-handle.git open-by-handle
-
-Test case can be found at
-http://git.kernel.org/?p=fs/ext2/kvaneesh/handle-test.git
-git://git.kernel.org/pub/scm/fs/ext2/kvaneesh/handle-test.git
-
-Changes from V20:
-a) Use better variable names
-b) change handle_size type to __u32
-c) max handle size is now nfsv4 handle size. Considering file system would
-   want to support a handle that can fit into nfsv4 handle size limiting
-   max handle size to 128 rather than 4096 is the right thing.
-d) I didn't add Ceph changes in the series. I am expecting the changes
-   will go via Ceph tree.
-
--aneesh
+diff --git a/fs/open.c b/fs/open.c
+index d74e198..0475a35 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -30,6 +30,7 @@
+ #include <linux/fs_struct.h>
+ #include <linux/ima.h>
+ #include <linux/dnotify.h>
++#include <linux/exportfs.h>
+ 
+ #include "internal.h"
+ 
+@@ -1042,3 +1043,137 @@ int nonseekable_open(struct inode *inode, struct file *filp)
+ }
+ 
+ EXPORT_SYMBOL(nonseekable_open);
++
++#ifdef CONFIG_EXPORTFS
++static long do_sys_name_to_handle(struct path *path,
++				  struct file_handle __user *ufh,
++				  int __user *mnt_id)
++{
++	long retval;
++	struct file_handle f_handle;
++	int handle_dwords, handle_bytes;
++	struct file_handle *handle = NULL;
++
++	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
++		retval = -EFAULT;
++		goto err_out;
++	}
++	if (f_handle.handle_bytes > MAX_HANDLE_SZ) {
++		retval = -EINVAL;
++		goto err_out;
++	}
++	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_bytes,
++			 GFP_KERNEL);
++	if (!handle) {
++		retval = -ENOMEM;
++		goto err_out;
++	}
++
++	/* convert handle size to  multiple of sizeof(u32) */
++	handle_dwords = f_handle.handle_bytes >> 2;
++
++	/* we ask for a non connected handle */
++	retval = exportfs_encode_fh(path->dentry,
++				    (struct fid *)handle->f_handle,
++				    &handle_dwords,  0);
++	handle->handle_type = retval;
++	/* convert handle size to bytes */
++	handle_bytes = handle_dwords * sizeof(u32);
++	handle->handle_bytes = handle_bytes;
++	if ((handle->handle_bytes > f_handle.handle_bytes) ||
++	    (retval == 255) || (retval == -ENOSPC)) {
++		/* As per old exportfs_encode_fh documentation
++		 * we could return ENOSPC to indicate overflow
++		 * But file system returned 255 always. So handle
++		 * both the values
++		 */
++		/*
++		 * set the handle size to zero so we copy only
++		 * non variable part of the file_handle
++		 */
++		handle_bytes = 0;
++		retval = -EOVERFLOW;
++	} else
++		retval = 0;
++	/* copy the mount id */
++	if (copy_to_user(mnt_id, &path->mnt->mnt_id, sizeof(*mnt_id))) {
++		retval = -EFAULT;
++		goto err_free_out;
++	}
++	if (copy_to_user(ufh, handle,
++			 sizeof(struct file_handle) + handle_bytes))
++		retval = -EFAULT;
++err_free_out:
++	kfree(handle);
++err_out:
++	return retval;
++}
++
++/**
++ * sys_name_to_handle_at: convert name to handle
++ * @dfd: directory relative to which name is interpreted if not absolute
++ * @name: name that should be converted to handle.
++ * @handle: resulting file handle
++ * @mnt_id: mount id of the file system containing the file
++ * @flag: flag value to indicate whether to follow symlink or not
++ *
++ * @handle->handle_size indicate the space available to store the
++ * variable part of the file handle in bytes. If there is not
++ * enough space, the field is updated to return the minimum
++ * value required.
++ */
++SYSCALL_DEFINE5(name_to_handle_at, int, dfd, const char __user *, name,
++		struct file_handle __user *, handle, int __user*, mnt_id,
++		int, flag)
++{
++
++	int follow;
++	int fput_needed;
++	long ret = -EINVAL;
++	struct path path, *pp;
++	struct file *file = NULL;
++
++	if ((flag & ~AT_SYMLINK_FOLLOW) != 0)
++		goto err_out;
++
++	if (name == NULL && dfd != AT_FDCWD) {
++		file = fget_light(dfd, &fput_needed);
++		if (file) {
++			pp = &file->f_path;
++			ret = 0;
++		} else
++			ret = -EBADF;
++	} else {
++		follow = (flag & AT_SYMLINK_FOLLOW) ? LOOKUP_FOLLOW : 0;
++		ret = user_path_at(dfd, name, follow, &path);
++		pp = &path;
++	}
++	if (ret)
++		goto err_out;
++	/*
++	 * We need t make sure wether the file system
++	 * support decoding of the file handle
++	 */
++	if (!pp->mnt->mnt_sb->s_export_op ||
++	    !pp->mnt->mnt_sb->s_export_op->fh_to_dentry) {
++		ret = -EOPNOTSUPP;
++		goto out_path;
++	}
++	ret = do_sys_name_to_handle(pp, handle, mnt_id);
++
++out_path:
++	if (file)
++		fput_light(file, fput_needed);
++	else
++		path_put(&path);
++err_out:
++	return ret;
++}
++#else
++SYSCALL_DEFINE5(name_to_handle_at, int, dfd, const char __user *, name,
++		struct file_handle __user *, handle, int __user *, mnt_id,
++		int, flag)
++{
++	return -ENOSYS;
++}
++#endif
+diff --git a/include/linux/exportfs.h b/include/linux/exportfs.h
+index df05257..561837d 100644
+--- a/include/linux/exportfs.h
++++ b/include/linux/exportfs.h
+@@ -8,6 +8,9 @@ struct inode;
+ struct super_block;
+ struct vfsmount;
+ 
++/* limit the handle size to NFSv4 handle size now */
++#define MAX_HANDLE_SZ 128
++
+ /*
+  * The fileid_type identifies how the file within the filesystem is encoded.
+  * In theory this is freely set and parsed by the filesystem, but we try to
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 63d069b..1c7c6ca 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -948,6 +948,13 @@ struct file {
+ #endif
+ };
+ 
++struct file_handle {
++	__u32 handle_bytes;
++	int handle_type;
++	/* file identifier */
++	unsigned char f_handle[0];
++};
++
+ #define get_file(x)	atomic_long_inc(&(x)->f_count)
+ #define fput_atomic(x)	atomic_long_add_unless(&(x)->f_count, -1, 1)
+ #define file_count(x)	atomic_long_read(&(x)->f_count)
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index e6319d1..6ab4d07 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -62,6 +62,7 @@ struct robust_list_head;
+ struct getcpu_cache;
+ struct old_linux_dirent;
+ struct perf_event_attr;
++struct file_handle;
+ 
+ #include <linux/types.h>
+ #include <linux/aio_abi.h>
+@@ -831,5 +832,7 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
+ 			unsigned long prot, unsigned long flags,
+ 			unsigned long fd, unsigned long pgoff);
+ asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
+-
++asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
++				      struct file_handle __user *handle,
++				      int __user *mnt_id, int flag);
+ #endif
+-- 
+1.7.0.4
 
