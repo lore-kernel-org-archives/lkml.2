@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab0JETXz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 15:23:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47010 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab0JETXy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 15:23:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=bUYijAYvKqO2ygtAulDxAl0LdK++5MxiJt9w612zpNL1gOW0RnLHKtENedyY2WIrq5
-         nXKFc5yz/cLk6UCetlYyrII3pj9Tt8SZqs+pHF05fmOIsLRCM0D3LKYneN+/kK+L9ez7
-         O+A0lMHqf1waT2ZciuKtl41xaSMQ2DsoYR4fE=
-MIME-Version: 1.0
-In-Reply-To: <20101005190741.GC20825@kroah.com>
-References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
-	<20101005190741.GC20825@kroah.com>
-Date: Tue, 5 Oct 2010 22:23:52 +0300
-Message-ID: <AANLkTikOBWxXh7uVrDxfW3OnwOM58JTXU76KUUoQWBWM@mail.gmail.com>
-Subject: Re: [PATCH 0/2] omap: dsp: make the driver actually work
-From: Felipe Contreras <felipe.contreras@gmail.com>
+	id S1754833Ab0JET03 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 15:26:29 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:52723 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753133Ab0JET02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 15:26:28 -0400
+Date: Tue, 5 Oct 2010 12:33:02 -0700
+From: Andres Salomon <dilinger@queued.net>
 To: Greg KH <greg@kroah.com>
-Cc: linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Hiroshi Doyu <hiroshi.doyu@nokia.com>
-Content-Type: text/plain; charset=UTF-8
+Cc: Greg KH <gregkh@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
+        Jon Nettleton <jon.nettleton@gmail.com>
+Subject: Re: linux-next: Tree for October 1 (staging/olpc_dcon)
+Message-ID: <20101005123302.399b258f@debxo>
+In-Reply-To: <20101005190818.GD20825@kroah.com>
+References: <20101001153756.47b52566.sfr@canb.auug.org.au>
+	<20101001154531.997630a2.randy.dunlap@oracle.com>
+	<20101001192454.0a427cb0@debxo>
+	<20101002185154.GA18020@suse.de>
+	<20101002180334.7894bdfe@debxo>
+	<20101005190818.GD20825@kroah.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 5, 2010 at 10:07 PM, Greg KH <greg@kroah.com> wrote:
-> On Mon, Oct 04, 2010 at 07:09:13PM +0300, Felipe Contreras wrote:
->> It seems the platform device was dropped from the migration of tidspbridge into
->> staging, plus the sdram meblock (previously bootmem) required for it work are
->> gone.
->>
->> Withouth these patches the driver loads, but doesn't do anything.
->>
->> A second issue with ioremap() still remains, but that can be solved by
->> reverting 309caa9.
->>
->> I think these might be worth to get into 2.6.36, if not, I have versions with
->> more changes; cleanups and so on.
->
-> I've applied this to my staging-next tree, for .37, as it's not a big
-> deal for .36.
+On Tue, 5 Oct 2010 12:08:18 -0700
+Greg KH <greg@kroah.com> wrote:
 
-Well, I thought it would be nice if the driver actually worked on .36,
-but anyway, I'll rebase the rest of my cleanup patches and send them.
-Hopefully I find a way to get rid of the ioremap() issue.
+> On Sat, Oct 02, 2010 at 06:03:34PM -0700, Andres Salomon wrote:
+> > On Sat, 2 Oct 2010 11:51:54 -0700
+> > Greg KH <gregkh@suse.de> wrote:
+> > 
+> > > On Fri, Oct 01, 2010 at 07:24:54PM -0700, Andres Salomon wrote:
+> > > > On Fri, 1 Oct 2010 15:45:31 -0700
+> > > > Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> > > > 
+> > > > > On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
+> > > > > 
+> > > > > > Hi all,
+> > > > > > 
+> > > > > > Changes since 20100930:
+> > > > > 
+> > > > > 
+> > > > > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
+> > > > > declaration of function 'geode_gpio_event_irq'
+> > > > > drivers/staging/olpc_dcon/olpc_dcon_xo_1.c:57: error: implicit
+> > > > > declaration of function 'geode_gpio'
+> > > > 
+> > > > Yep, it's pending a cs5535-gpio patch
+> > > > (https://patchwork.kernel.org/patch/209482/).
+> > > 
+> > > Wait, as I didn't apply the later patches, what I did apply should
+> > > have still built properly (remember our rule, no breakage at any
+> > > point in a patch series.)  So, should I revert the last olpc patch
+> > > that caused this problem?
+> > > 
+> > 
+> > Sorry, I thought that was made clear by the "this patch is necessary
+> > for building the driver" comments in each patch description.  The
+> > original driver that was submitted doesn't build unless all patches
+> > are applied (the only which touches external APIs is the pending
+> > cs5535-gpio one).
+> 
+> Ok, I'll go mark the driver as depending on CONFIG_BROKEN for now,
+> until we get that resolved, as we can't have a driver that breaks the
+> build in the tree.
+> 
+> thanks,
+> 
+> greg k-h
 
-Cheers.
 
--- 
-Felipe Contreras
+Sounds good.  After the two outstanding patches are applied,
+CONFIG_BROKEN can be safely removed.
+
+
