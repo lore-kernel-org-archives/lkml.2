@@ -1,42 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755905Ab0JEA0t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 20:26:49 -0400
-Received: from mail.perches.com ([173.55.12.10]:2657 "EHLO mail.perches.com"
+	id S1755524Ab0JEAgq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 20:36:46 -0400
+Received: from jdl.com ([208.123.74.7]:47658 "EHLO jdl.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754247Ab0JEA0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 20:26:47 -0400
-Subject: Re: [PATCH] serial8250: ratelimit "too much work" error
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Daniel Drake <dsd@laptop.org>, linux-serial@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Greg KH <greg@kroah.com>
-In-Reply-To: <20101004164911.c8348e7e.akpm@linux-foundation.org>
-References: <20101002110438.801F49D401B@zog.reactivated.net>
-	 <20101004145101.b28fdc0a.akpm@linux-foundation.org>
-	 <20101004150238.fbc1b6cf.akpm@linux-foundation.org>
-	 <1286230259.10512.81.camel@Joe-Laptop>
-	 <20101004152102.1e04f30a.akpm@linux-foundation.org>
-	 <1286233169.10512.85.camel@Joe-Laptop>
-	 <20101004161139.2a988b85.akpm@linux-foundation.org>
-	 <1286235245.10512.91.camel@Joe-Laptop>
-	 <20101004164911.c8348e7e.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Oct 2010 17:26:46 -0700
-Message-ID: <1286238406.10512.111.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754112Ab0JEAgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 20:36:45 -0400
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, tglx@linutronix.de
+Subject: Re: [PATCH] Globally s/struct irq_host/struct irq_domain/ 
+In-reply-to: <1286233776.2463.329.camel@pasglop> 
+References: <E1P2Tqn-0004gj-W1@jdl.com> <20101004165212.GC13749@angua.secretlab.ca> <1286233776.2463.329.camel@pasglop>
+Comments: In-reply-to Benjamin Herrenschmidt <benh@kernel.crashing.org>
+   message dated "Tue, 05 Oct 2010 10:09:36 +1100."
+Date: Mon, 04 Oct 2010 19:36:40 -0500
+From: Jon Loeliger <jdl@jdl.com>
+Message-Id: <E1P2vWK-0008RN-2H@jdl.com>
+X-Spam-Score: -1.7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-04 at 16:49 -0700, Andrew Morton wrote:
-> Look at the file!  It all does one thing.  It encapsulates a single
-> concept.  It's simply a bad thing to add single-concept
-> application-specific material into that.  Layering, and all that.
+> 
+> I doubt the need for irq_host will disappear. However I don't see that
+> going into the core under that name, so I think the rename is a very
+> valid thing to do now. We just need to sync the patches to avoid pure
+> mechanical clash.
 
-Take a look at kernel.h recently?
+I'm happy to spin/rebase the patch as needed.
 
+> Thomas initial series doesn't yet generalize the virq layer and that
+> will take a bit longer, so I'm happy to see Jon stuff go upstream first.
 
+My patch is against Linus' mainline.  Not sure who might pick it up.
+
+jdl
