@@ -1,95 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757289Ab0JECxH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 22:53:07 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57589 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753197Ab0JECxG (ORCPT
+	id S1757423Ab0JECzT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 22:55:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53153 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757227Ab0JECzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 22:53:06 -0400
-Date: Mon, 4 Oct 2010 19:54:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2] DMI: log system, BIOS, and board information
-Message-Id: <20101004195406.96d71305.akpm@linux-foundation.org>
-In-Reply-To: <20101005024529.GA20805@helgaas.com>
-References: <20100930164905.13154.33194.stgit@bob.kio>
-	<20101004161926.7082bd13.akpm@linux-foundation.org>
-	<20101005024529.GA20805@helgaas.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 4 Oct 2010 22:55:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: Is it legal to return positive value when do_execve() succeeds?
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101005113840.28C9.A69D9226@jp.fujitsu.com>
+References: <20101005102446.28C3.A69D9226@jp.fujitsu.com> <20101005113840.28C9.A69D9226@jp.fujitsu.com>
+Message-Id: <20101005115656.28D1.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  5 Oct 2010 11:55:06 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Oct 2010 20:45:29 -0600 Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-
-> On Mon, Oct 04, 2010 at 04:19:26PM -0700, Andrew Morton wrote:
-> > On Thu, 30 Sep 2010 10:49:05 -0600
-> > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> > > KOSAKI Motohiro wrote:
+> > > > > fs/binfmt_elf.c:
+> > > > >  77 #define BAD_ADDR(x) ((unsigned long)(x) >= TASK_SIZE)
+> > > > Can do_brk() return BAD_ADDR() _and_ !IS_ERR_VALUE() value? when?
+> > > 
+> > > For example, arch/mips/include/asm/processor.h has below definitions
+> > > which is smaller than INT_MAX
+> > > 
+> > >  47 #ifdef CONFIG_32BIT
+> > > (...snipped...)
+> > >  52 #define TASK_SIZE       0x7fff8000UL
+> > > (...snipped...)
+> > >  63 #endif
+> > >  64 
+> > >  65 #ifdef CONFIG_64BIT
+> > > (...snipped...)
+> > >  74 #define TASK_SIZE       0x10000000000UL
+> > > (...snipped...)
+> > >  91 #endif
+> > > 
+> > > Also, several architectures define TASK_SIZE as
+> > > 
+> > >   #define TASK_SIZE               PAGE_OFFSET
+> > > 
+> > > and PAGE_OFFSET could be 0 if CONFIG_KERNEL_RAM_BASE_ADDRESS is not defined.
+> > > 
+> > > include/asm-generic/page.h
+> > >  68 #ifdef CONFIG_KERNEL_RAM_BASE_ADDRESS
+> > >  69 #define PAGE_OFFSET             (CONFIG_KERNEL_RAM_BASE_ADDRESS)
+> > >  70 #else
+> > >  71 #define PAGE_OFFSET             (0)
+> > >  72 #endif
+> > > 
+> > > If TASK_SIZE == 0, BAD_ADDR(x) is always true and !IS_ERR_VALUE(x) can be true.
+> > > Although I don't know which combination makes such environment,
+> > > I think "BAD_ADDR() _and_ !IS_ERR_VALUE()" can happen.
 > > 
-> > > 
-> > > Put basic system information in the dmesg log.  There are lots of dmesg
-> > > logs on the web, and it would be useful if they contained this information
-> > > for debugging platform problems.
-> > > 
-> > > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
-> > > ---
-> > > 
-> > >  drivers/firmware/dmi_scan.c |   35 ++++++++++++++++++++++++++++++++++-
-> > >  1 files changed, 34 insertions(+), 1 deletions(-)
-> > > 
-> > > 
-> > > diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
-> > > index b3d22d6..d625e53 100644
-> > > --- a/drivers/firmware/dmi_scan.c
-> > > +++ b/drivers/firmware/dmi_scan.c
-> > > @@ -2,6 +2,7 @@
-> > >  #include <linux/string.h>
-> > >  #include <linux/init.h>
-> > >  #include <linux/module.h>
-> > > +#include <linux/ctype.h>
-> > >  #include <linux/dmi.h>
-> > >  #include <linux/efi.h>
-> > >  #include <linux/bootmem.h>
-> > > @@ -361,6 +362,36 @@ static void __init dmi_decode(const struct dmi_header *dm, void *dummy)
-> > >  	}
-> > >  }
-> > >  
-> > > +static const char * __init dmi_printable_system_info(int field)
-> > > +{
-> > > +	const char *info, *p;
-> > > +
-> > > +	info = dmi_get_system_info(field);
-> > > +	if (!info)
-> > > +		return NULL;
-> > > +
-> > > +	for (p = info; *p; p++)
-> > > +		if (!isprint(*p))
-> > > +			return "<...>";
-> > > +
-> > > +	return info;
-> > > +}
+> > I think you should read do_brk() itself. the spec is
 > > 
-> > So if the string contains any non-printable character, we suppress the
-> > whole string.
+> > success case:
+> > 	return addr argument
 > > 
-> > Is that the best thing to do?  Would it be better to present the
-> > oddball character as \xNN or such?
+> > error case: 
+> > 	return error code
+> > 
+> > When does it return invalid address?
 > 
-> I would definitely prefer to do that, but that would mean allocating
-> memory, and this happens so early that it looked like it would be
-> more trouble than it's worth.  I'm not saying I couldn't be convinced,
-> though.
+> Does this makes a bit cleanups?
+> 
+> 
+> 
+> From 5f5556d30ac1876ec2211a2eae77e8372183a9b1 Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Fri, 15 Oct 2010 05:13:40 +0900
+> Subject: [cleanup][PATCH] elf: kill BAD_ADDR() macro
+> 
+> BAD_ADDR() macro is useless because 1) do_brk() and do_mmap() return
+> only either valid pointer or error code 2) when kernel and userland have
+> perfectly different address space (such as old 4G:4G separation), to
+> compare TASK_SIZE has no good meaning.
+> 
+> Then, this patch change it to use IS_ERR_VALUE instead (as other a lot
+> of places).
+> But, this is theorical issue. this patch doesn't have functional change.
 
-Well, one could print the data one char at a time.  If we're running
-early in boot with a single CPU up then that wouldn't make too big a
-mess.
+Ouch, this patch is completely corrupted. please ignore it.
 
-Is there some upper bound to the length of a DMI string?  If so, use a
-static initdata buffer dimensioned to 4x that?
+
 
