@@ -1,143 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab0JEKzr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:55:47 -0400
-Received: from smtp126.sbc.mail.sp1.yahoo.com ([69.147.65.185]:20073 "HELO
-	smtp126.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752108Ab0JEKzp (ORCPT
+	id S932866Ab0JEK4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:56:35 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:53314 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751832Ab0JEK4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:55:45 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: CK3meT4VM1kZGUlMuJLqo8VOfreMAMFBRNYWCq0YvoQQxYI
- S2IBZwIkKhmaeRsv32rQQHlht4mEPfGN6K3Aa9cEXrpe8dS1Ia8zOxJKiDrZ
- voV1H2VdKH0tw6rgHEb.BpoAYX5SgiAjs7hWdIqFKexb5yzLqWyyvYcePy4_
- Zo5wM1JWNbGFxEKm9ELZsQz92DUVOtxY73ojZBpQ6E0L2V5ULeDIitEE0tc.
- 9UChEcEnISBJLeUKRut1UGtSisc_Zk1Kb8Ewp0cTnoElIOwbSNUazsb9SIPd
- nG9N7sbMEUe3ynUYeZ8azD19YLVuNpr.mpu8Zdt8UnvY2wfmG2qlw70.M
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC v2 20/21] tcm: Add Kbuild and Kconfig for drivers/target,
-	Documentation/target/tcm_mod_builder.py
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com
-In-Reply-To: <20101005163323P.fujita.tomonori@lab.ntt.co.jp>
-References: <1285195906-11804-1-git-send-email-nab@linux-iscsi.org>
-	 <20101005163323P.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Date: Tue, 05 Oct 2010 03:51:28 -0700
-Message-Id: <1286275888.20824.37.camel@haakon2.linux-iscsi.org>
+	Tue, 5 Oct 2010 06:56:34 -0400
+Date: Tue, 5 Oct 2010 12:21:57 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Samu Onkalo <samu.p.onkalo@nokia.com>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] misc: Driver for bh1770glc / sfh7770 ALS and
+ proximity sensor
+Message-ID: <20101005122157.149f14d0@lxorguk.ukuu.org.uk>
+In-Reply-To: <1286271779-19819-2-git-send-email-samu.p.onkalo@nokia.com>
+References: <1286271779-19819-1-git-send-email-samu.p.onkalo@nokia.com>
+	<1286271779-19819-2-git-send-email-samu.p.onkalo@nokia.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-05 at 16:38 +0900, FUJITA Tomonori wrote:
-> On Wed, 22 Sep 2010 15:51:46 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > 
-> > Add TCM Kbuild and Kconfig files and update drivers/ to pick up drivers/target.
-> > Add Docmentation/target/ for tcm_mod_builder.py script for generating new
-> > TCM v4 fabric modules functional ConfigFS skeletons.
-> > 
-> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> > ---
-> >  Documentation/target/tcm_mod_builder.py  | 1039 ++++++++++++++++++++++++++++++
-> >  Documentation/target/tcm_mod_builder.txt |  138 ++++
-> >  drivers/Kconfig                          |    2 +
-> >  drivers/Makefile                         |    1 +
-> >  drivers/target/Kbuild                    |   27 +
-> >  drivers/target/Kconfig                   |   34 +
-> >  6 files changed, 1241 insertions(+), 0 deletions(-)
-> >  create mode 100755 Documentation/target/tcm_mod_builder.py
-> >  create mode 100644 Documentation/target/tcm_mod_builder.txt
-> >  create mode 100644 drivers/target/Kbuild
-> >  create mode 100644 drivers/target/Kconfig
-> 
-> > +++ b/Documentation/target/tcm_mod_builder.txt
-> > @@ -0,0 +1,138 @@
-> > +>>>>>>>>>> The TCM v4 fabric module script generator <<<<<<<<<<
-> > +
-> > +Greetings all,
-> > +
-> > +This document is intended to be a mini-HOWTO for using the tcm_mod_builder.py
-> > +script to generate a brand new functional TCM v4 fabric .ko module of your very own,
-> > +that once built can be immediately be loaded to start access the new TCM/ConfigFS
-> > +fabric skeleton, by simplying using:
-> > +
-> > +	modprobe $TCM_NEW_MOD
-> > +	mkdir -p /sys/kernel/config/target/$TCM_NEW_MOD
-> > +
-> > +This script will create a new drivers/target/$TCM_NEW_MOD/, and will do the following
-> > +
-> > +	*) Generate new API callers for drivers/target/target_core_fabric_configs.c logic
-> > +	   ->make_nodeacl(), ->drop_nodeacl(), ->make_tpg(), ->drop_tpg()
-> > +	   ->make_wwn(), ->drop_wwn().  These are created into $TCM_NEW_MOD/$TCM_NEW_MOD_configfs.c
-> > +	*) Generate basic infrastructure for loading/unloading LKMs and TCM/ConfigFS fabric module
-> > +	   using a skeleton struct target_core_fabric_ops API template.
-> > +	*) Based on user defined T10 Proto_Ident for the new fabric module being built,
-> > +	   the TransportID / Initiator and Target WWPN related handlers for
-> > +	   SPC-3 persistent reservation are automatically generated in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-> > +	   using drivers/target/target_core_fabric_lib.c logic.
-> > +	*) NOP API calls for all other Data I/O path and fabric dependent attribute logic
-> > +	   in $TCM_NEW_MOD/$TCM_NEW_MOD_fabric.c
-> > +
-> > +So far the generation of new functional ConfigFS skeletons supports for FC,
-> > +SAS and iSCSI proto_idents, which is defined at the top of tcm_mod_builder.py:main().
-> > +Once proto_ident is selected in main(), and the handful of other global variables at top
-> > +of tcm_mod_builder.py are correct, actually running the script looks like:
-> > +
-> > +target:/mnt/sdb/lio-core-2.6.git/Documentation/target# ./tcm_mod_builder.py 
-> > +Writing file:
-> > +/mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000/tcm_nab5000_base.h
-> > +Using tcm_mod_scan_fabric_ops:
-> 
-> I thought that I can use this to write IBM vscsi target driver but I
-> got:
-> 
-> fujita@rose:~/git/linux-next/Documentation/target$ ./tcm_mod_builder.py
-> Creating fabric_mod_dir: /mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000
-> Traceback (most recent call last):
->   File "./tcm_mod_builder.py", line 1039, in <module>
->     main()
->   File "./tcm_mod_builder.py", line 1028, in main
->     tcm_mod_create_module_subdir()
->   File "./tcm_mod_builder.py", line 38, in tcm_mod_create_module_subdir
->     ret = os.mkdir(fabric_mod_dir)
-> OSError: [Errno 2] No such file or directory: '/mnt/sdb/lio-core-2.6.git/drivers/target/tcm_nab5000'
-> 
-> 
-> And looks like tcm_dir isn't configurable.
+On Tue,  5 Oct 2010 12:42:55 +0300
+Samu Onkalo <samu.p.onkalo@nokia.com> wrote:
 
-Hi Tomo,
+> This is a driver for ROHM BH1770GLC and OSRAM SFH7770 combined
+> ALS and proximity sensor.
 
-I just pushed some updates into lio-core-2.6.git/lio-4.0 to allow:
+Same comment about regulators.
 
-	 './tcm_mod_builder.py -p $PROTO_IDENT -m $TCM_MOD_NAME' 
 
-to be called instead of the original hardcoded values used when
-generating a new TCM fabric module configfs skeleton.  The commitdiff is
-here:
+> +/* Supported stand alone rates in ms from chip data sheet */
+> +static s16 prox_rates[] = {10, 20, 30, 40, 70, 100, 200, 500, 1000, 2000};
+> +
+> +/* Supported IR-led currents in mA */
+> +static const u8 prox_curr_ma[] = {5, 10, 20, 50, 100, 150, 200};
+> +
+> +/* Supported stand alone rates in ms from chip data sheet */
+> +static s16 lux_rates[] = {100, 200, 500, 1000, 2000};
 
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=commitdiff;h=b9509f44b2fdcd95499e4276349ac3c6cd8407cf
+Any reason only one of the three is const ?
 
-The tcm_mod_builder.txt mini-HOWTO has also been updated here:
 
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=Documentation/target/tcm_mod_builder.txt;hb=refs/heads/lio-4.0
+> +static int bhsfh_prox_rates(struct bhsfh_chip *chip, int rate,
+> +			int rate_threshold)
+> +{
+> +	int i;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(prox_rates); i++)
+> +		if (prox_rates[i] == rate) {
+> +			chip->prox_rate = i;
+> +			break;
+> +		}
+> +
+> +	if (i == ARRAY_SIZE(prox_rates))
+> +		return -EINVAL;
+> +
+> +	for (i = 0; i < ARRAY_SIZE(prox_rates); i++)
+> +		if (prox_rates[i] == rate_threshold) {
+> +			chip->prox_rate_threshold = i;
+> +			return 0;
+> +		}
+> +
+> +	return -EINVAL;
 
-So from there, you should be able to call:
+This makes it hard for generic code. Wouldn't picking the best (first at
+least as good as required) be a bit more polite to user space ?
 
-	./tcm_mod_builder.py -p SAS -m tcm_ibmvtgt'
 
-to generate drivers/target/tcm_ibmvtgt/ with the default SAS (or FC or
-iSCSI) protocol ident handlers.
+> +static ssize_t bhsfh_lux_result_show(struct device *dev,
+> +				   struct device_attribute *attr, char *buf)
+> +{
+> +	struct bhsfh_chip *chip =  dev_get_drvdata(dev);
+> +	ssize_t ret;
+> +
+> +	mutex_lock(&chip->mutex);
+> +	if (pm_runtime_suspended(dev))
+> +		ret = -EIO; /* Chip is not enabled at all */
+> +	else if (chip->lux_wait_result)
+> +		ret = -EAGAIN; /* Waiting for result */
 
-Thanks!
+This makes no sense because you can't poll() a sysfs file
 
---nab
 
+
+> +static ssize_t bhsfh_lux_calib_show(struct device *dev,
+> +				 struct device_attribute *attr, char *buf)
+> +{
+> +	struct bhsfh_chip *chip = dev_get_drvdata(dev);
+> +	return snprintf(buf, PAGE_SIZE, "%u\n", chip->lux_calib);
+> +}
+
+This is short chip->mutex locks as you sometimes temporarily change the
+value (error path below)
+
+> +
+> +static ssize_t bhsfh_lux_calib_store(struct device *dev,
+> +				  struct device_attribute *attr,
+> +				  const char *buf, size_t len)
+> +{
+> +	struct bhsfh_chip *chip = dev_get_drvdata(dev);
+> +	unsigned long value;
+> +	u32 old_calib;
+> +	u32 new_corr;
+> +
+> +	if (strict_strtoul(buf, 0, &value))
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&chip->mutex);
+> +	old_calib = chip->lux_calib;
+> +	chip->lux_calib = value;
+> +	new_corr = bhsfh_get_corr_value(chip);
+> +	if (new_corr == 0) {
+> +		chip->lux_calib = old_calib;
+> +		mutex_unlock(&chip->mutex);
+> +		return -EINVAL;
+> +	}
+> +	chip->lux_corr = new_corr;
+> +	mutex_unlock(&chip->mutex);
+> +
+> +	return len;
