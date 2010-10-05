@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932886Ab0JEKW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:22:59 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:57801 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932825Ab0JEKW4 (ORCPT
+	id S932898Ab0JEKXG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:23:06 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:41306 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932817Ab0JEKXC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:22:56 -0400
+	Tue, 5 Oct 2010 06:23:02 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@kernel.dk,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V21 04/12] vfs: Add handle based readlink syscall
-Date: Tue,  5 Oct 2010 15:52:12 +0530
-Message-Id: <1286274140-26533-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V21 05/12] vfs: Add handle based stat syscall
+Date: Tue,  5 Oct 2010 15:52:13 +0530
+Message-Id: <1286274140-26533-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1286274140-26533-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -26,60 +26,127 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/stat.c                |   28 ++++++++++++++++++++++++++++
- include/linux/syscalls.h |    3 +++
- 2 files changed, 31 insertions(+), 0 deletions(-)
+ arch/x86/ia32/sys_ia32.c |   13 +++++++++++++
+ fs/stat.c                |   42 ++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h       |    3 +++
+ include/linux/syscalls.h |    9 +++++++++
+ 4 files changed, 67 insertions(+), 0 deletions(-)
 
-diff --git a/fs/stat.c b/fs/stat.c
-index 12e90e2..29052eb 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -319,6 +319,34 @@ SYSCALL_DEFINE3(readlink, const char __user *, path, char __user *, buf,
- 	return sys_readlinkat(AT_FDCWD, path, buf, bufsiz);
+diff --git a/arch/x86/ia32/sys_ia32.c b/arch/x86/ia32/sys_ia32.c
+index 849813f..7f679e4 100644
+--- a/arch/x86/ia32/sys_ia32.c
++++ b/arch/x86/ia32/sys_ia32.c
+@@ -138,6 +138,19 @@ asmlinkage long sys32_fstatat(unsigned int dfd, const char __user *filename,
+ 	return cp_stat64(statbuf, &stat);
  }
  
-+SYSCALL_DEFINE4(handle_readlink, int, mountdirfd,
-+		struct file_handle __user *, ufh,
-+		char __user *, buf, int, bufsiz)
++asmlinkage long sys32_handle_stat64(int mountdirfd,
++				    struct file_handle __user *ufh,
++				    struct stat64 __user *statbuf)
 +{
-+	long retval = 0;
-+	struct path path;
-+	struct inode *inode;
++	struct kstat stat;
++	int error;
 +
-+	if (bufsiz <= 0)
-+		return -EINVAL;
-+	retval = handle_to_path(mountdirfd, ufh, &path);
-+	if (retval)
-+		goto out_err;
-+
-+	inode = path.dentry->d_inode;
-+	retval = -EINVAL;
-+	if (inode->i_op->readlink) {
-+		retval = security_inode_readlink(path.dentry);
-+		if (!retval) {
-+			touch_atime(path.mnt, path.dentry);
-+			retval = inode->i_op->readlink(path.dentry,
-+						       buf, bufsiz);
-+		}
-+	}
-+	path_put(&path);
-+out_err:
-+	return retval;
++	error = do_handle_stat(mountdirfd, ufh, &stat);
++	if (error)
++		return error;
++	return cp_stat64(statbuf, &stat);
 +}
++
+ /*
+  * Linux/i386 didn't use to be able to handle more than
+  * 4 system call parameters, so these system calls used a memory
+diff --git a/fs/stat.c b/fs/stat.c
+index 29052eb..d448876 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -286,6 +286,35 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ 	return error;
+ }
  
- /* ---------- LFS-64 ----------- */
- #ifdef __ARCH_WANT_STAT64
++int do_handle_stat(int mountdirfd, struct file_handle __user *ufh,
++		   struct kstat *stat)
++{
++	struct path path;
++	int error = -EINVAL;
++
++	error = handle_to_path(mountdirfd, ufh, &path);
++	if (error)
++		goto out;
++
++	error = vfs_getattr(path.mnt, path.dentry, stat);
++	path_put(&path);
++out:
++	return error;
++}
++
++SYSCALL_DEFINE3(handle_stat, int, mountdirfd,
++		struct file_handle __user *, ufh,
++		struct stat __user *, statbuf)
++{
++	struct kstat stat;
++	int error;
++
++	error = do_handle_stat(mountdirfd, ufh, &stat);
++	if (error)
++		return error;
++	return cp_new_stat(&stat, statbuf);
++}
++
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
+ {
+@@ -434,6 +463,19 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
+ 		return error;
+ 	return cp_new_stat64(&stat, statbuf);
+ }
++
++SYSCALL_DEFINE3(handle_stat64, int, mountdirfd,
++		struct file_handle __user *, ufh,
++		struct stat64 __user *, statbuf)
++{
++	struct kstat stat;
++	int error;
++
++	error = do_handle_stat(mountdirfd, ufh, &stat);
++	if (error)
++		return error;
++	return cp_new_stat64(&stat, statbuf);
++}
+ #endif /* __ARCH_WANT_STAT64 */
+ 
+ /* Caller is here responsible for sufficient locking (ie. inode->i_lock) */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 4421f15..cffe154 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -2335,6 +2335,9 @@ extern int vfs_stat(const char __user *, struct kstat *);
+ extern int vfs_lstat(const char __user *, struct kstat *);
+ extern int vfs_fstat(unsigned int, struct kstat *);
+ extern int vfs_fstatat(int , const char __user *, struct kstat *, int);
++extern int do_handle_stat(int mountdirfd,
++			  struct file_handle __user *ufh,
++			  struct kstat *stat);
+ 
+ extern int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+ 		    unsigned long arg);
 diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 89a0ade..bf03e4a 100644
+index bf03e4a..de4f242 100644
 --- a/include/linux/syscalls.h
 +++ b/include/linux/syscalls.h
-@@ -838,4 +838,7 @@ asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
- asmlinkage long sys_open_by_handle_at(int mountdirfd,
- 				      struct file_handle __user *handle,
- 				      int flags);
-+asmlinkage long sys_handle_readlink(int mountdirfd,
-+				    struct file_handle __user *ufh,
-+				    char __user *buf, int bufsiz);
+@@ -841,4 +841,13 @@ asmlinkage long sys_open_by_handle_at(int mountdirfd,
+ asmlinkage long sys_handle_readlink(int mountdirfd,
+ 				    struct file_handle __user *ufh,
+ 				    char __user *buf, int bufsiz);
++#if BITS_PER_LONG == 32
++asmlinkage long sys_handle_stat64(int mountdirfd,
++				  struct file_handle __user *ufh,
++				  struct stat64 __user *statbuf);
++#else
++asmlinkage long sys_handle_stat(int mountdirfd,
++				struct file_handle __user *ufh,
++				struct stat __user *statbuf);
++#endif
  #endif
 -- 
 1.7.0.4
