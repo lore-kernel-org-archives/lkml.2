@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab0JEQxv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:53:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39754 "EHLO hera.kernel.org"
+	id S1755945Ab0JEQyB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:54:01 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:48140 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755776Ab0JEQxu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:53:50 -0400
-Message-ID: <4CAB5874.9060106@kernel.org>
-Date: Tue, 05 Oct 2010 18:55:16 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1755926Ab0JEQx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 12:53:59 -0400
+Date: Tue, 5 Oct 2010 18:53:56 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: hpa@zytor.com, linux-tip-commits@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mingo@redhat.com,
+        torvalds@linux-foundation.org, ryan@innosecc.com, tglx@linutronix.de
+Subject: Re: [tip:x86/cpu] x86, cpu: Fix X86_FEATURE_NOPL
+Message-ID: <20101005165356.GA6569@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	"H. Peter Anvin" <hpa@linux.intel.com>, hpa@zytor.com,
+	linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+	mingo@redhat.com, torvalds@linux-foundation.org, ryan@innosecc.com,
+	tglx@linutronix.de
+References: <20101004073127.GA20305@liondog.tnic>
+ <tip-366d4a43b1a7a861c356a0e407c4f03f454d42ea@git.kernel.org>
+ <20101005094712.GA5626@a1.tnic>
+ <4CAB52AD.60502@linux.intel.com>
 MIME-Version: 1.0
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-CC: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Yang Ruirui <ruirui.r.yang@tieto.com>,
-        Andrew Morton <akpm@linux-foundation.org>, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
-Subject: Re: -mm: xfs lockdep warning
-References: <201009161546.16909.ruirui.r.yang@tieto.com>	<20100917005227.GJ24409@dastard>	<20100920191355.GA28443@infradead.org>	<AANLkTi=45J+=ytj=NC4bYTVJFRakNQQiFd35K7mrf+Gq@mail.gmail.com>	<4CA997DF.5030008@kernel.org>	<20101004092107.GJ4681@dastard> <AANLkTi=3jjoCtYoK0endt8OM=omygO284WN2ZQZ=jceo@mail.gmail.com> <4CAB5779.5020901@kernel.org>
-In-Reply-To: <4CAB5779.5020901@kernel.org>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 16:53:03 +0000 (UTC)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4CAB52AD.60502@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2010 06:51 PM, Tejun Heo wrote:
-> On 10/05/2010 12:09 PM, Torsten Kaiser wrote:
->> 2) the hang with 2.6.35-rc5 I have seen twice (triggered probably by
->> high load while building KOffice on an tmpfs)
-> 
-> The trace doesn't seem to firmly point at xfs locking up.  There are
-> md and dm crypt involved.  Are you sure this is locking up inside xfs?
-> Also, can you please enable frame pointers so that we can get more
-> reliable backtrace?
-> 
->> 3) the lockdep issue that started this thread and that I am seeing in
->> mainline 2.6.36-rc5 and -rc6 and that seems to be rather easy to
->> trigger for me.
->>
->> Because 3) is regarded as a false positive, it should not be the cause
->> of 2)
-> 
-> For now, let's not draw any conclusion or mix the issues.  I'll look
-> up the original thread and look into what the lockdep warning means.
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+Date: Tue, Oct 05, 2010 at 09:30:37AM -0700
 
-Ah, okay, David already looked into it and concluded it to be a
-spurious one.  Can you please attach full kernel message of the
-lockup?
+> On 10/5/2010 2:47 AM, Borislav Petkov wrote:
+> >
+> >tag it for -stable too?
+> >
+> 
+> What is the flaw that justifies it for stable, or even .36?  It
+> seems relatively harmless, with at most a very minor performance
+> issue, unless I'm missing something?
 
-Thanks.
+I was thinking more along the lines of this being partially broken
+when supplying non-constant arguments to cpu_has(), something like
+<arch/x86/kernel/cpu/proc.c:show_cpuinfo()>, for example. But all this
+could cause is /proc/cpuinfo not to report the "nopl" feature bit. I
+guess this is too minor an issue to even to be considered for stable.
 
 -- 
-tejun
+Regards/Gruss,
+Boris.
