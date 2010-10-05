@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752406Ab0JEODw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 10:03:52 -0400
-Received: from kroah.org ([198.145.64.141]:52657 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab0JEODv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753300Ab0JEODx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 10:03:53 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:29495 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab0JEODv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Oct 2010 10:03:51 -0400
-Date: Tue, 5 Oct 2010 06:57:50 -0700
-From: Greg KH <greg@kroah.com>
-To: Kent Overstreet <kent.overstreet@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] Potential kobject functionality (two stage delete,
- single delete)
-Message-ID: <20101005135750.GA4414@kroah.com>
-References: <4CAB26C7.2020109@gmail.com>
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] DMI: log system, BIOS, and board information
+Date: Tue, 5 Oct 2010 08:02:46 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <20100930164905.13154.33194.stgit@bob.kio> <20101005024529.GA20805@helgaas.com> <20101004195406.96d71305.akpm@linux-foundation.org>
+In-Reply-To: <20101004195406.96d71305.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CAB26C7.2020109@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010050802.49055.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 06:23:19AM -0700, Kent Overstreet wrote:
-> I've been working on reference counting in my own code, and it
-> seemed to me that some of this stuff would be best added to the
-> generic code - I can't be the only one who's needed to solve these
-> particular problems. But kobjects aren't new, maybe someone knows if
-> any of this has been tried before?
-
-Oh yeah, it's come up lots of times before, see the lkml archives :)
-
-> The easy one would be a flag marking an object as deleted when
-> there's still references. The idea is if you've got multiple
-> unserialized ways of closing/deleting something - error handling
-> paths and/or a way for a user to request that it be closed - you
-> need to make sure you drop only one reference.
-
-Yes, very common.
-
-> This is trivial to handle without adding to the kobject code,
-
-Yes, and in the end, it should be handled by the code needing it, not in
-the kobject code itself.  That's why it hasn't been added.
-
-> but it
-> seems to me it ought to be common enough to warrant adding it - I
-> wouldn't be surprised if there's driver code that doesn't handle it
-> correctly, it's easy enough to miss if you don't think about the
-> particular case. We need to add an atomic bitflag to struct kobject;
-> another callback in struct kobj_type might be useful too. Then
-> something like the following should be it:
+On Monday, October 04, 2010 08:54:06 pm Andrew Morton wrote:
+> On Mon, 4 Oct 2010 20:45:29 -0600 Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
 > 
-> void kobject_delete(struct kobject *k)
-> {
-> 	if (!test_and_set_bit(deleted)) {
-> 		if (delete_fn)
-> 			delete_fn(k);
-> 		kobject_put(k);
-> 	}
-> }
+> > On Mon, Oct 04, 2010 at 04:19:26PM -0700, Andrew Morton wrote:
+> > > On Thu, 30 Sep 2010 10:49:05 -0600
+> > > Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+> > > 
+> > > > 
+> > > > Put basic system information in the dmesg log.  There are lots of dmesg
+> > > > logs on the web, and it would be useful if they contained this information
+> > > > for debugging platform problems.
+> > > > 
+> > > > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > > > ---
+> > > > 
+> > > >  drivers/firmware/dmi_scan.c |   35 ++++++++++++++++++++++++++++++++++-
+> > > >  1 files changed, 34 insertions(+), 1 deletions(-)
+> > > > 
+> > > > 
+> > > > diff --git a/drivers/firmware/dmi_scan.c b/drivers/firmware/dmi_scan.c
+> > > > index b3d22d6..d625e53 100644
+> > > > --- a/drivers/firmware/dmi_scan.c
+> > > > +++ b/drivers/firmware/dmi_scan.c
+> > > > @@ -2,6 +2,7 @@
+> > > >  #include <linux/string.h>
+> > > >  #include <linux/init.h>
+> > > >  #include <linux/module.h>
+> > > > +#include <linux/ctype.h>
+> > > >  #include <linux/dmi.h>
+> > > >  #include <linux/efi.h>
+> > > >  #include <linux/bootmem.h>
+> > > > @@ -361,6 +362,36 @@ static void __init dmi_decode(const struct dmi_header *dm, void *dummy)
+> > > >  	}
+> > > >  }
+> > > >  
+> > > > +static const char * __init dmi_printable_system_info(int field)
+> > > > +{
+> > > > +	const char *info, *p;
+> > > > +
+> > > > +	info = dmi_get_system_info(field);
+> > > > +	if (!info)
+> > > > +		return NULL;
+> > > > +
+> > > > +	for (p = info; *p; p++)
+> > > > +		if (!isprint(*p))
+> > > > +			return "<...>";
+> > > > +
+> > > > +	return info;
+> > > > +}
+> > > 
+> > > So if the string contains any non-printable character, we suppress the
+> > > whole string.
+> > > 
+> > > Is that the best thing to do?  Would it be better to present the
+> > > oddball character as \xNN or such?
+> > 
+> > I would definitely prefer to do that, but that would mean allocating
+> > memory, and this happens so early that it looked like it would be
+> > more trouble than it's worth.  I'm not saying I couldn't be convinced,
+> > though.
+> 
+> Well, one could print the data one char at a time.  If we're running
+> early in boot with a single CPU up then that wouldn't make too big a
+> mess.
+> 
+> Is there some upper bound to the length of a DMI string?  If so, use a
+> static initdata buffer dimensioned to 4x that?
 
-Every time we have tried to do something like this, it ends up not being
-correct, and missused, so we don't.
+Yeah, good ideas.  I'll push on that a little bit more.
 
-> The more annoying one is two stage delete. Unless my google-fu has
-> failed me, I don't see a reasonable way of using kobject refcounting
-> if you need to drop a refcount from atomic context.
-
-You can't call kfree from atomic context?
-
-Anyway, code does handle this properly, look at the scsi code for
-example, we have a waitqueue-like infrastructure to do this somewhere,
-perhaps it's within the driver core, I can't remember it this early in
-the morning.
-
-thanks,
-
-greg k-h
+Bjorn
