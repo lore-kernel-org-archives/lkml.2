@@ -1,60 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756660Ab0JETzx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 15:55:53 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59803 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab0JETzw convert rfc822-to-8bit (ORCPT
+	id S1756648Ab0JET67 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 15:58:59 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:59185 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754417Ab0JET65 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 15:55:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uVq7bHJNgz39D4oqvUKWsXiT1TgVdDchiquJjky7VPSPiCNJtd0vNN997cwlyNC3HV
-         c4kyiJ060HHZcqP5UiKCJQEYIkbyWkDkLEGMlo4J9I49OZob3ItTIOQagPSku7oCeHQY
-         J7CYNfSWiabKGzrXs/KVXxXTbyTcRobIvMgnY=
-MIME-Version: 1.0
-In-Reply-To: <1286307715-12276-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1286307715-12276-1-git-send-email-Dinh.Nguyen@freescale.com>
-Date: Tue, 5 Oct 2010 21:55:51 +0200
-Message-ID: <AANLkTim+WNx1B860AgHeP_X2u7HRC3=40j3FKgAg_BXf@mail.gmail.com>
-Subject: Re: [PATCHv3] ARM: imx: Add iram allocator functions
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        s.hauer@pengutronix.de, r.schwebel@pengutronix.de,
-        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-        amit.kucheria@canonical.com, xiao-lizhang@freescale.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Oct 2010 15:58:57 -0400
+Subject: Re: RFC: btusb firmware load help
+From: Marcel Holtmann <holtmann@linux.intel.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>
+In-Reply-To: <20101005192814.GB11831@tux>
+References: <20100924230730.GB6566@tux> <1286266981.17473.33.camel@aeonflux>
+	 <20101005192814.GB11831@tux>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Oct 2010 21:58:51 +0200
+Message-ID: <1286308731.2588.13.camel@aeonflux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/5  <Dinh.Nguyen@freescale.com>:
+Hi Luis,
 
-> Add iram allocation functions using GENERIC_ALLOCATOR. The
-> allocation size is 4KB multiples to guarantee alignment. The
-> idea for these functions is for i.MX platforms to use them
-> to dynamically allocate IRAM usage.
+> > > Marcel, I was just poked about this thread:
+> > > 
+> > > http://www.spinics.net/lists/linux-bluetooth/msg06087.html
+> > > 
+> > > The hack is required because our BT hardware does not accept HCI commands
+> > > when the device is plugged in. If I understood your position you did not
+> > > want to accept the patch because our BT USB devices are violating the
+> > > specification by not acceping HCI commands and yet claiming to be BT
+> > > devices, is that right?
+> > 
+> > you don't have to accept HCI commands when your device has no firmware
+> > loaded. That is just fine. However at that point you should not claim to
+> > be a Bluetooth H:2 device with USB Bluetooth descriptors.
+> > 
+> > Just having different USB PIDs for without firmware and with firmware
+> > stages would have been fine. The ancient Broadcom 203x devices even got
+> > that part right.
+> 
+> Ah I see.
+> 
+> > So what about sticking with the current VID:PID for the device without
+> > firmware and we blacklist it in btusb driver. And then the firmware
+> > loading ensures that after reset it uses a different PID for the device
+> > with valid HCI firmware.
+> 
+> How would firmware be uploaded to the device if no module
+> is claiming it?
 
-Neither here...
+most likely via a separate firmware loading driver. Your ath3k driver is
+such a driver. Same as the bcm203x driver. They don't do anything than
+claiming that USB device, loading the firmware, and then let it reset.
 
-> +config IRAM_ALLOC
-> +       bool "Enable IRAM allocator"
-> +       select GENERIC_ALLOCATOR
-> +       help
-> +         Select this to have access to generic IRAM allocation functions that
-> +         use the GENERIC_ALLOCATOR.  The allocation size is 4KB multiples to
-> +         guarantee alignment. The idea for these functions is for i.MX platforms
-> +         to use them to dynamically allocate IRAM usage.
+And after the reset the btusb can claim the one where the firmware has
+been loaded and which behaves like a proper USB dongle.
 
-Nor here is is explained what an IRAM is.
+The part that I don't understand is that you have the ath3k driver doing
+it exactly how it should be done, why now started to make nasty hacks in
+the btusb driver.
 
-What is it? Is this yet another fancy name for on-chip-memory?
+Regards
 
-And why I? = Initial? Interrupt? ...?
+Marcel
 
-Yours,
-Linus Walleij
+
