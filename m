@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757600Ab0JEGtY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 02:49:24 -0400
-Received: from compulab.co.il ([67.18.134.219]:34003 "EHLO compulab.co.il"
+	id S1757611Ab0JEGxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 02:53:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59549 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752278Ab0JEGtW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 02:49:22 -0400
-Message-ID: <4CAACA63.6090202@compulab.co.il>
-Date: Tue, 05 Oct 2010 08:49:07 +0200
-From: Igor Grinberg <grinberg@compulab.co.il>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.7) Gecko/20100816 Lightning/1.0b2 Thunderbird/3.1.1
+	id S1757586Ab0JEGxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 02:53:42 -0400
+Message-ID: <4CAACBDA.6090308@kernel.org>
+Date: Tue, 05 Oct 2010 08:55:22 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        vapier@gentoo.org, khilman@deeprootsystems.com,
-        dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH v2] Input: Make ADS7846 independent on regulator
-References: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com> <4C862EB3.4080006@compulab.co.il> <20100907125335.GD25830@sirena.org.uk> <201009091027.18176.marek.vasut@gmail.com> <20100909094120.GB1988@rakim.wolfsonmicro.main>
-In-Reply-To: <20100909094120.GB1988@rakim.wolfsonmicro.main>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+To: Ingo Molnar <mingo@elte.hu>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the lost-spurious-irq tree with the
+ tip tree
+References: <20101005141334.6a0f15fd.sfr@canb.auug.org.au> <4CAABC0E.3030700@kernel.org> <20101005063227.GB12267@elte.hu>
+In-Reply-To: <20101005063227.GB12267@elte.hu>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 06:53:16 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 09/09/10 12:41, Mark Brown wrote:
-> On Thu, Sep 09, 2010 at 10:27:17AM +0200, Marek Vasut wrote:
->> Dne Út 7. září 2010 14:53:35 Mark Brown napsal(a):
->>> From a regulator API usage point of view a separate implementation of
->>> the same thing was nacked - there are regulator API facilties for hiding
->>> missing regulators from drivers when needed to get systems going, unless
->>> the device genuinely can cope without supplies it should be relying on
->>> those.
+Hello, Ingo.
 
-I actually, don't see why ads7846 is strictly relying on the regulator
-and I don't understand, why ads7846 driver has to bail out if the regulator
-is not found? Why shouldn't the driver try to continue?
-I think it should bail out only in case communicating with the device failed.
+On 10/05/2010 08:32 AM, Ingo Molnar wrote:
+> 
+> * Tejun Heo <tj@kernel.org> wrote:
+> 
+>>> I think I fixed it all up (see below).  I can carry this fix (or a 
+>>> better one) as necessary.
+>>
+>> Can you please drop lost-spurious-irq for now?  It needs to be 
+>> reimplemented.  I'll send a merge request again when it's ready.
+> 
+> Please send irq merge requests to Thomas instead and wait for those 
+> genirq bits to show up upstream. (You did so in the past and the review 
+> process was ongoing AFAICS)
+> 
+> Otherwise we would be dilluting linux-next testing with random side 
+> effects from a tree that wasnt yet (in that form) scheduled to go 
+> upstream by its respective maintainer at that time.
+> 
+> We were lucky that this showed up as merge complications - what if 
+> instead it merged 'fine' on the textual and build/boot level but 
+> mis-merged on the functional level in subtle ways? Thomas would be 
+> sending something to Linus that was never really tested in linux-next in 
+> that form, caused problems upstream, and Linus would be rightfully upset 
+> about the situation.
+> 
+> Stephen, you need to enforce such things ...
 
->> Maybe these platforms should have been fixed prior to applying the patch adding 
->> regulator goo into ads7846 driver then. What's the way to go now then ?
-> Fix the platforms and use the dummy regulators to keep them going until
-> that happens.  It's trivial to do the hookup in the platforms.
+I think Stephen had done enough.  At the time, I wasn't sure which
+tree it was going to go through and it took some time before Thomas
+responded, so I was intending to push it through separately.  I should
+have retracted the tree right after it was determined to be
+reimplemented but forgot.  That's my mistake not Stephen's.  Sorry
+about that.
 
-You want each platform, that does not have a special regulated power supply
-for the ads7846, to define a dummy regulator just to cope with that artificial
-dependency of the device driver?
-I think it is a waste and big code duplication in each platform
-that does not have that special regulator.
+Thanks.
 
 -- 
-Regards,
-Igor.
-
+tejun
