@@ -1,64 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756522Ab0JFBgw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 21:36:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:2684 "EHLO mail.perches.com"
+	id S1756652Ab0JFBi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 21:38:26 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:51302 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751681Ab0JFBgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 21:36:51 -0400
-Subject: Re: [PATCH v3] iio: light: Adding driver for ISL29018 ALS
-From: Joe Perches <joe@perches.com>
-To: rklein@nvidia.com
-Cc: jic23@cam.ac.uk, achew@nvidia.com, olof@lixom.net,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-iio@vger.kernel.org, ldewangan@nvidia.com
-In-Reply-To: <1286318566-9782-1-git-send-email-rklein@nvidia.com>
-References: <1286318566-9782-1-git-send-email-rklein@nvidia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Oct 2010 18:36:48 -0700
-Message-ID: <1286329008.2156.78.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1751626Ab0JFBiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 21:38:25 -0400
+Date: Tue, 5 Oct 2010 15:05:46 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] core kernel fixes
+Message-ID: <20101005220546.GS2369@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101005191223.GA31795@elte.hu>
+ <AANLkTik9E0dr=Qah0d_+9YaAsA7WfeawA1c4oDbiJK-j@mail.gmail.com>
+ <20101005210904.GQ2369@linux.vnet.ibm.com>
+ <AANLkTi==ZE7+PTPdB1JjdSdqus0Ox+rjTAxMMMJk0fBi@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi==ZE7+PTPdB1JjdSdqus0Ox+rjTAxMMMJk0fBi@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-05 at 15:42 -0700, rklein@nvidia.com wrote:
-> From: Rhyland Klein <rklein@nvidia.com>
+On Tue, Oct 05, 2010 at 02:45:07PM -0700, Linus Torvalds wrote:
+> On Tue, Oct 5, 2010 at 2:09 PM, Paul E. McKenney
+> <paulmck@linux.vnet.ibm.com> wrote:
+> >
+> > Good point!!!  If the following diff looks good to you, I will get it
+> > tested and pushed.
+> 
+> Looks good. Except since I pulled the thing despite my complaint,
+> you'll also need to undo the extra irqs_disabled() test.
 
-Hi again.
+No problem, the diff I sent you combined two commits.  ;-)
 
-> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-[]
-> +#define ISL29018_REG_ADD_DATA_LSB	0x02
-> +#define ISL29018_REG_ADD_DATA_MSB	0x03
-> +#define ISL29018_MAX_REGS		ISL29018_REG_ADD_DATA_MSB
-> +
-> +struct isl29018_chip {
-> +	struct iio_dev		*indio_dev;
-> +	struct i2c_client	*client;
-> +	struct mutex		lock;
-> +	unsigned int		range;
-> +	unsigned int		adc_bit;
-> +	int			prox_scheme;
-> +	u8			reg_cache[ISL29018_MAX_REGS];
-> +};
-[]
-> +static int isl29018_chip_init(struct i2c_client *client)
-> +{
-> +	struct isl29018_chip *chip = i2c_get_clientdata(client);
-[]
-> +	memset((void *)chip->reg_cache, 0, ARRAY_SIZE(chip->reg_cache));
-
-Turns out there's only 3 of these registers.
-Earlier, I believe you said 32 bytes. 
-
-I think the normal kernel style is:
-
-	memset(chip->reg_cache, 0, sizeof(chip->reg_cache));
-
-ARRAY_SIZE works, but only because reg_cache is u8.
-
-cheers, Joe
-
+							Thanx, Paul
