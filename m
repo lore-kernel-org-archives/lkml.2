@@ -1,35 +1,35 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754619Ab0JCVyN (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Sun, 3 Oct 2010 17:54:13 -0400
-Received: from mail.hljh.hc.edu.tw ([163.19.115.9]:37264 "EHLO
-	mail.hljh.hc.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754900Ab0JCVyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Oct 2010 17:54:10 -0400
-X-Greylist: delayed 2262 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Oct 2010 17:54:09 EDT
-From: "Mrs. Zeng Q. Zhen" <info@mail.com>
-Reply-To: mrszengqzhene53@gmail.com
-Subject: Hello
-Date: Mon, 4 Oct 2010 04:56:15 +0800
-Message-Id: <20101003204015.M92685@mail.com>
-X-Mailer: Open WebMail 2.51 20050228
-X-OriginatingIP: 173.244.178.74 (english)
+	id S932723Ab0JEJmP (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 5 Oct 2010 05:42:15 -0400
+Received: from smtp201.alice.it ([82.57.200.97]:33861 "EHLO smtp201.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755551Ab0JEJmO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 05:42:14 -0400
+X-Greylist: delayed 1495 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 05:42:14 EDT
+Message-ID: <4C1A2A6A0192C5AD@smtp201.alice.it> (added by postmaster@alice.it)
+Reply-To: <inquirymf@hawamail.com>
+From: "MALCOM FINANCING" <hieronim.woniak@neostrada.pl>
+To: info@infoaxe.net
+Subject: LOAN OFFER AT LOW INTEREST RATE!!
+Date: Tue, 5 Oct 2010 10:17:09 +0100
 MIME-Version: 1.0
 Content-Type: text/plain;
-	charset=iso-8859-1
-To: undisclosed-recipients:;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compliment of the day,
+Do you need 100% Finance?? MS.Ginny Brishen,a financial lender and consultant,MALCOM FINANCING Sdn Bhd,
+For Debt Consolidation Loan, Business Loan, Private loan, Home Refinancing Loan etc... 
 
-I am Mrs. Zeng Q. Zhen, a staff of lloyds Group Plc. here in Hong Kong 
-attached with Private Banking Services; I have a secured business proposal 
-for you. Should you be interested please reach me on my private email address 
-(mrszengqzhene53@gmail.com) And after that I shall provide you with more 
-details of my proposal. Your earliest response to this letter will be 
-appreciated.
+The Offer Ranges from $5,000.00 Min. To $100,000,000.00 Max. at 2.0% interest per annum.
+Get the best for your family and own a dream home as well with our General Loan scheme.
 
-Yours Sincerely,
-Zeng Q.Zhen
+Contact Person: MS.Ginny Brishen.
+Email: inquirymf@hawamail.com
+            MALCOM FINANCIAL Sdn Bhd.
