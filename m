@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757487Ab0JEWa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 18:30:27 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:49360 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757027Ab0JEWa0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 18:30:26 -0400
-Date: Wed, 6 Oct 2010 09:30:22 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/17] fs: icache lock lru/writeback lists
-Message-ID: <20101005223022.GL4681@dastard>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
- <1285762729-17928-7-git-send-email-david@fromorbit.com>
- <20101001060103.GE32349@infradead.org>
+	id S1757512Ab0JEWbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 18:31:06 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57717 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757027Ab0JEWbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 18:31:05 -0400
+Message-ID: <4CABA6E5.6030601@zytor.com>
+Date: Tue, 05 Oct 2010 15:29:57 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101001060103.GE32349@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>, Vivek Goyal <vgoyal@redhat.com>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>
+Subject: Re: [PATCH 2/4] x86, memblock: Fix crashkernel allocation
+References: <4CAA4BD5.4020505@kernel.org> <4CAA4DE2.1020406@kernel.org>
+In-Reply-To: <4CAA4DE2.1020406@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 02:01:03AM -0400, Christoph Hellwig wrote:
-> On Wed, Sep 29, 2010 at 10:18:38PM +1000, Dave Chinner wrote:
-> > From: Nick Piggin <npiggin@suse.de>
-> > 
-> > The inode moves between different lists protected by the inode_lock. Introduce
-> > a new lock that protects all of the lists (dirty, unused, in use, etc) that the
-> > inode will move around as it changes state. As this is mostly a list for
-> > protecting the writeback lists, name it wb_inode_list_lock and nest all the
-> > list manipulations in this lock inside the current inode_lock scope.
-> 
-> As a band-aid to get rid of the inode_lock this might be fine, but I
-> don't really like it.  For one all the list are per-bdi_writeback, so
-> the lock should be as well.  Second the lock is held over far too long
-> periods during writeback, which leads to a lot of whacky trylock
-> operations and unlock and sleep cycles inside it.  In practice we only
-> need it in the places where we manipulate the lists.
+On 10/04/2010 02:57 PM, Yinghai Lu wrote:
+>
+> +#define DEFAULT_BZIMAGE_ADDR_MAX 0x37FFFFFF
+>  static void __init reserve_crashkernel(void)
+>  {
+>  	unsigned long long total_mem;
+> @@ -518,17 +519,28 @@ static void __init reserve_crashkernel(v
+>  	if (crash_base <= 0) {
+>  		const unsigned long long alignment = 16<<20;	/* 16M */
+>  
+> -		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
+> -				 alignment);
+> +		/*
+> +		 * Assume half crash_size is for bzImage
+> +		 *  kexec want bzImage is below DEFAULT_BZIMAGE_ADDR_MAX
+> +		 */
+> +		crash_base = memblock_find_in_range(alignment,
+> +				DEFAULT_BZIMAGE_ADDR_MAX + crash_size/2,
+> +				crash_size, alignment);
+> +
+>  		if (crash_base == MEMBLOCK_ERROR) {
+> -			pr_info("crashkernel reservation failed - No suitable area found.\n");
+> -			return;
+> +			crash_base = memblock_find_in_range(alignment,
+> +					 ULONG_MAX, crash_size, alignment);
+> +
+> +			if (crash_base == MEMBLOCK_ERROR) {
+> +				pr_info("crashkernel reservation failed - No suitable area found.\n");
+> +				return;
+> +			}
+>  		}
+>  
 
-per-bdi writeback lock won't work with the patch set as it stands -
-it also protects the LRU which is a global list. I'll have to pull
-back another patch to split the LRU and IO lists to make this lock
-per-bdi.
+Okay, this *really* doesn't make sense.
 
-> Also it feels like it really should nest outside i_lock, not inside it,
-> but I need to look more deeply to figure why that might not easily be
-> possible.
+It's bad enough that kexec doesn't know what memory is safe for it, but
+why the heck the heuristic that "half is for bzImage and the rest can go
+beyond the heuristic limit"?  Can't we at least simply cap the region to
+the default, unless the kexec system has passed in some knowable
+alternative?  Furthermore, why bother having the "fallback" at all
+(certainly without having a message!?)  If we don't get the memory area
+we need we're likely to randomly fail anyway.
 
-Yeah, I'm trying to rework the patch series to not nest anything
-inside i_lock. The more I look at all that trylock stuff, the more
-my eyes bleed....
+Let me be completely clear -- it's obvious from all of this that kexec
+is fundamentally broken by design: if kexec can't communicate the safe
+memory to use it's busted seven ways to Sunday and it needs to be fixed.
+ However, in the meantime I can see capping the memory available to it
+as a temporary band-aid, but a fallback to picking random memory is
+nuts, especially on the motivation that "a future kexec version might be
+able to use it."  If so, the "future kexec tools" should SAY SO.
 
-Cheers,
+This is beyond crazy -- it's complete and total bonkers.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+	-hpa
