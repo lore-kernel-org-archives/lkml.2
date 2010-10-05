@@ -1,90 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753295Ab0JEFDq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 01:03:46 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:46241 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752073Ab0JEFDo (ORCPT
+	id S1753484Ab0JEFGj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 01:06:39 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:56882 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab0JEFGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 01:03:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=eY9YjAUzpdrzaO9kYnYEzWACemQzeEdQ9iMbgCqIE6BPcVF2/e27a/cHhMVulWSeMm
-         zXsYruT9Sl5o+zkD5eSt+AvaQsiv2Yn6yqgyq1JXUe9/Z2cAt+5XQZWHcETm7FKrMhXs
-         Cw9NpRIKD1nM85U82PFG6Rk4zK3WqH3wvzH5g=
-Date: Mon, 4 Oct 2010 22:03:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linux Input <linux-input@vger.kernel.org>
-Subject: Sysctl locking?
-Message-ID: <20101005050335.GA15355@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Oct 2010 01:06:38 -0400
+Date: Tue, 05 Oct 2010 01:06:15 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
+        linux-pci@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] intel_idle: PCI quirk to prevent Lenovo Ideapad s10-3 boot
+ hang
+In-reply-to: <20100930222946.GB23084@srcf.ucam.org>
+Message-id: <alpine.LFD.2.00.1010050104450.23209@localhost.localdomain>
+References: <alpine.LFD.2.00.1009242122390.8641@localhost.localdomain>
+ <20100927135735.GA856@srcf.ucam.org>
+ <alpine.LFD.2.00.1009301810380.7033@localhost.localdomain>
+ <20100930222946.GB23084@srcf.ucam.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> > we check (and clear) that bit only if the acpi tables
+> > tell us to do so.
+> 
+> Do the tables tell us to do so on this platform?
 
-I tried tracing through sysctl code and it appears that there is no
-generic locking for reads and writes to a sysctl node and thus a patch
-like below is needed if proc_handler is a bit more complex than simply
-storing an integer value.
+In this configuration, yes, otherwise acpi_idle
+would have failed in exactly the same way.
 
-Am I missing something?
+-Len Brown, Intel Open Source Technology Center
 
-Thanks.
-
---  
-Dmitry
-
-Input: mac mouse emulation - add locking
-
-We need to add appropriate locking when toggling mac mouse emulation
-on and off to ensure that input device and handler are in consistent
-state.
-
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
-
- drivers/macintosh/mac_hid.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-
-diff --git a/drivers/macintosh/mac_hid.c b/drivers/macintosh/mac_hid.c
-index 067f996..6a82388 100644
---- a/drivers/macintosh/mac_hid.c
-+++ b/drivers/macintosh/mac_hid.c
-@@ -23,6 +23,8 @@ static int mouse_button3_keycode = KEY_RIGHTALT;	/* right option key */
- 
- static struct input_dev *mac_hid_emumouse_dev;
- 
-+static DEFINE_MUTEX(mac_hid_emumouse_mutex);
-+
- static int mac_hid_create_emumouse(void)
- {
- 	static struct lock_class_key mac_hid_emumouse_dev_event_class;
-@@ -187,6 +189,10 @@ static int mac_hid_toggle_emumouse(ctl_table *table, int write,
- 	int old_val = *valp;
- 	int rc;
- 
-+	rc = mutex_lock_killable(&mac_hid_emumouse_mutex);
-+	if (rc)
-+		return rc;
-+
- 	rc = proc_dointvec(table, write, buffer, lenp, ppos);
- 
- 	if (rc == 0 && write && *valp != old_val) {
-@@ -202,6 +208,8 @@ static int mac_hid_toggle_emumouse(ctl_table *table, int write,
- 	if (rc)
- 		*valp = old_val;
- 
-+	mutex_unlock(&mac_hid_emumouse_mutex);
-+
- 	return rc;
- }
- 
