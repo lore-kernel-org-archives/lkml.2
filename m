@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932861Ab0JEMOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 08:14:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42496 "EHLO mx1.redhat.com"
+	id S932923Ab0JEMOh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 08:14:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45448 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932165Ab0JEMOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 08:14:16 -0400
-Message-ID: <4CAB1693.2080301@redhat.com>
-Date: Tue, 05 Oct 2010 14:14:11 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
+	id S932165Ab0JEMOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 08:14:35 -0400
+Date: Tue, 5 Oct 2010 12:13:46 GMT
+From: tip-bot for Stephane Eranian <eranian@google.com>
+Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
+        eranian@google.com, hpa@zytor.com, mingo@redhat.com,
+        peterz@infradead.org, davem@davemloft.net, robert.richter@amd.com,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
+        paulus@samba.org, linux-kernel@vger.kernel.org, acme@redhat.com,
+        peterz@infradead.org, davem@davemloft.net, robert.richter@amd.com,
+        fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <4c97e41a.078fd80a.7a8b.3cc9@mx.google.com>
+References: <4c97e41a.078fd80a.7a8b.3cc9@mx.google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf trace scripting: Fix extern struct definitions
+Message-ID: <tip-0f940cb7d970f4fd569bb5f9f49774422f2ccbee@git.kernel.org>
+Git-Commit-ID: 0f940cb7d970f4fd569bb5f9f49774422f2ccbee
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Matthew Wilcox <matthew@wil.cx>
-CC: Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        xiyou.wangcong@gmail.com
-Subject: Re: [PATCH v2] procfs: fix numbering in /proc/locks
-References: <4CA484BA.7090809@redhat.com>
-In-Reply-To: <4CA484BA.7090809@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Oct 2010 12:13:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/30/2010 02:38 PM, Jerome Marchand wrote:
-> 
-> The lock number in /proc/locks (first field) is implemented by a counter
-> (private field of struct seq_file) which is incremented at each call of
-> locks_show() and reset to 1 in locks_start() whatever the offset is. It
-> should be reset according to the actual position in the list.
-> 
-> Moreover, locks_show() can be called twice to print a single line thus
-> skipping a number. The counter should be incremented in locks_next().
-> 
-> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-> ---
->  locks.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/locks.c b/fs/locks.c
-> index ab24d49..49d7343 100644
-> --- a/fs/locks.c
-> +++ b/fs/locks.c
-> @@ -2166,19 +2166,19 @@ static int locks_show(struct seq_file *f, void *v)
->  	list_for_each_entry(bfl, &fl->fl_block, fl_block)
->  		lock_get_status(f, bfl, (long)f->private, " ->");
->  
-> -	f->private++;
->  	return 0;
->  }
->  
->  static void *locks_start(struct seq_file *f, loff_t *pos)
->  {
->  	lock_kernel();
-> -	f->private = (void *)1;
-> +	f->private = (void *) (*pos + 1);
+Commit-ID:  0f940cb7d970f4fd569bb5f9f49774422f2ccbee
+Gitweb:     http://git.kernel.org/tip/0f940cb7d970f4fd569bb5f9f49774422f2ccbee
+Author:     Stephane Eranian <eranian@google.com>
+AuthorDate: Tue, 21 Sep 2010 00:45:01 +0200
+Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
+CommitDate: Mon, 4 Oct 2010 12:24:51 -0300
 
-That cast trigger a warning on some arch:
-"warning: cast to pointer from integer of different size"
+perf trace scripting: Fix extern struct definitions
 
-There is no real risk here. At worst /proc/locks will show wrong number
-if there is more than 2^32 locks, but should I mute the warning it with
-something like:
-        f->private = (void *) (size_t) (*pos + 1);
-?
+Both python_scripting_ops and perl_scripting_ops have two global definitions.
+One in trace-event-scripting.c and one in their respective scripting-engine
+modules.
 
-Thanks,
-Jerome
+The issue is that depending on the linker order one definition or the other
+is chosen. One is uninitialized (bss), while the other is initialized. If
+the uninitialized version is chosen, then perf does not function properly.
 
->  	return seq_list_start(&file_lock_list, *pos);
->  }
->  
->  static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
->  {
-> +	f->private++;
->  	return seq_list_next(v, &file_lock_list, pos);
->  }
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+This patch fixes this by adding the extern prefix to the definitions in
+trace-event-scripting.c.
 
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Robert Richter <robert.richter@amd.com>
+LKML-Reference: <4c97e41a.078fd80a.7a8b.3cc9@mx.google.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/trace-event-scripting.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tools/perf/util/trace-event-scripting.c b/tools/perf/util/trace-event-scripting.c
+index 7ea983a..f7af2fc 100644
+--- a/tools/perf/util/trace-event-scripting.c
++++ b/tools/perf/util/trace-event-scripting.c
+@@ -97,7 +97,7 @@ void setup_python_scripting(void)
+ 	register_python_scripting(&python_scripting_unsupported_ops);
+ }
+ #else
+-struct scripting_ops python_scripting_ops;
++extern struct scripting_ops python_scripting_ops;
+ 
+ void setup_python_scripting(void)
+ {
+@@ -158,7 +158,7 @@ void setup_perl_scripting(void)
+ 	register_perl_scripting(&perl_scripting_unsupported_ops);
+ }
+ #else
+-struct scripting_ops perl_scripting_ops;
++extern struct scripting_ops perl_scripting_ops;
+ 
+ void setup_perl_scripting(void)
+ {
