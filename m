@@ -1,124 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917Ab0JEIVV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 04:21:21 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62081 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757857Ab0JEIVS (ORCPT
+	id S1757937Ab0JEIVl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 04:21:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:35059 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757924Ab0JEIVi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 04:21:18 -0400
+	Tue, 5 Oct 2010 04:21:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=HpJCEFF8urt2/3zQGtd6+cDFHe6hsP74dE1A+vEkGUNHoiNPmn9xJz3a67f6dmED3q
-         R2iXxyU2HLfOEzp1+BlmjmKqrsQm00znCIQcc1YyovGUcWzbRVp3owK6X9Y9BPmjJMyS
-         zJWR/dPjXPhpTOe2RFwittwbozqJ7oZGdmfIY=
-Message-ID: <4CAAE077.9010500@gmail.com>
-Date: Tue, 05 Oct 2010 10:23:19 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=kjhRlmEjIkQoIiF5UX5zOfXs58Ck9eYyOwQtlxTfZbewH1hMHeo33lTVFxrwmCmvCw
+         qRMZAukpQYclhIBFGEp2ACwpPSk4JK7HnlzNJEE9vjar9gVPHZ2lPgZDz387BrYiEwMz
+         z7ONrgOHGHSgN3VRHV24sgnRygxqFhm8EP7Es=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Igor Grinberg <grinberg@compulab.co.il>
+Subject: Re: [PATCH v2] Input: Make ADS7846 independent on regulator
+Date: Tue, 5 Oct 2010 10:21:30 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-trunk-amd64; KDE/4.4.5; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-arm-kernel@lists.infradead.org, vapier@gentoo.org,
+        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org, pavel@ucw.cz,
+        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
+        akpm@linux-foundation.org
+References: <1280560182-7071-1-git-send-email-marek.vasut@gmail.com> <20100909094120.GB1988@rakim.wolfsonmicro.main> <4CAACA63.6090202@compulab.co.il>
+In-Reply-To: <4CAACA63.6090202@compulab.co.il>
 MIME-Version: 1.0
-To: Chris Frey <cdfrey@foursquare.net>
-CC: Jens Axboe <jaxboe@fusionio.com>, Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jdike@addtoit.com" <jdike@addtoit.com>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "user-mode-linux-user@lists.sourceforge.net" 
-	<user-mode-linux-user@lists.sourceforge.net>,
-        "janjaap@bos.nl" <janjaap@bos.nl>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "adobriyan@gmail.com" <adobriyan@gmail.com>,
-        "syzop@vulnscan.org" <syzop@vulnscan.org>
-Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
-References: <1285710456-4435-1-git-send-email-richard@nod.at> <20100928150000.f007f43e.akpm@linux-foundation.org> <201009290013.11332.richard@nod.at> <20100928225202.GA30352@foursquare.net> <4CA275CE.6060401@fusionio.com> <20100929012945.GA3324@foursquare.net> <4CA2CCC3.8010307@fusionio.com> <20100929063452.GA13290@foursquare.net> <4CAA02D0.7040901@gmail.com> <20101004195152.GA31583@foursquare.net>
-In-Reply-To: <20101004195152.GA31583@foursquare.net>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010051021.30496.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2010 09:51 PM, Chris Frey wrote:
-> On Mon, Oct 04, 2010 at 06:37:36PM +0200, Tejun Heo wrote:
->> Hello, sorry about chiming in later.  I was off last week.
+Dne Út 5. října 2010 08:49:07 Igor Grinberg napsal(a):
+>  On 09/09/10 12:41, Mark Brown wrote:
+> > On Thu, Sep 09, 2010 at 10:27:17AM +0200, Marek Vasut wrote:
+> >> Dne Út 7. září 2010 14:53:35 Mark Brown napsal(a):
+> >>> From a regulator API usage point of view a separate implementation of
+> >>> the same thing was nacked - there are regulator API facilties for
+> >>> hiding missing regulators from drivers when needed to get systems
+> >>> going, unless the device genuinely can cope without supplies it should
+> >>> be relying on those.
 > 
-> No problem, I'm eager to test patches to fix this.
+> I actually, don't see why ads7846 is strictly relying on the regulator
+> and I don't understand, why ads7846 driver has to bail out if the regulator
+> is not found? Why shouldn't the driver try to continue?
+> I think it should bail out only in case communicating with the device
+> failed.
+
+Well, I can't but agree ... it's unnecessary crud indeed.
 > 
->> I think we're on the right track.  The problem with Jens' patch was
->> that it didn't consider the fact that blk_end_request() now internally
->> updates the current position of the request, so if restart happens
->> after some of part of the request is complete it will end up adding
->> the offsets multiple times.  I think slightly modifying it to track
->> the current position instead of offset should do it.  Chris, can you
->> please try the following patch and see whether the problem goes away?
+> >> Maybe these platforms should have been fixed prior to applying the patch
+> >> adding regulator goo into ads7846 driver then. What's the way to go now
+> >> then ?
+> > 
+> > Fix the platforms and use the dummy regulators to keep them going until
+> > that happens.  It's trivial to do the hookup in the platforms.
 > 
-> Unfortunately, this patch does not fix it for me.  I applied your patch
-> to kernel 2.6.35.5, and got the usual error:
-> 
-> EXT3-fs error (device ubda): ext3_lookup: deleted inode referenced: 566188
-> 
-> Lots of them, actually.
+> You want each platform, that does not have a special regulated power supply
+> for the ads7846, to define a dummy regulator just to cope with that
+> artificial dependency of the device driver?
 
-Hmmmm, can you please give a shot at the following one?  Thank you.
+You can enable some option in the regulator stuff that automagically shoves in a 
+dummy regulator, but it's still additional crud.
 
-diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
-index 1bcd208..0435d21 100644
---- a/arch/um/drivers/ubd_kern.c
-+++ b/arch/um/drivers/ubd_kern.c
-@@ -163,6 +163,7 @@ struct ubd {
- 	struct scatterlist sg[MAX_SG];
- 	struct request *request;
- 	int start_sg, end_sg;
-+	sector_t rq_pos;
- };
+> I think it is a waste and big code duplication in each platform
+> that does not have that special regulator.
 
- #define DEFAULT_COW { \
-@@ -187,6 +188,7 @@ struct ubd {
- 	.request =		NULL, \
- 	.start_sg =		0, \
- 	.end_sg =		0, \
-+	.rq_pos =		0, \
- }
-
- /* Protected by ubd_lock */
-@@ -1228,7 +1230,6 @@ static void do_ubd_request(struct request_queue *q)
- {
- 	struct io_thread_req *io_req;
- 	struct request *req;
--	sector_t sector;
- 	int n;
-
- 	while(1){
-@@ -1239,12 +1240,12 @@ static void do_ubd_request(struct request_queue *q)
- 				return;
-
- 			dev->request = req;
-+			dev->rq_pos = blk_rq_pos(req);
- 			dev->start_sg = 0;
- 			dev->end_sg = blk_rq_map_sg(q, req, dev->sg);
- 		}
-
- 		req = dev->request;
--		sector = blk_rq_pos(req);
- 		while(dev->start_sg < dev->end_sg){
- 			struct scatterlist *sg = &dev->sg[dev->start_sg];
-
-@@ -1256,10 +1257,10 @@ static void do_ubd_request(struct request_queue *q)
- 				return;
- 			}
- 			prepare_request(req, io_req,
--					(unsigned long long)sector << 9,
-+					(unsigned long long)dev->rq_pos << 9,
- 					sg->offset, sg->length, sg_page(sg));
-
--			sector += sg->length >> 9;
-+			dev->rq_pos += sg->length >> 9;
- 			n = os_write_file(thread_fd, &io_req,
- 					  sizeof(struct io_thread_req *));
- 			if(n != sizeof(struct io_thread_req *)){
+Indeed
