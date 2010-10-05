@@ -1,154 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757732Ab0JEXQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 19:16:29 -0400
-Received: from mga03.intel.com ([143.182.124.21]:57405 "EHLO mga03.intel.com"
+	id S1757585Ab0JEXTp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 19:19:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48376 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757595Ab0JEXQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 19:16:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,287,1283756400"; 
-   d="scan'208";a="332607791"
-Message-ID: <4CABB1B9.4080002@intel.com>
-Date: Tue, 05 Oct 2010 16:16:09 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1756205Ab0JEXTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 19:19:43 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 1/5] ACPI: Allow handlers to be installed at the same time as methods
+Date: Wed, 6 Oct 2010 01:18:50 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-pci@vger.kernel.org, "Moore, Robert" <robert.moore@intel.com>
+References: <1286216549-5438-1-git-send-email-mjg@redhat.com> <1286216549-5438-2-git-send-email-mjg@redhat.com>
+In-Reply-To: <1286216549-5438-2-git-send-email-mjg@redhat.com>
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH 4/4] dmaengine: Add Freescale i.MX1/21/27 DMA driver
-References: <1285854995-6569-1-git-send-email-s.hauer@pengutronix.de> <1285854995-6569-5-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1285854995-6569-5-git-send-email-s.hauer@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010060118.50875.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9/30/2010 6:56 AM, Sascha Hauer wrote:
-> This driver is currently implemented as a user to the old i.MX
-> DMA API. This allows us to convert each user of the old API to
-> the dmaengine API one by one. Once this is done the old DMA
-> driver can be merged into the i.MX dmaengine driver.
->
-> Signed-off-by: Sascha Hauer<s.hauer@pengutronix.de>
-> ---
->   drivers/dma/Kconfig   |    8 +
->   drivers/dma/Makefile  |    1 +
->   drivers/dma/imx-dma.c |  426 +++++++++++++++++++++++++++++++++++++++++++++++++
->   3 files changed, 435 insertions(+), 0 deletions(-)
->   create mode 100644 drivers/dma/imx-dma.c
-[..]
-> diff --git a/drivers/dma/imx-dma.c b/drivers/dma/imx-dma.c
-> new file mode 100644
-> index 0000000..6ef82ba
-> --- /dev/null
-> +++ b/drivers/dma/imx-dma.c
-> @@ -0,0 +1,426 @@
-> +/*
-> + * drivers/dma/imx-dma.c
-> + *
-> + * This file contains a driver for the Freescale i.MX DMA engine
-> + * found on i.MX1/21/27
-> + *
-> + * Copyright 2010 Sascha Hauer, Pengutronix<s.hauer@pengutronix.de>
-> + *
-> + * The code contained herein is licensed under the GNU General Public
-> + * License. You may obtain a copy of the GNU General Public License
-> + * Version 2 or later at the following locations:
-> + *
-> + * http://www.opensource.org/licenses/gpl-license.html
-> + * http://www.gnu.org/copyleft/gpl.html
-> + */
-> +#include<linux/init.h>
-> +#include<linux/types.h>
-> +#include<linux/mm.h>
-> +#include<linux/interrupt.h>
-> +#include<linux/spinlock.h>
-> +#include<linux/device.h>
-> +#include<linux/dma-mapping.h>
-> +#include<linux/slab.h>
-> +#include<linux/platform_device.h>
-> +#include<linux/dmaengine.h>
-> +
-> +#include<asm/irq.h>
-> +#include<mach/dma-v1.h>
-> +#include<mach/hardware.h>
-> +
-> +struct imxdma_channel {
-> +       struct imxdma_engine            *imxdma;
-> +       unsigned int                    channel;
-> +       unsigned int                    imxdma_channel;
-> +
-> +       enum dma_data_direction         direction;
+On Monday, October 04, 2010, Matthew Garrett wrote:
+> There are circumstances under which it may be desirable for GPE handlers
+> to be installable without displacing the existing GPE method. Add support
+> for this via a boolean argument to acpi_install_gpe_handler, and fix up the
+> existing users to ensure that their behaviour doesn't change.
 
-Why does the channel have a direction isn't that a function of the 
-transaction?  It's also unused.
+Hmm.  I'm not sure this is the best way to do that.
 
-> +       enum dma_slave_buswidth         word_size;
-> +       dma_addr_t                      bd_phys;
+In fact, what we need to handle is the case in which a GPE is pointed to by
+a _PRW method somewhere and we presume that it's necessary to execute
+Notify() for it regardless of whether or not it has a method, right?
 
-unused?
+So, this GPE will have ACPI_GPE_CAN_WAKE, so can we just put something like
 
-> +       unsigned long                   flags;
+if (gpe_event_info->flags & ACPI_GPE_CAN_WAKE)
+         execute Notify()
 
-unused?
+somewhere around the switch statement in acpi_ev_gpe_dispatch()?
 
-> +       dma_addr_t                      per_address;
-> +       u32                             watermark_level;
-> +       struct dma_chan                 chan;
-> +       spinlock_t                      lock;
-> +       struct dma_async_tx_descriptor  desc;
-> +       dma_cookie_t                    last_completed;
-> +       enum dma_status                 status;
-> +       int                             dma_request;
-> +       struct scatterlist              *sg_list;
-> +};
-> +
-> +#define MAX_DMA_CHANNELS 8
-> +
-> +struct imxdma_engine {
-> +       struct device                   *dev;
-> +       struct dma_device               dma_device;
-> +       struct imxdma_channel           channel[MAX_DMA_CHANNELS];
-> +};
-> +
-> +static struct imxdma_channel *to_imxdma_chan(struct dma_chan *chan)
-> +{
-> +       return container_of(chan, struct imxdma_channel, chan);
-> +}
-> +
-> +static void imxdma_handle(struct imxdma_channel *imxdmac)
-> +{
-> +       if (imxdmac->desc.callback)
-> +               imxdmac->desc.callback(imxdmac->desc.callback_param);
-> +       imxdmac->last_completed = imxdmac->desc.cookie;
-> +}
-> +
-> +static void imxdma_irq_handler(int channel, void *data)
-> +{
-> +       struct imxdma_channel *imxdmac = data;
-> +printk("%s\n", __func__);
+Or perhaps replace acpi_ev_asynch_enable_gpe() with something that will
+execute Notify() and then do what the original acpi_ev_asynch_enable_gpe() does?
 
-Debug leftover?
+That should be easier to implement after the changes we've been discussing with
+Bob recently (basically, handle both GPE handlers and _Lxx/_Exx analogously).
 
-> +       imxdmac->status = DMA_SUCCESS;
-> +       imxdma_handle(imxdmac);
-> +}
-> +
-> +static void imxdma_err_handler(int channel, void *data, int error)
-> +{
-> +       struct imxdma_channel *imxdmac = data;
-> +printk("%s 0x%08x\n", __func__, error);
-> +dump_stack();
-
-If you want to keep this I think it is better as a
-
-WARN(1, "%s 0x%08x\n", __func__, error)
-
-...assuming that errors are rare.
-
---
-Dan
+Rafael
