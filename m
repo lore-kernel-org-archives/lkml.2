@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932513Ab0JEJMp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 05:12:45 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54532 "EHLO mx2.mail.elte.hu"
+	id S932484Ab0JEJOL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 05:14:11 -0400
+Received: from www.tglx.de ([62.245.132.106]:41623 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932314Ab0JEJMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 05:12:43 -0400
-Date: Tue, 5 Oct 2010 11:12:23 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the lost-spurious-irq tree with the
- tip tree
-Message-ID: <20101005091223.GA16005@elte.hu>
-References: <20101005141334.6a0f15fd.sfr@canb.auug.org.au>
- <4CAABC0E.3030700@kernel.org>
- <20101005063227.GB12267@elte.hu>
- <20101005174524.b62d14a1.sfr@canb.auug.org.au>
- <20101005070123.GF12267@elte.hu>
- <20101005193803.e805b3eb.sfr@canb.auug.org.au>
+	id S1755300Ab0JEJOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 05:14:10 -0400
+Date: Tue, 5 Oct 2010 11:13:53 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>, x86@kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH 04/22] x86/io_apic: add get_nr_irqs_gsi()
+In-Reply-To: <1286216015-9710-5-git-send-email-konrad.wilk@oracle.com>
+Message-ID: <alpine.LFD.2.00.1010051112560.2556@localhost6.localdomain6>
+References: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com> <1286216015-9710-5-git-send-email-konrad.wilk@oracle.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101005193803.e805b3eb.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 4 Oct 2010, Konrad Rzeszutek Wilk wrote:
 
-* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-
-> Hi Ingo,
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 > 
-> On Tue, 5 Oct 2010 09:01:23 +0200 Ingo Molnar <mingo@elte.hu> wrote:
->
-> > Fortunately there's a really simple solution: wait for an explicit 
-> > reply from a maintainer before adding a new-feature tree. (Solicite 
-> > again via a To: email if the Cc: went unanswered by the 
-> > maintainers.)
+> Impact: new interface to get max GSI
 > 
-> Sure we can try that.
+> Add get_nr_irqs_gsi() to return nr_irqs_gsi.  Xen will use this to
+> determine how many irqs it needs to reserve for hardware irqs.
 
-Thanks.
+Acked.by: Thomas Gleixner <tglx@linutronix.de>
 
-> > Could you please start using that method for all subsystems i 
-> > co-maintain?
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> Reviewed-by: "H. Peter Anvin" <hpa@zytor.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: x86@kernel.org
+> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+> ---
+>  arch/x86/include/asm/io_apic.h |    1 +
+>  arch/x86/kernel/apic/io_apic.c |    5 +++++
+>  2 files changed, 6 insertions(+), 0 deletions(-)
 > 
-> So, to be clear, from the MAINTAINERS file that would be LOCKDEP AND 
-> LOCKSTAT, PERFORMANCE EVENTS SUBSYSTEM, SCHEDULER, TRACING, and X86 
-> ARCHITECTURE. [...]
-
-Yep - those are the main ones.
-
-( You might want to apply the process generally as well - it's rather 
-  rare that trees parallel to maintainer trees get added to linux-next 
-  and IMO it pays to make sure the maintainers are actively fine with 
-  such additions.
-
-  A Cc: to a mail with no patch content is easy to miss and it's useful
-  to solicit a 'yeah, sure it's fine' mail from a maintainer - just like 
-  we solicit Acked-by's from maintainers for much smaller matters than 
-  full trees (individual patches).
-
-  This would further ensure that linux-next is indeed a stable
-  approximation of the 'next Linux' as intended by maintainers.
-  To me this looks like a pretty obvious and useful thing to do. )
-
-Thanks,
-
-	Ingo
+> diff --git a/arch/x86/include/asm/io_apic.h b/arch/x86/include/asm/io_apic.h
+> index 9cb2edb..f27c681 100644
+> --- a/arch/x86/include/asm/io_apic.h
+> +++ b/arch/x86/include/asm/io_apic.h
+> @@ -169,6 +169,7 @@ extern void mask_IO_APIC_setup(struct IO_APIC_route_entry **ioapic_entries);
+>  extern int restore_IO_APIC_setup(struct IO_APIC_route_entry **ioapic_entries);
+>  
+>  extern void probe_nr_irqs_gsi(void);
+> +extern int get_nr_irqs_gsi(void);
+>  
+>  extern int setup_ioapic_entry(int apic, int irq,
+>  			      struct IO_APIC_route_entry *entry,
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index f1efeba..4c9b2b9 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -3862,6 +3862,11 @@ void __init probe_nr_irqs_gsi(void)
+>  	printk(KERN_DEBUG "nr_irqs_gsi: %d\n", nr_irqs_gsi);
+>  }
+>  
+> +int get_nr_irqs_gsi(void)
+> +{
+> +	return nr_irqs_gsi;
+> +}
+> +
+>  #ifdef CONFIG_SPARSE_IRQ
+>  int __init arch_probe_nr_irqs(void)
+>  {
+> -- 
+> 1.7.0.4
+> 
