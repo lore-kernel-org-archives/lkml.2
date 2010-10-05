@@ -1,140 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab0JEETT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 00:19:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33036 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751657Ab0JEETS (ORCPT
+	id S1752259Ab0JEEUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 00:20:43 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54526 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750831Ab0JEEUm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 00:19:18 -0400
-Date: Mon, 4 Oct 2010 21:20:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: lkml <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 1/2] vcs: add poll/fasync support
-Message-Id: <20101004212025.279eca25.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1010042323350.3107@xanadu.home>
-References: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
-	<20101004155454.771f7b70.akpm@linux-foundation.org>
-	<alpine.LFD.2.00.1010042323350.3107@xanadu.home>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Oct 2010 00:20:42 -0400
+Date: Tue, 5 Oct 2010 09:50:27 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 00/10] memcg: per cgroup dirty page accounting
+Message-ID: <20101005042027.GR7896@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1286175485-30643-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 04 Oct 2010 23:51:25 -0400 (EDT) Nicolas Pitre <nico@fluxnic.net> wrote:
+* Greg Thelen <gthelen@google.com> [2010-10-03 23:57:55]:
 
-> On Mon, 4 Oct 2010, Andrew Morton wrote:
+> This patch set provides the ability for each cgroup to have independent dirty
+> page limits.
 > 
-> > On Fri, 01 Oct 2010 00:10:23 -0400 (EDT)
-> > Nicolas Pitre <nico@fluxnic.net> wrote:
-> > 
-> > > The /dev/vcs* devices are used, amongst other things, by accessibility
-> > > applications such as BRLTTY to display the screen content onto refreshable
-> > > braille displays.  Currently this is performed by constantly reading from
-> > > /dev/vcsa0 whether or not the screen content has changed.  Given the
-> > > default braille refresh rate of 25 times per second, this easily qualifies
-> > > as the biggest source of wake-up events preventing laptops from entering
-> > > deeper power saving states.
-> > > 
-> > > To avoid this periodic polling, let's add support for select()/poll() and
-> > > SIGIO with the /dev/vcs* devices.  The implemented semantic is to report
-> > > data availability whenever the corresponding vt has seen some update after
-> > > the last read() operation.  The application still has to lseek() back
-> > > as usual in order to read() the new data.
-> > > 
-> > > Not to create unwanted overhead, the needed data structure is allocated
-> > > and the vt notification callback is registered only when the poll or
-> > > fasync method is invoked for the first time per file instance.
-> > > 
-> > > ...
-> > > 
-> > > diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
-> > > index bcce46c..9013573 100644
-> > > --- a/drivers/char/vc_screen.c
-> > > +++ b/drivers/char/vc_screen.c
-> > > @@ -35,6 +35,10 @@
-> > >  #include <linux/console.h>
-> > >  #include <linux/device.h>
-> > >  #include <linux/smp_lock.h>
-> > > +#include <linux/sched.h>
-> > > +#include <linux/poll.h>
-> > > +#include <linux/signal.h>
-> > > +#include <linux/slab.h>
-> > 
-> > Formally, we need fs.h and notifier.h (at lesat).  I'll fix that up.
+> Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+> page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+> not be able to consume more than their designated share of dirty pages and will
+> be forced to perform write-out if they cross that limit.
 > 
-> I didn't think that notifier.h was necessary as the declaration for 
-> register_vt_notifier() is in vt_kern.h, which also includes notifier.h 
-> itself already.
-
-bug ;) vt_kern.h could use a forward declaration and save the include.
-
-> As to fs.h... I agree in principle, but I don't see what my patch is 
-> adding that would make fs.h a new requirement. In other words it was 
-> probably required even before, which could justify a patch of its own?
-
-kill_fasync() declaration.
-
-> > >  #include <asm/uaccess.h>
-> > >  #include <asm/byteorder.h>
-> > > @@ -45,6 +49,78 @@
-> > >  #undef addr
-> > >  #define HEADER_SIZE	4
-> > >  
-> > > +struct vcs_poll_data {
-> > > +	struct notifier_block notifier;
-> > > +	unsigned int cons_num;
-> > > +	int has_read;
-> > 
-> > It would be nice to document the meaning of has_read.  And consider
-> > using the more appropriate `bool' type?
+> These patches were developed and tested on mmotm 2010-09-28-16-13.  The patches
+> are based on a series proposed by Andrea Righi in Mar 2010.
 > 
-> OK, please could you fold the patch below into this one?  That should 
-> make the code more self explanatory.
-
-shall take a look, thanks,
-
-> [...]
-> > > +static struct vcs_poll_data *
-> > > +vcs_poll_data_get(struct file *file)
-> > > +{
-> > > +	struct vcs_poll_data *poll = file->private_data;
-> > > +
-> > > +	if (poll)
-> > > +		return poll;
-> > > +
-> > > +	poll = kzalloc(sizeof(*poll), GFP_KERNEL);
-> > > +	if (!poll)
-> > > +		return NULL;
-> > > +	poll->cons_num = iminor(file->f_path.dentry->d_inode) & 127;
-> > > +	init_waitqueue_head(&poll->waitq);
-> > > +	poll->notifier.notifier_call = vcs_notifier;
-> > > +	if (register_vt_notifier(&poll->notifier) != 0) {
-> > > +		kfree(poll);
-> > > +		return NULL;
-> > > +	}
-> > > +
-> > > +	spin_lock(&file->f_lock);
-> > > +	if (!file->private_data) {
-> > > +		file->private_data = poll;
-> > > +	} else {
-> > > +		/* someone else raced ahead of us */
-> > > +		vcs_poll_data_free(poll);
-> > > +		poll = file->private_data;
-> > > +	}
-> > > +	spin_unlock(&file->f_lock);
-> > 
-> > What's the race-handling code here all about?
+> Overview:
+> - Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+>   unstable.
+> - Extend mem_cgroup to record the total number of pages in each of the 
+>   interesting dirty states (dirty, writeback, unstable_nfs).  
+> - Add dirty parameters similar to the system-wide  /proc/sys/vm/dirty_*
+>   limits to mem_cgroup.  The mem_cgroup dirty parameters are accessible
+>   via cgroupfs control files.
+> - Consider both system and per-memcg dirty limits in page writeback when
+>   deciding to queue background writeback or block for foreground writeback.
 > 
-> This code may be called either through ->poll() or ->fasync().  If we 
-> have two threads using the same file descriptor, they could both enter 
-> this function, both notice that the structure hasn't been allocated yet 
-> and go ahead allocating it in parallel, but only one of them must 
-> survive and be shared otherwise we'd leak memory with a dangling 
-> notifier callback.
+> Known shortcomings:
+> - When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+>   writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+>   just inodes contributing dirty pages to the cgroup exceeding its limit.  
 
-And I'll turn that into a code comment!
+I suspect this means that we'll need a bdi controller in the I/O
+controller spectrum or make writeback cgroup aware.
+
+> 
+> Performance measurements:
+> - kernel builds are unaffected unless run with a small dirty limit.
+> - all data collected with CONFIG_CGROUP_MEM_RES_CTLR=y.
+> - dd has three data points (in secs) for three data sizes (100M, 200M, and 1G).  
+>   As expected, dd slows when it exceed its cgroup dirty limit.
+> 
+>                kernel_build          dd
+> mmotm             2:37        0.18, 0.38, 1.65
+>   root_memcg
+> 
+> mmotm             2:37        0.18, 0.35, 1.66
+>   non-root_memcg
+> 
+> mmotm+patches     2:37        0.18, 0.35, 1.68
+>   root_memcg
+> 
+> mmotm+patches     2:37        0.19, 0.35, 1.69
+>   non-root_memcg
+> 
+> mmotm+patches     2:37        0.19, 2.34, 22.82
+>   non-root_memcg
+>   150 MiB memcg dirty limit
+> 
+> mmotm+patches     3:58        1.71, 3.38, 17.33
+>   non-root_memcg
+>   1 MiB memcg dirty limit
+> 
+> Greg Thelen (10):
+>   memcg: add page_cgroup flags for dirty page tracking
+>   memcg: document cgroup dirty memory interfaces
+>   memcg: create extensible page stat update routines
+>   memcg: disable local interrupts in lock_page_cgroup()
+>   memcg: add dirty page accounting infrastructure
+>   memcg: add kernel calls for memcg dirty page stats
+>   memcg: add dirty limits to mem_cgroup
+>   memcg: add cgroupfs interface to memcg dirty limits
+>   writeback: make determine_dirtyable_memory() static.
+>   memcg: check memcg dirty limits in page writeback
+> 
+>  Documentation/cgroups/memory.txt |   37 ++++
+>  fs/nfs/write.c                   |    4 +
+>  include/linux/memcontrol.h       |   78 +++++++-
+>  include/linux/page_cgroup.h      |   31 +++-
+>  include/linux/writeback.h        |    2 -
+>  mm/filemap.c                     |    1 +
+>  mm/memcontrol.c                  |  426 ++++++++++++++++++++++++++++++++++----
+>  mm/page-writeback.c              |  211 ++++++++++++-------
+>  mm/rmap.c                        |    4 +-
+>  mm/truncate.c                    |    1 +
+>  10 files changed, 672 insertions(+), 123 deletions(-)
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> 
+
+-- 
+	Three Cheers,
+	Balbir
