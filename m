@@ -1,131 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758088Ab0JEKdY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:33:24 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:56704 "EHLO
+	id S932959Ab0JEKd0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:33:26 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:56706 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932859Ab0JEKby (ORCPT
+	with ESMTP id S932869Ab0JEKby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Oct 2010 06:31:54 -0400
-Message-Id: <20101005103148.272615582@szeredi.hu>
+Message-Id: <20101005103140.601636569@szeredi.hu>
 References: <20101005103108.288743609@szeredi.hu>
 User-Agent: quilt/0.46-1
-Date: Tue, 05 Oct 2010 12:31:17 +0200
+Date: Tue, 05 Oct 2010 12:31:13 +0200
 From: Miklos Szeredi <miklos@szeredi.hu>
 To: viro@zeniv.linux.org.uk
 Cc: dave@linux.vnet.ibm.com, akpm@linux-foundation.org,
         linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 9/9] vfs: mark mounts read-only on forced remount
-Content-Disposition: inline; filename=vfs-force-mounts-readonly.patch
+Subject: [PATCH 5/9] vfs: allow mnt_want_write() to sleep
+Content-Disposition: inline; filename=vfs-sleeping-mnt_want_write.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-When the superblock is forcefully remounted read-only, as in case of
-an emergency remount or filesystem errors, make sure that the mounts
-belonging to the superblock are also marked read-only.
+Allow mnt_want_write() to sleep.
+
+This is necessary to enable holding off write requests for the
+duration of ->remount_fs(), which may sleep.
+
+A quick audit didn't turn up any callers from atomic context.
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/internal.h  |    1 +
- fs/namespace.c |   16 ++++++++++++++++
- fs/super.c     |   16 ++++++++++++----
- 3 files changed, 29 insertions(+), 4 deletions(-)
+ fs/namespace.c     |   11 +++++++----
+ fs/super.c         |    1 +
+ include/linux/fs.h |    5 +++++
+ 3 files changed, 13 insertions(+), 4 deletions(-)
 
-Index: linux-2.6/fs/internal.h
-===================================================================
---- linux-2.6.orig/fs/internal.h	2010-10-04 13:02:24.000000000 +0200
-+++ linux-2.6/fs/internal.h	2010-10-04 15:09:49.000000000 +0200
-@@ -72,6 +72,7 @@ extern struct vfsmount *copy_tree(struct
- extern int sb_prepare_remount_readonly(struct super_block *);
- extern void sb_cancel_remount_readonly(struct super_block *);
- extern void sb_finish_remount_readonly(struct super_block *);
-+extern void mark_mounts_readonly(struct super_block *);
- 
- extern void __init mnt_init(void);
- 
 Index: linux-2.6/fs/namespace.c
 ===================================================================
---- linux-2.6.orig/fs/namespace.c	2010-10-04 13:02:24.000000000 +0200
-+++ linux-2.6/fs/namespace.c	2010-10-04 15:09:49.000000000 +0200
-@@ -418,7 +418,13 @@ static int mnt_make_writable(struct vfsm
- 
- void sb_force_remount_readonly(struct super_block *sb)
- {
-+	struct vfsmount *mnt;
-+
-+	br_write_lock(vfsmount_lock);
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance)
-+		mnt->mnt_flags |= MNT_READONLY;
- 	sb->s_flags |= MS_RDONLY;
-+	br_write_unlock(vfsmount_lock);
+--- linux-2.6.orig/fs/namespace.c	2010-10-04 12:15:17.000000000 +0200
++++ linux-2.6/fs/namespace.c	2010-10-04 16:50:44.000000000 +0200
+@@ -281,8 +281,12 @@ int mnt_want_write(struct vfsmount *mnt)
+ 	 * incremented count after it has set MNT_WRITE_HOLD.
+ 	 */
+ 	smp_mb();
+-	while (mnt->mnt_flags & MNT_WRITE_HOLD)
+-		cpu_relax();
++	if (unlikely(mnt->mnt_flags & MNT_WRITE_HOLD)) {
++		preempt_enable();
++		wait_event(mnt->mnt_sb->s_wait_remount_readonly,
++			   !(mnt->mnt_flags & MNT_WRITE_HOLD));
++		preempt_disable();
++	}
+ 	/*
+ 	 * After the slowpath clears MNT_WRITE_HOLD, mnt_is_readonly will
+ 	 * be set to match its requirements. So we must not load that until
+@@ -292,9 +296,7 @@ int mnt_want_write(struct vfsmount *mnt)
+ 	if (__mnt_is_readonly(mnt)) {
+ 		dec_mnt_writers(mnt);
+ 		ret = -EROFS;
+-		goto out;
+ 	}
+-out:
+ 	preempt_enable();
+ 	return ret;
  }
- EXPORT_SYMBOL(sb_force_remount_readonly);
- 
-@@ -477,6 +483,16 @@ void sb_finish_remount_readonly(struct s
- 	wake_up_all(&sb->s_wait_remount_readonly);
+@@ -395,6 +397,7 @@ static int mnt_make_readonly(struct vfsm
+ 	 */
+ 	smp_wmb();
+ 	mnt->mnt_flags &= ~MNT_WRITE_HOLD;
++	wake_up_all(&mnt->mnt_sb->s_wait_remount_readonly);
+ 	br_write_unlock(vfsmount_lock);
+ 	return ret;
  }
- 
-+void mark_mounts_readonly(struct super_block *sb)
-+{
-+	struct vfsmount *mnt;
-+
-+	br_write_lock(vfsmount_lock);
-+	list_for_each_entry(mnt, &sb->s_mounts, mnt_instance)
-+		mnt->mnt_flags |= MNT_READONLY;
-+	br_write_unlock(vfsmount_lock);
-+}
-+
- void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb)
- {
- 	mnt->mnt_sb = sb;
 Index: linux-2.6/fs/super.c
 ===================================================================
---- linux-2.6.orig/fs/super.c	2010-10-04 13:02:24.000000000 +0200
-+++ linux-2.6/fs/super.c	2010-10-04 15:09:49.000000000 +0200
-@@ -555,6 +555,7 @@ int do_remount_sb(struct super_block *sb
- {
- 	int retval;
- 	int remount_ro;
-+	bool old_ro;
+--- linux-2.6.orig/fs/super.c	2010-10-04 12:12:01.000000000 +0200
++++ linux-2.6/fs/super.c	2010-10-04 16:50:25.000000000 +0200
+@@ -107,6 +107,7 @@ static struct super_block *alloc_super(s
+ 		mutex_init(&s->s_dquot.dqonoff_mutex);
+ 		init_rwsem(&s->s_dquot.dqptr_sem);
+ 		init_waitqueue_head(&s->s_wait_unfrozen);
++		init_waitqueue_head(&s->s_wait_remount_readonly);
+ 		s->s_maxbytes = MAX_NON_LFS;
+ 		s->s_op = &default_op;
+ 		s->s_time_gran = 1000000000;
+Index: linux-2.6/include/linux/fs.h
+===================================================================
+--- linux-2.6.orig/include/linux/fs.h	2010-10-04 12:13:00.000000000 +0200
++++ linux-2.6/include/linux/fs.h	2010-10-04 16:50:25.000000000 +0200
+@@ -1385,6 +1385,11 @@ struct super_block {
+ 	 * generic_show_options()
+ 	 */
+ 	char *s_options;
++
++	/*
++	 * Wait queue for remouting read-only
++	 */
++	wait_queue_head_t s_wait_remount_readonly;
+ };
  
- 	if (sb->s_frozen != SB_UNFROZEN)
- 		return -EBUSY;
-@@ -569,12 +570,14 @@ int do_remount_sb(struct super_block *sb
- 	shrink_dcache_sb(sb);
- 	sync_filesystem(sb);
- 
--	remount_ro = (flags & MS_RDONLY) && !(sb->s_flags & MS_RDONLY);
-+	old_ro = (sb->s_flags & MS_RDONLY) != 0;
-+	remount_ro = (flags & MS_RDONLY) && !old_ro;
- 
- 	/* If we are remounting RDONLY and current sb is read/write,
- 	   make sure there are no rw files opened */
- 	if (remount_ro) {
- 		if (force) {
-+			mark_mounts_readonly(sb);
- 			mark_files_ro(sb);
- 		} else {
- 			retval = sb_prepare_remount_readonly(sb);
-@@ -596,9 +599,14 @@ int do_remount_sb(struct super_block *sb
- 			return retval;
- 		}
- 	}
--	if (remount_ro && !force)
--		sb_finish_remount_readonly(sb);
--
-+	if (remount_ro) {
-+		WARN_ON(!(flags & MS_RDONLY));
-+		if (!force)
-+			sb_finish_remount_readonly(sb);
-+	} else if ((flags & MS_RDONLY) && !old_ro) {
-+		/* filesystem remounted r/o without being asked to */
-+		sb_force_remount_readonly(sb);
-+	}
- 	sb->s_flags = (sb->s_flags & ~MS_RMT_MASK) | (flags & MS_RMT_MASK);
- 
- 	/*
+ extern struct timespec current_fs_time(struct super_block *sb);
 
 -- 
