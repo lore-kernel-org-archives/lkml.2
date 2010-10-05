@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab0JESds (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 14:33:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10596 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750843Ab0JESdq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 14:33:46 -0400
-Date: Tue, 5 Oct 2010 20:27:32 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jason Wang <jasowang@redhat.com>
-Subject: [GIT PULL net-next-2.6] vhost-net patchset for 2.6.37
-Message-ID: <20101005182732.GA25796@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755366Ab0JESfH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 14:35:07 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:59245 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754314Ab0JESfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 14:35:05 -0400
+Date: Tue, 5 Oct 2010 20:31:54 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-omap@vger.kernel.org,
+        linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] arm/omap: simplify conditional
+Message-ID: <20101005203154.0ba412d2@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It looks like it was a quiet cycle for vhost-net:
-probably because most of energy was spent on bugfixes
-that went in for 2.6.36.
-People are working on multiqueue, tracing but I'm not
-sure it'll get done in time for 2.6.37 - so here's
-a tree with a single patch that helps windows guests
-which we definitely want in the next kernel.
+Simplify conditional: (a || (!a && !b)) => (a || !b)
 
-Please merge for 2.6.37.
-Thanks!
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ arch/arm/plat-omap/fb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-The following changes since commit a00eac0c459abecb539fb2a2abd3122dd7ca5d4a:
-
-  ppp: Use a real SKB control block in fragmentation engine. (2010-10-05 01:36:52 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
-
-Jason Wang (1):
-      vhost: max s/g to match qemu
-
- drivers/vhost/net.c   |    2 +-
- drivers/vhost/vhost.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++++-
- drivers/vhost/vhost.h |   18 ++++++++----------
- 3 files changed, 57 insertions(+), 12 deletions(-)
+diff --git a/arch/arm/plat-omap/fb.c b/arch/arm/plat-omap/fb.c
+index 0054b95..5c09095 100644
+--- a/arch/arm/plat-omap/fb.c
++++ b/arch/arm/plat-omap/fb.c
+@@ -126,7 +126,7 @@ static int set_fbmem_region_type(struct omapfb_mem_region *rg, int mem_type,
+ 	 * type = 0 && paddr = 0, a default don't care case maps to
+ 	 * the SDRAM type.
+ 	 */
+-	if (rg->type || (!rg->type && !rg->paddr))
++	if (rg->type || !rg->paddr)
+ 		return 0;
+ 	if (ranges_overlap(rg->paddr, rg->size, mem_start, mem_size)) {
+ 		rg->type = mem_type;
+-- 
+1.7.2.2
