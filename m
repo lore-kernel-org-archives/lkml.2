@@ -1,53 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab0JEFca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 01:32:30 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:56909 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753476Ab0JEFc3 (ORCPT
+	id S1756817Ab0JEFhY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 01:37:24 -0400
+Received: from qmta12.emeryville.ca.mail.comcast.net ([76.96.27.227]:42545
+	"EHLO qmta12.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754281Ab0JEFhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 01:32:29 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Christoph Lameter <cl@linux.com>
-Subject: Re: Default zone_reclaim_mode = 1 on NUMA kernel is bad forfile/email/web servers
-Cc: kosaki.motohiro@jp.fujitsu.com, Mel Gorman <mel@csn.ul.ie>,
-        Rob Mueller <robm@fastmail.fm>, linux-kernel@vger.kernel.org,
-        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1010040805500.2502@router.home>
-References: <20101004211112.E8B1.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1010040805500.2502@router.home>
-Message-Id: <20101005142527.28DB.A69D9226@jp.fujitsu.com>
+	Tue, 5 Oct 2010 01:37:22 -0400
+Date: Mon, 4 Oct 2010 22:35:20 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: walter harms <wharms@bfs.de>, Tracey Dent <tdent48227@gmail.com>,
+        greg@kroah.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH v3 01/20] Staging: cx25821: Makefile: cleaned up
+ Makefile cflag lines
+Message-ID: <20101005053520.GC6369@haskell.muteddisk.com>
+Mail-Followup-To: Sam Ravnborg <sam@ravnborg.org>,
+	walter harms <wharms@bfs.de>, Tracey Dent <tdent48227@gmail.com>,
+	greg@kroah.com, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <1286037489-28439-1-git-send-email-tdent48227@gmail.com>
+ <4CA879A1.3070400@bfs.de>
+ <20101003205128.GA16185@merkur.ravnborg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  5 Oct 2010 14:32:27 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101003205128.GA16185@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 4 Oct 2010, KOSAKI Motohiro wrote:
+On 22:51 Sun 03 Oct     , Sam Ravnborg wrote:
+> On Sun, Oct 03, 2010 at 02:40:01PM +0200, walter harms wrote:
+> > 
+> > 
+> > Tracey Dent schrieb:
+> > > Changed to use the proper ccflags-y option
+> > > 
+> > > Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+> > > ---
+> > >  drivers/staging/cx25821/Makefile |    8 ++++----
+> > >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > > 
+> > > diff --git a/drivers/staging/cx25821/Makefile b/drivers/staging/cx25821/Makefile
+> > > index d0eb16e..6448364 100644
+> > > --- a/drivers/staging/cx25821/Makefile
+> > > +++ b/drivers/staging/cx25821/Makefile
+> > > @@ -7,7 +7,7 @@ cx25821-objs   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
+> > >  obj-$(CONFIG_VIDEO_CX25821) += cx25821.o
+> > >  obj-$(CONFIG_VIDEO_CX25821_ALSA) += cx25821-alsa.o
+> > >  
+> > > -EXTRA_CFLAGS += -Idrivers/media/video
+> > > -EXTRA_CFLAGS += -Idrivers/media/common/tuners
+> > > -EXTRA_CFLAGS += -Idrivers/media/dvb/dvb-core
+> > > -EXTRA_CFLAGS += -Idrivers/media/dvb/frontends
+> > > +ccflags-y := -Idrivers/media/video
+> > > +ccflags-y += -Idrivers/media/common/tuners
+> > > +ccflags-y += -Idrivers/media/dvb/dvb-core
+> > > +ccflags-y += -Idrivers/media/dvb/frontends
+> > 
+> > they have invented vpath for this, did they ?
+> > note: I am not familiar with the linux makefile.
+> vpath is not the answer here.
 > 
-> > > The problem with zone reclaim mainly is created for large apps whose
-> > > working set is larger than the local node. The special settings are only
-> > > needing for those applications.
-> >
-> > In theory, yes. but please talk with userland developers. They always say
-> > "Our software work fine on *BSD, Solaris, Mac, etc etc. that's definitely
-> > linux problem". /me have no way to persuade them ;-)
-> 
-> Do those support NUMA? I would think not. You would have to switch on
-> interleave at the BIOS level (getting a hardware hack in place to get
-> rid of the NUMA effects) to make these OSes run right.
+> Note that Tracy dent did the simple replacement of EXTRA_CFLAGS with ccflags-y.
+> The Makefiles could in many cases benefit from general cleanups - which many
+> of your futher comments is a good indicator of.
 
-Sure. It wouldn't. Many opensource userland developers don't like
-using out of posix API. In the other hand, many proprietery developers
-don't hesitate it. I don't know reason.
-Also, I'm not sure evey Corei7 Motherboard have BIOS level numa interleaving.
-Are you sure? generically, commodity component vendor don't like to equipe 
-additonal firmware feature. It's not zero cost. I think this solusion only fit
-server vendor (e.g. IBM, HP, Fujitsu). but dunnno. Myself and fujitsu haven't hit 
-this issue. I don't know _every_ motherboard equipement in the world.
+Hi Sam,
 
+I happen to have sent out a RFC patch for media/ a little over a week ago.
+Mauro Chehab has not commented on it yet, but I am curious to hear your
+opinion.
 
+http://marc.info/?l=linux-kernel&m=128553496013767&w=2
+
+Thanks,
+mfm
 
