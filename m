@@ -1,103 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757609Ab0JEU3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 16:29:33 -0400
-Received: from smtp208.alice.it ([82.57.200.104]:39336 "EHLO smtp208.alice.it"
+	id S1757391Ab0JEU3W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 16:29:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40738 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757519Ab0JEU3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 16:29:31 -0400
-Date: Tue, 5 Oct 2010 22:29:17 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Alan Ott <alan@signal11.us>
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Oliver Neukum <oliver@neukum.name>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: hidraw, fix a NULL pointer dereference in
- hidraw_ioctl
-Message-Id: <20101005222917.9f4da7bc.ospite@studenti.unina.it>
-In-Reply-To: <4CA9DC8D.3030207@signal11.us>
-References: <1286018724-7484-1-git-send-email-ospite@studenti.unina.it>
-	<4CA9DC8D.3030207@signal11.us>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg"
+	id S1757271Ab0JEU3S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 16:29:18 -0400
+From: Fernando Guzman Lugo <x0095840@ti.com>
+To: <gregkh@suse.de>
+Cc: <felipe.contreras@nokia.com>, <ameya.palande@nokia.com>, <nm@ti.com>,
+        <Hiroshi.DOYU@nokia.com>, <ohad@wizery.com>,
+        <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
+        <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCHv3 08/11] staging: tidspbridge: remove dw_dmmu_base from cfg_hostres struct
+Date: Tue,  5 Oct 2010 15:35:41 -0500
+Message-Id: <1286310944-25035-9-git-send-email-x0095840@ti.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1286310944-25035-8-git-send-email-x0095840@ti.com>
+References: <1286310944-25035-1-git-send-email-x0095840@ti.com>
+ <1286310944-25035-2-git-send-email-x0095840@ti.com>
+ <1286310944-25035-3-git-send-email-x0095840@ti.com>
+ <1286310944-25035-4-git-send-email-x0095840@ti.com>
+ <1286310944-25035-5-git-send-email-x0095840@ti.com>
+ <1286310944-25035-6-git-send-email-x0095840@ti.com>
+ <1286310944-25035-7-git-send-email-x0095840@ti.com>
+ <1286310944-25035-8-git-send-email-x0095840@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+We don't need to map iva2 iommu register base address
+anymore.
 
-On Mon, 04 Oct 2010 09:54:21 -0400
-Alan Ott <alan@signal11.us> wrote:
+Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+---
+ drivers/staging/tidspbridge/core/tiomap3430.c      |    3 ---
+ drivers/staging/tidspbridge/core/tiomap_io.c       |    3 +--
+ .../tidspbridge/include/dspbridge/cfgdefs.h        |    1 -
+ drivers/staging/tidspbridge/rmgr/drv.c             |    4 ----
+ 4 files changed, 1 insertions(+), 10 deletions(-)
 
-> On 10/02/2010 07:25 AM, Antonio Ospite wrote:
-> > BUG: unable to handle kernel NULL pointer dereference at 00000000000000=
-28
-> > IP: [<ffffffffa02c66b4>] hidraw_ioctl+0xfc/0x32c [hid]
-> > [...]
-> >
-[...]
-> > there is a similar problem when _writing_ to the device, but Alan's
-> > changes in that area are shuffling the code a bit, should I send a patch
-> > [to hidraw_send_report()] on top of Alan's work for that, or a fix for
-> > current mainline [in hidraw_write()] on which Alan should rebase his
-> > work would be better?
-> >   =20
->=20
-> This needs to go back into stable kernels as well, so a patch against=20
-> mainline will be necessary for that. If you want to make a patch against=
-=20
-> mine, that's fine with me. If you want me to work it into my patch,=20
-> that's fine too. (I want you to get credit for the fix though :) ).
->
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 4927ec3..a95ff2f 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -833,8 +833,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt)
+ 			iounmap((void *)host_res->dw_mem_base[3]);
+ 		if (host_res->dw_mem_base[4])
+ 			iounmap((void *)host_res->dw_mem_base[4]);
+-		if (host_res->dw_dmmu_base)
+-			iounmap(host_res->dw_dmmu_base);
+ 		if (host_res->dw_per_base)
+ 			iounmap(host_res->dw_per_base);
+ 		if (host_res->dw_per_pm_base)
+@@ -848,7 +846,6 @@ static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt)
+ 		host_res->dw_mem_base[2] = (u32) NULL;
+ 		host_res->dw_mem_base[3] = (u32) NULL;
+ 		host_res->dw_mem_base[4] = (u32) NULL;
+-		host_res->dw_dmmu_base = NULL;
+ 		host_res->dw_sys_ctrl_base = NULL;
+ 
+ 		kfree(host_res);
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
+index b526532..66dbf02 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.c
++++ b/drivers/staging/tidspbridge/core/tiomap_io.c
+@@ -393,7 +393,6 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
+ 		omap_dspbridge_dev->dev.platform_data;
+ 	struct cfg_hostres *resources = dev_context->resources;
+ 	int status = 0;
+-	u32 temp;
+ 
+ 	if (!dev_context->mbox)
+ 		return 0;
+@@ -437,7 +436,7 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
+ 		omap_mbox_restore_ctx(dev_context->mbox);
+ 
+ 		/* Access MMU SYS CONFIG register to generate a short wakeup */
+-		temp = readl(resources->dw_dmmu_base + 0x10);
++		iommu_read_reg(dev_context->dsp_mmu, MMU_SYSCONFIG);
+ 
+ 		dev_context->dw_brd_state = BRD_RUNNING;
+ 	} else if (dev_context->dw_brd_state == BRD_RETENTION) {
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
+index 38122db..dfb55cc 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cfgdefs.h
+@@ -68,7 +68,6 @@ struct cfg_hostres {
+ 	void __iomem *dw_per_base;
+ 	u32 dw_per_pm_base;
+ 	u32 dw_core_pm_base;
+-	void __iomem *dw_dmmu_base;
+ 	void __iomem *dw_sys_ctrl_base;
+ };
+ 
+diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
+index 81b1b90..0c857b9 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv.c
++++ b/drivers/staging/tidspbridge/rmgr/drv.c
+@@ -743,7 +743,6 @@ static int request_bridge_resources(struct cfg_hostres *res)
+ 	host_res->dw_sys_ctrl_base = ioremap(OMAP_SYSC_BASE, OMAP_SYSC_SIZE);
+ 	dev_dbg(bridge, "dw_mem_base[0] 0x%x\n", host_res->dw_mem_base[0]);
+ 	dev_dbg(bridge, "dw_mem_base[3] 0x%x\n", host_res->dw_mem_base[3]);
+-	dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
+ 
+ 	/* for 24xx base port is not mapping the mamory for DSP
+ 	 * internal memory TODO Do a ioremap here */
+@@ -797,8 +796,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
+ 							 OMAP_PER_PRM_SIZE);
+ 		host_res->dw_core_pm_base = (u32) ioremap(OMAP_CORE_PRM_BASE,
+ 							  OMAP_CORE_PRM_SIZE);
+-		host_res->dw_dmmu_base = ioremap(OMAP_DMMU_BASE,
+-						 OMAP_DMMU_SIZE);
+ 
+ 		dev_dbg(bridge, "dw_mem_base[0] 0x%x\n",
+ 			host_res->dw_mem_base[0]);
+@@ -810,7 +807,6 @@ int drv_request_bridge_res_dsp(void **phost_resources)
+ 			host_res->dw_mem_base[3]);
+ 		dev_dbg(bridge, "dw_mem_base[4] 0x%x\n",
+ 			host_res->dw_mem_base[4]);
+-		dev_dbg(bridge, "dw_dmmu_base %p\n", host_res->dw_dmmu_base);
+ 
+ 		shm_size = drv_datap->shm_size;
+ 		if (shm_size >= 0x10000) {
+-- 
+1.6.3.3
 
-Alan rebasing your patch on top of the hidraw_write() fix is trivial
-so you do it in your v5, ok? It does not get rebased automatically just
-because of the mutex_lock() call.
-
-If it is OK to you I'd promote my Tested-by to a Signed-off-by in
-the commit message so to take implicit credit for the fix. But this is
-not even needed as the fix will be in mainline anyway.
-
-> > The same pattern of unchecked hidraw_table[minor] is also present in
-> > hidraw_get_report but this function is called only after the NULL check
-> > in hidraw_ioctl _for_now_, so that is currently safe.
-> >   =20
->=20
-> I can stick a comment ahead of hidraw_send_report, similar to the one=20
-> which already exists.
->
-
-ACK.
-
-Thanks,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkyrip0ACgkQ5xr2akVTsAHoaQCfUx1s+lHvU710FrEr7pluNyqL
-cSQAoJxvFk6c8XIbAcSBYYD761NkH+dY
-=LpGn
------END PGP SIGNATURE-----
-
---Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg--
