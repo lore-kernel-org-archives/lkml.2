@@ -1,78 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932372Ab0JEHAy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 03:00:54 -0400
-Received: from mxout12.netvision.net.il ([194.90.6.37]:60407 "EHLO
-	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932272Ab0JEHAx (ORCPT
+	id S932457Ab0JEHA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 03:00:59 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40974 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932414Ab0JEHA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 03:00:53 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-From: Micki Balanga <micki@n-trig.com>
-To: Jiri Kosina <jkosina@suse.cz>, Greg KH <greg@kroah.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "jim.collar@eqware.net" <jim.collar@eqware.net>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] USB: misc: Add N-trig firmware driver
-Thread-topic: [PATCH] USB: misc: Add N-trig firmware driver
-Thread-index: Acti0OWpN7rr5r0+RhetTRfWBmmSEQAgJO2AABhmRYAAKf84kA==
-Date: Tue, 05 Oct 2010 06:59:43 +0000
-Message-id: <6EF693376E00E2458E26FEC229232B128AAE23@Exchange2010-IL.n-trig.com>
-References: <6EF693376E00E2458E26FEC229232B128A8D39@Exchange2010-IL.n-trig.com>
- <20101004011949.GA23855@kroah.com>
- <alpine.LRH.2.00.1010041458010.12867@twin.jikos.cz>
-In-reply-to: <alpine.LRH.2.00.1010041458010.12867@twin.jikos.cz>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [172.16.1.1]
+	Tue, 5 Oct 2010 03:00:58 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 5 Oct 2010 15:55:35 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 06/10] memcg: add kernel calls for memcg dirty page
+ stats
+Message-Id: <20101005155535.735a3810.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1286175485-30643-7-git-send-email-gthelen@google.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-7-git-send-email-gthelen@google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun,  3 Oct 2010 23:58:01 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-
-> -----Original Message-----
-> From: Jiri Kosina [mailto:jkosina@suse.cz]
-> Sent: Monday, October 04, 2010 2:58 PM
-> To: Greg KH
-> Cc: Micki Balanga; gregkh@suse.de; jim.collar@eqware.net; linux-
-> usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] USB: misc: Add N-trig firmware driver
+> Add calls into memcg dirty page accounting.  Notify memcg when pages
+> transition between clean, file dirty, writeback, and unstable nfs.
+> This allows the memory controller to maintain an accurate view of
+> the amount of its memory that is dirty.
 > 
-> On Sun, 3 Oct 2010, Greg KH wrote:
-> 
-> > >
-> >
-> > Can you please attach this in a non-base64 format so it can be
-> properly
-> > reviewed, and then, applied if applicable?
-> >
-> > Note, please run the patch through the scripts/checkpatch.pl tool
-> first
-> > before sending it out, so we don't just say the same things it finds
-> :)
-> 
-> As we already have HID driver for n-trig, could this whole thing
-> perhaps
-> be made part of it?
-> 
-> --
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Signed-off-by: Andrea Righi <arighi@develer.com>
 
-The driver communicates with the bulk in/out endpoint. 
-
-It was written as a standalone module, because it does not use any HID subsystem services, 
-and to ensure that the HID driver would not be too complex. 
-
-The driver has been tested over several weeks at our company.
-The  patch was prepared and checked using the Checkpatch utility.
-
-I await your input as to how you wish to proceed.
-Micki
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
