@@ -1,173 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab0JDX4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 19:56:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49843 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752283Ab0JDX4w (ORCPT
+	id S1757435Ab0JEADu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 20:03:50 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:32518 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752283Ab0JEADs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 19:56:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1010050026170.2556@localhost6.localdomain6>
-References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6>
- <201010041300.15234.arnd@arndb.de> <alpine.LFD.2.00.1010050026170.2556@localhost6.localdomain6>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Mon, 4 Oct 2010 16:55:52 -0700
-Message-ID: <AANLkTimbEnwPaAvvNN3NCt7Nzx6FG2hbr4QurT5-YukN@mail.gmail.com>
-Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, LKML <linux-kernel@vger.kernel.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Kay Sievers <kay.sievers@vrfy.org>, Brandon Philips <brandon@ifup.org>
-Content-Type: multipart/mixed; boundary=0023547c8c07fe779e0491d34985
+	Mon, 4 Oct 2010 20:03:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=o77ZV5MLTmjQWSzxKWHV9MpGM6Mc63UhHWYEVLLhsouaeP0VvwWeSeoQXw2ty0GAtY
+         9ttJtv05/mzJ/d+MzkwQ==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Subject: Proper kernel irq time accounting -v4
+Date: Mon,  4 Oct 2010 17:03:15 -0700
+Message-Id: <1286237003-12406-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0023547c8c07fe779e0491d34985
-Content-Type: text/plain; charset=ISO-8859-1
+Previous versions:
+-v0: http://lkml.indiana.edu/hypermail//linux/kernel/1005.3/00411.html
+     lkml subject - "Finer granularity and task/cgroup irq time accounting"
 
-On Mon, Oct 4, 2010 at 3:43 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->
-> The patch below cures it.
+-v1: http://lkml.indiana.edu/hypermail//linux/kernel/1007.2/00987.html
+     lkml subject - "Finer granularity and task/cgroup irq time accounting"
 
-Hmm. I think I'd rather move the module_bug_finalize() call away from
-the arch-specific module_finalize(), and down later into
-load_module().
+-v2: http://lkml.indiana.edu/hypermail//linux/kernel/1009.2/00488.html
+     lkml subject - "Proper kernel irq time accounting"
 
-Basically, we simply shouldn't be doing global things that need the
-'module_mutex' until after we've done all the local things, and then
-checked for uniqueness.
+-v3: http://lkml.indiana.edu/hypermail//linux/kernel/1009.3/02482.html
+     lkml subject - "Proper kernel irq time accounting -v3"
 
-And I don't see why module_bug_finalize() (and module_bug_cleanup) is
-called from arch-specific code anyway. I think that placement is
-purely historical.
 
-It would seem to make most sense to do the module_bug_finalize() in
-the same location where we add the module to the list of modules.
+Change from -v3:
+- Switch to using sched_clock_cpu instead of sched_clock in
+  account_system_vtime. This needed tick_check_idle to be called early in
+  irq_enter.
+- Do not account softirq time in ksoftirqd context. We want ksoftirqd to
+  continue having sched exec_runtime.
+- Add a boot option to disable tsc based irq accounting in x86.
+- Remove the patch that exported irq times in /proc/interrupts and
+  /proc/softirqs. I am relooking at other options to export that and
+  will have a replacement patch soon.
 
-IOW, a patch like the attached. UNTESTED!
 
-                    Linus
+Description:
+Here is some background information about interrupt time accounting in kernel
+and related problems.
 
---0023547c8c07fe779e0491d34985
-Content-Type: text/x-patch; charset=US-ASCII; name="patch.diff"
-Content-Disposition: attachment; filename="patch.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gew004b20
+Interrupts always run in the context of currently running task. Softirqs mostly
+run in the context of currently running task, unless softirqd gets involved.
+/proc/interrupts and /proc/softirqs are the interfaces that report the number
+of interrupts and softirqs per CPU since boot. /proc/stat has fields that
+report per CPU and system-wide interrupt and softirq processing time in
+clock_t units.
 
-IGFyY2gvYXZyMzIva2VybmVsL21vZHVsZS5jICAgfCAgICAzICstLQogYXJjaC9oODMwMC9rZXJu
-ZWwvbW9kdWxlLmMgICB8ICAgIDMgKy0tCiBhcmNoL21uMTAzMDAva2VybmVsL21vZHVsZS5jIHwg
-ICAgMyArLS0KIGFyY2gvcGFyaXNjL2tlcm5lbC9tb2R1bGUuYyAgfCAgICAzICstLQogYXJjaC9w
-b3dlcnBjL2tlcm5lbC9tb2R1bGUuYyB8ICAgIDUgLS0tLS0KIGFyY2gvczM5MC9rZXJuZWwvbW9k
-dWxlLmMgICAgfCAgICAzICstLQogYXJjaC9zaC9rZXJuZWwvbW9kdWxlLmMgICAgICB8ICAgIDIg
-LS0KIGFyY2gveDg2L2tlcm5lbC9tb2R1bGUuYyAgICAgfCAgICAzICstLQogaW5jbHVkZS9saW51
-eC9tb2R1bGUuaCAgICAgICB8ICAgIDUgKystLS0KIGtlcm5lbC9tb2R1bGUuYyAgICAgICAgICAg
-ICAgfCAgICAzICsrKwogbGliL2J1Zy5jICAgICAgICAgICAgICAgICAgICB8ICAgIDYgKystLS0t
-CiAxMSBmaWxlcyBjaGFuZ2VkLCAxMyBpbnNlcnRpb25zKCspLCAyNiBkZWxldGlvbnMoLSkKCmRp
-ZmYgLS1naXQgYS9hcmNoL2F2cjMyL2tlcm5lbC9tb2R1bGUuYyBiL2FyY2gvYXZyMzIva2VybmVs
-L21vZHVsZS5jCmluZGV4IDk4Zjk0ZDAuLmE3MjdmNTQgMTAwNjQ0Ci0tLSBhL2FyY2gvYXZyMzIv
-a2VybmVsL21vZHVsZS5jCisrKyBiL2FyY2gvYXZyMzIva2VybmVsL21vZHVsZS5jCkBAIC0zMTQs
-MTAgKzMxNCw5IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwgY29u
-c3QgRWxmX1NoZHIgKnNlY2hkcnMsCiAJdmZyZWUobW9kdWxlLT5hcmNoLnN5bWluZm8pOwogCW1v
-ZHVsZS0+YXJjaC5zeW1pbmZvID0gTlVMTDsKIAotCXJldHVybiBtb2R1bGVfYnVnX2ZpbmFsaXpl
-KGhkciwgc2VjaGRycywgbW9kdWxlKTsKKwlyZXR1cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYXJj
-aF9jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZHVsZSkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAo
-bW9kdWxlKTsKIH0KZGlmZiAtLWdpdCBhL2FyY2gvaDgzMDAva2VybmVsL21vZHVsZS5jIGIvYXJj
-aC9oODMwMC9rZXJuZWwvbW9kdWxlLmMKaW5kZXggMDg2NWUyOS4uZGI0OTUzZCAxMDA2NDQKLS0t
-IGEvYXJjaC9oODMwMC9rZXJuZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9oODMwMC9rZXJuZWwvbW9k
-dWxlLmMKQEAgLTExMiwxMCArMTEyLDkgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBFbGZf
-RWhkciAqaGRyLAogCQkgICAgY29uc3QgRWxmX1NoZHIgKnNlY2hkcnMsCiAJCSAgICBzdHJ1Y3Qg
-bW9kdWxlICptZSkKIHsKLQlyZXR1cm4gbW9kdWxlX2J1Z19maW5hbGl6ZShoZHIsIHNlY2hkcnMs
-IG1lKTsKKwlyZXR1cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVwKHN0cnVjdCBt
-b2R1bGUgKm1vZCkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlmZiAtLWdpdCBh
-L2FyY2gvbW4xMDMwMC9rZXJuZWwvbW9kdWxlLmMgYi9hcmNoL21uMTAzMDAva2VybmVsL21vZHVs
-ZS5jCmluZGV4IDZhZWE3ZmQuLjE5NmExMTEgMTAwNjQ0Ci0tLSBhL2FyY2gvbW4xMDMwMC9rZXJu
-ZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9tbjEwMzAwL2tlcm5lbC9tb2R1bGUuYwpAQCAtMjA2LDcg
-KzIwNiw3IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAkJICAg
-IGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCQkgICAgc3RydWN0IG1vZHVsZSAqbWUpCiB7Ci0J
-cmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CisJcmV0dXJuIDA7
-CiB9CiAKIC8qCkBAIC0yMTQsNSArMjE0LDQgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBF
-bGZfRWhkciAqaGRyLAogICovCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVs
-ZSAqbW9kKQogewotCW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogfQpkaWZmIC0tZ2l0IGEvYXJj
-aC9wYXJpc2Mva2VybmVsL21vZHVsZS5jIGIvYXJjaC9wYXJpc2Mva2VybmVsL21vZHVsZS5jCmlu
-ZGV4IDE1OWEyYjguLjZlODFiYjUgMTAwNjQ0Ci0tLSBhL2FyY2gvcGFyaXNjL2tlcm5lbC9tb2R1
-bGUuYworKysgYi9hcmNoL3BhcmlzYy9rZXJuZWwvbW9kdWxlLmMKQEAgLTk0MSwxMSArOTQxLDEw
-IEBAIGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAluc3ltcyA9IG5l
-d3B0ciAtIChFbGZfU3ltICopc3ltaGRyLT5zaF9hZGRyOwogCURFQlVHUCgiTkVXIG51bV9zeW10
-YWIgJWx1XG4iLCBuc3ltcyk7CiAJc3ltaGRyLT5zaF9zaXplID0gbnN5bXMgKiBzaXplb2YoRWxm
-X1N5bSk7Ci0JcmV0dXJuIG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CisJ
-cmV0dXJuIDA7CiB9CiAKIHZvaWQgbW9kdWxlX2FyY2hfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICpt
-b2QpCiB7CiAJZGVyZWdpc3Rlcl91bndpbmRfdGFibGUobW9kKTsKLQltb2R1bGVfYnVnX2NsZWFu
-dXAobW9kKTsKIH0KZGlmZiAtLWdpdCBhL2FyY2gvcG93ZXJwYy9rZXJuZWwvbW9kdWxlLmMgYi9h
-cmNoL3Bvd2VycGMva2VybmVsL21vZHVsZS5jCmluZGV4IDQ3N2M2NjMuLjRlZjkzYWUgMTAwNjQ0
-Ci0tLSBhL2FyY2gvcG93ZXJwYy9rZXJuZWwvbW9kdWxlLmMKKysrIGIvYXJjaC9wb3dlcnBjL2tl
-cm5lbC9tb2R1bGUuYwpAQCAtNjUsMTAgKzY1LDYgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25z
-dCBFbGZfRWhkciAqaGRyLAogCWNvbnN0IEVsZl9TaGRyICpzZWN0OwogCWludCBlcnI7CiAKLQll
-cnIgPSBtb2R1bGVfYnVnX2ZpbmFsaXplKGhkciwgc2VjaGRycywgbWUpOwotCWlmIChlcnIpCi0J
-CXJldHVybiBlcnI7Ci0KIAkvKiBBcHBseSBmZWF0dXJlIGZpeHVwcyAqLwogCXNlY3QgPSBmaW5k
-X3NlY3Rpb24oaGRyLCBzZWNoZHJzLCAiX19mdHJfZml4dXAiKTsKIAlpZiAoc2VjdCAhPSBOVUxM
-KQpAQCAtMTAxLDUgKzk3LDQgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBFbGZfRWhkciAq
-aGRyLAogCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQogewot
-CW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogfQpkaWZmIC0tZ2l0IGEvYXJjaC9zMzkwL2tlcm5l
-bC9tb2R1bGUuYyBiL2FyY2gvczM5MC9rZXJuZWwvbW9kdWxlLmMKaW5kZXggMjJjZmQ2My4uZjcx
-NjdlZSAxMDA2NDQKLS0tIGEvYXJjaC9zMzkwL2tlcm5lbC9tb2R1bGUuYworKysgYi9hcmNoL3Mz
-OTAva2VybmVsL21vZHVsZS5jCkBAIC00MDcsMTAgKzQwNyw5IEBAIGludCBtb2R1bGVfZmluYWxp
-emUoY29uc3QgRWxmX0VoZHIgKmhkciwKIHsKIAl2ZnJlZShtZS0+YXJjaC5zeW1pbmZvKTsKIAlt
-ZS0+YXJjaC5zeW1pbmZvID0gTlVMTDsKLQlyZXR1cm4gbW9kdWxlX2J1Z19maW5hbGl6ZShoZHIs
-IHNlY2hkcnMsIG1lKTsKKwlyZXR1cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYXJjaF9jbGVhbnVw
-KHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsKLQltb2R1bGVfYnVnX2NsZWFudXAobW9kKTsKIH0KZGlm
-ZiAtLWdpdCBhL2FyY2gvc2gva2VybmVsL21vZHVsZS5jIGIvYXJjaC9zaC9rZXJuZWwvbW9kdWxl
-LmMKaW5kZXggNDNhZGRkZi4uYWUwYmU2OSAxMDA2NDQKLS0tIGEvYXJjaC9zaC9rZXJuZWwvbW9k
-dWxlLmMKKysrIGIvYXJjaC9zaC9rZXJuZWwvbW9kdWxlLmMKQEAgLTE0OSwxMyArMTQ5LDExIEBA
-IGludCBtb2R1bGVfZmluYWxpemUoY29uc3QgRWxmX0VoZHIgKmhkciwKIAlpbnQgcmV0ID0gMDsK
-IAogCXJldCB8PSBtb2R1bGVfZHdhcmZfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7Ci0JcmV0
-IHw9IG1vZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CiAKIAlyZXR1cm4gcmV0
-OwogfQogCiB2b2lkIG1vZHVsZV9hcmNoX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQogewot
-CW1vZHVsZV9idWdfY2xlYW51cChtb2QpOwogCW1vZHVsZV9kd2FyZl9jbGVhbnVwKG1vZCk7CiB9
-CmRpZmYgLS1naXQgYS9hcmNoL3g4Ni9rZXJuZWwvbW9kdWxlLmMgYi9hcmNoL3g4Ni9rZXJuZWwv
-bW9kdWxlLmMKaW5kZXggZTBiYzE4Ni4uMWMzNTVjNSAxMDA2NDQKLS0tIGEvYXJjaC94ODYva2Vy
-bmVsL21vZHVsZS5jCisrKyBiL2FyY2gveDg2L2tlcm5lbC9tb2R1bGUuYwpAQCAtMjM5LDExICsy
-MzksMTAgQEAgaW50IG1vZHVsZV9maW5hbGl6ZShjb25zdCBFbGZfRWhkciAqaGRyLAogCQlhcHBs
-eV9wYXJhdmlydChwc2VnLCBwc2VnICsgcGFyYS0+c2hfc2l6ZSk7CiAJfQogCi0JcmV0dXJuIG1v
-ZHVsZV9idWdfZmluYWxpemUoaGRyLCBzZWNoZHJzLCBtZSk7CisJcmV0dXJuIDA7CiB9CiAKIHZv
-aWQgbW9kdWxlX2FyY2hfY2xlYW51cChzdHJ1Y3QgbW9kdWxlICptb2QpCiB7CiAJYWx0ZXJuYXRp
-dmVzX3NtcF9tb2R1bGVfZGVsKG1vZCk7Ci0JbW9kdWxlX2J1Z19jbGVhbnVwKG1vZCk7CiB9CmRp
-ZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L21vZHVsZS5oIGIvaW5jbHVkZS9saW51eC9tb2R1bGUu
-aAppbmRleCA4YTZiOWZkLi5hYWNlMDY2IDEwMDY0NAotLS0gYS9pbmNsdWRlL2xpbnV4L21vZHVs
-ZS5oCisrKyBiL2luY2x1ZGUvbGludXgvbW9kdWxlLmgKQEAgLTY4NiwxNyArNjg2LDE2IEBAIGV4
-dGVybiBpbnQgbW9kdWxlX3N5c2ZzX2luaXRpYWxpemVkOwogCiAKICNpZmRlZiBDT05GSUdfR0VO
-RVJJQ19CVUcKLWludCAgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBFbGZfRWhkciAqLCBjb25z
-dCBFbGZfU2hkciAqLAordm9pZCBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICos
-IGNvbnN0IEVsZl9TaGRyICosCiAJCQkgc3RydWN0IG1vZHVsZSAqKTsKIHZvaWQgbW9kdWxlX2J1
-Z19jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKik7CiAKICNlbHNlCS8qICFDT05GSUdfR0VORVJJQ19C
-VUcgKi8KIAotc3RhdGljIGlubGluZSBpbnQgIG1vZHVsZV9idWdfZmluYWxpemUoY29uc3QgRWxm
-X0VoZHIgKmhkciwKK3N0YXRpYyBpbmxpbmUgdm9pZCBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0
-IEVsZl9FaGRyICpoZHIsCiAJCQkJCWNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAogCQkJCQlzdHJ1
-Y3QgbW9kdWxlICptb2QpCiB7Ci0JcmV0dXJuIDA7CiB9CiBzdGF0aWMgaW5saW5lIHZvaWQgbW9k
-dWxlX2J1Z19jbGVhbnVwKHN0cnVjdCBtb2R1bGUgKm1vZCkge30KICNlbmRpZgkvKiBDT05GSUdf
-R0VORVJJQ19CVUcgKi8KZGlmZiAtLWdpdCBhL2tlcm5lbC9tb2R1bGUuYyBiL2tlcm5lbC9tb2R1
-bGUuYwppbmRleCBkMGI1ZjhkLi5lMmFlZGRkIDEwMDY0NAotLS0gYS9rZXJuZWwvbW9kdWxlLmMK
-KysrIGIva2VybmVsL21vZHVsZS5jCkBAIC0yNjI1LDYgKzI2MjUsNyBAQCBzdGF0aWMgc3RydWN0
-IG1vZHVsZSAqbG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJaWYgKGVyciA8IDApCiAJ
-CWdvdG8gZGRlYnVnOwogCisJbW9kdWxlX2J1Z19maW5hbGl6ZShpbmZvLmhkciwgaW5mby5zZWNo
-ZHJzLCBtb2QpOwogCWxpc3RfYWRkX3JjdSgmbW9kLT5saXN0LCAmbW9kdWxlcyk7CiAJbXV0ZXhf
-dW5sb2NrKCZtb2R1bGVfbXV0ZXgpOwogCkBAIC0yNjUwLDYgKzI2NTEsOCBAQCBzdGF0aWMgc3Ry
-dWN0IG1vZHVsZSAqbG9hZF9tb2R1bGUodm9pZCBfX3VzZXIgKnVtb2QsCiAJbXV0ZXhfbG9jaygm
-bW9kdWxlX211dGV4KTsKIAkvKiBVbmxpbmsgY2FyZWZ1bGx5OiBrYWxsc3ltcyBjb3VsZCBiZSB3
-YWxraW5nIGxpc3QuICovCiAJbGlzdF9kZWxfcmN1KCZtb2QtPmxpc3QpOworCW1vZHVsZV9idWdf
-Y2xlYW51cChtb2QpOworCiAgZGRlYnVnOgogCWlmICghbW9kLT50YWludHMpCiAJCWR5bmFtaWNf
-ZGVidWdfcmVtb3ZlKGluZm8uZGVidWcpOwpkaWZmIC0tZ2l0IGEvbGliL2J1Zy5jIGIvbGliL2J1
-Zy5jCmluZGV4IDdjZGZhZDguLjE5NTUyMDkgMTAwNjQ0Ci0tLSBhL2xpYi9idWcuYworKysgYi9s
-aWIvYnVnLmMKQEAgLTcyLDggKzcyLDggQEAgc3RhdGljIGNvbnN0IHN0cnVjdCBidWdfZW50cnkg
-Km1vZHVsZV9maW5kX2J1Zyh1bnNpZ25lZCBsb25nIGJ1Z2FkZHIpCiAJcmV0dXJuIE5VTEw7CiB9
-CiAKLWludCBtb2R1bGVfYnVnX2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVs
-Zl9TaGRyICpzZWNoZHJzLAotCQkJc3RydWN0IG1vZHVsZSAqbW9kKQordm9pZCBtb2R1bGVfYnVn
-X2ZpbmFsaXplKGNvbnN0IEVsZl9FaGRyICpoZHIsIGNvbnN0IEVsZl9TaGRyICpzZWNoZHJzLAor
-CQkJIHN0cnVjdCBtb2R1bGUgKm1vZCkKIHsKIAljaGFyICpzZWNzdHJpbmdzOwogCXVuc2lnbmVk
-IGludCBpOwpAQCAtOTcsOCArOTcsNiBAQCBpbnQgbW9kdWxlX2J1Z19maW5hbGl6ZShjb25zdCBF
-bGZfRWhkciAqaGRyLCBjb25zdCBFbGZfU2hkciAqc2VjaGRycywKIAkgKiBjb3VsZCBwb3RlbnRp
-YWxseSBsZWFkIHRvIGRlYWRsb2NrIGFuZCB0aHVzIGJlIGNvdW50ZXItcHJvZHVjdGl2ZS4KIAkg
-Ki8KIAlsaXN0X2FkZCgmbW9kLT5idWdfbGlzdCwgJm1vZHVsZV9idWdfbGlzdCk7Ci0KLQlyZXR1
-cm4gMDsKIH0KIAogdm9pZCBtb2R1bGVfYnVnX2NsZWFudXAoc3RydWN0IG1vZHVsZSAqbW9kKQo=
---0023547c8c07fe779e0491d34985--
+
+There are two problems with the way interrupts are accounted by the kernel.
+
+(1) Coarse grained interrupt time reporting
+On most archs (except s390, powerpc, ia64 with CONFIG_VIRT_CPU_ACCOUNTING),
+the interrupt and softirq time reported in /proc/stat is tick sample based.
+Kernel looks at what it is doing at each CPU tick and accounts the entire
+tick to that particular activity. This means the data in /proc/stat is
+pretty coarse grained.
+
+One related problem (atleast on x86), with recent
+"Run irq handlers with interrupts disabled" change, timer interrupt cannot
+fire when there is an interrupt being serviced [1]. As a result sampling based
+hardirq time in /proc/stat cannot capture any hardirq time at all.
+
+(2) Accounting irq processing time to current task/taskgroup
+Whenever irq processing happens, kernel accounts that time to currently
+running task. The exec_runtime reported in /proc/<pid>/schedstat and
+<cgroup>/cpuacct.usage* includes any irq processing that happened while
+the task was running. The scheduler vruntime calculations
+also account any irq processing to the current task. This means exec time
+accounting during heavy irq processing is kind of random, depending on
+when and which CPU processing happens and what task happened to be
+running on that CPU at that time.
+
+
+Solution to (1) involves adding extra timing on irq entry/exit to
+get the fine granularity info and then exporting it to user.
+The following patchset addresses this problem in a way similar to [2][3].
+Keeps most of the code that does the timing generic
+(CONFIG_IRQ_TIME_ACCOUNTING), based off of sched_clock(). And adds support for
+this in x86. This time is not yet exported to userspace yet. Patch for that
+coming soon.
+
+One partial solution proposed in [2][3] for (2) above, was to capture this
+interrupt time at task/taskgroup level and let user know how much irq
+processing time kernel charged to each task/taskgroup. But, that solution
+did not solve task timeslice including irq processing.
+Peter Zijlstra and Martin Schwidefsky disagreed with that approach and
+wanted to see more complete solution in not accounting irq processing time
+to tasks at all.
+
+The patchset below tries this more complete solution, with two scheduler
+related changes. First, to take out irq processing time from the time
+scheduler accounts to the task. Second, make adjustments to the CPU
+power, to account for irq processing activity on the CPU. That in turn
+results in irq busy CPU pulling tasks corresponding to its non-irq
+processing bandwidth that it has got.
+
+The changes here is only enabled for CONFIG_IRQ_TIME_ACCOUNTING as of now.
+
+Thanks,
+Venki
+
+References:
+
+[1] http://lkml.indiana.edu/hypermail//linux/kernel/1005.3/00864.html
+    lkml subject - "genirq: Run irq handlers with interrupts disabled"
+
+[2] http://lkml.indiana.edu/hypermail//linux/kernel/1005.3/00411.html
+    lkml subject - "Finer granularity and task/cgroup irq time accounting"
+
+[3] http://lkml.indiana.edu/hypermail//linux/kernel/1007.2/00987.html
+    lkml subject - "Finer granularity and task/cgroup irq time accounting"
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+
