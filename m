@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754402Ab0JEPVQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 11:21:16 -0400
-Received: from smtp208.alice.it ([82.57.200.104]:40417 "EHLO smtp208.alice.it"
+	id S1754331Ab0JEPVP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 11:21:15 -0400
+Received: from smtp205.alice.it ([82.57.200.101]:35088 "EHLO smtp205.alice.it"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754145Ab0JEPVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754104Ab0JEPVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Oct 2010 11:21:13 -0400
 From: Antonio Ospite <ospite@studenti.unina.it>
 To: linux-input@vger.kernel.org
 Cc: Antonio Ospite <ospite@studenti.unina.it>, Jiri Kosina <jkosina@suse.cz>,
         Alan Ott <alan@signal11.us>, Oliver Neukum <oliver@neukum.name>,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [PATCH 1/2] HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
-Date: Tue,  5 Oct 2010 17:20:16 +0200
-Message-Id: <1286292017-6746-2-git-send-email-ospite@studenti.unina.it>
+Subject: [PATCH 0/2] HID: hidraw, fix two NULL pointer dereferences
+Date: Tue,  5 Oct 2010 17:20:15 +0200
+Message-Id: <1286292017-6746-1-git-send-email-ospite@studenti.unina.it>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz>
 References: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz>
@@ -22,68 +22,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000028
-IP: [<ffffffffa02c66b4>] hidraw_ioctl+0xfc/0x32c [hid]
-[...]
+Hi,
 
-This is reproducible by disconnecting the device while userspace does
-ioctl in a loop and doesn't check return values in order to exit the
-loop, like in the following test program:
+here are some fixes to hidraw.
 
-int main(int argc, char *argv[])
-{
-	int fd = -1;
-	unsigned char name[256];
-	int ret;
+Patches are against 2.6.36-rc6, but they should be ported to other
+maintained stable kernels as well.
 
-	if (argc != 2) {
-		fprintf(stderr, "usage: %s </dev/hidrawX>\n", argv[0]);
-		exit(1);
-	}
+Antonio Ospite (2):
+  HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
+  HID: hidraw, fix a NULL pointer dereference in hidraw_write
 
-	fd = open(argv[1], O_RDWR);
-	if (fd < 0) {
-		perror("hidraw open");
-		exit(1);
-	}
+ drivers/hid/hidraw.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
 
-	while (1) {
-		ret = ioctl(fd, HIDIOCGRAWNAME(256), name);
-		printf("ret: %d name: %s\n", ret, name);
-	}
 
-	close(fd);
-	exit(0);
-}
+The first one has been sent already but I am resending it with
+stable@stable@kernel.org in the recipients list.
 
-Signed-off-by: Antonio Ospite <ospite@studenti.unina.it>
----
- drivers/hid/hidraw.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-index 47d70c5..9eaf6ae 100644
---- a/drivers/hid/hidraw.c
-+++ b/drivers/hid/hidraw.c
-@@ -244,6 +244,10 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
- 
- 	mutex_lock(&minors_lock);
- 	dev = hidraw_table[minor];
-+	if (!dev) {
-+		ret = -ENODEV;
-+		goto out;
-+	}
- 
- 	switch (cmd) {
- 		case HIDIOCGRDESCSIZE:
-@@ -317,6 +321,7 @@ static long hidraw_ioctl(struct file *file, unsigned int cmd,
- 
- 		ret = -ENOTTY;
- 	}
-+out:
- 	mutex_unlock(&minors_lock);
- 	return ret;
- }
+Thanks,
+   Antonio
+
 -- 
-1.7.1
+Antonio Ospite
+http://ao2.it
 
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
