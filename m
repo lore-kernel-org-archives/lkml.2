@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932434Ab0JEJH7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 05:07:59 -0400
-Received: from www.tglx.de ([62.245.132.106]:32997 "EHLO www.tglx.de"
+	id S932461Ab0JEJLA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 05:11:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7031 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755038Ab0JEJH5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 05:07:57 -0400
-Date: Tue, 5 Oct 2010 11:07:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH 15/22] x86: Copy-n-paste arch_teardown_msi_irqs from
- msi.c to io_apic.c.
-In-Reply-To: <1286216015-9710-16-git-send-email-konrad.wilk@oracle.com>
-Message-ID: <alpine.LFD.2.00.1010051055470.2556@localhost6.localdomain6>
-References: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com> <1286216015-9710-16-git-send-email-konrad.wilk@oracle.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932280Ab0JEJK7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 05:10:59 -0400
+Message-ID: <4CAAEB67.6090005@redhat.com>
+Date: Tue, 05 Oct 2010 11:09:59 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Ingo Molnar <mingo@elte.hu>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Jan Beulich <JBeulich@novell.com>,
+        heukelum@fastmail.fm, tglx@linutronix.de, akpm@linux-foundation.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: gas 2.16 and assembly macros -- entry_64.S build failure
+References: <20100916082816.GA25681@elte.hu> <4C91F3A30200007800016B64@vpn.id2.novell.com> <20100916101355.GA31458@elte.hu> <4C9219BC0200007800016C53@vpn.id2.novell.com> <4CA52AA5.5040402@zytor.com> <4CA9A69F.8000006@redhat.com> <4CA9F625.7090709@zytor.com> <4CA9FEE2.7000900@redhat.com> <4CAA1BA3.1010306@zytor.com> <4CAAD85B.7020607@redhat.com> <20101005075107.GC23608@elte.hu>
+In-Reply-To: <20101005075107.GC23608@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Oct 2010, Konrad Rzeszutek Wilk wrote:
+  On 10/05/2010 09:51 AM, Ingo Molnar wrote:
+> >
+> >  I suppose it isn't possible to refuse to build with the broken version?
+>
+> We could leave it build-broken and ask for a version specific quirk that
+> runs a simple sed script over the source to turns 'pushl_cfi' et al into
+> 'push', or so?
+>
 
-> In preparation for non-privileged domains to disable PCI devices'
-> MSI/MSIx, we need to augment arch_teardown_msi_irqs to make
-> a call to the privileged domain (patch to follow).
+Good idea.
 
-Can't we find a more clever solution than just copying stuff around ?
+-- 
+error compiling committee.c: too many arguments to function
 
-Something like this:
-
-diff --git a/drivers/pci/msi.c b/drivers/pci/msi.c
-index 69b7be3..36d607c 100644
---- a/drivers/pci/msi.c
-+++ b/drivers/pci/msi.c
-@@ -60,7 +60,12 @@ int arch_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
- #endif
- 
- #ifndef arch_teardown_msi_irqs
--void arch_teardown_msi_irqs(struct pci_dev *dev)
-+# define arch_teardown_msi_irqs default_teardown_msi_irqs
-+# define HAVE_DEFAULT_MSI_TEARDOWN_IRQS
-+#endif
-+
-+#ifdef HAVE_DEFAULT_MSI_TEARDOWN_IRQS
-+void default_teardown_msi_irqs(struct pci_dev *dev)
- {
- 	struct msi_desc *entry;
- 
-That way you can override arch_teardown_msi_irqs with x86_msi_ops, define
-HAVE_DEFAULT_MSI_TEARDOWN_IRQS in asm/msi.h and set the default
-pointer to default_teardown_msi_irqs().
-
-Thanks,
-
-	tglx
