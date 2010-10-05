@@ -1,82 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758031Ab0JEKGw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:06:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:53254 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755445Ab0JEKGv (ORCPT
+	id S932793Ab0JEKJN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:09:13 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:63992 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752557Ab0JEKJL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:06:51 -0400
-Date: Tue, 5 Oct 2010 12:06:49 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: javier Martin <javier.martin@vista-silicon.com>
-Cc: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 4/4] dmaengine: Add Freescale i.MX1/21/27 DMA driver
-Message-ID: <20101005100649.GL28242@pengutronix.de>
-References: <1285854995-6569-1-git-send-email-s.hauer@pengutronix.de> <1285854995-6569-5-git-send-email-s.hauer@pengutronix.de> <AANLkTikaAuBe=ef3vnt_xV0At4ZQbNsD4rFqtLF4R+0+@mail.gmail.com>
+	Tue, 5 Oct 2010 06:09:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=u19m2/4vgxR5Ws7W0rzChYO1Weh/QHry4rihSda6+nhLjnZsEvr13loZTpIXMsDVxR
+         RFAdIzkultd6rMG8WRixb426/wI4Idy03HlvplxNjHR5w9owHMsByPNzv+URPPYLB1oK
+         qL/yFHA3PHzesYb89av39RpuPPMG8O4vyQ0gw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikaAuBe=ef3vnt_xV0At4ZQbNsD4rFqtLF4R+0+@mail.gmail.com>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 12:05:17 up 94 days,  1:16, 27 users,  load average: 0.19, 0.27,
-	0.28
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <20101004092107.GJ4681@dastard>
+References: <201009161546.16909.ruirui.r.yang@tieto.com>
+	<20100917005227.GJ24409@dastard>
+	<20100920191355.GA28443@infradead.org>
+	<AANLkTi=45J+=ytj=NC4bYTVJFRakNQQiFd35K7mrf+Gq@mail.gmail.com>
+	<4CA997DF.5030008@kernel.org>
+	<20101004092107.GJ4681@dastard>
+Date: Tue, 5 Oct 2010 12:09:10 +0200
+Message-ID: <AANLkTi=3jjoCtYoK0endt8OM=omygO284WN2ZQZ=jceo@mail.gmail.com>
+Subject: Re: -mm: xfs lockdep warning
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Tejun Heo <tj@kernel.org>, Christoph Hellwig <hch@infradead.org>,
+        Yang Ruirui <ruirui.r.yang@tieto.com>,
+        Andrew Morton <akpm@linux-foundation.org>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Javier,
+On Mon, Oct 4, 2010 at 11:21 AM, Dave Chinner <david@fromorbit.com> wrote:
+> On Mon, Oct 04, 2010 at 11:01:19AM +0200, Tejun Heo wrote:
+>> Hello,
+>>
+>> On 09/25/2010 03:08 PM, Torsten Kaiser wrote:
+>> > [adding Tejun Heo, because I'm partly blaming his workqueues]
+>>
+>> :-) Sorry about the delay.  I was away the last week.
+>>
+>> > After that I enabled lockdep and retried the same update: This time no
+>> > hang, only the same lockdep report that Yang Ruirui had.
+>> >
+>> > So I'm currently at a loss how I should continue from here. The XFS
+>> > false positive drowns any other lockdep problems, but XFS had some
+>> > hang problems with the new workqueues. (Personally I had no other hang
+>> > with earlier 2.6.36-rcs)
+>
+> What XFS hang problem? I've seen temporary livelocks from the new
+> workqueue code, but thay have been fixed. I haven't come across any
+> deadlocks or hangs. Do you have a pointer to a bug report in case my
+> memory is failing me?
 
-On Tue, Oct 05, 2010 at 09:45:10AM +0200, javier Martin wrote:
-> Hi Sascha,
-> 
-> 
-> +
-> > +struct imxdma_channel {
-> > +       struct imxdma_engine            *imxdma;
-> > +       unsigned int                    channel;
-> > +       unsigned int                    imxdma_channel;
-> > +
-> > +       enum dma_data_direction         direction;
-> > +       enum dma_slave_buswidth         word_size;
-> > +       dma_addr_t                      bd_phys;
-> > +       unsigned long                   flags;
-> > +       dma_addr_t                      per_address;
-> > +       u32                             watermark_level;
-> > +       struct dma_chan                 chan;
-> > +       spinlock_t                      lock;
-> > +       struct dma_async_tx_descriptor  desc;
-> > +       dma_cookie_t                    last_completed;
-> > +       enum dma_status                 status;
-> > +       int                             dma_request;
-> > +       struct scatterlist              *sg_list;
-> > +};
-> > +
-> > +#define MAX_DMA_CHANNELS 8
-> >
-> 
->  i.MX27 has 16 DMA channels. Maybe an #ifdef would solve the issue.
+I was referring to the hang that prompted to increase of the priority
+of the xfslogd thread. Its commit
+51749e47e191db8e588ad5cebea731caf7b705d7 in Linus' tree. But it seems
+I have misremembered that one as a hang.
 
-This is by intention. I want to reserve 8 channels for the old driver
-and the remaining 8 for the dmaengine driver. This way we can have both
-in the tree and use both drivers parallel. This can be changed to the
-real value once the old driver is gone.
+The hang I have seen is describe here:
+http://marc.info/?l=linux-kernel&m=128542018414916&w=2
 
-Sascha
+As 2.6.36-rc5 already includes this priority fix, I believe this hang
+is something different and wrote that mail.
 
+>> If workqueue lockdep annotations are triggering spuriously, just nuke
+>> all lockdep annotations in workqueue.c.  Currently the annotations are
+>> the same as before and trigger even when an actual deadlock won't
+>> happen anymore around flushes (but then again all the current users
+>> should be operating under the same constraints as before).  I'm
+>> looking into how to improve the lockdep annotations but in the end it
+>> might be best to leave it as it is.  I'll try to analyze the warnings.
+>
+> It looks like there's been some discussion that has been private so
+> I'm clueless as to the context being discussed here.  Can someone
+> fill me in on whatever is going on?
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+I only send the above message both to the lkml and the XFS mailing list.
+
+But it could have been wrong to make it a reply in this thread,
+because now there are three different things mixed up.
+
+1) the old livelock, that I was referring too -> That is already fixed
+in mainline, I just wanted to note, that this is unrelated to the hang
+I have seen.
+2) the hang with 2.6.35-rc5 I have seen twice (triggered probably by
+high load while building KOffice on an tmpfs)
+3) the lockdep issue that started this thread and that I am seeing in
+mainline 2.6.36-rc5 and -rc6 and that seems to be rather easy to
+trigger for me.
+
+Because 3) is regarded as a false positive, it should not be the cause
+of 2). But because 3) triggers on my system I can't see if lockdep
+might give better pointers to what might be the real cause of 2).
+
+So, I would like to test the patch Christoph was testing in
+http://marc.info/?l=linux-kernel&m=128501006509743&w=2 to see, if that
+helps to debug my hang. (And because I did not see that patch on the
+lkml, I replied to Christophs mail.)
+
+I CC'ed Tejun, because I believe the primary suspect for my hang was
+the stuck kworker/u:8:845 and I was hoping he might see something
+obvious wrong in that stacktrace.
+
+Torsten
