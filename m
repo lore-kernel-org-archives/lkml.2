@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab0JEHA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 03:00:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40974 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932414Ab0JEHA6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 03:00:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 5 Oct 2010 15:55:35 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 06/10] memcg: add kernel calls for memcg dirty page
- stats
-Message-Id: <20101005155535.735a3810.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1286175485-30643-7-git-send-email-gthelen@google.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-7-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757604Ab0JEHEq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 03:04:46 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:37244 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754788Ab0JEHEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 03:04:45 -0400
+Date: Tue, 5 Oct 2010 09:01:23 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the lost-spurious-irq tree with the
+ tip tree
+Message-ID: <20101005070123.GF12267@elte.hu>
+References: <20101005141334.6a0f15fd.sfr@canb.auug.org.au>
+ <4CAABC0E.3030700@kernel.org>
+ <20101005063227.GB12267@elte.hu>
+ <20101005174524.b62d14a1.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101005174524.b62d14a1.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  3 Oct 2010 23:58:01 -0700
-Greg Thelen <gthelen@google.com> wrote:
 
-> Add calls into memcg dirty page accounting.  Notify memcg when pages
-> transition between clean, file dirty, writeback, and unstable nfs.
-> This allows the memory controller to maintain an accurate view of
-> the amount of its memory that is dirty.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> Signed-off-by: Andrea Righi <arighi@develer.com>
+* Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
-Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Not sure what I can do beyond making sure that all relevant people are 
+> informed about what trees are being merged. [...]
+
+Fortunately there's a really simple solution: wait for an explicit reply 
+from a maintainer before adding a new-feature tree. (Solicite again via 
+a To: email if the Cc: went unanswered by the maintainers.)
+
+Could you please start using that method for all subsystems i 
+co-maintain?
+
+Thanks,
+
+	Ingo
 
