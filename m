@@ -1,103 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757576Ab0JEGZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 02:25:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:39321 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757548Ab0JEGZw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 02:25:52 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 5 Oct 2010 15:20:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 01/10] memcg: add page_cgroup flags for dirty page
- tracking
-Message-Id: <20101005152028.32c8c5ba.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1286175485-30643-2-git-send-email-gthelen@google.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-2-git-send-email-gthelen@google.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932179Ab0JEGco (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 02:32:44 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34676 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754647Ab0JEGcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 02:32:43 -0400
+Date: Tue, 5 Oct 2010 08:32:27 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the lost-spurious-irq tree with the
+ tip tree
+Message-ID: <20101005063227.GB12267@elte.hu>
+References: <20101005141334.6a0f15fd.sfr@canb.auug.org.au>
+ <4CAABC0E.3030700@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CAABC0E.3030700@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0299]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  3 Oct 2010 23:57:56 -0700
-Greg Thelen <gthelen@google.com> wrote:
 
-> Add additional flags to page_cgroup to track dirty pages
-> within a mem_cgroup.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+* Tejun Heo <tj@kernel.org> wrote:
 
-Ack...oh, but it seems I've signed. Thanks.
--Kame
+> > I think I fixed it all up (see below).  I can carry this fix (or a 
+> > better one) as necessary.
+> 
+> Can you please drop lost-spurious-irq for now?  It needs to be 
+> reimplemented.  I'll send a merge request again when it's ready.
 
-> ---
->  include/linux/page_cgroup.h |   23 +++++++++++++++++++++++
->  1 files changed, 23 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 5bb13b3..b59c298 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -40,6 +40,9 @@ enum {
->  	PCG_USED, /* this object is in use. */
->  	PCG_ACCT_LRU, /* page has been accounted for */
->  	PCG_FILE_MAPPED, /* page is accounted as "mapped" */
-> +	PCG_FILE_DIRTY, /* page is dirty */
-> +	PCG_FILE_WRITEBACK, /* page is under writeback */
-> +	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
->  	PCG_MIGRATION, /* under page migration */
->  };
->  
-> @@ -59,6 +62,10 @@ static inline void ClearPageCgroup##uname(struct page_cgroup *pc)	\
->  static inline int TestClearPageCgroup##uname(struct page_cgroup *pc)	\
->  	{ return test_and_clear_bit(PCG_##lname, &pc->flags);  }
->  
-> +#define TESTSETPCGFLAG(uname, lname)			\
-> +static inline int TestSetPageCgroup##uname(struct page_cgroup *pc)	\
-> +	{ return test_and_set_bit(PCG_##lname, &pc->flags);  }
-> +
->  TESTPCGFLAG(Locked, LOCK)
->  
->  /* Cache flag is set only once (at allocation) */
-> @@ -80,6 +87,22 @@ SETPCGFLAG(FileMapped, FILE_MAPPED)
->  CLEARPCGFLAG(FileMapped, FILE_MAPPED)
->  TESTPCGFLAG(FileMapped, FILE_MAPPED)
->  
-> +SETPCGFLAG(FileDirty, FILE_DIRTY)
-> +CLEARPCGFLAG(FileDirty, FILE_DIRTY)
-> +TESTPCGFLAG(FileDirty, FILE_DIRTY)
-> +TESTCLEARPCGFLAG(FileDirty, FILE_DIRTY)
-> +TESTSETPCGFLAG(FileDirty, FILE_DIRTY)
-> +
-> +SETPCGFLAG(FileWriteback, FILE_WRITEBACK)
-> +CLEARPCGFLAG(FileWriteback, FILE_WRITEBACK)
-> +TESTPCGFLAG(FileWriteback, FILE_WRITEBACK)
-> +
-> +SETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +CLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +TESTPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +TESTCLEARPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +TESTSETPCGFLAG(FileUnstableNFS, FILE_UNSTABLE_NFS)
-> +
->  SETPCGFLAG(Migration, MIGRATION)
->  CLEARPCGFLAG(Migration, MIGRATION)
->  TESTPCGFLAG(Migration, MIGRATION)
-> -- 
-> 1.7.1
-> 
-> 
+Please send irq merge requests to Thomas instead and wait for those 
+genirq bits to show up upstream. (You did so in the past and the review 
+process was ongoing AFAICS)
 
+Otherwise we would be dilluting linux-next testing with random side 
+effects from a tree that wasnt yet (in that form) scheduled to go 
+upstream by its respective maintainer at that time.
+
+We were lucky that this showed up as merge complications - what if 
+instead it merged 'fine' on the textual and build/boot level but 
+mis-merged on the functional level in subtle ways? Thomas would be 
+sending something to Linus that was never really tested in linux-next in 
+that form, caused problems upstream, and Linus would be rightfully upset 
+about the situation.
+
+Stephen, you need to enforce such things ...
+
+Thanks,
+
+	Ingo
