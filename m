@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757833Ab0JEHwl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 03:52:41 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:36027 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755360Ab0JEHwk (ORCPT
+	id S1757821Ab0JEHx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 03:53:57 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:29628 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755360Ab0JEHx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 03:52:40 -0400
-Subject: Re: [PATCH] Added firmware load patch to crap directory. This
- patch loads firmware from btusb when device is plugged in.
-From: Marcel Holtmann <marcel@holtmann.org>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: Bala Shanmugam <sbalashanmugam@atheros.com>,
-        linux-wireless@vger.kernel.org, linux-bluetooth@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTinjiJ6FyoAi4aP=8pr9EwV0wpV7LtwQx-hwaOFs@mail.gmail.com>
-References: <1285931572-3592-1-git-send-email-sbalashanmugam@atheros.com>
-	 <AANLkTinjiJ6FyoAi4aP=8pr9EwV0wpV7LtwQx-hwaOFs@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Oct 2010 09:52:35 +0200
-Message-ID: <1286265155.17473.25.camel@aeonflux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Oct 2010 03:53:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=HgmZYTqR4u/fuavRtszE41ifWCuB/RRot0uEcBSfcqtfZM0eDZiAht472x5umzt+MN
+         LBZjie98uHt569VK003A==
+From: Michel Lespinasse <walken@google.com>
+To: linux-mm@kvack.org, Linus Torvalds <torvalds@linux-foundation.org>,
+        Ying Han <yinghan@google.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 0/3] V2: Reduce mmap_sem hold times during file backed page faults
+Date: Tue,  5 Oct 2010 00:53:32 -0700
+Message-Id: <1286265215-9025-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+This is the second iteration of our change dropping mmap_sem when a disk
+access occurs during a page fault to a file backed VMA.
 
-> > Marcel feels that Atheros sflash based BT device
-> > +doesn't follow bluetooth H:2 specification and HCI commands should be supported
-> > +in firmware if it is detected as bluetooth device. Using HCI command, firmware
-> > +should be loaded.
-> > +
-> > +In sfash based device we don't have enough memory to support HCI commands in firmware.
-> > +So load firmware from btusb when the device comes up.
-> > +
-> 
-> You should still ask the maintainer for an alternative, otherwise the
-> device unusable. Did you submit the patch first in [PATCH] form? If
-> not please submit the patch, all I saw as an RFC and no followup at
-> all.
+Changes since V1:
+- Cleaned up 'Retry page fault when blocking on disk transfer' applying
+  linus's suggestions
+- Added 'access_error API cleanup'
 
-I think it is pretty clear how these devices should be designed when it
-comes to firmware loading. Just having different USB PIDs for firmware
-loading stage and fully functional Bluetooth device stage is not that
-hard to do. Other companies have done this.
+Tests:
 
-If you device claims Bluetooth USB class descriptors, then it should
-behave like that and offer HCI protocol running on it.
+- microbenchmark: thread A mmaps a large file and does random read accesses
+  to the mmaped area - achieves about 55 iterations/s. Thread B does
+  mmap/munmap in a loop at a separate location - achieves 55 iterations/s
+  before, 15000 iterations/s after.
+- We are seeing related effects in some applications in house, which show
+  significant performance regressions when running without this change.
+- I am looking for a microbenchmark to expose the worst case overhead of
+  the page fault retry. Would FIO be a good match for that use ?
 
-Regards
+Michel Lespinasse (3):
+  filemap_fault: unique path for locking page
+  Retry page fault when blocking on disk transfer.
+  access_error API cleanup
 
-Marcel
-
-
+ arch/x86/mm/fault.c |   44 +++++++++++++++++++++++++++++---------------
+ include/linux/mm.h  |    2 ++
+ mm/filemap.c        |   41 ++++++++++++++++++++++++++++++++---------
+ mm/memory.c         |    3 ++-
+ 4 files changed, 65 insertions(+), 25 deletions(-)
