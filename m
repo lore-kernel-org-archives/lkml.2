@@ -1,117 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab0JED0l (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 23:26:41 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41228 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752960Ab0JED0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 23:26:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=SFJ71uOEgZHBRuBY0lHDVBwHL7U7Txb75SXDgDYXEt0zXsN/81FI2f6hzTs/U/nEla
-         0x/7fhXgjilXT/QW3DaQvR6sf1S/5+fZvX1mGjTnjou0DaPMTSJuXRw65RqTAPke/eXu
-         c3cQ+IJXzYf6PibpS1cMl6f4ibl9LBuSqD/Ao=
+	id S1757357Ab0JEDca (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 23:32:30 -0400
+Received: from qmta10.emeryville.ca.mail.comcast.net ([76.96.30.17]:53035 "EHLO
+	qmta10.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753603Ab0JEDc3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 23:32:29 -0400
+Date: Mon, 4 Oct 2010 20:30:28 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] kbuild: remove duplicate -I flag in addtree
+Message-ID: <20101005033028.GD10162@haskell.muteddisk.com>
+Mail-Followup-To: Michal Marek <mmarek@suse.cz>,
+	linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <1285553472-924-1-git-send-email-mfm@muteddisk.com>
+ <20101004151045.GA5637@sepie.suse.cz>
 MIME-Version: 1.0
-Date: Tue, 5 Oct 2010 11:26:38 +0800
-Message-ID: <AANLkTimHw3VhnTj4P9s3RgEUiyqsTHdSmSimBVGvS-g4@mail.gmail.com>
-Subject: [PATCH] perf: fix not exit when fork error
-From: jovi zhang <bookjovi@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20101004151045.GA5637@sepie.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o953Qnhr015124
 
-fix one bug(not exit when fork error in builtin-stat.c), also unify
-some exit code usage.
+On 17:10 Mon 04 Oct     , Michal Marek wrote:
+> On Sun, Sep 26, 2010 at 07:11:12PM -0700, matt mooney wrote:
+> > When O= is used, any -I flag given that is not an absolute path gets
+> > duplicated. The $(1) appended to the conditional clause covers the
+> > absolute case, but due to being outside of the conditional statement
+> > it gets added everytime.
+> > 
+> > Signed-off-by: matt mooney <mfm@muteddisk.com>
+> > ---
+> >  scripts/Kbuild.include |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/scripts/Kbuild.include b/scripts/Kbuild.include
+> > index ed2773e..08c74ed 100644
+> > --- a/scripts/Kbuild.include
+> > +++ b/scripts/Kbuild.include
+> > @@ -158,7 +158,7 @@ modbuiltin := -f $(if $(KBUILD_SRC),$(srctree)/)scripts/Makefile.modbuiltin obj
+> >  # Prefix -I with $(srctree) if it is not an absolute path.
+> >  # skip if -I has no parameter
+> >  addtree = $(if $(patsubst -I%,%,$(1)), \
+> > -$(if $(filter-out -I/%,$(1)),$(patsubst -I%,-I$(srctree)/%,$(1))) $(1))
+> > +$(if $(filter-out -I/%,$(1)),$(patsubst -I%,-I$(srctree)/%,$(1)),$(1)))
+> 
+> $ mkdir _build-new; make O=_build-new defconfig; make O=_build-new V=1 all
+> fails with
+> 
+>   perl /home/mmarek/linux-2.6/kernel/timeconst.pl 1000 > kernel/timeconst.h
+>   gcc -Wp,-MD,kernel/.time.o.d  -nostdinc -isystem /usr/lib64/gcc/x86_64-suse-linux/4.5/include -I/home/mmarek/linux-2.6/arch/x86/include -Iinclude  -I/home/mmarek/linux-2.6/include -include include/generated/autoconf.h  -I/home/mmarek/linux-2.6/kernel -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -m64 -mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=2048 -fno-stack-protector -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(time)"  -D"KBUILD_MODNAME=KBUILD_STR(time)"  -c -o kernel/time.o /home/mmarek
+> /linux-2.6/kernel/time.c
+> /home/mmarek/linux-2.6/kernel/time.c:44:23: fatal error: timeconst.h: No such file or directory
+> 
+> The correct gcc line without your patch is 
+>   gcc -Wp,-MD,kernel/.time.o.d  -nostdinc -isystem /usr/lib64/gcc/x86_64-suse-linux/4.5/include -I/home/mmarek/linux-2.6/arch/x86/include -Iinclude  -I/home/mmarek/linux-2.6/include -include include/generated/autoconf.h  -I/home/mmarek/linux-2.6/kernel -Ikernel -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -Os -m64 -mtune=generic -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -DCONFIG_AS_CFI_SECTIONS=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=2048 -fno-stack-protector -fno-omit-frame-pointer -fno-optimize-sibling-calls -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack    -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(time)"  -D"KBUILD_MODNAME=KBUILD_STR(time)"  -c -o kernel/time.o /ho
+> me/mmarek/linux-2.6/kernel/time.c
+> 
+> The difference is that with your patch it is lacking the -Ikernel
+> include, so it does not search for generated header files in $(obj).
 
-Signed-off-by: jovi zhang <bookjovi@gmail.com>
-tools/perf/builtin-stat.c |    7 +++++--
-tools/perf/builtin-top.c  |    6 +++---
-tools/perf/perf.c         |    4 ++--
-3 files changed, 10 insertions(+), 7 deletions(-)
+Ugh! I tested it for an external module and I built every driver under media/
+thinking this covered all cases. I completely forgot about generated files.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a6b4d44..fe3e044 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -285,12 +285,15 @@ static int run_perf_stat(int argc __used, const
-char **argv)
-
-      if (forks && (pipe(child_ready_pipe) < 0 || pipe(go_pipe) < 0)) {
-              perror("failed to create pipes");
--               exit(1);
-+               exit(-1);
-      }
-
-      if (forks) {
--               if ((child_pid = fork()) < 0)
-+               child_pid = fork();
-+               if (child_pid < 0) {
-                      perror("failed to fork");
-+                       exit(-1);
-+               }
-
-              if (!child_pid) {
-                      close(child_ready_pipe[0]);
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index b513e40..d0e646c 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -1047,7 +1047,7 @@ static void event__process_sample(const event_t *self,
-                  RB_EMPTY_ROOT(&al.map->dso->symbols[MAP__FUNCTION])) {
-                      pr_err("The %s file can't be used\n",
-                             symbol_conf.vmlinux_name);
--                       exit(1);
-+                       exit(-1);
-              }
-
-              return;
-@@ -1066,7 +1066,7 @@ static void event__process_sample(const event_t *self,
-                              machine__fprintf_vmlinux_path(machine, stderr);
-                      } else
-                              pr_err(".\n");
--                       exit(1);
-+                       exit(-1);
-              }
-      }
-
-@@ -1439,7 +1439,7 @@ int cmd_top(int argc, const char **argv, const
-char *prefix __used)
-              default_interval = freq;
-      } else {
-              fprintf(stderr, "frequency and count are zero, aborting\n");
--               exit(EXIT_FAILURE);
-+               exit(-1);
-      }
-
-      /*
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index cdd6c03..2d4601f 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -468,7 +468,7 @@ int main(int argc, const char **argv)
-              printf("\n usage: %s\n\n", perf_usage_string);
-              list_common_cmds_help();
-              printf("\n %s\n\n", perf_more_info_string);
--               exit(1);
-+               exit(-1);
-      }
-      cmd = argv[0];
-
-@@ -492,7 +492,7 @@ int main(int argc, const char **argv)
-                      fprintf(stderr, "Expansion of alias '%s' failed; "
-                              "'%s' is not a perf-command\n",
-                              cmd, argv[0]);
--                       exit(1);
-+                       exit(-1);
-              }
-              if (!done_help) {
-                      cmd = argv[0] = help_unknown_cmd(cmd);
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Thanks,
+mfm
