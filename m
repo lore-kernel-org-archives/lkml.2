@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab0JEDBM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 23:01:12 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:55642 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753423Ab0JEDBL convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 23:01:11 -0400
-MIME-Version: 1.0
-In-Reply-To: <1286233776.2463.329.camel@pasglop>
-References: <E1P2Tqn-0004gj-W1@jdl.com> <20101004165212.GC13749@angua.secretlab.ca>
- <1286233776.2463.329.camel@pasglop>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 4 Oct 2010 21:00:50 -0600
-X-Google-Sender-Auth: K5Lfp3o4e_TaLlvGmk4x7li_0RI
-Message-ID: <AANLkTimGtuq8+yA121xg0tVQ=Z=nqfzUG6BC8YqzX3Qh@mail.gmail.com>
-Subject: Re: [PATCH] Globally s/struct irq_host/struct irq_domain/
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Jon Loeliger <jdl@jdl.com>, linux-kernel@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756724Ab0JEDNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 23:13:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43132 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753423Ab0JEDNJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 23:13:09 -0400
+Date: Tue, 5 Oct 2010 14:12:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: linux-next: manual merge of the lost-spurious-irq tree with the tip
+ tree
+Message-Id: <20101005141258.af27dee9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 4, 2010 at 5:09 PM, Benjamin Herrenschmidt
-<benh@kernel.crashing.org> wrote:
-> On Mon, 2010-10-04 at 10:52 -0600, Grant Likely wrote:
->> On Sun, Oct 03, 2010 at 02:03:57PM -0500, Jon Loeliger wrote:
->> >
->> > Just rename the irq_host structure as irq_domain to lessen the
->> > confusion around the word "host".  Updated a few comments and
->> > error messages to use "irq_domain" when refering to the structure.
->> >
->> > Suggested by Ben Herrenschmidt on the device-tree mailing list.
->> >
->> > Signed-off-by: Jon Loeliger <jdl@jdl.com>
->> > ---
->> >
->> > Grant requested one giant patch simply renaming the structure.
->>
->> Thanks Jon,
->>
->> However, considering that tglx has already embarked on his Grand IRQ
->> Subsystem Cleanup, I suspect that this will end up just getting in the
->> way unless he picks it up into his queue.  It may even by that the
->> need for irq_host will disappear once Thomas is finished by merging it
->> into the core code.  I'd like to sit tight on this until the details
->> of what powerpc virqs can be worked out with Ben and Thomas.
->
-> I doubt the need for irq_host will disappear. However I don't see that
-> going into the core under that name, so I think the rename is a very
-> valid thing to do now. We just need to sync the patches to avoid pure
-> mechanical clash.
->
-> Thomas initial series doesn't yet generalize the virq layer and that
-> will take a bit longer, so I'm happy to see Jon stuff go upstream first.
+Hi Tejun,
 
-Alright, should tglx pick up this patch, or do you want to carry it in
-the powerpc tree?
+Today's linux-next merge of the lost-spurious-irq tree got a conflict in
+kernel/irq/internals.h between commits
+a77c4635915021c646cc017f22239e66d1aab4d5 ("genirq: Add new functions to
+dummy chips") and bd151412263a67b5321e9dd1d5b4bf6d96fdebf3 ("genirq:
+Provide config option to disable deprecated code") from the tip tree and
+commits 32b5d378f49485f3ae172eb0ac2bfc4ebbbdb060 ("irq: cleanup
+irqfixup") and 80f97e2b33c3e66c11b10abd2890506a3abeb320 ("irq: make
+spurious poll timer per desc") from the lost-spurious-irq tree.
 
-g.
+Just context changes.  I fixed it up (see below) and can carry the fixes
+as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
->
-> What hopefully will go away is the big irq_map array, I hope to put the
-> domain & hw_number information in the irq_desc or irq_data eventually.
->
->> Also, sorry for sending you down this rabbit hole.  When I suggested
->> this I didn't realize how quickly Thomas was going to get started on
->> his rework.
->
-> Cheers,
-> Ben.
->
+diff --cc kernel/irq/internals.h
+index b905f0a,1b24309..0000000
+--- a/kernel/irq/internals.h
++++ b/kernel/irq/internals.h
+@@@ -2,10 -2,6 +2,8 @@@
+   * IRQ subsystem internal functions and variables:
+   */
+  
+- extern int noirqdebug;
+- 
+ +#define irq_data_to_desc(data)	container_of(data, struct irq_desc, irq_data)
+ +
+  /* Set default functions for irq_chip structures: */
+  extern void irq_chip_set_defaults(struct irq_chip *chip);
+  
+@@@ -42,27 -38,23 +40,33 @@@ extern int irq_select_affinity_usr(unsi
+  
+  extern void irq_set_thread_affinity(struct irq_desc *desc);
+  
+ +#ifndef CONFIG_GENERIC_HARDIRQS_NO_DEPRECATED
+ +static inline void irq_end(unsigned int irq, struct irq_desc *desc)
+ +{
+ +	if (desc->irq_data.chip && desc->irq_data.chip->end)
+ +		desc->irq_data.chip->end(irq);
+ +}
+ +#else
+ +static inline void irq_end(unsigned int irq, struct irq_desc *desc) { }
+ +#endif
+ +
++ extern void poll_irq(unsigned long arg);
++ extern void irq_poll_action_added(struct irq_desc *desc,
++ 				  struct irqaction *action);
++ extern void irq_poll_action_removed(struct irq_desc *desc,
++ 				    struct irqaction *action);
++ 
+  /* Inline functions for support of irq chips on slow busses */
+ -static inline void chip_bus_lock(unsigned int irq, struct irq_desc *desc)
+ +static inline void chip_bus_lock(struct irq_desc *desc)
+  {
+ -	if (unlikely(desc->chip->bus_lock))
+ -		desc->chip->bus_lock(irq);
+ +	if (unlikely(desc->irq_data.chip->irq_bus_lock))
+ +		desc->irq_data.chip->irq_bus_lock(&desc->irq_data);
+  }
+  
+ -static inline void chip_bus_sync_unlock(unsigned int irq, struct irq_desc *desc)
+ +static inline void chip_bus_sync_unlock(struct irq_desc *desc)
+  {
+ -	if (unlikely(desc->chip->bus_sync_unlock))
+ -		desc->chip->bus_sync_unlock(irq);
+ +	if (unlikely(desc->irq_data.chip->irq_bus_sync_unlock))
+ +		desc->irq_data.chip->irq_bus_sync_unlock(&desc->irq_data);
+  }
+  
+  /*
+@@@ -76,11 -68,11 +80,11 @@@
+  static inline void print_irq_desc(unsigned int irq, struct irq_desc *desc)
+  {
+  	printk("irq %d, desc: %p, depth: %d, count: %d, unhandled: %d\n",
+- 		irq, desc, desc->depth, desc->irq_count, desc->irqs_unhandled);
++ 		irq, desc, desc->depth, desc->spr.nr_samples, desc->spr.nr_bad);
+  	printk("->handle_irq():  %p, ", desc->handle_irq);
+  	print_symbol("%s\n", (unsigned long)desc->handle_irq);
+ -	printk("->chip(): %p, ", desc->chip);
+ -	print_symbol("%s\n", (unsigned long)desc->chip);
+ +	printk("->irq_data.chip(): %p, ", desc->irq_data.chip);
+ +	print_symbol("%s\n", (unsigned long)desc->irq_data.chip);
+  	printk("->action(): %p\n", desc->action);
+  	if (desc->action) {
+  		printk("->action->handler(): %p, ", desc->action->handler);
