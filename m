@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab0JEVEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 17:04:08 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45079 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754141Ab0JEVEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755473Ab0JEVEG (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Oct 2010 17:04:06 -0400
-Message-ID: <4CAB92B0.2030707@ti.com>
-Date: Tue, 5 Oct 2010 16:03:44 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+Received: from mail.candelatech.com ([208.74.158.172]:50041 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753571Ab0JEVEE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 17:04:04 -0400
+Message-ID: <4CAB92C2.9060007@candelatech.com>
+Date: Tue, 05 Oct 2010 14:04:02 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Kevin Hilman <khilman@deeprootsystems.com>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        Paul <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v5] power: introduce library for device-specific OPPs
-References: <1285933174-24053-1-git-send-email-nm@ti.com>	<201010050036.23179.rjw@sisk.pl> <4CAB228C.7030902@ti.com>	<201010052244.11403.rjw@sisk.pl> <8739skpdo9.fsf@deeprootsystems.com>
-In-Reply-To: <8739skpdo9.fsf@deeprootsystems.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: suspicious rcu_dereference_check at kernel/sched.c:618
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Hilman had written, on 10/05/2010 03:50 PM, the following:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
->> On Tuesday, October 05, 2010, Nishanth Menon wrote:
->>> Rafael J. Wysocki had written, on 10/04/2010 05:36 PM, the following:
->>>> On Friday, October 01, 2010, Nishanth Menon wrote:
-> 
-> [...]
-> 
->>>> I'm not really sure why so many mutexes are needed here.  I don't think you
->>>> need a separate mutex in every struct device_opp object.  I'd just use
->>>> dev_opp_list_lock for everything.
->>> I did consider using  dev_opp_list_lock to lock everything *but* here is 
->>> the contention:
->>>
->>> dev_opp_list_lock locks modification for addition of domains device. 
->>> This operation happens usually during init stage.
->>>
->>> each domain device has multiple opps, new opps can be added, but the 
->>> more often usage will probably be opp_enable and disable. domain are 
->>> usually modifiable independent of each other - device_opp->lock provides 
->>> device level lock allowing for each domain device opp list to be 
->>> modified independent of each other. e.g. on thermal overage we may 
->>> choose to lower mpu domain while a coprocessor driver in parallel might 
->>> choose to disable co-processor domain in parallel.
->>>
->>> Wondering why you'd like a single lock for all domains and restrict 
->>> parallelization?
->> Because of the simplicity, mostly.  If there's only a relatively short period
->> when the lock will be contended for, that still is not too bad and it's much
->> easier to get the synchronization right with just one lock for starters.
-> 
-> FWIW, I agree with Rafael
-> 
-> These are not going be highly contended locks, and the lock durations
-> are very short, so simplifying the locking is a big win for readability.
-> 
-> Kevin
-Fair enough. we can relook if the lock becomes a contended lock in the 
-future. I do agree that simplifying the locking will benefit 
-readability. Will post a v6 with a singular lock and updated 
-documentation for the same.
+This is from a wireless-testing tree (2.6.36-rc6 + wireless hacks).
+
+I see this fairly often, and would be happy to test patches :)
+
+===================================================
+[ INFO: suspicious rcu_dereference_check() usage. ]
+---------------------------------------------------
+/home/greearb/git/linux.wireless-testing/kernel/sched.c:618 invoked rcu_dereference_check() without protection!
+
+other info that might help us debug this:
+
+
+rcu_scheduler_active = 1, debug_locks = 1
+1 lock held by ifup/23517:
+  #0:  (&rq->lock){-.-.-.}, at: [<c042f782>] task_fork_fair+0x3b/0x108
+
+stack backtrace:
+Pid: 23517, comm: ifup Not tainted 2.6.36-rc6-wl+ #5
+Call Trace:
+  [<c075e219>] ? printk+0xf/0x16
+  [<c0455842>] lockdep_rcu_dereference+0x74/0x7d
+  [<c0426854>] task_group+0x6d/0x79
+  [<c042686e>] set_task_rq+0xe/0x57
+  [<c042f79e>] task_fork_fair+0x57/0x108
+  [<c042e965>] sched_fork+0x82/0xf9
+  [<c04334b3>] copy_process+0x569/0xe8e
+  [<c0433ef0>] do_fork+0x118/0x262
+  [<c076302f>] ? do_page_fault+0x16a/0x2cf
+  [<c044b80c>] ? up_read+0x16/0x2a
+  [<c04085ae>] sys_clone+0x1b/0x20
+  [<c04030a5>] ptregs_clone+0x15/0x30
+  [<c0402f1c>] ? sysenter_do_call+0x12/0x38
+
+
+Thanks,
+Ben
 
 -- 
-Regards,
-Nishanth Menon
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
