@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754299Ab0JESqV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 14:46:21 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:47713 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752481Ab0JESqU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 14:46:20 -0400
-Date: Tue, 5 Oct 2010 20:41:49 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Jay Vosburgh <fubar@us.ibm.com>
-Cc: bonding-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH] bonding: simplify conditionals
-Message-ID: <20101005204149.6a43d080@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753297Ab0JESwH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 14:52:07 -0400
+Received: from kroah.org ([198.145.64.141]:39813 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750843Ab0JESwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 14:52:06 -0400
+Date: Tue, 5 Oct 2010 11:49:25 -0700
+From: Greg KH <greg@kroah.com>
+To: pavan_savoy@ti.com
+Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] prepare TI_ST to move out of staging
+Message-ID: <20101005184925.GA20825@kroah.com>
+References: <1285877610-3043-1-git-send-email-pavan_savoy@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285877610-3043-1-git-send-email-pavan_savoy@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify conditionals:
- (a || (!a && !b)) => (a || !b)
- (!(!a && b)) => (a || !b)
+On Thu, Sep 30, 2010 at 04:13:27PM -0400, pavan_savoy@ti.com wrote:
+> From: Pavan Savoy <pavan_savoy@ti.com>
+> 
+> Greg,
+> 
+> As suggested, the patch has been modified to set of 3 patches.
+> 1. to add the new line discipline number to tty.h
+> 2. rm the __KERNEL__ since the header is no more required for user-space
+> 3. mv the header file to include/linux/
+> 
+> Please review.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/net/bonding/bond_3ad.c |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+Looks good, all queued up now.
 
-diff --git a/drivers/net/bonding/bond_3ad.c b/drivers/net/bonding/bond_3ad.c
-index 0ddf4c6..d0ad321 100644
---- a/drivers/net/bonding/bond_3ad.c
-+++ b/drivers/net/bonding/bond_3ad.c
-@@ -1541,10 +1541,9 @@ static void ad_agg_selection_logic(struct aggregator *agg)
- 		 */
- 		if (active && active->lag_ports &&
- 		    active->lag_ports->is_enabled &&
--		    (__agg_has_partner(active) ||
--		     (!__agg_has_partner(active) && !__agg_has_partner(best)))) {
--			if (!(!active->actor_oper_aggregator_key &&
--			      best->actor_oper_aggregator_key)) {
-+		    (__agg_has_partner(active) || !__agg_has_partner(best))) {
-+			if (active->actor_oper_aggregator_key ||
-+			    !best->actor_oper_aggregator_key) {
- 				best = NULL;
- 				active->is_active = 1;
- 			}
--- 
-1.7.2.2
+So, on to moving the drivers out of the staging tree, right?  Care to
+send me patches for them?  Have you gotten the bluetooth driver reviewed
+yet?
+
+thanks,
+
+greg k-h
