@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758158Ab0JELPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 07:15:38 -0400
-Received: from qmta05.emeryville.ca.mail.comcast.net ([76.96.30.48]:50510 "EHLO
-	qmta05.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758117Ab0JELPh (ORCPT
+	id S932996Ab0JELU2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 07:20:28 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38593 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751345Ab0JELU1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 07:15:37 -0400
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [net-2.6 PATCH] MAINTAINERS: update Intel LAN Ethernet info
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
-        bphilips@novell.com, Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Date: Tue, 05 Oct 2010 04:15:17 -0700
-Message-ID: <20101005111438.22968.15130.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Tue, 5 Oct 2010 07:20:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=w4RJuC7TvdBzZQyEhgK/Yp2GrNwuUw9HegoyVoFTTuOYLYm/9pLn/Ck6nYfJ/CPjKY
+         sC1MpiwOfoGW2zE2Z3ZP4tpWhHVDHRJoXwbcgVRz77LtSn1ggWTEuHhfnLYTjG+UNPj3
+         iv6h0FuRHDVCoyghN26sfRkXgKeWgAhmk4WsM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Date: Tue, 5 Oct 2010 19:20:26 +0800
+Message-ID: <AANLkTikcRppGD592yth-xaea961OczDhXX1Hj+qQ6fJH@mail.gmail.com>
+Subject: [PATCH] pid: remove unused include
+From: jovi zhang <bookjovi@gmail.com>
+To: andre.goddard@gmail.com, hedi@sgi.com
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-- Add ixgbevf and docs files to the maintainers file
+remove unused include of pid.c
 
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
+Signed-off-by: jovi zhang <bookjovi@gmail.com>
+kernel/pid.c |    3 ---
+1 files changed, 0 insertions(+), 3 deletions(-)
 
- MAINTAINERS |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+diff --git a/kernel/pid.c b/kernel/pid.c
+index d55c6fb..6de4c07 100644
+--- a/kernel/pid.c
++++ b/kernel/pid.c
+@@ -27,15 +27,12 @@
+ */
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 44e6595..20a03b9 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -3050,16 +3050,27 @@ L:	netdev@vger.kernel.org
- S:	Maintained
- F:	drivers/net/ixp2000/
- 
--INTEL ETHERNET DRIVERS (e100/e1000/e1000e/igb/igbvf/ixgb/ixgbe)
-+INTEL ETHERNET DRIVERS (e100/e1000/e1000e/igb/igbvf/ixgb/ixgbe/ixgbevf)
- M:	Jeff Kirsher <jeffrey.t.kirsher@intel.com>
- M:	Jesse Brandeburg <jesse.brandeburg@intel.com>
- M:	Bruce Allan <bruce.w.allan@intel.com>
--M:	Alex Duyck <alexander.h.duyck@intel.com>
-+M:	Carolyn Wyborny <carolyn.wyborny@intel.com>
-+M:	Don Skidmore <donald.c.skidmore@intel.com>
-+M:	Greg Rose <gregory.v.rose@intel.com>
- M:	PJ Waskiewicz <peter.p.waskiewicz.jr@intel.com>
-+M:	Alex Duyck <alexander.h.duyck@intel.com>
- M:	John Ronciak <john.ronciak@intel.com>
- L:	e1000-devel@lists.sourceforge.net
- W:	http://e1000.sourceforge.net/
- S:	Supported
-+F:	Documentation/networking/e100.txt
-+F:	Documentation/networking/e1000.txt
-+F:	Documentation/networking/e1000e.txt
-+F:	Documentation/networking/igb.txt
-+F:	Documentation/networking/igbvf.txt
-+F:	Documentation/networking/ixgb.txt
-+F:	Documentation/networking/ixgbe.txt
-+F:	Documentation/networking/ixgbevf.txt
- F:	drivers/net/e100.c
- F:	drivers/net/e1000/
- F:	drivers/net/e1000e/
-@@ -3067,6 +3078,7 @@ F:	drivers/net/igb/
- F:	drivers/net/igbvf/
- F:	drivers/net/ixgb/
- F:	drivers/net/ixgbe/
-+F:	drivers/net/ixgbevf/
- 
- INTEL PRO/WIRELESS 2100 NETWORK CONNECTION SUPPORT
- L:	linux-wireless@vger.kernel.org
+#include <linux/mm.h>
+-#include <linux/module.h>
+-#include <linux/slab.h>
+#include <linux/init.h>
+#include <linux/rculist.h>
+#include <linux/bootmem.h>
+#include <linux/hash.h>
+#include <linux/pid_namespace.h>
+#include <linux/init_task.h>
+-#include <linux/syscalls.h>
 
+#define pid_hashfn(nr, ns)     \
+       hash_long((unsigned long)nr + (unsigned long)ns, pidhash_shift)
