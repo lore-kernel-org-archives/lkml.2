@@ -1,404 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab0JEU3Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 16:29:25 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44984 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757254Ab0JEU3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 16:29:24 -0400
-From: Fernando Guzman Lugo <x0095840@ti.com>
-To: <gregkh@suse.de>
-Cc: <felipe.contreras@nokia.com>, <ameya.palande@nokia.com>, <nm@ti.com>,
-        <Hiroshi.DOYU@nokia.com>, <ohad@wizery.com>,
-        <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
-        <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCHv3 10/11] staging: tidspbridge - deprecate reserve/unreserve_memory funtions
-Date: Tue,  5 Oct 2010 15:35:43 -0500
-Message-Id: <1286310944-25035-11-git-send-email-x0095840@ti.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1286310944-25035-10-git-send-email-x0095840@ti.com>
-References: <1286310944-25035-1-git-send-email-x0095840@ti.com>
- <1286310944-25035-2-git-send-email-x0095840@ti.com>
- <1286310944-25035-3-git-send-email-x0095840@ti.com>
- <1286310944-25035-4-git-send-email-x0095840@ti.com>
- <1286310944-25035-5-git-send-email-x0095840@ti.com>
- <1286310944-25035-6-git-send-email-x0095840@ti.com>
- <1286310944-25035-7-git-send-email-x0095840@ti.com>
- <1286310944-25035-8-git-send-email-x0095840@ti.com>
- <1286310944-25035-9-git-send-email-x0095840@ti.com>
- <1286310944-25035-10-git-send-email-x0095840@ti.com>
+	id S1757609Ab0JEU3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 16:29:33 -0400
+Received: from smtp208.alice.it ([82.57.200.104]:39336 "EHLO smtp208.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757519Ab0JEU3b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 16:29:31 -0400
+Date: Tue, 5 Oct 2010 22:29:17 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Alan Ott <alan@signal11.us>
+Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Oliver Neukum <oliver@neukum.name>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] HID: hidraw, fix a NULL pointer dereference in
+ hidraw_ioctl
+Message-Id: <20101005222917.9f4da7bc.ospite@studenti.unina.it>
+In-Reply-To: <4CA9DC8D.3030207@signal11.us>
+References: <1286018724-7484-1-git-send-email-ospite@studenti.unina.it>
+	<4CA9DC8D.3030207@signal11.us>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now what iommu memory usage is kept track by iommu module
-the functions reserve/unreserve_memory are not needed anymore.
+--Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
----
- .../staging/tidspbridge/include/dspbridge/proc.h   |   46 --------
- drivers/staging/tidspbridge/pmgr/dspapi.c          |   34 +-----
- drivers/staging/tidspbridge/rmgr/node.c            |   20 +----
- drivers/staging/tidspbridge/rmgr/proc.c            |  114 ++------------------
- 4 files changed, 17 insertions(+), 197 deletions(-)
+On Mon, 04 Oct 2010 09:54:21 -0400
+Alan Ott <alan@signal11.us> wrote:
 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-index 5e09fd1..2d12aab 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
-@@ -551,29 +551,6 @@ extern int proc_map(void *hprocessor,
- 			   struct process_context *pr_ctxt);
- 
- /*
-- *  ======== proc_reserve_memory ========
-- *  Purpose:
-- *      Reserve a virtually contiguous region of DSP address space.
-- *  Parameters:
-- *      hprocessor      :   The processor handle.
-- *      ul_size	  :   Size of the address space to reserve.
-- *      pp_rsv_addr       :   Ptr to DSP side reserved u8 address.
-- *  Returns:
-- *      0	 :   Success.
-- *      -EFAULT     :   Invalid processor handle.
-- *      -EPERM       :   General failure.
-- *      -ENOMEM     :   Cannot reserve chunk of this size.
-- *  Requires:
-- *      pp_rsv_addr is not NULL
-- *      PROC Initialized.
-- *  Ensures:
-- *  Details:
-- */
--extern int proc_reserve_memory(void *hprocessor,
--				      u32 ul_size, void **pp_rsv_addr,
--				      struct process_context *pr_ctxt);
--
--/*
-  *  ======== proc_un_map ========
-  *  Purpose:
-  *      Removes a MPU buffer mapping from the DSP address space.
-@@ -595,27 +572,4 @@ extern int proc_reserve_memory(void *hprocessor,
- extern int proc_un_map(void *hprocessor, void *map_addr,
- 			      struct process_context *pr_ctxt);
- 
--/*
-- *  ======== proc_un_reserve_memory ========
-- *  Purpose:
-- *      Frees a previously reserved region of DSP address space.
-- *  Parameters:
-- *      hprocessor      :   The processor handle.
-- *      prsv_addr	:   Ptr to DSP side reservedBYTE address.
-- *  Returns:
-- *      0	 :   Success.
-- *      -EFAULT     :   Invalid processor handle.
-- *      -EPERM       :   General failure.
-- *      -ENOENT   :   Cannot find a reserved region starting with this
-- *		      :   address.
-- *  Requires:
-- *      prsv_addr is not NULL
-- *      PROC Initialized.
-- *  Ensures:
-- *  Details:
-- */
--extern int proc_un_reserve_memory(void *hprocessor,
--					 void *prsv_addr,
--					 struct process_context *pr_ctxt);
--
- #endif /* PROC_ */
-diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
-index faf8304..0187c47 100644
---- a/drivers/staging/tidspbridge/pmgr/dspapi.c
-+++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
-@@ -989,27 +989,10 @@ u32 procwrap_register_notify(union trapped_args *args, void *pr_ctxt)
- /*
-  * ======== procwrap_reserve_memory ========
-  */
--u32 procwrap_reserve_memory(union trapped_args *args, void *pr_ctxt)
-+u32 __deprecated procwrap_reserve_memory(union trapped_args *args,
-+							void *pr_ctxt)
- {
--	int status;
--	void *prsv_addr;
--	void *hprocessor = ((struct process_context *)pr_ctxt)->hprocessor;
--
--	if ((args->args_proc_rsvmem.ul_size <= 0) ||
--	    (args->args_proc_rsvmem.ul_size & (PG_SIZE4K - 1)) != 0)
--		return -EINVAL;
--
--	status = proc_reserve_memory(hprocessor,
--				     args->args_proc_rsvmem.ul_size, &prsv_addr,
--				     pr_ctxt);
--	if (!status) {
--		if (put_user(prsv_addr, args->args_proc_rsvmem.pp_rsv_addr)) {
--			status = -EINVAL;
--			proc_un_reserve_memory(args->args_proc_rsvmem.
--					       hprocessor, prsv_addr, pr_ctxt);
--		}
--	}
--	return status;
-+	return 0;
- }
- 
- /*
-@@ -1038,15 +1021,10 @@ u32 procwrap_un_map(union trapped_args *args, void *pr_ctxt)
- /*
-  * ======== procwrap_un_reserve_memory ========
-  */
--u32 procwrap_un_reserve_memory(union trapped_args *args, void *pr_ctxt)
-+u32 __deprecated procwrap_un_reserve_memory(union trapped_args *args,
-+							void *pr_ctxt)
- {
--	int status;
--	void *hprocessor = ((struct process_context *)pr_ctxt)->hprocessor;
--
--	status = proc_un_reserve_memory(hprocessor,
--					args->args_proc_unrsvmem.prsv_addr,
--					pr_ctxt);
--	return status;
-+	return 0;
- }
- 
- /*
-diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index 1562f3c..ccb1811 100644
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -430,17 +430,6 @@ int node_allocate(struct proc_object *hprocessor,
- 	if (status)
- 		goto func_cont;
- 
--	status = proc_reserve_memory(hprocessor,
--				     pnode->create_args.asa.task_arg_obj.
--				     heap_size + PAGE_SIZE,
--				     (void **)&(pnode->create_args.asa.
--					task_arg_obj.udsp_heap_res_addr),
--				     pr_ctxt);
--	if (status) {
--		pr_err("%s: Failed to reserve memory for heap: 0x%x\n",
--		       __func__, status);
--		goto func_cont;
--	}
- #ifdef DSP_DMM_DEBUG
- 	status = dmm_get_handle(p_proc_object, &dmm_mgr);
- 	if (!dmm_mgr) {
-@@ -456,8 +445,7 @@ int node_allocate(struct proc_object *hprocessor,
- 	map_attrs |= DSP_MAPVIRTUALADDR;
- 	status = proc_map(hprocessor, (void *)attr_in->pgpp_virt_addr,
- 			  pnode->create_args.asa.task_arg_obj.heap_size,
--			  (void *)pnode->create_args.asa.task_arg_obj.
--			  udsp_heap_res_addr, (void **)&mapped_addr, map_attrs,
-+			  NULL, (void **)&mapped_addr, map_attrs,
- 			  pr_ctxt);
- 	if (status)
- 		pr_err("%s: Failed to map memory for Heap: 0x%x\n",
-@@ -2576,12 +2564,6 @@ static void delete_node(struct node_object *hnode,
- 			status = proc_un_map(hnode->hprocessor, (void *)
- 					     task_arg_obj.udsp_heap_addr,
- 					     pr_ctxt);
--
--			status = proc_un_reserve_memory(hnode->hprocessor,
--							(void *)
--							task_arg_obj.
--							udsp_heap_res_addr,
--							pr_ctxt);
- #ifdef DSP_DMM_DEBUG
- 			status = dmm_get_handle(p_proc_object, &dmm_mgr);
- 			if (dmm_mgr)
-diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
-index e5fec57..429f354 100644
---- a/drivers/staging/tidspbridge/rmgr/proc.c
-+++ b/drivers/staging/tidspbridge/rmgr/proc.c
-@@ -152,34 +152,21 @@ static struct dmm_map_object *add_mapping_info(struct process_context *pr_ctxt,
- 	return map_obj;
- }
- 
--static int match_exact_map_obj(struct dmm_map_object *map_obj,
--					u32 dsp_addr, u32 size)
--{
--	if (map_obj->dsp_addr == dsp_addr && map_obj->size != size)
--		pr_err("%s: addr match (0x%x), size don't (0x%x != 0x%x)\n",
--				__func__, dsp_addr, map_obj->size, size);
--
--	return map_obj->dsp_addr == dsp_addr &&
--		map_obj->size == size;
--}
--
- static void remove_mapping_information(struct process_context *pr_ctxt,
--						u32 dsp_addr, u32 size)
-+						u32 dsp_addr)
- {
- 	struct dmm_map_object *map_obj;
- 
--	pr_debug("%s: looking for virt 0x%x size 0x%x\n", __func__,
--							dsp_addr, size);
-+	pr_debug("%s: looking for virt 0x%x\n", __func__, dsp_addr);
- 
- 	spin_lock(&pr_ctxt->dmm_map_lock);
- 	list_for_each_entry(map_obj, &pr_ctxt->dmm_map_list, link) {
--		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x size 0x%x\n",
-+		pr_debug("%s: candidate: mpu_addr 0x%x virt 0x%x\n",
- 							__func__,
- 							map_obj->mpu_addr,
--							map_obj->dsp_addr,
--							map_obj->size);
-+							map_obj->dsp_addr);
- 
--		if (match_exact_map_obj(map_obj, dsp_addr, size)) {
-+		if (map_obj->dsp_addr == dsp_addr) {
- 			pr_debug("%s: match, deleting map info\n", __func__);
- 			list_del(&map_obj->link);
- 			kfree(map_obj->dma_info.sg);
-@@ -1353,7 +1340,6 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- {
- 	u32 va_align;
- 	u32 pa_align;
--	struct dmm_object *dmm_mgr;
- 	u32 size_align;
- 	int status = 0;
- 	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
-@@ -1382,11 +1368,6 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 	}
- 	/* Critical section */
- 	mutex_lock(&proc_lock);
--	dmm_get_handle(p_proc_object, &dmm_mgr);
--	if (dmm_mgr)
--		status = dmm_map_memory(dmm_mgr, va_align, size_align);
--	else
--		status = -EFAULT;
- 
- 	/* Add mapping to the page tables. */
- 	if (!status) {
-@@ -1409,9 +1390,9 @@ int proc_map(void *hprocessor, void *pmpu_addr, u32 ul_size,
- 		map_obj->dsp_addr = (va_align |
- 					((u32)pmpu_addr & (PG_SIZE4K - 1)));
- 		*pp_map_addr = (void *)map_obj->dsp_addr;
-+		pr_err("%s: mapped address %x\n", __func__, *pp_map_addr);
- 	} else {
--		remove_mapping_information(pr_ctxt, va_align, size_align);
--		dmm_un_map_memory(dmm_mgr, va_align, &size_align);
-+		remove_mapping_information(pr_ctxt, va_align);
- 	}
- 	mutex_unlock(&proc_lock);
- 
-@@ -1504,38 +1485,6 @@ func_end:
- }
- 
- /*
-- *  ======== proc_reserve_memory ========
-- *  Purpose:
-- *      Reserve a virtually contiguous region of DSP address space.
-- */
--int proc_reserve_memory(void *hprocessor, u32 ul_size,
--			       void **pp_rsv_addr,
--			       struct process_context *pr_ctxt)
--{
--	struct dmm_object *dmm_mgr;
--	int status = 0;
--	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
--
--	if (!p_proc_object) {
--		status = -EFAULT;
--		goto func_end;
--	}
--
--	status = dmm_get_handle(p_proc_object, &dmm_mgr);
--	if (!dmm_mgr) {
--		status = -EFAULT;
--		goto func_end;
--	}
--
--	status = dmm_reserve_memory(dmm_mgr, ul_size, (u32 *) pp_rsv_addr);
--func_end:
--	dev_dbg(bridge, "%s: hprocessor: 0x%p ul_size: 0x%x pp_rsv_addr: 0x%p "
--		"status 0x%x\n", __func__, hprocessor,
--		ul_size, pp_rsv_addr, status);
--	return status;
--}
--
--/*
-  *  ======== proc_start ========
-  *  Purpose:
-  *      Start a processor running.
-@@ -1683,7 +1632,6 @@ int proc_un_map(void *hprocessor, void *map_addr,
- {
- 	int status = 0;
- 	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
--	struct dmm_object *dmm_mgr;
- 	u32 va_align;
- 	u32 size_align;
- 
-@@ -1693,23 +1641,11 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 		goto func_end;
- 	}
- 
--	status = dmm_get_handle(hprocessor, &dmm_mgr);
--	if (!dmm_mgr) {
--		status = -EFAULT;
--		goto func_end;
--	}
--
- 	/* Critical section */
- 	mutex_lock(&proc_lock);
--	/*
--	 * Update DMM structures. Get the size to unmap.
--	 * This function returns error if the VA is not mapped
--	 */
--	status = dmm_un_map_memory(dmm_mgr, (u32) va_align, &size_align);
- 	/* Remove mapping from the page tables. */
--	if (!status)
--		status = user_to_dsp_unmap(
--			p_proc_object->hbridge_context->dsp_mmu, va_align);
-+	status = user_to_dsp_unmap(p_proc_object->hbridge_context->dsp_mmu,
-+								va_align);
- 
- 	mutex_unlock(&proc_lock);
- 	if (status)
-@@ -1720,7 +1656,7 @@ int proc_un_map(void *hprocessor, void *map_addr,
- 	 * from dmm_map_list, so that mapped memory resource tracking
- 	 * remains uptodate
- 	 */
--	remove_mapping_information(pr_ctxt, (u32) map_addr, size_align);
-+	remove_mapping_information(pr_ctxt, (u32) map_addr);
- 
- func_end:
- 	dev_dbg(bridge, "%s: hprocessor: 0x%p map_addr: 0x%p status: 0x%x\n",
-@@ -1729,36 +1665,6 @@ func_end:
- }
- 
- /*
-- *  ======== proc_un_reserve_memory ========
-- *  Purpose:
-- *      Frees a previously reserved region of DSP address space.
-- */
--int proc_un_reserve_memory(void *hprocessor, void *prsv_addr,
--				  struct process_context *pr_ctxt)
--{
--	struct dmm_object *dmm_mgr;
--	int status = 0;
--	struct proc_object *p_proc_object = (struct proc_object *)hprocessor;
--
--	if (!p_proc_object) {
--		status = -EFAULT;
--		goto func_end;
--	}
--
--	status = dmm_get_handle(p_proc_object, &dmm_mgr);
--	if (!dmm_mgr) {
--		status = -EFAULT;
--		goto func_end;
--	}
--
--	status = dmm_un_reserve_memory(dmm_mgr, (u32) prsv_addr);
--func_end:
--	dev_dbg(bridge, "%s: hprocessor: 0x%p prsv_addr: 0x%p status: 0x%x\n",
--		__func__, hprocessor, prsv_addr, status);
--	return status;
--}
--
--/*
-  *  ======== = proc_monitor ======== ==
-  *  Purpose:
-  *      Place the Processor in Monitor State. This is an internal
--- 
-1.6.3.3
+> On 10/02/2010 07:25 AM, Antonio Ospite wrote:
+> > BUG: unable to handle kernel NULL pointer dereference at 00000000000000=
+28
+> > IP: [<ffffffffa02c66b4>] hidraw_ioctl+0xfc/0x32c [hid]
+> > [...]
+> >
+[...]
+> > there is a similar problem when _writing_ to the device, but Alan's
+> > changes in that area are shuffling the code a bit, should I send a patch
+> > [to hidraw_send_report()] on top of Alan's work for that, or a fix for
+> > current mainline [in hidraw_write()] on which Alan should rebase his
+> > work would be better?
+> >   =20
+>=20
+> This needs to go back into stable kernels as well, so a patch against=20
+> mainline will be necessary for that. If you want to make a patch against=
+=20
+> mine, that's fine with me. If you want me to work it into my patch,=20
+> that's fine too. (I want you to get credit for the fix though :) ).
+>
 
+Alan rebasing your patch on top of the hidraw_write() fix is trivial
+so you do it in your v5, ok? It does not get rebased automatically just
+because of the mutex_lock() call.
+
+If it is OK to you I'd promote my Tested-by to a Signed-off-by in
+the commit message so to take implicit credit for the fix. But this is
+not even needed as the fix will be in mainline anyway.
+
+> > The same pattern of unchecked hidraw_table[minor] is also present in
+> > hidraw_get_report but this function is called only after the NULL check
+> > in hidraw_ioctl _for_now_, so that is currently safe.
+> >   =20
+>=20
+> I can stick a comment ahead of hidraw_send_report, similar to the one=20
+> which already exists.
+>
+
+ACK.
+
+Thanks,
+   Antonio
+
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkyrip0ACgkQ5xr2akVTsAHoaQCfUx1s+lHvU710FrEr7pluNyqL
+cSQAoJxvFk6c8XIbAcSBYYD761NkH+dY
+=LpGn
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__5_Oct_2010_22_29_17_+0200_i0qkyJffJP.ar5Gg--
