@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab0JEQNa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:13:30 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:25939 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752193Ab0JEQN3 (ORCPT
+	id S1755596Ab0JEQPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:15:32 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:38865 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754668Ab0JEQPa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:13:29 -0400
-Subject: [PATCH v2] x86, HPET: mark HPET PCI BARs as IORESOURCE_PCI_FIXED
-To: Venkatesh Pallipadi <venki@google.com>
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Prarit Bhargava <prarit@redhat.com>, fredlwm@gmail.com,
-        Simon Arlott <simon@fire.lp0.eu>, x86@kernel.org,
-        Clemens Ladisch <clemens@ladisch.de>, linux-kernel@vger.kernel.org,
-        Marc Jones <marcj303@gmail.com>,
-        Jordan Crouse <jcrouse@codeaurora.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Yinghai Lu <yinghai@kernel.org>
-Date: Tue, 05 Oct 2010 10:13:26 -0600
-Message-ID: <20101005161325.22039.70478.stgit@bob.kio>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 5 Oct 2010 12:15:30 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=q5RBK4v1/Q5zXUEHruIgLLfIDhJ3UNY3solgmbKInum3JN7HMxL1FvFQSyitI4WjFpkIZJS4hfYAQiEQqsP82Nr75VUjjQ+uF1yu+JCgsTJa/n0ofhVzJcwgsQLCUqUZ;
+Date: Tue, 5 Oct 2010 09:16:29 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Andy Whitcroft <apw@canonical.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Jiri Slaby <jslaby@suse.cz>,
+        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] intel_ips -- ensure we do not enable gpu turbo mode
+ without driver linkage
+Message-ID: <20101005091629.7a602f32@jbarnes-desktop>
+In-Reply-To: <1286268522-26337-1-git-send-email-apw@canonical.com>
+References: <1286268522-26337-1-git-send-email-apw@canonical.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue,  5 Oct 2010 09:48:42 +0100
+Andy Whitcroft <apw@canonical.com> wrote:
 
-We often discover the HPET early, via the static ACPI HPET table, before
-enumerating PCI devices.  If the HPET is implemented as a PCI function,
-we will discover it again during PCI device enumeration.  We must make
-sure we never move the PCI function out from under the driver.
+> Both when polling the current turbo status (in poll_turbo_status mode)
+> and when handling thermal events (in ips_irq_handler) the current status
+> of GPU turbo is updated to match the hardware status.  However if during
+> driver initialisation we were unable aquire linkage to the i915 driver
+> enabling GPU turbo will lead to an oops on the first attempt to determine
+> GPU busy status.
+> 
+> Ensure that we do not enable GPU turbo unless we have driver linkage.
+> 
+> BugLink: http://bugs.launchpad.net/bugs/632430
+> Cc: stable@kernel.org
+> Signed-off-by: Andy Whitcroft <apw@canonical.com>
+> ---
+>  drivers/platform/x86/intel_ips.c |    6 ++++--
+>  1 files changed, 4 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
+> index afe82e5..3ca50b3 100644
+> --- a/drivers/platform/x86/intel_ips.c
+> +++ b/drivers/platform/x86/intel_ips.c
+> @@ -680,7 +680,8 @@ static void update_turbo_limits(struct ips_driver *ips)
+>  	u32 hts = thm_readl(THM_HTS);
+>  
+>  	ips->cpu_turbo_enabled = !(hts & HTS_PCTD_DIS);
+> -	ips->gpu_turbo_enabled = !(hts & HTS_GTD_DIS);
+> +	if (ips->gpu_busy)
+> +		ips->gpu_turbo_enabled = !(hts & HTS_GTD_DIS);
+>  	ips->core_power_limit = thm_readw(THM_MPCPC);
+>  	ips->mch_power_limit = thm_readw(THM_MMGPC);
+>  	ips->mcp_temp_limit = thm_readw(THM_PTL);
+> @@ -1150,7 +1151,8 @@ static irqreturn_t ips_irq_handler(int irq, void *arg)
+>  				STS_GPL_SHIFT;
+>  			/* ignore EC CPU vs GPU pref */
+>  			ips->cpu_turbo_enabled = !(sts & STS_PCTD_DIS);
+> -			ips->gpu_turbo_enabled = !(sts & STS_GTD_DIS);
+> +			if (ips->gpu_busy)
+> +				ips->gpu_turbo_enabled = !(sts & STS_GTD_DIS);
+>  			ips->mcp_temp_limit = (sts & STS_PTL_MASK) >>
+>  				STS_PTL_SHIFT;
+>  			ips->mcp_power_limit = (tc1 & STS_PPL_MASK) >>
 
-Doing this for *any* PCI BAR that matches a previously discovered HPET
-should be more generic than the previous ATI-specific quirk.
+Looks good, thanks.  Most of the performance upside is on the GPU, so
+running without i915 is a shame, but we definitely shouldn't oops, so
+this patch looks fine.
 
-This is for a regression from 2.6.34, but the reporter has been unable
-to test it yet.
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Reference: https://bugzilla.kernel.org/show_bug.cgi?id=18482
-Reported-by: Simon Arlott <simon@fire.lp0.eu>
-Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
----
-
- arch/x86/kernel/quirks.c |   19 +++++++++++++++++++
- arch/x86/pci/fixup.c     |   28 ----------------------------
- 2 files changed, 19 insertions(+), 28 deletions(-)
-
-
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index 939b9e9..9510f53 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -507,6 +507,25 @@ static void force_disable_hpet_msi(struct pci_dev *unused)
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
- 			 force_disable_hpet_msi);
- 
-+static void quirk_pci_hpet(struct pci_dev *dev)
-+{
-+	int i;
-+
-+	if (!hpet_address)
-+		return;
-+
-+	for (i = 0; i < 6; i++) {
-+		struct resource *res = &dev->resource[i];
-+
-+		if (resource_type(res) == IORESOURCE_MEM &&
-+		    res->start == hpet_address) {
-+			dev_info(&dev->dev, "BAR %d: %pR is an HPET we found earlier; making it immovable\n",
-+				 i, res);
-+			res->flags |= IORESOURCE_PCI_FIXED;
-+		}
-+	}
-+}
-+DECLARE_PCI_FIXUP_HEADER(PCI_ANY_ID, PCI_ANY_ID, quirk_pci_hpet);
- #endif
- 
- #if defined(CONFIG_PCI) && defined(CONFIG_NUMA)
-diff --git a/arch/x86/pci/fixup.c b/arch/x86/pci/fixup.c
-index 6dd8955..08eba69 100644
---- a/arch/x86/pci/fixup.c
-+++ b/arch/x86/pci/fixup.c
-@@ -493,31 +493,3 @@ static void __devinit pci_siemens_interrupt_controller(struct pci_dev *dev)
- }
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_SIEMENS, 0x0015,
- 			  pci_siemens_interrupt_controller);
--
--/*
-- * SB600: Disable BAR1 on device 14.0 to avoid HPET resources from
-- * confusing the PCI engine:
-- */
--static void sb600_disable_hpet_bar(struct pci_dev *dev)
--{
--	u8 val;
--
--	/*
--	 * The SB600 and SB700 both share the same device
--	 * ID, but the PM register 0x55 does something different
--	 * for the SB700, so make sure we are dealing with the
--	 * SB600 before touching the bit:
--	 */
--
--	pci_read_config_byte(dev, 0x08, &val);
--
--	if (val < 0x2F) {
--		outb(0x55, 0xCD6);
--		val = inb(0xCD7);
--
--		/* Set bit 7 in PM register 0x55 */
--		outb(0x55, 0xCD6);
--		outb(val | 0x80, 0xCD7);
--	}
--}
--DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_ATI, 0x4385, sb600_disable_hpet_bar);
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
