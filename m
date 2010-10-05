@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755416Ab0JETdF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 15:33:05 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:51538 "EHLO
+	id S1756125Ab0JEThT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 15:37:19 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:52425 "EHLO
 	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755047Ab0JETdD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 15:33:03 -0400
-Date: Tue, 5 Oct 2010 15:32:57 -0400
+	by vger.kernel.org with ESMTP id S1755351Ab0JEThQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 15:37:16 -0400
+Date: Tue, 5 Oct 2010 15:37:12 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: linux-kernel@vger.kernel.org, systemtap@sources.redhat.com,
         ltt-dev@lists.casi.polymtl.ca
@@ -26,367 +26,709 @@ Cc: Steven Rostedt <rostedt@goodmis.org>, mingo@elte.hu,
         Felix Burton <Felix.Burton@windriver.com>,
         Andrew McDermott <Andrew.McDermott@windriver.com>,
         Stefan Hajnoczi <stefanha@gmail.com>
-Subject: [RFC] Common Trace Format Requirements (v1.4)
-Message-ID: <20101005193257.GA25605@Krystal>
+Subject: [RFC] Common Trace Format Proposal for Linux (v1)
+Message-ID: <20101005193712.GB25605@Krystal>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
 X-Editor: vi
 X-Info: http://www.efficios.com
 X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 15:24:39 up 12 days, 23:26,  7 users,  load average: 0.21, 0.15,
-	0.10
+X-Uptime: 15:33:00 up 12 days, 23:35,  6 users,  load average: 0.17, 0.12,
+	0.09
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathieu Desnoyers, EfficiOS Inc.
-
-  The goal of the present document is to gather the trace format requirements
-from the embedded, telecom, high-performance and kernel communities. It consists
-of an overview of the trace format, tracer and trace analyzer requirements to
-consider for a Common Trace Format proposal.
-
-This document includes requirements from:
-
-Steven Rostedt <rostedt@goodmis.org>
-Dominique Toupin <dominique.toupin@ericsson.com>
-Aaron Spear <aaron_spear@mentor.com>
-Philippe Maisonneuve <Philippe.Maisonneuve@windriver.com>
-Felix Burton <Felix.Burton@windriver.com>
-Andrew McDermott <Andrew.McDermott@windriver.com>
-"Frank Ch. Eigler" <fche@redhat.com>
-Michel Dagenais <michel.dagenais@polymtl.ca>
-Stefan Hajnoczi <stefanha@gmail.com>
-Multi-Core Association Tool Infrastructure Workgroup
-   (http://www.multicore-association.org/workgroup/tiwg.php)
-
-
-* Trace Format Requirements
-
-  These are requirements on the trace format per se. This section discusses the
-layout of data in the trace, explaining the rationale behind the choices. The
-rationale for the trace format choices may refer to the tracer and trace
-analyzer requirements stated below. This section starts by presenting the common
-trace model, and then specifies the requirements of an instance of this model
-specifically tailored to efficient kernel- and user-space tracing requirements.
-
-
-1) Architecture
-
-This high-level model is meant to be an industry-wide, common model, fulfilling
-the tracing requirements. It is meant to be application-, architecture-, and
-language-agnostic.
-
-1.1) Core model
-
-- Event
-
-An event is an information record contained within the trace.
-
-  - Events must be in physical order within a section. Their physical position
-    relative to other events within the section specify their order relative to
-    other events within the same section.
-  - Event type (numeric identifier: maps to metadata)
-    - Unique ID assigned within a section.
-  - Event payload
-    - Variable event size
-    - Size limitations: maximum event size should be configurable.
-    - Size information available through metadata.
-    - Support various data alignment for architectures, standards, and
-      languages:
-      - Natural alignment of data for architectures with slow non-aligned
-        writes.
-      - Packed layout of headers for architecture with efficient non-aligned
-        writes.
-
-- Section
-
-A section within the trace can be thought of as the ELF sections in a ELF
-binary. They contain a sequence of physically contiguous event records.
-
-  - Multi-level section identifier
-    - e.g.: section name / CPU number
-  - Contains a subset of event types
-
-The parallel with ELF sections is used here to conceptually demonstrate the idea
-of section, but the similarity stops there. A trace is peculiar in that we have
-to continuously append to each sections, and we need to have ideally no
-interaction between sections. Therefore, for storage, recording all sections
-into a single file is not recommended; a directory made of one file per section
-is better suited.
-
-
-- Metadata
-
-Metadata is the description of the setting of the environment of the
-application. Defines the basic types of the domains. Will define the mapping
-between the event, and the type of the event fields. The metadata scope (what it
-describes) is a whole trace, which consists of one or many sections.
-
-The metadata can be either contained in the trace (better usability for telecom
-scenarios) or added alongside the trace data by a separate module (for DSP
-scenarios). Metadata checksumming (only for statically generated metadata)
-and/or versioning can be used to ensure consistency between sections and
-metadata in the latter.
-
-  - Trace version
-    - Major number (increment breaks compabilility)
-    - Minor number (increment keeps compatibility)
-  - Describe the invariant properties of the environment where the trace was
-    generated.
-    - Contain unique domain identifier (kernel, process ID and timestamp,
-      hypervisor)
-    - Describes the runtime environment.
-    - Report target bitness
-    - Report target byte order
-    - Data types (see section 1.2 Extensions below)
-  - Architecture-agnostic (text-based)
-  - Ought to be parsed with a regular grammar
-  - Mapping to event types, e.g. (section, event) tuples, with:
-      ( section identifier, event numerical identifier )
-  - Description of event context fields (per section)
-  - Can be streamed along with the trace as a trace section
-  - Support dynamic addition of new event types while trace is active (required
-    to support module/shared object loading and dynamic probes)
-  - Metadata section should be efficient and reliable. Additional information
-    could be kept in separate sections, outside of metadata.
-  - Metadata description language not imposed by standard
-    - Metadata format identifier placed at the beginning of the metadata.
-
-
-1.2) Extensions (optional capabilities)
-
-- Event
-  - Optional context (thread id, virtual cpu id, execution mode (irq/bh/thread),
-                      CPU/board/node id, event ordering identifier, timestamp,
-                      current hardware performance counter information, event
-                      size)
-    - Optional ordering capability across sections:
-      - Ordering identifier required for trace containing many event streams
-      - Either timestamp-based or based on unique sequence numbers
-    - Optional time-flow capability: per-event timestamps
-  - It should be possible to have context information only in some event records
-    within a section. E.g., timestamp written every few events.
-
-- Section
-  - Optional context applying to all events contained in that section
-    (thread id, virtual cpu id, execution mode (irq/bh/thread), CPU/board/node
-     id)
-  - Support piece-wise compression
-  - Support checksumming
-
-- Metadata
-  - Execution environment information
-    - Data types available: integer, strings, arrays, sequence, floats,
-      structures, maps (aka enumerations), bitfields, ...
-      - Describe type alignment.
-      - Describe type size.
-      - Describe type signedness.
-      - Other type examples:
-        - gcc "vector" type. (packed data)
-          http://gcc.gnu.org/onlinedocs/gcc/Vector-Extensions.html
-        - gcc complex type (e.g. complex short, float, double...)
-        - gcc _Fract and _Accum http://gcc.gnu.org/wiki/FixedPointArithmetic
-          http://gcc.gnu.org/onlinedocs/gcc/Fixed_002dPoint.html
-  - Describes trace capabilities, for instance:
-    - Event ordering across sections
-    - Time flow information
-      - In event header
-      - Or possibly payload of pre-specified sections and/or events
-    - Ability to perform event ordering across traces
-
-  - Optional per-event "current state tracking" information.
-
-    This per-event taxonomy allows automated creation of a state machine that
-    keeps track of state updates within the taxonomy tree.
-
-    Described in an file-system path-like taxonomy with additional []
-    operator which indicates a lookup by value, e.g.:
-
-    * For events in the trace stream updating the current state only based on
-      information known from the context (either derived from the per-section or
-      per-event context information):
-
-    E.g., associated with a scheduling change event:
-
-    "cpu[section/cpu]/thread = field/next_pid"
-       Updates the current value of the current section's cpu "thread" attribute
-       (e.g. currently running thread).
-
-    E.g., associated with a system call:
-
-    "thread[cpu[section/cpu]/thread]/syscall[field/syscall_id]/id
-       = field/syscall_id"
-
-       Updates the state value of the current thread "syscall" attribute.
-
-    * For events in the trace stream targeting a path that depends on other
-      fields into that same event (would be common for full system state dump at
-      trace start):
-
-    E.g., associated with a thread listing event:
-    "thread[field/pid]/pid = field/pid"
-
-    E.g., associated with a thread memory maps listing event:
-    "thread[field/pid]/mmap[field/address]/address = field/address"
-    "thread[field/pid]/mmap[field/address]/end = field/end"
-    "thread[field/pid]/mmap[field/address]/flags = field/flags"
-    "thread[field/pid]/mmap[field/address]/pgoff = field/pgoff"
-    "thread[field/pid]/mmap[field/address]/inode = field/inode"
-
-    All per-event context information (e.g. repeating the current PID and CPU
-    for each event) can be represented with this taxonomy, e.g., in the
-    section description:
-
-    "section/pid = field/pid"
-    "section/cpu = field/cpu"
-
-
-2) Linux-specific Model
-
-   (Linux instance, specific to the reference implementation)
-
-Instance of the model specifically tailored to the Linux kernel and C
-programs/libraries requirements. Allows for either packed events, or events
-aligned following the ISO/C standard.
-
-- Event
-  - Payload
-    - Initially support ISO C naturally aligned and packed type layouts.
-
-- Each section represented as a trace stream (typically 1 trace stream per cpu
-  per section) to allow the tracer to easily append to these sections.
-  Identifier: section name / CPU ID
-  Each section has a CPU ID identifier in its context information.
-
-- Trace stream
-  - Should have no hard-coded limit on size of a file generated by saving the
-    trace stream (64 bit file position is fine)
-  - Event lost count should be localized. It should apply to a limited time
-    interval and to a tracefile, hence to a specific section, so the trace
-    analyzer can provide basic information about what kind of events were lost
-    and where they were lost in the trace.
-  - A stream is divided into packets, which each consists of one or many event
-    records.
-  - Should be optionally compressible piece-wise (packet per packet).
-  - Optional checksum on the packet content (except packet header), with a
-    selection of checksum algorithms. Performed on a per-packet basis.
-  - Packet headers should contain a sequence number to help UDP streaming
-    reassembly.
-  - Packet headers should be allowed to contain extra space reserved for
-    encapsulation into a UDP packet encapsulation without copy.
-
-- Compact representation
-  - Minimize the overhead in terms of disk/network/serial port/memory bandwidth.
-  - A compact representation can keep more information in smaller buffers,
-    thus needs less memory to keep the same amount of information around.
-    Also useful to improve cache locality in flight recorder mode.
-
-- Natural alignment of headers for architectures with slow non-aligned writes.
-
-- Packed layout of headers for architecture with efficient non-aligned writes.
-
-- Should have a 1 to 1 mapping between the memory buffers and the generated
-  trace files: allows zero-copy with splice().
-
-- Use target endianness
-
-- Portable across different host target (tracer)/host (analyzer) architectures
-
-- It should be possible to generate metadata from descriptions written in header
-  files (extraction with C preprocessor macros is one solution).
-
-
-* Requirements on the Tracers
-
-Higher-level tracer requirements that seem appropriate to support some of the
-trace format requirements stated above.
-
-Enumerating these higher-level requirements influence the trace format in many
-ways. For instance, a requirement for compactness leads to schemes where all
-information repetition should be eliminated. Thus the need for optional
-per-section context information. Another example is the requirement for speed
-and streaming. The requirement for speed ans treaming leads to zero-copy
-implementations, which imply that the trace format should be written natively by
-the tracer.  The tracer requirements stated in this section are stated to ensure
-that the trace format structure makes it possible for a tracer to cope with the
-requirements, not to require that all tracer do so.
-
-
-*Fast*
-- Low-overhead
-- Handle large trace throughput (multi-GB per minutes)
-- Scalable to high number of cores
-  - Per-cpu memory buffers
-  - Scalability and performance-aware synchronization
-
-*Compact*
-- Environments without filesystem
-  - Need to buffer events in target RAM to send them in group a host for
-    analysis
-- Ability to tune the size of buffers and transmission medium to minimize the
-  impact on the traced system.
-- Streaming (live monitoring)
-  - Through sockets (USB, network)
-  - Through serial ports
-  - There must be a related protocol for streaming this event data.
-
-- Availability of flight recorder (synonym: overwrite) mode
-  - Exclusive ownership of reader data.
-  - Buffer size should be per group of events.
-
-- Output trace to disk
-- Trace buffers available in crash dump to allow post-mortem analysis
-- Fine-grained timestamps
-
-- Lockless (lock-free, ideally wait-free; aka starvation-free)
-
-- Buffer introspection: event written, read and lost counts.
-
-- Ability to iteratively narrow the level of details and traced time window
-  following an initial high level "state" overview provided by an initial trace
-  collecting everything.
-
-- Support kernel module instrumentation
-
-- Standard way(s) for a host to upload/access trace log data from a
-  target/JTAG device/simulator/etc.
-
-- Conditional tracing in kernel space.
-
-- Compatibility with power management subsystem (trace collection shall not be a
-  reason for waking up a device)
-
-- Well defined and stable trace configuration and control API across kernel
-  versions.
-
-- Create and run more than one trace session in parallel at the same time
-  - monitoring from system administrators
-  - field engineered to troubleshoot a specific problem
-
-
-* Trace Analyzer Requirements
-
-The trace analyzer requirements stated in this section are stated to ensure that
-the trace format structure makes it possible for a trace analyzer to cope with
-the requirements, not to require that all trace analyzers do so.
-
-- Ability to cope with huge traces (> 10 GB)
-- Should be possible to do a binary search on the file to find events by time
-  at least. (combined with smart indexing/ summary data perhaps)
-- File format should be as dense as possible, but not at the expense of
-  analysis performance (faster is more important than bigger since disks are
-  getting cheaper)
-- Must not be required to scan through all events in order to start
-  analyzing (by time anyway)
-- Support live viewing of trace streams
-- Standard description of a trace event context.
-  (PERI-XML calls it "Dimensions")
-- Manage system-wide event scoping with the following hierarchy:
-  (address space identifier, section name, event name)
+The goal of the present document is to propose a trace format that suits the
+needs of the embedded, telecom, high-performance and kernel communities.  It is
+based on the Common Trace Format Requirements (v1.4) document. It is designed to
+be natively generated by tracing of a Linux kernel and Linux user-space
+applications written in C/C++.
+
+A reference implementation of a library to read and write this trace format is
+being implemented within the BabelTrace project, a converter between trace
+formats. The development tree is available at:
+
+  git tree:   git://git.efficios.com/babeltrace.git
+  gitweb:     http://git.efficios.com/?p=babeltrace.git
+
+Comments are welcome! (proposal document below)
+
+Thanks,
+
+Mathieu
+
+
+1. Preliminary definitions
+
+  - Trace: An ordered sequence of events.
+  - Section: Group of events, containing a subset of the trace event types.
+  - Packet: A sequence of physically contiguous events within a section.
+  - Event: This is the basic entry in a trace. (aka: a trace record).
+    - An event identifier (ID) relates to the class (a type) of event within
+      a section.
+        e.g. section: high_throughput, event: irq_entry.
+    - An event (or event record) relates to a specific instance of an event
+      class.
+        e.g. section: high_throughput, event: irq_entry, at time X, on CPU Y
+
+
+2. High-level representation of a trace
+
+A trace is divided into multiple trace streams, each representing an information
+stream specific to:
+
+ - a section,
+ - a processor.
+
+A trace "section" consists of a collection of trace streams (typically one trace
+stream per cpu) containing a subset of the trace event types.
+
+Because each trace stream is appended to while a trace is being recorded, each
+is associated with a separate file for disk output. Therefore, a trace stored to
+disk can be represented as a directory containing one file per section.
+
+A metadata section contains information on trace event types. It describes:
+
+- Trace version.
+- Types available.
+- Per-section event header description.
+- Per-section event header selection.
+- Per-section event context fields.
+- Per-event
+  - Event type to section mapping.
+  - Event type to name mapping.
+  - Event type to ID mapping.
+  - Event fields description.
+
+
+3. Trace Section
+
+A trace section is divided in contiguous packets of variable size. These
+subdivisions allow the trace analyzer to perform a fast binary search by time
+within the section (typically requiring to index only the packet headers)
+without reading the whole section. These subdivisions have a variable size to
+eliminate the need to transfer the packet padding when partially filled packets
+must be sent when streaming a trace for live viewing/analysis. Dividing sections
+into packets is also useful for network streaming over UDP and flight recorder
+mode tracing (a whole packet can be swapped out of the buffer atomically for
+reading).
+
+The section header is repeated at the beginning of each packet to allow
+flexibility in terms of:
+
+  - streaming support,
+  - allowing arbitrary buffers to be discarded without making the trace
+    unreadable,
+  - allow UDP packet loss handling by either dealing with missing packet or
+    asking for re-transmission.
+  - transparently support flight recorder mode,
+  - transparently support crash dump.
+
+The section header will therefore be referred to as the "packet header"
+thorough the rest of this document.
+
+
+4. Types
+
+4.1 Basic types
+
+A basic type is a non-compound type, as described in this section.
+
+4.1.1 Type inheritance
+
+Type specifications can be inherited to allow deriving concrete types from an
+abstract type. For example, see the uint32_t type derived from the "integer"
+abstract type below ("Integers" section). Concrete types have a precise binary
+representation in the trace. Abstract types have methods to read and write these
+types, but must be derived into a concrete type to be usable in an event field.
+
+Concrete types inherit from abstract types. Abstract types can inherit from
+other abstract types.
+
+4.1.2 Alignment
+
+We define "byte-packed" types as aligned on the byte size, namely 8-bit.
+We define "bit-packed" types as following on the next bit, as defined by the
+"bitfields" section.
+We define "natural alignment" of a basic type as the lesser value between the
+type size and the architecture word size.
+
+All basic types, except bitfields, are either aligned on their "natural"
+alignment or byte-packed, depending on the architecture preference.
+Architectures providing fast unaligned writes byte-packed basic types to save
+space, aligning each type on byte boundaries (8-bit). Architectures with slow
+unaligned writes align types on the lesser value between their size and the
+architecture word size (the type "natural" alignment on the architecture).
+
+Note that the natural alignment for 64-bit integers and double-precision
+floating point values is fixed to 32-bit on a 32-bit architecture, but to 64-bit
+for a 64-bit architecture.
+
+Metadata attribute representation:
+
+  align = value;                                /* value in bits */
+
+4.1.3 Byte order
+
+By default, target architecture endianness is used. Byte order can be overridden
+for a basic type by specifying a "byte_order" attribute. Typical use-case is to
+specify the network byte order (big endian: "be") to save data captured from the
+network into the trace without conversion. If not specified, the byte order is
+native.
+
+Metadata representation:
+
+  byte_order = native OR network OR be OR le;	/* network and be are aliases */
+
+4.1.4 Size
+
+Type size, in bits, for integers and floats is that returned by "sizeof()" in C
+multiplied by CHAR_BIT.
+We require the size of "char" and "unsigned char" types (CHAR_BIT) to be fixed
+to 8 bits for cross-endianness compatibility.
+
+Metadata representation:
+
+  size = value;    (value is in bits)
+
+4.1.5 Integers
+
+Signed integers are represented in two-complement. Integer alignment, size,
+signedness and byte ordering are defined in the metadata. Integers aligned on
+byte size (8-bit) and with length multiple of byte size (8-bit) correspond to
+the C99 standard integers. In addition, integers with alignment and/or size that
+are _not_ a multiple of the byte size are permitted; these correspond to the C99
+standard bitfields, with the added specification that the CTF integer bitfields
+have a fixed binary representation. A MIT-licensed reference implementation of
+the CTF portable bitfields is available at:
+
+  http://git.efficios.com/?p=babeltrace.git;a=blob;f=include/babeltrace/bitfield.h
+
+Binary representation of integers:
+
+- On little and big endian:
+  - Within a byte, high bits correspond to an integer high bits, and low bits
+    correspond to low bits.
+- On little endian:
+  - Integer across multiple bytes are placed from the less significant to the
+    most significant.
+  - Consecutive integers are placed from lower bits to higher bits (even within
+    a byte).
+- On big endian:
+  - Integer across multiple bytes are placed from the most significant to the
+    less significant.
+  - Consecutive integers are placed from higher bits to lower bits (even within
+    a byte).
+
+This binary representation is derived from the bitfield implementation in GCC
+for little and big endian. However, contrary to what GCC does, integers can
+cross units boundaries (no padding is required). Padding can be explicitely
+added (see 4.1.6 GNU/C bitfields) to follow the GCC layout if needed.
+
+Metadata representation:
+
+  abstract_type integer {
+    signed = true OR false;                     /* default false */
+    byte_order = native OR network OR be OR le; /* default native */
+    size = value;                               /* value in bits, no default */
+    align = value;                              /* value in bits */
+  }
+
+Example of type inheritance (creation of a concrete type uint32_t):
+
+type uint32_t {
+  parent = integer;
+  size = 8;
+  signed = false;
+  align = 32;
+}
+
+Definition of a 5-bit signed bitfield:
+
+type int5_t {
+  parent = integer;
+  size = 5;
+  signed = true;
+  align = 1;
+}
+
+4.1.6 GNU/C bitfields
+
+The GNU/C bitfields follow closely the integer representation, with a
+particularity on alignment: if a bitfield cannot fit in the current unit, the
+unit is padded and the bitfield starts at the following unit. We therefore need
+to express the extra "unit size" information.
+
+Metadata representation:
+
+abstract_type gcc_bitfield {
+  parent = integer;
+  unit_size = value;
+}
+
+As an example, the following structure declared in C compiled by GCC:
+
+struct example {
+  short a:12;
+  short b:5;
+};
+
+Would correspond to the following structure, aligned on the largest element
+(short). The second bitfield would be aligned on the next unit boundary, because
+it would not fit in the current unit.
+
+type struct_example {
+  parent = struct;
+  fields = {
+    {
+      type {
+        parent = gcc_bitfield;
+        unit_size = 16;				/* sizeof(short) */
+        size = 12;
+        signed = true;
+        align = 1;
+      },
+      a,
+    },
+    {
+      type {
+        parent = gcc_bitfield;
+        unit_size = 16;				/* sizeof(short) */
+        size = 5;
+        signed = true;
+        align = 1;
+      },
+      b,
+    },
+  };
+}
+
+4.1.7 Floating point
+
+The floating point values byte ordering is defined in the metadata.
+
+Floating point values follow the IEEE 754-2008 standard interchange formats.
+Description of the floating point values include the exponent and mantissa size
+in bits. Some requirements are imposed on the floating point values:
+
+- FLT_RADIX must be 2.
+- mant_dig is the number of digits represented in the mantissa. It is specified
+  by the ISO C99 standard, section 5.2.4, as FLT_MANT_DIG, DBL_MANT_DIG and
+  LDBL_MANT_DIG as defined by <float.h>.
+- exp_dig is the number of digits represented in the exponent. Given that
+  mant_dig is one bit more than its actual size in bits (leading 1 is not
+  needed) and also given that the sign bit always takes one bit, exp_dig can be
+  specified as:
+
+  - sizeof(float) * CHAR_BIT - FLT_MANT_DIG
+  - sizeof(double) * CHAR_BIT - DBL_MANT_DIG
+  - sizeof(long double) * CHAR_BIT - LDBL_MANT_DIG
+
+Metadata representation:
+
+abstract_type floating_point {
+   exp_dig = value;
+   mant_dig = value;
+   byte_order = native OR network OR be OR le;
+}
+
+Example of type inheritance:
+
+type float {
+  exp_dig = 8;         /* sizeof(float) * CHAR_BIT - FLT_MANT_DIG */
+  mant_dig = 24;       /* FLT_MANT_DIG */
+  byte_order = native;
+}
+
+TODO: define NaN, +inf, -inf behavior.
+
+4.1.8 Enumerations
+
+Enumerations are a mapping between an integer type and a table of strings. The
+numerical representation of the enumeration follows the integer type specified
+by the metadata. The enumeration mapping table is detailed in the enumeration
+description within the metadata.
+
+abstract_type enum  {
+  .parent = integer;
+  .map = {
+    { value , string },
+    { value , string },
+    { value , string },
+    ...
+  };
+}
+
+4.1.9 Strings
+
+Strings have a variable size and are terminated by a '\0' "NULL" character.
+Their encoding is described in the metadata. In absence of encoding attribute
+information, the default encoding is UTF-8.
+
+abstract_type string {
+  encoding = UTF8 OR ASCII;
+}
+
+4.2 Compound types
+
+4.2.1 Structures
+
+Structures are aligned on the largest alignment required by basic types
+contained within the structure. (This follows the ISO/C standard for structures)
+
+Metadata representation:
+
+abstract_type struct {
+  fields = {
+    { field_type, field_name },
+    { field_type, field_name },
+    ...
+  };
+}  
+
+Example:
+
+type struct_example {
+  parent = struct;
+  fields = {
+    {
+      type {                 /* Nameless type */
+        parent = integer;
+        size = 16;
+        signed = true;
+        align = 16;
+      },
+      first_field_name,
+    },
+    {
+      uint64_t,              /* Named type declared in the metadata */
+      second_field_name,
+    }
+  };
+}
+
+The fields are placed in a sequence next to each other. They each possess a
+field name, which is a unique identifier within the structure.
+
+4.2.2 Arrays
+
+Arrays are fixed-length. Their length is declared in the type declaration within
+the metadata. They contain an array of "inner type" elements, which can refer to
+any type not containing the type of the array being declared (no circular
+dependency).
+
+Metadata representation:
+
+abstract_type array {
+  length = value;
+  elem_type = type;
+}
+
+E.g.:
+
+type example_array {
+  parent = array;
+  length = 10;
+  elem_type = uint32_t;
+}
+
+
+4.2.3 Sequences
+
+Sequences are dynamically-sized arrays. They start with an integer that specify
+the length of the sequence, followed by an array of "inner type" elements.
+
+abstract_type sequence {
+  length_type = type;	/* Inheriting from integer */
+  elem_type = type;
+}
+
+The integer type follows the integer types specifications, and the sequence
+elements follow the "array" specifications.
+
+
+5. Trace Packet Header
+
+- Aligned on page size. Fixed size. Fields aligned on their natural size or
+  packed (depending on the architecture preference).
+  No padding at the end of the trace packet header. Native architecture byte
+  ordering.
+- Magic number (CTF magic numbers: 0xC1FC1FC1 and its reverse endianness
+  representation: 0xC11FFCC1) It needs to have a non-symmetric bytewise
+  representation. Used to distinguish between big and little endian traces (this
+  information is determined by knowing the endianness of the architecture
+  reading the trace and comparing the magic number against its value and the
+  reverse, 0xC11FFCC1). This magic number specifies that we use the CTF metadata
+  description language described in this document. Different magic numbers
+  should be used for other metadata description languages.
+- Session ID, used to ensure the packet match the metadata used.
+  (note: we cannot use a metadata checksum because metadata can be appended to
+   while tracing is active)
+- Packet content size (in bytes).
+- Packet size (in bytes, includes padding).
+- Packet content checksum (optional). Checksum excludes the packet header.
+- Per-section packet sequence count (to deal with UDP packet loss). The number
+  of significant sequence counter bits should also be present, so wrap-arounds
+  are deal with correctly.
+- Timestamp at the beginning and end of the packet. Should include all
+  event timestamps contained therein.
+- Events discarded count
+  - Snapshot of a per-section free-running counter, counting the number of
+    events discarded that were supposed to be written in the section prior to
+    the first event in the packet.
+    * Note: producer-consumer buffer full condition should fill the current
+            packet with padding so we know exactly where events have been
+            discarded.
+- Compression scheme used for the packet content. Applied directly to raw data.
+  0: no compression scheme
+  1: bzip2
+  2: gzip
+- Cypher used for the packet content. Applied after compression.
+  0: no encryption
+  1: AES
+- Checksum scheme used for the packet content. Applied after encryption.
+  0: no checksum
+  1: md5
+  2: sha1
+
+type packet_header {
+  parent = struct;
+  fields = {
+    { uint32_t, magic },
+    { uint32_t, session_id },
+    { uint32_t, content_size },
+    { uint32_t, packet_size },
+    { uint32_t, checksum },
+    { uint32_t, section_packet_count },
+    { uint64_t, timestamp_begin }
+    { uint64_t, timestamp_end }
+    [ uint32_t, events_discarded },
+    { uint8_t,  section_packet_count_bits },	/* Significant counter bits */
+    { uint8_t,  compression_scheme },
+    { uint8_t,  encryption_scheme },
+    { uint8_t,  checksum },
+  };
+};
+
+
+6. Event Structure
+
+The overall structure of an event is:
+
+  - Event Header (as specifed by the section metadata)
+  - Extended Event Header (as specified by the event header)
+  - Event Context (as specified by the section metadata)
+  - Event Payload (as specified by the event metadata)
+
+
+6.1 Event Header
+
+One major factor can vary between sections: the number of event IDs assigned to
+a section. Luckily, this information tends to stay relatively constant (modulo
+event registration while trace is being recorded), so we can specify different
+representations for sections containing few event IDs and sections containing
+many event IDs, so we end up representing the event ID and timestamp as densely
+as possible in each case.
+
+We therefore provide two types of events headers. Type 1 accommodates sections
+with less than 31 event IDs. Type 2 accommodates sections with 31 or more event
+IDs.
+
+The "extended headers" are used in the rare occasions where the information
+cannot be represented in the ranges available in the event header.
+
+Types uintX_t represent an X-bit unsigned integer.
+
+
+6.1.1 Type 1 - Few event IDs
+
+  - Aligned on 32-bit (or 8-bit if byte-packed, depending on the architecture
+    preference).
+  - Fixed size: 32 bits.
+  - Native architecture byte ordering.
+
+type event_header_1 {
+  parent = struct;
+  fields = {
+    { uint5_t, id },	/*
+			 * id: range: 0 - 30.
+			 * id 31 is reserved to indicate a following
+			 * extended header.
+			 */
+    { uint27_t, timestamp },
+  };
+};
+
+The end of a type 1 header is aligned on a 32-bit boundary (or packed).
+
+
+6.1.2 Extended Type 1 Event Header
+
+  - Follows struct event_header_1, which is aligned on 32-bit, so no need to
+    realign.
+  - Fixed size: 96 bits.
+  - Native architecture byte ordering.
+
+type event_header_1_ext {
+  parent = struct;
+  fields = {
+    { uint32_t, id },		/* 32-bit event IDs */
+    { uint64_t, timestamp },	/* 64-bit timestamps */ 
+  };
+};
+
+The end of a type 1 extended header is aligned on the natural alignment of a
+64-bit integer (or 8-bit if byte-packed).
+
+
+6.1.3 Type 2 - Many event IDs
+
+  - Aligned on 32-bit (or 8-bit if byte-packed, depending on the architecture
+    preference).
+  - Fixed size: 48 bits.
+  - Native architecture byte ordering.
+
+type event_header_2 {
+  parent = struct;
+  fields = {
+    { uint32_t, timestamp },
+    { uint16_t, id },	/*
+			 * id: range: 0 - 65534.
+			 * id 65535 is reserved to indicate a following
+			 * extended header.
+			 */
+  };
+};
+
+The end of a type 2 header is aligned on a 16-bit boundary (or 8-bit if
+byte-packed).
+
+
+6.1.4 Extended Type 2 Event Header
+
+  - Follows struct event_header_2, which alignment end on a 16-bit boundary, so
+    we need to align on 64-bit integer natural alignment (or 8-bit if
+    byte-packed).
+  - Fixed size: 96 bits.
+  - Native architecture byte ordering.
+
+type event_header_2_ext {
+  parent = struct;
+  fields = {
+    { uint64_t, timestamp },	/* 64-bit timestamps */ 
+    { uint32_t, id },		/* 32-bit event IDs */
+  };
+};
+
+The end of a type 2 extended header is aligned on the natural alignment of a
+32-bit integer (or 8-bit if byte-packed).
+
+
+6.2 Event Context
+
+The event context contains information relative to the current event. The choice
+and meaning of this information is specified by the metadata "section"
+information. For this trace format, event context is usually empty, except when
+the metadata "section" information specifies otherwise by declaring a non-empty
+structure for the event context. An example of event context is to save the
+event payload size with each event, or to save the current PID with each event.
+
+6.2.1 Event Context Description
+
+Event context example. These are declared within the section declaration within
+the metadata.
+
+type per_section_event_ctx {
+  parent = struct;
+  fields = {
+    { uint, pid },
+    { uint16_t, payload_size },
+  };
+};
+
+6.3 Event Payload
+
+An event payload contains fields specific to a given event type. The fields
+belonging to an event type are described in the event-specific metadata
+within a structure type.
+
+6.3.1 Padding
+
+No padding at the end of the event payload. This differs from the ISO/C standard
+for structures, but follows the CTF standard for structures. In a trace, even
+though it makes sense to align the beginning of a structure, it really makes no
+sense to add padding at the end of the structure, because structures are usually
+not followed by a structure of the same type.
+
+This trick can be done by adding a zero-length "end" field at the end of the C
+structures, and by using the offset of this field rather than using sizeof()
+when calculating the size of a structure (see section "A.1 Helper macros").
+
+6.3.2 Alignment
+
+The event payload is aligned on the largest alignment required by types
+contained within the payload. (This follows the ISO/C standard for structures)
+
+
+
+7. Metadata
+
+The meta-data is located in a tracefile section named "metadata". It is made of
+"packets", which each start with a packet header. The event type within the
+metadata section have no event header nor event context. Each event only
+contains a null-terminated "string" payload, which is a metadata description
+entry. The events are packed one next to another. Each packet start with a
+packet header, which contains, amongst other fields, the session ID and magic
+number.
+
+The metadata can be parsed by reading through the metadata strings, skipping
+spaces, newlines and null-characters.
+
+trace {
+  major = value;	/* Trace format version */
+  minor = value;
+}
+
+section {
+  name = section_name;
+  event {
+    /* Type 1 - Few event IDs; Type 2 - Many event IDs */
+    header_type = type1 OR type2;
+    context {
+      event_size = true OR false;  /* Includes event size field or not */
+    }
+  }
+}
+
+event {
+  name = event_name;
+  id = value;			/* Numeric identifier within the section */
+  section = section_name;
+  fields = type inheriting from "struct" abstract type.
+}
+
+/* More detail on types in section 4. Types */
+
+/* Named types */
+type typename {
+   ...
+}
+
+/* Unnamed types, contained within compound type fields */
+type {
+   ...
+}
+
+A.1 Helper macros
+
+The two following macros keep track of the size of a GNU/C structure without
+padding at the end by placing HEADER_END as the last field.
+
+#define HEADER_END		char end_field[0]
+#define header_sizeof(type)	offsetof(typeof(type), end_field)
 
 -- 
 Mathieu Desnoyers
