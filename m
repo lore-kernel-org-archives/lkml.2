@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216Ab0JELjQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 07:39:16 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49304 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751815Ab0JELjP (ORCPT
+	id S1758224Ab0JELkR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 07:40:17 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:37619 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751815Ab0JELkQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 07:39:15 -0400
+	Tue, 5 Oct 2010 07:40:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=hjCybO0ADcOuIOg3qMz/L+72iS+n6vNfTLHzq2GduP1Zwdvty3VBO9an48jDDJQ6D4
-         30hj1AQ7/B/u0x5q/VYCMBeOzghbmlDhe2lQcuoGaPYS0CDkXIBhezYyOqnjLRqcg9IM
-         1Jql+XrbkYwbVeh7EE3RoA3Mi3x9/4Zb2ADEs=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HojMyjIrs0S8wDo+h8PRFCrtIdOFK2Uac+1ijjorc+Jv5EWVO66Sgte0+G38IXvLIq
+         3sBG/2YZc5KOtagKL+Z7P59gMFBk0bs4onYvJCTM0lf+/WUv7XjGA3J1Thi7gXL9v4nW
+         rsFF1Dlk7mG99/a7uwR/5zs3ENulS5HTJevtY=
+Date: Tue, 5 Oct 2010 19:44:49 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        phillip@lougher.demon.co.uk, hsweeten@visionengravers.com,
+        hpa@zytor.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] initramfs: strcpy destination string overflow
+Message-ID: <20101005114449.GI5170@cr0.nay.redhat.com>
+References: <cover.1286193211.git.EXT-Eugeny.Kuznetsov@nokia.com>
+ <b6cdf32448371a89fdab2f3875ac5b32365bf518.1286193211.git.EXT-Eugeny.Kuznetsov@nokia.com>
 MIME-Version: 1.0
-Date: Tue, 5 Oct 2010 13:39:14 +0200
-Message-ID: <AANLkTik34ZKasZMMpx4wD71k+RPccGLvAi1Cwe5UwZpj@mail.gmail.com>
-Subject: [PATCH] pramfs: Persistent and protected RAM filesystem
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: linux-embedded@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Tim Bird <tim.bird@am.sony.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b6cdf32448371a89fdab2f3875ac5b32365bf518.1286193211.git.EXT-Eugeny.Kuznetsov@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Tue, Oct 05, 2010 at 12:44:17PM +0400, Evgeny Kuznetsov wrote:
+>From: Evgeny Kuznetsov <ext-eugeny.kuznetsov@nokia.com>
+>
+>Function "strcpy()" is used without check for maximum allowed
+>source string length and could cause destination string overflow.
+>"strcpy()" is replaced by "strlcpy()" to prevent destination
+>string overflow.
+>
+>Signed-off-by: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
 
-after a lot of improvement, test, bug fix and new features, it's the
-moment for third round with the kernel community to submit PRAMFS for
-mainline. First of all, I have to say thanks to Tim Bird and CELF to
-actively support the project.
 
-Since the last review (June 2009) a lot of things are changed:
+Looks good to me,
 
-- removed any reference of BKL
-- fixed the endianess for the fs layout
-- added support for extended attributes, ACLs and security labels
-- moved out any pte manipulations from fs and inserted them in mm
-- implemented the new truncate convention
-- fixed problems with 64bit archs
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-...and much more. Complete "story" in the ChangeLog inserted in the
-documentation file.
-
-Since the patch is long, you can download and review the patch from
-the project site: http:\\pramfs.sourceforge.net. The patch version is
-1.2.1 for kernel 2.6.36.
-In addition, in the web site tech page, you can find a lot of
-information about implementation, technical details, benchemarking and
-so on.
-
-Regards,
-
-Marco
+>---
+> init/initramfs.c |    2 +-
+> 1 files changed, 1 insertions(+), 1 deletions(-)
+>
+>diff --git a/init/initramfs.c b/init/initramfs.c
+>index 4b9c202..3e68568 100644
+>--- a/init/initramfs.c
+>+++ b/init/initramfs.c
+>@@ -56,7 +56,7 @@ static char __init *find_link(int major, int minor, int ino,
+> 	q->minor = minor;
+> 	q->ino = ino;
+> 	q->mode = mode;
+>-	strcpy(q->name, name);
+>+	strlcpy(q->name, name, sizeof(q->name));
+> 	q->next = NULL;
+> 	*p = q;
+> 	return NULL;
+>-- 
+>1.6.3.3
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
