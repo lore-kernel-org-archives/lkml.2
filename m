@@ -1,103 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932736Ab0JEJ1G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 05:27:06 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53201 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678Ab0JEJ1D (ORCPT
+	id S932655Ab0JEJ24 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 05:28:56 -0400
+Received: from trinity.develer.com ([83.149.158.210]:47893 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753721Ab0JEJ2z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 05:27:03 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: xfs@oss.sgi.com
-Subject: Re: [patch] xfs: properly account for reclaimed inodes
-Date: Tue, 5 Oct 2010 11:26:46 +0200
-User-Agent: KMail/1.9.10
-Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Chinner <david@fromorbit.com>,
-        stable@kernel.org, John Hawley <warthog9@kernel.org>,
-        linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
-References: <20101001074354.GF2618@cmpxchg.org> <20101004071904.GH4681@dastard> <20101004102213.GJ2618@cmpxchg.org>
-In-Reply-To: <20101004102213.GJ2618@cmpxchg.org>
+	Tue, 5 Oct 2010 05:28:55 -0400
+X-Greylist: delayed 615 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 05:28:54 EDT
+Date: Tue, 5 Oct 2010 11:18:36 +0200
+From: Andrea Righi <arighi@develer.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 08/10] memcg: add cgroupfs interface to memcg dirty
+ limits
+Message-ID: <20101005091836.GA1698@linux.develer.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+ <1286175485-30643-9-git-send-email-gthelen@google.com>
+ <20101005161340.9bb7382e.kamezawa.hiroyu@jp.fujitsu.com>
+ <xr93r5g5w0uc.fsf@ninji.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201010051126.47537.hpj@urpla.net>
-X-Provags-ID: V02:K0:SZeMBl0FgehY9mxeqo+G8AOsz+IHMGDqSwfQzoJqXds
- 8FqLq+Qshs3boli8YQ9C+7qnRpYfrb3FaoftU0VZK1S1DrwPpF
- /MMKYPaeCJCNvcTv1LVFP7VEMpFcaYH+PGluMQm442iCaWbXmH
- enb1ufmGq6vvBSEDwXLeRHoCv6hrYGt8nWwKVC78nKR3M9DLQw
- A6m5xvmosF5dLOxcFMy11DNJ51sqhMtytDqAGyzdBQ=
+In-Reply-To: <xr93r5g5w0uc.fsf@ninji.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 October 2010, 12:22:13 Johannes Weiner wrote:
-> Hi,
->
-> On Mon, Oct 04, 2010 at 06:19:04PM +1100, Dave Chinner wrote:
-> > On Fri, Oct 01, 2010 at 12:17:23PM -0500, Alex Elder wrote:
-> > > On Fri, 2010-10-01 at 09:43 +0200, Johannes Weiner wrote:
-> > > > When marking an inode reclaimable, a per-AG counter is increased,
-> > > > the inode is tagged reclaimable in its per-AG tree, and, when this
-> > > > is the first reclaimable inode in the AG, the AG entry in the
-> > > > per-mount tree is also tagged.
-> > > >
-> > > > When an inode is finally reclaimed, however, it is only deleted
-> > > > from the per-AG tree.  Neither the counter is decreased, nor is the
-> > > > parent tree's AG entry untagged properly.
-> > > >
-> > > > Since the tags in the per-mount tree are not cleared, the inode
-> > > > shrinker iterates over all AGs that have had reclaimable inodes at
-> > > > one point in time.
-> > > >
-> > > > The counters on the other hand signal an increasing amount of slab
-> > > > objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
-> > > > per-filesystem context" this is not a real issue anymore because
-> > > > the shrinker bails out after one iteration.
-> > > >
-> > > > But the problem was observable on a machine running v2.6.34, where
-> > > > the reclaimable work increased and each process going into direct
-> > > > reclaim eventually got stuck on the xfs inode shrinking path,
-> > > > trying to scan several million objects.
-> > > >
-> > > > Fix this by properly unwinding the reclaimable-state tracking of an
-> > > > inode when it is reclaimed.
-> > > >
-> > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> > > > Cc: stable@kernel.org
-> > >
-> > > Yes, this looks right to me.  The state was correctly
-> > > adjusted in xfs_iget_cache_hit() when a RECLAIMABLE
-> > > inode is found in the cache, but it was not done when
-> > > reclaim completes.
-> > >
-> > > Reviewed-by: Alex Elder <aelder@sgi.com>
+On Tue, Oct 05, 2010 at 12:33:15AM -0700, Greg Thelen wrote:
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> 
+> > On Sun,  3 Oct 2010 23:58:03 -0700
+> > Greg Thelen <gthelen@google.com> wrote:
 > >
-> > Alex, can you push this to Linus ASAP? This needs to go back to
-> > stable kernels as well..
->
-> Here is my suggestion of a backport to .34.  Dave, Alex, do you
-> approve?
->
-> 	Hannes
->
-> diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
-> index 6845db9..3314f2a 100644
-> --- a/fs/xfs/xfs_iget.c
-> +++ b/fs/xfs/xfs_iget.c
-> @@ -499,6 +499,7 @@ xfs_ireclaim(
->  	write_lock(&pag->pag_ici_lock);
->  	if (!radix_tree_delete(&pag->pag_ici_root, agino))
->  		ASSERT(0);
-> +	pag->pag_ici_reclaimable--;
->  	write_unlock(&pag->pag_ici_lock);
->  	xfs_perag_put(pag);
->
->
+> >> Add cgroupfs interface to memcg dirty page limits:
+> >>   Direct write-out is controlled with:
+> >>   - memory.dirty_ratio
+> >>   - memory.dirty_bytes
+> >> 
+> >>   Background write-out is controlled with:
+> >>   - memory.dirty_background_ratio
+> >>   - memory.dirty_background_bytes
+> >> 
+> >> Signed-off-by: Andrea Righi <arighi@develer.com>
+> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >
+> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >
+> > a question below.
+> >
+> >
+> >> ---
+> >>  mm/memcontrol.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  1 files changed, 89 insertions(+), 0 deletions(-)
+> >> 
+> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> index 6ec2625..2d45a0a 100644
+> >> --- a/mm/memcontrol.c
+> >> +++ b/mm/memcontrol.c
+> >> @@ -100,6 +100,13 @@ enum mem_cgroup_stat_index {
+> >>  	MEM_CGROUP_STAT_NSTATS,
+> >>  };
+> >>  
+> >> +enum {
+> >> +	MEM_CGROUP_DIRTY_RATIO,
+> >> +	MEM_CGROUP_DIRTY_BYTES,
+> >> +	MEM_CGROUP_DIRTY_BACKGROUND_RATIO,
+> >> +	MEM_CGROUP_DIRTY_BACKGROUND_BYTES,
+> >> +};
+> >> +
+> >>  struct mem_cgroup_stat_cpu {
+> >>  	s64 count[MEM_CGROUP_STAT_NSTATS];
+> >>  };
+> >> @@ -4292,6 +4299,64 @@ static int mem_cgroup_oom_control_write(struct cgroup *cgrp,
+> >>  	return 0;
+> >>  }
+> >>  
+> >> +static u64 mem_cgroup_dirty_read(struct cgroup *cgrp, struct cftype *cft)
+> >> +{
+> >> +	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
+> >> +	bool root;
+> >> +
+> >> +	root = mem_cgroup_is_root(mem);
+> >> +
+> >> +	switch (cft->private) {
+> >> +	case MEM_CGROUP_DIRTY_RATIO:
+> >> +		return root ? vm_dirty_ratio : mem->dirty_param.dirty_ratio;
+> >> +	case MEM_CGROUP_DIRTY_BYTES:
+> >> +		return root ? vm_dirty_bytes : mem->dirty_param.dirty_bytes;
+> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_RATIO:
+> >> +		return root ? dirty_background_ratio :
+> >> +			mem->dirty_param.dirty_background_ratio;
+> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_BYTES:
+> >> +		return root ? dirty_background_bytes :
+> >> +			mem->dirty_param.dirty_background_bytes;
+> >> +	default:
+> >> +		BUG();
+> >> +	}
+> >> +}
+> >> +
+> >> +static int
+> >> +mem_cgroup_dirty_write(struct cgroup *cgrp, struct cftype *cft, u64 val)
+> >> +{
+> >> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+> >> +	int type = cft->private;
+> >> +
+> >> +	if (cgrp->parent == NULL)
+> >> +		return -EINVAL;
+> >> +	if ((type == MEM_CGROUP_DIRTY_RATIO ||
+> >> +	     type == MEM_CGROUP_DIRTY_BACKGROUND_RATIO) && val > 100)
+> >> +		return -EINVAL;
+> >> +	switch (type) {
+> >> +	case MEM_CGROUP_DIRTY_RATIO:
+> >> +		memcg->dirty_param.dirty_ratio = val;
+> >> +		memcg->dirty_param.dirty_bytes = 0;
+> >> +		break;
+> >> +	case MEM_CGROUP_DIRTY_BYTES:
+> >> +		memcg->dirty_param.dirty_bytes = val;
+> >> +		memcg->dirty_param.dirty_ratio  = 0;
+> >> +		break;
+> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_RATIO:
+> >> +		memcg->dirty_param.dirty_background_ratio = val;
+> >> +		memcg->dirty_param.dirty_background_bytes = 0;
+> >> +		break;
+> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_BYTES:
+> >> +		memcg->dirty_param.dirty_background_bytes = val;
+> >> +		memcg->dirty_param.dirty_background_ratio = 0;
+> >> +		break;
+> >
+> >
+> > Curious....is this same behavior as vm_dirty_ratio ?
+> 
+> I think this is same behavior as vm_dirty_ratio.  When vm_dirty_ratio is
+> changed then dirty_ratio_handler() will set vm_dirty_bytes=0.  When
+> vm_dirty_bytes is written dirty_bytes_handler() will set
+> vm_dirty_ratio=0.  So I think that the per-memcg dirty memory parameters
+> mimic the behavior of vm_dirty_ratio, vm_dirty_bytes and the other
+> global dirty parameters.
+> 
+> Am I missing your question?
 
-Ping?
+mmh... looking at the code it seems the same behaviour, but in
+Documentation/sysctl/vm.txt we say a different thing (i.e., for
+dirty_bytes):
 
-Masters of xfs, please raise your voices!
+"If dirty_bytes is written, dirty_ratio becomes a function of its value
+(dirty_bytes / the amount of dirtyable system memory)."
 
-Pete
+However, in dirty_bytes_handler()/dirty_ratio_handler() we actually set
+the counterpart value as 0.
+
+I think we should clarify the documentation.
+
+Signed-off-by: Andrea Righi <arighi@develer.com>
+---
+ Documentation/sysctl/vm.txt |   12 ++++++++----
+ 1 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
+index b606c2c..30289fa 100644
+--- a/Documentation/sysctl/vm.txt
++++ b/Documentation/sysctl/vm.txt
+@@ -80,8 +80,10 @@ dirty_background_bytes
+ Contains the amount of dirty memory at which the pdflush background writeback
+ daemon will start writeback.
+ 
+-If dirty_background_bytes is written, dirty_background_ratio becomes a function
+-of its value (dirty_background_bytes / the amount of dirtyable system memory).
++Note: dirty_background_bytes is the counterpart of dirty_background_ratio. Only
++one of them may be specified at a time. When one sysctl is written it is
++immediately taken into account to evaluate the dirty memory limits and the
++other appears as 0 when read.
+ 
+ ==============================================================
+ 
+@@ -97,8 +99,10 @@ dirty_bytes
+ Contains the amount of dirty memory at which a process generating disk writes
+ will itself start writeback.
+ 
+-If dirty_bytes is written, dirty_ratio becomes a function of its value
+-(dirty_bytes / the amount of dirtyable system memory).
++Note: dirty_bytes is the counterpart of dirty_ratio. Only one of them may be
++specified at a time. When one sysctl is written it is immediately taken into
++account to evaluate the dirty memory limits and the other appears as 0 when
++read.
+ 
+ Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any
+ value lower than this limit will be ignored and the old configuration will be
