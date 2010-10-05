@@ -1,55 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932835Ab0JEKgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:36:24 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40005 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab0JEKgX (ORCPT
+	id S1758054Ab0JEKjq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:39:46 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:27447 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752703Ab0JEKjp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:36:23 -0400
-Message-ID: <4CAAFF99.6060504@canonical.com>
-Date: Tue, 05 Oct 2010 18:36:09 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Thunderbird/3.0.8
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: Re: linux-next: build failure after merge of the drivers-x86 tree
-References: <20101005151126.eadae817.sfr@canb.auug.org.au>
-In-Reply-To: <20101005151126.eadae817.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Oct 2010 06:39:45 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Tue, 05 Oct 2010 12:41:51 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH 1/1] wait: using uninitialized member of wait queue
+In-reply-to: <dfd3348b7971bee89360efb85f8d622e6574b003.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
+To: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+Cc: mingo@elte.hu, gregkh@suse.de, a.p.zijlstra@chello.nl, xiaosuo@gmail.com,
+        linux-kernel@vger.kernel.org, ext-eugeny.kuznetsov@nokia.com
+Message-id: <op.vj3mn1fl7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.62 (Linux)
+References: <cover.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
+ <dfd3348b7971bee89360efb85f8d622e6574b003.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2010 12:11 PM, Stephen Rothwell wrote:
-> Hi Matthew,
-> 
-> After merging the drivers-x86 tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> make[4]: *** No rule to make target `drivers/platform/x86/ideapad_laptop.c', needed by `drivers/platform/x86/ideapad_laptop.o'.  Stop.
-> 
-> Caused by commit 9efe5c1540a1e03cb2e0fca85e49fc4c57c6e771 ("ideapad:
-> Change the driver name to ideapad-laptop").  The commit renames
-> ideapad_acpi.c to ideapad-laptop.c but the Makefile uses ideapad_laptop.o
-> (note underscore v. dash).
-> 
-> Presumably this was never even build tested :-(
-> 
-> I have used the drivers-x86 tree from next-20101004 for today.
+On Tue, 05 Oct 2010 10:47:57 +0200, Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com> wrote:
+> Member "flags" of "wait_queue_t" struct  is used in several places in
+> kernel code without beeing initialized. "flags" is used in bitwise operations.
+                       ^^^^^^ -- "being"
 
-Sorry, my fault.
+> If "flags" not initialized then unexpected behaviour may have place.
+> Incorrect flags maybe used later in code.
+> Struct "wait_queue_t" is initialized in function "init_wait()". But
+> "init_wait()" do not initialize "flag" member.
+                 ^^ -- does         ^^^^ -- "flags"
 
-This line is wrong,
+> Added initialization of "wait_queue_t.flags" with zero value into "init_wait".
 
-+obj-$(CONFIG_IDEAPAD_LAPTOP)	+= ideapad_laptop.o
+> diff --git a/include/linux/wait.h b/include/linux/wait.h
+> index 0836ccc..3efc9f3 100644
+> --- a/include/linux/wait.h
+> +++ b/include/linux/wait.h
+> @@ -614,6 +614,7 @@ int wake_bit_function(wait_queue_t *wait, unsigned mode, int sync, void *key);
+>  		(wait)->private = current;				\
+>  		(wait)->func = autoremove_wake_function;		\
+>  		INIT_LIST_HEAD(&(wait)->task_list);			\
+> +		(wait)->flags = 0;					\
+>  	} while (0)
+> /**
 
-shall be
+I'd turn init_wait() into a static inline.  Otherwise looks good to me.
+(Interestingly, init_wait() is used only in 3 places in the kernel and
+none uses flags.)
 
-+obj-$(CONFIG_IDEAPAD_LAPTOP)	+= ideapad-laptop.o
-
-How shall I fix it? resend the whole patches or just this one?
-
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
