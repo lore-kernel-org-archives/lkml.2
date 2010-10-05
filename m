@@ -1,106 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab0JEL1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 07:27:14 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62865 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab0JEL1N convert rfc822-to-8bit (ORCPT
+	id S1758190Ab0JELaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 07:30:15 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:26020 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758149Ab0JELaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 07:27:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=gM/35MAfgAneomI3aszHB1x5MTwmcnqmQec9WJJJkw5TWZcOyTgVWsO/iu92EmrThu
-         DXSqgPjVe2REB26zffmKnFvUwu32aoid+KnOIFQhZvPlBpgNcAXEaOIQqSnNpcOeRp3G
-         rxSemF2lZ8xfnzCPToSYWeyTatUY5q4R+yjuE=
-MIME-Version: 1.0
-Date: Tue, 5 Oct 2010 15:27:12 +0400
-Message-ID: <AANLkTimLUKvo9DiwhfXvOg32NN7TaJCXJXKPyCF1PmWj@mail.gmail.com>
-Subject: PROBLEM:
-From: blondquirk <blondquirk@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Oct 2010 07:30:14 -0400
+Subject: Re: [PATCH 1/5] misc: Driver for bh1770glc / sfh7770 ALS and
+ proximity sensor
+From: Onkalo Samu <samu.p.onkalo@nokia.com>
+Reply-To: samu.p.onkalo@nokia.com
+To: ext Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20101005122157.149f14d0@lxorguk.ukuu.org.uk>
+References: <1286271779-19819-1-git-send-email-samu.p.onkalo@nokia.com>
+	 <1286271779-19819-2-git-send-email-samu.p.onkalo@nokia.com>
+	 <20101005122157.149f14d0@lxorguk.ukuu.org.uk>
+Content-Type: text/plain
+Organization: Nokia Oyj
+Date: Tue, 05 Oct 2010 14:29:50 +0300
+Message-Id: <1286278190.21781.10.camel@4fid08082>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 05 Oct 2010 11:29:57.0895 (UTC) FILETIME=[A3EC3970:01CB6480]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-intel_ips: 1. Integer overflow in update_average_power; 2. Value
-returned by i915_read_mch_val is too high to be used as power in mW
 
-Kernel version: linux-2.6.36-rc6 x64
+Alan, thanks for comments
 
-I have Core i3 laptop y460 with dual intel/ati graphics (ati card is
-powered off via acpi).
-When I modprobe intel_ips (laptop is nearly idle), I get annoying messages:
- [  903.188705] intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match
-expected value (found 25, expected 35)
- [  903.188739] intel ips 0000:00:1f.6: PCI INT C -> GSI 18 (level,
-low) -> IRQ 18
- [  903.190255] intel ips 0000:00:1f.6: IPS driver initialized, MCP
-temp limit 65535
- [  908.382790] intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
- [  913.381288] intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
- [  918.379786] intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
- [  923.378302] intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
- [  928.376823] intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
- [  933.375314] intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
- [  938.373857] intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
- [  943.372346] intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
- [  948.370891] intel ips 0000:00:1f.6: CPU power or thermal limit exceeded
- [  953.369370] intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
+-Samu
 
-Then if do
-$ modprobe -r intel_ips
-$ modprobe intel_ips
-I get only
- [ 1097.310896] intel ips 0000:00:1f.6: Warning: CPU TDP doesn't match
-expected value (found 25, expected 35)
- [ 1097.312321] intel ips 0000:00:1f.6: IPS driver initialized, MCP
-temp limit 65535
- [ 1102.505240] intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
- [ 1132.496265] intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
- [ 1212.472556] intel ips 0000:00:1f.6: MCP power or thermal limit exceeded
+On Tue, 2010-10-05 at 13:21 +0200, ext Alan Cox wrote:
+> On Tue,  5 Oct 2010 12:42:55 +0300
+> Samu Onkalo <samu.p.onkalo@nokia.com> wrote:
+> 
+> > This is a driver for ROHM BH1770GLC and OSRAM SFH7770 combined
+> > ALS and proximity sensor.
+> 
+> Same comment about regulators.
 
-Then I added debug output when calling read_mch_val() and noticed
-possible integer overflow
+?
 
-diff -urN intel_ips.c.orig intel_ips.c
---- intel_ips.c.orig    2010-10-04 11:11:42.513203000 +0400
-+++ intel_ips.c    2010-10-05 14:23:52.357869000 +0400
-@@ -873,7 +873,7 @@
- }
+> 
+> 
+> > +/* Supported stand alone rates in ms from chip data sheet */
+> > +static s16 prox_rates[] = {10, 20, 30, 40, 70, 100, 200, 500, 1000, 2000};
+> > +
+> > +/* Supported IR-led currents in mA */
+> > +static const u8 prox_curr_ma[] = {5, 10, 20, 50, 100, 150, 200};
+> > +
+> > +/* Supported stand alone rates in ms from chip data sheet */
+> > +static s16 lux_rates[] = {100, 200, 500, 1000, 2000};
+> 
+> Any reason only one of the three is const ?
 
- static const u16 power_decay_factor = 2;
--static u16 update_average_power(u32 avg, u32 val)
-+static u32 update_average_power(u32 avg, u32 val)
- {
-     u32 ret;
+No real reason.
 
-@@ -1039,6 +1039,7 @@
-         /* Power */
-         if (ips->read_mch_val) {
-             mch_val = ips->read_mch_val();
-+           dev_info(&ips->dev->dev, "mch_val is %u\n", mch_val);
-             ips->mch_avg_power =
-                 update_average_power(ips->mch_avg_power,
-                              mch_val);
+> 
+> 
+> > +static int bhsfh_prox_rates(struct bhsfh_chip *chip, int rate,
+> > +			int rate_threshold)
+> > +{
+> > +	int i;
+> > +
+> > +	for (i = 0; i < ARRAY_SIZE(prox_rates); i++)
+> > +		if (prox_rates[i] == rate) {
+> > +			chip->prox_rate = i;
+> > +			break;
+> > +		}
+> > +
+> > +	if (i == ARRAY_SIZE(prox_rates))
+> > +		return -EINVAL;
+> > +
+> > +	for (i = 0; i < ARRAY_SIZE(prox_rates); i++)
+> > +		if (prox_rates[i] == rate_threshold) {
+> > +			chip->prox_rate_threshold = i;
+> > +			return 0;
+> > +		}
+> > +
+> > +	return -EINVAL;
+> 
+> This makes it hard for generic code. Wouldn't picking the best (first at
+> least as good as required) be a bit more polite to user space ?
 
-And now mch_power doesn't fluctuate, but it's unexpectedly huge, which
-might indicate problem related to i915 :
-$ while true; do cat /sys/kernel/debug/ips/mch_power; sleep 1; done;
-8886864mW
-11704782mW
-5017037mW
-7487929mW
-5988348mW
-6001705mW
-4132710mW
+Well, perhaps it is better to have hardcoded (or platform specific)
+rates instead of control interface. I'll change that.
 
-Also there is possible overflow when converting from unsigned long to
-u32, but it should not occur if i915_read_mch_val returns power in mW
+> 
+> 
+> > +static ssize_t bhsfh_lux_result_show(struct device *dev,
+> > +				   struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct bhsfh_chip *chip =  dev_get_drvdata(dev);
+> > +	ssize_t ret;
+> > +
+> > +	mutex_lock(&chip->mutex);
+> > +	if (pm_runtime_suspended(dev))
+> > +		ret = -EIO; /* Chip is not enabled at all */
+> > +	else if (chip->lux_wait_result)
+> > +		ret = -EAGAIN; /* Waiting for result */
+> 
+> This makes no sense because you can't poll() a sysfs file
 
-Keywords: modules
----
-blondquirk
+ok, what should be returned when there is no valid results available?
+
+> 
+> 
+> 
+> > +static ssize_t bhsfh_lux_calib_show(struct device *dev,
+> > +				 struct device_attribute *attr, char *buf)
+> > +{
+> > +	struct bhsfh_chip *chip = dev_get_drvdata(dev);
+> > +	return snprintf(buf, PAGE_SIZE, "%u\n", chip->lux_calib);
+> > +}
+> 
+> This is short chip->mutex locks as you sometimes temporarily change the
+> value (error path below)
+> 
+
+?
+
+> > +
+> > +static ssize_t bhsfh_lux_calib_store(struct device *dev,
+> > +				  struct device_attribute *attr,
+> > +				  const char *buf, size_t len)
+> > +{
+> > +	struct bhsfh_chip *chip = dev_get_drvdata(dev);
+> > +	unsigned long value;
+> > +	u32 old_calib;
+> > +	u32 new_corr;
+> > +
+> > +	if (strict_strtoul(buf, 0, &value))
+> > +		return -EINVAL;
+> > +
+> > +	mutex_lock(&chip->mutex);
+> > +	old_calib = chip->lux_calib;
+> > +	chip->lux_calib = value;
+> > +	new_corr = bhsfh_get_corr_value(chip);
+> > +	if (new_corr == 0) {
+> > +		chip->lux_calib = old_calib;
+> > +		mutex_unlock(&chip->mutex);
+> > +		return -EINVAL;
+> > +	}
+> > +	chip->lux_corr = new_corr;
+> > +	mutex_unlock(&chip->mutex);
+> > +
+> > +	return len;
+
