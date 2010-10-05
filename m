@@ -1,188 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757453Ab0JEDt6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 23:49:58 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:62499 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751687Ab0JEDt5 (ORCPT
+	id S1757467Ab0JEDv1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 23:51:27 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:65471 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751687Ab0JEDv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 23:49:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=W4m6nWDVQrtS2uo33VcKSLX6P477aD77iv8Wuo2hP0x21KY0YtAHsh35k6ltgvXl/p
-         vrTl21Ukgu4Fk/1GGxAneQ+cFKNsnU+lsLx4P4O1GmX4g1nEZrAsAQa9IKEDu1doDTxq
-         Kv/tfARYBaAAwIJpOu73AnEXogMzgDSYVqk5g=
-From: Namhyung Kim <namhyung@gmail.com>
+	Mon, 4 Oct 2010 23:51:26 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 04 Oct 2010 23:51:25 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
 To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>
-Subject: [PATCH UPDATED] ptrace: cleanup arch_ptrace() on m68knommu
-Date: Tue,  5 Oct 2010 12:49:49 +0900
-Message-Id: <1286250589-3693-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <20101004164205.7e8c0a66.akpm@linux-foundation.org>
-References: <20101004164205.7e8c0a66.akpm@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 1/2] vcs: add poll/fasync support
+In-reply-to: <20101004155454.771f7b70.akpm@linux-foundation.org>
+Message-id: <alpine.LFD.2.00.1010042323350.3107@xanadu.home>
+References: <alpine.LFD.2.00.1009302320360.1146@xanadu.home>
+ <20101004155454.771f7b70.akpm@linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use new 'regno', 'datap' variables in order to remove duplicated
-expressions and unnecessary castings. Alse remove checking @addr
-less than 0 because addr is now unsigned.
+On Mon, 4 Oct 2010, Andrew Morton wrote:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
-Acked-by: Greg Ungerer <gerg@uclinux.org>
----
+> On Fri, 01 Oct 2010 00:10:23 -0400 (EDT)
+> Nicolas Pitre <nico@fluxnic.net> wrote:
+> 
+> > The /dev/vcs* devices are used, amongst other things, by accessibility
+> > applications such as BRLTTY to display the screen content onto refreshable
+> > braille displays.  Currently this is performed by constantly reading from
+> > /dev/vcsa0 whether or not the screen content has changed.  Given the
+> > default braille refresh rate of 25 times per second, this easily qualifies
+> > as the biggest source of wake-up events preventing laptops from entering
+> > deeper power saving states.
+> > 
+> > To avoid this periodic polling, let's add support for select()/poll() and
+> > SIGIO with the /dev/vcs* devices.  The implemented semantic is to report
+> > data availability whenever the corresponding vt has seen some update after
+> > the last read() operation.  The application still has to lseek() back
+> > as usual in order to read() the new data.
+> > 
+> > Not to create unwanted overhead, the needed data structure is allocated
+> > and the vt notification callback is registered only when the poll or
+> > fasync method is invoked for the first time per file instance.
+> > 
+> > ...
+> > 
+> > diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
+> > index bcce46c..9013573 100644
+> > --- a/drivers/char/vc_screen.c
+> > +++ b/drivers/char/vc_screen.c
+> > @@ -35,6 +35,10 @@
+> >  #include <linux/console.h>
+> >  #include <linux/device.h>
+> >  #include <linux/smp_lock.h>
+> > +#include <linux/sched.h>
+> > +#include <linux/poll.h>
+> > +#include <linux/signal.h>
+> > +#include <linux/slab.h>
+> 
+> Formally, we need fs.h and notifier.h (at lesat).  I'll fix that up.
 
-reworked version on top of -next. Thanks.
+I didn't think that notifier.h was necessary as the declaration for 
+register_vt_notifier() is in vt_kern.h, which also includes notifier.h 
+itself already.
 
- arch/m68knommu/kernel/ptrace.c |   54 ++++++++++++++++++---------------------
- 1 files changed, 25 insertions(+), 29 deletions(-)
+As to fs.h... I agree in principle, but I don't see what my patch is 
+adding that would make fs.h a new requirement. In other words it was 
+probably required even before, which could justify a patch of its own?
 
-diff --git a/arch/m68knommu/kernel/ptrace.c b/arch/m68knommu/kernel/ptrace.c
-index 4ba708b..3defad4 100644
---- a/arch/m68knommu/kernel/ptrace.c
-+++ b/arch/m68knommu/kernel/ptrace.c
-@@ -115,6 +115,8 @@ long arch_ptrace(struct task_struct *child, long request,
- 		 unsigned long addr, unsigned long data)
- {
- 	int ret;
-+	int regno = addr >> 2;
-+	unsigned long __user *datap = (unsigned long __user *) data;
- 
- 	switch (request) {
- 		/* read the word at location addr in the USER area. */
-@@ -122,53 +124,48 @@ long arch_ptrace(struct task_struct *child, long request,
- 			unsigned long tmp;
- 
- 			ret = -EIO;
--			if ((addr & 3) || addr < 0 ||
--			    addr > sizeof(struct user) - 3)
-+			if ((addr & 3) || addr > sizeof(struct user) - 3)
- 				break;
- 
- 			tmp = 0;  /* Default return condition */
--			addr = addr >> 2; /* temporary hack. */
- 			ret = -EIO;
--			if (addr < 19) {
--				tmp = get_reg(child, addr);
--				if (addr == PT_SR)
-+			if (regno < 19) {
-+				tmp = get_reg(child, regno);
-+				if (regno == PT_SR)
- 					tmp >>= 16;
--			} else if (addr >= 21 && addr < 49) {
--				tmp = child->thread.fp[addr - 21];
--			} else if (addr == 49) {
-+			} else if (regno >= 21 && regno < 49) {
-+				tmp = child->thread.fp[regno - 21];
-+			} else if (regno == 49) {
- 				tmp = child->mm->start_code;
--			} else if (addr == 50) {
-+			} else if (regno == 50) {
- 				tmp = child->mm->start_data;
--			} else if (addr == 51) {
-+			} else if (regno == 51) {
- 				tmp = child->mm->end_code;
- 			} else
- 				break;
--			ret = put_user(tmp,(unsigned long *) data);
-+			ret = put_user(tmp, datap);
- 			break;
- 		}
- 
- 		case PTRACE_POKEUSR: /* write the word at location addr in the USER area */
- 			ret = -EIO;
--			if ((addr & 3) || addr < 0 ||
--			    addr > sizeof(struct user) - 3)
-+			if ((addr & 3) || addr > sizeof(struct user) - 3)
- 				break;
- 
--			addr = addr >> 2; /* temporary hack. */
--
--			if (addr == PT_SR) {
-+			if (regno == PT_SR) {
- 				data &= SR_MASK;
- 				data <<= 16;
- 				data |= get_reg(child, PT_SR) & ~(SR_MASK << 16);
- 			}
--			if (addr < 19) {
--				if (put_reg(child, addr, data))
-+			if (regno < 19) {
-+				if (put_reg(child, regno, data))
- 					break;
- 				ret = 0;
- 				break;
- 			}
--			if (addr >= 21 && addr < 48)
-+			if (regno >= 21 && regno < 48)
- 			{
--				child->thread.fp[addr - 21] = data;
-+				child->thread.fp[regno - 21] = data;
- 				ret = 0;
- 			}
- 			break;
-@@ -180,11 +177,11 @@ long arch_ptrace(struct task_struct *child, long request,
- 			    tmp = get_reg(child, i);
- 			    if (i == PT_SR)
- 				tmp >>= 16;
--			    if (put_user(tmp, (unsigned long *) data)) {
-+			    if (put_user(tmp, datap)) {
- 				ret = -EFAULT;
- 				break;
- 			    }
--			    data += sizeof(unsigned long);
-+			    datap++;
- 			}
- 			ret = 0;
- 			break;
-@@ -194,7 +191,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 			int i;
- 			unsigned long tmp;
- 			for (i = 0; i < 19; i++) {
--			    if (get_user(tmp, (unsigned long *) data)) {
-+			    if (get_user(tmp, datap)) {
- 				ret = -EFAULT;
- 				break;
- 			    }
-@@ -204,7 +201,7 @@ long arch_ptrace(struct task_struct *child, long request,
- 				tmp |= get_reg(child, PT_SR) & ~(SR_MASK << 16);
- 			    }
- 			    put_reg(child, i, tmp);
--			    data += sizeof(unsigned long);
-+			    datap++;
- 			}
- 			ret = 0;
- 			break;
-@@ -213,7 +210,7 @@ long arch_ptrace(struct task_struct *child, long request,
- #ifdef PTRACE_GETFPREGS
- 		case PTRACE_GETFPREGS: { /* Get the child FPU state. */
- 			ret = 0;
--			if (copy_to_user((void *)data, &child->thread.fp,
-+			if (copy_to_user(datap, &child->thread.fp,
- 					 sizeof(struct user_m68kfp_struct)))
- 				ret = -EFAULT;
- 			break;
-@@ -223,7 +220,7 @@ long arch_ptrace(struct task_struct *child, long request,
- #ifdef PTRACE_SETFPREGS
- 		case PTRACE_SETFPREGS: { /* Set the child FPU state. */
- 			ret = 0;
--			if (copy_from_user(&child->thread.fp, (void *)data,
-+			if (copy_from_user(&child->thread.fp, datap,
- 					   sizeof(struct user_m68kfp_struct)))
- 				ret = -EFAULT;
- 			break;
-@@ -231,8 +228,7 @@ long arch_ptrace(struct task_struct *child, long request,
- #endif
- 
- 	case PTRACE_GET_THREAD_AREA:
--		ret = put_user(task_thread_info(child)->tp_value,
--			       (unsigned long __user *)data);
-+		ret = put_user(task_thread_info(child)->tp_value, datap);
- 		break;
- 
- 		default:
--- 
-1.7.0.4
+> >  #include <asm/uaccess.h>
+> >  #include <asm/byteorder.h>
+> > @@ -45,6 +49,78 @@
+> >  #undef addr
+> >  #define HEADER_SIZE	4
+> >  
+> > +struct vcs_poll_data {
+> > +	struct notifier_block notifier;
+> > +	unsigned int cons_num;
+> > +	int has_read;
+> 
+> It would be nice to document the meaning of has_read.  And consider
+> using the more appropriate `bool' type?
 
+OK, please could you fold the patch below into this one?  That should 
+make the code more self explanatory.
+
+[...]
+> > +static struct vcs_poll_data *
+> > +vcs_poll_data_get(struct file *file)
+> > +{
+> > +	struct vcs_poll_data *poll = file->private_data;
+> > +
+> > +	if (poll)
+> > +		return poll;
+> > +
+> > +	poll = kzalloc(sizeof(*poll), GFP_KERNEL);
+> > +	if (!poll)
+> > +		return NULL;
+> > +	poll->cons_num = iminor(file->f_path.dentry->d_inode) & 127;
+> > +	init_waitqueue_head(&poll->waitq);
+> > +	poll->notifier.notifier_call = vcs_notifier;
+> > +	if (register_vt_notifier(&poll->notifier) != 0) {
+> > +		kfree(poll);
+> > +		return NULL;
+> > +	}
+> > +
+> > +	spin_lock(&file->f_lock);
+> > +	if (!file->private_data) {
+> > +		file->private_data = poll;
+> > +	} else {
+> > +		/* someone else raced ahead of us */
+> > +		vcs_poll_data_free(poll);
+> > +		poll = file->private_data;
+> > +	}
+> > +	spin_unlock(&file->f_lock);
+> 
+> What's the race-handling code here all about?
+
+This code may be called either through ->poll() or ->fasync().  If we 
+have two threads using the same file descriptor, they could both enter 
+this function, both notice that the structure hasn't been allocated yet 
+and go ahead allocating it in parallel, but only one of them must 
+survive and be shared otherwise we'd leak memory with a dangling 
+notifier callback.
+
+8< -----
+diff --git a/drivers/char/vc_screen.c b/drivers/char/vc_screen.c
+index 58e8d5e..a6ecd6a 100644
+--- a/drivers/char/vc_screen.c
++++ b/drivers/char/vc_screen.c
+@@ -52,7 +52,7 @@
+ struct vcs_poll_data {
+ 	struct notifier_block notifier;
+ 	unsigned int cons_num;
+-	int has_read;
++	bool seen_last_update;
+ 	wait_queue_head_t waitq;
+ 	struct fasync_struct *fasync;
+ };
+@@ -76,7 +76,7 @@ vcs_notifier(struct notifier_block *nb, unsigned long code, void *_param)
+ 	if (currcons != vc->vc_num)
+ 		return NOTIFY_DONE;
+ 
+-	poll->has_read = 0;
++	poll->seen_last_update = false;
+ 	wake_up_interruptible(&poll->waitq);
+ 	kill_fasync(&poll->fasync, SIGIO, POLL_IN);
+ 	return NOTIFY_OK;
+@@ -213,7 +213,7 @@ vcs_read(struct file *file, char __user *buf, size_t count, loff_t *ppos)
+ 		goto unlock_out;
+ 	poll = file->private_data;
+ 	if (count && poll)
+-		poll->has_read = 1;
++		poll->seen_last_update = true;
+ 	read = 0;
+ 	ret = 0;
+ 	while (count) {
+@@ -547,7 +547,7 @@ vcs_poll(struct file *file, poll_table *wait)
+ 
+ 	if (poll) {
+ 		poll_wait(file, &poll->waitq, wait);
+-		if (!poll->has_read)
++		if (!poll->seen_last_update)
+ 			ret = POLLIN | POLLRDNORM;
+ 	}
+ 	return ret;
