@@ -1,57 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751748Ab0JEQ2f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 12:28:35 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:57501 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751233Ab0JEQ2e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 12:28:34 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19NOAZ7qQw1ACDfOziWl77A
-Date: Tue, 5 Oct 2010 09:28:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Greg KH <greg@kroah.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-omap <linux-omap@vger.kernel.org>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Hiroshi Doyu <hiroshi.doyu@nokia.com>
-Subject: Re: [PATCH 1/2] omap: add dsp platform device
-Message-ID: <20101005162830.GI3117@atomide.com>
-References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
- <1286208555-8829-2-git-send-email-felipe.contreras@gmail.com>
- <20101005155656.GA27130@kroah.com>
+	id S1752174Ab0JEQan (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 12:30:43 -0400
+Received: from mga02.intel.com ([134.134.136.20]:22960 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab0JEQal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 12:30:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,284,1283756400"; 
+   d="scan'208";a="560911964"
+Message-ID: <4CAB52AD.60502@linux.intel.com>
+Date: Tue, 05 Oct 2010 09:30:37 -0700
+From: "H. Peter Anvin" <hpa@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101005155656.GA27130@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Borislav Petkov <bp@alien8.de>, hpa@zytor.com,
+        linux-tip-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mingo@redhat.com, torvalds@linux-foundation.org, ryan@innosecc.com,
+        tglx@linutronix.de
+Subject: Re: [tip:x86/cpu] x86, cpu: Fix X86_FEATURE_NOPL
+References: <20101004073127.GA20305@liondog.tnic> <tip-366d4a43b1a7a861c356a0e407c4f03f454d42ea@git.kernel.org> <20101005094712.GA5626@a1.tnic>
+In-Reply-To: <20101005094712.GA5626@a1.tnic>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH <greg@kroah.com> [101005 09:01]:
-> On Mon, Oct 04, 2010 at 07:09:14PM +0300, Felipe Contreras wrote:
-> > Otherwise tidspbridge cannot work.
-> > 
-> > It looks like this was dropped in the conversion to staging. I took the
-> > liberty of doing some cleaning up.
-> > 
-> > Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> > ---
-> >  arch/arm/mach-omap2/Makefile          |    4 ++
-> >  arch/arm/mach-omap2/dsp.c             |   85 +++++++++++++++++++++++++++++++++
-> >  arch/arm/plat-omap/common.c           |    2 +
-> >  arch/arm/plat-omap/devices.c          |   30 ++++++++++++
-> >  arch/arm/plat-omap/include/plat/dsp.h |   31 ++++++++++++
-> 
-> I need an ack from some omap maintainers before I can take this into the
-> staging tree.
+On 10/5/2010 2:47 AM, Borislav Petkov wrote:
+>
+> tag it for -stable too?
+>
 
-Looks good to me
+What is the flaw that justifies it for stable, or even .36?  It seems 
+relatively harmless, with at most a very minor performance issue, unless 
+I'm missing something?
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+	-hpa
+
