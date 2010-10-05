@@ -1,151 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756175Ab0JERBB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 13:01:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25383 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755962Ab0JERAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 13:00:39 -0400
-Date: Tue, 5 Oct 2010 13:57:38 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-        cl@linux-foundation.org
-Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to
- provide fast guest write interface
-Message-ID: <20101005165738.GA32750@amt.cnet>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-5-git-send-email-gleb@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286207794-16120-5-git-send-email-gleb@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756195Ab0JERBn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 13:01:43 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:35269 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab0JERBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 13:01:42 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: v9fs-developer@lists.sourceforge.net
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 2/3] fs/9p: Add missing iput in v9fs_vfs_lookup
+Date: Tue,  5 Oct 2010 22:31:29 +0530
+Message-Id: <1286298090-2422-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1286298090-2422-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1286298090-2422-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 05:56:26PM +0200, Gleb Natapov wrote:
-> Keep track of memslots changes by keeping generation number in memslots
-> structure. Provide kvm_write_guest_cached() function that skips
-> gfn_to_hva() translation if memslots was not changed since previous
-> invocation.
-> 
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> ---
->  include/linux/kvm_host.h  |    7 +++++
->  include/linux/kvm_types.h |    7 +++++
->  virt/kvm/kvm_main.c       |   57 +++++++++++++++++++++++++++++++++++++++++---
->  3 files changed, 67 insertions(+), 4 deletions(-)
-> 
-> diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
-> index a08614e..4dff9a1 100644
-> --- a/include/linux/kvm_host.h
-> +++ b/include/linux/kvm_host.h
-> @@ -199,6 +199,7 @@ struct kvm_irq_routing_table {};
->  
->  struct kvm_memslots {
->  	int nmemslots;
-> +	u32 generation;
->  	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
->  					KVM_PRIVATE_MEM_SLOTS];
->  };
-> @@ -352,12 +353,18 @@ int kvm_write_guest_page(struct kvm *kvm, gfn_t gfn, const void *data,
->  			 int offset, int len);
->  int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
->  		    unsigned long len);
-> +int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-> +			   void *data, unsigned long len);
-> +int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-> +			      gpa_t gpa);
->  int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
->  int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
->  struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
->  int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
->  unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
->  void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
-> +void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
-> +			     gfn_t gfn);
->  
->  void kvm_vcpu_block(struct kvm_vcpu *vcpu);
->  void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
-> diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
-> index 7ac0d4e..ee6eb71 100644
-> --- a/include/linux/kvm_types.h
-> +++ b/include/linux/kvm_types.h
-> @@ -67,4 +67,11 @@ struct kvm_lapic_irq {
->  	u32 dest_id;
->  };
->  
-> +struct gfn_to_hva_cache {
-> +	u32 generation;
-> +	gpa_t gpa;
-> +	unsigned long hva;
-> +	struct kvm_memory_slot *memslot;
-> +};
-> +
->  #endif /* __KVM_TYPES_H__ */
-> diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-> index db58a1b..45ef50c 100644
-> --- a/virt/kvm/kvm_main.c
-> +++ b/virt/kvm/kvm_main.c
-> @@ -687,6 +687,7 @@ skip_lpage:
->  		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
->  		if (mem->slot >= slots->nmemslots)
->  			slots->nmemslots = mem->slot + 1;
-> +		slots->generation++;
->  		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
->  
->  		old_memslots = kvm->memslots;
-> @@ -723,6 +724,7 @@ skip_lpage:
->  	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
->  	if (mem->slot >= slots->nmemslots)
->  		slots->nmemslots = mem->slot + 1;
-> +	slots->generation++;
->  
->  	/* actual memory is freed via old in kvm_free_physmem_slot below */
->  	if (!npages) {
-> @@ -1247,6 +1249,47 @@ int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
->  	return 0;
->  }
->  
-> +int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-> +			      gpa_t gpa)
-> +{
-> +	struct kvm_memslots *slots = kvm_memslots(kvm);
-> +	int offset = offset_in_page(gpa);
-> +	gfn_t gfn = gpa >> PAGE_SHIFT;
-> +
-> +	ghc->gpa = gpa;
-> +	ghc->generation = slots->generation;
-> +	ghc->memslot = gfn_to_memslot(kvm, gfn);
-> +	ghc->hva = gfn_to_hva(kvm, gfn);
-> +	if (!kvm_is_error_hva(ghc->hva))
-> +		ghc->hva += offset;
-> +	else
-> +		return -EFAULT;
-> +
-> +	return 0;
-> +}
+Make sure we drop inode reference in the error path
 
-Should use a unique kvm_memslots structure for the cache entry, since it
-can change in between (use gfn_to_hva_memslot, etc on "slots" pointer).
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/9p/vfs_inode.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Also should zap any cached entries on overflow, otherwise malicious
-userspace could make use of stale slots:
+diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
+index 1ec9075..1ac9229 100644
+--- a/fs/9p/vfs_inode.c
++++ b/fs/9p/vfs_inode.c
+@@ -1028,7 +1028,7 @@ static struct dentry *v9fs_vfs_lookup(struct inode *dir, struct dentry *dentry,
+ 
+ 	result = v9fs_fid_add(dentry, fid);
+ 	if (result < 0)
+-		goto error;
++		goto error_iput;
+ 
+ inst_out:
+ 	if (v9ses->cache)
+@@ -1039,6 +1039,8 @@ inst_out:
+ 	d_add(dentry, inode);
+ 	return NULL;
+ 
++error_iput:
++	iput(inode);
+ error:
+ 	p9_client_clunk(fid);
+ 
+-- 
+1.7.0.4
 
-> +void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
-> +{
-> +	struct kvm_memory_slot *memslot;
-> +
-> +	memslot = gfn_to_memslot(kvm, gfn);
-> +	mark_page_dirty_in_slot(kvm, memslot, gfn);
-> +}
-> +
->  /*
->   * The vCPU has executed a HLT instruction with in-kernel mode enabled.
->   */
-> -- 
-> 1.7.1
