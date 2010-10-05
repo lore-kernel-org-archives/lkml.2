@@ -1,96 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab0JEJ0w (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 05:26:52 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:64579 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932424Ab0JEJ0v (ORCPT
+	id S932736Ab0JEJ1G (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 05:27:06 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:53201 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932678Ab0JEJ1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 05:26:51 -0400
-X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 05:26:51 EDT
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-To: Ingo Molnar <mingo@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mitake@dcl.info.waseda.ac.jp,
-        h.mitake@gmail.com, Dmitry Torokhov <dtor@mail.ru>,
-        Vojtech Pavlik <vojtech@ucw.cz>, Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/2] lockdep: check the depth of subclass
-Date: Tue,  5 Oct 2010 18:01:50 +0900
-Message-Id: <1286269311-28336-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-X-Mailer: git-send-email 1.6.5.2
+	Tue, 5 Oct 2010 05:27:03 -0400
+From: "Hans-Peter Jansen" <hpj@urpla.net>
+To: xfs@oss.sgi.com
+Subject: Re: [patch] xfs: properly account for reclaimed inodes
+Date: Tue, 5 Oct 2010 11:26:46 +0200
+User-Agent: KMail/1.9.10
+Cc: Johannes Weiner <hannes@cmpxchg.org>, Dave Chinner <david@fromorbit.com>,
+        stable@kernel.org, John Hawley <warthog9@kernel.org>,
+        linux-kernel@vger.kernel.org, Alex Elder <aelder@sgi.com>
+References: <20101001074354.GF2618@cmpxchg.org> <20101004071904.GH4681@dastard> <20101004102213.GJ2618@cmpxchg.org>
+In-Reply-To: <20101004102213.GJ2618@cmpxchg.org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201010051126.47537.hpj@urpla.net>
+X-Provags-ID: V02:K0:SZeMBl0FgehY9mxeqo+G8AOsz+IHMGDqSwfQzoJqXds
+ 8FqLq+Qshs3boli8YQ9C+7qnRpYfrb3FaoftU0VZK1S1DrwPpF
+ /MMKYPaeCJCNvcTv1LVFP7VEMpFcaYH+PGluMQm442iCaWbXmH
+ enb1ufmGq6vvBSEDwXLeRHoCv6hrYGt8nWwKVC78nKR3M9DLQw
+ A6m5xvmosF5dLOxcFMy11DNJ51sqhMtytDqAGyzdBQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current look_up_lock_class() doesn't check the parameter "subclass".
-This rarely rises problems because the main caller of this function,
-register_lock_class(), checks it.
-But register_lock_class() is not the only function which calls
-look_up_lock_class(). lock_set_class() and its callees also call it.
-And lock_set_class() doesn't check this parameter.
+On Monday 04 October 2010, 12:22:13 Johannes Weiner wrote:
+> Hi,
+>
+> On Mon, Oct 04, 2010 at 06:19:04PM +1100, Dave Chinner wrote:
+> > On Fri, Oct 01, 2010 at 12:17:23PM -0500, Alex Elder wrote:
+> > > On Fri, 2010-10-01 at 09:43 +0200, Johannes Weiner wrote:
+> > > > When marking an inode reclaimable, a per-AG counter is increased,
+> > > > the inode is tagged reclaimable in its per-AG tree, and, when this
+> > > > is the first reclaimable inode in the AG, the AG entry in the
+> > > > per-mount tree is also tagged.
+> > > >
+> > > > When an inode is finally reclaimed, however, it is only deleted
+> > > > from the per-AG tree.  Neither the counter is decreased, nor is the
+> > > > parent tree's AG entry untagged properly.
+> > > >
+> > > > Since the tags in the per-mount tree are not cleared, the inode
+> > > > shrinker iterates over all AGs that have had reclaimable inodes at
+> > > > one point in time.
+> > > >
+> > > > The counters on the other hand signal an increasing amount of slab
+> > > > objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
+> > > > per-filesystem context" this is not a real issue anymore because
+> > > > the shrinker bails out after one iteration.
+> > > >
+> > > > But the problem was observable on a machine running v2.6.34, where
+> > > > the reclaimable work increased and each process going into direct
+> > > > reclaim eventually got stuck on the xfs inode shrinking path,
+> > > > trying to scan several million objects.
+> > > >
+> > > > Fix this by properly unwinding the reclaimable-state tracking of an
+> > > > inode when it is reclaimed.
+> > > >
+> > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > > Cc: stable@kernel.org
+> > >
+> > > Yes, this looks right to me.  The state was correctly
+> > > adjusted in xfs_iget_cache_hit() when a RECLAIMABLE
+> > > inode is found in the cache, but it was not done when
+> > > reclaim completes.
+> > >
+> > > Reviewed-by: Alex Elder <aelder@sgi.com>
+> >
+> > Alex, can you push this to Linus ASAP? This needs to go back to
+> > stable kernels as well..
+>
+> Here is my suggestion of a backport to .34.  Dave, Alex, do you
+> approve?
+>
+> 	Hannes
+>
+> diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
+> index 6845db9..3314f2a 100644
+> --- a/fs/xfs/xfs_iget.c
+> +++ b/fs/xfs/xfs_iget.c
+> @@ -499,6 +499,7 @@ xfs_ireclaim(
+>  	write_lock(&pag->pag_ici_lock);
+>  	if (!radix_tree_delete(&pag->pag_ici_root, agino))
+>  		ASSERT(0);
+> +	pag->pag_ici_reclaimable--;
+>  	write_unlock(&pag->pag_ici_lock);
+>  	xfs_perag_put(pag);
+>
+>
 
-This will rise problems when the the value of subclass is larger
-MAX_LOCKDEP_SUBCLASSES. Because the address (used as the key of class)
-caliculated with too large subclass has a possibility to point
-another key in different lock_class_key.
-Of course this problem depends on the memory layout and
-occurs with really low possibility.
+Ping?
 
-And mousedev_create() calles lockdep_set_subclass() and
-sets class of mousedev->mutex as MOUSEDEV_MIX(== 31).
-And if my understanding is correct,
-this subclass doesn't have to be MOUSEDEV_MIX,
-so I modified this value to SINGLE_DEPTH_NESTING.
+Masters of xfs, please raise your voices!
 
-Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Dmitry Torokhov <dtor@mail.ru>
-Cc: Vojtech Pavlik <vojtech@ucw.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- drivers/input/mousedev.c |    2 +-
- kernel/lockdep.c         |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
-index d528a2d..9897334 100644
---- a/drivers/input/mousedev.c
-+++ b/drivers/input/mousedev.c
-@@ -866,7 +866,7 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
- 	spin_lock_init(&mousedev->client_lock);
- 	mutex_init(&mousedev->mutex);
- 	lockdep_set_subclass(&mousedev->mutex,
--			     minor == MOUSEDEV_MIX ? MOUSEDEV_MIX : 0);
-+			     minor == MOUSEDEV_MIX ? SINGLE_DEPTH_NESTING : 0);
- 	init_waitqueue_head(&mousedev->wait);
- 
- 	if (minor == MOUSEDEV_MIX)
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 84baa71..c4c13ae 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -639,6 +639,21 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
- 	}
- #endif
- 
-+	if (unlikely(subclass >= MAX_LOCKDEP_SUBCLASSES)) {
-+		/*
-+		 * This check should be done not only in __lock_acquire()
-+		 * but also here. Because register_lock_class() is also called
-+		 * by lock_set_class(). Callers of lock_set_class() can
-+		 * pass invalid value as subclass.
-+		 */
-+
-+		debug_locks_off();
-+		printk(KERN_ERR "BUG: looking up invalid subclass: %u\n", subclass);
-+		printk(KERN_ERR "turning off the locking correctness validator.\n");
-+		dump_stack();
-+		return NULL;
-+	}
-+
- 	/*
- 	 * Static locks do not have their class-keys yet - for them the key
- 	 * is the lock object itself:
--- 
-1.6.5.2
-
+Pete
