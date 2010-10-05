@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756754Ab0JETyR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 15:54:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62858 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab0JETxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 15:53:49 -0400
-Date: Tue, 5 Oct 2010 16:51:50 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-        cl@linux-foundation.org
-Subject: Re: [PATCH v6 10/12] Handle async PF in non preemptable context
-Message-ID: <20101005195149.GC1786@amt.cnet>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-11-git-send-email-gleb@redhat.com>
+	id S1756660Ab0JETzx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 15:55:53 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:59803 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755877Ab0JETzw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 15:55:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=uVq7bHJNgz39D4oqvUKWsXiT1TgVdDchiquJjky7VPSPiCNJtd0vNN997cwlyNC3HV
+         c4kyiJ060HHZcqP5UiKCJQEYIkbyWkDkLEGMlo4J9I49OZob3ItTIOQagPSku7oCeHQY
+         J7CYNfSWiabKGzrXs/KVXxXTbyTcRobIvMgnY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286207794-16120-11-git-send-email-gleb@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1286307715-12276-1-git-send-email-Dinh.Nguyen@freescale.com>
+References: <1286307715-12276-1-git-send-email-Dinh.Nguyen@freescale.com>
+Date: Tue, 5 Oct 2010 21:55:51 +0200
+Message-ID: <AANLkTim+WNx1B860AgHeP_X2u7HRC3=40j3FKgAg_BXf@mail.gmail.com>
+Subject: Re: [PATCHv3] ARM: imx: Add iram allocator functions
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        s.hauer@pengutronix.de, r.schwebel@pengutronix.de,
+        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
+        amit.kucheria@canonical.com, xiao-lizhang@freescale.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 05:56:32PM +0200, Gleb Natapov wrote:
-> If async page fault is received by idle task or when preemp_count is
-> not zero guest cannot reschedule, so do sti; hlt and wait for page to be
-> ready. vcpu can still process interrupts while it waits for the page to
-> be ready.
-> 
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> ---
->  arch/x86/kernel/kvm.c |   40 ++++++++++++++++++++++++++++++++++------
->  1 files changed, 34 insertions(+), 6 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-> index 36fb3e4..f73946f 100644
-> --- a/arch/x86/kernel/kvm.c
-> +++ b/arch/x86/kernel/kvm.c
-> @@ -37,6 +37,7 @@
->  #include <asm/cpu.h>
->  #include <asm/traps.h>
->  #include <asm/desc.h>
-> +#include <asm/tlbflush.h>
->  
->  #define MMU_QUEUE_SIZE 1024
->  
-> @@ -78,6 +79,8 @@ struct kvm_task_sleep_node {
->  	wait_queue_head_t wq;
->  	u32 token;
->  	int cpu;
-> +	bool halted;
-> +	struct mm_struct *mm;
->  };
->  
->  static struct kvm_task_sleep_head {
-> @@ -106,6 +109,11 @@ void kvm_async_pf_task_wait(u32 token)
->  	struct kvm_task_sleep_head *b = &async_pf_sleepers[key];
->  	struct kvm_task_sleep_node n, *e;
->  	DEFINE_WAIT(wait);
-> +	int cpu, idle;
-> +
-> +	cpu = get_cpu();
-> +	idle = idle_cpu(cpu);
-> +	put_cpu();
->  
->  	spin_lock(&b->lock);
->  	e = _find_apf_task(b, token);
-> @@ -119,19 +127,33 @@ void kvm_async_pf_task_wait(u32 token)
->  
->  	n.token = token;
->  	n.cpu = smp_processor_id();
-> +	n.mm = current->active_mm;
-> +	n.halted = idle || preempt_count() > 1;
-> +	atomic_inc(&n.mm->mm_count);
+2010/10/5  <Dinh.Nguyen@freescale.com>:
 
-Can't see why this reference is needed.
+> Add iram allocation functions using GENERIC_ALLOCATOR. The
+> allocation size is 4KB multiples to guarantee alignment. The
+> idea for these functions is for i.MX platforms to use them
+> to dynamically allocate IRAM usage.
 
+Neither here...
+
+> +config IRAM_ALLOC
+> +       bool "Enable IRAM allocator"
+> +       select GENERIC_ALLOCATOR
+> +       help
+> +         Select this to have access to generic IRAM allocation functions that
+> +         use the GENERIC_ALLOCATOR.  The allocation size is 4KB multiples to
+> +         guarantee alignment. The idea for these functions is for i.MX platforms
+> +         to use them to dynamically allocate IRAM usage.
+
+Nor here is is explained what an IRAM is.
+
+What is it? Is this yet another fancy name for on-chip-memory?
+
+And why I? = Initial? Interrupt? ...?
+
+Yours,
+Linus Walleij
