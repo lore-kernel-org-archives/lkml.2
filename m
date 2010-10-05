@@ -1,40 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab0JEBam (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Oct 2010 21:30:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48294 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104Ab0JEBak (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Oct 2010 21:30:40 -0400
-Message-ID: <4CAA7F77.7010605@redhat.com>
-Date: Mon, 04 Oct 2010 21:29:27 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
+	id S1756140Ab0JEBjS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Oct 2010 21:39:18 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55351 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751324Ab0JEBjR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Oct 2010 21:39:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
+         :from:to:content-type;
+        b=nY5dUjNytIq0CaN/mXDaS9uHmjKsVvoJqRlOlciwvTrfFpu4UGMBvsGwy796mZ1sjR
+         CZ5WFDMBuRWoJpPzL9xd6Q0a6gTSseNqyKruhs/CigNGSAcLbuIbQkKgA4EVnHaHnW8B
+         R+USwJ//8ap5P8fDIEH1WvsvQUBP1i36nvOoI=
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to provide
- fast guest write interface
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com> <1286207794-16120-5-git-send-email-gleb@redhat.com>
-In-Reply-To: <1286207794-16120-5-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 4 Oct 2010 21:39:16 -0400
+X-Google-Sender-Auth: vJfBYoRTprwFyCbo7F9gVPZjmMQ
+Message-ID: <AANLkTimKpVR5UVYLetwt=S4PSkMEJTBpUk7Q-o=ha_ds@mail.gmail.com>
+Subject: Detecting runnable process?
+From: Philip Wernersbach <philip.wernersbach@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2010 11:56 AM, Gleb Natapov wrote:
-> Keep track of memslots changes by keeping generation number in memslots
-> structure. Provide kvm_write_guest_cached() function that skips
-> gfn_to_hva() translation if memslots was not changed since previous
-> invocation.
->
-> Signed-off-by: Gleb Natapov<gleb@redhat.com>
+I'm writing some kernel code that given a task's task_struct must
+decide if it is runnable, and hasn't crashed or exited. So far here's
+what I've come up with:
 
-Acked-by: Rik van Riel <riel@redhat.com>
+struct task_struct *my_task;
+... snip ...
+if(likely(my_task != NULL && pid_alive(my_task) == true)) { return my_task; }
 
--- 
-All rights reversed
+Is this correct?
+
+-Phil
