@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab0JERrU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 13:47:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21258 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753252Ab0JERrT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 13:47:19 -0400
-Date: Tue, 5 Oct 2010 13:47:18 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, x86@kernel.org, sassmann@redhat.com,
-        akataria@vmware.com
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20101005174659.17912.1027.sendpatchset@prarit.bos.redhat.com>
-Subject: [PATCH]: x86: local_irq_save/restore when issuing IPI in early bootup
+	id S1755603Ab0JERrp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 13:47:45 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47141 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753709Ab0JERrn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 13:47:43 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Tue, 5 Oct 2010 12:47:35 -0500
+Subject: RE: [PATCHv2 01/11] staging: tidspbridge: replace iommu custom for
+ opensource implementation
+Thread-Topic: [PATCHv2 01/11] staging: tidspbridge: replace iommu custom for
+ opensource implementation
+Thread-Index: Actkp9NfmqBX31Z7TtuyjDbt0cYKGAADYC6A
+Message-ID: <496565EC904933469F292DDA3F1663E602F471BFF4@dlee06.ent.ti.com>
+References: <1285899178-14413-1-git-send-email-x0095840@ti.com>
+ <1285899178-14413-2-git-send-email-x0095840@ti.com>
+ <20101005155541.GA24456@kroah.com>
+In-Reply-To: <20101005155541.GA24456@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resending to wider audience.  This was originally posted here
 
-http://marc.info/?l=linux-kernel&m=128162059006512&w=2
+Hi, 
 
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com] 
+> Sent: Tuesday, October 05, 2010 10:56 AM
+> To: Guzman Lugo, Fernando
+> Cc: gregkh@suse.de; felipe.contreras@nokia.com; 
+> ameya.palande@nokia.com; Menon, Nishanth; 
+> Hiroshi.DOYU@nokia.com; ohad@wizery.com; 
+> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
+> linux-omap@vger.kernel.org
+> Subject: Re: [PATCHv2 01/11] staging: tidspbridge: replace 
+> iommu custom for opensource implementation
+> 
+> On Thu, Sep 30, 2010 at 09:12:48PM -0500, Fernando Guzman Lugo wrote:
+> > Now the tidspbridge uses the API's from iovmm module.
+> > 
+> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> 
+> This patch applied, but number 2 and others didn't.  Care to 
+> respin those against the new linux-next tree and resend?
 
+I will rebase and send then as soon as possible.
 
-When sending out an IPI interrupts are masked off.  In the cpu wakeup code, this
-is not the case.  Make the code consistent.
+Regards,
+Fernando.
 
-Alok Kataria noticed the following hang:
-
-1.  vcpu1 is doing wakeup_secondary_cpu_via_init() is booting all the other
-processors.  It tries to bring each cpu up by sending an IPI which is done
-by writing the APIC ICR.
-
-The call path is wakeup_secondary_cpu_via_init() which calls apic_icr_write->
-native_apic_icr_write().  native_apic_icr_write() writes APIC_ICR2 and APIC_ICR
-in order to modify the ICRHI and ICRLO values.
-
-The ICRHI is set to the number of online cpus.
-
-The write to APIC_ICR does not happen because
-
-2.  vcpu1's physical cpu *may* take a timer interrupt which does
-lapic_timer_broadcast(), which calls send_IPI_mask().  send_IPI_mask()
-calls default_send_IPI_mask_sequence_phys() which changes the ICRHI value to
-the number of online vcpus -- which is one less than what it was set to in
-step 1.
-
-3.  return to thread in step 1 ... ICRHI is different and one less
-than the previous value.  This results in the IPI being sent TWICE to the
-same vcpu (CPU X-1) instead of once to CPU X-1 and once to CPU X.
-
-It may be that native_apic_icr_write() actually needs it's own irq save/restore,
-however, I cannot see a code path that requires it.  A larger irq save/restore
-seems more appropriate around the IPI code which seems adequate given that
-other code does the same thing (see calls to __default_send_IPI_dest_field() )
-and is not broken.
-
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 8b3bfc4..efa6c98 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -580,6 +580,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- {
- 	unsigned long send_status, accept_status = 0;
- 	int maxlvt, num_starts, j;
-+	unsigned long flags;
- 
- 	maxlvt = lapic_get_maxlvt();
- 
-@@ -600,6 +601,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 	/*
- 	 * Send IPI
- 	 */
-+	local_irq_save(flags);
- 	apic_icr_write(APIC_INT_LEVELTRIG | APIC_INT_ASSERT | APIC_DM_INIT,
- 		       phys_apicid);
- 
-@@ -616,6 +618,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 
- 	pr_debug("Waiting for send to finish...\n");
- 	send_status = safe_apic_wait_icr_idle();
-+	local_irq_restore(flags);
- 
- 	mb();
- 	atomic_set(&init_deasserted, 1);
-@@ -657,6 +660,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 		/* Target chip */
- 		/* Boot on the stack */
- 		/* Kick the second */
-+		local_irq_save(flags);
- 		apic_icr_write(APIC_DM_STARTUP | (start_eip >> 12),
- 			       phys_apicid);
- 
-@@ -669,6 +673,7 @@ wakeup_secondary_cpu_via_init(int phys_apicid, unsigned long start_eip)
- 
- 		pr_debug("Waiting for send to finish...\n");
- 		send_status = safe_apic_wait_icr_idle();
-+		local_irq_restore(flags);
- 
- 		/*
- 		 * Give the other CPU some time to accept the IPI.
+> 
+> thanks,
+> 
+> greg k-h
+> 
