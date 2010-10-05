@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758078Ab0JEKnR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 06:43:17 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:35361 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752226Ab0JEKnQ (ORCPT
+	id S1758047Ab0JEKoH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 06:44:07 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:44414 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751173Ab0JEKoG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 06:43:16 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zzbb2cK1432N98dN4015Lzz1202hzz8275bhz32i2a8h64h)
-X-Spam-TCS-SCL: 3:0
-X-WSS-ID: 0L9TCE6-01-CLB-02
-X-M-MSG: 
-Date: Tue, 5 Oct 2010 12:42:07 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Maynard Johnson <maynardj@us.ibm.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        William Cohen <wcohen@redhat.com>,
-        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH] oprofile: disable write access to oprofilefs while
- profiler is running
-Message-ID: <20101005104207.GY13563@erda.amd.com>
-References: <1286275017-32497-1-git-send-email-robert.richter@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1286275017-32497-1-git-send-email-robert.richter@amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Tue, 5 Oct 2010 06:44:06 -0400
+Date: Tue, 5 Oct 2010 12:34:02 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86/mm: remove duplicated include
+Message-ID: <20101005123402.0d610cfc@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05.10.10 06:36:57, Robert Richter wrote:
-> Oprofile counters are setup when profiling is disabled. Thus, writing
-> to oprofilefs has no immediate effect. Changes are updated only after
-> oprofile is reenabled.
-> 
-> To keep userland and kernel states synchronized, we now allow
-> configuration of oprofile only if profiling is disabled.  In this case
-> it checks if the profiler is running and then disables write access to
-> oprofilefs by returning -EBUSY. The change should be backward
-> compatible with current oprofile userland daemon.
-> 
-> Cc: Maynard Johnson <maynardj@us.ibm.com>
-> Cc: William Cohen <wcohen@redhat.com>
-> Cc: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
+Remove duplicated include.
 
-Maynard, please ack if you are fine with it.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+ arch/x86/mm/init_64.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-Thanks,
-
--Robert
-
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 9a66746..612f353 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -50,7 +50,6 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
+-#include <linux/bootmem.h>
+ 
+ static unsigned long dma_reserve __initdata;
+ 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+1.7.2.2
