@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757072Ab0JEUHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 16:07:43 -0400
-Received: from kroah.org ([198.145.64.141]:52984 "EHLO coco.kroah.org"
+	id S1756907Ab0JEUJs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 16:09:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:37739 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756824Ab0JEUH3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 16:07:29 -0400
-Date: Tue, 5 Oct 2010 13:06:49 -0700
-From: Greg KH <greg@kroah.com>
-To: "Savoy, Pavan" <pavan_savoy@ti.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] prepare TI_ST to move out of staging
-Message-ID: <20101005200649.GA4228@kroah.com>
-References: <1285877610-3043-1-git-send-email-pavan_savoy@ti.com>
- <20101005184925.GA20825@kroah.com>
- <19F8576C6E063C45BE387C64729E739404AA21CB20@dbde02.ent.ti.com>
+	id S1754510Ab0JEUJq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 16:09:46 -0400
+From: "Ramirez Luna, Omar" <omar.ramirez@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: Greg KH <greg@kroah.com>, linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Hiroshi Doyu <hiroshi.doyu@nokia.com>
+Date: Tue, 5 Oct 2010 15:09:39 -0500
+Subject: RE: [PATCH 0/2] omap: dsp: make the driver actually work
+Thread-Topic: [PATCH 0/2] omap: dsp: make the driver actually work
+Thread-Index: ActkyC7gZRqrkVtSTuyqOw2EGMfqrAAAJ6hw
+Message-ID: <27F9C60D11D683428E133F85D2BB4A5304681D48D3@dlee03.ent.ti.com>
+References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>
+	<20101005190741.GC20825@kroah.com>
+	<AANLkTikOBWxXh7uVrDxfW3OnwOM58JTXU76KUUoQWBWM@mail.gmail.com>
+	<27F9C60D11D683428E133F85D2BB4A5304681D4889@dlee03.ent.ti.com>
+ <AANLkTin=k07hUq+cLAOsf0aYw5Ey23UOpbpo=+Eb49w9@mail.gmail.com>
+In-Reply-To: <AANLkTin=k07hUq+cLAOsf0aYw5Ey23UOpbpo=+Eb49w9@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <19F8576C6E063C45BE387C64729E739404AA21CB20@dbde02.ent.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 12:27:46AM +0530, Savoy, Pavan wrote:
-> > So, on to moving the drivers out of the staging tree, right?  Care to
-> > send me patches for them?  Have you gotten the bluetooth driver reviewed
-> > yet?
+Felipe Contreras wrote:
+...
+>> 
+>> phys_to_virt instead of ioremap should work fine, still need to try
+>> it though. 
 > 
-> No not yet.
-> I had planned to put up a patch to move the st_core.c, st_kim.c and
-> st_ll.c to drivers/misc/ first.
+> I tried that... Didn't work. I guess we need to flush at some points
+> (since the memory is cacheable). 
 
-That is fine.
+Hmmm, because my other option was to move the reserved memory outside the kernel, but that involves specifying bootargs again and using dma_alloc_coherent with their restrictions.
 
-> Then put together Bluetooth header and driver where in I will bring in
-> Marcel/Johan & linux-bluetooth into the loop.  Then move the unified
-> bt_drv.c to something like ti_st_bt.c to drivers/bluetooth/
-> 
-> Does this sound OK?
+If you are working on a different method and need any help let me know.
 
-Yes it does.  Feel free to send patches for the first part above on if
-you want to.
+Regards,
 
-thanks,
-
-greg k-h
+Omar
