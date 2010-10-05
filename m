@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab0JEPfY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 11:35:24 -0400
-Received: from www.tglx.de ([62.245.132.106]:58695 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754426Ab0JEPfX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 11:35:23 -0400
-Date: Tue, 5 Oct 2010 17:34:11 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Hans Rosenfeld <hans.rosenfeld@amd.com>
-cc: robert.richter@amd.com, LKML <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [RFC 0/3] Basic support for LWP
-In-Reply-To: <20101005145155.GD173@escobedo.osrc.amd.com>
-Message-ID: <alpine.LFD.2.00.1010051730060.2556@localhost6.localdomain6>
-References: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com> <alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6> <20101005145155.GD173@escobedo.osrc.amd.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754747Ab0JEPfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 11:35:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47278 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754426Ab0JEPfx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 11:35:53 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.LFD.2.00.1010050927450.2556@localhost6.localdomain6>
+References: <alpine.LFD.2.00.1010032141410.14550@localhost6.localdomain6>
+ <201010041300.15234.arnd@arndb.de> <alpine.LFD.2.00.1010050026170.2556@localhost6.localdomain6>
+ <201010051544.52269.rusty@rustcorp.com.au> <alpine.LFD.2.00.1010050927450.2556@localhost6.localdomain6>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 5 Oct 2010 08:34:52 -0700
+Message-ID: <AANLkTino8StCF7OZvzxeFrs0a4JVnxRK-deJ4XUU41Ef@mail.gmail.com>
+Subject: Re: [BUG 2.6.36-rc6] list corruption in module_bug_finalize
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Arnd Bergmann <arnd@arndb.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Kay Sievers <kay.sievers@vrfy.org>, Brandon Philips <brandon@ifup.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Oct 2010, Hans Rosenfeld wrote:
+On Tue, Oct 5, 2010 at 12:30 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Tue, 5 Oct 2010, Rusty Russell wrote:
+>
+>> On Tue, 5 Oct 2010 09:13:38 am Thomas Gleixner wrote:
+>> > The patch below cures it.
+>>
+>> Using module_mutex here is just lazy...  Here's 5c, go buy your own lock :)
+>
+> I'm lazy. :) My evil plan of sending a crap patch so it gets replaced
+> by a nice one worked well :)
 
-> [ adding Robert ]
-> 
-> On Mon, Oct 04, 2010 at 06:13:46PM -0400, Thomas Gleixner wrote:
-> > > LWP (Light-Weight Profiling) is a new profiling mechanism that allows
-> > > user mode processes to gather performance data about themselves with
-> > > very low overhead. The specification can be found here:
-> > >         http://developer.amd.com/cpu/LWP/Pages/default.aspx
-> > 
-> > All I can see there is marketing blurb. The spec pdf does not tell me
-> > either how the end result of your patches will look like.
-> 
-> Well, you should get a basic understanding of how LWP works from the
-> spec. I'm pretty sure there is more than that blurb in there.
-> 
-> What I sent _is_ the end result. Supporting LWP in the task switching
-> code is the only thing necessary to use the LWP instructions in user
-> space. And that is also what I'd like to get some comments on.
+Can you test the one I sent out (the second one with the trivial
+module unload fix)? My own testing would be pretty pointless, since I
+don't use modules myself (I've compile-tested it, and it all looks
+sane, but...)
 
-So it's the end result. Ok, then explain the following sentence:
- 
-> > > This code adds basic support for LWP to the context switch code, which
-> > > is the minimum needed to use LWP. Support for other LWP features like
-> > > interrupts will be added later.
-
-If your patch _IS_ the end result then there are no other LWP
-features, right ?
-
-If there are, then your patch is _NOT_ the end result and we really
-want to know what is coming.
-
-Thanks,
-
-	tglx
+                  Linus
