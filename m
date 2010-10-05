@@ -1,37 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab0JEUGg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 16:06:36 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:57064 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756696Ab0JEUGf (ORCPT
+	id S1756924Ab0JEUHa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 16:07:30 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:15971 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756696Ab0JEUH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 16:06:35 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX183TNytT4FbJbFQj83Z3cBQ
-Date: Tue, 5 Oct 2010 13:06:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Nicolas Kaiser <nikai@nikai.net>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/5] arm/omap: remove duplicated include
-Message-ID: <20101005200630.GS3117@atomide.com>
-References: <20101004122436.7092868f@absol.kitzblitz>
- <20101004123937.4493b01b@absol.kitzblitz>
+	Tue, 5 Oct 2010 16:07:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=TT6XMVSlJl5T9JyrSFyPNOy6KhIBFHPyOe+H4VXed6A0TKmTU9pGHBVBNPfQkZnMq
+	MXMfVpG71ZPS0bMxFVltg==
+From: Greg Thelen <gthelen@google.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 05/10] memcg: add dirty page accounting infrastructure
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-6-git-send-email-gthelen@google.com>
+	<20101005160929.GC9515@barrios-desktop>
+Date: Tue, 05 Oct 2010 13:06:59 -0700
+In-Reply-To: <20101005160929.GC9515@barrios-desktop> (Minchan Kim's message of
+	"Wed, 6 Oct 2010 01:09:29 +0900")
+Message-ID: <xr934od0tndo.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101004123937.4493b01b@absol.kitzblitz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nicolas Kaiser <nikai@nikai.net> [101004 03:35]:
-> Remove duplicated include.
+Minchan Kim <minchan.kim@gmail.com> writes:
 
-Thanks, adding to omap-for-linus.
+> On Sun, Oct 03, 2010 at 11:58:00PM -0700, Greg Thelen wrote:
+>> Add memcg routines to track dirty, writeback, and unstable_NFS pages.
+>> These routines are not yet used by the kernel to count such pages.
+>> A later change adds kernel calls to these new routines.
+>> 
+>> Signed-off-by: Greg Thelen <gthelen@google.com>
+>> Signed-off-by: Andrea Righi <arighi@develer.com>
+>> ---
+>>  include/linux/memcontrol.h |    3 +
+>>  mm/memcontrol.c            |   89 ++++++++++++++++++++++++++++++++++++++++----
+>>  2 files changed, 84 insertions(+), 8 deletions(-)
+>> 
+>> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> index 7c7bec4..6303da1 100644
+>> --- a/include/linux/memcontrol.h
+>> +++ b/include/linux/memcontrol.h
+>> @@ -28,6 +28,9 @@ struct mm_struct;
+>>  /* Stats that can be updated by kernel. */
+>>  enum mem_cgroup_write_page_stat_item {
+>>  	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
+>> +	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
+>> +	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
+>> +	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
+>>  };
+>>  
+>>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> index 267d774..f40839f 100644
+>> --- a/mm/memcontrol.c
+>> +++ b/mm/memcontrol.c
+>> @@ -85,10 +85,13 @@ enum mem_cgroup_stat_index {
+>>  	 */
+>>  	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
+>>  	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
+>> -	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>>  	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
+>>  	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
+>>  	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
+>> +	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
+>> +	MEM_CGROUP_STAT_FILE_DIRTY,	/* # of dirty pages in page cache */
+>> +	MEM_CGROUP_STAT_FILE_WRITEBACK,		/* # of pages under writeback */
+>> +	MEM_CGROUP_STAT_FILE_UNSTABLE_NFS,	/* # of NFS unstable pages */
+>>  	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
+>>  	/* incremented at every  pagein/pageout */
+>>  	MEM_CGROUP_EVENTS = MEM_CGROUP_STAT_DATA,
+>> @@ -1626,6 +1629,48 @@ void mem_cgroup_update_page_stat(struct page *page,
+>>  			ClearPageCgroupFileMapped(pc);
+>>  		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+>>  		break;
+>> +
+>> +	case MEMCG_NR_FILE_DIRTY:
+>> +		/* Use Test{Set,Clear} to only un/charge the memcg once. */
+>> +		if (val > 0) {
+>> +			if (TestSetPageCgroupFileDirty(pc))
+>> +				/* already set */
+>
+> Nitpick. 
+> The comment doesn't give any useful information.
+> It looks like redundant. 
 
-Tony
+I agree.  I removed the four redundant comments you referred to.  Thanks
+for the feedback.
+
+>> +				val = 0;
+>> +		} else {
+>> +			if (!TestClearPageCgroupFileDirty(pc))
+>> +				/* already cleared */
+>
+> Ditto
+>
+>> +				val = 0;
+>> +		}
+>> +		idx = MEM_CGROUP_STAT_FILE_DIRTY;
+>> +		break;
+>> +
+>> +	case MEMCG_NR_FILE_WRITEBACK:
+>> +		/*
+>> +		 * This counter is adjusted while holding the mapping's
+>> +		 * tree_lock.  Therefore there is no race between settings and
+>> +		 * clearing of this flag.
+>> +		 */
+>> +		if (val > 0)
+>> +			SetPageCgroupFileWriteback(pc);
+>> +		else
+>> +			ClearPageCgroupFileWriteback(pc);
+>> +		idx = MEM_CGROUP_STAT_FILE_WRITEBACK;
+>> +		break;
+>> +
+>> +	case MEMCG_NR_FILE_UNSTABLE_NFS:
+>> +		/* Use Test{Set,Clear} to only un/charge the memcg once. */
+>> +		if (val > 0) {
+>> +			if (TestSetPageCgroupFileUnstableNFS(pc))
+>> +				/* already set */
+>
+> Ditto 
+>
+>> +				val = 0;
+>> +		} else {
+>> +			if (!TestClearPageCgroupFileUnstableNFS(pc))
+>> +				/* already cleared */
+>
+> Ditto 
+>
+>> +				val = 0;
+>> +		}
+>> +		idx = MEM_CGROUP_STAT_FILE_UNSTABLE_NFS;
+>> +		break;
+>> +
+>>  	default:
+>>  		BUG();
+>>  	}
+>> @@ -2133,6 +2178,16 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
+>>  	memcg_check_events(mem, pc->page);
+>>  }
+>>  
+>> +static void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
+>> +					      struct mem_cgroup *to,
+>> +					      enum mem_cgroup_stat_index idx)
+>> +{
+>> +	preempt_disable();
+>> +	__this_cpu_dec(from->stat->count[idx]);
+>> +	__this_cpu_inc(to->stat->count[idx]);
+>> +	preempt_enable();
+>> +}
+>> +
+>>  /**
+>>   * __mem_cgroup_move_account - move account of the page
+>>   * @pc:	page_cgroup of the page.
+>> @@ -2159,13 +2214,18 @@ static void __mem_cgroup_move_account(struct page_cgroup *pc,
+>>  	VM_BUG_ON(!PageCgroupUsed(pc));
+>>  	VM_BUG_ON(pc->mem_cgroup != from);
+>>  
+>> -	if (PageCgroupFileMapped(pc)) {
+>> -		/* Update mapped_file data for mem_cgroup */
+>> -		preempt_disable();
+>> -		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+>> -		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
+>> -		preempt_enable();
+>> -	}
+>> +	if (PageCgroupFileMapped(pc))
+>> +		mem_cgroup_move_account_page_stat(from, to,
+>> +					MEM_CGROUP_STAT_FILE_MAPPED);
+>> +	if (PageCgroupFileDirty(pc))
+>> +		mem_cgroup_move_account_page_stat(from, to,
+>> +					MEM_CGROUP_STAT_FILE_DIRTY);
+>> +	if (PageCgroupFileWriteback(pc))
+>> +		mem_cgroup_move_account_page_stat(from, to,
+>> +					MEM_CGROUP_STAT_FILE_WRITEBACK);
+>> +	if (PageCgroupFileUnstableNFS(pc))
+>> +		mem_cgroup_move_account_page_stat(from, to,
+>> +					MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
+>>  	mem_cgroup_charge_statistics(from, pc, false);
+>>  	if (uncharge)
+>>  		/* This is not "cancel", but cancel_charge does all we need. */
+>> @@ -3545,6 +3605,9 @@ enum {
+>>  	MCS_PGPGIN,
+>>  	MCS_PGPGOUT,
+>>  	MCS_SWAP,
+>> +	MCS_FILE_DIRTY,
+>> +	MCS_WRITEBACK,
+>> +	MCS_UNSTABLE_NFS,
+>>  	MCS_INACTIVE_ANON,
+>>  	MCS_ACTIVE_ANON,
+>>  	MCS_INACTIVE_FILE,
+>> @@ -3567,6 +3630,9 @@ struct {
+>>  	{"pgpgin", "total_pgpgin"},
+>>  	{"pgpgout", "total_pgpgout"},
+>>  	{"swap", "total_swap"},
+>> +	{"dirty", "total_dirty"},
+>> +	{"writeback", "total_writeback"},
+>> +	{"nfs", "total_nfs"},
+>>  	{"inactive_anon", "total_inactive_anon"},
+>>  	{"active_anon", "total_active_anon"},
+>>  	{"inactive_file", "total_inactive_file"},
+>> @@ -3596,6 +3662,13 @@ mem_cgroup_get_local_stat(struct mem_cgroup *mem, struct mcs_total_stat *s)
+>>  		s->stat[MCS_SWAP] += val * PAGE_SIZE;
+>>  	}
+>>  
+>> +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_DIRTY);
+>> +	s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
+>> +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_WRITEBACK);
+>> +	s->stat[MCS_WRITEBACK] += val * PAGE_SIZE;
+>> +	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
+>> +	s->stat[MCS_UNSTABLE_NFS] += val * PAGE_SIZE;
+>> +
+>>  	/* per zone stat */
+>>  	val = mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON);
+>>  	s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
+>> -- 
+>> 1.7.1
+>> 
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>> 
