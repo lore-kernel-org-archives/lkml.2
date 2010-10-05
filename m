@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753015Ab0JEEuq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 00:50:46 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:39564 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752062Ab0JEEup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 00:50:45 -0400
-Date: Tue, 5 Oct 2010 10:20:23 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Greg Thelen <gthelen@google.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, containers@lists.osdl.org,
-        Andrea Righi <arighi@develer.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 00/10] memcg: per cgroup dirty page accounting
-Message-ID: <20101005045023.GS7896@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	id S1753295Ab0JEFDq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 01:03:46 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46241 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752073Ab0JEFDo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 01:03:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=eY9YjAUzpdrzaO9kYnYEzWACemQzeEdQ9iMbgCqIE6BPcVF2/e27a/cHhMVulWSeMm
+         zXsYruT9Sl5o+zkD5eSt+AvaQsiv2Yn6yqgyq1JXUe9/Z2cAt+5XQZWHcETm7FKrMhXs
+         Cw9NpRIKD1nM85U82PFG6Rk4zK3WqH3wvzH5g=
+Date: Mon, 4 Oct 2010 22:03:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Linux Input <linux-input@vger.kernel.org>
+Subject: Sysctl locking?
+Message-ID: <20101005050335.GA15355@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286175485-30643-1-git-send-email-gthelen@google.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg Thelen <gthelen@google.com> [2010-10-03 23:57:55]:
+Hi,
 
-> This patch set provides the ability for each cgroup to have independent dirty
-> page limits.
-> 
-> Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
-> page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
-> not be able to consume more than their designated share of dirty pages and will
-> be forced to perform write-out if they cross that limit.
-> 
-> These patches were developed and tested on mmotm 2010-09-28-16-13.  The patches
-> are based on a series proposed by Andrea Righi in Mar 2010.
+I tried tracing through sysctl code and it appears that there is no
+generic locking for reads and writes to a sysctl node and thus a patch
+like below is needed if proc_handler is a bit more complex than simply
+storing an integer value.
 
-Hi, Greg,
+Am I missing something?
 
-I see a problem with "    memcg: add dirty page accounting infrastructure".
+Thanks.
 
-The reject is
+--  
+Dmitry
 
- enum mem_cgroup_write_page_stat_item {
-        MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
-+       MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
-+       MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
-+       MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
- };
+Input: mac mouse emulation - add locking
 
-I don't see mem_cgroup_write_page_stat_item in memcontrol.h. Is this
-based on top of Kame's cleanup.
+We need to add appropriate locking when toggling mac mouse emulation
+on and off to ensure that input device and handler are in consistent
+state.
 
-I am working off of mmotm 28 sept 2010 16:13.
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ drivers/macintosh/mac_hid.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
 
--- 
-	Three Cheers,
-	Balbir
+diff --git a/drivers/macintosh/mac_hid.c b/drivers/macintosh/mac_hid.c
+index 067f996..6a82388 100644
+--- a/drivers/macintosh/mac_hid.c
++++ b/drivers/macintosh/mac_hid.c
+@@ -23,6 +23,8 @@ static int mouse_button3_keycode = KEY_RIGHTALT;	/* right option key */
+ 
+ static struct input_dev *mac_hid_emumouse_dev;
+ 
++static DEFINE_MUTEX(mac_hid_emumouse_mutex);
++
+ static int mac_hid_create_emumouse(void)
+ {
+ 	static struct lock_class_key mac_hid_emumouse_dev_event_class;
+@@ -187,6 +189,10 @@ static int mac_hid_toggle_emumouse(ctl_table *table, int write,
+ 	int old_val = *valp;
+ 	int rc;
+ 
++	rc = mutex_lock_killable(&mac_hid_emumouse_mutex);
++	if (rc)
++		return rc;
++
+ 	rc = proc_dointvec(table, write, buffer, lenp, ppos);
+ 
+ 	if (rc == 0 && write && *valp != old_val) {
+@@ -202,6 +208,8 @@ static int mac_hid_toggle_emumouse(ctl_table *table, int write,
+ 	if (rc)
+ 		*valp = old_val;
+ 
++	mutex_unlock(&mac_hid_emumouse_mutex);
++
+ 	return rc;
+ }
+ 
