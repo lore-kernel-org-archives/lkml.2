@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab0JFWvS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 18:51:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45394 "EHLO mx1.suse.de"
+	id S933278Ab0JFWwd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 18:52:33 -0400
+Received: from claw.goop.org ([74.207.240.146]:47263 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932979Ab0JFWvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 18:51:17 -0400
-Date: Wed, 6 Oct 2010 15:51:04 -0700
-From: Greg KH <gregkh@suse.de>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Stefan Ringel <stefan.ringel@arcor.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH] staging: fix possible use-before-NULL-check crash
-Message-ID: <20101006225104.GA21013@suse.de>
-References: <20101006223941.GW14666@outflux.net>
+	id S932904Ab0JFWwc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 18:52:32 -0400
+Message-ID: <4CACFDAD.3090900@goop.org>
+Date: Wed, 06 Oct 2010 15:52:29 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101006223941.GW14666@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org>
+In-Reply-To: <4CAA4DC1.6000104@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 03:39:41PM -0700, Kees Cook wrote:
-> Found via http://coccinelle.lip6.fr/rules/mini_null_ref.cocci
-> 
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> ---
->  drivers/staging/tm6000/tm6000-alsa.c |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/tm6000/tm6000-alsa.c b/drivers/staging/tm6000/tm6000-alsa.c
-> index 087137d..c1aff0e 100644
-> --- a/drivers/staging/tm6000/tm6000-alsa.c
-> +++ b/drivers/staging/tm6000/tm6000-alsa.c
-> @@ -426,10 +426,11 @@ error:
->  
->  static int tm6000_audio_fini(struct tm6000_core *dev)
->  {
-> -	struct snd_tm6000_card	*chip = dev->adev;
-> +	struct snd_tm6000_card	*chip;
->  
->  	if (!dev)
->  		return 0;
-> +	chip = dev->adev;
+ On 10/04/2010 02:57 PM, Yinghai Lu wrote:
+> Please check memblock related patches
+>
+> [PATCH 1/4] memblock: Fix big size with find_region()
+> [PATCH -v5 2/4] x86, memblock: Fix crashkernel allocation
+> [PATCH 3/4] x86, memblock: Remove __memblock_x86_find_in_range_size()
+> [PATCH 4/4] x86, mm, memblock, 32bit: Make add_highpages honor early reserved ranges
+>
+> first one should get into core/memblock branch, and others should be in x86/mm/memeblock branch
 
-Nice catch, but I don't think that the dev pointer can ever be NULL
-here.
+I also need this to avoid an early crash under Xen.  The Xen init code
+ends up calling memblock_x86_reserve_range() before
+x86_64_start_reservations().
 
-Mauro, can you queue this up through your tree, as you handle this one?
+Also in git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git
+memblock
 
-thanks,
+    J
 
-greg k-h
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Tue, 21 Sep 2010 17:05:35 -0700
+Subject: [PATCH] memblock: allow memblock_init to be called early
+
+The Xen setup code needs to call memblock_x86_reserve_range() very early,
+so allow it to initialize the memblock subsystem before doing so.  The
+second memblock_init() is ignored.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 7d46c84..63b83ce 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -30,6 +30,7 @@
+ #include <linux/console.h>
+ #include <linux/pci.h>
+ #include <linux/gfp.h>
++#include <linux/memblock.h>
+ 
+ #include <xen/xen.h>
+ #include <xen/interface/xen.h>
+@@ -1183,6 +1184,8 @@ asmlinkage void __init xen_start_kernel(void)
+ 	local_irq_disable();
+ 	early_boot_irqs_off();
+ 
++	memblock_init();
++
+ 	xen_raw_console_write("mapping kernel into physical memory\n");
+ 	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
+ 
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 9ad3969..ae8b06c 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -752,6 +752,12 @@ void __init memblock_analyze(void)
+ 
+ void __init memblock_init(void)
+ {
++	static int init_done __initdata = 0;
++
++	if (init_done)
++		return;
++	init_done = 1;
++
+ 	/* Hookup the initial arrays */
+ 	memblock.memory.regions	= memblock_memory_init_regions;
+ 	memblock.memory.max		= INIT_MEMBLOCK_REGIONS;
+
+
