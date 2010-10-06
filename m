@@ -1,131 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759370Ab0JFQiU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:38:20 -0400
-Received: from mail.atheros.com ([12.19.149.2]:34551 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753348Ab0JFQiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:38:18 -0400
-Date: Wed, 6 Oct 2010 09:38:16 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: Marcel Holtmann <holtmann@linux.intel.com>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>
-Subject: Re: RFC: btusb firmware load help
-Message-ID: <20101006163816.GE7070@tux>
-References: <20100924230730.GB6566@tux>
- <1286266981.17473.33.camel@aeonflux>
- <20101005192814.GB11831@tux>
- <1286308731.2588.13.camel@aeonflux>
- <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
- <1286349552.6145.11.camel@aeonflux>
- <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
- <1286380566.6145.42.camel@aeonflux>
+	id S1759402Ab0JFQue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:50:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33869 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757341Ab0JFQud (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 6 Oct 2010 12:50:33 -0400
+Date: Wed, 6 Oct 2010 12:50:22 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [Xen-devel] [PATCH v2 01/10] xen: remap GSIs as pirqs when
+ running as initial domain
+Message-ID: <20101006165022.GC1590@dumpdata.com>
+References: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop>
+ <1286191730-3188-1-git-send-email-stefano.stabellini@eu.citrix.com>
+ <20101004192426.GA10291@dumpdata.com>
+ <alpine.DEB.2.00.1010051400350.2440@kaball-desktop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286380566.6145.42.camel@aeonflux>
+In-Reply-To: <alpine.DEB.2.00.1010051400350.2440@kaball-desktop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 08:56:06AM -0700, Marcel Holtmann wrote:
-> Hi Luis,
-> 
-> > > Now I am failing to understand why this was done wrong in the first
-> > > place. Especially if the loading procedure happens as you say it
-> > > happens.
+> > > +void __init xen_setup_pirqs(void)
+> > > +{
+> > > +	int irq;
+> > > +#ifndef CONFIG_SMP
+> > > +	int nr_ioapics = 1;
+> > > +#endif
 > > 
-> > You got me :) Anyone?
+> > Should this be defined in a header instead? Was this nr_ioapics==1
+> > meant to fall in the '0 == nr_ioapics' to setup the first sixteen
+> > irqs?
 > > 
-> > > This is the example for the Broadcom 203x devices:
-> > >
-> > > static struct usb_device_id blacklist_table[] = {
-> > >        /* Broadcom BCM2033 without firmware */
-> > >        { USB_DEVICE(0x0a5c, 0x2033), .driver_info = BTUSB_IGNORE },
-> > >
-> > > The btusb driver clearly blacklists them. And then bcm203x can take over
-> > > loading the firmware:
-> > >
-> > > static const struct usb_device_id bcm203x_table[] = {
-> > >        /* Broadcom Blutonium (BCM2033) */
-> > >        { USB_DEVICE(0x0a5c, 0x2033) },
-> > >
-> > > So there is a working example of this already in the kernel tree since
-> > > forever.
-> > 
-> > Nice, thanks for the pointer. Our team will review and try to address
-> > an alternative patch.
-> > 
-> > Now for my own sanity -- I still don't think I get this how this
-> > BCM2033 blacklist trick works, I take it the device once plugged in
-> > gets a generic btusb USB device vendor:device ID. The btusb driver
-> > then picks up the the blacklist table, and searches for a
-> > usb_match_id() on it for the given interface... What I don't get is
-> > how there will be a match here if the USB vendor:device ID is just the
-> > generic btusb one. Can you help me understand how this trick works?
+> > Is CONFIG_X86_IO_APIC more appropiate than CONFIG_SMP?
 > 
-> the generic Bluetooth USB class descriptors is what btusb uses. With a
-> few expectation for devices that use VID:PID combination.
+> I think it was supposed to fix a compilation error in case
+> CONFIG_X86_IO_APIC is not set, so that in both cases in which an ioapic
+> is not present in the system or the ioapic support is not compiled in
+> the kernel we would fall in the '0 == nr_ioapics' code path.
 
-Ahhh... got it..
+That is what I thought, but nr_ioapics is set to one, so how do
+we fall in 0 == 1 code path?
 
-> So in general what happens if a device gets matched via the Bluetooth
-> USB class descriptors the btusb driver will claim. We do however check
-> against out blacklist first. If the VID:PID is listed in the blacklist
-> we do return ENODEV. That means that the USB subsystem goes ahead and
-> tries the next driver. In this case bcm203x driver. This will claim it,
-> load the firmware, reset it and come back with different VID:PID values.
-> After that the btusb can successfully claim it since it is no longer in
-> the blacklist.
-
-Ah neat.
-
-> If I understand this all correct without having the hardware available
-> for verifying this, then it should be like this:
-> 
-> Just add this to blacklist_table[] in btusb.c:
-> 
->         /* Atheros AR3011 without firmware */
->         { USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
-> 
-> And then we can add the firmware loading to ath3k driver to load the
-> specific 1st stage firmware. And then ath3k can load the 2nd stage as
-> well. After that it should become a default Bluetooth USB device and the
-> btusb driver can take care of it.
-
-Got it... thanks for the clarification. So ath3k actually doesn't seem to
-have 2-stage firmware files, ath3k-2.fw actually seems to be a new firmware
-upgrade. The firmware already made it into linux-firmware.git tree but the
-respective patch just never made it upstream. I am not sure of the
-differences between these firmware but I do remember reading from Vikram
-that no new API was changed. I asked for clarification on the firmware
-updates and asked if it can be documented here:
-
-http://wireless.kernel.org/en/users/Drivers/ath3k
-
-If the device can live with simply getting ath3k-1.fw loaded once then
-perhaps the change you described above is all that is needed, not sure.
-
-Deepak, can you please try this patch, I don't have hardware to test
-this with.
-
-diff --git a/drivers/bluetooth/btusb.c b/drivers/bluetooth/btusb.c
-index d22ce3c..a62c1b2 100644
---- a/drivers/bluetooth/btusb.c
-+++ b/drivers/bluetooth/btusb.c
-@@ -140,6 +140,9 @@ static struct usb_device_id blacklist_table[] = {
- 	/* Frontline ComProbe Bluetooth Sniffer */
- 	{ USB_DEVICE(0x16d3, 0x0002), .driver_info = BTUSB_SNIFFER },
- 
-+	/* Atheros AR3011 without firmware */
-+	{ USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
-+
- 	{ }	/* Terminating entry */
- };
- 
+> So I guess the right thing to do here would be to replace CONFIG_SMP
+> with CONFIG_X86_IO_APIC.
+> I don't think that it is worth moving these three lines into an header
+> file.
+OK.
