@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab0JFTpL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 15:45:11 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:40657 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758128Ab0JFTpJ (ORCPT
+	id S1759405Ab0JFTpq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 15:45:46 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:32973 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759219Ab0JFTpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 15:45:09 -0400
-Date: Wed, 6 Oct 2010 20:45:07 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
+	Wed, 6 Oct 2010 15:45:45 -0400
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Arun MURTHY <arun.murthy@stericsson.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "lars\@metafoo.de" <lars@metafoo.de>,
+        "kernel\@pengutronix.de" <kernel@pengutronix.de>,
+        "philipp.zabel\@gmail.com" <philipp.zabel@gmail.com>,
+        "robert.jarzmik\@free.fr" <robert.jarzmik@free.fr>,
+        "marek.vasut\@gmail.com" <marek.vasut@gmail.com>,
+        "eric.y.miao\@gmail.com" <eric.y.miao@gmail.com>,
+        "rpurdie\@rpsys.net" <rpurdie@rpsys.net>,
+        "sameo\@linux.intel.com" <sameo@linux.intel.com>,
+        "kgene.kim\@samsung.com" <kgene.kim@samsung.com>,
+        "linux-omap\@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel\@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 6/7] sh: oprofile: Use perf-events oprofile backend
-Message-ID: <20101006194507.GA30419@console-pimps.org>
-References: <cover.1286222593.git.matt@console-pimps.org>
- <db62cbe463d5bce89196d6456ad386129ce0022a.1286222593.git.matt@console-pimps.org>
- <20101006183549.GW13563@erda.amd.com>
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mips\@linux-mips.org" <linux-mips@linux-mips.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        "bgat\@billgatliff.com" <bgat@billgatliff.com>
+Subject: Re: [PATCHv2 1/7] pwm: Add pwm core driver
+Organization: Deep Root Systems, LLC
+References: <1286280002-1636-1-git-send-email-arun.murthy@stericsson.com>
+	<1286280002-1636-2-git-send-email-arun.murthy@stericsson.com>
+	<20101005122225.6dda30ff.akpm@linux-foundation.org>
+	<F45880696056844FA6A73F415B568C6953571D4F05@EXDCVYMBSTM006.EQ1STM.local>
+Date: Wed, 06 Oct 2010 12:45:40 -0700
+In-Reply-To: <F45880696056844FA6A73F415B568C6953571D4F05@EXDCVYMBSTM006.EQ1STM.local>
+	(Arun MURTHY's message of "Wed, 6 Oct 2010 06:03:28 +0200")
+Message-ID: <87ocb7jeaj.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101006183549.GW13563@erda.amd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 08:35:49PM +0200, Robert Richter wrote:
-> On 04.10.10 16:44:24, Matt Fleming wrote:
-> > Now that we've got a generic perf-events based oprofile backend we might
-> > as well make use of it seeing as SH doesn't do anything special with its
-> > oprofile backend. Also introduce a new CONFIG_HW_PERF_EVENTS symbol so
-> > that we can fallback to using the timer interrupt for oprofile if the
-> > CPU doesn't support perf events.
-> > 
-> > Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> > ---
-> >  arch/sh/Kconfig            |   13 +++++
-> >  arch/sh/oprofile/Makefile  |    4 ++
-> >  arch/sh/oprofile/common.c  |  109 ++++---------------------------------------
-> >  arch/sh/oprofile/op_impl.h |   33 -------------
-> >  4 files changed, 28 insertions(+), 131 deletions(-)
-> >  delete mode 100644 arch/sh/oprofile/op_impl.h
-> 
-> This patch looks good.
-> 
-> We might merge it with patch 7/7.
+Arun MURTHY <arun.murthy@stericsson.com> writes:
 
-This patch was broken out for Paul's benefit to ease review. If he's
-happy for me to merge this with 7/7 then that's fine with me.
+[...]
+
+>> 
+>> I suggest that you work on Kevin's comments before making any code
+>> changes though.
+>
+> This pwm driver also supports the Davinci pwm driver as suggested by
+> Kelvin.
+
+My concern isn't whether it supports davinci or not.  Adapting existing
+drivers is the easy part.
+
+My concern is that there are now two proposals for a generic PWM
+framework, and I would prefer to see that those projects are aligned
+before anything merges.
+
+Kevin
