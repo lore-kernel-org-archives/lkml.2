@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933103Ab0JFVBV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 17:01:21 -0400
-Received: from asmtpout023.mac.com ([17.148.16.98]:62830 "EHLO
-	asmtpout023.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab0JFVBU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 17:01:20 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010060138
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-06_11:2010-10-06,2010-10-06,1970-01-01 signatures=0
-Subject: Re: Kernel config option missing: 'Compile the kernel with frame
- pointers'
-From: Elvis Dowson <elvis.dowson@mac.com>
-In-reply-to: <55150.64.39.142.105.1286398399.squirrel@xenotime.net>
-Date: Thu, 07 Oct 2010 01:00:53 +0400
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Message-id: <22641647-5901-4C65-99D0-F9BF2064AD91@mac.com>
-References: <B2C884FB-3933-4363-85C6-4F1206275B4C@mac.com>
- <55150.64.39.142.105.1286398399.squirrel@xenotime.net>
-To: Randy Dunlap <rdunlap@xenotime.net>
-X-Mailer: Apple Mail (2.1081)
+	id S933121Ab0JFVBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 17:01:41 -0400
+Received: from kroah.org ([198.145.64.141]:56500 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933107Ab0JFVBj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 17:01:39 -0400
+Date: Wed, 6 Oct 2010 13:59:37 -0700
+From: Greg KH <greg@kroah.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Thomas Renninger <trenn@suse.de>, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, jbaron@redhat.com
+Subject: Re: Dynamic Debug module.ddebug fake param enhancements V4
+Message-ID: <20101006205937.GA6184@kroah.com>
+References: <20100920184441.GA2915@redhat.com>
+ <201009270909.18490.bjorn.helgaas@hp.com>
+ <201009281425.19070.trenn@suse.de>
+ <201009280822.11675.bjorn.helgaas@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201009280822.11675.bjorn.helgaas@hp.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Randy,
+On Tue, Sep 28, 2010 at 08:22:11AM -0600, Bjorn Helgaas wrote:
+> On Tuesday, September 28, 2010 06:25:18 am Thomas Renninger wrote:
+> > Greg: Do you mind pushing the first (1/4, V4) and the last (4/4)
+> > patch into your tree for linux-next and leave the two PNP patches
+> > out, please.
 
-On Oct 7, 2010, at 12:53 AM, Randy Dunlap wrote:
+I've applied them now.
+
+> > More PNP related discussion, below.
+> > 
+> > On Monday 27 September 2010 17:09:18 Bjorn Helgaas wrote:
+> > > On Monday, September 27, 2010 02:25:46 am Thomas Renninger wrote:
+> > > 
+> > > > What do you think (dev_dbg vs printk(KERN_DEBUG...)?
+> > ...
+> > > With the exception of the ones in pnp/resource.c that I want to convert
+> > > to dev_printk(KERN_DEBUG), I think all the pnp_dbg() uses are things
+> > > I used during PNP development and haven't ever needed since.
+> > 
+> > Ok. Sounds sane.
+> > I used the PNP parts as it nicely showed what the
+> > module.ddebug boot param is doing, but I agree it hasn't much
+> > advantage for PNP.
+> > 
+> > Whatabout compiling pnp in one module namespace, the first
+> > of the two PNP patches?
 > 
-> It sounds like you don't have DEBUG_KERNEL symbol set.
-> You can't see the FRAME_POINTER kconfig symbol unless
-> DEBUG_KERNEL is set/enabled and you are on a qualifying
-> architecture:
+> [2/4] looks reasonable to me.
+
+And this one.
+
 > 
-> config FRAME_POINTER
->        bool "Compile the kernel with frame pointers"
->        depends on DEBUG_KERNEL && \
->                (CRIS || M68K || M68KNOMMU || FRV || UML || \
->                 AVR32 || SUPERH || BLACKFIN || MN10300) || \
->                ARCH_WANT_FRAME_POINTERS
->        default y if (DEBUG_INFO && UML) || ARCH_WANT_FRAME_POINTERS
+> > E.g. attached patch would be an on top patch which provides no
+> > functional change, just that a pnp.debug would be a module param:
+> > cat /sys/module/pnp/parameters/debug
 > 
-> 
-> The prompt for DEBUG_KERNEL is "Kernel debugging".
-> It is in the "Kernel hacking" menu.
+> As does the one below.
 
-I have CONFIG_DEBUG_KERNEL=y set. I'm compiling for the ARM architecture (TI OMAP 3503). So I guess it doesn't apply for ARM?
+And this one.
 
-I want to debug the kernel using Eclipse IDE and kgdb.
+So that left 3/4 out of the series applied to my tree.
 
-Best regards,
+If this is incorrect, please let me know.
 
-Elvis
+thanks,
+
+greg k-h
