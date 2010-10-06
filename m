@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab0JFLTP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 07:19:15 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36951 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752180Ab0JFLTO (ORCPT
+	id S1758898Ab0JFLVS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 07:21:18 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:38378 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756219Ab0JFLVR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 07:19:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=CKVWB7BeO56WS2q2/wTG0Y+k8CZuiijD58l9PimD2OB7/QeMU4As5nVoTLa3r4XVYZ
-         yQ8hgFCnOCQ0C5vLbVMosg1meNDkhQL895d0C824QXaHv/dDseCaAs0T84eg96SZrhhS
-         4WQhrdVBCzujRkSJ7cPnSmelTVGBjlwAE+It8=
+	Wed, 6 Oct 2010 07:21:17 -0400
+Date: Wed, 6 Oct 2010 12:21:15 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Adam Jiang <jiang.adam@gmail.com>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] mips: irq: add stackoverflow detection
+Message-ID: <20101006112114.GA19856@linux-mips.org>
+References: <1286361676-10743-1-git-send-email-jiang.adam@gmail.com>
+ <4CAC5537.9040904@mvista.com>
 MIME-Version: 1.0
-In-Reply-To: <4CAC577F.9040401@rsk.demon.co.uk>
-References: <20101005185725.088808842@linux.com>
-	<AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com>
-	<4CAC577F.9040401@rsk.demon.co.uk>
-Date: Wed, 6 Oct 2010 14:19:13 +0300
-X-Google-Sender-Auth: o6dwv-lx2e0h-SCESgnrx1boIQ4
-Message-ID: <AANLkTikr9B5Yb+Owe3t+Rb8KBO33DE=9YBQZ_1+Gwcu8@mail.gmail.com>
-Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
-From: Pekka Enberg <penberg@kernel.org>
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-Cc: Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, npiggin@kernel.dk,
-        yanmin_zhang@linux.intel.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CAC5537.9040904@mvista.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 6, 2010 at 2:03 PM, Richard Kennedy <richard@rsk.demon.co.uk> wrote:
-> What tree are these patches against ? I'm getting patch failures on the
-> main tree.
+On Wed, Oct 06, 2010 at 02:53:43PM +0400, Sergei Shtylyov wrote:
 
-The 'slab/next' branch of slab.git:
+> >Add stackoverflow detection to mips arch
+> 
+>    There's no such word: stackoverflow. Space is needed.
+> 
+> >This is the 3rd version of the smiple patch. 2K is too big for many
+> >system, so I Modified the warning line by following Ralf's suggestion.
+> 
+> >Signed-off-by: Adam Jiang<jiang.adam@gmail.com>
+> [...]
+> 
+> >diff --git a/arch/mips/kernel/irq.c b/arch/mips/kernel/irq.c
+> >index c6345f5..b43edb7 100644
+> >--- a/arch/mips/kernel/irq.c
+> >+++ b/arch/mips/kernel/irq.c
+> >@@ -151,6 +151,28 @@ void __init init_IRQ(void)
+> >  #endif
+> >  }
+> >
+> >+#ifdef CONFIG_DEBUG_STACKOVERFLOW
+> >+static inline void check_stack_overflow(void)
+> >+{
+> >+	unsigned long sp;
+> >+
+> >+	asm volatile("move %0, $sp" : "=r" (sp));
+> >+	sp = sp & THREAD_MASK;
+> 
+>    Why not:
+> 
+> 	sp &= THREAD_MASK;
+> 
+>    It's C, after all! :-)
 
-http://git.kernel.org/?p=linux/kernel/git/penberg/slab-2.6.git;a=summary
+I already had accepted his previous version with minor changes so I've
+combined the two.
+
+Thanks Adam!
+
+  Ralf
