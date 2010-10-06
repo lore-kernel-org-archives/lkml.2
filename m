@@ -1,63 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754930Ab0JFSsa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:48:30 -0400
-Received: from www.tglx.de ([62.245.132.106]:52904 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754576Ab0JFSs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:48:29 -0400
-Date: Wed, 6 Oct 2010 20:48:07 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        "jeremy@goop.org" <jeremy@goop.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 4/7] acpi: use indirect call to register gsi in different
- modes
-In-Reply-To: <4CACB257.7060705@zytor.com>
-Message-ID: <alpine.LFD.2.00.1010062047340.17015@localhost6.localdomain6>
-References: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop> <1283167276-7364-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.00.1010061749110.2440@kaball-desktop> <4CACB257.7060705@zytor.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932952Ab0JFSvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:51:07 -0400
+Received: from va3ehsobe010.messaging.microsoft.com ([216.32.180.30]:27430
+	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759761Ab0JFSvD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 14:51:03 -0400
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Oct 2010 14:51:03 EDT
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9VSZQ-01-QLM-02
+X-M-MSG: 
+Date: Wed, 6 Oct 2010 20:35:49 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 6/7] sh: oprofile: Use perf-events oprofile backend
+Message-ID: <20101006183549.GW13563@erda.amd.com>
+References: <cover.1286222593.git.matt@console-pimps.org>
+ <db62cbe463d5bce89196d6456ad386129ce0022a.1286222593.git.matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <db62cbe463d5bce89196d6456ad386129ce0022a.1286222593.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 6 Oct 2010, H. Peter Anvin wrote:
-
-> On 10/06/2010 10:00 AM, Stefano Stabellini wrote:
-> > Peter,
-> > I sent this patch a while back as part of the "PV on HVM: receive
-> > interrupts as xen events" series (that it is based upon Konrad's
-> > pcifront series, he sent another version to the list yesterday).
-> > 
-> > Do you think that this is a reasonble approach?
-> > 
-> > If you want to give a look at the whole series you can find it here:
-> > 
-> > http://lkml.org/lkml/2010/8/30/170
-> > 
-> > everything else is Xen specific stuff.
-> > 
-> > Thanks in advance,
-> > 
+On 04.10.10 16:44:24, Matt Fleming wrote:
+> Now that we've got a generic perf-events based oprofile backend we might
+> as well make use of it seeing as SH doesn't do anything special with its
+> oprofile backend. Also introduce a new CONFIG_HW_PERF_EVENTS symbol so
+> that we can fallback to using the timer interrupt for oprofile if the
+> CPU doesn't support perf events.
 > 
-> On the surface it seems reasonable.
-> 
-> Thomas Gleixner has been working on greatly revamping a bunch of the x86
-> interrupt code, and this might interact with his stuff, so it would be
-> good if he could comment on it.
-> 
-> [tglx: what they're apparently working on is to redirect APIC interrupts
-> to Xen event channels so they don't have to interact with the simulated
-> memory-mapped APIC.  It's "paravirtualization light".]
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> ---
+>  arch/sh/Kconfig            |   13 +++++
+>  arch/sh/oprofile/Makefile  |    4 ++
+>  arch/sh/oprofile/common.c  |  109 ++++---------------------------------------
+>  arch/sh/oprofile/op_impl.h |   33 -------------
+>  4 files changed, 28 insertions(+), 131 deletions(-)
+>  delete mode 100644 arch/sh/oprofile/op_impl.h
 
-I'm not touching acpi code. So that should be ok.
+This patch looks good.
 
-Thanks,
+We might merge it with patch 7/7.
 
-	tglx
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
