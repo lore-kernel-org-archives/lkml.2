@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755811Ab0JFFBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 01:01:52 -0400
-Received: from dhruva1.ncra.tifr.res.in ([158.144.12.129]:59627 "EHLO
-	dhruva1.ncra.tifr.res.in" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753811Ab0JFFBv (ORCPT
+	id S1753776Ab0JFFI3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 01:08:29 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46110 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751979Ab0JFFI2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 01:01:51 -0400
-From: "Raju Rameshwar Uprade" <rajsingh@ncra.tifr.res.in>
-To: Greg Oliver <oliver.greg@gmail.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Subject: Re: pl2303_ttyUSB0 userspace application not able to control RTS line
-Date: Wed, 6 Oct 2010 10:31:27 +0530
-Message-Id: <20101006045841.M45600@admin-gateway.ncra.tifr.res.in>
-In-Reply-To: <AANLkTim+LsaL0QeQPwNjFA3F-hzkZs-HqghM0o6Us9TD@mail.gmail.com>
-References: <20100922052107.M44650@admin-gateway.ncra.tifr.res.in> <20100922145607.GB26309@suse.de> <20100923100127.M64470@admin-gateway.ncra.tifr.res.in> <20100923140236.GB31394@suse.de> <20100928091520.M79654@admin-gateway.ncra.tifr.res.in> <20100928113036.GA15024@suse.de> <20100928115204.M46802@admin-gateway.ncra.tifr.res.in> <20100928120743.GA15807@suse.de> <20101004042924.M50398@admin-gateway.ncra.tifr.res.in> <20101005104403.M28756@admin-gateway.ncra.tifr.res.in> <20101005133312.GF3548@suse.de> <20101006034210.M38114@admin-gateway.ncra.tifr.res.in> <AANLkTim+LsaL0QeQPwNjFA3F-hzkZs-HqghM0o6Us9TD@mail.gmail.com>
-X-Mailer: OpenWebMail 2.53 (08:Aug:2008)
-X-OriginatingIP: 158.144.12.129
+	Wed, 6 Oct 2010 01:08:28 -0400
+Date: Wed, 6 Oct 2010 06:08:25 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Walleij <linus.ml.walleij@gmail.com>
+Subject: Re: [PATCH] regulator: Add option for machine drivers to enable
+	the dummy regulator
+Message-ID: <20101006050825.GA17998@sirena.org.uk>
+References: <1286331512-4608-1-git-send-email-broonie@opensource.wolfsonmicro.com> <201010060609.17412.marek.vasut@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010060609.17412.marek.vasut@gmail.com>
+X-Cookie: Yow!
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 06, 2010 at 06:09:17AM +0200, Marek Vasut wrote:
 
-What kind of email is this....
+> This still solves nothing ... This leaves boards broken and the granularity is 
+We've already got a compatibility option which allows this to be enabled
+with a config change, and the actual code update required has been
+reduced to a single line.  This does not seem terribly onerous.
 
-and who are you Greg oliver, I haven't wrote email to you.
+> too big. Consider there are boards that use regulator for MMC, but not for 
+> ADS7846 for example.
 
-I am interacting with Greg KH and rest of kernel mailing list.
-
-Mind your own business and language.
-
-
-> You know - I have had the (mis)forune of working with some of your
-> people - straight out of college..  While I was impressed with their
-> capacities, I was duly unimpressed with their inability to shut the
-> fuck up when appropriate.  If they knew that a typo on the command
-> line was more easily correctable after the fact (since of course set
-> -o vi ) was in place..  then they may (I DOUBT IT) shut the fuck
-> up....  Anyhow - just a pissed off observation...
-> 
-> Teach them to STFU when noone asked them shit to begin with....  Or -
-> put a dick (my dick) in their mouths....
-
-
-
+You can't have it both ways.  Either drivers just ignore missing
+regulators and just run as though everything is fine (which is what
+you've been requesting enthusiastically) or they trust that they can get
+accurate information about what is and isn't mapped.  All this is doing
+is providing a way to enable the former behaviour in the core.
