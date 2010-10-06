@@ -1,84 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab0JFKBn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 06:01:43 -0400
-Received: from smtp205.alice.it ([82.57.200.101]:55934 "EHLO smtp205.alice.it"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751216Ab0JFKBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 06:01:41 -0400
-Date: Wed, 6 Oct 2010 12:01:29 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
-        Alan Ott <alan@signal11.us>, Oliver Neukum <oliver@neukum.name>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [PATCH 0/2] HID: hidraw, fix two NULL pointer dereferences
-Message-Id: <20101006120129.52da81d3.ospite@studenti.unina.it>
-In-Reply-To: <4CAB94A0.8040402@gmail.com>
-References: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz>
-	<1286292017-6746-1-git-send-email-ospite@studenti.unina.it>
-	<4CAB94A0.8040402@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh"
+	id S1756304Ab0JFKHF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 06:07:05 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:19972
+	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751010Ab0JFKHD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 06:07:03 -0400
+X-SpamScore: -21
+X-BigFish: VS-21(zz1432N98dNzz1202hzz8275bh8275dh15d4Rz32i87h2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L9V5EO-02-447-02
+X-M-MSG: 
+Date: Wed, 6 Oct 2010 12:07:35 +0200
+From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
+To: Matthew Garrett <mjg@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        "x86@kernel.org" <x86@kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "stable@kernel.org" <stable@kernel.org>
+Subject: Re: [PATCH v2] x86: Reenable the AMD IOMMU if it's mysteriously
+ vanished over suspend
+Message-ID: <20101006100734.GX9817@amd.com>
+References: <20101004134339.GT9817@amd.com>
+ <1286218771-5934-1-git-send-email-mjg@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1286218771-5934-1-git-send-email-mjg@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Mon, Oct 04, 2010 at 02:59:31PM -0400, Matthew Garrett wrote:
+> AMD's reference BIOS code had a bug that could result in the firmware
+> failing to reenable the iommu on resume. It transpires that this causes
+> certain less than desirable behaviour when it comes to PCI accesses, to
+> whit them ending up somewhere near Bristol when the more desirable outcome
+> was Edinburgh. Sadness ensues, perhaps along with filesystem corruption.
+> Let's make sure that it gets turned back on, and that we restore its
+> configuration so decisions it makes bear some resemblance to those made by
+> reasonable people rather than crack-addled lemurs who spent all your DMA
+> on Thunderbird.
+> 
+> Signed-off-by: Matthew Garrett <mjg@redhat.com>
+> Cc: stable@kernel.org
 
-On Tue, 05 Oct 2010 23:12:00 +0200
-Jiri Slaby <jirislaby@gmail.com> wrote:
+Applied, thanks a lot.
 
-> On 10/05/2010 05:20 PM, Antonio Ospite wrote:
-> > here are some fixes to hidraw.
-> >=20
-> > Patches are against 2.6.36-rc6, but they should be ported to other
-> > maintained stable kernels as well.
-> >=20
-> > Antonio Ospite (2):
-> >   HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
-> >   HID: hidraw, fix a NULL pointer dereference in hidraw_write
->=20
-> Hi, please fix also the window in hidraw_release.
->
+-- 
+AMD Operating System Research Center
 
-I am not sure I get what you mean, can you please add more details?
+Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
 
-> thanks,
-> --=20
-> js
->=20
-
-Thanks,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-
---Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkysSPkACgkQ5xr2akVTsAHyPQCdE0Jtmhz8Z2xq9vZUoNXZKwFh
-x7kAn2GYNoGlkgOZTNj+nYmjHw3pgfpK
-=KMIf
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh--
