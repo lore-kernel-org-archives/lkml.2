@@ -1,71 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab0JFHfW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:35:22 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34046
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755106Ab0JFHfU (ORCPT
+	id S932288Ab0JFHg2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:36:28 -0400
+Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:58325
+	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932217Ab0JFHg0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:35:20 -0400
-Date: Wed, 06 Oct 2010 00:35:41 -0700 (PDT)
-Message-Id: <20101006.003541.71128466.davem@davemloft.net>
-To: cywang@google.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, timo.teras@iki.fi
-Subject: Re: [PATCH] net: Fix sk_dst_check() to reset the obsolete
- dst_entry of a socket.
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <AANLkTikkv4htP1f=KFwSaa8=K6LicDN0eusXctow-Efb@mail.gmail.com>
-References: <AANLkTikkv4htP1f=KFwSaa8=K6LicDN0eusXctow-Efb@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 03:36:26 -0400
+X-SpamScore: -12
+X-BigFish: VPS-12(zzbb2cK98dN4015Lzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L9UYFX-02-YP0-02
+X-M-MSG: 
+Date: Wed, 6 Oct 2010 09:35:58 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: "Rosenfeld, Hans" <Hans.Rosenfeld@amd.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@googlemail.com>
+Subject: Re: [RFC 0/3] Basic support for LWP
+Message-ID: <20101006073558.GJ13563@erda.amd.com>
+References: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com>
+ <alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6>
+ <20101005145155.GD173@escobedo.osrc.amd.com>
+ <alpine.LFD.2.00.1010051730060.2556@localhost6.localdomain6>
+ <20101005182739.GE173@escobedo.osrc.amd.com>
+ <20101005190501.GA21916@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20101005190501.GA21916@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05.10.10 15:05:01, Ingo Molnar wrote:
 
-This should have been fixed by:
+> So thoughts need to be made what the point of it all is and how it 
+> integrates into perf. If it doesnt integrate, if the whole plan is to 
+> just get it to user-space where it can be messed up freely in some CPU 
+> specific way then color me thoroughly uninterested. We have a generic 
+> instrumentation framework for a reason.
 
---------------------
-commit ae2688d59b5f861dc70a091d003773975d2ae7fb
-Author: Jianzhao Wang <jianzhao.wang@6wind.com>
-Date:   Wed Sep 8 14:35:43 2010 -0700
+I was looking at how this integrates into the perf syscall. It might
+be a little disappointing, but there is not much to do for the kernel.
+Ring buffer handling is implemented in hardware now, the user land
+sets up address ranges in the task's address space for buffers and
+thus may direct access it. We do not need an interrupt handler to fill
+the buffers. The pmu state is saved and restored during context
+switches in ways that has been proven for the fpu (xsave) and
+virtualization (VMCB like LWPCB). So, overall hardware is now doing
+the job for writing samples into a userland buffer and managing the
+pmu state. This reduces system overhead while profiling a lot
+especially because we don't have to walk through a software stack with
+each sample (this is where the 'lightweight' comes from).
 
-    net: blackhole route should always be recalculated
-    
-    Blackhole routes are used when xfrm_lookup() returns -EREMOTE (error
-    triggered by IKE for example), hence this kind of route is always
-    temporary and so we should check if a better route exists for next
-    packets.
-    Bug has been introduced by commit d11a4dc18bf41719c9f0d7ed494d295dd2973b92.
-    
-    Signed-off-by: Jianzhao Wang <jianzhao.wang@6wind.com>
-    Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
-    Signed-off-by: David S. Miller <davem@davemloft.net>
+Of course this does not fit into current frameworks because of its
+difference in concept, but in general we want to see it in perf. So
+the main work of integration will leave here to tool and library
+implementation. But for this Linux must implement LWP context switch
+support. This is what Hans did.
 
-diff --git a/net/ipv4/route.c b/net/ipv4/route.c
-index 3f56b6e..6298f75 100644
---- a/net/ipv4/route.c
-+++ b/net/ipv4/route.c
-@@ -2738,6 +2738,11 @@ slow_output:
- }
- EXPORT_SYMBOL_GPL(__ip_route_output_key);
- 
-+static struct dst_entry *ipv4_blackhole_dst_check(struct dst_entry *dst, u32 cookie)
-+{
-+	return NULL;
-+}
-+
- static void ipv4_rt_blackhole_update_pmtu(struct dst_entry *dst, u32 mtu)
- {
- }
-@@ -2746,7 +2751,7 @@ static struct dst_ops ipv4_dst_blackhole_ops = {
- 	.family			=	AF_INET,
- 	.protocol		=	cpu_to_be16(ETH_P_IP),
- 	.destroy		=	ipv4_dst_destroy,
--	.check			=	ipv4_dst_check,
-+	.check			=	ipv4_blackhole_dst_check,
- 	.update_pmtu		=	ipv4_rt_blackhole_update_pmtu,
- 	.entries		=	ATOMIC_INIT(0),
- };
+We also measured the system impact which comes from the additional
+rdmsrl() if the cpu supports LWP. There is no significant performance
+decrease in a worst case scenario. So, this is how we think it is the
+best to implement it and we need your feedback here.
+
+I think we should consider to apply patch 1/3 as it is unrelated to
+LWP and reworks and improves the code.
+
+Thanks,
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
