@@ -1,231 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758636Ab0JFM0y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 08:26:54 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:34241 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755615Ab0JFM0x (ORCPT
+	id S932138Ab0JFM1x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 08:27:53 -0400
+Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:56122
+	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755274Ab0JFM1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 08:26:53 -0400
-Date: Wed, 6 Oct 2010 14:23:22 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] kvm: fix typo in copyright notice
-Message-ID: <20101006142322.15b4aa26@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 08:27:51 -0400
+X-SpamScore: -6
+X-BigFish: VPS-6(zzbb2cK1432N98dN78fbpzz1202hzz8275dhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9VBXZ-01-01J-02
+X-M-MSG: 
+Date: Wed, 6 Oct 2010 14:27:36 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
+Message-ID: <20101006122736.GL13563@erda.amd.com>
+References: <cover.1286222593.git.matt@console-pimps.org>
+ <59a8e68894a2e755232189abbe9b1a3b892e309c.1286222593.git.matt@console-pimps.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <59a8e68894a2e755232189abbe9b1a3b892e309c.1286222593.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix typo in copyright notice.
+On 04.10.10 16:44:20, Matt Fleming wrote:
+> Introduce perf_pmu_name() helper function that returns the name of the
+> pmu. This gives us a generic way to get the name of a pmu regardless of
+> how an architecture identifies it internally, e.g. ARM uses an id
+> whereas SH currently uses a string.
+> 
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> ---
+>  arch/arm/kernel/perf_event.c |   23 +++++++++++++++++++++++
+>  arch/arm/oprofile/common.c   |   22 +---------------------
+>  arch/sh/kernel/perf_event.c  |   14 ++++++++++++++
+>  include/linux/perf_event.h   |    1 +
+>  kernel/perf_event.c          |    5 +++++
+>  5 files changed, 44 insertions(+), 21 deletions(-)
+> 
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index ef3bc33..3bff24d 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -123,6 +123,29 @@ armpmu_get_max_events(void)
+>  }
+>  EXPORT_SYMBOL_GPL(armpmu_get_max_events);
+>  
+> +const char *perf_pmu_name(void)
+> +{
+> +	enum arm_perf_pmu_ids id = armpmu_get_pmu_id();
+> +
+> +	switch (id) {
+> +	case ARM_PERF_PMU_ID_XSCALE1:
+> +		return "arm/xscale1";
+> +	case ARM_PERF_PMU_ID_XSCALE2:
+> +		return "arm/xscale2";
+> +	case ARM_PERF_PMU_ID_V6:
+> +		return "arm/armv6";
+> +	case ARM_PERF_PMU_ID_V6MP:
+> +		return "arm/mpcore";
+> +	case ARM_PERF_PMU_ID_CA8:
+> +		return "arm/armv7";
+> +	case ARM_PERF_PMU_ID_CA9:
+> +		return "arm/armv7-ca9";
+> +	default:
+> +		return NULL;
+> +	}
+> +}
+> +EXPORT_SYMBOL_GPL(perf_pmu_name);
+> +
+>  int perf_num_counters(void)
+>  {
+>  	return armpmu_get_max_events();
+> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+> index 23f18a0..cb224ee 100644
+> --- a/arch/arm/oprofile/common.c
+> +++ b/arch/arm/oprofile/common.c
+> @@ -155,26 +155,6 @@ static void op_perf_stop(void)
+>  }
+>  
+>  
+> -static char *op_name_from_perf_id(enum arm_perf_pmu_ids id)
+> -{
+> -	switch (id) {
+> -	case ARM_PERF_PMU_ID_XSCALE1:
+> -		return "arm/xscale1";
+> -	case ARM_PERF_PMU_ID_XSCALE2:
+> -		return "arm/xscale2";
+> -	case ARM_PERF_PMU_ID_V6:
+> -		return "arm/armv6";
+> -	case ARM_PERF_PMU_ID_V6MP:
+> -		return "arm/mpcore";
+> -	case ARM_PERF_PMU_ID_CA8:
+> -		return "arm/armv7";
+> -	case ARM_PERF_PMU_ID_CA9:
+> -		return "arm/armv7-ca9";
+> -	default:
+> -		return NULL;
+> -	}
+> -}
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- arch/x86/kvm/emulate.c     |    2 +-
- arch/x86/kvm/i8254.c       |    2 +-
- arch/x86/kvm/i8259.c       |    2 +-
- arch/x86/kvm/irq.c         |    2 +-
- arch/x86/kvm/lapic.c       |    2 +-
- arch/x86/kvm/mmu.c         |    2 +-
- arch/x86/kvm/mmu_audit.c   |    2 +-
- arch/x86/kvm/paging_tmpl.h |    2 +-
- arch/x86/kvm/svm.c         |    2 +-
- arch/x86/kvm/timer.c       |    2 +-
- arch/x86/kvm/vmx.c         |    2 +-
- arch/x86/kvm/x86.c         |    2 +-
- virt/kvm/irq_comm.c        |    2 +-
- virt/kvm/kvm_main.c        |    2 +-
- 14 files changed, 14 insertions(+), 14 deletions(-)
+I don't like moving this oprofile names out to perf. These strings
+don't have much to do with the pmu names and are hints for the
+oprofile daemon to detect the pmu type with no other use. Of course
+this is more human readable than an enum or so, but it is of no worth
+other than oprofile. So it should be kept inside oprofile.
 
-diff --git a/arch/x86/kvm/emulate.c b/arch/x86/kvm/emulate.c
-index aead72e..cb8bd2e 100644
---- a/arch/x86/kvm/emulate.c
-+++ b/arch/x86/kvm/emulate.c
-@@ -9,7 +9,7 @@
-  * privileged instructions:
-  *
-  * Copyright (C) 2006 Qumranet
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  *   Avi Kivity <avi@qumranet.com>
-  *   Yaniv Kamay <yaniv@qumranet.com>
-diff --git a/arch/x86/kvm/i8254.c b/arch/x86/kvm/i8254.c
-index 2ad40a4..efad723 100644
---- a/arch/x86/kvm/i8254.c
-+++ b/arch/x86/kvm/i8254.c
-@@ -5,7 +5,7 @@
-  * Copyright (c) 2006 Intel Corporation
-  * Copyright (c) 2007 Keir Fraser, XenSource Inc
-  * Copyright (c) 2008 Intel Corporation
-- * Copyright 2009 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2009 Red Hat, Inc. and/or its affiliates.
-  *
-  * Permission is hereby granted, free of charge, to any person obtaining a copy
-  * of this software and associated documentation files (the "Software"), to deal
-diff --git a/arch/x86/kvm/i8259.c b/arch/x86/kvm/i8259.c
-index 6e77471..cf585f7 100644
---- a/arch/x86/kvm/i8259.c
-+++ b/arch/x86/kvm/i8259.c
-@@ -3,7 +3,7 @@
-  *
-  * Copyright (c) 2003-2004 Fabrice Bellard
-  * Copyright (c) 2007 Intel Corporation
-- * Copyright 2009 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2009 Red Hat, Inc. and/or its affiliates.
-  *
-  * Permission is hereby granted, free of charge, to any person obtaining a copy
-  * of this software and associated documentation files (the "Software"), to deal
-diff --git a/arch/x86/kvm/irq.c b/arch/x86/kvm/irq.c
-index f994da4..7e06ba1 100644
---- a/arch/x86/kvm/irq.c
-+++ b/arch/x86/kvm/irq.c
-@@ -1,7 +1,7 @@
- /*
-  * irq.c: API for in kernel interrupt controller
-  * Copyright (c) 2007, Intel Corporation.
-- * Copyright 2009 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2009 Red Hat, Inc. and/or its affiliates.
-  *
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms and conditions of the GNU General Public License,
-diff --git a/arch/x86/kvm/lapic.c b/arch/x86/kvm/lapic.c
-index 22b06f7..ed1a533 100644
---- a/arch/x86/kvm/lapic.c
-+++ b/arch/x86/kvm/lapic.c
-@@ -5,7 +5,7 @@
-  * Copyright (C) 2006 Qumranet, Inc.
-  * Copyright (C) 2007 Novell
-  * Copyright (C) 2007 Intel
-- * Copyright 2009 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2009 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Dor Laor <dor.laor@qumranet.com>
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 6e248d8..3c7d024 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -7,7 +7,7 @@
-  * MMU support
-  *
-  * Copyright (C) 2006 Qumranet, Inc.
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Yaniv Kamay  <yaniv@qumranet.com>
-diff --git a/arch/x86/kvm/mmu_audit.c b/arch/x86/kvm/mmu_audit.c
-index bd2b1be..ee0feef 100644
---- a/arch/x86/kvm/mmu_audit.c
-+++ b/arch/x86/kvm/mmu_audit.c
-@@ -4,7 +4,7 @@
-  * Audit code for KVM MMU
-  *
-  * Copyright (C) 2006 Qumranet, Inc.
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Yaniv Kamay  <yaniv@qumranet.com>
-diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-index 2bdd843..30cde53 100644
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -7,7 +7,7 @@
-  * MMU support
-  *
-  * Copyright (C) 2006 Qumranet, Inc.
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Yaniv Kamay  <yaniv@qumranet.com>
-diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
-index eeb08d6..a7fdd78 100644
---- a/arch/x86/kvm/svm.c
-+++ b/arch/x86/kvm/svm.c
-@@ -4,7 +4,7 @@
-  * AMD SVM support
-  *
-  * Copyright (C) 2006 Qumranet, Inc.
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Yaniv Kamay  <yaniv@qumranet.com>
-diff --git a/arch/x86/kvm/timer.c b/arch/x86/kvm/timer.c
-index e16a0db..fc7a101 100644
---- a/arch/x86/kvm/timer.c
-+++ b/arch/x86/kvm/timer.c
-@@ -6,7 +6,7 @@
-  *
-  * timer support
-  *
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * This work is licensed under the terms of the GNU GPL, version 2.  See
-  * the COPYING file in the top-level directory.
-diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
-index 0a70194..e5bc464 100644
---- a/arch/x86/kvm/vmx.c
-+++ b/arch/x86/kvm/vmx.c
-@@ -5,7 +5,7 @@
-  * machines without emulation or binary translation.
-  *
-  * Copyright (C) 2006 Qumranet, Inc.
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Avi Kivity   <avi@qumranet.com>
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 5733073..778dc86 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -6,7 +6,7 @@
-  * Copyright (C) 2006 Qumranet, Inc.
-  * Copyright (C) 2008 Qumranet, Inc.
-  * Copyright IBM Corporation, 2008
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Avi Kivity   <avi@qumranet.com>
-diff --git a/virt/kvm/irq_comm.c b/virt/kvm/irq_comm.c
-index 369e380..8edca91 100644
---- a/virt/kvm/irq_comm.c
-+++ b/virt/kvm/irq_comm.c
-@@ -17,7 +17,7 @@
-  * Authors:
-  *   Yaozu (Eddie) Dong <Eddie.dong@intel.com>
-  *
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  */
- 
- #include <linux/kvm_host.h>
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 3ff01d0..aed2f90 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -5,7 +5,7 @@
-  * machines without emulation or binary translation.
-  *
-  * Copyright (C) 2006 Qumranet, Inc.
-- * Copyright 2010 Red Hat, Inc. and/or its affilates.
-+ * Copyright 2010 Red Hat, Inc. and/or its affiliates.
-  *
-  * Authors:
-  *   Avi Kivity   <avi@qumranet.com>
+> -
+>  static int op_arm_create_files(struct super_block *sb, struct dentry *root)
+>  {
+>  	unsigned int i;
+> @@ -391,7 +371,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+>  	ops->start		= op_arm_start;
+>  	ops->stop		= op_arm_stop;
+>  	ops->shutdown		= op_arm_stop;
+> -	ops->cpu_type		= op_name_from_perf_id(armpmu_get_pmu_id());
+> +	ops->cpu_type		= perf_pmu_name();
+>  
+>  	if (!ops->cpu_type)
+>  		ret = -ENODEV;
+> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+> index 2cb9ad5..e065a1d 100644
+> --- a/arch/sh/kernel/perf_event.c
+> +++ b/arch/sh/kernel/perf_event.c
+> @@ -59,6 +59,20 @@ static inline int sh_pmu_initialized(void)
+>  	return !!sh_pmu;
+>  }
+>  
+> +const char *perf_pmu_name(void)
+> +{
+> +	if (!sh_pmu)
+> +		return NULL;
+> +
+> +	if (!strcmp(sh_pmu->name, "SH7750"))
+> +		return "sh/sh7750";
+> +	if (!strcmp(sh_pmu->name, "SH-4A"))
+> +		return "sh/sh4a";
+> +
+> +	return NULL;
+> +}
+> +EXPORT_SYMBOL_GPL(perf_pmu_name);
+
+I rather want use here the solution we discussed earlier, simply
+including <asm/perf_event.h> and then access sh_pmu->name directly
+from oprofile.
+
+-Robert
+
+> +
+>  int perf_num_counters(void)
+>  {
+>  	if (!sh_pmu)
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 1a02192..33f08da 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -850,6 +850,7 @@ extern int perf_max_events;
+>  extern const struct pmu *hw_perf_event_init(struct perf_event *event);
+>  
+>  extern int perf_num_counters(void);
+> +extern const char *perf_pmu_name(void);
+>  extern void perf_event_task_sched_in(struct task_struct *task);
+>  extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
+>  extern void perf_event_task_tick(struct task_struct *task);
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index db5b560..fc51268 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -85,6 +85,11 @@ void __weak hw_perf_enable(void)		{ barrier(); }
+>  
+>  void __weak perf_event_print_debug(void)	{ }
+>  
+> +extern __weak const char *perf_pmu_name(void)
+> +{
+> +	return "pmu";
+> +}
+> +
+>  static DEFINE_PER_CPU(int, perf_disable_count);
+>  
+>  void perf_disable(void)
+> -- 
+> 1.7.1
+> 
+> 
+
 -- 
-1.7.2.2
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
