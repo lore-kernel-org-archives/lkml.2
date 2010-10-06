@@ -1,57 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab0JFLOx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 07:14:53 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41334 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab0JFLOw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 07:14:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=gHklx5GjQnW9AJYTUAOedjKfOGgo64m5PDBoXvqyi1OrRSVbpY+SQ1KFK7r5UQcFvE
-         TUuGTHTlET9TyoUVIrZ5m4WmrWARpAN/SHGBROukvflwH06hAJ4N2k2A0L2V28Dphj8t
-         s8G2G3PyBJe1A+z5gYZB8UMSHC5vcpjgkudPc=
+	id S1758869Ab0JFLPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 07:15:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26658 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754318Ab0JFLPL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 07:15:11 -0400
+Date: Wed, 6 Oct 2010 13:14:17 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
+        cl@linux-foundation.org
+Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to
+ provide fast guest write interface
+Message-ID: <20101006111417.GX11145@redhat.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+ <1286207794-16120-5-git-send-email-gleb@redhat.com>
+ <20101005165738.GA32750@amt.cnet>
 MIME-Version: 1.0
-In-Reply-To: <46AFBEB1-7026-4060-927C-ED1A0D84F8F7@mac.com>
-References: <12E01E63-75E5-4822-BEA6-D8C0260BC915@mac.com>
-	<AANLkTimqfHEYyErLiWfrW5SkjseTvcswoPOP2Jkab1pC@mail.gmail.com>
-	<46AFBEB1-7026-4060-927C-ED1A0D84F8F7@mac.com>
-Date: Wed, 6 Oct 2010 14:14:50 +0300
-X-Google-Sender-Auth: _fPzX24apARRZj42p2FrGReO7BU
-Message-ID: <AANLkTimWzD9350M4RFd+X9JrwiU_HxU9oyKqNjL-wuKZ@mail.gmail.com>
-Subject: Re: How to test kernel drivers for memory leaks
-From: Pekka Enberg <penberg@kernel.org>
-To: Elvis Dowson <elvis.dowson@mac.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Catalin Marinas <catalin.marinas@arm.com>, jason.wessel@windriver.com
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101005165738.GA32750@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 6, 2010 at 1:13 PM, Elvis Dowson <elvis.dowson@mac.com> wrote:
->> Kmemleak is an in-kernel memory leak detector. See
->> Documentation/kmemleak.txt for details.
->
-> Thanks for that info, I just read it and it looks useful.
->
-> Do you know of any other tools that can be used for full static and dynamic analysis, and observations of variables while it is running on the target?
->
-> I used to use Rational Test-Real-Time with a JTAG emulator probe before. Are there any other equivalent tools that can do good static and dynamic analysis of kernel modules, while it is running on the target, with a good interface?
->
-> I want to setup a full kernel profiling and debug environment, to be able to debug linux kernel (android-2.6.32) running on a TI OMAP 3503 target platform (Gumstix Overo Earth), to optimize performance and improve the stability of the system (e.g. running for more than 1 year, without requiring a reboot).
+On Tue, Oct 05, 2010 at 01:57:38PM -0300, Marcelo Tosatti wrote:
+> On Mon, Oct 04, 2010 at 05:56:26PM +0200, Gleb Natapov wrote:
+> > Keep track of memslots changes by keeping generation number in memslots
+> > structure. Provide kvm_write_guest_cached() function that skips
+> > gfn_to_hva() translation if memslots was not changed since previous
+> > invocation.
+> > 
+> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> > ---
+> >  include/linux/kvm_host.h  |    7 +++++
+> >  include/linux/kvm_types.h |    7 +++++
+> >  virt/kvm/kvm_main.c       |   57 +++++++++++++++++++++++++++++++++++++++++---
+> >  3 files changed, 67 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+> > index a08614e..4dff9a1 100644
+> > --- a/include/linux/kvm_host.h
+> > +++ b/include/linux/kvm_host.h
+> > @@ -199,6 +199,7 @@ struct kvm_irq_routing_table {};
+> >  
+> >  struct kvm_memslots {
+> >  	int nmemslots;
+> > +	u32 generation;
+> >  	struct kvm_memory_slot memslots[KVM_MEMORY_SLOTS +
+> >  					KVM_PRIVATE_MEM_SLOTS];
+> >  };
+> > @@ -352,12 +353,18 @@ int kvm_write_guest_page(struct kvm *kvm, gfn_t gfn, const void *data,
+> >  			 int offset, int len);
+> >  int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
+> >  		    unsigned long len);
+> > +int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+> > +			   void *data, unsigned long len);
+> > +int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+> > +			      gpa_t gpa);
+> >  int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len);
+> >  int kvm_clear_guest(struct kvm *kvm, gpa_t gpa, unsigned long len);
+> >  struct kvm_memory_slot *gfn_to_memslot(struct kvm *kvm, gfn_t gfn);
+> >  int kvm_is_visible_gfn(struct kvm *kvm, gfn_t gfn);
+> >  unsigned long kvm_host_page_size(struct kvm *kvm, gfn_t gfn);
+> >  void mark_page_dirty(struct kvm *kvm, gfn_t gfn);
+> > +void mark_page_dirty_in_slot(struct kvm *kvm, struct kvm_memory_slot *memslot,
+> > +			     gfn_t gfn);
+> >  
+> >  void kvm_vcpu_block(struct kvm_vcpu *vcpu);
+> >  void kvm_vcpu_on_spin(struct kvm_vcpu *vcpu);
+> > diff --git a/include/linux/kvm_types.h b/include/linux/kvm_types.h
+> > index 7ac0d4e..ee6eb71 100644
+> > --- a/include/linux/kvm_types.h
+> > +++ b/include/linux/kvm_types.h
+> > @@ -67,4 +67,11 @@ struct kvm_lapic_irq {
+> >  	u32 dest_id;
+> >  };
+> >  
+> > +struct gfn_to_hva_cache {
+> > +	u32 generation;
+> > +	gpa_t gpa;
+> > +	unsigned long hva;
+> > +	struct kvm_memory_slot *memslot;
+> > +};
+> > +
+> >  #endif /* __KVM_TYPES_H__ */
+> > diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+> > index db58a1b..45ef50c 100644
+> > --- a/virt/kvm/kvm_main.c
+> > +++ b/virt/kvm/kvm_main.c
+> > @@ -687,6 +687,7 @@ skip_lpage:
+> >  		memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+> >  		if (mem->slot >= slots->nmemslots)
+> >  			slots->nmemslots = mem->slot + 1;
+> > +		slots->generation++;
+> >  		slots->memslots[mem->slot].flags |= KVM_MEMSLOT_INVALID;
+> >  
+> >  		old_memslots = kvm->memslots;
+> > @@ -723,6 +724,7 @@ skip_lpage:
+> >  	memcpy(slots, kvm->memslots, sizeof(struct kvm_memslots));
+> >  	if (mem->slot >= slots->nmemslots)
+> >  		slots->nmemslots = mem->slot + 1;
+> > +	slots->generation++;
+> >  
+> >  	/* actual memory is freed via old in kvm_free_physmem_slot below */
+> >  	if (!npages) {
+> > @@ -1247,6 +1249,47 @@ int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
+> >  	return 0;
+> >  }
+> >  
+> > +int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+> > +			      gpa_t gpa)
+> > +{
+> > +	struct kvm_memslots *slots = kvm_memslots(kvm);
+> > +	int offset = offset_in_page(gpa);
+> > +	gfn_t gfn = gpa >> PAGE_SHIFT;
+> > +
+> > +	ghc->gpa = gpa;
+> > +	ghc->generation = slots->generation;
+> > +	ghc->memslot = gfn_to_memslot(kvm, gfn);
+> > +	ghc->hva = gfn_to_hva(kvm, gfn);
+> > +	if (!kvm_is_error_hva(ghc->hva))
+> > +		ghc->hva += offset;
+> > +	else
+> > +		return -EFAULT;
+> > +
+> > +	return 0;
+> > +}
+> 
+> Should use a unique kvm_memslots structure for the cache entry, since it
+> can change in between (use gfn_to_hva_memslot, etc on "slots" pointer).
+> 
+I do not understand what do you mean here. kvm_memslots structure itself
+is not cached only various translation that use it are cached. Translation
+result are never used if kvm_memslots was changed.
 
-I have never tried it myself but there's an in-kernel debugger in
-mainline these days:
+> Also should zap any cached entries on overflow, otherwise malicious
+> userspace could make use of stale slots:
+> 
+There is only one cached entry at each given time. User who wants to
+write into guest memory often defines gfn_to_hva_cache variable
+somewhere. Init it with kvm_gfn_to_hva_cache_init() and then calls
+kvm_write_guest_cached() on it. If there was no slot changes in between
+cached translation are used. Otherwise cache is recalculated.
 
-http://kernel.org/pub/linux/kernel/people/jwessel/kdb/
+> > +void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
+> > +{
+> > +	struct kvm_memory_slot *memslot;
+> > +
+> > +	memslot = gfn_to_memslot(kvm, gfn);
+> > +	mark_page_dirty_in_slot(kvm, memslot, gfn);
+> > +}
+> > +
+> >  /*
+> >   * The vCPU has executed a HLT instruction with in-kernel mode enabled.
+> >   */
+> > -- 
+> > 1.7.1
 
-For profiling, I suggest you take a look at tools/perf in the mainline
-source tree.
-
-                        Pekka
+--
+			Gleb.
