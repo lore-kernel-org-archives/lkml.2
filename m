@@ -1,73 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758749Ab0JFHnr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:43:47 -0400
-Received: from mx1.melware.net ([78.47.171.162]:51977 "EHLO mx1.melware.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758666Ab0JFHno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:43:44 -0400
-X-Greylist: delayed 1078 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Oct 2010 03:43:43 EDT
-Date: Wed, 6 Oct 2010 09:25:44 +0200 (CEST)
-From: Armin Schindler <armin@melware.de>
-To: Dan Carpenter <error27@gmail.com>
-cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] eicon: make buffer larger
-In-Reply-To: <20101004192459.GE5692@bicker>
-Message-ID: <alpine.DEB.2.00.1010060923120.29107@justus.melware.de>
-References: <20101004192459.GE5692@bicker>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Organization: Cytronics & Melware
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S932474Ab0JFHnf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:43:35 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:9385 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932428Ab0JFHnc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 03:43:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56772950"
+X-IronPort-AV: E=Sophos;i="4.57,288,1283756400"; 
+   d="scan'208";a="20252801"
+From: Jeff Ohlstein <johlstei@codeaurora.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Steve Muckle <smuckle@codeaurora.org>,
+        Brian Swetland <swetland@google.com>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: [PATCH 17/20 v2] msm: add MSM8x60 FFA support
+Date: Wed,  6 Oct 2010 00:42:56 -0700
+Message-Id: <1286350979-19328-18-git-send-email-johlstei@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
+References: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Oct 2010, Dan Carpenter wrote:
-> In diva_mnt_add_xdi_adapter() we do this:
->  strcpy (clients[id].drvName,     tmp);
->  strcpy (clients[id].Dbg.drvName, tmp);
->
-> The "clients[id].drvName" is a 128 character buffer and
-> "clients[id].Dbg.drvName" was originally a 16 character buffer but I've
-> changed it to 128 as well.  We don't actually use 128 characters but we
-> do use more than 16.
+From: Gregory Bean <gbean@codeaurora.org>
 
-I don't see any reason for that change. The driver names here do not use 
-more than 16 characters and when filled, the length is checked anyway.
-Please avoid changing the size of that structure.
+The MSM8X60 FFA contains different components than the MSM8X60 SURF,
+and therefore requires a different ARCH type and machine ID.
 
-Armin
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+---
+ arch/arm/mach-msm/Kconfig         |    9 ++++++++-
+ arch/arm/mach-msm/board-msm8x60.c |    7 +++++++
+ 2 files changed, 15 insertions(+), 1 deletions(-)
 
-> I've also changed the size of "tmp" to 128 characters instead of 256.
->
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
->
-> diff --git a/drivers/isdn/hardware/eicon/debuglib.h b/drivers/isdn/hardware/eicon/debuglib.h
-> index 8ea5877..02eed6b 100644
-> --- a/drivers/isdn/hardware/eicon/debuglib.h
-> +++ b/drivers/isdn/hardware/eicon/debuglib.h
-> @@ -249,7 +249,7 @@ typedef struct _DbgHandle_
->  }     regTime ;  /* timestamp for registration       */
->  void               *pIrp ;   /* ptr to pending i/o request       */
->  unsigned long       dbgMask ;  /* current debug mask               */
-> - char                drvName[16] ; /* ASCII name of registered driver  */
-> + char                drvName[128] ; /* ASCII name of registered driver  */
->  char                drvTag[64] ; /* revision string     */
->  DbgEnd              dbg_end ;  /* function for debug closing       */
->  DbgLog              dbg_prt ;  /* function for debug appending     */
-> diff --git a/drivers/isdn/hardware/eicon/debug.c b/drivers/isdn/hardware/eicon/debug.c
-> index 33ce89e..3626401 100644
-> --- a/drivers/isdn/hardware/eicon/debug.c
-> +++ b/drivers/isdn/hardware/eicon/debug.c
-> @@ -862,7 +862,7 @@ void diva_mnt_add_xdi_adapter (const DESCRIPTOR* d) {
->   diva_os_spin_lock_magic_t old_irql, old_irql1;
->   dword sec, usec, logical, serial, org_mask;
->   int id, best_id = 0, free_id = -1;
-> -  char tmp[256];
-> +  char tmp[128];
->   diva_dbg_entry_head_t* pmsg = NULL;
->   int len;
->   word size;
->
+diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
+index d5076eb..e469217 100644
+--- a/arch/arm/mach-msm/Kconfig
++++ b/arch/arm/mach-msm/Kconfig
+@@ -38,7 +38,8 @@ config ARCH_MSM8X60
+ 	select ARM_GIC
+ 	select CPU_V7
+ 	select MSM_V2_TLMM
+-	select MACH_MSM8X60_SURF if (!MACH_MSM8X60_RUMI3 && !MACH_MSM8X60_SIM)
++	select MACH_MSM8X60_SURF if (!MACH_MSM8X60_RUMI3 && !MACH_MSM8X60_SIM \
++				  && !MACH_MSM8X60_FFA)
+ 
+ endchoice
+ 
+@@ -109,6 +110,12 @@ config MACH_MSM8X60_SIM
+ 	help
+ 	  Support for the Qualcomm MSM8x60 simulator.
+ 
++config MACH_MSM8X60_FFA
++	depends on ARCH_MSM8X60
++	bool "MSM8x60 FFA"
++	help
++	  Support for the Qualcomm MSM8x60 FFA eval board.
++
+ endmenu
+ 
+ config MSM_DEBUG_UART
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index 95b0e36..7486a68 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -91,3 +91,10 @@ MACHINE_START(MSM8X60_SIM, "QCT MSM8X60 SIMULATOR")
+ 	.init_machine = msm8x60_init,
+ 	.timer = &msm_timer,
+ MACHINE_END
++
++MACHINE_START(MSM8X60_FFA, "QCT MSM8X60 FFA")
++	.map_io = msm8x60_map_io,
++	.init_irq = msm8x60_init_irq,
++	.init_machine = msm8x60_init,
++	.timer = &msm_timer,
++MACHINE_END
+-- 
+1.7.2.1
+
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
