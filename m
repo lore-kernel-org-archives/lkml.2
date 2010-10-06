@@ -1,106 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab0JFEsc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 00:48:32 -0400
-Received: from mxout12.netvision.net.il ([194.90.6.37]:63043 "EHLO
-	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750909Ab0JFEsb (ORCPT
+	id S1754389Ab0JFEtK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 00:49:10 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:56123 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752190Ab0JFEtI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 00:48:31 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-From: Micki Balanga <micki@n-trig.com>
-To: Greg KH <greg@kroah.com>
-Cc: Jiri Kosina <jkosina@suse.cz>, "gregkh@suse.de" <gregkh@suse.de>,
-        "jim.collar@eqware.net" <jim.collar@eqware.net>,
-        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] USB: misc: Add N-trig firmware driver
-Thread-topic: [PATCH] USB: misc: Add N-trig firmware driver
-Thread-index: Acti0OWpN7rr5r0+RhetTRfWBmmSEQAgJO2AABhmRYAAKf84kAAH4ZaAACW0TlA=
-Date: Wed, 06 Oct 2010 04:47:24 +0000
-Message-id: <6EF693376E00E2458E26FEC229232B128AB242@Exchange2010-IL.n-trig.com>
-References: <6EF693376E00E2458E26FEC229232B128A8D39@Exchange2010-IL.n-trig.com>
- <20101004011949.GA23855@kroah.com>
- <alpine.LRH.2.00.1010041458010.12867@twin.jikos.cz>
- <6EF693376E00E2458E26FEC229232B128AAE23@Exchange2010-IL.n-trig.com>
- <20101005124637.GB2943@kroah.com>
-In-reply-to: <20101005124637.GB2943@kroah.com>
-Accept-Language: en-US
-Content-language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-Originating-IP: [172.16.1.1]
+	Wed, 6 Oct 2010 00:49:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=ewyqF2ym7z3EAkXRBvNmuh/JQ41ymhNnaDhFHmr9CFm+fL3ps3Qn6BjcNBgcuTovTY
+         xB7rLF4Yrjwvfd+OBi0LkNXvYybdmw8IzkWfrPgR7UD4z7BbrXkNnSC03YVX6eRh5XPG
+         0Xq4ZUVa3Xu3cIQC7aMmsFpA+2KB4HNpN1JoY=
+Date: Wed, 6 Oct 2010 06:48:47 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: greg@kroah.com, abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/28] Staging: comedi: drivers.c: Edit file so that
+	checkpatch.pl has 4 warnings and 0 errors
+Message-ID: <20101006044847.GC5409@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
+	abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1286326843-6170-1-git-send-email-tdent48227@gmail.com> <1286326843-6170-7-git-send-email-tdent48227@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286326843-6170-7-git-send-email-tdent48227@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 05, 2010 at 09:00:22PM -0400, Tracey Dent wrote:
+> @@ -118,7 +118,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+>  	for (driv = comedi_drivers; driv; driv = driv->next) {
+>  		if (!try_module_get(driv->module)) {
+>  			printk
+> -			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
+> +			    (KERN_INFO "comedi: failed to increment	\
+> +					module count, skipping\n");
 
+This screws up the output that gets printed for the user.  It happens
+again below several times.
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, October 05, 2010 2:47 PM
-> To: Micki Balanga
-> Cc: Jiri Kosina; gregkh@suse.de; jim.collar@eqware.net; linux-
-> usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH] USB: misc: Add N-trig firmware driver
-> 
-> On Tue, Oct 05, 2010 at 06:59:43AM +0000, Micki Balanga wrote:
-> >
-> >
-> > > -----Original Message-----
-> > > From: Jiri Kosina [mailto:jkosina@suse.cz]
-> > > Sent: Monday, October 04, 2010 2:58 PM
-> > > To: Greg KH
-> > > Cc: Micki Balanga; gregkh@suse.de; jim.collar@eqware.net; linux-
-> > > usb@vger.kernel.org; linux-kernel@vger.kernel.org
-> > > Subject: Re: [PATCH] USB: misc: Add N-trig firmware driver
-> > >
-> > > On Sun, 3 Oct 2010, Greg KH wrote:
-> > >
-> > > > >
-> > > >
-> > > > Can you please attach this in a non-base64 format so it can be
-> > > properly
-> > > > reviewed, and then, applied if applicable?
-> > > >
-> > > > Note, please run the patch through the scripts/checkpatch.pl tool
-> > > first
-> > > > before sending it out, so we don't just say the same things it
-> finds
-> > > :)
-> > >
-> > > As we already have HID driver for n-trig, could this whole thing
-> > > perhaps
-> > > be made part of it?
-> > >
-> > > --
-> > > Jiri Kosina
-> > > SUSE Labs, Novell Inc.
-> >
-> > The driver communicates with the bulk in/out endpoint.
-> 
-> Why does it have to be a driver at all?  Why can't you just use libusb
-> or usbfs to implement this?
+Also it's best to not break up string literals across lines because then
+someone can't do a:  grep "failed to increment module count".  For these
+cases it's better to go over 80 characters and make grep work.
 
-The driver is used for several debug applications we use and libusb or usbfs caused us several problem.
-we also run on several platform. The user space application which communicate with the driver
-is common for several OS. 
+regards,
+dan carpenter
+
+>  			continue;
+>  		}
+>  		if (driv->num_names) {
+> @@ -206,8 +207,9 @@ int comedi_driver_unregister(struct comedi_driver *driver)
+>  		if (dev->attached && dev->driver == driver) {
+>  			if (dev->use_count)
+>  				printk
+> -				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
+> -				     dev->use_count);
+> +				    (KERN_WARNING "BUG! detaching device     \
+> +							with use_count=%d\n",
+> +							dev->use_count);
+>  			comedi_device_detach(dev);
+>  		}
+>  		mutex_unlock(&dev->mutex);
+> @@ -647,7 +649,8 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
+>  	if ((int)(async->buf_write_count + nbytes -
+>  		  async->buf_write_alloc_count) > 0) {
+>  		printk
+> -		    (KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
+> +		    (KERN_INFO "comedi: attempted to write-free more	\
+> +				bytes than have been write-allocated.\n");
+>  		nbytes = async->buf_write_alloc_count - async->buf_write_count;
+>  	}
+>  	async->buf_write_count += nbytes;
+> -- 
+> 1.7.3.1.50.g1e633
 > 
-> > It was written as a standalone module, because it does not use any
-> HID
-> > subsystem services, and to ensure that the HID driver would not be
-> too
-> > complex.
-> >
-> > The driver has been tested over several weeks at our company.
-> > The  patch was prepared and checked using the Checkpatch utility.
-> 
-> You might want to check that last step, it didn't seem to work properly
-> as the patch you sent could not be applied, due to it being base64
-> encoded :)
-> 
-> thanks,
-> 
-> greg k-h
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
