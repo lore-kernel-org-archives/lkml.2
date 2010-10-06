@@ -1,160 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab0JFQ7z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:59:55 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:42261 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab0JFQ7y (ORCPT
+	id S1759438Ab0JFRGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 13:06:09 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:14118
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752903Ab0JFRGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:59:54 -0400
-X-IronPort-AV: E=Sophos;i="4.57,290,1283731200"; 
-   d="scan'208";a="2219634"
-Date: Wed, 6 Oct 2010 18:00:15 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: x86@kernel.org, linux-kernel@vger.kernel.org,
-        xen-devel@lists.xensource.com, "jeremy@goop.org" <jeremy@goop.org>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
-Subject: Re: [PATCH 4/7] acpi: use indirect call to register gsi in different
- modes
-In-Reply-To: <1283167276-7364-4-git-send-email-stefano.stabellini@eu.citrix.com>
-Message-ID: <alpine.DEB.2.00.1010061749110.2440@kaball-desktop>
-References: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop> <1283167276-7364-4-git-send-email-stefano.stabellini@eu.citrix.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Oct 2010 13:06:08 -0400
+X-Greylist: delayed 906 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Oct 2010 13:06:07 EDT
+X-SpamScore: 3
+X-BigFish: VS3(zzc8kzz1202hzz8275bhz2dh2a8h62h)
+X-Spam-TCS-SCL: 1:0
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <bryan.wu@canonical.com>,
+        <amit.kucheria@canonical.com>, <xiao-lizhang@freescale.com>,
+        Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv4] ARM: imx: Add iram allocator functions
+Date: Wed, 6 Oct 2010 11:48:02 -0500
+Message-ID: <1286383682-26506-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain
+X-Reverse-DNS: de01egw01.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
-I sent this patch a while back as part of the "PV on HVM: receive
-interrupts as xen events" series (that it is based upon Konrad's
-pcifront series, he sent another version to the list yesterday).
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Do you think that this is a reasonble approach?
+Add IRAM(Internal RAM) allocation functions using GENERIC_ALLOCATOR.
+The allocation size is 4KB multiples to guarantee alignment. The
+idea for these functions is for i.MX platforms to use them
+to dynamically allocate IRAM usage.
 
-If you want to give a look at the whole series you can find it here:
+Applies on 2.6.36-rc6
 
-http://lkml.org/lkml/2010/8/30/170
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Reviewed-by: Amit Kucheria <amit.kucheria@canonical.com>
+---
+ arch/arm/plat-mxc/Kconfig             |    4 ++
+ arch/arm/plat-mxc/Makefile            |    1 +
+ arch/arm/plat-mxc/include/mach/iram.h |   37 ++++++++++++++++
+ arch/arm/plat-mxc/iram.c              |   74 +++++++++++++++++++++++++++++++++
+ 4 files changed, 116 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/plat-mxc/include/mach/iram.h
+ create mode 100644 arch/arm/plat-mxc/iram.c
 
-everything else is Xen specific stuff.
+diff --git a/arch/arm/plat-mxc/Kconfig b/arch/arm/plat-mxc/Kconfig
+index 6785db4..0e99bb4 100644
+--- a/arch/arm/plat-mxc/Kconfig
++++ b/arch/arm/plat-mxc/Kconfig
+@@ -110,4 +110,8 @@ config ARCH_MXC_AUDMUX_V1
+ config ARCH_MXC_AUDMUX_V2
+ 	bool
+ 
++config IRAM_ALLOC
++	bool
++	select GENERIC_ALLOCATOR
++
+ endif
+diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
+index 78d405e..35cf07b 100644
+--- a/arch/arm/plat-mxc/Makefile
++++ b/arch/arm/plat-mxc/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_MXC_TZIC) += tzic.o
+ 
+ obj-$(CONFIG_IMX_HAVE_IOMUX_V1) += iomux-v1.o
+ obj-$(CONFIG_ARCH_MXC_IOMUX_V3) += iomux-v3.o
++obj-$(CONFIG_IRAM_ALLOC) += iram.o
+ obj-$(CONFIG_MXC_PWM)  += pwm.o
+ obj-$(CONFIG_USB_EHCI_MXC) += ehci.o
+ obj-$(CONFIG_MXC_ULPI) += ulpi.o
+diff --git a/arch/arm/plat-mxc/include/mach/iram.h b/arch/arm/plat-mxc/include/mach/iram.h
+new file mode 100644
+index 0000000..351dacd
+--- /dev/null
++++ b/arch/arm/plat-mxc/include/mach/iram.h
+@@ -0,0 +1,37 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ * MA 02110-1301, USA.
++ */
++#include <linux/errno.h>
++
++#ifdef CONFIG_IRAM_ALLOC
++int __init iram_init(unsigned long base, unsigned long size);
++void *iram_alloc(unsigned int size, unsigned long *dma_addr);
++void iram_free(unsigned long dma_addr, unsigned int size);
++#else
++static inline int __init iram_init(unsigned long base, unsigned long size)
++{
++	return -ENOMEM;
++}
++
++static inline void *iram_alloc(unsigned int size, unsigned long *dma_addr)
++{
++	return NULL;
++}
++
++static inline void iram_free(unsigned long base, unsigned long size) {}
++#endif
+diff --git a/arch/arm/plat-mxc/iram.c b/arch/arm/plat-mxc/iram.c
+new file mode 100644
+index 0000000..25c9e73
+--- /dev/null
++++ b/arch/arm/plat-mxc/iram.c
+@@ -0,0 +1,74 @@
++/*
++ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2
++ * of the License, or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
++ * MA 02110-1301, USA.
++ */
++
++#include <linux/kernel.h>
++#include <linux/io.h>
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/spinlock.h>
++#include <linux/genalloc.h>
++
++static unsigned long iram_phys_base;
++static void __iomem *iram_virt_base;
++static struct gen_pool *iram_pool;
++
++static inline unsigned long iram_phys_to_virt(unsigned long p)
++{
++	p = (unsigned long)iram_virt_base + (p - iram_phys_base);
++	return p;
++}
++
++void __iomem*iram_alloc(unsigned int size, unsigned long *dma_addr)
++{
++	if (!iram_pool)
++		return NULL;
++
++	*dma_addr = gen_pool_alloc(iram_pool, size);
++	pr_debug("iram alloc - %dB@0x%p\n", size, (void *)*dma_addr);
++	if (!dma_addr)
++		return NULL;
++	return iram_phys_to_virt(*dma_addr);
++}
++EXPORT_SYMBOL(iram_alloc);
++
++void iram_free(unsigned long addr, unsigned int size)
++{
++	if (!iram_pool)
++		return;
++
++	gen_pool_free(iram_pool, addr, size);
++}
++EXPORT_SYMBOL(iram_free);
++
++int __init iram_init(unsigned long base, unsigned long size)
++{
++	iram_phys_base = base;
++
++	iram_pool = gen_pool_create(PAGE_SHIFT, -1);
++	if (!iram_pool)
++		return -ENOMEM;
++
++	gen_pool_add(iram_pool, base, size, -1);
++	iram_virt_base = ioremap(iram_phys_base, size);
++	if (!iram_virt_base)
++		return -EIO;
++
++	pr_info("i.MX IRAM pool: %ld KB@0x%p\n", size / 1024, iram_virt_base);
++	return 0;
++}
+-- 
+1.6.0.4
 
-Thanks in advance,
 
-Stefano
-
-
-On Mon, 30 Aug 2010, stefano.stabellini@eu.citrix.com wrote:
-> From: Jeremy Fitzhardinge <jeremy@goop.org>
-> 
-> Rather than using a tree of conditionals, use function pointer
-> for acpi_register_gsi.
-> 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-> ---
->  arch/x86/kernel/acpi/boot.c |   59 ++++++++++++++++++++++++++++++------------
->  1 files changed, 42 insertions(+), 17 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index c05872a..031f0c2 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -513,35 +513,61 @@ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
->  	return 0;
->  }
->  
-> -/*
-> - * success: return IRQ number (>=0)
-> - * failure: return < 0
-> - */
-> -int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
-> +static int acpi_register_gsi_pic(struct device *dev, u32 gsi,
-> +				 int trigger, int polarity)
->  {
-> -	unsigned int irq;
-> -	unsigned int plat_gsi = gsi;
-> -
->  #ifdef CONFIG_PCI
->  	/*
->  	 * Make sure all (legacy) PCI IRQs are set as level-triggered.
->  	 */
-> -	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
-> -		if (trigger == ACPI_LEVEL_SENSITIVE)
-> -			eisa_set_level_irq(gsi);
-> -	}
-> +	if (trigger == ACPI_LEVEL_SENSITIVE)
-> +		eisa_set_level_irq(gsi);
->  #endif
->  
-> +	return gsi;
-> +}
-> +
-> +static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
-> +				    int trigger, int polarity)
-> +{
->  #ifdef CONFIG_X86_IO_APIC
-> -	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC) {
-> -		plat_gsi = mp_register_gsi(dev, gsi, trigger, polarity);
-> -	}
-> +	gsi = mp_register_gsi(dev, gsi, trigger, polarity);
->  #endif
-> +
-> +	return gsi;
-> +}
-> +
-> +static int (*__acpi_register_gsi)(struct device *dev, u32 gsi, int trigger, int polarity) = acpi_register_gsi_pic;
-> +
-> +/*
-> + * success: return IRQ number (>=0)
-> + * failure: return < 0
-> + */
-> +int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
-> +{
-> +	unsigned int irq;
-> +	unsigned int plat_gsi = gsi;
-> +
-> +	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
->  	irq = gsi_to_irq(plat_gsi);
->  
->  	return irq;
->  }
->  
-> +void __init acpi_set_irq_model_pic(void)
-> +{
-> +	acpi_irq_model = ACPI_IRQ_MODEL_PIC;
-> +	__acpi_register_gsi = acpi_register_gsi_pic;
-> +	acpi_ioapic = 0;
-> +}
-> +
-> +void __init acpi_set_irq_model_ioapic(void)
-> +{
-> +	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
-> +	__acpi_register_gsi = acpi_register_gsi_ioapic;
-> +	acpi_ioapic = 1;
-> +}
-> +
->  /*
->   *  ACPI based hotplug support for CPU
->   */
-> @@ -1259,8 +1285,7 @@ static void __init acpi_process_madt(void)
->  			 */
->  			error = acpi_parse_madt_ioapic_entries();
->  			if (!error) {
-> -				acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
-> -				acpi_ioapic = 1;
-> +				acpi_set_irq_model_ioapic();
->  
->  				smp_found_config = 1;
->  			}
-> -- 
-> 1.5.6.5
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
