@@ -1,78 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932933Ab0JFSXk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:23:40 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48467 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759667Ab0JFSXj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:23:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <20101006145903.GR13563@erda.amd.com>
-References: <cover.1286222593.git.matt@console-pimps.org> <74092b0d162aafc21e408033cec6146e227363b5.1286222593.git.matt@console-pimps.org>
- <20101006133309.GP13563@erda.amd.com> <20101006144921.GQ13563@erda.amd.com>
- <20101006145311.GA3754@linux-sh.org> <20101006145903.GR13563@erda.amd.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 6 Oct 2010 12:23:17 -0600
-X-Google-Sender-Auth: 0AWNQTkAyBpyAA7jWqiW_OUDWcE
-Message-ID: <AANLkTikGQe99k_fK5pZtkn-ht9jgC0guDkn28dSedjUo@mail.gmail.com>
-Subject: Re: [PATCH 4/7] ARM: oprofile: Move non-ARM code into separate init/exit
-To: Robert Richter <robert.richter@amd.com>
-Cc: Paul Mundt <lethal@linux-sh.org>, Matt Fleming <matt@console-pimps.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932945Ab0JFSZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:25:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61533 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932567Ab0JFSZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 14:25:26 -0400
+Date: Wed, 6 Oct 2010 14:24:50 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Szeredi Miklos <miklos@szeredi.hu>, mszeredi2@gmail.com,
+        viro@zeniv.linux.org.uk, hch@infradead.org, agruen@suse.de,
+        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 01/34] VFS: Make clone_mnt() and copy_tree() return error codes
+Message-ID: <20101006182449.GC18479@shell>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-2-git-send-email-vaurora@redhat.com> <E1P1FnW-0001yC-Ts@pomaz-ex.szeredi.hu> <20100930214123.GA490@shell> <20100930214418.GB490@shell> <20101001003342.GI9247@ram-laptop> <20101001015857.GA5003@ram-laptop> <AANLkTin0k-Sz8Y6dwm9s6isKgDPgcqpg0NON5kuiOcJ3@mail.gmail.com> <20101001183243.GM9247@ram-laptop>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101001183243.GM9247@ram-laptop>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 6, 2010 at 8:59 AM, Robert Richter <robert.richter@amd.com> wrote:
-> On 06.10.10 10:53:11, Paul Mundt wrote:
->> On Wed, Oct 06, 2010 at 04:49:21PM +0200, Robert Richter wrote:
->> > On 06.10.10 15:33:09, Robert Richter wrote:
->> > > On 04.10.10 16:44:22, Matt Fleming wrote:
->> > > > -void __exit oprofile_arch_exit(void)
->> > > > +int __init oprofile_arch_init(struct oprofile_operations *ops)
->> > > > +{
->> > >
->> > > We should do here a:
->> > >
->> > >   memset(ops, 0, sizeof(*ops));
->> >
->> > Matt,
->> >
->> > an alternative would be to move this to oprofile_perf_init() and
->> > modify ops->backtrace afterwards, but then we will lose the function's
->> > tail call. Not sure that is better. Paul, what do you think?
->> >
->> I'm a bit confused as to why we just don't do:
->>
->> ---
->>
->> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
->> index b336cd9..76d97a5 100644
->> --- a/drivers/oprofile/oprof.c
->> +++ b/drivers/oprofile/oprof.c
->> @@ -252,6 +252,8 @@ static int __init oprofile_init(void)
->>  {
->>       int err;
->>
->> +     memset(&oprofile_ops, 0, sizeof(struct oprofile_operations));
->> +
->
-> Yes, this looks much better. Thanks Paul.
+On Fri, Oct 01, 2010 at 11:32:43AM -0700, Ram Pai wrote:
+> On Fri, Oct 01, 2010 at 11:12:48AM +0200, Szeredi Miklos wrote:
+> > On Fri, Oct 1, 2010 at 3:58 AM, Ram Pai <linuxram@us.ibm.com> wrote:
+> > > > > > > @@ -1212,11 +1216,12 @@ struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
+> > > > > > > ? ? ? ? struct path path;
+> > > > > > >
+> > > > > > > ? ? ? ? if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(mnt))
+> > > > > > > - ? ? ? ? ? ? ? return NULL;
+> > > > > > > + ? ? ? ? ? ? ? return ERR_PTR(-EINVAL);
+> > > > >
+> > > > > Ram, do you remember how this worked?
+> > > >
+> > > > Oops. That should be a OR condition. there is one other check in that
+> > > > function that should also be a OR condition.
+> > >
+> > > I may be wrong here. Can't exactly recollect what CL_COPY_ALL flag means. Al Viro
+> > > might remember? ?If CL_COPY_ALL means, to clone everything irrespective of any other
+> > > flags, then the above code seems right.
+> > 
+> > CL_COPY_ALL means clone the mount despite MNT_UNBINDABLE.  It is used
+> > for cloning the whole namespace and for collect_mounts(), both of
+> > which ignore MNT_UNBINDABLE.
+> 
+> Ok. That reminds me  when the above piece of code in copy_tree() is triggered.
+> It triggered when a mount tree with a unbindable mount at its head
+> is moved on a shared mount with atleast one peer.
+> 
+> something like this should trigger the code.
+> 
+> # create a unbindable mount
+> mkdir -p /mnt2/m1
+> mount --bind /mnt2/m1 /mnt2/m1
+> mount --make-unbindable /mnt2/m1
+> 
+> #create a shared mount with one peer.
+> mkdir -p /mnt2/s1
+> mkdir -p /mnt2/s2
+> mount --bind /mnt2/s1 /mnt2/s1
+> mount --make-shared /mnt2/s1
+> mount --bind /mnt2/s1 /mnt2/s2
+> 
+> #move the unbindable mount to one of the shared peer
+> mkdir -p /mnt2/s1/movemount
+> mount --move /mnt2/m1 /mnt2/s1/movemount
+> 
+> the last step will fail and that is because of the above check in copy_tree()
 
-oprofile_ops is allocated in bss and so is already zeroed.  No need to
-do it explicitly.
+Actually, it fails in do_move_mount(), as Miklos theorized.  I tested
+it with the above in an attempt to trigger it in practice in case the
+code review was wrong, but failed.
 
-g.
+> > Of the two remaining callers of copy_tree() do_loopback already checks
+> > MNT_UNBINDABLE on the root of the tree to be copied.
+> > 
+> > So that leaves the one in pnode.c.   That one will be called when
+> > attaching a new mount or mount tree.  If the root of that tree is
+> > unbindable then the propagation will fail with -ENOMEM which is wrong,
+> > it should simply skip the whole tree and not try to propagate.  
+> 
+> Yes.  the propagation_mnt() should fail if it is unable to create clones
+> of the source mount due to any reason. However -ENOMEM may not be
+> the right return code. 
+> 
+> 
+> > Calls
+> > which result in propagation are  do_loopback, do_move_mount and
+> > do_add_mount.  Of this do_loopback and do_move_mount already check for
+> > MNT_UNBINDABLE, do_add_mount doesn't check, but should probably just
+> > mask out MNT_UNBINDABLE.
+> > 
+> > So in the end that check in copy_tree() should never actually trigger
+> > and can be turned into a WARN_ON
+> 
+> You can do that. But then we have to catch for the cases where a unbindable
+> mount is moved on a shared mounts. I suppose we can put in a check in do_move_mount().
+> > 
+> > Additionally the propagation code should perhaps be more defensive and
+> > skip MNT_UNBINDABLE source mounts.
+> 
+> No. If we do that, I am afraid, we will end up with inconsistent peer-mount trees 
+> which will not resemble each other.
+
+Any chance you have the time to do a little documentation on where
+checks should be done and what flags each function expects?  Right now
+the distribution and location of the checks tend to send the reader
+off on false trails...
+
+-VAL
