@@ -1,59 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab0JFG31 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 02:29:27 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:33917 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758571Ab0JFG3Z (ORCPT
+	id S1758603Ab0JFGhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 02:37:52 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:25194 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754046Ab0JFGhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 02:29:25 -0400
-Date: Wed, 6 Oct 2010 17:29:21 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: dada1@cosmosbay.com, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/17] fs: inode per-cpu last_ino allocator
-Message-ID: <20101006062921.GA32255@dastard>
-References: <1285762729-17928-1-git-send-email-david@fromorbit.com>
- <1285762729-17928-16-git-send-email-david@fromorbit.com>
- <20100930020759.GC1535@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100930020759.GC1535@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 6 Oct 2010 02:37:51 -0400
+Subject: Re: [PATCH 1/1] omap: Ptr "isr_reg" tracked as NULL was
+ dereferenced
+From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+To: ext Kevin Hilman <khilman@deeprootsystems.com>, balbi@ti.com
+Cc: balbi@ti.com, "tony@atomide.com" <tony@atomide.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "zmc@lurian.net" <zmc@lurian.net>,
+        "a.j.buxton@gmail.com" <a.j.buxton@gmail.com>
+In-Reply-To: <877hhwvg3r.fsf@deeprootsystems.com>
+References: <cover.1286261378.git.EXT-Eugeny.Kuznetsov@nokia.com>
+	 <131d16236d19895323fca2f058d65f1f116bacad.1286261378.git.EXT-Eugeny.Kuznetsov@nokia.com>
+	 <20101005093206.GB2977@legolas.emea.dhcp.ti.com>
+	 <877hhwvg3r.fsf@deeprootsystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 10:33:22 +0400
+Message-ID: <1286346802.24366.89.camel@ekuznets-lx-nokia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2010 06:37:01.0286 (UTC) FILETIME=[E1DC4860:01CB6520]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 10:07:59PM -0400, Christoph Hellwig wrote:
-> On Wed, Sep 29, 2010 at 10:18:47PM +1000, Dave Chinner wrote:
-> > From: Eric Dumazet <dada1@cosmosbay.com>
-> > 
-> > last_ino was converted to an atomic variable to allow the inode_lock
-> > to go away. However, contended atomics do not scale on large
-> > machines, and new_inode() triggers excessive contention in such
-> > situations.
+On Tue, 2010-10-05 at 08:01 -0700, ext Kevin Hilman wrote:
+> Felipe Balbi <balbi@ti.com> writes:
 > 
-> And the good thing is most users of new_inode couldn't care less about
-> the fake i_ino assigned because they have a real inode number.  So
-> the first step is to move the i_ino assignment into a separate helper
-> and only use it in those filesystems that need it.  Second step is
-> to figure out why some filesystems need iunique() and some are fine
-> with the incrementing counter and then we should find a scalable way
-> to generate an inode number - preferably just one and not to, but if
-> that's not possible we need some documentation on why which one is
-> needed.
+> > Hi,
+> >
+> > On Tue, Oct 05, 2010 at 03:42:10AM -0500, Evgeny Kuznetsov wrote:
+> >>+	if (!isr_reg) {
+> >>+		printk(KERN_ERR "FATAL: Incorrect GPIO method %i\n",
+> >>+				bank->method);
+> >>+		BUG();
+> >>+		}
+> >
+> > this could be simply:
+> >
+> > BUG_ON(!isr_reg);
+> 
+> WARN_ON is better.
+> 
+> A BUG() will panic the kernel and stop everything.  This is not an error
+> condition that should prevent the entire kernel from running.
 
-Sounds like a good plan, but I don't really have time right now to
-understand the iget routines of every single filesystem to determine
-which rely on the current new_inode() allocated inode number. I
-think that is best left for a later cleanup, seeing as the
-last_ino scalability problem is easily addressed....
+'isr_reg' is dereferenced later in code:
+	...
+	isr_saved = isr = __raw_readl(isr_reg) & enabled;
+	...
+So this will stop kernel anyway.
+I just hoped to help in understanding of issue by log line. WARN_ON
+could be used for this.
 
-Cheers,
+As a variant compilation error could be added, to prevent situation when
+kernel is incorrectly configured.
+E.g.:
+#if !defined(CONFIG_ARCH_OMAP1) &&		
+	!defined(CONFIG_ARCH_OMAP15XX) &&	
+	!defined(CONFIG_ARCH_OMAP16XX) &&	
+	!defined(CONFIG_ARCH_OMAP730) &&	
+	!defined(CONFIG_ARCH_OMAP850) &&	
+	!defined(CONFIG_ARCH_OMAP2) &&	
+	!defined(CONFIG_ARCH_OMAP3) &&	
+	!defined(CONFIG_ARCH_OMAP4)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+#error "Incorrect arch configuration"
+#endif
+
+But there are still cases when 'isr_reg' could have NULL value (if
+'bank->method' is not equal to configured one).
+
+Regards,
+Evgeny
+> 
+> From asm-generic/bug.h:
+> 
+> /*
+>  * Don't use BUG() or BUG_ON() unless there's really no way out; one
+>  * example might be detecting data structure corruption in the middle
+>  * of an operation that can't be backed out of.  If the (sub)system
+>  * can somehow continue operating, perhaps with reduced functionality,
+>  * it's probably not BUG-worthy.
+>  *
+>  * If you're tempted to BUG(), think again:  is completely giving up
+>  * really the *only* solution?  There are usually better options, where
+>  * users don't need to reboot ASAP and can mostly shut down cleanly.
+>  */
+
+
+
