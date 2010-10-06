@@ -1,61 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756992Ab0JFXzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 19:55:20 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:56001 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752533Ab0JFXzS (ORCPT
+	id S932447Ab0JGAEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:04:30 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47766 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756832Ab0JGAE2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 19:55:18 -0400
-Date: Thu, 7 Oct 2010 01:55:13 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Colin Cross <ccross@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Sven Neumann <s.neumann@raumfeld.com>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
-Message-ID: <20101006235513.GY7159@buzzloop.caiaq.de>
-References: <1286177435.2140.5.camel@sven>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286177435.2140.5.camel@sven>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 6 Oct 2010 20:04:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 7 Oct 2010 08:58:58 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: balbir@linux.vnet.ibm.com
+Cc: containers@lists.linux-foundation.org,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Restrict size of page_cgroup->flags
+Message-Id: <20101007085858.0e07de59.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101006142314.GG4195@balbir.in.ibm.com>
+References: <20101006142314.GG4195@balbir.in.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 09:30:35AM +0200, Sven Neumann wrote:
-> we are running an embedded system here based on the PXA300 platform.
-> Suspend/resume used to work well so far. However after upgrading the
-> kernel from 2.6.34.7 to 2.6.35.6, we get the following error when trying
-> to suspend the system:
+On Wed, 6 Oct 2010 19:53:14 +0530
+Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+
+> I propose restricting page_cgroup.flags to 16 bits. The patch for the
+> same is below. Comments?
 > 
-> # echo "mem" > "/sys/power/state"
-> [ 5647.295953] PM: Syncing filesystems ... done.
-> [ 5647.318792] Freezing user space processes ... (elapsed 0.01 seconds) done.
-> [ 5647.337048] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> [ 5647.356915] Suspending console(s) (use no_console_suspend to debug)
-> [ 5647.366651] pm_op(): platform_pm_suspend+0x0/0x5c returns -38
-> [ 5647.366671] PM: Device pxa2xx-mci.0 failed to suspend: error -38
-> [ 5647.367082] PM: Some devices failed to suspend
+> 
+> Restrict the bits usage in page_cgroup.flags
+> 
+> From: Balbir Singh <balbir@linux.vnet.ibm.com>
+> 
+> Restricting the flags helps control growth of the flags unbound.
+> Restriciting it to 16 bits gives us the possibility of merging
+> cgroup id with flags (atomicity permitting) and saving a whole
+> long word in page_cgroup
+> 
+> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
 
-We've bisected this effect down to commit 152e1d5920 ("PM: Prevent
-waiting forever on asynchronous resume after failing suspend").
-Suspending our PXA3xx based system breaks with this patch.
+Doesn't make sense until you show the usage of existing bits.
+And I guess 16bit may be too large on 32bit systems.
 
-I tried to understand what's going wrong, but I didn't follow the
-discussion about this logic, so I would rather like to pass it back to
-the originating people.
-
-I can only guess that the problem here is the somewhat tricky handling
-around mmc_sdio_suspend(), which returns -ENODEV (-38) in case a
-particular function of a card can not be suspended. The SDIO core would
-have simply removed the card in this case normally, but the PM core
-seems to interfere now, stopping the whole suspend procedure.
-
-Can anyone shed some light on this?
+Nack for now.
 
 Thanks,
-Daniel
+-Kame
 
