@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759615Ab0JFUF1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 16:05:27 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:32997 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755902Ab0JFUF0 (ORCPT
+	id S1759706Ab0JFUFl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 16:05:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45243 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759574Ab0JFUFk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 16:05:26 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Wed, 06 Oct 2010 16:05:25 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Stephen Boyd <sboyd@codeaurora.org>, Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] [ARM] Translate delay.S into (mostly) C
-In-reply-to: <1286393743.22265.129.camel@m0nster>
-Message-id: <alpine.LFD.2.00.1010061553350.3107@xanadu.home>
-References: <1285644827-6846-1-git-send-email-sboyd@codeaurora.org>
- <1285644827-6846-2-git-send-email-sboyd@codeaurora.org>
- <1286299355.18791.11.camel@c-dwalke-linux.qualcomm.com>
- <4CABEECB.4030301@codeaurora.org>
- <alpine.LFD.2.00.1010061024220.3107@xanadu.home>
- <4CACC053.2090509@codeaurora.org> <1286393743.22265.129.camel@m0nster>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 6 Oct 2010 16:05:40 -0400
+Date: Wed, 6 Oct 2010 22:05:20 +0200
+From: Gleb Natapov <gleb@minantech.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, avi@redhat.com, mingo@elte.hu,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, hpa@zytor.com,
+        riel@redhat.com, cl@linux-foundation.org
+Subject: Re: [PATCH v6 07/12] Add async PF initialization to PV guest.
+Message-ID: <20101006200520.GB4120@minantech.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+ <1286207794-16120-8-git-send-email-gleb@redhat.com>
+ <20101005182554.GA1786@amt.cnet>
+ <20101006105504.GV11145@redhat.com>
+ <20101006144512.GC31423@amt.cnet>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101006144512.GC31423@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010, Daniel Walker wrote:
+On Wed, Oct 06, 2010 at 11:45:12AM -0300, Marcelo Tosatti wrote:
+> On Wed, Oct 06, 2010 at 12:55:04PM +0200, Gleb Natapov wrote:
+> > On Tue, Oct 05, 2010 at 03:25:54PM -0300, Marcelo Tosatti wrote:
+> > > On Mon, Oct 04, 2010 at 05:56:29PM +0200, Gleb Natapov wrote:
+> > > > Enable async PF in a guest if async PF capability is discovered.
+> > > > 
+> > > > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> > > > ---
+> > > >  Documentation/kernel-parameters.txt |    3 +
+> > > >  arch/x86/include/asm/kvm_para.h     |    5 ++
+> > > >  arch/x86/kernel/kvm.c               |   92 +++++++++++++++++++++++++++++++++++
+> > > >  3 files changed, 100 insertions(+), 0 deletions(-)
+> > > > 
+> > > 
+> > > > +static int __cpuinit kvm_cpu_notify(struct notifier_block *self,
+> > > > +				    unsigned long action, void *hcpu)
+> > > > +{
+> > > > +	int cpu = (unsigned long)hcpu;
+> > > > +	switch (action) {
+> > > > +	case CPU_ONLINE:
+> > > > +	case CPU_DOWN_FAILED:
+> > > > +	case CPU_ONLINE_FROZEN:
+> > > > +		smp_call_function_single(cpu, kvm_guest_cpu_notify, NULL, 0);
+> > > 
+> > > wait parameter should probably be 1.
+> > Why should we wait for it? FWIW I copied this from somewhere (May be
+> > arch/x86/pci/amd_bus.c).
+> 
+> So that you know its executed in a defined point in cpu bringup.
+> 
+If I read code correctly CPU we are notified about is already running when
+callback is called, so I do not see what waiting for IPI to be processed will
+accomplish here. With many cpus we will make boot a little bit slower. I don't
+care too much though, so if you still think that 1 is required here I'll make
+it so. 
 
-> On Wed, 2010-10-06 at 11:30 -0700, Stephen Boyd wrote:
-> > Is there some way to force GCC to do what I want (interleave the
-> > functions)? It seems happy to inline them and then optimize the
-> > register
-> > usage and instruction ordering. Perhaps that is OK though and we're
-> > wasting our time trying to be conservative in code size. 
-
-You could use the noinline qualifier from <linux/compiler.h> with those 
-functions you don't want inlined.
-
-> Is it possible to do all this in assembly ? Can't you have the default
-> implementation using this assembly with different function names, then
-> just set the assembly function names in C code someplace?
-
-That weould be my preference too.  Being in assembly means that this 
-code is unlikely to change with different optimization levels and/or gcc 
-versions which would otherwise require different calibration values. 
-Relying on stable calibration is necessary for the lpj kernel cmdline 
-parameter to have some meaning.
-
-
-Nicolas
+--
+			Gleb.
