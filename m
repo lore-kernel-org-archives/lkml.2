@@ -1,68 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab0JFPvP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 11:51:15 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:54425 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757107Ab0JFPvM (ORCPT
+	id S932839Ab0JFP4P (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 11:56:15 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:38582 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932465Ab0JFP4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 11:51:12 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9VLBZ-02-7SN-02
-X-M-MSG: 
-Date: Wed, 6 Oct 2010 17:50:26 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Paul Mundt <lethal@linux-sh.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+	Wed, 6 Oct 2010 11:56:14 -0400
+Subject: Re: RFC: btusb firmware load help
+From: Marcel Holtmann <holtmann@linux.intel.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
-Message-ID: <20101006155026.GT13563@erda.amd.com>
-References: <cover.1286222593.git.matt@console-pimps.org>
- <59a8e68894a2e755232189abbe9b1a3b892e309c.1286222593.git.matt@console-pimps.org>
- <20101006122736.GL13563@erda.amd.com>
- <20101006123950.GA29118@linux-sh.org>
- <20101006131825.GO13563@erda.amd.com>
- <20101006133041.GA29273@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20101006133041.GA29273@linux-sh.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>
+In-Reply-To: <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
+References: <20100924230730.GB6566@tux> <1286266981.17473.33.camel@aeonflux>
+	 <20101005192814.GB11831@tux> <1286308731.2588.13.camel@aeonflux>
+	 <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
+	 <1286349552.6145.11.camel@aeonflux>
+	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 17:56:06 +0200
+Message-ID: <1286380566.6145.42.camel@aeonflux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.10.10 09:30:41, Paul Mundt wrote:
-> On Wed, Oct 06, 2010 at 03:18:25PM +0200, Robert Richter wrote:
-> > So, I am also fine with implementing a generic perf_pmu_name() for sh
-> > and then derive the oprofile cpu_type string from it in the oprofile
-> > code.
-> > 
-> Again, this is unacceptable.
+Hi Luis,
 
-Paul,
+> > Now I am failing to understand why this was done wrong in the first
+> > place. Especially if the loading procedure happens as you say it
+> > happens.
+> 
+> You got me :) Anyone?
+> 
+> > This is the example for the Broadcom 203x devices:
+> >
+> > static struct usb_device_id blacklist_table[] = {
+> >        /* Broadcom BCM2033 without firmware */
+> >        { USB_DEVICE(0x0a5c, 0x2033), .driver_info = BTUSB_IGNORE },
+> >
+> > The btusb driver clearly blacklists them. And then bcm203x can take over
+> > loading the firmware:
+> >
+> > static const struct usb_device_id bcm203x_table[] = {
+> >        /* Broadcom Blutonium (BCM2033) */
+> >        { USB_DEVICE(0x0a5c, 0x2033) },
+> >
+> > So there is a working example of this already in the kernel tree since
+> > forever.
+> 
+> Nice, thanks for the pointer. Our team will review and try to address
+> an alternative patch.
+> 
+> Now for my own sanity -- I still don't think I get this how this
+> BCM2033 blacklist trick works, I take it the device once plugged in
+> gets a generic btusb USB device vendor:device ID. The btusb driver
+> then picks up the the blacklist table, and searches for a
+> usb_match_id() on it for the given interface... What I don't get is
+> how there will be a match here if the USB vendor:device ID is just the
+> generic btusb one. Can you help me understand how this trick works?
 
-maybe I misunderstood you, but isn't this you preferred solution? We
-make perf_pmu_name() part of the generic i/f and then derive the
-oprofile name from the pmu name provided by perf.
+the generic Bluetooth USB class descriptors is what btusb uses. With a
+few expectation for devices that use VID:PID combination.
 
--Robert
+So in general what happens if a device gets matched via the Bluetooth
+USB class descriptors the btusb driver will claim. We do however check
+against out blacklist first. If the VID:PID is listed in the blacklist
+we do return ENODEV. That means that the USB subsystem goes ahead and
+tries the next driver. In this case bcm203x driver. This will claim it,
+load the firmware, reset it and come back with different VID:PID values.
+After that the btusb can successfully claim it since it is no longer in
+the blacklist.
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+If I understand this all correct without having the hardware available
+for verifying this, then it should be like this:
+
+Just add this to blacklist_table[] in btusb.c:
+
+        /* Atheros AR3011 without firmware */
+        { USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
+
+And then we can add the firmware loading to ath3k driver to load the
+specific 1st stage firmware. And then ath3k can load the 2nd stage as
+well. After that it should become a default Bluetooth USB device and the
+btusb driver can take care of it.
+
+Regards
+
+Marcel
+
 
