@@ -1,125 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932193Ab0JFHTU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:19:20 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:48654 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131Ab0JFHTT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:19:19 -0400
-Subject: Re: RFC: btusb firmware load help
-From: Marcel Holtmann <holtmann@linux.intel.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>
-In-Reply-To: <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
-References: <20100924230730.GB6566@tux> <1286266981.17473.33.camel@aeonflux>
-	 <20101005192814.GB11831@tux> <1286308731.2588.13.camel@aeonflux>
-	 <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Oct 2010 09:19:12 +0200
-Message-ID: <1286349552.6145.11.camel@aeonflux>
+	id S932191Ab0JFHZd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:25:33 -0400
+Received: from sh.osrg.net ([192.16.179.4]:47679 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932112Ab0JFHZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 03:25:32 -0400
+Date: Wed, 6 Oct 2010 16:25:07 +0900
+To: nab@linux-iscsi.org
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
+        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com
+Subject: Re: [RFC v2 05/21] tcm: Add ConfigFS subsystem backstore
+	infrastructure
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20101006155833G.fujita.tomonori@lab.ntt.co.jp>
+References: <20101006091219Q.fujita.tomonori@lab.ntt.co.jp>
+	<1286339442.5685.76.camel@haakon2.linux-iscsi.org>
+	<20101006155833G.fujita.tomonori@lab.ntt.co.jp>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20101006162018R.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 06 Oct 2010 16:25:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+On Wed, 6 Oct 2010 16:09:26 +0900
+FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 
-> > most likely via a separate firmware loading driver.
+> On Tue, 05 Oct 2010 21:30:42 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 > 
-> Like the fwload patch ? Or something different?
-
-something clean of course and not this hacking around, but in general
-along that.
-
-> > Your ath3k driver is such a driver. Same as the bcm203x driver.
+> > I have been thinking about something similar that is needed for the WIP
+> > TCM HW target mode drivers when a:
+> > 
+> > 	mkdir -p /sys/kernel/config/target/$TCM_MOD/$LPORT_WWPN/tpgt_1
+> > 
+> > happens the WWPN is coming from HW.  This currently looks like something
+> > along the lines of the following for tcm_lpfc:
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/tcm_lpfc/tcm_lpfc_configfs.c;hb=tcm_lpfc#l227
 > 
-> Right -- so ath3k depends on some atheros USB device IDs, and its a
-> stupid driver that just loads firmware. The problem with this new
-> device is that it requires two phases. One to load some sort of
-> firmware onto it to get it to read as an ath3k device, and then ath3k
-> will load the right firmware to it. So the hardware device is already
-> claiming a btusb vendor:device ID, we can't change that I believe. Of
-> course for future devices we can, and we've addressed this and its
-> been fixed.
-
-So your current loading procedure is this:
-
-	1) btusb with hacked firmware loading
-	2) ath3k
-	3) btusb with HCI
-
-Who thought that this is a good idea in the first place? And more
-important that I would accept this upstream? This is even worse than I
-thought it is.
-
-Please get this craziness fixed.
-
-> > They don't do anything than claiming that USB device, loading the firmware, and then let it reset.
+> The above link doesn't work for me so I'm not sure.
 > 
-> Right but if the SFLASH configurations hardware is already shipping
-> and without firmware is claiming to be a BT USB device which matches
-> the USB vendor:device ID of the btusb driver. Unfortunately it does
-> not accept HCI commands which as you indicates breaks some
-> specification. We can and have fixed this in future chipsets but this
-> one cannot be addressed. So what do we do?
+> But I guess that you are talking about the problem that
+> tcm_lpfc_make_lport() can accept proper hardware port addresses. We
+> are on the same page if so.
 > 
-> > And after the reset the btusb can claim the one where the firmware has
-> > been loaded and which behaves like a proper USB dongle.
 > 
-> Right, that's what the fwload patch from our BT team does, no?
-
-Yes, but not inside the btusb driver. Stop hacking a generic driver with
-crazy firmware loading only because the USB Bluetooth class descriptors
-got screwed up in the first place.
-
-> > The part that I don't understand is that you have the ath3k driver doing
-> > it exactly how it should be done, why now started to make nasty hacks in
-> > the btusb driver.
+> > The main issue here is that the user still needs to know the $LPORT_WWPN
+> > before hand (either from looking at a sticker on the card, or via
+> > another method) in order to preform the initial TFO->fabric_make_wwn()
+> > -> $TCM_MOD_make_wwn() operation.  So what we need is a configfs attrib
+> > at the top level TCM fabric group in order to see a list of the
+> > available hardware ports from the specific $TCM_MOD.  What I was
+> > thinking for TCM HW fabric module ports would be to have something like:
+> > 
+> > 	/sys/kernel/config/target/$TCM_MOD/hw_ports
+> > 
+> > that would walk the struct pci_dev looking for fabric module specific HW
+> > target mode capabilities.  I assume this is what you had in mind for
+> > drivers/scsi/ibmvscsi as well, yes..?
 > 
-> Yeah that seems to have been a shortcoming, its something you should
-> expect from us moving forward. I've been told AR3012 and future
-> Atheros chipsets will not have behave this way, and this issue is only
-> present for the AR3011 devices with SFLASH configuration.
+> Doesn't sound so.
+> 
+> I want the driver to create necessary target directories in
+> /sys/kernel/config/target/ibmvscsit/ automatically.
 
-Most likely including the flashing into ath3k firmware loading driver
-and that being called bound twice might be a good idea. However we are
-not doing the firmware loading in btusb. Then a patch to blacklist this
-broken device. And then ensure that the firmware changes the USB PIDs
-after success.
+In addition, I also think that /sys/kernel/config/target/$TCM_MOD
+should show up automatically when I load the module.
 
-And if I understand you correct, then it does this anyway right now
-already. Otherwise the ath3k driver would not bind to it.
+vine:/home/fujita# modprobe iscsi_target_mod
 
-Now I am failing to understand why this was done wrong in the first
-place. Especially if the loading procedure happens as you say it
-happens.
+Then why do I need to create iscsi directory by hand?
 
-This is the example for the Broadcom 203x devices:
-
-static struct usb_device_id blacklist_table[] = {
-        /* Broadcom BCM2033 without firmware */
-        { USB_DEVICE(0x0a5c, 0x2033), .driver_info = BTUSB_IGNORE },
-
-The btusb driver clearly blacklists them. And then bcm203x can take over
-loading the firmware:
-
-static const struct usb_device_id bcm203x_table[] = {
-        /* Broadcom Blutonium (BCM2033) */
-        { USB_DEVICE(0x0a5c, 0x2033) },
-
-So there is a working example of this already in the kernel tree since
-forever.
-
-Regards
-
-Marcel
+vine:/home/fujita# mkdir /sys/kernel/config/target/iscsi
 
 
+btw, 'iscsi' needs to renamed to iscsi_tcp or something like that?
