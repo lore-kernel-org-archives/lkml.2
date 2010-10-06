@@ -1,93 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab0JFHOq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:14:46 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47382 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758637Ab0JFHOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:14:45 -0400
-Date: Wed, 6 Oct 2010 16:09:29 +0900
-To: nab@linux-iscsi.org
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, michaelc@cs.wisc.edu, hch@lst.de,
-        hare@suse.de, James.Bottomley@suse.de, axboe@kernel.dk,
-        bharrosh@panasas.com, jeff@garzik.org, tj@kernel.org
-Subject: Re: [RFC v2 00/21] TCM Core and TCM_Loop patches for v2.6.37
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1286340405.5685.93.camel@haakon2.linux-iscsi.org>
-References: <1285195702-11421-1-git-send-email-nab@linux-iscsi.org>
-	<20101006111621O.fujita.tomonori@lab.ntt.co.jp>
-	<1286340405.5685.93.camel@haakon2.linux-iscsi.org>
+	id S932193Ab0JFHTU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:19:20 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:48654 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932131Ab0JFHTT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 03:19:19 -0400
+Subject: Re: RFC: btusb firmware load help
+From: Marcel Holtmann <holtmann@linux.intel.com>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>
+In-Reply-To: <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
+References: <20100924230730.GB6566@tux> <1286266981.17473.33.camel@aeonflux>
+	 <20101005192814.GB11831@tux> <1286308731.2588.13.camel@aeonflux>
+	 <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 09:19:12 +0200
+Message-ID: <1286349552.6145.11.camel@aeonflux>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20101006160434M.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 06 Oct 2010 16:09:30 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Oct 2010 21:46:45 -0700
-"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+Hi Luis,
 
-> On Wed, 2010-10-06 at 11:21 +0900, FUJITA Tomonori wrote:
-> > On Wed, 22 Sep 2010 15:48:22 -0700
-> > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > 
-> > >  drivers/Kconfig                                |    2 +
-> > >  drivers/Makefile                               |    1 +
-> > >  drivers/target/Kbuild                          |   30 +
-> > >  drivers/target/Kconfig                         |   36 +
-> > 
-> > Why do we need a new place for the target stuff? This could be used
-> > for non scsi protocl?
-> > 
+> > most likely via a separate firmware loading driver.
 > 
-> Yes, I have envisioned the princaple pieces of TCM/ConfigFS design being
-> very much SCSI fabric independent from the start of v3.0 development,
-> and I think the v4.0 virtual HBA/DEV abstraction now present in
-> target_core_configfs.c and fabric module independent control plane in
-> target_core_fabric_configfs.c does demonstrate this design feature.
+> Like the fwload patch ? Or something different?
+
+something clean of course and not this hacking around, but in general
+along that.
+
+> > Your ath3k driver is such a driver. Same as the bcm203x driver.
 > 
-> Of course doing 'SCSI-less' target mode this would still involve some
-> work to target_core_transport.c to add ATA specific
-> emulation/passthrough and disable others for the default SPC-3 emulation
-> logic currently in place.  However, I do believe the TCM subsystem
-> plugin API in target_core_transport.h for pSCSI, iBLOCK, FILEIO, etc is
-> already more or less SCSI fabric independent and adding a libata
-> subsystem plugin (eg: with it's own set of TCM fabric modules) minus
-> current libata-scsi.c glue code would be possible if the libata folks
-> would like to entertain that discussion..
+> Right -- so ath3k depends on some atheros USB device IDs, and its a
+> stupid driver that just loads firmware. The problem with this new
+> device is that it requires two phases. One to load some sort of
+> firmware onto it to get it to read as an ath3k device, and then ath3k
+> will load the right firmware to it. So the hardware device is already
+> claiming a btusb vendor:device ID, we can't change that I believe. Of
+> course for future devices we can, and we've addressed this and its
+> been fixed.
 
-I like to hear the opinions of SCSI maintainer and ATA folks.
+So your current loading procedure is this:
 
-Even if the target feature is SCSI independent, the SCSI drivers
-should go to under driver/scsi. As I explained, at least, it's a
-cleaner solution for ibmvscsi target driver.
+	1) btusb with hacked firmware loading
+	2) ath3k
+	3) btusb with HCI
 
+Who thought that this is a good idea in the first place? And more
+important that I would accept this upstream? This is even worse than I
+thought it is.
 
-> > We had the similar discussion when I put stgt to mainline but we
-> > concluded that under drivers/scsi is the best place.
-> > 
-> > I don't like to put ibmvscsi driver under something like
-> > drivers/target/tcm_ibmvscsit because ibmvscsi needs to include some
-> > files under drivers/scsi/ibmvscsi/. It's more reasonable to put the
-> > driver there.
-> > 
-> > Can we change the name, TCM (Target Core Mod), to something more
-> > informative? I think that "Core Mod" is really pointless.
-> > 
-> > This will be the mainline scsi target feature so why can't we name
-> > the files and modules in more appropriate way?
+Please get this craziness fixed.
+
+> > They don't do anything than claiming that USB device, loading the firmware, and then let it reset.
 > 
-> Honestly, I tend not to care very much about naming and things, but that
-> said I would really hate to have to rename actual TCM code at this point
-> for .37 (other than say directory location/layout and file names) while
-> the drivers/target/lio-target -> iscsi_proto.h conversion is still on
-> our TODO list.
+> Right but if the SFLASH configurations hardware is already shipping
+> and without firmware is claiming to be a BT USB device which matches
+> the USB vendor:device ID of the btusb driver. Unfortunately it does
+> not accept HCI commands which as you indicates breaks some
+> specification. We can and have fixed this in future chipsets but this
+> one cannot be addressed. So what do we do?
+> 
+> > And after the reset the btusb can claim the one where the firmware has
+> > been loaded and which behaves like a proper USB dongle.
+> 
+> Right, that's what the fwload patch from our BT team does, no?
 
-I'm not sure this goes for .37 (up to James) but anyway I think that
-we need to take care about the module names now. Once we put stuff
-into mainline, it's not good to change the module names. File and
-directory names and layout can be changed any time.
+Yes, but not inside the btusb driver. Stop hacking a generic driver with
+crazy firmware loading only because the USB Bluetooth class descriptors
+got screwed up in the first place.
+
+> > The part that I don't understand is that you have the ath3k driver doing
+> > it exactly how it should be done, why now started to make nasty hacks in
+> > the btusb driver.
+> 
+> Yeah that seems to have been a shortcoming, its something you should
+> expect from us moving forward. I've been told AR3012 and future
+> Atheros chipsets will not have behave this way, and this issue is only
+> present for the AR3011 devices with SFLASH configuration.
+
+Most likely including the flashing into ath3k firmware loading driver
+and that being called bound twice might be a good idea. However we are
+not doing the firmware loading in btusb. Then a patch to blacklist this
+broken device. And then ensure that the firmware changes the USB PIDs
+after success.
+
+And if I understand you correct, then it does this anyway right now
+already. Otherwise the ath3k driver would not bind to it.
+
+Now I am failing to understand why this was done wrong in the first
+place. Especially if the loading procedure happens as you say it
+happens.
+
+This is the example for the Broadcom 203x devices:
+
+static struct usb_device_id blacklist_table[] = {
+        /* Broadcom BCM2033 without firmware */
+        { USB_DEVICE(0x0a5c, 0x2033), .driver_info = BTUSB_IGNORE },
+
+The btusb driver clearly blacklists them. And then bcm203x can take over
+loading the firmware:
+
+static const struct usb_device_id bcm203x_table[] = {
+        /* Broadcom Blutonium (BCM2033) */
+        { USB_DEVICE(0x0a5c, 0x2033) },
+
+So there is a working example of this already in the kernel tree since
+forever.
+
+Regards
+
+Marcel
+
 
