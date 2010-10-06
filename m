@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab0JFEv2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 00:51:28 -0400
-Received: from smtp108.sbc.mail.mud.yahoo.com ([68.142.198.106]:41342 "HELO
-	smtp108.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753811Ab0JFEv0 (ORCPT
+	id S1755345Ab0JFEw7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 00:52:59 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:38299 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752019Ab0JFEw5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 00:51:26 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: 1Eo9n34VM1mjqV3LJnDpsBcGGrjoSTnNO6fhMLld4a4uFHk
- h4PGmX6RPoXE4e1HQrxBWKgFtApVLoOZ2FX_Ik0BdbnMgN3es1FlhKEQCBLZ
- kEIxX2N6oHR20wpguJQ4vjZj_0qy_DgoG5xCmBuVNwFJbpVPSDzK5QiW9RLK
- yzzQ6unKud8YbayRCTf2Dt.FulauM0NAgnzIh4iSs7XFXU_AwhdgqTfJvaYu
- Obl.K6rHZyAwij22azPWbGngY2FOoCIny2Td8OPDYqoLVjjHVBeJhJaSuOPv
- bnFpIPhSesSdvG9R.u.Xlw9AAwicgqgn4LkpRFwmNcVcHIKaiSb7JOnoFi8y
- 5CpgG5UbHF15e00JtGQ--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC v2 00/21] TCM Core and TCM_Loop patches for v2.6.37
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com,
-        Jeff Garzik <jeff@garzik.org>, Tejun Heo <tj@kernel.org>
-In-Reply-To: <20101006111621O.fujita.tomonori@lab.ntt.co.jp>
-References: <1285195702-11421-1-git-send-email-nab@linux-iscsi.org>
-	 <20101006111621O.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Date: Tue, 05 Oct 2010 21:46:45 -0700
-Message-Id: <1286340405.5685.93.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 00:52:57 -0400
+Date: Wed, 6 Oct 2010 06:52:55 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Michal Marek <mmarek@suse.cz>, linux-media@vger.kernel.org,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: Re: [RFC PATCH] media: consolidation of -I flags
+Message-ID: <20101006045255.GA24870@merkur.ravnborg.org>
+References: <1285534847-31463-1-git-send-email-mfm@muteddisk.com> <20101005142906.GA20059@merkur.ravnborg.org> <20101005192435.GA17798@haskell.muteddisk.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101005192435.GA17798@haskell.muteddisk.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 11:21 +0900, FUJITA Tomonori wrote:
-> On Wed, 22 Sep 2010 15:48:22 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 > 
-> >  drivers/Kconfig                                |    2 +
-> >  drivers/Makefile                               |    1 +
-> >  drivers/target/Kbuild                          |   30 +
-> >  drivers/target/Kconfig                         |   36 +
+> Ah, I was not aware of that, and I forgot to test for that case.
 > 
-> Why do we need a new place for the target stuff? This could be used
-> for non scsi protocl?
+> > > 
+> > > If neither idea is considered beneficial, I will go ahead and replace
+> > > the older variables with the newer ones as is.
+> > 
+> > This is the right approach.
+> > 
+> > You could consider to do a more general cleanup:
+> > 1) replace EXTRA_CFLAGS with ccflags-y (the one you suggest)
+> > 2) replace use of <module>-objs with <module>-y
+> > 3) break continued lines into several assignments
+> >    People very often uses '\' to break long lines, where a
+> >    simple += would be much more readable.
+> >    But this topic may be personal - I never uses "\" in my .c code unless in macros,
+> >    and I have applied the same rule for Makefiles.
+> >    An ugly example is drivers/media/Makefile
+> > 4) In general use ":=" instead of "=".
+> >    Add using "+=" as first assignment is OK - but it just looks plain wrong
+> > 5) some files has a mixture of spaces/tabs (are red in my vim)
+> >    dvb-core/Makefile is one such example
+> > 6) remove useless stuff
+> >    siano/Makefile has some strange assignments to EXTRA_CFLAGS
+> > 7) Likely a few more items to look after...
+> > 
+> > This is more work - but then you finish a Makefile rather than doing a simple
+> > conversion.
 > 
+> I agree with all your points above; however, I was unsure of whether a wholesale
+> cleanup would be welcomed because I would then end up touching numerous lines
+> (and in some cases, possibly all lines).
+The Makefiles are all very simple - so touching all lines in a files
+is not a big deal here. But then you would have to batch your changes
+in smaller parts touching only a few Makefiles/one Makefile per patch.
 
-Yes, I have envisioned the princaple pieces of TCM/ConfigFS design being
-very much SCSI fabric independent from the start of v3.0 development,
-and I think the v4.0 virtual HBA/DEV abstraction now present in
-target_core_configfs.c and fabric module independent control plane in
-target_core_fabric_configfs.c does demonstrate this design feature.
+> Is the use of <module>-objs deprecated? Some people might wonder why I am
+> changing that when they are not building a multisource object.
+I always recommends the <module>-y notation.
+Because this version has the flexibility to use the kbuild way
+of dealing with conditional modules.
 
-Of course doing 'SCSI-less' target mode this would still involve some
-work to target_core_transport.c to add ATA specific
-emulation/passthrough and disable others for the default SPC-3 emulation
-logic currently in place.  However, I do believe the TCM subsystem
-plugin API in target_core_transport.h for pSCSI, iBLOCK, FILEIO, etc is
-already more or less SCSI fabric independent and adding a libata
-subsystem plugin (eg: with it's own set of TCM fabric modules) minus
-current libata-scsi.c glue code would be possible if the libata folks
-would like to entertain that discussion..
-
-> We had the similar discussion when I put stgt to mainline but we
-> concluded that under drivers/scsi is the best place.
-> 
-> I don't like to put ibmvscsi driver under something like
-> drivers/target/tcm_ibmvscsit because ibmvscsi needs to include some
-> files under drivers/scsi/ibmvscsi/. It's more reasonable to put the
-> driver there.
-> 
-> Can we change the name, TCM (Target Core Mod), to something more
-> informative? I think that "Core Mod" is really pointless.
-> 
-> This will be the mainline scsi target feature so why can't we name
-> the files and modules in more appropriate way?
-
-Honestly, I tend not to care very much about naming and things, but that
-said I would really hate to have to rename actual TCM code at this point
-for .37 (other than say directory location/layout and file names) while
-the drivers/target/lio-target -> iscsi_proto.h conversion is still on
-our TODO list.
-
-Best,
-
---nab
+I see no reason to do such change alaone - but as part of other minor
+cleanups it would be natural to change to the <module>-y idiom.
 
 
+All the comments above is valid for staging too. There we should
+try to do general cleanup on the Makefile rather than a lot of small
+edits.
+But sometimes the MAkefiles contains so much legacy that this will be more
+than one patch..
+
+	Sam
