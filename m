@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759475Ab0JFUbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 16:31:42 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38046 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759059Ab0JFUbk (ORCPT
+	id S1759207Ab0JFUcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 16:32:47 -0400
+Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:26009 "HELO
+	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756643Ab0JFUcq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 16:31:40 -0400
-X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=cD81UUMRb2IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=1xyqmJOagibntsUD8z0A:9 a=H9IuXV-XBcOJXjcHBbwxOu939_kA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC PATCH] poll(): add poll_wait_set_exclusive()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20101006190434.GA5783@Krystal>
-References: <20101006175635.GA21652@Krystal>
-	 <AANLkTik3MWtEpi=mzf2-_x4_kdrwv-EOjeVHNzbmfian@mail.gmail.com>
-	 <20101006190434.GA5783@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 06 Oct 2010 16:31:36 -0400
-Message-ID: <1286397096.6661.2.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 16:32:46 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: qN2rHpoVM1lDyKXaS1.A3TCx07hVtXw6Jrt3DHf4UORN1UZ
+ p73h0abhRepeVjJSJzwpha5_H3_sApf3_pJ1udZQO0l9m5IXnk2O2.h_WhcA
+ w_uIpUXrNVTHtJ_4Xj5hbjGOMvcwvEahUxx9VyHnMrXBGm8d0lRfZnzNZ7f2
+ xfyG1b.DF_6jJiikvRL9ypoqrud9PyUHHUZHujXdK8DIAxOKjhlR3fTxu.y8
+ J.rzq4JvgQWJqP.dayR8biUfap_fYRZSqFEb.9KH0Sg--
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 6 Oct 2010 15:32:43 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Ben Greear <greearb@candelatech.com>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [RFC] slub:  Enable backtrace for create/delete points.
+In-Reply-To: <1286395723-28271-1-git-send-email-greearb@candelatech.com>
+Message-ID: <alpine.DEB.2.00.1010061527560.6878@router.home>
+References: <1286395723-28271-1-git-send-email-greearb@candelatech.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 15:04 -0400, Mathieu Desnoyers wrote:
+On Wed, 6 Oct 2010, greearb@candelatech.com wrote:
 
-> For reference, here is the use-case: The user-space daemon runs typically one
-> thread per cpu, each with a handle on many file descriptors. Each thread waits
-> for data to be available using poll(). In order to follow the poll semantic,
-> when data becomes available on a file descriptor, the kernel wakes up all
-> threads at once, but in my case only one of them will successfully consume the
-> data (all other thread's splice or read will fail with -ENODATA). With many
-> threads, these useless wakeups add an unwanted overhead and scalability
-> limitation.
+> This patch attempts to grab a backtrace for the creation
+> and deletion points of the slub object.  When a fault is
+> detected, we can then get a better idea of where the item
+> was deleted.
 
-Mathieu, I'm curious to why you have multiple threads reading the same
-fd. Since the threads are per cpu, does the fd handle all CPUs? Or do
-you have an fd per event per CPU, in which case the threads should just
-poll off of their own fds.
-
--- Steve
-
-
+We have had patches like that for SLAB in the past. The backtrace was
+typically limited to 4 entries I believe.
