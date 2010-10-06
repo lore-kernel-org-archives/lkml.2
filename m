@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754210Ab0JFXsN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 19:48:13 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45567 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751808Ab0JFXsM (ORCPT
+	id S1756992Ab0JFXzU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 19:55:20 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:56001 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752533Ab0JFXzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 19:48:12 -0400
-Message-ID: <4CAD0A5C.7030005@kernel.org>
-Date: Wed, 06 Oct 2010 16:46:36 -0700
-From: "J.H." <warthog9@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.7
+	Wed, 6 Oct 2010 19:55:18 -0400
+Date: Thu, 7 Oct 2010 01:55:13 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Colin Cross <ccross@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Sven Neumann <s.neumann@raumfeld.com>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
+Message-ID: <20101006235513.GY7159@buzzloop.caiaq.de>
+References: <1286177435.2140.5.camel@sven>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Johannes Weiner <hannes@cmpxchg.org>, Alex Elder <aelder@sgi.com>,
-        xfs@oss.sgi.com, linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: [patch] xfs: properly account for reclaimed inodes
-References: <20101001074354.GF2618@cmpxchg.org> <1285953443.2422.4.camel@doink> <20101004071904.GH4681@dastard> <20101004102213.GJ2618@cmpxchg.org> <20101006045349.GA13191@dastard>
-In-Reply-To: <20101006045349.GA13191@dastard>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.3 (shards.monkeyblade.net [198.137.202.13]); Wed, 06 Oct 2010 16:46:38 -0700 (PDT)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286177435.2140.5.camel@sven>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/05/2010 09:53 PM, Dave Chinner wrote:
-> On Mon, Oct 04, 2010 at 12:22:13PM +0200, Johannes Weiner wrote:
->> Hi,
->>
->> On Mon, Oct 04, 2010 at 06:19:04PM +1100, Dave Chinner wrote:
->>> On Fri, Oct 01, 2010 at 12:17:23PM -0500, Alex Elder wrote:
->>>> On Fri, 2010-10-01 at 09:43 +0200, Johannes Weiner wrote:
->>>>> When marking an inode reclaimable, a per-AG counter is increased, the
->>>>> inode is tagged reclaimable in its per-AG tree, and, when this is the
->>>>> first reclaimable inode in the AG, the AG entry in the per-mount tree
->>>>> is also tagged.
->>>>>
->>>>> When an inode is finally reclaimed, however, it is only deleted from
->>>>> the per-AG tree.  Neither the counter is decreased, nor is the parent
->>>>> tree's AG entry untagged properly.
->>>>>
->>>>> Since the tags in the per-mount tree are not cleared, the inode
->>>>> shrinker iterates over all AGs that have had reclaimable inodes at one
->>>>> point in time.
->>>>>
->>>>> The counters on the other hand signal an increasing amount of slab
->>>>> objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
->>>>> per-filesystem context" this is not a real issue anymore because the
->>>>> shrinker bails out after one iteration.
->>>>>
->>>>> But the problem was observable on a machine running v2.6.34, where the
->>>>> reclaimable work increased and each process going into direct reclaim
->>>>> eventually got stuck on the xfs inode shrinking path, trying to scan
->>>>> several million objects.
->>>>>
->>>>> Fix this by properly unwinding the reclaimable-state tracking of an
->>>>> inode when it is reclaimed.
->>>>>
->>>>> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
->>>>> Cc: stable@kernel.org
->>>>
->>>> Yes, this looks right to me.  The state was correctly
->>>> adjusted in xfs_iget_cache_hit() when a RECLAIMABLE
->>>> inode is found in the cache, but it was not done when
->>>> reclaim completes.
->>>>
->>>> Reviewed-by: Alex Elder <aelder@sgi.com>
->>>
->>> Alex, can you push this to Linus ASAP? This needs to go back to
->>> stable kernels as well..
->>
->> Here is my suggestion of a backport to .34.  Dave, Alex, do you
->> approve?
->>
->> 	Hannes
->>
->> diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
->> index 6845db9..3314f2a 100644
->> --- a/fs/xfs/xfs_iget.c
->> +++ b/fs/xfs/xfs_iget.c
->> @@ -499,6 +499,7 @@ xfs_ireclaim(
->>  	write_lock(&pag->pag_ici_lock);
->>  	if (!radix_tree_delete(&pag->pag_ici_root, agino))
->>  		ASSERT(0);
->> +	pag->pag_ici_reclaimable--;
->>  	write_unlock(&pag->pag_ici_lock);
->>  	xfs_perag_put(pag);
+On Mon, Oct 04, 2010 at 09:30:35AM +0200, Sven Neumann wrote:
+> we are running an embedded system here based on the PXA300 platform.
+> Suspend/resume used to work well so far. However after upgrading the
+> kernel from 2.6.34.7 to 2.6.35.6, we get the following error when trying
+> to suspend the system:
 > 
-> Looks good to me.
-> 
-> Reviewed-by: Dave Chinner <dchinner@redhat.com>
+> # echo "mem" > "/sys/power/state"
+> [ 5647.295953] PM: Syncing filesystems ... done.
+> [ 5647.318792] Freezing user space processes ... (elapsed 0.01 seconds) done.
+> [ 5647.337048] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+> [ 5647.356915] Suspending console(s) (use no_console_suspend to debug)
+> [ 5647.366651] pm_op(): platform_pm_suspend+0x0/0x5c returns -38
+> [ 5647.366671] PM: Device pxa2xx-mci.0 failed to suspend: error -38
+> [ 5647.367082] PM: Some devices failed to suspend
 
-i've got this in production and things seem to be acting a lot more like
-I would expect.
+We've bisected this effect down to commit 152e1d5920 ("PM: Prevent
+waiting forever on asynchronous resume after failing suspend").
+Suspending our PXA3xx based system breaks with this patch.
 
-Tested-by: John 'Warthog9' Hawley <warthog9@kernel.org>
+I tried to understand what's going wrong, but I didn't follow the
+discussion about this logic, so I would rather like to pass it back to
+the originating people.
+
+I can only guess that the problem here is the somewhat tricky handling
+around mmc_sdio_suspend(), which returns -ENODEV (-38) in case a
+particular function of a card can not be suspended. The SDIO core would
+have simply removed the card in this case normally, but the PM core
+seems to interfere now, stopping the whole suspend procedure.
+
+Can anyone shed some light on this?
+
+Thanks,
+Daniel
+
