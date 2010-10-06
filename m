@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758422Ab0JFCsA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 22:48:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57958 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755999Ab0JFCr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 22:47:59 -0400
-Date: Wed, 6 Oct 2010 13:47:56 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jason Baron <jbaron@redhat.com>
-Subject: linux-next: manual merge of the tip tree with Linus' tree
-Message-Id: <20101006134756.a6c8730a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1758467Ab0JFC5B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 22:57:01 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:53104 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716Ab0JFC5A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 22:57:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=GdpBVHhMKaRZaaBs6XbLyAYOu61TaVU6UxErbA/Ci8JHl1q7C7zFqM/edUTEo+qgaT
+         I5rYLdzmLbUS7rPY6YYvqtH9jzDoqkWvt/JGp6HO8nAjDLjzJ8vweDDmlgIeLEaCAXJz
+         kIpJ5r8PCM+t8n+2Qgm0UAtURjCNDvYf5aRxg=
+Subject: Re: [GIT PULL] core kernel fixes
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20101005220546.GS2369@linux.vnet.ibm.com>
+References: <20101005191223.GA31795@elte.hu>
+	 <AANLkTik9E0dr=Qah0d_+9YaAsA7WfeawA1c4oDbiJK-j@mail.gmail.com>
+	 <20101005210904.GQ2369@linux.vnet.ibm.com>
+	 <AANLkTi==ZE7+PTPdB1JjdSdqus0Ox+rjTAxMMMJk0fBi@mail.gmail.com>
+	 <20101005220546.GS2369@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 04:56:54 +0200
+Message-ID: <1286333814.4861.9.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Le mardi 05 octobre 2010 à 15:05 -0700, Paul E. McKenney a écrit :
+> On Tue, Oct 05, 2010 at 02:45:07PM -0700, Linus Torvalds wrote:
+> > On Tue, Oct 5, 2010 at 2:09 PM, Paul E. McKenney
+> > <paulmck@linux.vnet.ibm.com> wrote:
+> > >
+> > > Good point!!!  If the following diff looks good to you, I will get it
+> > > tested and pushed.
+> > 
+> > Looks good. Except since I pulled the thing despite my complaint,
+> > you'll also need to undo the extra irqs_disabled() test.
+> 
+> No problem, the diff I sent you combined two commits.  ;-)
+> 
 
-Today's linux-next merge of the tip tree got a conflict in
-arch/x86/kernel/module.c between commit
-5336377d6225959624146629ce3fc88ee8ecda3d ("modules: Fix module_bug_list
-list corruption race") from Linus' tree and commit
-d9f5ab7b1c0a520867af389bab5d5fcdbd0e407e ("jump label: x86 support") from
-the tip tree.
+Hi Paul & Linus
 
-Just context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I originally considered adding the test in rcu_read_lock_bh_held() too,
+but thought (wrongly) :
 
-diff --cc arch/x86/kernel/module.c
-index 1c355c5,5399f58..0000000
---- a/arch/x86/kernel/module.c
-+++ b/arch/x86/kernel/module.c
-@@@ -239,7 -239,10 +239,10 @@@ int module_finalize(const Elf_Ehdr *hdr
-  		apply_paravirt(pseg, pseg + para->sh_size);
-  	}
-  
-+ 	/* make jump label nops */
-+ 	jump_label_apply_nops(me);
-+ 
- -	return module_bug_finalize(hdr, sechdrs, me);
- +	return 0;
-  }
-  
-  void module_arch_cleanup(struct module *mod)
+	"rcu_read_unlock_bh() doesnt block hard IRQ, thus
+	 rcu_read_lock_bh_held() should not test hard irq."
+
+I remember anyway my first patch was wrong, since I was not using
+irqs_disabled() but in_irq() 
+
+http://kerneltrap.org/mailarchive/linux-kernel/2010/9/22/4622784
+
+Thanks !
+
+
