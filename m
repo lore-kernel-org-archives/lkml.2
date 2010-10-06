@@ -1,12 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758876Ab0JFNah (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 09:30:37 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:45370 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757971Ab0JFNac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 09:30:32 -0400
-Date: Wed, 6 Oct 2010 19:00:24 +0530
+	id S1758801Ab0JFNcv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 09:32:51 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:44824 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757376Ab0JFNcu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 09:32:50 -0400
+Date: Wed, 6 Oct 2010 19:02:44 +0530
 From: Balbir Singh <balbir@linux.vnet.ibm.com>
 To: Greg Thelen <gthelen@google.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
@@ -15,37 +16,42 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
         KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
         Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 Subject: Re: [PATCH 08/10] memcg: add cgroupfs interface to memcg dirty limits
-Message-ID: <20101006133024.GE4195@balbir.in.ibm.com>
+Message-ID: <20101006133244.GF4195@balbir.in.ibm.com>
 Reply-To: balbir@linux.vnet.ibm.com
 References: <1286175485-30643-1-git-send-email-gthelen@google.com>
  <1286175485-30643-9-git-send-email-gthelen@google.com>
+ <20101006133024.GE4195@balbir.in.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1286175485-30643-9-git-send-email-gthelen@google.com>
+In-Reply-To: <20101006133024.GE4195@balbir.in.ibm.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg Thelen <gthelen@google.com> [2010-10-03 23:58:03]:
+* Balbir Singh <balbir@linux.vnet.ibm.com> [2010-10-06 19:00:24]:
 
-> Add cgroupfs interface to memcg dirty page limits:
->   Direct write-out is controlled with:
->   - memory.dirty_ratio
->   - memory.dirty_bytes
+> * Greg Thelen <gthelen@google.com> [2010-10-03 23:58:03]:
 > 
->   Background write-out is controlled with:
->   - memory.dirty_background_ratio
->   - memory.dirty_background_bytes
+> > Add cgroupfs interface to memcg dirty page limits:
+> >   Direct write-out is controlled with:
+> >   - memory.dirty_ratio
+> >   - memory.dirty_bytes
+> > 
+> >   Background write-out is controlled with:
+> >   - memory.dirty_background_ratio
+> >   - memory.dirty_background_bytes
+> > 
+> > Signed-off-by: Andrea Righi <arighi@develer.com>
+> > Signed-off-by: Greg Thelen <gthelen@google.com>
+> > ---
 > 
-> Signed-off-by: Andrea Righi <arighi@develer.com>
-> Signed-off-by: Greg Thelen <gthelen@google.com>
-> ---
+> The added interface is not uniform with the rest of our write
+> operations. Does the patch below help? I did a quick compile and run
+> test.
 
-The added interface is not uniform with the rest of our write
-operations. Does the patch below help? I did a quick compile and run
-test.
+here is a version with my signed-off-by
 
 
 Make writes to memcg dirty tunables more uniform
@@ -55,6 +61,8 @@ From: Balbir Singh <balbir@linux.vnet.ibm.com>
 We today support 'M', 'm', 'k', 'K', 'g' and 'G' suffixes for
 general memcg writes. This patch provides the same functionality
 for dirty tunables.
+
+Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
 ---
 
  mm/memcontrol.c |   47 +++++++++++++++++++++++++++++++++++++----------
@@ -62,14 +70,14 @@ for dirty tunables.
 
 
 diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 2d45a0a..3c360e6 100644
+index 2d45a0a..116fecd 100644
 --- a/mm/memcontrol.c
 +++ b/mm/memcontrol.c
 @@ -4323,6 +4323,41 @@ static u64 mem_cgroup_dirty_read(struct cgroup *cgrp, struct cftype *cft)
  }
  
  static int
-+mem_cgroup_dirty_write_string(struct cgroup *cont, struct cftype *cft,
++mem_cgroup_dirty_write_string(struct cgroup *cgrp, struct cftype *cft,
 +				const char *buffer)
 +{
 +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
@@ -140,7 +148,7 @@ index 2d45a0a..3c360e6 100644
  		.name = "dirty_background_bytes",
  		.read_u64 = mem_cgroup_dirty_read,
 -		.write_u64 = mem_cgroup_dirty_write,
-+		.write_u64 = mem_cgroup_dirty_write_string,
++		.write_string = mem_cgroup_dirty_write_string,
  		.private = MEM_CGROUP_DIRTY_BACKGROUND_BYTES,
  	},
  };
