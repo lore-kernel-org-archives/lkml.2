@@ -1,44 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759172Ab0JFPPl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 11:15:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57992 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759160Ab0JFPPj (ORCPT
+	id S932776Ab0JFPRU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 11:17:20 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:60454 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932521Ab0JFPRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 11:15:39 -0400
-Date: Wed, 6 Oct 2010 11:15:26 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: btrfs oops on dodgy SSD
-Message-ID: <20101006151526.GP9759@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Dave Airlie <airlied@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTiknCR6Z2=L9FoA8+m7o8dw6=Hq1QHWKn7Oyf9UF@mail.gmail.com>
+	Wed, 6 Oct 2010 11:17:19 -0400
+Message-ID: <4CAC92D3.2050700@csr.com>
+Date: Wed, 06 Oct 2010 16:16:35 +0100
+From: David Vrabel <david.vrabel@csr.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTiknCR6Z2=L9FoA8+m7o8dw6=Hq1QHWKn7Oyf9UF@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Brownell <david-b@pacbell.net>
+CC: linux-usb@vger.kernel.org, tlinder <tlinder@codeaurora.org>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Robert Lukassen <robert.lukassen@tomtom.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Fabien Chouteau <fabien.chouteau@barco.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the Gadget
+ Framework
+References: <568203.56459.qm@web180308.mail.gq1.yahoo.com>
+In-Reply-To: <568203.56459.qm@web180308.mail.gq1.yahoo.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2010 15:16:37.0648 (UTC) FILETIME=[786B9900:01CB6569]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 11:07:10AM +1000, Dave Airlie wrote:
-> I have an SSD which I use for scratch builds and stuff, it seems to be
-> broken or just dislike my NV sata controller.
+David Brownell wrote:
 > 
-> Was just running Linus tree and got the attached oops when doing a
-> kernel build on it this morning.
+>> Support for new SuperSpeed BOS descriptor was 
 > 
-> oops didn't come out in logs, though there were some disk reset and a
-> hung task detect.
-> 
-> Might help btrfs robustness maybe if we could avoid the panic ;-)
+> Wireless USB BOS descriptors exist too, yes?  Does
+> this approach cover them, or just SuperSpeed?  (We
+> may someday want to support Wireless USB on the
+> peripheral/gadget side too...
 
-Ouch, the oops was in the code printing a corrupted btree block.  I
-should be able to easily trigger this at home...
+Wireless USB also has endpoint companion descriptors similar to SuperSpeed.
 
--chris
+I haven't received the patch email for some reason.  If someone forwards
+it to me I can review it from a WUSB point of view.
+
+David
+-- 
+David Vrabel, Senior Software Engineer, Drivers
+CSR, Churchill House, Cambridge Business Park,  Tel: +44 (0)1223 692562
+Cowley Road, Cambridge, CB4 0WZ                 http://www.csr.com/
+
+
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
