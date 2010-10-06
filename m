@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758708Ab0JFHnM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:43:12 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6371 "EHLO
+	id S1758734Ab0JFHnW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:43:22 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:6374 "EHLO
 	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757415Ab0JFHnK (ORCPT
+	with ESMTP id S1758684Ab0JFHnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:43:10 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56883645"
+	Wed, 6 Oct 2010 03:43:18 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56883650"
 X-IronPort-AV: E=Sophos;i="4.57,287,1283756400"; 
-   d="scan'208";a="88852282"
+   d="scan'208";a="88852287"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Daniel Walker <dwalker@codeaurora.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
@@ -18,13 +18,12 @@ Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
-        Gregory Bean <gbean@codeaurora.org>,
-        Brian Swetland <swetland@google.com>,
         Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>
-Subject: [PATCH 01/20 v2] msm: create config option for proc-comm
-Date: Wed,  6 Oct 2010 00:42:40 -0700
-Message-Id: <1286350979-19328-2-git-send-email-johlstei@codeaurora.org>
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Gregory Bean <gbean@codeaurora.org>
+Subject: [PATCH 03/20 v2] msm: initial irq definitions for MSM8X60
+Date: Wed,  6 Oct 2010 00:42:42 -0700
+Message-Id: <1286350979-19328-4-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
 References: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
@@ -34,81 +33,77 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steve Muckle <smuckle@codeaurora.org>
 
-Some builds may not support the proc-comm interface with
-the baseband processor.
+IRQ assignments are different for MSM8X60 than other existing MSMs.
 
 Signed-off-by: Steve Muckle <smuckle@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig  |    7 +++++++
- arch/arm/mach-msm/Makefile |    7 ++-----
- 2 files changed, 9 insertions(+), 5 deletions(-)
+ arch/arm/mach-msm/include/mach/irqs-8x60.h |   43 ++++++++++++++++++++++++++++
+ arch/arm/mach-msm/include/mach/irqs.h      |    2 +
+ 2 files changed, 45 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-msm/include/mach/irqs-8x60.h
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index 47264a7..90f9b17 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -10,6 +10,7 @@ config ARCH_MSM7X00A
- 	select MSM_SMD
- 	select MSM_SMD_PKG3
- 	select CPU_V6
-+	select MSM_PROC_COMM
- 
- config ARCH_MSM7X30
- 	bool "MSM7x30"
-@@ -18,6 +19,7 @@ config ARCH_MSM7X30
- 	select MSM_VIC
- 	select CPU_V7
- 	select MSM_REMOTE_SPINLOCK_DEKKERS
-+	select MSM_PROC_COMM
- 
- config ARCH_QSD8X50
- 	bool "QSD8X50"
-@@ -26,6 +28,8 @@ config ARCH_QSD8X50
- 	select MSM_VIC
- 	select CPU_V7
- 	select MSM_REMOTE_SPINLOCK_LDREX
-+	select MSM_PROC_COMM
+diff --git a/arch/arm/mach-msm/include/mach/irqs-8x60.h b/arch/arm/mach-msm/include/mach/irqs-8x60.h
+new file mode 100644
+index 0000000..9fae253
+--- /dev/null
++++ b/arch/arm/mach-msm/include/mach/irqs-8x60.h
+@@ -0,0 +1,43 @@
++/* Copyright (c) 2010 Code Aurora Forum. All rights reserved.
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions are met:
++ *     * Redistributions of source code must retain the above copyright
++ *       notice, this list of conditions and the following disclaimer.
++ *     * Redistributions in binary form must reproduce the above copyright
++ *       notice, this list of conditions and the following disclaimer in the
++ *       documentation and/or other materials provided with the distribution.
++ *     * Neither the name of Code Aurora nor
++ *       the names of its contributors may be used to endorse or promote
++ *       products derived from this software without specific prior written
++ *       permission.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
++ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
++ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
++ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
++ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
++ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
++ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
++ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ *
++ */
 +
- endchoice
- 
- config MSM_SOC_REV_A
-@@ -103,6 +107,9 @@ endchoice
- config MSM_SMD_PKG3
- 	bool
- 
-+config MSM_PROC_COMM
-+	bool
++#ifndef __ASM_ARCH_MSM_IRQS_8X60_H
++#define __ASM_ARCH_MSM_IRQS_8X60_H
 +
- config MSM_SMD
- 	bool
- 
-diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
-index 7046106..6105d4f 100644
---- a/arch/arm/mach-msm/Makefile
-+++ b/arch/arm/mach-msm/Makefile
-@@ -1,9 +1,5 @@
--obj-y += proc_comm.o
- obj-y += io.o idle.o timer.o dma.o
--obj-y += vreg.o
- obj-y += acpuclock-arm11.o
--obj-y += clock.o clock-pcom.o
--obj-y += gpio.o
- 
- ifdef CONFIG_MSM_VIC
- obj-y += irq-vic.o
-@@ -11,10 +7,11 @@ else
- obj-y += irq.o
- endif
- 
-+obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
-+obj-$(CONFIG_MSM_PROC_COMM) += clock.o gpio.c
- obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
- obj-$(CONFIG_MSM_SMD) += smd.o smd_debug.o
- obj-$(CONFIG_MSM_SMD) += last_radio_log.o
--
- obj-$(CONFIG_MACH_TROUT) += board-trout.o board-trout-gpio.o board-trout-mmc.o devices-msm7x00.o
- obj-$(CONFIG_MACH_HALIBUT) += board-halibut.o devices-msm7x00.o
- obj-$(CONFIG_ARCH_MSM7X30) += board-msm7x30.o devices-msm7x30.o
++/* MSM ACPU Interrupt Numbers */
++
++/* 0-15:  STI/SGI (software triggered/generated interrupts)
++ * 16-31: PPI (private peripheral interrupts)
++ * 32+:   SPI (shared peripheral interrupts)
++ */
++
++#define NR_GPIO_IRQS 173
++#define NR_MSM_IRQS 256
++#define NR_BOARD_IRQS 0
++
++#endif
+diff --git a/arch/arm/mach-msm/include/mach/irqs.h b/arch/arm/mach-msm/include/mach/irqs.h
+index 164d355..8679a45 100644
+--- a/arch/arm/mach-msm/include/mach/irqs.h
++++ b/arch/arm/mach-msm/include/mach/irqs.h
+@@ -24,6 +24,8 @@
+ #elif defined(CONFIG_ARCH_QSD8X50)
+ #include "irqs-8x50.h"
+ #include "sirc.h"
++#elif defined(CONFIG_ARCH_MSM8X60)
++#include "irqs-8x60.h"
+ #elif defined(CONFIG_ARCH_MSM_ARM11)
+ #include "irqs-7x00.h"
+ #else
 -- 
 1.7.2.1
 
