@@ -1,43 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753470Ab0JFERF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 00:17:05 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:42343 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751291Ab0JFERD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 00:17:03 -0400
-Date: Tue, 5 Oct 2010 21:17:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: linux-next: manual merge of the rcu tree with Linus' tree
-Message-ID: <20101006041700.GA2553@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20101006133825.8ca341e4.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101006133825.8ca341e4.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753548Ab0JFER6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 00:17:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59091 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751070Ab0JFER5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 00:17:57 -0400
+Date: Tue, 5 Oct 2010 21:18:35 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-mm@kvack.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@kernel.dk>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 3/3] access_error API cleanup
+Message-Id: <20101005211835.070a5096.akpm@linux-foundation.org>
+In-Reply-To: <AANLkTi=+0i13JF552P7dF_JD+S10Lt8=+KySHdtg-Uex@mail.gmail.com>
+References: <1286265215-9025-1-git-send-email-walken@google.com>
+	<1286265215-9025-4-git-send-email-walken@google.com>
+	<4CABF4F3.7050002@zytor.com>
+	<AANLkTi=+0i13JF552P7dF_JD+S10Lt8=+KySHdtg-Uex@mail.gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 01:38:25PM +1100, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Today's linux-next merge of the rcu tree got a conflict in
-> include/linux/rcupdate.h between commit
-> b3a084b9b684622b149e8dcf03855bf0d5fb588b ("rcu: rcu_read_lock_bh_held():
-> disabling irqs also disables bh") from Linus' tree and commit
-> ca5ecddfa8fcbd948c95530e7e817cee9fb43a3d ("rcu: define __rcu address
-> space modifier for sparse") from the rcu tree.
-> 
-> I am not sure how to fix this, so I just used the version from the rcu
-> tree.
+On Tue, 5 Oct 2010 21:14:12 -0700 Michel Lespinasse <walken@google.com> wrote:
 
-I believe that I will have an update that will get rid of the conflict.
-But I will let you be the final judge of that.  ;-)
+> I figure barring any surprises, the series is likely to merge from -mm
+> tree to mainline in time for 2.6.37 ?
 
-							Thanx, Paul
+yep.
