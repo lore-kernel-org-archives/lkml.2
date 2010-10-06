@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758628Ab0JFGsk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 02:48:40 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38894 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757380Ab0JFGsi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 02:48:38 -0400
-Date: Wed, 6 Oct 2010 17:48:31 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Zimny Lech <napohybelskurwysynom2010@gmail.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for October 6
-Message-Id: <20101006174831.02cf1691.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTikxMdXrm1jRztZM1BUAoCbBtAs6A39v1cAgRnDY@mail.gmail.com>
-References: <20101006163632.c1943a38.sfr@canb.auug.org.au>
-	<AANLkTikxMdXrm1jRztZM1BUAoCbBtAs6A39v1cAgRnDY@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S932129Ab0JFHF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:05:57 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:19201 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756906Ab0JFHFz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 03:05:55 -0400
+Date: Wed, 6 Oct 2010 09:05:39 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree 
+ (jdelvare-hwmon tree related)
+Message-ID: <20101006090539.6dacba1e@endymion.delvare>
+In-Reply-To: <20101006152831.f91a5610.sfr@canb.auug.org.au>
+References: <20101006152831.f91a5610.sfr@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__6_Oct_2010_17_48_31_+1100_Jj/.9yerCF1a_5+S"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Oct_2010_17_48_31_+1100_Jj/.9yerCF1a_5+S
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
 
-On Wed, 6 Oct 2010 08:25:24 +0200 Zimny Lech <napohybelskurwysynom2010@gmai=
-l.com> wrote:
->
-> 2010/10/6 Stephen Rothwell <sfr@canb.auug.org.au>:
-> > Hi all,
-> >
-> > Changes since 20101005:
->=20
-> It seems that you forgot to push to repo
-> http://git.kernel.org/?p=3Dlinux/kernel/git/next/linux-next.git;a=3Dsumma=
-ry
+On Wed, 6 Oct 2010 15:28:31 +1100, Stephen Rothwell wrote:
+> Hi ,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/hwmon/pcf8591.c: In function 'pcf8591_probe':
+> drivers/hwmon/pcf8591.c:205: error: implicit declaration of function 'IS_ERR'
+> drivers/hwmon/pcf8591.c:206: error: implicit declaration of function 'PTR_ERR'
+> 
+> Caused by commit 63575f5628b811d80f81158825dbc9d3db4ac1a5 ("hwmon:
+> (pcf8591) Register as a hwmon device").
 
-No, its just that the mirroring was slow/blocked :-(
+Oh, right. Missing include, thanks for the heads up.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+> See Rule 1 in Documentation/SubmitChecklist.
 
---Signature=_Wed__6_Oct_2010_17_48_31_+1100_Jj/.9yerCF1a_5+S
-Content-Type: application/pgp-signature
+True, shame on me :(
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> I have added reverted that commit (and
+> 3eabb87a17ff8da477f7bf4c5a14063b68937fb1 ("hwmon: (pcf8591) Don't attempt
+> to detect devices") that followed it) for today.
 
-iQEcBAEBAgAGBQJMrBu/AAoJEDMEi1NhKgbsEUQH/2gfKWbYxMC7E4fewm9EoKHb
-9wsF6y02Xny5lUD8tObNtxRj+dWUOhjtZmmtUJ49o9It4px03Fe9zJj9q9Jv5/H1
-4R2PwnE9PqW2aLUF+l7ASBr5p9jA+NU7L80rM5xtw5c4/JKobUoqL0An0WVpdSYD
-k6mMOhUde4rv9bhvyaqtZ8E4EKPxaj/QVjlmyWeWCM/FDm9r9pnHH2zp8CbW6Zra
-kel9FMmNMZPOpKlmCFv5SNN03ibbMfM+GW36cBc2NHVkafrky+WLXj6znaLlYP6Z
-mpJ/vmNqcj3nb1517h4ccDW7eO4735Nqx7eWGsehZykmrZQgYcCvtSoRafmrEeI=
-=lclH
------END PGP SIGNATURE-----
+Fixed by now.
 
---Signature=_Wed__6_Oct_2010_17_48_31_+1100_Jj/.9yerCF1a_5+S--
+-- 
+Jean Delvare
