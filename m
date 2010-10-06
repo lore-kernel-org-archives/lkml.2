@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758848Ab0JFMwz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 08:52:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56119 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758790Ab0JFMwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 08:52:53 -0400
-Message-ID: <4CAC7123.8090504@suse.cz>
-Date: Wed, 06 Oct 2010 14:52:51 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Nicolas Palix <npalix.work@gmail.com>
-Cc: Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-        Nicolas Palix <npalix@diku.dk>, Sam Ravnborg <sam@ravnborg.org>,
-        Joerg Roedel <joerg.roedel@amd.com>, cocci@diku.dk,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] Coccinelle: Improve user information with a new kind
- of comment
-References: <1286225141-22027-1-git-send-email-npalix.work@gmail.com>
-In-Reply-To: <1286225141-22027-1-git-send-email-npalix.work@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2
+	id S1758839Ab0JFNA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 09:00:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55056 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755867Ab0JFNA4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 09:00:56 -0400
+X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=-tYYMGhhkdgA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=SVbljbAVUH09fqSSTXwA:9 a=JLR-upzFSH4x10y_-WSOg_tQ6scA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 1/5] jump label: fix module __init section race
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jason Baron <jbaron@redhat.com>, mingo@elte.hu,
+        mathieu.desnoyers@polymtl.ca, hpa@zytor.com, tglx@linutronix.de,
+        andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+        vgoyal@redhat.com, sam@ravnborg.org, tony@bakeyournoodle.com,
+        ddaney@caviumnetworks.com, linux-kernel@vger.kernel.org,
+        2nddept-manager@sdl.hitachi.co.jp
+In-Reply-To: <4CA6F44A.1000907@hitachi.com>
+References: <cover.1285965957.git.jbaron@redhat.com>
+	 <c6f037b7598777668025ceedd9294212fd95fa34.1285965957.git.jbaron@redhat.com>
+	 <4CA6F44A.1000907@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 06 Oct 2010 09:00:50 -0400
+Message-ID: <1286370051.6750.180.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 4.10.2010 22:45, Nicolas Palix wrote:
-> Improve user information with a new kind of comment
-> about semantic patch output.
+On Sat, 2010-10-02 at 17:58 +0900, Masami Hiramatsu wrote:
+
+> > +static void remove_module_init(struct module *mod)
 > 
-> Fix spelling.
+> Hi Jason,
 > 
-> Signed-off-by: Nicolas Palix <npalix.work@gmail.com>
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> ---
->  scripts/coccicheck |    9 +++++++--
->  1 files changed, 7 insertions(+), 2 deletions(-)
-> 
-> diff --git a/scripts/coccicheck b/scripts/coccicheck
-> index b8bcf1f..4655551 100755
-> --- a/scripts/coccicheck
-> +++ b/scripts/coccicheck
-> @@ -25,7 +25,7 @@ fi
->  
->  if [ "$MODE" = "" ] ; then
->      if [ "$ONLINE" = "0" ] ; then
-> -	echo 'You have not explicitly specify the mode to use. Fallback to "report".'
-> +	echo 'You have not explicitly specified the mode to use. Fallback to "report".'
->  	echo 'You can specify the mode with "make coccicheck MODE=<mode>"'
->  	echo 'Available modes are: report, patch, context, org'
->      fi
-> @@ -52,7 +52,12 @@ coccinelle () {
->  
->  	FILE=`echo $COCCI | sed "s|$srctree/||"`
->  
-> -	echo "Processing `basename $COCCI` with option(s) \"$OPT\""
-> +	echo "Processing `basename $COCCI`"
-> +	echo "with option(s) \"$OPT\""
-> +	echo 'Semantic patch information:'
-> +
-> +	sed -e '/\/\/#/!d' -e 's|^//#||' $COCCI
+> Just a comment, I prefer remove_jump_label_module_init() than this name,
+> because remove_module_init is too general.
 
-sed -ne 's|^//#||p' $COCCI :)
+This is probably not too big of a deal since it is static, but the name
+change may make it easier for etags and ctags users.
 
-But I would put this after the "Message example to submit a patch".
-free.cocci has the information in this order and it makes more sense
-this way IMO (first general information, then details). And it would be
-nice to only display the "Semantic patch information:" line if there
-actually is some additional information in the semantic patch file.
-Otherwise, the series looks OK to me.
+Jason, are you OK if I pull in this patch and make the change myself?
 
-> +
->  	echo 'Message example to submit a patch:'
->  
->  	sed -e '/\/\/\//!d' -e 's|^///||' $COCCI
+-- Steve
 
 
-Michal
