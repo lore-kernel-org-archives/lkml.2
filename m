@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab0JFChC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 22:37:02 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55137 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755911Ab0JFChA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 22:37:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=VYcbu+7FqJ7Z9LCHLtq8jdtm+apH94dbiBkTdM0+xu+xP8oO6QdFNbovrKvyiRAmZ7
-         SFqygBhLlG611EqJUZTr2K5DDQi7+khRJoLjcCcavU23gsNvK1LVMJ7kCed7NqSkFELU
-         0hqgVJX+kFkoO4KwSYzNT9K+bPm58BVB0f40o=
-MIME-Version: 1.0
-In-Reply-To: <20101005190551.GA23055@opensource.wolfsonmicro.com>
-References: <20101005141140.0276dc14@absol.kitzblitz>
-	<20101005190551.GA23055@opensource.wolfsonmicro.com>
-Date: Wed, 6 Oct 2010 10:36:58 +0800
-Message-ID: <AANLkTi=TgsJivTpYqfGTuwz8qjm=yJa+ur10ZAE54KBy@mail.gmail.com>
-Subject: Re: [PATCH] sound/soc/nuc900: remove duplicated include
-From: Wan ZongShun <mcuos.com@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Nicolas Kaiser <nikai@nikai.net>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	id S1758401Ab0JFChH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 22:37:07 -0400
+Received: from sh.osrg.net ([192.16.179.4]:39821 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758373Ab0JFChF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 22:37:05 -0400
+Date: Wed, 6 Oct 2010 11:36:38 +0900
+To: nab@linux-iscsi.org
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        fujita.tomonori@lab.ntt.co.jp, michaelc@cs.wisc.edu, hch@lst.de,
+        hare@suse.de, James.Bottomley@suse.de, axboe@kernel.dk,
+        bharrosh@panasas.com
+Subject: Re: [RFC v2 06/21] tcm: Add fabric and subsystem transport engine
+ core
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1285195763-11535-1-git-send-email-nab@linux-iscsi.org>
+References: <1285195763-11535-1-git-send-email-nab@linux-iscsi.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20101006113150S.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 06 Oct 2010 11:36:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/6 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Tue, Oct 05, 2010 at 02:11:40PM +0200, Nicolas Kaiser wrote:
->> Remove duplicated include.
->>
->> Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
->
-> Applied, but please always remember to CC maintainers on patches as
-> explained in Documentation/SubmittingPatches.
->
+On Wed, 22 Sep 2010 15:49:23 -0700
+"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 
-Acked-by: Wan ZongShun <mcuos.com@gmail.com>
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> The patch adds core generic target engine functionality including processing of struct se_cmd
+> generation of N struct se_task, control CDB emulation, sense data, memory allocation, and
+> and mapping from fabric module allocated memory using linked list struct scatterlist
+> style memory based on the limitiations of the underlying TCM HBA and Device backstores.
+> 
+> The TCM layer sits is above Linux/SCSI, Linux/BLOCK and Linux/VFS subsystems, and
+> communicates with these subsystems (and local RAMDISK plugins) using an API of function
+> pointers in se_subsystem_api_t.  It provides processing capabilties and emulation for SCSI
+> logic and CDBs in a generic manner to storage object LUNs provided from Linux storage
+> subsystems backend storage devices.
+> 
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  drivers/target/target_core_scdb.c      |  158 +
+>  drivers/target/target_core_scdb.h      |   15 +
+>  drivers/target/target_core_transport.c | 8860 ++++++++++++++++++++++++++++++++
+>  include/target/target_core_transport.h |  570 ++
+>  4 files changed, 9603 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/target/target_core_scdb.c
+>  create mode 100644 drivers/target/target_core_scdb.h
+>  create mode 100644 drivers/target/target_core_transport.c
+>  create mode 100644 include/target/target_core_transport.h
 
-Thanks all.
+Can a driver cleanly overwrite cmd->transport_emulate_cdb? ibmvscsi
+target driver needs to the specific responses for INQUIRY and
+REPORT_LUNS.
 
-
--- 
-*linux-arm-kernel mailing list
-mail addr:linux-arm-kernel@lists.infradead.org
-you can subscribe by:
-http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
-
-* linux-arm-NUC900 mailing list
-mail addr:NUC900@googlegroups.com
-main web: https://groups.google.com/group/NUC900
-you can subscribe it by sending me mail:
-mcuos.com@gmail.com
+I guess that the driver can ignore the response buffer from tcm and
+create the own but it would be nice if the driver can do cleanly.
