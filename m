@@ -1,49 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759336Ab0JFQTE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:19:04 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52864 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab0JFQTD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:19:03 -0400
-Date: Wed, 6 Oct 2010 17:18:54 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Moore, Robert" <robert.moore@intel.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
-Subject: Re: [PATCH 1/5] ACPI: Allow handlers to be installed at the same
-	time as methods
-Message-ID: <20101006161854.GA30584@srcf.ucam.org>
-References: <1286216549-5438-1-git-send-email-mjg@redhat.com> <1286216549-5438-2-git-send-email-mjg@redhat.com> <201010060118.50875.rjw@sisk.pl> <4911F71203A09E4D9981D27F9D830858B4893B89@orsmsx503.amr.corp.intel.com>
+	id S1759345Ab0JFQTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:19:49 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:33280 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415Ab0JFQTs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 12:19:48 -0400
+Date: Wed, 6 Oct 2010 21:49:09 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 03/10] memcg: create extensible page stat update routines
+Message-ID: <20101006161909.GI4195@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+ <1286175485-30643-4-git-send-email-gthelen@google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4911F71203A09E4D9981D27F9D830858B4893B89@orsmsx503.amr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1286175485-30643-4-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 09:14:07AM -0700, Moore, Robert wrote:
+* Greg Thelen <gthelen@google.com> [2010-10-03 23:57:58]:
 
-> Although there exists a single Windows document mentions this behavior as a windows "feature", I'm not 100% convinced that this is actually true. AFAIK, we've never seen a machine that depends on an "implicit notify" on a device when a wake GPE happens.
+> Replace usage of the mem_cgroup_update_file_mapped() memcg
+> statistic update routine with two new routines:
+> * mem_cgroup_inc_page_stat()
+> * mem_cgroup_dec_page_stat()
+> 
+> As before, only the file_mapped statistic is managed.  However,
+> these more general interfaces allow for new statistics to be
+> more easily added.  New statistics are added with memcg dirty
+> page accounting.
+> 
+> Signed-off-by: Greg Thelen <gthelen@google.com>
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> ---
+>  include/linux/memcontrol.h |   31 ++++++++++++++++++++++++++++---
+>  mm/memcontrol.c            |   17 ++++++++---------
+>  mm/rmap.c                  |    4 ++--
+>  3 files changed, 38 insertions(+), 14 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 159a076..7c7bec4 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -25,6 +25,11 @@ struct page_cgroup;
+>  struct page;
+>  struct mm_struct;
+> 
+> +/* Stats that can be updated by kernel. */
+> +enum mem_cgroup_write_page_stat_item {
+> +	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
+> +};
+> +
+>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>  					struct list_head *dst,
+>  					unsigned long *scanned, int order,
+> @@ -121,7 +126,22 @@ static inline bool mem_cgroup_disabled(void)
+>  	return false;
+>  }
+> 
+> -void mem_cgroup_update_file_mapped(struct page *page, int val);
+> +void mem_cgroup_update_page_stat(struct page *page,
+> +				 enum mem_cgroup_write_page_stat_item idx,
+> +				 int val);
+> +
+> +static inline void mem_cgroup_inc_page_stat(struct page *page,
+> +				enum mem_cgroup_write_page_stat_item idx)
+> +{
+> +	mem_cgroup_update_page_stat(page, idx, 1);
+> +}
+> +
+> +static inline void mem_cgroup_dec_page_stat(struct page *page,
+> +				enum mem_cgroup_write_page_stat_item idx)
+> +{
+> +	mem_cgroup_update_page_stat(page, idx, -1);
+> +}
+> +
+>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>  						gfp_t gfp_mask);
+>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
+> @@ -293,8 +313,13 @@ mem_cgroup_print_oom_info(struct mem_cgroup *memcg, struct task_struct *p)
+>  {
+>  }
+> 
+> -static inline void mem_cgroup_update_file_mapped(struct page *page,
+> -							int val)
+> +static inline void mem_cgroup_inc_page_stat(struct page *page,
+> +				enum mem_cgroup_write_page_stat_item idx)
+> +{
+> +}
+> +
+> +static inline void mem_cgroup_dec_page_stat(struct page *page,
+> +				enum mem_cgroup_write_page_stat_item idx)
+>  {
+>  }
+> 
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 512cb12..f4259f4 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -1592,7 +1592,9 @@ bool mem_cgroup_handle_oom(struct mem_cgroup *mem, gfp_t mask)
+>   * possibility of race condition. If there is, we take a lock.
+>   */
+> 
+> -static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+> +void mem_cgroup_update_page_stat(struct page *page,
+> +				 enum mem_cgroup_write_page_stat_item idx,
+> +				 int val)
+>  {
+>  	struct mem_cgroup *mem;
+>  	struct page_cgroup *pc = lookup_page_cgroup(page);
+> @@ -1615,30 +1617,27 @@ static void mem_cgroup_update_file_stat(struct page *page, int idx, int val)
+>  			goto out;
+>  	}
+> 
+> -	this_cpu_add(mem->stat->count[idx], val);
+> -
+>  	switch (idx) {
+> -	case MEM_CGROUP_STAT_FILE_MAPPED:
+> +	case MEMCG_NR_FILE_MAPPED:
+>  		if (val > 0)
+>  			SetPageCgroupFileMapped(pc);
+>  		else if (!page_mapped(page))
+>  			ClearPageCgroupFileMapped(pc);
+> +		idx = MEM_CGROUP_STAT_FILE_MAPPED;
+>  		break;
+>  	default:
+>  		BUG();
+>  	}
+> 
+> +	this_cpu_add(mem->stat->count[idx], val);
+> +
+>  out:
+>  	if (unlikely(need_unlock))
+>  		unlock_page_cgroup(pc);
+>  	rcu_read_unlock();
+>  	return;
+>  }
+> -
+> -void mem_cgroup_update_file_mapped(struct page *page, int val)
+> -{
+> -	mem_cgroup_update_file_stat(page, MEM_CGROUP_STAT_FILE_MAPPED, val);
+> -}
+> +EXPORT_SYMBOL(mem_cgroup_update_page_stat);
+> 
+>  /*
+>   * size of first charge trial. "32" comes from vmscan.c's magic value.
+> diff --git a/mm/rmap.c b/mm/rmap.c
+> index 8734312..779c0db 100644
+> --- a/mm/rmap.c
+> +++ b/mm/rmap.c
+> @@ -912,7 +912,7 @@ void page_add_file_rmap(struct page *page)
+>  {
+>  	if (atomic_inc_and_test(&page->_mapcount)) {
+>  		__inc_zone_page_state(page, NR_FILE_MAPPED);
+> -		mem_cgroup_update_file_mapped(page, 1);
+> +		mem_cgroup_inc_page_stat(page, MEMCG_NR_FILE_MAPPED);
+>  	}
+>  }
+> 
+> @@ -950,7 +950,7 @@ void page_remove_rmap(struct page *page)
+>  		__dec_zone_page_state(page, NR_ANON_PAGES);
+>  	} else {
+>  		__dec_zone_page_state(page, NR_FILE_MAPPED);
+> -		mem_cgroup_update_file_mapped(page, -1);
+> +		mem_cgroup_dec_page_stat(page, MEMCG_NR_FILE_MAPPED);
+>  	}
+>  	/*
+>  	 * It would be tidy to reset the PageAnon mapping here,
 
-Such behaviour would be irrelevant for system sleep/wake - the only 
-requirement is in runtime power management.
 
-> It appears to me that the biggest issue right now is the fact that a Notify() must be performed on a Device object, and the problem is how to associate the GPE with the device object.
-
-The other important aspect of this is that a single GPE may correspond 
-to multiple devices. The methods will generally cope with this by either 
-sending multiple notifies, executing some SMM code to identify the 
-relevant device or reading PCI configuration registers to identify the 
-source of the wakeup. We need to handle that case as well.
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+ 
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+	Three Cheers,
+	Balbir
