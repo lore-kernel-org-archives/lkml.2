@@ -1,69 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759965Ab0JFWEk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 18:04:40 -0400
-Received: from de01.mail.all-tld.net ([195.140.232.8]:55319 "EHLO
-	de01.mail.all-tld.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757012Ab0JFWEi (ORCPT
+	id S933212Ab0JFWJZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 18:09:25 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35084 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755098Ab0JFWJY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 18:04:38 -0400
-X-Greylist: delayed 1087 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Oct 2010 18:04:38 EDT
-Date: Wed, 6 Oct 2010 23:46:25 +0200
-From: Anders Larsen <al@alarsen.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Craig Shelley <craig@microtron.org.uk>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] USB: cp210x: Add WAGO 750-923 Service Cable device ID
-Message-ID: <20101006214625.GA21514@alarsen.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-ALL-TLD-GmbH-Information: AEV Virus and Spam Secure Mail System
-X-ALL-TLD-GmbH-VirusScanner: Found to be clean
-X-ALL-TLD-GmbH-SpamCheck: 
-X-MailScanner-From: anders@alarsen.net
+	Wed, 6 Oct 2010 18:09:24 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com,
+        Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH] HWPOISON: Implement hwpoison-on-free for soft offlining
+Date: Thu,  7 Oct 2010 00:09:11 +0200
+Message-Id: <1286402951-1881-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1286402951-1881-1-git-send-email-andi@firstfloor.org>
+References: <1286402951-1881-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The WAGO 750-923 USB Service Cable is used for configuration and firmware
-updates of several industrial automation products from WAGO Kontakttechnik GmbH.
+From: Andi Kleen <ak@linux.intel.com>
 
-Bus 004 Device 002: ID 1be3:07a6
-Device Descriptor:
-  bLength                18
-  bDescriptorType         1
-  bcdUSB               1.10
-  bDeviceClass            0 (Defined at Interface level)
-  bDeviceSubClass         0
-  bDeviceProtocol         0
-  bMaxPacketSize0        64
-  idVendor           0x1be3
-  idProduct          0x07a6
-  bcdDevice            1.00
-  iManufacturer           1 Silicon Labs
-  iProduct                2 WAGO USB Service Cable
-  iSerial                 3 1277796751
-  . . .
+Hard offlining was always able to offline most kernel pages by setting the
+HWPoison flag on it and waiting for the next free. This works on all
+pages that get eventually freed.
 
-Signed-off-by: Anders Larsen <al@alarsen.net>
+This didn't work for soft offlining unfortunately, because it cannot
+safely set the HWPoison flag on a still alive page. Handle this
+by introducing a second page flag HWPoisonOnFree that is handled
+by page free and enables HWPoison then. This does not add any
+overhead to page free because it can be handled as a bad flag
+which are already checked for.
+
+Since page flags are scarce on 32bit architectures this is only done on
+64bit .
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/usb/serial/cp210x.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ include/linux/mm.h         |    1 +
+ include/linux/page-flags.h |   15 +++++++++++++-
+ mm/Kconfig                 |    4 +++
+ mm/memory-failure.c        |   46 +++++++++++++++++++++++++++++++++++++++++++-
+ mm/page_alloc.c            |    2 +
+ 5 files changed, 66 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/cp210x.c b/drivers/usb/serial/cp210x.c
-index f72afa9..8d7731d 100644
---- a/drivers/usb/serial/cp210x.c
-+++ b/drivers/usb/serial/cp210x.c
-@@ -133,6 +133,7 @@ static const struct usb_device_id id_table[] = {
- 	{ USB_DEVICE(0x17F4, 0xAAAA) }, /* Wavesense Jazz blood glucose meter */
- 	{ USB_DEVICE(0x1843, 0x0200) }, /* Vaisala USB Instrument Cable */
- 	{ USB_DEVICE(0x18EF, 0xE00F) }, /* ELV USB-I2C-Interface */
-+	{ USB_DEVICE(0x1BE3, 0x07A6) }, /* WAGO 750-923 USB Service Cable */
- 	{ USB_DEVICE(0x413C, 0x9500) }, /* DW700 GPS USB interface */
- 	{ } /* Terminating Entry */
- };
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 74949fb..f7da94d 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1481,6 +1481,7 @@ enum mf_flags {
+ extern void memory_failure(unsigned long pfn, int trapno);
+ extern int __memory_failure(unsigned long pfn, int trapno, int flags);
+ extern int unpoison_memory(unsigned long pfn);
++extern void hwpoison_page_on_free(struct page *p);
+ extern int sysctl_memory_failure_early_kill;
+ extern int sysctl_memory_failure_recovery;
+ extern void shake_page(struct page *p, int access);
+diff --git a/include/linux/page-flags.h b/include/linux/page-flags.h
+index 6fa3178..2d4196b 100644
+--- a/include/linux/page-flags.h
++++ b/include/linux/page-flags.h
+@@ -107,6 +107,9 @@ enum pageflags {
+ #endif
+ #ifdef CONFIG_MEMORY_FAILURE
+ 	PG_hwpoison,		/* hardware poisoned page. Don't touch */
++#ifdef CONFIG_HWPOISON_ON_FREE
++	PG_hwpoison_on_free,	/* hwpoison on free */
++#endif
+ #endif
+ 	__NR_PAGEFLAGS,
+ 
+@@ -280,6 +283,15 @@ PAGEFLAG_FALSE(HWPoison)
+ #define __PG_HWPOISON 0
+ #endif
+ 
++#if defined(CONFIG_MEMORY_FAILURE) && BITS_PER_LONG == 64
++PAGEFLAG(HWPoisonOnFree, hwpoison_on_free)
++TESTSCFLAG(HWPoisonOnFree, hwpoison_on_free)
++#define __PG_HWPOISON_ON_FREE (1UL << PG_hwpoison_on_free)
++#else
++PAGEFLAG_FALSE(HWPoisonOnFree)
++#define __PG_HWPOISON_ON_FREE 0
++#endif
++
+ u64 stable_page_flags(struct page *page);
+ 
+ static inline int PageUptodate(struct page *page)
+@@ -406,7 +418,8 @@ static inline void __ClearPageTail(struct page *page)
+ 	 1 << PG_private | 1 << PG_private_2 | \
+ 	 1 << PG_buddy	 | 1 << PG_writeback | 1 << PG_reserved | \
+ 	 1 << PG_slab	 | 1 << PG_swapcache | 1 << PG_active | \
+-	 1 << PG_unevictable | __PG_MLOCKED | __PG_HWPOISON)
++	 1 << PG_unevictable | __PG_MLOCKED | __PG_HWPOISON | \
++	 __PG_HWPOISON_ON_FREE)
+ 
+ /*
+  * Flags checked when a page is prepped for return by the page allocator.
+diff --git a/mm/Kconfig b/mm/Kconfig
+index f0fb912..ede5444 100644
+--- a/mm/Kconfig
++++ b/mm/Kconfig
+@@ -269,6 +269,10 @@ config MEMORY_FAILURE
+ 	  even when some of its memory has uncorrected errors. This requires
+ 	  special hardware support and typically ECC memory.
+ 
++config HWPOISON_ON_FREE
++	depends on MEMORY_FAILURE && 64BIT
++	def_bool y	
++
+ config HWPOISON_INJECT
+ 	tristate "HWPoison pages injector"
+ 	depends on MEMORY_FAILURE && DEBUG_KERNEL && PROC_FS
+diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+index 9c26eec..34901f6 100644
+--- a/mm/memory-failure.c
++++ b/mm/memory-failure.c
+@@ -1268,6 +1268,14 @@ int soft_offline_page(struct page *page, int flags)
+ 	if (ret == 0)
+ 		goto done;
+ 
++#ifdef CONFIG_HWPOISON_ON_FREE
++	/*
++	 * When the page gets freed make sure to poison
++	 * it immediately.
++	 */
++	SetPageHWPoisonOnFree(page);
++#endif
++
+ 	/*
+ 	 * Page cache page we can handle?
+ 	 */
+@@ -1279,7 +1287,15 @@ int soft_offline_page(struct page *page, int flags)
+ 		shake_page(page, 1);
+ 
+ 		/*
+-		 * Did it turn free?
++		 * Did it get poisoned on free?
++		 */
++		if (PageHWPoison(page)) {
++			pr_info("soft_offline: %#lx: Page freed through shaking\n", pfn);
++			return 0;
++		}
++
++		/* 
++		 * Try to grab it as a free page again.
+ 		 */
+ 		ret = get_any_page(page, pfn, 0);
+ 		if (ret < 0)
+@@ -1287,12 +1303,23 @@ int soft_offline_page(struct page *page, int flags)
+ 		if (ret == 0)
+ 			goto done;
+ 	}
++
++	if (PageHWPoisonOnFree(page)) {
++		pr_info("soft_offline: %#lx: Delaying poision of unknown page %lx to free\n",
++			pfn, page->flags);
++		return -EIO; /* or 0? */
++	}
++
+ 	if (!PageLRU(page)) {
+ 		pr_debug("soft_offline: %#lx: unknown non LRU page type %lx\n",
+ 				pfn, page->flags);
+ 		return -EIO;
+ 	}
+ 
++	/* 
++	 * Normal page cache page here.
++	 */
++
+ 	lock_page(page);
+ 	wait_on_page_writeback(page);
+ 
+@@ -1389,3 +1416,20 @@ int is_hwpoison_address(unsigned long addr)
+ 	return is_hwpoison_entry(entry);
+ }
+ EXPORT_SYMBOL_GPL(is_hwpoison_address);
++
++#ifdef CONFIG_HWPOISON_ON_FREE
++
++/* 
++ * HWPoison a page after freeing. 
++ * This is the fallback path for most pages we cannot free early.
++ */
++void hwpoison_page_on_free(struct page *p)
++{
++	get_page(p);
++	SetPageHWPoison(p);
++	ClearPageHWPoisonOnFree(p);
++	pr_info("MCE: %#lx: Delayed poisioning of page after free\n",
++		page_to_pfn(p));
++	atomic_long_inc(&mce_bad_pages);
++}
++#endif
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index a8cfa9c..519c24c 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -564,6 +564,8 @@ static inline int free_pages_check(struct page *page)
+ 		(page->mapping != NULL)  |
+ 		(atomic_read(&page->_count) != 0) |
+ 		(page->flags & PAGE_FLAGS_CHECK_AT_FREE))) {
++		if (PageHWPoisonOnFree(page))
++			hwpoison_page_on_free(page);
+ 		bad_page(page);
+ 		return 1;
+ 	}
 -- 
-1.7.0.4
+1.7.1
 
