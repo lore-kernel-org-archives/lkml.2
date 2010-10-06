@@ -1,26 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932436Ab0JFHqy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:46:54 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49200 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932310Ab0JFHn0 (ORCPT
+	id S932463Ab0JFHrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:47:25 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:6374 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757415Ab0JFHnV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:43:26 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56772918"
-X-IronPort-AV: E=Sophos;i="4.57,288,1283756400"; 
-   d="scan'208";a="20252785"
+	Wed, 6 Oct 2010 03:43:21 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56883654"
+X-IronPort-AV: E=Sophos;i="4.57,287,1283756400"; 
+   d="scan'208";a="88852288"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Daniel Walker <dwalker@codeaurora.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Steve Muckle <smuckle@codeaurora.org>,
+        linux-kernel@vger.kernel.org,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: [PATCH 07/20 v2] msm: irq: rename existing entry-macro to entry-macro-vic
-Date: Wed,  6 Oct 2010 00:42:46 -0700
-Message-Id: <1286350979-19328-8-git-send-email-johlstei@codeaurora.org>
+        Russell King <linux@arm.linux.org.uk>,
+        Steve Muckle <smuckle@codeaurora.org>
+Subject: [PATCH 04/20 v2] msm: irqs-8x60: interrupt map
+Date: Wed,  6 Oct 2010 00:42:43 -0700
+Message-Id: <1286350979-19328-5-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
 References: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
@@ -28,262 +30,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steve Muckle <smuckle@codeaurora.org>
+From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
 
-The existing MSM irq entry macro is specific to a VIC
-implementation. Renaming this makes room for irq support based on
-other interrupt controllers.
+Define the interrupt map in irq-8x60.h
 
-Signed-off-by: Steve Muckle <smuckle@codeaurora.org>
+Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/entry-macro-qgic.S |   88 +++++++++++++++++++++
- arch/arm/mach-msm/include/mach/entry-macro-vic.S  |   37 +++++++++
- arch/arm/mach-msm/include/mach/entry-macro.S      |   43 +++-------
- arch/arm/mach-msm/include/mach/smp.h              |   39 +++++++++
- 4 files changed, 178 insertions(+), 29 deletions(-)
- create mode 100644 arch/arm/mach-msm/include/mach/entry-macro-qgic.S
- create mode 100644 arch/arm/mach-msm/include/mach/entry-macro-vic.S
- create mode 100644 arch/arm/mach-msm/include/mach/smp.h
+ arch/arm/mach-msm/include/mach/irqs-8x60.h |  225 ++++++++++++++++++++++++++++
+ 1 files changed, 225 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-msm/include/mach/entry-macro-qgic.S b/arch/arm/mach-msm/include/mach/entry-macro-qgic.S
-new file mode 100644
-index 0000000..4dc99aa
---- /dev/null
-+++ b/arch/arm/mach-msm/include/mach/entry-macro-qgic.S
-@@ -0,0 +1,88 @@
-+/*
-+ * Low-level IRQ helper macros
-+ *
-+ * Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * This file is licensed under  the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <mach/hardware.h>
-+#include <asm/hardware/gic.h>
-+
-+	.macro	disable_fiq
-+	.endm
-+
-+	.macro  get_irqnr_preamble, base, tmp
-+	ldr	\base, =gic_cpu_base_addr
-+	ldr	\base, [\base]
-+	.endm
-+
-+	.macro  arch_ret_to_user, tmp1, tmp2
-+	.endm
-+
-+	/*
-+	 * The interrupt numbering scheme is defined in the
-+	 * interrupt controller spec.  To wit:
-+	 *
-+	 * Migrated the code from ARM MP port to be more consistant
-+	 * with interrupt processing , the following still holds true
-+	 * however, all interrupts are treated the same regardless of
-+	 * if they are local IPI or PPI
-+	 *
-+	 * Interrupts 0-15 are IPI
-+	 * 16-31 are PPI
-+	 *   (16-18 are the timers)
-+	 * 32-1020 are global
-+	 * 1021-1022 are reserved
-+	 * 1023 is "spurious" (no interrupt)
-+	 *
-+	 * A simple read from the controller will tell us the number of the
-+	 * highest priority enabled interrupt.  We then just need to check
-+	 * whether it is in the valid range for an IRQ (0-1020 inclusive).
-+	 *
-+	 * Base ARM code assumes that the local (private) peripheral interrupts
-+	 * are not valid, we treat them differently, in that the privates are
-+	 * handled like normal shared interrupts with the exception that only
-+	 * one processor can register the interrupt and the handler must be
-+	 * the same for all processors.
-+	 */
-+
-+	.macro  get_irqnr_and_base, irqnr, irqstat, base, tmp
-+
-+	ldr  \irqstat, [\base, #GIC_CPU_INTACK] /* bits 12-10 =srcCPU,
-+						   9-0 =int # */
-+
-+	bic     \irqnr, \irqstat, #0x1c00	@mask src
-+	cmp     \irqnr, #15
-+	ldr		\tmp, =1021
-+	cmpcc	\irqnr, \irqnr
-+	cmpne	\irqnr, \tmp
-+	cmpcs	\irqnr, \irqnr
-+
-+	.endm
-+
-+	/* We assume that irqstat (the raw value of the IRQ acknowledge
-+	 * register) is preserved from the macro above.
-+	 * If there is an IPI, we immediately signal end of interrupt on the
-+	 * controller, since this requires the original irqstat value which
-+	 * we won't easily be able to recreate later.
-+	 */
-+	.macro test_for_ipi, irqnr, irqstat, base, tmp
-+    bic \irqnr, \irqstat, #0x1c00
-+    cmp \irqnr, #16
-+    strcc   \irqstat, [\base, #GIC_CPU_EOI]
-+    cmpcs   \irqnr, \irqnr
-+	.endm
-+
-+	/* As above, this assumes that irqstat and base are preserved.. */
-+
-+	.macro test_for_ltirq, irqnr, irqstat, base, tmp
-+    bic \irqnr, \irqstat, #0x1c00
-+    mov     \tmp, #0
-+    cmp \irqnr, #16
-+    moveq   \tmp, #1
-+    streq   \irqstat, [\base, #GIC_CPU_EOI]
-+    cmp \tmp, #0
-+	.endm
-diff --git a/arch/arm/mach-msm/include/mach/entry-macro-vic.S b/arch/arm/mach-msm/include/mach/entry-macro-vic.S
-new file mode 100644
-index 0000000..70563ed
---- /dev/null
-+++ b/arch/arm/mach-msm/include/mach/entry-macro-vic.S
-@@ -0,0 +1,37 @@
-+/*
-+ * Copyright (C) 2007 Google, Inc.
-+ * Author: Brian Swetland <swetland@google.com>
-+ *
-+ * This software is licensed under the terms of the GNU General Public
-+ * License version 2, as published by the Free Software Foundation, and
-+ * may be copied, distributed, and modified under those terms.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ */
-+
-+#include <mach/msm_iomap.h>
-+
-+	.macro	disable_fiq
-+	.endm
-+
-+	.macro	get_irqnr_preamble, base, tmp
-+	@ enable imprecise aborts
-+	cpsie	a
-+	mov	\base, #MSM_VIC_BASE
-+	.endm
-+
-+	.macro	arch_ret_to_user, tmp1, tmp2
-+	.endm
-+
-+	.macro	get_irqnr_and_base, irqnr, irqstat, base, tmp
-+	@ 0xD0 has irq# or old irq# if the irq has been handled
-+	@ 0xD4 has irq# or -1 if none pending *but* if you just
-+	@ read 0xD4 you never get the first irq for some reason
-+	ldr	\irqnr, [\base, #0xD0]
-+	ldr	\irqnr, [\base, #0xD4]
-+	cmp	\irqnr, #0xffffffff
-+	.endm
-diff --git a/arch/arm/mach-msm/include/mach/entry-macro.S b/arch/arm/mach-msm/include/mach/entry-macro.S
-index d225948..b16f082 100644
---- a/arch/arm/mach-msm/include/mach/entry-macro.S
-+++ b/arch/arm/mach-msm/include/mach/entry-macro.S
-@@ -1,38 +1,23 @@
--/* arch/arm/mach-msm7200/include/mach/entry-macro.S
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-  *
-- * Copyright (C) 2007 Google, Inc.
-- * Author: Brian Swetland <swetland@google.com>
-- *
-- * This software is licensed under the terms of the GNU General Public
-- * License version 2, as published by the Free Software Foundation, and
-- * may be copied, distributed, and modified under those terms.
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 and
-+ * only version 2 as published by the Free Software Foundation.
-  *
-  * This program is distributed in the hope that it will be useful,
-  * but WITHOUT ANY WARRANTY; without even the implied warranty of
-  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  * GNU General Public License for more details.
-  *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
-+ * 02110-1301, USA.
-+ *
+diff --git a/arch/arm/mach-msm/include/mach/irqs-8x60.h b/arch/arm/mach-msm/include/mach/irqs-8x60.h
+index 9fae253..c809358 100644
+--- a/arch/arm/mach-msm/include/mach/irqs-8x60.h
++++ b/arch/arm/mach-msm/include/mach/irqs-8x60.h
+@@ -36,6 +36,231 @@
+  * 32+:   SPI (shared peripheral interrupts)
   */
  
--#include <mach/msm_iomap.h>
--
-- 	.macro	disable_fiq
--	.endm
--
--	.macro	get_irqnr_preamble, base, tmp
--	@ enable imprecise aborts
--	cpsie	a
--	mov	\base, #MSM_VIC_BASE
--	.endm
--
--	.macro	arch_ret_to_user, tmp1, tmp2
--	.endm
--
--	.macro	get_irqnr_and_base, irqnr, irqstat, base, tmp
--	@ 0xD0 has irq# or old irq# if the irq has been handled
--	@ 0xD4 has irq# or -1 if none pending *but* if you just
--	@ read 0xD4 you never get the first irq for some reason
--	ldr	\irqnr, [\base, #0xD0]
--	ldr	\irqnr, [\base, #0xD4]
--	cmp	\irqnr, #0xffffffff
--	.endm
-+#if defined(CONFIG_ARM_GIC)
-+#include <mach/entry-macro-qgic.S>
-+#else
-+#include <mach/entry-macro-vic.S>
-+#endif
-diff --git a/arch/arm/mach-msm/include/mach/smp.h b/arch/arm/mach-msm/include/mach/smp.h
-new file mode 100644
-index 0000000..3ff7bf5
---- /dev/null
-+++ b/arch/arm/mach-msm/include/mach/smp.h
-@@ -0,0 +1,39 @@
-+/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
-+ *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Code Aurora nor
-+ *       the names of its contributors may be used to endorse or promote
-+ *       products derived from this software without specific prior written
-+ *       permission.
-+ *
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-+ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-+ *
-+ */
++#define GIC_PPI_START 16
++#define GIC_SPI_START 32
 +
-+#ifndef __ASM_ARCH_MSM_SMP_H
-+#define __ASM_ARCH_MSM_SMP_H
++#define INT_DEBUG_TIMER_EXP			(GIC_PPI_START + 0)
++#define INT_GP_TIMER_EXP			(GIC_PPI_START + 1)
++#define INT_GP_TIMER2_EXP			(GIC_PPI_START + 2)
++#define WDT0_ACCSCSSNBARK_INT			(GIC_PPI_START + 3)
++#define WDT1_ACCSCSSNBARK_INT			(GIC_PPI_START + 4)
++#define AVS_SVICINT				(GIC_PPI_START + 5)
++#define AVS_SVICINTSWDONE			(GIC_PPI_START + 6)
++#define CPU_DBGCPUXCOMMRXFULL			(GIC_PPI_START + 7)
++#define CPU_DBGCPUXCOMMTXEMPTY			(GIC_PPI_START + 8)
++#define CPU_SICCPUXPERFMONIRPTREQ		(GIC_PPI_START + 9)
++#define SC_AVSCPUXDOWN				(GIC_PPI_START + 10)
++#define SC_AVSCPUXUP				(GIC_PPI_START + 11)
++#define SC_SICCPUXACGIRPTREQ			(GIC_PPI_START + 12)
++/* PPI 13 to 15 are unused */
 +
-+#include <asm/hardware/gic.h>
 +
-+static inline void smp_cross_call(const struct cpumask *mask)
-+{
-+	gic_raise_softirq(mask, 1);
-+}
++#define SC_SICMPUIRPTREQ			(GIC_SPI_START + 0)
++#define SC_SICL2IRPTREQ				(GIC_SPI_START + 1)
++#define SC_SICL2ACGIRPTREQ			(GIC_SPI_START + 2)
++#define NC					(GIC_SPI_START + 3)
++#define TLMM_SCSS_DIR_CONN_IRQ_0		(GIC_SPI_START + 4)
++#define TLMM_SCSS_DIR_CONN_IRQ_1		(GIC_SPI_START + 5)
++#define TLMM_SCSS_DIR_CONN_IRQ_2		(GIC_SPI_START + 6)
++#define TLMM_SCSS_DIR_CONN_IRQ_3		(GIC_SPI_START + 7)
++#define TLMM_SCSS_DIR_CONN_IRQ_4		(GIC_SPI_START + 8)
++#define TLMM_SCSS_DIR_CONN_IRQ_5		(GIC_SPI_START + 9)
++#define TLMM_SCSS_DIR_CONN_IRQ_6		(GIC_SPI_START + 10)
++#define TLMM_SCSS_DIR_CONN_IRQ_7		(GIC_SPI_START + 11)
++#define TLMM_SCSS_DIR_CONN_IRQ_8		(GIC_SPI_START + 12)
++#define TLMM_SCSS_DIR_CONN_IRQ_9		(GIC_SPI_START + 13)
++#define PM8058_SEC_IRQ_N			(GIC_SPI_START + 14)
++#define PM8901_SEC_IRQ_N			(GIC_SPI_START + 15)
++#define TLMM_SCSS_SUMMARY_IRQ			(GIC_SPI_START + 16)
++#define SPDM_RT_1_IRQ				(GIC_SPI_START + 17)
++#define SPDM_DIAG_IRQ				(GIC_SPI_START + 18)
++#define RPM_SCSS_CPU0_GP_HIGH_IRQ		(GIC_SPI_START + 19)
++#define RPM_SCSS_CPU0_GP_MEDIUM_IRQ		(GIC_SPI_START + 20)
++#define RPM_SCSS_CPU0_GP_LOW_IRQ		(GIC_SPI_START + 21)
++#define RPM_SCSS_CPU0_WAKE_UP_IRQ		(GIC_SPI_START + 22)
++#define RPM_SCSS_CPU1_GP_HIGH_IRQ		(GIC_SPI_START + 23)
++#define RPM_SCSS_CPU1_GP_MEDIUM_IRQ		(GIC_SPI_START + 24)
++#define RPM_SCSS_CPU1_GP_LOW_IRQ		(GIC_SPI_START + 25)
++#define RPM_SCSS_CPU1_WAKE_UP_IRQ		(GIC_SPI_START + 26)
++#define SSBI2_2_SC_CPU0_SECURE_INT		(GIC_SPI_START + 27)
++#define SSBI2_2_SC_CPU0_NON_SECURE_INT		(GIC_SPI_START + 28)
++#define SSBI2_1_SC_CPU0_SECURE_INT		(GIC_SPI_START + 29)
++#define SSBI2_1_SC_CPU0_NON_SECURE_INT		(GIC_SPI_START + 30)
++#define MSMC_SC_SEC_CE_IRQ			(GIC_SPI_START + 31)
++#define MSMC_SC_PRI_CE_IRQ			(GIC_SPI_START + 32)
++#define MARM_FIQ				(GIC_SPI_START + 33)
++#define MARM_IRQ				(GIC_SPI_START + 34)
++#define MARM_L2CC_IRQ				(GIC_SPI_START + 35)
++#define MARM_WDOG_EXPIRED			(GIC_SPI_START + 36)
++#define MARM_SCSS_GP_IRQ_0			(GIC_SPI_START + 37)
++#define MARM_SCSS_GP_IRQ_1			(GIC_SPI_START + 38)
++#define MARM_SCSS_GP_IRQ_2			(GIC_SPI_START + 39)
++#define MARM_SCSS_GP_IRQ_3			(GIC_SPI_START + 40)
++#define MARM_SCSS_GP_IRQ_4			(GIC_SPI_START + 41)
++#define MARM_SCSS_GP_IRQ_5			(GIC_SPI_START + 42)
++#define MARM_SCSS_GP_IRQ_6			(GIC_SPI_START + 43)
++#define MARM_SCSS_GP_IRQ_7			(GIC_SPI_START + 44)
++#define MARM_SCSS_GP_IRQ_8			(GIC_SPI_START + 45)
++#define MARM_SCSS_GP_IRQ_9			(GIC_SPI_START + 46)
++#define VPE_IRQ					(GIC_SPI_START + 47)
++#define VFE_IRQ					(GIC_SPI_START + 48)
++#define VCODEC_IRQ				(GIC_SPI_START + 49)
++#define TV_ENC_IRQ				(GIC_SPI_START + 50)
++#define SMMU_VPE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 51)
++#define SMMU_VPE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 52)
++#define SMMU_VFE_CB_SC_SECURE_IRQ		(GIC_SPI_START + 53)
++#define SMMU_VFE_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 54)
++#define SMMU_VCODEC_B_CB_SC_SECURE_IRQ		(GIC_SPI_START + 55)
++#define SMMU_VCODEC_B_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 56)
++#define SMMU_VCODEC_A_CB_SC_SECURE_IRQ		(GIC_SPI_START + 57)
++#define SMMU_VCODEC_A_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 58)
++#define SMMU_ROT_CB_SC_SECURE_IRQ		(GIC_SPI_START + 59)
++#define SMMU_ROT_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 60)
++#define SMMU_MDP1_CB_SC_SECURE_IRQ		(GIC_SPI_START + 61)
++#define SMMU_MDP1_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 62)
++#define SMMU_MDP0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 63)
++#define SMMU_MDP0_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 64)
++#define SMMU_JPEGD_CB_SC_SECURE_IRQ		(GIC_SPI_START + 65)
++#define SMMU_JPEGD_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 66)
++#define SMMU_IJPEG_CB_SC_SECURE_IRQ		(GIC_SPI_START + 67)
++#define SMMU_IJPEG_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 68)
++#define SMMU_GFX3D_CB_SC_SECURE_IRQ		(GIC_SPI_START + 69)
++#define SMMU_GFX3D_CB_SC_NON_SECURE_IRQ		(GIC_SPI_START + 70)
++#define SMMU_GFX2D0_CB_SC_SECURE_IRQ		(GIC_SPI_START + 71)
++#define SMMU_GFX2D0_CB_SC_NON_SECURE_IRQ	(GIC_SPI_START + 72)
++#define ROT_IRQ					(GIC_SPI_START + 73)
++#define MMSS_FABRIC_IRQ				(GIC_SPI_START + 74)
++#define MDP_IRQ					(GIC_SPI_START + 75)
++#define JPEGD_IRQ				(GIC_SPI_START + 76)
++#define JPEG_IRQ				(GIC_SPI_START + 77)
++#define MMSS_IMEM_IRQ				(GIC_SPI_START + 78)
++#define HDMI_IRQ				(GIC_SPI_START + 79)
++#define GFX3D_IRQ				(GIC_SPI_START + 80)
++#define GFX2D0_IRQ				(GIC_SPI_START + 81)
++#define DSI_IRQ					(GIC_SPI_START + 82)
++#define CSI_1_IRQ				(GIC_SPI_START + 83)
++#define CSI_0_IRQ				(GIC_SPI_START + 84)
++#define LPASS_SCSS_AUDIO_IF_OUT0_IRQ		(GIC_SPI_START + 85)
++#define LPASS_SCSS_MIDI_IRQ			(GIC_SPI_START + 86)
++#define LPASS_Q6SS_WDOG_EXPIRED			(GIC_SPI_START + 87)
++#define LPASS_SCSS_GP_LOW_IRQ			(GIC_SPI_START + 88)
++#define LPASS_SCSS_GP_MEDIUM_IRQ		(GIC_SPI_START + 89)
++#define LPASS_SCSS_GP_HIGH_IRQ			(GIC_SPI_START + 90)
++#define TOP_IMEM_IRQ				(GIC_SPI_START + 91)
++#define FABRIC_SYS_IRQ				(GIC_SPI_START + 92)
++#define FABRIC_APPS_IRQ				(GIC_SPI_START + 93)
++#define USB1_HS_BAM_IRQ				(GIC_SPI_START + 94)
++#define SDC4_BAM_IRQ				(GIC_SPI_START + 95)
++#define SDC3_BAM_IRQ				(GIC_SPI_START + 96)
++#define SDC2_BAM_IRQ				(GIC_SPI_START + 97)
++#define SDC1_BAM_IRQ				(GIC_SPI_START + 98)
++#define FABRIC_SPS_IRQ				(GIC_SPI_START + 99)
++#define USB1_HS_IRQ				(GIC_SPI_START + 100)
++#define SDC4_IRQ_0				(GIC_SPI_START + 101)
++#define SDC3_IRQ_0				(GIC_SPI_START + 102)
++#define SDC2_IRQ_0				(GIC_SPI_START + 103)
++#define SDC1_IRQ_0				(GIC_SPI_START + 104)
++#define SPS_BAM_DMA_IRQ				(GIC_SPI_START + 105)
++#define SPS_SEC_VIOL_IRQ			(GIC_SPI_START + 106)
++#define SPS_MTI_0				(GIC_SPI_START + 107)
++#define SPS_MTI_1				(GIC_SPI_START + 108)
++#define SPS_MTI_2				(GIC_SPI_START + 109)
++#define SPS_MTI_3				(GIC_SPI_START + 110)
++#define SPS_MTI_4				(GIC_SPI_START + 111)
++#define SPS_MTI_5				(GIC_SPI_START + 112)
++#define SPS_MTI_6				(GIC_SPI_START + 113)
++#define SPS_MTI_7				(GIC_SPI_START + 114)
++#define SPS_MTI_8				(GIC_SPI_START + 115)
++#define SPS_MTI_9				(GIC_SPI_START + 116)
++#define SPS_MTI_10				(GIC_SPI_START + 117)
++#define SPS_MTI_11				(GIC_SPI_START + 118)
++#define SPS_MTI_12				(GIC_SPI_START + 119)
++#define SPS_MTI_13				(GIC_SPI_START + 120)
++#define SPS_MTI_14				(GIC_SPI_START + 121)
++#define SPS_MTI_15				(GIC_SPI_START + 122)
++#define SPS_MTI_16				(GIC_SPI_START + 123)
++#define SPS_MTI_17				(GIC_SPI_START + 124)
++#define SPS_MTI_18				(GIC_SPI_START + 125)
++#define SPS_MTI_19				(GIC_SPI_START + 126)
++#define SPS_MTI_20				(GIC_SPI_START + 127)
++#define SPS_MTI_21				(GIC_SPI_START + 128)
++#define SPS_MTI_22				(GIC_SPI_START + 129)
++#define SPS_MTI_23				(GIC_SPI_START + 130)
++#define SPS_MTI_24				(GIC_SPI_START + 131)
++#define SPS_MTI_25				(GIC_SPI_START + 132)
++#define SPS_MTI_26				(GIC_SPI_START + 133)
++#define SPS_MTI_27				(GIC_SPI_START + 134)
++#define SPS_MTI_28				(GIC_SPI_START + 135)
++#define SPS_MTI_29				(GIC_SPI_START + 136)
++#define SPS_MTI_30				(GIC_SPI_START + 137)
++#define SPS_MTI_31				(GIC_SPI_START + 138)
++#define UXMC_EBI2_WR_ER_DONE_IRQ		(GIC_SPI_START + 139)
++#define UXMC_EBI2_OP_DONE_IRQ			(GIC_SPI_START + 140)
++#define USB2_IRQ				(GIC_SPI_START + 141)
++#define USB1_IRQ				(GIC_SPI_START + 142)
++#define TSSC_SSBI_IRQ				(GIC_SPI_START + 143)
++#define TSSC_SAMPLE_IRQ				(GIC_SPI_START + 144)
++#define TSSC_PENUP_IRQ				(GIC_SPI_START + 145)
++#define INT_UART1DM_IRQ				(GIC_SPI_START + 146)
++#define GSBI1_QUP_IRQ				(GIC_SPI_START + 147)
++#define INT_UART2DM_IRQ				(GIC_SPI_START + 148)
++#define GSBI2_QUP_IRQ				(GIC_SPI_START + 149)
++#define INT_UART3DM_IRQ				(GIC_SPI_START + 150)
++#define GSBI3_QUP_IRQ				(GIC_SPI_START + 151)
++#define INT_UART4DM_IRQ				(GIC_SPI_START + 152)
++#define GSBI4_QUP_IRQ				(GIC_SPI_START + 153)
++#define INT_UART5DM_IRQ				(GIC_SPI_START + 154)
++#define GSBI5_QUP_IRQ				(GIC_SPI_START + 155)
++#define INT_UART6DM_IRQ				(GIC_SPI_START + 156)
++#define GSBI6_QUP_IRQ				(GIC_SPI_START + 157)
++#define INT_UART7DM_IRQ				(GIC_SPI_START + 158)
++#define GSBI7_QUP_IRQ				(GIC_SPI_START + 159)
++#define INT_UART8DM_IRQ				(GIC_SPI_START + 160)
++#define GSBI8_QUP_IRQ				(GIC_SPI_START + 161)
++#define TSIF_TSPP_IRQ				(GIC_SPI_START + 162)
++#define TSIF_BAM_IRQ				(GIC_SPI_START + 163)
++#define TSIF2_IRQ				(GIC_SPI_START + 164)
++#define TSIF1_IRQ				(GIC_SPI_START + 165)
++#define INT_ADM1_MASTER				(GIC_SPI_START + 166)
++#define INT_ADM1_AARM				(GIC_SPI_START + 167)
++#define INT_ADM1_SD2				(GIC_SPI_START + 168)
++#define INT_ADM1_SD3				(GIC_SPI_START + 169)
++#define INT_ADM0_MASTER				(GIC_SPI_START + 170)
++#define INT_ADM0_AARM				(GIC_SPI_START + 171)
++#define INT_ADM0_SD2				(GIC_SPI_START + 172)
++#define INT_ADM0_SD3				(GIC_SPI_START + 173)
++#define CC_SCSS_WDT1CPU1BITEEXPIRED		(GIC_SPI_START + 174)
++#define CC_SCSS_WDT1CPU0BITEEXPIRED		(GIC_SPI_START + 175)
++#define CC_SCSS_WDT0CPU1BITEEXPIRED		(GIC_SPI_START + 176)
++#define CC_SCSS_WDT0CPU0BITEEXPIRED		(GIC_SPI_START + 177)
++#define TSENS_UPPER_LOWER_INT			(GIC_SPI_START + 178)
++#define SSBI2_2_SC_CPU1_SECURE_INT		(GIC_SPI_START + 179)
++#define SSBI2_2_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 180)
++#define SSBI2_1_SC_CPU1_SECURE_INT		(GIC_SPI_START + 181)
++#define SSBI2_1_SC_CPU1_NON_SECURE_INT		(GIC_SPI_START + 182)
++#define XPU_SUMMARY_IRQ				(GIC_SPI_START + 183)
++#define BUS_EXCEPTION_SUMMARY_IRQ		(GIC_SPI_START + 184)
++#define HSDDRX_SMICH0_IRQ			(GIC_SPI_START + 185)
++#define HSDDRX_EBI1_IRQ				(GIC_SPI_START + 186)
++#define SDC5_BAM_IRQ				(GIC_SPI_START + 187)
++#define SDC5_IRQ_0				(GIC_SPI_START + 188)
++#define INT_UART9DM_IRQ				(GIC_SPI_START + 189)
++#define GSBI9_QUP_IRQ				(GIC_SPI_START + 190)
++#define INT_UART10DM_IRQ			(GIC_SPI_START + 191)
++#define GSBI10_QUP_IRQ				(GIC_SPI_START + 192)
++#define INT_UART11DM_IRQ			(GIC_SPI_START + 193)
++#define GSBI11_QUP_IRQ				(GIC_SPI_START + 194)
++#define INT_UART12DM_IRQ			(GIC_SPI_START + 195)
++#define GSBI12_QUP_IRQ				(GIC_SPI_START + 196)
++/*SPI 197 to 216 arent used in 8x60*/
++#define SMPSS_SPARE_1				(GIC_SPI_START + 217)
++#define SMPSS_SPARE_2				(GIC_SPI_START + 218)
++#define SMPSS_SPARE_3				(GIC_SPI_START + 219)
++#define SMPSS_SPARE_4				(GIC_SPI_START + 220)
++#define SMPSS_SPARE_5				(GIC_SPI_START + 221)
++#define SMPSS_SPARE_6				(GIC_SPI_START + 222)
++#define SMPSS_SPARE_7				(GIC_SPI_START + 223)
 +
-+#endif
+ #define NR_GPIO_IRQS 173
+ #define NR_MSM_IRQS 256
+ #define NR_BOARD_IRQS 0
 -- 
 1.7.2.1
 
