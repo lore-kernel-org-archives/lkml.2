@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754152Ab0JFEan (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 00:30:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:50616 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab0JFEam convert rfc822-to-8bit (ORCPT
+	id S1754808Ab0JFEat (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 00:30:49 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:35051 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754293Ab0JFEap (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 00:30:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EZy8emmfQJQPqQcIbP3zc1ZINBhjmeakJTR0CyWpV2r98cank780exB3OBQPlprA22
-         F+t/wD1TCbGW9ZLO7f/yJyrJ9G62IapIfU7sF7etVEETYFre6+NzKs2ickAqGBN337Ar
-         VjVQFvknmqhkNkG11tr/9/iLznbgg4911Ukcw=
+	Wed, 6 Oct 2010 00:30:45 -0400
+Message-ID: <4CABFB6F.2070800@vflare.org>
+Date: Wed, 06 Oct 2010 00:30:39 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20101006034210.M38114@admin-gateway.ncra.tifr.res.in>
-References: <20100922052107.M44650@admin-gateway.ncra.tifr.res.in>
-	<20100922145607.GB26309@suse.de>
-	<20100923100127.M64470@admin-gateway.ncra.tifr.res.in>
-	<20100923140236.GB31394@suse.de>
-	<20100928091520.M79654@admin-gateway.ncra.tifr.res.in>
-	<20100928113036.GA15024@suse.de>
-	<20100928115204.M46802@admin-gateway.ncra.tifr.res.in>
-	<20100928120743.GA15807@suse.de>
-	<20101004042924.M50398@admin-gateway.ncra.tifr.res.in>
-	<20101005104403.M28756@admin-gateway.ncra.tifr.res.in>
-	<20101005133312.GF3548@suse.de>
-	<20101006034210.M38114@admin-gateway.ncra.tifr.res.in>
-Date: Tue, 5 Oct 2010 23:30:40 -0500
-Message-ID: <AANLkTim+LsaL0QeQPwNjFA3F-hzkZs-HqghM0o6Us9TD@mail.gmail.com>
-Subject: Re: pl2303_ttyUSB0 userspace application not able to control RTS line
-From: Greg Oliver <oliver.greg@gmail.com>
-To: Raju Rameshwar Uprade <rajsingh@ncra.tifr.res.in>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Greg KH <greg@kroah.com>
+CC: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linux Driver Project <devel@linuxdriverproject.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: OOM panics with zram
+References: <1281374816-904-1-git-send-email-ngupta@vflare.org> <1284053081.7586.7910.camel@nimitz> <4CA8CE45.9040207@vflare.org> <20101005234300.GA14396@kroah.com> <4CABDF0E.3050400@vflare.org> <20101006023624.GA27685@kroah.com>
+In-Reply-To: <20101006023624.GA27685@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 5, 2010 at 11:14 PM, Raju Rameshwar Uprade
-<rajsingh@ncra.tifr.res.in> wrote:
->
->> Is this your "modified" driver?
->
->  No..It's pl2303.
->
+On 10/5/2010 10:36 PM, Greg KH wrote:
+> On Tue, Oct 05, 2010 at 10:29:34PM -0400, Nitin Gupta wrote:
+>> On 10/5/2010 7:43 PM, Greg KH wrote:
+>>> On Sun, Oct 03, 2010 at 02:41:09PM -0400, Nitin Gupta wrote:
+>>>> Also, please do not use linux-next/mainline version of compcache. Instead
+>>>> just use version in the project repository here:
+>>>> hg clone https://compcache.googlecode.com/hg/ compcache 
+>>>
+>>> What?  No, the reason we put this into the kernel was so that _everyone_
+>>> could work on it, including the original developers.  Going off and
+>>> doing development somewhere else just isn't ok.  Should I just delete
+>>> this driver from the staging tree as you don't seem to want to work with
+>>> the community at this point in time?
+>>>
 >>
->> I don't see that error in the kernel log below at all.
->
->  sometimes I got that error.
->
->> What kernel version is this?
->
->  2.6.35
->
->> And are you sure that your device actually has the RTS lines connected?
->> I have seen a number of these devices that do not bring those lines from
->> the chip to the rs232 connection.
->
-> I have connected a RS-485 interface card to this usb-to-serial converter which has
-> MAX-485 IC ( Line driver chip which convert RS-232 to RS-485),of which pin number 2 is
-> for RTS line.
->
-> Through my modified pl2303 device driver, I am able to enable/disable the RTS line as
-> per my need,as I told in my earlier email.
->
->> You really might want to go purchase a "real" usb to serial converter
->> that works properly, the pl2303 devices do not fit that category.
->
-> Yes, I am also thinking of purchasing a "real" usb to serial converter.
->
-> Thanks a lot Greg, I have learned a lot interacting with you.
+>> Getting it out of -staging wasn't my intent. Community is the reason
+>> that this project still exists.
+>>
+>>
+>>>> This is updated much more frequently and has many more bug fixes over
+>>>> the mainline. It will also be easier to fix bugs/add features much more
+>>>> quickly in this repo rather than sending them to lkml which can take
+>>>> long time.
+>>>
+>>> Yes, developing in your own sandbox can always be faster, but there is
+>>> no feedback loop.
+>>>
+>>
+>> I was finding it real hard to find time to properly discuss each patch
+>> over LKML, so I thought of shifting focus to local project repository
+>> and then later go through proper reviews.
+> 
+> So, should I delete the version in staging, or are you going to send
+> patches to sync it up with your development version?
+> 
 
-You know - I have had the (mis)forune of working with some of your
-people - straight out of college..  While I was impressed with their
-capacities, I was duly unimpressed with their inability to shut the
-fuck up when appropriate.  If they knew that a typo on the command
-line was more easily correctable after the fact (since of course set
--o vi ) was in place..  then they may (I DOUBT IT) shut the fuck
-up....  Anyhow - just a pissed off observation...
+Deleting it from staging would not help much. Much more helpful would
+be to sync at least the mainline and linux-next version of the driver
+so it's easier to develop against these kernel trees.  Initially, I
+thought -staging means that any reviewed change can quickly make it
+to *both* linux-next and more importantly -staging in mainline. Working/
+Testing against mainline is much smoother than against linux-next.
 
-Teach them to STFU when noone asked them shit to begin with....  Or -
-put a dick (my dick) in their mouths....
+Thanks,
+Nitin
+
+
