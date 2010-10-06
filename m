@@ -1,123 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758902Ab0JFNeK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 09:34:10 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:34048
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756315Ab0JFNeG (ORCPT
+	id S932200Ab0JFNe4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 09:34:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38522 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756315Ab0JFNey convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 09:34:06 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bh8275dhz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 0,
-X-WSS-ID: 0L9VEZ8-02-E8C-02
-X-M-MSG: 
-Date: Wed, 6 Oct 2010 15:33:09 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Matt Fleming <matt@console-pimps.org>
-CC: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 4/7] ARM: oprofile: Move non-ARM code into separate
- init/exit
-Message-ID: <20101006133309.GP13563@erda.amd.com>
-References: <cover.1286222593.git.matt@console-pimps.org>
- <74092b0d162aafc21e408033cec6146e227363b5.1286222593.git.matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <74092b0d162aafc21e408033cec6146e227363b5.1286222593.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Wed, 6 Oct 2010 09:34:54 -0400
+Subject: Re: 1 RT task blocks 4-core machine ?
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tommaso Cucinotta <tommaso.cucinotta@sssup.it>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Dario Faggioli <faggioli@gandalf.sssup.it>,
+        Fabio Checconi <fabio@gandalf.sssup.it>, linux-kernel@vger.kernel.org
+In-Reply-To: <4CAA54A1.6050507@sssup.it>
+References: <AANLkTim2icGqFWB1S6TVcQwmo+sCcGdNDPO3s8LFqzR=@mail.gmail.com>
+	 <4CAA54A1.6050507@sssup.it>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 06 Oct 2010 15:34:05 +0200
+Message-ID: <1286372045.2144.180.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04.10.10 16:44:22, Matt Fleming wrote:
-> In preparation for moving the majority of this oprofile code into an
-> architecture-neutral place separate the architecture-independent code
-> into oprofile_perf_init() and oprofile_perf_exit().
-> 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> Tested-by: Will Deacon <will.deacon@arm.com>
-> ---
->  arch/arm/oprofile/common.c |   17 ++++++++++++++---
->  1 files changed, 14 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-> index 86df75f..e4cd332 100644
-> --- a/arch/arm/oprofile/common.c
-> +++ b/arch/arm/oprofile/common.c
-> @@ -327,7 +327,7 @@ static void arm_backtrace(struct pt_regs * const regs, unsigned int depth)
->  		tail = user_backtrace(tail);
->  }
->  
-> -int __init oprofile_arch_init(struct oprofile_operations *ops)
-> +int __init oprofile_perf_init(struct oprofile_operations *ops)
->  {
->  	int cpu, ret = 0;
->  
-> @@ -365,7 +365,6 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
->  		}
->  	}
->  
-> -	ops->backtrace		= arm_backtrace;
->  	ops->create_files	= oprofile_perf_create_files;
->  	ops->setup		= oprofile_perf_setup;
->  	ops->start		= oprofile_perf_start;
-> @@ -388,7 +387,14 @@ out:
->  	return ret;
->  }
->  
-> -void __exit oprofile_arch_exit(void)
-> +int __init oprofile_arch_init(struct oprofile_operations *ops)
-> +{
+On Tue, 2010-10-05 at 00:26 +0200, Tommaso Cucinotta wrote:
+> A possible explanation might be that the CFS load balancing logic sees
+> my only active task (e.g., the ssh server or shell etc.) as running
+> alone on its core, and does not detect that it is inhibited to actually
+> run due to RT tasks on the same core. Therefore, it will not migrate
+> the task to the free cores. Does this explanation make sense
+> or is it completely wrong ?
 
-We should do here a:
+Possibly, its got some logic to detect this but maybe it gets confused
+still, in particular look at the adaptive cpu_power in
+update_cpu_power() and calling functions.
 
-	memset(ops, 0, sizeof(*ops));
+> Also, I'd like to hear whether this is considered the "normal/desired"
+> behavior of intermixing RT and non-RT tasks. 
 
-Otherwise it looks good.
-
--Robert
-
-> +	ops->backtrace		= arm_backtrace;
-> +
-> +	return oprofile_perf_init(ops);
-> +}
-> +
-> +void __exit oprofile_perf_exit(void)
->  {
->  	int cpu, id;
->  	struct perf_event *event;
-> @@ -406,6 +412,11 @@ void __exit oprofile_arch_exit(void)
->  	kfree(counter_config);
->  	exit_driverfs();
->  }
-> +
-> +void __exit oprofile_arch_exit(void)
-> +{
-> +	oprofile_perf_exit();
-> +}
->  #else
->  int __init oprofile_arch_init(struct oprofile_operations *ops)
->  {
-> -- 
-> 1.7.1
-> 
-> 
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Pegging a cpu using sched_fifo/rr pretty much means you get to keep the
+pieces, if it works nice, if you can make it work better kudos, but no
+polling from sched_fifo/rr is not something that is considered sane for
+the general health of your system.
