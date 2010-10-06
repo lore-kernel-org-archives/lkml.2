@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933099Ab0JFU7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 16:59:40 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:48218 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933085Ab0JFU7i (ORCPT
+	id S933103Ab0JFVBV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 17:01:21 -0400
+Received: from asmtpout023.mac.com ([17.148.16.98]:62830 "EHLO
+	asmtpout023.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755263Ab0JFVBU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 16:59:38 -0400
-Date: Wed, 6 Oct 2010 16:02:36 -0500
-From: Sonny Rao <sonnyrao@us.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Nishanth Aravamudan <nacc@us.ibm.com>, miltonm@bga.com,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Ian Campbell <ian.campbell@citrix.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        linux-kernel@vger.kernel.org, sonnyrao@linux.vnet.ibm.com
-Subject: Re: [RESEND PATCH 1/2] IRQ: use cpu_possible_mask rather than
- online_mask in setup_affinity
-Message-ID: <20101006210236.GQ13726@us.ibm.com>
-References: <1285968378-12805-1-git-send-email-nacc@us.ibm.com>
- <1285968378-12805-2-git-send-email-nacc@us.ibm.com>
- <1286017262.2144.90.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286017262.2144.90.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 6 Oct 2010 17:01:20 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010060138
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-06_11:2010-10-06,2010-10-06,1970-01-01 signatures=0
+Subject: Re: Kernel config option missing: 'Compile the kernel with frame
+ pointers'
+From: Elvis Dowson <elvis.dowson@mac.com>
+In-reply-to: <55150.64.39.142.105.1286398399.squirrel@xenotime.net>
+Date: Thu, 07 Oct 2010 01:00:53 +0400
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Message-id: <22641647-5901-4C65-99D0-F9BF2064AD91@mac.com>
+References: <B2C884FB-3933-4363-85C6-4F1206275B4C@mac.com>
+ <55150.64.39.142.105.1286398399.squirrel@xenotime.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 01:01:02PM +0200, Peter Zijlstra wrote:
-> On Fri, 2010-10-01 at 14:26 -0700, Nishanth Aravamudan wrote:
-> > The use of online_mask requires architecture code to be hotplug-aware to
-> > account for IRQ round-robin'ing. 
+Hi Randy,
+
+On Oct 7, 2010, at 12:53 AM, Randy Dunlap wrote:
 > 
-> Architectures that support hotplug should be hotplug aware, that's not
-> too much to ask imho.
-
-It seems like most architectures support HOTPLUG_CPU
-a quick grep for HOTPLUG_CPU in arch shows:
-arm
-blackfin
-ia64
-m32r
-mips
-mn10300
-parisc
-powerpc
-s390
-sh
-sparc
-x86
-
-also see my reply to Thomas -- it appears that many of the interrupt
-controller implementations enforce only affinitizing to online cpus
-
-The other point is, as this is generic code, it's making an assumption
-that online cpus is the right mask to test against and we know of at
-least one case where this isn't quite correct.
-
-> > With user-driven dynamic SMT,
+> It sounds like you don't have DEBUG_KERNEL symbol set.
+> You can't see the FRAME_POINTER kconfig symbol unless
+> DEBUG_KERNEL is set/enabled and you are on a qualifying
+> architecture:
 > 
-> What's that?
+> config FRAME_POINTER
+>        bool "Compile the kernel with frame pointers"
+>        depends on DEBUG_KERNEL && \
+>                (CRIS || M68K || M68KNOMMU || FRV || UML || \
+>                 AVR32 || SUPERH || BLACKFIN || MN10300) || \
+>                ARCH_WANT_FRAME_POINTERS
+>        default y if (DEBUG_INFO && UML) || ARCH_WANT_FRAME_POINTERS
+> 
+> 
+> The prompt for DEBUG_KERNEL is "Kernel debugging".
+> It is in the "Kernel hacking" menu.
 
-Well, that is basically a feature where we can use CPU hotplug to
-force a particular mode on an SMT (hardware multithreaded) processor 
+I have CONFIG_DEBUG_KERNEL=y set. I'm compiling for the ARM architecture (TI OMAP 3503). So I guess it doesn't apply for ARM?
 
-The point here was really that on such multi-threaded processors -- which are
-becoming more common -- cpu hotplug can potentially be used fairly
-often.
+I want to debug the kernel using Eclipse IDE and kgdb.
 
+Best regards,
 
-Sonny
+Elvis
