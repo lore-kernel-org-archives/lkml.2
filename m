@@ -1,60 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759268Ab0JFROt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 13:14:49 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:62615 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab0JFROs (ORCPT
+	id S1759282Ab0JFRQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 13:16:09 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:58882 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752377Ab0JFRQH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 13:14:48 -0400
-Message-ID: <4CACAE56.6090209@vlnb.net>
-Date: Wed, 06 Oct 2010 21:13:58 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Wed, 6 Oct 2010 13:16:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=upqYLXpmZoltOJW5XdfKLTjzLhgdSzjai/yreOwplGlTjLPyrw6DT6yrXdBYQfLpNm
+         xNT791Qf8wVxOYH6ucyO5jrBDPRYmKPP1jHCPpXcRoS8LPRAhb1jSr3l059shP5NHBz5
+         4vYH9tmd26FyM3fpfdWol/yOk9UyCMvVSvuwY=
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com,
-        jeff@garzik.org
-Subject: Re: [RFC v2 00/21] TCM Core and TCM_Loop patches for v2.6.37
-References: <1285195702-11421-1-git-send-email-nab@linux-iscsi.org>	 <20101006111621O.fujita.tomonori@lab.ntt.co.jp>	 <1286340405.5685.93.camel@haakon2.linux-iscsi.org>	 <20101006160434M.fujita.tomonori@lab.ntt.co.jp> <1286349898.5685.117.camel@haakon2.linux-iscsi.org> <4CAC833F.2010108@kernel.org>
-In-Reply-To: <4CAC833F.2010108@kernel.org>
+In-Reply-To: <1280555108-27994-1-git-send-email-marek.vasut@gmail.com>
+References: <1280555108-27994-1-git-send-email-marek.vasut@gmail.com>
+Date: Wed, 6 Oct 2010 19:16:05 +0200
+Message-ID: <AANLkTindRMOmo8CrFuUsWqNRn6CZVKOMQZS2LXJ63=YC@mail.gmail.com>
+Subject: Re: [PATCH] Input: Make ADS7846 independent on regulator
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, dmitry.torokhov@gmail.com,
+        vapier@gentoo.org, pavel@ucw.cz, akpm@linux-foundation.org,
+        khilman@deeprootsystems.com, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, eric.y.miao@gmail.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:fFuXxXO6mOOJjru7Yg8lZDYP7QN9Ui+or1ODkIvHs0y
- jvbWEaiAESrgF8jADLTWqvgcK3qTuj5dDpGvEHSSIG+5E526U5
- TMUaq3KT1sm++0VvQj59311bDALTHpMHBVjcy4jS3i8FiKmLLk
- QLiHN6T8CqvNYvDWQlHoLctUja8qSMYw8R1Xp0Y1c4JhfqMiit
- z8PD2wW5xDCB5GS8yTfyA==
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo, on 10/06/2010 06:10 PM wrote:
-> On 10/06/2010 09:24 AM, Nicholas A. Bellinger wrote:
->>> I like to hear the opinions of SCSI maintainer and ATA folks.
->>
->> jejb, jgarzik, tejun and co..?  Any thoughts here..?
-> 
-> I frankly have no idea whatsoever.  Is there something I can read to
-> educate myself on the subject?
+2010/7/31 Marek Vasut <marek.vasut@gmail.com>:
 
-General information about a SCSI target subsystem you can find in
-http://scst.sourceforge.net. More internal details about implementation
-in http://scst.sourceforge.net/scst_pg.html. Features which are
-implemented in http://scst.sourceforge.net/comparison.html.
+> This fixes a problem on some Sharp Zaurus devices, where there is no regulator
+> present and yet the touchscreen is used.
+>
+> Signed-off-by: Marek Vasut <marek.vasut@gmail.com>
+> ---
+>  drivers/input/touchscreen/ads7846.c |   50 +++++++++++++++++++++++------------
+>  1 files changed, 33 insertions(+), 17 deletions(-)
+>
+> diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
+> index a9fdf55..dafaef6 100644
+> --- a/drivers/input/touchscreen/ads7846.c
+> +++ b/drivers/input/touchscreen/ads7846.c
+> @@ -791,7 +791,10 @@ static void ads7846_disable(struct ads7846 *ts)
+>                }
+>        }
+>
+> -       regulator_disable(ts->reg);
+> +#ifdef CONFIG_REGULATOR
 
-Directly on the subject you can find some considerations in
-http://lkml.org/lkml/2010/10/1/140 (second half of the message).
+Skip the #ifdef, if the regulators are configured out, there will be
+a stub providing NULL for all get_regulator() calls anyway.
 
-My opinion is that in ideal the SCSI initiator subsystem should be
-drivers/scsi/initiator and the target subsystem - drivers/scsi/target
-with shared code in drivers/scsi/. But in reality such big
-reorganization is unlikely possible, so it's better to leave SCSI
-initiator subsystem in drivers/scsi and the target subsystem - in the
-separate directory in drivers/ (drivers/scst for SCST).
+> +       if (ts->reg)
+> +               regulator_disable(ts->reg);
+> +#endif
+>
+>        /* we know the chip's in lowpower mode since we always
+>         * leave it that way after every request
+> @@ -804,7 +807,10 @@ static void ads7846_enable(struct ads7846 *ts)
+>        if (!ts->disabled)
+>                return;
+>
+> -       regulator_enable(ts->reg);
+> +#ifdef CONFIG_REGULATOR
 
-Vlad
+Skip the #ifdef.
+
+> +       if (ts->reg)
+> +               regulator_enable(ts->reg);
+> +#endif
+>
+>        ts->disabled = 0;
+>        ts->irq_disabled = 0;
+> @@ -1161,18 +1167,21 @@ static int __devinit ads7846_probe(struct spi_device *spi)
+>
+>        ts->last_msg = m;
+>
+> +#ifdef CONFIG_REGULATOR
+
+Skip the #ifdef.
+
+>        ts->reg = regulator_get(&spi->dev, "vcc");
+> -       if (IS_ERR(ts->reg)) {
+> -               err = PTR_ERR(ts->reg);
+> -               dev_err(&spi->dev, "unable to get regulator: %d\n", err);
+> -               goto err_free_gpio;
+> -       }
+> -
+> -       err = regulator_enable(ts->reg);
+> -       if (err) {
+> -               dev_err(&spi->dev, "unable to enable regulator: %d\n", err);
+> -               goto err_put_regulator;
+> +       if (IS_ERR(ts->reg))
+> +               ts->reg = NULL;
+> +       else {
+> +               err = regulator_enable(ts->reg);
+> +               if (err) {
+> +                       dev_err(&spi->dev, "unable to enable regulator: %d\n",
+> +                               err);
+> +                       goto err_put_regulator;
+> +               }
+>        }
+> +#else
+> +       ts->reg = NULL;
+> +#endif
+
+Delete the #else/#endif clause entirely.
+
+>
+>        if (request_irq(spi->irq, ads7846_irq, IRQF_TRIGGER_FALLING,
+>                        spi->dev.driver->name, ts)) {
+> @@ -1218,10 +1227,13 @@ static int __devinit ads7846_probe(struct spi_device *spi)
+>  err_free_irq:
+>        free_irq(spi->irq, ts);
+>  err_disable_regulator:
+> -       regulator_disable(ts->reg);
+> +#ifdef CONFIG_REGULATOR
+
+Skip the #ifdef.
+
+> +       if (ts->reg)
+> +               regulator_disable(ts->reg);
+>  err_put_regulator:
+> -       regulator_put(ts->reg);
+> - err_free_gpio:
+> +       if (ts->reg)
+> +               regulator_put(ts->reg);
+> +#endif
+>        if (ts->gpio_pendown != -1)
+>                gpio_free(ts->gpio_pendown);
+>  err_cleanup_filter:
+> @@ -1251,8 +1263,12 @@ static int __devexit ads7846_remove(struct spi_device *spi)
+>        /* suspend left the IRQ disabled */
+>        enable_irq(ts->spi->irq);
+>
+> -       regulator_disable(ts->reg);
+> -       regulator_put(ts->reg);
+> +#ifdef CONFIG_REGULATOR
+
+Skip the #ifdef.
+
+> +       if (ts->reg) {
+> +               regulator_disable(ts->reg);
+> +               regulator_put(ts->reg);
+> +       }
+> +#endif
+>
+>        if (ts->gpio_pendown != -1)
+>                gpio_free(ts->gpio_pendown);
+> --
+> 1.7.1
+
+Yours,
+Linus Walleij
