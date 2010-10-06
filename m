@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933137Ab0JFWvA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 18:51:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55026 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757468Ab0JFWu7 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 6 Oct 2010 18:50:59 -0400
-Date: Wed, 6 Oct 2010 18:50:43 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, xen-devel@lists.xensource.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH v7] Xen PCI + Xen PCI frontend driver.
-Message-ID: <20101006225043.GA20211@dumpdata.com>
-References: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com>
- <4CAAF428020000780001A834@vpn.id2.novell.com>
+	id S933258Ab0JFWvS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 18:51:18 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45394 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932979Ab0JFWvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 18:51:17 -0400
+Date: Wed, 6 Oct 2010 15:51:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Stefan Ringel <stefan.ringel@arcor.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] staging: fix possible use-before-NULL-check crash
+Message-ID: <20101006225104.GA21013@suse.de>
+References: <20101006223941.GW14666@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CAAF428020000780001A834@vpn.id2.novell.com>
+In-Reply-To: <20101006223941.GW14666@outflux.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 08:47:20AM +0100, Jan Beulich wrote:
-> >>> On 04.10.10 at 20:13, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > This patch set contains the supporting patches and the driver itself for
-> > Xen Paravirtualized (PV) domains to use PCI pass-through devices (the git 
-> > tree
-> > is git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git 
-> > devel/xen-pcifront-0.7).
-.. snip..
-> Somehow this patch series appears to be incomplete: Neither on
-> xen-devel nor on patchwork I can find patches 6, 11, 18, 19, and 20.
-
-Shucks! I am not sure what happend, the git-send-email looked to have sent them 
-all.  Let me redo them and resend them with more attention to this.
-
-Are you able to use the git tree to look at the patches as an internim solution?
-
-> >  MAINTAINERS: Add myself for Xen PCI and Xen SWIOTLB maintainer.
-> >  xen/pci: Request ACS when Xen-SWIOTLB is activated.
+On Wed, Oct 06, 2010 at 03:39:41PM -0700, Kees Cook wrote:
+> Found via http://coccinelle.lip6.fr/rules/mini_null_ref.cocci
 > 
-> Also, up to here I count only 20 patch descriptions...
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> ---
+>  drivers/staging/tm6000/tm6000-alsa.c |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 > 
-> > The shortlog and the diffstat:
-.. snip ..
-> 
-> ... while these sum up to the announced (in the actual series) 22.
+> diff --git a/drivers/staging/tm6000/tm6000-alsa.c b/drivers/staging/tm6000/tm6000-alsa.c
+> index 087137d..c1aff0e 100644
+> --- a/drivers/staging/tm6000/tm6000-alsa.c
+> +++ b/drivers/staging/tm6000/tm6000-alsa.c
+> @@ -426,10 +426,11 @@ error:
+>  
+>  static int tm6000_audio_fini(struct tm6000_core *dev)
+>  {
+> -	struct snd_tm6000_card	*chip = dev->adev;
+> +	struct snd_tm6000_card	*chip;
+>  
+>  	if (!dev)
+>  		return 0;
+> +	chip = dev->adev;
 
-<scratches his head in confusion>
+Nice catch, but I don't think that the dev pointer can ever be NULL
+here.
+
+Mauro, can you queue this up through your tree, as you handle this one?
+
+thanks,
+
+greg k-h
