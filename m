@@ -1,100 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758691Ab0JFH4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:56:09 -0400
-Received: from smtp101.sbc.mail.gq1.yahoo.com ([67.195.15.60]:36997 "HELO
-	smtp101.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757150Ab0JFH4H (ORCPT
+	id S1758726Ab0JFIBN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 04:01:13 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:42552 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758673Ab0JFIBM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:56:07 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: xKwxvswVM1mBTMcw9G3bf6NFemFcnsAy_iu3f7HMIt99_Yx
- pHq3Y0rG8SNPhBIS9bD_QpvLskhy60haqSIU5_OULKHlTC6W5o.09k2jUZfs
- udW6IoB3Rls9r.mPLApbvj2dXtp2TB0dxlu_F9qGeMiTqI4q3ZqOIT5Ls_JC
- .j61DchuuSdB0TrTssAaVdeYZP1isIabiRUbNrUOy4w750dkImiTI1pLIetv
- nlFuYuoImdeBmsutDliCMY5ZuHVpgYCkgxT77QdJhJaep9BjoSqJpIBZ5Jn_
- JR1l7hBZ_AkkJrIuqDE0oBJJP1SDNcrzKLNwkeMCVxnR_0gd1_MTjHYdgN_x
- RWbzr5jmxlRKjS_gk7Q--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC v2 05/21] tcm: Add ConfigFS subsystem backstore
-	infrastructure
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com,
-        joel.becker@oracle.com, Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <20101006163859Y.fujita.tomonori@lab.ntt.co.jp>
-References: <1286339442.5685.76.camel@haakon2.linux-iscsi.org>
-	 <20101006155833G.fujita.tomonori@lab.ntt.co.jp>
-	 <1286349730.5685.113.camel@haakon2.linux-iscsi.org>
-	 <20101006163859Y.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Date: Wed, 06 Oct 2010 00:51:27 -0700
-Message-Id: <1286351487.5685.145.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 04:01:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=U2E8BSDIrNTM/Ww7idXzGIrM9n50qDk3ItrQm5XLwPwbRmB5u1yjyvYjQGsHuK5Ssr
+         8NrgL4wF6AZkCeRnmS3LT3NJYocp9ThIyFYaXjGEGJr4Ov3vxMJ2dNU1Pr8TV8Ai/oo/
+         tGqaUyFHmsgBWCtwMS+OOSDfM9pX6lhoZXGf8=
+MIME-Version: 1.0
+In-Reply-To: <20101005225223.GC23315@opensource.wolfsonmicro.com>
+References: <20100907125335.GD25830@sirena.org.uk>
+	<201009091027.18176.marek.vasut@gmail.com>
+	<20100909094120.GB1988@rakim.wolfsonmicro.main>
+	<4CAACA63.6090202@compulab.co.il>
+	<20101005161608.GD19730@core.coreip.homeip.net>
+	<20101005164037.GA20555@opensource.wolfsonmicro.com>
+	<20101005180703.GD21399@core.coreip.homeip.net>
+	<20101005185942.GA22808@opensource.wolfsonmicro.com>
+	<20101005203508.7df590db@lxorguk.ukuu.org.uk>
+	<AANLkTimTW6v3N9aRA0h15SWXbBc_W0dhpf5rEeqBqGbf@mail.gmail.com>
+	<20101005225223.GC23315@opensource.wolfsonmicro.com>
+Date: Wed, 6 Oct 2010 10:01:10 +0200
+Message-ID: <AANLkTi=+xGpqSrhPB_nLqJd_E0DzLdeb4AaQQQqP04h3@mail.gmail.com>
+Subject: Re: [PATCH v2] Input: Make ADS7846 independent on regulator
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Igor Grinberg <grinberg@compulab.co.il>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, vapier@gentoo.org,
+        khilman@deeprootsystems.com, linux-kernel@vger.kernel.org,
+        pavel@ucw.cz, linux-input@vger.kernel.org, eric.y.miao@gmail.com,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 16:43 +0900, FUJITA Tomonori wrote:
-> On Wed, 06 Oct 2010 00:22:10 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > > > The main issue here is that the user still needs to know the $LPORT_WWPN
-> > > > before hand (either from looking at a sticker on the card, or via
-> > > > another method) in order to preform the initial TFO->fabric_make_wwn()
-> > > > -> $TCM_MOD_make_wwn() operation.  So what we need is a configfs attrib
-> > > > at the top level TCM fabric group in order to see a list of the
-> > > > available hardware ports from the specific $TCM_MOD.  What I was
-> > > > thinking for TCM HW fabric module ports would be to have something like:
-> > > > 
-> > > > 	/sys/kernel/config/target/$TCM_MOD/hw_ports
-> > > > 
-> > > > that would walk the struct pci_dev looking for fabric module specific HW
-> > > > target mode capabilities.  I assume this is what you had in mind for
-> > > > drivers/scsi/ibmvscsi as well, yes..?
-> > > 
-> > > Doesn't sound so.
-> > > 
-> > > I want the driver to create necessary target directories in
-> > > /sys/kernel/config/target/ibmvscsit/ automatically.
-> > > 
-> > > 
-> > 
-> > Hmmmm, well configfs is entirely driven by userspace syscalls, so we
-> 
-> I think that we really want to configure things by kernel space too
-> because the scsi target stuff need to handle hardware.
-> 
-> Need to load the module and create the module name directory by name?
-> 
-> Need to read the content in sysfs to get the hardware info and create
-> the directories appropriate for the hardware by hand?
-> 
-> Looks strange and inconvenient interface to me. Why can't the kernel
-> just create the directory layout that suits to the hardware for users?
-> 
-> 
+2010/10/6 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
-Actually, I already had some code that could simulate mkdir(2) and
-rmdir(2) to do exactly what you are talking about here for doing
-configfs groups ops from kernel space in 2008 in to assist with the
-IOCTL -> configfs v3.0 conversion work.  Joel gave this a big NACK back
-then, and I removed the code from target_core_configfs.c shortly
-thereafter.  
+> On Wed, Oct 06, 2010 at 12:09:39AM +0200, Linus Walleij wrote:
+>
+>> This wrapper function will accept non-existing regulators and
+>> not treat them as errors. Consumers will have to NULL-check their
+>> regulators.
+>
+> No, this is actively unhelpful.  If consumers can null check their
+> regulators then they can just as well do an IS_ERR() check
 
-But really, pushing this logic into userspace and making
-python/perl/shell code do these type of things IMHO makes the kernel
-level target code cleaner.
+.. and wrap all enable/disable/ etc into conditional statements
+that depend on whether we could locate a regulator or not.
 
-Of course I think having something to create configfs groups from
-kernelspace is very useful for debugging and ProcFS/SysFS/NetLink/IOCTL
--> ConfigFS conversion purposes, but I will have to defer to Joel for
-his reasons of not allowing configfs consumers to do this. (CC'ing
-linux-fsdevel)
+And yes, this is what I'm already doing in drivers like
+drivers/mmc/host/mmci.c, where I check for the regulator
+holder in the mmci state struct to be NULL (another way
+would be to have a boolean .has_regulator but you get the
+idea).
 
---nab
+I think what Alan requested is that it be made more seamless.
+The patches try to make regulator support less hairy in these
+cases, a non-existing regulator will be a NULL pointer (no error
+and the runtime functions will act as the compile-time stubs.
 
+> The existing dummy regulator support already does all this in a manner
+> which is much less invasive for the core.
+
+Correct me if I'm wrong but the dummy regulators are something
+different which appear when you choose to compile out regulator
+support altogether.
+
+This was not what Alan was asking about I believe, the usecase
+to addressed is partial regulator support, where regulator framework
+*is* compiled in, but a driver *may* not get a regulator from the
+framework.
+
+The patch makes the runtime functions with partial regulator
+support for a NULL regulator behave exactly like the
+compile-time stubs.
+
+If I read your answer right, your stance is that the regulator
+framework shall not help out in situations like this, instead
+the driver shall recognice -ENODEV from regulator_get() and
+avoid doing any regulator calls after that. Is this correct?
+
+Yours,
+Linus Walleij
