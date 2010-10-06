@@ -1,153 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758169Ab0JFAwW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 20:52:22 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64418 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756205Ab0JFAwU (ORCPT
+	id S1758195Ab0JFAxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 20:53:36 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:36911 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756584Ab0JFAxf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 20:52:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=A3wOMJIcS3324TQdPdLVgxdnlG3+wi90TV4X0eLjeh+WL5+ZH1rwpObrrBeV9/xr3F
-         ZgXpm7LDvxOohtreRVE1LEOXeRYBXgHlQbe/XYcUQzAs7Ym+O7+lLyp2QKLPkXSH4fQJ
-         tISGS+HZxxs5AXyTOx/2jXBEPvQ53h2fOwwYI=
-MIME-Version: 1.0
-In-Reply-To: <20101005235355.GB18586@haskell.muteddisk.com>
-References: <1285534847-31463-1-git-send-email-mfm@muteddisk.com>
-	<20101005142906.GA20059@merkur.ravnborg.org>
-	<20101005192435.GA17798@haskell.muteddisk.com>
-	<AANLkTik4Ezpj939za2PMWOqOxjXnbdXjvtbXR6Tau2zr@mail.gmail.com>
-	<20101005235355.GB18586@haskell.muteddisk.com>
-Date: Tue, 5 Oct 2010 20:52:20 -0400
-Message-ID: <AANLkTin+vdjH_JaWqc-iWHQ=92kEg9Nc2T9wruTOFpYZ@mail.gmail.com>
-Subject: Re: [RFC PATCH] media: consolidation of -I flags
-From: T Dent <tdent48227@gmail.com>
-To: T Dent <tdent48227@gmail.com>, Sam Ravnborg <sam@ravnborg.org>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Michal Marek <mmarek@suse.cz>, linux-media@vger.kernel.org,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 5 Oct 2010 20:53:35 -0400
+Date: Wed, 6 Oct 2010 09:49:28 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 02/10] memcg: document cgroup dirty memory interfaces
+Message-Id: <20101006094928.cae0dbf7.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <1286175485-30643-3-git-send-email-gthelen@google.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-3-git-send-email-gthelen@google.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/5/10, matt mooney <mfm@muteddisk.com> wrote:
-> On 18:27 Tue 05 Oct     , T Dent wrote:
->> On 10/5/10, Sam Ravnborg <sam@ravnborg.org> wrote:
->> > On Sun, Sep 26, 2010 at 02:00:47PM -0700, matt mooney wrote:
->> >> I have been doing cleanup of makefiles, namely replacing the older
->> >> style
->> >> compilation flag variables with the newer style. While doing this, I
->> >> noticed that the majority of drivers in the media subsystem seem to
->> >> rely
->> >> on a few core header files:
->> >>
->> >> 	-Idrivers/media/video
->> >> 	-Idrivers/media/common/tuners
->> >> 	-Idrivers/media/dvb/dvb-core
->> >> 	-Idrivers/media/dvb/frontends
->> >>
->> >> This patch removes them from the individual makefiles and puts them in
->> >> the main makefile under media.
->> > Using subdir-ccflags-y has one drawback you need to be aware of.
->> > The variable is _not_ picked up if you build individual drivers like
->> > this:
->> >
->> >
->> >      make drivers/media/dvb/b2c2/
->> >
->> > So with this patch applied it is no longer possible to do so.
->> > It is better to accept the duplication rather than breaking
->> > the build of individual drivers.
->> >
->> >>
->> >> If neither idea is considered beneficial, I will go ahead and replace
->> >> the older variables with the newer ones as is.
->> >
->> > This is the right approach.
->> >
->> > You could consider to do a more general cleanup:
->> > 1) replace EXTRA_CFLAGS with ccflags-y (the one you suggest)
->> > 2) replace use of <module>-objs with <module>-y
->> > 3) break continued lines into several assignments
->>
->> I have a question when you say this do you mean change something like
->> this:
->>
->> r8187se-objs :=
->>
->> to
->>
->> r8187se-y :=
->
-> Yes, that is what is meant, but remember to change conditional inclusions to
-> the
-> kbuild idiom.
+On Sun,  3 Oct 2010 23:57:57 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-Okay, I get start on it right away.
->
->> If so, I could start working on that in the staging directory.
->
-> That's cool; the staging makefiles need extra attention though, so you
-> really
-> need to go through and make sure you understand what is and isn't needed.
-> And
-> check to see what drivers are on their way out so that you don't waste your
-> time.
->
-> Now, I do have some of these queued up for other parts of the kernel, so
-> please
-> let me know before you start sending in patches for other parts that I have
-> already worked on.
+> Document cgroup dirty memory interfaces and statistics.
+> 
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Greg Thelen <gthelen@google.com>
 
-I message you if haven't sent the patches in, yet to see what you did
-or are doing.
->
-> Thanks,
-> mfm
->
->> >    People very often uses '\' to break long lines, where a
->> >    simple += would be much more readable.
->> >    But this topic may be personal - I never uses "\" in my .c code
->> > unless in
->> > macros,
->> >    and I have applied the same rule for Makefiles.
->> >    An ugly example is drivers/media/Makefile
->> > 4) In general use ":=" instead of "=".
->> >    Add using "+=" as first assignment is OK - but it just looks plain
->> > wrong
->> > 5) some files has a mixture of spaces/tabs (are red in my vim)
->> >    dvb-core/Makefile is one such example
->> > 6) remove useless stuff
->> >    siano/Makefile has some strange assignments to EXTRA_CFLAGS
->> > 7) Likely a few more items to look after...
->> >
->> > This is more work - but then you finish a Makefile rather than doing a
->> > simple
->> > conversion.
->> >
->> > 	Sam
->> > --
->> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
->> > in
->> > the body of a message to majordomo@vger.kernel.org
->> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> > Please read the FAQ at  http://www.tux.org/lkml/
->> >
->>
->> Thanks,
->>
->> Tracey D
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
-Thanks,
+I think you will change "nfs" to "nfs_unstable", but anyway,
 
-Tracey D
+Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+
+Thanks
+Daisuke Nishimura.
+
+> ---
+>  Documentation/cgroups/memory.txt |   37 +++++++++++++++++++++++++++++++++++++
+>  1 files changed, 37 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/cgroups/memory.txt b/Documentation/cgroups/memory.txt
+> index 7781857..eab65e2 100644
+> --- a/Documentation/cgroups/memory.txt
+> +++ b/Documentation/cgroups/memory.txt
+> @@ -385,6 +385,10 @@ mapped_file	- # of bytes of mapped file (includes tmpfs/shmem)
+>  pgpgin		- # of pages paged in (equivalent to # of charging events).
+>  pgpgout		- # of pages paged out (equivalent to # of uncharging events).
+>  swap		- # of bytes of swap usage
+> +dirty		- # of bytes that are waiting to get written back to the disk.
+> +writeback	- # of bytes that are actively being written back to the disk.
+> +nfs		- # of bytes sent to the NFS server, but not yet committed to
+> +		the actual storage.
+>  inactive_anon	- # of bytes of anonymous memory and swap cache memory on
+>  		LRU list.
+>  active_anon	- # of bytes of anonymous and swap cache memory on active
+> @@ -453,6 +457,39 @@ memory under it will be reclaimed.
+>  You can reset failcnt by writing 0 to failcnt file.
+>  # echo 0 > .../memory.failcnt
+>  
+> +5.5 dirty memory
+> +
+> +Control the maximum amount of dirty pages a cgroup can have at any given time.
+> +
+> +Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+> +page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+> +not be able to consume more than their designated share of dirty pages and will
+> +be forced to perform write-out if they cross that limit.
+> +
+> +The interface is equivalent to the procfs interface: /proc/sys/vm/dirty_*.  It
+> +is possible to configure a limit to trigger both a direct writeback or a
+> +background writeback performed by per-bdi flusher threads.  The root cgroup
+> +memory.dirty_* control files are read-only and match the contents of
+> +the /proc/sys/vm/dirty_* files.
+> +
+> +Per-cgroup dirty limits can be set using the following files in the cgroupfs:
+> +
+> +- memory.dirty_ratio: the amount of dirty memory (expressed as a percentage of
+> +  cgroup memory) at which a process generating dirty pages will itself start
+> +  writing out dirty data.
+> +
+> +- memory.dirty_bytes: the amount of dirty memory (expressed in bytes) in the
+> +  cgroup at which a process generating dirty pages will start itself writing out
+> +  dirty data.
+> +
+> +- memory.dirty_background_ratio: the amount of dirty memory of the cgroup
+> +  (expressed as a percentage of cgroup memory) at which background writeback
+> +  kernel threads will start writing out dirty data.
+> +
+> +- memory.dirty_background_bytes: the amount of dirty memory (expressed in bytes)
+> +  in the cgroup at which background writeback kernel threads will start writing
+> +  out dirty data.
+> +
+>  6. Hierarchy support
+>  
+>  The memory controller supports a deep hierarchy and hierarchical accounting.
+> -- 
+> 1.7.1
+> 
