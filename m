@@ -1,30 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760041Ab0JFXAO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 19:00:14 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:42655 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966Ab0JFXAN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 19:00:13 -0400
-Date: Thu, 7 Oct 2010 00:00:10 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, jbaron@redhat.com
-Subject: Re: [PATCH v2 2/2] jump label: Add MIPS support.
-Message-ID: <20101006230010.GA6808@linux-mips.org>
-References: <1286218615-24011-1-git-send-email-ddaney@caviumnetworks.com>
- <1286218615-24011-3-git-send-email-ddaney@caviumnetworks.com>
+	id S1760056Ab0JFXAY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 19:00:24 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60008 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760045Ab0JFXAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 19:00:21 -0400
+Message-ID: <4CACFF66.5080609@zytor.com>
+Date: Wed, 06 Oct 2010 15:59:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286218615-24011-3-git-send-email-ddaney@caviumnetworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org> <4CACFDAD.3090900@goop.org> <4CACFECD.3090304@kernel.org>
+In-Reply-To: <4CACFECD.3090304@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Acked-by: Ralf Baechle <ralf@linux-mips.org>
+On 10/06/2010 03:57 PM, Yinghai Lu wrote:
+> 
+> How about
+> +	if (memblock.memory.regions)
+> +		return;	
+> 
 
-  Ralf
+I was just about to ask the same question. ;)
+
+	-hpa
