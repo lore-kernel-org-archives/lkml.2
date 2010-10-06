@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933120Ab0JFVVv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 17:21:51 -0400
-Received: from kroah.org ([198.145.64.141]:59375 "EHLO coco.kroah.org"
+	id S933162Ab0JFVWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 17:22:06 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:57337 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756536Ab0JFVVu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 17:21:50 -0400
-Date: Wed, 6 Oct 2010 14:16:04 -0700
-From: Greg KH <greg@kroah.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, bjorn.helgaas@hp.com,
-        jbaron@redhat.com
-Subject: Re: [PATCH 1/4] Dynamic Debug: Introduce global fake module param
- module.ddebug - V4
-Message-ID: <20101006211604.GA2093@kroah.com>
-References: <20100920184441.GA2915@redhat.com>
- <1285331311-21753-2-git-send-email-trenn@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1285331311-21753-2-git-send-email-trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932838Ab0JFVWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 17:22:05 -0400
+From: pavan-savoy@ti.com
+To: linux-bluetooth@vger.kernel.org, marcel@holtmann.org,
+        johan.hedberg@gmail.com
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 2/2] drivers:bluetooth: Kconfig & Makefile for TI BT
+Date: Wed,  6 Oct 2010 18:34:53 -0400
+Message-Id: <1286404493-23816-3-git-send-email-pavan-savoy@ti.com>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1286404493-23816-2-git-send-email-pavan-savoy@ti.com>
+References: <1286404493-23816-1-git-send-email-pavan-savoy@ti.com>
+ <1286404493-23816-2-git-send-email-pavan-savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 02:28:28PM +0200, Thomas Renninger wrote:
-> Dynamic Debug allows enabling of pr_debug and dev_dbg messages at runtime.
-> This is controlled via /sys/kernel/debug/dynamic_debug/control.
-> One major drawback is that the whole initialization of a module cannot be
-> tracked, because ddebug is only aware of debug strings of loaded modules.
-> But this is the most interesting part...
-> 
-> This patch introduces a fake module parameter module.ddebug(not shown in
-> /sys/module/*/parameters, thus it does not use any resources/memory).
-> 
-> If a module passes ddebug as a module parameter (e.g. via module.ddebug
-> kernel boot param or via "modprobe module ddebug"), all debug strings of this
-> module get activated by issuing "module module_name +p" internally
-> (not via sysfs) when the module gets loaded.
-> 
-> Possible enhancements for the future if ddebug might get extended with
-> further flags:
-> module.ddebug=flags
-> Then module.ddebug="p" would be the same as module.ddebug, but if there
-> is a "x" ddebug flag added, one could pass:
-> module.ddebug="xp"
-> which would result in such a dynamic debug query:
-> module module_name +xp
-> 
-> Modules must not use "ddebug" as module parameter or it will get ignored.
-> If it's tried, a warning will show up at module load time that it will get
-> ignored (only works for not built-in modules).
-> 
-> Tested with (additional added pr_debug messages):
-> options hp-wmi ddebug
-> in modprobe.conf
-> -> works and pr_debug messages issued at module initialization time show
-> up. Also "p" flag gets set for the whole hp-wmi module:
-> grep hp-wmi /sys/../dynamic_debug/control
-> also tested with compiled-in modules, e.g. pnp.ddebug and an additional
-> patch later in the patch series which instruments pnp code to work with ddebug.
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-I don't think you actually built this patch, as it dies:
-kernel/params.c: In function ‘parse_one’:
-kernel/params.c:114:2: error: ‘tmp’ undeclared (first use in this function)
-kernel/params.c:114:2: note: each undeclared identifier is reported only once for each function it appears in
-kernel/params.c: In function ‘destroy_params’:
-kernel/params.c:726:8: warning: unused variable ‘tmp’
+Kconfig and Makefile modifications to enable the Bluetooth
+driver for Texas Instrument's WiLink 7 chipset.
 
-I've dropped all 4 from my queue now, care to resend when they work
-properly?
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/bluetooth/Kconfig      |   11 +++++++++++
+ drivers/bluetooth/Makefile     |    1 +
+ drivers/staging/ti-st/Kconfig  |   14 --------------
+ drivers/staging/ti-st/Makefile |    5 -----
+ 4 files changed, 12 insertions(+), 19 deletions(-)
+ delete mode 100644 drivers/staging/ti-st/Kconfig
+ delete mode 100644 drivers/staging/ti-st/Makefile
 
-thanks,
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 02deef4..91a18b3 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -219,4 +219,15 @@ config BT_ATH3K
+ 	  Say Y here to compile support for "Atheros firmware download driver"
+ 	  into the kernel or say M to compile it as module (ath3k).
+ 
++config BT_TI
++	tristate "BlueZ bluetooth driver for TI ST"
++	depends on BT && RFKILL
++	select TI_ST
++	help
++	  This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
++	  combo devices. This makes use of shared transport line discipline
++	  core driver to communicate with the BT core of the combo chip.
++
++	  Say Y here to compile support for Texas Instrument's WiLink7 driver
++	  into the kernel or say M to compile it as module.
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 71bdf13..63156da 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -28,3 +28,4 @@ hci_uart-$(CONFIG_BT_HCIUART_BCSP)	+= hci_bcsp.o
+ hci_uart-$(CONFIG_BT_HCIUART_LL)	+= hci_ll.o
+ hci_uart-$(CONFIG_BT_HCIUART_ATH3K)	+= hci_ath.o
+ hci_uart-objs				:= $(hci_uart-y)
++obj-$(CONFIG_BT_TI)			:= bt_ti.o
+diff --git a/drivers/staging/ti-st/Kconfig b/drivers/staging/ti-st/Kconfig
+deleted file mode 100644
+index 074b8e8..0000000
+--- a/drivers/staging/ti-st/Kconfig
++++ /dev/null
+@@ -1,14 +0,0 @@
+-#
+-# TI's shared transport line discipline and the protocol
+-# drivers (BT, FM and GPS)
+-#
+-menu "Texas Instruments shared transport line discipline"
+-config ST_BT
+-	tristate "BlueZ bluetooth driver for ST"
+-	depends on BT && RFKILL
+-	select TI_ST
+-	help
+-	  This enables the Bluetooth driver for TI BT/FM/GPS combo devices.
+-	  This makes use of shared transport line discipline core driver to
+-	  communicate with the BT core of the combo chip.
+-endmenu
+diff --git a/drivers/staging/ti-st/Makefile b/drivers/staging/ti-st/Makefile
+deleted file mode 100644
+index 5f11b82..0000000
+--- a/drivers/staging/ti-st/Makefile
++++ /dev/null
+@@ -1,5 +0,0 @@
+-#
+-# Makefile for TI's shared transport line discipline
+-# and its protocol drivers (BT, FM, GPS)
+-#
+-obj-$(CONFIG_ST_BT) 		+= bt_drv.o
+-- 
+1.6.5
 
-greg k-h
