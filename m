@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759429Ab0JFQvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:51:14 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:34330 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758987Ab0JFQvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:51:13 -0400
-To: Andy Whitcroft <apw@canonical.com>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-reply-to: <20101006122940.GC19733@agent57> (message from Andy Whitcroft on
-	Wed, 6 Oct 2010 13:29:40 +0100)
-Subject: Re: overlayfs: BUG in ovl_whiteout
-References: <20101001180702.GD2832@shadowen.org>
- <E1P2hGO-0001kL-Gw@pomaz-ex.szeredi.hu>
- <20101004173343.GA19733@agent57>
- <E1P2rSX-0002hz-Lj@pomaz-ex.szeredi.hu> <20101006122940.GC19733@agent57>
-Message-Id: <E1P3XCv-0007E8-S1@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 06 Oct 2010 18:51:09 +0200
+	id S1759327Ab0JFQyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:54:13 -0400
+Received: from mx2.fusionio.com ([64.244.102.31]:50396 "EHLO mx2.fusionio.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758798Ab0JFQyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 12:54:12 -0400
+X-ASG-Debug-ID: 1286384049-08b7e8220001-xx1T2L
+X-Barracuda-Envelope-From: JAxboe@fusionio.com
+Message-ID: <4CACA9AD.9070900@fusionio.com>
+Date: Wed, 6 Oct 2010 18:54:05 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] one writeback regression fix for .36
+Content-Type: text/plain; charset="ISO-8859-1"
+X-ASG-Orig-Subj: [GIT PULL] one writeback regression fix for .36
+Content-Transfer-Encoding: 7bit
+X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
+X-Barracuda-Start-Time: 1286384049
+X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
+X-Barracuda-Spam-Score: 0.00
+X-Barracuda-Spam-Status: No, SCORE=0.00 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.42910
+	Rule breakdown below
+	 pts rule name              description
+	---- ---------------------- --------------------------------------------------
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010, Andy Whitcroft wrote:
-> On Mon, Oct 04, 2010 at 10:16:29PM +0200, Miklos Szeredi wrote:
-> > 
-> > OK, my guess is that it's a 'rename to self' which was not properly
-> > implemented.
-> > 
-> > Does the following patch make a difference?
-> 
-> That one panic'd immediatly.  Seems that we can have missmatched lowers
-> as well.  I applied the below over the top, and that seems to pass
-> testing without tripping the WARN_ON.
-> 
-> -apw
-> 
-> commit 03375858c62f617846b5dc4968fe8178eda51a7c
-> Author: Andy Whitcroft <apw@canonical.com>
-> Date:   Tue Oct 5 14:54:08 2010 +0100
-> 
->     overlayfs: handle missing lower inodes in ovl_is_same_inode
->     
->     Signed-off-by: Andy Whitcroft <apw@canonical.com>
+Hi Linus,
 
-OK, that's because d1 or d2 is negative, otherwise either the upper or
-the lower dentry _must_ exist.  In the version I committed to the
-overlayfs.v3 branch vfs_is_same_inode() checks whether the dentries
-are positive and only calls ->is_same_inode() if they are.
+The recent patch series from Jan introduced a WARN_ON() regression.
+The real fix for this is adding a super_operations->get_bdi(), which
+we'll do for 2.6.37.
 
-Can you please try pull from that branch and check if it's still buggy
-without your patch?
+Please pull.
 
-Thanks,
-Miklos
+are available in the git repository at:
+  git://git.kernel.dk/linux-2.6-block.git for-linus
 
+Christoph Hellwig (1):
+      writeback: always use sb->s_bdi for writeback purposes
 
+ fs/fs-writeback.c |   19 ++++---------------
+ 1 files changed, 4 insertions(+), 15 deletions(-)
 
-> 
-> diff --git a/fs/overlayfs/overlayfs.c b/fs/overlayfs/overlayfs.c
-> index c10cc7b..f596222 100644
-> --- a/fs/overlayfs/overlayfs.c
-> +++ b/fs/overlayfs/overlayfs.c
-> @@ -1964,19 +1964,25 @@ static int ovl_statfs(struct dentry *dentry, struct kstatfs *buf)
->  
->  static bool ovl_is_same_inode(struct dentry *d1, struct dentry *d2)
->  {
-> -	struct dentry *upperd1;
-> -	struct dentry *upperd2;
-> +	struct dentry *od1;
-> +	struct dentry *od2;
->  
-> -	upperd1 = ovl_dentry_upper(d1);
-> -	upperd2 = ovl_dentry_upper(d2);
-> +	od1 = ovl_dentry_upper(d1);
-> +	od2 = ovl_dentry_upper(d2);
->  
-> -	if (upperd1 && upperd2)
-> -		return vfs_is_same_inode(upperd1, upperd2);
-> +	if (od1 && od2)
-> +		return vfs_is_same_inode(od1, od2);
->  
-> -	if (upperd1 || upperd2)
-> +	if (od1 || od2)
->  		return false;
->  
-> -	return vfs_is_same_inode(ovl_dentry_lower(d1), ovl_dentry_lower(d2));
-> +	od1 = ovl_dentry_lower(d1);
-> +	od2 = ovl_dentry_lower(d2);
-> +
-> +	if (od1 && od2)
-> +		return vfs_is_same_inode(od1, od2);
-> +
-> +	return false;
->  }
->  
->  static const struct super_operations ovl_super_operations = {
-> 
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 5581122..ab38fef 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -72,22 +72,11 @@ int writeback_in_progress(struct backing_dev_info *bdi)
+ static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
+ {
+ 	struct super_block *sb = inode->i_sb;
+-	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
+ 
+-	/*
+-	 * For inodes on standard filesystems, we use superblock's bdi. For
+-	 * inodes on virtual filesystems, we want to use inode mapping's bdi
+-	 * because they can possibly point to something useful (think about
+-	 * block_dev filesystem).
+-	 */
+-	if (sb->s_bdi && sb->s_bdi != &noop_backing_dev_info) {
+-		/* Some device inodes could play dirty tricks. Catch them... */
+-		WARN(bdi != sb->s_bdi && bdi_cap_writeback_dirty(bdi),
+-			"Dirtiable inode bdi %s != sb bdi %s\n",
+-			bdi->name, sb->s_bdi->name);
+-		return sb->s_bdi;
+-	}
+-	return bdi;
++	if (strcmp(sb->s_type->name, "bdev") == 0)
++		return inode->i_mapping->backing_dev_info;
++
++	return sb->s_bdi;
+ }
+ 
+ static void bdi_queue_work(struct backing_dev_info *bdi,
+
+-- 
+Jens Axboe
+
