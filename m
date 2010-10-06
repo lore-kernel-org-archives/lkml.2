@@ -1,111 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758640Ab0JFDgr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 23:36:47 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:30836 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758551Ab0JFDgo (ORCPT
+	id S1758643Ab0JFDfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 23:35:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61711 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758592Ab0JFDfr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 23:36:44 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56754049"
-Message-ID: <4CABEECB.4030301@codeaurora.org>
-Date: Tue, 05 Oct 2010 20:36:43 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.8) Gecko/20100802 Thunderbird/3.1.2
-MIME-Version: 1.0
-To: Daniel Walker <dwalker@codeaurora.org>
-CC: Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] [ARM] Translate delay.S into (mostly) C
-References: <1285644827-6846-1-git-send-email-sboyd@codeaurora.org>	<1285644827-6846-2-git-send-email-sboyd@codeaurora.org> <1286299355.18791.11.camel@c-dwalke-linux.qualcomm.com>
-In-Reply-To: <1286299355.18791.11.camel@c-dwalke-linux.qualcomm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Oct 2010 23:35:47 -0400
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=dgbM859F5ZQA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=Op-mwl0xAAAA:8 a=meVymXHHAAAA:8 a=YARMKTzuC7XxI4AYRegA:9 a=n6EABryYw485qJXwiCUA:7 a=yktOZIr3FUDQaoH2oewAjK3ze3MA:4 a=jEp0ucaQiEUA:10 a=d4CUUju0HPYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101006033545.049555341@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 05 Oct 2010 23:34:47 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>
+Subject: [PATCH 2/9] jump label/x86: Move arch_init_ideal_nop5 later
+References: <20101006033445.465428951@goodmis.org>
+Content-Disposition: inline; filename=0002-jump-label-x86-Move-arch_init_ideal_nop5-later.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/05/2010 10:22 AM, Daniel Walker wrote:
-> You shouldn't really reference this series in this comment. You have to
-> look at this as a changeset comment. So you really want to describe what
-> this change is doing not what the over all series is doing.
->
-> It would be better to say something like,
->
-> "We're implementing this in C to give us further flexibility in allowing
-> overrides."
->
-> But don't references "next patch" or "this series" , but you can do that
-> in the intro email.
->
+From: Jason Baron <jbaron@redhat.com>
 
-Why not? This is a common thing to do when multiple patches are related
-to one topic. Doing a git log and searching for "next patch" shows
-others doing the same.
+arch_init_ideal_nop5() was being called from setup_arch() before
+the exception table was setup. Move it later into
+alternative_instructions().
 
->>
->>  $ scripts/bloat-o-meter vmlinux.orig vmlinux.new
->>  add/remove: 0/0 grow/shrink: 2/0 up/down: 12/0 (12)
->>  function                                     old     new   delta
->>  __udelay                                      48      56      +8
->>  __const_udelay                                40      44      +4
->
-> I think the "size" command might be better for this type of stuff. It
-> should give you the same output (or similar).. It's just used more
-> frequently. 
+Fixes a boot hang on OLPC's XO-1 laptop based on Geode LX
+processor.
 
-Ok.
+Reported-by: Daniel Drake <dsd@laptop.org>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+LKML-Reference: <20101004154633.GA2900@redhat.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ arch/x86/kernel/alternative.c |    5 +++++
+ arch/x86/kernel/setup.c       |    6 ------
+ 2 files changed, 5 insertions(+), 6 deletions(-)
 
-$ size vmlinux.orig
-   text    data     bss     dec     hex filename
-6533503  530232 1228296 8292031  7e86bf vmlinux.orig
-$ size vmlinux.new
-   text    data     bss     dec     hex filename
-6533607  530232 1228296 8292135  7e8727 vmlinux.new
-
-I should mention GCC decided to inline __delay() into __udelay() and
-__const_udelay() and also decided to inline __const_udelay() into
-__delay() meaning we lost the function interleaving the assembly file
-had. I'll make a note of that and sorry for being misleading.
-
-> Is this an -Os kernel, or -O2 ?
-
--Os.
-
->> +/*
->> + * 0 <= xloops <= 0x7fffff06
->> + * loops_per_jiffy <= 0x01ffffff (max. 3355 bogomips)
->
-> As long as your doing a re-write may as well add some real text here,
-> and for the others.
-
-Any suggestions on what to add? I hoped the original comments would be
-good enough already considering the code is unchanged.
-
->> + */
->> +void __const_udelay(unsigned long xloops)
->> +{
->> +	unsigned long lpj;
->> +	unsigned long loops;
->> +
->> +	xloops >>= 14;			/* max = 0x01ffffff */
->> +	lpj = loops_per_jiffy >> 10;	/* max = 0x0001ffff */
->> +	loops = lpj * xloops;		/* max = 0x00007fff */
->> +	loops >>= 6;			/* max = 2^32-1 */
->> +
->> +	if (loops)
->> +		__delay(loops);
->
-> likely/unlikely ?
-
-likely. Although I'm doubtful on how much it will help considering the
-assembly and the code are equivalent already for this part of the code.
-
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index cb0e6d3..d8b5b21 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -454,6 +454,7 @@ extern struct paravirt_patch_site __start_parainstructions[],
+ 
+ void __init alternative_instructions(void)
+ {
++	unsigned long flags;
+ 	/* The patching is not fully atomic, so try to avoid local interruptions
+ 	   that might execute the to be patched code.
+ 	   Other CPUs are not running. */
+@@ -508,6 +509,10 @@ void __init alternative_instructions(void)
+ 				(unsigned long)__smp_locks_end);
+ 
+ 	restart_nmi();
++
++	local_irq_save(flags);
++	arch_init_ideal_nop5();
++	local_irq_restore(flags);
+ }
+ 
+ /**
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 00e1678..c3a4fbb 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -112,7 +112,6 @@
+ #include <asm/numa_64.h>
+ #endif
+ #include <asm/mce.h>
+-#include <asm/alternative.h>
+ 
+ /*
+  * end_pfn only includes RAM, while max_pfn_mapped includes all e820 entries.
+@@ -727,7 +726,6 @@ void __init setup_arch(char **cmdline_p)
+ {
+ 	int acpi = 0;
+ 	int k8 = 0;
+-	unsigned long flags;
+ 
+ #ifdef CONFIG_X86_32
+ 	memcpy(&boot_cpu_data, &new_cpu_data, sizeof(new_cpu_data));
+@@ -1073,10 +1071,6 @@ void __init setup_arch(char **cmdline_p)
+ 	x86_init.oem.banner();
+ 
+ 	mcheck_init();
+-
+-	local_irq_save(flags);
+-	arch_init_ideal_nop5();
+-	local_irq_restore(flags);
+ }
+ 
+ #ifdef CONFIG_X86_32
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.1
+
 
