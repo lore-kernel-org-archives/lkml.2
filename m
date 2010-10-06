@@ -1,56 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759373Ab0JFQbS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:31:18 -0400
-Received: from new1.smtp.messagingengine.com ([66.111.4.221]:41318 "EHLO
+	id S1759389Ab0JFQba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:31:30 -0400
+Received: from new1.smtp.messagingengine.com ([66.111.4.221]:48353 "EHLO
 	new1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757299Ab0JFQbR (ORCPT
+	by vger.kernel.org with ESMTP id S1759376Ab0JFQb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:31:17 -0400
-X-Sasl-enc: yODaxfEyIP7nEvnLgA3rWoyLqpEdu6hkS3gvk/m2ZU9u 1286382675
+	Wed, 6 Oct 2010 12:31:28 -0400
+X-Sasl-enc: tIuzM5stlrMFNSPLFSMgSD9KXWR867Pjx7JNoSVBVhYy 1286382686
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
 To: tyhicks@linux.vnet.ibm.com, kirkland@canonical.com, jmorris@namei.org,
-        akpm@linux-foundation.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: [PATCH 0/3] ecryptfs misc patches
-Date: Wed, 6 Oct 2010 18:30:50 +0200
+        akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: [PATCH 1/3] ecryptfs: release keys loaded in ecryptfs_keyring_auth_tok_for_sig()
+Date: Wed, 6 Oct 2010 18:31:06 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.34.7-56.fc13.x86_64; KDE/4.4.5; x86_64; ; )
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart32174449.d1zIQ4ZHxQ";
+  boundary="nextPart1714199.jOHCpxfSix";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010061830.55492.roberto.sassu@polito.it>
+Message-Id: <201010061831.06856.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart32174449.d1zIQ4ZHxQ
+--nextPart1714199.jOHCpxfSix
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-=46irst two patches should be considered as a bug fix, while the third is
-intended as enhancement.
+This patch allows keys requested in the function ecryptfs_keyring_auth_tok_=
+for_sig()=20
+to be released when they are no longer required. In particular keys are dir=
+ectly released=20
+in the same function if the obtained authentication token is not valid.
+=46urther, a new function parameter 'auth_tok_key' has been added to=20
+ecryptfs_find_auth_tok_for_sig() in order to provide callers the key pointe=
+r to be passed=20
+to key_put().
 
 
-Roberto Sassu (3):
-  ecryptfs: release keys loaded in ecryptfs_keyring_auth_tok_for_sig()
-  ecryptfs: checking return code of ecryptfs_find_auth_tok_for_sig()
-  ecryptfs: added ecryptfs_mount_auth_tok_only mount parameter
-
- fs/ecryptfs/ecryptfs_kernel.h |    1 +
- fs/ecryptfs/keystore.c        |   43 ++++++++++++++++++++++++++++++++++---=
+Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- fs/ecryptfs/main.c            |    8 ++++++-
- 3 files changed, 44 insertions(+), 8 deletions(-)
+ fs/ecryptfs/keystore.c |   34 ++++++++++++++++++++++++++++------
+ 1 files changed, 28 insertions(+), 6 deletions(-)
 
+diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+index 73811cf..77580db 100644
+=2D-- a/fs/ecryptfs/keystore.c
++++ b/fs/ecryptfs/keystore.c
+@@ -446,6 +446,7 @@ out:
+  */
+ static int
+ ecryptfs_find_auth_tok_for_sig(
++	struct key **auth_tok_key,
+ 	struct ecryptfs_auth_tok **auth_tok,
+ 	struct ecryptfs_mount_crypt_stat *mount_crypt_stat,
+ 	char *sig)
+@@ -453,12 +454,12 @@ ecryptfs_find_auth_tok_for_sig(
+ 	struct ecryptfs_global_auth_tok *global_auth_tok;
+ 	int rc =3D 0;
+=20
++	(*auth_tok_key) =3D NULL;
+ 	(*auth_tok) =3D NULL;
+ 	if (ecryptfs_find_global_auth_tok_for_sig(&global_auth_tok,
+ 						  mount_crypt_stat, sig)) {
+=2D		struct key *auth_tok_key;
+=20
+=2D		rc =3D ecryptfs_keyring_auth_tok_for_sig(&auth_tok_key, auth_tok,
++		rc =3D ecryptfs_keyring_auth_tok_for_sig(auth_tok_key, auth_tok,
+ 						       sig);
+ 	} else
+ 		(*auth_tok) =3D global_auth_tok->global_auth_tok;
+@@ -509,6 +510,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remain=
+ing_bytes,
+ 			     char *filename, size_t filename_size)
+ {
+ 	struct ecryptfs_write_tag_70_packet_silly_stack *s;
++	struct key *auth_tok_key =3D NULL;
+ 	int rc =3D 0;
+=20
+ 	s =3D kmalloc(sizeof(*s), GFP_KERNEL);
+@@ -606,6 +608,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remain=
+ing_bytes,
+ 	}
+ 	dest[s->i++] =3D s->cipher_code;
+ 	rc =3D ecryptfs_find_auth_tok_for_sig(
++		&auth_tok_key,
+ 		&s->auth_tok, mount_crypt_stat,
+ 		mount_crypt_stat->global_default_fnek_sig);
+ 	if (rc) {
+@@ -753,6 +756,8 @@ out_free_unlock:
+ out_unlock:
+ 	mutex_unlock(s->tfm_mutex);
+ out:
++	if (auth_tok_key)
++		key_put(auth_tok_key);
+ 	kfree(s);
+ 	return rc;
+ }
+@@ -798,6 +803,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *f=
+ilename_size,
+ 			     char *data, size_t max_packet_size)
+ {
+ 	struct ecryptfs_parse_tag_70_packet_silly_stack *s;
++	struct key *auth_tok_key =3D NULL;
+ 	int rc =3D 0;
+=20
+ 	(*packet_size) =3D 0;
+@@ -910,7 +916,8 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *f=
+ilename_size,
+ 	 * >=3D ECRYPTFS_MAX_IV_BYTES. */
+ 	memset(s->iv, 0, ECRYPTFS_MAX_IV_BYTES);
+ 	s->desc.info =3D s->iv;
+=2D	rc =3D ecryptfs_find_auth_tok_for_sig(&s->auth_tok, mount_crypt_stat,
++	rc =3D ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
++					    &s->auth_tok, mount_crypt_stat,
+ 					    s->fnek_sig_hex);
+ 	if (rc) {
+ 		printk(KERN_ERR "%s: Error attempting to find auth tok for "
+@@ -986,6 +993,8 @@ out:
+ 		(*filename_size) =3D 0;
+ 		(*filename) =3D NULL;
+ 	}
++	if (auth_tok_key)
++		key_put(auth_tok_key);
+ 	kfree(s);
+ 	return rc;
+ }
+@@ -1557,14 +1566,19 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **=
+auth_tok_key,
+ 		       ECRYPTFS_VERSION_MAJOR,
+ 		       ECRYPTFS_VERSION_MINOR);
+ 		rc =3D -EINVAL;
+=2D		goto out;
++		goto out_release_key;
+ 	}
+ 	if ((*auth_tok)->token_type !=3D ECRYPTFS_PASSWORD
+ 	    && (*auth_tok)->token_type !=3D ECRYPTFS_PRIVATE_KEY) {
+ 		printk(KERN_ERR "Invalid auth_tok structure "
+ 		       "returned from key query\n");
+ 		rc =3D -EINVAL;
+=2D		goto out;
++		goto out_release_key;
++	}
++out_release_key:
++	if (rc) {
++		key_put(*auth_tok_key);
++		(*auth_tok_key) =3D NULL;
+ 	}
+ out:
+ 	return rc;
+@@ -1688,6 +1702,7 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_s=
+tat *crypt_stat,
+ 	struct ecryptfs_auth_tok_list_item *auth_tok_list_item;
+ 	size_t tag_11_contents_size;
+ 	size_t tag_11_packet_size;
++	struct key *auth_tok_key;
+ 	int rc =3D 0;
+=20
+ 	INIT_LIST_HEAD(&auth_tok_list);
+@@ -1784,6 +1799,10 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_=
+stat *crypt_stat,
+ 	 * just one will be sufficient to decrypt to get the FEK. */
+ find_next_matching_auth_tok:
+ 	found_auth_tok =3D 0;
++	if (auth_tok_key) {
++		key_put(auth_tok_key);
++		auth_tok_key =3D NULL;
++	}
+ 	list_for_each_entry(auth_tok_list_item, &auth_tok_list, list) {
+ 		candidate_auth_tok =3D &auth_tok_list_item->auth_tok;
+ 		if (unlikely(ecryptfs_verbosity > 0)) {
+@@ -1800,7 +1819,8 @@ find_next_matching_auth_tok:
+ 			rc =3D -EINVAL;
+ 			goto out_wipe_list;
+ 		}
+=2D		ecryptfs_find_auth_tok_for_sig(&matching_auth_tok,
++		ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
++					       &matching_auth_tok,
+ 					       crypt_stat->mount_crypt_stat,
+ 					       candidate_auth_tok_sig);
+ 		if (matching_auth_tok) {
+@@ -1866,6 +1886,8 @@ found_matching_auth_tok:
+ out_wipe_list:
+ 	wipe_auth_tok_list(&auth_tok_list);
+ out:
++	if (auth_tok_key)
++		key_put(auth_tok_key);
+ 	return rc;
+ }
+=20
 =2D-=20
 1.7.2.3
 
---nextPart32174449.d1zIQ4ZHxQ
+--nextPart1714199.jOHCpxfSix
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -131,12 +278,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDEwMDYxNjMwNTBaMCMGCSqGSIb3DQEJBDEWBBTUqIsJ3zu/FqH21KYd60KfvM/JITAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQBI
-ydoNxg7nEWsTVEHl7WFGHlfdJiOdp2QzlU9985C0cGl7wznGn7b/i4uWLlJOqFJewnOQmT/RRuH4
-4bZWUFEvSLP6vTXZHYmr+oXn34IP5AAHI6U1JTVUF/DVYfNLZWedU0/IKTfAYY+sfAeskOhJ6UkZ
-hqrC0Xilxl5G0iQaYAqPQ9sw5xXWPLb++eOCu8R+/r3+egfxLsUbJtKqycBIDHgx1Y7rizSsLSz4
-ubTiDyhsFghDr+szOcy1zucwwUXk6ms/KpDNly+Sk9MfTZjUnZIbI5Czgl1kHq2ydXdNXNjcJ8U9
-jgqiz4Hx08q8FiG9k9BEC8Ac4l4YT1nsSa81AAAAAAAA
+Fw0xMDEwMDYxNjMxMDZaMCMGCSqGSIb3DQEJBDEWBBTN7pW+YsjsTU5oZbayTpVcptqqJTAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQCM
+McTU7t9fJeLa0CKudAJMUosnRYkCG8Hbn2qJjeJtwRItmcHdVeBqvVc29byxYOXYaHFDKXl8sUl6
+1PICuLLHInmOOVkWy5gNty3YSv1mETH39pgMy+3jnX94hF4BDnIzWFEAjsKIU1JA3/lLBDRLN86P
+ztaaVNLETjoS/O+PNVN3HSwCu71gqTQ6h4W/8+htT3FHphmZX/bMCvL6H3qxh1OLuqD4Ah0v3Lpz
+ZNGLjpYzayLRSDfuAYa0WngUaX0BufqvrPZx9LMsqHEmP9V7ibC8q9ZPrsImIOBq4EvOZULDk7XV
+D9JyOY+lNVakS3/EQbYBcCgeo4uexWwh7nx+AAAAAAAA
 
---nextPart32174449.d1zIQ4ZHxQ--
+--nextPart1714199.jOHCpxfSix--
