@@ -1,238 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759544Ab0JFSGf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:06:35 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50112 "EHLO
+	id S1759514Ab0JFSGa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:06:30 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:50351 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759524Ab0JFSGc (ORCPT
+	with ESMTP id S1751695Ab0JFSG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:06:32 -0400
+	Wed, 6 Oct 2010 14:06:28 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 6/8] arm: generalize asm/signal.h
-Date: Wed,  6 Oct 2010 20:06:18 +0200
-Message-Id: <1286388380-20646-7-git-send-email-arnd@arndb.de>
+Subject: [PATCH 1/8] arm: generalize IPC header files
+Date: Wed,  6 Oct 2010 20:06:13 +0200
+Message-Id: <1286388380-20646-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286388380-20646-1-git-send-email-arnd@arndb.de>
 References: <1286388380-20646-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:xNq0I7Nke//8wtswbyskzjJpXnzxs+ax9L5cKij/IVg
- Ir58pluNi5Zbqdgd3qI3wcJnpMEgoT9oqCNP/lt/ZhI51jZSEJ
- iefJeAhK0RAsYoMjl41EQmvZOd9nXRLaveqg4WgVf59YwvP5J7
- iMUPE8VWCjBjdZpO+uRGgY/2TICbeJseX2bjYpt4+cGCFM05B5
- pdAUMcNdRYtjOV+TSPZAw==
+X-Provags-ID: V02:K0:IoxKzU0iCGf/Usg1jId6YaKayF500+679NyQMu0NquI
+ xR1q+dPuMyeuH5oTiXXSahXK1f61Hxo1FUN+clnLtdURWZQJUM
+ 1Xlo1PrvaikvbYfzy9OMT6Ped99xv5426TEG7nUartM4i3trM+
+ MeJ8orHzGhLLgMTYs14OGWyjSsl6nWl5mYE3oRlUhP0jBgBk85
+ tYp4rlyFxONhsl/YSy2lw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The signal.h implementation in arm is mostly generic, this
-makes it look like the version in include/asm-generic/.
-
-In addition to the definitions from the generic file, arm
-needs two SA_FLAGS values (SA_THIRTYTWO and SA_RESTORER)
-and a nonstandard signal (SIGSWI) as well as the definition
-of the legacy struct old_sigaction.
-
-We do however drop support for libc5 and older using the
-header in user space. This was done on other architectures
-before because libc5 header compatibility has been broken
-elsewhere for a long time already.
+The IPC structure definitions in ARM are all compatible
+with the generic definitions. Make them look identical
+as a preparation for actually using the files in
+include/asm-generic.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/include/asm/signal.h |  119 +++++++++++++++++++----------------------
- 1 files changed, 56 insertions(+), 63 deletions(-)
+ arch/arm/include/asm/ipcbuf.h |   15 ++++++++++-----
+ arch/arm/include/asm/msgbuf.h |   20 ++++++++++++++++++--
+ arch/arm/include/asm/sembuf.h |   27 ++++++++++++++++++++-------
+ arch/arm/include/asm/shmbuf.h |   21 +++++++++++++++++++--
+ 4 files changed, 67 insertions(+), 16 deletions(-)
 
-diff --git a/arch/arm/include/asm/signal.h b/arch/arm/include/asm/signal.h
-index 43ba0fb..6c67030 100644
---- a/arch/arm/include/asm/signal.h
-+++ b/arch/arm/include/asm/signal.h
-@@ -1,33 +1,27 @@
- #ifndef _ASMARM_SIGNAL_H
- #define _ASMARM_SIGNAL_H
- 
--#include <linux/types.h>
-+/*
-+ * ARM specific SA_FLAGS values:
-+ * SA_THIRTYTWO		delivers the signal in 32-bit mode, even if the task 
-+ *			is running in 26-bit.
-+ * SA_RESTART		flag to get restarting signals (which were the default long ago)
-+ */
-+#define SA_THIRTYTWO	0x02000000
-+#define SA_RESTORER	0x04000000
- 
--/* Avoid too many header ordering problems.  */
--struct siginfo;
-+/*
-+ * ARM specific signals
-+ */
-+#define SIGSWI		32
- 
--#ifdef __KERNEL__
--/* Most things should be clean enough to redefine this at will, if care
--   is taken to make libc match.  */
-+/* Generic stuff below */
-+#include <linux/types.h>
- 
- #define _NSIG		64
--#define _NSIG_BPW	32
-+#define _NSIG_BPW	__BITS_PER_LONG
- #define _NSIG_WORDS	(_NSIG / _NSIG_BPW)
- 
--typedef unsigned long old_sigset_t;		/* at least 32 bits */
--
--typedef struct {
--	unsigned long sig[_NSIG_WORDS];
--} sigset_t;
--
--#else
--/* Here we must cater to libcs that poke about in kernel headers.  */
--
--#define NSIG		32
--typedef unsigned long sigset_t;
--
--#endif /* __KERNEL__ */
--
- #define SIGHUP		 1
- #define SIGINT		 2
- #define SIGQUIT		 3
-@@ -68,22 +62,20 @@ typedef unsigned long sigset_t;
- 
- /* These should not be considered constants from userland.  */
- #define SIGRTMIN	32
-+#ifndef SIGRTMAX
- #define SIGRTMAX	_NSIG
--
--#define SIGSWI		32
-+#endif
+diff --git a/arch/arm/include/asm/ipcbuf.h b/arch/arm/include/asm/ipcbuf.h
+index 9768397..40e492d 100644
+--- a/arch/arm/include/asm/ipcbuf.h
++++ b/arch/arm/include/asm/ipcbuf.h
+@@ -2,24 +2,29 @@
+ #define __ASMARM_IPCBUF_H
  
  /*
-  * SA_FLAGS values:
+- * The ipc64_perm structure for arm architecture.
++ * The generic ipc64_perm structure:
+  * Note extra padding because this structure is passed back and forth
+  * between kernel and user space.
   *
-- * SA_NOCLDSTOP		flag to turn off SIGCHLD when children stop.
-- * SA_NOCLDWAIT		flag on SIGCHLD to inhibit zombies.
-- * SA_SIGINFO		deliver the signal with SIGINFO structs
-- * SA_THIRTYTWO		delivers the signal in 32-bit mode, even if the task 
-- *			is running in 26-bit.
-- * SA_ONSTACK		allows alternate signal stacks (see sigaltstack(2)).
-- * SA_RESTART		flag to get restarting signals (which were the default long ago)
-- * SA_NODEFER		prevents the current signal from being masked in the handler.
-- * SA_RESETHAND		clears the handler when the signal is delivered.
-+ * SA_ONSTACK indicates that a registered stack_t will be used.
-+ * SA_SIGINFO deliver the signal with SIGINFO structs
-+ * SA_RESTART flag to get restarting signals (which were the default long ago)
-+ * SA_NOCLDSTOP flag to turn off SIGCHLD when children stop.
-+ * SA_RESETHAND clears the handler when the signal is delivered.
-+ * SA_NOCLDWAIT flag on SIGCHLD to inhibit zombies.
-+ * SA_NODEFER prevents the current signal from being masked in the handler.
-  *
-  * SA_ONESHOT and SA_NOMASK are the historical Linux names for the Single
-  * Unix names RESETHAND and NODEFER respectively.
-@@ -91,8 +83,6 @@ typedef unsigned long sigset_t;
- #define SA_NOCLDSTOP	0x00000001
- #define SA_NOCLDWAIT	0x00000002
- #define SA_SIGINFO	0x00000004
--#define SA_THIRTYTWO	0x02000000
--#define SA_RESTORER	0x04000000
- #define SA_ONSTACK	0x08000000
- #define SA_RESTART	0x10000000
- #define SA_NODEFER	0x40000000
-@@ -101,8 +91,12 @@ typedef unsigned long sigset_t;
- #define SA_NOMASK	SA_NODEFER
- #define SA_ONESHOT	SA_RESETHAND
++ * ipc64_perm was originally meant to be architecture specific, but
++ * everyone just ended up making identical copies without specific
++ * optimizations, so we may just as well all use the same one.
++ *
+  * Pad space is left for:
+- * - 32-bit mode_t and seq
++ * - 32-bit mode_t on architectures that only had 16 bit
++ * - 32-bit seq
+  * - 2 miscellaneous 32-bit values
+  */
  
-+/*
-+ * New architectures should not define the obsolete
-+ *	SA_RESTORER	0x04000000
-+ */
+-struct ipc64_perm
+-{
++struct ipc64_perm {
+ 	__kernel_key_t		key;
+ 	__kernel_uid32_t	uid;
+ 	__kernel_gid32_t	gid;
+ 	__kernel_uid32_t	cuid;
+ 	__kernel_gid32_t	cgid;
+ 	__kernel_mode_t		mode;
+-	unsigned short		__pad1;
++				/* pad if mode_t is u16: */
++	unsigned char		__pad1[4 - sizeof(__kernel_mode_t)];
+ 	unsigned short		seq;
+ 	unsigned short		__pad2;
+ 	unsigned long		__unused1;
+diff --git a/arch/arm/include/asm/msgbuf.h b/arch/arm/include/asm/msgbuf.h
+index 33b35b9..ca4e383 100644
+--- a/arch/arm/include/asm/msgbuf.h
++++ b/arch/arm/include/asm/msgbuf.h
+@@ -1,11 +1,21 @@
+ #ifndef _ASMARM_MSGBUF_H
+ #define _ASMARM_MSGBUF_H
  
 -/* 
+- * The msqid64_ds structure for arm architecture.
++#include <asm/bitsperlong.h>
 +/*
-  * sigaltstack controls
-  */
- #define SS_ONSTACK	1
-@@ -111,20 +105,22 @@ typedef unsigned long sigset_t;
- #define MINSIGSTKSZ	2048
- #define SIGSTKSZ	8192
- 
--#include <asm-generic/signal-defs.h>
-+#ifndef __ASSEMBLY__
-+typedef struct {
-+	unsigned long sig[_NSIG_WORDS];
-+} sigset_t;
- 
--#ifdef __KERNEL__
--struct old_sigaction {
--	__sighandler_t sa_handler;
--	old_sigset_t sa_mask;
--	unsigned long sa_flags;
--	__sigrestore_t sa_restorer;
--};
-+/* not actually used, but required for linux/syscalls.h */
-+typedef unsigned long old_sigset_t;
-+
-+#include <asm-generic/signal-defs.h>
- 
- struct sigaction {
- 	__sighandler_t sa_handler;
- 	unsigned long sa_flags;
-+#ifdef SA_RESTORER
- 	__sigrestore_t sa_restorer;
++ * generic msqid64_ds structure.
++ *
+  * Note extra padding because this structure is passed back and forth
+  * between kernel and user space.
+  *
++ * msqid64_ds was originally meant to be architecture specific, but
++ * everyone just ended up making identical copies without specific
++ * optimizations, so we may just as well all use the same one.
++ *
++ * 64 bit architectures typically define a 64 bit __kernel_time_t,
++ * so they do not need the first three padding words.
++ * On big-endian systems, the padding is in the wrong place.
++ *
+  * Pad space is left for:
+  * - 64-bit time_t to solve y2038 problem
+  * - 2 miscellaneous 32-bit values
+@@ -14,11 +24,17 @@
+ struct msqid64_ds {
+ 	struct ipc64_perm msg_perm;
+ 	__kernel_time_t msg_stime;	/* last msgsnd time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long	__unused1;
 +#endif
- 	sigset_t sa_mask;		/* mask last for extensibility */
+ 	__kernel_time_t msg_rtime;	/* last msgrcv time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long	__unused2;
++#endif
+ 	__kernel_time_t msg_ctime;	/* last change time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long	__unused3;
++#endif
+ 	unsigned long  msg_cbytes;	/* current number of bytes on queue */
+ 	unsigned long  msg_qnum;	/* number of messages in queue */
+ 	unsigned long  msg_qbytes;	/* max number of bytes on queue */
+diff --git a/arch/arm/include/asm/sembuf.h b/arch/arm/include/asm/sembuf.h
+index 1c02839..f7131b7 100644
+--- a/arch/arm/include/asm/sembuf.h
++++ b/arch/arm/include/asm/sembuf.h
+@@ -1,23 +1,36 @@
+ #ifndef _ASMARM_SEMBUF_H
+ #define _ASMARM_SEMBUF_H
+ 
+-/* 
+- * The semid64_ds structure for arm architecture.
++#include <asm/bitsperlong.h>
++
++/*
++ * The semid64_ds structure for x86 architecture.
+  * Note extra padding because this structure is passed back and forth
+  * between kernel and user space.
+  *
++ * semid64_ds was originally meant to be architecture specific, but
++ * everyone just ended up making identical copies without specific
++ * optimizations, so we may just as well all use the same one.
++ *
++ * 64 bit architectures typically define a 64 bit __kernel_time_t,
++ * so they do not need the first two padding words.
++ * On big-endian systems, the padding is in the wrong place.
++ *
+  * Pad space is left for:
+  * - 64-bit time_t to solve y2038 problem
+  * - 2 miscellaneous 32-bit values
+  */
+-
+ struct semid64_ds {
+-	struct ipc64_perm sem_perm;		/* permissions .. see ipc.h */
+-	__kernel_time_t	sem_otime;		/* last semop time */
++	struct ipc64_perm sem_perm;	/* permissions .. see ipc.h */
++	__kernel_time_t	sem_otime;	/* last semop time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long	__unused1;
+-	__kernel_time_t	sem_ctime;		/* last change time */
++#endif
++	__kernel_time_t	sem_ctime;	/* last change time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long	__unused2;
+-	unsigned long	sem_nsems;		/* no. of semaphores in array */
++#endif
++	unsigned long	sem_nsems;	/* no. of semaphores in array */
+ 	unsigned long	__unused3;
+ 	unsigned long	__unused4;
  };
+diff --git a/arch/arm/include/asm/shmbuf.h b/arch/arm/include/asm/shmbuf.h
+index 2e5c67b..39b1ab0 100644
+--- a/arch/arm/include/asm/shmbuf.h
++++ b/arch/arm/include/asm/shmbuf.h
+@@ -1,11 +1,22 @@
+ #ifndef _ASMARM_SHMBUF_H
+ #define _ASMARM_SHMBUF_H
  
-@@ -132,24 +128,6 @@ struct k_sigaction {
- 	struct sigaction sa;
- };
- 
--#else
--/* Here we must cater to libcs that poke about in kernel headers.  */
--
--struct sigaction {
--	union {
--	  __sighandler_t _sa_handler;
--	  void (*_sa_sigaction)(int, struct siginfo *, void *);
--	} _u;
--	sigset_t sa_mask;
--	unsigned long sa_flags;
--	void (*sa_restorer)(void);
--};
--
--#define sa_handler	_u._sa_handler
--#define sa_sigaction	_u._sa_sigaction
--
--#endif /* __KERNEL__ */
--
- typedef struct sigaltstack {
- 	void __user *ss_sp;
- 	int ss_flags;
-@@ -157,8 +135,23 @@ typedef struct sigaltstack {
- } stack_t;
- 
- #ifdef __KERNEL__
+-/* 
+- * The shmid64_ds structure for arm architecture.
++#include <asm/bitsperlong.h>
 +
- #include <asm/sigcontext.h>
-+#undef __HAVE_ARCH_SIG_BITOPS
-+
- #define ptrace_signal_deliver(regs, cookie) do { } while (0)
--#endif
- 
--#endif
-+#endif /* __KERNEL__ */
-+#endif /* __ASSEMBLY__ */
-+
-+/* End generic stuff */
-+#ifdef __KERNEL__
-+struct old_sigaction {
-+	__sighandler_t sa_handler;
-+	old_sigset_t sa_mask;
-+	unsigned long sa_flags;
-+	__sigrestore_t sa_restorer;
-+};
-+#endif /* __KERNEL__ */
-+
-+#endif /* _ASMARM_SIGNAL_H */
++/*
++ * The shmid64_ds structure for x86 architecture.
+  * Note extra padding because this structure is passed back and forth
+  * between kernel and user space.
+  *
++ * shmid64_ds was originally meant to be architecture specific, but
++ * everyone just ended up making identical copies without specific
++ * optimizations, so we may just as well all use the same one.
++ *
++ * 64 bit architectures typically define a 64 bit __kernel_time_t,
++ * so they do not need the first two padding words.
++ * On big-endian systems, the padding is in the wrong place.
++ *
++ *
+  * Pad space is left for:
+  * - 64-bit time_t to solve y2038 problem
+  * - 2 miscellaneous 32-bit values
+@@ -15,11 +26,17 @@ struct shmid64_ds {
+ 	struct ipc64_perm	shm_perm;	/* operation perms */
+ 	size_t			shm_segsz;	/* size of segment (bytes) */
+ 	__kernel_time_t		shm_atime;	/* last attach time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long		__unused1;
++#endif
+ 	__kernel_time_t		shm_dtime;	/* last detach time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long		__unused2;
++#endif
+ 	__kernel_time_t		shm_ctime;	/* last change time */
++#if __BITS_PER_LONG != 64
+ 	unsigned long		__unused3;
++#endif
+ 	__kernel_pid_t		shm_cpid;	/* pid of creator */
+ 	__kernel_pid_t		shm_lpid;	/* pid of last operator */
+ 	unsigned long		shm_nattch;	/* no. of current attaches */
 -- 
 1.7.1
 
