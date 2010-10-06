@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752118Ab0JFBdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 21:33:41 -0400
-Received: from mx.treblig.org ([80.68.94.177]:42370 "EHLO mx.treblig.org"
+	id S1756522Ab0JFBgw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 21:36:52 -0400
+Received: from mail.perches.com ([173.55.12.10]:2684 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751427Ab0JFBdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 21:33:40 -0400
-X-Greylist: delayed 2032 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Oct 2010 21:33:40 EDT
-Date: Wed, 6 Oct 2010 01:59:47 +0100
-From: "Dr. David Alan Gilbert" <linux@treblig.org>
-To: swhiteho@redhat.com
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: gfs2_glops_list duplicate initialiser
-Message-ID: <20101006005947.GA2512@gallifrey>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Chocolate: 70 percent or better cocoa solids preferably
-X-Operating-System: Linux/2.6.32.20-kvm-i386-20100823 (i686)
-X-Uptime: 01:54:52 up 41 days,  9:21,  1 user,  load average: 0.04, 0.02,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751681Ab0JFBgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 21:36:51 -0400
+Subject: Re: [PATCH v3] iio: light: Adding driver for ISL29018 ALS
+From: Joe Perches <joe@perches.com>
+To: rklein@nvidia.com
+Cc: jic23@cam.ac.uk, achew@nvidia.com, olof@lixom.net,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, ldewangan@nvidia.com
+In-Reply-To: <1286318566-9782-1-git-send-email-rklein@nvidia.com>
+References: <1286318566-9782-1-git-send-email-rklein@nvidia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Oct 2010 18:36:48 -0700
+Message-ID: <1286329008.2156.78.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven,
-  I was running sparse on the current main kernel git tree and
-it spotted:
+On Tue, 2010-10-05 at 15:42 -0700, rklein@nvidia.com wrote:
+> From: Rhyland Klein <rklein@nvidia.com>
 
-fs/gfs2/glops.c:456:10: warning: Initializer entry defined twice
-fs/gfs2/glops.c:459:10:   also defined here
+Hi again.
 
-That's:
-const struct gfs2_glock_operations *gfs2_glops_list[] = {
-        [LM_TYPE_META] = &gfs2_meta_glops,
-        [LM_TYPE_INODE] = &gfs2_inode_glops,
-        [LM_TYPE_RGRP] = &gfs2_rgrp_glops,
-        [LM_TYPE_NONDISK] = &gfs2_trans_glops,
-        [LM_TYPE_IOPEN] = &gfs2_iopen_glops,
-        [LM_TYPE_FLOCK] = &gfs2_flock_glops,
-        [LM_TYPE_NONDISK] = &gfs2_nondisk_glops,
-        [LM_TYPE_QUOTA] = &gfs2_quota_glops,
-        [LM_TYPE_JOURNAL] = &gfs2_journal_glops,
-};
+> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
+[]
+> +#define ISL29018_REG_ADD_DATA_LSB	0x02
+> +#define ISL29018_REG_ADD_DATA_MSB	0x03
+> +#define ISL29018_MAX_REGS		ISL29018_REG_ADD_DATA_MSB
+> +
+> +struct isl29018_chip {
+> +	struct iio_dev		*indio_dev;
+> +	struct i2c_client	*client;
+> +	struct mutex		lock;
+> +	unsigned int		range;
+> +	unsigned int		adc_bit;
+> +	int			prox_scheme;
+> +	u8			reg_cache[ISL29018_MAX_REGS];
+> +};
+[]
+> +static int isl29018_chip_init(struct i2c_client *client)
+> +{
+> +	struct isl29018_chip *chip = i2c_get_clientdata(client);
+[]
+> +	memset((void *)chip->reg_cache, 0, ARRAY_SIZE(chip->reg_cache));
 
-The two separate assignments with the index of LM_TYPE_NONDISK are
-as it says a bit odd; it's not obvious to me what the right
-index is for the thing that is assigned &gfs2_trans_glops.
+Turns out there's only 3 of these registers.
+Earlier, I believe you said 32 bytes. 
 
-Dave
--- 
- -----Open up your eyes, open up your mind, open up your code -------   
-/ Dr. David Alan Gilbert    |       Running GNU/Linux       | Happy  \ 
-\ gro.gilbert @ treblig.org |                               | In Hex /
- \ _________________________|_____ http://www.treblig.org   |_______/
+I think the normal kernel style is:
+
+	memset(chip->reg_cache, 0, sizeof(chip->reg_cache));
+
+ARRAY_SIZE works, but only because reg_cache is u8.
+
+cheers, Joe
+
