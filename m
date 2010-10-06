@@ -1,63 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758611Ab0JFDft (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 23:35:49 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41826 "EHLO
+	id S1758657Ab0JFDiD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 23:38:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61711 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758595Ab0JFDfr (ORCPT
+	with ESMTP id S1758604Ab0JFDft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 23:35:47 -0400
-X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=0s3T7Di9ZokA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=mkBMUuqLQEF-4Qm-a2gA:9 a=IYX8qphYRydIe9zf5dAA:7 a=mSan-g2_I5sl-JaV0ZMiHL6dMFUA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+	Tue, 5 Oct 2010 23:35:49 -0400
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=7wlrzml9AW8A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=yvfyBhAeTrWaMyASluUA:9 a=OzVY5EqTThy8ktZk0cEA:7 a=xDJxmaQW6GG018gaRrr918r04a8A:4 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101006033545.365867366@goodmis.org>
+Message-Id: <20101006033546.437773605@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 05 Oct 2010 23:34:48 -0400
+Date: Tue, 05 Oct 2010 23:34:51 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 3/9] tracing/x86: No need to disable interrupts when calling arch_init_ideal_nop5
+        Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
+Subject: [PATCH 6/9] tracing: Graph support for wakeup tracer
 References: <20101006033445.465428951@goodmis.org>
-Content-Disposition: inline; filename=0003-tracing-x86-No-need-to-disable-interrupts-when-calli.patch
+Content-Disposition: inline; filename=0006-tracing-Graph-support-for-wakeup-tracer.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Jiri Olsa <jolsa@redhat.com>
 
-The function arch_init_ideal_nop5() is taken from the original
-ftrace_dyn_arch_init() that originally had interrupts disabled
-when calling it. This was due to the old way that mcounts were converted
-to nops. The disabling of interrupts is no longer needed for the
-work that is done.
+Add function graph support for wakeup latency tracer.
+The graph output is enabled by setting the 'display-graph'
+trace option.
 
+Signed-off-by: Jiri Olsa <jolsa@redhat.com>
+LKML-Reference: <1285243253-7372-4-git-send-email-jolsa@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/ftrace.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ kernel/trace/trace_sched_wakeup.c |  231 +++++++++++++++++++++++++++++++++++--
+ 1 files changed, 221 insertions(+), 10 deletions(-)
 
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index ebd80d5..13955a1 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -2795,15 +2795,13 @@ extern unsigned long __stop_mcount_loc[];
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+index 4086eae..033510d 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -31,13 +31,33 @@ static int			wakeup_rt;
+ static arch_spinlock_t wakeup_lock =
+ 	(arch_spinlock_t)__ARCH_SPIN_LOCK_UNLOCKED;
  
- void __init ftrace_init(void)
++static void wakeup_reset(struct trace_array *tr);
+ static void __wakeup_reset(struct trace_array *tr);
++static int wakeup_graph_entry(struct ftrace_graph_ent *trace);
++static void wakeup_graph_return(struct ftrace_graph_ret *trace);
+ 
+ static int save_lat_flag;
+ 
++#define TRACE_DISPLAY_GRAPH     1
++
++static struct tracer_opt trace_opts[] = {
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++	/* display latency trace as call graph */
++	{ TRACER_OPT(display-graph, TRACE_DISPLAY_GRAPH) },
++#endif
++	{ } /* Empty entry */
++};
++
++static struct tracer_flags tracer_flags = {
++	.val  = 0,
++	.opts = trace_opts,
++};
++
++#define is_graph() (tracer_flags.val & TRACE_DISPLAY_GRAPH)
++
+ #ifdef CONFIG_FUNCTION_TRACER
+ /*
+- * irqsoff uses its own tracer function to keep the overhead down:
++ * wakeup uses its own tracer function to keep the overhead down:
+  */
+ static void
+ wakeup_tracer_call(unsigned long ip, unsigned long parent_ip)
+@@ -80,8 +100,191 @@ static struct ftrace_ops trace_ops __read_mostly =
  {
--	unsigned long count, addr, flags;
-+	unsigned long count, addr;
- 	int ret;
+ 	.func = wakeup_tracer_call,
+ };
++
++static int start_func_tracer(int graph)
++{
++	int ret;
++
++	if (!graph)
++		ret = register_ftrace_function(&trace_ops);
++	else
++		ret = register_ftrace_graph(&wakeup_graph_return,
++					    &wakeup_graph_entry);
++
++	if (!ret && tracing_is_enabled())
++		tracer_enabled = 1;
++	else
++		tracer_enabled = 0;
++
++	return ret;
++}
++
++static void stop_func_tracer(int graph)
++{
++	tracer_enabled = 0;
++
++	if (!graph)
++		unregister_ftrace_function(&trace_ops);
++	else
++		unregister_ftrace_graph();
++}
++
+ #endif /* CONFIG_FUNCTION_TRACER */
  
- 	/* Keep the ftrace pointer to the stub */
- 	addr = (unsigned long)ftrace_stub;
++#ifdef CONFIG_FUNCTION_GRAPH_TRACER
++static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
++{
++
++	if (!(bit & TRACE_DISPLAY_GRAPH))
++		return -EINVAL;
++
++	if (!(is_graph() ^ set))
++		return 0;
++
++	stop_func_tracer(!set);
++
++	wakeup_reset(wakeup_trace);
++	tracing_max_latency = 0;
++
++	return start_func_tracer(set);
++}
++
++static int wakeup_graph_entry(struct ftrace_graph_ent *trace)
++{
++	struct trace_array *tr = wakeup_trace;
++	struct trace_array_cpu *data;
++	unsigned long flags;
++	long disabled;
++	int cpu, pc, ret = 0;
++
++	if (likely(!wakeup_task))
++		return 0;
++
++	pc = preempt_count();
++	preempt_disable_notrace();
++
++	cpu = raw_smp_processor_id();
++	if (cpu != wakeup_current_cpu)
++		goto out_enable;
++
++	data = tr->data[cpu];
++	disabled = atomic_inc_return(&data->disabled);
++	if (unlikely(disabled != 1))
++		goto out;
++
++	local_save_flags(flags);
++	ret = __trace_graph_entry(tr, trace, flags, pc);
++
++out:
++	atomic_dec(&data->disabled);
++
++out_enable:
++	preempt_enable_notrace();
++	return ret;
++}
++
++static void wakeup_graph_return(struct ftrace_graph_ret *trace)
++{
++	struct trace_array *tr = wakeup_trace;
++	struct trace_array_cpu *data;
++	unsigned long flags;
++	long disabled;
++	int cpu, pc;
++
++	if (likely(!wakeup_task))
++		return;
++
++	pc = preempt_count();
++	preempt_disable_notrace();
++
++	cpu = raw_smp_processor_id();
++	if (cpu != wakeup_current_cpu)
++		goto out_enable;
++
++	data = tr->data[cpu];
++	disabled = atomic_inc_return(&data->disabled);
++	if (unlikely(disabled != 1))
++		goto out;
++
++	local_save_flags(flags);
++	__trace_graph_return(tr, trace, flags, pc);
++
++out:
++	atomic_dec(&data->disabled);
++
++out_enable:
++	preempt_enable_notrace();
++	return;
++}
++
++static void wakeup_trace_open(struct trace_iterator *iter)
++{
++	if (is_graph())
++		graph_trace_open(iter);
++}
++
++static void wakeup_trace_close(struct trace_iterator *iter)
++{
++	if (iter->private)
++		graph_trace_close(iter);
++}
++
++#define GRAPH_TRACER_FLAGS (TRACE_GRAPH_PRINT_PROC)
++
++static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
++{
++	/*
++	 * In graph mode call the graph tracer output function,
++	 * otherwise go with the TRACE_FN event handler
++	 */
++	if (is_graph())
++		return print_graph_function_flags(iter, GRAPH_TRACER_FLAGS);
++
++	return TRACE_TYPE_UNHANDLED;
++}
++
++static void wakeup_print_header(struct seq_file *s)
++{
++	if (is_graph())
++		print_graph_headers_flags(s, GRAPH_TRACER_FLAGS);
++	else
++		trace_default_header(s);
++}
++
++static void
++__trace_function(struct trace_array *tr,
++		 unsigned long ip, unsigned long parent_ip,
++		 unsigned long flags, int pc)
++{
++	if (is_graph())
++		trace_graph_function(tr, ip, parent_ip, flags, pc);
++	else
++		trace_function(tr, ip, parent_ip, flags, pc);
++}
++#else
++#define __trace_function trace_function
++
++static int wakeup_set_flag(u32 old_flags, u32 bit, int set)
++{
++	return -EINVAL;
++}
++
++static int wakeup_graph_entry(struct ftrace_graph_ent *trace)
++{
++	return -1;
++}
++
++static enum print_line_t wakeup_print_line(struct trace_iterator *iter)
++{
++	return TRACE_TYPE_UNHANDLED;
++}
++
++static void wakeup_graph_return(struct ftrace_graph_ret *trace) { }
++static void wakeup_print_header(struct seq_file *s) { }
++static void wakeup_trace_open(struct trace_iterator *iter) { }
++static void wakeup_trace_close(struct trace_iterator *iter) { }
++#endif /* CONFIG_FUNCTION_GRAPH_TRACER */
++
+ /*
+  * Should this new latency be reported/recorded?
+  */
+@@ -152,7 +355,7 @@ probe_wakeup_sched_switch(void *ignore,
+ 	/* The task we are waiting for is waking up */
+ 	data = wakeup_trace->data[wakeup_cpu];
  
--	local_irq_save(flags);
- 	ftrace_dyn_arch_init(&addr);
--	local_irq_restore(flags);
+-	trace_function(wakeup_trace, CALLER_ADDR0, CALLER_ADDR1, flags, pc);
++	__trace_function(wakeup_trace, CALLER_ADDR0, CALLER_ADDR1, flags, pc);
+ 	tracing_sched_switch_trace(wakeup_trace, prev, next, flags, pc);
  
- 	/* ftrace_dyn_arch_init places the return code in addr */
- 	if (addr)
+ 	T0 = data->preempt_timestamp;
+@@ -252,7 +455,7 @@ probe_wakeup(void *ignore, struct task_struct *p, int success)
+ 	 * is not called by an assembly function  (where as schedule is)
+ 	 * it should be safe to use it here.
+ 	 */
+-	trace_function(wakeup_trace, CALLER_ADDR1, CALLER_ADDR2, flags, pc);
++	__trace_function(wakeup_trace, CALLER_ADDR1, CALLER_ADDR2, flags, pc);
+ 
+ out_locked:
+ 	arch_spin_unlock(&wakeup_lock);
+@@ -303,12 +506,8 @@ static void start_wakeup_tracer(struct trace_array *tr)
+ 	 */
+ 	smp_wmb();
+ 
+-	register_ftrace_function(&trace_ops);
+-
+-	if (tracing_is_enabled())
+-		tracer_enabled = 1;
+-	else
+-		tracer_enabled = 0;
++	if (start_func_tracer(is_graph()))
++		printk(KERN_ERR "failed to start wakeup tracer\n");
+ 
+ 	return;
+ fail_deprobe_wake_new:
+@@ -320,7 +519,7 @@ fail_deprobe:
+ static void stop_wakeup_tracer(struct trace_array *tr)
+ {
+ 	tracer_enabled = 0;
+-	unregister_ftrace_function(&trace_ops);
++	stop_func_tracer(is_graph());
+ 	unregister_trace_sched_switch(probe_wakeup_sched_switch, NULL);
+ 	unregister_trace_sched_wakeup_new(probe_wakeup, NULL);
+ 	unregister_trace_sched_wakeup(probe_wakeup, NULL);
+@@ -379,9 +578,15 @@ static struct tracer wakeup_tracer __read_mostly =
+ 	.start		= wakeup_tracer_start,
+ 	.stop		= wakeup_tracer_stop,
+ 	.print_max	= 1,
++	.print_header	= wakeup_print_header,
++	.print_line	= wakeup_print_line,
++	.flags		= &tracer_flags,
++	.set_flag	= wakeup_set_flag,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
++	.open		= wakeup_trace_open,
++	.close		= wakeup_trace_close,
+ 	.use_max_tr	= 1,
+ };
+ 
+@@ -394,9 +599,15 @@ static struct tracer wakeup_rt_tracer __read_mostly =
+ 	.stop		= wakeup_tracer_stop,
+ 	.wait_pipe	= poll_wait_pipe,
+ 	.print_max	= 1,
++	.print_header	= wakeup_print_header,
++	.print_line	= wakeup_print_line,
++	.flags		= &tracer_flags,
++	.set_flag	= wakeup_set_flag,
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
++	.open		= wakeup_trace_open,
++	.close		= wakeup_trace_close,
+ 	.use_max_tr	= 1,
+ };
+ 
 -- 
 1.7.1
 
