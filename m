@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758231Ab0JFGFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 02:05:44 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:39689 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755474Ab0JFGFn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 02:05:43 -0400
-Subject: Re: [PATCH 0/1] wait: using uninitialized member of wait queue
-From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-To: ext Linus Torvalds <torvalds@linux-foundation.org>
-Cc: akpm@linux-foundation.org, m.nazarewicz@samsung.com, mingo@elte.hu,
-        gregkh@suse.de, a.p.zijlstra@chello.nl, xiaosuo@gmail.com,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTimEp8rorHxtOQji-xtXZoDkcYrGGWCBQg3ypKf4@mail.gmail.com>
-References: <cover.1286193121.git.EXT-Eugeny.Kuznetsov@nokia.com>
-	 <AANLkTimEp8rorHxtOQji-xtXZoDkcYrGGWCBQg3ypKf4@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Oct 2010 10:01:31 +0400
-Message-ID: <1286344891.24366.59.camel@ekuznets-lx-nokia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Oct 2010 06:05:10.0793 (UTC) FILETIME=[6F1E2F90:01CB651C]
-X-Nokia-AV: Clean
+	id S1758344Ab0JFGFz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 02:05:55 -0400
+Received: from borg.medozas.de ([188.40.89.202]:56198 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758269Ab0JFGFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 02:05:54 -0400
+Date: Wed, 6 Oct 2010 08:05:52 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: David Miller <davem@davemloft.net>
+cc: Andreas Gruenbacher <agruen@suse.de>, netfilter@vger.kernel.org,
+        eparis@redhat.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        schwab@redhat.com, Harald Welte <laforge@netfilter.org>,
+        Andi Kleen <andi@firstfloor.org>
+Subject: Re: aligned_{u64,be64,le64} defined in #ifdef __KERNEL__
+In-Reply-To: <alpine.LNX.2.01.1008301502280.19931@obet.zrqbmnf.qr>
+Message-ID: <alpine.LNX.2.01.1010060804580.8631@obet.zrqbmnf.qr>
+References: <1282682582-15980-1-git-send-email-eparis@redhat.com> <201008300326.30233.agruen@suse.de> <20100829.212156.229740543.davem@davemloft.net> <201008301258.33113.agruen@suse.de> <alpine.LNX.2.01.1008301502280.19931@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-05 at 08:43 -0700, ext Linus Torvalds wrote:
-> On Tue, Oct 5, 2010 at 1:47 AM, Evgeny Kuznetsov
-> <EXT-Eugeny.Kuznetsov@nokia.com> wrote:
-> >
-> > Here is patch which fixes bug in /include/linux/wait.h file.
-> > Member "flags" of "wait_queue_t" struct  is used in several places in
-> > kernel code without beeing initialized. "flags" is used in bitwise
-> > operations. If it contain dummy data then incorrect flags may be
-> > used later in code.
-> 
-> The patch looks fine, but do you have any case of this actually
-> causing problems? Afaik, we do end up initializing the part of the
-> flags field we care about (WQ_FLAG_EXCLUSIVE) in prepare_to_wait()
-> (and add_wait_queue()), so it looks - from an admittedly very cursory
-> read - as if this is a good cleanup but shouldn't actually be the
-> cause of any actual bugs.
-> 
-> So I'll apply it, but I just wondered if you had actually seen any
-> semantic changes from it?
-> 
->                Linus
-I did not see any problems caused by uninitialized flag. But this is
-potential unsafe place (in case of future changes).
-Also there is initialization of all members but not 'flags' in
-init_wait() function. It is logical to initialize all data members.
+On Monday 2010-08-30 15:02, Jan Engelhardt wrote:
+>On Monday 2010-08-30 12:58, Andreas Gruenbacher wrote:
+>>
+>>> If we want a version of this type visible to userspace, it needs to,
+>>> for example, have double underscores prepended to the type name just
+>>> as we do for things like __u16 and __u32.
+>>
+>>How about something like this?
+>
+>
+>I like that approach:
+>
+>>From 3bec018a4835d4fdbe35595366a51bd09e3cc1d0 Mon Sep 17 00:00:00 2001
+>>From: Andreas Gruenbacher <agruen@suse.de>
+>>Date: Mon, 30 Aug 2010 12:51:01 +0200
+>>Subject: [PATCH] Define __aligned_{u64,le64,be64} types with 8-byte alignment
+>>
+>>--- a/include/linux/if_ppp.h
+>>+++ b/include/linux/if_ppp.h
+>>@@ -114,14 +114,14 @@ struct pppol2tp_ioc_stats {
+>> 	__u16		tunnel_id;	/* redundant */
+>> 	__u16		session_id;	/* if zero, get tunnel stats */
+>> 	__u32		using_ipsec:1;	/* valid only for session_id == 0 */
+>>-	aligned_u64	tx_packets;
+>>-	aligned_u64	tx_bytes;
+>>-	aligned_u64	tx_errors;
+>>-	aligned_u64	rx_packets;
+>>-	aligned_u64	rx_bytes;
+>>-	aligned_u64	rx_seq_discards;
+>>-	aligned_u64	rx_oos_packets;
+>>-	aligned_u64	rx_errors;
+>>+	__aligned_u64	tx_packets;
+>>+	__aligned_u64	tx_bytes;
+>>+	__aligned_u64	tx_errors;
+>>+	__aligned_u64	rx_packets;
+>>+	__aligned_u64	rx_bytes;
+>>+	__aligned_u64	rx_seq_discards;
+>>+	__aligned_u64	rx_oos_packets;
+>>+	__aligned_u64	rx_errors;
 
-Thanks,
-Regards,
-Evgeny
 
+Dave, you liked this too, but I don't see it in net-next yet. Was there 
+some sort of holdup?
+
+Jan
