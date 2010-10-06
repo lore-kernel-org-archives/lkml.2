@@ -1,57 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932882Ab0JFRxW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 13:53:22 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:53277 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932240Ab0JFRxU (ORCPT
+	id S1759494Ab0JFRyN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 13:54:13 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:11799 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753552Ab0JFRyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 13:53:20 -0400
-X-IronPort-AV: E=Sophos;i="4.57,291,1283731200"; 
-   d="scan'208";a="2220128"
-Date: Wed, 6 Oct 2010 18:53:39 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
-Subject: Re: [Xen-devel] [PATCH v2 01/10] xen: remap GSIs as pirqs when
- running as initial domain
-In-Reply-To: <20101006165022.GC1590@dumpdata.com>
-Message-ID: <alpine.DEB.2.00.1010061802290.2440@kaball-desktop>
-References: <alpine.DEB.2.00.1009301536300.2864@kaball-desktop> <1286191730-3188-1-git-send-email-stefano.stabellini@eu.citrix.com> <20101004192426.GA10291@dumpdata.com> <alpine.DEB.2.00.1010051400350.2440@kaball-desktop>
- <20101006165022.GC1590@dumpdata.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Oct 2010 13:54:11 -0400
+Message-ID: <4CACB7C3.9030000@caviumnetworks.com>
+Date: Wed, 06 Oct 2010 10:54:11 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Tracey Dent <tdent48227@gmail.com>
+CC: greg@kroah.com, abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 07/28] Staging: comedi: drivers.c: Edit file so that checkpatch.pl
+ has 4 warnings and 0 errors
+References: <1286326843-6170-1-git-send-email-tdent48227@gmail.com> <1286326843-6170-7-git-send-email-tdent48227@gmail.com>
+In-Reply-To: <1286326843-6170-7-git-send-email-tdent48227@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2010 17:54:18.0774 (UTC) FILETIME=[7FB0DB60:01CB657F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010, Konrad Rzeszutek Wilk wrote:
-> > > > +void __init xen_setup_pirqs(void)
-> > > > +{
-> > > > +	int irq;
-> > > > +#ifndef CONFIG_SMP
-> > > > +	int nr_ioapics = 1;
-> > > > +#endif
-> > > 
-> > > Should this be defined in a header instead? Was this nr_ioapics==1
-> > > meant to fall in the '0 == nr_ioapics' to setup the first sixteen
-> > > irqs?
-> > > 
-> > > Is CONFIG_X86_IO_APIC more appropiate than CONFIG_SMP?
-> > 
-> > I think it was supposed to fix a compilation error in case
-> > CONFIG_X86_IO_APIC is not set, so that in both cases in which an ioapic
-> > is not present in the system or the ioapic support is not compiled in
-> > the kernel we would fall in the '0 == nr_ioapics' code path.
-> 
-> That is what I thought, but nr_ioapics is set to one, so how do
-> we fall in 0 == 1 code path?
-> 
- 
-that was another mistake, I have fixed it now
+On 10/05/2010 06:00 PM, Tracey Dent wrote:
+> Changed a few lines that made checkpatch.pl complain. Could not get ever warning but
+> I got it down to to just 4, WARNING: line over 80 characters.
 
+The overall goal is to improve the code, not placate checkpatch.pl
+
+[...]
+>   				printk
+> -				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
+> -				     dev->use_count);
+> +				    (KERN_WARNING "BUG! detaching device     \
+> +							with use_count=%d\n",
+> +							dev->use_count);
+
+Is that really an improvement?
+
+And even if it were, is that really how strings should be split up?
+
+Hint:
+	pr_warning("BUG! detaching device with use_count=%d\n",
+		   dev->use_count);
+
+
+David Daney
