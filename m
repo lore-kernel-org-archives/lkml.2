@@ -1,301 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759529Ab0JFSGc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:06:32 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:53851 "EHLO
+	id S1759557Ab0JFSGg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:06:36 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62346 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759448Ab0JFSGa (ORCPT
+	with ESMTP id S1759448Ab0JFSGd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:06:30 -0400
+	Wed, 6 Oct 2010 14:06:33 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 5/8] arm: generalize asm/posix_types.h
-Date: Wed,  6 Oct 2010 20:06:17 +0200
-Message-Id: <1286388380-20646-6-git-send-email-arnd@arndb.de>
+Subject: [PATCH 7/8] arm: generalize asm/termios.h
+Date: Wed,  6 Oct 2010 20:06:19 +0200
+Message-Id: <1286388380-20646-8-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286388380-20646-1-git-send-email-arnd@arndb.de>
 References: <1286388380-20646-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:d43uJXTNEgHkcRHVuwM9ZFMUEanHyXLNmrmgNh0uXDW
- vJsXORHFBdvX18gVlaHugx8/2IR608hAEQCVx6uO298TIILvVJ
- nd6W8Nwpy8ZAoR0NijS+jcTsQTgVWCGARpWcxzismDPwMkfLFe
- O8vJxYKcZ991qcaq5tf9jcUh2UcxrEF8bjZ+V48SNrVFJqowCn
- +Xm18ful0b4m0AgPBtvcg==
+X-Provags-ID: V02:K0:xVvKRblTJCmypujh1OD7+jIAsh6TQZ4qktmKmS7nfVk
+ t1476T+tbOxAl3+EwXBlHUEEdWyuUPQuOupi8V0gN5K0O1/zf6
+ PZWDiUOeT32pn4/aB+72MdXobVHjAYjGsWs3abCgpzY3D7iys3
+ gVOM5MOqc6DpDv5tWD6nbIVJST6ZGXv11MqA4Ke7pxoLCgLI5f
+ BCPoF1xc08SzoP+pF/owg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes the arm version of asm/posix_types.h a variant
-of the asm-generic version, which allows overriding parts
-of the type definitions while using the common parts.
+The termios header on arm differs from the asm-generic
+version practically only in the definition of
+user_termio_to_kernel_termios and user_termio_to_kernel_termios.
 
-The definitions that still need to differ to maintain
-the user space ABI are:
+Using the generic definition fixes multiple problems:
 
-__kernel_mode_t
-__kernel_nlink_t
-__kernel_ipc_pid_t
-__kernel_uid_t
-__kernel_gid_t
-__kernel_uid32_t
-__kernel_gid32_t
-__kernel_old_uid_t
-__kernel_old_gid_t
-__kernel_old_dev_t
+- type safety of the functions
+- missing check of user space pointer access
+- incorrect behaviour on big-endian kernels
+- missing copy of the c_line field
 
-These get defined to their traditional values before
-the common code.
-
-The definitions of __FD_SET/__FD_CLR__FD_ISSET/__FD_ZERO
-all get replaced by the slightly different definitions
-from the asm-generic file, which are more type safe.
+Moreover, once the code is identical to the generic version,
+we can simply use that code instead.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- arch/arm/include/asm/posix_types.h |  207 ++++++++++++++++++++++++++++++------
- 1 files changed, 172 insertions(+), 35 deletions(-)
+ arch/arm/include/asm/termios.h |  136 +++++++++++++++++++++++++++++-----------
+ 1 files changed, 99 insertions(+), 37 deletions(-)
 
-diff --git a/arch/arm/include/asm/posix_types.h b/arch/arm/include/asm/posix_types.h
-index 2446d23..558cf4b 100644
---- a/arch/arm/include/asm/posix_types.h
-+++ b/arch/arm/include/asm/posix_types.h
-@@ -14,64 +14,201 @@
- #define __ARCH_ARM_POSIX_TYPES_H
+diff --git a/arch/arm/include/asm/termios.h b/arch/arm/include/asm/termios.h
+index 293e3f1..94ce9ec 100644
+--- a/arch/arm/include/asm/termios.h
++++ b/arch/arm/include/asm/termios.h
+@@ -1,5 +1,12 @@
+ #ifndef __ASM_ARM_TERMIOS_H
+ #define __ASM_ARM_TERMIOS_H
++/*
++ * Most architectures have straight copies of the x86 code, with
++ * varying levels of bug fixes on top. Usually it's a good idea
++ * to use this generic version instead, but be careful to avoid
++ * ABI changes.
++ * New architectures should not provide their own version.
++ */
+ 
+ #include <asm/termbits.h>
+ #include <asm/ioctls.h>
+@@ -21,16 +28,6 @@ struct termio {
+ 	unsigned char c_cc[NCC];	/* control characters */
+ };
+ 
+-#ifdef __KERNEL__
+-/*	intr=^C		quit=^|		erase=del	kill=^U
+-	eof=^D		vtime=\0	vmin=\1		sxtc=\0
+-	start=^Q	stop=^S		susp=^Z		eol=\0
+-	reprint=^R	discard=^U	werase=^W	lnext=^V
+-	eol2=\0
+-*/
+-#define INIT_C_CC "\003\034\177\025\004\0\1\0\021\023\032\0\022\017\027\026\0"
+-#endif
+-
+ /* modem lines */
+ #define TIOCM_LE	0x001
+ #define TIOCM_DTR	0x002
+@@ -51,41 +48,106 @@ struct termio {
+ 
+ #ifdef __KERNEL__
+ 
++#include <asm/uaccess.h>
++
++/*	intr=^C		quit=^\		erase=del	kill=^U
++	eof=^D		vtime=\0	vmin=\1		sxtc=\0
++	start=^Q	stop=^S		susp=^Z		eol=\0
++	reprint=^R	discard=^U	werase=^W	lnext=^V
++	eol2=\0
++*/
++#define INIT_C_CC "\003\034\177\025\004\0\1\0\021\023\032\0\022\017\027\026\0"
++
+ /*
+  * Translate a "termio" structure into a "termios". Ugh.
+  */
+-#define SET_LOW_TERMIOS_BITS(termios, termio, x) {		\
+-	unsigned short __tmp;					\
+-	get_user(__tmp,&(termio)->x);				\
+-	*(unsigned short *) &(termios)->x = __tmp;		\
+-}
++static inline int user_termio_to_kernel_termios(struct ktermios *termios,
++						const struct termio __user *termio)
++{
++	unsigned short tmp;
++
++	if (get_user(tmp, &termio->c_iflag) < 0)
++		goto fault;
++	termios->c_iflag = (0xffff0000 & termios->c_iflag) | tmp;
+ 
+-#define user_termio_to_kernel_termios(termios, termio) \
+-({ \
+-	SET_LOW_TERMIOS_BITS(termios, termio, c_iflag); \
+-	SET_LOW_TERMIOS_BITS(termios, termio, c_oflag); \
+-	SET_LOW_TERMIOS_BITS(termios, termio, c_cflag); \
+-	SET_LOW_TERMIOS_BITS(termios, termio, c_lflag); \
+-	copy_from_user((termios)->c_cc, (termio)->c_cc, NCC); \
+-})
++	if (get_user(tmp, &termio->c_oflag) < 0)
++		goto fault;
++	termios->c_oflag = (0xffff0000 & termios->c_oflag) | tmp;
++
++	if (get_user(tmp, &termio->c_cflag) < 0)
++		goto fault;
++	termios->c_cflag = (0xffff0000 & termios->c_cflag) | tmp;
++
++	if (get_user(tmp, &termio->c_lflag) < 0)
++		goto fault;
++	termios->c_lflag = (0xffff0000 & termios->c_lflag) | tmp;
++
++	if (get_user(termios->c_line, &termio->c_line) < 0)
++		goto fault;
++
++	if (copy_from_user(termios->c_cc, termio->c_cc, NCC) != 0)
++		goto fault;
++
++	return 0;
++
++ fault:
++	return -EFAULT;
++}
  
  /*
-- * This file is generally used by user-level software, so you need to
-- * be a little careful about namespace pollution etc.  Also, we cannot
-- * assume GCC is being used.
-+ * These are ARM specific overrides for types that
-+ * we traditionally define differently from the
-+ * generic types.
+  * Translate a "termios" structure into a "termio". Ugh.
   */
+-#define kernel_termios_to_user_termio(termio, termios) \
+-({ \
+-	put_user((termios)->c_iflag, &(termio)->c_iflag); \
+-	put_user((termios)->c_oflag, &(termio)->c_oflag); \
+-	put_user((termios)->c_cflag, &(termio)->c_cflag); \
+-	put_user((termios)->c_lflag, &(termio)->c_lflag); \
+-	put_user((termios)->c_line,  &(termio)->c_line); \
+-	copy_to_user((termio)->c_cc, (termios)->c_cc, NCC); \
+-})
 -
--typedef unsigned long		__kernel_ino_t;
- typedef unsigned short		__kernel_mode_t;
-+#define __kernel_mode_t		__kernel_mode_t
-+
- typedef unsigned short		__kernel_nlink_t;
--typedef long			__kernel_off_t;
--typedef int			__kernel_pid_t;
-+#define __kernel_nlink_t	__kernel_nlink_t
-+
- typedef unsigned short		__kernel_ipc_pid_t;
-+#define __kernel_ipc_pid_t	__kernel_ipc_pid_t
-+
- typedef unsigned short		__kernel_uid_t;
-+#define __kernel_uid_t		__kernel_uid_t
-+
- typedef unsigned short		__kernel_gid_t;
--typedef unsigned int		__kernel_size_t;
--typedef int			__kernel_ssize_t;
--typedef int			__kernel_ptrdiff_t;
--typedef long			__kernel_time_t;
--typedef long			__kernel_suseconds_t;
--typedef long			__kernel_clock_t;
--typedef int			__kernel_timer_t;
--typedef int			__kernel_clockid_t;
--typedef int			__kernel_daddr_t;
--typedef char *			__kernel_caddr_t;
--typedef unsigned short		__kernel_uid16_t;
--typedef unsigned short		__kernel_gid16_t;
-+#define __kernel_gid_t		__kernel_gid_t
-+
- typedef unsigned int		__kernel_uid32_t;
-+#define __kernel_uid32_t	__kernel_uid32_t
-+
- typedef unsigned int		__kernel_gid32_t;
-+#define __kernel_gid32_t	__kernel_gid32_t
- 
- typedef unsigned short		__kernel_old_uid_t;
-+#define __kernel_old_uid_t	__kernel_old_uid_t
-+
- typedef unsigned short		__kernel_old_gid_t;
-+#define __kernel_old_gid_t	__kernel_old_gid_t
-+
- typedef unsigned short		__kernel_old_dev_t;
-+#define __kernel_old_dev_t	__kernel_old_dev_t
-+
-+/* generic contents from here */
-+
-+#include <asm/bitsperlong.h>
-+/*
-+ * This file is generally used by user-level software, so you need to
-+ * be a little careful about namespace pollution etc.
-+ *
-+ * First the types that are often defined in different ways across
-+ * architectures, so that you can override them.
-+ */
-+
-+#ifndef __kernel_ino_t
-+typedef unsigned long	__kernel_ino_t;
-+#endif
-+
-+#ifndef __kernel_mode_t
-+typedef unsigned int	__kernel_mode_t;
-+#endif
-+
-+#ifndef __kernel_nlink_t
-+typedef unsigned long	__kernel_nlink_t;
-+#endif
-+
-+#ifndef __kernel_pid_t
-+typedef int		__kernel_pid_t;
-+#endif
-+
-+#ifndef __kernel_ipc_pid_t
-+typedef int		__kernel_ipc_pid_t;
-+#endif
-+
-+#ifndef __kernel_uid_t
-+typedef unsigned int	__kernel_uid_t;
-+typedef unsigned int	__kernel_gid_t;
-+#endif
-+
-+#ifndef __kernel_suseconds_t
-+typedef long		__kernel_suseconds_t;
-+#endif
-+
-+#ifndef __kernel_daddr_t
-+typedef int		__kernel_daddr_t;
-+#endif
- 
--#ifdef __GNUC__
--typedef long long		__kernel_loff_t;
-+#ifndef __kernel_uid32_t
-+typedef __kernel_uid_t	__kernel_uid32_t;
-+typedef __kernel_gid_t	__kernel_gid32_t;
- #endif
- 
-+#ifndef __kernel_old_uid_t
-+typedef __kernel_uid_t	__kernel_old_uid_t;
-+typedef __kernel_gid_t	__kernel_old_gid_t;
-+#endif
-+
-+#ifndef __kernel_old_dev_t
-+typedef unsigned int	__kernel_old_dev_t;
-+#endif
-+
-+/*
-+ * Most 32 bit architectures use "unsigned int" size_t,
-+ * and all 64 bit architectures use "unsigned long" size_t.
-+ */
-+#ifndef __kernel_size_t
-+#if __BITS_PER_LONG != 64
-+typedef unsigned int	__kernel_size_t;
-+typedef int		__kernel_ssize_t;
-+typedef int		__kernel_ptrdiff_t;
-+#else
-+typedef unsigned long	__kernel_size_t;
-+typedef long		__kernel_ssize_t;
-+typedef long		__kernel_ptrdiff_t;
-+#endif
-+#endif
-+
-+/*
-+ * anything below here should be completely generic
-+ */
-+typedef long		__kernel_off_t;
-+typedef long long	__kernel_loff_t;
-+typedef long		__kernel_time_t;
-+typedef long		__kernel_clock_t;
-+typedef int		__kernel_timer_t;
-+typedef int		__kernel_clockid_t;
-+typedef char *		__kernel_caddr_t;
-+typedef unsigned short	__kernel_uid16_t;
-+typedef unsigned short	__kernel_gid16_t;
-+
- typedef struct {
- 	int	val[2];
- } __kernel_fsid_t;
- 
--#if defined(__KERNEL__)
-+#ifdef __KERNEL__
- 
--#undef	__FD_SET
--#define __FD_SET(fd, fdsetp) \
--		(((fd_set *)(fdsetp))->fds_bits[(fd) >> 5] |= (1<<((fd) & 31)))
-+#undef __FD_SET
-+static inline void __FD_SET(unsigned long __fd, __kernel_fd_set *__fdsetp)
+-#define user_termios_to_kernel_termios(k, u) copy_from_user(k, u, sizeof(struct termios2))
+-#define kernel_termios_to_user_termios(u, k) copy_to_user(u, k, sizeof(struct termios2))
+-#define user_termios_to_kernel_termios_1(k, u) copy_from_user(k, u, sizeof(struct termios))
+-#define kernel_termios_to_user_termios_1(u, k) copy_to_user(u, k, sizeof(struct termios))
++static inline int kernel_termios_to_user_termio(struct termio __user *termio,
++						struct ktermios *termios)
 +{
-+	unsigned long __tmp = __fd / __NFDBITS;
-+	unsigned long __rem = __fd % __NFDBITS;
-+	__fdsetp->fds_bits[__tmp] |= (1UL<<__rem);
-+}
- 
--#undef	__FD_CLR
--#define __FD_CLR(fd, fdsetp) \
--		(((fd_set *)(fdsetp))->fds_bits[(fd) >> 5] &= ~(1<<((fd) & 31)))
-+#undef __FD_CLR
-+static inline void __FD_CLR(unsigned long __fd, __kernel_fd_set *__fdsetp)
-+{
-+	unsigned long __tmp = __fd / __NFDBITS;
-+	unsigned long __rem = __fd % __NFDBITS;
-+	__fdsetp->fds_bits[__tmp] &= ~(1UL<<__rem);
-+}
- 
--#undef	__FD_ISSET
--#define __FD_ISSET(fd, fdsetp) \
--		((((fd_set *)(fdsetp))->fds_bits[(fd) >> 5] & (1<<((fd) & 31))) != 0)
-+#undef __FD_ISSET
-+static inline int __FD_ISSET(unsigned long __fd, const __kernel_fd_set *__p)
-+{
-+	unsigned long __tmp = __fd / __NFDBITS;
-+	unsigned long __rem = __fd % __NFDBITS;
-+	return (__p->fds_bits[__tmp] & (1UL<<__rem)) != 0;
-+}
- 
--#undef	__FD_ZERO
--#define __FD_ZERO(fdsetp) \
--		(memset (fdsetp, 0, sizeof (*(fd_set *)(fdsetp))))
-+/*
-+ * This will unroll the loop for the normal constant case (8 ints,
-+ * for a 256-bit fd_set)
-+ */
-+#undef __FD_ZERO
-+static inline void __FD_ZERO(__kernel_fd_set *__p)
-+{
-+	unsigned long *__tmp = __p->fds_bits;
-+	int __i;
- 
--#endif
-+	if (__builtin_constant_p(__FDSET_LONGS)) {
-+		switch (__FDSET_LONGS) {
-+		case 16:
-+			__tmp[ 0] = 0; __tmp[ 1] = 0;
-+			__tmp[ 2] = 0; __tmp[ 3] = 0;
-+			__tmp[ 4] = 0; __tmp[ 5] = 0;
-+			__tmp[ 6] = 0; __tmp[ 7] = 0;
-+			__tmp[ 8] = 0; __tmp[ 9] = 0;
-+			__tmp[10] = 0; __tmp[11] = 0;
-+			__tmp[12] = 0; __tmp[13] = 0;
-+			__tmp[14] = 0; __tmp[15] = 0;
-+			return;
++	if (put_user(termios->c_iflag, &termio->c_iflag) < 0 ||
++	    put_user(termios->c_oflag, &termio->c_oflag) < 0 ||
++	    put_user(termios->c_cflag, &termio->c_cflag) < 0 ||
++	    put_user(termios->c_lflag, &termio->c_lflag) < 0 ||
++	    put_user(termios->c_line,  &termio->c_line) < 0 ||
++	    copy_to_user(termio->c_cc, termios->c_cc, NCC) != 0)
++		return -EFAULT;
 +
-+		case 8:
-+			__tmp[ 0] = 0; __tmp[ 1] = 0;
-+			__tmp[ 2] = 0; __tmp[ 3] = 0;
-+			__tmp[ 4] = 0; __tmp[ 5] = 0;
-+			__tmp[ 6] = 0; __tmp[ 7] = 0;
-+			return;
-+
-+		case 4:
-+			__tmp[ 0] = 0; __tmp[ 1] = 0;
-+			__tmp[ 2] = 0; __tmp[ 3] = 0;
-+			return;
-+		}
-+	}
-+	__i = __FDSET_LONGS;
-+	while (__i) {
-+		__i--;
-+		*__tmp = 0;
-+		__tmp++;
-+	}
++	return 0;
 +}
 +
-+#endif /* __KERNEL__ */
++#ifdef TCGETS2
++static inline int user_termios_to_kernel_termios(struct ktermios *k,
++						 struct termios2 __user *u)
++{
++	return copy_from_user(k, u, sizeof(struct termios2));
++}
++
++static inline int kernel_termios_to_user_termios(struct termios2 __user *u,
++						 struct ktermios *k)
++{
++	return copy_to_user(u, k, sizeof(struct termios2));
++}
++
++static inline int user_termios_to_kernel_termios_1(struct ktermios *k,
++						   struct termios __user *u)
++{
++	return copy_from_user(k, u, sizeof(struct termios));
++}
++
++static inline int kernel_termios_to_user_termios_1(struct termios __user *u,
++						   struct ktermios *k)
++{
++	return copy_to_user(u, k, sizeof(struct termios));
++}
++#else /* TCGETS2 */
++static inline int user_termios_to_kernel_termios(struct ktermios *k,
++						 struct termios __user *u)
++{
++	return copy_from_user(k, u, sizeof(struct termios));
++}
++
++static inline int kernel_termios_to_user_termios(struct termios __user *u,
++						 struct ktermios *k)
++{
++	return copy_to_user(u, k, sizeof(struct termios));
++}
++#endif /* TCGETS2 */
  
- #endif
+ #endif	/* __KERNEL__ */
+ 
 -- 
 1.7.1
 
