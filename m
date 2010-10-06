@@ -1,243 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933307Ab0JFXEF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 19:04:05 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:53320 "EHLO e5.ny.us.ibm.com"
+	id S1759951Ab0JFXGm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 19:06:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42715 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933244Ab0JFXED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 19:04:03 -0400
-Date: Wed, 6 Oct 2010 16:04:00 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
-Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: mmotm 2010-08-11 - RCU whinge during very early boot
-Message-ID: <20101006230400.GR2433@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <201008112340.o7BNenDe021017@imap1.linux-foundation.org>
- <10167.1281629887@localhost>
- <AANLkTim2Z=f0-=-+FEWPAdGrMdQXFWcQbKi0JCs_1KGK@mail.gmail.com>
+	id S1758212Ab0JFXGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 19:06:41 -0400
+Date: Wed, 6 Oct 2010 19:06:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <h.peter.anvin@intel.com>
+Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, yinghai@kernel.org,
+        caiqian@redhat.com, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [tip:core/memblock] x86, memblock: Fix crashkernel allocation
+Message-ID: <20101006230632.GA22059@redhat.com>
+References: <4CABAF2A.5090501@kernel.org>
+ <tip-9f4c13964b58608fbce05540743281ea3146c0e8@git.kernel.org>
+ <20101006151449.GA7378@redhat.com>
+ <4CACF531.2060407@intel.com>
+ <20101006224704.GD7378@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTim2Z=f0-=-+FEWPAdGrMdQXFWcQbKi0JCs_1KGK@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101006224704.GD7378@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 12:05:13PM +0200, Zdenek Kabelac wrote:
-> 2010/8/12  <Valdis.Kletnieks@vt.edu>:
-> > On Wed, 11 Aug 2010 16:10:49 PDT, akpm@linux-foundation.org said:
-> >> The mm-of-the-moment snapshot 2010-08-11-16-10 has been uploaded to
-> >>
-> >>    http://userweb.kernel.org/~akpm/mmotm/
-> >
-> > Throws a RCU complaint.  Hopefully somebody on the cc: list knows what it is about...
-> >
-> > [    0.026136] CPU0: Intel(R) Core(TM)2 Duo CPU     P8700  @ 2.53GHz stepping 0a
-> > [    0.028399] NMI watchdog enabled, takes one hw-pmu counter.
-> > [    0.030019] lockdep: fixing up alternatives.
-> > [    0.031178]
-> > [    0.031179] ===================================================
-> > [    0.031182] [ INFO: suspicious rcu_dereference_check() usage. ]
-> > [    0.031184] ---------------------------------------------------
-> > [    0.031187] kernel/sched.c:618 invoked rcu_dereference_check() without protection!
-> > [    0.031189]
-> > [    0.031189] other info that might help us debug this:
-> > [    0.031190]
-> > [    0.031192]
-> > [    0.031193] rcu_scheduler_active = 1, debug_locks = 1
-> > [    0.031195] 3 locks held by kworker/0:0/4:
-> > [    0.031197]  #0:  (events){+.+.+.}, at: [<ffffffff810504ca>] process_one_work+0x1b6/0x37d
-> > [    0.031210]  #1:  ((&c_idle.work)){+.+.+.}, at: [<ffffffff810504ca>] process_one_work+0x1b6/0x37d
-> > [    0.031217]  #2:  (&rq->lock){-.-...}, at: [<ffffffff81b5f9b8>] init_idle+0x2b/0x114
-> > [    0.031225]
-> > [    0.031226] stack backtrace:
-> > [    0.031229] Pid: 4, comm: kworker/0:0 Not tainted 2.6.35-mmotm0811 #1
-> > [    0.031232] Call Trace:
-> > [    0.031237]  [<ffffffff810661eb>] lockdep_rcu_dereference+0x9d/0xa5
-> > [    0.031242]  [<ffffffff8102b751>] task_group+0x7b/0x8a
-> > [    0.031246]  [<ffffffff81b5f9b8>] ? init_idle+0x2b/0x114
-> > [    0.031250]  [<ffffffff8102b775>] set_task_rq+0x15/0x6e
-> > [    0.031253]  [<ffffffff81b5fa5e>] init_idle+0xd1/0x114
-> > [    0.031257]  [<ffffffff81b5fb44>] fork_idle+0x8e/0x9d
-> > [    0.031261]  [<ffffffff81b5de6f>] do_fork_idle+0x17/0x28
-> > [    0.031265]  [<ffffffff8105052b>] process_one_work+0x217/0x37d
-> > [    0.031269]  [<ffffffff810504ca>] ? process_one_work+0x1b6/0x37d
-> > [    0.031273]  [<ffffffff81b5de58>] ? do_fork_idle+0x0/0x28
-> > [    0.031277]  [<ffffffff81051775>] worker_thread+0x17e/0x251
-> > [    0.031281]  [<ffffffff810515f7>] ? worker_thread+0x0/0x251
-> > [    0.031285]  [<ffffffff8105544a>] kthread+0x7d/0x85
-> > [    0.031290]  [<ffffffff81003554>] kernel_thread_helper+0x4/0x10
-> > [    0.031295]  [<ffffffff81558d80>] ? restore_args+0x0/0x30
-> > [    0.031299]  [<ffffffff810553cd>] ? kthread+0x0/0x85
-> > [    0.031303]  [<ffffffff81003550>] ? kernel_thread_helper+0x0/0x10
-> > [    0.031333] Booting Node   0, Processors  #1 Ok.
-> > [    0.103111] NMI watchdog enabled, takes one hw-pmu counter.
-> > [    0.104013] Brought up 2 CPUs
-> >
+On Wed, Oct 06, 2010 at 06:47:04PM -0400, Vivek Goyal wrote:
+> On Wed, Oct 06, 2010 at 03:16:17PM -0700, H. Peter Anvin wrote:
+> > On 10/06/2010 08:14 AM, Vivek Goyal wrote:
+> > > 
+> > > I really don't understand why to put a upper limit of DEFAULT_BZIMAGE_ADDR_MAX.
+> > > It does not make much sense to internally impose an upper limit on
+> > > reserved memory area if reserver has not specified one.
+> > > 
+> > > Why can't we provide a function which does a search from bottom up for
+> > > the required size of memory. If the memory finally reserved does not meet
+> > > the constraints needed by kexec, then kexec load will fail. Kernel does
+> > > not have to try to figure out the upper limit in this case.
+> > > 
+> > > Current state of affairs are not perfect, but coming up with artificial
+> > > upper limit here is further deterioriating the situation, IMHO.
+> > > 
+> > > Regarding the question of specifying the upper limit by kexec on command
+> > > line, I think it is hard. Kexec needs to load multiple segments and some
+> > > needs to go in really low memory area and some can be in higher memory
+> > > area. What is the upper limit in this case. If we take the upper limit
+> > > of lowest memory segment, then we will just not have sufficient memory
+> > > to load all segments.
+> > > 
+> > > That would mean split the reserved region into multiple parts and one
+> > > should specifiy separate upper limit for each region. That would make
+> > > the whole thing complex.
+> > > 
+> > > So can we atleast maintain the status quo where we search for crashkernel
+> > > memory bottom up without any upper limits instread of top down.
+> > > 
+> > 
+> > The reason the "whole thing is complex" is because your constraints are
+> > complex, and you're still trying to hide them from the kernel.  And what
+> > is absolutely incomprehensible to me is that you seem to think this is okay.
+> > 
+> > I really, REALLY, ***REALLY*** don't want to burden the kernel with a
+> > bunch of constraints which are invisible to it, where things will
+> > randomly fail because the implementation changed.  We have too much of
+> > that already, and it causes an enormous amount of problems all over the
+> > kernel.
+> > 
+> > Of course, we're already painted into a corner with a bad design that
+> > isn't going to change overnight, and of course, this is hardly the first
+> > time this has happened -- we do find our way out of tight spots on a
+> > regular basis.  Perhaps you're right and the best thing is to add an
+> > explicit bottoms-up allocator function for now, *BUT* I would also like
+> > to see a firm commitment to fix the underlying architectural problem for
+> > real, and not just "maintain the status quo" indefinitely, which is what
+> > your emails make me think you're expecting.
 > 
-> I'm still seeing this INFO message on my vanilla 2.6.36-rc kernel.
+> I really don't mind fixing the things properly in long term, just that I am
+> running out of ideas regarding how to fix it in proper way.
 > 
-> ----------------------
+> To me the best thing would be that this whole allocation thing be dyanmic
+> from user space where kexec will run, determine what it is loading, 
+> determine what are the memory contstraints on these segments (min, upper
+> limit, alignment etc), and then ask kernel for reserving contiguous
+> memory. This kind of dynamic reservation will remove lot of problems
+> associated with crashkernel= reservations.
 > 
-> ftrace: converting mcount calls to 0f 1f 44 00 00
-> ftrace: allocating 16045 entries in 63 pages
-> Setting APIC routing to flat
-> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
-> CPU0: Intel(R) Core(TM)2 Duo CPU     T7500  @ 2.20GHz stepping 0a
-> NMI watchdog enabled, takes one hw-pmu counter.
-> lockdep: fixing up alternatives.
+> But I am not aware of anyway of doing dynamic allocation and it certainly
+> does not seem to be easy to be able to allocated 128M of memory contiguously.
 > 
-> ===================================================
-> [ INFO: suspicious rcu_dereference_check() usage. ]
-> ---------------------------------------------------
-> kernel/sched.c:618 invoked rcu_dereference_check() without protection!
+> Because we don't have a way to reserve memory dynamically later, we end up
+> doing a big chunk of reservation using kernel command line and later
+> figure out what to load where. Now with this approach kexec has not even run
+> so how it can tell you what are the memory constraints.
 > 
-> other info that might help us debug this:
+> So to me one of the ways of properly fixing is adding some kind of
+> capability to reserve the memory dynamically (may be using sys_kexec())
+> and get rid of this notion of reserving memory at boot time.
 > 
+> The other concern you raised is hiding constraints from kernel. At this
+> point of time the only problem with crashkernel=X@0 syntax is that it
+> does not tell you whether to look for memory bottom up or top down. How
+> about if we specify it explicitly in the syntax so that kernel does not
+> have to assume things?
 > 
-> rcu_scheduler_active = 1, debug_locks = 0
-> 3 locks held by kworker/0:0/4:
->  #0:  (events){+.+.+.}, at: [<ffffffff8106e78e>] process_one_work+0x12e/0x560
->  #1:  ((&c_idle.work)){+.+.+.}, at: [<ffffffff8106e78e>]
-> process_one_work+0x12e/0x560
->  #2:  (&rq->lock){......}, at: [<ffffffff814772c3>] init_idle+0x30/0x12c
+> In fact the initial crashkernel syntax was. crashkernel=X@Y. This meant
+> allocated X amount of memory at location Y. This left no ambiguity and
+> kernel did not have to assume things. It had the problem though that 
+> we might not have physical RAM at location Y. So I think that's when
+> somebody came up with the idea of crashkernel=X@0 so that we ideally
+> want memory at location 0, but if you can't provide that, then provide
+> anything available next scanning bottom up. 
 > 
-> stack backtrace:
-> Pid: 4, comm: kworker/0:0 Not tainted 2.6.36-rc6-00085-g6e34025 #1
-> Call Trace:
->  [<ffffffff81089c1b>] lockdep_rcu_dereference+0xbb/0xc0
->  [<ffffffff8103e7d5>] set_task_rq+0x2f5/0x300
->  [<ffffffff81477374>] init_idle+0xe1/0x12c
->  [<ffffffff81477769>] fork_idle+0x90/0x9f
->  [<ffffffff81048dfa>] ? enqueue_entity+0x13a/0x430
->  [<ffffffff81482789>] ? sub_preempt_count+0x59/0x60
->  [<ffffffff814752f5>] do_fork_idle+0x1c/0x2d
->  [<ffffffff8106e7fa>] process_one_work+0x19a/0x560
->  [<ffffffff8106e78e>] ? process_one_work+0x12e/0x560
->  [<ffffffff814752d9>] ? do_fork_idle+0x0/0x2d
->  [<ffffffff81070189>] worker_thread+0x169/0x340
->  [<ffffffff81070020>] ? worker_thread+0x0/0x340
->  [<ffffffff810752e6>] kthread+0xa6/0xb0
->  [<ffffffff81004014>] kernel_thread_helper+0x4/0x10
->  [<ffffffff8147efcb>] ? _raw_spin_unlock_irq+0x3b/0x60
->  [<ffffffff8147f600>] ? restore_args+0x0/0x30
->  [<ffffffff81075240>] ? kthread+0x0/0xb0
->  [<ffffffff81004010>] ? kernel_thread_helper+0x0/0x10
-> Booting Node   0, Processors  #1 Ok.
-> TSC synchronization [CPU#0 -> CPU#1]:
-> Measured 399476 cycles TSC warp between CPUs, turning off TSC clock.
-> Marking TSC unstable due to check_tsc_sync_source failed
-> NMI watchdog enabled, takes one hw-pmu counter.
-> Brought up 2 CPUs
-> Total of 2 processors activated (8781.86 BogoMIPS).
-> regulator: core version 0.5
-> regulator: dummy:
-> Time:  7:44:09  Date: 10/05/10
+> So the only part missing from syntax is explicitly speicifying "next
+> available location scanning bottom up". If we add that to syntax then
+> kernel does not have to make assumptions. (except the alignment part).
+> 
+> So how about modifying syntax to crashkernel=X@Y#BU.
+> 
+> The "#BU" part can be optional and in that case kernel is free to allocate
+> memory either top down or bottom up.
+> 
 
-Hello, Zdenek,
+Thinking more on above point.
 
-I believe that the following patch from Peter Z. should address this.
+crashkernel=X@Y will mean that allocate memory X at location Y only. If
+it is not available just don't reserve. This will also mean that
+we should not overload Y=0 case and crashkernel=X@0 should also mean
+that reserve X amount of memory at location 0 and if it is not available
+fail.
 
-							Thanx, Paul
+crashkernel=<size>@<offset>#<policy> will communicate additional
+inforation regarding how to allocate memory. 
 
-------------------------------------------------------------------------
+policy could be comma separated strings to communicate bottom up or top down
+constraints. In future we could extend it to specify additional
+constraints like alignment.
 
-commit e3dd67d97b3c2aad366b845c797745a78efaf90d
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Thu Sep 16 17:50:31 2010 +0200
+policy="<str>"
 
-    sched: fix RCU lockdep splat from task_group()
-    
-    This addresses the following RCU lockdep splat:
-    
-    [0.051203] CPU0: AMD QEMU Virtual CPU version 0.12.4 stepping 03
-    [0.052999] lockdep: fixing up alternatives.
-    [0.054105]
-    [0.054106] ===================================================
-    [0.054999] [ INFO: suspicious rcu_dereference_check() usage. ]
-    [0.054999] ---------------------------------------------------
-    [0.054999] kernel/sched.c:616 invoked rcu_dereference_check() without protection!
-    [0.054999]
-    [0.054999] other info that might help us debug this:
-    [0.054999]
-    [0.054999]
-    [0.054999] rcu_scheduler_active = 1, debug_locks = 1
-    [0.054999] 3 locks held by swapper/1:
-    [0.054999]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff814be933>] cpu_up+0x42/0x6a
-    [0.054999]  #1:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810400d8>] cpu_hotplug_begin+0x2a/0x51
-    [0.054999]  #2:  (&rq->lock){-.-...}, at: [<ffffffff814be2f7>] init_idle+0x2f/0x113
-    [0.054999]
-    [0.054999] stack backtrace:
-    [0.054999] Pid: 1, comm: swapper Not tainted 2.6.35 #1
-    [0.054999] Call Trace:
-    [0.054999]  [<ffffffff81068054>] lockdep_rcu_dereference+0x9b/0xa3
-    [0.054999]  [<ffffffff810325c3>] task_group+0x7b/0x8a
-    [0.054999]  [<ffffffff810325e5>] set_task_rq+0x13/0x40
-    [0.054999]  [<ffffffff814be39a>] init_idle+0xd2/0x113
-    [0.054999]  [<ffffffff814be78a>] fork_idle+0xb8/0xc7
-    [0.054999]  [<ffffffff81068717>] ? mark_held_locks+0x4d/0x6b
-    [0.054999]  [<ffffffff814bcebd>] do_fork_idle+0x17/0x2b
-    [0.054999]  [<ffffffff814bc89b>] native_cpu_up+0x1c1/0x724
-    [0.054999]  [<ffffffff814bcea6>] ? do_fork_idle+0x0/0x2b
-    [0.054999]  [<ffffffff814be876>] _cpu_up+0xac/0x127
-    [0.054999]  [<ffffffff814be946>] cpu_up+0x55/0x6a
-    [0.054999]  [<ffffffff81ab562a>] kernel_init+0xe1/0x1ff
-    [0.054999]  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
-    [0.054999]  [<ffffffff814c353c>] ? restore_args+0x0/0x30
-    [0.054999]  [<ffffffff81ab5549>] ? kernel_init+0x0/0x1ff
-    [0.054999]  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
-    [0.056074] Booting Node   0, Processors  #1lockdep: fixing up alternatives.
-    [0.130045]  #2lockdep: fixing up alternatives.
-    [0.203089]  #3 Ok.
-    [0.275286] Brought up 4 CPUs
-    [0.276005] Total of 4 processors activated (16017.17 BogoMIPS).
-    
-    The cgroup_subsys_state structures referenced by idle tasks are never
-    freed, because the idle tasks should be part of the root cgroup,
-    which is not removable.
-    
-    The problem is that while we do in-fact hold rq->lock, the newly spawned
-    idle thread's cpu is not yet set to the correct cpu so the lockdep check
-    in task_group():
-    
-      lockdep_is_held(&task_rq(p)->lock)
-    
-    will fail.
-    
-    But this is a chicken and egg problem.  Setting the CPU's runqueue requires
-    that the CPU's runqueue already be set.  ;-)
-    
-    So insert an RCU read-side critical section to avoid the complaint.
-    
-    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+BU---> Look for next available free memory bottom up if memory at originally
+       specified location is not available.
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 09b574e..40e065e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5331,7 +5331,19 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
- 	idle->se.exec_start = sched_clock();
- 
- 	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
-+	/*
-+	 * We're having a chicken and egg problem, even though we are
-+	 * holding rq->lock, the cpu isn't yet set to this cpu so the
-+	 * lockdep check in task_group() will fail.
-+	 *
-+	 * Similar case to sched_fork(). / Alternatively we could
-+	 * use task_rq_lock() here and obtain the other rq->lock.
-+	 *
-+	 * Silence PROVE_RCU
-+	 */
-+	rcu_read_lock();
- 	__set_task_cpu(idle, cpu);
-+	rcu_read_unlock();
- 
- 	rq->curr = rq->idle = idle;
- #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
+Thanks
+Vivek
