@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759068Ab0JFONQ convert rfc822-to-quoted-printable (ORCPT
-	<rfc822;w@1wt.eu>); Wed, 6 Oct 2010 10:13:16 -0400
-Received: from kroah.org ([198.145.64.141]:36083 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759052Ab0JFONO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 10:13:14 -0400
-Date: Wed, 6 Oct 2010 07:03:43 -0700
-From: Greg KH <greg@kroah.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: OOM panics with zram
-Message-ID: <20101006140343.GC19470@kroah.com>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
- <1284053081.7586.7910.camel@nimitz>
- <4CA8CE45.9040207@vflare.org>
- <20101005234300.GA14396@kroah.com>
- <4CABDF0E.3050400@vflare.org>
- <20101006023624.GA27685@kroah.com>
- <4CABFB6F.2070800@vflare.org>
- <AANLkTi=0bPudtyVzebvM0hZUB6DdDhjopB06FOww8hvt@mail.gmail.com>
+	id S1759153Ab0JFONy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 10:13:54 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:60379 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758019Ab0JFONw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 10:13:52 -0400
+Date: Wed, 6 Oct 2010 23:13:47 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
+Message-ID: <20101006141347.GA32376@linux-sh.org>
+References: <cover.1286222593.git.matt@console-pimps.org> <59a8e68894a2e755232189abbe9b1a3b892e309c.1286222593.git.matt@console-pimps.org> <20101006122736.GL13563@erda.amd.com> <20101006123950.GA29118@linux-sh.org> <20101006131825.GO13563@erda.amd.com> <20101006133041.GA29273@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=0bPudtyVzebvM0hZUB6DdDhjopB06FOww8hvt@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101006133041.GA29273@linux-sh.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from QUOTED-PRINTABLE to 8bit by mail.home.local id o96EEd7r024437
 
-On Wed, Oct 06, 2010 at 10:38:59AM +0300, Pekka Enberg wrote:
-> Hi,
+On Wed, Oct 06, 2010 at 10:30:41PM +0900, Paul Mundt wrote:
+> On Wed, Oct 06, 2010 at 03:18:25PM +0200, Robert Richter wrote:
+> > I am not against adding the pmu name to the perf API. But the oprofile
+> > cpu_type strings are oprofile centric esp. for the userland. So these
+> > strings will remain part of oprofile. Also I don't think we want to
+> > polute the perf pmu names with it.
+> > 
+> And those architectures that have opted to use different strings for perf
+> events are free to mangle them however they want for the oprofile case.
+> It doesn't change the fact that strings are still being managed by all of
+> the architectures. The perf PMU names aren't presently locked in to an
+> ABI, whereas the oprofile strings are, so it seems fairly straightforward
+> to develop standard mangling rules for preventing an oprofile-facing
+> string, or to simply reuse the strings verbatim.
 > 
-> On Wed, Oct 6, 2010 at 7:30 AM, Nitin Gupta <ngupta@vflare.org> wrote:
-> > Deleting it from staging would not help much. Much more helpful would
-> > be to sync at least the mainline and linux-next version of the driver
-> > so it's easier to develop against these kernel trees.  Initially, I
-> > thought -staging means that any reviewed change can quickly make it
-> > to *both* linux-next and more importantly -staging in mainline. Working/
-> > Testing against mainline is much smoother than against linux-next.
-> 
-> We can't push the patches immediately to mainline because we need to
-> respect the merge window. You shouldn't need to rely on linux-next for
-> testing, though, but work directly against Greg's staging tree. Greg,
-> where's the official tree at, btw? The tree at
-> 
->   http://kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/
-> 
-> seems empty.
+So to add a bit of context here, I was just looking at the oprofile
+tools. The naming format here is one of:
 
-Oops, I need to update the MAINTAINERS file, the proper place for the
-staging tree is now in git, at
+	<arch>/<pmu>
 
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-next-2.6.git
+if there were a generic perf to oprofile pmu name mangler that did this
+it would cover almost all of the ARM cases already, the SH strings I'm
+happy to convert to work this way, and a good chunk of the PowerPC PMUs
+would work fine, too. PowerPC already has an oprofile CPU string in its
+CPU spec, so this would be even more trivial to wire up there if such a
+generic interface were to exist.
 
-which feeds directly into the linux-next tree.
-
-hope this helps,
-
-greg k-h
+This would just leave x86 as the odd one out, but I suppose if x86 were
+to move to the oprofile perf wrapper in the future then a bit of id to
+name mangling as an override wouldn't be too much work.
