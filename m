@@ -1,119 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932294Ab0JFIdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 04:33:04 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:61940 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932184Ab0JFIdC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 04:33:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=HGTqYYvbm+KdtOsliI8UkThtKquGoMPtIrxfLzQXJyJ9KRyHpELJTUsBzfJSa4I7up
-         Vst+5j80jVmPXus4VaRRmUe2pQ6ZJ7SbyycnvrF9pjmLzSkayRsudOZgFyPngCDiPyBd
-         +abvxPjil+5dv5SYD1u9oJzYA/5nlaoFa5zJU=
-Date: Wed, 6 Oct 2010 16:31:50 +0800
-From: Cong Meng <mcpacino@gmail.com>
-To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        dm-devel@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, Nick Piggin <npiggin@kernel.dk>
-Subject: introduce dm-snap-mv
-Message-ID: <20101006083150.GA15758@zhongling>
+	id S1758713Ab0JFIou (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 04:44:50 -0400
+Received: from mx1.melware.net ([78.47.171.162]:59904 "EHLO mx1.melware.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752873Ab0JFIot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 04:44:49 -0400
+Date: Wed, 6 Oct 2010 10:44:47 +0200 (CEST)
+From: Armin Schindler <armin@melware.de>
+To: Dan Carpenter <error27@gmail.com>
+cc: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] eicon: make buffer larger
+In-Reply-To: <20101006083117.GF5409@bicker>
+Message-ID: <alpine.DEB.2.00.1010061043550.29582@justus.melware.de>
+References: <20101004192459.GE5692@bicker> <alpine.DEB.2.00.1010060923120.29107@justus.melware.de> <20101006074714.GE5409@bicker> <alpine.DEB.2.00.1010061019480.29404@justus.melware.de> <20101006083117.GF5409@bicker>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: Cytronics & Melware
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello everyone,
+On Wed, 6 Oct 2010, Dan Carpenter wrote:
+> On Wed, Oct 06, 2010 at 10:21:02AM +0200, Armin Schindler wrote:
+>> On Wed, 6 Oct 2010, Dan Carpenter wrote:
+>>> On Wed, Oct 06, 2010 at 09:25:44AM +0200, Armin Schindler wrote:
+>>>> On Mon, 4 Oct 2010, Dan Carpenter wrote:
+>>>>> In diva_mnt_add_xdi_adapter() we do this:
+>>>>>  strcpy (clients[id].drvName,     tmp);
+>>>>>  strcpy (clients[id].Dbg.drvName, tmp);
+>>>>>
+>>>>> The "clients[id].drvName" is a 128 character buffer and
+>>>>> "clients[id].Dbg.drvName" was originally a 16 character buffer but I've
+>>>>> changed it to 128 as well.  We don't actually use 128 characters but we
+>>>>> do use more than 16.
+>>>>
+>>>> I don't see any reason for that change. The driver names here do not use
+>>>> more than 16 characters and when filled, the length is checked anyway.
+>>>> Please avoid changing the size of that structure.
+>>>>
+>>>
+>>> drivers/isdn/hardware/eicon/debug.c diva_mnt_add_xdi_adapter()
+>>>   874      sprintf (tmp, "ADAPTER:%d SN:%u-%d",
+>>>                           12345678 90123 45 67
+>>>
+>>> 	That's a minimum 17 characters.
+>>>
+>>>   875               (int)logical,
+>>>   876               serial & 0x00ffffff,
+>>>   877               (byte)(((serial & 0xff000000) >> 24) + 1));
+>>>   878    } else {
+>>>   879      sprintf (tmp, "ADAPTER:%d SN:%u", (int)logical, serial);
+>>>   880    }
+>>
+>> this is tmp with a bigger size. It seems you are mixing the sizes of
+>> drvName and tmp.
+>>
+>
+> What I mean is that later on we use strcpy() to copy "tmp" into
+> "clients[id].Dbg.drvName"
+>
+>   927    strcpy (clients[id].drvName,     tmp);
+>   928    strcpy (clients[id].Dbg.drvName, tmp);
+>                               ^
+>                    this buffer is only 16 chars
 
-I am very glad to introduce my work dm-snap-mv here.
+Now I understand. You are right. So the fix would be to change these 
+strcpy() to e.g. strncpy() or similar.
 
+Armin
 
-what is dm-snap-mv
--------------------
-The dm-snap-mv is a target module for device-mapper, which can take
-multiple snapshots against an existing block device(origin device).
-
-All snapshots are saved in an independent block device(COW device).
-
-The copy-on-write is used, so only diff-data will be saved in the COW device.
-
-
-features
---------
-1. snapshot of origin
-2. snapshot of snapshot
-3. instant snapshot creation and deletion
-4. origin and snapshots are concurrent readable/writable
-5. rollback snapshot to origin
-6. multiple origin devices share a COW device
-7. multiple COW devices are supported
-
-
-diagram
--------
-
-           +---------------------+    +---------------+     +--------------+
-   read <--|                     |-----               |     |              |
-           |    origin dm_dev    |    |   origin_dev  | COW |              |
-  write ---|                     |---->               |----->  snapshot-1  |
-           +---------------------+    +--|------------+     |     ...      | 
-                                         |                  |     ...      |        
-           +---------------------+    +--|------------------+     ...      |
-   read <--|                     |-------?-                    snapshot-N  |
-           |  snapshot-X dm_dev  |    |         cow_dev                    |
-  write ---|                     |---->                                    |
-           +---------------------+    +------------------------------------+
-
-  dm_dev: device-mapper device, created by "dmsetup create ..."
-     COW: copy-on-write
-
-
-download the source
------------------------
-http://github.com/mcpacino/dm-snap-mv
-
-git clone git://github.com/mcpacino/dm-snap-mv.git
-
-
-a kernel patch
---------------
-Now, dm-snap-mv highly depends on a kernel patch below, which make __getblk()
-can get a 4K buffer head while block size of the disk is NOT 4K.
-
-Signed-off-by: Cong Meng <mcpacino@gmail.com>
----
- fs/buffer.c |    7 ++-----
- 1 files changed, 2 insertions(+), 5 deletions(-)
-
-diff --git a/fs/buffer.c b/fs/buffer.c
-index 3e7dca2..f7f9d33 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1051,10 +1051,7 @@ grow_buffers(struct block_device *bdev, sector_t block, int size)
- 	pgoff_t index;
- 	int sizebits;
- 
--	sizebits = -1;
--	do {
--		sizebits++;
--	} while ((size << sizebits) < PAGE_SIZE);
-+	sizebits = PAGE_CACHE_SHIFT - bdev->bd_inode->i_blkbits;
- 
- 	index = block >> sizebits;
- 
-@@ -2924,7 +2921,7 @@ int submit_bh(int rw, struct buffer_head * bh)
- 	 */
- 	bio = bio_alloc(GFP_NOIO, 1);
- 
--	bio->bi_sector = bh->b_blocknr * (bh->b_size >> 9);
-+	bio->bi_sector = bh->b_blocknr << (bh->b_bdev->bd_inode->i_blkbits - 9);
- 	bio->bi_bdev = bh->b_bdev;
- 	bio->bi_io_vec[0].bv_page = bh->b_page;
- 	bio->bi_io_vec[0].bv_len = bh->b_size;
