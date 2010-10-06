@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759795Ab0JFSoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:44:20 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:26958
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759780Ab0JFSoS convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:44:18 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9VTDL-01-R6M-02
-X-M-MSG: 
-Date: Wed, 6 Oct 2010 20:44:07 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Paul Mundt <lethal@linux-sh.org>, Matt Fleming <matt@console-pimps.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>
-Subject: Re: [PATCH 4/7] ARM: oprofile: Move non-ARM code into separate
- init/exit
-Message-ID: <20101006184407.GY13563@erda.amd.com>
-References: <cover.1286222593.git.matt@console-pimps.org>
- <74092b0d162aafc21e408033cec6146e227363b5.1286222593.git.matt@console-pimps.org>
- <20101006133309.GP13563@erda.amd.com>
- <20101006144921.GQ13563@erda.amd.com>
- <20101006145311.GA3754@linux-sh.org>
- <20101006145903.GR13563@erda.amd.com>
- <AANLkTikGQe99k_fK5pZtkn-ht9jgC0guDkn28dSedjUo@mail.gmail.com>
+	id S1759770Ab0JFSpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:45:04 -0400
+Received: from mail.windriver.com ([147.11.1.11]:45641 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759690Ab0JFSpC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 14:45:02 -0400
+Message-ID: <4CACC3A0.4090300@windriver.com>
+Date: Wed, 06 Oct 2010 13:44:48 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <AANLkTikGQe99k_fK5pZtkn-ht9jgC0guDkn28dSedjUo@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
+CC: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
+        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: Any SYSRQ key to force mode switch to console mode when using
+ KMS?
+References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>	<20100921151033.80e61747.randy.dunlap@oracle.com>	<19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>	<4C9A1FB7.9050902@oracle.com>	<19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>	<19611.20403.865248.695829@elektron.ikp.physik.tu-darmstadt.de>	<20100923080212.ca4be1f6.rdunlap@xenotime.net>	<19611.32996.817920.499437@elektron.ikp.physik.tu-darmstadt.de> <20100924080707.ba98fa1e.rdunlap@xenotime.net>
+In-Reply-To: <20100924080707.ba98fa1e.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Oct 2010 18:44:49.0841 (UTC) FILETIME=[8E58FA10:01CB6586]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.10.10 14:23:17, Grant Likely wrote:
-> >> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
-> >> index b336cd9..76d97a5 100644
-> >> --- a/drivers/oprofile/oprof.c
-> >> +++ b/drivers/oprofile/oprof.c
-> >> @@ -252,6 +252,8 @@ static int __init oprofile_init(void)
-> >>  {
-> >>       int err;
-> >>
-> >> +     memset(&oprofile_ops, 0, sizeof(struct oprofile_operations));
-> >> +
-> >
-> > Yes, this looks much better. Thanks Paul.
-> 
-> oprofile_ops is allocated in bss and so is already zeroed.  No need to
-> do it explicitly.
+On 09/24/2010 10:07 AM, Randy Dunlap wrote:
+> On Thu, 23 Sep 2010 18:31:32 +0200 Uwe Bonnes wrote:
+>
+> [just adding cc's]
+>
+>   
+>>>>>>> "Randy" == Randy Dunlap <rdunlap@xenotime.net> writes:
+>>>>>>>               
+>>     Randy> Is CONFIG_DRM_KMS_HELPER enabled in your kernel .config file?  If
+>>     Randy> not, we need to find out how to enable it (there is no kconfig
+>>     Randy> prompt for it).
+>>
+>> Yes, it is enabled
+>>
+>>     Randy> Can you check if Alt-Sysrq-H (help) lists V for "force-fb(V)"?
+>> Yes, it is listed.
+>>
+>> And yes, my last experiments where with ALT-CTL-sysreq, so doomed for non
+>> function due to operator error.
+>>
+>> However:
+>> When running X, X.Org X Server 1.9.0 on Thinkpad R50 RV250, Alt-Sysrq-v
+>> switches to an all-black display. By console switching with ALT-CLT-F1 I
+>> get back to the booting console and ALT-CLT-F7 brings me back to X.  Running
+>> on the console and calling Alt-Sysrq-v prints
+>>  SysRq : Restore framebuffer console
+>>
+>> Is there some omission by the distribution or my setup that Alt-Sysrq-v when
+>> running X results in an all-black screen?
+>>
+>> And when I hit the hibernate problem, the screen stays black even with a
+>> console switch after Alt-Sysrq-v
+>>
+>>     
+I am not exactly sure what you are looking for but alt-sysrq-v might not
+tell you a whole lot because an escape back to the text console that was
+not actively receiving printk's or crash data is going to in general
+provide you with a black screen.
 
-Before oprofile_arch_init() it isn't necessarily needed, but we should
-definitely add it before oprofile_timer_init(). For code readability I
-would rather tend to let the first in too.
+If you were interested in something a bit more invasive such as a
+collecting a process listing or examining the dmesg output you might
+consider jumping into kdb.  
 
--Robert
+echo kbd > /sys/module/kgdboc/parameters/kgdboc
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Then you would do the "alt-sysrq v" followed by "alt-sysrq g".  From
+there you could then run dmesg, and your screen would no longer be blank
+in theory.  :-)
 
+We do have some patches for the RV250 for atomic kernel mode setting
+plus kdb support but they are not merged to the mainline kernels as of yet.
+
+
+Jason.
