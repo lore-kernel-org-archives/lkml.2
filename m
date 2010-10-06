@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759044Ab0JFONN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 10:13:13 -0400
-Received: from kroah.org ([198.145.64.141]:36075 "EHLO coco.kroah.org"
+	id S1759085Ab0JFONS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 10:13:18 -0400
+Received: from kroah.org ([198.145.64.141]:54382 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758996Ab0JFONM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 10:13:12 -0400
-Date: Wed, 6 Oct 2010 07:02:12 -0700
+	id S1759052Ab0JFONQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 10:13:16 -0400
+Date: Wed, 6 Oct 2010 07:04:37 -0700
 From: Greg KH <greg@kroah.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linux Driver Project <devel@linuxdriverproject.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: OOM panics with zram
-Message-ID: <20101006140212.GB19470@kroah.com>
-References: <1281374816-904-1-git-send-email-ngupta@vflare.org>
- <1284053081.7586.7910.camel@nimitz>
- <4CA8CE45.9040207@vflare.org>
- <20101005234300.GA14396@kroah.com>
- <4CABDF0E.3050400@vflare.org>
- <20101006023624.GA27685@kroah.com>
- <4CABFB6F.2070800@vflare.org>
+To: Micki Balanga <micki@n-trig.com>
+Cc: Jiri Kosina <jkosina@suse.cz>, "gregkh@suse.de" <gregkh@suse.de>,
+        "jim.collar@eqware.net" <jim.collar@eqware.net>,
+        "linux-usb@vger.kernel.org" <linux-usb@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] USB: misc: Add N-trig firmware driver
+Message-ID: <20101006140437.GD19470@kroah.com>
+References: <6EF693376E00E2458E26FEC229232B128A8D39@Exchange2010-IL.n-trig.com>
+ <20101004011949.GA23855@kroah.com>
+ <alpine.LRH.2.00.1010041458010.12867@twin.jikos.cz>
+ <6EF693376E00E2458E26FEC229232B128AAE23@Exchange2010-IL.n-trig.com>
+ <20101005124637.GB2943@kroah.com>
+ <6EF693376E00E2458E26FEC229232B128AB242@Exchange2010-IL.n-trig.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CABFB6F.2070800@vflare.org>
+In-Reply-To: <6EF693376E00E2458E26FEC229232B128AB242@Exchange2010-IL.n-trig.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 12:30:39AM -0400, Nitin Gupta wrote:
-> > So, should I delete the version in staging, or are you going to send
-> > patches to sync it up with your development version?
-> > 
+On Wed, Oct 06, 2010 at 04:47:24AM +0000, Micki Balanga wrote:
+> > Why does it have to be a driver at all?  Why can't you just use libusb
+> > or usbfs to implement this?
 > 
-> Deleting it from staging would not help much. Much more helpful would
-> be to sync at least the mainline and linux-next version of the driver
-> so it's easier to develop against these kernel trees.  Initially, I
-> thought -staging means that any reviewed change can quickly make it
-> to *both* linux-next and more importantly -staging in mainline.
+> The driver is used for several debug applications we use and libusb or
+> usbfs caused us several problem.
 
-It makes it quickly to linux-next, right?
+What were those problems?  Did you report them so we can get them fixed?
 
-Nothing goes "quickly" to mainline, other than the normal development
-process, which is well documented as to how it all works.
+> we also run on several platform. The user space application which
+> communicate with the driver is common for several OS. 
 
-> Working/ Testing against mainline is much smoother than against
-> linux-next.
-
-Sure it's "easier", but that's not how kernel development is done,
-sorry.  See Documentation/development-process/ for details.
+Then it would make more sense to use libusb, which works on all
+platforms, right?
 
 thanks,
 
