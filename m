@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab0JFNmd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 09:42:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43230 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932343Ab0JFNmb convert rfc822-to-8bit (ORCPT
+	id S932555Ab0JFNod (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 09:44:33 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:63413 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932343Ab0JFNob (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 09:42:31 -0400
-Subject: Re: [PATCH 1/7] perf: Add helper function to return number of
- counters
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-In-Reply-To: <20101006121410.GK13563@erda.amd.com>
-References: <cover.1286222593.git.matt@console-pimps.org>
-	 <c4eb88b09da564fe093cc6571ed747971425e69a.1286222593.git.matt@console-pimps.org>
-	 <20101006121410.GK13563@erda.amd.com>
+	Wed, 6 Oct 2010 09:44:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56911216"
+Subject: Re: [PATCH 3/3] [ARM] Implement a timer based __delay() loop
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        Colin Cross <ccross@android.com>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Santosh Shilimkar <santosh.shilimkar@ti.com>
+In-Reply-To: <4CABEECF.9080009@codeaurora.org>
+References: <1285644827-6846-1-git-send-email-sboyd@codeaurora.org>
+	 <1285644827-6846-4-git-send-email-sboyd@codeaurora.org>
+	 <1286300338.18791.26.camel@c-dwalke-linux.qualcomm.com>
+	 <4CABEECF.9080009@codeaurora.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 06 Oct 2010 15:41:32 +0200
-Message-ID: <1286372492.2144.181.camel@laptop>
+Date: Wed, 06 Oct 2010 06:44:29 -0700
+Message-ID: <1286372669.22265.59.camel@m0nster>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 14:14 +0200, Robert Richter wrote:
-> > +int perf_num_counters(void)
-> > +{
-> > +     return armpmu_get_max_events();
-> > +}
-> > +EXPORT_SYMBOL_GPL(perf_num_counters);
+On Tue, 2010-10-05 at 20:36 -0700, Stephen Boyd wrote:
+> On 10/05/2010 10:38 AM, Daniel Walker wrote:
+> >>  
+> >> +#ifdef ARCH_HAS_READ_CURRENT_TIMER
+> >> +/*
+> >> + * Assuming read_current_timer() is monotonically increasing
+> >> + * across calls.
+> > You should add more comments here. You assuming that it's monotonic over
+> > a 2000us (2ms) period .. I'm not sure this is a good assumption this
+> > timer may not be monotonically increasing all the time, what happens
+> > then?
 > 
-> Peter,
+> Ok I'll add that it shouldn't wrap more than once within 2000us (or
+> should I say 5ms since mdelay uses udelay?). Is that what you're saying
+> by it not being monotonically increasing? If a timer isn't increasing
+> the tick count it's broken and this call will loop forever. If the timer
+> wraps, we'll be safe due to unsigned maths as long as it wraps only once.
+
+I was saying it could be near wrapping when this process starts, then
+wrap in the middle. The unsigned math thing should work I think, but add
+a comment .. Your basically saying it's OK if it wraps, but the comment
+says it needs to be "monotonically increasing" which actually doesn't
+appear to be true. It needs to not wrap twice during this process.
+
+> >> +void read_current_timer_delay_loop(unsigned long loops)
+> >> +{
+> >> +	unsigned long bclock, now;
+> >> +
+> >> +	read_current_timer(&bclock);
+> >> +	do {
+> >> +		read_current_timer(&now);
+> >> +	} while ((now - bclock) < loops);
+> > Have you looked at time_before()/time_after() ?
 > 
-> can you please ack this interface? 
+> Nope. Wouldn't that require an addition though to make it work? I'd
+> rather just leave it like it is.
 
-It does seem like the best way forward for this, so
+I'm not saying you should change it, I'm saying look at those macro's to
+make sure your doing thinks correctly.
 
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Daniel
+
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
 
 
