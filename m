@@ -1,36 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759911Ab0JFWJZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 18:09:25 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35087 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756260Ab0JFWJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 18:09:24 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: RFC: Implement hwpoison on free for soft offlining
-Date: Thu,  7 Oct 2010 00:09:10 +0200
-Message-Id: <1286402951-1881-1-git-send-email-andi@firstfloor.org>
-X-Mailer: git-send-email 1.7.1
+	id S1759974Ab0JFWJt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 18:09:49 -0400
+Received: from mail.perches.com ([173.55.12.10]:2704 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759959Ab0JFWJr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 18:09:47 -0400
+Subject: [PATCH] drives/idle/intel_idle.c: Change file permissions to 644
+From: Joe Perches <joe@perches.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 15:09:45 -0700
+Message-ID: <1286402985.32241.9.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's a somewhat experimental patch to improve soft offlining
-in hwpoison, but allowing hwpoison on free for not directly
-freeable page types. It should work for nearly all
-left over page types that get eventually freed, so this makes
-soft offlining nearly universal. The only non handleable page
-types are now pages that never get freed.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+old mode 100755
+new mode 100644
 
-Drawback: It needs an additional page flag. Cannot set hwpoison
-directly because that would not be "soft" and cause errors.
-
-Since the flags are scarce on 32bit I only enabled it on 64bit.
-
-Comments?
-
--Andi
 
