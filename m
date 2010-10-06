@@ -1,121 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758391Ab0JFDVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 23:21:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52548 "EHLO smtps.tip.net.au"
+	id S1758488Ab0JFDXU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 23:23:20 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:37109 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754007Ab0JFDVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 23:21:13 -0400
-Date: Wed, 6 Oct 2010 14:21:10 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Charulatha V <charu@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>
-Subject: linux-next: manual merge of the staging-next tree with the omap
- tree
-Message-Id: <20101006142110.e757f27c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756954Ab0JFDXT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 23:23:19 -0400
+Date: Wed, 6 Oct 2010 08:53:10 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, containers@lists.osdl.org,
+        Andrea Righi <arighi@develer.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 00/10] memcg: per cgroup dirty page accounting
+Message-ID: <20101006032310.GU7896@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1286175485-30643-1-git-send-email-gthelen@google.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+* Greg Thelen <gthelen@google.com> [2010-10-03 23:57:55]:
 
-Today's linux-next merge of the staging-next tree got a conflict in
-arch/arm/plat-omap/devices.c between commit
-f2ce62312650211f6cf665cd6dc519c334c4071e ("OMAP: WDT: Split OMAP1 and
-OMAP2PLUS device registration") from the omap tree and commit
-90173882ed15a8034d6d162da5f343a2c7d87587 ("omap: add dsp platform
-device") from the staging-next tree.
+> This patch set provides the ability for each cgroup to have independent dirty
+> page limits.
+> 
+> Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+> page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+> not be able to consume more than their designated share of dirty pages and will
+> be forced to perform write-out if they cross that limit.
+> 
+> These patches were developed and tested on mmotm 2010-09-28-16-13.  The patches
+> are based on a series proposed by Andrea Righi in Mar 2010.
+> 
+> Overview:
+> - Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+>   unstable.
+> - Extend mem_cgroup to record the total number of pages in each of the 
+>   interesting dirty states (dirty, writeback, unstable_nfs).  
+> - Add dirty parameters similar to the system-wide  /proc/sys/vm/dirty_*
+>   limits to mem_cgroup.  The mem_cgroup dirty parameters are accessible
+>   via cgroupfs control files.
+> - Consider both system and per-memcg dirty limits in page writeback when
+>   deciding to queue background writeback or block for foreground writeback.
+> 
+> Known shortcomings:
+> - When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+>   writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+>   just inodes contributing dirty pages to the cgroup exceeding its limit.  
+> 
+> Performance measurements:
+> - kernel builds are unaffected unless run with a small dirty limit.
+> - all data collected with CONFIG_CGROUP_MEM_RES_CTLR=y.
+> - dd has three data points (in secs) for three data sizes (100M, 200M, and 1G).  
+>   As expected, dd slows when it exceed its cgroup dirty limit.
+> 
+>                kernel_build          dd
+> mmotm             2:37        0.18, 0.38, 1.65
+>   root_memcg
+> 
+> mmotm             2:37        0.18, 0.35, 1.66
+>   non-root_memcg
+> 
+> mmotm+patches     2:37        0.18, 0.35, 1.68
+>   root_memcg
+> 
+> mmotm+patches     2:37        0.19, 0.35, 1.69
+>   non-root_memcg
+> 
+> mmotm+patches     2:37        0.19, 2.34, 22.82
+>   non-root_memcg
+>   150 MiB memcg dirty limit
+> 
+> mmotm+patches     3:58        1.71, 3.38, 17.33
+>   non-root_memcg
+>   1 MiB memcg dirty limit
+>
 
-Just overlapping removal/additions (I think).  I fixed it up (see below)
-and can carry the changes as necessary.
+Greg, could you please try the parallel page fault test. Could you
+look at commit 0c3e73e84fe3f64cf1c2e8bb4e91e8901cbcdc38 and
+569b846df54ffb2827b83ce3244c5f032394cba4 for examples. 
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/arm/plat-omap/devices.c
-index 1e2383e,4c8f9b9..0000000
---- a/arch/arm/plat-omap/devices.c
-+++ b/arch/arm/plat-omap/devices.c
-@@@ -231,6 -233,75 +232,35 @@@ static void omap_init_uwire(void
-  static inline void omap_init_uwire(void) {}
-  #endif
-  
- -/*-------------------------------------------------------------------------*/
- -
- -#if	defined(CONFIG_OMAP_WATCHDOG) || defined(CONFIG_OMAP_WATCHDOG_MODULE)
- -
- -static struct resource wdt_resources[] = {
- -	{
- -		.flags		= IORESOURCE_MEM,
- -	},
- -};
- -
- -static struct platform_device omap_wdt_device = {
- -	.name	   = "omap_wdt",
- -	.id	     = -1,
- -	.num_resources	= ARRAY_SIZE(wdt_resources),
- -	.resource	= wdt_resources,
- -};
- -
- -static void omap_init_wdt(void)
- -{
- -	if (cpu_is_omap16xx())
- -		wdt_resources[0].start = 0xfffeb000;
- -	else if (cpu_is_omap2420())
- -		wdt_resources[0].start = 0x48022000; /* WDT2 */
- -	else if (cpu_is_omap2430())
- -		wdt_resources[0].start = 0x49016000; /* WDT2 */
- -	else if (cpu_is_omap343x())
- -		wdt_resources[0].start = 0x48314000; /* WDT2 */
- -	else if (cpu_is_omap44xx())
- -		wdt_resources[0].start = 0x4a314000;
- -	else
- -		return;
- -
- -	wdt_resources[0].end = wdt_resources[0].start + 0x4f;
- -
- -	(void) platform_device_register(&omap_wdt_device);
- -}
- -#else
- -static inline void omap_init_wdt(void) {}
- -#endif
- -
-+ #if defined(CONFIG_TIDSPBRIDGE) || defined(CONFIG_TIDSPBRIDGE_MODULE)
-+ 
-+ static phys_addr_t omap_dsp_phys_mempool_base;
-+ 
-+ void __init omap_dsp_reserve_sdram_memblock(void)
-+ {
-+ 	phys_addr_t size = CONFIG_TIDSPBRIDGE_MEMPOOL_SIZE;
-+ 	phys_addr_t paddr;
-+ 
-+ 	if (!size)
-+ 		return;
-+ 
-+ 	paddr = __memblock_alloc_base(size, SZ_1M, MEMBLOCK_REAL_LIMIT);
-+ 	if (!paddr) {
-+ 		pr_err("%s: failed to reserve %x bytes\n",
-+ 				__func__, size);
-+ 		return;
-+ 	}
-+ 
-+ 	omap_dsp_phys_mempool_base = paddr;
-+ }
-+ 
-+ phys_addr_t omap_dsp_get_mempool_base(void)
-+ {
-+ 	return omap_dsp_phys_mempool_base;
-+ }
-+ EXPORT_SYMBOL(omap_dsp_get_mempool_base);
-+ #endif
-+ 
-  /*
-   * This gets called after board-specific INIT_MACHINE, and initializes most
-   * on-chip peripherals accessible on this board (except for few like USB):
+	Three Cheers,
+	Balbir
