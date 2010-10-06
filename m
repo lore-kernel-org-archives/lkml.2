@@ -1,80 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758267Ab0JFCBa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 22:01:30 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:34718 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab0JFCB2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 22:01:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Yb/dkbk+e0vFOl1K+75Kb9+HNhk6Kyp9iLrfWoDep1fPc07Skno9VQwF5G/do8wgs3
-         YimXL4R6jfTdYVAjhg1lE4VXFWA3IOEzZsXYu7uQVfEbpBUifrOR/lqP5IVuviYN32pK
-         htIhdFP4y0bKMkkOJguk6u6wp86GuFh3dMvAw=
-MIME-Version: 1.0
-In-Reply-To: <20101006015038.GA22340@kroah.com>
-References: <1286326843-6170-1-git-send-email-tdent48227@gmail.com>
-	<20101006015038.GA22340@kroah.com>
-Date: Tue, 5 Oct 2010 22:01:27 -0400
-Message-ID: <AANLkTikmKH4veQPFQ4ob4_UDbCf20esgM7QZ+uZYXsVH@mail.gmail.com>
-Subject: Re: [PATCH 01/28] Staging: comedi: comedi.h: Edit file so
- cleanpatch.pl has 0 errors and warnings
-From: T Dent <tdent48227@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758260Ab0JFCEm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 22:04:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43257 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750954Ab0JFCEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 22:04:40 -0400
+Date: Wed, 6 Oct 2010 13:04:36 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: linux-next: manual merge of the kgdb tree with the input tree
+Message-Id: <20101006130436.45d8a96a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/5/10, Greg KH <greg@kroah.com> wrote:
-> On Tue, Oct 05, 2010 at 09:00:16PM -0400, Tracey Dent wrote:
->> Changed lines in the file so that checkpatch.pl wont complain. Fixed every
->> warning/error message such as; WARNING: storage class should be at the
->> beginning of the declaration, WARNING: please, no space for starting a
->> line, and last but not least WARNING: line over 80 characters.
->
-> Your changelog comment is longer than 80 characters wide :)
->
-Ik sorry about that.
->>
->> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
->> ---
->>  drivers/staging/comedi/comedi.h |   78
->> ++++++++++++++++++++-------------------
->>  1 files changed, 40 insertions(+), 38 deletions(-)
->>
->> diff --git a/drivers/staging/comedi/comedi.h
->> b/drivers/staging/comedi/comedi.h
->> index 6c900e2..680cef8 100644
->> --- a/drivers/staging/comedi/comedi.h
->> +++ b/drivers/staging/comedi/comedi.h
->> @@ -1,23 +1,23 @@
->>  /*
->> -    include/comedi.h (installed as /usr/include/comedi.h)
->> -    header file for comedi
->> +	include/comedi.h (installed as /usr/include/comedi.h)
->> +	header file for comedi
->>
->> -    COMEDI - Linux Control and Measurement Device Interface
->> -    Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
->> +	COMEDI - Linux Control and Measurement Device Interface
->> +	Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
->
-> Ick, no, these are all just fine, they are not an issue, go bug the
-> checkpatch.pl author about resolving this.  These comments don't need to
-> be changed, sorry.
+Hi Jason,
 
-I thought that I just wanted to get rid of the all the warnings. The
-author should take it out if its not an issue.
->
-> thanks,
->
-> greg k-h
-thanks,
+Today's linux-next merge of the kgdb tree got a conflict in
+drivers/char/sysrq.c between commit
+1966cb225c6f9040ca163802cbd052c393d4448f ("Input: sysrq - add locking to
+sysrq_filter()") from the input tree and commit
+02307772717c91a108aca2e999bbc586a85d06a2 ("sysrq,keyboard: properly deal
+with alt-sysrq in sysrq input filter") from the kgdb tree.
 
-Tracey D
+Just context changes.  I fixed it up (see below) and can carry the fax as
+necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/char/sysrq.c
+index f0ad694,9b97aad..0000000
+--- a/drivers/char/sysrq.c
++++ b/drivers/char/sysrq.c
+@@@ -566,7 -566,57 +566,58 @@@ static const unsigned char sysrq_xlate[
+  static bool sysrq_down;
+  static int sysrq_alt_use;
+  static int sysrq_alt;
+ +static DEFINE_SPINLOCK(sysrq_event_lock);
++ static bool sysrq_kbd_triggered;
++ 
++ /*
++  * This function was a copy of input_pass_event but modified to allow
++  * by-passing a specific filter, to allow for injected events without
++  * filter recursion.
++  */
++ static void input_pass_event_ignore(struct input_dev *dev,
++ 			     unsigned int type, unsigned int code, int value,
++ 			     struct input_handle *ignore_handle)
++ {
++ 	struct input_handler *handler;
++ 	struct input_handle *handle;
++ 
++ 	rcu_read_lock();
++ 
++ 	handle = rcu_dereference(dev->grab);
++ 	if (handle)
++ 		handle->handler->event(handle, type, code, value);
++ 	else {
++ 		bool filtered = false;
++ 
++ 		list_for_each_entry_rcu(handle, &dev->h_list, d_node) {
++ 			if (!handle->open || handle == ignore_handle)
++ 				continue;
++ 			handler = handle->handler;
++ 			if (!handler->filter) {
++ 				if (filtered)
++ 					break;
++ 
++ 				handler->event(handle, type, code, value);
++ 
++ 			} else if (handler->filter(handle, type, code, value))
++ 				filtered = true;
++ 		}
++ 	}
++ 
++ 	rcu_read_unlock();
++ }
++ 
++ /*
++  * Pass along alt-print_screen, if there was no sysrq processing by
++  * sending a key press down and then passing the key up event.
++  */
++ static void simulate_alt_sysrq(struct input_handle *handle)
++ {
++ 	input_pass_event_ignore(handle->dev, EV_KEY, KEY_SYSRQ, 1, handle);
++ 	input_pass_event_ignore(handle->dev, EV_SYN, SYN_REPORT, 0, handle);
++ 	input_pass_event_ignore(handle->dev, EV_KEY, KEY_SYSRQ, 0, handle);
++ 	input_pass_event_ignore(handle->dev, EV_SYN, SYN_REPORT, 0, handle);
++ }
+  
+  static bool sysrq_filter(struct input_handle *handle, unsigned int type,
+  		         unsigned int code, int value)
