@@ -1,113 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759119Ab0JFPbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 11:31:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11150 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755635Ab0JFPbP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 11:31:15 -0400
-Date: Wed, 6 Oct 2010 17:26:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-Message-ID: <20101006152609.GA21169@redhat.com>
-References: <1285250541.1837.95.camel@holzheu-laptop> <20100923171025.GA26623@redhat.com> <1285330688.2179.305.camel@holzheu-laptop> <20100926181127.GA26985@redhat.com> <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com> <20100927165133.GA23535@redhat.com> <20100929191916.21E1840038@magilla.sf.frob.com> <1285854460.1856.14.camel@holzheu-laptop> <20101005085751.4490A401B2@magilla.sf.frob.com> <1286357350.1888.25.camel@holzheu-laptop>
+	id S1759213Ab0JFPhZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 11:37:25 -0400
+Received: from am1ehsobe002.messaging.microsoft.com ([213.199.154.205]:33871
+	"EHLO AM1EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756643Ab0JFPhX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 11:37:23 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zzbb2cK1432N98dN4015Lzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9VKPX-01-DCR-02
+X-M-MSG: 
+Date: Wed, 6 Oct 2010 17:37:10 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Matt Fleming <matt@console-pimps.org>,
+        Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
+Message-ID: <20101006153710.GS13563@erda.amd.com>
+References: <cover.1286222593.git.matt@console-pimps.org>
+ <59a8e68894a2e755232189abbe9b1a3b892e309c.1286222593.git.matt@console-pimps.org>
+ <20101006122736.GL13563@erda.amd.com>
+ <20101006123950.GA29118@linux-sh.org>
+ <20101006131825.GO13563@erda.amd.com>
+ <20101006133041.GA29273@linux-sh.org>
+ <20101006141347.GA32376@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <1286357350.1888.25.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101006141347.GA32376@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I didn't read the whole patch, but some parts doesn't look right,
+On 06.10.10 10:13:47, Paul Mundt wrote:
+> On Wed, Oct 06, 2010 at 10:30:41PM +0900, Paul Mundt wrote:
+> > On Wed, Oct 06, 2010 at 03:18:25PM +0200, Robert Richter wrote:
+> > > I am not against adding the pmu name to the perf API. But the oprofile
+> > > cpu_type strings are oprofile centric esp. for the userland. So these
+> > > strings will remain part of oprofile. Also I don't think we want to
+> > > polute the perf pmu names with it.
+> > > 
+> > And those architectures that have opted to use different strings for perf
+> > events are free to mangle them however they want for the oprofile case.
+> > It doesn't change the fact that strings are still being managed by all of
+> > the architectures. The perf PMU names aren't presently locked in to an
+> > ABI, whereas the oprofile strings are, so it seems fairly straightforward
+> > to develop standard mangling rules for preventing an oprofile-facing
+> > string, or to simply reuse the strings verbatim.
+> > 
+> So to add a bit of context here, I was just looking at the oprofile
+> tools. The naming format here is one of:
+> 
+> 	<arch>/<pmu>
 
-On 10/06, Michael Holzheu wrote:
->
-> The patch also approaches another ugly Unix behavior regarding process
-> accounting. If a parent process dies before his children, the children
-> get the reaper process (init) as new parent. If we want to determine the
-> CPU usage of a process tree with cumulative time, this is very
-> suboptimal. To fix this I added a new process relationship tree for
-> accounting.
+Do you really want the oprofile name scheme move to perf?
 
-Well, I must admit, I can't say I like the complications this change adds ;)
-In any case, imho this change needs a separate patch/discussion.
+> 
+> if there were a generic perf to oprofile pmu name mangler that did this
 
-> Besides of that the patch adds an "acct_parent" pointer next to the parent
-> pointer and a "children_acct" list next to the children list to the
-> task_struct in order to remember the correct accounting task relationship.
+Or, do you mean here to derive an oprofile name from the pmu string in
+a generic way? I was suggesting this for SH when commenting on version
+3 of this patch set. We dropped this idea to keep changes simple for
+this initial patch set, because it was much easier to implement it
+with strcmp() and the pmu strings are not expected to be changed for
+sh in the near future.
 
-I am not sure I understand the "correct accounting" above. ->acct_parent
-adds the "parallel" hierarchy. In the simplest case, suppose that some
-process P forks the child C and exits. Then C->acct_parent == P->real_parent
-(P->acct_parent in general). I am not sure this is always good.
+So, can't we use op_name_from_perf_name() from [PATCH -v3 6/6] for SH
+here and implement a perf_pmu_name() function for sh that is part of
+perf's generic interface? 
 
-Anyway,
+Later we can add a generic function for sh ...
 
-> @@ -90,6 +156,24 @@ static void __exit_signal(struct task_st
->  
->  	posix_cpu_timers_exit(tsk);
->  	if (group_dead) {
-> +		if (!tsk->exit_accounting_done) {
-> +#ifdef __s390x__
-> +		/*
-> +		 * FIXME: On s390 we can call account_process_tick to update
-> +		 * CPU time information. This is probably not valid on other
-> +		 * architectures.
-> +		 */
-> +			if (current == tsk)
-> +				account_process_tick(current, 1);
-> +#endif
-> +			/*
-> +			 * FIXME: This somehow has to be moved to
-> +			 * finish_task_switch(), because otherwise
-> +			 * if the process accounts itself, the CPU time
-> +			 * that is used for this code will be lost.
-> +			 */
-> +			__account_to_parent(tsk, 0);
+> it would cover almost all of the ARM cases already, the SH strings I'm
+> happy to convert to work this way, and a good chunk of the PowerPC PMUs
+> would work fine, too. PowerPC already has an oprofile CPU string in its
+> CPU spec, so this would be even more trivial to wire up there if such a
+> generic interface were to exist.
+> 
+> This would just leave x86 as the odd one out, but I suppose if x86 were
+> to move to the oprofile perf wrapper in the future then a bit of id to
+> name mangling as an override wouldn't be too much work.
 
-We hold the wrong ->siglock here.
+... and also other architectures on top of these patches.
 
-Also, the logic behind ->exit_accounting_done looks wrong (and unneeded)
-but I am not sure...
+Thanks,
 
-> @@ -772,6 +869,15 @@ static void forget_original_parent(struc
->  	LIST_HEAD(dead_children);
->  
->  	write_lock_irq(&tasklist_lock);
-> +	list_for_each_entry_safe(p, n, &father->children_acct, sibling_acct) {
-> +		struct task_struct *t = p;
-> +		do {
-> +			t->acct_parent = t->acct_parent->acct_parent;
-> +		} while_each_thread(p, t);
-> +		list_move_tail(&p->sibling_acct,
-> +			       &p->acct_parent->children_acct);
+-Robert
 
-This is certainly wrong if there are other live threads in father's
-thread-group.
-
-Also, you need to change de_thread() if it changes the leader.
-
->  	list_for_each_entry_safe(p, n, &dead_children, sibling) {
->  		list_del_init(&p->sibling);
-> +		list_del_init(&p->sibling_acct);
-
-This list_del() can race with ->acct_parent if it in turn exits and
-does forget_original_parent() -> list_move_tail(sibling_acct).
-
-Oleg.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
