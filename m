@@ -1,85 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757832Ab0JFBzi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 21:55:38 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:53182 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750954Ab0JFBzh convert rfc822-to-8bit (ORCPT
+	id S1758267Ab0JFCBa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 22:01:30 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:34718 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750954Ab0JFCB2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 21:55:37 -0400
+	Tue, 5 Oct 2010 22:01:28 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Kz8zSXZi09YoFwvrT/6W0xBlMj1CUyVzfGi00D5lzEI9eUjOLsttxGw75e3ltJvYTl
-         36bpfogSTz+/piBUieROt8ik0DA/rDbaof/kyy/kKq8AQe7uf3l21kpjgOIwjO17QCUT
-         +mJczr/FZXeZpHzqciuISodbk0ozBBME5/eRY=
+         :cc:content-type;
+        b=Yb/dkbk+e0vFOl1K+75Kb9+HNhk6Kyp9iLrfWoDep1fPc07Skno9VQwF5G/do8wgs3
+         YimXL4R6jfTdYVAjhg1lE4VXFWA3IOEzZsXYu7uQVfEbpBUifrOR/lqP5IVuviYN32pK
+         htIhdFP4y0bKMkkOJguk6u6wp86GuFh3dMvAw=
 MIME-Version: 1.0
-In-Reply-To: <1286327715-sup-584@au1.ibm.com>
-References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
-	<1285916771-18033-6-git-send-email-imunsie@au1.ibm.com>
-	<AANLkTins34TrEWj618_4XBRwGGFqRSehwWEp7jBubvsu@mail.gmail.com>
-	<1286327715-sup-584@au1.ibm.com>
-Date: Tue, 5 Oct 2010 21:55:35 -0400
-Message-ID: <AANLkTimNeWEo5P0wXzszBiSYdh81=uhARA8KZPr7rcPf@mail.gmail.com>
-Subject: Re: [PATCH 05/18] powerpc: Wire up 44x little endian boot for
- remaining 44x targets
-From: Josh Boyer <jwboyer@gmail.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, paulus <paulus@samba.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+In-Reply-To: <20101006015038.GA22340@kroah.com>
+References: <1286326843-6170-1-git-send-email-tdent48227@gmail.com>
+	<20101006015038.GA22340@kroah.com>
+Date: Tue, 5 Oct 2010 22:01:27 -0400
+Message-ID: <AANLkTikmKH4veQPFQ4ob4_UDbCf20esgM7QZ+uZYXsVH@mail.gmail.com>
+Subject: Re: [PATCH 01/28] Staging: comedi: comedi.h: Edit file so
+ cleanpatch.pl has 0 errors and warnings
+From: T Dent <tdent48227@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 5, 2010 at 9:28 PM, Ian Munsie <imunsie@au1.ibm.com> wrote:
-> Excerpts from Josh Boyer's message of Fri Oct 01 21:27:37 +1000 2010:
->> > From: Ian Munsie <imunsie@au1.ibm.com>
->> >
->> > I haven't tested booting a little endian kernel on any of these targets,
->> > but they all claim to be 44x so my little endian trampoline should work
->> > on all of them, so wire it up on:
->> >
->> > bamboo
->> > katmai
->> > kilauea
->> > rainer
->> > sam440ep
->> > sequoia
->> > warp
->> > yosemite
->> > ebony
->>
->> I see no reason to do this at all.  If you haven't tested them and
->> there is no demand, there's no reason to wire them up.  Some might
->> actively want to disallow LE mode anyway, like the Warp or Sam440EP.
+On 10/5/10, Greg KH <greg@kroah.com> wrote:
+> On Tue, Oct 05, 2010 at 09:00:16PM -0400, Tracey Dent wrote:
+>> Changed lines in the file so that checkpatch.pl wont complain. Fixed every
+>> warning/error message such as; WARNING: storage class should be at the
+>> beginning of the declaration, WARNING: please, no space for starting a
+>> line, and last but not least WARNING: line over 80 characters.
 >
-> I wasn't aware that the Warp and Sam440EP disallowed LE mode - I'll
-> definitely unwire them and move the ARCH_SUPPORTS_LITTLE_ENDIAN to just
-> the sub-arch's that support it.
+> Your changelog comment is longer than 80 characters wide :)
+>
+Ik sorry about that.
+>>
+>> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+>> ---
+>>  drivers/staging/comedi/comedi.h |   78
+>> ++++++++++++++++++++-------------------
+>>  1 files changed, 40 insertions(+), 38 deletions(-)
+>>
+>> diff --git a/drivers/staging/comedi/comedi.h
+>> b/drivers/staging/comedi/comedi.h
+>> index 6c900e2..680cef8 100644
+>> --- a/drivers/staging/comedi/comedi.h
+>> +++ b/drivers/staging/comedi/comedi.h
+>> @@ -1,23 +1,23 @@
+>>  /*
+>> -    include/comedi.h (installed as /usr/include/comedi.h)
+>> -    header file for comedi
+>> +	include/comedi.h (installed as /usr/include/comedi.h)
+>> +	header file for comedi
+>>
+>> -    COMEDI - Linux Control and Measurement Device Interface
+>> -    Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
+>> +	COMEDI - Linux Control and Measurement Device Interface
+>> +	Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
+>
+> Ick, no, these are all just fine, they are not an issue, go bug the
+> checkpatch.pl author about resolving this.  These comments don't need to
+> be changed, sorry.
 
-Well, Warp and Sam440EP are production boards for actual companies.
-The rest are all just eval boards.  I don't know if the board
-maintainers care either way, I was just using them as examples of
-cases where someone might.
+I thought that I just wanted to get rid of the all the warnings. The
+author should take it out if its not an issue.
+>
+> thanks,
+>
+> greg k-h
+thanks,
 
-> As for the other boards, I would like to wire them up if they are able
-> to support LE mode - If anyone has one handy I would love to hear if
-> they are able to begin booting a LE kernel with these patches, or when &
-> how they fail.
-
-I'd avoid anything with an FPU until that gets tested.  So no bamboo,
-sequoia, canyonlands, etc.
-
-I noticed that canyonlands isn't even covered.  I'm guessing that's
-because we don't need to create a wrapper for it because U-Boot does
-direct loading of vmlinux and the DTB itself.  Has anyone done any
-work with getting U-Boot to work in LE mode or at least load LE
-vmlinux images?  The majority of new boards are going to be using
-U-Boot and it's ability to load the DTB/FDT, so that would be
-something that needs addressing.
-
-josh
+Tracey D
