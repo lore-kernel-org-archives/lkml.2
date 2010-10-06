@@ -1,120 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933294Ab0JFXDb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 19:03:31 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:43895 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757966Ab0JFXDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 19:03:30 -0400
-From: Dima Zavin <dima@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Dima Zavin <dima@android.com>,
-        =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-Subject: [PATCH 1/2] sched: normalize sleeper's vruntime during group change
-Date: Wed,  6 Oct 2010 15:56:30 -0700
-Message-Id: <1286405790-6987-1-git-send-email-dima@android.com>
-X-Mailer: git-send-email 1.6.6
-In-Reply-To: <AANLkTimpzfCDHuVQkExLvQHaVY==SFJ2AUWO7tZkcK2T@mail.gmail.com>
-References: <AANLkTimpzfCDHuVQkExLvQHaVY==SFJ2AUWO7tZkcK2T@mail.gmail.com>
+	id S933307Ab0JFXEF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 19:04:05 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:53320 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933244Ab0JFXED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 19:04:03 -0400
+Date: Wed, 6 Oct 2010 16:04:00 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Cc: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-08-11 - RCU whinge during very early boot
+Message-ID: <20101006230400.GR2433@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <201008112340.o7BNenDe021017@imap1.linux-foundation.org>
+ <10167.1281629887@localhost>
+ <AANLkTim2Z=f0-=-+FEWPAdGrMdQXFWcQbKi0JCs_1KGK@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-System-Of-Record: true
+In-Reply-To: <AANLkTim2Z=f0-=-+FEWPAdGrMdQXFWcQbKi0JCs_1KGK@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you switch the cgroup of a sleeping thread, its vruntime does
-not get adjusted correctly for the difference between the
-min_vruntime values of the two groups.
+On Tue, Oct 05, 2010 at 12:05:13PM +0200, Zdenek Kabelac wrote:
+> 2010/8/12  <Valdis.Kletnieks@vt.edu>:
+> > On Wed, 11 Aug 2010 16:10:49 PDT, akpm@linux-foundation.org said:
+> >> The mm-of-the-moment snapshot 2010-08-11-16-10 has been uploaded to
+> >>
+> >> † †http://userweb.kernel.org/~akpm/mmotm/
+> >
+> > Throws a RCU complaint. †Hopefully somebody on the cc: list knows what it is about...
+> >
+> > [ † †0.026136] CPU0: Intel(R) Core(TM)2 Duo CPU † † P8700 †@ 2.53GHz stepping 0a
+> > [ † †0.028399] NMI watchdog enabled, takes one hw-pmu counter.
+> > [ † †0.030019] lockdep: fixing up alternatives.
+> > [ † †0.031178]
+> > [ † †0.031179] ===================================================
+> > [ † †0.031182] [ INFO: suspicious rcu_dereference_check() usage. ]
+> > [ † †0.031184] ---------------------------------------------------
+> > [ † †0.031187] kernel/sched.c:618 invoked rcu_dereference_check() without protection!
+> > [ † †0.031189]
+> > [ † †0.031189] other info that might help us debug this:
+> > [ † †0.031190]
+> > [ † †0.031192]
+> > [ † †0.031193] rcu_scheduler_active = 1, debug_locks = 1
+> > [ † †0.031195] 3 locks held by kworker/0:0/4:
+> > [ † †0.031197] †#0: †(events){+.+.+.}, at: [<ffffffff810504ca>] process_one_work+0x1b6/0x37d
+> > [ † †0.031210] †#1: †((&c_idle.work)){+.+.+.}, at: [<ffffffff810504ca>] process_one_work+0x1b6/0x37d
+> > [ † †0.031217] †#2: †(&rq->lock){-.-...}, at: [<ffffffff81b5f9b8>] init_idle+0x2b/0x114
+> > [ † †0.031225]
+> > [ † †0.031226] stack backtrace:
+> > [ † †0.031229] Pid: 4, comm: kworker/0:0 Not tainted 2.6.35-mmotm0811 #1
+> > [ † †0.031232] Call Trace:
+> > [ † †0.031237] †[<ffffffff810661eb>] lockdep_rcu_dereference+0x9d/0xa5
+> > [ † †0.031242] †[<ffffffff8102b751>] task_group+0x7b/0x8a
+> > [ † †0.031246] †[<ffffffff81b5f9b8>] ? init_idle+0x2b/0x114
+> > [ † †0.031250] †[<ffffffff8102b775>] set_task_rq+0x15/0x6e
+> > [ † †0.031253] †[<ffffffff81b5fa5e>] init_idle+0xd1/0x114
+> > [ † †0.031257] †[<ffffffff81b5fb44>] fork_idle+0x8e/0x9d
+> > [ † †0.031261] †[<ffffffff81b5de6f>] do_fork_idle+0x17/0x28
+> > [ † †0.031265] †[<ffffffff8105052b>] process_one_work+0x217/0x37d
+> > [ † †0.031269] †[<ffffffff810504ca>] ? process_one_work+0x1b6/0x37d
+> > [ † †0.031273] †[<ffffffff81b5de58>] ? do_fork_idle+0x0/0x28
+> > [ † †0.031277] †[<ffffffff81051775>] worker_thread+0x17e/0x251
+> > [ † †0.031281] †[<ffffffff810515f7>] ? worker_thread+0x0/0x251
+> > [ † †0.031285] †[<ffffffff8105544a>] kthread+0x7d/0x85
+> > [ † †0.031290] †[<ffffffff81003554>] kernel_thread_helper+0x4/0x10
+> > [ † †0.031295] †[<ffffffff81558d80>] ? restore_args+0x0/0x30
+> > [ † †0.031299] †[<ffffffff810553cd>] ? kthread+0x0/0x85
+> > [ † †0.031303] †[<ffffffff81003550>] ? kernel_thread_helper+0x0/0x10
+> > [ † †0.031333] Booting Node † 0, Processors †#1 Ok.
+> > [ † †0.103111] NMI watchdog enabled, takes one hw-pmu counter.
+> > [ † †0.104013] Brought up 2 CPUs
+> >
+> 
+> I'm still seeing this INFO message on my vanilla 2.6.36-rc kernel.
+> 
+> ----------------------
+> 
+> ftrace: converting mcount calls to 0f 1f 44 00 00
+> ftrace: allocating 16045 entries in 63 pages
+> Setting APIC routing to flat
+> ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+> CPU0: Intel(R) Core(TM)2 Duo CPU     T7500  @ 2.20GHz stepping 0a
+> NMI watchdog enabled, takes one hw-pmu counter.
+> lockdep: fixing up alternatives.
+> 
+> ===================================================
+> [ INFO: suspicious rcu_dereference_check() usage. ]
+> ---------------------------------------------------
+> kernel/sched.c:618 invoked rcu_dereference_check() without protection!
+> 
+> other info that might help us debug this:
+> 
+> 
+> rcu_scheduler_active = 1, debug_locks = 0
+> 3 locks held by kworker/0:0/4:
+>  #0:  (events){+.+.+.}, at: [<ffffffff8106e78e>] process_one_work+0x12e/0x560
+>  #1:  ((&c_idle.work)){+.+.+.}, at: [<ffffffff8106e78e>]
+> process_one_work+0x12e/0x560
+>  #2:  (&rq->lock){......}, at: [<ffffffff814772c3>] init_idle+0x30/0x12c
+> 
+> stack backtrace:
+> Pid: 4, comm: kworker/0:0 Not tainted 2.6.36-rc6-00085-g6e34025 #1
+> Call Trace:
+>  [<ffffffff81089c1b>] lockdep_rcu_dereference+0xbb/0xc0
+>  [<ffffffff8103e7d5>] set_task_rq+0x2f5/0x300
+>  [<ffffffff81477374>] init_idle+0xe1/0x12c
+>  [<ffffffff81477769>] fork_idle+0x90/0x9f
+>  [<ffffffff81048dfa>] ? enqueue_entity+0x13a/0x430
+>  [<ffffffff81482789>] ? sub_preempt_count+0x59/0x60
+>  [<ffffffff814752f5>] do_fork_idle+0x1c/0x2d
+>  [<ffffffff8106e7fa>] process_one_work+0x19a/0x560
+>  [<ffffffff8106e78e>] ? process_one_work+0x12e/0x560
+>  [<ffffffff814752d9>] ? do_fork_idle+0x0/0x2d
+>  [<ffffffff81070189>] worker_thread+0x169/0x340
+>  [<ffffffff81070020>] ? worker_thread+0x0/0x340
+>  [<ffffffff810752e6>] kthread+0xa6/0xb0
+>  [<ffffffff81004014>] kernel_thread_helper+0x4/0x10
+>  [<ffffffff8147efcb>] ? _raw_spin_unlock_irq+0x3b/0x60
+>  [<ffffffff8147f600>] ? restore_args+0x0/0x30
+>  [<ffffffff81075240>] ? kthread+0x0/0xb0
+>  [<ffffffff81004010>] ? kernel_thread_helper+0x0/0x10
+> Booting Node   0, Processors  #1 Ok.
+> TSC synchronization [CPU#0 -> CPU#1]:
+> Measured 399476 cycles TSC warp between CPUs, turning off TSC clock.
+> Marking TSC unstable due to check_tsc_sync_source failed
+> NMI watchdog enabled, takes one hw-pmu counter.
+> Brought up 2 CPUs
+> Total of 2 processors activated (8781.86 BogoMIPS).
+> regulator: core version 0.5
+> regulator: dummy:
+> Time:  7:44:09  Date: 10/05/10
 
-The problem becomes most apparent when one has cgroups whose
-cpu shares differ greatly, say group A.shares=1024 and group B.shares=52.
-After some time, the vruntime of the group with the larger share (A)
-will be way ahead of the group with the small share (B). Currently,
-when a sleeping task is moved from group A to group B, it will retain its
-larger vruntime value and thus will be way ahead of all the other tasks
-in its new group. This will prevent this task from executing for an
-extended period of time.
+Hello, Zdenek,
 
-This patch adds a new callback, prep_move_task, to struct sched_class
-to give sched_fair the opportunity to adjust the task's vruntime
-just before setting its new group. This allows us to properly normalize
-a sleeping task's vruntime when moving it between different cgroups.
+I believe that the following patch from Peter Z. should address this.
 
-Cc: Arve Hj√∏nnev√•g <arve@android.com>
-Signed-off-by: Dima Zavin <dima@android.com>
----
- include/linux/sched.h |    1 +
- kernel/sched.c        |    5 +++++
- kernel/sched_fair.c   |   14 +++++++++++++-
- 3 files changed, 19 insertions(+), 1 deletions(-)
+							Thanx, Paul
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..ba3494e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1073,6 +1073,7 @@ struct sched_class {
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	void (*moved_group) (struct task_struct *p, int on_rq);
-+	void (*prep_move_group) (struct task_struct *p, int on_rq);
- #endif
- };
- 
+------------------------------------------------------------------------
+
+commit e3dd67d97b3c2aad366b845c797745a78efaf90d
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Thu Sep 16 17:50:31 2010 +0200
+
+    sched: fix RCU lockdep splat from task_group()
+    
+    This addresses the following RCU lockdep splat:
+    
+    [0.051203] CPU0: AMD QEMU Virtual CPU version 0.12.4 stepping 03
+    [0.052999] lockdep: fixing up alternatives.
+    [0.054105]
+    [0.054106] ===================================================
+    [0.054999] [ INFO: suspicious rcu_dereference_check() usage. ]
+    [0.054999] ---------------------------------------------------
+    [0.054999] kernel/sched.c:616 invoked rcu_dereference_check() without protection!
+    [0.054999]
+    [0.054999] other info that might help us debug this:
+    [0.054999]
+    [0.054999]
+    [0.054999] rcu_scheduler_active = 1, debug_locks = 1
+    [0.054999] 3 locks held by swapper/1:
+    [0.054999]  #0:  (cpu_add_remove_lock){+.+.+.}, at: [<ffffffff814be933>] cpu_up+0x42/0x6a
+    [0.054999]  #1:  (cpu_hotplug.lock){+.+.+.}, at: [<ffffffff810400d8>] cpu_hotplug_begin+0x2a/0x51
+    [0.054999]  #2:  (&rq->lock){-.-...}, at: [<ffffffff814be2f7>] init_idle+0x2f/0x113
+    [0.054999]
+    [0.054999] stack backtrace:
+    [0.054999] Pid: 1, comm: swapper Not tainted 2.6.35 #1
+    [0.054999] Call Trace:
+    [0.054999]  [<ffffffff81068054>] lockdep_rcu_dereference+0x9b/0xa3
+    [0.054999]  [<ffffffff810325c3>] task_group+0x7b/0x8a
+    [0.054999]  [<ffffffff810325e5>] set_task_rq+0x13/0x40
+    [0.054999]  [<ffffffff814be39a>] init_idle+0xd2/0x113
+    [0.054999]  [<ffffffff814be78a>] fork_idle+0xb8/0xc7
+    [0.054999]  [<ffffffff81068717>] ? mark_held_locks+0x4d/0x6b
+    [0.054999]  [<ffffffff814bcebd>] do_fork_idle+0x17/0x2b
+    [0.054999]  [<ffffffff814bc89b>] native_cpu_up+0x1c1/0x724
+    [0.054999]  [<ffffffff814bcea6>] ? do_fork_idle+0x0/0x2b
+    [0.054999]  [<ffffffff814be876>] _cpu_up+0xac/0x127
+    [0.054999]  [<ffffffff814be946>] cpu_up+0x55/0x6a
+    [0.054999]  [<ffffffff81ab562a>] kernel_init+0xe1/0x1ff
+    [0.054999]  [<ffffffff81003854>] kernel_thread_helper+0x4/0x10
+    [0.054999]  [<ffffffff814c353c>] ? restore_args+0x0/0x30
+    [0.054999]  [<ffffffff81ab5549>] ? kernel_init+0x0/0x1ff
+    [0.054999]  [<ffffffff81003850>] ? kernel_thread_helper+0x0/0x10
+    [0.056074] Booting Node   0, Processors  #1lockdep: fixing up alternatives.
+    [0.130045]  #2lockdep: fixing up alternatives.
+    [0.203089]  #3 Ok.
+    [0.275286] Brought up 4 CPUs
+    [0.276005] Total of 4 processors activated (16017.17 BogoMIPS).
+    
+    The cgroup_subsys_state structures referenced by idle tasks are never
+    freed, because the idle tasks should be part of the root cgroup,
+    which is not removable.
+    
+    The problem is that while we do in-fact hold rq->lock, the newly spawned
+    idle thread's cpu is not yet set to the correct cpu so the lockdep check
+    in task_group():
+    
+      lockdep_is_held(&task_rq(p)->lock)
+    
+    will fail.
+    
+    But this is a chicken and egg problem.  Setting the CPU's runqueue requires
+    that the CPU's runqueue already be set.  ;-)
+    
+    So insert an RCU read-side critical section to avoid the complaint.
+    
+    Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+
 diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..fe4bb20 100644
+index 09b574e..40e065e 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -8297,6 +8297,11 @@ void sched_move_task(struct task_struct *tsk)
- 	if (unlikely(running))
- 		tsk->sched_class->put_prev_task(rq, tsk);
+@@ -5331,7 +5331,19 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+ 	idle->se.exec_start = sched_clock();
  
-+#ifdef CONFIG_FAIR_GROUP_SCHED
-+	if (tsk->sched_class->prep_move_group)
-+		tsk->sched_class->prep_move_group(tsk, on_rq);
-+#endif
-+
- 	set_task_rq(tsk, task_cpu(tsk));
+ 	cpumask_copy(&idle->cpus_allowed, cpumask_of(cpu));
++	/*
++	 * We're having a chicken and egg problem, even though we are
++	 * holding rq->lock, the cpu isn't yet set to this cpu so the
++	 * lockdep check in task_group() will fail.
++	 *
++	 * Similar case to sched_fork(). / Alternatively we could
++	 * use task_rq_lock() here and obtain the other rq->lock.
++	 *
++	 * Silence PROVE_RCU
++	 */
++	rcu_read_lock();
+ 	__set_task_cpu(idle, cpu);
++	rcu_read_unlock();
  
- #ifdef CONFIG_FAIR_GROUP_SCHED
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index db3f674..6ded59f 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3827,10 +3827,21 @@ static void set_curr_task_fair(struct rq *rq)
- static void moved_group_fair(struct task_struct *p, int on_rq)
- {
- 	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct sched_entity *se = &p->se;
- 
- 	update_curr(cfs_rq);
- 	if (!on_rq)
--		place_entity(cfs_rq, &p->se, 1);
-+		se->vruntime += cfs_rq->min_vruntime;
-+}
-+
-+static void prep_move_group_fair(struct task_struct *p, int on_rq)
-+{
-+	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-+	struct sched_entity *se = &p->se;
-+
-+	/* normalize the runtime of a sleeping task before moving it */
-+	if (!on_rq)
-+		se->vruntime -= cfs_rq->min_vruntime;
- }
- #endif
- 
-@@ -3883,6 +3894,7 @@ static const struct sched_class fair_sched_class = {
- 
- #ifdef CONFIG_FAIR_GROUP_SCHED
- 	.moved_group		= moved_group_fair,
-+	.prep_move_group	= prep_move_group_fair,
- #endif
- };
- 
--- 
-1.6.6
-
+ 	rq->curr = rq->idle = idle;
+ #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
