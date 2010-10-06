@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758734Ab0JFHnW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:43:22 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:6374 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758684Ab0JFHnS (ORCPT
+	id S932541Ab0JFHni (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:43:38 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:49200 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932436Ab0JFHnc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:43:18 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56883650"
-X-IronPort-AV: E=Sophos;i="4.57,287,1283756400"; 
-   d="scan'208";a="88852287"
+	Wed, 6 Oct 2010 03:43:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56772957"
+X-IronPort-AV: E=Sophos;i="4.57,288,1283756400"; 
+   d="scan'208";a="20252811"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Daniel Walker <dwalker@codeaurora.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Steve Muckle <smuckle@codeaurora.org>,
+        linux-kernel@vger.kernel.org,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
         David Brown <davidb@codeaurora.org>,
         Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
         Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
         Gregory Bean <gbean@codeaurora.org>
-Subject: [PATCH 03/20 v2] msm: initial irq definitions for MSM8X60
-Date: Wed,  6 Oct 2010 00:42:42 -0700
-Message-Id: <1286350979-19328-4-git-send-email-johlstei@codeaurora.org>
+Subject: [PATCH 19/20 v2] msm: Platform initialization for the IOMMU driver
+Date: Wed,  6 Oct 2010 00:42:58 -0700
+Message-Id: <1286350979-19328-20-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
 References: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
@@ -31,79 +31,402 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steve Muckle <smuckle@codeaurora.org>
+From: Stepan Moskovchenko <stepanm@codeaurora.org>
 
-IRQ assignments are different for MSM8X60 than other existing MSMs.
+Register a driver for the MSM IOMMU devices and a driver
+for the translation context devices. Set up the global
+IOMMU registers and initialize the context banks.
 
-Signed-off-by: Steve Muckle <smuckle@codeaurora.org>
+Signed-off-by: Stepan Moskovchenko <stepanm@codeaurora.org>
 ---
- arch/arm/mach-msm/include/mach/irqs-8x60.h |   43 ++++++++++++++++++++++++++++
- arch/arm/mach-msm/include/mach/irqs.h      |    2 +
- 2 files changed, 45 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-msm/include/mach/irqs-8x60.h
+ arch/arm/mach-msm/Makefile    |    2 +-
+ arch/arm/mach-msm/iommu_dev.c |  364 +++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 365 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-msm/iommu_dev.c
 
-diff --git a/arch/arm/mach-msm/include/mach/irqs-8x60.h b/arch/arm/mach-msm/include/mach/irqs-8x60.h
+diff --git a/arch/arm/mach-msm/Makefile b/arch/arm/mach-msm/Makefile
+index 6a0b92e..56b1db9 100644
+--- a/arch/arm/mach-msm/Makefile
++++ b/arch/arm/mach-msm/Makefile
+@@ -12,7 +12,7 @@ obj-y += irq.o
+ endif
+ endif
+ 
+-obj-$(CONFIG_ARCH_MSM8X60) += clock-dummy.o
++obj-$(CONFIG_ARCH_MSM8X60) += clock-dummy.o iommu.o iommu_dev.o
+ obj-$(CONFIG_MSM_PROC_COMM) += proc_comm.o clock-pcom.o vreg.o
+ obj-$(CONFIG_MSM_PROC_COMM) += clock.o gpio.c
+ obj-$(CONFIG_ARCH_QSD8X50) += sirc.o
+diff --git a/arch/arm/mach-msm/iommu_dev.c b/arch/arm/mach-msm/iommu_dev.c
 new file mode 100644
-index 0000000..9fae253
+index 0000000..59ac7e5
 --- /dev/null
-+++ b/arch/arm/mach-msm/include/mach/irqs-8x60.h
-@@ -0,0 +1,43 @@
-+/* Copyright (c) 2010 Code Aurora Forum. All rights reserved.
++++ b/arch/arm/mach-msm/iommu_dev.c
+@@ -0,0 +1,364 @@
++/* Copyright (c) 2010, Code Aurora Forum. All rights reserved.
 + *
-+ * Redistribution and use in source and binary forms, with or without
-+ * modification, are permitted provided that the following conditions are met:
-+ *     * Redistributions of source code must retain the above copyright
-+ *       notice, this list of conditions and the following disclaimer.
-+ *     * Redistributions in binary form must reproduce the above copyright
-+ *       notice, this list of conditions and the following disclaimer in the
-+ *       documentation and/or other materials provided with the distribution.
-+ *     * Neither the name of Code Aurora nor
-+ *       the names of its contributors may be used to endorse or promote
-+ *       products derived from this software without specific prior written
-+ *       permission.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 and
++ * only version 2 as published by the Free Software Foundation.
 + *
-+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-+ * IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-+ * NON-INFRINGEMENT ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
-+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS;
-+ * OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
-+ * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-+ * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
-+ * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
 + *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
++ * 02110-1301, USA.
 + */
 +
-+#ifndef __ASM_ARCH_MSM_IRQS_8X60_H
-+#define __ASM_ARCH_MSM_IRQS_8X60_H
++#define pr_fmt(fmt)	KBUILD_MODNAME ": " fmt
 +
-+/* MSM ACPU Interrupt Numbers */
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/iommu.h>
++#include <linux/interrupt.h>
++#include <linux/err.h>
++#include <linux/slab.h>
 +
-+/* 0-15:  STI/SGI (software triggered/generated interrupts)
-+ * 16-31: PPI (private peripheral interrupts)
-+ * 32+:   SPI (shared peripheral interrupts)
-+ */
++#include <mach/iommu_hw-8xxx.h>
++#include <mach/iommu.h>
 +
-+#define NR_GPIO_IRQS 173
-+#define NR_MSM_IRQS 256
-+#define NR_BOARD_IRQS 0
++struct iommu_ctx_iter_data {
++	/* input */
++	const char *name;
 +
-+#endif
-diff --git a/arch/arm/mach-msm/include/mach/irqs.h b/arch/arm/mach-msm/include/mach/irqs.h
-index 164d355..8679a45 100644
---- a/arch/arm/mach-msm/include/mach/irqs.h
-+++ b/arch/arm/mach-msm/include/mach/irqs.h
-@@ -24,6 +24,8 @@
- #elif defined(CONFIG_ARCH_QSD8X50)
- #include "irqs-8x50.h"
- #include "sirc.h"
-+#elif defined(CONFIG_ARCH_MSM8X60)
-+#include "irqs-8x60.h"
- #elif defined(CONFIG_ARCH_MSM_ARM11)
- #include "irqs-7x00.h"
- #else
++	/* output */
++	struct device *dev;
++};
++
++static struct platform_device *msm_iommu_root_dev;
++
++static int each_iommu_ctx(struct device *dev, void *data)
++{
++	struct iommu_ctx_iter_data *res = data;
++	struct msm_iommu_ctx_dev *c = dev->platform_data;
++
++	if (!res || !c || !c->name || !res->name)
++		return -EINVAL;
++
++	if (!strcmp(res->name, c->name)) {
++		res->dev = dev;
++		return 1;
++	}
++	return 0;
++}
++
++static int each_iommu(struct device *dev, void *data)
++{
++	return device_for_each_child(dev, data, each_iommu_ctx);
++}
++
++struct device *msm_iommu_get_ctx(const char *ctx_name)
++{
++	struct iommu_ctx_iter_data r;
++	int found;
++
++	if (!msm_iommu_root_dev) {
++		pr_err("No root IOMMU device.\n");
++		goto fail;
++	}
++
++	r.name = ctx_name;
++	found = device_for_each_child(&msm_iommu_root_dev->dev, &r, each_iommu);
++
++	if (!found) {
++		pr_err("Could not find context <%s>\n", ctx_name);
++		goto fail;
++	}
++
++	return r.dev;
++fail:
++	return NULL;
++}
++EXPORT_SYMBOL(msm_iommu_get_ctx);
++
++static void msm_iommu_reset(void __iomem *base)
++{
++	int ctx, ncb;
++
++	SET_RPUE(base, 0);
++	SET_RPUEIE(base, 0);
++	SET_ESRRESTORE(base, 0);
++	SET_TBE(base, 0);
++	SET_CR(base, 0);
++	SET_SPDMBE(base, 0);
++	SET_TESTBUSCR(base, 0);
++	SET_TLBRSW(base, 0);
++	SET_GLOBAL_TLBIALL(base, 0);
++	SET_RPU_ACR(base, 0);
++	SET_TLBLKCRWE(base, 1);
++	ncb = GET_NCB(base)+1;
++
++	for (ctx = 0; ctx < ncb; ctx++) {
++		SET_BPRCOSH(base, ctx, 0);
++		SET_BPRCISH(base, ctx, 0);
++		SET_BPRCNSH(base, ctx, 0);
++		SET_BPSHCFG(base, ctx, 0);
++		SET_BPMTCFG(base, ctx, 0);
++		SET_ACTLR(base, ctx, 0);
++		SET_SCTLR(base, ctx, 0);
++		SET_FSRRESTORE(base, ctx, 0);
++		SET_TTBR0(base, ctx, 0);
++		SET_TTBR1(base, ctx, 0);
++		SET_TTBCR(base, ctx, 0);
++		SET_BFBCR(base, ctx, 0);
++		SET_PAR(base, ctx, 0);
++		SET_FAR(base, ctx, 0);
++		SET_CTX_TLBIALL(base, ctx, 0);
++		SET_TLBFLPTER(base, ctx, 0);
++		SET_TLBSLPTER(base, ctx, 0);
++		SET_TLBLKCR(base, ctx, 0);
++		SET_PRRR(base, ctx, 0);
++		SET_NMRR(base, ctx, 0);
++		SET_CONTEXTIDR(base, ctx, 0);
++	}
++}
++
++static int msm_iommu_probe(struct platform_device *pdev)
++{
++	struct resource *r;
++	struct clk *iommu_clk;
++	struct msm_iommu_drvdata *drvdata;
++	struct msm_iommu_dev *iommu_dev = pdev->dev.platform_data;
++	void __iomem *regs_base;
++	resource_size_t	len;
++	int ret = 0, ncb, nm2v, irq;
++
++	if (pdev->id != -1) {
++		drvdata = kzalloc(sizeof(*drvdata), GFP_KERNEL);
++
++		if (!drvdata) {
++			ret = -ENOMEM;
++			goto fail;
++		}
++
++		if (!iommu_dev) {
++			ret = -ENODEV;
++			goto fail;
++		}
++
++		if (iommu_dev->clk_rate != 0) {
++			iommu_clk = clk_get(&pdev->dev, "iommu_clk");
++
++			if (IS_ERR(iommu_clk)) {
++				ret = -ENODEV;
++				goto fail;
++			}
++
++			if (iommu_dev->clk_rate > 0)
++				clk_set_rate(iommu_clk, iommu_dev->clk_rate);
++
++			clk_enable(iommu_clk);
++			clk_put(iommu_clk);
++		}
++
++		r = platform_get_resource_byname(pdev, IORESOURCE_MEM,
++						 "physbase");
++		if (!r) {
++			ret = -ENODEV;
++			goto fail;
++		}
++
++		len = r->end - r->start + 1;
++
++		r = request_mem_region(r->start, len, r->name);
++		if (!r) {
++			pr_err("Could not request memory region: "
++			"start=%p, len=%d\n", (void *) r->start, len);
++			ret = -EBUSY;
++			goto fail;
++		}
++
++		regs_base = ioremap(r->start, len);
++
++		if (!regs_base) {
++			pr_err("Could not ioremap: start=%p, len=%d\n",
++				 (void *) r->start, len);
++			ret = -EBUSY;
++			goto fail;
++		}
++
++		irq = platform_get_irq_byname(pdev, "secure_irq");
++		if (irq < 0) {
++			ret = -ENODEV;
++			goto fail;
++		}
++
++		mb();
++
++		if (GET_IDR(regs_base) == 0) {
++			pr_err("Invalid IDR value detected\n");
++			ret = -ENODEV;
++			goto fail;
++		}
++
++		ret = request_irq(irq, msm_iommu_fault_handler, 0,
++				"msm_iommu_secure_irpt_handler", drvdata);
++		if (ret) {
++			pr_err("Request IRQ %d failed with ret=%d\n", irq, ret);
++			goto fail;
++		}
++
++		msm_iommu_reset(regs_base);
++		drvdata->base = regs_base;
++		drvdata->irq = irq;
++
++		nm2v = GET_NM2VCBMT((unsigned long) regs_base);
++		ncb = GET_NCB((unsigned long) regs_base);
++
++		pr_info("device %s mapped at %p, irq %d with %d ctx banks\n",
++			iommu_dev->name, regs_base, irq, ncb+1);
++
++		platform_set_drvdata(pdev, drvdata);
++	} else
++		msm_iommu_root_dev = pdev;
++
++	return 0;
++
++fail:
++	kfree(drvdata);
++	return ret;
++}
++
++static int msm_iommu_remove(struct platform_device *pdev)
++{
++	struct msm_iommu_drvdata *drv = NULL;
++
++	drv = platform_get_drvdata(pdev);
++	if (drv) {
++		memset(drv, 0, sizeof(struct msm_iommu_drvdata));
++		kfree(drv);
++		platform_set_drvdata(pdev, NULL);
++	}
++	return 0;
++}
++
++static int msm_iommu_ctx_probe(struct platform_device *pdev)
++{
++	struct msm_iommu_ctx_dev *c = pdev->dev.platform_data;
++	struct msm_iommu_drvdata *drvdata;
++	struct msm_iommu_ctx_drvdata *ctx_drvdata = NULL;
++	int i, ret = 0;
++	if (!c || !pdev->dev.parent) {
++		ret = -EINVAL;
++		goto fail;
++	}
++
++	drvdata = dev_get_drvdata(pdev->dev.parent);
++
++	if (!drvdata) {
++		ret = -ENODEV;
++		goto fail;
++	}
++
++	ctx_drvdata = kzalloc(sizeof(*ctx_drvdata), GFP_KERNEL);
++	if (!ctx_drvdata) {
++		ret = -ENOMEM;
++		goto fail;
++	}
++	ctx_drvdata->num = c->num;
++	ctx_drvdata->pdev = pdev;
++
++	INIT_LIST_HEAD(&ctx_drvdata->attached_elm);
++	platform_set_drvdata(pdev, ctx_drvdata);
++
++	/* Program the M2V tables for this context */
++	for (i = 0; i < MAX_NUM_MIDS; i++) {
++		int mid = c->mids[i];
++		if (mid == -1)
++			break;
++
++		SET_M2VCBR_N(drvdata->base, mid, 0);
++		SET_CBACR_N(drvdata->base, c->num, 0);
++
++		/* Set VMID = MID */
++		SET_VMID(drvdata->base, mid, mid);
++
++		/* Set the context number for that MID to this context */
++		SET_CBNDX(drvdata->base, mid, c->num);
++
++		/* Set MID associated with this context bank */
++		SET_CBVMID(drvdata->base, c->num, mid);
++
++		/* Set security bit override to be Non-secure */
++		SET_NSCFG(drvdata->base, mid, 3);
++	}
++
++	pr_info("context device %s with bank index %d\n", c->name, c->num);
++
++	return 0;
++fail:
++	kfree(ctx_drvdata);
++	return ret;
++}
++
++static int msm_iommu_ctx_remove(struct platform_device *pdev)
++{
++	struct msm_iommu_ctx_drvdata *drv = NULL;
++	drv = platform_get_drvdata(pdev);
++	if (drv) {
++		memset(drv, 0, sizeof(struct msm_iommu_ctx_drvdata));
++		kfree(drv);
++		platform_set_drvdata(pdev, NULL);
++	}
++	return 0;
++}
++
++static struct platform_driver msm_iommu_driver = {
++	.driver = {
++		.name	= "msm_iommu",
++	},
++	.probe		= msm_iommu_probe,
++	.remove		= msm_iommu_remove,
++};
++
++static struct platform_driver msm_iommu_ctx_driver = {
++	.driver = {
++		.name	= "msm_iommu_ctx",
++	},
++	.probe		= msm_iommu_ctx_probe,
++	.remove		= msm_iommu_ctx_remove,
++};
++
++static int msm_iommu_driver_init(void)
++{
++	int ret;
++	ret = platform_driver_register(&msm_iommu_driver);
++	if (ret != 0) {
++		pr_err("Failed to register IOMMU driver\n");
++		goto error;
++	}
++
++	ret = platform_driver_register(&msm_iommu_ctx_driver);
++	if (ret != 0) {
++		pr_err("Failed to register IOMMU context driver\n");
++		goto error;
++	}
++
++error:
++	return ret;
++}
++
++static void msm_iommu_driver_exit(void)
++{
++	platform_driver_unregister(&msm_iommu_ctx_driver);
++	platform_driver_unregister(&msm_iommu_driver);
++}
++
++subsys_initcall(msm_iommu_driver_init);
++module_exit(msm_iommu_driver_exit);
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Stepan Moskovchenko <stepanm@codeaurora.org>");
 -- 
 1.7.2.1
 
