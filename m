@@ -1,48 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932881Ab0JFUxf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 16:53:35 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:45411 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932678Ab0JFUxe (ORCPT
+	id S1759816Ab0JFUyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 16:54:46 -0400
+Received: from trinity.develer.com ([83.149.158.210]:41543 "EHLO
+	trinity.develer.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758100Ab0JFUyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 16:53:34 -0400
-Message-ID: <4CACE1B0.5000409@candelatech.com>
-Date: Wed, 06 Oct 2010 13:53:04 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Wed, 6 Oct 2010 16:54:45 -0400
+Date: Wed, 6 Oct 2010 22:54:41 +0200
+From: Andrea Righi <arighi@develer.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        David Rientjes <rientjes@google.com>
+Subject: Re: [PATCH 08/10] memcg: add cgroupfs interface to memcg dirty
+ limits
+Message-ID: <20101006205440.GA1266@linux.develer.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+ <1286175485-30643-9-git-send-email-gthelen@google.com>
+ <20101005161340.9bb7382e.kamezawa.hiroyu@jp.fujitsu.com>
+ <xr93r5g5w0uc.fsf@ninji.mtv.corp.google.com>
+ <20101005091836.GA1698@linux.develer.com>
+ <xr937hhvjhlj.fsf@ninji.mtv.corp.google.com>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [RFC] slub:  Enable backtrace for create/delete points.
-References: <1286395723-28271-1-git-send-email-greearb@candelatech.com> <alpine.DEB.2.00.1010061527560.6878@router.home>
-In-Reply-To: <alpine.DEB.2.00.1010061527560.6878@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <xr937hhvjhlj.fsf@ninji.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2010 01:32 PM, Christoph Lameter wrote:
-> On Wed, 6 Oct 2010, greearb@candelatech.com wrote:
->
->> This patch attempts to grab a backtrace for the creation
->> and deletion points of the slub object.  When a fault is
->> detected, we can then get a better idea of where the item
->> was deleted.
->
-> We have had patches like that for SLAB in the past. The backtrace was
-> typically limited to 4 entries I believe.
+On Wed, Oct 06, 2010 at 11:34:16AM -0700, Greg Thelen wrote:
+> Andrea Righi <arighi@develer.com> writes:
+> 
+> > On Tue, Oct 05, 2010 at 12:33:15AM -0700, Greg Thelen wrote:
+> >> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> >> 
+> >> > On Sun,  3 Oct 2010 23:58:03 -0700
+> >> > Greg Thelen <gthelen@google.com> wrote:
+> >> >
+> >> >> Add cgroupfs interface to memcg dirty page limits:
+> >> >>   Direct write-out is controlled with:
+> >> >>   - memory.dirty_ratio
+> >> >>   - memory.dirty_bytes
+> >> >> 
+> >> >>   Background write-out is controlled with:
+> >> >>   - memory.dirty_background_ratio
+> >> >>   - memory.dirty_background_bytes
+> >> >> 
+> >> >> Signed-off-by: Andrea Righi <arighi@develer.com>
+> >> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >> >
+> >> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >> >
+> >> > a question below.
+> >> >
+> >> >
+> >> >> ---
+> >> >>  mm/memcontrol.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >> >>  1 files changed, 89 insertions(+), 0 deletions(-)
+> >> >> 
+> >> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> >> index 6ec2625..2d45a0a 100644
+> >> >> --- a/mm/memcontrol.c
+> >> >> +++ b/mm/memcontrol.c
+> >> >> @@ -100,6 +100,13 @@ enum mem_cgroup_stat_index {
+> >> >>  	MEM_CGROUP_STAT_NSTATS,
+> >> >>  };
+> >> >>  
+> >> >> +enum {
+> >> >> +	MEM_CGROUP_DIRTY_RATIO,
+> >> >> +	MEM_CGROUP_DIRTY_BYTES,
+> >> >> +	MEM_CGROUP_DIRTY_BACKGROUND_RATIO,
+> >> >> +	MEM_CGROUP_DIRTY_BACKGROUND_BYTES,
+> >> >> +};
+> >> >> +
+> >> >>  struct mem_cgroup_stat_cpu {
+> >> >>  	s64 count[MEM_CGROUP_STAT_NSTATS];
+> >> >>  };
+> >> >> @@ -4292,6 +4299,64 @@ static int mem_cgroup_oom_control_write(struct cgroup *cgrp,
+> >> >>  	return 0;
+> >> >>  }
+> >> >>  
+> >> >> +static u64 mem_cgroup_dirty_read(struct cgroup *cgrp, struct cftype *cft)
+> >> >> +{
+> >> >> +	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
+> >> >> +	bool root;
+> >> >> +
+> >> >> +	root = mem_cgroup_is_root(mem);
+> >> >> +
+> >> >> +	switch (cft->private) {
+> >> >> +	case MEM_CGROUP_DIRTY_RATIO:
+> >> >> +		return root ? vm_dirty_ratio : mem->dirty_param.dirty_ratio;
+> >> >> +	case MEM_CGROUP_DIRTY_BYTES:
+> >> >> +		return root ? vm_dirty_bytes : mem->dirty_param.dirty_bytes;
+> >> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_RATIO:
+> >> >> +		return root ? dirty_background_ratio :
+> >> >> +			mem->dirty_param.dirty_background_ratio;
+> >> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_BYTES:
+> >> >> +		return root ? dirty_background_bytes :
+> >> >> +			mem->dirty_param.dirty_background_bytes;
+> >> >> +	default:
+> >> >> +		BUG();
+> >> >> +	}
+> >> >> +}
+> >> >> +
+> >> >> +static int
+> >> >> +mem_cgroup_dirty_write(struct cgroup *cgrp, struct cftype *cft, u64 val)
+> >> >> +{
+> >> >> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+> >> >> +	int type = cft->private;
+> >> >> +
+> >> >> +	if (cgrp->parent == NULL)
+> >> >> +		return -EINVAL;
+> >> >> +	if ((type == MEM_CGROUP_DIRTY_RATIO ||
+> >> >> +	     type == MEM_CGROUP_DIRTY_BACKGROUND_RATIO) && val > 100)
+> >> >> +		return -EINVAL;
+> >> >> +	switch (type) {
+> >> >> +	case MEM_CGROUP_DIRTY_RATIO:
+> >> >> +		memcg->dirty_param.dirty_ratio = val;
+> >> >> +		memcg->dirty_param.dirty_bytes = 0;
+> >> >> +		break;
+> >> >> +	case MEM_CGROUP_DIRTY_BYTES:
+> >> >> +		memcg->dirty_param.dirty_bytes = val;
+> >> >> +		memcg->dirty_param.dirty_ratio  = 0;
+> >> >> +		break;
+> >> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_RATIO:
+> >> >> +		memcg->dirty_param.dirty_background_ratio = val;
+> >> >> +		memcg->dirty_param.dirty_background_bytes = 0;
+> >> >> +		break;
+> >> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_BYTES:
+> >> >> +		memcg->dirty_param.dirty_background_bytes = val;
+> >> >> +		memcg->dirty_param.dirty_background_ratio = 0;
+> >> >> +		break;
+> >> >
+> >> >
+> >> > Curious....is this same behavior as vm_dirty_ratio ?
+> >> 
+> >> I think this is same behavior as vm_dirty_ratio.  When vm_dirty_ratio is
+> >> changed then dirty_ratio_handler() will set vm_dirty_bytes=0.  When
+> >> vm_dirty_bytes is written dirty_bytes_handler() will set
+> >> vm_dirty_ratio=0.  So I think that the per-memcg dirty memory parameters
+> >> mimic the behavior of vm_dirty_ratio, vm_dirty_bytes and the other
+> >> global dirty parameters.
+> >> 
+> >> Am I missing your question?
+> >
+> > mmh... looking at the code it seems the same behaviour, but in
+> > Documentation/sysctl/vm.txt we say a different thing (i.e., for
+> > dirty_bytes):
+> >
+> > "If dirty_bytes is written, dirty_ratio becomes a function of its value
+> > (dirty_bytes / the amount of dirtyable system memory)."
+> >
+> > However, in dirty_bytes_handler()/dirty_ratio_handler() we actually set
+> > the counterpart value as 0.
+> >
+> > I think we should clarify the documentation.
+> >
+> > Signed-off-by: Andrea Righi <arighi@develer.com>
+> 
+> Reviewed-by: Greg Thelen <gthelen@google.com>
+> 
+> This documentation change is general cleanup that is independent of the
+> memcg patch series shown on the subject.
 
-Even 8 didn't show enough to be useful in my case, so I bumped it to 16,
-but it would be easier to edit a #define than re-hack the entire
-patch each time someone wanted such a thing...
+Thanks Greg. I'll resend it as an independent patch.
 
-Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+-Andrea
