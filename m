@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757652Ab0JFBu5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 21:50:57 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:38969 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751997Ab0JFBuz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 21:50:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:mime-version:content-type:from:in-reply-to:date:cc
-         :content-transfer-encoding:message-id:references:to:x-mailer;
-        b=LG2riGoXRkfxi7WVjdnmT+zyaKWAUXL1rCkl5nFuwvY3dSRj0UrkjPXvc7Cu6L9ZiH
-         bq74DMJZ4Ri2BQd6EH2Bn6uGBdmgkcDRAXQPbDVNxH9i0yTLGO+hPzToW1TGgrzWFy5t
-         ooju7A5l1UkFLAkqjmtSk5HaFwzYtpDeaSQ2o=
-Subject: Re: Why not distribute timer handlers on CPUs on SMP
-Mime-Version: 1.0 (Apple Message framework v1078)
+	id S1758253Ab0JFBvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 21:51:40 -0400
+Received: from kroah.org ([198.145.64.141]:43669 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751997Ab0JFBvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 21:51:38 -0400
+Date: Tue, 5 Oct 2010 18:50:38 -0700
+From: Greg KH <greg@kroah.com>
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/28] Staging: comedi: comedi.h: Edit file so
+	cleanpatch.pl has 0 errors and warnings
+Message-ID: <20101006015038.GA22340@kroah.com>
+References: <1286326843-6170-1-git-send-email-tdent48227@gmail.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: bhs <haishan.bai@gmail.com>
-In-Reply-To: <2B624B3F-9338-4336-B4F6-D61B476DA255@gmail.com>
-Date: Wed, 6 Oct 2010 09:50:48 +0800
-Cc: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <AD61E4A9-2622-47F8-911C-A2FCF9F34BF8@gmail.com>
-References: <2B624B3F-9338-4336-B4F6-D61B476DA255@gmail.com>
-To: bhs <haishan.bai@gmail.com>
-X-Mailer: Apple Mail (2.1078)
+Content-Disposition: inline
+In-Reply-To: <1286326843-6170-1-git-send-email-tdent48227@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 05, 2010 at 09:00:16PM -0400, Tracey Dent wrote:
+> Changed lines in the file so that checkpatch.pl wont complain. Fixed every warning/error message such as; WARNING: storage class should be at the beginning of the declaration, WARNING: please, no space for starting a line, and last but not least WARNING: line over 80 characters.
 
-On Oct 6, 2010, at 9:05 AM, bhs wrote:
+Your changelog comment is longer than 80 characters wide :)
 
-> Hello,
 > 
-> I am just curious about why handle the timer functions on a CPU serially but not distribute them over CPUs
-> even on a SMP system?
+> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+> ---
+>  drivers/staging/comedi/comedi.h |   78 ++++++++++++++++++++-------------------
+>  1 files changed, 40 insertions(+), 38 deletions(-)
 > 
+> diff --git a/drivers/staging/comedi/comedi.h b/drivers/staging/comedi/comedi.h
+> index 6c900e2..680cef8 100644
+> --- a/drivers/staging/comedi/comedi.h
+> +++ b/drivers/staging/comedi/comedi.h
+> @@ -1,23 +1,23 @@
+>  /*
+> -    include/comedi.h (installed as /usr/include/comedi.h)
+> -    header file for comedi
+> +	include/comedi.h (installed as /usr/include/comedi.h)
+> +	header file for comedi
+>  
+> -    COMEDI - Linux Control and Measurement Device Interface
+> -    Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
+> +	COMEDI - Linux Control and Measurement Device Interface
+> +	Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
 
+Ick, no, these are all just fine, they are not an issue, go bug the
+checkpatch.pl author about resolving this.  These comments don't need to
+be changed, sorry.
 
-Yea, it already distributed over CPUs at calling add_timer(), timer function was bounded to a cpu on which
-it was created.
+thanks,
 
-I am sorry for my noise.
-
- 
-> The timer wheel handler function __run_timers() serializes the timer functions on a CPU,
-> is there any design consideration that handling timers on a CPU is more reasonable than distribute them
-> over CPUs?
-> 
-> 
-> Best regards
-> Shan Hai
-
+greg k-h
