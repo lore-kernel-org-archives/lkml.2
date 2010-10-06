@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932756Ab0JFOyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 10:54:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60657 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932649Ab0JFOyF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 10:54:05 -0400
-Date: Wed, 6 Oct 2010 11:38:47 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-        cl@linux-foundation.org
-Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to
- provide fast guest write interface
-Message-ID: <20101006143847.GB31423@amt.cnet>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-5-git-send-email-gleb@redhat.com>
- <20101005165738.GA32750@amt.cnet>
- <20101006111417.GX11145@redhat.com>
+	id S932584Ab0JFO7S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 10:59:18 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:46460 "EHLO
+	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755829Ab0JFO7Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 10:59:16 -0400
+X-SpamScore: -18
+X-BigFish: VPS-18(zzbb2cK1dbaL1432N98dNzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9VIYD-02-39M-02
+X-M-MSG: 
+Date: Wed, 6 Oct 2010 16:59:03 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Paul Mundt <lethal@linux-sh.org>
+CC: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 4/7] ARM: oprofile: Move non-ARM code into separate
+ init/exit
+Message-ID: <20101006145903.GR13563@erda.amd.com>
+References: <cover.1286222593.git.matt@console-pimps.org>
+ <74092b0d162aafc21e408033cec6146e227363b5.1286222593.git.matt@console-pimps.org>
+ <20101006133309.GP13563@erda.amd.com>
+ <20101006144921.GQ13563@erda.amd.com>
+ <20101006145311.GA3754@linux-sh.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20101006111417.GX11145@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20101006145311.GA3754@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 01:14:17PM +0200, Gleb Natapov wrote:
-> > > +int kvm_gfn_to_hva_cache_init(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
-> > > +			      gpa_t gpa)
-> > > +{
-> > > +	struct kvm_memslots *slots = kvm_memslots(kvm);
-> > > +	int offset = offset_in_page(gpa);
-> > > +	gfn_t gfn = gpa >> PAGE_SHIFT;
-> > > +
-> > > +	ghc->gpa = gpa;
-> > > +	ghc->generation = slots->generation;
-
-kvm->memslots can change here.
-
-> > > +	ghc->memslot = gfn_to_memslot(kvm, gfn);
-> > > +	ghc->hva = gfn_to_hva(kvm, gfn);
-
-And if so, gfn_to_memslot / gfn_to_hva will use new memslots pointer.
-
-Should dereference all values from one copy of kvm->memslots pointer.
- 
-> > > +	if (!kvm_is_error_hva(ghc->hva))
-> > > +		ghc->hva += offset;
-> > > +	else
-> > > +		return -EFAULT;
-> > > +
-> > > +	return 0;
-> > > +}
+On 06.10.10 10:53:11, Paul Mundt wrote:
+> On Wed, Oct 06, 2010 at 04:49:21PM +0200, Robert Richter wrote:
+> > On 06.10.10 15:33:09, Robert Richter wrote:
+> > > On 04.10.10 16:44:22, Matt Fleming wrote:
+> > > > -void __exit oprofile_arch_exit(void)
+> > > > +int __init oprofile_arch_init(struct oprofile_operations *ops)
+> > > > +{
+> > > 
+> > > We should do here a:
+> > > 
+> > > 	memset(ops, 0, sizeof(*ops));
 > > 
-> > Should use a unique kvm_memslots structure for the cache entry, since it
-> > can change in between (use gfn_to_hva_memslot, etc on "slots" pointer).
+> > Matt,
 > > 
-> I do not understand what do you mean here. kvm_memslots structure itself
-> is not cached only various translation that use it are cached. Translation
-> result are never used if kvm_memslots was changed.
-
-> > Also should zap any cached entries on overflow, otherwise malicious
-> > userspace could make use of stale slots:
+> > an alternative would be to move this to oprofile_perf_init() and
+> > modify ops->backtrace afterwards, but then we will lose the function's
+> > tail call. Not sure that is better. Paul, what do you think?
 > > 
-> There is only one cached entry at each given time. User who wants to
-> write into guest memory often defines gfn_to_hva_cache variable
-> somewhere. Init it with kvm_gfn_to_hva_cache_init() and then calls
-> kvm_write_guest_cached() on it. If there was no slot changes in between
-> cached translation are used. Otherwise cache is recalculated.
+> I'm a bit confused as to why we just don't do:
+> 
+> ---
+> 
+> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+> index b336cd9..76d97a5 100644
+> --- a/drivers/oprofile/oprof.c
+> +++ b/drivers/oprofile/oprof.c
+> @@ -252,6 +252,8 @@ static int __init oprofile_init(void)
+>  {
+>  	int err;
+>  
+> +	memset(&oprofile_ops, 0, sizeof(struct oprofile_operations));
+> +
 
-Malicious userspace can cause entry to be cached, ioctl
-SET_USER_MEMORY_REGION 2^32 times, generation number will match,
-mark_page_dirty_in_slot will be called with pointer to freed memory.
+Yes, this looks much better. Thanks Paul.
+
+-Robert
+
+>  	err = oprofile_arch_init(&oprofile_ops);
+>  	if (err < 0 || timer) {
+>  		printk(KERN_INFO "oprofile: using timer interrupt.\n");
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
