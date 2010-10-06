@@ -1,55 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759893Ab0JFTfq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 15:35:46 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:54549 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752786Ab0JFTfp (ORCPT
+	id S1759233Ab0JFTl6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 15:41:58 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41733 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755139Ab0JFTl4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 15:35:45 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6128"; a="56950538"
-Subject: Re: [PATCH 1/3] [ARM] Translate delay.S into (mostly) C
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Nicolas Pitre <nico@fluxnic.net>, Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <4CACC053.2090509@codeaurora.org>
-References: <1285644827-6846-1-git-send-email-sboyd@codeaurora.org>
-	 <1285644827-6846-2-git-send-email-sboyd@codeaurora.org>
-	 <1286299355.18791.11.camel@c-dwalke-linux.qualcomm.com>
-	 <4CABEECB.4030301@codeaurora.org>
-	 <alpine.LFD.2.00.1010061024220.3107@xanadu.home>
-	 <4CACC053.2090509@codeaurora.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Oct 2010 12:35:43 -0700
-Message-ID: <1286393743.22265.129.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 15:41:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vMB62s2CVpFWz0FVlGAaoph6g2eNluA4/ZoytiNYPChz6+wzu2ZdhHQGgEVr6eD42W
+         5YVc1CkBUGNG/qQPr4NN4GH8JlFVzLcthKQx670Nr342mv1KiHu7Opw056CtRlm5+2sO
+         p4Fdn/AMYWMqZHafZUAlcClszDc26FjpbKXr4=
+Date: Wed, 6 Oct 2010 23:41:50 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] apic, x86: Use BIOS settings for IBS and MCE
+	threshold interrupt LVT offsets
+Message-ID: <20101006194150.GA17647@lenovo>
+References: <1286360874-1471-1-git-send-email-robert.richter@amd.com> <1286360874-1471-3-git-send-email-robert.richter@amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286360874-1471-3-git-send-email-robert.richter@amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 11:30 -0700, Stephen Boyd wrote:
-> Is there some way to force GCC to do what I want (interleave the
-> functions)? It seems happy to inline them and then optimize the
-> register
-> usage and instruction ordering. Perhaps that is OK though and we're
-> wasting our time trying to be conservative in code size. 
+On Wed, Oct 06, 2010 at 12:27:54PM +0200, Robert Richter wrote:
+> We want the BIOS to setup the EILVT APIC registers. The offsets were
+> hardcoded and BIOS settings were overwritten by the OS. Now, the
+> subsystems for MCE threshold and IBS determine the LVT offset from the
+> registers the BIOS has setup. If the BIOS setup is buggy on a family
+> 10h system, a workaround enables IBS. If the OS determines an invalid
+> register setup, a "[Firmware Bug]: " error message is reported.
+> 
+> We need this change also for upcomming cpu families.
+> 
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
 
-Is it possible to do all this in assembly ? Can't you have the default
-implementation using this assembly with different function names, then
-just set the assembly function names in C code someplace?
+Hi Robert, a few comments
 
-Daniel
+...  
+>  /*
+>   * Program the next event, relative to now
+> diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> index 5e97529..e13d4bd 100644
+> --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> @@ -131,7 +131,8 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+>  	u32 low = 0, high = 0, address = 0;
+>  	unsigned int bank, block;
+>  	struct thresh_restart tr;
+> -	u8 lvt_off;
+> +	int lvt_off = -1;
+> +	u8 offset;
+>  
+>  	for (bank = 0; bank < NR_BANKS; ++bank) {
+>  		for (block = 0; block < NR_BLOCKS; ++block) {
+> @@ -165,8 +166,28 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+>  			if (shared_bank[bank] && c->cpu_core_id)
+>  				break;
+>  #endif
+> -			lvt_off = setup_APIC_eilvt_mce(THRESHOLD_APIC_VECTOR,
+> -						       APIC_EILVT_MSG_FIX, 0);
+> +			offset = (high & MASK_LVTOFF_HI) >> 20;
+> +			if (lvt_off < 0) {
+> +				if (setup_APIC_eilvt(offset,
+> +						     THRESHOLD_APIC_VECTOR,
+> +						     APIC_EILVT_MSG_FIX, 0)) {
+> +					pr_err(FW_BUG "cpu %d, failed to "
+> +					       "setup threshold interrupt "
+> +					       "for bank %d, block %d "
+> +					       "(MSR%08X=0x%x%08x)",
+> +					       smp_processor_id(), bank, block,
+> +					       address, high, low);
+> +					continue;
+> +				}
+> +				lvt_off = offset;
+> +			} else if (lvt_off != offset) {
 
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
+Could we put explicit type specificator here? For better readbility.
+...
 
+> +static int force_ibs_eilvt_setup(void)
+> +{
+> +	int i;
+> +	int ret;
+> +
+> +	/* find the next free available EILVT entry */
+> +	for (i = 1; i < 4; i++) {
 
+APIC_EILVT_NR_MAX here, no?
+
+> +		if (!eilvt_is_available(i))
+> +			continue;
+> +		ret = setup_ibs_ctl(i);
+> +		if (ret)
+> +			return ret;
+> +		return 0;
+>  	}
+>  
+ 
+  Cyrill
