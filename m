@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab0JFNSw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 09:18:52 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:28994
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756553Ab0JFNSu (ORCPT
+	id S932158Ab0JFN3y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 09:29:54 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40561 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab0JFN3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 09:18:50 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9VEAO-02-DDL-02
-X-M-MSG: 
-Date: Wed, 6 Oct 2010 15:18:25 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Paul Mundt <lethal@linux-sh.org>
-CC: Peter Zijlstra <peterz@infradead.org>,
-        Matt Fleming <matt@console-pimps.org>,
-        Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
-Message-ID: <20101006131825.GO13563@erda.amd.com>
-References: <cover.1286222593.git.matt@console-pimps.org>
- <59a8e68894a2e755232189abbe9b1a3b892e309c.1286222593.git.matt@console-pimps.org>
- <20101006122736.GL13563@erda.amd.com>
- <20101006123950.GA29118@linux-sh.org>
+	Wed, 6 Oct 2010 09:29:53 -0400
+Message-ID: <4CAC79CE.4020800@canonical.com>
+Date: Wed, 06 Oct 2010 14:29:50 +0100
+From: Stefan Bader <stefan.bader@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100915 Lightning/1.0b1 Thunderbird/3.0.8
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20101006123950.GA29118@linux-sh.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: Zdenek Kabelac <zkabelac@redhat.com>
+CC: chich21@mail.com, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: Linux kernel 2.6.34.7 lvm error
+References: <8CD30F86F2A0A2B-BE8-179A8@web-mmc-m02.sysops.aol.com> <4CA99462.5050707@redhat.com> <4CA9D18F.7070003@redhat.com>
+In-Reply-To: <4CA9D18F.7070003@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc'ing Peter)
+On 10/04/2010 02:07 PM, Zdenek Kabelac wrote:
+> Dne 4.10.2010 10:46, Zdenek Kabelac napsal(a):
+>> Dne 3.10.2010 11:56, chich21@mail.com napsal(a):
+>>> With Linux kernel 2.6.34.7 from www.kernel.org the following error occurs.
+>>>
+>>> Issuing this command produces error.
+>>>
+>>> vgchange -ay
+>>>
+>>> outputs:
+>>> Internal error: Maps lock 14317216 < unlock 14321312
+>>>
+>>> vgchange is part of lvm-tools.
+>>>
+>>> This doesn't happen with kernel 2.6.34 or 2.6.34.1 from www.kernel.org.
+>>>
+>>> Is there a patch for 2.6.34.x series coming for this error. As there is one
+>>> for 2.6.35.x series.
+>>>
+>>> Please CC email me related posts.
+>>
+>>
+>> Bug is related to stack guard fix - kernel 2.6.36-rc4 has this problem fixed.
+>> Bug is present in 2.6.36-rc3 - so something between them fixes the problem.
+>>
+>> It looks like the [stack] mapping loses 1 page after each mlock/munlock cycle.
+>> I'm probably going to play bisect game to find out missing fix.
+>>
+>> https://bugzilla.redhat.com/show_bug.cgi?id=638525
+>>
+> 
+> So - after bisecting - it seems that commit:
+> 
+> 39aa3cb3e8250db9188a6f1e3fb62ffa1a717678
+> "mm: Move vma_stack_continue into mm.h"  by Stefan
+> 
+> had a nice 'bug-fixing' side effect which have not been mentioned in its
+> description - it fixes misbehaving of mlock/munlock [stack] mapping size.
+>
 
-On 06.10.10 08:39:50, Paul Mundt wrote:
-> On Wed, Oct 06, 2010 at 02:27:36PM +0200, Robert Richter wrote:
-> > On 04.10.10 16:44:20, Matt Fleming wrote:
-> > > Introduce perf_pmu_name() helper function that returns the name of the
-> > > pmu. This gives us a generic way to get the name of a pmu regardless of
-> > > how an architecture identifies it internally, e.g. ARM uses an id
-> > > whereas SH currently uses a string.
-> > 
-> > I rather want use here the solution we discussed earlier, simply
-> > including <asm/perf_event.h> and then access sh_pmu->name directly
-> > from oprofile.
-> > 
-> No. Exposing sh_pmu generically is unacceptable. This is already
+I have been asking for that to get picked up for stable (though no response,
+yet). Unfortunately the better description (and the cc stable) got lost when
+Linus merged two patches together).
 
-I don't want to be the perf_pmu_name() discussion a show stopper for
-this patch set. We don't have a generic perf interface available now
-that allows us to detect the pmu type for sh cpus. I also don't see a
-name string as a final solution for pmu detection. So it will be more
-than just adding perf_pmu_name().
+The problem also might be related to the LVM version used (I could not see the
+message with LVM2.02.54 with a kernel that still shows the gaps on the split
+stack vma). But it definitely confuses anything that verifies the output of
+/proc/<pid>/maps.
 
-Until then, as we currently would only need the name for SH, I don't
-see something wrong here to include architectural interfaces from
-<asm/perf_event.h> directly by architectural code until a general
-solution is available.  If you run a 'git grep include..asm/perf' this
-is common for other architectures.
+-Stefan
 
-> centrally managed through perf, and if oprofile needs any additional
-> information then it needs to get that through the perf layer. We already
-> have the situation that effectively every architecture with perf support
-> implements a name string already, so making this part of the perf API
-> hardly seems like that big of a stretch. If the perf people are violently
-> opposed to this, then of course we can look at alternatives.
+> So I assume this commit should be backported to stable kernels as well when
+> there is stack-guard patch already added.
+> 
+> Cc: stable@
+> 
+> Zdenek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-I am not against adding the pmu name to the perf API. But the oprofile
-cpu_type strings are oprofile centric esp. for the userland. So these
-strings will remain part of oprofile. Also I don't think we want to
-polute the perf pmu names with it.
-
-> sh_pmu is created for use solely by the perf events code, we are not
-> going to have oprofile poking around in data structures it has no place
-> knowing anything about when 99% of everything else it is doing is already
-> abstracted cleanly through the perf events interfaces. Likewise for
-> special oprofile-specific APIs.
-
-So, I am also fine with implementing a generic perf_pmu_name() for sh
-and then derive the oprofile cpu_type string from it in the oprofile
-code.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
 
