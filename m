@@ -1,44 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758589Ab0JFDfd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 23:35:33 -0400
-Received: from kroah.org ([198.145.64.141]:34865 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758563Ab0JFDf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 23:35:28 -0400
-Date: Tue, 5 Oct 2010 20:36:05 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Charulatha V <charu@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Tony Lindgren <tony@atomide.com>, linux-omap@vger.kernel.org
-Subject: Re: linux-next: manual merge of the staging-next tree with the
-	omap tree
-Message-ID: <20101006033605.GB5719@kroah.com>
-References: <20101006142110.e757f27c.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101006142110.e757f27c.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1758651Ab0JFDfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 23:35:55 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60169 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758594Ab0JFDfq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 23:35:46 -0400
+X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=rYdYJuYFOagA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=bv03cLEAAAAA:8 a=meVymXHHAAAA:8 a=2329B2ElUEvuWOprjmMA:9 a=cet0QK3fV4xtpJMdHMxRV0jRKx4A:4 a=qZ3vZ2issHgA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101006033544.667985198@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 05 Oct 2010 23:34:46 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        matt mooney <mfm@muteddisk.com>
+Subject: [PATCH 1/9] tracing/trivial: Remove cast from void*
+References: <20101006033445.465428951@goodmis.org>
+Content-Disposition: inline; filename=0001-tracing-trivial-Remove-cast-from-void.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 02:21:10PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging-next tree got a conflict in
-> arch/arm/plat-omap/devices.c between commit
-> f2ce62312650211f6cf665cd6dc519c334c4071e ("OMAP: WDT: Split OMAP1 and
-> OMAP2PLUS device registration") from the omap tree and commit
-> 90173882ed15a8034d6d162da5f343a2c7d87587 ("omap: add dsp platform
-> device") from the staging-next tree.
-> 
-> Just overlapping removal/additions (I think).  I fixed it up (see below)
-> and can carry the changes as necessary.
+From: matt mooney <mfm@muteddisk.com>
 
-Your fixup looks correct to me, thanks for carrying it.
+Unnecessary cast from void* in assignment.
 
-greg k-h
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/ftrace.c |    4 ++--
+ kernel/trace/trace.c  |    2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+index 65fb077..ebd80d5 100644
+--- a/kernel/trace/ftrace.c
++++ b/kernel/trace/ftrace.c
+@@ -1638,8 +1638,8 @@ ftrace_failures_open(struct inode *inode, struct file *file)
+ 
+ 	ret = ftrace_avail_open(inode, file);
+ 	if (!ret) {
+-		m = (struct seq_file *)file->private_data;
+-		iter = (struct ftrace_iterator *)m->private;
++		m = file->private_data;
++		iter = m->private;
+ 		iter->flags = FTRACE_ITER_FAILURES;
+ 	}
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 9ec59f5..001bcd2 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -2196,7 +2196,7 @@ int tracing_open_generic(struct inode *inode, struct file *filp)
+ 
+ static int tracing_release(struct inode *inode, struct file *file)
+ {
+-	struct seq_file *m = (struct seq_file *)file->private_data;
++	struct seq_file *m = file->private_data;
+ 	struct trace_iterator *iter;
+ 	int cpu;
+ 
+-- 
+1.7.1
+
+
