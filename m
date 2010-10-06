@@ -1,83 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759951Ab0JFXGm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 19:06:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42715 "EHLO mx1.redhat.com"
+	id S1760018Ab0JFXJb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 19:09:31 -0400
+Received: from mga14.intel.com ([143.182.124.37]:56153 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758212Ab0JFXGl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 19:06:41 -0400
-Date: Wed, 6 Oct 2010 19:06:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Cc: mingo@redhat.com, linux-kernel@vger.kernel.org, yinghai@kernel.org,
-        caiqian@redhat.com, tglx@linutronix.de,
-        linux-tip-commits@vger.kernel.org,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [tip:core/memblock] x86, memblock: Fix crashkernel allocation
-Message-ID: <20101006230632.GA22059@redhat.com>
-References: <4CABAF2A.5090501@kernel.org>
- <tip-9f4c13964b58608fbce05540743281ea3146c0e8@git.kernel.org>
- <20101006151449.GA7378@redhat.com>
- <4CACF531.2060407@intel.com>
- <20101006224704.GD7378@redhat.com>
+	id S1754210Ab0JFXJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 19:09:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,293,1283756400"; 
+   d="scan'208";a="333088008"
+Message-ID: <4CAD01A9.9050907@intel.com>
+Date: Wed, 06 Oct 2010 16:09:29 -0700
+From: "H. Peter Anvin" <h.peter.anvin@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "caiqian@redhat.com" <caiqian@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>
+Subject: Re: [tip:core/memblock] x86, memblock: Fix crashkernel allocation
+References: <4CABAF2A.5090501@kernel.org> <tip-9f4c13964b58608fbce05540743281ea3146c0e8@git.kernel.org> <20101006151449.GA7378@redhat.com> <4CACF531.2060407@intel.com> <20101006224704.GD7378@redhat.com>
 In-Reply-To: <20101006224704.GD7378@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 06:47:04PM -0400, Vivek Goyal wrote:
-> On Wed, Oct 06, 2010 at 03:16:17PM -0700, H. Peter Anvin wrote:
-> > On 10/06/2010 08:14 AM, Vivek Goyal wrote:
-> > > 
-> > > I really don't understand why to put a upper limit of DEFAULT_BZIMAGE_ADDR_MAX.
-> > > It does not make much sense to internally impose an upper limit on
-> > > reserved memory area if reserver has not specified one.
-> > > 
-> > > Why can't we provide a function which does a search from bottom up for
-> > > the required size of memory. If the memory finally reserved does not meet
-> > > the constraints needed by kexec, then kexec load will fail. Kernel does
-> > > not have to try to figure out the upper limit in this case.
-> > > 
-> > > Current state of affairs are not perfect, but coming up with artificial
-> > > upper limit here is further deterioriating the situation, IMHO.
-> > > 
-> > > Regarding the question of specifying the upper limit by kexec on command
-> > > line, I think it is hard. Kexec needs to load multiple segments and some
-> > > needs to go in really low memory area and some can be in higher memory
-> > > area. What is the upper limit in this case. If we take the upper limit
-> > > of lowest memory segment, then we will just not have sufficient memory
-> > > to load all segments.
-> > > 
-> > > That would mean split the reserved region into multiple parts and one
-> > > should specifiy separate upper limit for each region. That would make
-> > > the whole thing complex.
-> > > 
-> > > So can we atleast maintain the status quo where we search for crashkernel
-> > > memory bottom up without any upper limits instread of top down.
-> > > 
-> > 
-> > The reason the "whole thing is complex" is because your constraints are
-> > complex, and you're still trying to hide them from the kernel.  And what
-> > is absolutely incomprehensible to me is that you seem to think this is okay.
-> > 
-> > I really, REALLY, ***REALLY*** don't want to burden the kernel with a
-> > bunch of constraints which are invisible to it, where things will
-> > randomly fail because the implementation changed.  We have too much of
-> > that already, and it causes an enormous amount of problems all over the
-> > kernel.
-> > 
-> > Of course, we're already painted into a corner with a bad design that
-> > isn't going to change overnight, and of course, this is hardly the first
-> > time this has happened -- we do find our way out of tight spots on a
-> > regular basis.  Perhaps you're right and the best thing is to add an
-> > explicit bottoms-up allocator function for now, *BUT* I would also like
-> > to see a firm commitment to fix the underlying architectural problem for
-> > real, and not just "maintain the status quo" indefinitely, which is what
-> > your emails make me think you're expecting.
+On 10/06/2010 03:47 PM, Vivek Goyal wrote:
 > 
 > I really don't mind fixing the things properly in long term, just that I am
 > running out of ideas regarding how to fix it in proper way.
@@ -100,13 +54,28 @@ On Wed, Oct 06, 2010 at 06:47:04PM -0400, Vivek Goyal wrote:
 > So to me one of the ways of properly fixing is adding some kind of
 > capability to reserve the memory dynamically (may be using sys_kexec())
 > and get rid of this notion of reserving memory at boot time.
-> 
+
+The problem, of course, will allocating very large chunks of memory at
+runtime is that there are going to be some number of non-movable and
+non-evictable pages that are going to break up the contiguous ranges.
+However, the mm recently added support for moving most pages, which
+should make that kind of allocation a lot more feasible.  I haven't
+experimented how well it works in practice, but I rather suspect that as
+long as the crashkernel is installed sufficiently early in the boot
+process it should have a very good probability of success.  Another
+option, although one which has its own hackiness issues, is to do a
+conservative allocation at boot time in preparation of the kexec call,
+which is then freed.  This doesn't really address the issue of location,
+though, which is part of the problem here.
+
 > The other concern you raised is hiding constraints from kernel. At this
 > point of time the only problem with crashkernel=X@0 syntax is that it
 > does not tell you whether to look for memory bottom up or top down. How
 > about if we specify it explicitly in the syntax so that kernel does not
 > have to assume things?
-> 
+
+See below.
+
 > In fact the initial crashkernel syntax was. crashkernel=X@Y. This meant
 > allocated X amount of memory at location Y. This left no ambiguity and
 > kernel did not have to assume things. It had the problem though that 
@@ -124,26 +93,22 @@ On Wed, Oct 06, 2010 at 06:47:04PM -0400, Vivek Goyal wrote:
 > The "#BU" part can be optional and in that case kernel is free to allocate
 > memory either top down or bottom up.
 > 
+> Or any other string which can communicate the bottom up part in a more 
+> intutive manner.
 
-Thinking more on above point.
+The whole problem here is that "bottoms up" isn't the true constraint --
+it's a proxy for "this chunk needs < address X, this chunk needs <
+address Y, ..." which is the real issue.  This is particularly messy
+since low memory is a (sometimes very) precious resource that is used by
+a lot of things (BIOS stubs, DMA-mask-limited hardware devices, and
+perhaps especially 1:1 mappable pages on 32 bits, and so on), and one of
+the major reasons we want to switch to a top-down allocation scheme is
+to not waste a precious resource when we don't have to.
 
-crashkernel=X@Y will mean that allocate memory X at location Y only. If
-it is not available just don't reserve. This will also mean that
-we should not overload Y=0 case and crashkernel=X@0 should also mean
-that reserve X amount of memory at location 0 and if it is not available
-fail.
+The one improvement one could to the crashkernel= syntax is perhaps
+"crashkernel=X<Y" meaning "allocate entirely below Y", since that is (at
+least in part) the real constraint.  It could even be extended to
+multiple segments: "crashkernel=X<Y,Z<W,..." if we really need to...
+that way you have your preallocation.
 
-crashkernel=<size>@<offset>#<policy> will communicate additional
-inforation regarding how to allocate memory. 
-
-policy could be comma separated strings to communicate bottom up or top down
-constraints. In future we could extend it to specify additional
-constraints like alignment.
-
-policy="<str>"
-
-BU---> Look for next available free memory bottom up if memory at originally
-       specified location is not available.
-
-Thanks
-Vivek
+	-hpa
