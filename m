@@ -1,35 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932191Ab0JFHZd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:25:33 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47679 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932112Ab0JFHZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:25:32 -0400
-Date: Wed, 6 Oct 2010 16:25:07 +0900
-To: nab@linux-iscsi.org
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com
+	id S932213Ab0JFH0u (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:26:50 -0400
+Received: from smtp102.sbc.mail.gq1.yahoo.com ([67.195.15.61]:32001 "HELO
+	smtp102.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932147Ab0JFH0t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 03:26:49 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: NJv0UcsVM1lMDbSVgzIKl8wWEY5RB3RJuZ9DVsuZsoMcRpk
+ Mx8PvCFntZjGpWbdrsjbqQOqKF1kE7RteVgpsYtF0x36guyV_HjxMnwhLcHl
+ mSkR6pSMhiYncR7Dq11LjhGrEzsKlD1M2VM.EVwbYAwVoX_4Eq8eB0bFG5dt
+ ZXoG2Gy2nQ1NWFO5cxQSZn49wYPoPZYUFvehIB3i39WyIuxuEBZw3eYcAFvR
+ 8F4ErzLs_1HJSqD8WSlGp7ZyeMNuu14kW9RlZBKdVN9Zg_UiYnsIOZM4YQYy
+ TBQQVMC6I8CFoZjO_hy6CZhn4zXYs7KNGnh1YMihXxeqtsaGNgiylTTVj
+X-Yahoo-Newman-Property: ymail-3
 Subject: Re: [RFC v2 05/21] tcm: Add ConfigFS subsystem backstore
 	infrastructure
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
+        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com,
+        Joel Becker <joel.becker@oracle.com>
 In-Reply-To: <20101006155833G.fujita.tomonori@lab.ntt.co.jp>
-References: <20101006091219Q.fujita.tomonori@lab.ntt.co.jp>
-	<1286339442.5685.76.camel@haakon2.linux-iscsi.org>
-	<20101006155833G.fujita.tomonori@lab.ntt.co.jp>
+References: <1285195750-11516-1-git-send-email-nab@linux-iscsi.org>
+	 <20101006091219Q.fujita.tomonori@lab.ntt.co.jp>
+	 <1286339442.5685.76.camel@haakon2.linux-iscsi.org>
+	 <20101006155833G.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Date: Wed, 06 Oct 2010 00:22:10 -0700
+Message-Id: <1286349730.5685.113.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <20101006162018R.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 06 Oct 2010 16:25:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010 16:09:26 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-
+On Wed, 2010-10-06 at 16:09 +0900, FUJITA Tomonori wrote:
 > On Tue, 05 Oct 2010 21:30:42 -0700
 > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 > 
@@ -45,11 +54,23 @@ FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 > 
 > The above link doesn't work for me so I'm not sure.
 > 
+
+Hmmm, this URL still is working OK for me..?
+
 > But I guess that you are talking about the problem that
 > tcm_lpfc_make_lport() can accept proper hardware port addresses. We
 > are on the same page if so.
 > 
 > 
+
+Well, just what the list of possible/available hardware WWNs that the
+fabric module will be referencing for the individual:
+
+	mkdir -p /sys/kernel/config/target/$TCM_FAB_MOD/$FABRIC_WWPN
+
+to locate and initialize the per HW port context fabric module configfs
+group.
+
 > > The main issue here is that the user still needs to know the $LPORT_WWPN
 > > before hand (either from looking at a sticker on the card, or via
 > > another method) in order to preform the initial TFO->fabric_make_wwn()
@@ -68,15 +89,25 @@ FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 > 
 > I want the driver to create necessary target directories in
 > /sys/kernel/config/target/ibmvscsit/ automatically.
+> 
+> 
 
-In addition, I also think that /sys/kernel/config/target/$TCM_MOD
-should show up automatically when I load the module.
+Hmmmm, well configfs is entirely driven by userspace syscalls, so we
+want to try to avoid doing this (jlbec CC'ed).  We want userspace code
+to parse a list of these values from sysfs+configfs and use these
+individual HW WWPN value(s) as the directory/group names for the
+mkdir(2) mentioned above.
 
-vine:/home/fujita# modprobe iscsi_target_mod
+> And 'hw_ports' looks unnecessary because fc drivers already provide
+> such information under /sys/class/, I think.
+> --
 
-Then why do I need to create iscsi directory by hand?
+Well, it really depends on what is required for individual target fabric
+modules I think, and perhaps could contain some other useful information
+about target mode HW specific available resources.  For the HW FC +
+libfc case, as long as the LLD continues to register TARGET_MODE capable
+HW ports in /sys/class, I think we should be good to go.
 
-vine:/home/fujita# mkdir /sys/kernel/config/target/iscsi
+--nab
 
 
-btw, 'iscsi' needs to renamed to iscsi_tcp or something like that?
