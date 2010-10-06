@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932129Ab0JFHF5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:05:57 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:19201 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756906Ab0JFHFz (ORCPT
+	id S1758654Ab0JFHJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:09:33 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:50894 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758571Ab0JFHJb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:05:55 -0400
-Date: Wed, 6 Oct 2010 09:05:39 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the final tree 
- (jdelvare-hwmon tree related)
-Message-ID: <20101006090539.6dacba1e@endymion.delvare>
-In-Reply-To: <20101006152831.f91a5610.sfr@canb.auug.org.au>
-References: <20101006152831.f91a5610.sfr@canb.auug.org.au>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Wed, 6 Oct 2010 03:09:31 -0400
+Subject: Re: RFC: btusb firmware load help
+From: Marcel Holtmann <holtmann@linux.intel.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>
+In-Reply-To: <20101005215008.GA11117@srcf.ucam.org>
+References: <20100924230730.GB6566@tux> <1286266981.17473.33.camel@aeonflux>
+	 <20101005192814.GB11831@tux> <1286308731.2588.13.camel@aeonflux>
+	 <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
+	 <20101005215008.GA11117@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 09:09:25 +0200
+Message-ID: <1286348965.6145.1.camel@aeonflux>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Hi Matthew,
 
-On Wed, 6 Oct 2010 15:28:31 +1100, Stephen Rothwell wrote:
-> Hi ,
+> > Right -- so ath3k depends on some atheros USB device IDs, and its a
+> > stupid driver that just loads firmware. The problem with this new
+> > device is that it requires two phases. One to load some sort of
+> > firmware onto it to get it to read as an ath3k device, and then ath3k
+> > will load the right firmware to it. So the hardware device is already
+> > claiming a btusb vendor:device ID, we can't change that I believe. Of
+> > course for future devices we can, and we've addressed this and its
+> > been fixed.
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
+> If the device IDs can be changed when the firmware is loaded, then 
+> simply provide a driver that binds to the original IDs and uploads the 
+> firmware. The original IDs can be blacklisted from btusb so it won't 
+> interfere. The device will then boot the firmware, detach and reattach 
+> with new IDs - btusb will then bind. Repeat for every cold reset.
 > 
-> drivers/hwmon/pcf8591.c: In function 'pcf8591_probe':
-> drivers/hwmon/pcf8591.c:205: error: implicit declaration of function 'IS_ERR'
-> drivers/hwmon/pcf8591.c:206: error: implicit declaration of function 'PTR_ERR'
-> 
-> Caused by commit 63575f5628b811d80f81158825dbc9d3db4ac1a5 ("hwmon:
-> (pcf8591) Register as a hwmon device").
+> If you can't change the IDs from firmware then an alternative would be 
+> to blacklist it from btusb and provide a userspace application triggered 
+> by a udev rule. Have it load the firmware and then poke 
+> /sys/bus/usb/drivers/btusb/new_id .
 
-Oh, right. Missing include, thanks for the heads up.
+exactly, we just blacklist the original USB IDs in the btusb driver. It
+already has a blacklist table and you just use BTUSB_IGNORE in there.
 
-> See Rule 1 in Documentation/SubmitChecklist.
+Regards
 
-True, shame on me :(
+Marcel
 
-> I have added reverted that commit (and
-> 3eabb87a17ff8da477f7bf4c5a14063b68937fb1 ("hwmon: (pcf8591) Don't attempt
-> to detect devices") that followed it) for today.
 
-Fixed by now.
-
--- 
-Jean Delvare
