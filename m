@@ -1,62 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab0JFDOa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 23:14:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55983 "EHLO smtps.tip.net.au"
+	id S1758391Ab0JFDVO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 23:21:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52548 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756680Ab0JFDO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 23:14:28 -0400
-Date: Wed, 6 Oct 2010 14:14:14 +1100
+	id S1754007Ab0JFDVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 23:21:13 -0400
+Date: Wed, 6 Oct 2010 14:21:10 +1100
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Joe Perches <joe@perches.com>, Jiri Kosina <jkosina@suse.cz>,
-        Sergei Shtylyov <sshtylyov@ru.mvista.com>, Felipe Balbi <balbi@ti.com>
-Subject: linux-next: manual merge of the usb tree with the trivial tree
-Message-Id: <20101006141414.abf7431f.sfr@canb.auug.org.au>
+        Charulatha V <charu@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Tony Lindgren <tony@atomide.com>, <linux-omap@vger.kernel.org>
+Subject: linux-next: manual merge of the staging-next tree with the omap
+ tree
+Message-Id: <20101006142110.e757f27c.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__6_Oct_2010_14_14_14_+1100_ED+D5Umds_uXO/P0"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Oct_2010_14_14_14_+1100_ED+D5Umds_uXO/P0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi Greg,
 
-Today's linux-next merge of the usb tree got a conflict in
-drivers/usb/musb/musb_gadget.c between commit
-7f26b3a7533bbc1ddd88b297c935ee4da8f74cea ("drivers/usb: Remove
-unnecessary return's from void functions") from the trivial tree and
-commit 82cccbf2458e50dabf8b9946b3f0ef0e8d31711f ("usb: musb: gadget: kill
-unreachable code in musb_g_rx()") from the usb tree.
+Today's linux-next merge of the staging-next tree got a conflict in
+arch/arm/plat-omap/devices.c between commit
+f2ce62312650211f6cf665cd6dc519c334c4071e ("OMAP: WDT: Split OMAP1 and
+OMAP2PLUS device registration") from the omap tree and commit
+90173882ed15a8034d6d162da5f343a2c7d87587 ("omap: add dsp platform
+device") from the staging-next tree.
 
-The latter also fixes the problem fixed in the former, so I just used the
-latter.
---=20
+Just overlapping removal/additions (I think).  I fixed it up (see below)
+and can carry the changes as necessary.
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Wed__6_Oct_2010_14_14_14_+1100_ED+D5Umds_uXO/P0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMq+mGAAoJEDMEi1NhKgbsETIH/iKAGcIQOOPuSfz9AIOG6Szz
-QvIGSL/reKGhx3VXR4RyOyeuu5bLGncS3+6DC4Q2kdsgdzLJXEs3/bDSb0lJRbJg
-nnjQSAyE0Kw4IZxRgqafeTC1berlPbM4r1Q3Sef5sNi1iB4/w7Q86jKmWO2aHMwn
-Npsjlzgqgt3f3qDRanb1La892nTANMbHgJMpfFaa6zx8M6W5Vcn+01PN8UEVVFPH
-pmD2NHuFn9bEste7GEUKc2jtnE9/9RNn7YucCHvKmPVD/1sPdPL7AURKrBWvSuVa
-uVOEHTcXR/Q4Hqg4Ae+QK39PanYkujfBBpX3Nf5UxEmk/YUEhonVYEm3R4ht8fM=
-=tkOz
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Oct_2010_14_14_14_+1100_ED+D5Umds_uXO/P0--
+diff --cc arch/arm/plat-omap/devices.c
+index 1e2383e,4c8f9b9..0000000
+--- a/arch/arm/plat-omap/devices.c
++++ b/arch/arm/plat-omap/devices.c
+@@@ -231,6 -233,75 +232,35 @@@ static void omap_init_uwire(void
+  static inline void omap_init_uwire(void) {}
+  #endif
+  
+ -/*-------------------------------------------------------------------------*/
+ -
+ -#if	defined(CONFIG_OMAP_WATCHDOG) || defined(CONFIG_OMAP_WATCHDOG_MODULE)
+ -
+ -static struct resource wdt_resources[] = {
+ -	{
+ -		.flags		= IORESOURCE_MEM,
+ -	},
+ -};
+ -
+ -static struct platform_device omap_wdt_device = {
+ -	.name	   = "omap_wdt",
+ -	.id	     = -1,
+ -	.num_resources	= ARRAY_SIZE(wdt_resources),
+ -	.resource	= wdt_resources,
+ -};
+ -
+ -static void omap_init_wdt(void)
+ -{
+ -	if (cpu_is_omap16xx())
+ -		wdt_resources[0].start = 0xfffeb000;
+ -	else if (cpu_is_omap2420())
+ -		wdt_resources[0].start = 0x48022000; /* WDT2 */
+ -	else if (cpu_is_omap2430())
+ -		wdt_resources[0].start = 0x49016000; /* WDT2 */
+ -	else if (cpu_is_omap343x())
+ -		wdt_resources[0].start = 0x48314000; /* WDT2 */
+ -	else if (cpu_is_omap44xx())
+ -		wdt_resources[0].start = 0x4a314000;
+ -	else
+ -		return;
+ -
+ -	wdt_resources[0].end = wdt_resources[0].start + 0x4f;
+ -
+ -	(void) platform_device_register(&omap_wdt_device);
+ -}
+ -#else
+ -static inline void omap_init_wdt(void) {}
+ -#endif
+ -
++ #if defined(CONFIG_TIDSPBRIDGE) || defined(CONFIG_TIDSPBRIDGE_MODULE)
++ 
++ static phys_addr_t omap_dsp_phys_mempool_base;
++ 
++ void __init omap_dsp_reserve_sdram_memblock(void)
++ {
++ 	phys_addr_t size = CONFIG_TIDSPBRIDGE_MEMPOOL_SIZE;
++ 	phys_addr_t paddr;
++ 
++ 	if (!size)
++ 		return;
++ 
++ 	paddr = __memblock_alloc_base(size, SZ_1M, MEMBLOCK_REAL_LIMIT);
++ 	if (!paddr) {
++ 		pr_err("%s: failed to reserve %x bytes\n",
++ 				__func__, size);
++ 		return;
++ 	}
++ 
++ 	omap_dsp_phys_mempool_base = paddr;
++ }
++ 
++ phys_addr_t omap_dsp_get_mempool_base(void)
++ {
++ 	return omap_dsp_phys_mempool_base;
++ }
++ EXPORT_SYMBOL(omap_dsp_get_mempool_base);
++ #endif
++ 
+  /*
+   * This gets called after board-specific INIT_MACHINE, and initializes most
+   * on-chip peripherals accessible on this board (except for few like USB):
