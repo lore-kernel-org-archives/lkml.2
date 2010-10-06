@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab0JFBBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 21:01:15 -0400
+	id S1758356Ab0JFBFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 21:05:25 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:47044 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758184Ab0JFBBM (ORCPT
+	with ESMTP id S1758184Ab0JFBBR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 21:01:12 -0400
+	Tue, 5 Oct 2010 21:01:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=PJq/U3PSASjpFVafDXBpZD/0fnTqk1s8TMwRST6VoKPKOHs6wB6bXBkxq/BO0b9fpN
-         24ejIZ5HQZHUjk+E2OpMXavYMB1bgo66JfKdK44GeLCEv1yVikQ5zx73te/0eBnxG53h
-         Ob9aoUJq1R4jLKrZw2gA/8F6gqRcPc9bsEfMw=
+        b=CPpjusjgm4raUq4HXPelzRG8ZASVpkbeRmEdEB+IuWCAm9c1745fh1+tmFYRrllQLh
+         ZXE/jRF/BIzMDcoaq3gt23ZwW/cjRw5vFuk6m4XUAckvq7Qq6BKze2NIHwguUGKGzNzz
+         PSdxYVDu2wn81uVekvLZ6SCdpKA26JLL/dEX4=
 From: Tracey Dent <tdent48227@gmail.com>
 To: greg@kroah.com, abbotti@mev.co.uk, fmhess@users.sourceforge.net
 Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
         Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 06/28] Staging: comedi: comedilib.h: Edit file so that checkpatch.pl has 0 errors and warnings
-Date: Tue,  5 Oct 2010 21:00:21 -0400
-Message-Id: <1286326843-6170-6-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 11/28] Staging: comedi: drivers: 8253.h:  Edit file so that checkpatch.pl has 0 errors and warnings
+Date: Tue,  5 Oct 2010 21:00:26 -0400
+Message-Id: <1286326843-6170-11-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.1.50.g1e633
 In-Reply-To: <1286326843-6170-1-git-send-email-tdent48227@gmail.com>
 References: <1286326843-6170-1-git-send-email-tdent48227@gmail.com>
@@ -32,24 +32,24 @@ WARNING: please, no space for starting a line.
 
 Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- drivers/staging/comedi/comedilib.h |   30 +++++++++++++++---------------
+ drivers/staging/comedi/drivers/8253.h |   30 +++++++++++++++---------------
  1 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedilib.h b/drivers/staging/comedi/comedilib.h
-index ca92c43..8a699c5 100644
---- a/drivers/staging/comedi/comedilib.h
-+++ b/drivers/staging/comedi/comedilib.h
+diff --git a/drivers/staging/comedi/drivers/8253.h b/drivers/staging/comedi/drivers/8253.h
+index 3eb45d4..8ef9360 100644
+--- a/drivers/staging/comedi/drivers/8253.h
++++ b/drivers/staging/comedi/drivers/8253.h
 @@ -1,23 +1,23 @@
  /*
--    linux/include/comedilib.h
--    header file for kcomedilib
-+	linux/include/comedilib.h
-+	header file for kcomedilib
+-    comedi/drivers/8253.h
+-    Header file for 8253
++	comedi/drivers/8253.h
++	Header file for 8253
  
 -    COMEDI - Linux Control and Measurement Device Interface
--    Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
+-    Copyright (C) 2000 David A. Schleef <ds@schleef.org>
 +	COMEDI - Linux Control and Measurement Device Interface
-+	Copyright (C) 1998-2001 David A. Schleef <ds@schleef.org>
++	Copyright (C) 2000 David A. Schleef <ds@schleef.org>
  
 -    This program is free software; you can redistribute it and/or modify
 -    it under the terms of the GNU General Public License as published by
