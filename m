@@ -1,70 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759408Ab0JFQbm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:31:42 -0400
-Received: from new1.smtp.messagingengine.com ([66.111.4.221]:54726 "EHLO
+	id S1759423Ab0JFQb5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:31:57 -0400
+Received: from new1.smtp.messagingengine.com ([66.111.4.221]:39975 "EHLO
 	new1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759393Ab0JFQbj (ORCPT
+	by vger.kernel.org with ESMTP id S1759393Ab0JFQby (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:31:39 -0400
-X-Sasl-enc: SVq1mhWYj2ZDalzvGXs2OQZhLwFHFzuChwpdzDEvGu7J 1286382697
+	Wed, 6 Oct 2010 12:31:54 -0400
+X-Sasl-enc: TQzoFHaxUsthZNuSDvnGh3lfto/vu7A2qrD2Omm9zQVm 1286382712
 From: Roberto Sassu <roberto.sassu@polito.it>
 Organization: Politecnico di Torino
 To: tyhicks@linux.vnet.ibm.com, kirkland@canonical.com, jmorris@namei.org,
         akpm@linux-foundation.org, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: [PATCH 2/3] ecryptfs: checking return code of ecryptfs_find_auth_tok_for_sig()
-Date: Wed, 6 Oct 2010 18:31:15 +0200
+Subject: [PATCH 3/3] ecryptfs: added ecryptfs_mount_auth_tok_only mount parameter
+Date: Wed, 6 Oct 2010 18:31:32 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.34.7-56.fc13.x86_64; KDE/4.4.5; x86_64; ; )
 MIME-Version: 1.0
 Content-Type: multipart/signed;
-  boundary="nextPart4642158.ebvnliFLYD";
+  boundary="nextPart12150568.lIQO6f9Mh1";
   protocol="application/pkcs7-signature";
   micalg=sha1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010061831.15661.roberto.sassu@polito.it>
+Message-Id: <201010061831.32663.roberto.sassu@polito.it>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart4642158.ebvnliFLYD
+--nextPart12150568.lIQO6f9Mh1
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: quoted-printable
 
-This patch replaces the check of the 'matching_auth_tok' pointer with
-the exit status of ecryptfs_find_auth_tok_for_sig().
-This avoids to use authentication tokens obtained through the function=20
-ecryptfs_keyring_auth_tok_for_sig which are not valid.
+This patch adds a new mount parameter 'ecryptfs_mount_auth_tok_only' to for=
+ce=20
+ecryptfs to use only authentication tokens which signature has been=20
+specified at mount time with parameters 'ecryptfs_sig' and 'ecryptfs_fnek_s=
+ig'.=20
+In this way, after disabling the passthrough and the encrypted view modes,
+it's possible to make available to users only files encrypted with the spec=
+ified
+authentication token.
 
 
 Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 =2D--
- fs/ecryptfs/keystore.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ fs/ecryptfs/ecryptfs_kernel.h |    1 +
+ fs/ecryptfs/keystore.c        |    7 +++++++
+ fs/ecryptfs/main.c            |    8 +++++++-
+ 3 files changed, 15 insertions(+), 1 deletions(-)
 
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 0032a9f..59ab793 100644
+=2D-- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -377,6 +377,7 @@ struct ecryptfs_mount_crypt_stat {
+ #define ECRYPTFS_GLOBAL_ENCRYPT_FILENAMES      0x00000010
+ #define ECRYPTFS_GLOBAL_ENCFN_USE_MOUNT_FNEK   0x00000020
+ #define ECRYPTFS_GLOBAL_ENCFN_USE_FEK          0x00000040
++#define ECRYPTFS_GLOBAL_MOUNT_AUTH_TOK_ONLY    0x00000080
+ 	u32 flags;
+ 	struct list_head global_auth_tok_list;
+ 	struct mutex global_auth_tok_list_mutex;
 diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-index 77580db..643d011 100644
+index 643d011..93f7785 100644
 =2D-- a/fs/ecryptfs/keystore.c
 +++ b/fs/ecryptfs/keystore.c
-@@ -1819,11 +1819,11 @@ find_next_matching_auth_tok:
- 			rc =3D -EINVAL;
- 			goto out_wipe_list;
- 		}
-=2D		ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
-+		rc =3D ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
- 					       &matching_auth_tok,
- 					       crypt_stat->mount_crypt_stat,
- 					       candidate_auth_tok_sig);
-=2D		if (matching_auth_tok) {
-+		if (!rc) {
- 			found_auth_tok =3D 1;
- 			goto found_matching_auth_tok;
- 		}
+@@ -459,6 +459,13 @@ ecryptfs_find_auth_tok_for_sig(
+ 	if (ecryptfs_find_global_auth_tok_for_sig(&global_auth_tok,
+ 						  mount_crypt_stat, sig)) {
+=20
++		/* if the flag ECRYPTFS_GLOBAL_MOUNT_AUTH_TOK_ONLY is set in the
++		 * mount_crypt_stat structure, we prevent to use auth toks that are
++		 * not inserted through the ecryptfs_add_global_auth_tok function.
++		 */
++		if (mount_crypt_stat->flags & ECRYPTFS_GLOBAL_MOUNT_AUTH_TOK_ONLY)
++			return -EINVAL;
++
+ 		rc =3D ecryptfs_keyring_auth_tok_for_sig(auth_tok_key, auth_tok,
+ 						       sig);
+ 	} else
+diff --git a/fs/ecryptfs/main.c b/fs/ecryptfs/main.c
+index cbd4e18..e372226 100644
+=2D-- a/fs/ecryptfs/main.c
++++ b/fs/ecryptfs/main.c
+@@ -208,7 +208,8 @@ enum { ecryptfs_opt_sig, ecryptfs_opt_ecryptfs_sig,
+        ecryptfs_opt_passthrough, ecryptfs_opt_xattr_metadata,
+        ecryptfs_opt_encrypted_view, ecryptfs_opt_fnek_sig,
+        ecryptfs_opt_fn_cipher, ecryptfs_opt_fn_cipher_key_bytes,
+=2D       ecryptfs_opt_unlink_sigs, ecryptfs_opt_err };
++       ecryptfs_opt_unlink_sigs, ecryptfs_opt_mount_auth_tok_only,
++       ecryptfs_opt_err };
+=20
+ static const match_table_t tokens =3D {
+ 	{ecryptfs_opt_sig, "sig=3D%s"},
+@@ -223,6 +224,7 @@ static const match_table_t tokens =3D {
+ 	{ecryptfs_opt_fn_cipher, "ecryptfs_fn_cipher=3D%s"},
+ 	{ecryptfs_opt_fn_cipher_key_bytes, "ecryptfs_fn_key_bytes=3D%u"},
+ 	{ecryptfs_opt_unlink_sigs, "ecryptfs_unlink_sigs"},
++	{ecryptfs_opt_mount_auth_tok_only, "ecryptfs_mount_auth_tok_only"},
+ 	{ecryptfs_opt_err, NULL}
+ };
+=20
+@@ -406,6 +408,10 @@ static int ecryptfs_parse_options(struct ecryptfs_sb_i=
+nfo *sbi, char *options)
+ 		case ecryptfs_opt_unlink_sigs:
+ 			mount_crypt_stat->flags |=3D ECRYPTFS_UNLINK_SIGS;
+ 			break;
++		case ecryptfs_opt_mount_auth_tok_only:
++			mount_crypt_stat->flags |=3D=20
++				ECRYPTFS_GLOBAL_MOUNT_AUTH_TOK_ONLY;
++			break;
+ 		case ecryptfs_opt_err:
+ 		default:
+ 			printk(KERN_WARNING
 =2D-=20
 1.7.2.3
 
---nextPart4642158.ebvnliFLYD
+--nextPart12150568.lIQO6f9Mh1
 Content-Type: application/pkcs7-signature; name="smime.p7s"
 Content-Disposition: attachment; filename="smime.p7s"
 Content-Transfer-Encoding: base64
@@ -145,12 +198,12 @@ TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggIc
 MIICGAIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8x
 NjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQIC
 A8EwCQYFKw4DAhoFAKCBhzAYBgkqhkiG9w0BCQMxCwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEP
-Fw0xMDEwMDYxNjMxMTVaMCMGCSqGSIb3DQEJBDEWBBQsYjppziPsn7Xwn7jKF6tDVRV12jAoBgkq
-hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQAq
-y3bnJsYt/B65bqCoPwgkrDhRgRZq8GRHKkmqFUtgWN1+aPbphaidbMSts89tbwoY8CUt2qdzfZHX
-5ulZs/qWJrtuh0gTV4KIwzlcZ/2tUAlPXfqSQ+83TFYHEVGIv8eOb5vrO1FRwX2/F8pOSjvRnYo7
-/EpL9/8Ym/z7UdyP4pHTd/Bh6dPdkLwYUsEdPg+yqfvktl7FxqdUr1mscziR+8fxfA45/2HDOnTA
-UzBXY8EIyaUA4m8tLW5uOVtEDPa+9JvQG7Yhy90vlwHMygDC9Icip1oJi/Z7jJsqg35v7vPEFhq5
-1R6O9BCbKTioMGmFFhTYm46TY4YY5fLGhNAXAAAAAAAA
+Fw0xMDEwMDYxNjMxMzJaMCMGCSqGSIb3DQEJBDEWBBRWuvEcRQpGof0o9+hguzXgiBzJKDAoBgkq
+hkiG9w0BCQ8xGzAZMAsGCWCGSAFlAwQBAjAKBggqhkiG9w0DBzANBgkqhkiG9w0BAQEFAASCAQB3
+XKQuq6+ekzQ+u3JbSY+qqT/mquWj8BYG8v+u14lNI7WegmbYAIGK+pj0ZqlsJw/qwZZMPBh7bm3q
+Y4LK/q/0ZAgdrvdH/rsADfGYkZDDs7+3jW1mx4vK7Fm5NIOFRU3dwaVqNGKZg4Ve1k+pcreuoLDx
+g+rVmm0WqsnxiXzCSpcahlsC/UZDZZzh3C4NizgoCjdj72elEEc35tyuAuMTcwu+k+XEmqFbU0hx
+AKu3nfkafH+GaoL35aiqzortPR8yVayxNkb+uRsyfkTUidyTibDeS2v5xgVgz8ighulfX/XtxVvf
+iKD6xWDPSJbrU+zCBVhIX+GeM5JKNW1kNgmKAAAAAAAA
 
---nextPart4642158.ebvnliFLYD--
+--nextPart12150568.lIQO6f9Mh1--
