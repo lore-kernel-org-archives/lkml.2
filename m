@@ -1,77 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759420Ab0JFQzc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:55:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59115 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757334Ab0JFQzb (ORCPT
+	id S1759419Ab0JFQ7z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:59:55 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:42261 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757239Ab0JFQ7y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:55:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=Hvhw+X/4mkqKVaysyZjRQ4lJ9WFJ+S/XuI1BS0LDpx/Kv9Bb+ofdf8KFo24702yldl
-         6cPlcTnikPagM46P2iBbLV5VifkFaMhDutnR+9q00XdYCbP4KdmSxKVMP1aKPQ+ichkm
-         I6JL5VKxWhB+oNJu3A0Kuh6AGJiIizcGRIIKk=
-Date: Wed, 6 Oct 2010 18:33:54 +0200
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH] x86, amd: Move CPB flag from "flags" to "power management"
- section in /proc/cpuinfo
-Message-ID: <20101006163354.GA31153@loge.amd.com>
+	Wed, 6 Oct 2010 12:59:54 -0400
+X-IronPort-AV: E=Sophos;i="4.57,290,1283731200"; 
+   d="scan'208";a="2219634"
+Date: Wed, 6 Oct 2010 18:00:15 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org,
+        xen-devel@lists.xensource.com, "jeremy@goop.org" <jeremy@goop.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 4/7] acpi: use indirect call to register gsi in different
+ modes
+In-Reply-To: <1283167276-7364-4-git-send-email-stefano.stabellini@eu.citrix.com>
+Message-ID: <alpine.DEB.2.00.1010061749110.2440@kaball-desktop>
+References: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop> <1283167276-7364-4-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+Peter,
+I sent this patch a while back as part of the "PV on HVM: receive
+interrupts as xen events" series (that it is based upon Konrad's
+pcifront series, he sent another version to the list yesterday).
 
-Avoid nameless flag in /proc/cpuinfo, ie.
+Do you think that this is a reasonble approach?
 
-   power management: ts tm 100mhzsteps hwpstate [9]
+If you want to give a look at the whole series you can find it here:
 
-and indicate CPB support rather in the power management section
-instead of the general feature flags section of /proc/cpuinfo.  The
-flag is provided with the same cpuid function like the other power
-management flags (CPUID Fn8000_0007_EDX).
+http://lkml.org/lkml/2010/8/30/170
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
----
- arch/x86/include/asm/cpufeature.h |    2 +-
- arch/x86/kernel/cpu/powerflags.c  |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+everything else is Xen specific stuff.
 
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 220e2ea..3ef222b 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -167,7 +167,7 @@
-  */
- #define X86_FEATURE_IDA		(7*32+ 0) /* Intel Dynamic Acceleration */
- #define X86_FEATURE_ARAT	(7*32+ 1) /* Always Running APIC Timer */
--#define X86_FEATURE_CPB		(7*32+ 2) /* AMD Core Performance Boost */
-+#define X86_FEATURE_CPB		(7*32+ 2) /* "" AMD Core Performance Boost */
- #define X86_FEATURE_EPB		(7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
- #define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
- #define X86_FEATURE_PLN		(7*32+ 5) /* Intel Power Limit Notification */
-diff --git a/arch/x86/kernel/cpu/powerflags.c b/arch/x86/kernel/cpu/powerflags.c
-index 5abbea2..3215558 100644
---- a/arch/x86/kernel/cpu/powerflags.c
-+++ b/arch/x86/kernel/cpu/powerflags.c
-@@ -16,5 +16,6 @@ const char *const x86_power_flags[32] = {
- 	"100mhzsteps",
- 	"hwpstate",
- 	"",	/* tsc invariant mapped to constant_tsc */
--		/* nothing */
-+	"cpb",
-+	/* nothing */
- };
--- 
-1.6.4.4
+Thanks in advance,
 
+Stefano
+
+
+On Mon, 30 Aug 2010, stefano.stabellini@eu.citrix.com wrote:
+> From: Jeremy Fitzhardinge <jeremy@goop.org>
+> 
+> Rather than using a tree of conditionals, use function pointer
+> for acpi_register_gsi.
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> ---
+>  arch/x86/kernel/acpi/boot.c |   59 ++++++++++++++++++++++++++++++------------
+>  1 files changed, 42 insertions(+), 17 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index c05872a..031f0c2 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -513,35 +513,61 @@ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
+>  	return 0;
+>  }
+>  
+> -/*
+> - * success: return IRQ number (>=0)
+> - * failure: return < 0
+> - */
+> -int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+> +static int acpi_register_gsi_pic(struct device *dev, u32 gsi,
+> +				 int trigger, int polarity)
+>  {
+> -	unsigned int irq;
+> -	unsigned int plat_gsi = gsi;
+> -
+>  #ifdef CONFIG_PCI
+>  	/*
+>  	 * Make sure all (legacy) PCI IRQs are set as level-triggered.
+>  	 */
+> -	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
+> -		if (trigger == ACPI_LEVEL_SENSITIVE)
+> -			eisa_set_level_irq(gsi);
+> -	}
+> +	if (trigger == ACPI_LEVEL_SENSITIVE)
+> +		eisa_set_level_irq(gsi);
+>  #endif
+>  
+> +	return gsi;
+> +}
+> +
+> +static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+> +				    int trigger, int polarity)
+> +{
+>  #ifdef CONFIG_X86_IO_APIC
+> -	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC) {
+> -		plat_gsi = mp_register_gsi(dev, gsi, trigger, polarity);
+> -	}
+> +	gsi = mp_register_gsi(dev, gsi, trigger, polarity);
+>  #endif
+> +
+> +	return gsi;
+> +}
+> +
+> +static int (*__acpi_register_gsi)(struct device *dev, u32 gsi, int trigger, int polarity) = acpi_register_gsi_pic;
+> +
+> +/*
+> + * success: return IRQ number (>=0)
+> + * failure: return < 0
+> + */
+> +int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+> +{
+> +	unsigned int irq;
+> +	unsigned int plat_gsi = gsi;
+> +
+> +	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
+>  	irq = gsi_to_irq(plat_gsi);
+>  
+>  	return irq;
+>  }
+>  
+> +void __init acpi_set_irq_model_pic(void)
+> +{
+> +	acpi_irq_model = ACPI_IRQ_MODEL_PIC;
+> +	__acpi_register_gsi = acpi_register_gsi_pic;
+> +	acpi_ioapic = 0;
+> +}
+> +
+> +void __init acpi_set_irq_model_ioapic(void)
+> +{
+> +	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+> +	__acpi_register_gsi = acpi_register_gsi_ioapic;
+> +	acpi_ioapic = 1;
+> +}
+> +
+>  /*
+>   *  ACPI based hotplug support for CPU
+>   */
+> @@ -1259,8 +1285,7 @@ static void __init acpi_process_madt(void)
+>  			 */
+>  			error = acpi_parse_madt_ioapic_entries();
+>  			if (!error) {
+> -				acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+> -				acpi_ioapic = 1;
+> +				acpi_set_irq_model_ioapic();
+>  
+>  				smp_found_config = 1;
+>  			}
+> -- 
+> 1.5.6.5
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
