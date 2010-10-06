@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758732Ab0JFIVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 04:21:09 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:59329 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758706Ab0JFIVF (ORCPT
+	id S1758715Ab0JFIY1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 04:24:27 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57089 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758636Ab0JFIYZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 04:21:05 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
+	Wed, 6 Oct 2010 04:24:25 -0400
+Date: Wed, 6 Oct 2010 10:24:22 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
 To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 4/4] DMAENGINE: ste_dma40: fix resource leaks in error paths.
-Date: Wed, 6 Oct 2010 10:20:38 +0200
-Message-ID: <1286353238-13742-5-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1286353238-13742-4-git-send-email-linus.walleij@stericsson.com>
-References: <1286353238-13742-1-git-send-email-linus.walleij@stericsson.com>
- <1286353238-13742-2-git-send-email-linus.walleij@stericsson.com>
- <1286353238-13742-3-git-send-email-linus.walleij@stericsson.com>
- <1286353238-13742-4-git-send-email-linus.walleij@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH 4/4] dmaengine: Add Freescale i.MX1/21/27 DMA driver
+Message-ID: <20101006082422.GT28242@pengutronix.de>
+References: <1285854995-6569-1-git-send-email-s.hauer@pengutronix.de> <1285854995-6569-5-git-send-email-s.hauer@pengutronix.de> <4CABB1B9.4080002@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CABB1B9.4080002@intel.com>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 10:23:20 up 94 days, 23:34, 13 users,  load average: 0.39, 0.31,
+	0.32
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+On Tue, Oct 05, 2010 at 04:16:09PM -0700, Dan Williams wrote:
+>> +       unsigned int                    channel;
+>> +       unsigned int                    imxdma_channel;
+>> +
+>> +       enum dma_data_direction         direction;
+>
+> Why does the channel have a direction isn't that a function of the  
+> transaction?  It's also unused.
+>
+>> +       enum dma_slave_buswidth         word_size;
+>> +       dma_addr_t                      bd_phys;
+>
+> unused?
+>
+>> +       unsigned long                   flags;
+>
+> unused?
 
-Fix some leaks of allocated descriptors in error paths.
+Sorry, it seems I was a bit too fast posting it. I'll send an updated
+version.
 
-Acked-by: Jonas Aaberg <jonas.aberg@stericsson.com>
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
- drivers/dma/ste_dma40.c |   17 +++++++++++++----
- 1 files changed, 13 insertions(+), 4 deletions(-)
+Sascha
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 554e294..c07d989 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -1728,6 +1728,8 @@ struct dma_async_tx_descriptor *stedma40_memcpy_sg(struct dma_chan *chan,
- 
- 	return &d40d->txd;
- err:
-+	if (d40d)
-+		d40_desc_free(d40c, d40d);
- 	spin_unlock_irqrestore(&d40c->lock, flags);
- 	return NULL;
- }
-@@ -1939,8 +1941,9 @@ static struct dma_async_tx_descriptor *d40_prep_memcpy(struct dma_chan *chan,
- err_fill_lli:
- 	dev_err(&d40c->chan.dev->device,
- 		"[%s] Failed filling in PHY LLI\n", __func__);
--	d40_pool_lli_free(d40d);
- err:
-+	if (d40d)
-+		d40_desc_free(d40c, d40d);
- 	spin_unlock_irqrestore(&d40c->lock, flags);
- 	return NULL;
- }
-@@ -2079,10 +2082,9 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 
- 	spin_lock_irqsave(&d40c->lock, flags);
- 	d40d = d40_desc_get(d40c);
--	spin_unlock_irqrestore(&d40c->lock, flags);
- 
- 	if (d40d == NULL)
--		return NULL;
-+		goto err;
- 
- 	if (d40c->log_num != D40_PHY_CHAN)
- 		err = d40_prep_slave_sg_log(d40d, d40c, sgl, sg_len,
-@@ -2095,7 +2097,7 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 			"[%s] Failed to prepare %s slave sg job: %d\n",
- 			__func__,
- 			d40c->log_num != D40_PHY_CHAN ? "log" : "phy", err);
--		return NULL;
-+		goto err;
- 	}
- 
- 	d40d->txd.flags = dma_flags;
-@@ -2104,7 +2106,14 @@ static struct dma_async_tx_descriptor *d40_prep_slave_sg(struct dma_chan *chan,
- 
- 	d40d->txd.tx_submit = d40_tx_submit;
- 
-+	spin_unlock_irqrestore(&d40c->lock, flags);
- 	return &d40d->txd;
-+
-+err:
-+	if (d40d)
-+		d40_desc_free(d40c, d40d);
-+	spin_unlock_irqrestore(&d40c->lock, flags);
-+	return NULL;
- }
- 
- static enum dma_status d40_tx_status(struct dma_chan *chan,
+
 -- 
-1.6.3.3
-
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
