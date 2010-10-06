@@ -1,130 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab0JFHsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:48:20 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:44591 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932340Ab0JFHsR (ORCPT
+	id S932578Ab0JFHsS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:48:18 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:19594 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932246Ab0JFHsQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:48:17 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: Fr_kHWoVM1kzD3raDpw9LLLZEOUXd3RnykM8RmTZ2Oaiiib
- dgyWlQG2v5zwbgS6qJP11osw9_e9D03X0iPL6GEi63tLEpEPyJGZbMvx.XAx
- xh9JRLCbQFfJ0ZUDzRaCeCDydvpQGimdUQWS9Yhz3ktcNfCNvQa0OlUxpnEr
- ipZGHOx80NDRpZo7ewQQefaC1Jcyzi66rHCyN.fR1eS7RUy6rl0oVjWGfVhA
- .quNNuZOPrJAnYg.nQM9tDQKc996vgkZiZWouUXjBAKlOWEUAMw4.gHoU2Rf
- nnkLU0v_bUHqZxsaB392i_nXuG1v3W_SBImyWZHK9W0a_wNyDhoZ0vMTH
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC v2 05/21] tcm: Add ConfigFS subsystem backstore
-	infrastructure
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com,
-        Joel Becker <joel.becker@oracle.com>
-In-Reply-To: <20101006162018R.fujita.tomonori@lab.ntt.co.jp>
-References: <20101006091219Q.fujita.tomonori@lab.ntt.co.jp>
-	 <1286339442.5685.76.camel@haakon2.linux-iscsi.org>
-	 <20101006155833G.fujita.tomonori@lab.ntt.co.jp>
-	 <20101006162018R.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Date: Wed, 06 Oct 2010 00:43:37 -0700
-Message-Id: <1286351017.5685.137.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 03:48:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=RKA/bcDkO0TNHTNW1ujuLlmErezxCzvG4cLNnewVrAqudf1DtfDL8iIlORCGLqBDcn
+         RyN2OkxRdEN4RO97XFuQ==
+MIME-Version: 1.0
+In-Reply-To: <20101006.003541.71128466.davem@davemloft.net>
+References: <AANLkTikkv4htP1f=KFwSaa8=K6LicDN0eusXctow-Efb@mail.gmail.com> <20101006.003541.71128466.davem@davemloft.net>
+From: =?UTF-8?B?Q2h1bmctWWloIFdhbmcgKOeOi+W0h+aHvyk=?= 
+	<cywang@google.com>
+Date: Wed, 6 Oct 2010 00:47:47 -0700
+Message-ID: <AANLkTikx+GadeYfg5rZNxsEig-0Af97ER7V94fjaVc+U@mail.gmail.com>
+Subject: Re: [PATCH] net: Fix sk_dst_check() to reset the obsolete dst_entry
+ of a socket.
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, timo.teras@iki.fi
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 16:25 +0900, FUJITA Tomonori wrote:
-> On Wed, 6 Oct 2010 16:09:26 +0900
-> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> 
-> > On Tue, 05 Oct 2010 21:30:42 -0700
-> > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > 
-> > > I have been thinking about something similar that is needed for the WIP
-> > > TCM HW target mode drivers when a:
-> > > 
-> > > 	mkdir -p /sys/kernel/config/target/$TCM_MOD/$LPORT_WWPN/tpgt_1
-> > > 
-> > > happens the WWPN is coming from HW.  This currently looks like something
-> > > along the lines of the following for tcm_lpfc:
-> > > 
-> > > http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/tcm_lpfc/tcm_lpfc_configfs.c;hb=tcm_lpfc#l227
-> > 
-> > The above link doesn't work for me so I'm not sure.
-> > 
-> > But I guess that you are talking about the problem that
-> > tcm_lpfc_make_lport() can accept proper hardware port addresses. We
-> > are on the same page if so.
-> > 
-> > 
-> > > The main issue here is that the user still needs to know the $LPORT_WWPN
-> > > before hand (either from looking at a sticker on the card, or via
-> > > another method) in order to preform the initial TFO->fabric_make_wwn()
-> > > -> $TCM_MOD_make_wwn() operation.  So what we need is a configfs attrib
-> > > at the top level TCM fabric group in order to see a list of the
-> > > available hardware ports from the specific $TCM_MOD.  What I was
-> > > thinking for TCM HW fabric module ports would be to have something like:
-> > > 
-> > > 	/sys/kernel/config/target/$TCM_MOD/hw_ports
-> > > 
-> > > that would walk the struct pci_dev looking for fabric module specific HW
-> > > target mode capabilities.  I assume this is what you had in mind for
-> > > drivers/scsi/ibmvscsi as well, yes..?
-> > 
-> > Doesn't sound so.
-> > 
-> > I want the driver to create necessary target directories in
-> > /sys/kernel/config/target/ibmvscsit/ automatically.
-> 
-> In addition, I also think that /sys/kernel/config/target/$TCM_MOD
-> should show up automatically when I load the module.
-> 
-> vine:/home/fujita# modprobe iscsi_target_mod
-> 
-> Then why do I need to create iscsi directory by hand?
+In fact, that is what I intent to change originally. However, consider
+Timo's issue, I intent to submit this patch instead.
 
-Because configfs is driven by completely userspace syscalls.  8-)
-
-> 
-> vine:/home/fujita# mkdir /sys/kernel/config/target/iscsi
-> 
-
-Actually, these is an LKM autoload feature for LIO-Target and TCM_Loop
-currently in place when:
-
-	mkdir /sys/kernel/config/target/[iscsi,loopback]
-
-occurs and propigates through target_Core_configfs.c code into
-target_core_register_fabric() here:
-
-http://git.kernel.org/?p=linux/kernel/git/nab/lio-core-2.6.git;a=blob;f=drivers/target/target_core_configfs.c;hb=lio-4.0#l144
-
-Other than these two hardcoded cases (I plan to add these as new modules
-are merged into mainline), the userspace code is expected to:
-
-	 modprobe $TCM_FAB_MOD ;
-	 mkdir /sys/kernel/config/target/$FAB_MOD
-
-in order to access the top level generic fabric directory/group in
-target_core_fabric_configfs.c code.
-
-> 
-> btw, 'iscsi' needs to renamed to iscsi_tcp or something like that?
-
-I was thinking here to keep the default software iSCSI LIO-Target code
-to use 'iscsi' and use add a seperate iSCSI HW target mode with a iscsi_
-$HWNAME prefix as necessary for the existing iSCSI HW TOE cases.  
-
-However there is a certain flavour of iSCSI HW target offload silicon
-currently in development that I am considering to integrate directly
-into LIO-Target code in order to function transparently with existing
-LIO kernel code, along with some new fabric configfs attribute knobs for
-tuning, debugging, etc.
-
---nab
-
+On Wed, Oct 6, 2010 at 12:35 AM, David Miller <davem@davemloft.net> wrote:
+>
+> This should have been fixed by:
+>
+> --------------------
+> commit ae2688d59b5f861dc70a091d003773975d2ae7fb
+> Author: Jianzhao Wang <jianzhao.wang@6wind.com>
+> Date:   Wed Sep 8 14:35:43 2010 -0700
+>
+>    net: blackhole route should always be recalculated
+>
+>    Blackhole routes are used when xfrm_lookup() returns -EREMOTE (error
+>    triggered by IKE for example), hence this kind of route is always
+>    temporary and so we should check if a better route exists for next
+>    packets.
+>    Bug has been introduced by commit d11a4dc18bf41719c9f0d7ed494d295dd2973b92.
+>
+>    Signed-off-by: Jianzhao Wang <jianzhao.wang@6wind.com>
+>    Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
+>    Signed-off-by: David S. Miller <davem@davemloft.net>
+>
+> diff --git a/net/ipv4/route.c b/net/ipv4/route.c
+> index 3f56b6e..6298f75 100644
+> --- a/net/ipv4/route.c
+> +++ b/net/ipv4/route.c
+> @@ -2738,6 +2738,11 @@ slow_output:
+>  }
+>  EXPORT_SYMBOL_GPL(__ip_route_output_key);
+>
+> +static struct dst_entry *ipv4_blackhole_dst_check(struct dst_entry *dst, u32 cookie)
+> +{
+> +       return NULL;
+> +}
+> +
+>  static void ipv4_rt_blackhole_update_pmtu(struct dst_entry *dst, u32 mtu)
+>  {
+>  }
+> @@ -2746,7 +2751,7 @@ static struct dst_ops ipv4_dst_blackhole_ops = {
+>        .family                 =       AF_INET,
+>        .protocol               =       cpu_to_be16(ETH_P_IP),
+>        .destroy                =       ipv4_dst_destroy,
+> -       .check                  =       ipv4_dst_check,
+> +       .check                  =       ipv4_blackhole_dst_check,
+>        .update_pmtu            =       ipv4_rt_blackhole_update_pmtu,
+>        .entries                =       ATOMIC_INIT(0),
+>  };
+>
