@@ -1,367 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932489Ab0JFRnR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 13:43:17 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:36319 "EHLO mgw-sa01.nokia.com"
+	id S1759490Ab0JFRpm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 13:45:42 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:40423 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759070Ab0JFRnP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 13:43:15 -0400
-Date: Wed, 6 Oct 2010 20:32:46 +0300
-From: David Cohen <david.cohen@nokia.com>
-To: ext Fernando Guzman Lugo <x0095840@ti.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "Contreras Felipe (Nokia-MS/Helsinki)" <felipe.contreras@nokia.com>,
-        "Palande Ameya (Nokia-MS/Helsinki)" <ameya.palande@nokia.com>,
-        "nm@ti.com" <nm@ti.com>,
-        "Doyu Hiroshi (Nokia-MS/Espoo)" <hiroshi.doyu@nokia.com>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCHv3 01/11] staging: tidspbridge: replace iommu custom for
- opensource implementation
-Message-ID: <20101006173246.GA21764@esdhcp036161.research.nokia.com>
-References: <1286310944-25035-1-git-send-email-x0095840@ti.com>
- <1286310944-25035-2-git-send-email-x0095840@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286310944-25035-2-git-send-email-x0095840@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
+	id S1759070Ab0JFRpk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 13:45:40 -0400
+Date: Wed, 6 Oct 2010 19:45:37 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: linville@tuxdriver.com, stable@kernel.org, linux-wireless@vger.kernel.org,
+        wey-yi.w.guy@intel.com, reinette.chatre@intel.com, ilw@linux.intel.com,
+        johannes.berg@intel.com, ben.m.cahill@intel.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH wireless-2.6 or stable] iwlwifi: return error when fail
+ to start scanning
+Message-ID: <20101006194537.35e8b00e@schatten.dmk.lab>
+In-Reply-To: <20101006160434.GB24581@redhat.com>
+References: <20101005085717.GA18012@redhat.com>
+	<1286317292-10679-1-git-send-email-florian@mickler.org>
+	<20101006090228.GA2523@redhat.com>
+	<20101006160434.GB24581@redhat.com>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Fernando,
+Hi Stanislaw!
 
-I have few comments below.
+On Wed, 6 Oct 2010 18:04:35 +0200
+Stanislaw Gruszka <sgruszka@redhat.com> wrote:
 
-> diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-> index 5718645..842b8db 100644
-> --- a/drivers/staging/tidspbridge/core/io_sm.c
-> +++ b/drivers/staging/tidspbridge/core/io_sm.c
-> @@ -291,6 +291,7 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
->         struct cod_manager *cod_man;
->         struct chnl_mgr *hchnl_mgr;
->         struct msg_mgr *hmsg_mgr;
-> +       struct iommu *mmu;
->         u32 ul_shm_base;
->         u32 ul_shm_base_offset;
->         u32 ul_shm_limit;
-> @@ -313,7 +314,6 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
->         struct bridge_ioctl_extproc ae_proc[BRDIOCTL_NUMOFMMUTLB];
->         struct cfg_hostres *host_res;
->         struct bridge_dev_context *pbridge_context;
-> -       u32 map_attrs;
->         u32 shm0_end;
->         u32 ul_dyn_ext_base;
->         u32 ul_seg1_size = 0;
-> @@ -337,6 +337,20 @@ int bridge_io_on_loaded(struct io_mgr *hio_mgr)
->                 status = -EFAULT;
->                 goto func_end;
->         }
-> +       mmu = pbridge_context->dsp_mmu;
-> +
-> +       if (mmu)
-> +               iommu_put(mmu);
-> +       mmu = iommu_get("iva2");
-> +
-> +       if (IS_ERR_OR_NULL(mmu)) {
-
-You can use IS_ERR() instead.
-
-[snip]
-
-> @@ -1122,217 +1081,81 @@ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
->   *
->   *  TODO: Disable MMU while updating the page tables (but that'll stall DSP)
->   */
-> -static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
-> -                                 u32 ul_mpu_addr, u32 virt_addr,
-> -                                 u32 ul_num_bytes, u32 ul_map_attr,
-> -                                 struct page **mapped_pages)
-> +static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctx,
-> +                       u32 uva, u32 da, u32 size, u32 attr,
-> +                       struct page **usr_pgs)
-> +
->  {
-> -       u32 attrs;
-> -       int status = 0;
-> -       struct bridge_dev_context *dev_context = dev_ctxt;
-> -       struct hw_mmu_map_attrs_t hw_attrs;
-> +       int res, w;
-> +       unsigned pages, i;
-> +       struct iommu *mmu = dev_ctx->dsp_mmu;
->         struct vm_area_struct *vma;
->         struct mm_struct *mm = current->mm;
-> -       u32 write = 0;
-> -       u32 num_usr_pgs = 0;
-> -       struct page *mapped_page, *pg;
-> -       s32 pg_num;
-> -       u32 va = virt_addr;
-> -       struct task_struct *curr_task = current;
-> -       u32 pg_i = 0;
-> -       u32 mpu_addr, pa;
-> -
-> -       dev_dbg(bridge,
-> -               "%s hDevCtxt %p, pa %x, va %x, size %x, ul_map_attr %x\n",
-> -               __func__, dev_ctxt, ul_mpu_addr, virt_addr, ul_num_bytes,
-> -               ul_map_attr);
-> -       if (ul_num_bytes == 0)
-> -               return -EINVAL;
-> +       struct sg_table *sgt;
-> +       struct scatterlist *sg;
+> This is stable friendly backport of wireless-testing commit
+> 3eecce527c7434dfd16517ce08b49632c8a26717 "iwlwifi: unify scan start
+> checks". Wireless-testing version include also a lot of cleanups.
 > 
-> -       if (ul_map_attr & DSP_MAP_DIR_MASK) {
-> -               attrs = ul_map_attr;
-> -       } else {
-> -               /* Assign default attributes */
-> -               attrs = ul_map_attr | (DSP_MAPVIRTUALADDR | DSP_MAPELEMSIZE16);
-> -       }
-> -       /* Take mapping properties */
-> -       if (attrs & DSP_MAPBIGENDIAN)
-> -               hw_attrs.endianism = HW_BIG_ENDIAN;
-> -       else
-> -               hw_attrs.endianism = HW_LITTLE_ENDIAN;
-> -
-> -       hw_attrs.mixed_size = (enum hw_mmu_mixed_size_t)
-> -           ((attrs & DSP_MAPMIXEDELEMSIZE) >> 2);
-> -       /* Ignore element_size if mixed_size is enabled */
-> -       if (hw_attrs.mixed_size == 0) {
-> -               if (attrs & DSP_MAPELEMSIZE8) {
-> -                       /* Size is 8 bit */
-> -                       hw_attrs.element_size = HW_ELEM_SIZE8BIT;
-> -               } else if (attrs & DSP_MAPELEMSIZE16) {
-> -                       /* Size is 16 bit */
-> -                       hw_attrs.element_size = HW_ELEM_SIZE16BIT;
-> -               } else if (attrs & DSP_MAPELEMSIZE32) {
-> -                       /* Size is 32 bit */
-> -                       hw_attrs.element_size = HW_ELEM_SIZE32BIT;
-> -               } else if (attrs & DSP_MAPELEMSIZE64) {
-> -                       /* Size is 64 bit */
-> -                       hw_attrs.element_size = HW_ELEM_SIZE64BIT;
-> -               } else {
-> -                       /*
-> -                        * Mixedsize isn't enabled, so size can't be
-> -                        * zero here
-> -                        */
-> -                       return -EINVAL;
-> -               }
-> -       }
-> -       if (attrs & DSP_MAPDONOTLOCK)
-> -               hw_attrs.donotlockmpupage = 1;
-> -       else
-> -               hw_attrs.donotlockmpupage = 0;
-> +       if (!size || !usr_pgs)
-> +               return -EINVAL;
+> On error case in {iwl3945,iwlagn}_request_scan we queue abort_scan work,
+> which in a fact do nothing, so we never complete the scan. Thats gives
+> "WARNING: at net/wireless/core.c:614 wdev_cleanup_work" and stopped
+> network connection until reload iwlwifi modules. Return of -EIO, and
+> stopping queuing any work is a fix.
 > 
-> -       if (attrs & DSP_MAPVMALLOCADDR) {
-> -               return mem_map_vmalloc(dev_ctxt, ul_mpu_addr, virt_addr,
-> -                                      ul_num_bytes, &hw_attrs);
-> -       }
-> -       /*
-> -        * Do OS-specific user-va to pa translation.
-> -        * Combine physically contiguous regions to reduce TLBs.
-> -        * Pass the translated pa to pte_update.
-> -        */
-> -       if ((attrs & DSP_MAPPHYSICALADDR)) {
-> -               status = pte_update(dev_context, ul_mpu_addr, virt_addr,
-> -                                   ul_num_bytes, &hw_attrs);
-> -               goto func_cont;
-> -       }
-> +       pages = size / PG_SIZE4K;
-
-Can you ensure 'size' is always PG_SIZE4K aligned?
-I don't have so much knowledge about the dsp bridge implementation, but you're
-testing only if size == 0.
-
+> Note there are still many cases when we can get: 
 > 
-> -       /*
-> -        * Important Note: ul_mpu_addr is mapped from user application process
-> -        * to current process - it must lie completely within the current
-> -        * virtual memory address space in order to be of use to us here!
-> -        */
->         down_read(&mm->mmap_sem);
-> -       vma = find_vma(mm, ul_mpu_addr);
-> -       if (vma)
-> -               dev_dbg(bridge,
-> -                       "VMAfor UserBuf: ul_mpu_addr=%x, ul_num_bytes=%x, "
-> -                       "vm_start=%lx, vm_end=%lx, vm_flags=%lx\n", ul_mpu_addr,
-> -                       ul_num_bytes, vma->vm_start, vma->vm_end,
-> -                       vma->vm_flags);
-> -
-> -       /*
-> -        * It is observed that under some circumstances, the user buffer is
-> -        * spread across several VMAs. So loop through and check if the entire
-> -        * user buffer is covered
-> -        */
-> -       while ((vma) && (ul_mpu_addr + ul_num_bytes > vma->vm_end)) {
-> -               /* jump to the next VMA region */
-> +       vma = find_vma(mm, uva);
-> +       while (vma && (uva + size > vma->vm_end))
->                 vma = find_vma(mm, vma->vm_end + 1);
-> -               dev_dbg(bridge,
-> -                       "VMA for UserBuf ul_mpu_addr=%x ul_num_bytes=%x, "
-> -                       "vm_start=%lx, vm_end=%lx, vm_flags=%lx\n", ul_mpu_addr,
-> -                       ul_num_bytes, vma->vm_start, vma->vm_end,
-> -                       vma->vm_flags);
-> -       }
-> +
->         if (!vma) {
->                 pr_err("%s: Failed to get VMA region for 0x%x (%d)\n",
-> -                      __func__, ul_mpu_addr, ul_num_bytes);
-> -               status = -EINVAL;
-> +                                               __func__, uva, size);
->                 up_read(&mm->mmap_sem);
-> -               goto func_cont;
-> +               return -EINVAL;
->         }
-> +       if (vma->vm_flags & (VM_WRITE | VM_MAYWRITE))
-> +               w = 1;
+> WARNING: at net/wireless/core.c:614 wdev_cleanup_work  
+> WARNING: at net/mac80211/scan.c:266 ieee80211_scan_completed
+> WARNING: at net/mac80211/scan.c:269 ieee80211_scan_complete
 > 
-> -       if (vma->vm_flags & VM_IO) {
-> -               num_usr_pgs = ul_num_bytes / PG_SIZE4K;
-> -               mpu_addr = ul_mpu_addr;
-> -
-> -               /* Get the physical addresses for user buffer */
-> -               for (pg_i = 0; pg_i < num_usr_pgs; pg_i++) {
-> -                       pa = user_va2_pa(mm, mpu_addr);
-> -                       if (!pa) {
-> -                               status = -EPERM;
-> -                               pr_err("DSPBRIDGE: VM_IO mapping physical"
-> -                                      "address is invalid\n");
-> -                               break;
-> -                       }
-> -                       if (pfn_valid(__phys_to_pfn(pa))) {
-> -                               pg = PHYS_TO_PAGE(pa);
-> -                               get_page(pg);
-> -                               if (page_count(pg) < 1) {
-> -                                       pr_err("Bad page in VM_IO buffer\n");
-> -                                       bad_page_dump(pa, pg);
-> -                               }
-> -                       }
-> -                       status = pte_set(dev_context->pt_attrs, pa,
-> -                                        va, HW_PAGE_SIZE4KB, &hw_attrs);
-> -                       if (status)
-> -                               break;
-> +       if (vma->vm_flags & VM_IO)
-> +               i = get_io_pages(mm, uva, pages, usr_pgs);
-> +       else
-> +               i = get_user_pages(current, mm, uva, pages, w, 1,
-> +                                                       usr_pgs, NULL);
-> +       up_read(&mm->mmap_sem);
+> which are not fixed. Unfortunately does not exist single, small fix
+> for that problems, and we probably will see some more bug reports
+> with scan warnings. As solution we rewrite iwl-scan.c code to avoid
+> all possible race conditions. That quite big patch set is queued
+> for 2.6.37 .
 > 
-> -                       va += HW_PAGE_SIZE4KB;
-> -                       mpu_addr += HW_PAGE_SIZE4KB;
-> -                       pa += HW_PAGE_SIZE4KB;
-> -               }
-> -       } else {
-> -               num_usr_pgs = ul_num_bytes / PG_SIZE4K;
-> -               if (vma->vm_flags & (VM_WRITE | VM_MAYWRITE))
-> -                       write = 1;
-> -
-> -               for (pg_i = 0; pg_i < num_usr_pgs; pg_i++) {
-> -                       pg_num = get_user_pages(curr_task, mm, ul_mpu_addr, 1,
-> -                                               write, 1, &mapped_page, NULL);
-> -                       if (pg_num > 0) {
-> -                               if (page_count(mapped_page) < 1) {
-> -                                       pr_err("Bad page count after doing"
-> -                                              "get_user_pages on"
-> -                                              "user buffer\n");
-> -                                       bad_page_dump(page_to_phys(mapped_page),
-> -                                                     mapped_page);
-> -                               }
-> -                               status = pte_set(dev_context->pt_attrs,
-> -                                                page_to_phys(mapped_page), va,
-> -                                                HW_PAGE_SIZE4KB, &hw_attrs);
-> -                               if (status)
-> -                                       break;
-> -
-> -                               if (mapped_pages)
-> -                                       mapped_pages[pg_i] = mapped_page;
-> -
-> -                               va += HW_PAGE_SIZE4KB;
-> -                               ul_mpu_addr += HW_PAGE_SIZE4KB;
-> -                       } else {
-> -                               pr_err("DSPBRIDGE: get_user_pages FAILED,"
-> -                                      "MPU addr = 0x%x,"
-> -                                      "vma->vm_flags = 0x%lx,"
-> -                                      "get_user_pages Err"
-> -                                      "Value = %d, Buffer"
-> -                                      "size=0x%x\n", ul_mpu_addr,
-> -                                      vma->vm_flags, pg_num, ul_num_bytes);
-> -                               status = -EPERM;
-> -                               break;
-> -                       }
-> -               }
-> +       if (i < 0)
-> +               return i;
-> +
-> +       if (i < pages) {
-> +               res = -EFAULT;
-> +               goto err_pages;
->         }
-> -       up_read(&mm->mmap_sem);
-> -func_cont:
-> -       if (status) {
-> -               /*
-> -                * Roll out the mapped pages incase it failed in middle of
-> -                * mapping
-> -                */
-> -               if (pg_i) {
-> -                       bridge_brd_mem_un_map(dev_context, virt_addr,
-> -                                          (pg_i * PG_SIZE4K));
-> -               }
-> -               status = -EPERM;
-> +
-> +       sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
-> +       if (!sgt) {
-> +               res = -ENOMEM;
-> +               goto err_pages;
->         }
-> -       /*
-> -        * In any case, flush the TLB
-> -        * This is called from here instead from pte_update to avoid unnecessary
-> -        * repetition while mapping non-contiguous physical regions of a virtual
-> -        * region
-> -        */
-> -       flush_all(dev_context);
-> -       dev_dbg(bridge, "%s status %x\n", __func__, status);
-> -       return status;
-> +
-> +       res = sg_alloc_table(sgt, pages, GFP_KERNEL);
-> +
-> +       if (res < 0)
-> +               goto err_sg;
-> +
-> +       for_each_sg(sgt->sgl, sg, sgt->nents, i)
-> +               sg_set_page(sg, usr_pgs[i], PAGE_SIZE, 0);
-> +
-> +       da = iommu_vmap(mmu, da, sgt, IOVMF_ENDIAN_LITTLE | IOVMF_ELSZ_32);
-> +
-> +       if (!IS_ERR_VALUE(da))
-> +               return 0;
+> Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> ---
 
-It might be a matter of taste, but you could unconditionally return 0
-and add a goto in case of error like you're doing in the rest of the
-function. IMO it would improve readability to point out the code for
-non-error condition has ended here.
+Not that it matters much, but I've looked through it and couldn't find
+anything wrong with it.
 
-Br,
+ Reviewed-by: Florian Mickler <florian@mickler.org>
 
-David
+Regards,
+Flo
 
-> +       res = (int)da;
-> +
-> +       sg_free_table(sgt);
-> +err_sg:
-> +       kfree(sgt);
-> +       i = pages;
-> +err_pages:
-> +       while (i--)
-> +               put_page(usr_pgs[i]);
-> +       return res;
+> Patch is intended for wireless-2.6, or in case when it does not
+> make 2.6.36 release, for -stable 2.6.36.y 
+> 
+>  drivers/net/wireless/iwlwifi/iwl-3945.h     |    2 +-
+>  drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |   18 ++++++------------
+>  drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 +-
+>  drivers/net/wireless/iwlwifi/iwl-core.h     |    2 +-
+>  drivers/net/wireless/iwlwifi/iwl-scan.c     |   14 +++++++++++---
+>  drivers/net/wireless/iwlwifi/iwl3945-base.c |   19 ++++++-------------
+>  6 files changed, 26 insertions(+), 31 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-3945.h b/drivers/net/wireless/iwlwifi/iwl-3945.h
+> index bb2aeeb..98509c5 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-3945.h
+> +++ b/drivers/net/wireless/iwlwifi/iwl-3945.h
+> @@ -295,7 +295,7 @@ extern const struct iwl_channel_info *iwl3945_get_channel_info(
+>  extern int iwl3945_rs_next_rate(struct iwl_priv *priv, int rate);
+>  
+>  /* scanning */
+> -void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
+> +int iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
+>  
+>  /* Requires full declaration of iwl_priv before including */
+>  #include "iwl-io.h"
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> index 8fd00a6..2be8faa 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
+> @@ -1147,7 +1147,7 @@ static int iwl_get_channels_for_scan(struct iwl_priv *priv,
+>  	return added;
 >  }
-> 
-
+>  
+> -void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+> +int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  {
+>  	struct iwl_host_cmd cmd = {
+>  		.id = REPLY_SCAN_CMD,
+> @@ -1394,24 +1394,18 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	scan->len = cpu_to_le16(cmd.len);
+>  
+>  	set_bit(STATUS_SCAN_HW, &priv->status);
+> -	if (iwl_send_cmd_sync(priv, &cmd))
+> +	if (iwl_send_cmd_sync(priv, &cmd)) {
+> +		clear_bit(STATUS_SCAN_HW, &priv->status);
+>  		goto done;
+> +	}
+>  
+>  	queue_delayed_work(priv->workqueue, &priv->scan_check,
+>  			   IWL_SCAN_CHECK_WATCHDOG);
+>  
+> -	return;
+> +	return 0;
+>  
+>   done:
+> -	/* Cannot perform scan. Make sure we clear scanning
+> -	* bits from status so next scan request can be performed.
+> -	* If we don't clear scanning status bit here all next scan
+> -	* will fail
+> -	*/
+> -	clear_bit(STATUS_SCAN_HW, &priv->status);
+> -	clear_bit(STATUS_SCANNING, &priv->status);
+> -	/* inform mac80211 scan aborted */
+> -	queue_work(priv->workqueue, &priv->abort_scan);
+> +	return -EIO;
+>  }
+>  
+>  int iwlagn_manage_ibss_station(struct iwl_priv *priv,
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.h b/drivers/net/wireless/iwlwifi/iwl-agn.h
+> index cc6464d..015da26 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-agn.h
+> +++ b/drivers/net/wireless/iwlwifi/iwl-agn.h
+> @@ -216,7 +216,7 @@ void iwl_reply_statistics(struct iwl_priv *priv,
+>  			  struct iwl_rx_mem_buffer *rxb);
+>  
+>  /* scan */
+> -void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
+> +int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
+>  
+>  /* station mgmt */
+>  int iwlagn_manage_ibss_station(struct iwl_priv *priv,
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-core.h b/drivers/net/wireless/iwlwifi/iwl-core.h
+> index 5e6ee3d..110de0f 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-core.h
+> +++ b/drivers/net/wireless/iwlwifi/iwl-core.h
+> @@ -109,7 +109,7 @@ struct iwl_hcmd_utils_ops {
+>  				  __le16 fc, __le32 *tx_flags);
+>  	int  (*calc_rssi)(struct iwl_priv *priv,
+>  			  struct iwl_rx_phy_res *rx_resp);
+> -	void (*request_scan)(struct iwl_priv *priv, struct ieee80211_vif *vif);
+> +	int (*request_scan)(struct iwl_priv *priv, struct ieee80211_vif *vif);
+>  };
+>  
+>  struct iwl_apm_ops {
+> diff --git a/drivers/net/wireless/iwlwifi/iwl-scan.c b/drivers/net/wireless/iwlwifi/iwl-scan.c
+> index a4b3663..290140a 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl-scan.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
+> @@ -298,6 +298,7 @@ EXPORT_SYMBOL(iwl_init_scan_params);
+>  
+>  static int iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  {
+> +	int ret;
+>  	lockdep_assert_held(&priv->mutex);
+>  
+>  	IWL_DEBUG_INFO(priv, "Starting scan...\n");
+> @@ -308,9 +309,11 @@ static int iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	if (WARN_ON(!priv->cfg->ops->utils->request_scan))
+>  		return -EOPNOTSUPP;
+>  
+> -	priv->cfg->ops->utils->request_scan(priv, vif);
+> +	ret = priv->cfg->ops->utils->request_scan(priv, vif);
+> +	if (ret)
+> +		clear_bit(STATUS_SCANNING, &priv->status);
+> +	return ret;
+>  
+> -	return 0;
+>  }
+>  
+>  int iwl_mac_hw_scan(struct ieee80211_hw *hw,
+> @@ -380,6 +383,7 @@ void iwl_internal_short_hw_scan(struct iwl_priv *priv)
+>  
+>  void iwl_bg_start_internal_scan(struct work_struct *work)
+>  {
+> +	int ret;
+>  	struct iwl_priv *priv =
+>  		container_of(work, struct iwl_priv, start_internal_scan);
+>  
+> @@ -414,7 +418,11 @@ void iwl_bg_start_internal_scan(struct work_struct *work)
+>  	if (WARN_ON(!priv->cfg->ops->utils->request_scan))
+>  		goto unlock;
+>  
+> -	priv->cfg->ops->utils->request_scan(priv, NULL);
+> +	ret = priv->cfg->ops->utils->request_scan(priv, NULL);
+> +	if (ret) {
+> +		clear_bit(STATUS_SCANNING, &priv->status);
+> +		priv->is_internal_short_scan = false;
+> +	}
+>   unlock:
+>  	mutex_unlock(&priv->mutex);
+>  }
+> diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> index d31661c..fc82da0 100644
+> --- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> +++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+> @@ -2799,7 +2799,7 @@ static void iwl3945_rfkill_poll(struct work_struct *data)
+>  
+>  }
+>  
+> -void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+> +int iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  {
+>  	struct iwl_host_cmd cmd = {
+>  		.id = REPLY_SCAN_CMD,
+> @@ -3000,25 +3000,18 @@ void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
+>  	scan->len = cpu_to_le16(cmd.len);
+>  
+>  	set_bit(STATUS_SCAN_HW, &priv->status);
+> -	if (iwl_send_cmd_sync(priv, &cmd))
+> +	if (iwl_send_cmd_sync(priv, &cmd)) {
+> +		clear_bit(STATUS_SCAN_HW, &priv->status);
+>  		goto done;
+> +	}
+>  
+>  	queue_delayed_work(priv->workqueue, &priv->scan_check,
+>  			   IWL_SCAN_CHECK_WATCHDOG);
+>  
+> -	return;
+> +	return 0;
+>  
+>   done:
+> -	/* can not perform scan make sure we clear scanning
+> -	 * bits from status so next scan request can be performed.
+> -	 * if we dont clear scanning status bit here all next scan
+> -	 * will fail
+> -	*/
+> -	clear_bit(STATUS_SCAN_HW, &priv->status);
+> -	clear_bit(STATUS_SCANNING, &priv->status);
+> -
+> -	/* inform mac80211 scan aborted */
+> -	queue_work(priv->workqueue, &priv->abort_scan);
+> +	return -EIO;
+>  }
+>  
+>  static void iwl3945_bg_restart(struct work_struct *data)
