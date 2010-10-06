@@ -1,101 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab0JFCEm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 22:04:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43257 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750954Ab0JFCEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 22:04:40 -0400
-Date: Wed, 6 Oct 2010 13:04:36 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: linux-next: manual merge of the kgdb tree with the input tree
-Message-Id: <20101006130436.45d8a96a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758281Ab0JFCGD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 22:06:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46157 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab0JFCGB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 22:06:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=R0j5njyuOXZ7PW36/bOwzwKQhn1iOnDwbZpRNcZrb6Yq2Vj08aYnSwmAwr7jVxA4kQ
+         wAiyW18dkxPLA/EOP5KC8g3vfhEXKlkh4MvRxdSwfHNbbN1aAlJpDZxiLUnV972n0tZx
+         ra5juOOlxJ81dY/kEKG1/UZInvuEqfDaWnEsQ=
+MIME-Version: 1.0
+In-Reply-To: <20101006015204.GA22411@kroah.com>
+References: <AANLkTi=GrHjrZaKdX8DiDf2nT-SByifSxn2sW_0NQWd_@mail.gmail.com>
+	<20101006015204.GA22411@kroah.com>
+Date: Tue, 5 Oct 2010 22:06:01 -0400
+Message-ID: <AANLkTi=7phj3BhSyBaoSy9KQ3=RuJp64hj_xDyU9q+HX@mail.gmail.com>
+Subject: Re: [PATCH 00/28] Staging: comedi: Fixed numerous file so that it had
+ little or no complaints from checkpatch.pl
+From: T Dent <tdent48227@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: abbotti@mev.co.uk, fmhess@users.sourceforge.net,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
+On 10/5/10, Greg KH <greg@kroah.com> wrote:
+> On Tue, Oct 05, 2010 at 09:15:16PM -0400, T Dent wrote:
+>> I fixed a lot of coding style errors, that checkpatch.pl had found. I
+>> didn't do some files in the drivers/ subdirectory because the warnings
+>> that were being produce was spacing errors. So spacing wasn't that
+>> serious ,so I skim and look for if it was anymore wranings or errors.
+>> There was none so I skip the rest.
+>>
+>> This is my last full scale checkpatch.pl patch series, as I'm going to
+>> try to contribute more interesting things to the Linux kernel. :)
+>
+> As mentioned in the response to 01/28, these are all just fine as-is and
+> don't need to be changed, sorry.
 
-Today's linux-next merge of the kgdb tree got a conflict in
-drivers/char/sysrq.c between commit
-1966cb225c6f9040ca163802cbd052c393d4448f ("Input: sysrq - add locking to
-sysrq_filter()") from the input tree and commit
-02307772717c91a108aca2e999bbc586a85d06a2 ("sysrq,keyboard: properly deal
-with alt-sysrq in sysrq input filter") from the kgdb tree.
+Okay. Doesn't matter that much it was the last patche series I was
+going to do like these.
 
-Just context changes.  I fixed it up (see below) and can carry the fax as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Go bug the checkpatch author to remove
+> this from the tool.
 
-diff --cc drivers/char/sysrq.c
-index f0ad694,9b97aad..0000000
---- a/drivers/char/sysrq.c
-+++ b/drivers/char/sysrq.c
-@@@ -566,7 -566,57 +566,58 @@@ static const unsigned char sysrq_xlate[
-  static bool sysrq_down;
-  static int sysrq_alt_use;
-  static int sysrq_alt;
- +static DEFINE_SPINLOCK(sysrq_event_lock);
-+ static bool sysrq_kbd_triggered;
-+ 
-+ /*
-+  * This function was a copy of input_pass_event but modified to allow
-+  * by-passing a specific filter, to allow for injected events without
-+  * filter recursion.
-+  */
-+ static void input_pass_event_ignore(struct input_dev *dev,
-+ 			     unsigned int type, unsigned int code, int value,
-+ 			     struct input_handle *ignore_handle)
-+ {
-+ 	struct input_handler *handler;
-+ 	struct input_handle *handle;
-+ 
-+ 	rcu_read_lock();
-+ 
-+ 	handle = rcu_dereference(dev->grab);
-+ 	if (handle)
-+ 		handle->handler->event(handle, type, code, value);
-+ 	else {
-+ 		bool filtered = false;
-+ 
-+ 		list_for_each_entry_rcu(handle, &dev->h_list, d_node) {
-+ 			if (!handle->open || handle == ignore_handle)
-+ 				continue;
-+ 			handler = handle->handler;
-+ 			if (!handler->filter) {
-+ 				if (filtered)
-+ 					break;
-+ 
-+ 				handler->event(handle, type, code, value);
-+ 
-+ 			} else if (handler->filter(handle, type, code, value))
-+ 				filtered = true;
-+ 		}
-+ 	}
-+ 
-+ 	rcu_read_unlock();
-+ }
-+ 
-+ /*
-+  * Pass along alt-print_screen, if there was no sysrq processing by
-+  * sending a key press down and then passing the key up event.
-+  */
-+ static void simulate_alt_sysrq(struct input_handle *handle)
-+ {
-+ 	input_pass_event_ignore(handle->dev, EV_KEY, KEY_SYSRQ, 1, handle);
-+ 	input_pass_event_ignore(handle->dev, EV_SYN, SYN_REPORT, 0, handle);
-+ 	input_pass_event_ignore(handle->dev, EV_KEY, KEY_SYSRQ, 0, handle);
-+ 	input_pass_event_ignore(handle->dev, EV_SYN, SYN_REPORT, 0, handle);
-+ }
-  
-  static bool sysrq_filter(struct input_handle *handle, unsigned int type,
-  		         unsigned int code, int value)
+I intend to.
+>
+> sorry,
+>
+> greg k-h
+>
+Thanks,
+
+Tracey D
