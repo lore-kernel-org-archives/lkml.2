@@ -1,40 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758562Ab0JFGTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 02:19:09 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:29988 "EHLO mgw-sa01.nokia.com"
+	id S1758597Ab0JFGTs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 02:19:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51274 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754046Ab0JFGTI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 02:19:08 -0400
-Date: Wed, 6 Oct 2010 09:17:55 +0300
-From: Heikki Krogerus <ext-heikki.krogerus@nokia.com>
-To: cbouatmailru@gmail.com
-Cc: linux-kernel@vger.kernel.org, dwmw2@infradead.org, cbou@mail.ru
-Subject: Re: [PATCH 0/2] minor changes to power_supply
-Message-ID: <20101006061755.GB32277@esdhcp041123.research.nokia.com>
-References: <1286178698-28428-1-git-send-email-ext-heikki.krogerus@nokia.com>
+	id S1758316Ab0JFGTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 02:19:46 -0400
+Date: Wed, 6 Oct 2010 09:19:27 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Joe Perches <joe@perches.com>, Jiri Kosina <jkosina@suse.cz>,
+        Sergei Shtylyov <sshtylyov@ru.mvista.com>,
+        "Balbi, Felipe" <balbi@ti.com>
+Subject: Re: linux-next: manual merge of the usb tree with the trivial tree
+Message-ID: <20101006061927.GA2659@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20101006141414.abf7431f.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <1286178698-28428-1-git-send-email-ext-heikki.krogerus@nokia.com>
+In-Reply-To: <20101006141414.abf7431f.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 04, 2010 at 09:51:36AM +0200, Krogerus Heikki (EXT-Teleca/Helsinki) wrote:
-> Both of them only concern USB charging.
-> 
-> Heikki Krogerus (2):
->   power_supply: add types for USB chargers
->   power_supply: Introduce maximum current property
-> 
->  drivers/power/power_supply_sysfs.c |    4 +++-
->  include/linux/power_supply.h       |    6 +++++-
->  2 files changed, 8 insertions(+), 2 deletions(-)
+On Tue, Oct 05, 2010 at 10:14:14PM -0500, Stephen Rothwell wrote:
+>Hi Greg,
+>
+>Today's linux-next merge of the usb tree got a conflict in
+>drivers/usb/musb/musb_gadget.c between commit
+>7f26b3a7533bbc1ddd88b297c935ee4da8f74cea ("drivers/usb: Remove
+>unnecessary return's from void functions") from the trivial tree and
 
-Anton, ping. Any comments on these?
+funny that I wasn't CCed to that one :-(
 
 -- 
-heikki
+balbi
