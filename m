@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab0JFJFu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 05:05:50 -0400
-Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:59737 "EHLO
-	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758789Ab0JFJFk (ORCPT
+	id S1758809Ab0JFJJq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 05:09:46 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:36758 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754363Ab0JFJJo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 05:05:40 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: <linux-kernel@vger.kernel.org>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 3/3] DMAENGINE: define a dummy filter function for ste_dma40
-Date: Wed, 6 Oct 2010 11:05:29 +0200
-Message-ID: <1286355929-31226-4-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1286355929-31226-3-git-send-email-linus.walleij@stericsson.com>
-References: <1286355929-31226-1-git-send-email-linus.walleij@stericsson.com>
- <1286355929-31226-2-git-send-email-linus.walleij@stericsson.com>
- <1286355929-31226-3-git-send-email-linus.walleij@stericsson.com>
+	Wed, 6 Oct 2010 05:09:44 -0400
+X-Sasl-enc: ZZuFoI9D7d50m8KyFh+6zLjejzMLLbltyrTdNnFE1WJZ 1286356183
+Message-ID: <4CAC3CD9.9040102@fastmail.fm>
+Date: Wed, 06 Oct 2010 10:09:45 +0100
+From: Jack Stone <jwjstone@fastmail.fm>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-GB; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Sami Kerola <kerolasa@iki.fi>
+CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, netdev@vger.kernel.org
+Subject: Re: [PATCH] Documentation/networking/ip-sysctl.txt tcp_tw_recycle
+ & tcp_tw_reuse
+References: <1286213524-4659-1-git-send-email-kerolasa@iki.fi>
+In-Reply-To: <1286213524-4659-1-git-send-email-kerolasa@iki.fi>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All platform data has to be made conditional on CONFIG_STEDMA40
-or we can provide a simple dummy filter functions as to avoid
-cluttering the code with other #ifdef:s.
+ On 04/10/2010 18:32, Sami Kerola wrote:
+> From: Sami Kerola <kerolasa@iki.fi>
+>
+> Instead of saying 'consult your technical export' the
+> documentation needs to assist an export to decide whether to keep
+> these settings off or set them on.
+>
+> Signed-off-by: Sami Kerola <kerolasa@iki.fi>
+I think the idea of this patch is still valuable. I've included possible
+rewordings inline below. I can't guarentee the english is correct but
+hopefully we can iterate to something acceptable to all.
+> ---
+>  Documentation/networking/ip-sysctl.txt |   20 +++++++++++++-------
+>  1 files changed, 13 insertions(+), 7 deletions(-)
+>
+> diff --git a/Documentation/networking/ip-sysctl.txt b/Documentation/networking/ip-sysctl.txt
+> index f350c69..01e2948 100644
+> --- a/Documentation/networking/ip-sysctl.txt
+> +++ b/Documentation/networking/ip-sysctl.txt
+> @@ -444,15 +444,21 @@ tcp_tso_win_divisor - INTEGER
+>  	Default: 3
+>  
+>  tcp_tw_recycle - BOOLEAN
+> -	Enable fast recycling TIME-WAIT sockets. Default value is 0.
+> -	It should not be changed without advice/request of technical
+> -	experts.
+> +	Enable fast recycling TIME-WAIT sockets. See also caution
+> +	wrote to tcp_tw_reuse. Default value is 0.
+Enable fast recycling TIME-WAIT sockets. This option can be dangerous.
+See the warning
+under tcp_tw-reuse for more information. Default value is 0.
+>  
+>  tcp_tw_reuse - BOOLEAN
+> -	Allow to reuse TIME-WAIT sockets for new connections when it is
+> -	safe from protocol viewpoint. Default value is 0.
+> -	It should not be changed without advice/request of technical
+> -	experts.
+> +	Allow to reuse TIME-WAIT sockets for new connections when it is safe
+> +	from protocol viewpoint. One should enable also tcp_timestamps when
+> +	this is enabled. Default value is 0.
+> +
+> +	Caution. Both tcp_tw_recycle and tcp_tw_reuse can cause problems. You
+> +	should not enable either without being sure about network topology in
+> +	between node(s) which are using, or used by, the node(s) where the
+> +	parameter is enabled. Connections that go via TCP state aware nodes,
+> +	such as firewalls, NAT devices or load balancers may start drop frames
+> +	because of the setting. The more there are connections the greater is
+> +	the likelyhood you will see this issue.
+The above paragraph reads oddly to me. How about:
+Neither of these options should be enabled unless the network topology
+is known. Connections
+that go via TCP state aware nodes, such as firewalls, NAT devices or
+load balancers may experience
+dropped frames. The larger the number of connections the greater the
+likelihood of this issue occuring.
+>  
+>  tcp_window_scaling - BOOLEAN
+>  	Enable window scaling as defined in RFC1323.
+Hope this helps,
 
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
-Dan I have had to bring this over from the platform (ARM) tree
-since the previous patch now collides with it so please pick
-it in through async_tx...
----
- arch/arm/plat-nomadik/include/plat/ste_dma40.h |   19 +++++++++++++++++++
- 1 files changed, 19 insertions(+), 0 deletions(-)
-
-diff --git a/arch/arm/plat-nomadik/include/plat/ste_dma40.h b/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-index 660552d..3dd4255 100644
---- a/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-+++ b/arch/arm/plat-nomadik/include/plat/ste_dma40.h
-@@ -162,6 +162,8 @@ struct stedma40_platform_data {
- 	int				 disabled_channels[STEDMA40_MAX_PHYS];
- };
- 
-+#ifdef CONFIG_STE_DMA40
-+
- /**
-  * stedma40_filter() - Provides stedma40_chan_cfg to the
-  * ste_dma40 dma driver via the dmaengine framework.
-@@ -223,4 +225,21 @@ dma_async_tx_descriptor *stedma40_slave_mem(struct dma_chan *chan,
- 						  direction, flags);
- }
- 
-+#else
-+static inline bool stedma40_filter(struct dma_chan *chan, void *data)
-+{
-+	return false;
-+}
-+
-+static inline struct
-+dma_async_tx_descriptor *stedma40_slave_mem(struct dma_chan *chan,
-+					    dma_addr_t addr,
-+					    unsigned int size,
-+					    enum dma_data_direction direction,
-+					    unsigned long flags)
-+{
-+	return NULL;
-+}
-+#endif
-+
- #endif
--- 
-1.6.3.3
-
+Jack
