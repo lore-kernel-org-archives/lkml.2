@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759127Ab0JFRcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 13:32:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51909 "EHLO mx1.redhat.com"
+	id S1759450Ab0JFRct (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 13:32:49 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:46589 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753516Ab0JFRcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 13:32:15 -0400
-Date: Wed, 6 Oct 2010 13:31:41 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Andreas Gruenbacher <agruen@suse.de>,
-        Michal Suchanek <hramrach@centrum.cz>,
-        Andy Whitcroft <apw@canonical.com>,
-        Scott James Remnant <scott@canonical.com>,
-        Vladimir Dronnikov <dronnikov@gmail.com>,
-        Felix Fietkau <nbd@openwrt.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linuxram@us.ibm.com,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        neilb@suse.de, viro@zeniv.linux.org.uk
-Subject: Re: [PATCH 6/7 v3] overlay: hybrid overlay filesystem prototype
-Message-ID: <20101006173141.GB18479@shell>
-References: <20100920180404.939991832@szeredi.hu> <201009281025.00727.agruen@suse.de> <20100930215114.GD490@shell> <201010011134.57594.agruen@suse.de>
+	id S1753181Ab0JFRcs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 13:32:48 -0400
+Date: Wed, 6 Oct 2010 19:32:45 +0200
+From: Florian Mickler <florian@mickler.org>
+To: "Guy, Wey-Yi" <wey-yi.w.guy@intel.com>
+Cc: Stanislaw Gruszka <sgruszka@redhat.com>,
+        "linville@tuxdriver.com" <linville@tuxdriver.com>,
+        "stable@kernel.org" <stable@kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "Chatre, Reinette" <reinette.chatre@intel.com>,
+        "ilw@linux.intel.com" <ilw@linux.intel.com>,
+        "Berg, Johannes" <johannes.berg@intel.com>,
+        "Cahill, Ben M" <ben.m.cahill@intel.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH wireless-2.6 or stable] iwlwifi: return error when fail
+ to start scanning
+Message-ID: <20101006193245.698957cc@schatten.dmk.lab>
+In-Reply-To: <1286381578.12594.18.camel@wwguy-ubuntu>
+References: <20101005085717.GA18012@redhat.com>
+	<1286317292-10679-1-git-send-email-florian@mickler.org>
+	<20101006090228.GA2523@redhat.com>
+	<20101006160434.GB24581@redhat.com>
+	<1286381578.12594.18.camel@wwguy-ubuntu>
+X-Mailer: Claws Mail 3.7.6cvs31 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010011134.57594.agruen@suse.de>
-User-Agent: Mutt/1.4.2.2i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 11:34:57AM +0200, Andreas Gruenbacher wrote:
-> On Thursday 30 September 2010 23:51:15 Valerie Aurora wrote:
-> > 
-> > Hm, this was a pretty basic assumption for me - that you'd want to
-> > construct a topmost image offline that would be "merged" with the
-> > lower layers.  So, for example:
-> > 
-> > Topmost layer contains:
-> > 
-> > /etc/hostname
-> > 
-> > Lower layers contain everything else in /etc/.  So /etc/ would exist
-> > on the topmost layer at the time of union mount, but we would want it
-> > to be transparent.  But if we created a new dir *during* the union
-> > mount, it would be opaque.
-> > 
-> > What was your model?
+On Wed, 06 Oct 2010 09:12:58 -0700
+"Guy, Wey-Yi" <wey-yi.w.guy@intel.com> wrote:
+
+> Hi Gruszka,
 > 
-> The prevalent use case probably is to start out with an empty topmost layer on 
-> top of an existing file system.  When things are modified, changes obviously 
-> go into the topmost layer.  Additional layers can later be stacked on top of 
-> that, turning the previous topmost layer into a read-only lower layer.
+> On Wed, 2010-10-06 at 09:04 -0700, Stanislaw Gruszka wrote:
+> > This is stable friendly backport of wireless-testing commit
+> > 3eecce527c7434dfd16517ce08b49632c8a26717 "iwlwifi: unify scan start
+> > checks". Wireless-testing version include also a lot of cleanups.
+> > 
+> > On error case in {iwl3945,iwlagn}_request_scan we queue abort_scan work,
+> > which in a fact do nothing, so we never complete the scan. Thats gives
+> > "WARNING: at net/wireless/core.c:614 wdev_cleanup_work" and stopped
+> > network connection until reload iwlwifi modules. Return of -EIO, and
+> > stopping queuing any work is a fix.
+> > 
+> > Note there are still many cases when we can get: 
+> > 
+> > WARNING: at net/wireless/core.c:614 wdev_cleanup_work  
+> > WARNING: at net/mac80211/scan.c:266 ieee80211_scan_completed
+> > WARNING: at net/mac80211/scan.c:269 ieee80211_scan_complete
+> > 
+> > which are not fixed. Unfortunately does not exist single, small fix
+> > for that problems, and we probably will see some more bug reports
+> > with scan warnings. As solution we rewrite iwl-scan.c code to avoid
+> > all possible race conditions. That quite big patch set is queued
+> > for 2.6.37 .
+> > 
+> > Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+> > ---
+> > Patch is intended for wireless-2.6, or in case when it does not
+> > make 2.6.36 release, for -stable 2.6.36.y 
+> > 
 > 
-> Overlaying preexisting file systems doesn't seem that important; users 
-> commonly should be able to start out with an empty topmost layer instead.  To 
+> Is this the replacement for Mickler's patch?
+> 
+> Thanks
+> Wey
+> 
 
-Okay, that surprises me.  Let me check my assumptions.  I cc'd several
-people who seem to be actively using unionfs or aufs in ways that we
-want union mounts to replace.  Do you start out with an empty topmost
-file system in most cases?  Or do you prepopulate with some files in
-dirs you want to be transparent?
+This is on top of current mainline, as far as I see. (And it replaces
+the patch I sent few hours ago)
 
-> also cover the less common cases, there should be a way to convert directories 
-> in a union from opaque to transparent and back though, just like there should 
-> be a way to get rid of a whiteout.
-
-Conversion is a requirement, yes.
-
--VAL
+Regards,
+Flo
