@@ -1,31 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932564Ab0JFHqU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:46:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:49200 "EHLO
+	id S932623Ab0JFHqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:46:34 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:9385 "EHLO
 	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932329Ab0JFHn2 (ORCPT
+	with ESMTP id S932318Ab0JFHn0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:43:28 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56772930"
+	Wed, 6 Oct 2010 03:43:26 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56772921"
 X-IronPort-AV: E=Sophos;i="4.57,288,1283756400"; 
-   d="scan'208";a="20252792"
+   d="scan'208";a="20252787"
 From: Jeff Ohlstein <johlstei@codeaurora.org>
 To: Daniel Walker <dwalker@codeaurora.org>
 Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>,
-        Jeff Ohlstein <johlstei@codeaurora.org>,
+        linux-kernel@vger.kernel.org, Steve Muckle <smuckle@codeaurora.org>,
         David Brown <davidb@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>,
         Bryan Huntsman <bryanh@codeaurora.org>,
         Russell King <linux@arm.linux.org.uk>,
         Gregory Bean <gbean@codeaurora.org>,
-        Steve Muckle <smuckle@codeaurora.org>,
-        Brian Swetland <swetland@google.com>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Tony Lindgren <tony@atomide.com>, Pavel Machek <pavel@ucw.cz>
-Subject: [PATCH 11/20 v2] msm: allow uart to be conditionally disabled
-Date: Wed,  6 Oct 2010 00:42:50 -0700
-Message-Id: <1286350979-19328-12-git-send-email-johlstei@codeaurora.org>
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+Subject: [PATCH 08/20 v2] msm: 8x60: gic initialization fixup for RUMI
+Date: Wed,  6 Oct 2010 00:42:47 -0700
+Message-Id: <1286350979-19328-9-git-send-email-johlstei@codeaurora.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
 References: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
@@ -33,85 +30,59 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daniel Walker <dwalker@codeaurora.org>
+From: Steve Muckle <smuckle@codeaurora.org>
 
-Some MSM targets don't select the debug UART in this way. For those we
-need to disable this selection mechanism.
+On RUMI platform STIs are not enabled by default, contrary to the
+GIC spec. The bits for STIs in the enable/enable clear registers
+are also RW instead of RO. STIs need to be enabled at initialization
+time.
 
-Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
-Signed-off-by: Jeff Ohlstein <johlstei@codeaurora.org>
+Signed-off-by: Steve Muckle <smuckle@codeaurora.org>
 ---
- arch/arm/mach-msm/Kconfig                    |    8 ++++++++
- arch/arm/mach-msm/include/mach/debug-macro.S |    2 +-
- 2 files changed, 9 insertions(+), 1 deletions(-)
+ arch/arm/mach-msm/board-msm8x60.c |   20 ++++++++++++++++++++
+ 1 files changed, 20 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-msm/Kconfig b/arch/arm/mach-msm/Kconfig
-index be05acc..def2a64 100644
---- a/arch/arm/mach-msm/Kconfig
-+++ b/arch/arm/mach-msm/Kconfig
-@@ -11,6 +11,7 @@ config ARCH_MSM7X00A
- 	select MSM_SMD_PKG3
- 	select CPU_V6
- 	select MSM_PROC_COMM
-+	select HAS_MSM_DEBUG_UART_PHYS
+diff --git a/arch/arm/mach-msm/board-msm8x60.c b/arch/arm/mach-msm/board-msm8x60.c
+index d30ead1..e7feb99 100644
+--- a/arch/arm/mach-msm/board-msm8x60.c
++++ b/arch/arm/mach-msm/board-msm8x60.c
+@@ -19,6 +19,7 @@
+ #include <linux/kernel.h>
+ #include <linux/platform_device.h>
+ #include <linux/io.h>
++#include <linux/irq.h>
  
- config ARCH_MSM7X30
- 	bool "MSM7x30"
-@@ -20,6 +21,7 @@ config ARCH_MSM7X30
- 	select CPU_V7
- 	select MSM_REMOTE_SPINLOCK_DEKKERS
- 	select MSM_PROC_COMM
-+	select HAS_MSM_DEBUG_UART_PHYS
+ #include <asm/mach-types.h>
+ #include <asm/mach/arch.h>
+@@ -41,9 +42,28 @@ static void __init msm8x60_map_io(void)
  
- config ARCH_QSD8X50
- 	bool "QSD8X50"
-@@ -29,6 +31,7 @@ config ARCH_QSD8X50
- 	select CPU_V7
- 	select MSM_REMOTE_SPINLOCK_LDREX
- 	select MSM_PROC_COMM
-+	select HAS_MSM_DEBUG_UART_PHYS
- 
- endchoice
- 
-@@ -40,6 +43,9 @@ config  ARCH_MSM_ARM11
- config  ARCH_MSM_SCORPION
- 	bool
- 
-+config HAS_MSM_DEBUG_UART_PHYS
-+	bool
+ static void __init msm8x60_init_irq(void)
+ {
++	unsigned int i;
 +
- config  MSM_VIC
- 	bool
+ 	gic_dist_init(0, MSM_QGIC_DIST_BASE, 1);
+ 	gic_cpu_base_addr = (void *)MSM_QGIC_CPU_BASE;
+ 	gic_cpu_init(0, MSM_QGIC_CPU_BASE);
++
++	/* Edge trigger PPIs except AVS_SVICINT and AVS_SVICINTSWDONE */
++	writel(0xFFFFD7FF, MSM_QGIC_DIST_BASE + GIC_DIST_CONFIG + 4);
++
++	/* RUMI does not adhere to GIC spec by enabling STIs by default.
++	 * Enable/clear is supposed to be RO for STIs, but is RW on RUMI.
++	 */
++	writel(0x0000FFFF, MSM_QGIC_DIST_BASE + GIC_DIST_ENABLE_SET);
++
++	/* FIXME: Not installing AVS_SVICINT and AVS_SVICINTSWDONE yet
++	 * as they are configured as level, which does not play nice with
++	 * handle_percpu_irq.
++	 */
++	for (i = GIC_PPI_START; i < GIC_SPI_START; i++) {
++		if (i != AVS_SVICINT && i != AVS_SVICINTSWDONE)
++			set_irq_handler(i, handle_percpu_irq);
++	}
+ }
  
-@@ -92,6 +98,7 @@ config MSM_DEBUG_UART
- 	default 2 if MSM_DEBUG_UART2
- 	default 3 if MSM_DEBUG_UART3
- 
-+if HAS_MSM_DEBUG_UART_PHYS
- choice
- 	prompt "Debug UART"
- 
-@@ -109,6 +116,7 @@ choice
- 	config MSM_DEBUG_UART3
- 		bool "UART3"
- endchoice
-+endif
- 
- config MSM_SMD_PKG3
- 	bool
-diff --git a/arch/arm/mach-msm/include/mach/debug-macro.S b/arch/arm/mach-msm/include/mach/debug-macro.S
-index 528750f..238c4f1 100644
---- a/arch/arm/mach-msm/include/mach/debug-macro.S
-+++ b/arch/arm/mach-msm/include/mach/debug-macro.S
-@@ -19,7 +19,7 @@
- #include <mach/hardware.h>
- #include <mach/msm_iomap.h>
- 
--#ifdef CONFIG_MSM_DEBUG_UART
-+#ifdef CONFIG_HAS_MSM_DEBUG_UART_PHYS
- 	.macro	addruart, rx, tmp
- 	@ see if the MMU is enabled and select appropriate base address
- 	mrc	p15, 0, \rx, c1, c0
+ static void __init msm8x60_init(void)
 -- 
 1.7.2.1
 
