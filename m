@@ -1,42 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab0JFU4T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 16:56:19 -0400
-Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:46665 "HELO
-	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932630Ab0JFU4S (ORCPT
+	id S1759955Ab0JFU5g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 16:57:36 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56265 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759517Ab0JFU5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 16:56:18 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: VVHi46IVM1kk2W7v4iGHg3xC2uQZavU0Rl7Gw9stUPaUAOL
- bHspmp5ElQx9D48raDzdFwh8rDNY4ErkuGB1raUMZLNCKj7yNqpRuZelIjGj
- 5J5pv9Q9b1u7jBPzcJF2xDTcYC_kv1MLrrFvL4JyRJGVQsAISyTL0u2fNC8G
- EwfsR5xbT.O5xGnwbb4Y433aFOVBKvJ8ZwzPrBctwKsnm1Skh_ik.HXYdMq_
- a6DgmKDj0F59v_N4bsVnNQHyOoxAlg31CC_scntoGu5.y
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 6 Oct 2010 15:56:13 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, npiggin@kernel.dk,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
-In-Reply-To: <1286379979.1897.0.camel@castor.rsk>
-Message-ID: <alpine.DEB.2.00.1010061554040.8083@router.home>
-References: <20101005185725.088808842@linux.com>  <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com>  <4CAC577F.9040401@rsk.demon.co.uk>  <AANLkTikr9B5Yb+Owe3t+Rb8KBO33DE=9YBQZ_1+Gwcu8@mail.gmail.com> <1286379979.1897.0.camel@castor.rsk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 6 Oct 2010 16:57:34 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm@kvack.org, fengguang.wu@intel.com, n-horiguchi@ah.jp.nec.com,
+        x86@kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/2] x86: HWPOISON: Report correct address granuality for huge hwpoison faults
+Date: Wed,  6 Oct 2010 22:57:21 +0200
+Message-Id: <1286398641-11862-3-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1286398641-11862-1-git-send-email-andi@firstfloor.org>
+References: <1286398641-11862-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Created a unified branch in my slab.git on kernel.org as well. Based on
-Pekka's for-next branch. There was an additional conflict caused by
-another merge to for-next that was fixed.
+From: Andi Kleen <ak@linux.intel.com>
 
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/christoph/slab.git unified
+An earlier patch fixed the hwpoison fault handling to encode the
+huge page size in the fault code of the page fault handler.
 
+This is needed to report this information in SIGBUS to user space.
+
+This is a straight forward patch to pass this information
+through to the signal handling in the x86 specific fault.c
+
+Cc: x86@kernel.org
+Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: fengguang.wu@intel.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/mm/fault.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+index 4c4508e..1d15a27 100644
+--- a/arch/x86/mm/fault.c
++++ b/arch/x86/mm/fault.c
+@@ -11,6 +11,7 @@
+ #include <linux/kprobes.h>		/* __kprobes, ...		*/
+ #include <linux/mmiotrace.h>		/* kmmio_handler, ...		*/
+ #include <linux/perf_event.h>		/* perf_sw_event		*/
++#include <linux/hugetlb.h>		/* hstate_index_to_shift	*/
+ 
+ #include <asm/traps.h>			/* dotraplinkage, ...		*/
+ #include <asm/pgalloc.h>		/* pgd_*(), ...			*/
+@@ -160,15 +161,20 @@ is_prefetch(struct pt_regs *regs, unsigned long error_code, unsigned long addr)
+ 
+ static void
+ force_sig_info_fault(int si_signo, int si_code, unsigned long address,
+-		     struct task_struct *tsk)
++		     struct task_struct *tsk, int fault)
+ {
++	unsigned lsb = 0;
+ 	siginfo_t info;
+ 
+ 	info.si_signo	= si_signo;
+ 	info.si_errno	= 0;
+ 	info.si_code	= si_code;
+ 	info.si_addr	= (void __user *)address;
+-	info.si_addr_lsb = si_code == BUS_MCEERR_AR ? PAGE_SHIFT : 0;
++	if (fault & VM_FAULT_HWPOISON_LARGE)
++		lsb = hstate_index_to_shift(VM_FAULT_GET_HINDEX(fault)); 
++	if (fault & VM_FAULT_HWPOISON)
++		lsb = PAGE_SHIFT;
++	info.si_addr_lsb = lsb;
+ 
+ 	force_sig_info(si_signo, &info, tsk);
+ }
+@@ -731,7 +737,7 @@ __bad_area_nosemaphore(struct pt_regs *regs, unsigned long error_code,
+ 		tsk->thread.error_code	= error_code | (address >= TASK_SIZE);
+ 		tsk->thread.trap_no	= 14;
+ 
+-		force_sig_info_fault(SIGSEGV, si_code, address, tsk);
++		force_sig_info_fault(SIGSEGV, si_code, address, tsk, 0);
+ 
+ 		return;
+ 	}
+@@ -816,14 +822,14 @@ do_sigbus(struct pt_regs *regs, unsigned long error_code, unsigned long address,
+ 	tsk->thread.trap_no	= 14;
+ 
+ #ifdef CONFIG_MEMORY_FAILURE
+-	if (fault & VM_FAULT_HWPOISON) {
++	if (fault & (VM_FAULT_HWPOISON|VM_FAULT_HWPOISON_LARGE)) {
+ 		printk(KERN_ERR
+ 	"MCE: Killing %s:%d due to hardware memory corruption fault at %lx\n",
+ 			tsk->comm, tsk->pid, address);
+ 		code = BUS_MCEERR_AR;
+ 	}
+ #endif
+-	force_sig_info_fault(SIGBUS, code, address, tsk);
++	force_sig_info_fault(SIGBUS, code, address, tsk, fault);
+ }
+ 
+ static noinline void
+@@ -833,7 +839,8 @@ mm_fault_error(struct pt_regs *regs, unsigned long error_code,
+ 	if (fault & VM_FAULT_OOM) {
+ 		out_of_memory(regs, error_code, address);
+ 	} else {
+-		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON))
++		if (fault & (VM_FAULT_SIGBUS|VM_FAULT_HWPOISON|
++			     VM_FAULT_HWPOISON_LARGE))
+ 			do_sigbus(regs, error_code, address, fault);
+ 		else
+ 			BUG();
+-- 
+1.7.1
 
