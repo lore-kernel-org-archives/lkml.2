@@ -1,90 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758686Ab0JFHmk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 03:42:40 -0400
-Received: from www.wytron.com.tw ([211.75.82.101]:49259 "EHLO
-	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757415Ab0JFHmj (ORCPT
+	id S1758693Ab0JFHnI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 03:43:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:6371 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757415Ab0JFHnG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 03:42:39 -0400
-X-Greylist: delayed 1792 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Oct 2010 03:42:39 EDT
-From: Thomas Chou <thomas@wytron.com.tw>
-To: linux-kernel@vger.kernel.org
-Cc: nios2-dev@sopc.et.ntust.edu.tw, Mike Frysinger <vapier@gentoo.org>,
-        Thomas Chou <thomas@wytron.com.tw>
-Subject: [PATCH] gen_init_cpio: remove leading `/' from file names
-Date: Wed,  6 Oct 2010 15:13:53 +0800
-Message-Id: <1286349233-31721-1-git-send-email-thomas@wytron.com.tw>
-X-Mailer: git-send-email 1.7.1.86.g0e460
-X-SA-Exim-Connect-IP: 192.168.1.15
-X-SA-Exim-Mail-From: thomas@wytron.com.tw
-X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
+	Wed, 6 Oct 2010 03:43:06 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6127"; a="56883643"
+X-IronPort-AV: E=Sophos;i="4.57,287,1283756400"; 
+   d="scan'208";a="88852275"
+From: Jeff Ohlstein <johlstei@codeaurora.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Jeff Ohlstein <johlstei@codeaurora.org>
+Subject: [PATCH 00/20 v2] Support for Qualcomm msm8660 target
+Date: Wed,  6 Oct 2010 00:42:39 -0700
+Message-Id: <1286350979-19328-1-git-send-email-johlstei@codeaurora.org>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When we extracted the generated cpio archive using "cpio -id" command,
-it complained,
+These patches add support to the Qualcomm msm8660 target. It currently
+provides uniprocessor support only, though SMP support is forthcoming.
 
-cpio: Removing leading `/' from member names
-var/run
-cpio: Removing leading `/' from member names
-var/lib
-cpio: Removing leading `/' from member names
-var/lib/misc
+Abhijeet Dharmapurikar (2):
+  msm: irqs-8x60: interrupt map
+  msm: 8x60: setup correct handlers for private interrupts
 
-It is worse with the latest "cpio" or "pax", which tries to overwrite
-the host file system with the leading '/'.
+Daniel Walker (2):
+  msm: dma: add stub functions for dma features not yet present on 8x60
+  msm: allow uart to be conditionally disabled
 
-So the leading '/' of file names should be removed. This is consistent
-with the initramfs come with major distributions such as Fedora or
-Debian, etc.
+Gregory Bean (1):
+  msm: add MSM8x60 FFA support
 
-Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
----
- usr/gen_init_cpio.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+Jeff Ohlstein (4):
+  msm: timer: support 8x60 timers
+  msm: clock: add dummy clock driver
+  msm: add build support for msm8x60 target
+  msm: physical offset for MSM8X60
 
-diff --git a/usr/gen_init_cpio.c b/usr/gen_init_cpio.c
-index b2b3c2d..59df70d 100644
---- a/usr/gen_init_cpio.c
-+++ b/usr/gen_init_cpio.c
-@@ -104,6 +104,8 @@ static int cpio_mkslink(const char *name, const char *target,
- 	char s[256];
- 	time_t mtime = time(NULL);
- 
-+	if (name[0] == '/')
-+		name++;
- 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
- 	       "%08X%08X%08X%08X%08X%08X%08X",
- 		"070701",		/* magic */
-@@ -152,6 +154,8 @@ static int cpio_mkgeneric(const char *name, unsigned int mode,
- 	char s[256];
- 	time_t mtime = time(NULL);
- 
-+	if (name[0] == '/')
-+		name++;
- 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
- 	       "%08X%08X%08X%08X%08X%08X%08X",
- 		"070701",		/* magic */
-@@ -245,6 +249,8 @@ static int cpio_mknod(const char *name, unsigned int mode,
- 	else
- 		mode |= S_IFCHR;
- 
-+	if (name[0] == '/')
-+		name++;
- 	sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
- 	       "%08X%08X%08X%08X%08X%08X%08X",
- 		"070701",		/* magic */
-@@ -332,6 +338,8 @@ static int cpio_mkfile(const char *name, const char *location,
- 		/* data goes on last link */
- 		if (i == nlinks) size = buf.st_size;
- 
-+		if (name[0] == '/')
-+			name++;
- 		namesize = strlen(name) + 1;
- 		sprintf(s,"%s%08X%08X%08lX%08lX%08X%08lX"
- 		       "%08lX%08X%08X%08X%08X%08X%08X",
+Stepan Moskovchenko (3):
+  msm: Add MSM IOMMU support
+  msm: Platform initialization for the IOMMU driver
+  msm: Platform data for msm8x60 IOMMUs
+
+Steve Muckle (8):
+  msm: create config option for proc-comm
+  msm: io: MSM8X60 io support
+  msm: initial irq definitions for MSM8X60
+  msm: MSM8X60 RUMI3 board support
+  msm: irq: rename existing entry-macro to entry-macro-vic
+  msm: 8x60: gic initialization fixup for RUMI
+  msm: add msm8x60_surf machine
+  msm: MSM8X60 simulator board support
+
+ arch/arm/mach-msm/Kconfig                         |   47 +
+ arch/arm/mach-msm/Makefile                        |   17 +-
+ arch/arm/mach-msm/board-msm8x60.c                 |  100 ++
+ arch/arm/mach-msm/clock-dummy.c                   |   54 +
+ arch/arm/mach-msm/devices-msm8x60-iommu.c         |  883 ++++++++++
+ arch/arm/mach-msm/include/mach/board.h            |    2 +
+ arch/arm/mach-msm/include/mach/debug-macro.S      |    2 +-
+ arch/arm/mach-msm/include/mach/dma.h              |   10 +-
+ arch/arm/mach-msm/include/mach/entry-macro-qgic.S |   88 +
+ arch/arm/mach-msm/include/mach/entry-macro-vic.S  |   37 +
+ arch/arm/mach-msm/include/mach/entry-macro.S      |   43 +-
+ arch/arm/mach-msm/include/mach/io.h               |    1 +
+ arch/arm/mach-msm/include/mach/iommu.h            |  103 ++
+ arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h    | 1871 +++++++++++++++++++++
+ arch/arm/mach-msm/include/mach/irqs-8x60.h        |  268 +++
+ arch/arm/mach-msm/include/mach/irqs.h             |    2 +
+ arch/arm/mach-msm/include/mach/memory.h           |    2 +
+ arch/arm/mach-msm/include/mach/msm_iomap-8x60.h   |   97 ++
+ arch/arm/mach-msm/include/mach/msm_iomap.h        |    4 +
+ arch/arm/mach-msm/include/mach/smp.h              |   39 +
+ arch/arm/mach-msm/io.c                            |   15 +
+ arch/arm/mach-msm/iommu.c                         |  597 +++++++
+ arch/arm/mach-msm/iommu_dev.c                     |  364 ++++
+ arch/arm/mach-msm/timer.c                         |   23 +-
+ 24 files changed, 4629 insertions(+), 40 deletions(-)
+ create mode 100644 arch/arm/mach-msm/board-msm8x60.c
+ create mode 100644 arch/arm/mach-msm/clock-dummy.c
+ create mode 100644 arch/arm/mach-msm/devices-msm8x60-iommu.c
+ create mode 100644 arch/arm/mach-msm/include/mach/entry-macro-qgic.S
+ create mode 100644 arch/arm/mach-msm/include/mach/entry-macro-vic.S
+ create mode 100644 arch/arm/mach-msm/include/mach/iommu.h
+ create mode 100644 arch/arm/mach-msm/include/mach/iommu_hw-8xxx.h
+ create mode 100644 arch/arm/mach-msm/include/mach/irqs-8x60.h
+ create mode 100644 arch/arm/mach-msm/include/mach/msm_iomap-8x60.h
+ create mode 100644 arch/arm/mach-msm/include/mach/smp.h
+ create mode 100644 arch/arm/mach-msm/iommu.c
+ create mode 100644 arch/arm/mach-msm/iommu_dev.c
+
 -- 
-1.7.1.86.g0e460
+1.7.2.1
 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
