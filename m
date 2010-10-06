@@ -1,74 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759274Ab0JFQS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:18:27 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:44187 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752415Ab0JFQS0 (ORCPT
+	id S1759336Ab0JFQTE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:19:04 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52864 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752415Ab0JFQTD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:18:26 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Eric Van Hensbergen <ericvh@gmail.com>
-Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [V9fs-developer] [PATCH 1/3] fs/9p: Update TLCREATE to allow create without open
-In-Reply-To: <m362xfkfo8.fsf@linux.vnet.ibm.com>
-References: <1286298090-2422-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <AANLkTinpie0YLpiuJjv1RzYr4LN1HbdtXh=OoNNJbG6k@mail.gmail.com> <m362xfkfo8.fsf@linux.vnet.ibm.com>
-User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.2 (i686-pc-linux-gnu)
-Date: Wed, 06 Oct 2010 16:33:48 +0530
-Message-ID: <m3wrpvinvv.fsf@linux.vnet.ibm.com>
+	Wed, 6 Oct 2010 12:19:03 -0400
+Date: Wed, 6 Oct 2010 17:18:54 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Moore, Robert" <robert.moore@intel.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>
+Subject: Re: [PATCH 1/5] ACPI: Allow handlers to be installed at the same
+	time as methods
+Message-ID: <20101006161854.GA30584@srcf.ucam.org>
+References: <1286216549-5438-1-git-send-email-mjg@redhat.com> <1286216549-5438-2-git-send-email-mjg@redhat.com> <201010060118.50875.rjw@sisk.pl> <4911F71203A09E4D9981D27F9D830858B4893B89@orsmsx503.amr.corp.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4911F71203A09E4D9981D27F9D830858B4893B89@orsmsx503.amr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 06 Oct 2010 11:48:15 +0530, "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
-> On Tue, 5 Oct 2010 13:15:42 -0400, Eric Van Hensbergen <ericvh@gmail.com> wrote:
-> > Ouch.  Protocol change.
-> > 
-> > Also - not sure I understand what's going on here.  Why does mknod go
-> > through TLCREATE, shouldn't we have our
-> > own protocol messages for mknod?//
-> 
-> This is needed for the below mknod usage
-> 
-> mknod("k2", S_IFREG) ;
-> 
-> 
+On Wed, Oct 06, 2010 at 09:14:07AM -0700, Moore, Robert wrote:
 
-May be a better fix is to make sure we use TLMKNOD instead of TLCREATE
-in case we get a create without LOOKUP_OPEN flags set. So how about
+> Although there exists a single Windows document mentions this behavior as a windows "feature", I'm not 100% convinced that this is actually true. AFAIK, we've never seen a machine that depends on an "implicit notify" on a device when a wake GPE happens.
 
-diff --git a/fs/9p/vfs_inode.c b/fs/9p/vfs_inode.c
-index 2f904a8..e89754f 100644
---- a/fs/9p/vfs_inode.c
-+++ b/fs/9p/vfs_inode.c
-@@ -55,6 +55,10 @@ static const struct inode_operations v9fs_file_inode_operations_dotl;
- static const struct inode_operations v9fs_symlink_inode_operations;
- static const struct inode_operations v9fs_symlink_inode_operations_dotl;
- 
-+static int
-+v9fs_vfs_mknod_dotl(struct inode *dir, struct dentry *dentry, int omode,
-+		    dev_t rdev);
-+
- /**
-  * unixmode2p9mode - convert unix mode bits to plan 9
-  * @v9ses: v9fs session information
-@@ -681,8 +685,14 @@ v9fs_vfs_create_dotl(struct inode *dir, struct dentry *dentry, int omode,
- 	v9ses = v9fs_inode2v9ses(dir);
- 	if (nd && nd->flags & LOOKUP_OPEN)
- 		flags = nd->intent.open.flags - 1;
--	else
--		flags = O_RDWR;
-+	else {
-+		/*
-+		 * create call without LOOKUP_OPEN is due
-+		 * to mknod of regular files. So use mknod
-+		 * operation.
-+		 */
-+		return v9fs_vfs_mknod_dotl(dir, dentry, omode, 0);
-+	}
- 
- 	name = (char *) dentry->d_name.name;
- 	P9_DPRINTK(P9_DEBUG_VFS, "v9fs_vfs_create_dotl: name:%s flags:0x%x "
+Such behaviour would be irrelevant for system sleep/wake - the only 
+requirement is in runtime power management.
+
+> It appears to me that the biggest issue right now is the fact that a Notify() must be performed on a Device object, and the problem is how to associate the GPE with the device object.
+
+The other important aspect of this is that a single GPE may correspond 
+to multiple devices. The methods will generally cope with this by either 
+sending multiple notifies, executing some SMM code to identify the 
+relevant device or reading PCI configuration registers to identify the 
+source of the wakeup. We need to handle that case as well.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
