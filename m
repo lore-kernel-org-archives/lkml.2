@@ -1,90 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754389Ab0JFEtK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 00:49:10 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:56123 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752190Ab0JFEtI (ORCPT
+	id S1755153Ab0JFEv2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 00:51:28 -0400
+Received: from smtp108.sbc.mail.mud.yahoo.com ([68.142.198.106]:41342 "HELO
+	smtp108.sbc.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753811Ab0JFEv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 00:49:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=ewyqF2ym7z3EAkXRBvNmuh/JQ41ymhNnaDhFHmr9CFm+fL3ps3Qn6BjcNBgcuTovTY
-         xB7rLF4Yrjwvfd+OBi0LkNXvYybdmw8IzkWfrPgR7UD4z7BbrXkNnSC03YVX6eRh5XPG
-         0Xq4ZUVa3Xu3cIQC7aMmsFpA+2KB4HNpN1JoY=
-Date: Wed, 6 Oct 2010 06:48:47 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: greg@kroah.com, abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/28] Staging: comedi: drivers.c: Edit file so that
-	checkpatch.pl has 4 warnings and 0 errors
-Message-ID: <20101006044847.GC5409@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
-	abbotti@mev.co.uk, fmhess@users.sourceforge.net,
-	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1286326843-6170-1-git-send-email-tdent48227@gmail.com> <1286326843-6170-7-git-send-email-tdent48227@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286326843-6170-7-git-send-email-tdent48227@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 6 Oct 2010 00:51:26 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: 1Eo9n34VM1mjqV3LJnDpsBcGGrjoSTnNO6fhMLld4a4uFHk
+ h4PGmX6RPoXE4e1HQrxBWKgFtApVLoOZ2FX_Ik0BdbnMgN3es1FlhKEQCBLZ
+ kEIxX2N6oHR20wpguJQ4vjZj_0qy_DgoG5xCmBuVNwFJbpVPSDzK5QiW9RLK
+ yzzQ6unKud8YbayRCTf2Dt.FulauM0NAgnzIh4iSs7XFXU_AwhdgqTfJvaYu
+ Obl.K6rHZyAwij22azPWbGngY2FOoCIny2Td8OPDYqoLVjjHVBeJhJaSuOPv
+ bnFpIPhSesSdvG9R.u.Xlw9AAwicgqgn4LkpRFwmNcVcHIKaiSb7JOnoFi8y
+ 5CpgG5UbHF15e00JtGQ--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [RFC v2 00/21] TCM Core and TCM_Loop patches for v2.6.37
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
+        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com,
+        Jeff Garzik <jeff@garzik.org>, Tejun Heo <tj@kernel.org>
+In-Reply-To: <20101006111621O.fujita.tomonori@lab.ntt.co.jp>
+References: <1285195702-11421-1-git-send-email-nab@linux-iscsi.org>
+	 <20101006111621O.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Date: Tue, 05 Oct 2010 21:46:45 -0700
+Message-Id: <1286340405.5685.93.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 09:00:22PM -0400, Tracey Dent wrote:
-> @@ -118,7 +118,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
->  	for (driv = comedi_drivers; driv; driv = driv->next) {
->  		if (!try_module_get(driv->module)) {
->  			printk
-> -			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
-> +			    (KERN_INFO "comedi: failed to increment	\
-> +					module count, skipping\n");
-
-This screws up the output that gets printed for the user.  It happens
-again below several times.
-
-Also it's best to not break up string literals across lines because then
-someone can't do a:  grep "failed to increment module count".  For these
-cases it's better to go over 80 characters and make grep work.
-
-regards,
-dan carpenter
-
->  			continue;
->  		}
->  		if (driv->num_names) {
-> @@ -206,8 +207,9 @@ int comedi_driver_unregister(struct comedi_driver *driver)
->  		if (dev->attached && dev->driver == driver) {
->  			if (dev->use_count)
->  				printk
-> -				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
-> -				     dev->use_count);
-> +				    (KERN_WARNING "BUG! detaching device     \
-> +							with use_count=%d\n",
-> +							dev->use_count);
->  			comedi_device_detach(dev);
->  		}
->  		mutex_unlock(&dev->mutex);
-> @@ -647,7 +649,8 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
->  	if ((int)(async->buf_write_count + nbytes -
->  		  async->buf_write_alloc_count) > 0) {
->  		printk
-> -		    (KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
-> +		    (KERN_INFO "comedi: attempted to write-free more	\
-> +				bytes than have been write-allocated.\n");
->  		nbytes = async->buf_write_alloc_count - async->buf_write_count;
->  	}
->  	async->buf_write_count += nbytes;
-> -- 
-> 1.7.3.1.50.g1e633
+On Wed, 2010-10-06 at 11:21 +0900, FUJITA Tomonori wrote:
+> On Wed, 22 Sep 2010 15:48:22 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 > 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >  drivers/Kconfig                                |    2 +
+> >  drivers/Makefile                               |    1 +
+> >  drivers/target/Kbuild                          |   30 +
+> >  drivers/target/Kconfig                         |   36 +
+> 
+> Why do we need a new place for the target stuff? This could be used
+> for non scsi protocl?
+> 
+
+Yes, I have envisioned the princaple pieces of TCM/ConfigFS design being
+very much SCSI fabric independent from the start of v3.0 development,
+and I think the v4.0 virtual HBA/DEV abstraction now present in
+target_core_configfs.c and fabric module independent control plane in
+target_core_fabric_configfs.c does demonstrate this design feature.
+
+Of course doing 'SCSI-less' target mode this would still involve some
+work to target_core_transport.c to add ATA specific
+emulation/passthrough and disable others for the default SPC-3 emulation
+logic currently in place.  However, I do believe the TCM subsystem
+plugin API in target_core_transport.h for pSCSI, iBLOCK, FILEIO, etc is
+already more or less SCSI fabric independent and adding a libata
+subsystem plugin (eg: with it's own set of TCM fabric modules) minus
+current libata-scsi.c glue code would be possible if the libata folks
+would like to entertain that discussion..
+
+> We had the similar discussion when I put stgt to mainline but we
+> concluded that under drivers/scsi is the best place.
+> 
+> I don't like to put ibmvscsi driver under something like
+> drivers/target/tcm_ibmvscsit because ibmvscsi needs to include some
+> files under drivers/scsi/ibmvscsi/. It's more reasonable to put the
+> driver there.
+> 
+> Can we change the name, TCM (Target Core Mod), to something more
+> informative? I think that "Core Mod" is really pointless.
+> 
+> This will be the mainline scsi target feature so why can't we name
+> the files and modules in more appropriate way?
+
+Honestly, I tend not to care very much about naming and things, but that
+said I would really hate to have to rename actual TCM code at this point
+for .37 (other than say directory location/layout and file names) while
+the drivers/target/lio-target -> iscsi_proto.h conversion is still on
+our TODO list.
+
+Best,
+
+--nab
+
+
