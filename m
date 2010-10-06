@@ -1,241 +1,417 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932837Ab0JFQDH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:03:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63883 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759244Ab0JFQDE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:03:04 -0400
-Date: Wed, 6 Oct 2010 18:04:35 +0200
-From: Stanislaw Gruszka <sgruszka@redhat.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: linville@tuxdriver.com, stable@kernel.org, linux-wireless@vger.kernel.org,
-        wey-yi.w.guy@intel.com, reinette.chatre@intel.com, ilw@linux.intel.com,
-        johannes.berg@intel.com, ben.m.cahill@intel.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH wireless-2.6 or stable] iwlwifi: return error when fail to
- start scanning
-Message-ID: <20101006160434.GB24581@redhat.com>
-References: <20101005085717.GA18012@redhat.com>
- <1286317292-10679-1-git-send-email-florian@mickler.org>
- <20101006090228.GA2523@redhat.com>
+	id S1759102Ab0JFQEY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:04:24 -0400
+Received: from bhuna.collabora.co.uk ([93.93.128.226]:59823 "EHLO
+	bhuna.collabora.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756765Ab0JFQEX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 12:04:23 -0400
+Message-ID: <4CAC9CD1.2050601@collabora.co.uk>
+Date: Wed, 06 Oct 2010 16:59:13 +0100
+From: Ian Molton <ian.molton@collabora.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100913 Icedove/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101006090228.GA2523@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Implement a virtio GPU transport
+Content-Type: multipart/mixed;
+ boundary="------------040907030000000800040106"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is stable friendly backport of wireless-testing commit
-3eecce527c7434dfd16517ce08b49632c8a26717 "iwlwifi: unify scan start
-checks". Wireless-testing version include also a lot of cleanups.
+This is a multi-part message in MIME format.
+--------------040907030000000800040106
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-On error case in {iwl3945,iwlagn}_request_scan we queue abort_scan work,
-which in a fact do nothing, so we never complete the scan. Thats gives
-"WARNING: at net/wireless/core.c:614 wdev_cleanup_work" and stopped
-network connection until reload iwlwifi modules. Return of -EIO, and
-stopping queuing any work is a fix.
+This patch implements a virtio-based transport for use by a virtualised 
+OpenGL passthrough implementation.
 
-Note there are still many cases when we can get: 
+The libGL and qemu-gl code to support this patch are available here:
 
-WARNING: at net/wireless/core.c:614 wdev_cleanup_work  
-WARNING: at net/mac80211/scan.c:266 ieee80211_scan_completed
-WARNING: at net/mac80211/scan.c:269 ieee80211_scan_complete
+http://gitorious.org/vm-gl-accel/qemu-gl
+http://gitorious.org/vm-gl-accel/qemu-libgl
 
-which are not fixed. Unfortunately does not exist single, small fix
-for that problems, and we probably will see some more bug reports
-with scan warnings. As solution we rewrite iwl-scan.c code to avoid
-all possible race conditions. That quite big patch set is queued
-for 2.6.37 .
 
-Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
----
-Patch is intended for wireless-2.6, or in case when it does not
-make 2.6.36 release, for -stable 2.6.36.y 
+Comments please!
 
- drivers/net/wireless/iwlwifi/iwl-3945.h     |    2 +-
- drivers/net/wireless/iwlwifi/iwl-agn-lib.c  |   18 ++++++------------
- drivers/net/wireless/iwlwifi/iwl-agn.h      |    2 +-
- drivers/net/wireless/iwlwifi/iwl-core.h     |    2 +-
- drivers/net/wireless/iwlwifi/iwl-scan.c     |   14 +++++++++++---
- drivers/net/wireless/iwlwifi/iwl3945-base.c |   19 ++++++-------------
- 6 files changed, 26 insertions(+), 31 deletions(-)
+--------------040907030000000800040106
+Content-Type: text/x-patch;
+ name="kernel_gl.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="kernel_gl.patch"
 
-diff --git a/drivers/net/wireless/iwlwifi/iwl-3945.h b/drivers/net/wireless/iwlwifi/iwl-3945.h
-index bb2aeeb..98509c5 100644
---- a/drivers/net/wireless/iwlwifi/iwl-3945.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-3945.h
-@@ -295,7 +295,7 @@ extern const struct iwl_channel_info *iwl3945_get_channel_info(
- extern int iwl3945_rs_next_rate(struct iwl_priv *priv, int rate);
- 
- /* scanning */
--void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
-+int iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
- 
- /* Requires full declaration of iwl_priv before including */
- #include "iwl-io.h"
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-index 8fd00a6..2be8faa 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-lib.c
-@@ -1147,7 +1147,7 @@ static int iwl_get_channels_for_scan(struct iwl_priv *priv,
- 	return added;
- }
- 
--void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
-+int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
- {
- 	struct iwl_host_cmd cmd = {
- 		.id = REPLY_SCAN_CMD,
-@@ -1394,24 +1394,18 @@ void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
- 	scan->len = cpu_to_le16(cmd.len);
- 
- 	set_bit(STATUS_SCAN_HW, &priv->status);
--	if (iwl_send_cmd_sync(priv, &cmd))
-+	if (iwl_send_cmd_sync(priv, &cmd)) {
-+		clear_bit(STATUS_SCAN_HW, &priv->status);
- 		goto done;
+diff --git a/drivers/gpu/Makefile b/drivers/gpu/Makefile
+index 30879df..35699a0 100644
+--- a/drivers/gpu/Makefile
++++ b/drivers/gpu/Makefile
+@@ -1 +1 @@
+-obj-y			+= drm/ vga/
++obj-y			+= drm/ vga/ misc/
+diff --git a/drivers/gpu/misc/Kconfig b/drivers/gpu/misc/Kconfig
+new file mode 100644
+index 0000000..50043d3
+--- /dev/null
++++ b/drivers/gpu/misc/Kconfig
+@@ -0,0 +1,8 @@
++config VIRTIOGL
++        tristate "Virtio userspace memory transport"
++        depends on VIRTIO_PCI
++        default n
++        help
++          A Driver to facilitate transferring data from userspace to a
++          hypervisor (eg. qemu)
++
+diff --git a/drivers/gpu/misc/Makefile b/drivers/gpu/misc/Makefile
+new file mode 100644
+index 0000000..d9ab333
+--- /dev/null
++++ b/drivers/gpu/misc/Makefile
+@@ -0,0 +1 @@
++obj-$(CONFIG_VIRTIOGL)          += virtio-gl.o
+diff --git a/drivers/gpu/misc/virtio-gl.c b/drivers/gpu/misc/virtio-gl.c
+new file mode 100644
+index 0000000..8882bda
+--- /dev/null
++++ b/drivers/gpu/misc/virtio-gl.c
+@@ -0,0 +1,312 @@
++/*
++ * Copyright (C) 2010 Intel Corporation
++ *
++ * Author: Ian Molton <ian.molton@collabora.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/fs.h>
++#include <linux/dma-mapping.h>
++#include <linux/sched.h>
++#include <linux/slab.h>
++#include <linux/miscdevice.h>
++#include <linux/virtio.h>
++#include <linux/virtio_ids.h>
++#include <linux/virtio_config.h>
++
++#define DEVICE_NAME "glmem"
++
++/* Define to use debugging checksums on transfers */
++#undef DEBUG_GLIO
++
++struct virtio_gl_data {
++	char *buffer;
++	int pages;
++	unsigned int pid;
++};
++
++struct virtio_gl_header {
++	int pid;
++	int buf_size;
++	int r_buf_size;
++#ifdef DEBUG_GLIO
++	int sum;
++#endif
++	char buffer;
++} __packed;
++
++#define to_virtio_gl_data(a)   ((struct virtio_gl_data *)(a)->private_data)
++
++#ifdef DEBUG_GLIO
++#define SIZE_OUT_HEADER (sizeof(int)*4)
++#define SIZE_IN_HEADER (sizeof(int)*2)
++#else
++#define SIZE_OUT_HEADER (sizeof(int)*3)
++#define SIZE_IN_HEADER sizeof(int)
++#endif
++
++static struct virtqueue *vq;
++
++
++/* This is videobuf_vmalloc_to_sg() from videobuf-dma-sg.c with
++ * some modifications
++ */
++static struct scatterlist *vmalloc_to_sg(struct scatterlist *sg_list,
++				unsigned char *virt, unsigned int pages)
++{
++	struct page *pg;
++
++	/* unaligned */
++	BUG_ON((ulong)virt & ~PAGE_MASK);
++
++	/* Fill with elements for the data */
++	while (pages) {
++		pg = vmalloc_to_page(virt);
++		if (!pg)
++			goto err;
++
++		sg_set_page(sg_list, pg, PAGE_SIZE, 0);
++		virt += PAGE_SIZE;
++		sg_list++;
++		pages--;
 +	}
- 
- 	queue_delayed_work(priv->workqueue, &priv->scan_check,
- 			   IWL_SCAN_CHECK_WATCHDOG);
- 
--	return;
-+	return 0;
- 
-  done:
--	/* Cannot perform scan. Make sure we clear scanning
--	* bits from status so next scan request can be performed.
--	* If we don't clear scanning status bit here all next scan
--	* will fail
--	*/
--	clear_bit(STATUS_SCAN_HW, &priv->status);
--	clear_bit(STATUS_SCANNING, &priv->status);
--	/* inform mac80211 scan aborted */
--	queue_work(priv->workqueue, &priv->abort_scan);
-+	return -EIO;
- }
- 
- int iwlagn_manage_ibss_station(struct iwl_priv *priv,
-diff --git a/drivers/net/wireless/iwlwifi/iwl-agn.h b/drivers/net/wireless/iwlwifi/iwl-agn.h
-index cc6464d..015da26 100644
---- a/drivers/net/wireless/iwlwifi/iwl-agn.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn.h
-@@ -216,7 +216,7 @@ void iwl_reply_statistics(struct iwl_priv *priv,
- 			  struct iwl_rx_mem_buffer *rxb);
- 
- /* scan */
--void iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
-+int iwlagn_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif);
- 
- /* station mgmt */
- int iwlagn_manage_ibss_station(struct iwl_priv *priv,
-diff --git a/drivers/net/wireless/iwlwifi/iwl-core.h b/drivers/net/wireless/iwlwifi/iwl-core.h
-index 5e6ee3d..110de0f 100644
---- a/drivers/net/wireless/iwlwifi/iwl-core.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-core.h
-@@ -109,7 +109,7 @@ struct iwl_hcmd_utils_ops {
- 				  __le16 fc, __le32 *tx_flags);
- 	int  (*calc_rssi)(struct iwl_priv *priv,
- 			  struct iwl_rx_phy_res *rx_resp);
--	void (*request_scan)(struct iwl_priv *priv, struct ieee80211_vif *vif);
-+	int (*request_scan)(struct iwl_priv *priv, struct ieee80211_vif *vif);
- };
- 
- struct iwl_apm_ops {
-diff --git a/drivers/net/wireless/iwlwifi/iwl-scan.c b/drivers/net/wireless/iwlwifi/iwl-scan.c
-index a4b3663..290140a 100644
---- a/drivers/net/wireless/iwlwifi/iwl-scan.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-scan.c
-@@ -298,6 +298,7 @@ EXPORT_SYMBOL(iwl_init_scan_params);
- 
- static int iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif *vif)
- {
-+	int ret;
- 	lockdep_assert_held(&priv->mutex);
- 
- 	IWL_DEBUG_INFO(priv, "Starting scan...\n");
-@@ -308,9 +309,11 @@ static int iwl_scan_initiate(struct iwl_priv *priv, struct ieee80211_vif *vif)
- 	if (WARN_ON(!priv->cfg->ops->utils->request_scan))
- 		return -EOPNOTSUPP;
- 
--	priv->cfg->ops->utils->request_scan(priv, vif);
-+	ret = priv->cfg->ops->utils->request_scan(priv, vif);
-+	if (ret)
-+		clear_bit(STATUS_SCANNING, &priv->status);
++
++	return sg_list;
++
++err:
++	kfree(sg_list);
++	return NULL;
++}
++
++static int put_data(struct virtio_gl_data *gldata)
++{
++	struct scatterlist *sg, *sg_list;
++	unsigned int count, ret, o_page, i_page, sg_entries;
++	struct virtio_gl_header *header =
++				(struct virtio_gl_header *)gldata->buffer;
++
++	ret = header->buf_size;
++
++	o_page = (header->buf_size + PAGE_SIZE-1) >> PAGE_SHIFT;
++	i_page = (header->r_buf_size + PAGE_SIZE-1) >> PAGE_SHIFT;
++
++	header->pid = gldata->pid;
++
++	if ((o_page && i_page) &&
++		(o_page > gldata->pages || i_page > gldata->pages)) {
++		i_page = 0;
++	}
++
++	if (o_page > gldata->pages)
++		o_page = gldata->pages;
++
++	if (i_page > gldata->pages)
++		i_page = gldata->pages;
++
++	if (!o_page)
++		o_page = 1;
++
++	sg_entries = o_page + i_page;
++
++	sg_list = kcalloc(sg_entries, sizeof(struct scatterlist), GFP_KERNEL);
++
++	if (!sg_list) {
++		ret = -EIO;
++		goto out;
++	}
++
++	sg_init_table(sg_list, sg_entries);
++
++	sg = vmalloc_to_sg(sg_list, gldata->buffer, o_page);
++	sg = vmalloc_to_sg(sg, gldata->buffer, i_page);
++
++	if (!sg) {
++		ret = -EIO;
++		goto out_free;
++	}
++
++	/* Transfer data */
++	if (virtqueue_add_buf(vq, sg_list, o_page, i_page, (void *)1) >= 0) {
++		virtqueue_kick(vq);
++		/* Chill out until it's done with the buffer. */
++		while (!virtqueue_get_buf(vq, &count))
++			cpu_relax();
++	}
++
++out_free:
++	kfree(sg_list);
++out:
 +	return ret;
- 
--	return 0;
- }
- 
- int iwl_mac_hw_scan(struct ieee80211_hw *hw,
-@@ -380,6 +383,7 @@ void iwl_internal_short_hw_scan(struct iwl_priv *priv)
- 
- void iwl_bg_start_internal_scan(struct work_struct *work)
- {
-+	int ret;
- 	struct iwl_priv *priv =
- 		container_of(work, struct iwl_priv, start_internal_scan);
- 
-@@ -414,7 +418,11 @@ void iwl_bg_start_internal_scan(struct work_struct *work)
- 	if (WARN_ON(!priv->cfg->ops->utils->request_scan))
- 		goto unlock;
- 
--	priv->cfg->ops->utils->request_scan(priv, NULL);
-+	ret = priv->cfg->ops->utils->request_scan(priv, NULL);
-+	if (ret) {
-+		clear_bit(STATUS_SCANNING, &priv->status);
-+		priv->is_internal_short_scan = false;
++}
++
++static void free_buffer(struct virtio_gl_data *gldata)
++{
++	if (gldata->buffer) {
++		vfree(gldata->buffer);
++		gldata->buffer = NULL;
 +	}
-  unlock:
- 	mutex_unlock(&priv->mutex);
- }
-diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-index d31661c..fc82da0 100644
---- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
-+++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
-@@ -2799,7 +2799,7 @@ static void iwl3945_rfkill_poll(struct work_struct *data)
- 
- }
- 
--void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
-+int iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
- {
- 	struct iwl_host_cmd cmd = {
- 		.id = REPLY_SCAN_CMD,
-@@ -3000,25 +3000,18 @@ void iwl3945_request_scan(struct iwl_priv *priv, struct ieee80211_vif *vif)
- 	scan->len = cpu_to_le16(cmd.len);
- 
- 	set_bit(STATUS_SCAN_HW, &priv->status);
--	if (iwl_send_cmd_sync(priv, &cmd))
-+	if (iwl_send_cmd_sync(priv, &cmd)) {
-+		clear_bit(STATUS_SCAN_HW, &priv->status);
- 		goto done;
-+	}
- 
- 	queue_delayed_work(priv->workqueue, &priv->scan_check,
- 			   IWL_SCAN_CHECK_WATCHDOG);
- 
--	return;
++}
++
++static int glmem_open(struct inode *inode, struct file *file)
++{
++	struct virtio_gl_data *gldata = kzalloc(sizeof(struct virtio_gl_data),
++						GFP_KERNEL);
++
++	if (!gldata)
++		return -ENXIO;
++
++	gldata->pid = pid_nr(task_pid(current));
++
++	file->private_data = gldata;
++
 +	return 0;
++}
++
++static int glmem_mmap(struct file *filp, struct vm_area_struct *vma)
++{
++	struct virtio_gl_data *gldata = to_virtio_gl_data(filp);
++	int pages = (vma->vm_end - vma->vm_start) / PAGE_SIZE;
++
++	/* Set a reasonable limit */
++	if (pages > 16)
++		return -ENOMEM;
++
++	/* for now, just allow one buffer to be mmap()ed. */
++	if (gldata->buffer)
++		return -EIO;
++
++	gldata->buffer = vmalloc_user(pages*PAGE_SIZE);
++
++	if (!gldata->buffer)
++		return -ENOMEM;
++
++	gldata->pages = pages;
++
++	if (remap_vmalloc_range(vma, gldata->buffer, 0) < 0) {
++		vfree(gldata->buffer);
++		return -EIO;
++	}
++
++	vma->vm_flags |= VM_DONTEXPAND;
++
++	return 0;
++}
++
++static int glmem_fsync(struct file *filp, int datasync)
++{
++	struct virtio_gl_data *gldata = to_virtio_gl_data(filp);
++
++	put_data(gldata);
++
++	return 0;
++}
++
++static int glmem_release(struct inode *inode, struct file *file)
++{
++	struct virtio_gl_data *gldata = to_virtio_gl_data(file);
++
++	if (gldata && gldata->buffer) {
++		struct virtio_gl_header *header =
++				(struct virtio_gl_header *)gldata->buffer;
++
++		/* Make sure the host hears about the process ending / dying */
++		header->pid = gldata->pid;
++		header->buf_size = SIZE_OUT_HEADER + 2;
++		header->r_buf_size = SIZE_IN_HEADER;
++		*(short *)(&header->buffer) = -1;
++
++		put_data(gldata);
++		free_buffer(gldata);
++	}
++
++	kfree(gldata);
++
++	return 0;
++}
++
++static const struct file_operations glmem_fops = {
++	.owner		= THIS_MODULE,
++	.open		= glmem_open,
++	.mmap		= glmem_mmap,
++	.fsync		= glmem_fsync,
++	.release	= glmem_release,
++};
++
++static struct miscdevice glmem_dev = {
++	MISC_DYNAMIC_MINOR,
++	DEVICE_NAME,
++	&glmem_fops
++};
++
++static int glmem_probe(struct virtio_device *vdev)
++{
++	int ret;
++
++	/* We expect a single virtqueue. */
++	vq = virtio_find_single_vq(vdev, NULL, "output");
++	if (IS_ERR(vq))
++		return PTR_ERR(vq);
++
++	ret = misc_register(&glmem_dev);
++	if (ret) {
++		printk(KERN_ERR "glmem: cannot register glmem_dev as misc");
++		return -ENODEV;
++	}
++
++	return 0;
++}
++
++static void __devexit glmem_remove(struct virtio_device *vdev)
++{
++	vdev->config->reset(vdev);
++	misc_deregister(&glmem_dev);
++	vdev->config->del_vqs(vdev);
++}
++
++static struct virtio_device_id id_table[] = {
++	{ VIRTIO_ID_GL, VIRTIO_DEV_ANY_ID },
++	{ 0 },
++};
++
++static struct virtio_driver virtio_gl_driver = {
++	.driver	= {
++		.name =  KBUILD_MODNAME,
++		.owner = THIS_MODULE,
++	},
++	.id_table =     id_table,
++	.probe =        glmem_probe,
++	.remove =       __devexit_p(glmem_remove),
++};
++
++static int __init glmem_init(void)
++{
++	return register_virtio_driver(&virtio_gl_driver);
++}
++
++static void __exit glmem_exit(void)
++{
++	unregister_virtio_driver(&virtio_gl_driver);
++}
++
++module_init(glmem_init);
++module_exit(glmem_exit);
++
++MODULE_DEVICE_TABLE(virtio, id_table);
++MODULE_DESCRIPTION("Virtio gl passthrough driver");
++MODULE_LICENSE("GPL v2");
++
+diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
+index 3d94a14..9a9a6cc 100644
+--- a/drivers/video/Kconfig
++++ b/drivers/video/Kconfig
+@@ -16,6 +16,7 @@ source "drivers/char/agp/Kconfig"
+ source "drivers/gpu/vga/Kconfig"
  
-  done:
--	/* can not perform scan make sure we clear scanning
--	 * bits from status so next scan request can be performed.
--	 * if we dont clear scanning status bit here all next scan
--	 * will fail
--	*/
--	clear_bit(STATUS_SCAN_HW, &priv->status);
--	clear_bit(STATUS_SCANNING, &priv->status);
--
--	/* inform mac80211 scan aborted */
--	queue_work(priv->workqueue, &priv->abort_scan);
-+	return -EIO;
- }
+ source "drivers/gpu/drm/Kconfig"
++source "drivers/gpu/misc/Kconfig"
  
- static void iwl3945_bg_restart(struct work_struct *data)
--- 
-1.7.1
+ config VGASTATE
+        tristate
+diff --git a/include/linux/virtio_ids.h b/include/linux/virtio_ids.h
+index 06660c0..663b496 100644
+--- a/include/linux/virtio_ids.h
++++ b/include/linux/virtio_ids.h
+@@ -12,6 +12,7 @@
+ #define VIRTIO_ID_CONSOLE	3 /* virtio console */
+ #define VIRTIO_ID_RNG		4 /* virtio ring */
+ #define VIRTIO_ID_BALLOON	5 /* virtio balloon */
++#define VIRTIO_ID_GL		6 /* virtio usermem */
+ #define VIRTIO_ID_9P		9 /* 9p virtio console */
+ 
+ #endif /* _LINUX_VIRTIO_IDS_H */
 
+--------------040907030000000800040106--
