@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758332Ab0JFGMf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 02:12:35 -0400
-Received: from compulab.co.il ([67.18.134.219]:43693 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755474Ab0JFGMe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 02:12:34 -0400
-Message-ID: <4CAC1347.3000301@compulab.co.il>
-Date: Wed, 06 Oct 2010 08:12:23 +0200
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
-MIME-Version: 1.0
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: achew@nvidia.com, axel.lin@gmail.com, gking@nvidia.com,
+	id S1758442Ab0JFGS1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 02:18:27 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:58276 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757050Ab0JFGS0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 02:18:26 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Eric Van Hensbergen <ericvh@gmail.com>
+Cc: v9fs-developer@lists.sourceforge.net, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] mfd: Add TPS658621C device ID
-References: <1286317946-11170-1-git-send-email-achew@nvidia.com>
-In-Reply-To: <1286317946-11170-1-git-send-email-achew@nvidia.com>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Subject: Re: [V9fs-developer] [PATCH 1/3] fs/9p: Update TLCREATE to allow create without open
+In-Reply-To: <AANLkTinpie0YLpiuJjv1RzYr4LN1HbdtXh=OoNNJbG6k@mail.gmail.com>
+References: <1286298090-2422-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <AANLkTinpie0YLpiuJjv1RzYr4LN1HbdtXh=OoNNJbG6k@mail.gmail.com>
+User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.2 (i686-pc-linux-gnu)
+Date: Wed, 06 Oct 2010 11:48:15 +0530
+Message-ID: <m362xfkfo8.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
-
-Can you please queue this?
-
-achew@nvidia.com wrote:
-> From: Andrew Chew <achew@nvidia.com>
+On Tue, 5 Oct 2010 13:15:42 -0400, Eric Van Hensbergen <ericvh@gmail.com> wrote:
+> Ouch.  Protocol change.
 > 
-> The interface for this device should be identical to that of the
-> TPS658521A.
+> Also - not sure I understand what's going on here.  Why does mknod go
+> through TLCREATE, shouldn't we have our
+> own protocol messages for mknod?//
+
+This is needed for the below mknod usage
+
+mknod("k2", S_IFREG) ;
+
+
 > 
-> Signed-off-by: Andrew Chew <achew@nvidia.com>
-
-Acked-by: Mike Rapoport <mike@compulab.co.il>
-
-> ---
->  drivers/mfd/tps6586x.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+> Why add an additional flag field instead of just using the existing
+> flags field since we are only talking about a bit?
 > 
-> diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> index 117eb7c..b4931ab 100644
-> --- a/drivers/mfd/tps6586x.c
-> +++ b/drivers/mfd/tps6586x.c
-> @@ -47,6 +47,7 @@
->  /* device id */
->  #define TPS6586X_VERSIONCRC	0xcd
->  #define TPS658621A_VERSIONCRC	0x15
-> +#define TPS658621C_VERSIONCRC	0x2c
->  
->  struct tps6586x_irq_data {
->  	u8	mask_reg;
-> @@ -497,7 +498,8 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
->  		return -EIO;
->  	}
->  
-> -	if (ret != TPS658621A_VERSIONCRC) {
-> +	if ((ret != TPS658621A_VERSIONCRC) &&
-> +	    (ret != TPS658621C_VERSIONCRC)) {
->  		dev_err(&client->dev, "Unsupported chip ID: %x\n", ret);
->  		return -ENODEV;
->  	}
 
+TLCREATE is 
 
--- 
-Sincerely yours,
-Mike.
+  size[4] Tlcreate tag[2] fid[4] name[s] flags[4] mode[4] gid[4]
+    
+  size[4] Rlcreate tag[2] qid[13] iounit[4]
+    
+
+The flags argument represent Linux access mode flags with which the caller
+is requesting to open the file with. Protocol allows all the Linux
+access
+
+Having a -1 with the flag would indicate all the access mode flags are
+set. So i found that to be ugly. And value 0 indicate O_RDONLY. So was
+not sure whether -1 in flags or having a separate lookup flags is the
+right thing to do.
+
+-aneesh
