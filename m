@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758113Ab0JFARn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 20:17:43 -0400
-Received: from sh.osrg.net ([192.16.179.4]:46918 "EHLO sh.osrg.net"
+	id S1758112Ab0JFAVz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 20:21:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52155 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757955Ab0JFARm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Oct 2010 20:17:42 -0400
-Date: Wed, 6 Oct 2010 09:17:12 +0900
-To: nab@linux-iscsi.org
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        fujita.tomonori@lab.ntt.co.jp, michaelc@cs.wisc.edu, hch@lst.de,
-        hare@suse.de, James.Bottomley@suse.de, axboe@kernel.dk,
-        bharrosh@panasas.com
-Subject: Re: [RFC v2 05/21] tcm: Add ConfigFS subsystem backstore
- infrastructure
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1285195750-11516-1-git-send-email-nab@linux-iscsi.org>
-References: <1285195750-11516-1-git-send-email-nab@linux-iscsi.org>
+	id S1757587Ab0JFAVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Oct 2010 20:21:54 -0400
+Subject: Re: System freeze on shutdown - bisected to commit 29d08b3efddc
+From: Dave Airlie <airlied@redhat.com>
+To: Marc Dionne <marc.c.dionne@gmail.com>, Ben Skeggs <skeggsb@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTikBXb-QZ2twFUZHzzYSHyZz1Kca4GRLu_6bo+Oo@mail.gmail.com>
+References: <AANLkTikBXb-QZ2twFUZHzzYSHyZz1Kca4GRLu_6bo+Oo@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 10:21:49 +1000
+Message-ID: <1286324509.2505.0.camel@clockmaker-el6>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <20101006091219Q.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 06 Oct 2010 09:17:15 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Sep 2010 15:49:10 -0700
-"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
+On Tue, 2010-10-05 at 18:24 -0400, Marc Dionne wrote:
+> Hi,
 > 
-> This patch adds the TCM/ConfigFS core HBA and device backstore infrastructre
-> objects in /sys/kernel/config/target/core.  It includes wrappers to logic for
-> Persistent Reservations and ALUA, and supports Linux/SCSI, Linux/BLOCK, and Linux/FILEIO
-> backstores using TCM subsystem plugin API.
+> My system has been crashing these past few days when issuing "reboot"
+> or hitting the Shut Down button in gnome.  I get a series of stack
+> traces scrolling on the console before things freeze up completely.
+> The traces that I do see at the end point to kmem_cache_alloc called
+> from get_empty_filp, but there are typically various other traces
+> above it.
+
+cc'ing Ben.
+
+Dave.
+
 > 
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
-> ---
->  drivers/target/target_core_configfs.c | 3334 +++++++++++++++++++++++++++++++++
->  include/target/target_core_configfs.h |   57 +
->  2 files changed, 3391 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/target/target_core_configfs.c
->  create mode 100644 include/target/target_core_configfs.h
+> It is easily reproducible so I took the time today to bisect it down
+> to this recent commit:
+>    29d08b3efddca628b0360411ab2b85f7b1723f48
+>    drm/gem: handlecount isn't really a kref so don't make it one
+> 
+> Reverting the commit on top of current git fixes the problem.  The
+> system has an Nvidia card and loads the nouveau driver.  Current
+> .config is attached.
+> 
+> Marc
 
-Can a driver create a directory/file under configfs?
 
-ibmvscsi target driver gets the list of targets to set up from
-hardware (see how drivers/scsi/ibmvscsi/ibmvstgt.c use
-vio_register_driver). The driver needs to tell an user about it so
-that he can set up luns, etc via configfs.
