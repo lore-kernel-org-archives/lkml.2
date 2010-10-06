@@ -1,103 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab0JFIBh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 04:01:37 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40472 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752873Ab0JFIBf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 04:01:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=w788pW04/rIPhNxlNIPBlieSUWrnB37VJUTDx7xBL43L9uWpJaKOsyu0pxUZxDkWjZ
-         2+DlozaBNp8S6rA3rUXvyhCsnDMmoYC4I8WyC7D6Up1KDE1AOAy5TB6Q0sRiWhfAsf1F
-         CxEoKWl8jWMeiOBIF3JwQjtXHgy4OlJfAu3z4=
+	id S1757959Ab0JFIQP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 04:16:15 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:43241 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752873Ab0JFIQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 04:16:13 -0400
+Message-ID: <4CAC304A.8040306@bfs.de>
+Date: Wed, 06 Oct 2010 10:16:10 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-In-Reply-To: <20101005185725.088808842@linux.com>
-References: <20101005185725.088808842@linux.com>
-Date: Wed, 6 Oct 2010 11:01:35 +0300
-X-Google-Sender-Auth: nydxZh2p5murcmcc_cptloPYzjM
-Message-ID: <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com>
-Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
-From: Pekka Enberg <penberg@kernel.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, npiggin@kernel.dk,
-        yanmin_zhang@linux.intel.com
+To: Dan Carpenter <error27@gmail.com>, Armin Schindler <armin@melware.de>,
+        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] eicon: make buffer larger
+References: <20101004192459.GE5692@bicker> <alpine.DEB.2.00.1010060923120.29107@justus.melware.de> <20101006074714.GE5409@bicker>
+In-Reply-To: <20101006074714.GE5409@bicker>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Adding more people who've taken interest in slab performance in the
-past to CC.)
 
-On Tue, Oct 5, 2010 at 9:57 PM, Christoph Lameter <cl@linux.com> wrote:
-> V3->V4:
-> - Lots of debugging
-> - Performance optimizations (more would be good)...
-> - Drop per slab locking in favor of per node locking for
->  partial lists (queuing implies freeing large amounts of objects
->  to per node lists of slab).
-> - Implement object expiration via reclaim VM logic.
->
-> The following is a release of an allocator based on SLAB
-> and SLUB that integrates the best approaches from both allocators. The
-> per cpu queuing is like in SLAB whereas much of the infrastructure
-> comes from SLUB.
->
-> After this patches SLUB will track the cpu cache contents
-> like SLAB attemped to. There are a number of architectural differences:
->
-> 1. SLUB accurately tracks cpu caches instead of assuming that there
->   is only a single cpu cache per node or system.
->
-> 2. SLUB object expiration is tied into the page reclaim logic. There
->   is no periodic cache expiration.
->
-> 3. SLUB caches are dynamically configurable via the sysfs filesystem.
->
-> 4. There is no per slab page metadata structure to maintain (aside
->   from the object bitmap that usually fits into the page struct).
->
-> 5. Has all the resiliency and diagnostic features of SLUB.
->
-> The unified allocator is a merging of SLUB with some queuing concepts from
-> SLAB and a new way of managing objects in the slabs using bitmaps. Memory
-> wise this is slightly more inefficient than SLUB (due to the need to place
-> large bitmaps --sized a few words--in some slab pages if there are more
-> than BITS_PER_LONG objects in a slab) but in general does not increase space
-> use too much.
->
-> The SLAB scheme of not touching the object during management is adopted.
-> The unified allocator can efficiently free and allocate cache cold objects
-> without causing cache misses.
->
-> Some numbers using tcp_rr on localhost
->
->
-> Dell R910 128G RAM, 64 processors, 4 NUMA nodes
->
-> threads unified         slub            slab
-> 64      4141798         3729037         3884939
-> 128     4146587         3890993         4105276
-> 192     4003063         3876570         4110971
-> 256     3928857         3942806         4099249
-> 320     3922623         3969042         4093283
-> 384     3827603         4002833         4108420
-> 448     4140345         4027251         4118534
-> 512     4163741         4050130         4122644
-> 576     4175666         4099934         4149355
-> 640     4190332         4142570         4175618
-> 704     4198779         4173177         4193657
-> 768     4662216         4200462         4222686
 
-Are there any stability problems left? Have you tried other benchmarks
-(e.g. hackbench, sysbench)? Can we merge the series in smaller
-batches? For example, if we leave out the NUMA parts in the first
-stage, do we expect to see performance regressions?
+Dan Carpenter schrieb:
+> On Wed, Oct 06, 2010 at 09:25:44AM +0200, Armin Schindler wrote:
+>> On Mon, 4 Oct 2010, Dan Carpenter wrote:
+>>> In diva_mnt_add_xdi_adapter() we do this:
+>>>  strcpy (clients[id].drvName,     tmp);
+>>>  strcpy (clients[id].Dbg.drvName, tmp);
+>>>
+>>> The "clients[id].drvName" is a 128 character buffer and
+>>> "clients[id].Dbg.drvName" was originally a 16 character buffer but I've
+>>> changed it to 128 as well.  We don't actually use 128 characters but we
+>>> do use more than 16.
+>> I don't see any reason for that change. The driver names here do not use  
+>> more than 16 characters and when filled, the length is checked anyway.
+>> Please avoid changing the size of that structure.
+>>
+> 
+> drivers/isdn/hardware/eicon/debug.c diva_mnt_add_xdi_adapter()
+>    874      sprintf (tmp, "ADAPTER:%d SN:%u-%d",
+>                            12345678 90123 45 67
+> 
+> 	That's a minimum 17 characters.
+> 
+>    875               (int)logical,
+>    876               serial & 0x00ffffff,
+>    877               (byte)(((serial & 0xff000000) >> 24) + 1));
+>    878    } else {
+>    879      sprintf (tmp, "ADAPTER:%d SN:%u", (int)logical, serial);
+>    880    }
+> 
+
+
+for that reason i am a fan of kasprintf().
+Maybe this a solution here also ? samething like:
+
+kasprintf (&buf, "ADAPTER:%d SN:%u-%d",12345678,90123,45,67):
+...
+kstrncpy(tmp,buf,sizeof(buf));
+....
+free(buf);
+
+that would keep overflows away until the changes in the structure are ready.
+
+re,
+ wh
