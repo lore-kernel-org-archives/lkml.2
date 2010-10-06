@@ -1,247 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab0JFDf6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Oct 2010 23:35:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:61711 "EHLO
+	id S1758632Ab0JFDfw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Oct 2010 23:35:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60169 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758599Ab0JFDfs (ORCPT
+	with ESMTP id S1758598Ab0JFDfs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Oct 2010 23:35:48 -0400
-X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=qAD6WA9oLnYA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=tk4UmSTbjtQ6H1ZrR3MA:9 a=sXUmqyBPQ6vOfUqoLkAA:7 a=HRu5BoomIPoaB4kbXYDrQspSkCUA:4 a=DHQQ7jDAcw4A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=PGVW_gikpH4A:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=E1fLRRr-8lSgszxbwL4A:9 a=Ntzz73yqo5asG-h2dFkA:7 a=cLF3sbcMkWqe400Z8tF_sGwIUF4A:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 67.242.120.143
-Message-Id: <20101006033546.167897818@goodmis.org>
+Message-Id: <20101006033547.063399650@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Tue, 05 Oct 2010 23:34:50 -0400
+Date: Tue, 05 Oct 2010 23:34:53 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>, Jiri Olsa <jolsa@redhat.com>
-Subject: [PATCH 5/9] tracing: Make graph related irqs/preemptsoff functions global
+Subject: [PATCH 8/9] tracing: Use one prologue for the preempt irqs off tracer function tracers
 References: <20101006033445.465428951@goodmis.org>
-Content-Disposition: inline; filename=0005-tracing-Make-graph-related-irqs-preemptsoff-function.patch
+Content-Disposition: inline; filename=0008-tracing-Use-one-prologue-for-the-preempt-irqs-off-tr.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jiri Olsa <jolsa@redhat.com>
+From: Steven Rostedt <srostedt@redhat.com>
 
-Move trace_graph_function() and print_graph_headers_flags() functions
-to the trace_function_graph.c to be globaly available.
+The preempt and irqsoff tracers have three types of function tracers.
+Normal function tracer, function graph entry, and function graph return.
+Each of these use a complex dance to prevent recursion and whether
+to trace the data or not (depending if interrupts are enabled or not).
 
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
-LKML-Reference: <1285243253-7372-3-git-send-email-jolsa@redhat.com>
+This patch moves the duplicate code into a single routine, to
+prevent future mistakes with modifying duplicate complex code.
+
+Cc: Jiri Olsa <jolsa@redhat.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.h                 |    4 ++
- kernel/trace/trace_functions_graph.c |   63 ++++++++++++++++++++++++++++++++--
- kernel/trace/trace_irqsoff.c         |   56 ++++--------------------------
- 3 files changed, 71 insertions(+), 52 deletions(-)
+ kernel/trace/trace_irqsoff.c |   96 +++++++++++++++++++++---------------------
+ 1 files changed, 48 insertions(+), 48 deletions(-)
 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index d39b3c5..9021f8c 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -343,6 +343,10 @@ void trace_function(struct trace_array *tr,
- 		    unsigned long ip,
- 		    unsigned long parent_ip,
- 		    unsigned long flags, int pc);
-+void trace_graph_function(struct trace_array *tr,
-+		    unsigned long ip,
-+		    unsigned long parent_ip,
-+		    unsigned long flags, int pc);
- void trace_default_header(struct seq_file *m);
- void print_trace_header(struct seq_file *m, struct trace_iterator *iter);
- int trace_empty(struct trace_iterator *iter);
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 47a8b8b..af03ba9 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -262,6 +262,35 @@ int trace_graph_thresh_entry(struct ftrace_graph_ent *trace)
- 		return trace_graph_entry(trace);
- }
- 
-+static void
-+__trace_graph_function(struct trace_array *tr,
-+		unsigned long ip, unsigned long flags, int pc)
-+{
-+	u64 time = trace_clock_local();
-+	struct ftrace_graph_ent ent = {
-+		.func  = ip,
-+		.depth = 0,
-+	};
-+	struct ftrace_graph_ret ret = {
-+		.func     = ip,
-+		.depth    = 0,
-+		.calltime = time,
-+		.rettime  = time,
-+	};
-+
-+	__trace_graph_entry(tr, &ent, flags, pc);
-+	__trace_graph_return(tr, &ret, flags, pc);
-+}
-+
-+void
-+trace_graph_function(struct trace_array *tr,
-+		unsigned long ip, unsigned long parent_ip,
-+		unsigned long flags, int pc)
-+{
-+	__trace_graph_function(tr, parent_ip, flags, pc);
-+	__trace_graph_function(tr, ip, flags, pc);
-+}
-+
- void __trace_graph_return(struct trace_array *tr,
- 				struct ftrace_graph_ret *trace,
- 				unsigned long flags,
-@@ -1178,7 +1207,7 @@ print_graph_comment(struct trace_seq *s, struct trace_entry *ent,
- 
- 
- enum print_line_t
--print_graph_function_flags(struct trace_iterator *iter, u32 flags)
-+__print_graph_function_flags(struct trace_iterator *iter, u32 flags)
- {
- 	struct ftrace_graph_ent_entry *field;
- 	struct fgraph_data *data = iter->private;
-@@ -1241,7 +1270,18 @@ print_graph_function_flags(struct trace_iterator *iter, u32 flags)
- static enum print_line_t
- print_graph_function(struct trace_iterator *iter)
- {
--	return print_graph_function_flags(iter, tracer_flags.val);
-+	return __print_graph_function_flags(iter, tracer_flags.val);
-+}
-+
-+enum print_line_t print_graph_function_flags(struct trace_iterator *iter,
-+					     u32 flags)
-+{
-+	if (trace_flags & TRACE_ITER_LATENCY_FMT)
-+		flags |= TRACE_GRAPH_PRINT_DURATION;
-+	else
-+		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-+
-+	return __print_graph_function_flags(iter, flags);
- }
- 
- static enum print_line_t
-@@ -1273,7 +1313,7 @@ static void print_lat_header(struct seq_file *s, u32 flags)
- 	seq_printf(s, "#%.*s|||| /                     \n", size, spaces);
- }
- 
--void print_graph_headers_flags(struct seq_file *s, u32 flags)
-+static void __print_graph_headers_flags(struct seq_file *s, u32 flags)
- {
- 	int lat = trace_flags & TRACE_ITER_LATENCY_FMT;
- 
-@@ -1314,6 +1354,23 @@ void print_graph_headers(struct seq_file *s)
- 	print_graph_headers_flags(s, tracer_flags.val);
- }
- 
-+void print_graph_headers_flags(struct seq_file *s, u32 flags)
-+{
-+	struct trace_iterator *iter = s->private;
-+
-+	if (trace_flags & TRACE_ITER_LATENCY_FMT) {
-+		/* print nothing if the buffers are empty */
-+		if (trace_empty(iter))
-+			return;
-+
-+		print_trace_header(s, iter);
-+		flags |= TRACE_GRAPH_PRINT_DURATION;
-+	} else
-+		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
-+
-+	__print_graph_headers_flags(s, flags);
-+}
-+
- void graph_trace_open(struct trace_iterator *iter)
- {
- 	/* pid and depth on the last trace processed */
 diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 73a6b06..4047e98 100644
+index 4047e98..5cf8c60 100644
 --- a/kernel/trace/trace_irqsoff.c
 +++ b/kernel/trace/trace_irqsoff.c
-@@ -229,75 +229,33 @@ static void irqsoff_trace_close(struct trace_iterator *iter)
+@@ -87,14 +87,22 @@ static __cacheline_aligned_in_smp	unsigned long max_sequence;
  
- static enum print_line_t irqsoff_print_line(struct trace_iterator *iter)
- {
--	u32 flags = GRAPH_TRACER_FLAGS;
--
--	if (trace_flags & TRACE_ITER_LATENCY_FMT)
--		flags |= TRACE_GRAPH_PRINT_DURATION;
--	else
--		flags |= TRACE_GRAPH_PRINT_ABS_TIME;
--
- 	/*
- 	 * In graph mode call the graph tracer output function,
- 	 * otherwise go with the TRACE_FN event handler
- 	 */
- 	if (is_graph())
--		return print_graph_function_flags(iter, flags);
-+		return print_graph_function_flags(iter, GRAPH_TRACER_FLAGS);
- 
- 	return TRACE_TYPE_UNHANDLED;
- }
- 
- static void irqsoff_print_header(struct seq_file *s)
- {
--	if (is_graph()) {
--		struct trace_iterator *iter = s->private;
--		u32 flags = GRAPH_TRACER_FLAGS;
--
--		if (trace_flags & TRACE_ITER_LATENCY_FMT) {
--			/* print nothing if the buffers are empty */
--			if (trace_empty(iter))
--				return;
--
--			print_trace_header(s, iter);
--			flags |= TRACE_GRAPH_PRINT_DURATION;
--		} else
--			flags |= TRACE_GRAPH_PRINT_ABS_TIME;
--
--		print_graph_headers_flags(s, flags);
--	} else
-+	if (is_graph())
-+		print_graph_headers_flags(s, GRAPH_TRACER_FLAGS);
-+	else
- 		trace_default_header(s);
- }
- 
- static void
--trace_graph_function(struct trace_array *tr,
--		 unsigned long ip, unsigned long flags, int pc)
--{
--	u64 time = trace_clock_local();
--	struct ftrace_graph_ent ent = {
--		.func  = ip,
--		.depth = 0,
--	};
--	struct ftrace_graph_ret ret = {
--		.func     = ip,
--		.depth    = 0,
--		.calltime = time,
--		.rettime  = time,
--	};
--
--	__trace_graph_entry(tr, &ent, flags, pc);
--	__trace_graph_return(tr, &ret, flags, pc);
--}
--
+ #ifdef CONFIG_FUNCTION_TRACER
+ /*
+- * irqsoff uses its own tracer function to keep the overhead down:
++ * Prologue for the preempt and irqs off function tracers.
++ *
++ * Returns 1 if it is OK to continue, and data->disabled is
++ *            incremented.
++ *         0 if the trace is to be ignored, and data->disabled
++ *            is kept the same.
++ *
++ * Note, this function is also used outside this ifdef but
++ *  inside the #ifdef of the function graph tracer below.
++ *  This is OK, since the function graph tracer is
++ *  dependent on the function tracer.
+  */
 -static void
- __trace_function(struct trace_array *tr,
- 		 unsigned long ip, unsigned long parent_ip,
- 		 unsigned long flags, int pc)
+-irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip)
++static int func_prolog_dec(struct trace_array *tr,
++			   struct trace_array_cpu **data,
++			   unsigned long *flags)
  {
--	if (!is_graph())
-+	if (is_graph())
-+		trace_graph_function(tr, ip, parent_ip, flags, pc);
-+	else
- 		trace_function(tr, ip, parent_ip, flags, pc);
--	else {
--		trace_graph_function(tr, parent_ip, flags, pc);
--		trace_graph_function(tr, ip, flags, pc);
--	}
+-	struct trace_array *tr = irqsoff_trace;
+-	struct trace_array_cpu *data;
+-	unsigned long flags;
+ 	long disabled;
+ 	int cpu;
+ 
+@@ -106,18 +114,38 @@ irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip)
+ 	 */
+ 	cpu = raw_smp_processor_id();
+ 	if (likely(!per_cpu(tracing_cpu, cpu)))
+-		return;
++		return 0;
+ 
+-	local_save_flags(flags);
++	local_save_flags(*flags);
+ 	/* slight chance to get a false positive on tracing_cpu */
+-	if (!irqs_disabled_flags(flags))
+-		return;
++	if (!irqs_disabled_flags(*flags))
++		return 0;
+ 
+-	data = tr->data[cpu];
+-	disabled = atomic_inc_return(&data->disabled);
++	*data = tr->data[cpu];
++	disabled = atomic_inc_return(&(*data)->disabled);
+ 
+ 	if (likely(disabled == 1))
+-		trace_function(tr, ip, parent_ip, flags, preempt_count());
++		return 1;
++
++	atomic_dec(&(*data)->disabled);
++
++	return 0;
++}
++
++/*
++ * irqsoff uses its own tracer function to keep the overhead down:
++ */
++static void
++irqsoff_tracer_call(unsigned long ip, unsigned long parent_ip)
++{
++	struct trace_array *tr = irqsoff_trace;
++	struct trace_array_cpu *data;
++	unsigned long flags;
++
++	if (!func_prolog_dec(tr, &data, &flags))
++		return;
++
++	trace_function(tr, ip, parent_ip, flags, preempt_count());
+ 
+ 	atomic_dec(&data->disabled);
+ }
+@@ -155,30 +183,16 @@ static int irqsoff_graph_entry(struct ftrace_graph_ent *trace)
+ 	struct trace_array *tr = irqsoff_trace;
+ 	struct trace_array_cpu *data;
+ 	unsigned long flags;
+-	long disabled;
+ 	int ret;
+-	int cpu;
+ 	int pc;
+ 
+-	cpu = raw_smp_processor_id();
+-	if (likely(!per_cpu(tracing_cpu, cpu)))
+-		return 0;
+-
+-	local_save_flags(flags);
+-	/* slight chance to get a false positive on tracing_cpu */
+-	if (!irqs_disabled_flags(flags))
++	if (!func_prolog_dec(tr, &data, &flags))
+ 		return 0;
+ 
+-	data = tr->data[cpu];
+-	disabled = atomic_inc_return(&data->disabled);
+-
+-	if (likely(disabled == 1)) {
+-		pc = preempt_count();
+-		ret = __trace_graph_entry(tr, trace, flags, pc);
+-	} else
+-		ret = 0;
+-
++	pc = preempt_count();
++	ret = __trace_graph_entry(tr, trace, flags, pc);
+ 	atomic_dec(&data->disabled);
++
+ 	return ret;
  }
  
- #else
+@@ -187,27 +201,13 @@ static void irqsoff_graph_return(struct ftrace_graph_ret *trace)
+ 	struct trace_array *tr = irqsoff_trace;
+ 	struct trace_array_cpu *data;
+ 	unsigned long flags;
+-	long disabled;
+-	int cpu;
+ 	int pc;
+ 
+-	cpu = raw_smp_processor_id();
+-	if (likely(!per_cpu(tracing_cpu, cpu)))
+-		return;
+-
+-	local_save_flags(flags);
+-	/* slight chance to get a false positive on tracing_cpu */
+-	if (!irqs_disabled_flags(flags))
++	if (!func_prolog_dec(tr, &data, &flags))
+ 		return;
+ 
+-	data = tr->data[cpu];
+-	disabled = atomic_inc_return(&data->disabled);
+-
+-	if (likely(disabled == 1)) {
+-		pc = preempt_count();
+-		__trace_graph_return(tr, trace, flags, pc);
+-	}
+-
++	pc = preempt_count();
++	__trace_graph_return(tr, trace, flags, pc);
+ 	atomic_dec(&data->disabled);
+ }
+ 
 -- 
 1.7.1
 
