@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758827Ab0JFJLL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 05:11:11 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23585 "EHLO
+	id S1758850Ab0JFJL0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 05:11:26 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:41683 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754363Ab0JFJLJ (ORCPT
+	with ESMTP id S1758839Ab0JFJLY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 05:11:09 -0400
+	Wed, 6 Oct 2010 05:11:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=google.com; s=beta;
         h=message-id:from:date:to:reply-to:cc:subject;
-        b=nGucGkv8kpbKBj2R3PyBtevmPisfap7EgE8+UeIJ8smvkIhrrnJp3RTsEHdn6RRqUJ
-         UVSz0V1/k00UqPdZwiGw==
-Message-ID: <4cac3d28.aae9d80a.24a1.1990@mx.google.com>
+        b=aLfrkOkSfq8uOUabRjevirec/61b38ZyIIQ1obfJr8ALNuE7SaJKiTYBLTvwvz86St
+         gBW/enUQoGw+52U3DgNQ==
+Message-ID: <4cac3d33.c1cfe30a.286c.1cf6@mx.google.com>
 From: Stephane Eranian <eranian@google.com>
 Date: Wed, 6 Oct 2010 11:08:01 +0200
 To: linux-kernel@vger.kernel.org
@@ -20,40 +20,23 @@ Reply-to: eranian@google.com
 Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
         fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
         eranian@google.com, robert.richter@amd.com, acme@redhat.com
-Subject: [RFC PATCH 0/2] perf_events: add support for per-cpu per-cgroup monitoring (v4)
+Subject: [RFC PATCH 2/2] perf_events: add support for per-cpu per-cgroup monitoring (v4)
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This series of patches adds per-container (cgroup) filtering capability
-to per-cpu monitoring. In other words, we can monitor all threads belonging
-to a specific cgroup and running on a specific CPU. 
+This perf tool patch adds the ability to filter monitoring based on container
+groups (cgroups) for both perf stat and perf record. The cgroup to monitor are
+passed via a new -G option followed by a list of cgroups.
 
-This is useful to measure what is going on inside a cgroup. Something that
-cannot easily and cheaply be achieved with either per-thread or per-cpu mode.
-Cgroups can span multiple CPUs. CPUs can be shared between cgroups. Cgroups
-can have lots of threads. Threads can come and go during a measurement.
+The cgroup filesystem has to be mounted. The tool will find it automatically,
+open the right file and pass the descriptor to perf_events.
 
-To measure per-cgroup today requires using per-thread mode and attaching to
-all the current threads inside a cgroup and tracking new threads. That would
-require scanning of /proc/PID, which is subject to race conditions, and
-creating an event for each thread, each event requiring kernel memory.
+In this fourth version, we fix the case where no event is specified yet -G
+is used. In that case, the cgroup constraint is applied to all events.
 
-The approach taken by this patch is to leverage the per-cpu mode by simply
-adding a filtering capability on context switch only when necessary. That
-way the amount of kernel memory used remains bound by the number of CPUs.
-We also do not have to scan /proc. We are only interested in cgroup level
-counts, samples and not thread level.
-
-The cgroup to monitor is designated by passing a file descriptor opened
-on the cgroup directory name in the cgroup filesystem. The cgroup mode
-is activated by passing a flag value in the perf_event syscall.
-
-The patch also includes changes to the perf tool to make use of cgroup
-filtering. Both perf stat and perf record have been extended to support
-cgroup via a new -G option. The cgroup is specified per event:
-
+Example:
 $ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
  Performance counter stats for 'sleep 1':
 
@@ -63,51 +46,272 @@ $ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
 
         1.001856890  seconds time elapsed
 
-Here, we measure cycles in 3 different cgroups. When a cgroup is omitted,
-the "root" cgroup is used, i.e., all threads executing on the monitored
-CPUs are measured.
-
-In the second version, time tracking has been updated. In cgroup mode,
-time_enabled tracks the time during which the cgroup was active, i.e., threads
-from the cgroup executed on the monitored CPU. The meaning of time_running
-is unchanged. In non-cgroup mode, time_enabled stills tracks wall-clock time
-for per-cpu events. Here is an example:
-
-In one shell I do:
-$ echo $$ >/cgroup/test1/perf_events.perf
-$ taskset -c 1 noploop 600
-In another shell I do:
-$ taskset -c 1 noploop 600
-
-Both noploops are competing on CPU1 (part of cgroup test1)
-
-$ perf stat -B -a -e cycles:u,cycles:u,cycles:u -G test1,,test2 -- sleep 1
- Performance counter stats for 'sleep 1':
-
-      1,190,595,954  cycles                   test1
-      2,372,471,023  cycles                  
-      <not counted>  cycles                   test2
-
-        1.001845567  seconds time elapsed
-
-The second count reflects activity across all CPUs and cgroups.
-The first count reflects was happened inside cgroup test1. As shown,
-the noploop running inside test1, only got half the CPU time.
-
-In the third version, we have dropped dependency on NR_CPUS
-in favor of dynamic allocation with alloc_percpu(). We have
-also renamed get_event_time() to something more explicit:
-perf_event_time(). We cleaned the code so it compiles with
-CONFIG_CGROUPS disabled. We have also fixed a bug in the
-perf tool sampling module builtin-record.c
-
-In this fourth version, we have dropped changes to perf_event_attr.
-Instead we pass the cgroup file descriptor in the pid argument to
-the syscall and we active cgroup mode by passing PERF_FLAG_PID_CGROUP
-into flags.
-
-PATCH 0/2: introduction
-PATCH 1/2: kernel changes
-PATCH 2/2: perf tool changes
-
 Signed-off-by: Stephane Eranian <eranian@google.com>
+
+---
+
+diff --git a/tools/perf/Documentation/perf-record.txt b/tools/perf/Documentation/perf-record.txt
+index 3ee27dc..0f9b8c8 100644
+--- a/tools/perf/Documentation/perf-record.txt
++++ b/tools/perf/Documentation/perf-record.txt
+@@ -116,6 +116,12 @@ Do not update the builid cache. This saves some overhead in situations
+ where the information in the perf.data file (which includes buildids)
+ is sufficient.
+ 
++-G name::
++--cgroup name::
++monitor only in the container called "name". This option is available only in per-cpu
++mode. The cgroup filesystem must be mounted. All threads belonging to container "name"
++are monitored when they run on the monitored CPUs.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1], linkperf:perf-list[1]
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 4b3a2d4..4115f77 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -53,6 +53,11 @@ comma-sperated list with no space: 0,1. Ranges of CPUs are specified with -: 0-2
+ In per-thread mode, this option is ignored. The -a option is still necessary
+ to activate system-wide monitoring. Default is to count on all CPUs.
+ 
++-G name::
++--cgroup name::
++monitor only in the container called "name". This option is available only in per-cpu
++mode. The cgroup filesystem must be mounted. All threads belonging to container "name"
++are monitored when they run on the monitored CPUs.
+ EXAMPLES
+ --------
+ 
+diff --git a/tools/perf/Makefile b/tools/perf/Makefile
+index d1db0f6..7b27c49 100644
+--- a/tools/perf/Makefile
++++ b/tools/perf/Makefile
+@@ -417,6 +417,7 @@ LIB_H += util/probe-finder.h
+ LIB_H += util/probe-event.h
+ LIB_H += util/pstack.h
+ LIB_H += util/cpumap.h
++LIB_H += util/cgroup.h
+ 
+ LIB_OBJS += $(OUTPUT)util/abspath.o
+ LIB_OBJS += $(OUTPUT)util/alias.o
+@@ -464,6 +465,7 @@ LIB_OBJS += $(OUTPUT)util/hist.o
+ LIB_OBJS += $(OUTPUT)util/probe-event.o
+ LIB_OBJS += $(OUTPUT)util/util.o
+ LIB_OBJS += $(OUTPUT)util/cpumap.o
++LIB_OBJS += $(OUTPUT)util/cgroup.o
+ 
+ BUILTIN_OBJS += $(OUTPUT)builtin-annotate.o
+ 
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index ff77b80..c1b330a 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -22,6 +22,7 @@
+ #include "util/session.h"
+ #include "util/symbol.h"
+ #include "util/cpumap.h"
++#include "util/cgroup.h"
+ 
+ #include <unistd.h>
+ #include <sched.h>
+@@ -229,6 +230,8 @@ static void create_counter(int counter, int cpu)
+ 	char *filter = filters[counter];
+ 	struct perf_event_attr *attr = attrs + counter;
+ 	struct perf_header_attr *h_attr;
++	unsigned long flags = 0;
++	int pid;
+ 	int track = !counter; /* only the first counter needs these */
+ 	int thread_index;
+ 	int ret;
+@@ -286,6 +289,9 @@ static void create_counter(int counter, int cpu)
+ 		attr->sample_type	|= PERF_SAMPLE_CPU;
+ 	}
+ 
++	if (cgroups[counter])
++		flags = PERF_FLAG_PID_CGROUP;
++
+ 	attr->mmap		= track;
+ 	attr->comm		= track;
+ 	attr->inherit		= !no_inherit;
+@@ -296,8 +302,13 @@ static void create_counter(int counter, int cpu)
+ 
+ 	for (thread_index = 0; thread_index < thread_num; thread_index++) {
+ try_again:
++		if (cgroups[counter])
++			pid = cgroups_fd[counter];
++		else
++			pid = all_tids[thread_index];
++
+ 		fd[nr_cpu][counter][thread_index] = sys_perf_event_open(attr,
+-				all_tids[thread_index], cpu, group_fd, 0);
++				pid, cpu, group_fd, flags);
+ 
+ 		if (fd[nr_cpu][counter][thread_index] < 0) {
+ 			int err = errno;
+@@ -828,6 +839,9 @@ static const struct option options[] = {
+ 		    "don't sample"),
+ 	OPT_BOOLEAN('N', "no-buildid-cache", &no_buildid,
+ 		    "do not update the buildid cache"),
++	OPT_CALLBACK('G', "cgroup", NULL, "name",
++		     "monitor in cgroup name only",
++		     parse_cgroups),
+ 	OPT_END()
+ };
+ 
+@@ -851,6 +865,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		write_mode = WRITE_FORCE;
+ 	}
+ 
++	if (nr_cgroups && !system_wide)
++		usage_with_options(record_usage, options);
++
+ 	symbol__init();
+ 	if (no_buildid)
+ 		disable_buildid_cache();
+@@ -861,6 +878,9 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 		attrs[0].config = PERF_COUNT_HW_CPU_CYCLES;
+ 	}
+ 
++	if (open_cgroups())
++		usage_with_options(record_usage, options);
++
+ 	if (target_pid != -1) {
+ 		target_tid = target_pid;
+ 		thread_num = find_all_tid(target_pid, &all_tids);
+@@ -870,6 +890,7 @@ int cmd_record(int argc, const char **argv, const char *prefix __used)
+ 			usage_with_options(record_usage, options);
+ 		}
+ 	} else {
++		err = -ENOMEM;
+ 		all_tids=malloc(sizeof(pid_t));
+ 		if (!all_tids)
+ 			goto out_symbol_exit;
+@@ -921,5 +942,6 @@ out_free_fd:
+ 	all_tids = NULL;
+ out_symbol_exit:
+ 	symbol__exit();
++	close_cgroups();
+ 	return err;
+ }
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a6b4d44..9bde425 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -47,6 +47,7 @@
+ #include "util/header.h"
+ #include "util/cpumap.h"
+ #include "util/thread.h"
++#include "util/cgroup.h"
+ 
+ #include <sys/prctl.h>
+ #include <math.h>
+@@ -151,6 +152,8 @@ struct stats			runtime_branches_stats;
+ static int create_perf_stat_counter(int counter)
+ {
+ 	struct perf_event_attr *attr = attrs + counter;
++	unsigned long flags = 0;
++	int pid = -1;
+ 	int thread;
+ 	int ncreated = 0;
+ 
+@@ -161,9 +164,13 @@ static int create_perf_stat_counter(int counter)
+ 	if (system_wide) {
+ 		int cpu;
+ 
++		if (cgroups[counter]) {
++			flags = PERF_FLAG_PID_CGROUP;
++			pid = cgroups_fd[counter];
++		}
+ 		for (cpu = 0; cpu < nr_cpus; cpu++) {
+ 			fd[cpu][counter][0] = sys_perf_event_open(attr,
+-					-1, cpumap[cpu], -1, 0);
++					pid, cpumap[cpu], -1, flags);
+ 			if (fd[cpu][counter][0] < 0)
+ 				pr_debug(ERR_PERF_OPEN, counter,
+ 					 fd[cpu][counter][0], strerror(errno));
+@@ -398,6 +405,9 @@ static void abs_printout(int counter, double avg)
+ 	else
+ 		fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));
+ 
++	if (cgroups[counter])
++		fprintf(stderr, " %s", cgroups[counter]);
++
+ 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
+ 		total = avg_stats(&runtime_cycles_stats);
+ 
+@@ -433,8 +443,13 @@ static void print_counter(int counter)
+ 	int scaled = event_scaled[counter];
+ 
+ 	if (scaled == -1) {
+-		fprintf(stderr, " %18s  %-24s\n",
++		fprintf(stderr, " %18s  %-24s",
+ 			"<not counted>", event_name(counter));
++
++		if (cgroups[counter])
++			fprintf(stderr, " %s", cgroups[counter]);
++
++		fprintf(stderr, "\n");
+ 		return;
+ 	}
+ 
+@@ -454,7 +469,6 @@ static void print_counter(int counter)
+ 		fprintf(stderr, "  (scaled from %.2f%%)",
+ 				100 * avg_running / avg_enabled);
+ 	}
+-
+ 	fprintf(stderr, "\n");
+ }
+ 
+@@ -545,6 +559,9 @@ static const struct option options[] = {
+ 		    "print large numbers with thousands\' separators"),
+ 	OPT_STRING('C', "cpu", &cpu_list, "cpu",
+ 		    "list of cpus to monitor in system-wide"),
++	OPT_CALLBACK('G', "cgroup", NULL, "name",
++		     "monitor in cgroup name only",
++		     parse_cgroups),
+ 	OPT_END()
+ };
+ 
+@@ -562,10 +579,23 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	if (run_count <= 0)
+ 		usage_with_options(stat_usage, options);
+ 
++	if (nr_cgroups && !system_wide)
++		usage_with_options(stat_usage, options);
++
+ 	/* Set attrs and nr_counters if no event is selected and !null_run */
+ 	if (!null_run && !nr_counters) {
+ 		memcpy(attrs, default_attrs, sizeof(default_attrs));
+ 		nr_counters = ARRAY_SIZE(default_attrs);
++		if (nr_cgroups == 1) {
++			for (i = 1; i < nr_counters; i++) {
++				cgroups[i] = strdup(cgroups[0]);
++				if (!cgroups[i]) {
++					close_cgroups();
++					return -ENOMEM;
++				}
++				nr_cgroups++;
++			}
++		}
+ 	}
+ 
+ 	if (system_wide)
+@@ -612,6 +642,9 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	signal(SIGALRM, skip_signal);
+ 	signal(SIGABRT, skip_signal);
+ 
++	if (open_cgroups())
++		usage_with_options(stat_usage, options);
++
+ 	status = 0;
+ 	for (run_idx = 0; run_idx < run_count; run_idx++) {
+ 		if (run_count != 1 && verbose)
+@@ -622,5 +655,7 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	if (status != -1)
+ 		print_stat(argc, argv);
+ 
++	close_cgroups();
++
+ 	return status;
+ }
