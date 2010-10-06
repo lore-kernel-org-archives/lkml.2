@@ -1,43 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759278Ab0JFQAa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 12:00:30 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:36520 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757239Ab0JFQA3 (ORCPT
+	id S932875Ab0JFQAg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 12:00:36 -0400
+Received: from eu1sys200aog102.obsmtp.com ([207.126.144.113]:60342 "EHLO
+	eu1sys200aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757239Ab0JFQAe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 12:00:29 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: uI4rWnkVM1ngDSkr0v4ZDmPq_uuj2CLVO6sh3_sz5e.iKId
- XdMX3IMe0zCBtK.azvDQDggbas4m9oKjeJAOIS2Gb_dLZRQvyEYPFH9ZmJ3Y
- dW_75D6oN4uPF1LlMMbUVllJDpIeG03CPbFEGS0Rf1..3mSluNiQi.CAGx5K
- qsq9I0lc_tg626tbN8A08IWbkGW0dFubAlp6kCd31k4hI0ZCiIbaPO6nVHNs
- -
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 6 Oct 2010 11:00:25 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-cc: Pekka Enberg <penberg@kernel.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
-        Mel Gorman <mel@csn.ul.ie>, npiggin@kernel.dk,
-        yanmin_zhang@linux.intel.com
-Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
-In-Reply-To: <4CAC577F.9040401@rsk.demon.co.uk>
-Message-ID: <alpine.DEB.2.00.1010061100080.31538@router.home>
-References: <20101005185725.088808842@linux.com> <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com> <4CAC577F.9040401@rsk.demon.co.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Oct 2010 12:00:34 -0400
+From: Arun Murthy <arun.murthy@stericsson.com>
+To: <lars@metafoo.de>, <akpm@linux-foundation.org>, <kernel@pengutronix.de>,
+        <philipp.zabel@gmail.com>, <robert.jarzmik@free.fr>,
+        <marek.vasut@gmail.com>, <eric.y.miao@gmail.com>, <rpurdie@rpsys.net>,
+        <sameo@linux.intel.com>, <kgene.kim@samsung.com>,
+        <linux-omap@vger.kernel.org>
+Cc: <linux-arm-kernel@lists.infradead.org>, <linux-kernel@vger.kernel.org>,
+        <linux-mips@linux-mips.org>, <STEricsson_nomadik_linux@list.st.com>,
+        <arun.murthy@stericsson.com>, <bgat@billgatliff.com>,
+        <khilman@deeprootsystems.com>
+Subject: [PATCHv3 3/7] leds: pwm: add a new element 'name' to platform data
+Date: Wed, 6 Oct 2010 21:29:14 +0530
+Message-ID: <1286380758-14063-4-git-send-email-arun.murthy@stericsson.com>
+X-Mailer: git-send-email 1.7.2.dirty
+In-Reply-To: <1286380758-14063-1-git-send-email-arun.murthy@stericsson.com>
+References: <1286380758-14063-1-git-send-email-arun.murthy@stericsson.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010, Richard Kennedy wrote:
+A new element 'name' is added to pwm led platform data structure.
+This is required to identify the pwm device.
 
-> Hi Christoph,
-> What tree are these patches against ? I'm getting patch failures on the
-> main tree.
+Signed-off-by: Arun Murthy <arun.murthy@stericsson.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+ drivers/leds/leds-pwm.c  |    4 +++-
+ include/linux/leds_pwm.h |    3 ++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-The patches are against Pekkas for-next tree.
+diff --git a/drivers/leds/leds-pwm.c b/drivers/leds/leds-pwm.c
+index da3fa8d..8da2be6 100644
+--- a/drivers/leds/leds-pwm.c
++++ b/drivers/leds/leds-pwm.c
+@@ -66,8 +66,10 @@ static int led_pwm_probe(struct platform_device *pdev)
+ 		cur_led = &pdata->leds[i];
+ 		led_dat = &leds_data[i];
+ 
++		if (!pdata->name)
++			pdata->name = cur_led->name;
+ 		led_dat->pwm = pwm_request(cur_led->pwm_id,
+-				cur_led->name);
++				pdata->name);
+ 		if (IS_ERR(led_dat->pwm)) {
+ 			dev_err(&pdev->dev, "unable to request PWM %d\n",
+ 					cur_led->pwm_id);
+diff --git a/include/linux/leds_pwm.h b/include/linux/leds_pwm.h
+index 33a0711..dbc925a 100644
+--- a/include/linux/leds_pwm.h
++++ b/include/linux/leds_pwm.h
+@@ -14,8 +14,9 @@ struct led_pwm {
+ };
+ 
+ struct led_pwm_platform_data {
+-	int			num_leds;
++	int		num_leds;
+ 	struct led_pwm	*leds;
++	char		*name;
+ };
+ 
+ #endif
+-- 
+1.7.2.dirty
 
