@@ -1,207 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759697Ab0JFSfv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:35:51 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:18250 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759161Ab0JFSfu (ORCPT
+	id S1759715Ab0JFShb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:37:31 -0400
+Received: from db3ehsobe002.messaging.microsoft.com ([213.199.154.140]:19010
+	"EHLO DB3EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759605Ab0JFSh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:35:50 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=nNhACkTtUB7aQFt3sejSqLiYoJI1TGAnMSr1lPnNnAyu20QuTDursEnjZ5Hy83z8P
-	JeGB69iERRI+b+UwrBWKQ==
-From: Greg Thelen <gthelen@google.com>
-To: Andrea Righi <arighi@develer.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH 08/10] memcg: add cgroupfs interface to memcg dirty limits
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-9-git-send-email-gthelen@google.com>
-	<20101005161340.9bb7382e.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93r5g5w0uc.fsf@ninji.mtv.corp.google.com>
-	<20101005091836.GA1698@linux.develer.com>
-Date: Wed, 06 Oct 2010 11:34:16 -0700
-In-Reply-To: <20101005091836.GA1698@linux.develer.com> (Andrea Righi's message
-	of "Tue, 5 Oct 2010 11:18:36 +0200")
-Message-ID: <xr937hhvjhlj.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 6 Oct 2010 14:37:29 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L9VT1U-01-QOQ-02
+X-M-MSG: 
+Date: Wed, 6 Oct 2010 20:37:05 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Matt Fleming <matt@console-pimps.org>
+CC: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 7/7] sh: Annotate oprofile_arch_exit() with __exit
+ marker
+Message-ID: <20101006183705.GX13563@erda.amd.com>
+References: <cover.1286222593.git.matt@console-pimps.org>
+ <4426d17460dc88dcb3d6e3af1b91af4db83785ae.1286222593.git.matt@console-pimps.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4426d17460dc88dcb3d6e3af1b91af4db83785ae.1286222593.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrea Righi <arighi@develer.com> writes:
+On 04.10.10 16:44:25, Matt Fleming wrote:
+> In order to avoid a section mismatch we need to annotate
+> oprofile_arch_exit() with an __exit marker.
+> 
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
 
-> On Tue, Oct 05, 2010 at 12:33:15AM -0700, Greg Thelen wrote:
->> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
->> 
->> > On Sun,  3 Oct 2010 23:58:03 -0700
->> > Greg Thelen <gthelen@google.com> wrote:
->> >
->> >> Add cgroupfs interface to memcg dirty page limits:
->> >>   Direct write-out is controlled with:
->> >>   - memory.dirty_ratio
->> >>   - memory.dirty_bytes
->> >> 
->> >>   Background write-out is controlled with:
->> >>   - memory.dirty_background_ratio
->> >>   - memory.dirty_background_bytes
->> >> 
->> >> Signed-off-by: Andrea Righi <arighi@develer.com>
->> >> Signed-off-by: Greg Thelen <gthelen@google.com>
->> >
->> > Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> >
->> > a question below.
->> >
->> >
->> >> ---
->> >>  mm/memcontrol.c |   89 +++++++++++++++++++++++++++++++++++++++++++++++++++++++
->> >>  1 files changed, 89 insertions(+), 0 deletions(-)
->> >> 
->> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> >> index 6ec2625..2d45a0a 100644
->> >> --- a/mm/memcontrol.c
->> >> +++ b/mm/memcontrol.c
->> >> @@ -100,6 +100,13 @@ enum mem_cgroup_stat_index {
->> >>  	MEM_CGROUP_STAT_NSTATS,
->> >>  };
->> >>  
->> >> +enum {
->> >> +	MEM_CGROUP_DIRTY_RATIO,
->> >> +	MEM_CGROUP_DIRTY_BYTES,
->> >> +	MEM_CGROUP_DIRTY_BACKGROUND_RATIO,
->> >> +	MEM_CGROUP_DIRTY_BACKGROUND_BYTES,
->> >> +};
->> >> +
->> >>  struct mem_cgroup_stat_cpu {
->> >>  	s64 count[MEM_CGROUP_STAT_NSTATS];
->> >>  };
->> >> @@ -4292,6 +4299,64 @@ static int mem_cgroup_oom_control_write(struct cgroup *cgrp,
->> >>  	return 0;
->> >>  }
->> >>  
->> >> +static u64 mem_cgroup_dirty_read(struct cgroup *cgrp, struct cftype *cft)
->> >> +{
->> >> +	struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
->> >> +	bool root;
->> >> +
->> >> +	root = mem_cgroup_is_root(mem);
->> >> +
->> >> +	switch (cft->private) {
->> >> +	case MEM_CGROUP_DIRTY_RATIO:
->> >> +		return root ? vm_dirty_ratio : mem->dirty_param.dirty_ratio;
->> >> +	case MEM_CGROUP_DIRTY_BYTES:
->> >> +		return root ? vm_dirty_bytes : mem->dirty_param.dirty_bytes;
->> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_RATIO:
->> >> +		return root ? dirty_background_ratio :
->> >> +			mem->dirty_param.dirty_background_ratio;
->> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_BYTES:
->> >> +		return root ? dirty_background_bytes :
->> >> +			mem->dirty_param.dirty_background_bytes;
->> >> +	default:
->> >> +		BUG();
->> >> +	}
->> >> +}
->> >> +
->> >> +static int
->> >> +mem_cgroup_dirty_write(struct cgroup *cgrp, struct cftype *cft, u64 val)
->> >> +{
->> >> +	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
->> >> +	int type = cft->private;
->> >> +
->> >> +	if (cgrp->parent == NULL)
->> >> +		return -EINVAL;
->> >> +	if ((type == MEM_CGROUP_DIRTY_RATIO ||
->> >> +	     type == MEM_CGROUP_DIRTY_BACKGROUND_RATIO) && val > 100)
->> >> +		return -EINVAL;
->> >> +	switch (type) {
->> >> +	case MEM_CGROUP_DIRTY_RATIO:
->> >> +		memcg->dirty_param.dirty_ratio = val;
->> >> +		memcg->dirty_param.dirty_bytes = 0;
->> >> +		break;
->> >> +	case MEM_CGROUP_DIRTY_BYTES:
->> >> +		memcg->dirty_param.dirty_bytes = val;
->> >> +		memcg->dirty_param.dirty_ratio  = 0;
->> >> +		break;
->> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_RATIO:
->> >> +		memcg->dirty_param.dirty_background_ratio = val;
->> >> +		memcg->dirty_param.dirty_background_bytes = 0;
->> >> +		break;
->> >> +	case MEM_CGROUP_DIRTY_BACKGROUND_BYTES:
->> >> +		memcg->dirty_param.dirty_background_bytes = val;
->> >> +		memcg->dirty_param.dirty_background_ratio = 0;
->> >> +		break;
->> >
->> >
->> > Curious....is this same behavior as vm_dirty_ratio ?
->> 
->> I think this is same behavior as vm_dirty_ratio.  When vm_dirty_ratio is
->> changed then dirty_ratio_handler() will set vm_dirty_bytes=0.  When
->> vm_dirty_bytes is written dirty_bytes_handler() will set
->> vm_dirty_ratio=0.  So I think that the per-memcg dirty memory parameters
->> mimic the behavior of vm_dirty_ratio, vm_dirty_bytes and the other
->> global dirty parameters.
->> 
->> Am I missing your question?
->
-> mmh... looking at the code it seems the same behaviour, but in
-> Documentation/sysctl/vm.txt we say a different thing (i.e., for
-> dirty_bytes):
->
-> "If dirty_bytes is written, dirty_ratio becomes a function of its value
-> (dirty_bytes / the amount of dirtyable system memory)."
->
-> However, in dirty_bytes_handler()/dirty_ratio_handler() we actually set
-> the counterpart value as 0.
->
-> I think we should clarify the documentation.
->
-> Signed-off-by: Andrea Righi <arighi@develer.com>
+Looks good.
 
-Reviewed-by: Greg Thelen <gthelen@google.com>
-
-This documentation change is general cleanup that is independent of the
-memcg patch series shown on the subject.
+-Robert
 
 > ---
->  Documentation/sysctl/vm.txt |   12 ++++++++----
->  1 files changed, 8 insertions(+), 4 deletions(-)
->
-> diff --git a/Documentation/sysctl/vm.txt b/Documentation/sysctl/vm.txt
-> index b606c2c..30289fa 100644
-> --- a/Documentation/sysctl/vm.txt
-> +++ b/Documentation/sysctl/vm.txt
-> @@ -80,8 +80,10 @@ dirty_background_bytes
->  Contains the amount of dirty memory at which the pdflush background writeback
->  daemon will start writeback.
+>  arch/sh/oprofile/common.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/sh/oprofile/common.c b/arch/sh/oprofile/common.c
+> index 449f842..93033d8 100644
+> --- a/arch/sh/oprofile/common.c
+> +++ b/arch/sh/oprofile/common.c
+> @@ -29,7 +29,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+>  	return oprofile_perf_init(ops);
+>  }
 >  
-> -If dirty_background_bytes is written, dirty_background_ratio becomes a function
-> -of its value (dirty_background_bytes / the amount of dirtyable system memory).
-> +Note: dirty_background_bytes is the counterpart of dirty_background_ratio. Only
-> +one of them may be specified at a time. When one sysctl is written it is
-> +immediately taken into account to evaluate the dirty memory limits and the
-> +other appears as 0 when read.
->  
->  ==============================================================
->  
-> @@ -97,8 +99,10 @@ dirty_bytes
->  Contains the amount of dirty memory at which a process generating disk writes
->  will itself start writeback.
->  
-> -If dirty_bytes is written, dirty_ratio becomes a function of its value
-> -(dirty_bytes / the amount of dirtyable system memory).
-> +Note: dirty_bytes is the counterpart of dirty_ratio. Only one of them may be
-> +specified at a time. When one sysctl is written it is immediately taken into
-> +account to evaluate the dirty memory limits and the other appears as 0 when
-> +read.
->  
->  Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any
->  value lower than this limit will be ignored and the old configuration will be
+> -void oprofile_arch_exit(void)
+> +void __exit oprofile_arch_exit(void)
+>  {
+>  	oprofile_perf_exit();
+>  }
+> -- 
+> 1.7.1
+> 
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
