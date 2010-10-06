@@ -1,181 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758807Ab0JFLIE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 07:08:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30665 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758730Ab0JFLIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 07:08:01 -0400
-Date: Wed, 6 Oct 2010 13:07:04 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-        cl@linux-foundation.org
-Subject: Re: [PATCH v6 03/12] Retry fault before vmentry
-Message-ID: <20101006110704.GW11145@redhat.com>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-4-git-send-email-gleb@redhat.com>
- <20101005155409.GB28955@amt.cnet>
+	id S1758711Ab0JFLMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 07:12:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39029 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab0JFLMM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 07:12:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RAyPMwARNtgLT1ki/KYSoo02YQ1LjWVgcjoGWkWEzrqA5+rxefH1X1mK+6wEbcited
+         sjOWroDoX+D1pesdiHZxVR74F54gLbANu32MOYNLtxdhjcfHWEP0mwKZKan78ifOPW9I
+         4hx41sKTPliXqb5vns9gCP7B6NZ5B/PINqwGk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101005155409.GB28955@amt.cnet>
+In-Reply-To: <1286303429-415145-4-git-send-email-hans.rosenfeld@amd.com>
+References: <20101005182739.GE173@escobedo.osrc.amd.com>
+	<1286303429-415145-4-git-send-email-hans.rosenfeld@amd.com>
+Date: Wed, 6 Oct 2010 07:12:11 -0400
+Message-ID: <AANLkTinBsut0Csubh1N85jkydH7wCp3YniASE-vyf7MP@mail.gmail.com>
+Subject: Re: [RFC 3/3] Save/restore LWP state in context switches.
+From: Brian Gerst <brgerst@gmail.com>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 05, 2010 at 12:54:09PM -0300, Marcelo Tosatti wrote:
-> On Mon, Oct 04, 2010 at 05:56:25PM +0200, Gleb Natapov wrote:
-> > When page is swapped in it is mapped into guest memory only after guest
-> > tries to access it again and generate another fault. To save this fault
-> > we can map it immediately since we know that guest is going to access
-> > the page. Do it only when tdp is enabled for now. Shadow paging case is
-> > more complicated. CR[034] and EFER registers should be switched before
-> > doing mapping and then switched back.
-> > 
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Signed-off-by: Gleb Natapov <gleb@redhat.com>
-> > ---
-> >  arch/x86/include/asm/kvm_host.h |    4 +++-
-> >  arch/x86/kvm/mmu.c              |   16 ++++++++--------
-> >  arch/x86/kvm/paging_tmpl.h      |    6 +++---
-> >  arch/x86/kvm/x86.c              |    7 +++++++
-> >  virt/kvm/async_pf.c             |    2 ++
-> >  5 files changed, 23 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-> > index 5f154d3..b9f263e 100644
-> > --- a/arch/x86/include/asm/kvm_host.h
-> > +++ b/arch/x86/include/asm/kvm_host.h
-> > @@ -240,7 +240,7 @@ struct kvm_mmu {
-> >  	void (*new_cr3)(struct kvm_vcpu *vcpu);
-> >  	void (*set_cr3)(struct kvm_vcpu *vcpu, unsigned long root);
-> >  	unsigned long (*get_cr3)(struct kvm_vcpu *vcpu);
-> > -	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err);
-> > +	int (*page_fault)(struct kvm_vcpu *vcpu, gva_t gva, u32 err, bool no_apf);
-> >  	void (*inject_page_fault)(struct kvm_vcpu *vcpu);
-> >  	void (*free)(struct kvm_vcpu *vcpu);
-> >  	gpa_t (*gva_to_gpa)(struct kvm_vcpu *vcpu, gva_t gva, u32 access,
-> > @@ -838,6 +838,8 @@ void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
-> >  				     struct kvm_async_pf *work);
-> >  void kvm_arch_async_page_present(struct kvm_vcpu *vcpu,
-> >  				 struct kvm_async_pf *work);
-> > +void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu,
-> > +			       struct kvm_async_pf *work);
-> >  extern bool kvm_find_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn);
-> >  
-> >  #endif /* _ASM_X86_KVM_HOST_H */
-> > diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> > index 4d49b5e..d85fda8 100644
-> > --- a/arch/x86/kvm/mmu.c
-> > +++ b/arch/x86/kvm/mmu.c
-> > @@ -2558,7 +2558,7 @@ static gpa_t nonpaging_gva_to_gpa_nested(struct kvm_vcpu *vcpu, gva_t vaddr,
-> >  }
-> >  
-> >  static int nonpaging_page_fault(struct kvm_vcpu *vcpu, gva_t gva,
-> > -				u32 error_code)
-> > +				u32 error_code, bool no_apf)
-> >  {
-> >  	gfn_t gfn;
-> >  	int r;
-> > @@ -2594,8 +2594,8 @@ static bool can_do_async_pf(struct kvm_vcpu *vcpu)
-> >  	return kvm_x86_ops->interrupt_allowed(vcpu);
-> >  }
-> >  
-> > -static bool try_async_pf(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gva,
-> > -			 pfn_t *pfn)
-> > +static bool try_async_pf(struct kvm_vcpu *vcpu, bool no_apf, gfn_t gfn,
-> > +			 gva_t gva, pfn_t *pfn)
-> >  {
-> >  	bool async;
-> >  
-> > @@ -2606,7 +2606,7 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gva,
-> >  
-> >  	put_page(pfn_to_page(*pfn));
-> >  
-> > -	if (can_do_async_pf(vcpu)) {
-> > +	if (!no_apf && can_do_async_pf(vcpu)) {
-> >  		trace_kvm_try_async_get_page(async, *pfn);
-> >  		if (kvm_find_async_pf_gfn(vcpu, gfn)) {
-> >  			vcpu->async_pf.work = kvm_double_apf;
-> > @@ -2620,8 +2620,8 @@ static bool try_async_pf(struct kvm_vcpu *vcpu, gfn_t gfn, gva_t gva,
-> >  	return false;
-> >  }
-> >  
-> > -static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa,
-> > -				u32 error_code)
-> > +static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa, u32 error_code,
-> > +			  bool no_apf)
-> >  {
-> >  	pfn_t pfn;
-> >  	int r;
-> > @@ -2643,7 +2643,7 @@ static int tdp_page_fault(struct kvm_vcpu *vcpu, gva_t gpa,
-> >  	mmu_seq = vcpu->kvm->mmu_notifier_seq;
-> >  	smp_rmb();
-> >  
-> > -	if (try_async_pf(vcpu, gfn, gpa, &pfn))
-> > +	if (try_async_pf(vcpu, no_apf, gfn, gpa, &pfn))
-> >  		return 0;
-> >  
-> >  	/* mmio */
-> > @@ -3306,7 +3306,7 @@ int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code)
-> >  	int r;
-> >  	enum emulation_result er;
-> >  
-> > -	r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code);
-> > +	r = vcpu->arch.mmu.page_fault(vcpu, cr2, error_code, false);
-> >  	if (r < 0)
-> >  		goto out;
-> >  
-> > diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> > index 8154353..9ad90f8 100644
-> > --- a/arch/x86/kvm/paging_tmpl.h
-> > +++ b/arch/x86/kvm/paging_tmpl.h
-> > @@ -530,8 +530,8 @@ out_gpte_changed:
-> >   *  Returns: 1 if we need to emulate the instruction, 0 otherwise, or
-> >   *           a negative value on error.
-> >   */
-> > -static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
-> > -			       u32 error_code)
-> > +static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
-> > +			     bool no_apf)
-> >  {
-> >  	int write_fault = error_code & PFERR_WRITE_MASK;
-> >  	int user_fault = error_code & PFERR_USER_MASK;
-> > @@ -574,7 +574,7 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr,
-> >  	mmu_seq = vcpu->kvm->mmu_notifier_seq;
-> >  	smp_rmb();
-> >  
-> > -	if (try_async_pf(vcpu, walker.gfn, addr, &pfn))
-> > +	if (try_async_pf(vcpu, no_apf, walker.gfn, addr, &pfn))
-> >  		return 0;
-> >  
-> >  	/* mmio */
-> > diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> > index 8dd9ac2..48fd59d 100644
-> > --- a/arch/x86/kvm/x86.c
-> > +++ b/arch/x86/kvm/x86.c
-> > @@ -6123,6 +6123,13 @@ void kvm_set_rflags(struct kvm_vcpu *vcpu, unsigned long rflags)
-> >  }
-> >  EXPORT_SYMBOL_GPL(kvm_set_rflags);
-> >  
-> > +void kvm_arch_async_page_ready(struct kvm_vcpu *vcpu, struct kvm_async_pf *work)
-> > +{
-> > +	if (!tdp_enabled || is_error_page(work->page))
-> > +		return;
-> > +	vcpu->arch.mmu.page_fault(vcpu, work->gva, 0, true);
-> > +}
-> > +
-> 
-> Can't you set a bit in vcpu->requests instead, and handle it in "out:"
-> at the end of vcpu_enter_guest? 
-> 
-> To have a single entry point for pagefaults, after vmexit handling.
-Jumping to "out:" will skip vmexit handling anyway, so we will not reuse
-same call site anyway. I don't see yet why the way you propose will have
-an advantage.
+On Tue, Oct 5, 2010 at 2:30 PM, Hans Rosenfeld <hans.rosenfeld@amd.com> wrote:
+> LWP (Light-Weight Profiling) is a new per-thread profiling mechanism
+> that can be enabled by any thread at any time if the OS claims to
+> support it (by setting a bit in XCR0). A threads LWP state
+> (configuration & unsaved collected data) is supposed to be saved and
+> restored with xsave and xrstor by the OS.
+>
+> Unfortunately, LWP does not support any kind of lazy switching, nor does
+> it use the TS bit in CR0. Since any thread can enable LWP at any time
+> without the kernel knowing, the context switch code is supposed to
+> save/restore LWP context unconditionally. This would require a valid
+> xsave state area for all threads, whether or not they use any FPU or LWP
+> functionality. It would also make the already complex lazy switching
+> code more complicated.
+>
+> To avoid this memory overhead, especially for systems not supporting
+> LWP, and also to avoid more intrusive changes to the code that handles
+> FPU state, this patch handles LWP separately from the FPU. Only if a
+> system supports LWP, the context switch code checks whether LWP has been
+> used by the thread that is being taken off the CPU by reading the
+> LWP_CBADDR MSR, which is nonzero if LWP has been used by the thread.
+> Only in that case the LWP state is saved to the common xsave area in the
+> threads FPU context. This means, of course, that an FPU context has to
+> be allocated and initialized when a thread first uses LWP before using
+> the FPU.
+>
+> Similarly, restoring the LWP state is only done when an FPU context
+> exists and the LWP bit in the xstate header is set.
+>
+> To make things a little more complicated, xsave and xrstor _do_ use the
+> TS bit and trap when it is set. To avoid unwanted traps, the TS bit has
+> to be cleared before and restored after doing xsave or xrstor for LWP.
+>
+> Signed-off-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
+
+I would prefer to see the xsave code refactored so that you would only
+need one xsave/xrstor call per context switch.  We are currently
+treating xsave as an extension to the FPU state.  But it would be
+better to treat FPU as a subset of the extended state.  That way more
+state can be added without touching the FPU code..
 
 --
-			Gleb.
+Brian Gerst
