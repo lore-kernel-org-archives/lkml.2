@@ -1,105 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752915Ab0JFJrl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 05:47:41 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:17676 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0JFJrj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 05:47:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hzPWmSLH47y9HSxnZk3NeceRlRFCvo62AUPBlv3Pz3LwjFQRMzyu+AgV+TXjcKQzkl
-         egeSdoe0JG+3AiWzenrQ==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikx+GadeYfg5rZNxsEig-0Af97ER7V94fjaVc+U@mail.gmail.com>
-References: <AANLkTikkv4htP1f=KFwSaa8=K6LicDN0eusXctow-Efb@mail.gmail.com>
- <20101006.003541.71128466.davem@davemloft.net> <AANLkTikx+GadeYfg5rZNxsEig-0Af97ER7V94fjaVc+U@mail.gmail.com>
-From: =?UTF-8?B?Q2h1bmctWWloIFdhbmcgKOeOi+W0h+aHvyk=?= 
-	<cywang@google.com>
-Date: Wed, 6 Oct 2010 02:47:12 -0700
-Message-ID: <AANLkTimF7piLEy7BUP4-BnmiiGT4NimZw0gE+kmYQd-c@mail.gmail.com>
-Subject: Re: [PATCH] net: Fix sk_dst_check() to reset the obsolete dst_entry
- of a socket.
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, timo.teras@iki.fi
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1754393Ab0JFKBn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 06:01:43 -0400
+Received: from smtp205.alice.it ([82.57.200.101]:55934 "EHLO smtp205.alice.it"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751216Ab0JFKBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 06:01:41 -0400
+Date: Wed, 6 Oct 2010 12:01:29 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: linux-input@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+        Alan Ott <alan@signal11.us>, Oliver Neukum <oliver@neukum.name>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH 0/2] HID: hidraw, fix two NULL pointer dereferences
+Message-Id: <20101006120129.52da81d3.ospite@studenti.unina.it>
+In-Reply-To: <4CAB94A0.8040402@gmail.com>
+References: <alpine.LNX.2.00.1010041548580.29535@pobox.suse.cz>
+	<1286292017-6746-1-git-send-email-ospite@studenti.unina.it>
+	<4CAB94A0.8040402@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I did not pay attention to the CL, actually that did not fix the issue
-I encountered. I have a connected UDP socket which will not escape
-from the "blackhole" since it will never enter the ipv4_blackhole
-function.
+--Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-In udp_sendmsg(), if the socket is connected one and the dst entry is
-obsolete, you will never have a chance to reset the socket's dst entry
-since rt will not be NULL.
+On Tue, 05 Oct 2010 23:12:00 +0200
+Jiri Slaby <jirislaby@gmail.com> wrote:
 
-udp_sendmsg() {
-....
-if (connected)
-               rt = (struct rtable *)sk_dst_check(sk, 0);
-if (rt == NULL) {
-...  blackhole_function_will_be_executed_here?
-}
-...
-}
-
-On Wed, Oct 6, 2010 at 12:47 AM, Chung-Yih Wang (王崇懿) <cywang@google.com> wrote:
-> In fact, that is what I intent to change originally. However, consider
-> Timo's issue, I intent to submit this patch instead.
+> On 10/05/2010 05:20 PM, Antonio Ospite wrote:
+> > here are some fixes to hidraw.
+> >=20
+> > Patches are against 2.6.36-rc6, but they should be ported to other
+> > maintained stable kernels as well.
+> >=20
+> > Antonio Ospite (2):
+> >   HID: hidraw, fix a NULL pointer dereference in hidraw_ioctl
+> >   HID: hidraw, fix a NULL pointer dereference in hidraw_write
+>=20
+> Hi, please fix also the window in hidraw_release.
 >
-> On Wed, Oct 6, 2010 at 12:35 AM, David Miller <davem@davemloft.net> wrote:
->>
->> This should have been fixed by:
->>
->> --------------------
->> commit ae2688d59b5f861dc70a091d003773975d2ae7fb
->> Author: Jianzhao Wang <jianzhao.wang@6wind.com>
->> Date:   Wed Sep 8 14:35:43 2010 -0700
->>
->>    net: blackhole route should always be recalculated
->>
->>    Blackhole routes are used when xfrm_lookup() returns -EREMOTE (error
->>    triggered by IKE for example), hence this kind of route is always
->>    temporary and so we should check if a better route exists for next
->>    packets.
->>    Bug has been introduced by commit d11a4dc18bf41719c9f0d7ed494d295dd2973b92.
->>
->>    Signed-off-by: Jianzhao Wang <jianzhao.wang@6wind.com>
->>    Signed-off-by: Nicolas Dichtel <nicolas.dichtel@6wind.com>
->>    Signed-off-by: David S. Miller <davem@davemloft.net>
->>
->> diff --git a/net/ipv4/route.c b/net/ipv4/route.c
->> index 3f56b6e..6298f75 100644
->> --- a/net/ipv4/route.c
->> +++ b/net/ipv4/route.c
->> @@ -2738,6 +2738,11 @@ slow_output:
->>  }
->>  EXPORT_SYMBOL_GPL(__ip_route_output_key);
->>
->> +static struct dst_entry *ipv4_blackhole_dst_check(struct dst_entry *dst, u32 cookie)
->> +{
->> +       return NULL;
->> +}
->> +
->>  static void ipv4_rt_blackhole_update_pmtu(struct dst_entry *dst, u32 mtu)
->>  {
->>  }
->> @@ -2746,7 +2751,7 @@ static struct dst_ops ipv4_dst_blackhole_ops = {
->>        .family                 =       AF_INET,
->>        .protocol               =       cpu_to_be16(ETH_P_IP),
->>        .destroy                =       ipv4_dst_destroy,
->> -       .check                  =       ipv4_dst_check,
->> +       .check                  =       ipv4_blackhole_dst_check,
->>        .update_pmtu            =       ipv4_rt_blackhole_update_pmtu,
->>        .entries                =       ATOMIC_INIT(0),
->>  };
->>
->
+
+I am not sure I get what you mean, can you please add more details?
+
+> thanks,
+> --=20
+> js
+>=20
+
+Thanks,
+   Antonio
+
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+
+--Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkysSPkACgkQ5xr2akVTsAHyPQCdE0Jtmhz8Z2xq9vZUoNXZKwFh
+x7kAn2GYNoGlkgOZTNj+nYmjHw3pgfpK
+=KMIf
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__6_Oct_2010_12_01_29_+0200_pvfp_vBqoKLknSIh--
