@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933019Ab0JFSba (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:31:30 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49476 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932632Ab0JFSb3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:31:29 -0400
-Date: Wed, 6 Oct 2010 19:31:24 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Christoph Hellwig <hch@lst.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] one writeback regression fix for .36
-Message-ID: <20101006183124.GR19804@ZenIV.linux.org.uk>
-References: <4CACA9AD.9070900@fusionio.com>
- <AANLkTi=NkzSWR0voR9xLs2f7Rxfc4A_n7qi+t9fbB2iz@mail.gmail.com>
-MIME-Version: 1.0
+	id S1758075Ab0JFScM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:32:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49469 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753277Ab0JFScL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 14:32:11 -0400
+Date: Wed, 6 Oct 2010 14:31:41 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Szeredi Miklos <miklos@szeredi.hu>
+Cc: Ram Pai <linuxram@us.ibm.com>, mszeredi2@gmail.com,
+        viro@zeniv.linux.org.uk, hch@infradead.org, agruen@suse.de,
+        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 01/34] VFS: Make clone_mnt() and copy_tree() return error codes
+Message-ID: <20101006183140.GD18479@shell>
+References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-2-git-send-email-vaurora@redhat.com> <E1P1FnW-0001yC-Ts@pomaz-ex.szeredi.hu> <20100930214123.GA490@shell> <20100930214418.GB490@shell> <20101001003342.GI9247@ram-laptop> <20101001015857.GA5003@ram-laptop> <AANLkTin0k-Sz8Y6dwm9s6isKgDPgcqpg0NON5kuiOcJ3@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=NkzSWR0voR9xLs2f7Rxfc4A_n7qi+t9fbB2iz@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTin0k-Sz8Y6dwm9s6isKgDPgcqpg0NON5kuiOcJ3@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 11:17:54AM -0700, Linus Torvalds wrote:
-> > Christoph Hellwig (1):
-> > ? ? ?writeback: always use sb->s_bdi for writeback purposes
+On Fri, Oct 01, 2010 at 11:12:48AM +0200, Szeredi Miklos wrote:
+> On Fri, Oct 1, 2010 at 3:58 AM, Ram Pai <linuxram@us.ibm.com> wrote:
+> > > > > > @@ -1212,11 +1216,12 @@ struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
+> > > > > > ? ? ? ? struct path path;
+> > > > > >
+> > > > > > ? ? ? ? if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(mnt))
+> > > > > > - ? ? ? ? ? ? ? return NULL;
+> > > > > > + ? ? ? ? ? ? ? return ERR_PTR(-EINVAL);
+> > > >
+> > > > Ram, do you remember how this worked?
+> > >
+> > > Oops. That should be a OR condition. there is one other check in that
+> > > function that should also be a OR condition.
+> >
+> > I may be wrong here. Can't exactly recollect what CL_COPY_ALL flag means. Al Viro
+> > might remember? ?If CL_COPY_ALL means, to clone everything irrespective of any other
+> > flags, then the above code seems right.
 > 
-> This is a f*cking disgrace. It's now the second patch I see during
-> this release window that works by parsing random strings in the block
-> device layer.
+> CL_COPY_ALL means clone the mount despite MNT_UNBINDABLE.  It is used
+> for cloning the whole namespace and for collect_mounts(), both of
+> which ignore MNT_UNBINDABLE.
 > 
-> This needs to stop. There's something seriously wrong in the whole
-> subsystem. This kind of hackery is a disease, and it seems to be
-> endemic.
+> Of the two remaining callers of copy_tree() do_loopback already checks
+> MNT_UNBINDABLE on the root of the tree to be copied.
 
-Eh...  I'm no fonder of that than you are (and strcmp is fucking stupid),
-but... that thing is really sb_is_blkdev_sb() trying to make a comeback
-in fs/fs-writeback.c.  IOW, it's sick, but not for the reasons you are
-mentioning; strcmp() use is trivially removable.
+I reviewed and tested and agree.
+
+But I don't think this change should go into stable.  It doesn't fix
+any existing bug and I don't like perturbing the code in stable for a
+code cleanup.
+
+> So that leaves the one in pnode.c.   That one will be called when
+> attaching a new mount or mount tree.  If the root of that tree is
+> unbindable then the propagation will fail with -ENOMEM which is wrong,
+> it should simply skip the whole tree and not try to propagate.   Calls
+
+Not try to propagate - and return an error?  Or succeed and ignore?
+
+> which result in propagation are  do_loopback, do_move_mount and
+> do_add_mount.  Of this do_loopback and do_move_mount already check for
+> MNT_UNBINDABLE, do_add_mount doesn't check, but should probably just
+> mask out MNT_UNBINDABLE.
+
+Hm, if we stop trusting callers of do_add_mount(), we should probably
+do a lot more than just mask this out.  Interestingly, most out-of-VFS
+callers just seem to add MNT_SHRINKABLE, maybe we should export
+do_add_shrinkable() instead or something like that?
+
+> So in the end that check in copy_tree() should never actually trigger
+> and can be turned into a WARN_ON
+
+WARN_ON() makes sense.
+
+> Additionally the propagation code should perhaps be more defensive and
+> skip MNT_UNBINDABLE source mounts.
+
+Maybe WARN_ON() here too?
+
+I'm not going to get around to revamping this part of mount
+propagation until after I finish union mount copyup rewrite, anyone
+else up for doing it sooner?
+
+-VAL
