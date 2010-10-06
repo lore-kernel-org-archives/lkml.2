@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759959Ab0JFWM6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 18:12:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43702 "EHLO mail.zytor.com"
+	id S1759990Ab0JFWNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 18:13:15 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:60923 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756536Ab0JFWM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 18:12:57 -0400
-Message-ID: <4CACF453.5020205@zytor.com>
-Date: Wed, 06 Oct 2010 15:12:35 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1759976Ab0JFWNO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 18:13:14 -0400
+Date: Wed, 6 Oct 2010 23:12:58 +0100
+From: Ben Dooks <ben-i2c@fluff.org>
+To: Kyungmin Park <kmpark@infradead.org>
+Cc: Ben Dooks <ben-i2c@fluff.org>, Jean Delvare <khali@linux-fr.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux I2C <linux-i2c@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] i2c fixes for 2.6.36
+Message-ID: <20101006221258.GV21564@trinity.fluff.org>
+References: <20101001140619.28d96040@endymion.delvare> <AANLkTi=aKWP3_KhD88ebGB04xAM9Pc7eqw1LBr2EJNS_@mail.gmail.com> <20101001140918.GU21564@trinity.fluff.org> <AANLkTikvXe5ZHCqqtfkAWu=78HWe0BD=suDMGETwd+hC@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Yinghai Lu <yinghai@kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] memblock: Fix big size with find_region()
-References: <4CA1ABA4.6070803@kernel.org> <20101006140604.982b22d6.akpm@linux-foundation.org>
-In-Reply-To: <20101006140604.982b22d6.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikvXe5ZHCqqtfkAWu=78HWe0BD=suDMGETwd+hC@mail.gmail.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2010 02:06 PM, Andrew Morton wrote:
+On Fri, Oct 01, 2010 at 11:18:49PM +0900, Kyungmin Park wrote:
+> On Fri, Oct 1, 2010 at 11:09 PM, Ben Dooks <ben-i2c@fluff.org> wrote:
+> > On Fri, Oct 01, 2010 at 10:38:46PM +0900, Kyungmin Park wrote:
+> >> Hi Jean,
+> >>
+> >> Even though it's not yet acked from Ben. It should be fixed for
+> >> correct operation.
+> >> Without this patch, some I2C device doesn't work correctly.
+> >> http://www.spinics.net/lists/linux-i2c/msg04016.html
+> >
+> > It was in my last pull request to Linus.
+> Thanks Ben,
 > 
-> This seems rather odd.  If some caller is passing in size>end then that
-> caller is buggy isn't it?  A memory block which ends at 0x1000 and has
-> a size of 0x2000 is nonsensical.
-> 
-> So shouldn't we at leat emit a warning so tht the offending caller can
-> be found and fixed?
-> 
+> To Ben,
+> Do you have a plan to use notification mail or  confirm mail to ensure
+> these patches are merged or not.
+> I think it's helpful to your maintained subsystem participants. e.g,
+> samsung soc, sdhci-s3c, i2c and so on.
 
-I don't think this is necessarily a bug in the caller -- it just
-indicates that it has a request that is impossible to fulfill -- but
-that can happen for a lot of other reasons.
+I do try and send confirmation emails with every patch, but it currently
+is a manual process.
 
-Keep in mind that the range and the size will typically come from
-different origins.  As such, it's not clear to me that this is something
-that requires printing a specific error message for any more than any
-other allocation failure, but perhaps you disagree?
+-- 
+Ben
 
-	-hpa
-
+Q:      What's a light-year?
+A:      One-third less calories than a regular year.
 
