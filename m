@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab0JFPAm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 11:00:42 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:58374 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757536Ab0JFPAl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 11:00:41 -0400
-Date: Thu, 7 Oct 2010 00:00:35 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 4/7] ARM: oprofile: Move non-ARM code into separate init/exit
-Message-ID: <20101006150035.GB3754@linux-sh.org>
-References: <cover.1286222593.git.matt@console-pimps.org> <74092b0d162aafc21e408033cec6146e227363b5.1286222593.git.matt@console-pimps.org> <20101006133309.GP13563@erda.amd.com> <20101006144921.GQ13563@erda.amd.com> <20101006145311.GA3754@linux-sh.org> <20101006145903.GR13563@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101006145903.GR13563@erda.amd.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1759138Ab0JFPFd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 11:05:33 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56432 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755545Ab0JFPFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 11:05:32 -0400
+From: pavan_savoy@ti.com
+To: gregkh@suse.de, linux-kernel@vger.kernel.org
+Cc: alan@lxorguk.ukuu.org.uk, devel@driverdev.osuosl.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 0/2] move TI_ST driver out of staging
+Date: Wed,  6 Oct 2010 12:18:13 -0400
+Message-Id: <1286381895-11329-1-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 04:59:03PM +0200, Robert Richter wrote:
-> On 06.10.10 10:53:11, Paul Mundt wrote:
-> > On Wed, Oct 06, 2010 at 04:49:21PM +0200, Robert Richter wrote:
-> > > On 06.10.10 15:33:09, Robert Richter wrote:
-> > > > On 04.10.10 16:44:22, Matt Fleming wrote:
-> > > > > -void __exit oprofile_arch_exit(void)
-> > > > > +int __init oprofile_arch_init(struct oprofile_operations *ops)
-> > > > > +{
-> > > > 
-> > > > We should do here a:
-> > > > 
-> > > > 	memset(ops, 0, sizeof(*ops));
-> > > 
-> > > Matt,
-> > > 
-> > > an alternative would be to move this to oprofile_perf_init() and
-> > > modify ops->backtrace afterwards, but then we will lose the function's
-> > > tail call. Not sure that is better. Paul, what do you think?
-> > > 
-> > I'm a bit confused as to why we just don't do:
-> > 
-> > ---
-> > 
-> > diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
-> > index b336cd9..76d97a5 100644
-> > --- a/drivers/oprofile/oprof.c
-> > +++ b/drivers/oprofile/oprof.c
-> > @@ -252,6 +252,8 @@ static int __init oprofile_init(void)
-> >  {
-> >  	int err;
-> >  
-> > +	memset(&oprofile_ops, 0, sizeof(struct oprofile_operations));
-> > +
-> 
-> Yes, this looks much better. Thanks Paul.
-> 
-> 
-In which case, if you want to take it:
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Greg,
+
+As suggested, I've squashed the 4 patches into a set of 2 patches.
+1. moves the source files.
+2. moves/modifies the Kconfig and Makefiles.
+
+Please review.
+
+Thanks & Regards,
+Pavan Savoy
+
+Pavan Savoy (2):
+  drivers:staging:ti-st: move TI_ST from staging
+  drivers:misc: ti-st: Kconfig & Makefile for TI_ST
+
+ drivers/misc/Kconfig            |    1 +
+ drivers/misc/Makefile           |    1 +
+ drivers/misc/ti-st/Kconfig      |   17 +
+ drivers/misc/ti-st/Makefile     |    6 +
+ drivers/misc/ti-st/st_core.c    | 1031 +++++++++++++++++++++++++++++++++++++++
+ drivers/misc/ti-st/st_kim.c     |  798 ++++++++++++++++++++++++++++++
+ drivers/misc/ti-st/st_ll.c      |  150 ++++++
+ drivers/staging/ti-st/Kconfig   |   11 -
+ drivers/staging/ti-st/Makefile  |    2 -
+ drivers/staging/ti-st/st_core.c | 1030 --------------------------------------
+ drivers/staging/ti-st/st_kim.c  |  797 ------------------------------
+ drivers/staging/ti-st/st_ll.c   |  149 ------
+ 12 files changed, 2004 insertions(+), 1989 deletions(-)
+ create mode 100644 drivers/misc/ti-st/Kconfig
+ create mode 100644 drivers/misc/ti-st/Makefile
+ create mode 100644 drivers/misc/ti-st/st_core.c
+ create mode 100644 drivers/misc/ti-st/st_kim.c
+ create mode 100644 drivers/misc/ti-st/st_ll.c
+ delete mode 100644 drivers/staging/ti-st/st_core.c
+ delete mode 100644 drivers/staging/ti-st/st_kim.c
+ delete mode 100644 drivers/staging/ti-st/st_ll.c
+
