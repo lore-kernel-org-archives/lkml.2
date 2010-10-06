@@ -1,99 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932839Ab0JFP4P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 11:56:15 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:38582 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932465Ab0JFP4O (ORCPT
+	id S1759239Ab0JFP4x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 11:56:53 -0400
+Received: from smtp102.prem.mail.ac4.yahoo.com ([76.13.13.41]:41157 "HELO
+	smtp102.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1759155Ab0JFP4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 11:56:14 -0400
-Subject: Re: RFC: btusb firmware load help
-From: Marcel Holtmann <holtmann@linux.intel.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>
-In-Reply-To: <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
-References: <20100924230730.GB6566@tux> <1286266981.17473.33.camel@aeonflux>
-	 <20101005192814.GB11831@tux> <1286308731.2588.13.camel@aeonflux>
-	 <AANLkTimz7U52_qHaTutQDOFQde+GrWJRA0WpqY__FPgi@mail.gmail.com>
-	 <1286349552.6145.11.camel@aeonflux>
-	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Oct 2010 17:56:06 +0200
-Message-ID: <1286380566.6145.42.camel@aeonflux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Oct 2010 11:56:51 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: _dp_7ssVM1mMHpDCqbZeoRMwubr4j.0lYA5o_ME3cCugyqn
+ DGpspjEHwXwEp2USHtVKLTVZDMqQaXxSPXvvRdqG_v7O5GKTZ98OX9dpp0Vx
+ pY3laIPjTnUQ63yxgrnomrOVXmYj95iUIRPHxlC9Ddu.CNaYyPlPGZQA4HuZ
+ lzOFax6dUUfC7_lx3W3.y3oShY_cHjYxv8yK3FH8EqTzTIibC5BbNOwkymsR
+ 2mIytcdN6OSNI9ZgfnUoghrjGBJfx
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 6 Oct 2010 10:56:47 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, David Rientjes <rientjes@google.com>,
+        Mel Gorman <mel@csn.ul.ie>, npiggin@kernel.dk,
+        yanmin_zhang@linux.intel.com
+Subject: Re: [UnifiedV4 00/16] The Unified slab allocator (V4)
+In-Reply-To: <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1010061054410.31538@router.home>
+References: <20101005185725.088808842@linux.com> <AANLkTinPU4T59PvDH1wX2Rcy7beL=TvmHOZh_wWuBU-T@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+On Wed, 6 Oct 2010, Pekka Enberg wrote:
 
-> > Now I am failing to understand why this was done wrong in the first
-> > place. Especially if the loading procedure happens as you say it
-> > happens.
-> 
-> You got me :) Anyone?
-> 
-> > This is the example for the Broadcom 203x devices:
-> >
-> > static struct usb_device_id blacklist_table[] = {
-> >        /* Broadcom BCM2033 without firmware */
-> >        { USB_DEVICE(0x0a5c, 0x2033), .driver_info = BTUSB_IGNORE },
-> >
-> > The btusb driver clearly blacklists them. And then bcm203x can take over
-> > loading the firmware:
-> >
-> > static const struct usb_device_id bcm203x_table[] = {
-> >        /* Broadcom Blutonium (BCM2033) */
-> >        { USB_DEVICE(0x0a5c, 0x2033) },
-> >
-> > So there is a working example of this already in the kernel tree since
-> > forever.
-> 
-> Nice, thanks for the pointer. Our team will review and try to address
-> an alternative patch.
-> 
-> Now for my own sanity -- I still don't think I get this how this
-> BCM2033 blacklist trick works, I take it the device once plugged in
-> gets a generic btusb USB device vendor:device ID. The btusb driver
-> then picks up the the blacklist table, and searches for a
-> usb_match_id() on it for the given interface... What I don't get is
-> how there will be a match here if the USB vendor:device ID is just the
-> generic btusb one. Can you help me understand how this trick works?
+> Are there any stability problems left? Have you tried other benchmarks
+> (e.g. hackbench, sysbench)? Can we merge the series in smaller
+> batches? For example, if we leave out the NUMA parts in the first
+> stage, do we expect to see performance regressions?
 
-the generic Bluetooth USB class descriptors is what btusb uses. With a
-few expectation for devices that use VID:PID combination.
+I have tried hackbench but the number seem to be unstable on my system.
+There may be various small optimizations still left to be done.
 
-So in general what happens if a device gets matched via the Bluetooth
-USB class descriptors the btusb driver will claim. We do however check
-against out blacklist first. If the VID:PID is listed in the blacklist
-we do return ENODEV. That means that the USB subsystem goes ahead and
-tries the next driver. In this case bcm203x driver. This will claim it,
-load the firmware, reset it and come back with different VID:PID values.
-After that the btusb can successfully claim it since it is no longer in
-the blacklist.
+You cannot merge this without the patches up to the patch that implements
+alien caches without performance issues. If you leave out the NUMA parts
+then !NUMA is of course fine.
 
-If I understand this all correct without having the hardware available
-for verifying this, then it should be like this:
-
-Just add this to blacklist_table[] in btusb.c:
-
-        /* Atheros AR3011 without firmware */
-        { USB_DEVICE(0x0cf3, 0x3002), .driver_info = BTUSB_IGNORE },
-
-And then we can add the firmware loading to ath3k driver to load the
-specific 1st stage firmware. And then ath3k can load the 2nd stage as
-well. After that it should become a default Bluetooth USB device and the
-btusb driver can take care of it.
-
-Regards
-
-Marcel
+I would suggest to merge the cleanups first for the next upstream
+merge cycle and give this patchset at least a whole -next cycle before
+upstream merge.
 
 
