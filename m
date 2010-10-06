@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759770Ab0JFSpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 14:45:04 -0400
-Received: from mail.windriver.com ([147.11.1.11]:45641 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759690Ab0JFSpC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 14:45:02 -0400
-Message-ID: <4CACC3A0.4090300@windriver.com>
-Date: Wed, 06 Oct 2010 13:44:48 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754930Ab0JFSsa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 14:48:30 -0400
+Received: from www.tglx.de ([62.245.132.106]:52904 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754576Ab0JFSs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 14:48:29 -0400
+Date: Wed, 6 Oct 2010 20:48:07 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>
+Subject: Re: [PATCH 4/7] acpi: use indirect call to register gsi in different
+ modes
+In-Reply-To: <4CACB257.7060705@zytor.com>
+Message-ID: <alpine.LFD.2.00.1010062047340.17015@localhost6.localdomain6>
+References: <alpine.DEB.2.00.1008301134160.2545@kaball-desktop> <1283167276-7364-4-git-send-email-stefano.stabellini@eu.citrix.com> <alpine.DEB.2.00.1010061749110.2440@kaball-desktop> <4CACB257.7060705@zytor.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Uwe Bonnes <bon@elektron.ikp.physik.tu-darmstadt.de>
-CC: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: Any SYSRQ key to force mode switch to console mode when using
- KMS?
-References: <19601.1301.803816.92851@elektron.ikp.physik.tu-darmstadt.de>	<20100921151033.80e61747.randy.dunlap@oracle.com>	<19609.53242.674915.369484@elektron.ikp.physik.tu-darmstadt.de>	<4C9A1FB7.9050902@oracle.com>	<19611.8986.142128.168878@elektron.ikp.physik.tu-darmstadt.de>	<19611.20403.865248.695829@elektron.ikp.physik.tu-darmstadt.de>	<20100923080212.ca4be1f6.rdunlap@xenotime.net>	<19611.32996.817920.499437@elektron.ikp.physik.tu-darmstadt.de> <20100924080707.ba98fa1e.rdunlap@xenotime.net>
-In-Reply-To: <20100924080707.ba98fa1e.rdunlap@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Oct 2010 18:44:49.0841 (UTC) FILETIME=[8E58FA10:01CB6586]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/24/2010 10:07 AM, Randy Dunlap wrote:
-> On Thu, 23 Sep 2010 18:31:32 +0200 Uwe Bonnes wrote:
->
-> [just adding cc's]
->
->   
->>>>>>> "Randy" == Randy Dunlap <rdunlap@xenotime.net> writes:
->>>>>>>               
->>     Randy> Is CONFIG_DRM_KMS_HELPER enabled in your kernel .config file?  If
->>     Randy> not, we need to find out how to enable it (there is no kconfig
->>     Randy> prompt for it).
->>
->> Yes, it is enabled
->>
->>     Randy> Can you check if Alt-Sysrq-H (help) lists V for "force-fb(V)"?
->> Yes, it is listed.
->>
->> And yes, my last experiments where with ALT-CTL-sysreq, so doomed for non
->> function due to operator error.
->>
->> However:
->> When running X, X.Org X Server 1.9.0 on Thinkpad R50 RV250, Alt-Sysrq-v
->> switches to an all-black display. By console switching with ALT-CLT-F1 I
->> get back to the booting console and ALT-CLT-F7 brings me back to X.  Running
->> on the console and calling Alt-Sysrq-v prints
->>  SysRq : Restore framebuffer console
->>
->> Is there some omission by the distribution or my setup that Alt-Sysrq-v when
->> running X results in an all-black screen?
->>
->> And when I hit the hibernate problem, the screen stays black even with a
->> console switch after Alt-Sysrq-v
->>
->>     
-I am not exactly sure what you are looking for but alt-sysrq-v might not
-tell you a whole lot because an escape back to the text console that was
-not actively receiving printk's or crash data is going to in general
-provide you with a black screen.
-
-If you were interested in something a bit more invasive such as a
-collecting a process listing or examining the dmesg output you might
-consider jumping into kdb.  
-
-echo kbd > /sys/module/kgdboc/parameters/kgdboc
-
-Then you would do the "alt-sysrq v" followed by "alt-sysrq g".  From
-there you could then run dmesg, and your screen would no longer be blank
-in theory.  :-)
-
-We do have some patches for the RV250 for atomic kernel mode setting
-plus kdb support but they are not merged to the mainline kernels as of yet.
 
 
-Jason.
+On Wed, 6 Oct 2010, H. Peter Anvin wrote:
+
+> On 10/06/2010 10:00 AM, Stefano Stabellini wrote:
+> > Peter,
+> > I sent this patch a while back as part of the "PV on HVM: receive
+> > interrupts as xen events" series (that it is based upon Konrad's
+> > pcifront series, he sent another version to the list yesterday).
+> > 
+> > Do you think that this is a reasonble approach?
+> > 
+> > If you want to give a look at the whole series you can find it here:
+> > 
+> > http://lkml.org/lkml/2010/8/30/170
+> > 
+> > everything else is Xen specific stuff.
+> > 
+> > Thanks in advance,
+> > 
+> 
+> On the surface it seems reasonable.
+> 
+> Thomas Gleixner has been working on greatly revamping a bunch of the x86
+> interrupt code, and this might interact with his stuff, so it would be
+> good if he could comment on it.
+> 
+> [tglx: what they're apparently working on is to redirect APIC interrupts
+> to Xen event channels so they don't have to interact with the simulated
+> memory-mapped APIC.  It's "paravirtualization light".]
+
+I'm not touching acpi code. So that should be ok.
+
+Thanks,
+
+	tglx
