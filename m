@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752932Ab0JGQeH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 12:34:07 -0400
-Received: from mail.atheros.com ([12.19.149.2]:50582 "EHLO mail.atheros.com"
+	id S1753414Ab0JGQfT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 12:35:19 -0400
+Received: from mail.atheros.com ([12.19.149.2]:50676 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751923Ab0JGQeF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 12:34:05 -0400
-Message-ID: <4CADF677.8070506@atheros.com>
-Date: Thu, 7 Oct 2010 22:03:59 +0530
+	id S1751880Ab0JGQfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 12:35:17 -0400
+Message-ID: <4CADF6BF.6070305@atheros.com>
+Date: Thu, 7 Oct 2010 22:05:11 +0530
 From: Bala Shanmugam <sbalashanmugam@atheros.com>
 User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
@@ -49,4 +49,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 > Marcel
 >
 >
-h
+Marcel,
+
+eeprom based 3011 chips comes up with PID 3000 giving control to DFU 
+driver [ath3k].  ath3k downloads the
+firmware changing PID to 3002.  Now btusb gets control.
+
+In sflash based devices to reduce windows suspend/resume time we had a 
+small firmware in flash which
+enables the device to get detected as Generic Bluetooth USB device with 
+PID 3002.  So control reaches btusb when device is plugged in, leaving 
+no option for us to load the actual firmware.
+
+Solution would be to blacklist 3002 in btusb, enable ath3k to get 
+control for both the devices, download the firmware and change PID to 
+3003 so that control with come to btusb.
+
+Thanks for your time.
+
+Regards,
+Bala.
