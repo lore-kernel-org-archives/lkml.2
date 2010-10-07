@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab0JGVm0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:42:26 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:61387 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753266Ab0JGVmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:42:24 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="56993445"
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Mike Frysinger <vapier@gentoo.org>, Feng Tang <feng.tang@intel.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-In-Reply-To: <20101007223819.46246716@lxorguk.ukuu.org.uk>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
-	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
-	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007223819.46246716@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 14:41:58 -0700
-Message-ID: <1286487718.23836.94.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753462Ab0JGVnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:43:43 -0400
+Received: from kroah.org ([198.145.64.141]:56164 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751880Ab0JGVnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 17:43:41 -0400
+Date: Thu, 7 Oct 2010 14:41:37 -0700
+From: Greg KH <greg@kroah.com>
+To: rklein@nvidia.com
+Cc: jic23@cam.ac.uk, joe@perches.com, achew@nvidia.com, olof@lixom.net,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-iio@vger.kernel.org, ldewangan@nvidia.com
+Subject: Re: [PATCH v5] staging: iio: light: Adding driver for ISL29018 ALS
+Message-ID: <20101007214137.GA9269@kroah.com>
+References: <1286480883-25589-1-git-send-email-rklein@nvidia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286480883-25589-1-git-send-email-rklein@nvidia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 22:38 +0100, Alan Cox wrote:
-> > Your making too many assumptions .. You might be able to modify the
-> > kernel, and not the userspace. So you couldn't tweak the device
-> > creation .. It's much easier in the server world ..
+On Thu, Oct 07, 2010 at 12:48:03PM -0700, rklein@nvidia.com wrote:
+> From: Rhyland Klein <rklein@nvidia.com>
 > 
-> Spare me the embedded is different lecture. It's not. In fact it's
-> usually easier because the environment you are testing is usually
-> standalone, doesn't cause a million dollar an hour downtime if you get it
-> wrong and was designed for debug/test so actually has a jtag port.
-
-fair enough, it's hard for both of us.
-
-> If you can modify the file system you can make /dev/ttyS0 the major/minor
-> of the jtag port.
+> adding support for the ISL 29018 ambient light and proximity sensor.
 > 
-> If you can load anything in front of the userspace you can rename the
-> device/move it
+> Addressed comments from reviews by Jonathan Cameron and Joe Perches
+>   * Removed some excess dbg prints that only printed function name
+>   * Renamed some properties to make them more descriptive
+>   * Added a property to list available adc resolutions
+>   * Defined arrays for resolutions/ranges as static const
+>   * Change loops initialization to memset for extensibility.
+>     * used sizeof() instead of ARRAY_SIZE() to be safer
+>   * Added a property to list available adc ranges
 > 
-> So I find your example case fictional. In fact the only time I can see
-> you having a box so tightly locked up you can only tweak the kernel is
-> jailbreaking it, in which case you are such a fringe usage case and
-> technically competent that you can just do custom patches as you'll be
-> doing anyway for other bits.
+> Signed-off-by: Rhyland Klein <rklein@nvidia.com>
+> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 
-There's lots of other situations that can come up. You can't in anyway
-say that there is some certain set of situations where you'll always
-have X, Y, and Z.. There have been enough strange situations that I
-don't think it's right for you or me to assume we just know what they
-all are.
+Too bad no one actually compiled this driver:
+  CC [M]  drivers/staging/iio/light/isl29018.o
+drivers/staging/iio/light/isl29018.c:420:8: error: ‘show_prox_infrared_suppression’ undeclared here (not in a function)
+drivers/staging/iio/light/isl29018.c:433:1: error: ‘iio_dev_attr_range_available’ undeclared here (not in a function)
+drivers/staging/iio/light/isl29018.c:435:1: error: ‘iio_dev_attr_adc_resolution_available’ undeclared here (not in a function)
+drivers/staging/iio/light/isl29018.c: In function ‘isl29018_chip_init’:
+drivers/staging/iio/light/isl29018.c:451:6: warning: unused variable ‘i’
+drivers/staging/iio/light/isl29018.c: At top level:
+drivers/staging/iio/light/isl29018.c:350:16: warning: ‘show_prox_infrared_supression’ defined but not used
+drivers/staging/iio/light/isl29018.c:416:1: warning: ‘iio_const_attr_range_available’ defined but not used
+drivers/staging/iio/light/isl29018.c:417:1: warning: ‘iio_const_attr_adc_resolution_available’ defined but not used
+make[2]: *** [drivers/staging/iio/light/isl29018.o] Error 1
+make[1]: *** [drivers/staging/iio/light] Error 2
+make: *** [_module_drivers/staging/iio] Error 2
 
-> > > We've said no over a period of about ten years to a lot of attempts to
-> > > just borrow the ttyS0 range. If we'd said yes it would have been a
-> > > complete mess by now.
-> > > 
-> > > So the answer is no.
-> > 
-> > Nothing can be unilateral, there's always room for exceptions. You
-> > should say something more like "it's possible, but unlikely".
-> 
-> This argument gets regurgitated every so often and nobody has yet
-> provided a plausable reason to make a nasty mess.
+Please fix this up before resending it.
 
-There's plenty of nasty messes in the kernel, "they" must have had some
-justification ..
+thanks,
 
-> Either way I would suggest the path forward is
-> 
-> - Look at the blackfin jtag using tty_port alone and see if it looks
->   cleaner
-
-Yeah ..
-
-> - Fix the bugs noted
-
-Check,
-
-> - Submit a driver that uses the existing allocated jtag major/minor only
-
-The driver does this already. It uses ttyJ* by default, and ttyS is an
-option ..
-
-> and then have a debate about ttyS0 hackery separately.
-
-Fine with me..
-
--- 
-
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+greg k-h
