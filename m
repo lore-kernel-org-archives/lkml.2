@@ -1,188 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab0JGS7q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 14:59:46 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:45063 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750964Ab0JGS7p (ORCPT
+	id S1753392Ab0JGTAI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 15:00:08 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:58320 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab0JGTAF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 14:59:45 -0400
-Date: Thu, 7 Oct 2010 20:59:43 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux@arm.linux.org.uk, s.hauer@pengutronix.de,
-        valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-        bryan.wu@canonical.com, amit.kucheria@canonical.com,
-        xiao-lizhang@freescale.com
-Subject: Re: [PATCHv5] ARM: imx: Add iram allocator functions
-Message-ID: <20101007185943.GY29673@pengutronix.de>
-References: <1286467250-22644-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Thu, 7 Oct 2010 15:00:05 -0400
+Date: Thu, 7 Oct 2010 14:58:59 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2010-10-07
+Message-ID: <20101007185859.GD20950@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1286467250-22644-1-git-send-email-Dinh.Nguyen@freescale.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Dave,
 
-On Thu, Oct 07, 2010 at 11:00:50AM -0500, Dinh.Nguyen@freescale.com wrote:
-> From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> 
-> Add IRAM(Internal RAM) allocation functions using GENERIC_ALLOCATOR.
-> The allocation size is 4KB multiples to guarantee alignment. The
-> idea for these functions is for i.MX platforms to use them
-> to dynamically allocate IRAM usage.
-> 
-> Applies on 2.6.36-rc7
-> 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> Reviewed-by: Amit Kucheria <amit.kucheria@canonical.com>
-> ---
->  arch/arm/plat-mxc/Kconfig             |    4 ++
->  arch/arm/plat-mxc/Makefile            |    1 +
->  arch/arm/plat-mxc/include/mach/iram.h |   41 ++++++++++++++++++
->  arch/arm/plat-mxc/iram_alloc.c        |   74 +++++++++++++++++++++++++++++++++
->  4 files changed, 120 insertions(+), 0 deletions(-)
->  create mode 100644 arch/arm/plat-mxc/include/mach/iram.h
->  create mode 100644 arch/arm/plat-mxc/iram_alloc.c
-> 
-> diff --git a/arch/arm/plat-mxc/Kconfig b/arch/arm/plat-mxc/Kconfig
-> index 6785db4..0e99bb4 100644
-> --- a/arch/arm/plat-mxc/Kconfig
-> +++ b/arch/arm/plat-mxc/Kconfig
-> @@ -110,4 +110,8 @@ config ARCH_MXC_AUDMUX_V1
->  config ARCH_MXC_AUDMUX_V2
->  	bool
->  
-> +config IRAM_ALLOC
-> +	bool
-> +	select GENERIC_ALLOCATOR
-> +
->  endif
-> diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
-> index 78d405e..1ddfb13 100644
-> --- a/arch/arm/plat-mxc/Makefile
-> +++ b/arch/arm/plat-mxc/Makefile
-> @@ -10,6 +10,7 @@ obj-$(CONFIG_MXC_TZIC) += tzic.o
->  
->  obj-$(CONFIG_IMX_HAVE_IOMUX_V1) += iomux-v1.o
->  obj-$(CONFIG_ARCH_MXC_IOMUX_V3) += iomux-v3.o
-> +obj-$(CONFIG_IRAM_ALLOC) += iram_alloc.o
->  obj-$(CONFIG_MXC_PWM)  += pwm.o
->  obj-$(CONFIG_USB_EHCI_MXC) += ehci.o
->  obj-$(CONFIG_MXC_ULPI) += ulpi.o
-> diff --git a/arch/arm/plat-mxc/include/mach/iram.h b/arch/arm/plat-mxc/include/mach/iram.h
-> new file mode 100644
-> index 0000000..f7edd45
-> --- /dev/null
-> +++ b/arch/arm/plat-mxc/include/mach/iram.h
-> @@ -0,0 +1,41 @@
-> +/*
-> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-> + * MA 02110-1301, USA.
-> + */
-> +#include <linux/errno.h>
-> +
-> +#ifdef CONFIG_IRAM_ALLOC
-> +
-> +int __init iram_init(unsigned long base, unsigned long size);
-> +void *iram_alloc(unsigned int size, unsigned long *dma_addr);
-here an __iomem is missing
+Here are a few more more-or-less-one-liner fixes intended for 2.6.36.
+The one from Felix fixes a regression introduced in the 2.6.36 cycle.
+The one from Johannes fixes a crash reported by Ben Greear (as
+documented in the changelog).  The one from me reverts and earlier patch
+from me that can result in stuff in dmesg from not calling
+netif_receive_skb in the proper context.
 
-> +void iram_free(unsigned long dma_addr, unsigned int size);
-> +
-> +#else
-> +
-> +static inline int __init iram_init(unsigned long base, unsigned long size)
-> +{
-> +	return -ENOMEM;
-> +}
-> +
-> +static inline void *iram_alloc(unsigned int size, unsigned long *dma_addr)
-> +{
-> +	return NULL;
-> +}
-> +
-> +static inline void iram_free(unsigned long base, unsigned long size) {}
-> +
-> +#endif
-> diff --git a/arch/arm/plat-mxc/iram_alloc.c b/arch/arm/plat-mxc/iram_alloc.c
-> new file mode 100644
-> index 0000000..8f75a32
-> --- /dev/null
-> +++ b/arch/arm/plat-mxc/iram_alloc.c
-> @@ -0,0 +1,74 @@
-> +/*
-> + * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; either version 2
-> + * of the License, or (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-> + * MA 02110-1301, USA.
-> + */
-> +
-> +#include <linux/kernel.h>
-> +#include <linux/io.h>
-> +#include <linux/module.h>
-> +#include <linux/spinlock.h>
-> +#include <linux/genalloc.h>
-> +#include <mach/iram.h>
-> +
-> +static unsigned long iram_phys_base;
-> +static void __iomem *iram_virt_base;
-> +static struct gen_pool *iram_pool;
-> +
-> +static inline void __iomem *iram_phys_to_virt(unsigned long p)
-> +{
-> +	p = iram_virt_base + (p - iram_phys_base);
-> +	return p;
-if you combine the above two lines to
+Please let me know if there are problems!
 
-	return iram_virt_base + (p - iram_phys_base);
+Thanks,
 
-you make sparse happy.  Currently it wails:
+John
 
-	arch/arm/plat-mxc/iram_alloc.c: In function 'iram_phys_to_virt':
-	arch/arm/plat-mxc/iram_alloc.c:33: warning: assignment makes integer from pointer without a cast
-	arch/arm/plat-mxc/iram_alloc.c:34: warning: return makes pointer from integer without a cast
+---
 
-Best regards
-Uwe
+The following changes since commit fb3dbece264a50ab4373f3af0bbbd9175d3ad4d7:
 
+  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6 (2010-10-07 00:59:39 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
+
+Felix Fietkau (1):
+      ath9k_hw: fix regression in ANI listen time calculation
+
+Johannes Berg (1):
+      mac80211: delete AddBA response timer
+
+John W. Linville (1):
+      Revert "mac80211: use netif_receive_skb in ieee80211_tx_status callpath"
+
+ drivers/net/wireless/ath/ath9k/ani.c |    2 +-
+ net/mac80211/agg-tx.c                |    2 ++
+ net/mac80211/status.c                |    4 ++--
+ 3 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/ani.c b/drivers/net/wireless/ath/ath9k/ani.c
+index cc648b6..a3d95cc 100644
+--- a/drivers/net/wireless/ath/ath9k/ani.c
++++ b/drivers/net/wireless/ath/ath9k/ani.c
+@@ -543,7 +543,7 @@ static u8 ath9k_hw_chan_2_clockrate_mhz(struct ath_hw *ah)
+ 	if (conf_is_ht40(conf))
+ 		return clockrate * 2;
+ 
+-	return clockrate * 2;
++	return clockrate;
+ }
+ 
+ static int32_t ath9k_hw_ani_get_listen_time(struct ath_hw *ah)
+diff --git a/net/mac80211/agg-tx.c b/net/mac80211/agg-tx.c
+index c893f23..8f23401 100644
+--- a/net/mac80211/agg-tx.c
++++ b/net/mac80211/agg-tx.c
+@@ -175,6 +175,8 @@ int ___ieee80211_stop_tx_ba_session(struct sta_info *sta, u16 tid,
+ 
+ 	set_bit(HT_AGG_STATE_STOPPING, &tid_tx->state);
+ 
++	del_timer_sync(&tid_tx->addba_resp_timer);
++
+ 	/*
+ 	 * After this packets are no longer handed right through
+ 	 * to the driver but are put onto tid_tx->pending instead,
+diff --git a/net/mac80211/status.c b/net/mac80211/status.c
+index 10caec5..34da679 100644
+--- a/net/mac80211/status.c
++++ b/net/mac80211/status.c
+@@ -377,7 +377,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
+ 				skb2 = skb_clone(skb, GFP_ATOMIC);
+ 				if (skb2) {
+ 					skb2->dev = prev_dev;
+-					netif_receive_skb(skb2);
++					netif_rx(skb2);
+ 				}
+ 			}
+ 
+@@ -386,7 +386,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
+ 	}
+ 	if (prev_dev) {
+ 		skb->dev = prev_dev;
+-		netif_receive_skb(skb);
++		netif_rx(skb);
+ 		skb = NULL;
+ 	}
+ 	rcu_read_unlock();
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
