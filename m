@@ -1,89 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752304Ab0JGRPW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:15:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3230 "EHLO mx1.redhat.com"
+	id S1753452Ab0JGRP6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:15:58 -0400
+Received: from mx3.sophos.com ([74.202.89.160]:33751 "EHLO mx3.sophos.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751197Ab0JGRPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:15:20 -0400
-Date: Thu, 7 Oct 2010 19:14:18 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v6 08/12] Handle async PF in a guest.
-Message-ID: <20101007171418.GA2397@redhat.com>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-9-git-send-email-gleb@redhat.com>
- <4CADC6C3.3040305@redhat.com>
+	id S1753165Ab0JGRP4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 13:15:56 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Eric Paris <eparis@redhat.com>
+Subject: Re: Linux 2.6.36-rc7
+Date: Thu, 7 Oct 2010 18:15:53 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.4.4; x86_64; ; )
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <201010071710.46938.tvrtko.ursulin@sophos.com>
+In-Reply-To: <201010071710.46938.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CADC6C3.3040305@redhat.com>
+Message-ID: <201010071815.54303.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 07/10/2010 18:15:54,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 07/10/2010 18:15:54,
+	Serialize complete at 07/10/2010 18:15:54
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 03:10:27PM +0200, Avi Kivity wrote:
->  On 10/04/2010 05:56 PM, Gleb Natapov wrote:
-> >When async PF capability is detected hook up special page fault handler
-> >that will handle async page fault events and bypass other page faults to
-> >regular page fault handler. Also add async PF handling to nested SVM
-> >emulation. Async PF always generates exit to L1 where vcpu thread will
-> >be scheduled out until page is available.
-> >
-> 
-> Please separate guest and host changes.
-> 
-> >+void kvm_async_pf_task_wait(u32 token)
-> >+{
-> >+	u32 key = hash_32(token, KVM_TASK_SLEEP_HASHBITS);
-> >+	struct kvm_task_sleep_head *b =&async_pf_sleepers[key];
-> >+	struct kvm_task_sleep_node n, *e;
-> >+	DEFINE_WAIT(wait);
-> >+
-> >+	spin_lock(&b->lock);
-> >+	e = _find_apf_task(b, token);
-> >+	if (e) {
-> >+		/* dummy entry exist ->  wake up was delivered ahead of PF */
-> >+		hlist_del(&e->link);
-> >+		kfree(e);
-> >+		spin_unlock(&b->lock);
-> >+		return;
-> >+	}
-> >+
-> >+	n.token = token;
-> >+	n.cpu = smp_processor_id();
-> >+	init_waitqueue_head(&n.wq);
-> >+	hlist_add_head(&n.link,&b->list);
-> >+	spin_unlock(&b->lock);
-> >+
-> >+	for (;;) {
-> >+		prepare_to_wait(&n.wq,&wait, TASK_UNINTERRUPTIBLE);
-> >+		if (hlist_unhashed(&n.link))
-> >+			break;
-> >+		local_irq_enable();
-> 
-> Suppose we take another apf here.  And another, and another (for
-> different pages, while executing schedule()).  What's to prevent
-> kernel stack overflow?
-> 
-Host side keeps track of outstanding apfs and will not send apf for the
-same phys address twice. It will halt vcpu instead.
+On Thursday 07 Oct 2010 17:10:46 Tvrtko Ursulin wrote:
+> On Wednesday 06 Oct 2010 22:45:13 Linus Torvalds wrote:
+> [snip]
+>
+> > And yes, that's probably as exciting as it gets, which is just fine by
+> > me. This should be the last -rc, I'm not seeing any reason to keep
+> > delaying a real release. There was still more changes to
+> > drivers/gpu/drm than I really would have hoped for, but they all look
+> > harmless and good. Famous last words.
+>
+> Hi Linus,
+>
+> Please see http://marc.info/?l=linux-kernel&m=128618485204253&w=2
+>
+> I have sent this proposed bugfix several times now but no one is picking it
+> up and Eric seems to have disappeared. It would be suboptimal to release
+> 2.6.36 with a core fanotify feature non-functional.
 
-> >+		schedule();
-> >+		local_irq_disable();
-> >+	}
-> >+	finish_wait(&n.wq,&wait);
-> >+
-> >+	return;
-> >+}
-> >+EXPORT_SYMBOL_GPL(kvm_async_pf_task_wait);
-> >+
-> I have a truly marvellous patch that fixes the bug which this
-> signature is too narrow to contain.
+Unfortunately I have another showstopper. Sadly I missed it until now because
+internally we were more worried of issues which were kind of direct problems
+for us and I went to deep instead of spending more time reviewing it breath
+first.
 
---
-			Gleb.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=08ae89380a8210a9965d04083e1de78cb8bca4b1
+
+Priority argument was dropped from the fanotify_init syscall, and since it is
+a syscall once released it is set in stone. Without the priority argument, how
+are multiple clients supposed to be ordered?
+
+Co-existence between multiple clients was something which was supposed to be
+designed in from the start. Use cases like hierarchical storage management,
+anti-malware and content indexing should all be able to co-exist. Without a
+priority argument I do not see how it can be assured HSM sees the perm event
+before anti-malware, and content indexing after both of them? If there was any
+discussion about dropping priority I missed it. :(
+
+Tvrtko
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
