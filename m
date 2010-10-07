@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933208Ab0JGAlP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 20:41:15 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45976 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932573Ab0JGAlN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 20:41:13 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 7 Oct 2010 09:35:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 04/10] memcg: disable local interrupts in
- lock_page_cgroup()
-Message-Id: <20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933244Ab0JGAli (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:41:38 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49866 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932573Ab0JGAlh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 20:41:37 -0400
+Date: Thu, 7 Oct 2010 01:41:20 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1010070140090.25541@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010 09:15:34 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> First of all, we could add your patch as it is and I don't expect any
-> regression report about interrupt latency.
-> That's because many embedded guys doesn't use mmotm and have a
-> tendency to not report regression of VM.
-> Even they don't use memcg. Hmm...
-> 
-> I pass the decision to MAINTAINER Kame and Balbir.
-> Thanks for the detail explanation.
-> 
+This is the nasty race condition fix from Thomas, I've been running it and 
+playing with firefox a lot and haven't seen any side effects of it, we 
+have positive feedback on it fixing the actual problem of up 1GB of memory 
+leaked in 5-10s of scrolling in the pathalogical cases.
 
-Hmm. IRQ delay is a concern. So, my option is this. How do you think ?
+Dave.
 
-1. remove local_irq_save()/restore() in lock/unlock_page_cgroup().
-   yes, I don't like it.
+The following changes since commit e1d9694cae722d00a94fb58f901aa69c9c324a16:
 
-2. At moving charge, do this:
-	a) lock_page()/ or trylock_page()
-	b) wait_on_page_writeback()
-	c) do move_account under lock_page_cgroup().
-	c) unlock_page()
+  Merge branch 'core-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-10-05 13:07:43 -0700)
 
+are available in the git repository at:
 
-Then, Writeback updates will never come from IRQ context while
-lock/unlock_page_cgroup() is held by move_account(). There will be no race.
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
-Do I miss something ?
+Thomas Hellstrom (1):
+      drm/ttm: Fix two race conditions + fix busy codepaths
 
-Thanks,
--Kame
-
+ drivers/gpu/drm/ttm/ttm_bo.c |   83 ++++++++++++++++++++++++++++++++++++------
+ include/drm/ttm/ttm_bo_api.h |    4 ++-
+ 2 files changed, 74 insertions(+), 13 deletions(-)
