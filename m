@@ -1,71 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab0JGQfT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 12:35:19 -0400
-Received: from mail.atheros.com ([12.19.149.2]:50676 "EHLO mail.atheros.com"
+	id S1753109Ab0JGQge (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 12:36:34 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:48975 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab0JGQfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 12:35:17 -0400
-Message-ID: <4CADF6BF.6070305@atheros.com>
-Date: Thu, 7 Oct 2010 22:05:11 +0530
-From: Bala Shanmugam <sbalashanmugam@atheros.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+	id S1751525Ab0JGQgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 12:36:33 -0400
+Message-ID: <4CADF727.9070404@fusionio.com>
+Date: Thu, 07 Oct 2010 18:36:55 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-To: Marcel Holtmann <holtmann@linux.intel.com>
-CC: Shanmugamkamatchi Balashanmugam 
-	<Shanmugamkamatchi.Balashanmugam@atheros.com>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>
-Subject: Re: RFC: btusb firmware load help
-References: <1286349552.6145.11.camel@aeonflux>	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>	 <1286380566.6145.42.camel@aeonflux> <20101006163816.GE7070@tux>	 <AANLkTik9w4_PdcEsbRHakLcxcD334_1Q8hGArxTXPCGF@mail.gmail.com>	 <20101006173949.GG7070@tux>	 <1286387660.3655.382.camel@jlt3.sipsolutions.net>	 <AANLkTikYRSQw-+Tcj4VS1qxi=OaeF9C5hjAMWVu+0M=v@mail.gmail.com>	 <AANLkTi=o4Mc72NrNoALBdS3YHeY7RMyyAJPsCy=uW3+F@mail.gmail.com>	 <1286389697.3655.401.camel@jlt3.sipsolutions.net>	 ,<20101006183340.GI7070@tux>	 <44EE5C37ADC36343B0625A05DD408C4850DAD2CA31@CHEXMB-01.global.atheros.com> <1286465072.6145.151.camel@aeonflux>
-In-Reply-To: <1286465072.6145.151.camel@aeonflux>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] single block fix for 2.6.36
+References: <4CAD7A00.6060003@fusionio.com> <x49lj6a9i3x.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49lj6a9i3x.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/7/2010 8:54 PM, Marcel Holtmann wrote:
-> Hi Bala,
->
->> Thanks Johannes.  This would be better option to change PID in firmware
->> as blacklisting 3002 might create problems for 3011 chipsets.
->> Will try and let you people know.
-> The misbehaving 3002 needs to be blacklisted in btusb.c anyway. However
-> after loading the firmware to 3002 device, it should change its PID to
-> something else.
->
-> I am still trying to figure out if this is one stage firmware loading or
-> a two stage firmware loading. This is all pretty unclear and nobody has
-> answered this clearly so far.
->
-> Regards
->
-> Marcel
->
->
-Marcel,
+On 2010-10-07 16:45, Jeff Moyer wrote:
+> Jens Axboe <jaxboe@fusionio.com> writes:
+> 
+>> Hi Linus,
+>>
+>> The API that was added for drivers to switch IO schedulers
+>> when loaded does not work if the driver isn't in a fully
+>> initialized state. The in-kernel ones call it right after
+>> blk_init_queue(), which will result in an oops when the
+>> elevator core tries to unregister unregistered kobjects.
+> 
+> Color me confused.  If the problem is trying to unregister unregistered
+> objects, then why does your backtrace show a problem registering
+> objects?
 
-eeprom based 3011 chips comes up with PID 3000 giving control to DFU 
-driver [ath3k].  ath3k downloads the
-firmware changing PID to 3002.  Now btusb gets control.
+Probably mostly circumstantial, it ends up triggering deletions on
+not-added kobjects. Why it triggers specifically in the addition I
+haven't checked, I think it's running into a NULL parent (I noticed this
+last week and got an oops, and iirc that's where it crashed in
+sysfs_create_dir()).
 
-In sflash based devices to reduce windows suspend/resume time we had a 
-small firmware in flash which
-enables the device to get detected as Generic Bluetooth USB device with 
-PID 3002.  So control reaches btusb when device is plugged in, leaving 
-no option for us to load the actual firmware.
+So where it bombs does seem a bit confusing, but the reason for why is
+as I outlined in the mail and in the changelog.
 
-Solution would be to blacklist 3002 in btusb, enable ath3k to get 
-control for both the devices, download the firmware and change PID to 
-3003 so that control with come to btusb.
+>     RIP: 0010:[<ffffffff8116f15e>]  [<ffffffff8116f15e>] sysfs_create_dir+0x2e/0xc0
+> ...
+>     Call Trace:
+>      [<ffffffff8123fb77>] kobject_add_internal+0xe7/0x1f0
+>      [<ffffffff8123fd98>] kobject_add_varg+0x38/0x60
+>      [<ffffffff8123feb9>] kobject_add+0x69/0x90
+>      [<ffffffff8116efe0>] ? sysfs_remove_dir+0x20/0xa0
+>      [<ffffffff8103d48d>] ? sub_preempt_count+0x9d/0xe0
+>      [<ffffffff8143de20>] ? _raw_spin_unlock+0x30/0x50
+>      [<ffffffff8116efe0>] ? sysfs_remove_dir+0x20/0xa0
+>      [<ffffffff8116eff4>] ? sysfs_remove_dir+0x34/0xa0
+>      [<ffffffff81224204>] elv_register_queue+0x34/0xa0
+>      [<ffffffff81224aad>] elevator_change+0xfd/0x250
+>      [<ffffffffa007e000>] ? t_init+0x0/0x361 [t]
+>      [<ffffffffa007e000>] ? t_init+0x0/0x361 [t]
+>      [<ffffffffa007e0a8>] t_init+0xa8/0x361 [t]
+>      [<ffffffff810001de>] do_one_initcall+0x3e/0x170
+>      [<ffffffff8108c3fd>] sys_init_module+0xbd/0x220
+>      [<ffffffff81002f2b>] system_call_fastpath+0x16/0x1b
+> 
+> I tried to track down what was going on, but I don't have your .config,
+> so trying to pick things apart by guessing wasn't working out very well
+> for me.  Also, your changelog entry in your tree is different from what
+> you posted here (more complete) and you never posted a relevant patch to
+> the list.
 
-Thanks for your time.
+Just add an elevator_change(q, "noop"); or similar to any driver and
+you'll see the issue. My .config doesn't matter, unless you are using
+the S390 tape block driver or mGine flash block driver (mg_block). They
+are the only users of that API.
 
-Regards,
-Bala.
+I figured the folks that were truly interested would check the
+changelog, the git pull requests are rarely as informative as the
+individual changes. I actually thought I did pretty well on this one :-)
+
+>> Add a registered bit and only do the unregister/register
+>> dance in elevator_switch() if we need to. The other call
+>> path for this is the sysfs parts to allow online switching,
+>> which can only be called with a fully setup driver.
+> 
+> I don't doubt that you're right, but you certainly haven't given enough
+> information for me to verify this in the 20 or 30 minutes I spent
+> looking.
+
+Did you try calling elevator_change? That should show the problem right
+away, not in 20-30 minutes :-)
+
+-- 
+Jens Axboe
+
