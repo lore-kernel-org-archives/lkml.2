@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab0JGUsW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 16:48:22 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51891 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab0JGUsV (ORCPT
+	id S1755857Ab0JGUtK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 16:49:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63602 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab0JGUtH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 16:48:21 -0400
+	Thu, 7 Oct 2010 16:49:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=wzXEw2EBarLokJvP7SsTvuSrmpRyYOC9zpgFRlCx5zWXyF++CSX1jaZpR1+wPJfDg3
-         yqDQKUztXMlKP7ywBeYnjB5shyFnwVZQcBpU/83oOGTIrXeZn4z4DxJV7To5wt2nJkM4
-         tyPgYxpmG3JisGnMVszeHUUXcJzG5biWbiF6k=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=mEQhlJyzuvC5VrWj44rsz8HyZtvQog68W8bnlhkwkV8DBJudkfw3KA8Ufaa3rkP0wB
+         76oTIhD3dzMMvJHqKO2jR9I/sOUBuVG2F6tTtloiQ+/1v+9nUQJh4ZcFdwX25RodH1rZ
+         6uzYswzQfCwOGg0w4+s1l6I1cRELRyhEPCvUs=
 MIME-Version: 1.0
-In-Reply-To: <1286482013.23836.29.camel@c-dwalke-linux.qualcomm.com>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
- <AANLkTinxorq2XhJdGDNQuUghxzr1q6OW=S1VjupOu5nH@mail.gmail.com>
- <1286480364.23836.17.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=8Et=Z6zrzbZa3L0MO=cBjjh7L=XU2=PDEbzWW@mail.gmail.com>
- <1286481532.23836.27.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=j2n-X+-zkas8HdL1awo7Lcyxwofts6FjU8vj6@mail.gmail.com>
- <1286482013.23836.29.camel@c-dwalke-linux.qualcomm.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 7 Oct 2010 16:47:59 -0400
-X-Google-Sender-Auth: dhbSMEUfUw493hlcDKYEOBh0j0s
-Message-ID: <AANLkTinDvL9vPb6nmve3rO9dMtMAqh=d1oqBVTOHzYWH@mail.gmail.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20101007133529.GA21782@srcf.ucam.org>
+References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com>
+	<20101007111510.GA19624@srcf.ucam.org>
+	<AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com>
+	<20101007133529.GA21782@srcf.ucam.org>
+Date: Thu, 7 Oct 2010 15:49:05 -0500
+X-Google-Sender-Auth: N9ujv0EKKwphzi6KZEcwx99Ic7w
+Message-ID: <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com>
+Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
+From: Mario Limonciello <superm1@ubuntu.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
+        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 7, 2010 at 16:06, Daniel Walker wrote:
-> On Thu, 2010-10-07 at 16:02 -0400, Mike Frysinger wrote:
->> how is that any different from:
->> ln -s ttyJ0 /dev/ttyS0
->
-> It has the same major and minors as ttyS* does. So you don't have to run
-> anything on the target.
+Hi Matthew:
 
-i dont see how those things are related.  the major/minor are
-irrelevant, unless you've already hard coded these in some app that
-creates device nodes manually (instead of mdev/udev), but even then
-that's something that "needs to be run on the target".  and both
-already have config support to transparently do something like
-"symlink ttyS# to XXX" as XXX is created.
--mike
+On Thu, Oct 7, 2010 at 08:35, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+>
+> On Thu, Oct 07, 2010 at 08:30:57AM -0500, Mario Limonciello wrote:
+>
+> >    In this specific scenario that Ken Yu submitted this patch for, the
+> >    firmware will return the same return codes for the SMI's as a functional
+> >    machine will.  Machines affected by this will fail to recover after rfkill
+> >    is toggled twice.  The symptom will be that the soft block always appears
+> >    set to the same setting with continued keypresses.
+> >    During the prototype phase this option is quite useful to help debug the
+> >    problem it addresses.
+>
+> Is the kernel able to unblock it under those circumstances?
+
+Manually running rfkill unblock will unblock it in this broken
+firmware scenario in question.
+
+--
+Mario Limonciello
+superm1@gmail.com
