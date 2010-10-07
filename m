@@ -1,37 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759646Ab0JGB0W (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 21:26:22 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:5077 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754388Ab0JGB0V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 21:26:21 -0400
-Message-ID: <4CAD21BD.8050203@caviumnetworks.com>
-Date: Wed, 06 Oct 2010 18:26:21 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
-MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>, rostedt@goodmis.org
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org, jbaron@redhat.com
-Subject: Re: [PATCH v2 2/2] jump label: Add MIPS support.
-References: <1286218615-24011-1-git-send-email-ddaney@caviumnetworks.com> <1286218615-24011-3-git-send-email-ddaney@caviumnetworks.com> <20101006230010.GA6808@linux-mips.org>
-In-Reply-To: <20101006230010.GA6808@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1759694Ab0JGBbM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 21:31:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43063 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759612Ab0JGBbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 21:31:09 -0400
+Date: Thu, 7 Oct 2010 12:31:04 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        Joe Perches <joe@perches.com>
+Subject: linux-next: manual merge of the net tree with the net-current tree
+Message-Id: <20101007123104.bf7a9808.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Oct 2010 01:26:29.0179 (UTC) FILETIME=[AAAC20B0:01CB65BE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/06/2010 04:00 PM, Ralf Baechle wrote:
-> Acked-by: Ralf Baechle<ralf@linux-mips.org>
->
->    Ralf
->
+Hi all,
 
-That should complete the Acked-by prerequisites for this set.  I hope 
-Steven and Jason can get them merged for 2.6.37 (hint, hint :-))
+Today's linux-next merge of the net tree got a conflict in
+net/caif/caif_socket.c between commit
+79315068f4560f3f7bd6e9790190dcb43059770c ("caif: fix two caif_connect()
+bugs") from the net-current tree and commit
+b31fa5bad576cd8180a5ad70c648333b44320d44 ("net/caif: Use pr_fmt") from
+the net tree.
 
-Thanks,
-David Daney
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/caif/caif_socket.c
+index 4bf28f2,abcba53..0000000
+--- a/net/caif/caif_socket.c
++++ b/net/caif/caif_socket.c
+@@@ -897,23 -888,14 +889,22 @@@ static int caif_connect(struct socket *
+  		cf_sk->sk.sk_state = CAIF_DISCONNECTED;
+  		goto out;
+  	}
+ -	dev = dev_get_by_index(sock_net(sk), ifindex);
+ +
+ +	err = -ENODEV;
+ +	rcu_read_lock();
+ +	dev = dev_get_by_index_rcu(sock_net(sk), ifindex);
+ +	if (!dev) {
+ +		rcu_read_unlock();
+ +		goto out;
+ +	}
+  	cf_sk->headroom = LL_RESERVED_SPACE_EXTRA(dev, headroom);
+ +	mtu = dev->mtu;
+ +	rcu_read_unlock();
+ +
+  	cf_sk->tailroom = tailroom;
+ -	cf_sk->maxframe = dev->mtu - (headroom + tailroom);
+ -	dev_put(dev);
+ +	cf_sk->maxframe = mtu - (headroom + tailroom);
+  	if (cf_sk->maxframe < 1) {
+- 		pr_warning("CAIF: %s(): CAIF Interface MTU too small (%u)\n",
+- 			   __func__, mtu);
+ -		pr_warn("CAIF Interface MTU too small (%d)\n", dev->mtu);
+ -		err = -ENODEV;
+++		pr_warn("CAIF Interface MTU too small (%d)\n", mtu);
+  		goto out;
+  	}
+  
