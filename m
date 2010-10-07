@@ -1,83 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab0JGGiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 02:38:18 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46845 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755131Ab0JGGiR convert rfc822-to-8bit (ORCPT
+	id S1758192Ab0JGGym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 02:54:42 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41719 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751816Ab0JGGyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 02:38:17 -0400
-Subject: Re: [PATCH] edac: mpc85xx: Add support for new MPCxxx/Pxxxx EDAC controllers (fix)
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Kumar Gala <galak@kernel.crashing.org>
-In-Reply-To: <20101007062909.GA27110@oksana.dev.rtsoft.ru>
-Date: Thu, 7 Oct 2010 01:37:25 -0500
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Scott Wood <scottwood@freescale.com>, Peter Tyser <ptyser@xes-inc.com>,
-        linux-kernel@vger.kernel.org, Dave Jiang <djiang@mvista.com>,
-        linuxppc-dev@ozlabs.org, Doug Thompson <dougthompson@xmission.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0778A3B9-E242-4BCC-B318-154BE9ECB2C6@kernel.crashing.org>
-References: <20100715182507.GA3482@oksana.dev.rtsoft.ru> <20100716151224.21d499a3@schlenkerla.am.freescale.net> <20100721153933.64d02086.akpm@linux-foundation.org> <20100721182108.5a22c822@schlenkerla.am.freescale.net> <20100801105419.GA352@oksana.dev.rtsoft.ru> <5628792F-9A5F-4200-90B3-FB3939F02969@kernel.crashing.org> <20101007062909.GA27110@oksana.dev.rtsoft.ru>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-X-Mailer: Apple Mail (2.1081)
+	Thu, 7 Oct 2010 02:54:41 -0400
+Date: Thu, 7 Oct 2010 08:54:38 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Joe Perches <joe@perches.com>
+Cc: Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scripts/checkpatch.pl: Warn on non-executable files
+	created with non 100644 file permissions
+Message-ID: <20101007065438.GB12741@pengutronix.de>
+References: <1286407891.32241.21.camel@Joe-Laptop>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="JP+T4n/bALQSJXh8"
+Content-Disposition: inline
+In-Reply-To: <1286407891.32241.21.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> It's already in Linus' tree.
 
-Yeah, the problem is what's merged in linus's tree has p4080 listed and it shouldn't
+--JP+T4n/bALQSJXh8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> Thanks,
-> 
-> - - - -
-> commit cd1542c8197fc3c2eb3a8301505d5d9738fab1e4
-> Author: Anton Vorontsov <avorontsov@mvista.com>
-> Date:   Tue Aug 10 18:03:21 2010 -0700
-> 
->    edac: mpc85xx: add support for new MPCxxx/Pxxxx EDAC controllers
-> 
->    Simply add proper IDs into the device table.
-> 
->    Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
->    Cc: Scott Wood <scottwood@freescale.com>
->    Cc: Peter Tyser <ptyser@xes-inc.com>
->    Cc: Dave Jiang <djiang@mvista.com>
->    Cc: Doug Thompson <dougthompson@xmission.com>
->    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-> 
-> diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-> index fdbad55..af75e27 100644
-> --- a/drivers/edac/mpc85xx_edac.c
-> +++ b/drivers/edac/mpc85xx_edac.c
-> @@ -647,7 +647,10 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
-> 	{ .compatible = "fsl,mpc8555-l2-cache-controller", },
-> 	{ .compatible = "fsl,mpc8560-l2-cache-controller", },
-> 	{ .compatible = "fsl,mpc8568-l2-cache-controller", },
-> +	{ .compatible = "fsl,mpc8569-l2-cache-controller", },
-> 	{ .compatible = "fsl,mpc8572-l2-cache-controller", },
-> +	{ .compatible = "fsl,p1020-l2-cache-controller", },
-> +	{ .compatible = "fsl,p1021-l2-cache-controller", },
-> 	{ .compatible = "fsl,p2020-l2-cache-controller", },
-> 	{},
-> };
-> @@ -1125,7 +1128,10 @@ static struct of_device_id mpc85xx_mc_err_of_match[] = {
-> 	{ .compatible = "fsl,mpc8569-memory-controller", },
-> 	{ .compatible = "fsl,mpc8572-memory-controller", },
-> 	{ .compatible = "fsl,mpc8349-memory-controller", },
-> +	{ .compatible = "fsl,p1020-memory-controller", },
-> +	{ .compatible = "fsl,p1021-memory-controller", },
-> 	{ .compatible = "fsl,p2020-memory-controller", },
-> +	{ .compatible = "fsl,p4080-memory-controller", },
+On Wed, Oct 06, 2010 at 04:31:31PM -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  scripts/checkpatch.pl |    8 ++++++++
+>  1 files changed, 8 insertions(+), 0 deletions(-)
+>=20
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index 2039acd..6f8a1d4 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -1346,6 +1346,14 @@ sub process {
+>  			}
+>  		}
+> =20
+> +		if ($rawline =3D~ /^ create mode (\d+) ([\w\.\/\-]+)$/) {
 
-This line should be here ;)
+Do you really need to escape ./- in the character-class? ISTR this is not
+needed.
 
-> 	{},
-> };
-> MODULE_DEVICE_TABLE(of, mpc85xx_mc_err_of_match);
+> +			my $mode =3D $1;
+> +			my $file =3D $2;
+> +			if ($mode ne "100644" && !($file =3D~ /\.(sh|pl|py|awk)$/)) {
+> +				WARN("FILE '$file' should probably use file permission 100644 not $m=
+ode\n" . $herecurr);
+> +			}
 
+What about checking for no filename extension, too, and changing the messag=
+e to
+something like "use proper file permission or proper extension"?
+
+> +		}
+> +
+>  # Check for wrappage within a valid hunk of the file
+>  		if ($realcnt !=3D 0 && $line !~ m{^(?:\+|-| |\\ No newline|$)}) {
+>  			ERROR("patch seems to be corrupt (line wrapped?)\n" .
+>=20
+>=20
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--JP+T4n/bALQSJXh8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkytbq4ACgkQD27XaX1/VRvgjACgkMVhWxA7xNS2QkNyi2kUxact
+5qYAn0XD43h1A/6cVvIeJU2hIjwMI3Zi
+=Hat0
+-----END PGP SIGNATURE-----
+
+--JP+T4n/bALQSJXh8--
