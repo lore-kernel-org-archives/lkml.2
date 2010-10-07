@@ -1,190 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759962Ab0JGBoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 21:44:19 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:32797 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757279Ab0JGBoS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 21:44:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=MrcuPUnkBsQpFBbo1oXj/NlH/IhgSQiNrKklJpcAGfc9ZdH5toIQgV+MzKPOHv6WIm
-         elJrV3tKmKZpduWRr7VA==
+	id S933263Ab0JGBu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 21:50:58 -0400
+Received: from mga03.intel.com ([143.182.124.21]:9106 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751580Ab0JGBu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 21:50:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,294,1283756400"; 
+   d="scan'208";a="333130569"
+Date: Thu, 7 Oct 2010 09:50:27 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Subject: Re: [PATCH 3/4] HWPOISON: Report correct address granuality for AO
+ huge page errors
+Message-ID: <20101007015027.GA5482@localhost>
+References: <1286398141-13749-1-git-send-email-andi@firstfloor.org>
+ <1286398141-13749-4-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-In-Reply-To: <4CACE200.1050901@verisign.com>
-References: <4CACE200.1050901@verisign.com>
-Date: Wed, 6 Oct 2010 18:44:14 -0700
-Message-ID: <AANLkTint0UDnSwCsuS6eT_P+kwpCALzm2ghLUHW8q9fR@mail.gmail.com>
-Subject: Re: [PATCH 1/1] cpufreq: sampling_down_factor to improve ondemand performance
-From: Venkatesh Pallipadi <venki@google.com>
-To: David C Niemi <dniemi@verisign.com>
-Cc: cpufreq-list@vger.kernel.org, Dave Jones <davej@redhat.com>,
-        Daniel Hollocher <danielhollocher@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286398141-13749-4-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 6, 2010 at 1:54 PM, David C Niemi <dniemi@verisign.com> wrote:
-> Adds a new global tunable, sampling_down_factor.  Set to 1 it makes no
-> changes from existing behavior, but set to greater than 1 (e.g. 100)
-> it acts as a multiplier for the scheduling interval for reevaluating
-> load when the CPU is at its top speed due to high load.  This improves
-> performance by reducing the overhead of load evaluation and helping
-> the CPU stay at its top speed when truly busy, rather than shifting
-> back and forth in speed.  This tunable has no effect on behavior at
-> lower speeds/lower CPU loads.
->
-> This patch is against 2.6.36-rc6.
->
-> This patch should help solve kernel bug 19672 "ondemand is slow".
->
-> Signed-off-by: David Niemi <dniemi@verisign.com>
-> CC: Venkatesh Pallipadi <venki@google.com>
-> CC: Dave Jones <davej@redhat.com>
-> CC: Daniel Hollocher <danielhollocher@gmail.com>
-> CC: <cpufreq-list@vger.kernel.org>
-> CC: <linux-kernel@vger.kernel.org>
-
-Acked-by: Venkatesh Pallipadi <venki@google.com>
-
+On Thu, Oct 07, 2010 at 04:49:00AM +0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> The SIGBUS user space signalling is supposed to report the
+> address granuality of a corruption. Pass this information correctly
+> for huge pages by querying the hpage order.
+> 
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: fengguang.wu@intel.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
-> cpufreq_ondemand.c |   42 +++++++++++++++++++++++++++++++++++++++++-
-> 1 file changed, 41 insertions(+), 1 deletion(-)
->
-> diff --git a/linux-2.6.36-rc6/drivers/cpufreq/cpufreq_ondemand.c.orig b/linux-2.6.36-rc6/drivers/cpufreq/cpufreq_ondemand.c
-> index 7b50936..c631f27 100644
-> --- a/linux-2.6.36-rc6/drivers/cpufreq/cpufreq_ondemand.c.orig
-> +++ b/linux-2.6.36-rc6/drivers/cpufreq/cpufreq_ondemand.c
-> @@ -30,6 +30,8 @@
->
->  #define DEF_FREQUENCY_DOWN_DIFFERENTIAL                (10)
->  #define DEF_FREQUENCY_UP_THRESHOLD             (80)
-> +#define DEF_SAMPLING_DOWN_FACTOR               (1)
-> +#define MAX_SAMPLING_DOWN_FACTOR               (100000)
->  #define MICRO_FREQUENCY_DOWN_DIFFERENTIAL      (3)
->  #define MICRO_FREQUENCY_UP_THRESHOLD           (95)
->  #define MICRO_FREQUENCY_MIN_SAMPLE_RATE                (10000)
-> @@ -82,6 +84,7 @@ struct cpu_dbs_info_s {
->        unsigned int freq_lo;
->        unsigned int freq_lo_jiffies;
->        unsigned int freq_hi_jiffies;
-> +       unsigned int rate_mult;
->        int cpu;
->        unsigned int sample_type:1;
->        /*
-> @@ -108,10 +111,12 @@ static struct dbs_tuners {
->        unsigned int up_threshold;
->        unsigned int down_differential;
->        unsigned int ignore_nice;
-> +       unsigned int sampling_down_factor;
->        unsigned int powersave_bias;
->        unsigned int io_is_busy;
->  } dbs_tuners_ins = {
->        .up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
-> +       .sampling_down_factor = DEF_SAMPLING_DOWN_FACTOR,
->        .down_differential = DEF_FREQUENCY_DOWN_DIFFERENTIAL,
->        .ignore_nice = 0,
->        .powersave_bias = 0,
-> @@ -259,6 +264,7 @@ static ssize_t show_##file_name                                             \
->  show_one(sampling_rate, sampling_rate);
->  show_one(io_is_busy, io_is_busy);
->  show_one(up_threshold, up_threshold);
-> +show_one(sampling_down_factor, sampling_down_factor);
->  show_one(ignore_nice_load, ignore_nice);
->  show_one(powersave_bias, powersave_bias);
->
-> @@ -340,6 +346,29 @@ static ssize_t store_up_threshold(struct kobject *a, struct attribute *b,
->        return count;
->  }
->
-> +static ssize_t store_sampling_down_factor(struct kobject *a,
-> +                       struct attribute *b, const char *buf, size_t count)
-> +{
-> +       unsigned int input, j;
-> +       int ret;
-> +       ret = sscanf(buf, "%u", &input);
-> +
-> +       if (ret != 1 || input > MAX_SAMPLING_DOWN_FACTOR || input < 1)
-> +               return -EINVAL;
-> +       mutex_lock(&dbs_mutex);
-> +       dbs_tuners_ins.sampling_down_factor = input;
-> +
-> +       /* Reset down sampling multiplier in case it was active */
-> +       for_each_online_cpu(j) {
-> +               struct cpu_dbs_info_s *dbs_info;
-> +               dbs_info = &per_cpu(od_cpu_dbs_info, j);
-> +               dbs_info->rate_mult = 1;
-> +       }
-> +       mutex_unlock(&dbs_mutex);
-> +
-> +       return count;
-> +}
-> +
->  static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
->                                      const char *buf, size_t count)
->  {
-> @@ -401,6 +430,7 @@ static ssize_t store_powersave_bias(struct kobject *a, struct attribute *b,
->  define_one_global_rw(sampling_rate);
->  define_one_global_rw(io_is_busy);
->  define_one_global_rw(up_threshold);
-> +define_one_global_rw(sampling_down_factor);
->  define_one_global_rw(ignore_nice_load);
->  define_one_global_rw(powersave_bias);
->
-> @@ -409,6 +439,7 @@ static struct attribute *dbs_attributes[] = {
->        &sampling_rate_min.attr,
->        &sampling_rate.attr,
->        &up_threshold.attr,
-> +       &sampling_down_factor.attr,
->        &ignore_nice_load.attr,
->        &powersave_bias.attr,
->        &io_is_busy.attr,
-> @@ -562,6 +593,10 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
->
->        /* Check for frequency increase */
->        if (max_load_freq > dbs_tuners_ins.up_threshold * policy->cur) {
-> +               /* If switching to max speed, apply sampling_down_factor */
-> +               if (policy->cur < policy->max)
-> +                       this_dbs_info->rate_mult =
-> +                               dbs_tuners_ins.sampling_down_factor;
->                dbs_freq_increase(policy, policy->max);
->                return;
->        }
-> @@ -584,6 +619,9 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
->                                (dbs_tuners_ins.up_threshold -
->                                 dbs_tuners_ins.down_differential);
->
-> +               /* No longer fully busy, reset rate_mult */
-> +               this_dbs_info->rate_mult = 1;
-> +
->                if (freq_next < policy->min)
->                        freq_next = policy->min;
->
-> @@ -607,7 +645,8 @@ static void do_dbs_timer(struct work_struct *work)
->        int sample_type = dbs_info->sample_type;
->
->        /* We want all CPUs to do sampling nearly on same jiffy */
-> -       int delay = usecs_to_jiffies(dbs_tuners_ins.sampling_rate);
-> +       int delay = usecs_to_jiffies(dbs_tuners_ins.sampling_rate
-> +               * dbs_info->rate_mult);
->
->        if (num_online_cpus() > 1)
->                delay -= jiffies % delay;
-> @@ -711,6 +750,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
->                        }
->                }
->                this_dbs_info->cpu = cpu;
-> +               this_dbs_info->rate_mult = 1;
->                ondemand_powersave_bias_init_cpu(cpu);
->                /*
->                 * Start the timerschedule work, when this governor
->
->
->
+>  mm/memory-failure.c |   15 +++++++++------
+>  1 files changed, 9 insertions(+), 6 deletions(-)
+> 
+> diff --git a/mm/memory-failure.c b/mm/memory-failure.c
+> index 9c26eec..886144b 100644
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -183,10 +183,11 @@ EXPORT_SYMBOL_GPL(hwpoison_filter);
+>   * signal.
+>   */
+>  static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
+> -			unsigned long pfn)
+> +			unsigned long pfn, struct page *page)
+>  {
+>  	struct siginfo si;
+>  	int ret;
+> +	unsigned order;
+>  
+>  	printk(KERN_ERR
+>  		"MCE %#lx: Killing %s:%d early due to hardware memory corruption\n",
+> @@ -198,7 +199,8 @@ static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
+>  #ifdef __ARCH_SI_TRAPNO
+>  	si.si_trapno = trapno;
+>  #endif
+> -	si.si_addr_lsb = PAGE_SHIFT;
+> +	order = PageCompound(page) ? huge_page_order(page) : PAGE_SHIFT;
+
+huge_page_order() expects struct hstate *h. Should be
+compound_order(compound_head(page)) or compound_order(page) if it's
+already a head page.
+
+btw, I notice that force_sig_info_fault() sets 
+
+        info.si_addr_lsb = si_code == BUS_MCEERR_AR ? PAGE_SHIFT : 0;
+
+What's the intention of conditional 0 here?
+
+> +	si.si_addr_lsb = order;
+>  	/*
+>  	 * Don't use force here, it's convenient if the signal
+>  	 * can be temporarily blocked.
+> @@ -327,7 +329,7 @@ static void add_to_kill(struct task_struct *tsk, struct page *p,
+>   * wrong earlier.
+>   */
+>  static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
+> -			  int fail, unsigned long pfn)
+> +			  int fail, struct page *page, unsigned long pfn)
+>  {
+>  	struct to_kill *tk, *next;
+>  
+> @@ -341,7 +343,8 @@ static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
+>  			if (fail || tk->addr_valid == 0) {
+>  				printk(KERN_ERR
+>  		"MCE %#lx: forcibly killing %s:%d because of failure to unmap corrupted page\n",
+> -					pfn, tk->tsk->comm, tk->tsk->pid);
+> +					pfn,	
+> +					tk->tsk->comm, tk->tsk->pid);
+>  				force_sig(SIGKILL, tk->tsk);
+>  			}
+>  
+> @@ -352,7 +355,7 @@ static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
+>  			 * process anyways.
+>  			 */
+>  			else if (kill_proc_ao(tk->tsk, tk->addr, trapno,
+> -					      pfn) < 0)
+> +					      pfn, page) < 0)
+>  				printk(KERN_ERR
+>  		"MCE %#lx: Cannot send advisory machine check signal to %s:%d\n",
+>  					pfn, tk->tsk->comm, tk->tsk->pid);
+> @@ -928,7 +931,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+>  	 * any accesses to the poisoned memory.
+>  	 */
+>  	kill_procs_ao(&tokill, !!PageDirty(hpage), trapno,
+> -		      ret != SWAP_SUCCESS, pfn);
+> +		      ret != SWAP_SUCCESS, p, pfn);
+
+It seems a bit better to pass "hpage" (the head page) instead of "p"
+since the function only referenced the head page, and "p" is somehow
+duplicated with "pfn".
+
+Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
+
+Thanks,
+Fengguang
