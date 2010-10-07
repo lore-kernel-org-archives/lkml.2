@@ -1,57 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab0JGUN6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 16:13:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755286Ab0JGUN4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 16:13:56 -0400
-Message-ID: <4CAE29CC.8030702@redhat.com>
-Date: Thu, 07 Oct 2010 22:13:00 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
-MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        just.for.lkml@googlemail.com, hch@infradead.org,
-        herbert@gondor.hengli.com.au
-Subject: Re: [dm-devel] Linux 2.6.36-rc7
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <4CAE1F47.3050105@kernel.org>
-In-Reply-To: <4CAE1F47.3050105@kernel.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755300Ab0JGUQR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 16:16:17 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48830 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752718Ab0JGUQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 16:16:16 -0400
+Date: Thu, 7 Oct 2010 21:41:34 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: linux-kernel@vger.kernel.org, marcel@holtmann.org,
+        linux-bluetooth@vger.kernel.org
+Subject: Peculiar stuff in hci_ath3k/badness in hci_uart
+Message-ID: <20101007214134.6bcd2e8f@lxorguk.ukuu.org.uk>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2010 09:28 PM, Tejun Heo wrote:
+Noticed this while looking at Savoy's stuff
 
-> I'm afraid there is a possibly workqueue related deadlock under high
-> memory pressure.  It happens on dm-crypt + md raid1 configuration.
-> I'm not yet sure whether this is caused by workqueue failing to kick
-> rescuers under memory pressure or the shared workqueue is making an
-> already existing problem more visible and in the process of setting up
-> an environment to reproduce the problem.
-> 
->  http://thread.gmane.org/gmane.comp.file-systems.xfs.general/34922/focus=1044784
 
-Yes, XFS is very good to show up problems in dm-crypt:)
+ath_wakeup_ar3k:
 
-But there was no change in dm-crypt which can itself cause such problem,
-planned workqueue changes are not in 2.6.36 yet.
-Code is basically the same for the last few releases.
+       int status = tty->driver->ops->tiocmget(tty, NULL);
 
-So it seems that workqueue processing really changed here under memory pressure.
+Now if the tty driver it is bound to happens to use the file pointer or
+worse still call into its file->ops badness is going to occur. Doubly fun
+is this - a NULL tiocmget is perfectly acceptable and some drivers don't
+have one. In the case of serial or usb core using code your backside is
+saved by luck. For other hardware well the SELinux page 0 mapping stuff
+will save your backside, and probably if enabled the sysctl bit on
+current kernels, but if not - oh dear me.
 
-Milan
+It continues....
 
-p.s.
-Anyway, if you are able to reproduce it and you think that there is problem
-in per-device dm-crypt workqueue, there are patches from Andi for shared
-per-cpu workqueue, maybe it can help here. (But this is really not RC material.)
+(kernel space)
+	struct termios settings;
 
-Unfortunately not yet in dm-devel tree, but I have them here ready for review:
-http://mbroz.fedorapeople.org/dm-crypt/2.6.36-devel/
-(all 4 patches must be applied, I hope Alasdair will put them in dm quilt soon.)
+
+        n_tty_ioctl_helper(tty, NULL, TCGETS, (unsigned long)&settings);
+        settings.c_cflag &= ~CRTSCTS;
+        n_tty_ioctl_helper(tty, NULL, TCSETS, (unsigned long)&settings);
+
+n_tty_ioctl_helper expects a user space pointer.
+
+
+I've not reviewed it for security impacts. I'd imagine you can oops the
+kernel happily with it and maybe more via the NULL pointers if suitable
+obscure hardware happens to be present. My gut feeling is that for most
+x86 boxes the worst will be an Oops or very bizarre behaviour because they
+won't have any suitable serial ports you can hit or have permission to
+access.
+
+tiocmget needs a file pointer because some devices check for hangups
+here. Now in fact it would actually make sense to move that into the core
+code and see if we can kill the file pointer but right now it doesn't
+seem safe.
+
+The ioctl helper stuff can either use the ugly set_fs hackery or better
+yet shove a helper in the kernel tree to get or set kernel termios which
+just takes a struct ktermios and does the right mutex locks and ops calls
+checks for NULL ops.
+
+I can find no record of this code having been anywhere near
+linux-kernel/linux-serial, which is a pity because after we'd mopped up
+our spilled drinks the bug would have been reported.
+
+Fortunately I looked further and the further I looked the more fun it gets
+
+in hci_uart we have
+
+                len = tty->ops->write(tty, skb->data, skb->len);
+
+but I can't find anywhere we check that the tty has a write op (a few
+don't), and you should check this at open and refuse if the ops you need
+don't exist (eg as SLIP does:
+
+static int slip_open(struct tty_struct *tty)
+{
+        struct slip *sl;
+        int err;
+
+        if (!capable(CAP_NET_ADMIN))
+                return -EPERM;
+
+        if (tty->ops->write == NULL)
+                return -EOPNOTSUPP;
+
+Fortunately almost no system will have a driver loaded which lacks a
+write op, but this should be fixed.
+
+
+Alan
