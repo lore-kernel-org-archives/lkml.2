@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759891Ab0JGCSr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 22:18:47 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:53126 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759606Ab0JGCSq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 22:18:46 -0400
-Date: Wed, 6 Oct 2010 19:18:36 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
-        "David S. Miller" <davem@davemloft.net>, stable@kernel.org
-Subject: [PATCH v2] ipc: initialize structure memory to zero for shmctl
-Message-ID: <20101007021836.GA14666@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1759870Ab0JGCXT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 22:23:19 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:54368 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757596Ab0JGCXR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 22:23:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 7 Oct 2010 11:17:43 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH 04/10] memcg: disable local interrupts in
+ lock_page_cgroup()
+Message-Id: <20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-5-git-send-email-gthelen@google.com>
+	<20101005160332.GB9515@barrios-desktop>
+	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
+	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
+	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The old shm interface will leak a few bytes of stack contents. Explicitly
-initialize the structure to zero-fill the untouched fields, using memset
-instead of C99-style in case there are ever holes in the structure.
+On Thu, 7 Oct 2010 10:54:56 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- ipc/shm.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+> On Thu, 7 Oct 2010 09:35:45 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> 
+> > On Wed, 6 Oct 2010 09:15:34 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
+> > 
+> > > First of all, we could add your patch as it is and I don't expect any
+> > > regression report about interrupt latency.
+> > > That's because many embedded guys doesn't use mmotm and have a
+> > > tendency to not report regression of VM.
+> > > Even they don't use memcg. Hmm...
+> > > 
+> > > I pass the decision to MAINTAINER Kame and Balbir.
+> > > Thanks for the detail explanation.
+> > > 
+> > 
+> > Hmm. IRQ delay is a concern. So, my option is this. How do you think ?
+> > 
+> > 1. remove local_irq_save()/restore() in lock/unlock_page_cgroup().
+> >    yes, I don't like it.
+> > 
+> > 2. At moving charge, do this:
+> > 	a) lock_page()/ or trylock_page()
+> > 	b) wait_on_page_writeback()
+> > 	c) do move_account under lock_page_cgroup().
+> > 	c) unlock_page()
+> > 
+> > 
+> > Then, Writeback updates will never come from IRQ context while
+> > lock/unlock_page_cgroup() is held by move_account(). There will be no race.
+> > 
+> hmm, if we'll do that, I think we need to do that under pte_lock in
+> mem_cgroup_move_charge_pte_range(). But, we can't do wait_on_page_writeback()
+> under pte_lock, right? Or, we need re-organize current move-charge implementation.
+> 
+Nice catch. I think releaseing pte_lock() is okay. (and it should be released)
 
-diff --git a/ipc/shm.c b/ipc/shm.c
-index 52ed77e..f943b1e 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -473,6 +473,7 @@ static inline unsigned long copy_shmid_to_user(void __user *buf, struct shmid64_
- 	    {
- 		struct shmid_ds out;
- 
-+		memset(&out, 0, sizeof(out));
- 		ipc64_perm_to_ipc_perm(&in->shm_perm, &out.shm_perm);
- 		out.shm_segsz	= in->shm_segsz;
- 		out.shm_atime	= in->shm_atime;
-@@ -524,6 +525,7 @@ static inline unsigned long copy_shminfo_to_user(void __user *buf, struct shminf
- 	    {
- 		struct shminfo out;
- 
-+		memset(&out, 0, sizeof(out));
- 		if(in->shmmax > INT_MAX)
- 			out.shmmax = INT_MAX;
- 		else
--- 
-1.7.1
+IIUC, task's css_set() points to new cgroup when "move" is called. Then,
+it's not necessary to take pte_lock, I guess.
+(And taking pte_lock too long is not appreciated..)
+
+I'll write a sample patch today.
+
+Thanks,
+-Kame
 
 
--- 
-Kees Cook
-Ubuntu Security Team
+
+
+
+
+
+
+> Thanks,
+> Daisuke Nishimura.
+> 
+
