@@ -1,46 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760402Ab0JGOt6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 10:49:58 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:42842 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758023Ab0JGOt5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 10:49:57 -0400
-Message-ID: <4CADDD9F.3030806@zytor.com>
-Date: Thu, 07 Oct 2010 07:47:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1760229Ab0JGOww (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 10:52:52 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:51658 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754267Ab0JGOwv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 10:52:51 -0400
+From: "Savoy, Pavan" <pavan_savoy@ti.com>
+To: Jiri Slaby <jirislaby@gmail.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
+Date: Thu, 7 Oct 2010 20:22:32 +0530
+Subject: RE: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
+Thread-Topic: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
+Thread-Index: Actl9XXNVJVDBj74R+eQeI5zEXfoYwAOVbwQ
+Message-ID: <19F8576C6E063C45BE387C64729E739404AA21D193@dbde02.ent.ti.com>
+References: <1286381895-11329-1-git-send-email-pavan_savoy@ti.com>
+ <1286381895-11329-2-git-send-email-pavan_savoy@ti.com>
+ <4CACD234.7020900@gmail.com>
+ <19F8576C6E063C45BE387C64729E739404AA21CEA1@dbde02.ent.ti.com>
+ <4CACF5A7.3010601@gmail.com>
+ <19F8576C6E063C45BE387C64729E739404AA21CEC6@dbde02.ent.ti.com>
+ <4CAD7DAB.8030209@gmail.com>
+In-Reply-To: <4CAD7DAB.8030209@gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Stephane Eranian <eranian@google.com>
-CC: mingo@elte.hu, Hans.Rosenfeld@amd.com, robert.richter@amd.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org,
-        Andreas.Herrmann3@amd.com, peterz@infradead.org, fweisbec@gmail.com,
-        rostedt@goodmis.org, acme@redhat.com,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, eranian@gmail.com
-Subject: Re: [RFC 0/3] Basic support for LWP
-References: <1286212172-654419-1-git-send-email-hans.rosenfeld@amd.com>	<alpine.LFD.2.00.1010042358520.2556@localhost6.localdomain6>	<20101005145155.GD173@escobedo.osrc.amd.com>	<alpine.LFD.2.00.1010051730060.2556@localhost6.localdomain6>	<20101005182739.GE173@escobedo.osrc.amd.com>	<20101005190501.GA21916@elte.hu>	<20101006073558.GJ13563@erda.amd.com>	<AANLkTi=T0QmcKeZcgcR+GKk-9OwQUB_x8XdHiNuU7tE_@mail.gmail.com>	<AANLkTimwVuosF24_gBOTpMydfcj-SQPFyZM4uu=vEPbL@mail.gmail.com>	<4CADD257.7080203@zytor.com>	<AANLkTin+PXzz4qJHX6kHiQW8Rqdrv=hrvq4iWuaOnGiV@mail.gmail.com>	<4CADD73B.8070809@zytor.com> <AANLkTi=nTUvcmk1XBHx=Dp6Qqiksq=m_RDn96y1J+Mck@mail.gmail.com>
-In-Reply-To: <AANLkTi=nTUvcmk1XBHx=Dp6Qqiksq=m_RDn96y1J+Mck@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2010 07:25 AM, Stephane Eranian wrote:
->>
->> No, but you wouldn't be able to use lazy FPU.
->>
-> You mean lazy restore, I am guessing here.
-> Is that to say, you cannot figure out whether the FPU state in
-> the CPU on ctxsw in is yours anymore?
+
+
+
+> -----Original Message-----
+> From: Jiri Slaby [mailto:jirislaby@gmail.com]
+> Sent: Thursday, October 07, 2010 2:59 AM
+> To: Savoy, Pavan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org; devel@driverdev.osuosl.org;
+> alan@lxorguk.ukuu.org.uk
+> Subject: Re: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
 > 
+> On 10/07/2010 12:36 AM, Savoy, Pavan wrote:
+> >>>>> +int st_core_init(struct st_data_s **core_data)
+> >>>>> +{
+> >>>>> +	struct st_data_s *st_gdata;
+> >>>>> +	long err;
+> >>>>> +	static struct tty_ldisc_ops *st_ldisc_ops;
+> >>>>> +
+> >>>>> +	/* populate and register to TTY line discipline */
+> >>>>> +	st_ldisc_ops = kzalloc(sizeof(*st_ldisc_ops), GFP_KERNEL);
+> >>>>> +	if (!st_ldisc_ops) {
+> >>>>> +		pr_err("no mem to allocate");
+> >>>>> +		return -ENOMEM;
+> >>>>> +	}
+> >>>> This can be static structure, you don't need to allocate this on heap.
+> >>>> It should be a singleton.
+> >>>
+> >>> Yes, I got this comment before, but is it just a style issue?
+> >>> I want to keep this in heap because some day, I hope TTY ldics have their
+> >> own
+> >>> private_data, which I can pass around like the tty_struct's data.
+> >>> and having them in heap, I plan to keep a reference to ops structure, so
+> >> that I
+> >>> can pass around and use ops->private_data everywhere ..
+> >>
+> >> I doubt ldisc ops will ever have ->private_data. What would you need it
+> >> for? The ops generally work with ttys which have ->disc_data.
+> >
+> > Yes, But in this case, I required something which can be set during
+> ldisc_register, and can be picked up during tty_open.
+> 
+> Why? ldiscs are per-system, singletons, not per-device. So you should
+> not bind to them any device specific info.
 
-Lazy save/restore, and more or less, yes.  Really, XSAVE was designed to
-be saved/restored as a unit, with unused state skipped.
 
-	-hpa
+Per-system? I don't understand this.
+There can be ldisc for each individual TTY, so doesn't that make it per device?
+Or to be even more specific, it makes it per-TTY which is mapped to a particular device, UART/a-set of usb-endpoints etc...
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+This driver in fact does just that, it is a driver which allows sharing of the TTY by many other drivers (I call it the protocol drivers).
 
+> --
+> js
