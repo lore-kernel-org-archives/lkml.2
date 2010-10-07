@@ -1,25 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752129Ab0JGVeD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:34:03 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44625 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750826Ab0JGVeA (ORCPT
+	id S1751852Ab0JGVeu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:34:50 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:53116 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750826Ab0JGVet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:34:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=iu1nt/eUqSTEMCI6KA8PFt7OtRrVKtw5VOBqZ1ZVBZcfUl7VyS73eaktHVS9Uu5P1P
-         FFiAFgvyRqfBtGqYN6Ffzqjbz2M0p6zs7WGlaC7SzJe1FOOds2WRxYYBuuwGXvW1hrBE
-         Opw4PpFVgU83YRJVAKDLLhSG4kasuPdqToN2Q=
+	Thu, 7 Oct 2010 17:34:49 -0400
 Subject: Re: [PATCH] net: clear heap allocations for privileged ethtool
  actions
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Ben Hutchings <bhutchings@solarflare.com>
 To: Kees Cook <kees.cook@canonical.com>
 Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <bhutchings@solarflare.com>,
         Jeff Garzik <jgarzik@redhat.com>,
         Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
         Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
@@ -27,55 +19,62 @@ Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
 In-Reply-To: <20101007211004.GA20267@outflux.net>
 References: <20101007211004.GA20267@outflux.net>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 23:31:25 +0200
-Message-ID: <1286487085.3745.99.camel@edumazet-laptop>
+Organization: Solarflare Communications
+Date: Thu, 07 Oct 2010 22:34:44 +0100
+Message-ID: <1286487284.2271.37.camel@achroite.uk.solarflarecom.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Oct 2010 21:34:48.0643 (UTC) FILETIME=[77B86930:01CB6667]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17688.005
+X-TM-AS-Result: No--15.346700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 07 octobre 2010 à 14:10 -0700, Kees Cook a écrit :
+On Thu, 2010-10-07 at 14:10 -0700, Kees Cook wrote:
 > Several other ethtool functions leave heap uncleared (potentially) by
 > drivers. Some interfaces appear safe (eeprom, etc), in that the sizes
 > are well controlled. In some situations (e.g. unchecked error conditions),
 > the heap will remain unchanged in areas before copying back to userspace.
 > Note that these are less of an issue since these all require CAP_NET_ADMIN.
-
-> @@ -775,7 +775,7 @@ static int ethtool_get_regs(struct net_device *dev, char __user *useraddr)
->  	if (regs.len > reglen)
->  		regs.len = reglen;
->  
-> -	regbuf = kmalloc(reglen, GFP_USER);
-> +	regbuf = kzalloc(reglen, GFP_USER);
->  	if (!regbuf)
+> 
+> Cc: stable@kernel.org
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> ---
+>  net/core/ethtool.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/net/core/ethtool.c b/net/core/ethtool.c
+> index 7a85367..fb9cf30 100644
+> --- a/net/core/ethtool.c
+> +++ b/net/core/ethtool.c
+> @@ -397,7 +397,7 @@ static noinline_for_stack int ethtool_get_rxfh_indir(struct net_device *dev,
+>  	    (KMALLOC_MAX_SIZE - sizeof(*indir)) / sizeof(*indir->ring_index))
+>  		return -ENOMEM;
+>  	full_size = sizeof(*indir) + sizeof(*indir->ring_index) * table_size;
+> -	indir = kmalloc(full_size, GFP_USER);
+> +	indir = kzalloc(full_size, GFP_USER);
+>  	if (!indir)
 >  		return -ENOMEM;
 >  
-> -- 
-> 1.7.1
-> 
+[...]
 
-Are you sure this is not hiding a more problematic problem ?
+Acked-by: Ben Hutchings <bhutchings@solarflare.com>
 
-Code does :
+You could alternately recalculate full_size before copying back to the
+user buffer:
 
-reglen = ops->get_regs_len(dev);
-if (regs.len > reglen)
-	regs.len = reglen;
-regbuf = kmalloc(reglen, GFP_USER);
+	full_size = sizeof(*indir) + sizeof(*indir->ring_index) * indir->size;
 
-So we can not copy back kernel memory.
+but kzalloc() is more obviously safe.
 
-However, what happens if user provides regs.len = 1 byte, and driver
-get_regs() doesnt properly checks regs.len and write past end of regbuf
--> We probably write on other parts of kernel memory
+Ben.
 
-An audit is needed, but first driver I checked is buggy
-(drivers/net/qlcnic/qlcnic_ethtool.c)
-
-->
- 	memset(p, 0, qlcnic_get_regs_len(dev));
-
-
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
