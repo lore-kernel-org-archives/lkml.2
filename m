@@ -1,109 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755354Ab0JGUSR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 16:18:17 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:50391 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751172Ab0JGUSQ convert rfc822-to-8bit (ORCPT
+	id S1755401Ab0JGUTJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 16:19:09 -0400
+Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:57534
+	"EHLO VA3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755288Ab0JGUTH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 16:18:16 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Jiri Slaby <jirislaby@gmail.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>
-Date: Fri, 8 Oct 2010 01:47:56 +0530
-Subject: RE: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
-Thread-Topic: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
-Thread-Index: ActmW4p5ZZQsXZvfRQ217yh+uxNqYgAACuWg
-Message-ID: <19F8576C6E063C45BE387C64729E739404AA21D248@dbde02.ent.ti.com>
-References: <1286381895-11329-1-git-send-email-pavan_savoy@ti.com>
-	<1286381895-11329-2-git-send-email-pavan_savoy@ti.com>
-	<4CACD234.7020900@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21CEA1@dbde02.ent.ti.com>
-	<4CACF5A7.3010601@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21CEC6@dbde02.ent.ti.com>
-	<4CAD7DAB.8030209@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21D193@dbde02.ent.ti.com>
-	<4CAE10C0.9000106@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21D220@dbde02.ent.ti.com>
-	<20101007203801.1c55a1d3@lxorguk.ukuu.org.uk>
-	<19F8576C6E063C45BE387C64729E739404AA21D23B@dbde02.ent.ti.com>
- <20101007213503.657bcab0@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101007213503.657bcab0@lxorguk.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Oct 2010 16:19:07 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+From: <alan.tull@freescale.com>
+To: <mmarek@suse.cz>
+CC: <linux-kbuild@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Alan Tull <alan.tull@freescale.com>
+Subject: [PATCH] Fix LOCALVERSION append plus logic
+Date: Thu, 7 Oct 2010 15:18:52 -0500
+Message-ID: <1286482732-12087-1-git-send-email-alan.tull@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 MIME-Version: 1.0
+Content-Type: text/plain
+X-Reverse-DNS: az33egw01.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Alan Tull <alan.tull@freescale.com>
 
-> -----Original Message-----
-> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
-> Sent: Thursday, October 07, 2010 3:35 PM
-> To: Savoy, Pavan
-> Cc: Jiri Slaby; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@driverdev.osuosl.org; linux-bluetooth@vger.kernel.org
-> Subject: Re: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
-> 
-> > ldisc is the ONLY way to do it, isn't it? Do I have any other option?
-> 
-> Userspace but even then it wouldn't solve your problem
-> 
-> > The situation was something similar here.
-> > What I was trying to get to is how we can have a per-device context if a
-> driver is just a line discipline driver?
-> 
-> tty->driver_data
-> 		TTY private data
-> tty->disc_data
-> 		LDISC per instance private data
-> 
-> So when your ldisc is opened attach your data to the tty->disc_data, and
-> when it is closed free the data.
+This change fixes the logic to do what the comment says
+when CONFIG_LOCALVERSION_AUTO and CONFIG_LOCALVERSION are
+both not set.
 
-But, I want to attach my data not when ldsic is opened, but when ldisc is registered.
-I want to begin accessing the data when ldisc is opened.
+Also fix a spelling error in the comment.
 
-> > I have 3 sub-devices if you will on a device which is interfaced over UART,
-> > One of them is Bluetooth which requires any UART Bluetooth device to have
-> its
-> > Own line discipline - N_HCI.
-> 
-> The problem is that your chip by the sound of it does not talk the
-> bluetooth ldisc - it talks something more complex.
-> 
-> The obvious question then is
-> 
-> Does it talk
-> 
-> 1.	HCI with bits nailed on
-> 2.	Something rather different which contains muxed data some of
-> which is reformatted up to create HCI
-> 
-> In the first case it may be worth seeing if the existing N_HCI could
-> support forwarding unknown frame types to a helper. In the latter it's a
-> lot trickier. It is possible to create a mux tty layer (see n_gsm.c) but
-> that is almost certainly overkill for this.
-> 
-> I wonder what Marcel thinks in terms of re-using the bluetooth ldisc ?
+If the kernel tree is in git, here's the config
+permutations (with CONFIG_LOCALVERSION_AUTO turned off)
+and the image name resulting:
 
-Yes, Marcel did suggest extending N_HCI, But even then, there need
-to be like a bunch of helpers (1 for FM, 1 for GPS, 1 for NFC, 1 for power-management), also the problem of who owns the /dev/tty begins to occur, Bluetooth has a utility called hciattach, I don't want my FM radio software to run hciattach when /dev/radio0 is opened and communicated via FM.
+CONFIG_LOCALVERSION=""
+results:
+patched   :   Linux-2.6.35.3+
+unpatched :   Linux-2.6.35.3
 
-In any case, the ti-st/ seems better now by look of things, I certainly welcome suggestions to improve it.
-Also, is there any plan to re-write whole of TTY like a the i2C or the SPI bus structure?
+CONFIG_LOCALVERSION="-something"
+results:
+patched   :   Linux-2.6.35.3-something
+unpatched :   Linux-2.6.35.3-something+
 
-Here I can imagine, all TTY line disciplines being sort of protocol/client drivers, the TTY sub-system in itself would be like the algos driver and then
-The uart drivers (like 8250.c) can be the adapter drivers.. What say?
+Signed-off-by: Alan Tull <alan.tull@freescale.com>
+---
+ scripts/setlocalversion |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-With something like this all I had to do was to write a new client driver.
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index 64a9cb5..4488a33 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -160,9 +160,9 @@ if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
+ 	# full scm version string
+ 	res="$res$(scm_version)"
+ else
+-	# apped a plus sign if the repository is not in a clean tagged
++	# append a plus sign if the repository is not in a clean tagged
+ 	# state and  LOCALVERSION= is not specified
+-	if test "${LOCALVERSION+set}" != "set"; then
++	if test "$CONFIG_LOCALVERSION" = ""; then
+ 		scm=$(scm_version --short)
+ 		res="$res${scm:++}"
+ 	fi
+-- 
+1.6.0.4
 
 
