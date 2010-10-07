@@ -1,142 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab0JGAtu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 20:49:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59744 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759115Ab0JGAts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 20:49:48 -0400
-Date: Thu, 7 Oct 2010 11:49:38 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michal Marek <mmarek@suse.cz>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: Linux 2.6.36-rc7
-Message-Id: <20101007114938.ad3d2c76.sfr@canb.auug.org.au>
-In-Reply-To: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1759301Ab0JGAyI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:54:08 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46566 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab0JGAyG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 20:54:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 7 Oct 2010 09:48:45 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Andrea Righi <arighi@develer.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 07/10] memcg: add dirty limits to mem_cgroup
+Message-Id: <20101007094845.9e6a1b0f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-8-git-send-email-gthelen@google.com>
+	<20101005094302.GA4314@linux.develer.com>
+	<xr93eic4wjlq.fsf@ninji.mtv.corp.google.com>
+	<20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, 06 Oct 2010 17:27:13 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-Hi Linus,
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+> 
+> > On Tue, 05 Oct 2010 12:00:17 -0700
+> > Greg Thelen <gthelen@google.com> wrote:
+> >
+> >> Andrea Righi <arighi@develer.com> writes:
+> >> 
+> >> > On Sun, Oct 03, 2010 at 11:58:02PM -0700, Greg Thelen wrote:
+> >> >> Extend mem_cgroup to contain dirty page limits.  Also add routines
+> >> >> allowing the kernel to query the dirty usage of a memcg.
+> >> >> 
+> >> >> These interfaces not used by the kernel yet.  A subsequent commit
+> >> >> will add kernel calls to utilize these new routines.
+> >> >
+> >> > A small note below.
+> >> >
+> >> >> 
+> >> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+> >> >> Signed-off-by: Andrea Righi <arighi@develer.com>
+> >> >> ---
+> >> >>  include/linux/memcontrol.h |   44 +++++++++++
+> >> >>  mm/memcontrol.c            |  180 +++++++++++++++++++++++++++++++++++++++++++-
+> >> >>  2 files changed, 223 insertions(+), 1 deletions(-)
+> >> >> 
+> >> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> >> >> index 6303da1..dc8952d 100644
+> >> >> --- a/include/linux/memcontrol.h
+> >> >> +++ b/include/linux/memcontrol.h
+> >> >> @@ -19,6 +19,7 @@
+> >> >>  
+> >> >>  #ifndef _LINUX_MEMCONTROL_H
+> >> >>  #define _LINUX_MEMCONTROL_H
+> >> >> +#include <linux/writeback.h>
+> >> >>  #include <linux/cgroup.h>
+> >> >>  struct mem_cgroup;
+> >> >>  struct page_cgroup;
+> >> >> @@ -33,6 +34,30 @@ enum mem_cgroup_write_page_stat_item {
+> >> >>  	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
+> >> >>  };
+> >> >>  
+> >> >> +/* Cgroup memory statistics items exported to the kernel */
+> >> >> +enum mem_cgroup_read_page_stat_item {
+> >> >> +	MEMCG_NR_DIRTYABLE_PAGES,
+> >> >> +	MEMCG_NR_RECLAIM_PAGES,
+> >> >> +	MEMCG_NR_WRITEBACK,
+> >> >> +	MEMCG_NR_DIRTY_WRITEBACK_PAGES,
+> >> >> +};
+> >> >> +
+> >> >> +/* Dirty memory parameters */
+> >> >> +struct vm_dirty_param {
+> >> >> +	int dirty_ratio;
+> >> >> +	int dirty_background_ratio;
+> >> >> +	unsigned long dirty_bytes;
+> >> >> +	unsigned long dirty_background_bytes;
+> >> >> +};
+> >> >> +
+> >> >> +static inline void get_global_vm_dirty_param(struct vm_dirty_param *param)
+> >> >> +{
+> >> >> +	param->dirty_ratio = vm_dirty_ratio;
+> >> >> +	param->dirty_bytes = vm_dirty_bytes;
+> >> >> +	param->dirty_background_ratio = dirty_background_ratio;
+> >> >> +	param->dirty_background_bytes = dirty_background_bytes;
+> >> >> +}
+> >> >> +
+> >> >>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+> >> >>  					struct list_head *dst,
+> >> >>  					unsigned long *scanned, int order,
+> >> >> @@ -145,6 +170,10 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+> >> >>  	mem_cgroup_update_page_stat(page, idx, -1);
+> >> >>  }
+> >> >>  
+> >> >> +bool mem_cgroup_has_dirty_limit(void);
+> >> >> +void get_vm_dirty_param(struct vm_dirty_param *param);
+> >> >> +s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item);
+> >> >> +
+> >> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> >> >>  						gfp_t gfp_mask);
+> >> >>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
+> >> >> @@ -326,6 +355,21 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+> >> >>  {
+> >> >>  }
+> >> >>  
+> >> >> +static inline bool mem_cgroup_has_dirty_limit(void)
+> >> >> +{
+> >> >> +	return false;
+> >> >> +}
+> >> >> +
+> >> >> +static inline void get_vm_dirty_param(struct vm_dirty_param *param)
+> >> >> +{
+> >> >> +	get_global_vm_dirty_param(param);
+> >> >> +}
+> >> >> +
+> >> >> +static inline s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+> >> >> +{
+> >> >> +	return -ENOSYS;
+> >> >> +}
+> >> >> +
+> >> >>  static inline
+> >> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> >> >>  					    gfp_t gfp_mask)
+> >> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> >> >> index f40839f..6ec2625 100644
+> >> >> --- a/mm/memcontrol.c
+> >> >> +++ b/mm/memcontrol.c
+> >> >> @@ -233,6 +233,10 @@ struct mem_cgroup {
+> >> >>  	atomic_t	refcnt;
+> >> >>  
+> >> >>  	unsigned int	swappiness;
+> >> >> +
+> >> >> +	/* control memory cgroup dirty pages */
+> >> >> +	struct vm_dirty_param dirty_param;
+> >> >> +
+> >> >>  	/* OOM-Killer disable */
+> >> >>  	int		oom_kill_disable;
+> >> >>  
+> >> >> @@ -1132,6 +1136,172 @@ static unsigned int get_swappiness(struct mem_cgroup *memcg)
+> >> >>  	return swappiness;
+> >> >>  }
+> >> >>  
+> >> >> +/*
+> >> >> + * Returns a snapshot of the current dirty limits which is not synchronized with
+> >> >> + * the routines that change the dirty limits.  If this routine races with an
+> >> >> + * update to the dirty bytes/ratio value, then the caller must handle the case
+> >> >> + * where both dirty_[background_]_ratio and _bytes are set.
+> >> >> + */
+> >> >> +static void __mem_cgroup_get_dirty_param(struct vm_dirty_param *param,
+> >> >> +					 struct mem_cgroup *mem)
+> >> >> +{
+> >> >> +	if (mem && !mem_cgroup_is_root(mem)) {
+> >> >> +		param->dirty_ratio = mem->dirty_param.dirty_ratio;
+> >> >> +		param->dirty_bytes = mem->dirty_param.dirty_bytes;
+> >> >> +		param->dirty_background_ratio =
+> >> >> +			mem->dirty_param.dirty_background_ratio;
+> >> >> +		param->dirty_background_bytes =
+> >> >> +			mem->dirty_param.dirty_background_bytes;
+> >> >> +	} else {
+> >> >> +		get_global_vm_dirty_param(param);
+> >> >> +	}
+> >> >> +}
+> >> >> +
+> >> >> +/*
+> >> >> + * Get dirty memory parameters of the current memcg or global values (if memory
+> >> >> + * cgroups are disabled or querying the root cgroup).
+> >> >> + */
+> >> >> +void get_vm_dirty_param(struct vm_dirty_param *param)
+> >> >> +{
+> >> >> +	struct mem_cgroup *memcg;
+> >> >> +
+> >> >> +	if (mem_cgroup_disabled()) {
+> >> >> +		get_global_vm_dirty_param(param);
+> >> >> +		return;
+> >> >> +	}
+> >> >> +
+> >> >> +	/*
+> >> >> +	 * It's possible that "current" may be moved to other cgroup while we
+> >> >> +	 * access cgroup. But precise check is meaningless because the task can
+> >> >> +	 * be moved after our access and writeback tends to take long time.  At
+> >> >> +	 * least, "memcg" will not be freed under rcu_read_lock().
+> >> >> +	 */
+> >> >> +	rcu_read_lock();
+> >> >> +	memcg = mem_cgroup_from_task(current);
+> >> >> +	__mem_cgroup_get_dirty_param(param, memcg);
+> >> >> +	rcu_read_unlock();
+> >> >> +}
+> >> >> +
+> >> >> +/*
+> >> >> + * Check if current memcg has local dirty limits.  Return true if the current
+> >> >> + * memory cgroup has local dirty memory settings.
+> >> >> + */
+> >> >> +bool mem_cgroup_has_dirty_limit(void)
+> >> >> +{
+> >> >> +	struct mem_cgroup *mem;
+> >> >> +
+> >> >> +	if (mem_cgroup_disabled())
+> >> >> +		return false;
+> >> >> +
+> >> >> +	mem = mem_cgroup_from_task(current);
+> >> >> +	return mem && !mem_cgroup_is_root(mem);
+> >> >> +}
+> >> >
+> >> > We only check the pointer without dereferencing it, so this is probably
+> >> > ok, but maybe this is safer:
+> >> >
+> >> > bool mem_cgroup_has_dirty_limit(void)
+> >> > {
+> >> > 	struct mem_cgroup *mem;
+> >> > 	bool ret;
+> >> >
+> >> > 	if (mem_cgroup_disabled())
+> >> > 		return false;
+> >> >
+> >> > 	rcu_read_lock();
+> >> > 	mem = mem_cgroup_from_task(current);
+> >> > 	ret = mem && !mem_cgroup_is_root(mem);
+> >> > 	rcu_read_unlock();
+> >> >
+> >> > 	return ret;
+> >> > }
+> >> >
+> >> > rcu_read_lock() should be held in mem_cgroup_from_task(), otherwise
+> >> > lockdep could detect this as an error.
+> >> >
+> >> > Thanks,
+> >> > -Andrea
+> >> 
+> >> Good suggestion.  I agree that lockdep might catch this.  There are some
+> >> unrelated debug_locks failures (even without my patches) that I worked
+> >> around to get lockdep to complain about this one.  I applied your
+> >> suggested fix and lockdep was happy.  I will incorporate this fix into
+> >> the next revision of the patch series.
+> >> 
+> >
+> > Hmm, considering other parts, shouldn't we define mem_cgroup_from_task
+> > as macro ?
+> >
+> > Thanks,
+> > -Kame
+> 
+> Is your motivation to increase performance with the same functionality?
+> If so, then would a 'static inline' be performance equivalent to a
+> preprocessor macro yet be safer to use?
+> 
+Ah, if lockdep finds this as bug, I think other parts will hit this, too.
 
-On Wed, 6 Oct 2010 14:45:13 -0700 Linus Torvalds <torvalds@linux-foundation=
-.org> wrote:
->
-> This should be the last -rc, I'm not seeing any reason to keep
-> delaying a real release. There was still more changes to
-> drivers/gpu/drm than I really would have hoped for, but they all look
-> harmless and good. Famous last words.
+like this.
+> static struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+> {
+>         struct mem_cgroup *mem = NULL;
+> 
+>         if (!mm)
+>                 return NULL;
+>         /*
+>          * Because we have no locks, mm->owner's may be being moved to other
+>          * cgroup. We use css_tryget() here even if this looks
+>          * pessimistic (rather than adding locks here).
+>          */
+>         rcu_read_lock();
+>         do {
+>                 mem = mem_cgroup_from_task(rcu_dereference(mm->owner));
+>                 if (unlikely(!mem))
+>                         break;
+>         } while (!css_tryget(&mem->css));
+>         rcu_read_unlock();
+>         return mem;
+> }
 
-I have no idea how critical any of this stuff is, but linux-next contain
-the following in it's "current" trees i.e. stuff that is supposed to go
-into 2.6.36.  These are from the arm-current, scsi-rc-fixes, net-current,
-wireless-current, kbuild-current, input-current and ide-curent trees
-(contacts cc'd).
+mem_cgroup_from_task() is designed to be used as this.
+If defined as macro, I think it will not be catched.
 
-Arnaud Lacombe (1):
-      kconfig: delay symbol direct dependency initialization
-[This one produces a lot of new warnings, but also fixes a bug ...]
 
-Ben Hutchings (2):
-      Revert "ipv4: Make INET_LRO a bool instead of tristate."
-      netdev: Depend on INET before selecting INET_LRO
+> Maybe it makes more sense to find a way to perform this check in
+> mem_cgroup_has_dirty_limit() without needing to grab the rcu lock.  I
+> think this lock grab is unneeded.  I am still collecting performance
+> data, but suspect that this may be making the code slower than it needs
+> to be.
+> 
 
-Dan Carpenter (1):
-      cls_u32: signedness bug
+Hmm. css_set[] itself is freed by RCU..what idea to remove rcu_read_lock() do
+you have ? Adding some flags ?
 
-Dan Rosenberg (2):
-      sctp: prevent reading out-of-bounds memory
-      sctp: Fix out-of-bounds reading in sctp_asoc_get_hmac()
+Ah...I noticed that you should do
 
-David Stevens (1):
-      ipv4: correct IGMP behavior on v3 query during v2-compatibility mode
+ mem = mem_cgroup_from_task(current->mm->owner);
 
-Dmitry Torokhov (1):
-      Input: wacom - fix runtime PM related deadlock
+to check has_dirty_limit...
 
-Eric Dumazet (1):
-      caif: fix two caif_connect() bugs
+-Kame
 
-Felix Fietkau (1):
-      ath9k_hw: fix regression in ANI listen time calculation
-
-Henrik Rydberg (1):
-      Input: uinput - setup MT usage during device creation
-
-Jeff Kirsher (4):
-      ixgbevf.txt: Update ixgbevf documentation
-      e1000.txt: Update e1000 documentation
-      e1000e.txt: Add e1000e documentation
-      MAINTAINERS: update Intel LAN Ethernet info
-
-Johannes Berg (1):
-      mac80211: delete AddBA response timer
-
-Kenneth Waters (1):
-      Input: joydev - fix JSIOCSAXMAP ioctl
-
-Maciej =C5=BBenczykowski (1):
-      net: Fix IPv6 PMTU disc. w/ asymmetric routes
-
-Martin K. Petersen (1):
-      [SCSI] Fix VPD inquiry page wrapper
-
-Nagendra Tomar (1):
-      net: Fix the condition passed to sk_wait_event()
-
-Neil Horman (1):
-      bonding: fix WARN_ON when writing to bond_master sysfs file
-
-Santosh Shilimkar (1):
-      ARM: 6419/1: mmu: Fix MT_MEMORY and MT_MEMORY_NONCACHED pte flags
-
-Sergei Shtylyov (2):
-      hpt366: add debounce delay to cable_detect() method
-      hpt366: fix clock turnaround
-
-Stanislaw Gruszka (1):
-      skge: add quirk to limit DMA
-
-Will Deacon (2):
-      ARM: 6416/1: errata: faulty hazard checking in the Store Buffer may l=
-ead to data corruption
-      ARM: 6412/1: kprobes-decode: add support for MOVW instruction
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMrRkiAAoJEDMEi1NhKgbsUekH/3omT671i4yr9EmGcnElaNSt
-V9w4JIFMyoZ1agEbW7h65qR1YG82wM1h07nGoLugJSx4loEFhnu2l+WvW84FRi9n
-USDUoc8vascnvjt8BLdz95TFAdGeoJTqKKd7F8ARdMgQk/ExMw3AB7k1+mYr+D+T
-sL7XG+8MHDoEEKzzfV/ePDl9/RGVyhAGNN3AquXfl368wMnx0dF7KCZrk47FTwZv
-JK8m24ltxrnMNgo4Aqtjv1h4pquXBnmXbDU3h2/fk+j66YcgeudCMrNR445AflDN
-eT20zCn1TQGcJkO+2UsbVyXtbtfVuMVOO0XPTza8uFgd/u536sNGq2Of6IXJ5hg=
-=Fs80
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC--
