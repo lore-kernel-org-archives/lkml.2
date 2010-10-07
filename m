@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751595Ab0JGPjy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 11:39:54 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:34064 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750836Ab0JGPjx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 11:39:53 -0400
-Date: Thu, 7 Oct 2010 11:39:52 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
+	id S1752836Ab0JGPku (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 11:40:50 -0400
+Received: from kroah.org ([198.145.64.141]:40109 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752699Ab0JGPks (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 11:40:48 -0400
+Date: Thu, 7 Oct 2010 08:37:23 -0700
+From: Greg KH <greg@kroah.com>
 To: tlinder <tlinder@codeaurora.org>
-cc: USB list <linux-usb@vger.kernel.org>,
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
         David Brownell <dbrownell@users.sourceforge.net>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC/PATCH v2 1/3] Add usb_endpoint_descriptor to be part of
- the struct usb_ep
-In-Reply-To: <1286465037-12438-1-git-send-email-tlinder@codeaurora.org>
-Message-ID: <Pine.LNX.4.44L0.1010071136380.1753-100000@iolanthe.rowland.org>
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Robert Lukassen <robert.lukassen@tomtom.com>,
+        Fabien Chouteau <fabien.chouteau@barco.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH v2 3/3] usb:gadget: Add SuperSpeed support to the
+ Gadget Framework
+Message-ID: <20101007153723.GC26129@kroah.com>
+References: <1286465101-12539-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286465101-12539-1-git-send-email-tlinder@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010, tlinder wrote:
+On Thu, Oct 07, 2010 at 05:24:57PM +0200, tlinder wrote:
+> +/** Default endpoint companion descriptor */
 
-> Change ep_choose() and usb_ep_enable() prototypes to use endpoint
-> descriptor from usb_ep. This optimization prevents the FDs from handling
-> the endpoint chosen descriptor.
-> This optimization is not full though. To fully exploit this change one
-> needs to update all the UDCs as well since in the current implementation
-> each of them saves the endpoint descriptor in it's internal (and extended)
-> endpoint structure.
-> This patch is a preparation for adding SuperSpeed support to the gadget
-> framework.
-> 
-> Signed-off-by: Tatyana Linder <tlinder@codeaurora.org>
+What's the '**' for?
 
-...
+> +static struct usb_ss_ep_comp_descriptor default_ep_comp_desc = {
+> +		.bDescriptorType = USB_DT_SS_ENDPOINT_COMP,
+> +		.bLength = 0x06,
+> +		.bMaxBurst = 0, /* the default is we don't support bursting */
+> +		.bmAttributes = 0, /* 2^0 streams supported */
+> +		.wBytesPerInterval = 0,
+> +};
+> +
+> +/**This function receives a pointer to usb_function and adds
 
-> diff --git a/include/linux/usb/gadget.h b/include/linux/usb/gadget.h
-> index d3ef42d..5e5198d 100644
-> --- a/include/linux/usb/gadget.h
-> +++ b/include/linux/usb/gadget.h
-> @@ -133,18 +133,25 @@ struct usb_ep_ops {
->   *      the endpoint descriptor used to configure the endpoint.
->   * @driver_data:for use by the gadget driver.  all other fields are
->   *	read-only to gadget drivers.
-> + * @bEndpointAddress: used to identify ep when finding descriptor that matches
-> + *	connection speed
-> + * @desc:endpoint descriptor.  this pointer set before endpoint is enabled and
-> + *	remains valid until the endpoint is disabled; the data byte order
-> + *	is little-endian (usb-standard).
+Incorrect kerneldoc formatting, please fix this up.
 
-The kerneldoc for @driver_data states that @bEndpointAddress and @desc 
-are read-only for gadget drivers.  This contradicts the changes this 
-patch makes to those drivers.
+thanks,
 
-Alan Stern
-
+greg k-h
