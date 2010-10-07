@@ -1,44 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753217Ab0JGVmY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:42:24 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42528 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab0JGVmX (ORCPT
+	id S1753541Ab0JGVm0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:42:26 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:61387 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753266Ab0JGVmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:42:23 -0400
-Date: Thu, 7 Oct 2010 22:42:12 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Mario Limonciello <superm1@ubuntu.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
-        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
-Message-ID: <20101007214212.GA2010@srcf.ucam.org>
-References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com> <20101007111510.GA19624@srcf.ucam.org> <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com> <20101007133529.GA21782@srcf.ucam.org> <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com> <20101007205049.GB32726@srcf.ucam.org> <AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com> <20101007213027.GA18628@core.coreip.homeip.net> <20101007213754.GA1896@srcf.ucam.org> <AANLkTinL9UckjiQGmMJ_NENPp9XxFHRdvTje_V46LPQ+@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinL9UckjiQGmMJ_NENPp9XxFHRdvTje_V46LPQ+@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 7 Oct 2010 17:42:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="56993445"
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Mike Frysinger <vapier@gentoo.org>, Feng Tang <feng.tang@intel.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+In-Reply-To: <20101007223819.46246716@lxorguk.ukuu.org.uk>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
+	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
+	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007223819.46246716@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 14:41:58 -0700
+Message-ID: <1286487718.23836.94.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 04:41:12PM -0500, Mario Limonciello wrote:
+On Thu, 2010-10-07 at 22:38 +0100, Alan Cox wrote:
+> > Your making too many assumptions .. You might be able to modify the
+> > kernel, and not the userspace. So you couldn't tweak the device
+> > creation .. It's much easier in the server world ..
+> 
+> Spare me the embedded is different lecture. It's not. In fact it's
+> usually easier because the environment you are testing is usually
+> standalone, doesn't cause a million dollar an hour downtime if you get it
+> wrong and was designed for debug/test so actually has a jtag port.
 
-> All Dell laptops are /supposed/ to adhere to the specification in
-> question.  Unfortunately, not all machines are tested with Linux
-> during their development and on the OS they ship with that
-> functionality isn't always used in that specific way for rfkill.
+fair enough, it's hard for both of us.
 
-I don't understand this. You know which code is broken - surely you're 
-able to determine which products shipped with BIOSes derived from the 
-broken code?
+> If you can modify the file system you can make /dev/ttyS0 the major/minor
+> of the jtag port.
+> 
+> If you can load anything in front of the userspace you can rename the
+> device/move it
+> 
+> So I find your example case fictional. In fact the only time I can see
+> you having a box so tightly locked up you can only tweak the kernel is
+> jailbreaking it, in which case you are such a fringe usage case and
+> technically competent that you can just do custom patches as you'll be
+> doing anyway for other bits.
+
+There's lots of other situations that can come up. You can't in anyway
+say that there is some certain set of situations where you'll always
+have X, Y, and Z.. There have been enough strange situations that I
+don't think it's right for you or me to assume we just know what they
+all are.
+
+> > > We've said no over a period of about ten years to a lot of attempts to
+> > > just borrow the ttyS0 range. If we'd said yes it would have been a
+> > > complete mess by now.
+> > > 
+> > > So the answer is no.
+> > 
+> > Nothing can be unilateral, there's always room for exceptions. You
+> > should say something more like "it's possible, but unlikely".
+> 
+> This argument gets regurgitated every so often and nobody has yet
+> provided a plausable reason to make a nasty mess.
+
+There's plenty of nasty messes in the kernel, "they" must have had some
+justification ..
+
+> Either way I would suggest the path forward is
+> 
+> - Look at the blackfin jtag using tty_port alone and see if it looks
+>   cleaner
+
+Yeah ..
+
+> - Fix the bugs noted
+
+Check,
+
+> - Submit a driver that uses the existing allocated jtag major/minor only
+
+The driver does this already. It uses ttyJ* by default, and ttyS is an
+option ..
+
+> and then have a debate about ttyS0 hackery separately.
+
+Fine with me..
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
