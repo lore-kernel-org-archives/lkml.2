@@ -1,56 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069Ab0JGAca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 20:32:30 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:40942 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932573Ab0JGAc3 (ORCPT
+	id S933208Ab0JGAlP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:41:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45976 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932573Ab0JGAlN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 20:32:29 -0400
-Date: Thu, 7 Oct 2010 09:31:20 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/4] HWPOISON: Report correct address granuality for AO
- huge page errors
-Message-ID: <20101007003120.GB9891@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1286398141-13749-1-git-send-email-andi@firstfloor.org>
- <1286398141-13749-4-git-send-email-andi@firstfloor.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <1286398141-13749-4-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Oct 2010 20:41:13 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 7 Oct 2010 09:35:45 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 04/10] memcg: disable local interrupts in
+ lock_page_cgroup()
+Message-Id: <20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-5-git-send-email-gthelen@google.com>
+	<20101005160332.GB9515@barrios-desktop>
+	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
+	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> @@ -198,7 +199,8 @@ static int kill_proc_ao(struct task_struct *t, unsigned long addr, int trapno,
->  #ifdef __ARCH_SI_TRAPNO
->  	si.si_trapno = trapno;
->  #endif
-> -	si.si_addr_lsb = PAGE_SHIFT;
-> +	order = PageCompound(page) ? huge_page_order(page) : PAGE_SHIFT;
-                                                     ^^^^
-                                     huge_page_order(page_hstate(page)) ?
+On Wed, 6 Oct 2010 09:15:34 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> +	si.si_addr_lsb = order;
->  	/*
->  	 * Don't use force here, it's convenient if the signal
->  	 * can be temporarily blocked.
+> First of all, we could add your patch as it is and I don't expect any
+> regression report about interrupt latency.
+> That's because many embedded guys doesn't use mmotm and have a
+> tendency to not report regression of VM.
+> Even they don't use memcg. Hmm...
+> 
+> I pass the decision to MAINTAINER Kame and Balbir.
+> Thanks for the detail explanation.
+> 
 
-...
+Hmm. IRQ delay is a concern. So, my option is this. How do you think ?
 
-> @@ -341,7 +343,8 @@ static void kill_procs_ao(struct list_head *to_kill, int doit, int trapno,
->  			if (fail || tk->addr_valid == 0) {
->  				printk(KERN_ERR
->  		"MCE %#lx: forcibly killing %s:%d because of failure to unmap corrupted page\n",
-> -					pfn, tk->tsk->comm, tk->tsk->pid);
-> +					pfn,	
-> +					tk->tsk->comm, tk->tsk->pid);
+1. remove local_irq_save()/restore() in lock/unlock_page_cgroup().
+   yes, I don't like it.
 
-What's the point of this change?
+2. At moving charge, do this:
+	a) lock_page()/ or trylock_page()
+	b) wait_on_page_writeback()
+	c) do move_account under lock_page_cgroup().
+	c) unlock_page()
+
+
+Then, Writeback updates will never come from IRQ context while
+lock/unlock_page_cgroup() is held by move_account(). There will be no race.
+
+Do I miss something ?
 
 Thanks,
-Naoya Horiguchi
+-Kame
+
