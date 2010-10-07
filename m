@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754614Ab0JGTaV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 15:30:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:46423 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab0JGTaU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 15:30:20 -0400
-Date: Thu, 7 Oct 2010 21:30:16 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] Please pull hwpoison fixes for 2.6.36
-Message-ID: <20101007193015.GA8091@basil.fritz.box>
+	id S1754552Ab0JGTeo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 15:34:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44248 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab0JGTen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 15:34:43 -0400
+Message-ID: <4CAE1F47.3050105@kernel.org>
+Date: Thu, 07 Oct 2010 21:28:07 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        just.for.lkml@googlemail.com, herbert@gondor.hengli.com.au,
+        hch@infradead.org, neilb@suse.de, dm-devel@redhat.com
+Subject: Re: Linux 2.6.36-rc7
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+In-Reply-To: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 07 Oct 2010 19:33:27 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hello, Linus.
 
-Some last minute hwpoison bug fixes. It turned out the address 
-granuality information for errors was not passed out to user space,
-and this broke someone who wanted to use it. Fixed this
-with a straight forward change to signal.c. And a couple of other
-bug fixes that have accumulated.
+On 10/06/2010 11:45 PM, Linus Torvalds wrote:
+> So I decided to break my a-week-is-eight-days rut, and actually
+> release -rc7 after a proper seven-day week instead. Wo-oo!
+> 
+> And yes, that's probably as exciting as it gets, which is just fine by
+> me. This should be the last -rc, I'm not seeing any reason to keep
+> delaying a real release. There was still more changes to
+> drivers/gpu/drm than I really would have hoped for, but they all look
+> harmless and good. Famous last words.
 
-Please consider pulling. Thanks,
--Andi
+I'm afraid there is a possibly workqueue related deadlock under high
+memory pressure.  It happens on dm-crypt + md raid1 configuration.
+I'm not yet sure whether this is caused by workqueue failing to kick
+rescuers under memory pressure or the shared workqueue is making an
+already existing problem more visible and in the process of setting up
+an environment to reproduce the problem.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git hwpoison-fixes
+ http://thread.gmane.org/gmane.comp.file-systems.xfs.general/34922/focus=1044784
 
-Andi Kleen (3):
-      HWPOISON: Copy si_addr_lsb to user
-      HWPOISON: Report correct address granuality for AO huge page errors
-      HWPOISON: Stop shrinking at right page count
-
-Naoya Horiguchi (1):
-      page-types.c: fix name of unpoison interface
-
- Documentation/vm/page-types.c |    2 +-
- kernel/signal.c               |    8 ++++++++
- mm/memory-failure.c           |   12 ++++++------
- 3 files changed, 15 insertions(+), 7 deletions(-)
+Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+tejun
