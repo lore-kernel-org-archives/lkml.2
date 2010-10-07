@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759870Ab0JGCXT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 22:23:19 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:54368 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757596Ab0JGCXR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 22:23:17 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 7 Oct 2010 11:17:43 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH 04/10] memcg: disable local interrupts in
- lock_page_cgroup()
-Message-Id: <20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759976Ab0JGCXp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 22:23:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49777 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757596Ab0JGCXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 22:23:42 -0400
+Date: Wed, 6 Oct 2010 19:19:59 -0700
+From: Greg KH <gregkh@suse.de>
+To: Sameer Nanda <snanda@chromium.org>
+Cc: lenb@kernel.org, stefan.bader@canonical.com, brad.figg@canonical.com,
+        apw@canonical.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ACPI: Read TSC upon resume
+Message-ID: <20101007021959.GA7300@suse.de>
+References: <1286406919-6236-1-git-send-email-snanda@chromium.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286406919-6236-1-git-send-email-snanda@chromium.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010 10:54:56 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-
-> On Thu, 7 Oct 2010 09:35:45 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Wed, Oct 06, 2010 at 04:15:19PM -0700, Sameer Nanda wrote:
+> Read the TSC upon resuming and print it out. This is useful
+> in helping figure out amount of time spent in the BIOS when
+> resuming from suspend.
 > 
-> > On Wed, 6 Oct 2010 09:15:34 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> > 
-> > > First of all, we could add your patch as it is and I don't expect any
-> > > regression report about interrupt latency.
-> > > That's because many embedded guys doesn't use mmotm and have a
-> > > tendency to not report regression of VM.
-> > > Even they don't use memcg. Hmm...
-> > > 
-> > > I pass the decision to MAINTAINER Kame and Balbir.
-> > > Thanks for the detail explanation.
-> > > 
-> > 
-> > Hmm. IRQ delay is a concern. So, my option is this. How do you think ?
-> > 
-> > 1. remove local_irq_save()/restore() in lock/unlock_page_cgroup().
-> >    yes, I don't like it.
-> > 
-> > 2. At moving charge, do this:
-> > 	a) lock_page()/ or trylock_page()
-> > 	b) wait_on_page_writeback()
-> > 	c) do move_account under lock_page_cgroup().
-> > 	c) unlock_page()
-> > 
-> > 
-> > Then, Writeback updates will never come from IRQ context while
-> > lock/unlock_page_cgroup() is held by move_account(). There will be no race.
-> > 
-> hmm, if we'll do that, I think we need to do that under pte_lock in
-> mem_cgroup_move_charge_pte_range(). But, we can't do wait_on_page_writeback()
-> under pte_lock, right? Or, we need re-organize current move-charge implementation.
+> Change-Id: I1d6a32bd62421becddecd152d561763e5f3e1101
+
+What is this tag for?  I don't think it matches anything the kernel
+community wants, do you?
+
+And are you always going to be printing this out?  Why do we want to
+know this every time?
+
+
+> Signed-off-by: Sameer Nanda <snanda@chromium.org>
+> ---
+>  drivers/acpi/sleep.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
 > 
-Nice catch. I think releaseing pte_lock() is okay. (and it should be released)
+> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+> index c0fed2e..f0588fa 100644
+> --- a/drivers/acpi/sleep.c
+> +++ b/drivers/acpi/sleep.c
+> @@ -214,6 +214,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>  	acpi_status status = AE_OK;
+>  	unsigned long flags = 0;
+>  	u32 acpi_state = acpi_target_sleep_state;
+> +	u64 tsc;
+>  
+>  	ACPI_FLUSH_CPU_CACHE();
+>  
+> @@ -235,6 +236,9 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>  
+>  	case ACPI_STATE_S3:
+>  		do_suspend_lowlevel();
+> +		rdtscll(tsc);
+> +		printk(KERN_INFO "TSC at resume: %llu\n",
+> +				(unsigned long long)tsc);
 
-IIUC, task's css_set() points to new cgroup when "move" is called. Then,
-it's not necessary to take pte_lock, I guess.
-(And taking pte_lock too long is not appreciated..)
+How long does this take, will it slow down resume?
 
-I'll write a sample patch today.
+thanks,
 
-Thanks,
--Kame
-
-
-
-
-
-
-
-
-> Thanks,
-> Daisuke Nishimura.
-> 
-
+greg k-h
