@@ -1,33 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756153Ab0JGVE2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:04:28 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53406 "EHLO
+	id S1756188Ab0JGVFx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:05:53 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39938 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab0JGVE1 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751949Ab0JGVFw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:04:27 -0400
+	Thu, 7 Oct 2010 17:05:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:from:date
          :x-google-sender-auth:message-id:subject:to:cc:content-type
          :content-transfer-encoding;
-        b=v+h8XwoWOyxqpLDM0DgvVojwu5jml1kV8w6TsY90HYJvRGnm7Htk4VyENGEo8ZIdi0
-         GZMj1iP38uXEuL9fsAzZKaiQ94p6DWVLTKwQ0Cc+yTmw+0D8LdCI76H/pdwDthUVSqDl
-         JU8fhm8hz6HpyAlR99ARfq2E/TASvFN+4MyUU=
+        b=QFjuK1F/LSgeprUejvpVlVIzC9YFSLI9mvQNmz6L8c5Loka2/ZGgeUnGNo/z/JR29w
+         9ZOiqJloyrCFQD58gN9VzgNhtIyOT6IS56kS+/v9+7HzhSIt/BNJfwjH+3zpzBeMWgCQ
+         a8/wnkNmb1WDLkGyChn/u/YTwliXcHDyIf7+k=
 MIME-Version: 1.0
-In-Reply-To: <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+In-Reply-To: <1286485186.23836.56.camel@c-dwalke-linux.qualcomm.com>
 References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
- <20101007215019.17b4a34a@lxorguk.ukuu.org.uk> <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
- <20101007220538.2294a7e4@lxorguk.ukuu.org.uk> <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+ <AANLkTinxorq2XhJdGDNQuUghxzr1q6OW=S1VjupOu5nH@mail.gmail.com>
+ <1286480364.23836.17.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=8Et=Z6zrzbZa3L0MO=cBjjh7L=XU2=PDEbzWW@mail.gmail.com>
+ <1286481532.23836.27.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=j2n-X+-zkas8HdL1awo7Lcyxwofts6FjU8vj6@mail.gmail.com>
+ <1286482013.23836.29.camel@c-dwalke-linux.qualcomm.com> <AANLkTinDvL9vPb6nmve3rO9dMtMAqh=d1oqBVTOHzYWH@mail.gmail.com>
+ <1286485186.23836.56.camel@c-dwalke-linux.qualcomm.com>
 From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 7 Oct 2010 17:03:59 -0400
-X-Google-Sender-Auth: RqapCDxsWZ1RSwYZV42prJMX0kU
-Message-ID: <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
+Date: Thu, 7 Oct 2010 17:05:31 -0400
+X-Google-Sender-Auth: 09MM9BXOAemfUIjwEt5dz0WpQDY
+Message-ID: <AANLkTi==_WDX03gYRa0=qCSgZ2eoO-Uzpg66WeEX57rS@mail.gmail.com>
 Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
 To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
+Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
         Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
         Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
         Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
@@ -40,34 +42,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 7, 2010 at 16:51, Daniel Walker wrote:
-> On Thu, 2010-10-07 at 22:05 +0100, Alan Cox wrote:
->> On Thu, 07 Oct 2010 13:36:06 -0700 Daniel Walker wrote:
->> > On Thu, 2010-10-07 at 21:50 +0100, Alan Cox wrote:
->> > > > +         Say Y here if you want to install DCC driver as a normal serial port
->> > > > +         /dev/ttyS0 (major 4, minor 64). Otherwise, it appears as /dev/ttyJ0
->> > > > +         (major 4, minor 128) and can co-exist with other UARTs, such as
->> > > > +         8250/16C550 compatibles.
->> > > > +
->> > >
->> > > NAK to both
+On Thu, Oct 7, 2010 at 16:59, Daniel Walker wrote:
+> On Thu, 2010-10-07 at 16:47 -0400, Mike Frysinger wrote:
+>> On Thu, Oct 7, 2010 at 16:06, Daniel Walker wrote:
+>> > On Thu, 2010-10-07 at 16:02 -0400, Mike Frysinger wrote:
+>> >> how is that any different from:
+>> >> ln -s ttyJ0 /dev/ttyS0
 >> >
->> > I would agree if this wasn't strictly for debugging embedded devices in
->> > difficult situations.. After talking to Mike, it's seems like it would
->> > be useful to have this as a ttyS* specifically because embedded devices
->> > won't always create a ttyJ* for you and ttyS* will likely already exist.
+>> > It has the same major and minors as ttyS* does. So you don't have to run
+>> > anything on the target.
 >>
->> If you are debugging an embedded device you are capable of changing it
->> (otherwise you wouldn't debug it). Therefore the fact you might need to
->> tweak the tty creation on the device is not a problem. If you can't
->> change the device well there is no point debugging it is there !
+>> i dont see how those things are related.  the major/minor are
+>> irrelevant, unless you've already hard coded these in some app that
+>> creates device nodes manually (instead of mdev/udev), but even then
+>> that's something that "needs to be run on the target".  and both
+>> already have config support to transparently do something like
+>> "symlink ttyS# to XXX" as XXX is created.
 >
-> Your making too many assumptions .. You might be able to modify the
-> kernel, and not the userspace. So you couldn't tweak the device
-> creation .. It's much easier in the server world ..
+> Something does ultimately run on all targets, the issues is does the
+> person debugging have the ability to change it .. It's not always the
+> case that they can change it. The userspace may not have udev at all.
+> The userspace may consist of a single binary .. I'm not making any
+> assumptions about the userspace here, it can be anything.
 
-this driver isnt in the kernel.  there is no ABI to preserve.  if
-people want to use the mainline driver, they can fix their userspace.
-i dont think the "binary userspace" argument is terribly relevant to
-new driver submissions.
+then there is already a static rootfs with pre-populated /dev which
+would be fixed, or the single binary fixed.  if the options are "my
+system works" or "my system doesnt work", i cant imagine people would
+continue to attempt to use "/dev/ttyS#" if it didnt exist or didnt
+work.
 -mike
