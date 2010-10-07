@@ -1,271 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab0JGG0f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 02:26:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59893 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab0JGG0e (ORCPT
+	id S1756119Ab0JGG3S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 02:29:18 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:64211 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab0JGG3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 02:26:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 7 Oct 2010 15:21:11 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH] memcg: reduce lock time at move charge (Was Re: [PATCH
- 04/10] memcg: disable local interrupts in lock_page_cgroup()
-Message-Id: <20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Oct 2010 02:29:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=cRTdnIjiGFhIIg4rjvgddAgN5XMHoMsq/ZhfuzRjgiSptlszVHOhPSUPGbHnGZRg2e
+         jocrk7qXpWStnlsD1dqRtZYaKYDeiHEnKR6JaUPJ6ZrmCSfSaoEUltKEfj/KVfYpApM0
+         VCwdgGMqcNm1okV1OMJRKwuembkfORzKQvhLU=
+Date: Thu, 7 Oct 2010 10:29:09 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Kumar Gala <galak@kernel.crashing.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Scott Wood <scottwood@freescale.com>, Peter Tyser <ptyser@xes-inc.com>,
+        linux-kernel@vger.kernel.org, Dave Jiang <djiang@mvista.com>,
+        linuxppc-dev@ozlabs.org, Doug Thompson <dougthompson@xmission.com>
+Subject: Re: [PATCH] edac: mpc85xx: Add support for new MPCxxx/Pxxxx EDAC
+ controllers (fix)
+Message-ID: <20101007062909.GA27110@oksana.dev.rtsoft.ru>
+References: <20100715182507.GA3482@oksana.dev.rtsoft.ru>
+ <20100716151224.21d499a3@schlenkerla.am.freescale.net>
+ <20100721153933.64d02086.akpm@linux-foundation.org>
+ <20100721182108.5a22c822@schlenkerla.am.freescale.net>
+ <20100801105419.GA352@oksana.dev.rtsoft.ru>
+ <5628792F-9A5F-4200-90B3-FB3939F02969@kernel.crashing.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <5628792F-9A5F-4200-90B3-FB3939F02969@kernel.crashing.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010 11:17:43 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
- 
-> > hmm, if we'll do that, I think we need to do that under pte_lock in
-> > mem_cgroup_move_charge_pte_range(). But, we can't do wait_on_page_writeback()
-> > under pte_lock, right? Or, we need re-organize current move-charge implementation.
-> > 
-> Nice catch. I think releaseing pte_lock() is okay. (and it should be released)
+On Thu, Oct 07, 2010 at 01:18:19AM -0500, Kumar Gala wrote:
+[...]
+> > diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+> > index cfa86f7..b178cfa 100644
+> > --- a/drivers/edac/mpc85xx_edac.c
+> > +++ b/drivers/edac/mpc85xx_edac.c
+> > @@ -652,7 +652,6 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
+> > 	{ .compatible = "fsl,p1020-l2-cache-controller", },
+> > 	{ .compatible = "fsl,p1021-l2-cache-controller", },
+> > 	{ .compatible = "fsl,p2020-l2-cache-controller", },
+> > -	{ .compatible = "fsl,p4080-l2-cache-controller", },
+> > 	{},
+> > };
+> > MODULE_DEVICE_TABLE(of, mpc85xx_l2_err_of_match);
+> > -- 
+> > 1.7.0.5
 > 
-> IIUC, task's css_set() points to new cgroup when "move" is called. Then,
-> it's not necessary to take pte_lock, I guess.
-> (And taking pte_lock too long is not appreciated..)
-> 
-> I'll write a sample patch today.
-> 
-Here.
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Can you post a new patch as it doesn't look like this got merged by Andrew so we need to clean up after ourselves.
 
-Now, at task migration among cgroup, memory cgroup scans page table and moving
-account if flags are properly set.
+It's already in Linus' tree.
 
-The core code, mem_cgroup_move_charge_pte_range() does
+Thanks,
 
- 	pte_offset_map_lock();
-	for all ptes in a page table:
-		1. look into page table, find_and_get a page
-		2. remove it from LRU.
-		3. move charge.
-		4. putback to LRU. put_page()
-	pte_offset_map_unlock();
+- - - -
+commit cd1542c8197fc3c2eb3a8301505d5d9738fab1e4
+Author: Anton Vorontsov <avorontsov@mvista.com>
+Date:   Tue Aug 10 18:03:21 2010 -0700
 
-for pte entries on a 3rd(2nd) level page table.
+    edac: mpc85xx: add support for new MPCxxx/Pxxxx EDAC controllers
+    
+    Simply add proper IDs into the device table.
+    
+    Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+    Cc: Scott Wood <scottwood@freescale.com>
+    Cc: Peter Tyser <ptyser@xes-inc.com>
+    Cc: Dave Jiang <djiang@mvista.com>
+    Cc: Doug Thompson <dougthompson@xmission.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 
-This pte_offset_map_lock seems a bit long. This patch modifies a rountine as
-
-	pte_offset_map_lock()
-	for 32 pages:
-		      find_and_get a page
-		      record it
-	pte_offset_map_unlock()
-	for all recorded pages
-		      isolate it from LRU.
-		      move charge
-		      putback to LRU
-	for all recorded pages
-		      put_page()
-
-Note: newly-charged pages while we move account are charged to the new group.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   92 ++++++++++++++++++++++++++++++++++++--------------------
- 1 file changed, 60 insertions(+), 32 deletions(-)
-
-Index: mmotm-0928/mm/memcontrol.c
-===================================================================
---- mmotm-0928.orig/mm/memcontrol.c
-+++ mmotm-0928/mm/memcontrol.c
-@@ -4475,17 +4475,22 @@ one_by_one:
-  *
-  * Called with pte lock held.
-  */
--union mc_target {
--	struct page	*page;
--	swp_entry_t	ent;
--};
- 
- enum mc_target_type {
--	MC_TARGET_NONE,	/* not used */
-+	MC_TARGET_NONE, /* used as failure code(0) */
- 	MC_TARGET_PAGE,
- 	MC_TARGET_SWAP,
+diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+index fdbad55..af75e27 100644
+--- a/drivers/edac/mpc85xx_edac.c
++++ b/drivers/edac/mpc85xx_edac.c
+@@ -647,7 +647,10 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
+ 	{ .compatible = "fsl,mpc8555-l2-cache-controller", },
+ 	{ .compatible = "fsl,mpc8560-l2-cache-controller", },
+ 	{ .compatible = "fsl,mpc8568-l2-cache-controller", },
++	{ .compatible = "fsl,mpc8569-l2-cache-controller", },
+ 	{ .compatible = "fsl,mpc8572-l2-cache-controller", },
++	{ .compatible = "fsl,p1020-l2-cache-controller", },
++	{ .compatible = "fsl,p1021-l2-cache-controller", },
+ 	{ .compatible = "fsl,p2020-l2-cache-controller", },
+ 	{},
  };
- 
-+struct mc_target {
-+	enum mc_target_type type;
-+	union {
-+		struct page	*page;
-+		swp_entry_t	ent;
-+	} val;
-+};
-+
-+
- static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
- 						unsigned long addr, pte_t ptent)
- {
-@@ -4561,7 +4566,7 @@ static struct page *mc_handle_file_pte(s
- }
- 
- static int is_target_pte_for_mc(struct vm_area_struct *vma,
--		unsigned long addr, pte_t ptent, union mc_target *target)
-+		unsigned long addr, pte_t ptent, struct mc_target *target)
- {
- 	struct page *page = NULL;
- 	struct page_cgroup *pc;
-@@ -4587,7 +4592,7 @@ static int is_target_pte_for_mc(struct v
- 		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
- 			ret = MC_TARGET_PAGE;
- 			if (target)
--				target->page = page;
-+				target->val.page = page;
- 		}
- 		if (!ret || !target)
- 			put_page(page);
-@@ -4597,8 +4602,10 @@ static int is_target_pte_for_mc(struct v
- 			css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
- 		ret = MC_TARGET_SWAP;
- 		if (target)
--			target->ent = ent;
-+			target->val.ent = ent;
- 	}
-+	if (target)
-+		target->type = ret;
- 	return ret;
- }
- 
-@@ -4751,6 +4758,9 @@ static void mem_cgroup_cancel_attach(str
- 	mem_cgroup_clear_mc();
- }
- 
-+
-+#define MC_MOVE_ONCE		(32)
-+
- static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
- 				unsigned long addr, unsigned long end,
- 				struct mm_walk *walk)
-@@ -4759,26 +4769,47 @@ static int mem_cgroup_move_charge_pte_ra
- 	struct vm_area_struct *vma = walk->private;
- 	pte_t *pte;
- 	spinlock_t *ptl;
-+	struct mc_target *target;
-+	int index, num;
-+
-+	target = kzalloc(sizeof(struct mc_target) *MC_MOVE_ONCE, GFP_KERNEL);
-+	if (!target)
-+		return -ENOMEM;
- 
- retry:
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; addr += PAGE_SIZE) {
-+	for (num = 0; num < MC_MOVE_ONCE && addr != end; addr += PAGE_SIZE) {
- 		pte_t ptent = *(pte++);
--		union mc_target target;
--		int type;
-+		ret = is_target_pte_for_mc(vma, addr, ptent, &target[num]);
-+		if (!ret)
-+			continue;
-+		target[num++].type = ret;
-+	}
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
-+
-+	ret = 0;
-+	index = 0;
-+	do {
-+		struct mc_target *mt;
- 		struct page *page;
- 		struct page_cgroup *pc;
- 		swp_entry_t ent;
- 
--		if (!mc.precharge)
--			break;
-+		if (!mc.precharge) {
-+			ret = mem_cgroup_do_precharge(1);
-+			if (ret)
-+				goto out;
-+			continue;
-+		}
-+
-+		mt = &target[index++];
- 
--		type = is_target_pte_for_mc(vma, addr, ptent, &target);
--		switch (type) {
-+		switch (mt->type) {
- 		case MC_TARGET_PAGE:
--			page = target.page;
-+			page = mt->val.page;
- 			if (isolate_lru_page(page))
--				goto put;
-+				break;
- 			pc = lookup_page_cgroup(page);
- 			if (!mem_cgroup_move_account(pc,
- 						mc.from, mc.to, false)) {
-@@ -4787,11 +4818,9 @@ retry:
- 				mc.moved_charge++;
- 			}
- 			putback_lru_page(page);
--put:			/* is_target_pte_for_mc() gets the page */
--			put_page(page);
- 			break;
- 		case MC_TARGET_SWAP:
--			ent = target.ent;
-+			ent = mt->val.ent;
- 			if (!mem_cgroup_move_swap_account(ent,
- 						mc.from, mc.to, false)) {
- 				mc.precharge--;
-@@ -4802,21 +4831,20 @@ put:			/* is_target_pte_for_mc() gets th
- 		default:
- 			break;
- 		}
-+	} while (index < num);
-+out:
-+	for (index = 0; index < num; index++) {
-+		if (target[index].type == MC_TARGET_PAGE)
-+			put_page(target[index].val.page);
-+		target[index].type = MC_TARGET_NONE;
- 	}
--	pte_unmap_unlock(pte - 1, ptl);
-+
-+	if (ret)
-+		return ret;
- 	cond_resched();
- 
--	if (addr != end) {
--		/*
--		 * We have consumed all precharges we got in can_attach().
--		 * We try charge one by one, but don't do any additional
--		 * charges to mc.to if we have failed in charge once in attach()
--		 * phase.
--		 */
--		ret = mem_cgroup_do_precharge(1);
--		if (!ret)
--			goto retry;
--	}
-+	if (addr != end)
-+		goto retry;
- 
- 	return ret;
- }
-
+@@ -1125,7 +1128,10 @@ static struct of_device_id mpc85xx_mc_err_of_match[] = {
+ 	{ .compatible = "fsl,mpc8569-memory-controller", },
+ 	{ .compatible = "fsl,mpc8572-memory-controller", },
+ 	{ .compatible = "fsl,mpc8349-memory-controller", },
++	{ .compatible = "fsl,p1020-memory-controller", },
++	{ .compatible = "fsl,p1021-memory-controller", },
+ 	{ .compatible = "fsl,p2020-memory-controller", },
++	{ .compatible = "fsl,p4080-memory-controller", },
+ 	{},
+ };
+ MODULE_DEVICE_TABLE(of, mpc85xx_mc_err_of_match);
