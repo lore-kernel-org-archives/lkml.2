@@ -1,43 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab0JGViG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:38:06 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53434 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750972Ab0JGViE (ORCPT
+	id S1751690Ab0JGVkN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:40:13 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:53504 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab0JGVkL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:38:04 -0400
-Date: Thu, 7 Oct 2010 22:37:54 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Mario Limonciello <superm1@ubuntu.com>,
-        Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
-        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
-Message-ID: <20101007213754.GA1896@srcf.ucam.org>
-References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com> <20101007111510.GA19624@srcf.ucam.org> <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com> <20101007133529.GA21782@srcf.ucam.org> <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com> <20101007205049.GB32726@srcf.ucam.org> <AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com> <20101007213027.GA18628@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101007213027.GA18628@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 7 Oct 2010 17:40:11 -0400
+Subject: Re: [PATCH] net: clear heap allocations for privileged ethtool
+ actions
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Kees Cook <kees.cook@canonical.com>, linux-kernel@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Jeff Garzik <jgarzik@redhat.com>,
+        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
+        netdev@vger.kernel.org
+In-Reply-To: <1286487085.3745.99.camel@edumazet-laptop>
+References: <20101007211004.GA20267@outflux.net>
+	 <1286487085.3745.99.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Thu, 07 Oct 2010 22:40:07 +0100
+Message-ID: <1286487607.2271.42.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-4.fc13) 
+Content-Transfer-Encoding: 8BIT
+X-OriginalArrivalTime: 07 Oct 2010 21:40:11.0442 (UTC) FILETIME=[381FA120:01CB6668]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-17688.005
+X-TM-AS-Result: No--29.954200-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 02:30:28PM -0700, Dmitry Torokhov wrote:
+On Thu, 2010-10-07 at 23:31 +0200, Eric Dumazet wrote:
+> Le jeudi 07 octobre 2010 à 14:10 -0700, Kees Cook a écrit :
+> > Several other ethtool functions leave heap uncleared (potentially) by
+> > drivers. Some interfaces appear safe (eeprom, etc), in that the sizes
+> > are well controlled. In some situations (e.g. unchecked error conditions),
+> > the heap will remain unchanged in areas before copying back to userspace.
+> > Note that these are less of an issue since these all require CAP_NET_ADMIN.
+> 
+> > @@ -775,7 +775,7 @@ static int ethtool_get_regs(struct net_device *dev, char __user *useraddr)
+> >  	if (regs.len > reglen)
+> >  		regs.len = reglen;
+> >  
+> > -	regbuf = kmalloc(reglen, GFP_USER);
+> > +	regbuf = kzalloc(reglen, GFP_USER);
 
-> We have this strategy for bunch of input stuff (force release, keymap)
-> and I think it works better than dding more and more DMI quirks into
-> kernel itself.
+Actually, I recently changed this to vmalloc() so your patch won't
+apply.
 
-It's limited to Dell hardware, so I think keeping a static list in the 
-Dell laptop driver is reasonable. All we need is a list of hardware, and 
-I'd really hope that Dell know which BIOS versions contain this code!
+> >  	if (!regbuf)
+> >  		return -ENOMEM;
+> >  
+> > -- 
+> > 1.7.1
+> > 
+> 
+> Are you sure this is not hiding a more problematic problem ?
+> 
+> Code does :
+> 
+> reglen = ops->get_regs_len(dev);
+> if (regs.len > reglen)
+> 	regs.len = reglen;
+> regbuf = kmalloc(reglen, GFP_USER);
+> 
+> So we can not copy back kernel memory.
+> 
+> However, what happens if user provides regs.len = 1 byte, and driver
+> get_regs() doesnt properly checks regs.len and write past end of regbuf
+> -> We probably write on other parts of kernel memory
+[...]
+
+Why should the driver's get_regs() check regs.len?  The buffer is
+allocated based on reglen which is provided by the driver, not the user.
+
+reglen (length of the kernel buffer) is not reduced; regs.len (length of
+the user buffer) is.  That lets the user know how much of the user
+buffer was actually used.
+
+Ben.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
