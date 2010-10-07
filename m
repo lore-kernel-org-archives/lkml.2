@@ -1,463 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0JGVpV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:45:21 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:61906 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751268Ab0JGVpS (ORCPT
+	id S1754295Ab0JGVp3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:45:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57775 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754103Ab0JGVp0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:45:18 -0400
-Date: Thu, 7 Oct 2010 15:45:34 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: pavan_savoy@ti.com
-Cc: linux-bluetooth@vger.kernel.org, marcel@holtmann.org, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-Message-ID: <20101007184534.GB13602@vigoh>
-References: <1286477237-7526-1-git-send-email-pavan_savoy@ti.com>
- <1286477237-7526-2-git-send-email-pavan_savoy@ti.com>
+	Thu, 7 Oct 2010 17:45:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Oe9X/CTCjb+SGTIN0LKBWNrJuBWcIsqHky6DHaSXvVNap2WLc7Kdzurt9szn3Px7b3
+         MbKJ0kTewmfcqfLzOJjyexo79Ls7qxCuY8cMZ+me0c9w158fjN4OO4RTVpdISjPco5S/
+         TBcSz/JJ5CNGVQMJCrXX5ToZZVdoFJSYqgYsI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286477237-7526-2-git-send-email-pavan_savoy@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101007214212.GA2010@srcf.ucam.org>
+References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com>
+	<20101007111510.GA19624@srcf.ucam.org>
+	<AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com>
+	<20101007133529.GA21782@srcf.ucam.org>
+	<AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com>
+	<20101007205049.GB32726@srcf.ucam.org>
+	<AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com>
+	<20101007213027.GA18628@core.coreip.homeip.net>
+	<20101007213754.GA1896@srcf.ucam.org>
+	<AANLkTinL9UckjiQGmMJ_NENPp9XxFHRdvTje_V46LPQ+@mail.gmail.com>
+	<20101007214212.GA2010@srcf.ucam.org>
+Date: Thu, 7 Oct 2010 16:45:22 -0500
+X-Google-Sender-Auth: YHYphPNoeeQ5_S0jvwb2PF-p4V4
+Message-ID: <AANLkTimh649Lhj-sBYzViq_G-2Bva0U-TPCMGfSdK=QE@mail.gmail.com>
+Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
+From: Mario Limonciello <superm1@ubuntu.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
+        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavan,
+Matthew:
 
-Change the commit subject to "Bluetooth: TI_ST bluetooth driver" 
+On Thu, Oct 7, 2010 at 16:42, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Thu, Oct 07, 2010 at 04:41:12PM -0500, Mario Limonciello wrote:
+>
+>> All Dell laptops are /supposed/ to adhere to the specification in
+>> question.  Unfortunately, not all machines are tested with Linux
+>> during their development and on the OS they ship with that
+>> functionality isn't always used in that specific way for rfkill.
+>
+> I don't understand this. You know which code is broken - surely you're
+> able to determine which products shipped with BIOSes derived from the
+> broken code?
+>
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
+>
 
-* pavan_savoy@ti.com <pavan_savoy@ti.com> [2010-10-07 14:47:16 -0400]:
-
-> From: Pavan Savoy <pavan_savoy@ti.com>
-> 
-> This is the bluetooth protocol driver for the TI WiLink7 chipsets.
-> Texas Instrument's WiLink chipsets combine wireless technologies
-> like BT, FM, GPS and WLAN onto a single chip.
-> 
-> This Bluetooth driver works on top of the TI_ST shared transport
-> line discipline driver which also allows other drivers like
-> FM V4L2 and GPS character driver to make use of the same UART interface.
-> 
-> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> ---
->  drivers/bluetooth/bt_ti.c |  489 +++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 489 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/bluetooth/bt_ti.c
-
-We don't have filename with bt_.. in drivers/bluetooth/. Maybe ti_st.c
-should be a better name, or something like that.
-
-> 
-> diff --git a/drivers/bluetooth/bt_ti.c b/drivers/bluetooth/bt_ti.c
-> new file mode 100644
-> index 0000000..dffbb56
-> --- /dev/null
-> +++ b/drivers/bluetooth/bt_ti.c
-> @@ -0,0 +1,489 @@
-> +/*
-> + *  Texas Instrument's Bluetooth Driver For Shared Transport.
-> + *
-> + *  Bluetooth Driver acts as interface between HCI CORE and
-> + *  TI Shared Transport Layer.
-> + *
-> + *  Copyright (C) 2009-2010 Texas Instruments
-> + *  Author: Raja Mani <raja_mani@ti.com>
-> + *	Pavan Savoy <pavan_savoy@ti.com>
-> + *
-> + *  This program is free software; you can redistribute it and/or modify
-> + *  it under the terms of the GNU General Public License version 2 as
-> + *  published by the Free Software Foundation.
-> + *
-> + *  This program is distributed in the hope that it will be useful,
-> + *  but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + *  GNU General Public License for more details.
-> + *
-> + *  You should have received a copy of the GNU General Public License
-> + *  along with this program; if not, write to the Free Software
-> + *  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-> + *
-> + */
-> +
-> +#include <linux/platform_device.h>
-> +#include <net/bluetooth/bluetooth.h>
-> +#include <net/bluetooth/hci_core.h>
-> +
-> +#include <linux/ti_wilink_st.h>
-> +
-> +/* Bluetooth Driver Version */
-> +#define VERSION               "1.0"
-> +
-> +/* Defines number of seconds to wait for reg completion
-> + * callback getting called from ST (in case,registration
-> + * with ST returns PENDING status)
-> + */
-> +#define BT_REGISTER_TIMEOUT   6000	/* 6 sec */
-> +
-> +/* BT driver's local status */
-> +#define BT_DRV_RUNNING        0
-> +#define BT_ST_REGISTERED      1
-> +
-> +/**
-> + * struct hci_st - BT driver operation structure
-> + * @hdev: hci device pointer which binds to bt driver
-> + * @flags: used locally,to maintain various BT driver status
-> + * @streg_cbdata: to hold ST registration callback status
-> + * @st_write: write function pointer of ST driver
-> + * @wait_for_btdrv_reg_completion - completion sync between hci_st_open
-> + *	and hci_st_registration_completion_cb.
-> + */
-> +struct hci_st {
-> +	struct hci_dev *hdev;
-> +	unsigned long flags;
-> +	char streg_cbdata;
-> +	long (*st_write) (struct sk_buff *);
-> +	struct completion wait_for_btdrv_reg_completion;
-> +};
-> +
-> +static int reset;
-> +
-> +/* Increments HCI counters based on pocket ID (cmd,acl,sco) */
-> +static inline void hci_st_tx_complete(struct hci_st *hst, int pkt_type)
-> +{
-> +	struct hci_dev *hdev;
-> +	hdev = hst->hdev;
-> +
-> +	/* Update HCI stat counters */
-> +	switch (pkt_type) {
-> +	case HCI_COMMAND_PKT:
-> +		hdev->stat.cmd_tx++;
-> +		break;
-> +
-> +	case HCI_ACLDATA_PKT:
-> +		hdev->stat.acl_tx++;
-> +		break;
-> +
-> +	case HCI_SCODATA_PKT:
-> +		hdev->stat.cmd_tx++;
-
-it should be sco_tx here.
-
-> +		break;
-> +	}
-> +}
-> +
-> +/* ------- Interfaces to Shared Transport ------ */
-> +
-> +/* Called by ST layer to indicate protocol registration completion
-> + * status.hci_st_open() function will wait for signal from this
-> + * API when st_register() function returns ST_PENDING.
-> + */
-> +static void hci_st_registration_completion_cb(void *priv_data, char data)
-
-That is not the hci layer, so rename this function (and the others) to
-something that reflect where they are really doing.
-
-> +{
-> +	struct hci_st *lhst = (struct hci_st *)priv_data;
-> +	/* hci_st_open() function needs value of 'data' to know
-> +	 * the registration status(success/fail),So have a back
-> +	 * up of it.
-> +	 */
-> +	lhst->streg_cbdata = data;
-> +
-> +	/* Got a feedback from ST for BT driver registration
-> +	 * request.Wackup hci_st_open() function to continue
-> +	 * it's open operation.
-> +	 */
-> +	complete(&lhst->wait_for_btdrv_reg_completion);
-> +}
-> +
-> +/* Called by Shared Transport layer when receive data is
-> + * available */
-> +static long hci_st_receive(void *priv_data, struct sk_buff *skb)
-> +{
-> +	int err;
-> +	int len;
-
-you can put err and len in the same line.
-
-> +	struct hci_st *lhst = (struct hci_st *)priv_data;
-> +
-> +	err = 0;
-> +	len = 0;
-
-and no need to set them to 0 here.
-
-> +
-> +	if (skb == NULL) {
-> +		BT_ERR("Invalid SKB received from ST");
-> +		return -EFAULT;
-> +	}
-
-We need a empty line here.
-
-> +	if (!lhst) {
-> +		kfree_skb(skb);
-> +		BT_ERR("Invalid hci_st memory,freeing SKB");
-> +		return -EFAULT;
-> +	}
-
-And also here. Check the rest of the code for similar issues.
-
-> +	if (!test_bit(BT_DRV_RUNNING, &lhst->flags)) {
-> +		kfree_skb(skb);
-> +		BT_ERR("Device is not running,freeing SKB");
-> +		return -EINVAL;
-> +	}
-
-If you are here, your device is running, right? Or am I missing
-something?
-
-> +
-> +	len = skb->len;
-> +	skb->dev = (struct net_device *)lhst->hdev;
-> +
-> +	/* Forward skb to HCI CORE layer */
-> +	err = hci_recv_frame(skb);
-> +	if (err) {
-> +		kfree_skb(skb);
-> +		BT_ERR("Unable to push skb to HCI CORE(%d),freeing SKB",
-> +				err);
-> +		return err;
-> +	}
-> +	lhst->hdev->stat.byte_rx += len;
-
-actually you even don't need len, just use skb->len
-
-> +
-> +	return 0;
-> +}
-> +
-> +/* ------- Interfaces to HCI layer ------ */
-> +
-> +/* Called from HCI core to initialize the device */
-> +static int hci_st_open(struct hci_dev *hdev)
-> +{
-> +	static struct st_proto_s hci_st_proto;
-> +	unsigned long timeleft;
-> +	struct hci_st *hst;
-> +	int err;
-> +	err = 0;
-> +
-> +	BT_DBG("%s %p", hdev->name, hdev);
-> +	hst = hdev->driver_data;
-> +
-> +	/* Populate BT driver info required by ST */
-> +	memset(&hci_st_proto, 0, sizeof(hci_st_proto));
-> +
-> +	/* BT driver ID */
-> +	hci_st_proto.type = ST_BT;
-> +
-> +	/* Receive function which called from ST */
-> +	hci_st_proto.recv = hci_st_receive;
-> +
-> +	/* Packet match function may used in future */
-> +	hci_st_proto.match_packet = NULL;
-
-It is already NULL, you dua a memset.
-
-> +
-> +	/* Callback to be called when registration is pending */
-> +	hci_st_proto.reg_complete_cb = hci_st_registration_completion_cb;
-> +
-> +	/* This is write function pointer of ST. BT driver will make use of this
-> +	 * for sending any packets to chip. ST will assign and give to us, so
-> +	 * make it as NULL */
-> +	hci_st_proto.write = NULL;
-
-Same here.
-
-> +
-> +	/* send in the hst to be received at registration complete callback
-> +	 * and during st's receive
-> +	 */
-> +	hci_st_proto.priv_data = hst;
-> +
-> +	/* Register with ST layer */
-> +	err = st_register(&hci_st_proto);
-> +	if (err == -EINPROGRESS) {
-> +		/* Prepare wait-for-completion handler data structures.
-> +		 * Needed to syncronize this and st_registration_completion_cb()
-> +		 * functions.
-> +		 */
-> +		init_completion(&hst->wait_for_btdrv_reg_completion);
-
-I'm not liking that, but I'll leave for Marcel and others comment.
-
-> +
-> +		/* Reset ST registration callback status flag , this value
-> +		 * will be updated in hci_st_registration_completion_cb()
-> +		 * function whenever it called from ST driver.
-> +		 */
-> +		hst->streg_cbdata = -EINPROGRESS;
-> +
-> +		/* ST is busy with other protocol registration(may be busy with
-> +		 * firmware download).So,Wait till the registration callback
-> +		 * (passed as a argument to st_register() function) getting
-> +		 * called from ST.
-> +		 */
-> +		BT_DBG(" %s waiting for reg completion signal from ST",
-> +				__func__);
-> +
-> +		timeleft =
-> +			wait_for_completion_timeout
-> +			(&hst->wait_for_btdrv_reg_completion,
-> +			 msecs_to_jiffies(BT_REGISTER_TIMEOUT));
-> +		if (!timeleft) {
-> +			BT_ERR("Timeout(%d sec),didn't get reg"
-> +					"completion signal from ST",
-> +					BT_REGISTER_TIMEOUT / 1000);
-> +			return -ETIMEDOUT;
-> +		}
-> +
-> +		/* Is ST registration callback called with ERROR value? */
-> +		if (hst->streg_cbdata != 0) {
-> +			BT_ERR("ST reg completion CB called with invalid"
-> +					"status %d", hst->streg_cbdata);
-> +			return -EAGAIN;
-> +		}
-> +		err = 0;
-> +	} else if (err == -1) {
-
-Use the proper error macro instead "-1" 
-
-> +		BT_ERR("st_register failed %d", err);
-> +		return -EAGAIN;
-> +	}
-> +
-> +	/* Do we have proper ST write function? */
-> +	if (hci_st_proto.write != NULL) {
-> +		/* We need this pointer for sending any Bluetooth pkts */
-> +		hst->st_write = hci_st_proto.write;
-> +	} else {
-> +		BT_ERR("failed to get ST write func pointer");
-> +
-> +		/* Undo registration with ST */
-> +		err = st_unregister(ST_BT);
-> +		if (err < 0)
-> +			BT_ERR("st_unregister failed %d", err);
-> +
-> +		hst->st_write = NULL;
-> +		return -EAGAIN;
-> +	}
-> +
-> +	/* Registration with ST layer is completed successfully,
-> +	 * now chip is ready to accept commands from HCI CORE.
-> +	 * Mark HCI Device flag as RUNNING
-> +	 */
-> +	set_bit(HCI_RUNNING, &hdev->flags);
-> +
-> +	/* Registration with ST successful */
-> +	set_bit(BT_ST_REGISTERED, &hst->flags);
-> +
-> +	return err;
-> +}
-> +
-> +/* Close device */
-> +static int hci_st_close(struct hci_dev *hdev)
-> +{
-> +	int err;
-> +	struct hci_st *hst;
-
-Skip a line after declarations.
-
-> +	err = 0;
-
-you can set err to 0 in the declaration if you really need that.
-
-> +
-> +	hst = hdev->driver_data;
-> +	/* Unregister from ST layer */
-> +	if (test_and_clear_bit(BT_ST_REGISTERED, &hst->flags)) {
-> +		err = st_unregister(ST_BT);
-> +		if (err != 0) {
-> +			BT_ERR("st_unregister failed %d", err);
-> +			return -EBUSY;
-> +		}
-> +	}
-> +
-> +	hst->st_write = NULL;
-> +
-> +	/* ST layer would have moved chip to inactive state.
-> +	 * So,clear HCI device RUNNING flag.
-> +	 */
-> +	if (!test_and_clear_bit(HCI_RUNNING, &hdev->flags))
-> +		return 0;
-
-Looks you are screwing up the flags here, if it fails on st_unregister()
-and returns HCI_RUNNING should keep set?
-
-> +
-> +	return err;
-
-Rethink how you are doing error handling here, it should no be
-complicated like that.
-
-> +}
-> +
-> +/* Called from HCI CORE , Sends frames to Shared Transport */
-> +static int hci_st_send_frame(struct sk_buff *skb)
-> +{
-> +	struct hci_dev *hdev;
-> +	struct hci_st *hst;
-> +	long len;
-> +
-> +	if (skb == NULL) {
-> +		BT_ERR("Invalid skb received from HCI CORE");
-> +		return -ENOMEM;
-> +	}
-> +	hdev = (struct hci_dev *)skb->dev;
-> +	if (!hdev) {
-> +		BT_ERR("SKB received for invalid HCI Device (hdev=NULL)");
-> +		return -ENODEV;
-> +	}
-> +	if (!test_bit(HCI_RUNNING, &hdev->flags)) {
-> +		BT_ERR("Device is not running");
-> +		return -EBUSY;
-> +	}
-> +
-> +	hst = (struct hci_st *)hdev->driver_data;
-> +
-> +	/* Prepend skb with frame type */
-> +	memcpy(skb_push(skb, 1), &bt_cb(skb)->pkt_type, 1);
-> +
-> +	BT_DBG(" %s: type %d len %d", hdev->name, bt_cb(skb)->pkt_type,
-> +			skb->len);
-> +
-> +	/* Insert skb to shared transport layer's transmit queue.
-> +	 * Freeing skb memory is taken care in shared transport layer,
-> +	 * so don't free skb memory here.
-> +	 */
-> +	if (!hst->st_write) {
-> +		kfree_skb(skb);
-> +		BT_ERR(" Can't write to ST, st_write null?");
-> +		return -EAGAIN;
-> +	}
-> +	len = hst->st_write(skb);
-> +	if (len < 0) {
-> +		/* Something went wrong in st write , free skb memory */
-
-IMHO we don't need comments like that, clearly we now that something
-went wrong.
-
-> +		kfree_skb(skb);
-> +		BT_ERR(" ST write failed (%ld)", len);
-> +		return -EAGAIN;
-> +	}
-> +
-> +	/* ST accepted our skb. So, Go ahead and do rest */
-> +	hdev->stat.byte_tx += len;
-> +	hci_st_tx_complete(hst, bt_cb(skb)->pkt_type);
-> +
-> +	return 0;
-
-goto might be better to handle error here.
+Not all product's BIOS are developed in-house.  The ones that are, yes
+it quite possible to identify.  Matter of fact, this issue tends to
+not exist on the in-house developed BIOS codebase.
 
 
 -- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
+Mario Limonciello
+superm1@gmail.com
