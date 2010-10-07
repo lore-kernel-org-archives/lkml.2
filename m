@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760062Ab0JGDC1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 23:02:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53153 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760050Ab0JGDCZ (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Wed, 6 Oct 2010 23:02:25 -0400
-Date: Wed, 6 Oct 2010 22:59:23 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Bruce Edge <bruce.edge@gmail.com>
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com, hpa@zytor.com,
-        alex.williamson@redhat.com, x86@kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: [Xen-devel] Re: [PATCH 16/20] x86: Introduce x86_msi_ops
-Message-ID: <20101007025923.GB8272@dumpdata.com>
-References: <1280945955-14229-1-git-send-email-konrad.wilk@oracle.com>
- <1280945955-14229-17-git-send-email-konrad.wilk@oracle.com>
- <20100831183140.GA3431@dumpdata.com>
- <20100923144826.GA29015@dumpdata.com>
- <AANLkTinor8_okhpQ1M_DGubAp50M4j2T1RFO-TTi0Q2b@mail.gmail.com>
+	id S933108Ab0JGDIl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 23:08:41 -0400
+Received: from xenotime.net ([72.52.115.56]:49271 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S933021Ab0JGDIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 23:08:40 -0400
+Message-ID: <39657.64.39.138.238.1286420910.squirrel@xenotime.net>
+In-Reply-To: <22641647-5901-4C65-99D0-F9BF2064AD91@mac.com>
+References: <B2C884FB-3933-4363-85C6-4F1206275B4C@mac.com>
+    <55150.64.39.142.105.1286398399.squirrel@xenotime.net>
+    <22641647-5901-4C65-99D0-F9BF2064AD91@mac.com>
+Date: Wed, 6 Oct 2010 20:08:30 -0700 (PDT)
+Subject: Re: Kernel config option missing: 'Compile the kernel with frame 
+     pointers'
+From: "Randy Dunlap" <rdunlap@xenotime.net>
+To: "Elvis Dowson" <elvis.dowson@mac.com>
+Cc: "Randy Dunlap" <rdunlap@xenotime.net>,
+        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.5.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinor8_okhpQ1M_DGubAp50M4j2T1RFO-TTi0Q2b@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 23, 2010 at 04:18:42PM -0700, Bruce Edge wrote:
-> On Thu, Sep 23, 2010 at 7:48 AM, Konrad Rzeszutek Wilk
-> <konrad.wilk@oracle.com> wrote:
-> > On Tue, Aug 31, 2010 at 02:31:40PM -0400, Konrad Rzeszutek Wilk wrote:
-> >> On Wed, Aug 04, 2010 at 02:19:11PM -0400, Konrad Rzeszutek Wilk wrote:
-> >> > From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> >> >
-> >> > Introduce an x86 specific indirect mechanism to setup MSIs.
-> >> > The MSI setup functions become function pointers in an x86_msi_ops
-> >> > struct, that defaults to the implementation in io_apic.c
-> >>
-> >> Hey Peter,
-> >>
-> >> I was wondering if you have time to take a look at this?
-> >
-> > ping?
-> >>
-> >> The patchset introduces a driver which takes care of allowing
-> >> pci_conf_read/write in a virtualized environements with PCI
-> >> passthrough devices. Unfortunatly for MSI operations that is not
-> >> so simple, so this patch alongside with the previous one
-> >> (https://patchwork.kernel.org/patch/117105/)
-> >> expands the arch_* calls. This makes it possible to register on top
-> >> of the native callback (the virtualized ones can), if required.
-> >>
-> 
-> Is this patch required for PCI passthrough devices that use MSI interrupts?
 
-Yes. And also for MSI-X. However, I've just posted a new updated mechanism based
-on Thomas's idea - which is superior to this one.
+On Wed, October 6, 2010 2:00 pm, Elvis Dowson wrote:
+> Hi Randy,
+>
+>
+> On Oct 7, 2010, at 12:53 AM, Randy Dunlap wrote:
+>
+>>
+>> It sounds like you don't have DEBUG_KERNEL symbol set.
+>> You can't see the FRAME_POINTER kconfig symbol unless
+>> DEBUG_KERNEL is set/enabled and you are on a qualifying
+>> architecture:
+>>
+>>
+>> config FRAME_POINTER bool "Compile the kernel with frame pointers"
+>> depends on DEBUG_KERNEL && \ (CRIS || M68K || M68KNOMMU || FRV || UML ||
+>> \
+>> AVR32 || SUPERH || BLACKFIN || MN10300) || \
+>> ARCH_WANT_FRAME_POINTERS
+>> default y if (DEBUG_INFO && UML) || ARCH_WANT_FRAME_POINTERS
+>>
+>>
+>> The prompt for DEBUG_KERNEL is "Kernel debugging".
+>> It is in the "Kernel hacking" menu.
+>>
+>
+> I have CONFIG_DEBUG_KERNEL=y set. I'm compiling for the ARM architecture
+> (TI OMAP 3503). So I guess it doesn't apply for ARM?
 
-> 
-> I'm wondering because I'm seeing drivers for PCI passthrough  are able
-> to init the MSI interrupts OK, but never get any interrupts with pvops
-> domU kernels.
+That's correct AFAICT.
+ARM does not set (select) ARCH_WANT_FRAME_POINTERS.
 
-The problem you are seeing is different, I think we can narrow it down
-to the dom0 doing something wacked.
+
+> I want to debug the kernel using Eclipse IDE and kgdb.
+
+
+
+-- 
+~Randy
 
