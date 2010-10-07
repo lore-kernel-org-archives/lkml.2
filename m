@@ -1,128 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab0JGQhy convert rfc822-to-quoted-printable (ORCPT
-	<rfc822;w@1wt.eu>); Thu, 7 Oct 2010 12:37:54 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:56492 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752370Ab0JGQhv convert rfc822-to-8bit (ORCPT
+	id S1752326Ab0JGQmi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 12:42:38 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:48292 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751175Ab0JGQmh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 12:37:51 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        "Pekka Savola \(ipv6\)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-References: <1286025469.2582.1806.camel@edumazet-laptop>
-	<20101004085913.GR14068@sgi.com>
-	<1286183058.18293.26.camel@edumazet-laptop>
-	<20101004093439.GG5189@cr0.nay.redhat.com>
-	<1286187030.18293.33.camel@edumazet-laptop>
-	<20101004103545.GJ5189@cr0.nay.redhat.com>
-	<1286188701.18293.57.camel@edumazet-laptop>
-	<20101005130117.GK5170@cr0.nay.redhat.com>
-	<20101007071859.GD5471@cr0.nay.redhat.com>
-	<20101007092538.GE5471@cr0.nay.redhat.com>
-	<1286445081.2912.15.camel@edumazet-laptop>
-Date: Thu, 07 Oct 2010 09:37:32 -0700
-In-Reply-To: <1286445081.2912.15.camel@edumazet-laptop> (Eric Dumazet's
-	message of "Thu, 07 Oct 2010 11:51:21 +0200")
-Message-ID: <m1iq1e3qnn.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 FVGT_m_MULTI_ODD Contains multiple odd letter combinations
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 T_TooManySym_03 6+ unique symbols in subject
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Eric Dumazet <eric.dumazet@gmail.com>
-X-Spam-Relay-Country: 
-Subject: Re: [PATCH] sysctl: fix min/max handling in __do_proc_doulongvec_minmax()
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Thu, 7 Oct 2010 12:42:37 -0400
+Subject: Re: RFC: btusb firmware load help
+From: Marcel Holtmann <holtmann@linux.intel.com>
+To: Bala Shanmugam <sbalashanmugam@atheros.com>
+Cc: Shanmugamkamatchi Balashanmugam 
+	<Shanmugamkamatchi.Balashanmugam@atheros.com>,
+        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>
+In-Reply-To: <4CADF6BF.6070305@atheros.com>
+References: <1286349552.6145.11.camel@aeonflux>
+	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
+	 <1286380566.6145.42.camel@aeonflux> <20101006163816.GE7070@tux>
+	 <AANLkTik9w4_PdcEsbRHakLcxcD334_1Q8hGArxTXPCGF@mail.gmail.com>
+	 <20101006173949.GG7070@tux>
+	 <1286387660.3655.382.camel@jlt3.sipsolutions.net>
+	 <AANLkTikYRSQw-+Tcj4VS1qxi=OaeF9C5hjAMWVu+0M=v@mail.gmail.com>
+	 <AANLkTi=o4Mc72NrNoALBdS3YHeY7RMyyAJPsCy=uW3+F@mail.gmail.com>
+	 <1286389697.3655.401.camel@jlt3.sipsolutions.net>
+	 ,<20101006183340.GI7070@tux>
+	 <44EE5C37ADC36343B0625A05DD408C4850DAD2CA31@CHEXMB-01.global.atheros.com>
+	 <1286465072.6145.151.camel@aeonflux>  <4CADF6BF.6070305@atheros.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 18:42:21 +0200
+Message-ID: <1286469741.6145.165.camel@aeonflux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from QUOTED-PRINTABLE to 8bit by mail.home.local id o97GcXxQ031189
 
-Eric Dumazet <eric.dumazet@gmail.com> writes:
+Hi Bala,
 
-> Le jeudi 07 octobre 2010 à 17:25 +0800, Américo Wang a écrit :
->> >>
->> >
->> >Here is the final one.
->> 
->> Oops, that one is not correct. Hopefully this one
->> is correct.
->> 
->> --------------->
->> 
->> Eric D. noticed that we may trigger an OOPS if we leave ->extra{1,2}
->> to NULL when we use proc_doulongvec_minmax().
->> 
->> Actually, we don't need to store min/max values in a vector,
->> because all the elements in the vector should share the same min/max
->> value, like what proc_dointvec_minmax() does.
->> 
+> >> Thanks Johannes.  This would be better option to change PID in firmware
+> >> as blacklisting 3002 might create problems for 3011 chipsets.
+> >> Will try and let you people know.
+> > The misbehaving 3002 needs to be blacklisted in btusb.c anyway. However
+> > after loading the firmware to 3002 device, it should change its PID to
+> > something else.
+> >
+> > I am still trying to figure out if this is one stage firmware loading or
+> > a two stage firmware loading. This is all pretty unclear and nobody has
+> > answered this clearly so far.
 >
-> If we assert same min/max limits are to be applied to all elements,
-> a much simpler fix than yours would be :
->
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index f88552c..8e45451 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -2485,7 +2485,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
->  		kbuf[left] = 0;
->  	}
->  
-> -	for (; left && vleft--; i++, min++, max++, first=0) {
-> +	for (; left && vleft--; i++, first=0) {
->  		unsigned long val;
->  
->  		if (write) {
->
->
-> Please dont send huge patches like this to 'fix' a bug,
-> especially on slow path.
->
-> First we fix the bug, _then_ we can try to make code more 
-> efficient or more pretty or shorter.
->
-> So the _real_ question is :
->
-> Should the min/max limits should be a single pair,
-> shared by all elements, or a vector of limits.
+> eeprom based 3011 chips comes up with PID 3000 giving control to DFU 
+> driver [ath3k].  ath3k downloads the
+> firmware changing PID to 3002.  Now btusb gets control.
+> 
+> In sflash based devices to reduce windows suspend/resume time we had a 
+> small firmware in flash which
+> enables the device to get detected as Generic Bluetooth USB device with 
+> PID 3002.  So control reaches btusb when device is plugged in, leaving 
+> no option for us to load the actual firmware.
+> 
+> Solution would be to blacklist 3002 in btusb, enable ath3k to get 
+> control for both the devices, download the firmware and change PID to 
+> 3003 so that control with come to btusb.
 
-The difference between long handling and int handling is a
-usability issue.  I don't expect we will be exporting new
-vectors via sysctl, so the conversion of a handful of vectors
-from int to long is where this is most likely to be used.
+so here is the thing that needs to be done.
 
-I skimmed through all of what I presume are the current users
-aka linux-2.6.36-rcX and there don't appear to be any users
-of proc_dounlongvec_minmax that use it's vector properties there.
+a) Get a firmware for PID 3000 devices that change the firmware to some
+other PID. Since 3003 is already in use as well, using 3004 or later is
+better approach.
 
-Which doubly tells me that incrementing the min and max pointers
-is not what we want to do.
+b) Blacklist PID 3002 in btusb.c.
 
-Eric
+c) Handle special firmware loading case for PID 3002 sflash devices. If
+firmware is loaded changed to 3005 or other.
+
+And as a general note, I prefer that the PID after loading firmware is
+different if you don't happen to actually load the same firmware.
+
+So please sort out your USB PID assignment for Bluetooth in general.
+This seems to be a mess that is not thought through properly.
+
+Regards
+
+Marcel
 
 
