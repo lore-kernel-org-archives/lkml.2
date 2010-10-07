@@ -1,279 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760007Ab0JGIJd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 04:09:33 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40788 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752297Ab0JGIJ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 04:09:29 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 7 Oct 2010 17:04:05 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
+	id S1760133Ab0JGILT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 04:11:19 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:58078 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753381Ab0JGILR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 04:11:17 -0400
+Date: Thu, 7 Oct 2010 10:11:00 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH v2] memcg: reduce lock time at move charge (Was Re: [PATCH
- 04/10] memcg: disable local interrupts in lock_page_cgroup()
-Message-Id: <20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
-	<20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] core kernel fixes
+Message-ID: <20101007081100.GA16539@elte.hu>
+References: <20101005191223.GA31795@elte.hu>
+ <AANLkTik9E0dr=Qah0d_+9YaAsA7WfeawA1c4oDbiJK-j@mail.gmail.com>
+ <20101005210904.GQ2369@linux.vnet.ibm.com>
+ <AANLkTi==ZE7+PTPdB1JjdSdqus0Ox+rjTAxMMMJk0fBi@mail.gmail.com>
+ <20101005220546.GS2369@linux.vnet.ibm.com>
+ <1286333814.4861.9.camel@edumazet-laptop>
+ <20101006045905.GE2553@linux.vnet.ibm.com>
+ <20101006182049.GA16329@elte.hu>
+ <20101006212722.GP2433@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101006212722.GP2433@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010 16:42:04 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > If so, how about adding a new member(struct mc_target *targe) to move_charge_struct,
-> > and allocate/free it at mem_cgroup_move_charge() ?
+
+* Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+
+> On Wed, Oct 06, 2010 at 08:20:49PM +0200, Ingo Molnar wrote:
 > > 
-> Hmm, sounds nice.
+> > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > 
+> > > Ingo, I have this queued up at:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+> > > 
+> > > It passes targeted testing.  If Eric is OK with it, it is ready to be 
+> > > pulled.  At least as soon as kernel.org gets it out to the mirrors. 
+> > > Commmit 773e3f9357.
+> > 
+> > Now that the original fix is in Linus's tree, can the followup commits 
+> > wait until v2.6.37?
+> > 
+> > Linus, Paul, what's your preference?
 > 
+> I am fine either way.
 
-Here.
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Ok, Linus released -rc7 which is probably the last -rc so to reduce 
+final-rc code flux i have pulled your fix into tip:core/rcu, for 
+v2.6.37.
 
-Now, at task migration among cgroup, memory cgroup scans page table and moving
-account if flags are properly set.
+Thanks,
 
-The core code, mem_cgroup_move_charge_pte_range() does
-
- 	pte_offset_map_lock();
-	for all ptes in a page table:
-		1. look into page table, find_and_get a page
-		2. remove it from LRU.
-		3. move charge.
-		4. putback to LRU. put_page()
-	pte_offset_map_unlock();
-
-for pte entries on a 3rd level? page table.
-
-This pte_offset_map_lock seems a bit long. This patch modifies a rountine as
-
-	for 32 pages: pte_offset_map_lock()
-		      find_and_get a page
-		      record it
-		      pte_offset_map_unlock()
-	for all recorded pages
-		      isolate it from LRU.
-		      move charge
-		      putback to LRU
-	for all recorded pages
-		      put_page()
-
-Changelog: v1->v2
- - removed kzalloc() of mc_target. preallocate it on "mc"
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   95 ++++++++++++++++++++++++++++++++++----------------------
- 1 file changed, 59 insertions(+), 36 deletions(-)
-
-Index: mmotm-0928/mm/memcontrol.c
-===================================================================
---- mmotm-0928.orig/mm/memcontrol.c
-+++ mmotm-0928/mm/memcontrol.c
-@@ -276,6 +276,21 @@ enum move_type {
- 	NR_MOVE_TYPE,
- };
- 
-+enum mc_target_type {
-+	MC_TARGET_NONE, /* used as failure code(0) */
-+	MC_TARGET_PAGE,
-+	MC_TARGET_SWAP,
-+};
-+
-+struct mc_target {
-+	enum mc_target_type type;
-+	union {
-+		struct page *page;
-+		swp_entry_t	ent;
-+	} val;
-+};
-+#define MC_MOVE_ONCE	(32)
-+
- /* "mc" and its members are protected by cgroup_mutex */
- static struct move_charge_struct {
- 	spinlock_t	  lock; /* for from, to, moving_task */
-@@ -284,6 +299,7 @@ static struct move_charge_struct {
- 	unsigned long precharge;
- 	unsigned long moved_charge;
- 	unsigned long moved_swap;
-+	struct mc_target target[MC_MOVE_ONCE];
- 	struct task_struct *moving_task;	/* a task moving charges */
- 	wait_queue_head_t waitq;		/* a waitq for other context */
- } mc = {
-@@ -291,6 +307,7 @@ static struct move_charge_struct {
- 	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
- };
- 
-+
- static bool move_anon(void)
- {
- 	return test_bit(MOVE_CHARGE_TYPE_ANON,
-@@ -4475,16 +4492,7 @@ one_by_one:
-  *
-  * Called with pte lock held.
-  */
--union mc_target {
--	struct page	*page;
--	swp_entry_t	ent;
--};
- 
--enum mc_target_type {
--	MC_TARGET_NONE,	/* not used */
--	MC_TARGET_PAGE,
--	MC_TARGET_SWAP,
--};
- 
- static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
- 						unsigned long addr, pte_t ptent)
-@@ -4561,7 +4569,7 @@ static struct page *mc_handle_file_pte(s
- }
- 
- static int is_target_pte_for_mc(struct vm_area_struct *vma,
--		unsigned long addr, pte_t ptent, union mc_target *target)
-+		unsigned long addr, pte_t ptent, struct mc_target *target)
- {
- 	struct page *page = NULL;
- 	struct page_cgroup *pc;
-@@ -4587,7 +4595,7 @@ static int is_target_pte_for_mc(struct v
- 		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
- 			ret = MC_TARGET_PAGE;
- 			if (target)
--				target->page = page;
-+				target->val.page = page;
- 		}
- 		if (!ret || !target)
- 			put_page(page);
-@@ -4597,8 +4605,10 @@ static int is_target_pte_for_mc(struct v
- 			css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
- 		ret = MC_TARGET_SWAP;
- 		if (target)
--			target->ent = ent;
-+			target->val.ent = ent;
- 	}
-+	if (target)
-+		target->type = ret;
- 	return ret;
- }
- 
-@@ -4759,26 +4769,42 @@ static int mem_cgroup_move_charge_pte_ra
- 	struct vm_area_struct *vma = walk->private;
- 	pte_t *pte;
- 	spinlock_t *ptl;
-+	int index, num;
- 
- retry:
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; addr += PAGE_SIZE) {
-+	for (num = 0; num < MC_MOVE_ONCE && addr != end; addr += PAGE_SIZE) {
- 		pte_t ptent = *(pte++);
--		union mc_target target;
--		int type;
-+		ret = is_target_pte_for_mc(vma, addr, ptent, &mc.target[num]);
-+		if (!ret)
-+			continue;
-+		mc.target[num++].type = ret;
-+	}
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
-+
-+	ret = 0;
-+	index = 0;
-+	do {
-+		struct mc_target *mt;
- 		struct page *page;
- 		struct page_cgroup *pc;
- 		swp_entry_t ent;
- 
--		if (!mc.precharge)
--			break;
-+		if (!mc.precharge) {
-+			ret = mem_cgroup_do_precharge(1);
-+			if (ret)
-+				goto out;
-+			continue;
-+		}
-+
-+		mt = &mc.target[index++];
- 
--		type = is_target_pte_for_mc(vma, addr, ptent, &target);
--		switch (type) {
-+		switch (mt->type) {
- 		case MC_TARGET_PAGE:
--			page = target.page;
-+			page = mt->val.page;
- 			if (isolate_lru_page(page))
--				goto put;
-+				break;
- 			pc = lookup_page_cgroup(page);
- 			if (!mem_cgroup_move_account(pc,
- 						mc.from, mc.to, false)) {
-@@ -4787,11 +4813,9 @@ retry:
- 				mc.moved_charge++;
- 			}
- 			putback_lru_page(page);
--put:			/* is_target_pte_for_mc() gets the page */
--			put_page(page);
- 			break;
- 		case MC_TARGET_SWAP:
--			ent = target.ent;
-+			ent = mt->val.ent;
- 			if (!mem_cgroup_move_swap_account(ent,
- 						mc.from, mc.to, false)) {
- 				mc.precharge--;
-@@ -4802,21 +4826,20 @@ put:			/* is_target_pte_for_mc() gets th
- 		default:
- 			break;
- 		}
-+	} while (index < num);
-+out:
-+	for (index = 0; index < num; index++) {
-+		if (mc.target[index].type == MC_TARGET_PAGE)
-+			put_page(mc.target[index].val.page);
-+		mc.target[index].type = MC_TARGET_NONE;
- 	}
--	pte_unmap_unlock(pte - 1, ptl);
-+
-+	if (ret)
-+		return ret;
- 	cond_resched();
- 
--	if (addr != end) {
--		/*
--		 * We have consumed all precharges we got in can_attach().
--		 * We try charge one by one, but don't do any additional
--		 * charges to mc.to if we have failed in charge once in attach()
--		 * phase.
--		 */
--		ret = mem_cgroup_do_precharge(1);
--		if (!ret)
--			goto retry;
--	}
-+	if (addr != end)
-+		goto retry;
- 
- 	return ret;
- }
-
+	Ingo
