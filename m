@@ -1,359 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753424Ab0JGFVt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 01:21:49 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33618 "EHLO smtps.tip.net.au"
+	id S1753343Ab0JGFbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 01:31:24 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:46622 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752382Ab0JGFVr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 01:21:47 -0400
-Date: Thu, 7 Oct 2010 16:21:39 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for October 7
-Message-Id: <20101007162139.13381d1e.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__7_Oct_2010_16_21_39_+1100_I6mLOVhqxoiSoNpA"
+	id S1752382Ab0JGFbW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 01:31:22 -0400
+Date: Thu, 7 Oct 2010 11:01:17 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        containers@lists.linux-foundation.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] Restrict size of page_cgroup->flags
+Message-ID: <20101007053117.GQ4195@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101006142314.GG4195@balbir.in.ibm.com>
+ <20101007085858.0e07de59.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007031203.GK4195@balbir.in.ibm.com>
+ <20101007121816.bbd009c1.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007035608.GN4195@balbir.in.ibm.com>
+ <20101007132233.f695aa2c.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101007132233.f695aa2c.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Oct_2010_16_21_39_+1100_I6mLOVhqxoiSoNpA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-07 13:22:33]:
 
-Hi all,
+> On Thu, 7 Oct 2010 09:26:08 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-07 12:18:16]:
+> > 
+> > > On Thu, 7 Oct 2010 08:42:04 +0530
+> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-07 08:58:58]:
+> > > > 
+> > > > > On Wed, 6 Oct 2010 19:53:14 +0530
+> > > > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> > > > > 
+> > > > > > I propose restricting page_cgroup.flags to 16 bits. The patch for the
+> > > > > > same is below. Comments?
+> > > > > > 
+> > > > > > 
+> > > > > > Restrict the bits usage in page_cgroup.flags
+> > > > > > 
+> > > > > > From: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > > > > > 
+> > > > > > Restricting the flags helps control growth of the flags unbound.
+> > > > > > Restriciting it to 16 bits gives us the possibility of merging
+> > > > > > cgroup id with flags (atomicity permitting) and saving a whole
+> > > > > > long word in page_cgroup
+> > > > > > 
+> > > > > > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > > > > 
+> > > > > Doesn't make sense until you show the usage of existing bits.
+> > > > 
+> > > > ??
+> > > > 
+> > > Limiting something for NOT EXISTING PATCH doesn't make sense, in general.
+> > > 
+> > > 
+> > > > > And I guess 16bit may be too large on 32bit systems.
+> > > > 
+> > > > too large on 32 bit systems? My intention is to keep the flags to 16
+> > > > bits and then use cgroup id for the rest and see if we can remove
+> > > > mem_cgroup pointer
+> > > > 
+> > > 
+> > > You can't use flags field to store mem_cgroup_id while we use lock bit on it.
+> > > We have to store something more stable...as pfn or node-id or zone-id.
+> > > 
+> > > It's very racy. 
+> > >
+> > 
+> > Yes, correct it is racy, there is no easy way from what I know we can write
+> > the upper 16 bits of the flag without affecting the lower 16 bits, if
+> > the 16 bits are changing. One of the techniques could be to have lock
+> > for the unsigned long word itself - but I don't know what performance
+> > overhead that would add. Having said that I would like to explore
+> > techniques that allow me to merge the two.
+> > 
+> 
+> to store pfn, we need to limit under 12bit.
+> I'll schedule my patch if dirty_ratio one goes.
+>
 
-Changes since 20101006:
+cool! We'll redo the patch then and lets make this work. We'll need to
+see how many bits we need for section/node/zone to do pc_to_pfn() and
+pfn_to_page().
 
-All the trees hosted on git.infradead.org are unfetchable (and presumably
-unable to be updated) due to the machine crashing.
-
-Linus' tree lost its build failure.
-
-The msm tree lost its conflict.
-
-The jdelvare-hwmon lost its build failure.
-
-The net tree gained a conflict against the net-current tree.
-
-The drm tree lost its conflicts but gained some more against the i2c tree.
-
-The hwpoison tree lost its build failure.
-
-The usb tree lost a conflict.
-
-The bkl-llseek tree gained a conflict against the drm tree.
-
-The irqflags tree gained a conflict against Linus' tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 176 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/platforms/85xx/mpc85xx_m=
-ds.c
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging swiotlb-xen/master
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging wireless/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3pandor=
-a.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom-periph=
-erals.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/libertas/if_sdio=
-.c
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/pcnet_cs.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/ipw2x00/ipw2200.c
-CONFLICT (content): Merge conflict in net/caif/caif_socket.c
-Merging mtd/master
-Merging crypto/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-Merging sound-asoc/for-next
-CONFLICT (content): Merge conflict in drivers/video/sh_mobile_hdmi.c
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-CONFLICT (content): Merge conflict in drivers/input/keyboard/Kconfig
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in fs/ext4/mballoc.c
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/smc91c92_cs.c
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging mmc/mmc-next
-Merging kgdb/kgdb-next
-CONFLICT (content): Merge conflict in drivers/char/sysrq.c
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/mfd/sh_mobile_sdhi.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_drv.h
-CONFLICT (content): Merge conflict in drivers/gpu/drm/i915/intel_i2c.c
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging catalin/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/smp_plat.h
-CONFLICT (content): Merge conflict in arch/arm/kernel/Makefile
-CONFLICT (content): Merge conflict in arch/arm/mach-vexpress/ct-ca9x4.c
-CONFLICT (content): Merge conflict in arch/arm/mm/flush.c
-Merging alacrity/linux-next
-CONFLICT (content): Merge conflict in include/linux/Kbuild
-Merging i7core_edac/linux_next
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging i7300_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging xen/upstream/xen
-Merging rcu/rcu/next
-CONFLICT (content): Merge conflict in include/linux/rcupdate.h
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in arch/x86/kernel/module.c
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in net/core/dev.c
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-CONFLICT (content): Merge conflict in include/linux/percpu.h
-CONFLICT (content): Merge conflict in mm/percpu.c
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging quilt/driver-core
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-Merging quilt/tty
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/usb/gadget/rndis.c
-Merging staging-next/staging-next
-CONFLICT (rename/modify): Merge conflict in drivers/misc/ti-st/st_kim.c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/devices.c
-CONFLICT (content): Merge conflict in drivers/misc/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/Makefile
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/hard-inter=
-face.c
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/Makefile deleted=
- in HEAD and modified in staging-next/staging-next. Version staging-next/st=
-aging-next of drivers/staging/mrst-touchscreen/Makefile left in tree.
-CONFLICT (delete/modify): drivers/staging/mrst-touchscreen/intel-mid-touch.=
-c deleted in HEAD and modified in staging-next/staging-next. Version stagin=
-g-next/staging-next of drivers/staging/mrst-touchscreen/intel-mid-touch.c l=
-eft in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st.h deleted in staging-nex=
-t/staging-next and modified in HEAD. Version HEAD of drivers/staging/ti-st/=
-st.h left in tree.
-CONFLICT (delete/modify): drivers/staging/ti-st/st_core.h deleted in stagin=
-g-next/staging-next and modifRecorded preimage for 'drivers/misc/Makefile'
-$ git rm -f drivers/staging/mrst-touchscreen/Makefile drivers/staging/mrst-=
-touchscreen/intel-mid-touch.c
-$ git rm -f drivers/staging/ti-st/st.h drivers/staging/ti-st/st_core.h
-Applying: staging: ath6kl: Fixing the driver to use modified mmc_host struc=
-ture
-Merging slabh/slabh
-Merging bkl-trivial/trivial
-CONFLICT (content): Merge conflict in drivers/block/ataflop.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4000_cs.c
-CONFLICT (content): Merge conflict in drivers/char/pcmcia/cm4040_cs.c
-CONFLICT (content): Merge conflict in drivers/mmc/card/block.c
-Merging bkl-llseek/llseek
-CONFLICT (content): Merge conflict in drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-CONFLICT (content): Merge conflict in drivers/infiniband/hw/cxgb4/device.c
-Merging bkl-vfs/vfs
-CONFLICT (content): Merge conflict in fs/nilfs2/super.c
-Merging bkl-config/config
-CONFLICT (content): Merge conflict in fs/compat_ioctl.c
-Merging irqflags/master
-CONFLICT (content): Merge conflict in arch/mips/kernel/irq-gic.c
-Merging cleancache/linux-next
-CONFLICT (content): Merge conflict in include/linux/fs.h
-CONFLICT (content): Merge conflict in mm/Kconfig
-Merging scsi-post-merge/merge-base:master
-
---Signature=_Thu__7_Oct_2010_16_21_39_+1100_I6mLOVhqxoiSoNpA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMrVjjAAoJEDMEi1NhKgbslLkH/j+9jyFUs5UBOKvuIOy832CV
-XzeVT5/CRThMDSjwL0YpuJ2uPc31ghrVt/KI2Fy+U/uDanbTVUkHNix/BVpHCq0a
-3rFE/rocGDcNd5OkWpRmBnsNUkUa4q1gLbLEI+N+wuIA+dsTCGEfYS1roUkCHRXH
-3sYo3HIxDLMrrzlf06zPUobBQqUBEUDuoKqhSPn+g9Zut/dxJWMfd0oxh207wMt3
-e75F+9kHMJD4qLceSMtw2rpZJ6qJ6gjsB0Mlg6NwDVLNBNmfqEIL1kEp9nVocaBJ
-cFUyXQvACCD5q879kNC/knoE3mB4K2c2P77vV8qudqumKqlUa4wMU1IObNq1M7Y=
-=RX6B
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Oct_2010_16_21_39_+1100_I6mLOVhqxoiSoNpA--
+-- 
+	Three Cheers,
+	Balbir
