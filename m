@@ -1,90 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753278Ab0JGPlD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 11:41:03 -0400
-Received: from kroah.org ([198.145.64.141]:40115 "EHLO coco.kroah.org"
+	id S1752657Ab0JGPks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 11:40:48 -0400
+Received: from kroah.org ([198.145.64.141]:40092 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab0JGPkt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 11:40:49 -0400
-Date: Thu, 7 Oct 2010 08:39:04 -0700
+	id S1751418Ab0JGPkq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 11:40:46 -0400
+Date: Thu, 7 Oct 2010 08:35:27 -0700
 From: Greg KH <greg@kroah.com>
-To: tlinder <tlinder@codeaurora.org>
-Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC/PATCH v2 2/3] usb: usb3.0 ch9 definitions
-Message-ID: <20101007153904.GD26129@kroah.com>
-References: <1286465076-12503-1-git-send-email-tlinder@codeaurora.org>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: pavan-savoy@ti.com, linux-bluetooth@vger.kernel.org,
+        johan.hedberg@gmail.com, linux-kernel@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: Re: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
+Message-ID: <20101007153527.GA26129@kroah.com>
+References: <1286404493-23816-1-git-send-email-pavan-savoy@ti.com>
+ <1286404493-23816-2-git-send-email-pavan-savoy@ti.com>
+ <1286445948.6145.70.camel@aeonflux>
+ <20101007143409.GB14913@kroah.com>
+ <1286464867.6145.148.camel@aeonflux>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286465076-12503-1-git-send-email-tlinder@codeaurora.org>
+In-Reply-To: <1286464867.6145.148.camel@aeonflux>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 05:24:36PM +0200, tlinder wrote:
-> Signed-off-by: tlinder <tlinder@codeaurora.org>
-
-I need a "real" name here please.
-
-> ---
->  include/linux/usb/ch9.h |   59 +++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 57 insertions(+), 2 deletions(-)
+On Thu, Oct 07, 2010 at 05:21:07PM +0200, Marcel Holtmann wrote:
+> Hi Greg,
 > 
-> diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
-> index da2ed77..20573b2 100644
-> --- a/include/linux/usb/ch9.h
-> +++ b/include/linux/usb/ch9.h
-> @@ -123,8 +123,23 @@
->  #define USB_DEVICE_A_ALT_HNP_SUPPORT	5	/* (otg) other RH port does */
->  #define USB_DEVICE_DEBUG_MODE		6	/* (special devices only) */
->  
-> +/**
+> > > > This is the bluetooth protocol driver for the TI WiLink7 chipsets.
+> > > > Texas Instrument's WiLink chipsets combine wireless technologies
+> > > > like BT, FM, GPS and WLAN onto a single chip.
+> > > > 
+> > > > This Bluetooth driver works on top of the TI_ST shared transport
+> > > > line discipline driver which also allows other drivers like
+> > > > FM V4L2 and GPS character driver to make use of the same UART interface.
+> > > > 
+> > > > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> > > > ---
+> > > >  drivers/bluetooth/bt_ti.c      |  463 ++++++++++++++++++++++++++++++++++++
+> > > >  drivers/staging/ti-st/bt_drv.c |  509 ----------------------------------------
+> > > >  drivers/staging/ti-st/bt_drv.h |   61 -----
+> > > >  3 files changed, 463 insertions(+), 570 deletions(-)
+> > > >  create mode 100644 drivers/bluetooth/bt_ti.c
+> > > >  delete mode 100644 drivers/staging/ti-st/bt_drv.c
+> > > >  delete mode 100644 drivers/staging/ti-st/bt_drv.h
+> > > 
+> > > I don't care about staging at all. So you sort that out with Greg.
+> > > 
+> > > Submit your driver for upstream inclusion. And once accepted you can pin
+> > > Greg about removing it.
+> > 
+> > The driver is already in staging, this is the request to move it out of
+> > staging and into the "correct" place in the tree.  The core of the ti-st
+> > code is now in the drivers/misc/ directory in the linux-next tree, and
+> > this patch is the request to move the bluetooth drive into the proper
+> > drivers/bluetooth/ location.
+> 
+> nice idea, but I don't want it that way. I am not dealing with staging
+> at all. They can submit this driver for upstream inclusion and then
+> delete it in a second step from staging. Or the other way around.
 
-What's this '**' for?
+That's fine, then consider this a "please add the driver to your tree"
+type of request.
 
-> + * New Feature Selectors as added by USB 3.0
-> + * See USB 3.0 spec Table 9-6
-> + */
-> +#define USB_DEVICE_U1_ENABLE	48	/* dev may initiate U1 transition */
-> +#define USB_DEVICE_U2_ENABLE	49	/* dev may initiate U2 transition*/
-> +#define USB_DEVICE_LTM_ENABLE	50	/* dev may send LTM*/
-> +#define USB_INTRF_FUNC_SUSPEND	0	/* function suspend*/
-> +
-> +#define USB_INTR_FUNC_SUSPEND_OPT_MASK	0xFF00
-> +
->  #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
->  
-> +/* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
-> +#define USB_DEV_STAT_U1_ENABLED		2	/* transition into U1 state */
-> +#define USB_DEV_STAT_U2_ENABLED		3	/* transition into U2 state */
-> +#define USB_DEV_STAT_LTM_ENABLED	4	/* Latency tolerance messages*/
->  
->  /**
->   * struct usb_ctrlrequest - SETUP data for a USB device control request
-> @@ -675,6 +690,7 @@ struct usb_bos_descriptor {
->  	__u8  bNumDeviceCaps;
->  } __attribute__((packed));
->  
-> +#define USB_DT_BOS_SIZE		5
->  /*-------------------------------------------------------------------------*/
->  
->  /* USB_DT_DEVICE_CAPABILITY:  grouped with BOS */
-> @@ -712,16 +728,55 @@ struct usb_wireless_cap_descriptor {	/* Ultra Wide Band */
->  	__u8  bReserved;
->  } __attribute__((packed));
->  
-> +/* USB 2.0 Extension descriptor */
->  #define	USB_CAP_TYPE_EXT		2
-> -
+> And as long as this driver registers a Bluetooth HCI device in its
+> module_init routine it is not ready for upstream. This needs to be fixed
+> first and I mentioned that already before.
 
-Why delete this line?
-
-Clean this up and I can take this type of change now.
+That's also fine, it's an iterative process :)
 
 thanks,
 
