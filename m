@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752248Ab0JGEJC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 00:09:02 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34463 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab0JGEJA (ORCPT
+	id S1752036Ab0JGELL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 00:11:11 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56877 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab0JGELK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 00:09:00 -0400
+	Thu, 7 Oct 2010 00:11:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=dr7bYpUaFSGCmIH2rZW1W4vSrcv6OVrJ12Yx4wsOwN8yAqoulUeSXa+62mVehIA+01
-         Al0EPDNLJ7RcKDhd/2DUKcQxCg2+QvfcAHkxRPXpAvuHvDmx8UvUydDgK2NKS8hOtkrv
-         vt9oad6QuIi3jBsWeyk0GyIQOPgjoEmA51iGU=
-MIME-Version: 1.0
-In-Reply-To: <20101006202143.GE26397@kroah.com>
-References: <1286302800-2715-1-git-send-email-rahul.ruikar@gmail.com>
- <4CAB79C4.3030208@ru.mvista.com> <AANLkTinBBUQuEnWzASb5daiE+C3w+Rs8kLdgzK7XAyne@mail.gmail.com>
- <20101006202143.GE26397@kroah.com>
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=iub4cNSFeENgxj5ImM2xUvPCeEcApZ0707MxoXzt33V1lsvfzhHxshl6K584cwsChO
+         7SceiOUN+W61BW9izmWBzfj3vtgrikKSaiCsMP8vQ4prmDcgT/YLGqEb50w2dmlpaXcZ
+         WXbsLsqWff44G7vlPrXosU3x1+ijYn9ZT8Phs=
 From: Rahul Ruikar <rahul.ruikar@gmail.com>
-Date: Thu, 7 Oct 2010 09:25:13 +0530
-Message-ID: <AANLkTinGhwDUzuH1O5a31aSpv_mRiyqSi8z1tZm1FERK@mail.gmail.com>
-Subject: Re: [PATCH] usb: gadget: langwell_udc: Fix error path
-To: Greg KH <greg@kroah.com>
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Joe Perches <joe@perches.com>,
-        linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rahul Ruikar <rahul.ruikar@gmail.com>
+Subject: [RESEND/PATCH] usb: gadget: dummy_hcd: Fix error path
+Date: Thu,  7 Oct 2010 09:40:45 +0530
+Message-Id: <1286424645-2899-1-git-send-email-rahul.ruikar@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just sent in another mail.
+In function dummy_udc_probe()
+call put_device() when device_register() fails.
+also usb_get_hcd() put before device_register() after review comment
+from Alan Stern.
 
-- Rahul Ruikar
+Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+---
+ drivers/usb/gadget/dummy_hcd.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/usb/gadget/dummy_hcd.c b/drivers/usb/gadget/dummy_hcd.c
+index dc65462..9b30483 100644
+--- a/drivers/usb/gadget/dummy_hcd.c
++++ b/drivers/usb/gadget/dummy_hcd.c
+@@ -874,6 +874,8 @@ static int dummy_udc_probe (struct platform_device *pdev)
+ 	struct dummy	*dum = the_controller;
+ 	int		rc;
+ 
++	usb_get_hcd(dummy_to_hcd(dum));
++
+ 	dum->gadget.name = gadget_name;
+ 	dum->gadget.ops = &dummy_ops;
+ 	dum->gadget.is_dualspeed = 1;
+@@ -885,10 +887,10 @@ static int dummy_udc_probe (struct platform_device *pdev)
+ 	dum->gadget.dev.parent = &pdev->dev;
+ 	dum->gadget.dev.release = dummy_gadget_release;
+ 	rc = device_register (&dum->gadget.dev);
+-	if (rc < 0)
++	if (rc < 0) {
++		put_device(&dum->gadget.dev);
+ 		return rc;
+-
+-	usb_get_hcd (dummy_to_hcd (dum));
++	}
+ 
+ 	platform_set_drvdata (pdev, dum);
+ 	rc = device_create_file (&dum->gadget.dev, &dev_attr_function);
+-- 
+1.7.2.3
 
-
-
-
-On 7 October 2010 01:51, Greg KH <greg@kroah.com> wrote:
-> On Wed, Oct 06, 2010 at 08:04:23AM +0530, Rahul Ruikar wrote:
->> updated patch with following changes.
->> - variable name changed
->> - comment updated.
->>
->> Please find it attached here.
->
-> Please resend it, not attached in base64 format so that I can apply it
-> properly.
->
-> thanks,
->
-> greg k-h
->
