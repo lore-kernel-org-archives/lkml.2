@@ -1,144 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755756Ab0JGUgY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 16:36:24 -0400
-Received: from mail.windriver.com ([147.11.1.11]:57529 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755617Ab0JGUgJ (ORCPT
+	id S1755837Ab0JGUgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 16:36:35 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:10893 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab0JGUgc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 16:36:09 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: dmitry.torokhov@gmail.com
-Cc: kgdb-bugreport@lists.sourceforge.net, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
+	Thu, 7 Oct 2010 16:36:32 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="56986339"
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Mike Frysinger <vapier@gentoo.org>, Feng Tang <feng.tang@intel.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
         Jason Wessel <jason.wessel@windriver.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 3/3] sysrq,keyboard: properly deal with alt-sysrq in sysrq input filter
-Date: Thu,  7 Oct 2010 15:35:48 -0500
-Message-Id: <1286483748-1171-4-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1286483748-1171-1-git-send-email-jason.wessel@windriver.com>
-References: <1286483748-1171-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 07 Oct 2010 20:35:53.0908 (UTC) FILETIME=[3CDAA740:01CB665F]
+        Philippe Langlais <philippe.langlais@stericsson.com>
+In-Reply-To: <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 13:36:06 -0700
+Message-ID: <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch addresses 2 problems:
+On Thu, 2010-10-07 at 21:50 +0100, Alan Cox wrote:
+> > +	  Say Y here if you want to install DCC driver as a normal serial port
+> > +	  /dev/ttyS0 (major 4, minor 64). Otherwise, it appears as /dev/ttyJ0
+> > +	  (major 4, minor 128) and can co-exist with other UARTs, such as
+> > +	  8250/16C550 compatibles.
+> > +
+> 
+> NAK to both
 
-1) You should still be able to use alt-PrintScreen to capture a grab
-   of a single window when the sysrq filter is active.
+Both what?
 
-2) The sysrq filter should reset the low level key mask so that future
-   key presses will not show up as a repeated key.  The problem was
-   that when you executed alt-sysrq g and then resumed the kernel, you
-   would have to press 'g' twice to get it working again.
+> ttyJ0 is 204,186 for "JTAG1 DCC protocol based serial"
+> 
+> so there is an existing name and minor allocation, which as you won't be
+> using two of them should be quite usable.
+> 
+> If you want to be able to switch at runtime to pretend it is ttyS0 please
+> deal with that in your user space. The same rules apply to you as have
+> been applied to everyone else who has tried to implement this same crap
+> in their uart driver too (we'd have it in about 30 by now otherwise)
 
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>
-CC: linux-input@vger.kernel.org
-Reported-by: Maxim Levitsky <maximlevitsky@gmail.com>
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
----
- drivers/char/sysrq.c |   64 +++++++++++++++++++++++++++++++++++++++++++++++--
- 1 files changed, 61 insertions(+), 3 deletions(-)
+I would agree if this wasn't strictly for debugging embedded devices in
+difficult situations.. After talking to Mike, it's seems like it would
+be useful to have this as a ttyS* specifically because embedded devices
+won't always create a ttyJ* for you and ttyS* will likely already exist.
 
-diff --git a/drivers/char/sysrq.c b/drivers/char/sysrq.c
-index ef31bb8..b1fad74 100644
---- a/drivers/char/sysrq.c
-+++ b/drivers/char/sysrq.c
-@@ -566,6 +566,57 @@ static const unsigned char sysrq_xlate[KEY_MAX + 1] =
- static bool sysrq_down;
- static int sysrq_alt_use;
- static int sysrq_alt;
-+static bool sysrq_kbd_triggered;
-+
-+/*
-+ * This function was a copy of input_pass_event but modified to allow
-+ * by-passing a specific filter, to allow for injected events without
-+ * filter recursion.
-+ */
-+static void input_pass_event_ignore(struct input_dev *dev,
-+			     unsigned int type, unsigned int code, int value,
-+			     struct input_handle *ignore_handle)
-+{
-+	struct input_handler *handler;
-+	struct input_handle *handle;
-+
-+	rcu_read_lock();
-+
-+	handle = rcu_dereference(dev->grab);
-+	if (handle)
-+		handle->handler->event(handle, type, code, value);
-+	else {
-+		bool filtered = false;
-+
-+		list_for_each_entry_rcu(handle, &dev->h_list, d_node) {
-+			if (!handle->open || handle == ignore_handle)
-+				continue;
-+			handler = handle->handler;
-+			if (!handler->filter) {
-+				if (filtered)
-+					break;
-+
-+				handler->event(handle, type, code, value);
-+
-+			} else if (handler->filter(handle, type, code, value))
-+				filtered = true;
-+		}
-+	}
-+
-+	rcu_read_unlock();
-+}
-+
-+/*
-+ * Pass along alt-print_screen, if there was no sysrq processing by
-+ * sending a key press down and then passing the key up event.
-+ */
-+static void simulate_alt_sysrq(struct input_handle *handle)
-+{
-+	input_pass_event_ignore(handle->dev, EV_KEY, KEY_SYSRQ, 1, handle);
-+	input_pass_event_ignore(handle->dev, EV_SYN, SYN_REPORT, 0, handle);
-+	input_pass_event_ignore(handle->dev, EV_KEY, KEY_SYSRQ, 0, handle);
-+	input_pass_event_ignore(handle->dev, EV_SYN, SYN_REPORT, 0, handle);
-+}
- 
- static bool sysrq_filter(struct input_handle *handle, unsigned int type,
- 		         unsigned int code, int value)
-@@ -580,9 +631,11 @@ static bool sysrq_filter(struct input_handle *handle, unsigned int type,
- 		if (value)
- 			sysrq_alt = code;
- 		else {
--			if (sysrq_down && code == sysrq_alt_use)
-+			if (sysrq_down && code == sysrq_alt_use) {
- 				sysrq_down = false;
--
-+				if (!sysrq_kbd_triggered)
-+					simulate_alt_sysrq(handle);
-+			}
- 			sysrq_alt = 0;
- 		}
- 		break;
-@@ -590,13 +643,18 @@ static bool sysrq_filter(struct input_handle *handle, unsigned int type,
- 	case KEY_SYSRQ:
- 		if (value == 1 && sysrq_alt) {
- 			sysrq_down = true;
-+			sysrq_kbd_triggered = false;
- 			sysrq_alt_use = sysrq_alt;
- 		}
- 		break;
- 
- 	default:
--		if (sysrq_down && value && value != 2)
-+		if (sysrq_down && value && value != 2 && !sysrq_kbd_triggered) {
-+			sysrq_kbd_triggered = true;
- 			__handle_sysrq(sysrq_xlate[code], true);
-+			/* Clear handled keys from being flagged as a repeated stroke */
-+			__clear_bit(code, handle->dev->key);
-+		}
- 		break;
- 	}
- 
+Daniel
+
 -- 
-1.6.3.3
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
