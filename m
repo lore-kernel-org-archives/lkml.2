@@ -1,62 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932693Ab0JGAT2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 20:19:28 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51700 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753566Ab0JGAT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 20:19:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Daniel Mack <daniel@caiaq.de>
-Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
-Date: Thu, 7 Oct 2010 02:18:41 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Colin Cross <ccross@android.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Sven Neumann <s.neumann@raumfeld.com>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-References: <1286177435.2140.5.camel@sven> <20101006235513.GY7159@buzzloop.caiaq.de>
-In-Reply-To: <20101006235513.GY7159@buzzloop.caiaq.de>
+	id S932862Ab0JGA1i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:27:38 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:58983 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753934Ab0JGA1g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 20:27:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=JcjiDgvWewCFLJyvXoH0aYqPowG48GyNHWkNy3Xdm/a9JJizDWHCSKSYuVd1HNdp0
+	cefzyyxH3T68v8jn0wGAA==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Righi <arighi@develer.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 07/10] memcg: add dirty limits to mem_cgroup
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-8-git-send-email-gthelen@google.com>
+	<20101005094302.GA4314@linux.develer.com>
+	<xr93eic4wjlq.fsf@ninji.mtv.corp.google.com>
+	<20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 06 Oct 2010 17:27:13 -0700
+In-Reply-To: <20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Thu, 7 Oct 2010 09:13:43 +0900")
+Message-ID: <xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010070218.41944.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 07, 2010, Daniel Mack wrote:
-> On Mon, Oct 04, 2010 at 09:30:35AM +0200, Sven Neumann wrote:
-> > we are running an embedded system here based on the PXA300 platform.
-> > Suspend/resume used to work well so far. However after upgrading the
-> > kernel from 2.6.34.7 to 2.6.35.6, we get the following error when trying
-> > to suspend the system:
-> > 
-> > # echo "mem" > "/sys/power/state"
-> > [ 5647.295953] PM: Syncing filesystems ... done.
-> > [ 5647.318792] Freezing user space processes ... (elapsed 0.01 seconds) done.
-> > [ 5647.337048] Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
-> > [ 5647.356915] Suspending console(s) (use no_console_suspend to debug)
-> > [ 5647.366651] pm_op(): platform_pm_suspend+0x0/0x5c returns -38
-> > [ 5647.366671] PM: Device pxa2xx-mci.0 failed to suspend: error -38
-> > [ 5647.367082] PM: Some devices failed to suspend
-> 
-> We've bisected this effect down to commit 152e1d5920 ("PM: Prevent
-> waiting forever on asynchronous resume after failing suspend").
-> Suspending our PXA3xx based system breaks with this patch.
-> 
-> I tried to understand what's going wrong, but I didn't follow the
-> discussion about this logic, so I would rather like to pass it back to
-> the originating people.
-> 
-> I can only guess that the problem here is the somewhat tricky handling
-> around mmc_sdio_suspend(), which returns -ENODEV (-38) in case a
-> particular function of a card can not be suspended. The SDIO core would
-> have simply removed the card in this case normally, but the PM core
-> seems to interfere now, stopping the whole suspend procedure.
-> 
-> Can anyone shed some light on this?
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-I wonder what happens if you echo 0 to /sys/power/pm_async ?
+> On Tue, 05 Oct 2010 12:00:17 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> Andrea Righi <arighi@develer.com> writes:
+>> 
+>> > On Sun, Oct 03, 2010 at 11:58:02PM -0700, Greg Thelen wrote:
+>> >> Extend mem_cgroup to contain dirty page limits.  Also add routines
+>> >> allowing the kernel to query the dirty usage of a memcg.
+>> >> 
+>> >> These interfaces not used by the kernel yet.  A subsequent commit
+>> >> will add kernel calls to utilize these new routines.
+>> >
+>> > A small note below.
+>> >
+>> >> 
+>> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+>> >> Signed-off-by: Andrea Righi <arighi@develer.com>
+>> >> ---
+>> >>  include/linux/memcontrol.h |   44 +++++++++++
+>> >>  mm/memcontrol.c            |  180 +++++++++++++++++++++++++++++++++++++++++++-
+>> >>  2 files changed, 223 insertions(+), 1 deletions(-)
+>> >> 
+>> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> >> index 6303da1..dc8952d 100644
+>> >> --- a/include/linux/memcontrol.h
+>> >> +++ b/include/linux/memcontrol.h
+>> >> @@ -19,6 +19,7 @@
+>> >>  
+>> >>  #ifndef _LINUX_MEMCONTROL_H
+>> >>  #define _LINUX_MEMCONTROL_H
+>> >> +#include <linux/writeback.h>
+>> >>  #include <linux/cgroup.h>
+>> >>  struct mem_cgroup;
+>> >>  struct page_cgroup;
+>> >> @@ -33,6 +34,30 @@ enum mem_cgroup_write_page_stat_item {
+>> >>  	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
+>> >>  };
+>> >>  
+>> >> +/* Cgroup memory statistics items exported to the kernel */
+>> >> +enum mem_cgroup_read_page_stat_item {
+>> >> +	MEMCG_NR_DIRTYABLE_PAGES,
+>> >> +	MEMCG_NR_RECLAIM_PAGES,
+>> >> +	MEMCG_NR_WRITEBACK,
+>> >> +	MEMCG_NR_DIRTY_WRITEBACK_PAGES,
+>> >> +};
+>> >> +
+>> >> +/* Dirty memory parameters */
+>> >> +struct vm_dirty_param {
+>> >> +	int dirty_ratio;
+>> >> +	int dirty_background_ratio;
+>> >> +	unsigned long dirty_bytes;
+>> >> +	unsigned long dirty_background_bytes;
+>> >> +};
+>> >> +
+>> >> +static inline void get_global_vm_dirty_param(struct vm_dirty_param *param)
+>> >> +{
+>> >> +	param->dirty_ratio = vm_dirty_ratio;
+>> >> +	param->dirty_bytes = vm_dirty_bytes;
+>> >> +	param->dirty_background_ratio = dirty_background_ratio;
+>> >> +	param->dirty_background_bytes = dirty_background_bytes;
+>> >> +}
+>> >> +
+>> >>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>> >>  					struct list_head *dst,
+>> >>  					unsigned long *scanned, int order,
+>> >> @@ -145,6 +170,10 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+>> >>  	mem_cgroup_update_page_stat(page, idx, -1);
+>> >>  }
+>> >>  
+>> >> +bool mem_cgroup_has_dirty_limit(void);
+>> >> +void get_vm_dirty_param(struct vm_dirty_param *param);
+>> >> +s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item);
+>> >> +
+>> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>> >>  						gfp_t gfp_mask);
+>> >>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
+>> >> @@ -326,6 +355,21 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+>> >>  {
+>> >>  }
+>> >>  
+>> >> +static inline bool mem_cgroup_has_dirty_limit(void)
+>> >> +{
+>> >> +	return false;
+>> >> +}
+>> >> +
+>> >> +static inline void get_vm_dirty_param(struct vm_dirty_param *param)
+>> >> +{
+>> >> +	get_global_vm_dirty_param(param);
+>> >> +}
+>> >> +
+>> >> +static inline s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+>> >> +{
+>> >> +	return -ENOSYS;
+>> >> +}
+>> >> +
+>> >>  static inline
+>> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>> >>  					    gfp_t gfp_mask)
+>> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> >> index f40839f..6ec2625 100644
+>> >> --- a/mm/memcontrol.c
+>> >> +++ b/mm/memcontrol.c
+>> >> @@ -233,6 +233,10 @@ struct mem_cgroup {
+>> >>  	atomic_t	refcnt;
+>> >>  
+>> >>  	unsigned int	swappiness;
+>> >> +
+>> >> +	/* control memory cgroup dirty pages */
+>> >> +	struct vm_dirty_param dirty_param;
+>> >> +
+>> >>  	/* OOM-Killer disable */
+>> >>  	int		oom_kill_disable;
+>> >>  
+>> >> @@ -1132,6 +1136,172 @@ static unsigned int get_swappiness(struct mem_cgroup *memcg)
+>> >>  	return swappiness;
+>> >>  }
+>> >>  
+>> >> +/*
+>> >> + * Returns a snapshot of the current dirty limits which is not synchronized with
+>> >> + * the routines that change the dirty limits.  If this routine races with an
+>> >> + * update to the dirty bytes/ratio value, then the caller must handle the case
+>> >> + * where both dirty_[background_]_ratio and _bytes are set.
+>> >> + */
+>> >> +static void __mem_cgroup_get_dirty_param(struct vm_dirty_param *param,
+>> >> +					 struct mem_cgroup *mem)
+>> >> +{
+>> >> +	if (mem && !mem_cgroup_is_root(mem)) {
+>> >> +		param->dirty_ratio = mem->dirty_param.dirty_ratio;
+>> >> +		param->dirty_bytes = mem->dirty_param.dirty_bytes;
+>> >> +		param->dirty_background_ratio =
+>> >> +			mem->dirty_param.dirty_background_ratio;
+>> >> +		param->dirty_background_bytes =
+>> >> +			mem->dirty_param.dirty_background_bytes;
+>> >> +	} else {
+>> >> +		get_global_vm_dirty_param(param);
+>> >> +	}
+>> >> +}
+>> >> +
+>> >> +/*
+>> >> + * Get dirty memory parameters of the current memcg or global values (if memory
+>> >> + * cgroups are disabled or querying the root cgroup).
+>> >> + */
+>> >> +void get_vm_dirty_param(struct vm_dirty_param *param)
+>> >> +{
+>> >> +	struct mem_cgroup *memcg;
+>> >> +
+>> >> +	if (mem_cgroup_disabled()) {
+>> >> +		get_global_vm_dirty_param(param);
+>> >> +		return;
+>> >> +	}
+>> >> +
+>> >> +	/*
+>> >> +	 * It's possible that "current" may be moved to other cgroup while we
+>> >> +	 * access cgroup. But precise check is meaningless because the task can
+>> >> +	 * be moved after our access and writeback tends to take long time.  At
+>> >> +	 * least, "memcg" will not be freed under rcu_read_lock().
+>> >> +	 */
+>> >> +	rcu_read_lock();
+>> >> +	memcg = mem_cgroup_from_task(current);
+>> >> +	__mem_cgroup_get_dirty_param(param, memcg);
+>> >> +	rcu_read_unlock();
+>> >> +}
+>> >> +
+>> >> +/*
+>> >> + * Check if current memcg has local dirty limits.  Return true if the current
+>> >> + * memory cgroup has local dirty memory settings.
+>> >> + */
+>> >> +bool mem_cgroup_has_dirty_limit(void)
+>> >> +{
+>> >> +	struct mem_cgroup *mem;
+>> >> +
+>> >> +	if (mem_cgroup_disabled())
+>> >> +		return false;
+>> >> +
+>> >> +	mem = mem_cgroup_from_task(current);
+>> >> +	return mem && !mem_cgroup_is_root(mem);
+>> >> +}
+>> >
+>> > We only check the pointer without dereferencing it, so this is probably
+>> > ok, but maybe this is safer:
+>> >
+>> > bool mem_cgroup_has_dirty_limit(void)
+>> > {
+>> > 	struct mem_cgroup *mem;
+>> > 	bool ret;
+>> >
+>> > 	if (mem_cgroup_disabled())
+>> > 		return false;
+>> >
+>> > 	rcu_read_lock();
+>> > 	mem = mem_cgroup_from_task(current);
+>> > 	ret = mem && !mem_cgroup_is_root(mem);
+>> > 	rcu_read_unlock();
+>> >
+>> > 	return ret;
+>> > }
+>> >
+>> > rcu_read_lock() should be held in mem_cgroup_from_task(), otherwise
+>> > lockdep could detect this as an error.
+>> >
+>> > Thanks,
+>> > -Andrea
+>> 
+>> Good suggestion.  I agree that lockdep might catch this.  There are some
+>> unrelated debug_locks failures (even without my patches) that I worked
+>> around to get lockdep to complain about this one.  I applied your
+>> suggested fix and lockdep was happy.  I will incorporate this fix into
+>> the next revision of the patch series.
+>> 
+>
+> Hmm, considering other parts, shouldn't we define mem_cgroup_from_task
+> as macro ?
+>
+> Thanks,
+> -Kame
 
-Rafael
+Is your motivation to increase performance with the same functionality?
+If so, then would a 'static inline' be performance equivalent to a
+preprocessor macro yet be safer to use?
+
+Maybe it makes more sense to find a way to perform this check in
+mem_cgroup_has_dirty_limit() without needing to grab the rcu lock.  I
+think this lock grab is unneeded.  I am still collecting performance
+data, but suspect that this may be making the code slower than it needs
+to be.
+
+--
+Greg
