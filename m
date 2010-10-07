@@ -1,207 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab0JGQAq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 12:00:46 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:26807
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750821Ab0JGQAp (ORCPT
+	id S1753007Ab0JGQD4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 12:03:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:32885 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751486Ab0JGQDz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 12:00:45 -0400
-X-SpamScore: 3
-X-BigFish: VS3(zzc8kzz1202hzz8275bhz2dh2a8h62h)
-X-Spam-TCS-SCL: 1:0
-From: <Dinh.Nguyen@freescale.com>
-To: <linux-kernel@vger.kernel.org>
-CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
-        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
-        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
-        <grant.likely@secretlab.ca>, <bryan.wu@canonical.com>,
-        <amit.kucheria@canonical.com>, <xiao-lizhang@freescale.com>,
-        Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv5] ARM: imx: Add iram allocator functions
-Date: Thu, 7 Oct 2010 11:00:50 -0500
-Message-ID: <1286467250-22644-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	Thu, 7 Oct 2010 12:03:55 -0400
+Date: Thu, 7 Oct 2010 18:03:41 +0200
+From: Gleb Natapov <gleb@minantech.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org
+Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to
+ provide fast guest write interface
+Message-ID: <20101007160340.GD4120@minantech.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+ <1286207794-16120-5-git-send-email-gleb@redhat.com>
+ <20101005165738.GA32750@amt.cnet>
+ <20101006111417.GX11145@redhat.com>
+ <20101006143847.GB31423@amt.cnet>
+ <20101006200836.GC4120@minantech.com>
+ <4CAD9A2D.7020009@redhat.com>
+ <20101007154248.GA30949@amt.cnet>
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: de01egw01.freescale.net
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101007154248.GA30949@amt.cnet>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+On Thu, Oct 07, 2010 at 12:42:48PM -0300, Marcelo Tosatti wrote:
+> On Thu, Oct 07, 2010 at 12:00:13PM +0200, Avi Kivity wrote:
+> >  On 10/06/2010 10:08 PM, Gleb Natapov wrote:
+> > >>  Malicious userspace can cause entry to be cached, ioctl
+> > >>  SET_USER_MEMORY_REGION 2^32 times, generation number will match,
+> > >>  mark_page_dirty_in_slot will be called with pointer to freed memory.
+> > >>
+> > >Hmm. To zap all cached entires on overflow we need to track them. If we
+> > >will track then we can zap them on each slot update and drop "generation"
+> > >entirely.
+> > 
+> > To track them you need locking.
+> > 
+> > Isn't SET_USER_MEMORY_REGION so slow that calling it 2^32 times
+> > isn't really feasible?
+> 
+> Assuming it takes 1ms, it would take 49 days.
+> 
+We may fail ioctl when max value is reached. The question is how much slot
+changes can we expect from real guest during its lifetime.
 
-Add IRAM(Internal RAM) allocation functions using GENERIC_ALLOCATOR.
-The allocation size is 4KB multiples to guarantee alignment. The
-idea for these functions is for i.MX platforms to use them
-to dynamically allocate IRAM usage.
+> > In any case, can use u64 generation count.
+> 
+> Agree.
+Yes, 64 bit ought to be enough for anybody.
 
-Applies on 2.6.36-rc7
-
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Reviewed-by: Amit Kucheria <amit.kucheria@canonical.com>
----
- arch/arm/plat-mxc/Kconfig             |    4 ++
- arch/arm/plat-mxc/Makefile            |    1 +
- arch/arm/plat-mxc/include/mach/iram.h |   41 ++++++++++++++++++
- arch/arm/plat-mxc/iram_alloc.c        |   74 +++++++++++++++++++++++++++++++++
- 4 files changed, 120 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/plat-mxc/include/mach/iram.h
- create mode 100644 arch/arm/plat-mxc/iram_alloc.c
-
-diff --git a/arch/arm/plat-mxc/Kconfig b/arch/arm/plat-mxc/Kconfig
-index 6785db4..0e99bb4 100644
---- a/arch/arm/plat-mxc/Kconfig
-+++ b/arch/arm/plat-mxc/Kconfig
-@@ -110,4 +110,8 @@ config ARCH_MXC_AUDMUX_V1
- config ARCH_MXC_AUDMUX_V2
- 	bool
- 
-+config IRAM_ALLOC
-+	bool
-+	select GENERIC_ALLOCATOR
-+
- endif
-diff --git a/arch/arm/plat-mxc/Makefile b/arch/arm/plat-mxc/Makefile
-index 78d405e..1ddfb13 100644
---- a/arch/arm/plat-mxc/Makefile
-+++ b/arch/arm/plat-mxc/Makefile
-@@ -10,6 +10,7 @@ obj-$(CONFIG_MXC_TZIC) += tzic.o
- 
- obj-$(CONFIG_IMX_HAVE_IOMUX_V1) += iomux-v1.o
- obj-$(CONFIG_ARCH_MXC_IOMUX_V3) += iomux-v3.o
-+obj-$(CONFIG_IRAM_ALLOC) += iram_alloc.o
- obj-$(CONFIG_MXC_PWM)  += pwm.o
- obj-$(CONFIG_USB_EHCI_MXC) += ehci.o
- obj-$(CONFIG_MXC_ULPI) += ulpi.o
-diff --git a/arch/arm/plat-mxc/include/mach/iram.h b/arch/arm/plat-mxc/include/mach/iram.h
-new file mode 100644
-index 0000000..f7edd45
---- /dev/null
-+++ b/arch/arm/plat-mxc/include/mach/iram.h
-@@ -0,0 +1,41 @@
-+/*
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-+ * MA 02110-1301, USA.
-+ */
-+#include <linux/errno.h>
-+
-+#ifdef CONFIG_IRAM_ALLOC
-+
-+int __init iram_init(unsigned long base, unsigned long size);
-+void *iram_alloc(unsigned int size, unsigned long *dma_addr);
-+void iram_free(unsigned long dma_addr, unsigned int size);
-+
-+#else
-+
-+static inline int __init iram_init(unsigned long base, unsigned long size)
-+{
-+	return -ENOMEM;
-+}
-+
-+static inline void *iram_alloc(unsigned int size, unsigned long *dma_addr)
-+{
-+	return NULL;
-+}
-+
-+static inline void iram_free(unsigned long base, unsigned long size) {}
-+
-+#endif
-diff --git a/arch/arm/plat-mxc/iram_alloc.c b/arch/arm/plat-mxc/iram_alloc.c
-new file mode 100644
-index 0000000..8f75a32
---- /dev/null
-+++ b/arch/arm/plat-mxc/iram_alloc.c
-@@ -0,0 +1,74 @@
-+/*
-+ * Copyright (C) 2010 Freescale Semiconductor, Inc. All Rights Reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2
-+ * of the License, or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
-+ * MA 02110-1301, USA.
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/io.h>
-+#include <linux/module.h>
-+#include <linux/spinlock.h>
-+#include <linux/genalloc.h>
-+#include <mach/iram.h>
-+
-+static unsigned long iram_phys_base;
-+static void __iomem *iram_virt_base;
-+static struct gen_pool *iram_pool;
-+
-+static inline void __iomem *iram_phys_to_virt(unsigned long p)
-+{
-+	p = iram_virt_base + (p - iram_phys_base);
-+	return p;
-+}
-+
-+void __iomem *iram_alloc(unsigned int size, unsigned long *dma_addr)
-+{
-+	if (!iram_pool)
-+		return NULL;
-+
-+	*dma_addr = gen_pool_alloc(iram_pool, size);
-+	pr_debug("iram alloc - %dB@0x%p\n", size, (void *)*dma_addr);
-+	if (!*dma_addr)
-+		return NULL;
-+	return iram_phys_to_virt(*dma_addr);
-+}
-+EXPORT_SYMBOL(iram_alloc);
-+
-+void iram_free(unsigned long addr, unsigned int size)
-+{
-+	if (!iram_pool)
-+		return;
-+
-+	gen_pool_free(iram_pool, addr, size);
-+}
-+EXPORT_SYMBOL(iram_free);
-+
-+int __init iram_init(unsigned long base, unsigned long size)
-+{
-+	iram_phys_base = base;
-+
-+	iram_pool = gen_pool_create(PAGE_SHIFT, -1);
-+	if (!iram_pool)
-+		return -ENOMEM;
-+
-+	gen_pool_add(iram_pool, base, size, -1);
-+	iram_virt_base = ioremap(iram_phys_base, size);
-+	if (!iram_virt_base)
-+		return -EIO;
-+
-+	pr_debug("i.MX IRAM pool: %ld KB@0x%p\n", size / 1024, iram_virt_base);
-+	return 0;
-+}
--- 
-1.6.0.4
-
-
+--
+			Gleb.
