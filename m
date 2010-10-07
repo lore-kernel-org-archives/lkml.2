@@ -1,85 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933169Ab0JGAno (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 20:43:44 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:39774 "EHLO e5.ny.us.ibm.com"
+	id S933254Ab0JGAtu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:49:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:59744 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753658Ab0JGAnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 20:43:42 -0400
-Date: Wed, 6 Oct 2010 17:43:39 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: DDD <dongdong.deng@windriver.com>
-Cc: dipankar@in.ibm.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] rcu: using ACCESS_ONCE() to observe the
- jiffies_stall/rnp->qsmask value
-Message-ID: <20101007004339.GT2433@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <1285662763-16748-1-git-send-email-dongdong.deng@windriver.com>
- <20100928232831.GC2419@linux.vnet.ibm.com>
- <4CA2E0BA.50908@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA2E0BA.50908@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1759115Ab0JGAts (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 20:49:48 -0400
+Date: Thu, 7 Oct 2010 11:49:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Michal Marek <mmarek@suse.cz>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: Linux 2.6.36-rc7
+Message-Id: <20101007114938.ad3d2c76.sfr@canb.auug.org.au>
+In-Reply-To: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Sep 29, 2010 at 02:46:18PM +0800, DDD wrote:
-> Paul E. McKenney wrote:
-> >On Tue, Sep 28, 2010 at 04:32:43PM +0800, Dongdong Deng wrote:
-> >>Using ACCESS_ONCE() to observe the jiffies_stall/rnp->qsmask value
-> >>due to the caller didn't hold the root_rcu/rnp node's lock.
-> >
-> >Given that the quantities are only used once, ACCESS_ONCE() is strictly
-> >speaking not necessary.  I am tempted to queue your patch regardless
-> >for the documentation benefits.
-> >
-> >Or is this patch necessary to fix a failure that you have been seeing?
-> 
-> Hello Pual,
-> 
-> No, I didn't see a failure about it.
-> I got this patch from code review.  :-)
+--Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thank you for the info, patch queued.
+Hi Linus,
 
-							Thanx, Paul
+On Wed, 6 Oct 2010 14:45:13 -0700 Linus Torvalds <torvalds@linux-foundation=
+.org> wrote:
+>
+> This should be the last -rc, I'm not seeing any reason to keep
+> delaying a real release. There was still more changes to
+> drivers/gpu/drm than I really would have hoped for, but they all look
+> harmless and good. Famous last words.
 
-> Thanks,
-> Dongdong
-> 
-> >In any case, thank you for taking a look at RCU!
-> >
-> >							Thanx, Paul
-> >
-> >>Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-> >>CC: Dipankar Sarma <dipankar@in.ibm.com>
-> >>CC: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> >>---
-> >> kernel/rcutree.c |    4 ++--
-> >> 1 files changed, 2 insertions(+), 2 deletions(-)
-> >>
-> >>diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> >>index d5bc439..07a7063 100644
-> >>--- a/kernel/rcutree.c
-> >>+++ b/kernel/rcutree.c
-> >>@@ -532,9 +532,9 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
-> >>
-> >> 	if (rcu_cpu_stall_panicking)
-> >> 		return;
-> >>-	delta = jiffies - rsp->jiffies_stall;
-> >>+	delta = jiffies - ACCESS_ONCE(rsp->jiffies_stall);
-> >> 	rnp = rdp->mynode;
-> >>-	if ((rnp->qsmask & rdp->grpmask) && delta >= 0) {
-> >>+	if ((ACCESS_ONCE(rnp->qsmask) & rdp->grpmask) && delta >= 0) {
-> >>
-> >> 		/* We haven't checked in, so go dump stack. */
-> >> 		print_cpu_stall(rsp);
-> >>-- 
-> >>1.6.0.4
-> >>
-> >
-> 
-> 
+I have no idea how critical any of this stuff is, but linux-next contain
+the following in it's "current" trees i.e. stuff that is supposed to go
+into 2.6.36.  These are from the arm-current, scsi-rc-fixes, net-current,
+wireless-current, kbuild-current, input-current and ide-curent trees
+(contacts cc'd).
+
+Arnaud Lacombe (1):
+      kconfig: delay symbol direct dependency initialization
+[This one produces a lot of new warnings, but also fixes a bug ...]
+
+Ben Hutchings (2):
+      Revert "ipv4: Make INET_LRO a bool instead of tristate."
+      netdev: Depend on INET before selecting INET_LRO
+
+Dan Carpenter (1):
+      cls_u32: signedness bug
+
+Dan Rosenberg (2):
+      sctp: prevent reading out-of-bounds memory
+      sctp: Fix out-of-bounds reading in sctp_asoc_get_hmac()
+
+David Stevens (1):
+      ipv4: correct IGMP behavior on v3 query during v2-compatibility mode
+
+Dmitry Torokhov (1):
+      Input: wacom - fix runtime PM related deadlock
+
+Eric Dumazet (1):
+      caif: fix two caif_connect() bugs
+
+Felix Fietkau (1):
+      ath9k_hw: fix regression in ANI listen time calculation
+
+Henrik Rydberg (1):
+      Input: uinput - setup MT usage during device creation
+
+Jeff Kirsher (4):
+      ixgbevf.txt: Update ixgbevf documentation
+      e1000.txt: Update e1000 documentation
+      e1000e.txt: Add e1000e documentation
+      MAINTAINERS: update Intel LAN Ethernet info
+
+Johannes Berg (1):
+      mac80211: delete AddBA response timer
+
+Kenneth Waters (1):
+      Input: joydev - fix JSIOCSAXMAP ioctl
+
+Maciej =C5=BBenczykowski (1):
+      net: Fix IPv6 PMTU disc. w/ asymmetric routes
+
+Martin K. Petersen (1):
+      [SCSI] Fix VPD inquiry page wrapper
+
+Nagendra Tomar (1):
+      net: Fix the condition passed to sk_wait_event()
+
+Neil Horman (1):
+      bonding: fix WARN_ON when writing to bond_master sysfs file
+
+Santosh Shilimkar (1):
+      ARM: 6419/1: mmu: Fix MT_MEMORY and MT_MEMORY_NONCACHED pte flags
+
+Sergei Shtylyov (2):
+      hpt366: add debounce delay to cable_detect() method
+      hpt366: fix clock turnaround
+
+Stanislaw Gruszka (1):
+      skge: add quirk to limit DMA
+
+Will Deacon (2):
+      ARM: 6416/1: errata: faulty hazard checking in the Store Buffer may l=
+ead to data corruption
+      ARM: 6412/1: kprobes-decode: add support for MOVW instruction
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMrRkiAAoJEDMEi1NhKgbsUekH/3omT671i4yr9EmGcnElaNSt
+V9w4JIFMyoZ1agEbW7h65qR1YG82wM1h07nGoLugJSx4loEFhnu2l+WvW84FRi9n
+USDUoc8vascnvjt8BLdz95TFAdGeoJTqKKd7F8ARdMgQk/ExMw3AB7k1+mYr+D+T
+sL7XG+8MHDoEEKzzfV/ePDl9/RGVyhAGNN3AquXfl368wMnx0dF7KCZrk47FTwZv
+JK8m24ltxrnMNgo4Aqtjv1h4pquXBnmXbDU3h2/fk+j66YcgeudCMrNR445AflDN
+eT20zCn1TQGcJkO+2UsbVyXtbtfVuMVOO0XPTza8uFgd/u536sNGq2Of6IXJ5hg=
+=Fs80
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__7_Oct_2010_11_49_38_+1100_Hd=TzG.Jc9LIeuGC--
