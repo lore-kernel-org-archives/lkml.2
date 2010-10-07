@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab0JGXZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 19:25:04 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:41242 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752534Ab0JGXZD (ORCPT
+	id S1754908Ab0JGX1w (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 19:27:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51216 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753451Ab0JGX1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 19:25:03 -0400
-Date: Fri, 8 Oct 2010 10:24:51 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Andreas Wiese <aw-lkml@meterriblecrew.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ciaran McCreesh <ciaran.mccreesh@googlemail.com>, xfs@oss.sgi.com
-Subject: Re: fallocate() on XFS clobbers S*ID-bits
-Message-ID: <20101007232451.GO4681@dastard>
-References: <20101007183418.GC5621@incendiary.meterriblecrew.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101007183418.GC5621@incendiary.meterriblecrew.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 7 Oct 2010 19:27:51 -0400
+Date: Thu, 7 Oct 2010 16:27:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jerome Marchand <jmarchan@redhat.com>
+Cc: Matthew Wilcox <matthew@wil.cx>, Pavel Emelyanov <xemul@parallels.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        xiyou.wangcong@gmail.com
+Subject: Re: [PATCH v2] procfs: fix numbering in /proc/locks
+Message-Id: <20101007162702.7db08f5b.akpm@linux-foundation.org>
+In-Reply-To: <4CAB1693.2080301@redhat.com>
+References: <4CA484BA.7090809@redhat.com>
+	<4CAB1693.2080301@redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ added xfs list on cc ]
+On Tue, 05 Oct 2010 14:14:11 +0200
+Jerome Marchand <jmarchan@redhat.com> wrote:
 
-On Thu, Oct 07, 2010 at 08:34:19PM +0200, Andreas Wiese wrote:
-> Hello.
+> On 09/30/2010 02:38 PM, Jerome Marchand wrote:
+> > 
+> > The lock number in /proc/locks (first field) is implemented by a counter
+> > (private field of struct seq_file) which is incremented at each call of
+> > locks_show() and reset to 1 in locks_start() whatever the offset is. It
+> > should be reset according to the actual position in the list.
+> > 
+> > Moreover, locks_show() can be called twice to print a single line thus
+> > skipping a number. The counter should be incremented in locks_next().
+> > 
+> > Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
+> > ---
+> >  locks.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/fs/locks.c b/fs/locks.c
+> > index ab24d49..49d7343 100644
+> > --- a/fs/locks.c
+> > +++ b/fs/locks.c
+> > @@ -2166,19 +2166,19 @@ static int locks_show(struct seq_file *f, void *v)
+> >  	list_for_each_entry(bfl, &fl->fl_block, fl_block)
+> >  		lock_get_status(f, bfl, (long)f->private, " ->");
+> >  
+> > -	f->private++;
+> >  	return 0;
+> >  }
+> >  
+> >  static void *locks_start(struct seq_file *f, loff_t *pos)
+> >  {
+> >  	lock_kernel();
+> > -	f->private = (void *)1;
+> > +	f->private = (void *) (*pos + 1);
 > 
-> I (with support from Cc'ed Ciaran) just noticed some odd behaviour with
-> fallocate() on XFS.  After open()ing some file and setting it S*ID via
-> fchmod(), S*ID bits vanish after calling fallocate() — as supposed to
-> for non-root users, but it also happens for root.
+> That cast trigger a warning on some arch:
+> "warning: cast to pointer from integer of different size"
 > 
-> Is this intended behaviour or did we spot a bug here?
-> 
-> At least on ext2 it works as expected, thus I guess it's the latter one.
+> There is no real risk here. At worst /proc/locks will show wrong number
+> if there is more than 2^32 locks, but should I mute the warning it with
+> something like:
+>         f->private = (void *) (size_t) (*pos + 1);
+> ?
 
-ext2 does not support the fallocate syscall. How does ext4 behave?
+Putting a loff_t into a void* is a pretty alarming thing to do.  If
+we're really going to do that then use a (long) cast and put a very
+good comment at the code site explaining why the bug doesn't matter, so
+people aren't misled.
 
-> I'm running v2.6.35.7 vanilla-kernel, but diffing fs/xfs to master
-> doesn't seem to address this issue.
+But really, why sweat it?  kmalloc the eight bytes, make ->private
+point at that and we never have to think about it again.  Bonus points
+for doing this without any typecasts ;)
 
-XFS has always cleared SUID/SGID bits when doing preallocation (via
-XFS_IOC_RESVSP). Given that that XFS ioctl formed the model for
-fallocate, I'd argue that the XFS behaviour is the on that should be
-followed.
-
-It'd be a bit silly for two different preallocation interfaces to
-have different behaviour w.r.t. SUID bits, but it's not clear to me
-which behaviour is correct. I'm happy to defer to whoever can say
-what the behaviour is supposed to be here...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
