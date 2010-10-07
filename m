@@ -1,81 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab0JGVPW (ORCPT <rfc822;w@1wt.eu>);
+	id S1756376Ab0JGVP2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:15:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50618 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756225Ab0JGVPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Oct 2010 17:15:22 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:33061 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753640Ab0JGVPV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:15:21 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="56990689"
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-In-Reply-To: <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
-	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
-	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 14:14:54 -0700
-Message-ID: <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Date: Thu, 7 Oct 2010 14:09:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: Brokhman Tatyana <tlinder@codeaurora.org>
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC/PATCH v3] usb: usb3.0 ch9 definitions
+Message-ID: <20101007210919.GA26660@suse.de>
+References: <1286476470-15265-1-git-send-email-tlinder@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286476470-15265-1-git-send-email-tlinder@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 17:03 -0400, Mike Frysinger wrote:
-> On Thu, Oct 7, 2010 at 16:51, Daniel Walker wrote:
-> > On Thu, 2010-10-07 at 22:05 +0100, Alan Cox wrote:
-> >> On Thu, 07 Oct 2010 13:36:06 -0700 Daniel Walker wrote:
-> >> > On Thu, 2010-10-07 at 21:50 +0100, Alan Cox wrote:
-> >> > > > +         Say Y here if you want to install DCC driver as a normal serial port
-> >> > > > +         /dev/ttyS0 (major 4, minor 64). Otherwise, it appears as /dev/ttyJ0
-> >> > > > +         (major 4, minor 128) and can co-exist with other UARTs, such as
-> >> > > > +         8250/16C550 compatibles.
-> >> > > > +
-> >> > >
-> >> > > NAK to both
-> >> >
-> >> > I would agree if this wasn't strictly for debugging embedded devices in
-> >> > difficult situations.. After talking to Mike, it's seems like it would
-> >> > be useful to have this as a ttyS* specifically because embedded devices
-> >> > won't always create a ttyJ* for you and ttyS* will likely already exist.
-> >>
-> >> If you are debugging an embedded device you are capable of changing it
-> >> (otherwise you wouldn't debug it). Therefore the fact you might need to
-> >> tweak the tty creation on the device is not a problem. If you can't
-> >> change the device well there is no point debugging it is there !
-> >
-> > Your making too many assumptions .. You might be able to modify the
-> > kernel, and not the userspace. So you couldn't tweak the device
-> > creation .. It's much easier in the server world ..
+On Thu, Oct 07, 2010 at 08:34:28PM +0200, Brokhman Tatyana wrote:
+> Adding SuperSpeed usb definitions as defined by ch9 of the USB3.0 spec.
+> This patch is a preparation for adding SuperSpeed support to the gadget
+> framework.
 > 
-> this driver isnt in the kernel.  there is no ABI to preserve.  if
-> people want to use the mainline driver, they can fix their userspace.
-> i dont think the "binary userspace" argument is terribly relevant to
-> new driver submissions.
+> Signed-off-by: Brokhman Tatyana <tlinder@codeaurora.org>
 
-It is , what's to stop any userspace from using ttyS0 ? .. There's lots
-of binary userspaces in the embedded world, along with many strange
-usages ..
+Is this still a [RFC] or is it something that you think should be
+applied to the tree?
 
-Daniel
+> ---
+>  include/linux/usb/ch9.h |   58 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 57 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
+> index da2ed77..a779b86 100644
+> --- a/include/linux/usb/ch9.h
+> +++ b/include/linux/usb/ch9.h
+> @@ -123,8 +123,23 @@
+>  #define USB_DEVICE_A_ALT_HNP_SUPPORT	5	/* (otg) other RH port does */
+>  #define USB_DEVICE_DEBUG_MODE		6	/* (special devices only) */
+>  
+> +/*
+> + * New Feature Selectors as added by USB 3.0
+> + * See USB 3.0 spec Table 9-6
+> + */
+> +#define USB_DEVICE_U1_ENABLE	48	/* dev may initiate U1 transition */
+> +#define USB_DEVICE_U2_ENABLE	49	/* dev may initiate U2 transition*/
+> +#define USB_DEVICE_LTM_ENABLE	50	/* dev may send LTM*/
+> +#define USB_INTRF_FUNC_SUSPEND	0	/* function suspend*/
+> +
+> +#define USB_INTR_FUNC_SUSPEND_OPT_MASK	0xFF00
+> +
+>  #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
+>  
+> +/* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
+> +#define USB_DEV_STAT_U1_ENABLED		2	/* transition into U1 state */
+> +#define USB_DEV_STAT_U2_ENABLED		3	/* transition into U2 state */
+> +#define USB_DEV_STAT_LTM_ENABLED	4	/* Latency tolerance messages*/
+>  
+>  /**
+>   * struct usb_ctrlrequest - SETUP data for a USB device control request
+> @@ -675,6 +690,7 @@ struct usb_bos_descriptor {
+>  	__u8  bNumDeviceCaps;
+>  } __attribute__((packed));
+>  
+> +#define USB_DT_BOS_SIZE		5
+>  /*-------------------------------------------------------------------------*/
+>  
+>  /* USB_DT_DEVICE_CAPABILITY:  grouped with BOS */
+> @@ -712,16 +728,56 @@ struct usb_wireless_cap_descriptor {	/* Ultra Wide Band */
+>  	__u8  bReserved;
+>  } __attribute__((packed));
+>  
+> +/* USB 2.0 Extension descriptor */
+>  #define	USB_CAP_TYPE_EXT		2
+>  
+>  struct usb_ext_cap_descriptor {		/* Link Power Management */
+>  	__u8  bLength;
+>  	__u8  bDescriptorType;
+>  	__u8  bDevCapabilityType;
+> -	__u8  bmAttributes;
+> +	__u32 bmAttributes;
+>  #define USB_LPM_SUPPORT			(1 << 1)	/* supports LPM */
+>  } __attribute__((packed));
 
--- 
+This structure just got bigger?  How is that going to affect existing
+users of it?  And shoudn't that be in __le32 format instead of __u32?
 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
+>  
+> +#define USB_DT_USB_EXT_CAP_SIZE	7
+> +
+> +/*
+> + * SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed USB
+> + * specific device level capabilities
+> + */
+> +#define		USB_SS_CAP_TYPE		3
+> +struct usb_ss_cap_descriptor {		/* Link Power Management */
+> +	__u8  bLength;
+> +	__u8  bDescriptorType;
+> +	__u8  bDevCapabilityType;
+> +	__u8  bmAttributes;
+> +#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
+> +	__u16 wSpeedSupported;
+
+__le16?
+
+> +#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
+> +#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
+> +#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
+> +#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
+> +	__u8  bFunctionalitySupport;
+> +	__u8  bU1devExitLat;
+> +	__u16 bU2DevExitLat;
+
+__le16?  I'm guessing these fields haven't actually been used for
+anything?
+
+> +} __attribute__((packed));
+> +
+> +#define USB_DT_USB_SS_CAP_SIZE	10
+> +
+> +/*
+> + * Container ID Capability descriptor: Defines the instance unique ID used to
+> + * identify the instance across all operating modes
+> + */
+> +#define	CONTAINER_ID_TYPE	4
+> +struct usb_ss_container_id_descriptor {
+> +	__u8  bLength;
+> +	__u8  bDescriptorType;
+> +	__u8  bDevCapabilityType;
+> +	__u8  bReserved;
+> +	__u8  ContainerID[16]; /* 128-bit number */
+
+Is this number in any specific endian format?  If so, you're going to
+have a hard time handling it as an array of bytes, aren't you?  How is
+this going to be managed?
+
+thanks,
+
+greg k-h
