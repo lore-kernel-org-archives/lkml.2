@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760112Ab0JGDxP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 23:53:15 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34441 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760005Ab0JGDxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 23:53:13 -0400
-Date: Thu, 7 Oct 2010 14:53:09 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Hellstrom <thellstrom@vmware.com>,
-        Dave Airlie <airlied@linux.ie>
-Subject: linux-next: manual merge of the bkl-llseek tree with the drm tree
-Message-Id: <20101007145309.0fb5dbe6.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1760110Ab0JGDz1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 23:55:27 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:57376 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760005Ab0JGDz0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 23:55:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=NPC7/AUK2hgE92AfWCZo3+Sv8MMKsGik2XYrZ3/DLx/8zuiffKlt6EQZtd9voGt+Ie
+         EGTsbubVnHFkhKBG0oHNXN9ZjtSrQWUXIS/vblvDLg0cQ/flpW2aeP8nk7tUlLXYxw5G
+         ILH9TTzPszQ6iAjcFwYniIVYTWaI3BfsDdKMQ=
+MIME-Version: 1.0
+In-Reply-To: <1286423526-2777-1-git-send-email-rahul.ruikar@gmail.com>
+References: <1286423526-2777-1-git-send-email-rahul.ruikar@gmail.com>
+From: Rahul Ruikar <rahul.ruikar@gmail.com>
+Date: Thu, 7 Oct 2010 09:24:17 +0530
+Message-ID: <AANLkTin3eFrPwN+CT7XR1dsCV82QgyT+UryNj0M9FhW7@mail.gmail.com>
+Subject: Re: [PATCH] usb: gadget: langwell_udc: Fix error path
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rahul Ruikar <rahul.ruikar@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Joe Perches <joe@perches.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Greg,
 
-Today's linux-next merge of the bkl-llseek tree got a conflict in
-drivers/gpu/drm/vmwgfx/vmwgfx_drv.c between commit
-7fbd721ad35f8ffec8d9a82e0e4b390cb6c9f4f7 ("drm/vmwgfx: Add new-style PM
-hooks to improve hibernation behavior") from the drm tree and commit
-dc880abef75e7c62c9048171f5112500f36a9244 ("drm: use noop_llseek") from
-the bkl-llseek tree.
+Kindly apply this patch.
 
-Just a trivial whitepsace change.  I fixed it up (see below) and can
-carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-index f2942b3,d237190..0000000
---- a/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-+++ b/drivers/gpu/drm/vmwgfx/vmwgfx_drv.c
-@@@ -899,16 -745,16 +899,17 @@@ static struct drm_driver driver = 
-  #if defined(CONFIG_COMPAT)
-  		 .compat_ioctl = drm_compat_ioctl,
-  #endif
-+ 		 .llseek = noop_llseek,
- -		 },
- +	},
-  	.pci_driver = {
- -		       .name = VMWGFX_DRIVER_NAME,
- -		       .id_table = vmw_pci_id_list,
- -		       .probe = vmw_probe,
- -		       .remove = vmw_remove,
- -		       .suspend = vmw_pci_suspend,
- -		       .resume = vmw_pci_resume
- -		       },
- +		 .name = VMWGFX_DRIVER_NAME,
- +		 .id_table = vmw_pci_id_list,
- +		 .probe = vmw_probe,
- +		 .remove = vmw_remove,
- +		 .driver = {
- +			 .pm = &vmw_pm_ops
- +		 }
- +	 },
-  	.name = VMWGFX_DRIVER_NAME,
-  	.desc = VMWGFX_DRIVER_DESC,
-  	.date = VMWGFX_DRIVER_DATE,
+- Rahul Ruikar
+
+
+
+
+
+On 7 October 2010 09:22, Rahul Ruikar <rahul.ruikar@gmail.com> wrote:
+> Fix for following cases
+> - Call device_unregister() only when device_register() succeeds.
+> - Call put_device() when device_register() fails.
+> - Call device_remove_file() only when device_create_file() succeeds.
+>
+> Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+> ---
+>  drivers/usb/gadget/langwell_udc.c |   14 +++++++++++---
+>  drivers/usb/gadget/langwell_udc.h |    4 +++-
+>  2 files changed, 14 insertions(+), 4 deletions(-)
+>
+> diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
+> index c2d2a20..56e216e 100644
+> --- a/drivers/usb/gadget/langwell_udc.c
+> +++ b/drivers/usb/gadget/langwell_udc.c
+> @@ -2952,8 +2952,11 @@ static void langwell_udc_remove(struct pci_dev *pdev)
+>        INFO(dev, "unbind\n");
+>        DBG(dev, "<--- %s()\n", __func__);
+>
+> -       device_unregister(&dev->gadget.dev);
+> -       device_remove_file(&pdev->dev, &dev_attr_langwell_udc);
+> +       if (dev->reg_status)
+> +               device_unregister(&dev->gadget.dev);
+> +
+> +       if (dev->file_created)
+> +               device_remove_file(&pdev->dev, &dev_attr_langwell_udc);
+>
+>  #ifndef        OTG_TRANSCEIVER
+>        pci_set_drvdata(pdev, NULL);
+> @@ -3190,13 +3193,18 @@ static int langwell_udc_probe(struct pci_dev *pdev,
+>        the_controller = dev;
+>
+>        retval = device_register(&dev->gadget.dev);
+> -       if (retval)
+> +       if (retval) {
+> +               put_device(&dev->gadget.dev);
+>                goto error;
+> +       }
+> +       dev->reg_status = 1;
+>
+>        retval = device_create_file(&pdev->dev, &dev_attr_langwell_udc);
+>        if (retval)
+>                goto error;
+>
+> +       dev->file_created = 1;
+> +
+>        VDBG(dev, "<--- %s()\n", __func__);
+>        return 0;
+>
+> diff --git a/drivers/usb/gadget/langwell_udc.h b/drivers/usb/gadget/langwell_udc.h
+> index 9719934..da40671 100644
+> --- a/drivers/usb/gadget/langwell_udc.h
+> +++ b/drivers/usb/gadget/langwell_udc.h
+> @@ -199,7 +199,9 @@ struct langwell_udc {
+>                                vbus_active:1,
+>                                suspended:1,
+>                                stopped:1,
+> -                               lpm:1;  /* LPM capability */
+> +                               lpm:1,  /* LPM capability */
+> +                               reg_status:1,
+> +                               file_created:1;
+>
+>        /* pci state used to access those endpoints */
+>        struct pci_dev          *pdev;
+> --
+> 1.7.2.3
+>
+>
