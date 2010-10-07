@@ -1,93 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753759Ab0JGRvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:51:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43583 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752258Ab0JGRvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:51:08 -0400
-X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=cD81UUMRb2IA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=EFT7cKsMyjZApBs6VeUA:9 a=bL25CUimhxtEMqpwdQIA:7 a=pyVheSDJHR62sVCfyBguyvhID1kA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC PATCH] poll(): add poll_wait_set_exclusive()
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20101007170716.GB799@Krystal>
-References: <20101006175635.GA21652@Krystal>
-	 <AANLkTik3MWtEpi=mzf2-_x4_kdrwv-EOjeVHNzbmfian@mail.gmail.com>
-	 <20101006190434.GA5783@Krystal>
-	 <1286397096.6661.2.camel@gandalf.stny.rr.com>
-	 <20101007170716.GB799@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 07 Oct 2010 13:51:04 -0400
-Message-ID: <1286473864.6661.16.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1752788Ab0JGRyZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:54:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab0JGRyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 13:54:23 -0400
+Date: Thu, 7 Oct 2010 19:53:29 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v6 06/12] Add PV MSR to enable asynchronous page faults
+ delivery.
+Message-ID: <20101007175329.GF2397@redhat.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+ <1286207794-16120-7-git-send-email-gleb@redhat.com>
+ <4CADC01E.3060409@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CADC01E.3060409@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 13:07 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Wed, 2010-10-06 at 15:04 -0400, Mathieu Desnoyers wrote:
-> > 
-> > > For reference, here is the use-case: The user-space daemon runs typically one
-> > > thread per cpu, each with a handle on many file descriptors. Each thread waits
-> > > for data to be available using poll(). In order to follow the poll semantic,
-> > > when data becomes available on a file descriptor, the kernel wakes up all
-> > > threads at once, but in my case only one of them will successfully consume the
-> > > data (all other thread's splice or read will fail with -ENODATA). With many
-> > > threads, these useless wakeups add an unwanted overhead and scalability
-> > > limitation.
-> > 
-> > Mathieu, I'm curious to why you have multiple threads reading the same
-> > fd. Since the threads are per cpu, does the fd handle all CPUs?
+On Thu, Oct 07, 2010 at 02:42:06PM +0200, Avi Kivity wrote:
+>  On 10/04/2010 05:56 PM, Gleb Natapov wrote:
+> >Guest enables async PF vcpu functionality using this MSR.
+> >
+> >  			return NON_PRESENT;
+> >+
+> >+MSR_KVM_ASYNC_PF_EN: 0x4b564d02
+> >+	data: Bits 63-6 hold 64-byte aligned physical address of a 32bit memory
 > 
-> The fd is local to a single ring buffer (which is per-cpu, transporting a group
-> of events). The threads consuming the file descriptors are approximately per
-> cpu, modulo cpu hotplug events, user preferences, etc. I would prefer not to
-> make that a strong 1-1 mapping (with affinity and all), because a typical
-> tracing scenario is that a single CPU is heavily used by the OS (thus producing
-> trace data), while other CPUs are idle, available to pull the data from the
-> buffers. Therefore, I strongly prefer not to affine reader threads to their
-> "local" buffers in the general case. That being said, it could be kept as an
-> option, since it might make sense in some other use-cases, especially with tiny
-> buffers, where it makes sense to keep locality of reference in the L2 cache.
+> Given that it must be aligned anyway, we can require it to be a
+> 64-byte region and also require that the guest zero it before
+> writing the MSR.  That will give us a little more flexibility in the
+> future.
+> 
+No code change needed, so OK.
 
-I never mention affinity. As with trace-cmd, it assigns a process per
-CPU, but those processes can be on any CPU that the scheduler chooses. I
-could probably do it with a single process reading all the CPU fds too.
-I might add that as an option.
+> >+	area which must be in guest RAM. Bits 5-1 are reserved and should be
+> >+	zero. Bit 0 is 1 when asynchronous page faults are enabled on the vcpu
+> >+	0 when disabled.
+> >+
+> >+	Physical address points to 32 bit memory location that will be written
+> >+	to by the hypervisor at the time of asynchronous page fault injection to
+> >+	indicate type of asynchronous page fault. Value of 1 means that the page
+> >+	referred to by the page fault is not present. Value 2 means that the
+> >+	page is now available.
+> >diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+> >index b9f263e..de31551 100644
+> >--- a/arch/x86/include/asm/kvm_host.h
+> >+++ b/arch/x86/include/asm/kvm_host.h
+> >@@ -417,6 +417,8 @@ struct kvm_vcpu_arch {
+> >
+> >  	struct {
+> >  		gfn_t gfns[roundup_pow_of_two(ASYNC_PF_PER_VCPU)];
+> >+		struct gfn_to_hva_cache data;
+> >+		u64 msr_val;
+> >  	} apf;
+> >  };
+> >
+> >diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+> >index e3faaaf..8662ae0 100644
+> >--- a/arch/x86/include/asm/kvm_para.h
+> >+++ b/arch/x86/include/asm/kvm_para.h
+> >@@ -20,6 +20,7 @@
+> >   * are available. The use of 0x11 and 0x12 is deprecated
+> >   */
+> >  #define KVM_FEATURE_CLOCKSOURCE2        3
+> >+#define KVM_FEATURE_ASYNC_PF		4
+> >
+> >  /* The last 8 bits are used to indicate how to interpret the flags field
+> >   * in pvclock structure. If no bits are set, all flags are ignored.
+> >@@ -32,9 +33,12 @@
+> >  /* Custom MSRs falls in the range 0x4b564d00-0x4b564dff */
+> >  #define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
+> >  #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
+> >+#define MSR_KVM_ASYNC_PF_EN 0x4b564d02
+> >
+> >  #define KVM_MAX_MMU_OP_BATCH           32
+> >
+> >+#define KVM_ASYNC_PF_ENABLED			(1<<  0)
+> >+
+> >  /* Operations for KVM_HC_MMU_OP */
+> >  #define KVM_MMU_OP_WRITE_PTE            1
+> >  #define KVM_MMU_OP_FLUSH_TLB	        2
+> >diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> >index 48fd59d..3e123ab 100644
+> >--- a/arch/x86/kvm/x86.c
+> >+++ b/arch/x86/kvm/x86.c
+> >@@ -782,12 +782,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
+> >   * kvm-specific. Those are put in the beginning of the list.
+> >   */
+> >
+> >-#define KVM_SAVE_MSRS_BEGIN	7
+> >+#define KVM_SAVE_MSRS_BEGIN	8
+> >  static u32 msrs_to_save[] = {
+> >  	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
+> >  	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+> >  	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+> >-	HV_X64_MSR_APIC_ASSIST_PAGE,
+> >+	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
+> >  	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+> >  	MSR_STAR,
+> >  #ifdef CONFIG_X86_64
+> >@@ -1425,6 +1425,29 @@ static int set_msr_hyperv(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+> >  	return 0;
+> >  }
+> >
+> >+static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+> >+{
+> >+	gpa_t gpa = data&  ~0x3f;
+> >+
+> >+	/* Bits 1:5 are resrved, Should be zero */
+> >+	if (data&  0x3e)
+> >+		return 1;
+> >+
+> >+	vcpu->arch.apf.msr_val = data;
+> >+
+> >+	if (!(data&  KVM_ASYNC_PF_ENABLED)) {
+> >+		kvm_clear_async_pf_completion_queue(vcpu);
+> 
+> May be a lengthy synchronous operation.  I guess we don't care.
+> 
+> >+		memset(vcpu->arch.apf.gfns, 0xff, sizeof vcpu->arch.apf.gfns);
+> 
+> That memset again.
+> 
+> >+		return 0;
+> >+	}
+> >+
+> >+	if (kvm_gfn_to_hva_cache_init(vcpu->kvm,&vcpu->arch.apf.data, gpa))
+> >+		return 1;
+> 
+> Note: we need to handle the memory being removed from underneath
+> kvm_gfn_to_hve_cache().  Given that, we can just make
+> kvm_gfn_to_hva_cache_init() return void.  "success" means nothing
+> when future changes can invalidate it.
+> 
+I want to catch guest doing stupid things. If guest give us non-existent
+address I want wrmsr to #GP.
+
+> >+
+> >+	kvm_async_pf_wakeup_all(vcpu);
+> 
+> Why is this needed?  If all apfs are flushed at disable time, what
+> do we need to wake up?
+For migration. Destination will rewrite msr and all processes will be
+waked up.
 
 > 
-> > Or do you have an fd per event per CPU, in which case the threads should just
-> > poll off of their own fds.
+> Need to list the MSR for save/restore/reset.
 > 
-> I have one fd per per-cpu buffer, but there can be many per-cpu buffers, each
-> transporting a group of events. Therefore, I don't want to associate one thread
-> per event group, because this would be a resource waste.  Typically, only a few
-> per-cpu buffers will be very active, and others will be very quiet.
+> 
+This patch adds it to msrs_to_save, no?
 
-Lets not talk about threads, what about fds? I'm wondering why you have
-many threads on the same fd?
-
--- Steve
-
-
-
+--
+			Gleb.
