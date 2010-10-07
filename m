@@ -1,66 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752965Ab0JGPsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 11:48:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64224 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752324Ab0JGPsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 11:48:15 -0400
-Date: Thu, 7 Oct 2010 11:47:58 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: mingo@elte.hu, fweisbec@gmail.com, robert.richter@amd.com,
-        gorcunov@gmail.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] arch generic way to trigger unknown NMIs
-Message-ID: <20101007154758.GA22385@redhat.com>
-References: <20101007030807.GA4076@redhat.com>
- <20101007072641.GE5010@basil.fritz.box>
- <20101007140112.GN10663@redhat.com>
- <20101007151128.GC6270@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101007151128.GC6270@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1753217Ab0JGPtp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 11:49:45 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:39452 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab0JGPtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 11:49:43 -0400
+Subject: RE: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
+From: Marcel Holtmann <marcel@holtmann.org>
+To: "Savoy, Pavan" <pavan_savoy@ti.com>
+Cc: "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
+        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
+        "greg@kroah.com" <greg@kroah.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <19F8576C6E063C45BE387C64729E739404AA21D1BD@dbde02.ent.ti.com>
+References: <1286404493-23816-1-git-send-email-pavan-savoy@ti.com>
+	 <1286404493-23816-2-git-send-email-pavan-savoy@ti.com>
+	 <1286445948.6145.70.camel@aeonflux>
+	 <19F8576C6E063C45BE387C64729E739404AA21D19E@dbde02.ent.ti.com>
+	 <1286464659.6145.144.camel@aeonflux>
+	 <19F8576C6E063C45BE387C64729E739404AA21D1B4@dbde02.ent.ti.com>
+	 <1286465843.6145.157.camel@aeonflux>
+	 <19F8576C6E063C45BE387C64729E739404AA21D1BD@dbde02.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 17:49:36 +0200
+Message-ID: <1286466576.6145.161.camel@aeonflux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 05:11:29PM +0200, Andi Kleen wrote:
-> On Thu, Oct 07, 2010 at 10:01:12AM -0400, Don Zickus wrote:
-> > On Thu, Oct 07, 2010 at 09:26:41AM +0200, Andi Kleen wrote:
-> > > 
-> > > Having a regression test for this is good, but it would 
-> > > be also good if it wasn't a private one but in some public
-> > > git repository.
+Hi Pavan,
+
+> > > > > > Registering the Bluetooth HCI driver in module_init/module_exit is not
+> > > > > > acceptable. Turn your shared transport into a proper bus.
+> > > > >
+> > > > > Yes, you did comment on it before, I remember, I did prototype the
+> > driver as
+> > > > > a bus driver, However I didn't find any advantages by converting it to a
+> > bus
+> > > > > driver.
+> > > > > As in, currently the shared transport driver is a line discipline driver
+> > > > because
+> > > > > it is the only way it can communicate over TTY without being tightly
+> > coupled
+> > > > with the UART driver.
+> > > > >
+> > > > > > We want to be able to have generic kernels where this module is
+> > enabled,
+> > > > > > but no Shared Transport is available.
+> > > > >
+> > > > > Oh if this is the reason I cannot have hci_register/_unregister in
+> > > > module_init/_exit, Can I do this module "depends" on TI_ST, Then it would
+> > not
+> > > > > even be visible to build if TI_ST is not selected.
+> > > >
+> > > > this is not helping either. Then TI_ST can not be selected and so you
+> > > > still end up with some weird platform specific kernels. We don't want
+> > > > that. We want generic kernels that can detect the hardware they are
+> > > > running on.
+> > > >
+> > > > As I said, I will not accept this driver if it registers HCI device in
+> > > > module_init. No other driver is doing this and it is in general a really
+> > > > really really bad idea.
+> > > >
+> > >
+> > > Ok, now I am beginning to get what you say, Let me check, may be what
+> > > I can do is, have something like a st_prepare() function called in the
+> > > module_init, and a _probe function of the bluetooth driver will be called,
+> > > _ONLY_ if the _probe of my platform driver has been called..
+> > > Do you think this would be a good idea?
+> > >
+> > > Note: the TI_ST driver is also a platform device driver, so that TI_ST's
+> > > Probe is not called, if a arch/xx/board-xx doesn't add it.
 > > 
-> > Yeah, I know.  It isn't meant to be private, mostly glue logic to load
-> > this module using RedHat's internal test harness.
-> > 
-> > Is there a more public place to add a test like this?  I guess that would
-> > be LTP.  Though last time I looked at LTP, all the tests are written in
-> > 'C' whereas I just cobbled together some shell scripts to configure kdump,
-> > load the module, panic, process the resulting vmcore to verify it panic'd
-> > for the right reason
+> > that that should be your bus right there.
 > 
-> One possible place would be mce-test, but LTP would work too I guess.
-
-I forgot about mce-test.  I can look at that too.
-
-<snip>
-
-> > 
-> > No I prefer a single one too, but there didn't seem to be a
-> > send_IPI_self() command, so I took the short route and sent it to
-> > everyone. :-(
+> I understand the perspective, but "bus" is not device-driver type of model right? I mean I need a device which will be added in some platform specific
+> board file, and the driver in my driver core file.
 > 
-> You're not sending it to everyone, everyone but you.
+> > Let me repeat this. If you register the HCI device in module_init then
+> > it will be registered on all platform this module is selected. Even if
+> > the kernel runs on x86. And that is not acceptable. Registering devices
+> > in module_init is a bad idea no matter what. That is why all other
+> > drivers just register a driver here and not a device.
 > 
-> Anyways for standard APIC send_IPI_cpu should be easy enough
-> to add. Standard NMI is usually to CPU #0 only.
+> I did initially think about making each of the protocol drivers a 
+> platform devices as well.
+> As in Bluetooth/FM/GPS TI_ST driver would also be a platform device and its _probe doing the HCI/v4L2/character device registration.
+> 
+> So which one do you think makes more sense here?
+> 1. Do I EXPORT a new symbol called st_prepare? And allow hci registration there?
+> 
+> 2. Or make Bluetooth device a platform device and this driver a platform driver
+> and add this Bluetooth device only when I add TI_ST platform device?
 
-Would that still be x86 specific though?  I could probably code that up,
-though I wonder if it would be accepted just for a test case.
+then make them a platform device. Since you do need a proper parent for
+these devices anyway. Otherwise a lot of logic within sysfs will fail.
 
-Cheers,
-Don
+Regards
+
+Marcel
+
+
