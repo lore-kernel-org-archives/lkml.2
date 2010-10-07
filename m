@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab0JGVuj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:50:39 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57302 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751713Ab0JGVui (ORCPT
+	id S1754031Ab0JGVvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:51:18 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:52740 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751713Ab0JGVvQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:50:38 -0400
-Date: Thu, 7 Oct 2010 22:50:28 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Mario Limonciello <superm1@ubuntu.com>,
-        Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
-        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
-Message-ID: <20101007215028.GB2292@srcf.ucam.org>
-References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com> <20101007111510.GA19624@srcf.ucam.org> <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com> <20101007133529.GA21782@srcf.ucam.org> <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com> <20101007205049.GB32726@srcf.ucam.org> <AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com> <20101007213027.GA18628@core.coreip.homeip.net> <20101007213754.GA1896@srcf.ucam.org> <20101007214628.GB18628@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101007214628.GB18628@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 7 Oct 2010 17:51:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="57100852"
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+In-Reply-To: <AANLkTimPrvj=NkJ0eN5kAmRTNof1N2nfo4U-THRnqikF@mail.gmail.com>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+	 <AANLkTinxorq2XhJdGDNQuUghxzr1q6OW=S1VjupOu5nH@mail.gmail.com>
+	 <1286480364.23836.17.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTi=8Et=Z6zrzbZa3L0MO=cBjjh7L=XU2=PDEbzWW@mail.gmail.com>
+	 <1286481532.23836.27.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTi=j2n-X+-zkas8HdL1awo7Lcyxwofts6FjU8vj6@mail.gmail.com>
+	 <1286482013.23836.29.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTinDvL9vPb6nmve3rO9dMtMAqh=d1oqBVTOHzYWH@mail.gmail.com>
+	 <1286485186.23836.56.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTi==_WDX03gYRa0=qCSgZ2eoO-Uzpg66WeEX57rS@mail.gmail.com>
+	 <1286486274.23836.62.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTimPrvj=NkJ0eN5kAmRTNof1N2nfo4U-THRnqikF@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 14:50:50 -0700
+Message-ID: <1286488250.23836.104.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 02:46:28PM -0700, Dmitry Torokhov wrote:
-> On Thu, Oct 07, 2010 at 10:37:54PM +0100, Matthew Garrett wrote:
-> > Dell laptop driver is reasonable. All we need is a list of hardware, and 
-> > I'd really hope that Dell know which BIOS versions contain this code!
-> > 
-> 
-> Unfortunately this kind of crap tends to flow from one BIOS version to
-> another.. How many DMI entries do we know about so far? Did Dell issue
-> firmware updates correcting the issue so new boxes will not exhibit the
-> problem?
+On Thu, 2010-10-07 at 17:32 -0400, Mike Frysinger wrote:
 
-Pushing this out to userspace doesn't help. If it's sufficiently 
-prevelant that it's impossible to have a comprehensive list, then a 
-module option makes it too easy for people to just post the fix on a 
-forum somewhere and never actually get it upstream.
+> > Ideally you would want this driver to work in any situation .. If it's
+> > setup to use ttyS0 for debugging, even if it doesn't exist, then this
+> > driver would be able to stand in for that interface.
+> 
+> i dont think that's the case.  "any situation" is way too vague and
+> invites mounds of crap to be included in the kernel which really
+> should be in userspace.  ive never had a problem with my embedded work
+> using ttyBF# or ttyBFJC# or ttySS# for the Blackfin serial devices,
+> nor have i heard customers complain that the file absolutely must be
+> named "ttyS#".  ive found that simply informing them "to use ttyBF#"
+> has always been sufficient.
+> -mike
+
+It's kind of a "your milage may vary" situation .. From my perspective
+it doesn't hurt anything to have an exception for this, considering what
+it is used for.
+
+Daniel
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
