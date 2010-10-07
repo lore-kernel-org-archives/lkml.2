@@ -1,114 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab0JGTAI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 15:00:08 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:58320 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753050Ab0JGTAF (ORCPT
+	id S1753007Ab0JGTAE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 15:00:04 -0400
+Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:51128 "EHLO
+	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752893Ab0JGTAB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 15:00:05 -0400
-Date: Thu, 7 Oct 2010 14:58:59 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-10-07
-Message-ID: <20101007185859.GD20950@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Oct 2010 15:00:01 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de
+To: mingo@redhat.com
+To: hpa@zytor.com
+To: x86@kernel.org
+Cc: dilinger@queued.net
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] OLPC: Add XO-1 poweroff support
+Message-Id: <20101007185952.A36859D401B@zog.reactivated.net>
+Date: Thu,  7 Oct 2010 19:59:52 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=DhNl2YeytwJssBBGe49HJX82LNDFEEVkpVB34RXKaPo= c=1 sm=0 a=AvS0RrwksfwA:10 a=Op-mwl0xAAAA:8 a=DxYcp4CUANubbBQo6-UA:9 a=RttQKB1h_DY9XDJk-_0A:7 a=5WY7vSb3EMVE5fRsxjAtkm_bTUsA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Add a pm_power_off handler for the OLPC XO-1 laptop.
 
-Here are a few more more-or-less-one-liner fixes intended for 2.6.36.
-The one from Felix fixes a regression introduced in the 2.6.36 cycle.
-The one from Johannes fixes a crash reported by Ben Greear (as
-documented in the changelog).  The one from me reverts and earlier patch
-from me that can result in stuff in dmesg from not calling
-netif_receive_skb in the proper context.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
+Signed-off-by: Daniel Drake <dsd@laptop.org>
 ---
+ arch/x86/Kconfig           |    6 ++
+ arch/x86/kernel/Makefile   |    1 +
+ arch/x86/kernel/olpc-xo1.c |  112 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 119 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/kernel/olpc-xo1.c
 
-The following changes since commit fb3dbece264a50ab4373f3af0bbbd9175d3ad4d7:
+The new olpc-xo1.c file will also be used for further functionality
+(suspend/resume, lid switch device, etc); patches to be submitted shortly
+after the review/merge of this one.
 
-  Merge branch 'master' of git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6 (2010-10-07 00:59:39 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Felix Fietkau (1):
-      ath9k_hw: fix regression in ANI listen time calculation
-
-Johannes Berg (1):
-      mac80211: delete AddBA response timer
-
-John W. Linville (1):
-      Revert "mac80211: use netif_receive_skb in ieee80211_tx_status callpath"
-
- drivers/net/wireless/ath/ath9k/ani.c |    2 +-
- net/mac80211/agg-tx.c                |    2 ++
- net/mac80211/status.c                |    4 ++--
- 3 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/ani.c b/drivers/net/wireless/ath/ath9k/ani.c
-index cc648b6..a3d95cc 100644
---- a/drivers/net/wireless/ath/ath9k/ani.c
-+++ b/drivers/net/wireless/ath/ath9k/ani.c
-@@ -543,7 +543,7 @@ static u8 ath9k_hw_chan_2_clockrate_mhz(struct ath_hw *ah)
- 	if (conf_is_ht40(conf))
- 		return clockrate * 2;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cea0cd9..19e6439 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2065,6 +2065,12 @@ config OLPC
+ 	  Add support for detecting the unique features of the OLPC
+ 	  XO hardware.
  
--	return clockrate * 2;
-+	return clockrate;
- }
- 
- static int32_t ath9k_hw_ani_get_listen_time(struct ath_hw *ah)
-diff --git a/net/mac80211/agg-tx.c b/net/mac80211/agg-tx.c
-index c893f23..8f23401 100644
---- a/net/mac80211/agg-tx.c
-+++ b/net/mac80211/agg-tx.c
-@@ -175,6 +175,8 @@ int ___ieee80211_stop_tx_ba_session(struct sta_info *sta, u16 tid,
- 
- 	set_bit(HT_AGG_STATE_STOPPING, &tid_tx->state);
- 
-+	del_timer_sync(&tid_tx->addba_resp_timer);
++config OLPC_XO1
++	bool "OLPC XO-1 support"
++	depends on OLPC
++	---help---
++	  Add support for non-essential features of the OLPC XO-1 laptop.
 +
- 	/*
- 	 * After this packets are no longer handed right through
- 	 * to the driver but are put onto tid_tx->pending instead,
-diff --git a/net/mac80211/status.c b/net/mac80211/status.c
-index 10caec5..34da679 100644
---- a/net/mac80211/status.c
-+++ b/net/mac80211/status.c
-@@ -377,7 +377,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
- 				skb2 = skb_clone(skb, GFP_ATOMIC);
- 				if (skb2) {
- 					skb2->dev = prev_dev;
--					netif_receive_skb(skb2);
-+					netif_rx(skb2);
- 				}
- 			}
+ config OLPC_OPENFIRMWARE
+ 	bool "Support for OLPC's Open Firmware"
+ 	depends on !X86_64 && !X86_PAE
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index fedf32a..247588f 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -106,6 +106,7 @@ obj-$(CONFIG_SCx200)		+= scx200.o
+ scx200-y			+= scx200_32.o
  
-@@ -386,7 +386,7 @@ void ieee80211_tx_status(struct ieee80211_hw *hw, struct sk_buff *skb)
- 	}
- 	if (prev_dev) {
- 		skb->dev = prev_dev;
--		netif_receive_skb(skb);
-+		netif_rx(skb);
- 		skb = NULL;
- 	}
- 	rcu_read_unlock();
+ obj-$(CONFIG_OLPC)		+= olpc.o
++obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o
+ obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
+ obj-$(CONFIG_X86_MRST)		+= mrst.o
+ 
+diff --git a/arch/x86/kernel/olpc-xo1.c b/arch/x86/kernel/olpc-xo1.c
+new file mode 100644
+index 0000000..ee840de
+--- /dev/null
++++ b/arch/x86/kernel/olpc-xo1.c
+@@ -0,0 +1,112 @@
++/*
++ * Support for features of the OLPC XO-1 laptop
++ *
++ * Copyright (C) 2010 One Laptop per Child
++ * Copyright (C) 2006 Red Hat, Inc.
++ * Copyright (C) 2006 Advanced Micro Devices, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ */
++
++#include <linux/init.h>
++#include <linux/pci.h>
++#include <linux/pci_ids.h>
++#include <linux/pm.h>
++
++#include <asm/io.h>
++#include <asm/olpc.h>
++
++#define DRV_NAME "olpc-xo1"
++
++#define PMS_BAR		4
++#define ACPI_BAR	5
++
++/* PMC registers (PMS block) */
++#define PM_SCLK		0x10
++#define PM_IN_SLPCTL	0x20
++#define PM_WKXD		0x34
++#define PM_WKD		0x30
++#define PM_SSC		0x54
++
++/* PM registers (ACPI block) */
++#define PM1_CNT		0x08
++#define PM_GPE0_STS	0x18
++
++static unsigned long acpi_base;
++static unsigned long pms_base;
++
++static void xo1_power_off(void)
++{
++	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
++
++	/* Enable all of these controls with 0 delay */
++	outl(0x40000000, pms_base + PM_SCLK);
++	outl(0x40000000, pms_base + PM_IN_SLPCTL);
++	outl(0x40000000, pms_base + PM_WKXD);
++	outl(0x40000000, pms_base + PM_WKD);
++
++	/* Clear status bits (possibly unnecessary) */
++	outl(0x0002ffff, pms_base  + PM_SSC);
++	outl(0xffffffff, acpi_base + PM_GPE0_STS);
++
++	/* Write SLP_EN bit to start the machinery */
++	outl(0x00002000, acpi_base + PM1_CNT);
++}
++
++/* Read the base addresses from the PCI BAR info */
++static int __init setup_bases(struct pci_dev *pdev)
++{
++	int r;
++
++	r = pci_enable_device_io(pdev);
++	if (r) {
++		dev_err(&pdev->dev, "can't enable device IO\n");
++		return r;
++	}
++
++	r = pci_request_region(pdev, ACPI_BAR, DRV_NAME);
++	if (r) {
++		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", ACPI_BAR);
++		return r;
++	}
++
++	r = pci_request_region(pdev, PMS_BAR, DRV_NAME);
++	if (r) {
++		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", PMS_BAR);
++		pci_release_region(pdev, ACPI_BAR);
++		return r;
++	}
++
++	acpi_base = pci_resource_start(pdev, ACPI_BAR);
++	pms_base = pci_resource_start(pdev, PMS_BAR);
++
++	return 0;
++}
++
++static int __init olpc_xo1_init(void)
++{
++	struct pci_dev *pdev;
++	int r;
++
++	if (olpc_board_at_least(olpc_board_pre(0xd0))) /* XO-1 only */
++		return 0;
++
++	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA,
++			      NULL);
++	if (!pdev)
++		return -ENODEV;
++
++	r = setup_bases(pdev);
++	if (r)
++		return r;
++
++	pm_power_off = xo1_power_off;
++
++	printk(KERN_INFO "OLPC XO-1 support registered\n");
++	return 0;
++}
++device_initcall(olpc_xo1_init);
++
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.7.2.3
+
