@@ -1,268 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932862Ab0JGA1i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 20:27:38 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58983 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab0JGA1g (ORCPT
+	id S932943Ab0JGAav (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:30:51 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:57876 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932573Ab0JGAat (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 20:27:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=JcjiDgvWewCFLJyvXoH0aYqPowG48GyNHWkNy3Xdm/a9JJizDWHCSKSYuVd1HNdp0
-	cefzyyxH3T68v8jn0wGAA==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Righi <arighi@develer.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 07/10] memcg: add dirty limits to mem_cgroup
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-8-git-send-email-gthelen@google.com>
-	<20101005094302.GA4314@linux.develer.com>
-	<xr93eic4wjlq.fsf@ninji.mtv.corp.google.com>
-	<20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 06 Oct 2010 17:27:13 -0700
-In-Reply-To: <20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
-	(KAMEZAWA Hiroyuki's message of "Thu, 7 Oct 2010 09:13:43 +0900")
-Message-ID: <xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 6 Oct 2010 20:30:49 -0400
+Date: Wed, 6 Oct 2010 17:30:41 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Ram Pai <linuxram@us.ibm.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org, clemens@ladisch.de,
+        Yinghai Lu <yinghai@kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource
+ allocation
+Message-ID: <20101007003041.GF2945@ram-laptop>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <20101006225834.GE2945@ram-laptop>
+ <20101006233953.GB16280@helgaas.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101006233953.GB16280@helgaas.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+On Wed, Oct 06, 2010 at 05:39:53PM -0600, Bjorn Helgaas wrote:
+> On Wed, Oct 06, 2010 at 03:58:34PM -0700, Ram Pai wrote:
+> >         PCI: override BIOS/firmware memory resource allocation
+> > 		through command line parameters
+> > 
+> > 	Platforms that are unaware of  SRIOV  BARs  fail to allocate MMIO
+> > 	resources  to SRIOV PCIe  devices. Hence  on  such  platforms the
+> > 	OS fails to  enable  SRIOV.
+> > 	Some  platforms  where  BIOS/uEFI resource   allocations  conflict
+> > 	the conflicting devices are disabled.
+> > 
+> > 	Ideally we  would  want  the  OS  to detect and fix automatically
+> > 	such problems and conflicts.  However previous  attempts to do so
+> > 	have led to regression on legacy platforms.
+> 
+> I'm sorry to be a nay-sayer, but I think we just haven't tried hard
+> enough.  Our ACPI/PCI/e820 resource management is not well integrated,
+> and I suspect if we straightened that out, we could avoid some of the
+> regressions we saw with previous attempts.
 
-> On Tue, 05 Oct 2010 12:00:17 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> Andrea Righi <arighi@develer.com> writes:
->> 
->> > On Sun, Oct 03, 2010 at 11:58:02PM -0700, Greg Thelen wrote:
->> >> Extend mem_cgroup to contain dirty page limits.  Also add routines
->> >> allowing the kernel to query the dirty usage of a memcg.
->> >> 
->> >> These interfaces not used by the kernel yet.  A subsequent commit
->> >> will add kernel calls to utilize these new routines.
->> >
->> > A small note below.
->> >
->> >> 
->> >> Signed-off-by: Greg Thelen <gthelen@google.com>
->> >> Signed-off-by: Andrea Righi <arighi@develer.com>
->> >> ---
->> >>  include/linux/memcontrol.h |   44 +++++++++++
->> >>  mm/memcontrol.c            |  180 +++++++++++++++++++++++++++++++++++++++++++-
->> >>  2 files changed, 223 insertions(+), 1 deletions(-)
->> >> 
->> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> >> index 6303da1..dc8952d 100644
->> >> --- a/include/linux/memcontrol.h
->> >> +++ b/include/linux/memcontrol.h
->> >> @@ -19,6 +19,7 @@
->> >>  
->> >>  #ifndef _LINUX_MEMCONTROL_H
->> >>  #define _LINUX_MEMCONTROL_H
->> >> +#include <linux/writeback.h>
->> >>  #include <linux/cgroup.h>
->> >>  struct mem_cgroup;
->> >>  struct page_cgroup;
->> >> @@ -33,6 +34,30 @@ enum mem_cgroup_write_page_stat_item {
->> >>  	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
->> >>  };
->> >>  
->> >> +/* Cgroup memory statistics items exported to the kernel */
->> >> +enum mem_cgroup_read_page_stat_item {
->> >> +	MEMCG_NR_DIRTYABLE_PAGES,
->> >> +	MEMCG_NR_RECLAIM_PAGES,
->> >> +	MEMCG_NR_WRITEBACK,
->> >> +	MEMCG_NR_DIRTY_WRITEBACK_PAGES,
->> >> +};
->> >> +
->> >> +/* Dirty memory parameters */
->> >> +struct vm_dirty_param {
->> >> +	int dirty_ratio;
->> >> +	int dirty_background_ratio;
->> >> +	unsigned long dirty_bytes;
->> >> +	unsigned long dirty_background_bytes;
->> >> +};
->> >> +
->> >> +static inline void get_global_vm_dirty_param(struct vm_dirty_param *param)
->> >> +{
->> >> +	param->dirty_ratio = vm_dirty_ratio;
->> >> +	param->dirty_bytes = vm_dirty_bytes;
->> >> +	param->dirty_background_ratio = dirty_background_ratio;
->> >> +	param->dirty_background_bytes = dirty_background_bytes;
->> >> +}
->> >> +
->> >>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->> >>  					struct list_head *dst,
->> >>  					unsigned long *scanned, int order,
->> >> @@ -145,6 +170,10 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
->> >>  	mem_cgroup_update_page_stat(page, idx, -1);
->> >>  }
->> >>  
->> >> +bool mem_cgroup_has_dirty_limit(void);
->> >> +void get_vm_dirty_param(struct vm_dirty_param *param);
->> >> +s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item);
->> >> +
->> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->> >>  						gfp_t gfp_mask);
->> >>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
->> >> @@ -326,6 +355,21 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
->> >>  {
->> >>  }
->> >>  
->> >> +static inline bool mem_cgroup_has_dirty_limit(void)
->> >> +{
->> >> +	return false;
->> >> +}
->> >> +
->> >> +static inline void get_vm_dirty_param(struct vm_dirty_param *param)
->> >> +{
->> >> +	get_global_vm_dirty_param(param);
->> >> +}
->> >> +
->> >> +static inline s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
->> >> +{
->> >> +	return -ENOSYS;
->> >> +}
->> >> +
->> >>  static inline
->> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->> >>  					    gfp_t gfp_mask)
->> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> >> index f40839f..6ec2625 100644
->> >> --- a/mm/memcontrol.c
->> >> +++ b/mm/memcontrol.c
->> >> @@ -233,6 +233,10 @@ struct mem_cgroup {
->> >>  	atomic_t	refcnt;
->> >>  
->> >>  	unsigned int	swappiness;
->> >> +
->> >> +	/* control memory cgroup dirty pages */
->> >> +	struct vm_dirty_param dirty_param;
->> >> +
->> >>  	/* OOM-Killer disable */
->> >>  	int		oom_kill_disable;
->> >>  
->> >> @@ -1132,6 +1136,172 @@ static unsigned int get_swappiness(struct mem_cgroup *memcg)
->> >>  	return swappiness;
->> >>  }
->> >>  
->> >> +/*
->> >> + * Returns a snapshot of the current dirty limits which is not synchronized with
->> >> + * the routines that change the dirty limits.  If this routine races with an
->> >> + * update to the dirty bytes/ratio value, then the caller must handle the case
->> >> + * where both dirty_[background_]_ratio and _bytes are set.
->> >> + */
->> >> +static void __mem_cgroup_get_dirty_param(struct vm_dirty_param *param,
->> >> +					 struct mem_cgroup *mem)
->> >> +{
->> >> +	if (mem && !mem_cgroup_is_root(mem)) {
->> >> +		param->dirty_ratio = mem->dirty_param.dirty_ratio;
->> >> +		param->dirty_bytes = mem->dirty_param.dirty_bytes;
->> >> +		param->dirty_background_ratio =
->> >> +			mem->dirty_param.dirty_background_ratio;
->> >> +		param->dirty_background_bytes =
->> >> +			mem->dirty_param.dirty_background_bytes;
->> >> +	} else {
->> >> +		get_global_vm_dirty_param(param);
->> >> +	}
->> >> +}
->> >> +
->> >> +/*
->> >> + * Get dirty memory parameters of the current memcg or global values (if memory
->> >> + * cgroups are disabled or querying the root cgroup).
->> >> + */
->> >> +void get_vm_dirty_param(struct vm_dirty_param *param)
->> >> +{
->> >> +	struct mem_cgroup *memcg;
->> >> +
->> >> +	if (mem_cgroup_disabled()) {
->> >> +		get_global_vm_dirty_param(param);
->> >> +		return;
->> >> +	}
->> >> +
->> >> +	/*
->> >> +	 * It's possible that "current" may be moved to other cgroup while we
->> >> +	 * access cgroup. But precise check is meaningless because the task can
->> >> +	 * be moved after our access and writeback tends to take long time.  At
->> >> +	 * least, "memcg" will not be freed under rcu_read_lock().
->> >> +	 */
->> >> +	rcu_read_lock();
->> >> +	memcg = mem_cgroup_from_task(current);
->> >> +	__mem_cgroup_get_dirty_param(param, memcg);
->> >> +	rcu_read_unlock();
->> >> +}
->> >> +
->> >> +/*
->> >> + * Check if current memcg has local dirty limits.  Return true if the current
->> >> + * memory cgroup has local dirty memory settings.
->> >> + */
->> >> +bool mem_cgroup_has_dirty_limit(void)
->> >> +{
->> >> +	struct mem_cgroup *mem;
->> >> +
->> >> +	if (mem_cgroup_disabled())
->> >> +		return false;
->> >> +
->> >> +	mem = mem_cgroup_from_task(current);
->> >> +	return mem && !mem_cgroup_is_root(mem);
->> >> +}
->> >
->> > We only check the pointer without dereferencing it, so this is probably
->> > ok, but maybe this is safer:
->> >
->> > bool mem_cgroup_has_dirty_limit(void)
->> > {
->> > 	struct mem_cgroup *mem;
->> > 	bool ret;
->> >
->> > 	if (mem_cgroup_disabled())
->> > 		return false;
->> >
->> > 	rcu_read_lock();
->> > 	mem = mem_cgroup_from_task(current);
->> > 	ret = mem && !mem_cgroup_is_root(mem);
->> > 	rcu_read_unlock();
->> >
->> > 	return ret;
->> > }
->> >
->> > rcu_read_lock() should be held in mem_cgroup_from_task(), otherwise
->> > lockdep could detect this as an error.
->> >
->> > Thanks,
->> > -Andrea
->> 
->> Good suggestion.  I agree that lockdep might catch this.  There are some
->> unrelated debug_locks failures (even without my patches) that I worked
->> around to get lockdep to complain about this one.  I applied your
->> suggested fix and lockdep was happy.  I will incorporate this fix into
->> the next revision of the patch series.
->> 
->
-> Hmm, considering other parts, shouldn't we define mem_cgroup_from_task
-> as macro ?
->
-> Thanks,
-> -Kame
+Can you be more specific as to what can be done to fix it automatically?
 
-Is your motivation to increase performance with the same functionality?
-If so, then would a 'static inline' be performance equivalent to a
-preprocessor macro yet be safer to use?
+Neither accepting this approach nor telling what needs to be straightened out
+to automatically fix all the systems out there, is just a deadend.
 
-Maybe it makes more sense to find a way to perform this check in
-mem_cgroup_has_dirty_limit() without needing to grab the rcu lock.  I
-think this lock grab is unneeded.  I am still collecting performance
-data, but suspect that this may be making the code slower than it needs
-to be.
+The choice is between
+	(a) an automated patch with the risk of regressing some platforms.
+	(b) an semi-automated patch that does not regress *any* platform,
+		with the ability to fix platforms that are currently broken.
+	(c) status quo, which means broken platforms continue to be so.
 
---
-Greg
+I thought the initial proposal was to use (b), with the long
+term goal of fixing it automatically, assuming that it is even possible.
+
+Let me know if that is *not* the goal and I will change directions.
+RP
