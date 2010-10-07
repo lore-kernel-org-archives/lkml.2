@@ -1,106 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab0JGTUD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 15:20:03 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50481 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754387Ab0JGTUA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 15:20:00 -0400
-Date: Thu, 7 Oct 2010 12:18:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Robin Holt <holt@sgi.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, James Morris <jmorris@namei.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Subject: Re: [PATCH] sysctl: fix min/max handling in
- __do_proc_doulongvec_minmax()
-Message-Id: <20101007121840.ca49e2ac.akpm@linux-foundation.org>
-In-Reply-To: <1286470743.2912.276.camel@edumazet-laptop>
-References: <1286025469.2582.1806.camel@edumazet-laptop>
-	<20101004085913.GR14068@sgi.com>
-	<1286183058.18293.26.camel@edumazet-laptop>
-	<20101004093439.GG5189@cr0.nay.redhat.com>
-	<1286187030.18293.33.camel@edumazet-laptop>
-	<20101004103545.GJ5189@cr0.nay.redhat.com>
-	<1286188701.18293.57.camel@edumazet-laptop>
-	<20101005130117.GK5170@cr0.nay.redhat.com>
-	<20101007071859.GD5471@cr0.nay.redhat.com>
-	<20101007092538.GE5471@cr0.nay.redhat.com>
-	<1286445081.2912.15.camel@edumazet-laptop>
-	<m1iq1e3qnn.fsf@fess.ebiederm.org>
-	<1286470743.2912.276.camel@edumazet-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754418Ab0JGTVp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 15:21:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8804 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752429Ab0JGTVo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 15:21:44 -0400
+Date: Thu, 7 Oct 2010 15:21:30 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: "H. Peter Anvin" <h.peter.anvin@intel.com>
+Cc: "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "caiqian@redhat.com" <caiqian@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Kexec Mailing List <kexec@lists.infradead.org>
+Subject: Re: [tip:core/memblock] x86, memblock: Fix crashkernel allocation
+Message-ID: <20101007192129.GC2581@redhat.com>
+References: <4CABAF2A.5090501@kernel.org>
+ <tip-9f4c13964b58608fbce05540743281ea3146c0e8@git.kernel.org>
+ <20101006151449.GA7378@redhat.com>
+ <4CACF531.2060407@intel.com>
+ <20101006224704.GD7378@redhat.com>
+ <4CAD01A9.9050907@intel.com>
+ <20101007181804.GE23308@redhat.com>
+ <4CAE1767.5040409@intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CAE1767.5040409@intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Oct 2010 18:59:03 +0200
-Eric Dumazet <eric.dumazet@gmail.com> wrote:
-
-> Le jeudi 07 octobre 2010 __ 09:37 -0700, Eric W. Biederman a __crit :
-> 
-> > The difference between long handling and int handling is a
-> > usability issue.  I don't expect we will be exporting new
-> > vectors via sysctl, so the conversion of a handful of vectors
-> > from int to long is where this is most likely to be used.
+On Thu, Oct 07, 2010 at 11:54:31AM -0700, H. Peter Anvin wrote:
+> On 10/07/2010 11:18 AM, Vivek Goyal wrote:
 > > 
-> > I skimmed through all of what I presume are the current users
-> > aka linux-2.6.36-rcX and there don't appear to be any users
-> > of proc_dounlongvec_minmax that use it's vector properties there.
+> > Ok, I was browsing through kexec-tools, x86 bzImage code and trying to
+> > refresh my memory what segments were being loaded and what were memory
+> > address concerns.
 > > 
-> > Which doubly tells me that incrementing the min and max pointers
-> > is not what we want to do.
+> > - relocatable bzImage (max addr 0x37ffffff, 896MB). 
+> > 	Though I don't know/understand where that 896MB come from.
 > > 
+> > - initrd (max addr 0x37ffffff, 896MB)
+> > 	Don't know why 896MB as upper limit
 > 
-> Thats fine by me, thanks Eric.
+> 896 MB is presumably the (default!!) LOWMEM limit on 32 bits.  This is
+> actually wrong if vmalloc= is also specified on command line, though, or
+> with nonstandard compile-time options.
 > 
-> Andrew, please remove previous patch from your tree and replace it by
-> following one :
+> > - Purgatory (max addr 2G)
+> > 
+> > - A segment to keep elf headers (no limit)
+> > 	These are accessed when second kernel as fully booted so can be
+> > 	addressed in higher addresses.
+> > 
+> > - A backup segment to copy first 640K of memory (not aware of any limit)
+> > - Setup/parameter segment (no limit)
+> > 	- We don't really execute anything here and just access it for
+> >   	  command line.
 > 
-> [PATCH v2] sysctl: fix min/max handling in __do_proc_doulongvec_minmax()
+> Probably has a 4 GB limit, since I believe it only has a 32-bit pointer.
 > 
-> When proc_doulongvec_minmax() is used with an array of longs,
-> and no min/max check requested (.extra1 or .extra2 being NULL), we
-> dereference a NULL pointer for the second element of the array.
+> > So atleast for bzImage it looks that if we specify crashkernel=128M<896M, it
+> > will work.
+> > 
+> > So I am fine with above additional syntax for crashkernel=. May be we shall
+> > have to the deprecate the crashkernel=X<@0 syntax.
+> > 
+> > CCing kexec list, in case others have any comments.
 > 
-> Noticed while doing some changes in network stack for the "16TB problem"
-> 
-> Fix is to not change min & max pointers in
-> __do_proc_doulongvec_minmax(), so that all elements of the vector share
-> an unique min/max limit, like proc_dointvec_minmax().
-> 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  kernel/sysctl.c |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index f88552c..8e45451 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -2485,7 +2485,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
->  		kbuf[left] = 0;
->  	}
->  
-> -	for (; left && vleft--; i++, min++, max++, first=0) {
-> +	for (; left && vleft--; i++, first=0) {
->  		unsigned long val;
->  
->  		if (write) {
+> It would be easy enough to either deprecate or make it an alias for
+> crashkernel=...<896M, which is basically what Yinghai's patch does.
 
-Did we check to see whether any present callers are passing in pointers
-to arrays of min/max values?
+Agreed.
 
-I wonder if there's any documentation for this interface which just
-became wrong.
+So Yinghai's patch is fine. I need to write a patch for introducing
+crashkernel=X<Y syntax to make the behavior explicit. Will do...
 
-
+Thanks
+Vivek
