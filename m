@@ -1,60 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752554Ab0JGSqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 14:46:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35881 "EHLO mx1.redhat.com"
+	id S1751943Ab0JGStT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 14:49:19 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62935 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752273Ab0JGSqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 14:46:01 -0400
-Date: Thu, 7 Oct 2010 20:44:57 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-        cl@linux-foundation.org
-Subject: Re: [PATCH v6 03/12] Retry fault before vmentry
-Message-ID: <20101007184457.GA8354@redhat.com>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-4-git-send-email-gleb@redhat.com>
- <20101005155409.GB28955@amt.cnet>
- <20101006110704.GW11145@redhat.com>
- <20101006142050.GA31423@amt.cnet>
+	id S1750964Ab0JGStS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 14:49:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,298,1283756400"; 
+   d="scan'208";a="614405321"
+Date: Thu, 7 Oct 2010 20:49:16 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: David Jander <david@protonic.nl>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
+Message-ID: <20101007184915.GA21875@sortiz-mobl>
+References: <20100929162315.GG29811@pengutronix.de>
+ <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
+ <20101007184501.GX29673@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20101006142050.GA31423@amt.cnet>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101007184501.GX29673@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 11:20:50AM -0300, Marcelo Tosatti wrote:
-> On Wed, Oct 06, 2010 at 01:07:04PM +0200, Gleb Natapov wrote:
-> > > Can't you set a bit in vcpu->requests instead, and handle it in "out:"
-> > > at the end of vcpu_enter_guest? 
-> > > 
-> > > To have a single entry point for pagefaults, after vmexit handling.
-> > Jumping to "out:" will skip vmexit handling anyway, so we will not reuse
-> > same call site anyway. I don't see yet why the way you propose will have
-> > an advantage.
-> 
-> What i meant was to call pagefault handler after vmexit handling.
-> 
-> Because the way it is in your patch now, with pre pagefault on entry,
-> one has to make an effort to verify ordering wrt other events on entry
-> processing.
-> 
-What events do you have in mind?
+Hi Uwe,
 
-> With pre pagefault after vmexit, its more natural.
+On Thu, Oct 07, 2010 at 08:45:01PM +0200, Uwe Kleine-König wrote:
+> Hi Samuel,
 > 
-I do not see non-ugly way to pass information that is needed to perform
-the prefault to the place you want me to put it. We can skip guest entry
-in case prefault was done which will have the same effect as your
-proposal, but I want to have a good reason to do so since otherwise we
-will just do more work for nothing on guest entry.
+> On Wed, Sep 29, 2010 at 06:23:46PM +0200, Uwe Kleine-König wrote:
+> > mc13892 is the companion PMIC for Freescale's i.MX51.  It's similar enough
+> > to mc13782 to support it in a single driver.
+> > 
+> > This patch introduces enough compatibility cruft to keep all users of the
+> > superseded mc13783 driver unchanged.
+> > 
+> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > ---
+> >  drivers/mfd/Kconfig         |    9 +-
+> >  drivers/mfd/Makefile        |    2 +-
+> >  drivers/mfd/mc13783-core.c  |  743 --------------------------------------
+> >  drivers/mfd/mc13xxx-core.c  |  840 +++++++++++++++++++++++++++++++++++++++++++
+> >  include/linux/mfd/mc13783.h |  247 ++++++-------
+> >  include/linux/mfd/mc13xxx.h |  154 ++++++++
+> >  6 files changed, 1113 insertions(+), 882 deletions(-)
+> >  delete mode 100644 drivers/mfd/mc13783-core.c
+> >  create mode 100644 drivers/mfd/mc13xxx-core.c
+> >  create mode 100644 include/linux/mfd/mc13xxx.h
+> > 
+> > [...]
+> > diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
+> > new file mode 100644
+> > index 0000000..93258ad
+> > --- /dev/null
+> > +++ b/drivers/mfd/mc13xxx-core.c
+> > @@ -0,0 +1,840 @@
+> > +/*
+> > + * Copyright 2009-2010 Pengutronix
+> > + * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
+> > + *
+> > + * loosely based on an earlier driver that has
+> > + * Copyright 2009 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
+> > + *
+> > + * This program is free software; you can redistribute it and/or modify it under
+> > + * the terms of the GNU General Public License version 2 as published by the
+> > + * Free Software Foundation.
+> > + */
+> > +#define DEBUG
+> > +#define VERBOSE_DEBUG
+> David Jander gave me a hint via private mail that I forgot to remove
+> these two #defines.
+> Would you care to remove these before Linus pulls?  Should I send a
+> patch or do you do it by hand?
+I'll take care of it, don't bother.
 
-> Does that make sense?
+Cheers,
+Samuel.
 
---
-			Gleb.
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
