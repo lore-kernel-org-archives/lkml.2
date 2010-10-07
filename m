@@ -1,118 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752287Ab0JGWJj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 18:09:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54387 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751521Ab0JGWJh (ORCPT
+	id S1751837Ab0JGWL5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 18:11:57 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:8194 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751180Ab0JGWL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 18:09:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=HwfAeDw768Et8RjpbTKO5sIwj/SdpyHUvRiDPCsMWNFe0YVAOhpyCsRUOkB4ZKuQik
-         4EFDMiPLKJRhzTYF/RZCwjq9oDtNPAdF/nzNF8o1PROMFjHnh4Iea2a5p6nS+3TzIAPn
-         FpZNgLGBL1qEWL6hjLibAOyWmySK4TcJJ4hVg=
-Message-ID: <4CAE4479.6010606@gmail.com>
-Date: Fri, 08 Oct 2010 00:06:49 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org,
-        ML netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: IPv4: sysctl table check failed [was: mmotm 2010-10-07-14-08 uploaded]
-References: <201010072140.o97Le69i025659@imap1.linux-foundation.org>
-In-Reply-To: <201010072140.o97Le69i025659@imap1.linux-foundation.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-2
+	Thu, 7 Oct 2010 18:11:56 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="57103106"
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Mike Frysinger <vapier@gentoo.org>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+In-Reply-To: <20101007215221.GA11478@suse.de>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
+	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
+	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007211513.GB26660@suse.de>
+	 <1286488038.23836.101.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007215221.GA11478@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 15:11:30 -0700
+Message-ID: <1286489490.23836.121.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2010 11:08 PM, akpm@linux-foundation.org wrote:
-> The mm-of-the-moment snapshot 2010-10-07-14-08 has been uploaded to
+On Thu, 2010-10-07 at 14:52 -0700, Greg KH wrote:
+> On Thu, Oct 07, 2010 at 02:47:18PM -0700, Daniel Walker wrote:
+> > On Thu, 2010-10-07 at 14:15 -0700, Greg KH wrote:
+> > > On Thu, Oct 07, 2010 at 01:51:18PM -0700, Daniel Walker wrote:
+> > > > Your making too many assumptions .. You might be able to modify the
+> > > > kernel, and not the userspace. So you couldn't tweak the device
+> > > > creation .. It's much easier in the server world ..
+> > > 
+> > > You're saying it's easier to replace an embedded kernel than a userspace
+> > > file on an embedded system?  Heh, that's funny.
+> > 
+> > I'm saying it _can_ happen that it's easier to replace the kernel.. I'm
+> > not saying it's always the case. We're talking about debugging
+> > situations in an embedded environment which don't always follow a normal
+> > path.
+> 
+> Nothing is "normal", so stop trying to say it is easier in the "server"
+> world please.
 
-Hi, I got bunch of "sysctl table check failed" below. All seem to be
-related to ipv4:
+Ok ..
 
-sysctl table check failed: /net/ipv4/tcp_mem  No min
-Pid: 1, comm: swapper Not tainted 2.6.36-rc7-mm1_64+ #1285
-Call Trace:
- [<ffffffff8108d444>] set_fail+0xa4/0xf0
- [<ffffffff8108d736>] sysctl_check_table+0x2a6/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff81072204>] __register_sysctl_paths+0xf4/0x320
- [<ffffffff815c1232>] ? printk+0x3c/0x42
- [<ffffffff8115d3bc>] ? sysfs_add_file+0xc/0x10
- [<ffffffff818b18bd>] ? sysctl_ipv4_init+0x0/0x87
- [<ffffffff81072456>] register_sysctl_paths+0x26/0x30
- [<ffffffff818b18fd>] sysctl_ipv4_init+0x40/0x87
- [<ffffffff810002df>] do_one_initcall+0x3f/0x170
- [<ffffffff81884d44>] kernel_init+0x158/0x1e2
- [<ffffffff8102fb54>] kernel_thread_helper+0x4/0x10
- [<ffffffff81884bec>] ? kernel_init+0x0/0x1e2
- [<ffffffff8102fb50>] ? kernel_thread_helper+0x0/0x10
-sysctl table check failed: /net/ipv4/tcp_mem  No max
-Pid: 1, comm: swapper Not tainted 2.6.36-rc7-mm1_64+ #1285
-Call Trace:
- [<ffffffff8108d444>] set_fail+0xa4/0xf0
- [<ffffffff8108d4da>] sysctl_check_table+0x4a/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff81072204>] __register_sysctl_paths+0xf4/0x320
- [<ffffffff815c1232>] ? printk+0x3c/0x42
- [<ffffffff8115d3bc>] ? sysfs_add_file+0xc/0x10
- [<ffffffff818b18bd>] ? sysctl_ipv4_init+0x0/0x87
- [<ffffffff81072456>] register_sysctl_paths+0x26/0x30
- [<ffffffff818b18fd>] sysctl_ipv4_init+0x40/0x87
- [<ffffffff810002df>] do_one_initcall+0x3f/0x170
- [<ffffffff81884d44>] kernel_init+0x158/0x1e2
- [<ffffffff8102fb54>] kernel_thread_helper+0x4/0x10
- [<ffffffff81884bec>] ? kernel_init+0x0/0x1e2
- [<ffffffff8102fb50>] ? kernel_thread_helper+0x0/0x10
-sysctl table check failed: /net/ipv4/udp_mem  No min
-Pid: 1, comm: swapper Not tainted 2.6.36-rc7-mm1_64+ #1285
-Call Trace:
- [<ffffffff8108d444>] set_fail+0xa4/0xf0
- [<ffffffff8108d736>] sysctl_check_table+0x2a6/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff81072204>] __register_sysctl_paths+0xf4/0x320
- [<ffffffff815c1232>] ? printk+0x3c/0x42
- [<ffffffff8115d3bc>] ? sysfs_add_file+0xc/0x10
- [<ffffffff818b18bd>] ? sysctl_ipv4_init+0x0/0x87
- [<ffffffff81072456>] register_sysctl_paths+0x26/0x30
- [<ffffffff818b18fd>] sysctl_ipv4_init+0x40/0x87
- [<ffffffff810002df>] do_one_initcall+0x3f/0x170
- [<ffffffff81884d44>] kernel_init+0x158/0x1e2
- [<ffffffff8102fb54>] kernel_thread_helper+0x4/0x10
- [<ffffffff81884bec>] ? kernel_init+0x0/0x1e2
- [<ffffffff8102fb50>] ? kernel_thread_helper+0x0/0x10
-sysctl table check failed: /net/ipv4/udp_mem  No max
-Pid: 1, comm: swapper Not tainted 2.6.36-rc7-mm1_64+ #1285
-Call Trace:
- [<ffffffff8108d444>] set_fail+0xa4/0xf0
- [<ffffffff8108d4da>] sysctl_check_table+0x4a/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff8108d4eb>] sysctl_check_table+0x5b/0x310
- [<ffffffff81072204>] __register_sysctl_paths+0xf4/0x320
- [<ffffffff815c1232>] ? printk+0x3c/0x42
- [<ffffffff8115d3bc>] ? sysfs_add_file+0xc/0x10
- [<ffffffff818b18bd>] ? sysctl_ipv4_init+0x0/0x87
- [<ffffffff81072456>] register_sysctl_paths+0x26/0x30
- [<ffffffff818b18fd>] sysctl_ipv4_init+0x40/0x87
- [<ffffffff810002df>] do_one_initcall+0x3f/0x170
- [<ffffffff81884d44>] kernel_init+0x158/0x1e2
- [<ffffffff8102fb54>] kernel_thread_helper+0x4/0x10
- [<ffffffff81884bec>] ? kernel_init+0x0/0x1e2
- [<ffffffff8102fb50>] ? kernel_thread_helper+0x0/0x10
+> > > > > We've said no over a period of about ten years to a lot of attempts to
+> > > > > just borrow the ttyS0 range. If we'd said yes it would have been a
+> > > > > complete mess by now.
+> > > > > 
+> > > > > So the answer is no.
+> > > > 
+> > > > Nothing can be unilateral, there's always room for exceptions. You
+> > > > should say something more like "it's possible, but unlikely".
+> > > 
+> > > Hm, how about this, as the TTY and serial driver[1] maintainer, I will
+> > > not accept this kind of patch at all.
+> > > 
+> > > Is that final enough for you?
+> > 
+> > So you don't like it, that's fair enough .. <thinks>I wonder what other
+> > maintainers I can send this too</thinks> ;)
+> > 
+> > Can you be more specific about your objections
+> 
+> See everything that Mike and Alan wrote, do I need to repeat it?
 
-regards,
+I'm not sure .. I would say "Yes" if I didn't get the feeling your
+already to tear my head off.
+
+I think the only disputed issue is the use of ttyS as options part of
+the driver ..
+
+Daniel
+
 -- 
-js
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
