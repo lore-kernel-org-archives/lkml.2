@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab0JGGcI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 02:32:08 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60049 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab0JGGcG (ORCPT
+	id S1758050Ab0JGGiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 02:38:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:46845 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755131Ab0JGGiR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 02:32:06 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4CAD6943.2020805@jp.fujitsu.com>
-Date: Thu, 07 Oct 2010 15:31:31 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/4] HWPOISON: Copy si_addr_lsb to user
-References: <1286398141-13749-1-git-send-email-andi@firstfloor.org> <1286398141-13749-3-git-send-email-andi@firstfloor.org>
-In-Reply-To: <1286398141-13749-3-git-send-email-andi@firstfloor.org>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Oct 2010 02:38:17 -0400
+Subject: Re: [PATCH] edac: mpc85xx: Add support for new MPCxxx/Pxxxx EDAC controllers (fix)
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <20101007062909.GA27110@oksana.dev.rtsoft.ru>
+Date: Thu, 7 Oct 2010 01:37:25 -0500
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Scott Wood <scottwood@freescale.com>, Peter Tyser <ptyser@xes-inc.com>,
+        linux-kernel@vger.kernel.org, Dave Jiang <djiang@mvista.com>,
+        linuxppc-dev@ozlabs.org, Doug Thompson <dougthompson@xmission.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0778A3B9-E242-4BCC-B318-154BE9ECB2C6@kernel.crashing.org>
+References: <20100715182507.GA3482@oksana.dev.rtsoft.ru> <20100716151224.21d499a3@schlenkerla.am.freescale.net> <20100721153933.64d02086.akpm@linux-foundation.org> <20100721182108.5a22c822@schlenkerla.am.freescale.net> <20100801105419.GA352@oksana.dev.rtsoft.ru> <5628792F-9A5F-4200-90B3-FB3939F02969@kernel.crashing.org> <20101007062909.GA27110@oksana.dev.rtsoft.ru>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/10/07 5:48), Andi Kleen wrote:
-> From: Andi Kleen <ak@linux.intel.com>
 > 
-> The original hwpoison code added a new siginfo field si_addr_lsb to
-> pass the granuality of the fault address to user space. Unfortunately
-> this field was never copied to user space. Fix this here.
+> It's already in Linus' tree.
+
+Yeah, the problem is what's merged in linus's tree has p4080 listed and it shouldn't
+
 > 
-> I added explicit checks for the MCEERR codes to avoid having
-> to patch all potential callers to initialize the field.
+> Thanks,
+> 
+> - - - -
+> commit cd1542c8197fc3c2eb3a8301505d5d9738fab1e4
+> Author: Anton Vorontsov <avorontsov@mvista.com>
+> Date:   Tue Aug 10 18:03:21 2010 -0700
+> 
+>    edac: mpc85xx: add support for new MPCxxx/Pxxxx EDAC controllers
+> 
+>    Simply add proper IDs into the device table.
+> 
+>    Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+>    Cc: Scott Wood <scottwood@freescale.com>
+>    Cc: Peter Tyser <ptyser@xes-inc.com>
+>    Cc: Dave Jiang <djiang@mvista.com>
+>    Cc: Doug Thompson <dougthompson@xmission.com>
+>    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+> 
+> diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+> index fdbad55..af75e27 100644
+> --- a/drivers/edac/mpc85xx_edac.c
+> +++ b/drivers/edac/mpc85xx_edac.c
+> @@ -647,7 +647,10 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
+> 	{ .compatible = "fsl,mpc8555-l2-cache-controller", },
+> 	{ .compatible = "fsl,mpc8560-l2-cache-controller", },
+> 	{ .compatible = "fsl,mpc8568-l2-cache-controller", },
+> +	{ .compatible = "fsl,mpc8569-l2-cache-controller", },
+> 	{ .compatible = "fsl,mpc8572-l2-cache-controller", },
+> +	{ .compatible = "fsl,p1020-l2-cache-controller", },
+> +	{ .compatible = "fsl,p1021-l2-cache-controller", },
+> 	{ .compatible = "fsl,p2020-l2-cache-controller", },
+> 	{},
+> };
+> @@ -1125,7 +1128,10 @@ static struct of_device_id mpc85xx_mc_err_of_match[] = {
+> 	{ .compatible = "fsl,mpc8569-memory-controller", },
+> 	{ .compatible = "fsl,mpc8572-memory-controller", },
+> 	{ .compatible = "fsl,mpc8349-memory-controller", },
+> +	{ .compatible = "fsl,p1020-memory-controller", },
+> +	{ .compatible = "fsl,p1021-memory-controller", },
+> 	{ .compatible = "fsl,p2020-memory-controller", },
+> +	{ .compatible = "fsl,p4080-memory-controller", },
 
-Now QEMU uses signalfd to catch the SIGBUS delivered to the
-main thread, so I think similar fix to copy lsb to user is
-required for signalfd too. 
+This line should be here ;)
 
-
-Thanks,
-H.Seto
-
-=====
-
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: [PATCH] signalfd: add support addr_lsb
-
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
----
- fs/signalfd.c            |   10 ++++++++++
- include/linux/signalfd.h |    3 ++-
- 2 files changed, 12 insertions(+), 1 deletions(-)
-
-diff --git a/fs/signalfd.c b/fs/signalfd.c
-index 1c5a6ad..3e28173 100644
---- a/fs/signalfd.c
-+++ b/fs/signalfd.c
-@@ -99,6 +99,16 @@ static int signalfd_copyinfo(struct signalfd_siginfo __user *uinfo,
- #ifdef __ARCH_SI_TRAPNO
- 		err |= __put_user(kinfo->si_trapno, &uinfo->ssi_trapno);
- #endif
-+#ifdef BUS_MCEERR_AO
-+		/* 
-+		 * Other callers might not initialize the si_lsb field,
-+		 * so check explicitely for the right codes here.
-+		 */
-+		if (kinfo->si_code == BUS_MCEERR_AR ||
-+		    kinfo->si_code == BUS_MCEERR_AO)
-+			err |= __put_user((short) kinfo->si_addr_lsb,
-+					  &uinfo->ssi_addr_lsb);
-+#endif
- 		break;
- 	case __SI_CHLD:
- 		err |= __put_user(kinfo->si_pid, &uinfo->ssi_pid);
-diff --git a/include/linux/signalfd.h b/include/linux/signalfd.h
-index b363b91..3ff4961 100644
---- a/include/linux/signalfd.h
-+++ b/include/linux/signalfd.h
-@@ -33,6 +33,7 @@ struct signalfd_siginfo {
- 	__u64 ssi_utime;
- 	__u64 ssi_stime;
- 	__u64 ssi_addr;
-+	__u16 ssi_addr_lsb;
- 
- 	/*
- 	 * Pad strcture to 128 bytes. Remember to update the
-@@ -43,7 +44,7 @@ struct signalfd_siginfo {
- 	 * comes out of a read(2) and we really don't want to have
- 	 * a compat on read(2).
- 	 */
--	__u8 __pad[48];
-+	__u8 __pad[46];
- };
- 
- 
--- 
-1.7.3.1
+> 	{},
+> };
+> MODULE_DEVICE_TABLE(of, mpc85xx_mc_err_of_match);
 
