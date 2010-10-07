@@ -1,98 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932925Ab0JGBBH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 21:01:07 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:51460 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752830Ab0JGBBF (ORCPT
+	id S1759597Ab0JGBBi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 21:01:38 -0400
+Received: from mx1.vsecurity.com ([209.67.252.12]:58183 "EHLO
+	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752830Ab0JGBBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 21:01:05 -0400
-Date: Thu, 7 Oct 2010 09:54:58 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: balbir@linux.vnet.ibm.com
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        containers@lists.linux-foundation.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC] Restrict size of page_cgroup->flags
-Message-Id: <20101007095458.a992969e.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101006142314.GG4195@balbir.in.ibm.com>
-References: <20101006142314.GG4195@balbir.in.ibm.com>
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Wed, 6 Oct 2010 21:01:37 -0400
+Subject: [PATCH] IPC: Initialize structure memory to zero for
+ compat_sys_mq_*
+From: Dan Rosenberg <drosenberg@vsecurity.com>
+To: linux-kernel@vger.kernel.org
+Cc: security@kernel.org, stable@kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 21:01:34 -0400
+Message-ID: <1286413294.4645.128.camel@Dan>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010 19:53:14 +0530
-Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+The "reserved" member should be zeroed before copying back to userspace
+to avoid leaking uninitialized kernel stack memory.
 
-> I propose restricting page_cgroup.flags to 16 bits. The patch for the
-> same is below. Comments?
-> 
-> 
-> Restrict the bits usage in page_cgroup.flags
-> 
-> From: Balbir Singh <balbir@linux.vnet.ibm.com>
-> 
-> Restricting the flags helps control growth of the flags unbound.
-> Restriciting it to 16 bits gives us the possibility of merging
-> cgroup id with flags (atomicity permitting) and saving a whole
-> long word in page_cgroup
-> 
-I agree that reducing the size of page_cgroup would be good and important.
-But, wouldn't it be better to remove ->page, if possible ?
+Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
 
-Thanks,
-Daisuke Nishimura.
+--- linux-2.6.35.5.orig/ipc/compat_mq.c	2010-09-20 16:59:09.000000000 -0400
++++ linux-2.6.35.5/ipc/compat_mq.c	2010-10-06 20:55:08.000000000 -0400
+@@ -52,7 +52,7 @@ asmlinkage long compat_sys_mq_open(const
+ {
+ 	void __user *p = NULL;
+ 	if (u_attr && oflag & O_CREAT) {
+-		struct mq_attr attr;
++		struct mq_attr attr = {};
+ 		p = compat_alloc_user_space(sizeof(attr));
+ 		if (get_compat_mq_attr(&attr, u_attr) ||
+ 		    copy_to_user(p, &attr, sizeof(attr)))
+@@ -123,7 +123,7 @@ asmlinkage long compat_sys_mq_getsetattr
+ 			const struct compat_mq_attr __user *u_mqstat,
+ 			struct compat_mq_attr __user *u_omqstat)
+ {
+-	struct mq_attr mqstat;
++	struct mq_attr mqstat = {};
+ 	struct mq_attr __user *p = compat_alloc_user_space(2 * sizeof(*p));
+ 	long ret;
+ 
 
-> Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> ---
-> 
->  include/linux/page_cgroup.h |    3 +++
->  mm/page_cgroup.c            |    1 +
->  2 files changed, 4 insertions(+), 0 deletions(-)
-> 
-> 
-> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
-> index 872f6b1..10c37b4 100644
-> --- a/include/linux/page_cgroup.h
-> +++ b/include/linux/page_cgroup.h
-> @@ -44,8 +44,11 @@ enum {
->  	PCG_FILE_WRITEBACK, /* page is under writeback */
->  	PCG_FILE_UNSTABLE_NFS, /* page is NFS unstable */
->  	PCG_MIGRATION, /* under page migration */
-> +	PCG_MAX_NR,
->  };
->  
-> +#define PCG_MAX_BIT_SIZE	16
-> +
->  #define TESTPCGFLAG(uname, lname)			\
->  static inline int PageCgroup##uname(struct page_cgroup *pc)	\
->  	{ return test_bit(PCG_##lname, &pc->flags); }
-> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
-> index 5bffada..e16ad2e 100644
-> --- a/mm/page_cgroup.c
-> +++ b/mm/page_cgroup.c
-> @@ -258,6 +258,7 @@ void __init page_cgroup_init(void)
->  	unsigned long pfn;
->  	int fail = 0;
->  
-> +	BUILD_BUG_ON(PCG_MAX_NR >= PCG_MAX_BIT_SIZE);
->  	if (mem_cgroup_disabled())
->  		return;
->  
-> 
-> -- 
-> 	Three Cheers,
-> 	Balbir
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> 
+
