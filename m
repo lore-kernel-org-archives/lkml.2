@@ -1,103 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753575Ab0JGQ7M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 12:59:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32963 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab0JGQ7K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 12:59:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=EzmZ1eN3lGlLNCawlTLXUEWUawt8euRB36oF12TWVCljdPWBpCWmbCv/IVpSO99QQz
-         TRM2oPVZU76YiwmGZ0RbHzLhQuvHHjVnSsCM+ObGfWDGwxlS8RpokNTGtV7yX2G/9kNs
-         mtK1C1jq2N89uARpbTRPRvWWtwrjDsR2WJsMM=
-Subject: Re: [PATCH] sysctl: fix min/max handling in
- __do_proc_doulongvec_minmax()
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Robin Holt <holt@sgi.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, James Morris <jmorris@namei.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-In-Reply-To: <m1iq1e3qnn.fsf@fess.ebiederm.org>
-References: <1286025469.2582.1806.camel@edumazet-laptop>
-	 <20101004085913.GR14068@sgi.com>
-	 <1286183058.18293.26.camel@edumazet-laptop>
-	 <20101004093439.GG5189@cr0.nay.redhat.com>
-	 <1286187030.18293.33.camel@edumazet-laptop>
-	 <20101004103545.GJ5189@cr0.nay.redhat.com>
-	 <1286188701.18293.57.camel@edumazet-laptop>
-	 <20101005130117.GK5170@cr0.nay.redhat.com>
-	 <20101007071859.GD5471@cr0.nay.redhat.com>
-	 <20101007092538.GE5471@cr0.nay.redhat.com>
-	 <1286445081.2912.15.camel@edumazet-laptop>
-	 <m1iq1e3qnn.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 18:59:03 +0200
-Message-ID: <1286470743.2912.276.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1752253Ab0JGRGr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:06:47 -0400
+Received: from mail.atheros.com ([12.19.149.2]:52731 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317Ab0JGRGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 13:06:45 -0400
+Message-ID: <4CADFE1E.1070708@atheros.com>
+Date: Thu, 7 Oct 2010 22:36:38 +0530
+From: Bala Shanmugam <sbalashanmugam@atheros.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Marcel Holtmann <holtmann@linux.intel.com>
+CC: Shanmugamkamatchi Balashanmugam 
+	<Shanmugamkamatchi.Balashanmugam@atheros.com>,
+        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
+        Sree Durbha <Sree.Durbha@atheros.com>
+Subject: Re: RFC: btusb firmware load help
+References: <1286349552.6145.11.camel@aeonflux>	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>	 <1286380566.6145.42.camel@aeonflux> <20101006163816.GE7070@tux>	 <AANLkTik9w4_PdcEsbRHakLcxcD334_1Q8hGArxTXPCGF@mail.gmail.com>	 <20101006173949.GG7070@tux>	 <1286387660.3655.382.camel@jlt3.sipsolutions.net>	 <AANLkTikYRSQw-+Tcj4VS1qxi=OaeF9C5hjAMWVu+0M=v@mail.gmail.com>	 <AANLkTi=o4Mc72NrNoALBdS3YHeY7RMyyAJPsCy=uW3+F@mail.gmail.com>	 <1286389697.3655.401.camel@jlt3.sipsolutions.net>	 ,<20101006183340.GI7070@tux>	 <44EE5C37ADC36343B0625A05DD408C4850DAD2CA31@CHEXMB-01.global.atheros.com>	 <1286465072.6145.151.camel@aeonflux>  <4CADF6BF.6070305@atheros.com> <1286469741.6145.165.camel@aeonflux>
+In-Reply-To: <1286469741.6145.165.camel@aeonflux>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 07 octobre 2010 à 09:37 -0700, Eric W. Biederman a écrit :
+  On 10/7/2010 10:12 PM, Marcel Holtmann wrote:
+> Hi Bala,
+>
+>>>> Thanks Johannes.  This would be better option to change PID in firmware
+>>>> as blacklisting 3002 might create problems for 3011 chipsets.
+>>>> Will try and let you people know.
+>>> The misbehaving 3002 needs to be blacklisted in btusb.c anyway. However
+>>> after loading the firmware to 3002 device, it should change its PID to
+>>> something else.
+>>>
+>>> I am still trying to figure out if this is one stage firmware loading or
+>>> a two stage firmware loading. This is all pretty unclear and nobody has
+>>> answered this clearly so far.
+>> eeprom based 3011 chips comes up with PID 3000 giving control to DFU
+>> driver [ath3k].  ath3k downloads the
+>> firmware changing PID to 3002.  Now btusb gets control.
+>>
+>> In sflash based devices to reduce windows suspend/resume time we had a
+>> small firmware in flash which
+>> enables the device to get detected as Generic Bluetooth USB device with
+>> PID 3002.  So control reaches btusb when device is plugged in, leaving
+>> no option for us to load the actual firmware.
+>>
+>> Solution would be to blacklist 3002 in btusb, enable ath3k to get
+>> control for both the devices, download the firmware and change PID to
+>> 3003 so that control with come to btusb.
+> so here is the thing that needs to be done.
+>
+> a) Get a firmware for PID 3000 devices that change the firmware to some
+> other PID. Since 3003 is already in use as well, using 3004 or later is
+> better approach.
+>
+> b) Blacklist PID 3002 in btusb.c.
+>
+> c) Handle special firmware loading case for PID 3002 sflash devices. If
+> firmware is loaded changed to 3005 or other.
+>
+> And as a general note, I prefer that the PID after loading firmware is
+> different if you don't happen to actually load the same firmware.
+>
+> So please sort out your USB PID assignment for Bluetooth in general.
+> This seems to be a mess that is not thought through properly.
+>
+> Regards
+>
+> Marcel
+>
+>
+Thanks for your suggestion Marcel.
+Can't we have same PID[3004 or later] for both the devices after loading 
+the firmware by ath3k?
+We need two different firmware if we plan to have two different PIDs for 
+these two bluetooth devices.
 
-> The difference between long handling and int handling is a
-> usability issue.  I don't expect we will be exporting new
-> vectors via sysctl, so the conversion of a handful of vectors
-> from int to long is where this is most likely to be used.
-> 
-> I skimmed through all of what I presume are the current users
-> aka linux-2.6.36-rcX and there don't appear to be any users
-> of proc_dounlongvec_minmax that use it's vector properties there.
-> 
-> Which doubly tells me that incrementing the min and max pointers
-> is not what we want to do.
-> 
-
-Thats fine by me, thanks Eric.
-
-Andrew, please remove previous patch from your tree and replace it by
-following one :
-
-[PATCH v2] sysctl: fix min/max handling in __do_proc_doulongvec_minmax()
-
-When proc_doulongvec_minmax() is used with an array of longs,
-and no min/max check requested (.extra1 or .extra2 being NULL), we
-dereference a NULL pointer for the second element of the array.
-
-Noticed while doing some changes in network stack for the "16TB problem"
-
-Fix is to not change min & max pointers in
-__do_proc_doulongvec_minmax(), so that all elements of the vector share
-an unique min/max limit, like proc_dointvec_minmax().
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
----
- kernel/sysctl.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index f88552c..8e45451 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -2485,7 +2485,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
- 		kbuf[left] = 0;
- 	}
- 
--	for (; left && vleft--; i++, min++, max++, first=0) {
-+	for (; left && vleft--; i++, first=0) {
- 		unsigned long val;
- 
- 		if (write) {
-
-
+Regards,
+Bala.
