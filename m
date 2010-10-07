@@ -1,86 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760107Ab0JGD4O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 23:56:14 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:49720 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757239Ab0JGD4N (ORCPT
+	id S1751181Ab0JGEBk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 00:01:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:35124 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab0JGEBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 23:56:13 -0400
-Date: Thu, 7 Oct 2010 09:26:08 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        containers@lists.linux-foundation.org,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Restrict size of page_cgroup->flags
-Message-ID: <20101007035608.GN4195@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101006142314.GG4195@balbir.in.ibm.com>
- <20101007085858.0e07de59.kamezawa.hiroyu@jp.fujitsu.com>
- <20101007031203.GK4195@balbir.in.ibm.com>
- <20101007121816.bbd009c1.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20101007121816.bbd009c1.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Oct 2010 00:01:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=RUw+9xic12D7kAn+yLuGqK5yI1kvMka0EmCG1DZCXLraO2fg8IaA5M7/u1dnSE0aq5
+         QbCGloh48YN45ZSIMBf+HJMUiQqhaQiOiLPYQwX5C+xuVtMrrnvWBP04Gi7g7Gxp1cn2
+         GxDGWOm1dKQGU7rxmEG8SKBQK1hiXUQqloxCU=
+From: Rahul Ruikar <rahul.ruikar@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
+        asanchez@neurowork.net, rjw@sisk.pl, csanchez@neurowork.net
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rahul Ruikar <rahul.ruikar@gmail.com>
+Subject: [PATCH] usb: core: endpoint: Fix error path
+Date: Thu,  7 Oct 2010 09:31:12 +0530
+Message-Id: <1286424072-2819-1-git-send-email-rahul.ruikar@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-07 12:18:16]:
+In function usb_create_ep_devs()
+call put_device() when device_register() fails.
 
-> On Thu, 7 Oct 2010 08:42:04 +0530
-> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> 
-> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-07 08:58:58]:
-> > 
-> > > On Wed, 6 Oct 2010 19:53:14 +0530
-> > > Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > I propose restricting page_cgroup.flags to 16 bits. The patch for the
-> > > > same is below. Comments?
-> > > > 
-> > > > 
-> > > > Restrict the bits usage in page_cgroup.flags
-> > > > 
-> > > > From: Balbir Singh <balbir@linux.vnet.ibm.com>
-> > > > 
-> > > > Restricting the flags helps control growth of the flags unbound.
-> > > > Restriciting it to 16 bits gives us the possibility of merging
-> > > > cgroup id with flags (atomicity permitting) and saving a whole
-> > > > long word in page_cgroup
-> > > > 
-> > > > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-> > > 
-> > > Doesn't make sense until you show the usage of existing bits.
-> > 
-> > ??
-> > 
-> Limiting something for NOT EXISTING PATCH doesn't make sense, in general.
-> 
-> 
-> > > And I guess 16bit may be too large on 32bit systems.
-> > 
-> > too large on 32 bit systems? My intention is to keep the flags to 16
-> > bits and then use cgroup id for the rest and see if we can remove
-> > mem_cgroup pointer
-> > 
-> 
-> You can't use flags field to store mem_cgroup_id while we use lock bit on it.
-> We have to store something more stable...as pfn or node-id or zone-id.
-> 
-> It's very racy. 
->
+Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
+---
+ drivers/usb/core/endpoint.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Yes, correct it is racy, there is no easy way from what I know we can write
-the upper 16 bits of the flag without affecting the lower 16 bits, if
-the 16 bits are changing. One of the techniques could be to have lock
-for the unsigned long word itself - but I don't know what performance
-overhead that would add. Having said that I would like to explore
-techniques that allow me to merge the two.
-
+diff --git a/drivers/usb/core/endpoint.c b/drivers/usb/core/endpoint.c
+index 3788e73..9da2505 100644
+--- a/drivers/usb/core/endpoint.c
++++ b/drivers/usb/core/endpoint.c
+@@ -202,7 +202,7 @@ int usb_create_ep_devs(struct device *parent,
+ 	return retval;
+ 
+ error_register:
+-	kfree(ep_dev);
++	put_device(&ep_dev->dev);
+ exit:
+ 	return retval;
+ }
 -- 
-	Three Cheers,
-	Balbir
+1.7.2.3
+
