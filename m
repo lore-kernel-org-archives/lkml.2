@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752169Ab0JGRmO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:42:14 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39915 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751412Ab0JGRmM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:42:12 -0400
-Date: Thu, 7 Oct 2010 19:07:41 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Eric Paris <eparis@redhat.com>
-Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+	id S1752490Ab0JGRnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:43:00 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:55565 "EHLO e2.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752191Ab0JGRm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 13:42:59 -0400
+Date: Thu, 7 Oct 2010 10:42:56 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        agruen@suse.de
-Subject: Re: Linux 2.6.36-rc7
-Message-ID: <20101007190741.2dc62626@lxorguk.ukuu.org.uk>
-In-Reply-To: <1286472835.2656.15.camel@dhcp231-98.rdu.redhat.com>
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
-	<201010071710.46938.tvrtko.ursulin@sophos.com>
-	<201010071815.54303.tvrtko.ursulin@sophos.com>
-	<1286472835.2656.15.camel@dhcp231-98.rdu.redhat.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+        linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] core kernel fixes
+Message-ID: <20101007174256.GG2434@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20101005191223.GA31795@elte.hu>
+ <AANLkTik9E0dr=Qah0d_+9YaAsA7WfeawA1c4oDbiJK-j@mail.gmail.com>
+ <20101005210904.GQ2369@linux.vnet.ibm.com>
+ <AANLkTi==ZE7+PTPdB1JjdSdqus0Ox+rjTAxMMMJk0fBi@mail.gmail.com>
+ <20101005220546.GS2369@linux.vnet.ibm.com>
+ <1286333814.4861.9.camel@edumazet-laptop>
+ <20101006045905.GE2553@linux.vnet.ibm.com>
+ <20101006182049.GA16329@elte.hu>
+ <20101006212722.GP2433@linux.vnet.ibm.com>
+ <20101007081100.GA16539@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101007081100.GA16539@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I see two possibilities off the top of my head:
+On Thu, Oct 07, 2010 at 10:11:00AM +0200, Ingo Molnar wrote:
 > 
-> I could just slap an (unused) priority field onto the end of the
-> fanotify_init() syscall (assuming Linus doesn't murder me) so we can
-> build that support out with explicit priorities down the line, which I
-> think might be overkill, or
+> * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
 > 
-> The other option (without breaking ABI as it stands today) is to define
-> some set of the fanotify_init() flags to be a priority field, we've got
-> 32 bits and only use 2 of them so giving 4-8 bits of that as a priority
-> (next cycle) isn't an issue and can be easily backwards compatible.
+> > On Wed, Oct 06, 2010 at 08:20:49PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+> > > 
+> > > > Ingo, I have this queued up at:
+> > > > 
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/urgent
+> > > > 
+> > > > It passes targeted testing.  If Eric is OK with it, it is ready to be 
+> > > > pulled.  At least as soon as kernel.org gets it out to the mirrors. 
+> > > > Commmit 773e3f9357.
+> > > 
+> > > Now that the original fix is in Linus's tree, can the followup commits 
+> > > wait until v2.6.37?
+> > > 
+> > > Linus, Paul, what's your preference?
+> > 
+> > I am fine either way.
+> 
+> Ok, Linus released -rc7 which is probably the last -rc so to reduce 
+> final-rc code flux i have pulled your fix into tip:core/rcu, for 
+> v2.6.37.
 
-Except you've then got a magic release that works differently to every
-other release afterwards and which sods law says will get shipped by some
-big vendor. Both your proposals are "we got the API wrong, lets have one
-kernel that is special", that isn't good in the bigger scheme of things
-and will have if kernel 2.6.blah then crap forced into bits of app/lib
-code forever.
+Ah, good, thank you!  I am rebasing on top of that.  Here is hoping that
+this approach quiets down the conflict in -next as well.  ;-)
 
-Given two chunks of "oh dear" last minute stuff would it be safer to
-simply punt and just pull the syscall/prototype itself (leaving the rest)
-for the release. That can go into the first pass of the next kernel tree,
-and if it the fixes and priority bits all work out may well then be tiny
-enough for -stable.
-
-Alan
+							Thanx, Paul
