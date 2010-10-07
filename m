@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753851Ab0JGPXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 11:23:19 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:48932 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750901Ab0JGPXS convert rfc822-to-8bit (ORCPT
+	id S1752936Ab0JGPYl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 11:24:41 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:50585 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab0JGPYj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 11:23:18 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 7 Oct 2010 20:53:09 +0530
-Subject: RE: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-Thread-Topic: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-Thread-Index: ActmMs0Oioco7/2jS0SxWMbHUuXkLwAADJyQ
-Message-ID: <19F8576C6E063C45BE387C64729E739404AA21D1B4@dbde02.ent.ti.com>
-References: <1286404493-23816-1-git-send-email-pavan-savoy@ti.com>
-	 <1286404493-23816-2-git-send-email-pavan-savoy@ti.com>
-	 <1286445948.6145.70.camel@aeonflux>
-	 <19F8576C6E063C45BE387C64729E739404AA21D19E@dbde02.ent.ti.com>
- <1286464659.6145.144.camel@aeonflux>
-In-Reply-To: <1286464659.6145.144.camel@aeonflux>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 7 Oct 2010 11:24:39 -0400
+Subject: RE: RFC: btusb firmware load help
+From: Marcel Holtmann <holtmann@linux.intel.com>
+To: Shanmugamkamatchi Balashanmugam 
+	<Shanmugamkamatchi.Balashanmugam@Atheros.com>
+Cc: Luis Rodriguez <Luis.Rodriguez@Atheros.com>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Deepak Dhamdhere <Deepak.Dhamdhere@Atheros.com>,
+        Sree Durbha <Sree.Durbha@Atheros.com>
+In-Reply-To: <44EE5C37ADC36343B0625A05DD408C4850DAD2CA31@CHEXMB-01.global.atheros.com>
+References: <1286349552.6145.11.camel@aeonflux>
+	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
+	 <1286380566.6145.42.camel@aeonflux> <20101006163816.GE7070@tux>
+	 <AANLkTik9w4_PdcEsbRHakLcxcD334_1Q8hGArxTXPCGF@mail.gmail.com>
+	 <20101006173949.GG7070@tux>
+	 <1286387660.3655.382.camel@jlt3.sipsolutions.net>
+	 <AANLkTikYRSQw-+Tcj4VS1qxi=OaeF9C5hjAMWVu+0M=v@mail.gmail.com>
+	 <AANLkTi=o4Mc72NrNoALBdS3YHeY7RMyyAJPsCy=uW3+F@mail.gmail.com>
+	 <1286389697.3655.401.camel@jlt3.sipsolutions.net>
+	 ,<20101006183340.GI7070@tux>
+	 <44EE5C37ADC36343B0625A05DD408C4850DAD2CA31@CHEXMB-01.global.atheros.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 17:24:32 +0200
+Message-ID: <1286465072.6145.151.camel@aeonflux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Bala,
 
-> -----Original Message-----
-> From: Marcel Holtmann [mailto:marcel@holtmann.org]
-> Sent: Thursday, October 07, 2010 10:18 AM
-> To: Savoy, Pavan
-> Cc: linux-bluetooth@vger.kernel.org; johan.hedberg@gmail.com; greg@kroah.com;
-> linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-> 
-> Hi Pavan,
-> 
-> > > Registering the Bluetooth HCI driver in module_init/module_exit is not
-> > > acceptable. Turn your shared transport into a proper bus.
-> >
-> > Yes, you did comment on it before, I remember, I did prototype the driver as
-> > a bus driver, However I didn't find any advantages by converting it to a bus
-> > driver.
-> > As in, currently the shared transport driver is a line discipline driver
-> because
-> > it is the only way it can communicate over TTY without being tightly coupled
-> with the UART driver.
-> >
-> > > We want to be able to have generic kernels where this module is enabled,
-> > > but no Shared Transport is available.
-> >
-> > Oh if this is the reason I cannot have hci_register/_unregister in
-> module_init/_exit, Can I do this module "depends" on TI_ST, Then it would not
-> > even be visible to build if TI_ST is not selected.
-> 
-> this is not helping either. Then TI_ST can not be selected and so you
-> still end up with some weird platform specific kernels. We don't want
-> that. We want generic kernels that can detect the hardware they are
-> running on.
-> 
-> As I said, I will not accept this driver if it registers HCI device in
-> module_init. No other driver is doing this and it is in general a really
-> really really bad idea.
-> 
+> Thanks Johannes.  This would be better option to change PID in firmware
+> as blacklisting 3002 might create problems for 3011 chipsets.
+> Will try and let you people know. 
 
-Ok, now I am beginning to get what you say, Let me check, may be what
-I can do is, have something like a st_prepare() function called in the
-module_init, and a _probe function of the bluetooth driver will be called,
-_ONLY_ if the _probe of my platform driver has been called..
-Do you think this would be a good idea?
+The misbehaving 3002 needs to be blacklisted in btusb.c anyway. However
+after loading the firmware to 3002 device, it should change its PID to
+something else.
 
-Note: the TI_ST driver is also a platform device driver, so that TI_ST's
-Probe is not called, if a arch/xx/board-xx doesn't add it.
+I am still trying to figure out if this is one stage firmware loading or
+a two stage firmware loading. This is all pretty unclear and nobody has
+answered this clearly so far.
 
-Please suggest.
+Regards
 
+Marcel
 
-> 
-> Marcel
-> 
 
