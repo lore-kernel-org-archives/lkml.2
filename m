@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755976Ab0JGUvH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 16:51:07 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56650 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755924Ab0JGUvD (ORCPT
+	id S1756004Ab0JGUvg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 16:51:36 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:60020 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755499Ab0JGUve (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 16:51:03 -0400
-Date: Thu, 7 Oct 2010 21:50:49 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Mario Limonciello <superm1@ubuntu.com>
-Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
-        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
-Message-ID: <20101007205049.GB32726@srcf.ucam.org>
-References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com> <20101007111510.GA19624@srcf.ucam.org> <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com> <20101007133529.GA21782@srcf.ucam.org> <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com>
+	Thu, 7 Oct 2010 16:51:34 -0400
+Date: Thu, 7 Oct 2010 14:51:48 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Greg KH <greg@kroah.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>, pavan-savoy@ti.com,
+        linux-bluetooth@vger.kernel.org, johan.hedberg@gmail.com,
+        linux-kernel@vger.kernel.org, Pavan Savoy <pavan_savoy@ti.com>
+Subject: Re: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
+Message-ID: <20101007175148.GC4893@vigoh>
+References: <1286404493-23816-1-git-send-email-pavan-savoy@ti.com>
+ <1286404493-23816-2-git-send-email-pavan-savoy@ti.com>
+ <1286445948.6145.70.camel@aeonflux>
+ <20101007143409.GB14913@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20101007143409.GB14913@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 03:49:05PM -0500, Mario Limonciello wrote:
-> Hi Matthew:
-> > Is the kernel able to unblock it under those circumstances?
-> 
-> Manually running rfkill unblock will unblock it in this broken
-> firmware scenario in question.
+Hi Greg,
 
-So the issue is in the firmware's response to the keystroke? Ok. I'd 
-rather have a DMI list of the broken machines than a module parameter.
+* Greg KH <greg@kroah.com> [2010-10-07 07:34:09 -0700]:
+
+> On Thu, Oct 07, 2010 at 12:05:48PM +0200, Marcel Holtmann wrote:
+> > Hi Pavan,
+> > 
+> > > This is the bluetooth protocol driver for the TI WiLink7 chipsets.
+> > > Texas Instrument's WiLink chipsets combine wireless technologies
+> > > like BT, FM, GPS and WLAN onto a single chip.
+> > > 
+> > > This Bluetooth driver works on top of the TI_ST shared transport
+> > > line discipline driver which also allows other drivers like
+> > > FM V4L2 and GPS character driver to make use of the same UART interface.
+> > > 
+> > > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+> > > ---
+> > >  drivers/bluetooth/bt_ti.c      |  463 ++++++++++++++++++++++++++++++++++++
+> > >  drivers/staging/ti-st/bt_drv.c |  509 ----------------------------------------
+> > >  drivers/staging/ti-st/bt_drv.h |   61 -----
+> > >  3 files changed, 463 insertions(+), 570 deletions(-)
+> > >  create mode 100644 drivers/bluetooth/bt_ti.c
+> > >  delete mode 100644 drivers/staging/ti-st/bt_drv.c
+> > >  delete mode 100644 drivers/staging/ti-st/bt_drv.h
+> > 
+> > I don't care about staging at all. So you sort that out with Greg.
+> > 
+> > Submit your driver for upstream inclusion. And once accepted you can pin
+> > Greg about removing it.
+> 
+> The driver is already in staging, this is the request to move it out of
+> staging and into the "correct" place in the tree.  The core of the ti-st
+> code is now in the drivers/misc/ directory in the linux-next tree, and
+> this patch is the request to move the bluetooth drive into the proper
+> drivers/bluetooth/ location.
+
+I'm wondering why this driver never touched linux-bluetooth before. It
+is on staging because it is not ready for a proper merge and while it is
+not ready it needs the comments from the bluetooth developers here to
+get it ready for merge in drivers/bluetooth. So why this never arrived 
+here before?
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Gustavo F. Padovan
+ProFUSION embedded systems - http://profusion.mobi
