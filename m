@@ -1,70 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759976Ab0JGCXp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 22:23:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49777 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757596Ab0JGCXm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 22:23:42 -0400
-Date: Wed, 6 Oct 2010 19:19:59 -0700
-From: Greg KH <gregkh@suse.de>
-To: Sameer Nanda <snanda@chromium.org>
-Cc: lenb@kernel.org, stefan.bader@canonical.com, brad.figg@canonical.com,
-        apw@canonical.com, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: Read TSC upon resume
-Message-ID: <20101007021959.GA7300@suse.de>
-References: <1286406919-6236-1-git-send-email-snanda@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286406919-6236-1-git-send-email-snanda@chromium.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1759992Ab0JGCYv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 22:24:51 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:57690 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1759825Ab0JGCYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 22:24:50 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19/rb4QWjV/tQgLS4uggqdw/WwLwT5T+limxV9XLh
+	1eDCnChG9RmtBT
+Subject: Re: [PATCH 1/2] sched: normalize sleeper's vruntime during group
+ change
+From: Mike Galbraith <efault@gmx.de>
+To: Dima Zavin <dima@android.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+In-Reply-To: <1286405790-6987-1-git-send-email-dima@android.com>
+References: <AANLkTimpzfCDHuVQkExLvQHaVY==SFJ2AUWO7tZkcK2T@mail.gmail.com>
+	 <1286405790-6987-1-git-send-email-dima@android.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 04:24:46 +0200
+Message-Id: <1286418286.7422.18.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 04:15:19PM -0700, Sameer Nanda wrote:
-> Read the TSC upon resuming and print it out. This is useful
-> in helping figure out amount of time spent in the BIOS when
-> resuming from suspend.
+On Wed, 2010-10-06 at 15:56 -0700, Dima Zavin wrote:
+> If you switch the cgroup of a sleeping thread, its vruntime does
+> not get adjusted correctly for the difference between the
+> min_vruntime values of the two groups.
 > 
-> Change-Id: I1d6a32bd62421becddecd152d561763e5f3e1101
+> The problem becomes most apparent when one has cgroups whose
+> cpu shares differ greatly, say group A.shares=1024 and group B.shares=52.
+> After some time, the vruntime of the group with the larger share (A)
+> will be way ahead of the group with the small share (B). Currently,
+> when a sleeping task is moved from group A to group B, it will retain its
+> larger vruntime value and thus will be way ahead of all the other tasks
+> in its new group. This will prevent this task from executing for an
+> extended period of time.
 
-What is this tag for?  I don't think it matches anything the kernel
-community wants, do you?
+Yeah, seems clear that normalization is a must.
 
-And are you always going to be printing this out?  Why do we want to
-know this every time?
+Questionable is whether we should apply START_DEBIT.  That's part of a
+different problem though (SCHED_PROCESS).
 
+> This patch adds a new callback, prep_move_task, to struct sched_class
+> to give sched_fair the opportunity to adjust the task's vruntime
+> just before setting its new group. This allows us to properly normalize
+> a sleeping task's vruntime when moving it between different cgroups.
 
-> Signed-off-by: Sameer Nanda <snanda@chromium.org>
+Acked-by: Mike Galbraith <efault@gmx.de>
+
+> Cc: Arve Hjønnevåg <arve@android.com>
+> Signed-off-by: Dima Zavin <dima@android.com>
 > ---
->  drivers/acpi/sleep.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+>  include/linux/sched.h |    1 +
+>  kernel/sched.c        |    5 +++++
+>  kernel/sched_fair.c   |   14 +++++++++++++-
+>  3 files changed, 19 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
-> index c0fed2e..f0588fa 100644
-> --- a/drivers/acpi/sleep.c
-> +++ b/drivers/acpi/sleep.c
-> @@ -214,6 +214,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
->  	acpi_status status = AE_OK;
->  	unsigned long flags = 0;
->  	u32 acpi_state = acpi_target_sleep_state;
-> +	u64 tsc;
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index 1e2a6db..ba3494e 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -1073,6 +1073,7 @@ struct sched_class {
 >  
->  	ACPI_FLUSH_CPU_CACHE();
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  	void (*moved_group) (struct task_struct *p, int on_rq);
+> +	void (*prep_move_group) (struct task_struct *p, int on_rq);
+>  #endif
+>  };
 >  
-> @@ -235,6 +236,9 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index dc85ceb..fe4bb20 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -8297,6 +8297,11 @@ void sched_move_task(struct task_struct *tsk)
+>  	if (unlikely(running))
+>  		tsk->sched_class->put_prev_task(rq, tsk);
 >  
->  	case ACPI_STATE_S3:
->  		do_suspend_lowlevel();
-> +		rdtscll(tsc);
-> +		printk(KERN_INFO "TSC at resume: %llu\n",
-> +				(unsigned long long)tsc);
+> +#ifdef CONFIG_FAIR_GROUP_SCHED
+> +	if (tsk->sched_class->prep_move_group)
+> +		tsk->sched_class->prep_move_group(tsk, on_rq);
+> +#endif
+> +
+>  	set_task_rq(tsk, task_cpu(tsk));
+>  
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index db3f674..6ded59f 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -3827,10 +3827,21 @@ static void set_curr_task_fair(struct rq *rq)
+>  static void moved_group_fair(struct task_struct *p, int on_rq)
+>  {
+>  	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+> +	struct sched_entity *se = &p->se;
+>  
+>  	update_curr(cfs_rq);
+>  	if (!on_rq)
+> -		place_entity(cfs_rq, &p->se, 1);
+> +		se->vruntime += cfs_rq->min_vruntime;
+> +}
+> +
+> +static void prep_move_group_fair(struct task_struct *p, int on_rq)
+> +{
+> +	struct cfs_rq *cfs_rq = task_cfs_rq(p);
+> +	struct sched_entity *se = &p->se;
+> +
+> +	/* normalize the runtime of a sleeping task before moving it */
+> +	if (!on_rq)
+> +		se->vruntime -= cfs_rq->min_vruntime;
+>  }
+>  #endif
+>  
+> @@ -3883,6 +3894,7 @@ static const struct sched_class fair_sched_class = {
+>  
+>  #ifdef CONFIG_FAIR_GROUP_SCHED
+>  	.moved_group		= moved_group_fair,
+> +	.prep_move_group	= prep_move_group_fair,
+>  #endif
+>  };
+>  
 
-How long does this take, will it slow down resume?
-
-thanks,
-
-greg k-h
