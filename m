@@ -1,46 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753115Ab0JGVro (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:47:44 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:39066 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab0JGVrn (ORCPT
+	id S1754280Ab0JGVr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:47:56 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:45856 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab0JGVrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:47:43 -0400
-Date: Thu, 7 Oct 2010 15:47:59 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: pavan_savoy@ti.com
-Cc: linux-bluetooth@vger.kernel.org, marcel@holtmann.org, greg@kroah.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] drivers:bluetooth: Kconfig & Makefile for TI BT
-Message-ID: <20101007184759.GD4893@vigoh>
-References: <1286477237-7526-1-git-send-email-pavan_savoy@ti.com>
- <1286477237-7526-2-git-send-email-pavan_savoy@ti.com>
- <1286477237-7526-3-git-send-email-pavan_savoy@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286477237-7526-3-git-send-email-pavan_savoy@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 7 Oct 2010 17:47:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="57100461"
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Mike Frysinger <vapier@gentoo.org>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+In-Reply-To: <20101007211513.GB26660@suse.de>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
+	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
+	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007211513.GB26660@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 14:47:18 -0700
+Message-ID: <1286488038.23836.101.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* pavan_savoy@ti.com <pavan_savoy@ti.com> [2010-10-07 14:47:17 -0400]:
-
-> From: Pavan Savoy <pavan_savoy@ti.com>
+On Thu, 2010-10-07 at 14:15 -0700, Greg KH wrote:
+> On Thu, Oct 07, 2010 at 01:51:18PM -0700, Daniel Walker wrote:
+> > Your making too many assumptions .. You might be able to modify the
+> > kernel, and not the userspace. So you couldn't tweak the device
+> > creation .. It's much easier in the server world ..
 > 
-> Kconfig and Makefile modifications to enable the Bluetooth
-> driver for Texas Instrument's WiLink 7 chipset.
-> 
-> Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> ---
->  drivers/bluetooth/Kconfig  |   10 ++++++++++
->  drivers/bluetooth/Makefile |    1 +
->  2 files changed, 11 insertions(+), 0 deletions(-)
+> You're saying it's easier to replace an embedded kernel than a userspace
+> file on an embedded system?  Heh, that's funny.
 
-Just merge this patch in the firt one. No need to keep this separated.
+I'm saying it _can_ happen that it's easier to replace the kernel.. I'm
+not saying it's always the case. We're talking about debugging
+situations in an embedded environment which don't always follow a normal
+path.
+
+> > > We've said no over a period of about ten years to a lot of attempts to
+> > > just borrow the ttyS0 range. If we'd said yes it would have been a
+> > > complete mess by now.
+> > > 
+> > > So the answer is no.
+> > 
+> > Nothing can be unilateral, there's always room for exceptions. You
+> > should say something more like "it's possible, but unlikely".
+> 
+> Hm, how about this, as the TTY and serial driver[1] maintainer, I will
+> not accept this kind of patch at all.
+> 
+> Is that final enough for you?
+
+So you don't like it, that's fair enough .. <thinks>I wonder what other
+maintainers I can send this too</thinks> ;)
+
+Can you be more specific about your objections .. The discussion over
+the ttyS* thing is still happening. I'm waiting for Hyok to give a good
+reason for why he wrote that part of it. I can imagine good reasons for
+why that part would exist, which is what I'm discussing with Alan and
+Mike.
+
+Daniel
 
 -- 
-Gustavo F. Padovan
-ProFUSION embedded systems - http://profusion.mobi
+
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
