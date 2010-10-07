@@ -1,79 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab0JGOrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 10:47:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14367 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755658Ab0JGOrR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 10:47:17 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] single block fix for 2.6.36
-References: <4CAD7A00.6060003@fusionio.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Thu, 07 Oct 2010 10:45:38 -0400
-In-Reply-To: <4CAD7A00.6060003@fusionio.com> (Jens Axboe's message of "Thu, 07
-	Oct 2010 09:42:56 +0200")
-Message-ID: <x49lj6a9i3x.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1760221Ab0JGOtL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 10:49:11 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34206 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759963Ab0JGOtJ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 10:49:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dm6x+7yH2VaraYFluq2mpa3gJIbhcsk24Tag3MUu6QwIr6z6qdmgUHlSROytzI9ap1
+         T45LJorZdkgSkugWsgVg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <AANLkTikcc_egoo==_R6usUdCm07Cuog7gD4DEjX8rfaP@mail.gmail.com>
+References: <4cac3d2e.21edd80a.7008.1831@mx.google.com>
+	<4CAD206A.1090708@cn.fujitsu.com>
+	<AANLkTikcc_egoo==_R6usUdCm07Cuog7gD4DEjX8rfaP@mail.gmail.com>
+Date: Thu, 7 Oct 2010 16:49:06 +0200
+Message-ID: <AANLkTi=x-WH5eF9rdr4c8QfdzRdLcEJn0PV2svuGqCT-@mail.gmail.com>
+Subject: Re: [RFC PATCH 1/2] perf_events: add support for per-cpu per-cgroup
+ monitoring (v4)
+From: Stephane Eranian <eranian@google.com>
+To: eranian@gmail.com
+Cc: Li Zefan <lizf@cn.fujitsu.com>, linux-kernel@vger.kernel.org,
+        peterz@infradead.org, mingo@elte.hu, paulus@samba.org,
+        davem@davemloft.net, fweisbec@gmail.com, perfmon2-devel@lists.sf.net,
+        robert.richter@amd.com, acme@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <jaxboe@fusionio.com> writes:
-
-> Hi Linus,
+On Thu, Oct 7, 2010 at 3:45 PM, stephane eranian <eranian@googlemail.com> wrote:
+> On Thu, Oct 7, 2010 at 3:20 AM, Li Zefan <lizf@cn.fujitsu.com> wrote:
+>> Stephane Eranian wrote:
+>>> This kernel patch adds the ability to filter monitoring based on
+>>> container groups (cgroups). This is for use in per-cpu mode only.
+>>>
+>>> The cgroup to monitor is passed as a file descriptor in the pid
+>>> argument to the syscall. The file descriptor must be opened to
+>>> the cgroup name in the cgroup filesystem. For instance, if the
+>>> cgroup name is foo and cgroupfs is mounted in /cgroup, then the
+>>> file descriptor is opened to /cgroup/foo. Cgroup mode is
+>>> activated by passing PERF_FLAG_PID_CGROUP into the flags argument
+>>> to the syscall.
+>>>
+>>> Signed-off-by: Stephane Eranian <eranian@google.com>
+>>>
+>>> ---
+>>>
+>>> diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+>>> index 709dfb9..67cf276 100644
+>>> --- a/include/linux/cgroup.h
+>>> +++ b/include/linux/cgroup.h
+>>> @@ -623,6 +623,8 @@ bool css_is_ancestor(struct cgroup_subsys_state *cg,
+>>>  unsigned short css_id(struct cgroup_subsys_state *css);
+>>>  unsigned short css_depth(struct cgroup_subsys_state *css);
+>>>
+>>> +struct cgroup_subsys_state *cgroup_css_from_dir(struct file *f, int id);
+>>> +
+>>>  #else /* !CONFIG_CGROUPS */
+>>>
+>>>  static inline int cgroup_init_early(void) { return 0; }
+>>> diff --git a/include/linux/cgroup_subsys.h b/include/linux/cgroup_subsys.h
+>>> index ccefff0..93f86b7 100644
+>>> --- a/include/linux/cgroup_subsys.h
+>>> +++ b/include/linux/cgroup_subsys.h
+>>> @@ -65,4 +65,8 @@ SUBSYS(net_cls)
+>>>  SUBSYS(blkio)
+>>>  #endif
+>>>
+>>> +#ifdef CONFIG_PERF_EVENTS
+>>> +SUBSYS(perf)
+>>> +#endif
+>>> +
+>>>  /* */
+>>> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+>>> index 61b1e2d..ad79f0a 100644
+>>> --- a/include/linux/perf_event.h
+>>> +++ b/include/linux/perf_event.h
+>>> @@ -454,6 +454,7 @@ enum perf_callchain_context {
+>>>
+>>>  #define PERF_FLAG_FD_NO_GROUP        (1U << 0)
+>>>  #define PERF_FLAG_FD_OUTPUT  (1U << 1)
+>>> +#define PERF_FLAG_PID_CGROUP (1U << 2) /* pid=cgroup id, per-cpu mode */
+>>>
+>>>  #ifdef __KERNEL__
+>>>  /*
+>>> @@ -461,6 +462,7 @@ enum perf_callchain_context {
+>>>   */
+>>>
+>>>  #ifdef CONFIG_PERF_EVENTS
+>>> +# include <linux/cgroup.h>
+>>>  # include <asm/perf_event.h>
+>>>  # include <asm/local64.h>
+>>>  #endif
+>>> @@ -698,6 +700,18 @@ struct swevent_hlist {
+>>>  #define PERF_ATTACH_CONTEXT  0x01
+>>>  #define PERF_ATTACH_GROUP    0x02
+>>>
+>>> +#ifdef CONFIG_CGROUPS
+>>> +struct perf_cgroup_time {
+>>> +     u64 time;
+>>> +     u64 timestamp;
+>>> +};
+>>> +
+>>> +struct perf_cgroup {
+>>> +     struct cgroup_subsys_state css;
+>>> +     struct perf_cgroup_time *time;
+>>> +};
+>>
+>> Can we avoid adding this perf cgroup subsystem? It has 2 disavantages:
+>>
+> Well, I need to maintain some timing information for each cgroup. This has
+> to be stored somewhere.
 >
-> The API that was added for drivers to switch IO schedulers
-> when loaded does not work if the driver isn't in a fully
-> initialized state. The in-kernel ones call it right after
-> blk_init_queue(), which will result in an oops when the
-> elevator core tries to unregister unregistered kobjects.
+>> - If one mounted cgroup fs without perf cgroup subsys, he can't monitor it.
+>
+> That's unfortunately true ;-)
+>
+>> - If there are several different cgroup mount points, only one can be
+>>  monitored.
+>>
+>> To choose which cgroup hierarchy to monitor, hierarchy id can be passed
+>> from userspace, which is the 2nd column below:
+>>
+> Ok, I will investigate this. As long as the hierarchy id is unique AND it can be
+> searched, then we can use it. Using /proc is fine with me.
+>
+>> $ cat /proc/cgroups
+>> #subsys_name    hierarchy       num_cgroups     enabled
+>> debug   0       1       1
+>> net_cls 0       1       1
+>>
 
-Color me confused.  If the problem is trying to unregister unregistered
-objects, then why does your backtrace show a problem registering
-objects?
+If I mount all subsystems:
+mount -t cgroup none /dev/cgroup
+Then, I get:
+#subsys_name	hierarchy	num_cgroups	enabled
+cpuset	1	1	1
+cpu	        1	1	1
+perf_event	1	1	1
 
-    RIP: 0010:[<ffffffff8116f15e>]  [<ffffffff8116f15e>] sysfs_create_dir+0x2e/0xc0
-...
-    Call Trace:
-     [<ffffffff8123fb77>] kobject_add_internal+0xe7/0x1f0
-     [<ffffffff8123fd98>] kobject_add_varg+0x38/0x60
-     [<ffffffff8123feb9>] kobject_add+0x69/0x90
-     [<ffffffff8116efe0>] ? sysfs_remove_dir+0x20/0xa0
-     [<ffffffff8103d48d>] ? sub_preempt_count+0x9d/0xe0
-     [<ffffffff8143de20>] ? _raw_spin_unlock+0x30/0x50
-     [<ffffffff8116efe0>] ? sysfs_remove_dir+0x20/0xa0
-     [<ffffffff8116eff4>] ? sysfs_remove_dir+0x34/0xa0
-     [<ffffffff81224204>] elv_register_queue+0x34/0xa0
-     [<ffffffff81224aad>] elevator_change+0xfd/0x250
-     [<ffffffffa007e000>] ? t_init+0x0/0x361 [t]
-     [<ffffffffa007e000>] ? t_init+0x0/0x361 [t]
-     [<ffffffffa007e0a8>] t_init+0xa8/0x361 [t]
-     [<ffffffff810001de>] do_one_initcall+0x3e/0x170
-     [<ffffffff8108c3fd>] sys_init_module+0xbd/0x220
-     [<ffffffff81002f2b>] system_call_fastpath+0x16/0x1b
+In other words, the hierarchy id is not unique.
+If the perf_event is not mounted, then hierarchy id = 0.
 
-I tried to track down what was going on, but I don't have your .config,
-so trying to pick things apart by guessing wasn't working out very well
-for me.  Also, your changelog entry in your tree is different from what
-you posted here (more complete) and you never posted a relevant patch to
-the list.
+When I compare with my approach, if perf_event is
+not mounted, then the file descriptor won't lead to the
+css, and therefore you will fail and that is fine because
+it means the perf_event subsystem is not instantiated
+therefore it cannot be used.
 
-> Add a registered bit and only do the unregister/register
-> dance in elevator_switch() if we need to. The other call
-> path for this is the sysfs parts to allow online switching,
-> which can only be called with a fully setup driver.
+In my patch, there was a missing check for a NULL
+css. I fixed that now, and it works fine.
 
-I don't doubt that you're right, but you certainly haven't given enough
-information for me to verify this in the 20 or 30 minutes I spent
-looking.
+As for multiple mount points, it seems like the first
+mount determines the restrictions for all mounts.
+In other words, if you mount only cpuset, then no
+other mount can provide more than cpuset, and vice-versa.
 
-Cheers,
-Jeff
+I have tried mounting cgroupfs in multiple places at the same
+time. Whatever directory I used, I got to the right css.
+
+Am I missing your point here?
