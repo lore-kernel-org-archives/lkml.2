@@ -1,188 +1,250 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab0JGTAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 15:00:04 -0400
-Received: from mtaout03-winn.ispmail.ntl.com ([81.103.221.49]:51128 "EHLO
-	mtaout03-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752893Ab0JGTAB (ORCPT
+	id S1752554Ab0JGTD1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 15:03:27 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:43168 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751352Ab0JGTDZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 15:00:01 -0400
-From: Daniel Drake <dsd@laptop.org>
-To: tglx@linutronix.de
-To: mingo@redhat.com
-To: hpa@zytor.com
-To: x86@kernel.org
-Cc: dilinger@queued.net
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] OLPC: Add XO-1 poweroff support
-Message-Id: <20101007185952.A36859D401B@zog.reactivated.net>
-Date: Thu,  7 Oct 2010 19:59:52 +0100 (BST)
-X-Cloudmark-Analysis: v=1.1 cv=DhNl2YeytwJssBBGe49HJX82LNDFEEVkpVB34RXKaPo= c=1 sm=0 a=AvS0RrwksfwA:10 a=Op-mwl0xAAAA:8 a=DxYcp4CUANubbBQo6-UA:9 a=RttQKB1h_DY9XDJk-_0A:7 a=5WY7vSb3EMVE5fRsxjAtkm_bTUsA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Thu, 7 Oct 2010 15:03:25 -0400
+Date: Thu, 7 Oct 2010 15:03:22 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>, David Rientjes <rientjes@google.com>,
+        Nick Piggin <nickpiggin@yahoo.com.au>,
+        Balbir Singh <balbir@in.ibm.com>, Cedric Le Goater <clg@fr.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [PATCH] Prio_heap: heap_remove(), heap_maximum(), heap_replace()
+	and heap_cherrypick()
+Message-ID: <20101007190322.GA27054@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 15:01:36 up 14 days, 23:03,  7 users,  load average: 0.09, 0.08,
+	0.08
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a pm_power_off handler for the OLPC XO-1 laptop.
+These added interfaces lets prio_heap users lookup the top of heap item without
+performing any insertion, perform removal of the topmost heap entry, and also
+replacement of topmost heap entry. This is useful if one need to use the result
+of the lookup to determine if the current maximum should simply be removed or if
+it should be replaced.
 
-Signed-off-by: Daniel Drake <dsd@laptop.org>
+This is used by the Generic Ring Buffer to perform timestamp-based fusion-merge
+of per-cpu buffer records into a single stream.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Acked-by: Balbir Singh <balbir@in.ibm.com>
+Cc: Paul Menage <menage@google.com>
+Cc: David Rientjes <rientjes@google.com>
+Cc: Cedric Le Goater <clg@fr.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
 ---
- arch/x86/Kconfig           |    6 ++
- arch/x86/kernel/Makefile   |    1 +
- arch/x86/kernel/olpc-xo1.c |  112 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 119 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/kernel/olpc-xo1.c
+ include/linux/prio_heap.h |   44 ++++++++++++++++++++++
+ lib/prio_heap.c           |   91 ++++++++++++++++++++++++++++++++++++----------
+ 2 files changed, 116 insertions(+), 19 deletions(-)
 
-The new olpc-xo1.c file will also be used for further functionality
-(suspend/resume, lid switch device, etc); patches to be submitted shortly
-after the review/merge of this one.
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cea0cd9..19e6439 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -2065,6 +2065,12 @@ config OLPC
- 	  Add support for detecting the unique features of the OLPC
- 	  XO hardware.
+Index: linux.trees.git/include/linux/prio_heap.h
+===================================================================
+--- linux.trees.git.orig/include/linux/prio_heap.h	2010-07-06 14:25:29.000000000 -0400
++++ linux.trees.git/include/linux/prio_heap.h	2010-07-07 10:04:33.000000000 -0400
+@@ -23,6 +23,18 @@ struct ptr_heap {
+ };
  
-+config OLPC_XO1
-+	bool "OLPC XO-1 support"
-+	depends on OLPC
-+	---help---
-+	  Add support for non-essential features of the OLPC XO-1 laptop.
-+
- config OLPC_OPENFIRMWARE
- 	bool "Support for OLPC's Open Firmware"
- 	depends on !X86_64 && !X86_PAE
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index fedf32a..247588f 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -106,6 +106,7 @@ obj-$(CONFIG_SCx200)		+= scx200.o
- scx200-y			+= scx200_32.o
- 
- obj-$(CONFIG_OLPC)		+= olpc.o
-+obj-$(CONFIG_OLPC_XO1)		+= olpc-xo1.o
- obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
- obj-$(CONFIG_X86_MRST)		+= mrst.o
- 
-diff --git a/arch/x86/kernel/olpc-xo1.c b/arch/x86/kernel/olpc-xo1.c
-new file mode 100644
-index 0000000..ee840de
---- /dev/null
-+++ b/arch/x86/kernel/olpc-xo1.c
-@@ -0,0 +1,112 @@
-+/*
-+ * Support for features of the OLPC XO-1 laptop
+ /**
++ * heap_maximum - return the largest element in the heap
++ * @heap: the heap to be operated on
 + *
-+ * Copyright (C) 2010 One Laptop per Child
-+ * Copyright (C) 2006 Red Hat, Inc.
-+ * Copyright (C) 2006 Advanced Micro Devices, Inc.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * Returns the largest element in the heap, without performing any modification
++ * to the heap structure. Returns NULL if the heap is empty.
 + */
-+
-+#include <linux/init.h>
-+#include <linux/pci.h>
-+#include <linux/pci_ids.h>
-+#include <linux/pm.h>
-+
-+#include <asm/io.h>
-+#include <asm/olpc.h>
-+
-+#define DRV_NAME "olpc-xo1"
-+
-+#define PMS_BAR		4
-+#define ACPI_BAR	5
-+
-+/* PMC registers (PMS block) */
-+#define PM_SCLK		0x10
-+#define PM_IN_SLPCTL	0x20
-+#define PM_WKXD		0x34
-+#define PM_WKD		0x30
-+#define PM_SSC		0x54
-+
-+/* PM registers (ACPI block) */
-+#define PM1_CNT		0x08
-+#define PM_GPE0_STS	0x18
-+
-+static unsigned long acpi_base;
-+static unsigned long pms_base;
-+
-+static void xo1_power_off(void)
++static inline void *heap_maximum(const struct ptr_heap *heap)
 +{
-+	printk(KERN_INFO "OLPC XO-1 power off sequence...\n");
-+
-+	/* Enable all of these controls with 0 delay */
-+	outl(0x40000000, pms_base + PM_SCLK);
-+	outl(0x40000000, pms_base + PM_IN_SLPCTL);
-+	outl(0x40000000, pms_base + PM_WKXD);
-+	outl(0x40000000, pms_base + PM_WKD);
-+
-+	/* Clear status bits (possibly unnecessary) */
-+	outl(0x0002ffff, pms_base  + PM_SSC);
-+	outl(0xffffffff, acpi_base + PM_GPE0_STS);
-+
-+	/* Write SLP_EN bit to start the machinery */
-+	outl(0x00002000, acpi_base + PM1_CNT);
++	return heap->size ? heap->ptrs[0] : NULL;
 +}
 +
-+/* Read the base addresses from the PCI BAR info */
-+static int __init setup_bases(struct pci_dev *pdev)
++/**
+  * heap_init - initialize an empty heap with a given memory size
+  * @heap: the heap structure to be initialized
+  * @size: amount of memory to use in bytes
+@@ -53,6 +65,38 @@ void heap_free(struct ptr_heap *heap);
+  */
+ extern void *heap_insert(struct ptr_heap *heap, void *p);
+ 
++/**
++ * heap_remove - remove the largest element from the heap
++ * @heap: the heap to be operated on
++ *
++ * Returns the largest element in the heap. It removes this element from the
++ * heap. Returns NULL if the heap is empty.
++ */
++extern void *heap_remove(struct ptr_heap *heap);
+ 
++/**
++ * heap_cherrypick - remove a given element from the heap
++ * @heap: the heap to be operated on
++ * @p: the element
++ *
++ * Remove the given element from the heap. Return the element if present, else
++ * return NULL. This algorithm has a complexity of O(n), which is higher than
++ * O(log(n)) provided by the rest of this API.
++ */
++extern void *heap_cherrypick(struct ptr_heap *heap, void *p);
++
++/**
++ * heap_replace_max - replace the the largest element from the heap
++ * @heap: the heap to be operated on
++ * @p: the pointer to be inserted as topmost element replacement
++ *
++ * Returns the largest element in the heap. It removes this element from the
++ * heap. The heap is rebalanced only once after the insertion. Returns NULL if
++ * the heap is empty.
++ *
++ * This is the equivalent of calling heap_remove() and then heap_insert(), but
++ * it only rebalances the heap once.
++ */
++extern void *heap_replace_max(struct ptr_heap *heap, void *p);
+ 
+ #endif /* _LINUX_PRIO_HEAP_H */
+Index: linux.trees.git/lib/prio_heap.c
+===================================================================
+--- linux.trees.git.orig/lib/prio_heap.c	2010-07-06 14:25:29.000000000 -0400
++++ linux.trees.git/lib/prio_heap.c	2010-07-07 10:18:32.000000000 -0400
+@@ -23,12 +23,49 @@ void heap_free(struct ptr_heap *heap)
+ 	kfree(heap->ptrs);
+ }
+ 
+-void *heap_insert(struct ptr_heap *heap, void *p)
++static void heapify(struct ptr_heap *heap, void **ptrs, void *p, int pos)
 +{
-+	int r;
-+
-+	r = pci_enable_device_io(pdev);
-+	if (r) {
-+		dev_err(&pdev->dev, "can't enable device IO\n");
-+		return r;
++	while (1) {
++		int left = 2 * pos + 1;
++		int right = 2 * pos + 2;
++		int largest = pos;
++		if (left < heap->size && heap->gt(ptrs[left], p))
++			largest = left;
++		if (right < heap->size && heap->gt(ptrs[right], ptrs[largest]))
++			largest = right;
++		if (largest == pos)
++			break;
++		/* Push p down the heap one level and bump one up */
++		ptrs[pos] = ptrs[largest];
++		ptrs[largest] = p;
++		pos = largest;
 +	}
-+
-+	r = pci_request_region(pdev, ACPI_BAR, DRV_NAME);
-+	if (r) {
-+		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", ACPI_BAR);
-+		return r;
-+	}
-+
-+	r = pci_request_region(pdev, PMS_BAR, DRV_NAME);
-+	if (r) {
-+		dev_err(&pdev->dev, "can't alloc PCI BAR #%d\n", PMS_BAR);
-+		pci_release_region(pdev, ACPI_BAR);
-+		return r;
-+	}
-+
-+	acpi_base = pci_resource_start(pdev, ACPI_BAR);
-+	pms_base = pci_resource_start(pdev, PMS_BAR);
-+
-+	return 0;
 +}
 +
-+static int __init olpc_xo1_init(void)
-+{
-+	struct pci_dev *pdev;
-+	int r;
++void *heap_replace_max(struct ptr_heap *heap, void *p)
+ {
+ 	void *res;
+ 	void **ptrs = heap->ptrs;
+ 	int pos;
+ 
++	if (!heap->size) {
++		ptrs[heap->size++] = p;
++		return NULL;
++	}
 +
-+	if (olpc_board_at_least(olpc_board_pre(0xd0))) /* XO-1 only */
-+		return 0;
-+
-+	pdev = pci_get_device(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_CS5536_ISA,
-+			      NULL);
-+	if (!pdev)
-+		return -ENODEV;
-+
-+	r = setup_bases(pdev);
-+	if (r)
-+		return r;
-+
-+	pm_power_off = xo1_power_off;
-+
-+	printk(KERN_INFO "OLPC XO-1 support registered\n");
-+	return 0;
++	/* Replace the current max and heapify */
++	res = ptrs[0];
++	ptrs[0] = p;
++	pos = 0;
++	heapify(heap, ptrs, p, pos);
++	return res;
 +}
-+device_initcall(olpc_xo1_init);
 +
--- 
-1.7.2.3
++void *heap_insert(struct ptr_heap *heap, void *p)
++{
++	void **ptrs = heap->ptrs;
++	int pos;
++
+ 	if (heap->size < heap->max) {
+ 		/* Heap insertion */
+ 		pos = heap->size++;
+@@ -47,24 +84,40 @@ void *heap_insert(struct ptr_heap *heap,
+ 		return p;
+ 
+ 	/* Replace the current max and heapify */
+-	res = ptrs[0];
+-	ptrs[0] = p;
+-	pos = 0;
++	return heap_replace_max(heap, p);
++}
+ 
+-	while (1) {
+-		int left = 2 * pos + 1;
+-		int right = 2 * pos + 2;
+-		int largest = pos;
+-		if (left < heap->size && heap->gt(ptrs[left], p))
+-			largest = left;
+-		if (right < heap->size && heap->gt(ptrs[right], ptrs[largest]))
+-			largest = right;
+-		if (largest == pos)
+-			break;
+-		/* Push p down the heap one level and bump one up */
+-		ptrs[pos] = ptrs[largest];
+-		ptrs[largest] = p;
+-		pos = largest;
++void *heap_remove(struct ptr_heap *heap)
++{
++	void **ptrs = heap->ptrs;
++
++	switch (heap->size) {
++	case 0:
++		return NULL;
++	case 1:
++		return ptrs[--heap->size];
+ 	}
+-	return res;
++
++	/* Shrink, replace the current max by previous last entry and heapify */
++	return heap_replace_max(heap, ptrs[--heap->size]);
++}
++
++void *heap_cherrypick(struct ptr_heap *heap, void *p)
++{
++	void **ptrs = heap->ptrs;
++	size_t pos, size = heap->size;
++
++	for (pos = 0; pos < size; pos++)
++		if (ptrs[pos] == p)
++			goto found;
++	return NULL;
++found:
++	if (heap->size == 1)
++		return ptrs[--heap->size];
++	/*
++	 * Replace p with previous last entry and heapify.
++	 */
++	ptrs[pos] = ptrs[--heap->size];
++	heapify(heap, ptrs, ptrs[pos], pos);
++	return p;
+ }
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
