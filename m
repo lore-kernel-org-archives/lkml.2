@@ -1,31 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab0JGXtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 19:49:11 -0400
-Received: from e24smtp04.br.ibm.com ([32.104.18.25]:49406 "EHLO
-	e24smtp04.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752657Ab0JGXtJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752738Ab0JGXt2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 19:49:28 -0400
+Received: from smtp12.ono.com ([62.42.230.20]:34991 "EHLO resmaa12.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752969Ab0JGXtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Oct 2010 19:49:09 -0400
-Message-ID: <4CAE5C71.50304@linux.vnet.ibm.com>
-Date: Thu, 07 Oct 2010 20:49:05 -0300
-From: Breno Leitao <leitao@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Nicolas Kaiser <nikai@nikai.net>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ehea: simplify conditional
-References: <20101008011450.0126ffc0@absol.kitzblitz>
-In-Reply-To: <20101008011450.0126ffc0@absol.kitzblitz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-Greylist: delayed 350 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Oct 2010 19:49:09 EDT
+Date: Fri, 8 Oct 2010 01:43:18 +0200
+From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Strange raid device numbering
+Message-ID: <20101008014318.04d7ded1@werewolf.home>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-mandriva-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/07/2010 08:14 PM, Nicolas Kaiser wrote:
-> Simplify: ((a&&  b) || (!a&&  !b)) =>  (a == b)
->
-> Signed-off-by: Nicolas Kaiser<nikai@nikai.net>
-Acked-by: Breno Leitao <leitao@linux.vnet.ibm.com>
+Hi...
 
+I'm running kernel 2.6.36-rc6.
+I have just built a simple raid0 array with two disks, and I followed what I
+had always done:
+
+raid=/dev/md0
+ndisk=2
+disks="/dev/sda1 /dev/sdb1"
+block=4
+chunk=256
+
+stride=$((chunk/block))
+stripe=$((stride*ndisk))
+
+for i in $disks
+do
+    mdadm --zero-superblock --force $i
+done
+mdadm -C -f -v $raid --level=0 --chunk=$chunk -n $ndisk $disks
+sleep 5
+mdadm -S $raid
+mdadm --assemble $raid $disks
+mkfs.ext4 -b $((block*1024)) -E stride=$stride,stripe-width=$stripe $raid
+
+Strangely, after I reboot, the system insists in numbering it as
+md127, instead of md0.
+
+Why ?
+How can I force it to be md0 ? (its half aesthetics, half curiosity...)
+
+TIA
+
+-- 
+J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
+                                         \         It's better when it's free
