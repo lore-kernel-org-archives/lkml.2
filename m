@@ -1,109 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756835Ab0JGG3s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 02:29:48 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33128 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab0JGG3r (ORCPT
+	id S1758003Ab0JGGad (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 02:30:33 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53391
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755131Ab0JGGab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 02:29:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 7 Oct 2010 15:24:22 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH] memcg: lock-free clear page writeback  (Was Re: [PATCH
- 04/10] memcg: disable local interrupts in lock_page_cgroup()
-Message-Id: <20101007152422.c5919517.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 7 Oct 2010 02:30:31 -0400
+Date: Wed, 06 Oct 2010 23:30:52 -0700 (PDT)
+Message-Id: <20101006.233052.233715980.davem@davemloft.net>
+To: error27@gmail.com
+Cc: mac@melware.de, isdn@linux-pingi.de, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [patch] eicon: make buffer larger
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20101004192459.GE5692@bicker>
+References: <20101004192459.GE5692@bicker>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg, I think clear_page_writeback() will not require _any_ locks with this patch.
-But set_page_writeback() requires it...
-(Maybe adding a special function for clear_page_writeback() is better rather than
- adding some complex to switch() in update_page_stat())
+From: Dan Carpenter <error27@gmail.com>
+Date: Mon, 4 Oct 2010 21:24:59 +0200
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> In diva_mnt_add_xdi_adapter() we do this:
+>   strcpy (clients[id].drvName,     tmp);
+>   strcpy (clients[id].Dbg.drvName, tmp);
+> 
+> The "clients[id].drvName" is a 128 character buffer and
+> "clients[id].Dbg.drvName" was originally a 16 character buffer but I've
+> changed it to 128 as well.  We don't actually use 128 characters but we
+> do use more than 16.
+> 
+> I've also changed the size of "tmp" to 128 characters instead of 256.
+> 
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Now, at page information accounting, we do lock_page_cgroup() if pc->mem_cgroup
-points to a cgroup where someone is moving charges from.
-
-At supporing dirty-page accounting, one of troubles is writeback bit.
-In general, writeback can be cleared via IRQ context. To update writeback bit
-with lock_page_cgroup() in safe way, we'll have to disable IRQ.
-....or do something.
-
-This patch waits for completion of writeback under lock_page() and do
-lock_page_cgroup() in safe way. (We never got end_io via IRQ context.)
-
-By this, writeback-accounting will never see race with account_move() and
-it can trust pc->mem_cgroup always _without_ any lock.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   18 ++++++++++++++++++
- 1 file changed, 18 insertions(+)
-
-Index: mmotm-0928/mm/memcontrol.c
-===================================================================
---- mmotm-0928.orig/mm/memcontrol.c
-+++ mmotm-0928/mm/memcontrol.c
-@@ -2183,17 +2183,35 @@ static void __mem_cgroup_move_account(st
- /*
-  * check whether the @pc is valid for moving account and call
-  * __mem_cgroup_move_account()
-+ * Don't call this under pte_lock etc...we'll do lock_page() and wait for
-+ * the end of I/O.
-  */
- static int mem_cgroup_move_account(struct page_cgroup *pc,
- 		struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
- {
- 	int ret = -EINVAL;
-+
-+	/*
-+ 	 * We move severl flags and accounting information here. So we need to
-+ 	 * avoid the races with update_stat routines. For most of routines,
-+ 	 * lock_page_cgroup() is enough for avoiding race. But we need to take
-+ 	 * care of IRQ context. If flag updates comes from IRQ context, This
-+ 	 * "move account" will be racy (and cause deadlock in lock_page_cgroup())
-+ 	 *
-+ 	 * Now, the only race we have is Writeback flag. We wait for it cleared
-+ 	 * before starting our jobs.
-+ 	 */
-+
-+	lock_page(pc->page);
-+	wait_on_page_writeback(pc->page);
-+
- 	lock_page_cgroup(pc);
- 	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
- 		__mem_cgroup_move_account(pc, from, to, uncharge);
- 		ret = 0;
- 	}
- 	unlock_page_cgroup(pc);
-+	unlock_page(pc->page);
- 	/*
- 	 * check events
- 	 */
-
+Applied.
