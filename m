@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756041Ab0JGVAO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:00:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:61006 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755907Ab0JGVAM convert rfc822-to-8bit (ORCPT
+	id S1756153Ab0JGVE2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:04:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53406 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab0JGVE1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:00:12 -0400
+	Thu, 7 Oct 2010 17:04:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
          :content-transfer-encoding;
-        b=mD6WM8TwzSyaxsS4fwqJVBE04m7Fagr4Us4GbGFePjRt7PoYHBUnV/F3Rq8AeiWwxe
-         O8nFU7EZHKLO1X07mozA==
+        b=v+h8XwoWOyxqpLDM0DgvVojwu5jml1kV8w6TsY90HYJvRGnm7Htk4VyENGEo8ZIdi0
+         GZMj1iP38uXEuL9fsAzZKaiQ94p6DWVLTKwQ0Cc+yTmw+0D8LdCI76H/pdwDthUVSqDl
+         JU8fhm8hz6HpyAlR99ARfq2E/TASvFN+4MyUU=
 MIME-Version: 1.0
-In-Reply-To: <1285742774-5013-2-git-send-email-dima@android.com>
-References: <1285742774-5013-1-git-send-email-dima@android.com>
-	<1285742774-5013-2-git-send-email-dima@android.com>
-Date: Thu, 7 Oct 2010 14:00:09 -0700
-X-Google-Sender-Auth: hmKGXGUGc3EyoK1nApING-Tnr98
-Message-ID: <AANLkTimR3pmxNF5TLTyEHZjPTrQeLrTB+HLsj-X6jPRx@mail.gmail.com>
-Subject: Re: [PATCH 2/2] sched: use the old min_vruntime when normalizing on dequeue
-From: Dima Zavin <dima@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>, Dima Zavin <dima@android.com>,
-        =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+ <20101007215019.17b4a34a@lxorguk.ukuu.org.uk> <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+ <20101007220538.2294a7e4@lxorguk.ukuu.org.uk> <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 7 Oct 2010 17:03:59 -0400
+X-Google-Sender-Auth: RqapCDxsWZ1RSwYZV42prJMX0kU
+Message-ID: <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike,
+On Thu, Oct 7, 2010 at 16:51, Daniel Walker wrote:
+> On Thu, 2010-10-07 at 22:05 +0100, Alan Cox wrote:
+>> On Thu, 07 Oct 2010 13:36:06 -0700 Daniel Walker wrote:
+>> > On Thu, 2010-10-07 at 21:50 +0100, Alan Cox wrote:
+>> > > > + Â  Â  Â  Â  Say Y here if you want to install DCC driver as a normal serial port
+>> > > > + Â  Â  Â  Â  /dev/ttyS0 (major 4, minor 64). Otherwise, it appears as /dev/ttyJ0
+>> > > > + Â  Â  Â  Â  (major 4, minor 128) and can co-exist with other UARTs, such as
+>> > > > + Â  Â  Â  Â  8250/16C550 compatibles.
+>> > > > +
+>> > >
+>> > > NAK to both
+>> >
+>> > I would agree if this wasn't strictly for debugging embedded devices in
+>> > difficult situations.. After talking to Mike, it's seems like it would
+>> > be useful to have this as a ttyS* specifically because embedded devices
+>> > won't always create a ttyJ* for you and ttyS* will likely already exist.
+>>
+>> If you are debugging an embedded device you are capable of changing it
+>> (otherwise you wouldn't debug it). Therefore the fact you might need to
+>> tweak the tty creation on the device is not a problem. If you can't
+>> change the device well there is no point debugging it is there !
+>
+> Your making too many assumptions .. You might be able to modify the
+> kernel, and not the userspace. So you couldn't tweak the device
+> creation .. It's much easier in the server world ..
 
-Thanks for the Ack for patch 1/2, could you take a look at this one too?
-
-Should I re-upload the series as v2 or you can pick the latest from
-patch 1 and take this one?
-
---Dima
-
-On Tue, Sep 28, 2010 at 11:46 PM, Dima Zavin <dima@android.com> wrote:
-> After pulling the thread off the run-queue during a cgroup change,
-> the cfs_rq.min_vruntime gets recalculated. The dequeued thread's vruntime
-> then gets normalized to this new value. This can then lead to the thread
-> getting an unfair boost in the new group if the vruntime of the next
-> task in the old run-queue was way further ahead.
->
-> Cc: Arve Hjønnevåg <arve@android.com>
-> Signed-off-by: Dima Zavin <dima@android.com>
-> ---
->  kernel/sched_fair.c |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
->
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 008fe57..cb24ddb 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -802,6 +802,8 @@ static void clear_buddies(struct cfs_rq *cfs_rq, struct sched_entity *se)
->  static void
->  dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->  {
-> +       u64 min_vruntime;
-> +
->        /*
->         * Update run-time statistics of the 'current'.
->         */
-> @@ -826,6 +828,8 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->        if (se != cfs_rq->curr)
->                __dequeue_entity(cfs_rq, se);
->        account_entity_dequeue(cfs_rq, se);
-> +
-> +       min_vruntime = cfs_rq->min_vruntime;
->        update_min_vruntime(cfs_rq);
->
->        /*
-> @@ -834,7 +838,7 @@ dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
->         * movement in our normalized position.
->         */
->        if (!(flags & DEQUEUE_SLEEP))
-> -               se->vruntime -= cfs_rq->min_vruntime;
-> +               se->vruntime -= min_vruntime;
->  }
->
->  /*
-> --
-> 1.6.6
->
->
+this driver isnt in the kernel.  there is no ABI to preserve.  if
+people want to use the mainline driver, they can fix their userspace.
+i dont think the "binary userspace" argument is terribly relevant to
+new driver submissions.
+-mike
