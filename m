@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab0JGDML (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 23:12:11 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:52382 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751152Ab0JGDMK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 23:12:10 -0400
-Date: Thu, 7 Oct 2010 08:42:04 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: containers@lists.linux-foundation.org,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] Restrict size of page_cgroup->flags
-Message-ID: <20101007031203.GK4195@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101006142314.GG4195@balbir.in.ibm.com>
- <20101007085858.0e07de59.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20101007085858.0e07de59.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1760054Ab0JGDNE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 23:13:04 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:36013 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751152Ab0JGDND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 23:13:03 -0400
+Subject: Re: [patch] xfs: properly account for reclaimed inodes
+From: Alex Elder <aelder@sgi.com>
+Reply-To: aelder@sgi.com
+To: Hans-Peter Jansen <hpj@urpla.net>
+Cc: xfs@oss.sgi.com, Johannes Weiner <hannes@cmpxchg.org>,
+        Dave Chinner <david@fromorbit.com>, stable@kernel.org,
+        John Hawley <warthog9@kernel.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <201010051126.47537.hpj@urpla.net>
+References: <20101001074354.GF2618@cmpxchg.org>
+	 <20101004071904.GH4681@dastard> <20101004102213.GJ2618@cmpxchg.org>
+	 <201010051126.47537.hpj@urpla.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Oct 2010 22:12:54 -0500
+Message-ID: <1286421174.6040.1.camel@doink>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Oct 2010 03:12:55.0739 (UTC) FILETIME=[895BD8B0:01CB65CD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-07 08:58:58]:
-
-> On Wed, 6 Oct 2010 19:53:14 +0530
-> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+On Tue, 2010-10-05 at 11:26 +0200, Hans-Peter Jansen wrote:
+> On Monday 04 October 2010, 12:22:13 Johannes Weiner wrote:
+> > Hi,
+> >
+> > On Mon, Oct 04, 2010 at 06:19:04PM +1100, Dave Chinner wrote:
+> > > On Fri, Oct 01, 2010 at 12:17:23PM -0500, Alex Elder wrote:
+> > > > On Fri, 2010-10-01 at 09:43 +0200, Johannes Weiner wrote:
+> > > > > When marking an inode reclaimable, a per-AG counter is increased,
+> > > > > the inode is tagged reclaimable in its per-AG tree, and, when this
+> > > > > is the first reclaimable inode in the AG, the AG entry in the
+> > > > > per-mount tree is also tagged.
+> > > > >
+> > > > > When an inode is finally reclaimed, however, it is only deleted
+> > > > > from the per-AG tree.  Neither the counter is decreased, nor is the
+> > > > > parent tree's AG entry untagged properly.
+> > > > >
+> > > > > Since the tags in the per-mount tree are not cleared, the inode
+> > > > > shrinker iterates over all AGs that have had reclaimable inodes at
+> > > > > one point in time.
+> > > > >
+> > > > > The counters on the other hand signal an increasing amount of slab
+> > > > > objects to reclaim.  Since "70e60ce xfs: convert inode shrinker to
+> > > > > per-filesystem context" this is not a real issue anymore because
+> > > > > the shrinker bails out after one iteration.
+> > > > >
+> > > > > But the problem was observable on a machine running v2.6.34, where
+> > > > > the reclaimable work increased and each process going into direct
+> > > > > reclaim eventually got stuck on the xfs inode shrinking path,
+> > > > > trying to scan several million objects.
+> > > > >
+> > > > > Fix this by properly unwinding the reclaimable-state tracking of an
+> > > > > inode when it is reclaimed.
+> > > > >
+> > > > > Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
+> > > > > Cc: stable@kernel.org
+> > > >
+> > > > Yes, this looks right to me.  The state was correctly
+> > > > adjusted in xfs_iget_cache_hit() when a RECLAIMABLE
+> > > > inode is found in the cache, but it was not done when
+> > > > reclaim completes.
+> > > >
+> > > > Reviewed-by: Alex Elder <aelder@sgi.com>
+> > >
+> > > Alex, can you push this to Linus ASAP? This needs to go back to
+> > > stable kernels as well..
+> >
+> > Here is my suggestion of a backport to .34.  Dave, Alex, do you
+> > approve?
+> >
+> > 	Hannes
+> >
+> > diff --git a/fs/xfs/xfs_iget.c b/fs/xfs/xfs_iget.c
+> > index 6845db9..3314f2a 100644
+> > --- a/fs/xfs/xfs_iget.c
+> > +++ b/fs/xfs/xfs_iget.c
+> > @@ -499,6 +499,7 @@ xfs_ireclaim(
+> >  	write_lock(&pag->pag_ici_lock);
+> >  	if (!radix_tree_delete(&pag->pag_ici_root, agino))
+> >  		ASSERT(0);
+> > +	pag->pag_ici_reclaimable--;
+> >  	write_unlock(&pag->pag_ici_lock);
+> >  	xfs_perag_put(pag);
+> >
+> >
 > 
-> > I propose restricting page_cgroup.flags to 16 bits. The patch for the
-> > same is below. Comments?
-> > 
-> > 
-> > Restrict the bits usage in page_cgroup.flags
-> > 
-> > From: Balbir Singh <balbir@linux.vnet.ibm.com>
-> > 
-> > Restricting the flags helps control growth of the flags unbound.
-> > Restriciting it to 16 bits gives us the possibility of merging
-> > cgroup id with flags (atomicity permitting) and saving a whole
-> > long word in page_cgroup
-> > 
-> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> Ping?
 > 
-> Doesn't make sense until you show the usage of existing bits.
-
-??
-
-> And I guess 16bit may be too large on 32bit systems.
-
-too large on 32 bit systems? My intention is to keep the flags to 16
-bits and then use cgroup id for the rest and see if we can remove
-mem_cgroup pointer
-
-> Nack for now.
->
-
-The issue is - do you see further growth of flags?
- 
-> Thanks,
-> -Kame
+> Masters of xfs, please raise your voices!
 > 
+> Pete
 
--- 
-	Three Cheers,
-	Balbir
+I know I'm a little late to the game in saying so, but I do
+agree this looks like the right fix for the .34 stable branch.
+
+Reviewed-by: Alex Elder <aelder@sgi.com>
+
