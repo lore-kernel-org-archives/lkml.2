@@ -1,73 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756188Ab0JGVFx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:05:53 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39938 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab0JGVFw convert rfc822-to-8bit (ORCPT
+	id S1756240Ab0JGVGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:06:14 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:29367 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755967Ab0JGVGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:05:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=QFjuK1F/LSgeprUejvpVlVIzC9YFSLI9mvQNmz6L8c5Loka2/ZGgeUnGNo/z/JR29w
-         9ZOiqJloyrCFQD58gN9VzgNhtIyOT6IS56kS+/v9+7HzhSIt/BNJfwjH+3zpzBeMWgCQ
-         a8/wnkNmb1WDLkGyChn/u/YTwliXcHDyIf7+k=
+	Thu, 7 Oct 2010 17:06:13 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: XGOdPJMVM1k0kQW_lFkD8izzKs6BJ.FYL2DBdcVWYK9aeox
+ gKX1ZDHN_gHsZIR4K2qfEu5.1YnUJrZxSw4aIFA8x72XGCsEoVKw3jMvZGFY
+ vulqxqx9g4KADdrdUBC_xxuahon3jyCaygxUTLj5tZdL7eymSBLUwYX.CjbI
+ 24a0VQ2lsPy6TzQTqE6dpLR0lHwemWxFMDTRPaA0kRiygJZUpifxnKTPcKQJ
+ 9BAstKgEdcRZlMWUq35_jH6K1MscV
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 7 Oct 2010 16:06:10 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Eric Dumazet <eric.dumazet@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] percpu_counter: change inaccurate comment
+In-Reply-To: <1286484131.3745.88.camel@edumazet-laptop>
+Message-ID: <alpine.DEB.2.00.1010071604250.4460@router.home>
+References: <1286469421.2912.240.camel@edumazet-laptop>  <alpine.DEB.2.00.1010071440220.28032@router.home>  <1286481860.3745.30.camel@edumazet-laptop>  <alpine.DEB.2.00.1010071509180.28032@router.home> <1286484131.3745.88.camel@edumazet-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1286485186.23836.56.camel@c-dwalke-linux.qualcomm.com>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
- <AANLkTinxorq2XhJdGDNQuUghxzr1q6OW=S1VjupOu5nH@mail.gmail.com>
- <1286480364.23836.17.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=8Et=Z6zrzbZa3L0MO=cBjjh7L=XU2=PDEbzWW@mail.gmail.com>
- <1286481532.23836.27.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=j2n-X+-zkas8HdL1awo7Lcyxwofts6FjU8vj6@mail.gmail.com>
- <1286482013.23836.29.camel@c-dwalke-linux.qualcomm.com> <AANLkTinDvL9vPb6nmve3rO9dMtMAqh=d1oqBVTOHzYWH@mail.gmail.com>
- <1286485186.23836.56.camel@c-dwalke-linux.qualcomm.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 7 Oct 2010 17:05:31 -0400
-X-Google-Sender-Auth: 09MM9BXOAemfUIjwEt5dz0WpQDY
-Message-ID: <AANLkTi==_WDX03gYRa0=qCSgZ2eoO-Uzpg66WeEX57rS@mail.gmail.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 7, 2010 at 16:59, Daniel Walker wrote:
-> On Thu, 2010-10-07 at 16:47 -0400, Mike Frysinger wrote:
->> On Thu, Oct 7, 2010 at 16:06, Daniel Walker wrote:
->> > On Thu, 2010-10-07 at 16:02 -0400, Mike Frysinger wrote:
->> >> how is that any different from:
->> >> ln -s ttyJ0 /dev/ttyS0
->> >
->> > It has the same major and minors as ttyS* does. So you don't have to run
->> > anything on the target.
->>
->> i dont see how those things are related.  the major/minor are
->> irrelevant, unless you've already hard coded these in some app that
->> creates device nodes manually (instead of mdev/udev), but even then
->> that's something that "needs to be run on the target".  and both
->> already have config support to transparently do something like
->> "symlink ttyS# to XXX" as XXX is created.
->
-> Something does ultimately run on all targets, the issues is does the
-> person debugging have the ability to change it .. It's not always the
-> case that they can change it. The userspace may not have udev at all.
-> The userspace may consist of a single binary .. I'm not making any
-> assumptions about the userspace here, it can be anything.
+On Thu, 7 Oct 2010, Eric Dumazet wrote:
 
-then there is already a static rootfs with pre-populated /dev which
-would be fixed, or the single binary fixed.  if the options are "my
-system works" or "my system doesnt work", i cant imagine people would
-continue to attempt to use "/dev/ttyS#" if it didnt exist or didnt
-work.
--mike
+> >
+> > The only difference between __this_cpu_ptr and this_cpu_ptr is that
+> > this_cpu_ptr checks that preempt was disabled. __this_cpu_ptr allows use
+> > even without preempt. Preempt must be disabled here so the use of
+> > this_cpu_ptr is appropriate.
+> >
+> >
+>
+> Thats not how I read the thing.
+>
+> In both variants, preemption _must_ be disabled, its only the context
+> that can tell how sure we are...
+
+Correct. One checks the other one does not check.
+
+> <quote>
+>
+> commit 7340a0b15280c
+>
+> __this_cpu_ptr  -> Do not check for preemption context
+> this_cpu_ptr    -> Check preemption context
+>
+> </quote>
+>
+> If preemption was enabled, both pointers would not be very useful...
+>
+> We use __this_cpu_ptr() in contexts where cpu _cannot_ change under us,
+> (we just disabled preemption one line above), so its not necessary to
+> perform the check.
+
+Someone could screw up the code in the future. Thats what its there for.
+
+
