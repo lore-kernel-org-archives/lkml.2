@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab0JGRen (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:34:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8494 "EHLO mx1.redhat.com"
+	id S1752273Ab0JGRe0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:34:26 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60284 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752579Ab0JGRem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:34:42 -0400
-Subject: Re: Linux 2.6.36-rc7
-From: Eric Paris <eparis@redhat.com>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        agruen@suse.de
-In-Reply-To: <201010071815.54303.tvrtko.ursulin@sophos.com>
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
-	 <201010071710.46938.tvrtko.ursulin@sophos.com>
-	 <201010071815.54303.tvrtko.ursulin@sophos.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 13:33:55 -0400
-Message-ID: <1286472835.2656.15.camel@dhcp231-98.rdu.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1752059Ab0JGReX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 13:34:23 -0400
+From: pavan_savoy@ti.com
+To: linux-bluetooth@vger.kernel.org, marcel@holtmann.org
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
+        Pavan Savoy <pavan_savoy@ti.com>
+Subject: [PATCH 2/2] drivers:bluetooth: Kconfig & Makefile for TI BT
+Date: Thu,  7 Oct 2010 14:47:17 -0400
+Message-Id: <1286477237-7526-3-git-send-email-pavan_savoy@ti.com>
+X-Mailer: git-send-email 1.6.5
+In-Reply-To: <1286477237-7526-2-git-send-email-pavan_savoy@ti.com>
+References: <1286477237-7526-1-git-send-email-pavan_savoy@ti.com>
+ <1286477237-7526-2-git-send-email-pavan_savoy@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 18:15 +0100, Tvrtko Ursulin wrote:
-> On Thursday 07 Oct 2010 17:10:46 Tvrtko Ursulin wrote:
-> > On Wednesday 06 Oct 2010 22:45:13 Linus Torvalds wrote:
+From: Pavan Savoy <pavan_savoy@ti.com>
 
-> Priority argument was dropped from the fanotify_init syscall, and since it is
-> a syscall once released it is set in stone. Without the priority argument, how
-> are multiple clients supposed to be ordered?
-> 
-> Co-existence between multiple clients was something which was supposed to be
-> designed in from the start. Use cases like hierarchical storage management,
-> anti-malware and content indexing should all be able to co-exist. Without a
-> priority argument I do not see how it can be assured HSM sees the perm event
-> before anti-malware, and content indexing after both of them? If there was any
-> discussion about dropping priority I missed it. :(
+Kconfig and Makefile modifications to enable the Bluetooth
+driver for Texas Instrument's WiLink 7 chipset.
 
-Shit.  I'm trying to remember the logic.  hrmph....   You could have a
-real interface issue....  Shit.  Let me think about it for an hour or
-two.
+Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
+---
+ drivers/bluetooth/Kconfig  |   10 ++++++++++
+ drivers/bluetooth/Makefile |    1 +
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-Original idea of priorities was to allow multiple permissions decision
-makers to co-exist without having the livelock problem of each trying to
-grant and deny access to each other.  That was solved with the
-O_NONOTIFY hack and I think the priority was then thought to be useless.
-But you're absolutely right, it isn't useless if we consider that an HSM
-might need to run first to make sure data exists on disk before an
-indexer looks at the data.
-
-I see two possibilities off the top of my head:
-
-I could just slap an (unused) priority field onto the end of the
-fanotify_init() syscall (assuming Linus doesn't murder me) so we can
-build that support out with explicit priorities down the line, which I
-think might be overkill, or
-
-The other option (without breaking ABI as it stands today) is to define
-some set of the fanotify_init() flags to be a priority field, we've got
-32 bits and only use 2 of them so giving 4-8 bits of that as a priority
-(next cycle) isn't an issue and can be easily backwards compatible.
-
--Eric
+diff --git a/drivers/bluetooth/Kconfig b/drivers/bluetooth/Kconfig
+index 02deef4..936d8ce 100644
+--- a/drivers/bluetooth/Kconfig
++++ b/drivers/bluetooth/Kconfig
+@@ -219,4 +219,14 @@ config BT_ATH3K
+ 	  Say Y here to compile support for "Atheros firmware download driver"
+ 	  into the kernel or say M to compile it as module (ath3k).
+ 
++config BT_TI
++	tristate "BlueZ bluetooth driver for TI ST"
++	depends on TI_ST
++	help
++	  This enables the Bluetooth driver for Texas Instrument's BT/FM/GPS
++	  combo devices. This makes use of shared transport line discipline
++	  core driver to communicate with the BT core of the combo chip.
++
++	  Say Y here to compile support for Texas Instrument's WiLink7 driver
++	  into the kernel or say M to compile it as module.
+ endmenu
+diff --git a/drivers/bluetooth/Makefile b/drivers/bluetooth/Makefile
+index 71bdf13..63156da 100644
+--- a/drivers/bluetooth/Makefile
++++ b/drivers/bluetooth/Makefile
+@@ -28,3 +28,4 @@ hci_uart-$(CONFIG_BT_HCIUART_BCSP)	+= hci_bcsp.o
+ hci_uart-$(CONFIG_BT_HCIUART_LL)	+= hci_ll.o
+ hci_uart-$(CONFIG_BT_HCIUART_ATH3K)	+= hci_ath.o
+ hci_uart-objs				:= $(hci_uart-y)
++obj-$(CONFIG_BT_TI)			:= bt_ti.o
+-- 
+1.6.5
 
