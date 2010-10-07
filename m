@@ -1,37 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab0JGWqD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 18:46:03 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:48303 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752248Ab0JGWqB (ORCPT
+	id S1753377Ab0JGWsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 18:48:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:38498 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750848Ab0JGWsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 18:46:01 -0400
-Date: Thu, 7 Oct 2010 23:45:59 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Don Zickus <dzickus@redhat.com>
-cc: Andi Kleen <andi@firstfloor.org>, mingo@elte.hu, fweisbec@gmail.com,
-        robert.richter@amd.com, gorcunov@gmail.com,
+	Thu, 7 Oct 2010 18:48:05 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="57106785"
+Subject: Re: [RFC/PATCH v3] usb: usb3.0 ch9 definitions
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Brokhman Tatyana <tlinder@codeaurora.org>
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [RFC] arch generic way to trigger unknown NMIs
-In-Reply-To: <20101007140112.GN10663@redhat.com>
-Message-ID: <alpine.LFD.2.00.1010072342170.15889@eddie.linux-mips.org>
-References: <20101007030807.GA4076@redhat.com> <20101007072641.GE5010@basil.fritz.box> <20101007140112.GN10663@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1286476470-15265-1-git-send-email-tlinder@codeaurora.org>
+References: <1286476470-15265-1-git-send-email-tlinder@codeaurora.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 15:47:39 -0700
+Message-ID: <1286491659.23836.122.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010, Don Zickus wrote:
+On Thu, 2010-10-07 at 20:34 +0200, Brokhman Tatyana wrote:
+> Adding SuperSpeed usb definitions as defined by ch9 of the USB3.0 spec.
+> This patch is a preparation for adding SuperSpeed support to the gadget
+> framework.
+> 
+> Signed-off-by: Brokhman Tatyana <tlinder@codeaurora.org>
 
-> No I prefer a single one too, but there didn't seem to be a
-> send_IPI_self() command, so I took the short route and sent it to
-> everyone. :-(
+Shouldn't your name be reversed? First Last . Isn't Tatyana your first
+name?
 
- Odd, APIC hardware does explicitly support such a mode (there are three 
-shorthands like this actually: all-but-self, all and self), so why don't 
-just add a suitable wrapper?
+Daniel
+-- 
 
-  Maciej
+Sent by a consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
