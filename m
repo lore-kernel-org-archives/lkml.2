@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760030Ab0JGCm0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 22:42:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38406 "EHLO smtps.tip.net.au"
+	id S1760036Ab0JGC6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 22:58:11 -0400
+Received: from kroah.org ([198.145.64.141]:35571 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752286Ab0JGCmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 22:42:25 -0400
-Date: Thu, 7 Oct 2010 13:42:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: linux-next: manual merge of the drm tree with the i2c tree
-Message-Id: <20101007134220.d926a652.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__7_Oct_2010_13_42_20_+1100_SbWXgJgBoG4t0aNF"
+	id S1751466Ab0JGC6K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 22:58:10 -0400
+Date: Wed, 6 Oct 2010 19:55:42 -0700
+From: Greg KH <greg@kroah.com>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, Jiri Slaby <jslaby@suse.cz>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [stable] [PATCH v2] ipc: initialize structure memory to zero
+	for shmctl
+Message-ID: <20101007025542.GA10460@kroah.com>
+References: <20101007021836.GA14666@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101007021836.GA14666@outflux.net>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Oct_2010_13_42_20_+1100_SbWXgJgBoG4t0aNF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Oct 06, 2010 at 07:18:36PM -0700, Kees Cook wrote:
+> The old shm interface will leak a few bytes of stack contents. Explicitly
+> initialize the structure to zero-fill the untouched fields, using memset
+> instead of C99-style in case there are ever holes in the structure.
+> 
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> ---
 
-Hi Dave,
+If you wish to have a patch included in the stable series, please read
+Documentation/stable_kernel_rules.txt which state that adding a:
+	Cc: stable <stable@kernel.org>
+to the signed-off-by: area will cause it to be automagically included
+when the patch gets into Linus's tree.  Otherwise it just causes a lot
+of extra work for me to dig around and watch out for it in the future.
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/i915/intel_i2c.c between commit
-2d3e8209c9d3abf6e831158e9814f50c57275487 ("i2c: Remove unneeded
-inclusions of <linux/i2c-id.h>") from the i2c tree and commit
-f899fc64cda8569d0529452aafc0da31c042df2e ("drm/i915: use GMBUS to manage
-i2c links") from the drm tree.
+thanks,
 
-Again, both commits removed the inclusion of linux/i2.-id.h, so I used
-the drm tree verison.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__7_Oct_2010_13_42_20_+1100_SbWXgJgBoG4t0aNF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMrTOMAAoJEDMEi1NhKgbsaMkH/jAO9PHBzbr8mCFHPDsQRNWb
-+OS1MhKgh8kmc8GrJzuEWc+Yr3KOZqHM+Bp64aysT+rvlmeX4VEoMHQ/3hKyQKEb
-MINg8ZhZ8tzUFwHM7cryvbZEgCzyRQejetjrThtseDnK2LihrhKRoI9TUIxlAxfA
-NfkpQqsgOC3BUYXTQDhTEj6LH5bJuYIKnxotc0f84O8qE/MSsoW/Fxx2RD2nD3ff
-o0TdO2Lz+ZHazUTcg012RTXtl3xhVoFw+nVoH0aIT0C9YGW/xOKG9z76XnkI+QnR
-pmzc7NKAlXdXiIDQk4UTd5qpKhhL2sd5woCR3zaukFwlCSd3TUlgZ3tcD4RXwYw=
-=I/f1
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Oct_2010_13_42_20_+1100_SbWXgJgBoG4t0aNF--
+greg k-h
