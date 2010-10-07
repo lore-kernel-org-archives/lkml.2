@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759694Ab0JGBbM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 21:31:12 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:43063 "EHLO smtps.tip.net.au"
+	id S1759776Ab0JGBdD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 21:33:03 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48155 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759612Ab0JGBbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 21:31:09 -0400
-Date: Thu, 7 Oct 2010 12:31:04 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
-        Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the net tree with the net-current tree
-Message-Id: <20101007123104.bf7a9808.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756635Ab0JGBc7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 21:32:59 -0400
+Message-ID: <4CAD2340.9040305@ti.com>
+Date: Wed, 6 Oct 2010 20:32:48 -0500
+From: Omar Ramirez Luna <omar.ramirez@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.7) Gecko/20100111 Thunderbird/3.0.1
+MIME-Version: 1.0
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: Greg KH <greg@kroah.com>, linux-omap <linux-omap@vger.kernel.org>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Ohad Ben-Cohen <ohad@wizery.com>, Tony Lindgren <tony@atomide.com>,
+        Hiroshi Doyu <hiroshi.doyu@nokia.com>
+Subject: Re: [PATCH 0/2] omap: dsp: make the driver actually work
+References: <1286208555-8829-1-git-send-email-felipe.contreras@gmail.com>	<20101005190741.GC20825@kroah.com>	<AANLkTikOBWxXh7uVrDxfW3OnwOM58JTXU76KUUoQWBWM@mail.gmail.com>	<27F9C60D11D683428E133F85D2BB4A5304681D4889@dlee03.ent.ti.com>	<AANLkTin=k07hUq+cLAOsf0aYw5Ey23UOpbpo=+Eb49w9@mail.gmail.com>	<27F9C60D11D683428E133F85D2BB4A5304681D48D3@dlee03.ent.ti.com> <AANLkTi=ENjWQRYitr_kYzmRKgve=CoBf=7Y5KHLJNLfb@mail.gmail.com>
+In-Reply-To: <AANLkTi=ENjWQRYitr_kYzmRKgve=CoBf=7Y5KHLJNLfb@mail.gmail.com>
+Content-Type: text/plain; charset="windows-1252"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 10/5/2010 4:05 PM, Felipe Contreras wrote:
+> On Tue, Oct 5, 2010 at 11:09 PM, Ramirez Luna,
+> Omar<omar.ramirez@ti.com>  wrote:
+>> Felipe Contreras wrote:
+...
+>>
+>> Hmmm, because my other option was to move the reserved memory
+>> outside the kernel, but that involves specifying bootargs again and
+>> using dma_alloc_coherent with their restrictions.
+>
+> Huh, if there's no contiguous memory region reserved, then the
+> driver is doing dma_alloc_coherent already, but that fails
+> (apparently 5M is too much). Plus I've read that dma_alloc_coherent
+> is "precious"; shouldn't be used for that.
 
-Today's linux-next merge of the net tree got a conflict in
-net/caif/caif_socket.c between commit
-79315068f4560f3f7bd6e9790190dcb43059770c ("caif: fix two caif_connect()
-bugs") from the net-current tree and commit
-b31fa5bad576cd8180a5ad70c648333b44320d44 ("net/caif: Use pr_fmt") from
-the net tree.
+Initially bridge was using the memory on the upper part of the RAM, 
+specifying in bootargs mem=MAX-6MB, so reintroducing the parameter works 
+fine; dma_alloc_coherent was also used when bridge was compiled as 
+built-in the kernel but now it is not working either.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> So, first I wanted to try reserving some region with mem=X boot
+> param, but that solution is ugly. If that worked, then I wanted ti
+> see if flushing each time we access that shm memory block works, but
+> in the process I wanted to reorganize the whole initialization code
+> because right now it's very ugly and confusing.
+>
 
-diff --cc net/caif/caif_socket.c
-index 4bf28f2,abcba53..0000000
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@@ -897,23 -888,14 +889,22 @@@ static int caif_connect(struct socket *
-  		cf_sk->sk.sk_state = CAIF_DISCONNECTED;
-  		goto out;
-  	}
- -	dev = dev_get_by_index(sock_net(sk), ifindex);
- +
- +	err = -ENODEV;
- +	rcu_read_lock();
- +	dev = dev_get_by_index_rcu(sock_net(sk), ifindex);
- +	if (!dev) {
- +		rcu_read_unlock();
- +		goto out;
- +	}
-  	cf_sk->headroom = LL_RESERVED_SPACE_EXTRA(dev, headroom);
- +	mtu = dev->mtu;
- +	rcu_read_unlock();
- +
-  	cf_sk->tailroom = tailroom;
- -	cf_sk->maxframe = dev->mtu - (headroom + tailroom);
- -	dev_put(dev);
- +	cf_sk->maxframe = mtu - (headroom + tailroom);
-  	if (cf_sk->maxframe < 1) {
-- 		pr_warning("CAIF: %s(): CAIF Interface MTU too small (%u)\n",
-- 			   __func__, mtu);
- -		pr_warn("CAIF Interface MTU too small (%d)\n", dev->mtu);
- -		err = -ENODEV;
-++		pr_warn("CAIF Interface MTU too small (%d)\n", mtu);
-  		goto out;
-  	}
-  
+Yes, I can help with that, I'm sending a patch to reintroduce the 
+parameter for phys_mempool_base, however we need to remove or disable 
+the memblock functions related with dspbridge. I was thinking of a 
+menuconfig parameter to specify mempool base for built-in compilation.
+
+Regards,
+
+Omar
+
