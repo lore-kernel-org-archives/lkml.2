@@ -1,195 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab0JGJun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 05:50:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753695Ab0JGJul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 05:50:41 -0400
-Message-ID: <4CAD97D0.70100@redhat.com>
-Date: Thu, 07 Oct 2010 11:50:08 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v6 02/12] Halt vcpu if page it tries to access is swapped
- out.
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com> <1286207794-16120-3-git-send-email-gleb@redhat.com>
-In-Reply-To: <1286207794-16120-3-git-send-email-gleb@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754223Ab0JGJv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 05:51:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34973 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753423Ab0JGJv1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 05:51:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=E4j6lOKsc8XGpaXU77nfC9GJ3MGrTy496pnd5/03ppGf9a0RLmT0gxMJJTkSJlm6C/
+         kfJmqAU6rL16Im3P6Y/+1XVldaO9EJPCP3tNLU2jGaiQDiLgaXYK6YcgkbTQrT/pMbGU
+         N1O//I4VRse4ym7ZIBzSWocGIykL8MBpc4nLI=
+Subject: Re: [PATCH] sysctl: fix min/max handling in
+ __do_proc_doulongvec_minmax()
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, ebiederm@xmission.com
+In-Reply-To: <20101007092538.GE5471@cr0.nay.redhat.com>
+References: <1286025469.2582.1806.camel@edumazet-laptop>
+	 <20101004085913.GR14068@sgi.com>
+	 <1286183058.18293.26.camel@edumazet-laptop>
+	 <20101004093439.GG5189@cr0.nay.redhat.com>
+	 <1286187030.18293.33.camel@edumazet-laptop>
+	 <20101004103545.GJ5189@cr0.nay.redhat.com>
+	 <1286188701.18293.57.camel@edumazet-laptop>
+	 <20101005130117.GK5170@cr0.nay.redhat.com>
+	 <20101007071859.GD5471@cr0.nay.redhat.com>
+	 <20101007092538.GE5471@cr0.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 11:51:21 +0200
+Message-ID: <1286445081.2912.15.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/04/2010 05:56 PM, Gleb Natapov wrote:
-> If a guest accesses swapped out memory do not swap it in from vcpu thread
-> context. Schedule work to do swapping and put vcpu into halted state
-> instead.
->
-> Interrupts will still be delivered to the guest and if interrupt will
-> cause reschedule guest will continue to run another task.
->
->
-> +
-> +static bool can_do_async_pf(struct kvm_vcpu *vcpu)
-> +{
-> +	if (unlikely(!irqchip_in_kernel(vcpu->kvm) ||
-> +		     kvm_event_needs_reinjection(vcpu)))
-> +		return false;
-> +
-> +	return kvm_x86_ops->interrupt_allowed(vcpu);
-> +}
+Le jeudi 07 octobre 2010 à 17:25 +0800, Américo Wang a écrit :
+> >>
+> >
+> >Here is the final one.
+> 
+> Oops, that one is not correct. Hopefully this one
+> is correct.
+> 
+> --------------->
+> 
+> Eric D. noticed that we may trigger an OOPS if we leave ->extra{1,2}
+> to NULL when we use proc_doulongvec_minmax().
+> 
+> Actually, we don't need to store min/max values in a vector,
+> because all the elements in the vector should share the same min/max
+> value, like what proc_dointvec_minmax() does.
+> 
 
-Strictly speaking, if the cpu can handle NMIs it can take an apf?
+If we assert same min/max limits are to be applied to all elements,
+a much simpler fix than yours would be :
 
-> @@ -5112,6 +5122,13 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
->   	if (unlikely(r))
->   		goto out;
->
-> +	kvm_check_async_pf_completion(vcpu);
-> +	if (vcpu->arch.mp_state == KVM_MP_STATE_HALTED) {
-> +		/* Page is swapped out. Do synthetic halt */
-> +		r = 1;
-> +		goto out;
-> +	}
-> +
-
-Why do it here in the fast path?  Can't you halt the cpu when starting 
-the page fault?
-
-I guess the apf threads can't touch mp_state, but they can have a 
-KVM_REQ to trigger the check.
-
->   	if (kvm_check_request(KVM_REQ_EVENT, vcpu) || req_int_win) {
->   		inject_pending_event(vcpu);
->
-> @@ -5781,6 +5798,9 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
->
->   	kvm_make_request(KVM_REQ_EVENT, vcpu);
->
-> +	kvm_clear_async_pf_completion_queue(vcpu);
-> +	memset(vcpu->arch.apf.gfns, 0xff, sizeof vcpu->arch.apf.gfns);
-
-An ordinary for loop is less tricky, even if it means one more line.
-
->
-> @@ -6040,6 +6064,7 @@ void kvm_arch_flush_shadow(struct kvm *kvm)
->   int kvm_arch_vcpu_runnable(struct kvm_vcpu *vcpu)
->   {
->   	return vcpu->arch.mp_state == KVM_MP_STATE_RUNNABLE
-> +		|| !list_empty_careful(&vcpu->async_pf.done)
->   		|| vcpu->arch.mp_state == KVM_MP_STATE_SIPI_RECEIVED
->   		|| vcpu->arch.nmi_pending ||
->   		(kvm_arch_interrupt_allowed(vcpu)&&
-
-Unrelated, shouldn't kvm_arch_vcpu_runnable() look at vcpu->requests?  
-Specifically KVM_REQ_EVENT?
-
-> +static void kvm_add_async_pf_gfn(struct kvm_vcpu *vcpu, gfn_t gfn)
-> +{
-> +	u32 key = kvm_async_pf_hash_fn(gfn);
-> +
-> +	while (vcpu->arch.apf.gfns[key] != -1)
-> +		key = kvm_async_pf_next_probe(key);
-
-Not sure what that -1 converts to on i386 where gfn_t is u64.
-> +
-> +void kvm_arch_async_page_not_present(struct kvm_vcpu *vcpu,
-> +				     struct kvm_async_pf *work)
-> +{
-> +	vcpu->arch.mp_state = KVM_MP_STATE_HALTED;
-> +
-> +	if (work == kvm_double_apf)
-> +		trace_kvm_async_pf_doublefault(kvm_rip_read(vcpu));
-> +	else {
-> +		trace_kvm_async_pf_not_present(work->gva);
-> +
-> +		kvm_add_async_pf_gfn(vcpu, work->arch.gfn);
-> +	}
-> +}
-
-Just have vcpu as the argument for tracepoints to avoid unconditional 
-kvm_rip_read (slow on Intel), and call kvm_rip_read() in 
-tp_fast_assign().  Similarly you can pass work instead of work->gva, 
-though that's not nearly as important.
-
-> +
-> +TRACE_EVENT(
-> +	kvm_async_pf_not_present,
-> +	TP_PROTO(u64 gva),
-> +	TP_ARGS(gva),
-
-Do you actually have a gva with tdp?  With nested virtualization, how do 
-you interpret this gva?
-> +
-> +TRACE_EVENT(
-> +	kvm_async_pf_completed,
-> +	TP_PROTO(unsigned long address, struct page *page, u64 gva),
-> +	TP_ARGS(address, page, gva),
-
-What does address mean?  There's also gva?
-
-> +
-> +	TP_STRUCT__entry(
-> +		__field(unsigned long, address)
-> +		__field(struct page*, page)
-> +		__field(u64, gva)
-> +		),
-> +
-> +	TP_fast_assign(
-> +		__entry->address = address;
-> +		__entry->page = page;
-> +		__entry->gva = gva;
-> +		),
-
-Recording a struct page * in a tracepoint?  Userspace can read this 
-entry, better to the page_to_pfn() here.
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index f88552c..8e45451 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2485,7 +2485,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+ 		kbuf[left] = 0;
+ 	}
+ 
+-	for (; left && vleft--; i++, min++, max++, first=0) {
++	for (; left && vleft--; i++, first=0) {
+ 		unsigned long val;
+ 
+ 		if (write) {
 
 
-> +void kvm_clear_async_pf_completion_queue(struct kvm_vcpu *vcpu)
-> +{
-> +	/* cancel outstanding work queue item */
-> +	while (!list_empty(&vcpu->async_pf.queue)) {
-> +		struct kvm_async_pf *work =
-> +			list_entry(vcpu->async_pf.queue.next,
-> +				   typeof(*work), queue);
-> +		cancel_work_sync(&work->work);
-> +		list_del(&work->queue);
-> +		if (!work->page) /* work was canceled */
-> +			kmem_cache_free(async_pf_cache, work);
-> +	}
+Please dont send huge patches like this to 'fix' a bug,
+especially on slow path.
 
-Are you holding any lock here?
+First we fix the bug, _then_ we can try to make code more 
+efficient or more pretty or shorter.
 
-If not, what protects vcpu->async_pf.queue?
-If yes, cancel_work_sync() will need to aquire it too (in case work is 
-running now and needs to take the lock, and cacncel_work_sync() needs to 
-wait for it) -> deadlock.
+So the _real_ question is :
 
-> +
-> +	/* do alloc nowait since if we are going to sleep anyway we
-> +	   may as well sleep faulting in page */
-/*
-  * multi
-  * line
-  * comment
-  */
+Should the min/max limits should be a single pair,
+shared by all elements, or a vector of limits.
 
-(but a good one, this is subtle)
-
-I missed where you halt the vcpu.  Can you point me at the function?
-
-Note this is a synthetic halt and must not be visible to live migration, 
-or we risk live migrating a halted state which doesn't really exist.
-
-Might be simplest to drain the apf queue on any of the save/restore ioctls.
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
 
