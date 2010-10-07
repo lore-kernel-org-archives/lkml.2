@@ -1,51 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab0JGTZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 15:25:57 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54090 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751460Ab0JGTZ4 (ORCPT
+	id S1754614Ab0JGTaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 15:30:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:46423 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752434Ab0JGTaU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 15:25:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=kikd2cr45MUUNckKYVPnN+xDC8OmZ5izLqgi8eBbGybhZ9RI2ZXDjhAI9oiuZoQ+KU
-         cxkwMIVrsOVcanvSHGGtpwo3MtzuXXnMPrZMGBZ4/QGYfok6T8d6UsvE7+qZvRT+Bzji
-         9nVHNcqubZsjqAjFNsy84nkAs1kVVJOEadId0=
+	Thu, 7 Oct 2010 15:30:20 -0400
+Date: Thu, 7 Oct 2010 21:30:16 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Please pull hwpoison fixes for 2.6.36
+Message-ID: <20101007193015.GA8091@basil.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 7 Oct 2010 15:25:34 -0400
-X-Google-Sender-Auth: _w0DuoYL6yevvpVCc2musvSy8KQ
-Message-ID: <AANLkTinxorq2XhJdGDNQuUghxzr1q6OW=S1VjupOu5nH@mail.gmail.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 7, 2010 at 14:36, Daniel Walker wrote:
-> Many of JTAG debuggers for ARM support DCC protocol over JTAG
-> connection, which is very useful to debug hardwares which has no
-> serial port. This patch adds DCC serial emulation and the console
-> support. System timer based polling method is used for the
-> emulation of serial input interrupt handling.
+Hi Linus,
 
-why use serial_core at all ?  seems like you could just use the tty
-layer directly.  i did that with drivers/char/bfin_jtag_comm.c.
+Some last minute hwpoison bug fixes. It turned out the address 
+granuality information for errors was not passed out to user space,
+and this broke someone who wanted to use it. Fixed this
+with a straight forward change to signal.c. And a couple of other
+bug fixes that have accumulated.
 
-although, there's the suggestion in the air that my jtag driver could
-be converted to the HVC framework to even further simplify things.
-but no one thinks it should be serial_core :).
--mike
+Please consider pulling. Thanks,
+-Andi
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6.git hwpoison-fixes
+
+Andi Kleen (3):
+      HWPOISON: Copy si_addr_lsb to user
+      HWPOISON: Report correct address granuality for AO huge page errors
+      HWPOISON: Stop shrinking at right page count
+
+Naoya Horiguchi (1):
+      page-types.c: fix name of unpoison interface
+
+ Documentation/vm/page-types.c |    2 +-
+ kernel/signal.c               |    8 ++++++++
+ mm/memory-failure.c           |   12 ++++++------
+ 3 files changed, 15 insertions(+), 7 deletions(-)
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
