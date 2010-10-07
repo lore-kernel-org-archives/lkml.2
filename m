@@ -1,107 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab0JGG3S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 02:29:18 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64211 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751574Ab0JGG3R (ORCPT
+	id S1756835Ab0JGG3s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 02:29:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33128 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab0JGG3r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 02:29:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cRTdnIjiGFhIIg4rjvgddAgN5XMHoMsq/ZhfuzRjgiSptlszVHOhPSUPGbHnGZRg2e
-         jocrk7qXpWStnlsD1dqRtZYaKYDeiHEnKR6JaUPJ6ZrmCSfSaoEUltKEfj/KVfYpApM0
-         VCwdgGMqcNm1okV1OMJRKwuembkfORzKQvhLU=
-Date: Thu, 7 Oct 2010 10:29:09 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Kumar Gala <galak@kernel.crashing.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Scott Wood <scottwood@freescale.com>, Peter Tyser <ptyser@xes-inc.com>,
-        linux-kernel@vger.kernel.org, Dave Jiang <djiang@mvista.com>,
-        linuxppc-dev@ozlabs.org, Doug Thompson <dougthompson@xmission.com>
-Subject: Re: [PATCH] edac: mpc85xx: Add support for new MPCxxx/Pxxxx EDAC
- controllers (fix)
-Message-ID: <20101007062909.GA27110@oksana.dev.rtsoft.ru>
-References: <20100715182507.GA3482@oksana.dev.rtsoft.ru>
- <20100716151224.21d499a3@schlenkerla.am.freescale.net>
- <20100721153933.64d02086.akpm@linux-foundation.org>
- <20100721182108.5a22c822@schlenkerla.am.freescale.net>
- <20100801105419.GA352@oksana.dev.rtsoft.ru>
- <5628792F-9A5F-4200-90B3-FB3939F02969@kernel.crashing.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <5628792F-9A5F-4200-90B3-FB3939F02969@kernel.crashing.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 7 Oct 2010 02:29:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 7 Oct 2010 15:24:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: [PATCH] memcg: lock-free clear page writeback  (Was Re: [PATCH
+ 04/10] memcg: disable local interrupts in lock_page_cgroup()
+Message-Id: <20101007152422.c5919517.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-5-git-send-email-gthelen@google.com>
+	<20101005160332.GB9515@barrios-desktop>
+	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
+	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
+	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
+	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 01:18:19AM -0500, Kumar Gala wrote:
-[...]
-> > diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-> > index cfa86f7..b178cfa 100644
-> > --- a/drivers/edac/mpc85xx_edac.c
-> > +++ b/drivers/edac/mpc85xx_edac.c
-> > @@ -652,7 +652,6 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
-> > 	{ .compatible = "fsl,p1020-l2-cache-controller", },
-> > 	{ .compatible = "fsl,p1021-l2-cache-controller", },
-> > 	{ .compatible = "fsl,p2020-l2-cache-controller", },
-> > -	{ .compatible = "fsl,p4080-l2-cache-controller", },
-> > 	{},
-> > };
-> > MODULE_DEVICE_TABLE(of, mpc85xx_l2_err_of_match);
-> > -- 
-> > 1.7.0.5
-> 
-> Can you post a new patch as it doesn't look like this got merged by Andrew so we need to clean up after ourselves.
+Greg, I think clear_page_writeback() will not require _any_ locks with this patch.
+But set_page_writeback() requires it...
+(Maybe adding a special function for clear_page_writeback() is better rather than
+ adding some complex to switch() in update_page_stat())
 
-It's already in Linus' tree.
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Thanks,
+Now, at page information accounting, we do lock_page_cgroup() if pc->mem_cgroup
+points to a cgroup where someone is moving charges from.
 
-- - - -
-commit cd1542c8197fc3c2eb3a8301505d5d9738fab1e4
-Author: Anton Vorontsov <avorontsov@mvista.com>
-Date:   Tue Aug 10 18:03:21 2010 -0700
+At supporing dirty-page accounting, one of troubles is writeback bit.
+In general, writeback can be cleared via IRQ context. To update writeback bit
+with lock_page_cgroup() in safe way, we'll have to disable IRQ.
+....or do something.
 
-    edac: mpc85xx: add support for new MPCxxx/Pxxxx EDAC controllers
-    
-    Simply add proper IDs into the device table.
-    
-    Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
-    Cc: Scott Wood <scottwood@freescale.com>
-    Cc: Peter Tyser <ptyser@xes-inc.com>
-    Cc: Dave Jiang <djiang@mvista.com>
-    Cc: Doug Thompson <dougthompson@xmission.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This patch waits for completion of writeback under lock_page() and do
+lock_page_cgroup() in safe way. (We never got end_io via IRQ context.)
 
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index fdbad55..af75e27 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -647,7 +647,10 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
- 	{ .compatible = "fsl,mpc8555-l2-cache-controller", },
- 	{ .compatible = "fsl,mpc8560-l2-cache-controller", },
- 	{ .compatible = "fsl,mpc8568-l2-cache-controller", },
-+	{ .compatible = "fsl,mpc8569-l2-cache-controller", },
- 	{ .compatible = "fsl,mpc8572-l2-cache-controller", },
-+	{ .compatible = "fsl,p1020-l2-cache-controller", },
-+	{ .compatible = "fsl,p1021-l2-cache-controller", },
- 	{ .compatible = "fsl,p2020-l2-cache-controller", },
- 	{},
- };
-@@ -1125,7 +1128,10 @@ static struct of_device_id mpc85xx_mc_err_of_match[] = {
- 	{ .compatible = "fsl,mpc8569-memory-controller", },
- 	{ .compatible = "fsl,mpc8572-memory-controller", },
- 	{ .compatible = "fsl,mpc8349-memory-controller", },
-+	{ .compatible = "fsl,p1020-memory-controller", },
-+	{ .compatible = "fsl,p1021-memory-controller", },
- 	{ .compatible = "fsl,p2020-memory-controller", },
-+	{ .compatible = "fsl,p4080-memory-controller", },
- 	{},
- };
- MODULE_DEVICE_TABLE(of, mpc85xx_mc_err_of_match);
+By this, writeback-accounting will never see race with account_move() and
+it can trust pc->mem_cgroup always _without_ any lock.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   18 ++++++++++++++++++
+ 1 file changed, 18 insertions(+)
+
+Index: mmotm-0928/mm/memcontrol.c
+===================================================================
+--- mmotm-0928.orig/mm/memcontrol.c
++++ mmotm-0928/mm/memcontrol.c
+@@ -2183,17 +2183,35 @@ static void __mem_cgroup_move_account(st
+ /*
+  * check whether the @pc is valid for moving account and call
+  * __mem_cgroup_move_account()
++ * Don't call this under pte_lock etc...we'll do lock_page() and wait for
++ * the end of I/O.
+  */
+ static int mem_cgroup_move_account(struct page_cgroup *pc,
+ 		struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
+ {
+ 	int ret = -EINVAL;
++
++	/*
++ 	 * We move severl flags and accounting information here. So we need to
++ 	 * avoid the races with update_stat routines. For most of routines,
++ 	 * lock_page_cgroup() is enough for avoiding race. But we need to take
++ 	 * care of IRQ context. If flag updates comes from IRQ context, This
++ 	 * "move account" will be racy (and cause deadlock in lock_page_cgroup())
++ 	 *
++ 	 * Now, the only race we have is Writeback flag. We wait for it cleared
++ 	 * before starting our jobs.
++ 	 */
++
++	lock_page(pc->page);
++	wait_on_page_writeback(pc->page);
++
+ 	lock_page_cgroup(pc);
+ 	if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
+ 		__mem_cgroup_move_account(pc, from, to, uncharge);
+ 		ret = 0;
+ 	}
+ 	unlock_page_cgroup(pc);
++	unlock_page(pc->page);
+ 	/*
+ 	 * check events
+ 	 */
+
