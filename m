@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab0JGDIl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 23:08:41 -0400
-Received: from xenotime.net ([72.52.115.56]:49271 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S933021Ab0JGDIk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 23:08:40 -0400
-Message-ID: <39657.64.39.138.238.1286420910.squirrel@xenotime.net>
-In-Reply-To: <22641647-5901-4C65-99D0-F9BF2064AD91@mac.com>
-References: <B2C884FB-3933-4363-85C6-4F1206275B4C@mac.com>
-    <55150.64.39.142.105.1286398399.squirrel@xenotime.net>
-    <22641647-5901-4C65-99D0-F9BF2064AD91@mac.com>
-Date: Wed, 6 Oct 2010 20:08:30 -0700 (PDT)
-Subject: Re: Kernel config option missing: 'Compile the kernel with frame 
-     pointers'
-From: "Randy Dunlap" <rdunlap@xenotime.net>
-To: "Elvis Dowson" <elvis.dowson@mac.com>
-Cc: "Randy Dunlap" <rdunlap@xenotime.net>,
-        "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>
-User-Agent: SquirrelMail/1.5.1
+	id S932894Ab0JGDIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 23:08:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37404 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751163Ab0JGDIf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 23:08:35 -0400
+Date: Wed, 6 Oct 2010 23:08:07 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: mingo@elte.hu, fweisbec@gmail.com, andi@firstfloor.org
+Cc: robert.richter@amd.com, gorcunov@gmail.com, linux-kernel@vger.kernel.org
+Subject: [RFC] arch generic way to trigger unknown NMIs
+Message-ID: <20101007030807.GA4076@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-On Wed, October 6, 2010 2:00 pm, Elvis Dowson wrote:
-> Hi Randy,
->
->
-> On Oct 7, 2010, at 12:53 AM, Randy Dunlap wrote:
->
->>
->> It sounds like you don't have DEBUG_KERNEL symbol set.
->> You can't see the FRAME_POINTER kconfig symbol unless
->> DEBUG_KERNEL is set/enabled and you are on a qualifying
->> architecture:
->>
->>
->> config FRAME_POINTER bool "Compile the kernel with frame pointers"
->> depends on DEBUG_KERNEL && \ (CRIS || M68K || M68KNOMMU || FRV || UML ||
->> \
->> AVR32 || SUPERH || BLACKFIN || MN10300) || \
->> ARCH_WANT_FRAME_POINTERS
->> default y if (DEBUG_INFO && UML) || ARCH_WANT_FRAME_POINTERS
->>
->>
->> The prompt for DEBUG_KERNEL is "Kernel debugging".
->> It is in the "Kernel hacking" menu.
->>
->
-> I have CONFIG_DEBUG_KERNEL=y set. I'm compiling for the ARM architecture
-> (TI OMAP 3503). So I guess it doesn't apply for ARM?
+I was trying to put some automation test scripts together and was looking
+for an arch neutral way to generate an unknown NMI.  I know some arches
+do not support NMI.  Any way I wanted to add the code to the lkdtm module,
+so I could more easily generate unknown NMIs  without hacking up the code.
 
-That's correct AFAICT.
-ARM does not set (select) ARCH_WANT_FRAME_POINTERS.
+For x86, I have been using:
 
 
-> I want to debug the kernel using Eclipse IDE and kgdb.
+diff --git a/drivers/misc/lkdtm.c b/drivers/misc/lkdtm.c
+index ef34de7..c685242 100644
+--- a/drivers/misc/lkdtm.c
++++ b/drivers/misc/lkdtm.c
+@@ -43,6 +43,7 @@
+ #include <linux/slab.h>
+ #include <scsi/scsi_cmnd.h>
+ #include <linux/debugfs.h>
++#include <asm/apic.h>
+ 
+ #ifdef CONFIG_IDE
+ #include <linux/ide.h>
+@@ -78,6 +79,7 @@ enum ctype {
+ 	SOFTLOCKUP,
+ 	HARDLOCKUP,
+ 	HUNG_TASK,
++	NMI,
+ };
+ 
+ static char* cp_name[] = {
+@@ -105,6 +107,7 @@ static char* cp_type[] = {
+ 	"SOFTLOCKUP",
+ 	"HARDLOCKUP",
+ 	"HUNG_TASK",
++	"NMI",
+ };
+ 
+ static struct jprobe lkdtm;
+@@ -340,6 +343,9 @@ static void lkdtm_do_action(enum ctype which)
+ 		set_current_state(TASK_UNINTERRUPTIBLE);
+ 		schedule();
+ 		break;
++	case NMI:
++		apic->send_IPI_allbutself(NMI_VECTOR);
++		break;
+ 	case NONE:
+ 	default:
+ 		break;
 
+Anyone have any thoughts?  Maybe there is an easier way?
 
-
--- 
-~Randy
-
+Thanks,
+Don
