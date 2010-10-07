@@ -1,83 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753501Ab0JGVkp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:40:45 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:47365 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753125Ab0JGVko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:40:44 -0400
-Date: Thu, 7 Oct 2010 14:40:21 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Jeff Garzik <jgarzik@redhat.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-        Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>,
-        netdev@vger.kernel.org
-Subject: Re: [PATCH] net: clear heap allocations for privileged ethtool
- actions
-Message-ID: <20101007214021.GL14666@outflux.net>
-References: <20101007211004.GA20267@outflux.net>
- <1286487085.3745.99.camel@edumazet-laptop>
+	id S1752953Ab0JGVlP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:41:15 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50850 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab0JGVlN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 17:41:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=XCPA0lSnzJ1m9grh4w3koVmV9Knr+JVaon+Lmb/Lm0s3aKNzkCBqhaXg4yPjBzfG6j
+         pnoK2za321AvY762faqNH5R6VFDcjkPMOVBm6VSFGB2w00/iWgkdscjtbmU9R5DHW0Rl
+         ZB0a3kq9t3xF84ot9K9gbc6flr4k1/6yzmsXw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1286487085.3745.99.camel@edumazet-laptop>
-Organization: Canonical
-X-HELO: www.outflux.net
+In-Reply-To: <20101007213754.GA1896@srcf.ucam.org>
+References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com>
+	<20101007111510.GA19624@srcf.ucam.org>
+	<AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com>
+	<20101007133529.GA21782@srcf.ucam.org>
+	<AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com>
+	<20101007205049.GB32726@srcf.ucam.org>
+	<AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com>
+	<20101007213027.GA18628@core.coreip.homeip.net>
+	<20101007213754.GA1896@srcf.ucam.org>
+Date: Thu, 7 Oct 2010 16:41:12 -0500
+X-Google-Sender-Auth: ECdEOZhMOY3QF9ym_2Q_DBM910s
+Message-ID: <AANLkTinL9UckjiQGmMJ_NENPp9XxFHRdvTje_V46LPQ+@mail.gmail.com>
+Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
+From: Mario Limonciello <superm1@ubuntu.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
+        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric,
+Matthew:
 
-On Thu, Oct 07, 2010 at 11:31:25PM +0200, Eric Dumazet wrote:
-> Le jeudi 07 octobre 2010 à 14:10 -0700, Kees Cook a écrit :
-> > Several other ethtool functions leave heap uncleared (potentially) by
-> > drivers. Some interfaces appear safe (eeprom, etc), in that the sizes
-> > are well controlled. In some situations (e.g. unchecked error conditions),
-> > the heap will remain unchanged in areas before copying back to userspace.
-> > Note that these are less of an issue since these all require CAP_NET_ADMIN.
-> 
-> > @@ -775,7 +775,7 @@ static int ethtool_get_regs(struct net_device *dev, char __user *useraddr)
-> >  	if (regs.len > reglen)
-> >  		regs.len = reglen;
-> >  
-> > -	regbuf = kmalloc(reglen, GFP_USER);
-> > +	regbuf = kzalloc(reglen, GFP_USER);
-> >  	if (!regbuf)
-> >  		return -ENOMEM;
-> >  
-> > -- 
-> > 1.7.1
-> > 
-> 
-> Are you sure this is not hiding a more problematic problem ?
-> 
-> Code does :
-> 
-> reglen = ops->get_regs_len(dev);
-> if (regs.len > reglen)
-> 	regs.len = reglen;
-> regbuf = kmalloc(reglen, GFP_USER);
-> 
-> So we can not copy back kernel memory.
-> 
-> However, what happens if user provides regs.len = 1 byte, and driver
-> get_regs() doesnt properly checks regs.len and write past end of regbuf
-> -> We probably write on other parts of kernel memory
+On Thu, Oct 7, 2010 at 16:37, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Thu, Oct 07, 2010 at 02:30:28PM -0700, Dmitry Torokhov wrote:
+>
+>> We have this strategy for bunch of input stuff (force release, keymap)
+>> and I think it works better than dding more and more DMI quirks into
+>> kernel itself.
+>
+> It's limited to Dell hardware, so I think keeping a static list in the
+> Dell laptop driver is reasonable. All we need is a list of hardware, and
+> I'd really hope that Dell know which BIOS versions contain this code!
+>
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
+>
 
-This code is basically a max() call from what I see.
+All Dell laptops are /supposed/ to adhere to the specification in
+question.  Unfortunately, not all machines are tested with Linux
+during their development and on the OS they ship with that
+functionality isn't always used in that specific way for rfkill.
 
-regbuf = kmalloc(max(regs.len, ops->get_regs_len(dev)), GFP_USER);
-
-If the user passes regs.len = 1, it will be ignored in favor of reglen,
-so we'll not write past the end of regbuf, unless I'm misunderstanding.
-
--Kees
 
 -- 
-Kees Cook
-Ubuntu Security Team
+Mario Limonciello
+superm1@gmail.com
