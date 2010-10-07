@@ -1,110 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab0JGUqz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 16:46:55 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36640 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751490Ab0JGUqx convert rfc822-to-8bit (ORCPT
+	id S1755657Ab0JGUsW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 16:48:22 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:51891 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab0JGUsV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 16:46:53 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: Jiri Slaby <jirislaby@gmail.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>
-Date: Fri, 8 Oct 2010 02:16:35 +0530
-Subject: RE: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
-Thread-Topic: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
-Thread-Index: ActmXvZBOJpBPBAHT1CxBn10+F2b0wAAGx5w
-Message-ID: <19F8576C6E063C45BE387C64729E739404AA21D24F@dbde02.ent.ti.com>
-References: <1286381895-11329-1-git-send-email-pavan_savoy@ti.com>
-	<1286381895-11329-2-git-send-email-pavan_savoy@ti.com>
-	<4CACD234.7020900@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21CEA1@dbde02.ent.ti.com>
-	<4CACF5A7.3010601@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21CEC6@dbde02.ent.ti.com>
-	<4CAD7DAB.8030209@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21D193@dbde02.ent.ti.com>
-	<4CAE10C0.9000106@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21D220@dbde02.ent.ti.com>
-	<20101007203801.1c55a1d3@lxorguk.ukuu.org.uk>
-	<19F8576C6E063C45BE387C64729E739404AA21D23B@dbde02.ent.ti.com>
-	<20101007213503.657bcab0@lxorguk.ukuu.org.uk>
-	<19F8576C6E063C45BE387C64729E739404AA21D248@dbde02.ent.ti.com>
- <20101007215943.45365f45@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101007215943.45365f45@lxorguk.ukuu.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Oct 2010 16:48:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=wzXEw2EBarLokJvP7SsTvuSrmpRyYOC9zpgFRlCx5zWXyF++CSX1jaZpR1+wPJfDg3
+         yqDQKUztXMlKP7ywBeYnjB5shyFnwVZQcBpU/83oOGTIrXeZn4z4DxJV7To5wt2nJkM4
+         tyPgYxpmG3JisGnMVszeHUUXcJzG5biWbiF6k=
 MIME-Version: 1.0
+In-Reply-To: <1286482013.23836.29.camel@c-dwalke-linux.qualcomm.com>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+ <AANLkTinxorq2XhJdGDNQuUghxzr1q6OW=S1VjupOu5nH@mail.gmail.com>
+ <1286480364.23836.17.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=8Et=Z6zrzbZa3L0MO=cBjjh7L=XU2=PDEbzWW@mail.gmail.com>
+ <1286481532.23836.27.camel@c-dwalke-linux.qualcomm.com> <AANLkTi=j2n-X+-zkas8HdL1awo7Lcyxwofts6FjU8vj6@mail.gmail.com>
+ <1286482013.23836.29.camel@c-dwalke-linux.qualcomm.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 7 Oct 2010 16:47:59 -0400
+X-Google-Sender-Auth: dhbSMEUfUw493hlcDKYEOBh0j0s
+Message-ID: <AANLkTinDvL9vPb6nmve3rO9dMtMAqh=d1oqBVTOHzYWH@mail.gmail.com>
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Oct 7, 2010 at 16:06, Daniel Walker wrote:
+> On Thu, 2010-10-07 at 16:02 -0400, Mike Frysinger wrote:
+>> how is that any different from:
+>> ln -s ttyJ0 /dev/ttyS0
+>
+> It has the same major and minors as ttyS* does. So you don't have to run
+> anything on the target.
 
-> -----Original Message-----
-> From: Alan Cox [mailto:alan@lxorguk.ukuu.org.uk]
-> Sent: Thursday, October 07, 2010 4:00 PM
-> To: Savoy, Pavan
-> Cc: Jiri Slaby; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@driverdev.osuosl.org; linux-bluetooth@vger.kernel.org
-> Subject: Re: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
-> 
-> > But, I want to attach my data not when ldsic is opened, but when ldisc is
-> registered.
-> > I want to begin accessing the data when ldisc is opened.
-> 
-> How can you attach per tty data when the ldisc is registered - the
-> relevant tty driver might not even have been loaded at that point. The
-> user may not even have been to the shop and bought it even !
-> 
-> What sort of data is this ?
-
-Data related to requesting the user-space to open/install the ldisc.
-Imagine a UEVENT structure or PID of the user-space process to which I need
-to send a signal .. I currently use rfkill.
-
-> > to be like a bunch of helpers (1 for FM, 1 for GPS, 1 for NFC, 1 for power-
-> management), also the problem of who owns the /dev/tty begins to occur,
-> Bluetooth has a utility called hciattach, I don't want my FM radio software to
-> run hciattach when /dev/radio0 is opened and communicated via FM.
-> 
-> I would have assumed the hotplug script would have run your own attach
-> and daemon and the FM radio etc would talk to the ldisc via other kernel
-> interfaces it presented.
-> 
-> So whenever the hardware is detected it would load the hardware driver
-> The hardware driver would create a tty instance for each physical port
-> The hotplug user space would run 'ti-st-attach' as a helper which would
-> load the ldisc and set up the bluetooth as well as providing exported
-> methods for FM radio etc.
-
-Yes, pretty similar to what I am doing now. I have this daemon which waits
-for events from my ldisc driver, and on receiving the notification it
-opens the uart, ioctl's the TIOCSETD and allows the tty to be accessed over
-the ldisc.
-
-> > In any case, the ti-st/ seems better now by look of things, I certainly
-> welcome suggestions to improve it.
-> > Also, is there any plan to re-write whole of TTY like a the i2C or the SPI
-> bus structure?
-> >
-> > Here I can imagine, all TTY line disciplines being sort of protocol/client
-> drivers, the TTY sub-system in itself would be like the algos driver and then
-> > The uart drivers (like 8250.c) can be the adapter drivers.. What say?
-> 
-> They already are, with the one oddity being that something needs to have
-> it opened from user space and to attach the ldisc. Thats fixable but hard
-> to fix and I'm not aware of any plan to do so - mostly because nobody
-> needs it so far.
-
-Yes, that oddity was the reason this notification had to be done.
-I could as well have opened it up on boot and attached the ldisc, but I chose
-to use it whenever other drivers wanted to - as in when hci0 is UP, or /dev/radio0 is opened.
-
-> Alan
+i dont see how those things are related.  the major/minor are
+irrelevant, unless you've already hard coded these in some app that
+creates device nodes manually (instead of mdev/udev), but even then
+that's something that "needs to be run on the target".  and both
+already have config support to transparently do something like
+"symlink ttyS# to XXX" as XXX is created.
+-mike
