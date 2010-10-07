@@ -1,57 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab0JGR7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:59:23 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:52625 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751166Ab0JGR7V (ORCPT
+	id S1754142Ab0JGSAg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 14:00:36 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:48801 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751193Ab0JGSAf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:59:21 -0400
-Subject: RE: RFC: btusb firmware load help
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Marcel Holtmann <holtmann@linux.intel.com>
-Cc: Shanmugamkamatchi Balashanmugam 
-	<Shanmugamkamatchi.Balashanmugam@Atheros.com>,
-        Luis Rodriguez <Luis.Rodriguez@Atheros.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@Atheros.com>,
-        Sree Durbha <Sree.Durbha@Atheros.com>
-In-Reply-To: <1286465072.6145.151.camel@aeonflux>
-References: <1286349552.6145.11.camel@aeonflux>
-	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
-	 <1286380566.6145.42.camel@aeonflux> <20101006163816.GE7070@tux>
-	 <AANLkTik9w4_PdcEsbRHakLcxcD334_1Q8hGArxTXPCGF@mail.gmail.com>
-	 <20101006173949.GG7070@tux>
-	 <1286387660.3655.382.camel@jlt3.sipsolutions.net>
-	 <AANLkTikYRSQw-+Tcj4VS1qxi=OaeF9C5hjAMWVu+0M=v@mail.gmail.com>
-	 <AANLkTi=o4Mc72NrNoALBdS3YHeY7RMyyAJPsCy=uW3+F@mail.gmail.com>
-	 <1286389697.3655.401.camel@jlt3.sipsolutions.net>
-	 ,<20101006183340.GI7070@tux>
-	 <44EE5C37ADC36343B0625A05DD408C4850DAD2CA31@CHEXMB-01.global.atheros.com>
-	 <1286465072.6145.151.camel@aeonflux>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 19:59:19 +0200
-Message-ID: <1286474359.20974.13.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Oct 2010 14:00:35 -0400
+Date: Thu, 7 Oct 2010 20:00:31 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+        Baruch Siach <baruch@tkos.co.il>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        Hemant Pedanekar <hemantp@ti.com>, Arnd Hannemann <arnd@arndnet.de>,
+        Omar Ramirez Luna <omar.ramirez@ti.com>
+Subject: Re: [PATCH v2] ARM: allow, but warn, when issuing ioremap() on RAM
+Message-ID: <20101007180031.GT29673@pengutronix.de>
+References: <20101007115156.GE27250@jasper.tkos.co.il> <1286454549-19690-1-git-send-email-felipe.contreras@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286454549-19690-1-git-send-email-felipe.contreras@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 17:24 +0200, Marcel Holtmann wrote:
+Hello,
 
-> I am still trying to figure out if this is one stage firmware loading or
-> a two stage firmware loading. This is all pretty unclear and nobody has
-> answered this clearly so far.
+On Thu, Oct 07, 2010 at 03:29:09PM +0300, Felipe Contreras wrote:
+> Many drivers are broken, and there's no alternative in sight. Such a big
+> change should stay as a warning for now, and only later should it
+> actually fail.
+> 
+> The drivers are not doing something correct, we get it, but for now it's
+> better to allow them to work (they do 99% of the time anyway) rather
+> than to force everyone to revert this patch in their internal trees
+> until there's a solution. A slightly broken functionality is better than
+> no functionality at all.
+> 
+> A warning lets people know that what they are doing is not right, and
+> they should fix it.
+> 
+> Cc: Han Jonghun <jonghun79.han@gmail.com>
+> Cc: Hemant Pedanekar <hemantp@ti.com>
+> Cc: Arnd Hannemann <arnd@arndnet.de>
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Cc: Omar Ramirez Luna <omar.ramirez@ti.com>
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> ---
+>  arch/arm/mm/ioremap.c |    5 ++---
+>  1 files changed, 2 insertions(+), 3 deletions(-)
+> 
+> For issues related to this:
+> http://article.gmane.org/gmane.linux.ports.arm.kernel/84454
+> http://article.gmane.org/gmane.linux.ports.sh.devel/8560
+> http://www.spinics.net/lists/linux-fbdev/msg01745.html
+> http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/22271
+> 
+> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+> index ab50627..a168673 100644
+> --- a/arch/arm/mm/ioremap.c
+> +++ b/arch/arm/mm/ioremap.c
+> @@ -202,10 +202,9 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+>  		return NULL;
+>  
+>  	/*
+> -	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
+> +	 * This causes problems with ARMv6+. Will be disallowed soon.
+maybe specify soon as "before 2.6.37"?
 
-afaict, it's just one stage -- either it has sflash and you load ath3k
-firmware over it (the problematic 3002-before-loading case), or it
-doesn't have any firmware (and comes up with 3000) and you load the same
-ath3k firmware over it with a different mechanism, which currently
-announces itself as 3002 but can be changed.
+Other than that, Acked-by: Uwe Kleine-König
+<u.kleine-koenig@pengutronix.de>
+because there is no other solution to make it into the kernel before
+.36.
 
-johannes
+Best regards
+Uwe
 
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
