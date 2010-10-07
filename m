@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932943Ab0JGAav (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 20:30:51 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:57876 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932573Ab0JGAat (ORCPT
+	id S932976Ab0JGAcG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 20:32:06 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:40779 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932573Ab0JGAcE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 20:30:49 -0400
-Date: Wed, 6 Oct 2010 17:30:41 -0700
-From: Ram Pai <linuxram@us.ibm.com>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Ram Pai <linuxram@us.ibm.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org, clemens@ladisch.de,
-        Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource
- allocation
-Message-ID: <20101007003041.GF2945@ram-laptop>
-Reply-To: Ram Pai <linuxram@us.ibm.com>
-References: <20101006225834.GE2945@ram-laptop>
- <20101006233953.GB16280@helgaas.com>
+	Wed, 6 Oct 2010 20:32:04 -0400
+Date: Thu, 7 Oct 2010 09:27:41 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/4] HWPOISON: Copy si_addr_lsb to user
+Message-ID: <20101007002741.GA9891@spritzera.linux.bs1.fc.nec.co.jp>
+References: <1286398141-13749-1-git-send-email-andi@firstfloor.org>
+ <1286398141-13749-3-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-2022-jp
 Content-Disposition: inline
-In-Reply-To: <20101006233953.GB16280@helgaas.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1286398141-13749-3-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 05:39:53PM -0600, Bjorn Helgaas wrote:
-> On Wed, Oct 06, 2010 at 03:58:34PM -0700, Ram Pai wrote:
-> >         PCI: override BIOS/firmware memory resource allocation
-> > 		through command line parameters
-> > 
-> > 	Platforms that are unaware of  SRIOV  BARs  fail to allocate MMIO
-> > 	resources  to SRIOV PCIe  devices. Hence  on  such  platforms the
-> > 	OS fails to  enable  SRIOV.
-> > 	Some  platforms  where  BIOS/uEFI resource   allocations  conflict
-> > 	the conflicting devices are disabled.
-> > 
-> > 	Ideally we  would  want  the  OS  to detect and fix automatically
-> > 	such problems and conflicts.  However previous  attempts to do so
-> > 	have led to regression on legacy platforms.
-> 
-> I'm sorry to be a nay-sayer, but I think we just haven't tried hard
-> enough.  Our ACPI/PCI/e820 resource management is not well integrated,
-> and I suspect if we straightened that out, we could avoid some of the
-> regressions we saw with previous attempts.
+Just nitpicking...
 
-Can you be more specific as to what can be done to fix it automatically?
+> @@ -2215,6 +2215,14 @@ int copy_siginfo_to_user(siginfo_t __user *to, siginfo_t *from)
+>  #ifdef __ARCH_SI_TRAPNO
+>  		err |= __put_user(from->si_trapno, &to->si_trapno);
+>  #endif
+> +#ifdef BUS_MCEERR_AO
+> +		/* 
+                  ^
+                  trailing white space
+> +		 * Other callers might not initialize the si_lsb field,
+> +	 	 * so check explicitely for the right codes here.
+        ^                   ^^^^^^^^^^^
+        white space         explicitly
 
-Neither accepting this approach nor telling what needs to be straightened out
-to automatically fix all the systems out there, is just a deadend.
+> +		 */
+> +		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
+> +			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
+> +#endif
+>  		break;
+>  	case __SI_CHLD:
+>  		err |= __put_user(from->si_pid, &to->si_pid);
 
-The choice is between
-	(a) an automated patch with the risk of regressing some platforms.
-	(b) an semi-automated patch that does not regress *any* platform,
-		with the ability to fix platforms that are currently broken.
-	(c) status quo, which means broken platforms continue to be so.
+Reviewed-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 
-I thought the initial proposal was to use (b), with the long
-term goal of fixing it automatically, assuming that it is even possible.
-
-Let me know if that is *not* the goal and I will change directions.
-RP
+Thanks,
+Naoya Horiguchi
