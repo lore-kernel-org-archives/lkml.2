@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753825Ab0JGR6B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:58:01 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:53545 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750941Ab0JGR57 (ORCPT
+	id S1754089Ab0JGR6f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:58:35 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:11567 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753769Ab0JGR6e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:57:59 -0400
-Subject: Re: RFC: btusb firmware load help
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Bala Shanmugam <sbalashanmugam@atheros.com>
-Cc: Shanmugamkamatchi Balashanmugam 
-	<Shanmugamkamatchi.Balashanmugam@atheros.com>,
-        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Marcel Holtmann <holtmann@linux.intel.com>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        Deepak Dhamdhere <Deepak.Dhamdhere@atheros.com>,
-        Sree Durbha <Sree.Durbha@atheros.com>
-In-Reply-To: <4CADF634.1030203@atheros.com>
-References: <1286349552.6145.11.camel@aeonflux>
-	 <AANLkTimDvgFtoGLEjgWyYRrhQy6Num-rn_2WYO4Lf84b@mail.gmail.com>
-	 <1286380566.6145.42.camel@aeonflux> <20101006163816.GE7070@tux>
-	 <AANLkTik9w4_PdcEsbRHakLcxcD334_1Q8hGArxTXPCGF@mail.gmail.com>
-	 <20101006173949.GG7070@tux>
-	 <1286387660.3655.382.camel@jlt3.sipsolutions.net>
-	 <AANLkTikYRSQw-+Tcj4VS1qxi=OaeF9C5hjAMWVu+0M=v@mail.gmail.com>
-	 <AANLkTi=o4Mc72NrNoALBdS3YHeY7RMyyAJPsCy=uW3+F@mail.gmail.com>
-	 <1286389697.3655.401.camel@jlt3.sipsolutions.net>
-	 ,<20101006183340.GI7070@tux>
-	 <44EE5C37ADC36343B0625A05DD408C4850DAD2CA31@CHEXMB-01.global.atheros.com>
-	 <1286464555.20974.3.camel@jlt3.sipsolutions.net>
-	 <4CADF634.1030203@atheros.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 19:57:53 +0200
-Message-ID: <1286474273.20974.11.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Oct 2010 13:58:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=n/DciQnipwjRneF995bbH8ja7E8NuTk8HhPz/J3sbBDrn7iyZVvW/t6RUZwjt5F9Jl
+         yDiCIzbyGNT4lh8oyRjQ==
+MIME-Version: 1.0
+In-Reply-To: <20101007021959.GA7300@suse.de>
+References: <1286406919-6236-1-git-send-email-snanda@chromium.org> <20101007021959.GA7300@suse.de>
+From: Sameer Nanda <snanda@chromium.org>
+Date: Thu, 7 Oct 2010 10:58:10 -0700
+X-Google-Sender-Auth: YUvZdnlIl-98YnjdD6_oZsE9lvw
+Message-ID: <AANLkTi=mjaojm-O2rbKRTpsqpKiSKjU+P2dGZmENd-jU@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: Read TSC upon resume
+To: Greg KH <gregkh@suse.de>
+Cc: lenb@kernel.org, stefan.bader@canonical.com, brad.figg@canonical.com,
+        apw@canonical.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 22:02 +0530, Bala Shanmugam wrote:
+(resending as plain text, sorry if you got dupe messages)
 
-> AR3011 when plugged-in uses PID 3000 and control goes to DFU driver [ath3k].
-> ath3k downloads the firmware to the device changing its PID to 3002.
-> Now btusb gets the control and attaches the device to bluetooth core.
-> 
-> So blacklisting 3002 in btusb will create issues for AR3011 chipsets.
-> In firmware if we change the PID from 3002 to 3003 as you suggested and 
-> blacklist 3002 in btusb we can make both devices work.
+On Wed, Oct 6, 2010 at 7:19 PM, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Oct 06, 2010 at 04:15:19PM -0700, Sameer Nanda wrote:
+>> Read the TSC upon resuming and print it out. This is useful
+>> in helping figure out amount of time spent in the BIOS when
+>> resuming from suspend.
+>>
+>> Change-Id: I1d6a32bd62421becddecd152d561763e5f3e1101
+>
+> What is this tag for?  I don't think it matches anything the kernel
+> community wants, do you?
 
-Yeah, that still seems like the best approach, or maybe 3004 instead of
-3003 if 3003 is already in use by a different chip, or whatever.
+Yeah, its not needed.  Let me resubmit the patch without this tag.
 
-johannes
+>
+> And are you always going to be printing this out?  Why do we want to
+> know this every time?
 
+Yes, every time.  This helps track variance in BIOS resume times
+within a single boot.
+
+>
+>> Signed-off-by: Sameer Nanda <snanda@chromium.org>
+>> ---
+>>  drivers/acpi/sleep.c |    4 ++++
+>>  1 files changed, 4 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+>> index c0fed2e..f0588fa 100644
+>> --- a/drivers/acpi/sleep.c
+>> +++ b/drivers/acpi/sleep.c
+>> @@ -214,6 +214,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>>       acpi_status status = AE_OK;
+>>       unsigned long flags = 0;
+>>       u32 acpi_state = acpi_target_sleep_state;
+>> +     u64 tsc;
+>>
+>>       ACPI_FLUSH_CPU_CACHE();
+>>
+>> @@ -235,6 +236,9 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>>
+>>       case ACPI_STATE_S3:
+>>               do_suspend_lowlevel();
+>> +             rdtscll(tsc);
+>> +             printk(KERN_INFO "TSC at resume: %llu\n",
+>> +                             (unsigned long long)tsc);
+>
+> How long does this take, will it slow down resume?
+
+The impact is ~10us (as measured on an Intel Atom N455 @ 1.66Ghz).
+Given that resume time is currently of the order of 1sec, its in the
+noise range.
+
+Thanks for the feedback!
+
+>
+> thanks,
+>
+> greg k-h
+>
+
+
+
+-- 
+Sameer
