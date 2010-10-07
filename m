@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753551Ab0JGWtt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 18:49:49 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:20354 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab0JGWts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 18:49:48 -0400
-Date: Fri, 08 Oct 2010 07:50:03 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH v3 2/2] MAINTAINERS: Add Samsung S5P series FIMC maintainers
-In-reply-to: <20100929090904.GA21199@july>
-To: "'Kyungmin Park'" <kmpark@infradead.org>, linux-kernel@vger.kernel.org
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        rmk@arm.linux.org.uk, m.szyprowski@samsung.com, pawel@osciak.com,
-        t.fujak@samsung.com, s.nawrocki@samsung.com
-Message-id: <00bf01cb6671$fd8d8900$f8a89b00$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActftfvlZMDAQCb6Rj6mtrn+TLQlKwGungsQ
-References: <20100929090904.GA21199@july>
+	id S1753757Ab0JGWvd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 18:51:33 -0400
+Received: from trent.utfs.org ([194.246.123.103]:48717 "EHLO trent.utfs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751595Ab0JGWvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 18:51:32 -0400
+X-Greylist: delayed 454 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Oct 2010 18:51:32 EDT
+Date: Thu, 7 Oct 2010 15:43:55 -0700 (PDT)
+From: Christian Kujau <lists@nerdbynature.de>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: takedakn@nttdata.co.jp, penguin-kernel@I-love.SAKURA.ne.jp
+Subject: 2.6.36-rc7: kernel panic with SECURITY_TOMOYO=y
+Message-ID: <alpine.DEB.2.01.1010071534370.21082@trent.utfs.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kyungmin Park wrote:
-> 
-> From: Kyungmin Park <kyungmin.park@samsung.com>
-> 
-> Add Samsung S5P series FIMC(Camera Interface) maintainers
-> 
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> ---
-> v2:
-> 	Write the right maintainers
-> 
->  MAINTAINERS |   10 ++++++++++
->  1 files changed, 10 insertions(+), 0 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 8ae1797..1e233d9 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -977,6 +977,16 @@ L:	linux-arm-kernel@lists.infradead.org
->  S:	Maintained
->  F:	arch/arm/mach-s5pv310/mach-universal_c210.c
-> 
-> +ARM/SAMSUNG S5P SERIES FIMC SUPPORT
-> +M:	Kyungmin Park <kyungmin.park@samsung.com>
-> +M:	Sylwester Nawrocki <s.nawrocki@samsung.com>
-> +L:	linux-arm-kernel@lists.infradead.org
-> +L:	linux-media@vger.kernel.org
-> +S:	Maintained
-> +F:	arch/arm/plat-s5p/dev-fimc*
-> +F:	arch/arm/plat-samsung/include/plat/*fimc*
-
 Hi,
 
-If required FIMC support maintainer, please remove above 2 lines...because
-the plat-s5p/dev-fimc* are just platform data files and entirely removed
-plat-samsung/include/plat/fimc.h header for removing platform code
-dependency by Sylwester's FIMC patch.
+I wanted to test Tomoyo, so I enabled CONFIG_SECURITY_TOMOYO in my 
+.config, wich enabled also:
 
-> +F:	drivers/media/video/s5p-fimc/
-> +
->  ARM/SHMOBILE ARM ARCHITECTURE
->  M:	Paul Mundt <lethal@linux-sh.org>
->  M:	Magnus Damm <magnus.damm@gmail.com>
-> --
++CONFIG_SECURITY=y
++CONFIG_SECURITYFS=y
++CONFIG_SECURITY_PATH=y
++CONFIG_SECURITY_TOMOYO=y
+
+However, during boot the machine (PowerPC G4, 32 bit) now panics:
+
+   http://nerdbynature.de/bits/2.6.36-rc7/
+
+I don't have a serial console, so I ran the image of the oops through some 
+OCR converter:
+
+Kernel panic - not syncing: Profile uersion 0 is not supported
+Call Trace:
+[efB4fd60] [c0008c88] show_stack+0x48/0x168 (unreliable)
+[ef84fda0] [c0375fe01 panic+0xa4/0x1ec
+[ef84fdf0] [c01c5f30] tomoyo_close_control+0x0/0xa4
+[efB4fe00] [c01cc2f0] tomoyo_load_policy+0xeB/0x11c
+[ef84fe40] [c01cdd30] tomoyo_bprm_set_creds+0x84/0x88
+[ef84fe50] [c01c37bc] security_bprm_set_creds+0x20/0x30
+[ef84fe60] [c00a02cc] prepare_binprm+0x9e/0x128
+[ef84fe90] [c00a0a10] do_execve+0x198/0x260
+[ef84fed0] [e0009748] sys_execve+0x58/0x84
+[efB4fef0] [c0010c1c] ret_from_syscall+0x0/0x38
+--- Exception: C01 at kernel_execve+0x8/0x14
+    LR = init_post+0x7c/0x138
+[ef84ffb0] [c000405c] init_post+0x20/0x138 (unreliable)
+[cfB4ffd0] [c043a25c] kernel_init+0x13c/0x174
+[ef84fff0] [c0010974] kernel_thread+0x4c/0x68
+Rebooting in 180 seconds..
 
 
-Thanks.
+(Don't trust the numbers in the first two rows though (the ones in "[]" 
+brackets) the other ones should be fine)
 
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
+I've not bisected the issue yet (compiling one kernel takes about ~40min 
+on this box), any ideas what might have caused this?
 
+Christian.
+-- 
+BOFH excuse #380:
+
+Operators killed when huge stack of backup tapes fell over.
