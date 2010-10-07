@@ -1,52 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751181Ab0JGEBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 00:01:40 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35124 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750704Ab0JGEBi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 00:01:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=RUw+9xic12D7kAn+yLuGqK5yI1kvMka0EmCG1DZCXLraO2fg8IaA5M7/u1dnSE0aq5
-         QbCGloh48YN45ZSIMBf+HJMUiQqhaQiOiLPYQwX5C+xuVtMrrnvWBP04Gi7g7Gxp1cn2
-         GxDGWOm1dKQGU7rxmEG8SKBQK1hiXUQqloxCU=
-From: Rahul Ruikar <rahul.ruikar@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Tejun Heo <tj@kernel.org>,
-        asanchez@neurowork.net, rjw@sisk.pl, csanchez@neurowork.net
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rahul Ruikar <rahul.ruikar@gmail.com>
-Subject: [PATCH] usb: core: endpoint: Fix error path
-Date: Thu,  7 Oct 2010 09:31:12 +0530
-Message-Id: <1286424072-2819-1-git-send-email-rahul.ruikar@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1751296Ab0JGEDK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 00:03:10 -0400
+Received: from www.tglx.de ([62.245.132.106]:41726 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750704Ab0JGEDI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 00:03:08 -0400
+Date: Thu, 7 Oct 2010 06:01:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+In-Reply-To: <4CAD1154.3080403@kernel.org>
+Message-ID: <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com> <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6>
+ <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6> <4CACFC23.4080504@kernel.org> <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6> <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In function usb_create_ep_devs()
-call put_device() when device_register() fails.
+On Wed, 6 Oct 2010, Yinghai Lu wrote:
 
-Signed-off-by: Rahul Ruikar <rahul.ruikar@gmail.com>
----
- drivers/usb/core/endpoint.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On 10/06/2010 04:37 PM, Yinghai Lu wrote:
+> > On 10/06/2010 03:52 PM, Thomas Gleixner wrote:
+> >> On Wed, 6 Oct 2010, Yinghai Lu wrote:
+> >>
+> >>> On 10/05/2010 03:22 AM, Thomas Gleixner wrote:
+> >>>> On Sun, 3 Oct 2010, Thomas Gleixner wrote:
+> >>>>> On Sun, 3 Oct 2010, Grant Likely wrote:
+> >>>>>> Okay, patch 14 looks good to me too (including Yinghai's comment).
+> >>>>>> The new allocator seems sane, and I didn't see any obvious errors in
+> >>>>>> patches 16-47.  I've not tested any of this yet.  Hopefully I'll be
+> >>>>>> able to carve out some time to do so early this week.
+> >>>>>
+> >>>>> Wait until I pushed out a fixed tree. In meantime I found out how I
+> >>>>> managed to screw up the quilt series :(
+> >>>>>
+> >>>>> Will post, once it's ready.
+> >>>>
+> >>>> Pushed out an updated tree to
+> >>>>
+> >>>>  git://git.kernel.org/pub/scm/linux/kernel/git/tglx/linux-2.6-sparse-irq.git master
+> >>>>
+> >>>
+> >>> test it together with tip, it seems all io apic routing is not set rightly. MSI is ok...
+> >>>
+> >>> [  200.290040] ehci_hcd 0000:00:1d.7: PCI INT A -> GSI 23 (level, low) -> IRQ 23
+> >>> [  200.290991] ehci_hcd 0000:00:1d.7: setting latency timer to 64
+> >>> [  200.310002] ehci_hcd 0000:00:1d.7: EHCI Host Controller
+> >>> [  200.310455] ehci_hcd 0000:00:1d.7: new USB bus registered, assigned bus number 1
+> >>> [  200.330127] ehci_hcd 0000:00:1d.7: debug port 1
+> >>> [  200.334395] ehci_hcd 0000:00:1d.7: cache line size of 256 is not supported
+> >>> [  200.350042] ehci_hcd 0000:00:1d.7: request interrupt 23 failed
+> >>> [  200.350491] ehci_hcd 0000:00:1d.7: USB bus 1 deregistered
+> >>> [  200.372257] ehci_hcd 0000:00:1d.7: PCI INT A disabled
+> >>> [  200.372644] ehci_hcd 0000:00:1d.7: init 0000:00:1d.7 fail, -38
+> >>> [  200.389916] ehci_hcd: probe of 0000:00:1d.7 failed with error -38
+> >>
+> >> Yep. Ingo's testing found that already. Does the patch below fix it ?
+> >>
+> >> Thanks,
+> >>
+> >> 	tglx
+> >> ---
+> >> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> >> index 2f171df..eb3d01d 100644
+> >> --- a/arch/x86/kernel/apic/io_apic.c
+> >> +++ b/arch/x86/kernel/apic/io_apic.c
+> >> @@ -252,11 +252,15 @@ static struct irq_cfg *alloc_irq_and_cfg_at(unsigned int at, int node)
+> >>  static struct irq_cfg *get_irq_cfg_at(unsigned int at, int node)
+> >>  {
+> >>  	int res = irq_alloc_desc_at(at, node);
+> >> +	struct irq_data *data;
+> >>  
+> >>  	if (res < 0 && res != -EEXIST)
+> >>  		return NULL;
+> >>  
+> >> -	return get_irq_chip_data(at);
+> >> +	data = irq_get_irq_data(at);
+> >> +	if (res >= 0 && !data->chip_data)
+> >> +		data->chip_data = alloc_irq_cfg(at, node);
+> >> +	return data->chip_data;
+> >>  }
+> >>  
+> >>  static int alloc_irq_from(unsigned int from, int node)
+> > 
+> > yes, it fixes the problem.
+> > 
+> > but can you merge get_irq_cfg_at() and alloc_irq_and_cfg_at() ? 
+> > it's confusing to let get_...() to do the alloc work.
 
-diff --git a/drivers/usb/core/endpoint.c b/drivers/usb/core/endpoint.c
-index 3788e73..9da2505 100644
---- a/drivers/usb/core/endpoint.c
-+++ b/drivers/usb/core/endpoint.c
-@@ -202,7 +202,7 @@ int usb_create_ep_devs(struct device *parent,
- 	return retval;
+Well, I'm not too happy about this preallocated stuff anyway, which is
+the reason for the warning below.
  
- error_register:
--	kfree(ep_dev);
-+	put_device(&ep_dev->dev);
- exit:
- 	return retval;
- }
--- 
-1.7.2.3
+> [   80.726176] WARNING: at drivers/pci/intr_remapping.c:67 irq_2_iommu_alloc+0x52/0xdc()
+> [   80.745935] Hardware name: Sun Fire X4800
+> [   80.746179] irq_2_iommu!=NULL irq 8
 
+Thanks,
+
+	tglx
