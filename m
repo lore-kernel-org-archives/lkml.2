@@ -1,142 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754921Ab0JGXfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 19:35:38 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:36040 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab0JGXfg convert rfc822-to-8bit (ORCPT
+	id S1752703Ab0JGXoE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 19:44:04 -0400
+Received: from mail.windriver.com ([147.11.1.11]:61759 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751842Ab0JGXoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 19:35:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OqMUJLg3mAJ8Jm3XXgAATJllA5pJ00K//nxn/wwwi5kZoqRS1vPddLF6KVMWQVeTT5
-         A4AJpD7aygi4FGBz13RokAfXni5wFqGegTX8qzhBFiAwnMmWTXdYwSKp4F5KRSXMuBzn
-         1InIAlhtCogWwxOEV9NWy6/R7e2Ku99yYuU48=
+	Thu, 7 Oct 2010 19:44:03 -0400
+Message-ID: <4CAE5B40.3070701@windriver.com>
+Date: Thu, 07 Oct 2010 18:44:00 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-In-Reply-To: <20101007152422.c5919517.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152422.c5919517.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 8 Oct 2010 08:35:30 +0900
-Message-ID: <AANLkTi=kBnrtb5KkFQE3tNwVh1dWeUVBepWjec7ReVL0@mail.gmail.com>
-Subject: Re: [PATCH] memcg: lock-free clear page writeback (Was Re: [PATCH
- 04/10] memcg: disable local interrupts in lock_page_cgroup()
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Greg Thelen <gthelen@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Elvis Dowson <elvis.dowson@mac.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: kgdb errors with serial console
+References: <BDD07355-7199-4A2E-8426-F6D43EA5D313@mac.com> <4CAE4BB6.7080509@windriver.com> <7BA01CAF-DD25-4AB6-9498-8AB89E2EDDE1@mac.com>
+In-Reply-To: <7BA01CAF-DD25-4AB6-9498-8AB89E2EDDE1@mac.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Oct 2010 23:44:01.0683 (UTC) FILETIME=[84E46E30:01CB6679]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kame,
+On 10/07/2010 06:07 PM, Elvis Dowson wrote:
+> On Oct 8, 2010, at 2:37 AM, Jason Wessel wrote:
+>
+>   
+>> It would probably also be good to test if the debugger is working at all
+>> on your serial port.
+>>
+>> Configure the debugger with:
+>> # echo ttyS2 > /sys/module/kgdboc/parameters/kgdboc
+>> kgdb: Registered I/O driver kgdboc.
+>> # echo g > /proc/sysrq-trigger
+>> SysRq : DEBUG
+>>
+>> And now to exit debugger you must blindly and perfectly type
+>> $D#44+
+>>
+>> Nothing will be echoed because at this stage the kernel serial polling
+>> driver would just be collecting characters.
+>>
+>> After typing that the kernel should return back to the running state and
+>> print something like:
+>> +$OK#9a#
+>>     
+>
+> Cool, I tried all the commands that you suggested and it worked perfectly. I got the same outputs. 
+>
+> So, if I understand correctly, I boot into the kernel without the kgbdwait option, and then manually launch the kgdb and then connect from Eclipse using gdb.
+>
+> The system waits at the root login prompt. 
+>   
 
-On Thu, Oct 7, 2010 at 3:24 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> Greg, I think clear_page_writeback() will not require _any_ locks with this patch.
-> But set_page_writeback() requires it...
-> (Maybe adding a special function for clear_page_writeback() is better rather than
->  adding some complex to switch() in update_page_stat())
->
-> ==
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->
-> Now, at page information accounting, we do lock_page_cgroup() if pc->mem_cgroup
-> points to a cgroup where someone is moving charges from.
->
-> At supporing dirty-page accounting, one of troubles is writeback bit.
-> In general, writeback can be cleared via IRQ context. To update writeback bit
-> with lock_page_cgroup() in safe way, we'll have to disable IRQ.
-> ....or do something.
->
-> This patch waits for completion of writeback under lock_page() and do
-> lock_page_cgroup() in safe way. (We never got end_io via IRQ context.)
->
-> By this, writeback-accounting will never see race with account_move() and
-> it can trust pc->mem_cgroup always _without_ any lock.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   18 ++++++++++++++++++
->  1 file changed, 18 insertions(+)
->
-> Index: mmotm-0928/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-0928.orig/mm/memcontrol.c
-> +++ mmotm-0928/mm/memcontrol.c
-> @@ -2183,17 +2183,35 @@ static void __mem_cgroup_move_account(st
->  /*
->  * check whether the @pc is valid for moving account and call
->  * __mem_cgroup_move_account()
-> + * Don't call this under pte_lock etc...we'll do lock_page() and wait for
-> + * the end of I/O.
->  */
->  static int mem_cgroup_move_account(struct page_cgroup *pc,
->                struct mem_cgroup *from, struct mem_cgroup *to, bool uncharge)
->  {
->        int ret = -EINVAL;
-> +
-> +       /*
-> +        * We move severl flags and accounting information here. So we need to
-> +        * avoid the races with update_stat routines. For most of routines,
-> +        * lock_page_cgroup() is enough for avoiding race. But we need to take
-> +        * care of IRQ context. If flag updates comes from IRQ context, This
-> +        * "move account" will be racy (and cause deadlock in lock_page_cgroup())
-> +        *
-> +        * Now, the only race we have is Writeback flag. We wait for it cleared
-> +        * before starting our jobs.
-> +        */
-> +
-> +       lock_page(pc->page);
-> +       wait_on_page_writeback(pc->page);
-> +
->        lock_page_cgroup(pc);
->        if (PageCgroupUsed(pc) && pc->mem_cgroup == from) {
->                __mem_cgroup_move_account(pc, from, to, uncharge);
->                ret = 0;
->        }
->        unlock_page_cgroup(pc);
-> +       unlock_page(pc->page);
->        /*
->         * check events
->         */
->
->
+Probably just set a break point at sys_sync.
 
-Looks good to me.
-But let me ask a question.
-Why do only move_account need this logic?
-Is deadlock candidate is only this place?
-How about mem_cgroup_prepare_migration?
+Of course if you are willing to try something a bit more complex you can
+probably make use of being able to interactively break in with the
+eclipse gdb plugin, assuming your serial port is connected to a linux
+host, and it appeared that way based on your description.
 
-unmap_and_move
-lock_page
-mem_cgroup_prepare_migration
-lock_page_cgroup
-...
-softirq happen
-lock_page_cgroup
+On your host you could set up the following:
 
 
-If race happens only where move_account and writeback, please describe
-it as comment.
-It would help to review the code in future.
+git clone git://git.kernel.org/pub/scm/utils/kernel/kgdb/agent-proxy.git
+cd agent-proxy
+make
+./agent-proxy 4440^4441 0 /dev/ttyUSB0,115200 &
 
--- 
-Kind regards,
-Minchan Kim
+telnet localhost 4440
+
+Now in your gdbinit file you replace the target remote with
+
+target remote localhost:4441
+
+The agent proxy should take care of sending the sysrq g for you, and the
+telnet window will provide you a look at the target console.
+
+Jason.
+
