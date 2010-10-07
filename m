@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab0JGReV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:34:21 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56725 "EHLO comal.ext.ti.com"
+	id S1752865Ab0JGRen (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:34:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8494 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751032Ab0JGReT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:34:19 -0400
-From: pavan_savoy@ti.com
-To: linux-bluetooth@vger.kernel.org, marcel@holtmann.org
-Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
-        Pavan Savoy <pavan_savoy@ti.com>
-Subject: [PATCH 0/2] v2: Bluetooth driver for TI_ST
-Date: Thu,  7 Oct 2010 14:47:15 -0400
-Message-Id: <1286477237-7526-1-git-send-email-pavan_savoy@ti.com>
-X-Mailer: git-send-email 1.6.5
+	id S1752579Ab0JGRem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 13:34:42 -0400
+Subject: Re: Linux 2.6.36-rc7
+From: Eric Paris <eparis@redhat.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        agruen@suse.de
+In-Reply-To: <201010071815.54303.tvrtko.ursulin@sophos.com>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+	 <201010071710.46938.tvrtko.ursulin@sophos.com>
+	 <201010071815.54303.tvrtko.ursulin@sophos.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Oct 2010 13:33:55 -0400
+Message-ID: <1286472835.2656.15.camel@dhcp231-98.rdu.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavan Savoy <pavan_savoy@ti.com>
+On Thu, 2010-10-07 at 18:15 +0100, Tvrtko Ursulin wrote:
+> On Thursday 07 Oct 2010 17:10:46 Tvrtko Ursulin wrote:
+> > On Wednesday 06 Oct 2010 22:45:13 Linus Torvalds wrote:
 
-Marcel,
+> Priority argument was dropped from the fanotify_init syscall, and since it is
+> a syscall once released it is set in stone. Without the priority argument, how
+> are multiple clients supposed to be ordered?
+> 
+> Co-existence between multiple clients was something which was supposed to be
+> designed in from the start. Use cases like hierarchical storage management,
+> anti-malware and content indexing should all be able to co-exist. Without a
+> priority argument I do not see how it can be assured HSM sees the perm event
+> before anti-malware, and content indexing after both of them? If there was any
+> discussion about dropping priority I missed it. :(
 
-I have taken care of the changes you've mentioned, Now the
-bluetooth driver is also a platform driver and it requires a
-platform device and this platform driver's probe will do the
-registration to HCI.
+Shit.  I'm trying to remember the logic.  hrmph....   You could have a
+real interface issue....  Shit.  Let me think about it for an hour or
+two.
 
-other changes include the usage of BT_DBG instead of pr_*
-and removal of piece of code which was redundant.
+Original idea of priorities was to allow multiple permissions decision
+makers to co-exist without having the livelock problem of each trying to
+grant and deny access to each other.  That was solved with the
+O_NONOTIFY hack and I think the priority was then thought to be useless.
+But you're absolutely right, it isn't useless if we consider that an HSM
+might need to run first to make sure data exists on disk before an
+indexer looks at the data.
 
-Please review and comment...
+I see two possibilities off the top of my head:
 
-Pavan Savoy (2):
-  drivers:bluetooth: TI_ST bluetooth driver
-  drivers:bluetooth: Kconfig & Makefile for TI BT
+I could just slap an (unused) priority field onto the end of the
+fanotify_init() syscall (assuming Linus doesn't murder me) so we can
+build that support out with explicit priorities down the line, which I
+think might be overkill, or
 
- drivers/bluetooth/Kconfig  |   10 +
- drivers/bluetooth/Makefile |    1 +
- drivers/bluetooth/bt_ti.c  |  489 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 500 insertions(+), 0 deletions(-)
- create mode 100644 drivers/bluetooth/bt_ti.c
+The other option (without breaking ABI as it stands today) is to define
+some set of the fanotify_init() flags to be a priority field, we've got
+32 bits and only use 2 of them so giving 4-8 bits of that as a priority
+(next cycle) isn't an issue and can be easily backwards compatible.
+
+-Eric
 
