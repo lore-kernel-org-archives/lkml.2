@@ -1,44 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab0JGVZD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:25:03 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:35066 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756609Ab0JGVZA (ORCPT
+	id S1756480Ab0JGV2D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:28:03 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:22714 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab0JGV2A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:25:00 -0400
-Date: Thu, 7 Oct 2010 22:24:51 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Mario Limonciello <superm1@ubuntu.com>
-Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
-        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
-Message-ID: <20101007212451.GA1458@srcf.ucam.org>
-References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com> <20101007111510.GA19624@srcf.ucam.org> <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com> <20101007133529.GA21782@srcf.ucam.org> <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com> <20101007205049.GB32726@srcf.ucam.org> <AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com>
+	Thu, 7 Oct 2010 17:28:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=qzUlTdM1pBFU+qew7BRHBPjFemo04g2Y/ErxM8Nl7lsgc7HLv1ti6HTJjETinX/d9K
+         nOD8HDwAAuB1njgR0aDQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <201010072159.31482.rjw@sisk.pl>
+References: <1286406919-6236-1-git-send-email-snanda@chromium.org>
+ <20101007021959.GA7300@suse.de> <AANLkTi=mjaojm-O2rbKRTpsqpKiSKjU+P2dGZmENd-jU@mail.gmail.com>
+ <201010072159.31482.rjw@sisk.pl>
+From: Sameer Nanda <snanda@chromium.org>
+Date: Thu, 7 Oct 2010 14:27:37 -0700
+X-Google-Sender-Auth: Lh3WFVRO0uDj1RfEY8TUPT7MCnE
+Message-ID: <AANLkTimD5Vrjp8tB6crdaOdS-=LYV+JZL0tCLLcruFGu@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: Read TSC upon resume
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Greg KH <gregkh@suse.de>, lenb@kernel.org, stefan.bader@canonical.com,
+        brad.figg@canonical.com, apw@canonical.com, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 03:53:37PM -0500, Mario Limonciello wrote:
+On Thu, Oct 7, 2010 at 12:59 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday, October 07, 2010, Sameer Nanda wrote:
+>> (resending as plain text, sorry if you got dupe messages)
+>>
+>> On Wed, Oct 6, 2010 at 7:19 PM, Greg KH <gregkh@suse.de> wrote:
+>> > On Wed, Oct 06, 2010 at 04:15:19PM -0700, Sameer Nanda wrote:
+>> >> Read the TSC upon resuming and print it out. This is useful
+>> >> in helping figure out amount of time spent in the BIOS when
+>> >> resuming from suspend.
+>> >>
+>> >> Change-Id: I1d6a32bd62421becddecd152d561763e5f3e1101
+>> >
+>> > What is this tag for?  I don't think it matches anything the kernel
+>> > community wants, do you?
+>>
+>> Yeah, its not needed.  Let me resubmit the patch without this tag.
+>>
+>> >
+>> > And are you always going to be printing this out?  Why do we want to
+>> > know this every time?
+>>
+>> Yes, every time.  This helps track variance in BIOS resume times
+>> within a single boot.
+>>
+>> >
+>> >> Signed-off-by: Sameer Nanda <snanda@chromium.org>
+>> >> ---
+>> >>  drivers/acpi/sleep.c |    4 ++++
+>> >>  1 files changed, 4 insertions(+), 0 deletions(-)
+>> >>
+>> >> diff --git a/drivers/acpi/sleep.c b/drivers/acpi/sleep.c
+>> >> index c0fed2e..f0588fa 100644
+>> >> --- a/drivers/acpi/sleep.c
+>> >> +++ b/drivers/acpi/sleep.c
+>> >> @@ -214,6 +214,7 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>> >>       acpi_status status = AE_OK;
+>> >>       unsigned long flags = 0;
+>> >>       u32 acpi_state = acpi_target_sleep_state;
+>> >> +     u64 tsc;
+>> >>
+>> >>       ACPI_FLUSH_CPU_CACHE();
+>> >>
+>> >> @@ -235,6 +236,9 @@ static int acpi_suspend_enter(suspend_state_t pm_state)
+>> >>
+>> >>       case ACPI_STATE_S3:
+>> >>               do_suspend_lowlevel();
+>> >> +             rdtscll(tsc);
+>> >> +             printk(KERN_INFO "TSC at resume: %llu\n",
+>> >> +                             (unsigned long long)tsc);
+>> >
+>> > How long does this take, will it slow down resume?
+>>
+>> The impact is ~10us (as measured on an Intel Atom N455 @ 1.66Ghz).
+>> Given that resume time is currently of the order of 1sec, its in the
+>> noise range.
+>
+> Do I think correctly that it assumes the TSC will be updated in the sleep state?
 
-> Yes the issue is the firmware's response to the keystroke.  The
-> intention here is to individual submit machines in future patches as
-> they're discovered.  The parameter's primary purpose is to assist in
-> building the list.  If someone reports a bug with these symptoms, they
-> can add the parameter to their kernel command line, and report if it
-> helps them.  If it helps, their machine can be added to the DMI table.
+No, it actually banks on TSC not being updated while the system is in S3 state.
+Theory here being that upon resuming from S3, the CPU gets reset and so TSC
+starts counting up from 0.  Therefore, reading the TSC value in the kernel upon
+resuming gives the number of cycles spent in the BIOS in resume path.
 
-Sorry, I'm not adding this as a module option. How can you not know 
-which machines are affected?
+>
+> Rafael
+>
+
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Sameer
