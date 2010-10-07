@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754908Ab0JGX1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 19:27:52 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51216 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753451Ab0JGX1v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 19:27:51 -0400
-Date: Thu, 7 Oct 2010 16:27:02 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Jerome Marchand <jmarchan@redhat.com>
-Cc: Matthew Wilcox <matthew@wil.cx>, Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        xiyou.wangcong@gmail.com
-Subject: Re: [PATCH v2] procfs: fix numbering in /proc/locks
-Message-Id: <20101007162702.7db08f5b.akpm@linux-foundation.org>
-In-Reply-To: <4CAB1693.2080301@redhat.com>
-References: <4CA484BA.7090809@redhat.com>
-	<4CAB1693.2080301@redhat.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754943Ab0JGXdY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 19:33:24 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31474 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753057Ab0JGXdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 19:33:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,299,1283756400"; 
+   d="scan'208";a="844917913"
+Message-ID: <4CAE58B5.1030901@intel.com>
+Date: Thu, 07 Oct 2010 16:33:09 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Ilya Yanok <yanok@emcraft.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "'Vladimir K'" <vlad@emcraft.com>, Wolfgang Denk <wd@denx.de>
+Subject: Re: [RFC] CONFIG_NET_DMA  can hang the system if DMA engine driver
+ uses tasklets
+References: <4CAE5445.4020106@emcraft.com>
+In-Reply-To: <4CAE5445.4020106@emcraft.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Oct 2010 14:14:11 +0200
-Jerome Marchand <jmarchan@redhat.com> wrote:
+On 10/7/2010 4:14 PM, Ilya Yanok wrote:
+[..]
+> We can see that the network stack calls dma_memcpy_to_iovec() function
+> from the softirq context and it never returns in case of DMA driver runs
+> out of descriptors and thus blocks the tasklet from being executed. We
+> have a deadlock.
+>
+> Dan, I'd like to ask your opinion, do you think this is a problem of
+> CONFIG_NET_DMA feature implementation or should the DMA engine drivers
+> be aware of it? How should we fix it?
+>
+> I can imagine the following possible solutions:
+> 1. Add a possibility to return a failure to the dma_memcpy_to_iovec()
+> function (and reschedule it from the upper level) to give tasklets a
+> chance to be executed.
+> 2. Place a restriction on the DMA drivers that descriptors should be
+> freed from the hard-irq context, not soft-irq and fix the existing drivers.
+> 3. Try to free the descriptors not only from tasklet but also from the
+> place they get requested.
 
-> On 09/30/2010 02:38 PM, Jerome Marchand wrote:
-> > 
-> > The lock number in /proc/locks (first field) is implemented by a counter
-> > (private field of struct seq_file) which is incremented at each call of
-> > locks_show() and reset to 1 in locks_start() whatever the offset is. It
-> > should be reset according to the actual position in the list.
-> > 
-> > Moreover, locks_show() can be called twice to print a single line thus
-> > skipping a number. The counter should be incremented in locks_next().
-> > 
-> > Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
-> > ---
-> >  locks.c |    4 ++--
-> >  1 file changed, 2 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/locks.c b/fs/locks.c
-> > index ab24d49..49d7343 100644
-> > --- a/fs/locks.c
-> > +++ b/fs/locks.c
-> > @@ -2166,19 +2166,19 @@ static int locks_show(struct seq_file *f, void *v)
-> >  	list_for_each_entry(bfl, &fl->fl_block, fl_block)
-> >  		lock_get_status(f, bfl, (long)f->private, " ->");
-> >  
-> > -	f->private++;
-> >  	return 0;
-> >  }
-> >  
-> >  static void *locks_start(struct seq_file *f, loff_t *pos)
-> >  {
-> >  	lock_kernel();
-> > -	f->private = (void *)1;
-> > +	f->private = (void *) (*pos + 1);
-> 
-> That cast trigger a warning on some arch:
-> "warning: cast to pointer from integer of different size"
-> 
-> There is no real risk here. At worst /proc/locks will show wrong number
-> if there is more than 2^32 locks, but should I mute the warning it with
-> something like:
->         f->private = (void *) (size_t) (*pos + 1);
-> ?
+This is what ioatdma and iop-adma do i.e. process descriptor reclaim 
+from the allocation failure path.  For example in ioat2_check_space_lock():
 
-Putting a loff_t into a void* is a pretty alarming thing to do.  If
-we're really going to do that then use a (long) cast and put a very
-good comment at the code site explaining why the bug doesn't matter, so
-people aren't misled.
+    /* progress reclaim in the allocation failure case we may be
+     * called under bh_disabled so we need to trigger the timer
+     * event directly
+     */
+    if (jiffies > chan->timer.expires && timer_pending(&chan->timer)) {
+            struct ioatdma_device *device = chan->device;
 
-But really, why sweat it?  kmalloc the eight bytes, make ->private
-point at that and we never have to think about it again.  Bonus points
-for doing this without any typecasts ;)
+            mod_timer(&chan->timer, jiffies + COMPLETION_TIMEOUT);
+            device->timer_fn((unsigned long) &chan->common);
+    }
 
+The assumption is that a free descriptor is always a short time delay.
+
+> Maybe somebody has a better solution.
+
+Not really, but extending dmatest with a test for this expectation would 
+help make this more clear but it would need a config option that injects 
+descriptor allocation failures.
+
+--
+Dan
