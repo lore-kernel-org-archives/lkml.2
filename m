@@ -1,130 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759992Ab0JGCYv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 22:24:51 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:57690 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1759825Ab0JGCYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 22:24:50 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19/rb4QWjV/tQgLS4uggqdw/WwLwT5T+limxV9XLh
-	1eDCnChG9RmtBT
-Subject: Re: [PATCH 1/2] sched: normalize sleeper's vruntime during group
- change
-From: Mike Galbraith <efault@gmx.de>
-To: Dima Zavin <dima@android.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <1286405790-6987-1-git-send-email-dima@android.com>
-References: <AANLkTimpzfCDHuVQkExLvQHaVY==SFJ2AUWO7tZkcK2T@mail.gmail.com>
-	 <1286405790-6987-1-git-send-email-dima@android.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 04:24:46 +0200
-Message-Id: <1286418286.7422.18.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1760013Ab0JGCZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 22:25:21 -0400
+Received: from mga09.intel.com ([134.134.136.24]:35514 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759825Ab0JGCZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 22:25:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,295,1283756400"; 
+   d="scan'208";a="664897409"
+Date: Thu, 7 Oct 2010 10:25:15 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "n-horiguchi@ah.jp.nec.com" <n-horiguchi@ah.jp.nec.com>,
+        "x86@kernel.org" <x86@kernel.org>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/2] Encode huge page size for VM_FAULT_HWPOISON errors
+Message-ID: <20101007022515.GC5482@localhost>
+References: <1286398641-11862-1-git-send-email-andi@firstfloor.org>
+ <1286398641-11862-2-git-send-email-andi@firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286398641-11862-2-git-send-email-andi@firstfloor.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 15:56 -0700, Dima Zavin wrote:
-> If you switch the cgroup of a sleeping thread, its vruntime does
-> not get adjusted correctly for the difference between the
-> min_vruntime values of the two groups.
+On Thu, Oct 07, 2010 at 04:57:20AM +0800, Andi Kleen wrote:
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> The problem becomes most apparent when one has cgroups whose
-> cpu shares differ greatly, say group A.shares=1024 and group B.shares=52.
-> After some time, the vruntime of the group with the larger share (A)
-> will be way ahead of the group with the small share (B). Currently,
-> when a sleeping task is moved from group A to group B, it will retain its
-> larger vruntime value and thus will be way ahead of all the other tasks
-> in its new group. This will prevent this task from executing for an
-> extended period of time.
+> This fixes a problem introduced with the hugetlb hwpoison handling
+> 
+> The user space SIGBUS signalling wants to know the size of the hugepage
+> that caused a HWPOISON fault.
+> 
+> Unfortunately the architecture page fault handlers do not have easy
+> access to the struct page.
+> 
+> Pass the information out in the fault error code instead.
+> 
+> I added a separate VM_FAULT_HWPOISON_LARGE bit for this case and encode
+> the hpage index in some free upper bits of the fault code. The small
+> page hwpoison keeps stays with the VM_FAULT_HWPOISON name to minimize
+> changes.
+> 
+> Also add code to hugetlb.h to convert that index into a page shift.
 
-Yeah, seems clear that normalization is a must.
+The use of hstate index is space efficient, however at the cost of
+more code and tight coupling with hugetlb. If directly encoding
+page_order-PAGE_SHIFT, a mask of 0x3f (6 bits) will be able to present
+max order 63+12=75 which is sufficient large. We still have plenty of
+free bits in the 32bit fault code :)
 
-Questionable is whether we should apply START_DEBIT.  That's part of a
-different problem though (SCHED_PROCESS).
+Thanks,
+Fengguang
 
-> This patch adds a new callback, prep_move_task, to struct sched_class
-> to give sched_fair the opportunity to adjust the task's vruntime
-> just before setting its new group. This allows us to properly normalize
-> a sleeping task's vruntime when moving it between different cgroups.
-
-Acked-by: Mike Galbraith <efault@gmx.de>
-
-> Cc: Arve Hjønnevåg <arve@android.com>
-> Signed-off-by: Dima Zavin <dima@android.com>
+> Will be used in a further patch.
+> 
+> Cc: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+> Cc: fengguang.wu@intel.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 > ---
->  include/linux/sched.h |    1 +
->  kernel/sched.c        |    5 +++++
->  kernel/sched_fair.c   |   14 +++++++++++++-
->  3 files changed, 19 insertions(+), 1 deletions(-)
+>  include/linux/hugetlb.h |    6 ++++++
+>  include/linux/mm.h      |   12 ++++++++++--
+>  mm/hugetlb.c            |    6 ++++--
+>  mm/memory.c             |    3 ++-
+>  4 files changed, 22 insertions(+), 5 deletions(-)
 > 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 1e2a6db..ba3494e 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1073,6 +1073,7 @@ struct sched_class {
+> diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> index 796f30e..943c76b 100644
+> --- a/include/linux/hugetlb.h
+> +++ b/include/linux/hugetlb.h
+> @@ -307,6 +307,11 @@ static inline struct hstate *page_hstate(struct page *page)
+>  	return size_to_hstate(PAGE_SIZE << compound_order(page));
+>  }
 >  
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->  	void (*moved_group) (struct task_struct *p, int on_rq);
-> +	void (*prep_move_group) (struct task_struct *p, int on_rq);
->  #endif
->  };
->  
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index dc85ceb..fe4bb20 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -8297,6 +8297,11 @@ void sched_move_task(struct task_struct *tsk)
->  	if (unlikely(running))
->  		tsk->sched_class->put_prev_task(rq, tsk);
->  
-> +#ifdef CONFIG_FAIR_GROUP_SCHED
-> +	if (tsk->sched_class->prep_move_group)
-> +		tsk->sched_class->prep_move_group(tsk, on_rq);
-> +#endif
-> +
->  	set_task_rq(tsk, task_cpu(tsk));
->  
->  #ifdef CONFIG_FAIR_GROUP_SCHED
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index db3f674..6ded59f 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -3827,10 +3827,21 @@ static void set_curr_task_fair(struct rq *rq)
->  static void moved_group_fair(struct task_struct *p, int on_rq)
->  {
->  	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-> +	struct sched_entity *se = &p->se;
->  
->  	update_curr(cfs_rq);
->  	if (!on_rq)
-> -		place_entity(cfs_rq, &p->se, 1);
-> +		se->vruntime += cfs_rq->min_vruntime;
+> +static inline unsigned hstate_index_to_shift(unsigned index)
+> +{
+> +	return hstates[index].order + PAGE_SHIFT;
 > +}
 > +
-> +static void prep_move_group_fair(struct task_struct *p, int on_rq)
-> +{
-> +	struct cfs_rq *cfs_rq = task_cfs_rq(p);
-> +	struct sched_entity *se = &p->se;
-> +
-> +	/* normalize the runtime of a sleeping task before moving it */
-> +	if (!on_rq)
-> +		se->vruntime -= cfs_rq->min_vruntime;
+>  #else
+>  struct hstate {};
+>  #define alloc_huge_page_node(h, nid) NULL
+> @@ -324,6 +329,7 @@ static inline unsigned int pages_per_huge_page(struct hstate *h)
+>  {
+>  	return 1;
 >  }
+> +#define hstate_index_to_shift(index) 0
 >  #endif
 >  
-> @@ -3883,6 +3894,7 @@ static const struct sched_class fair_sched_class = {
+>  #endif /* _LINUX_HUGETLB_H */
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 74949fb..f7e9efc 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -718,12 +718,20 @@ static inline int page_mapped(struct page *page)
+>  #define VM_FAULT_SIGBUS	0x0002
+>  #define VM_FAULT_MAJOR	0x0004
+>  #define VM_FAULT_WRITE	0x0008	/* Special case for get_user_pages */
+> -#define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned page */
+> +#define VM_FAULT_HWPOISON 0x0010	/* Hit poisoned small page */
+> +#define VM_FAULT_HWPOISON_LARGE 0x0020  /* Hit poisoned large page. Index encoded in upper bits */
 >  
->  #ifdef CONFIG_FAIR_GROUP_SCHED
->  	.moved_group		= moved_group_fair,
-> +	.prep_move_group	= prep_move_group_fair,
->  #endif
->  };
+>  #define VM_FAULT_NOPAGE	0x0100	/* ->fault installed the pte, not return page */
+>  #define VM_FAULT_LOCKED	0x0200	/* ->fault locked the returned page */
 >  
-
+> -#define VM_FAULT_ERROR	(VM_FAULT_OOM | VM_FAULT_SIGBUS | VM_FAULT_HWPOISON)
+> +#define VM_FAULT_HWPOISON_LARGE_MASK 0xf000 /* encodes hpage index for large hwpoison */
+> +
+> +#define VM_FAULT_ERROR	(VM_FAULT_OOM | VM_FAULT_SIGBUS | VM_FAULT_HWPOISON | \
+> +			 VM_FAULT_HWPOISON_LARGE)
+> +
+> +/* Encode hstate index for a hwpoisoned large page */
+> +#define VM_FAULT_SET_HINDEX(x) ((x) << 12)
+> +#define VM_FAULT_GET_HINDEX(x) (((x) >> 12) & 0xf)
+>  
+>  /*
+>   * Can be called by the pagefault handler when it gets a VM_FAULT_OOM.
+> diff --git a/mm/hugetlb.c b/mm/hugetlb.c
+> index 67cd032..96991de 100644
+> --- a/mm/hugetlb.c
+> +++ b/mm/hugetlb.c
+> @@ -2589,7 +2589,8 @@ retry:
+>  		 * So we need to block hugepage fault by PG_hwpoison bit check.
+>  		 */
+>  		if (unlikely(PageHWPoison(page))) {
+> -			ret = VM_FAULT_HWPOISON;
+> +			ret = VM_FAULT_HWPOISON | 
+> +			      VM_FAULT_SET_HINDEX(h - hstates);
+>  			goto backout_unlocked;
+>  		}
+>  		page_dup_rmap(page);
+> @@ -2656,7 +2657,8 @@ int hugetlb_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>  			migration_entry_wait(mm, (pmd_t *)ptep, address);
+>  			return 0;
+>  		} else if (unlikely(is_hugetlb_entry_hwpoisoned(entry)))
+> -			return VM_FAULT_HWPOISON;
+> +			return VM_FAULT_HWPOISON_LARGE | 
+> +			       VM_FAULT_SET_HINDEX(h - hstates);
+>  	}
+>  
+>  	ptep = huge_pte_alloc(mm, address, huge_page_size(h));
+> diff --git a/mm/memory.c b/mm/memory.c
+> index 71b161b..8cea8f3 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -1450,7 +1450,8 @@ int __get_user_pages(struct task_struct *tsk, struct mm_struct *mm,
+>  					if (ret & VM_FAULT_OOM)
+>  						return i ? i : -ENOMEM;
+>  					if (ret &
+> -					    (VM_FAULT_HWPOISON|VM_FAULT_SIGBUS))
+> +					    (VM_FAULT_HWPOISON|VM_FAULT_HWPOISON_LARGE|
+> +					     VM_FAULT_SIGBUS))
+>  						return i ? i : -EFAULT;
+>  					BUG();
+>  				}
+> -- 
+> 1.7.1
