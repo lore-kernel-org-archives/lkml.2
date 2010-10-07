@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751943Ab0JGStT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 14:49:19 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62935 "EHLO mga11.intel.com"
+	id S1752554Ab0JGSye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 14:54:34 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27638 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750964Ab0JGStS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 14:49:18 -0400
+	id S1751207Ab0JGSyc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 14:54:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,298,1283756400"; 
-   d="scan'208";a="614405321"
-Date: Thu, 7 Oct 2010 20:49:16 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: David Jander <david@protonic.nl>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/4] mfd/mc13xxx: add support for mc13892
-Message-ID: <20101007184915.GA21875@sortiz-mobl>
-References: <20100929162315.GG29811@pengutronix.de>
- <1285777427-2887-3-git-send-email-u.kleine-koenig@pengutronix.de>
- <20101007184501.GX29673@pengutronix.de>
+   d="scan'208";a="333446353"
+Message-ID: <4CAE1767.5040409@intel.com>
+Date: Thu, 07 Oct 2010 11:54:31 -0700
+From: "H. Peter Anvin" <h.peter.anvin@intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101007184501.GX29673@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "mingo@redhat.com" <mingo@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "yinghai@kernel.org" <yinghai@kernel.org>,
+        "caiqian@redhat.com" <caiqian@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        Kexec Mailing List <kexec@lists.infradead.org>
+Subject: Re: [tip:core/memblock] x86, memblock: Fix crashkernel allocation
+References: <4CABAF2A.5090501@kernel.org> <tip-9f4c13964b58608fbce05540743281ea3146c0e8@git.kernel.org> <20101006151449.GA7378@redhat.com> <4CACF531.2060407@intel.com> <20101006224704.GD7378@redhat.com> <4CAD01A9.9050907@intel.com> <20101007181804.GE23308@redhat.com>
+In-Reply-To: <20101007181804.GE23308@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Uwe,
-
-On Thu, Oct 07, 2010 at 08:45:01PM +0200, Uwe Kleine-König wrote:
-> Hi Samuel,
+On 10/07/2010 11:18 AM, Vivek Goyal wrote:
 > 
-> On Wed, Sep 29, 2010 at 06:23:46PM +0200, Uwe Kleine-König wrote:
-> > mc13892 is the companion PMIC for Freescale's i.MX51.  It's similar enough
-> > to mc13782 to support it in a single driver.
-> > 
-> > This patch introduces enough compatibility cruft to keep all users of the
-> > superseded mc13783 driver unchanged.
-> > 
-> > Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> > ---
-> >  drivers/mfd/Kconfig         |    9 +-
-> >  drivers/mfd/Makefile        |    2 +-
-> >  drivers/mfd/mc13783-core.c  |  743 --------------------------------------
-> >  drivers/mfd/mc13xxx-core.c  |  840 +++++++++++++++++++++++++++++++++++++++++++
-> >  include/linux/mfd/mc13783.h |  247 ++++++-------
-> >  include/linux/mfd/mc13xxx.h |  154 ++++++++
-> >  6 files changed, 1113 insertions(+), 882 deletions(-)
-> >  delete mode 100644 drivers/mfd/mc13783-core.c
-> >  create mode 100644 drivers/mfd/mc13xxx-core.c
-> >  create mode 100644 include/linux/mfd/mc13xxx.h
-> > 
-> > [...]
-> > diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> > new file mode 100644
-> > index 0000000..93258ad
-> > --- /dev/null
-> > +++ b/drivers/mfd/mc13xxx-core.c
-> > @@ -0,0 +1,840 @@
-> > +/*
-> > + * Copyright 2009-2010 Pengutronix
-> > + * Uwe Kleine-Koenig <u.kleine-koenig@pengutronix.de>
-> > + *
-> > + * loosely based on an earlier driver that has
-> > + * Copyright 2009 Pengutronix, Sascha Hauer <s.hauer@pengutronix.de>
-> > + *
-> > + * This program is free software; you can redistribute it and/or modify it under
-> > + * the terms of the GNU General Public License version 2 as published by the
-> > + * Free Software Foundation.
-> > + */
-> > +#define DEBUG
-> > +#define VERBOSE_DEBUG
-> David Jander gave me a hint via private mail that I forgot to remove
-> these two #defines.
-> Would you care to remove these before Linus pulls?  Should I send a
-> patch or do you do it by hand?
-I'll take care of it, don't bother.
+> Ok, I was browsing through kexec-tools, x86 bzImage code and trying to
+> refresh my memory what segments were being loaded and what were memory
+> address concerns.
+> 
+> - relocatable bzImage (max addr 0x37ffffff, 896MB). 
+> 	Though I don't know/understand where that 896MB come from.
+> 
+> - initrd (max addr 0x37ffffff, 896MB)
+> 	Don't know why 896MB as upper limit
 
-Cheers,
-Samuel.
+896 MB is presumably the (default!!) LOWMEM limit on 32 bits.  This is
+actually wrong if vmalloc= is also specified on command line, though, or
+with nonstandard compile-time options.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> - Purgatory (max addr 2G)
+> 
+> - A segment to keep elf headers (no limit)
+> 	These are accessed when second kernel as fully booted so can be
+> 	addressed in higher addresses.
+> 
+> - A backup segment to copy first 640K of memory (not aware of any limit)
+> - Setup/parameter segment (no limit)
+> 	- We don't really execute anything here and just access it for
+>   	  command line.
+
+Probably has a 4 GB limit, since I believe it only has a 32-bit pointer.
+
+> So atleast for bzImage it looks that if we specify crashkernel=128M<896M, it
+> will work.
+> 
+> So I am fine with above additional syntax for crashkernel=. May be we shall
+> have to the deprecate the crashkernel=X<@0 syntax.
+> 
+> CCing kexec list, in case others have any comments.
+
+It would be easy enough to either deprecate or make it an alias for
+crashkernel=...<896M, which is basically what Yinghai's patch does.
+
+	-hpa
