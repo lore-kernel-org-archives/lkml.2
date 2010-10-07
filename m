@@ -1,324 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab0JGXSm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 19:18:42 -0400
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:36508 "HELO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754602Ab0JGXSl (ORCPT
+	id S1752932Ab0JGXXr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 19:23:47 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:33282 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751100Ab0JGXXq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 19:18:41 -0400
-Date: Thu, 7 Oct 2010 18:18:35 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: linux-nfs@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: task blocked for more than 120 seconds.
-Message-ID: <20101007231835.GB2657@BohrerMBP.rgmadvisors.com>
+	Thu, 7 Oct 2010 19:23:46 -0400
+Date: Thu, 7 Oct 2010 17:23:42 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+        benh@kernel.crashing.org, paulus@samba.org,
+        Stefan Weil <weil@mail.berlios.de>, Jiri Kosina <jkosina@suse.cz>,
+        Sean MacLennan <smaclennan@pikatech.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Michal Simek <monstr@monstr.eu>,
+        "David S. Miller" <davem@davemloft.net>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 14/18] powerpc, of_serial: Endianness issues setting up
+ the serial ports
+Message-ID: <20101007232342.GB4213@angua.secretlab.ca>
+References: <1285916771-18033-1-git-send-email-imunsie@au1.ibm.com>
+ <1285916771-18033-15-git-send-email-imunsie@au1.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1285916771-18033-15-git-send-email-imunsie@au1.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Oct 01, 2010 at 05:06:07PM +1000, Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
+> 
+> The speed and clock of the serial ports is retrieved from the device
+> tree in both the PowerPC legacy serial code and the Open Firmware serial
+> driver, therefore they need to handle the fact that the device tree is
+> always big endian, while the CPU may not be.
+> 
+> Also fix other device tree references in the legacy serial code.
+> 
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 
-I've got some machines with nfs mounted home directories and recently
-had the machines lock up with the following output below from the
-kernel logs.  This machine was running 2.6.32.21 at the time, and
-was locked up for at least 20 minutes before we rebooted.  We've had
-this happen to us twice now, so while I haven't tried I believe we can
-reproduce it in about a day.
+Applied, thanks.
 
-Does anyone have any insight on what may be happening here or any
-suggestions for debugging?
+I'm picking up this one because it is also needed by Microblaze.
+Michal Simek also posted a patch that does the same thing, but this
+one is better so I'm dropping his in favour of this one.
 
-Thanks,
-Shawn
+As for the other patches, they all look good to me (at least for the
+bits that I care about), but I'll leave them for Ben to pick up so the
+series doesn't get too fragmented.
 
-INFO: task java:24970 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-java          D ffff88189c50e198     0 24970  24239 0x00000000
- ffff88205b7339c8 0000000000000086 0000000000000000 000000005ae2d09c
- 0000000000000286 0000000000000030 ffff88205b733988 000000010174a797
- ffff88205acd4a80 ffff88205b733fd8 000000000000e198 ffff88205acd4a80
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff8100c9ce>] ? common_interrupt+0xe/0x13
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff81047774>] ? __enqueue_entity+0x84/0x90
- [<ffffffff8104f7d5>] ? enqueue_task_fair+0x45/0x90
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task java:24982 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-java          D ffff8800283ee198     0 24982  24239 0x00000000
- ffff88104f6339c8 0000000000000086 0000000000000000 00000000ffffff10
- 0000000000000286 0000000000000030 0000000000000282 000000010174a681
- ffff88105a592580 ffff88104f633fd8 000000000000e198 ffff88105a592580
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff810ffef9>] ? do_wp_page+0x109/0x7c0
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task hbitimestamp:23184 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-hbitimestamp  D ffff88109c6ae198     0 23184  23175 0x00000000
- ffff880855d179c8 0000000000000086 0000000000000000 000000005bb2d600
- 0000000000000282 0000000000000030 0000000000000282 00000001017445ab
- ffff8808577bc640 ffff880855d17fd8 000000000000e198 ffff8808577bc640
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff8100cb4e>] ? apic_timer_interrupt+0xe/0x20
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8141c74e>] ? do_device_not_available+0xe/0x10
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task java:24970 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-java          D ffff88189c50e198     0 24970  24239 0x00000000
- ffff88205b7339c8 0000000000000086 0000000000000000 000000005ae2d09c
- 0000000000000286 0000000000000030 ffff88205b733988 000000010174a797
- ffff88205acd4a80 ffff88205b733fd8 000000000000e198 ffff88205acd4a80
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff8100c9ce>] ? common_interrupt+0xe/0x13
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff81047774>] ? __enqueue_entity+0x84/0x90
- [<ffffffff8104f7d5>] ? enqueue_task_fair+0x45/0x90
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task java:24982 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-java          D ffff8800283ee198     0 24982  24239 0x00000000
- ffff88104f6339c8 0000000000000086 0000000000000000 00000000ffffff10
- 0000000000000286 0000000000000030 0000000000000282 000000010174a681
- ffff88105a592580 ffff88104f633fd8 000000000000e198 ffff88105a592580
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff810ffef9>] ? do_wp_page+0x109/0x7c0
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task tail:22115 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-tail          D ffff88189c4ee198     0 22115  14494 0x00000000
- ffff88085b95bbd8 0000000000000086 0000000000000000 ffffffffa035d896
- ffff88205be57cc8 ffff88205be57cc8 ffff88205be57cc8 000000010174d70e
- ffff8808564fe400 ffff88085b95bfd8 000000000000e198 ffff8808564fe400
-Call Trace:
- [<ffffffffa035d896>] ? __rpc_execute+0xd6/0x2a0 [sunrpc]
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa04037d2>] nfs_sync_mapping_wait+0x122/0x260 [nfs]
- [<ffffffffa0403aa9>] nfs_write_mapping+0x79/0xb0 [nfs]
- [<ffffffffa0403afa>] nfs_wb_nocommit+0x1a/0x20 [nfs]
- [<ffffffffa03f60f8>] nfs_getattr+0x128/0x140 [nfs]
- [<ffffffff811351d1>] vfs_getattr+0x51/0x80
- [<ffffffff8113548f>] vfs_fstat+0x3f/0x60
- [<ffffffff811354d4>] sys_newfstat+0x24/0x40
- [<ffffffff810841a4>] ? sys_nanosleep+0x74/0x80
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task hbitimestamp:23184 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-hbitimestamp  D ffff88109c6ae198     0 23184  23175 0x00000000
- ffff880855d179c8 0000000000000086 0000000000000000 000000005bb2d600
- 0000000000000282 0000000000000030 0000000000000282 00000001017445ab
- ffff8808577bc640 ffff880855d17fd8 000000000000e198 ffff8808577bc640
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff8100cb4e>] ? apic_timer_interrupt+0xe/0x20
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8141c74e>] ? do_device_not_available+0xe/0x10
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task java:24970 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-java          D ffff88189c50e198     0 24970  24239 0x00000000
- ffff88205b7339c8 0000000000000086 0000000000000000 000000005ae2d09c
- 0000000000000286 0000000000000030 ffff88205b733988 000000010174a797
- ffff88205acd4a80 ffff88205b733fd8 000000000000e198 ffff88205acd4a80
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff8100c9ce>] ? common_interrupt+0xe/0x13
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff81047774>] ? __enqueue_entity+0x84/0x90
- [<ffffffff8104f7d5>] ? enqueue_task_fair+0x45/0x90
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task java:24982 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-java          D ffff8800283ee198     0 24982  24239 0x00000000
- ffff88104f6339c8 0000000000000086 0000000000000000 00000000ffffff10
- 0000000000000286 0000000000000030 0000000000000282 000000010174a681
- ffff88105a592580 ffff88104f633fd8 000000000000e198 ffff88105a592580
-Call Trace:
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff81419df3>] io_schedule+0x73/0xc0
- [<ffffffffa03fe02e>] nfs_wait_bit_uninterruptible+0xe/0x20 [nfs]
- [<ffffffff8141a61f>] __wait_on_bit+0x5f/0x90
- [<ffffffffa03fe020>] ? nfs_wait_bit_uninterruptible+0x0/0x20 [nfs]
- [<ffffffff8141a6c8>] out_of_line_wait_on_bit+0x78/0x90
- [<ffffffff8107fe50>] ? wake_bit_function+0x0/0x40
- [<ffffffff810e11ce>] ? find_get_page+0x1e/0xa0
- [<ffffffffa03fe00f>] nfs_wait_on_request+0x2f/0x40 [nfs]
- [<ffffffffa0403d77>] nfs_updatepage+0x107/0x4f0 [nfs]
- [<ffffffffa03f3a6a>] nfs_write_end+0x5a/0x2c0 [nfs]
- [<ffffffff810e0bb4>] generic_file_buffered_write+0x174/0x2a0
- [<ffffffff810e25f0>] __generic_file_aio_write+0x240/0x470
- [<ffffffff810e288f>] generic_file_aio_write+0x6f/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff810ffef9>] ? do_wp_page+0x109/0x7c0
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
-INFO: task hbitimestamp:24427 blocked for more than 120 seconds.
-"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-hbitimestamp  D ffff88089c40e198     0 24427  24317 0x00000000
- ffff88205a0b3c88 0000000000000082 0000000000000000 0000000000000000
- ffff88205a0b3ca8 ffffffff814196a8 0000000000000000 00000001017777de
- ffff88205a6ec8c0 ffff88205a0b3fd8 000000000000e198 ffff88205a6ec8c0
-Call Trace:
- [<ffffffff814196a8>] ? thread_return+0x4e/0x726
- [<ffffffff8141aac1>] __mutex_lock_slowpath+0xf1/0x170
- [<ffffffff8141a9ab>] mutex_lock+0x2b/0x50
- [<ffffffff810e2879>] generic_file_aio_write+0x59/0xe0
- [<ffffffffa03f371a>] nfs_file_write+0xda/0x1e0 [nfs]
- [<ffffffff8112fb7a>] do_sync_write+0xfa/0x140
- [<ffffffff810fcb91>] ? __do_fault+0x3e1/0x4c0
- [<ffffffff8107fe10>] ? autoremove_wake_function+0x0/0x40
- [<ffffffff8116a68f>] ? inotify_inode_queue_event+0x2f/0x120
- [<ffffffff811bd246>] ? security_file_permission+0x16/0x20
- [<ffffffff8112fe78>] vfs_write+0xb8/0x1a0
- [<ffffffff81130711>] sys_write+0x51/0x90
- [<ffffffff8141c74e>] ? do_device_not_available+0xe/0x10
- [<ffffffff8100c11b>] system_call_fastpath+0x16/0x1b
+g.
+
+> ---
+>  arch/powerpc/kernel/legacy_serial.c |   22 +++++++++++-----------
+>  drivers/serial/of_serial.c          |   12 ++++++------
+>  2 files changed, 17 insertions(+), 17 deletions(-)
+> 
+> diff --git a/arch/powerpc/kernel/legacy_serial.c b/arch/powerpc/kernel/legacy_serial.c
+> index c1fd0f9..c834757 100644
+> --- a/arch/powerpc/kernel/legacy_serial.c
+> +++ b/arch/powerpc/kernel/legacy_serial.c
+> @@ -52,14 +52,14 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
+>  				  phys_addr_t taddr, unsigned long irq,
+>  				  upf_t flags, int irq_check_parent)
+>  {
+> -	const u32 *clk, *spd;
+> +	const __be32 *clk, *spd;
+>  	u32 clock = BASE_BAUD * 16;
+>  	int index;
+>  
+>  	/* get clock freq. if present */
+>  	clk = of_get_property(np, "clock-frequency", NULL);
+>  	if (clk && *clk)
+> -		clock = *clk;
+> +		clock = be32_to_cpup(clk);
+>  
+>  	/* get default speed if present */
+>  	spd = of_get_property(np, "current-speed", NULL);
+> @@ -109,7 +109,7 @@ static int __init add_legacy_port(struct device_node *np, int want_index,
+>  	legacy_serial_infos[index].taddr = taddr;
+>  	legacy_serial_infos[index].np = of_node_get(np);
+>  	legacy_serial_infos[index].clock = clock;
+> -	legacy_serial_infos[index].speed = spd ? *spd : 0;
+> +	legacy_serial_infos[index].speed = spd ? be32_to_cpup(spd) : 0;
+>  	legacy_serial_infos[index].irq_check_parent = irq_check_parent;
+>  
+>  	printk(KERN_DEBUG "Found legacy serial port %d for %s\n",
+> @@ -168,7 +168,7 @@ static int __init add_legacy_soc_port(struct device_node *np,
+>  static int __init add_legacy_isa_port(struct device_node *np,
+>  				      struct device_node *isa_brg)
+>  {
+> -	const u32 *reg;
+> +	const __be32 *reg;
+>  	const char *typep;
+>  	int index = -1;
+>  	u64 taddr;
+> @@ -181,7 +181,7 @@ static int __init add_legacy_isa_port(struct device_node *np,
+>  		return -1;
+>  
+>  	/* Verify it's an IO port, we don't support anything else */
+> -	if (!(reg[0] & 0x00000001))
+> +	if (!(be32_to_cpu(reg[0]) & 0x00000001))
+>  		return -1;
+>  
+>  	/* Now look for an "ibm,aix-loc" property that gives us ordering
+> @@ -202,7 +202,7 @@ static int __init add_legacy_isa_port(struct device_node *np,
+>  		taddr = 0;
+>  
+>  	/* Add port, irq will be dealt with later */
+> -	return add_legacy_port(np, index, UPIO_PORT, reg[1], taddr,
+> +	return add_legacy_port(np, index, UPIO_PORT, be32_to_cpu(reg[1]), taddr,
+>  			       NO_IRQ, UPF_BOOT_AUTOCONF, 0);
+>  
+>  }
+> @@ -251,9 +251,9 @@ static int __init add_legacy_pci_port(struct device_node *np,
+>  	 * we get to their "reg" property
+>  	 */
+>  	if (np != pci_dev) {
+> -		const u32 *reg = of_get_property(np, "reg", NULL);
+> -		if (reg && (*reg < 4))
+> -			index = lindex = *reg;
+> +		const __be32 *reg = of_get_property(np, "reg", NULL);
+> +		if (reg && (be32_to_cpup(reg) < 4))
+> +			index = lindex = be32_to_cpup(reg);
+>  	}
+>  
+>  	/* Local index means it's the Nth port in the PCI chip. Unfortunately
+> @@ -507,7 +507,7 @@ static int __init check_legacy_serial_console(void)
+>  	struct device_node *prom_stdout = NULL;
+>  	int i, speed = 0, offset = 0;
+>  	const char *name;
+> -	const u32 *spd;
+> +	const __be32 *spd;
+>  
+>  	DBG(" -> check_legacy_serial_console()\n");
+>  
+> @@ -547,7 +547,7 @@ static int __init check_legacy_serial_console(void)
+>  	}
+>  	spd = of_get_property(prom_stdout, "current-speed", NULL);
+>  	if (spd)
+> -		speed = *spd;
+> +		speed = be32_to_cpup(spd);
+>  
+>  	if (strcmp(name, "serial") != 0)
+>  		goto not_found;
+> diff --git a/drivers/serial/of_serial.c b/drivers/serial/of_serial.c
+> index 2af8fd1..17849dc 100644
+> --- a/drivers/serial/of_serial.c
+> +++ b/drivers/serial/of_serial.c
+> @@ -31,8 +31,8 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>  {
+>  	struct resource resource;
+>  	struct device_node *np = ofdev->dev.of_node;
+> -	const unsigned int *clk, *spd;
+> -	const u32 *prop;
+> +	const __be32 *clk, *spd;
+> +	const __be32 *prop;
+>  	int ret, prop_size;
+>  
+>  	memset(port, 0, sizeof *port);
+> @@ -55,23 +55,23 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>  	/* Check for shifted address mapping */
+>  	prop = of_get_property(np, "reg-offset", &prop_size);
+>  	if (prop && (prop_size == sizeof(u32)))
+> -		port->mapbase += *prop;
+> +		port->mapbase += be32_to_cpup(prop);
+>  
+>  	/* Check for registers offset within the devices address range */
+>  	prop = of_get_property(np, "reg-shift", &prop_size);
+>  	if (prop && (prop_size == sizeof(u32)))
+> -		port->regshift = *prop;
+> +		port->regshift = be32_to_cpup(prop);
+>  
+>  	port->irq = irq_of_parse_and_map(np, 0);
+>  	port->iotype = UPIO_MEM;
+>  	port->type = type;
+> -	port->uartclk = *clk;
+> +	port->uartclk = be32_to_cpup(clk);
+>  	port->flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP
+>  		| UPF_FIXED_PORT | UPF_FIXED_TYPE;
+>  	port->dev = &ofdev->dev;
+>  	/* If current-speed was set, then try not to change it. */
+>  	if (spd)
+> -		port->custom_divisor = *clk / (16 * (*spd));
+> +		port->custom_divisor = be32_to_cpup(clk) / (16 * (be32_to_cpup(spd)));
+>  
+>  	return 0;
+>  }
+> -- 
+> 1.7.1
+> 
