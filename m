@@ -1,50 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759655Ab0JGH0r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 03:26:47 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:59047 "EHLO
+	id S1759932Ab0JGHgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 03:36:35 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58415 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab0JGH0q (ORCPT
+	with ESMTP id S1753219Ab0JGHge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 03:26:46 -0400
-Date: Thu, 7 Oct 2010 09:26:41 +0200
+	Thu, 7 Oct 2010 03:36:34 -0400
+Date: Thu, 7 Oct 2010 09:36:33 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, fweisbec@gmail.com, andi@firstfloor.org,
-        robert.richter@amd.com, gorcunov@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] arch generic way to trigger unknown NMIs
-Message-ID: <20101007072641.GE5010@basil.fritz.box>
-References: <20101007030807.GA4076@redhat.com>
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        fengguang.wu@intel.com, linux-mm@kvack.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/4] HWPOISON: Copy si_addr_lsb to user
+Message-ID: <20101007073633.GF5010@basil.fritz.box>
+References: <1286398141-13749-1-git-send-email-andi@firstfloor.org>
+ <1286398141-13749-3-git-send-email-andi@firstfloor.org>
+ <4CAD6943.2020805@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101007030807.GA4076@redhat.com>
+In-Reply-To: <4CAD6943.2020805@jp.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Having a regression test for this is good, but it would 
-be also good if it wasn't a private one but in some public
-git repository.
-
->  static struct jprobe lkdtm;
-> @@ -340,6 +343,9 @@ static void lkdtm_do_action(enum ctype which)
->  		set_current_state(TASK_UNINTERRUPTIBLE);
->  		schedule();
->  		break;
-> +	case NMI:
-> +		apic->send_IPI_allbutself(NMI_VECTOR);
-> +		break;
->  	case NONE:
->  	default:
->  		break;
+On Thu, Oct 07, 2010 at 03:31:31PM +0900, Hidetoshi Seto wrote:
+> (2010/10/07 5:48), Andi Kleen wrote:
+> > From: Andi Kleen <ak@linux.intel.com>
+> > 
+> > The original hwpoison code added a new siginfo field si_addr_lsb to
+> > pass the granuality of the fault address to user space. Unfortunately
+> > this field was never copied to user space. Fix this here.
+> > 
+> > I added explicit checks for the MCEERR codes to avoid having
+> > to patch all potential callers to initialize the field.
 > 
-> Anyone have any thoughts?  Maybe there is an easier way?
+> Now QEMU uses signalfd to catch the SIGBUS delivered to the
+> main thread, so I think similar fix to copy lsb to user is
+> required for signalfd too. 
 
-Do you really want the NMI on all CPUs - 1? Normally it's directed to
-a single one.
+Good catch. I don't think qemu uses this today, but it should
+be fixed there too for .37 at least.
 
 -Andi
+
