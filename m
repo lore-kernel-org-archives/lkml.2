@@ -1,37 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab0JHATf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 20:19:35 -0400
-Received: from trent.utfs.org ([194.246.123.103]:58597 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754349Ab0JHATe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 20:19:34 -0400
-Date: Thu, 7 Oct 2010 17:19:31 -0700 (PDT)
-From: lists@nerdbynature.de
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: LKML <linux-kernel@vger.kernel.org>, takedakn@nttdata.co.jp,
-        haradats@gmail.com
-Subject: Re: 2.6.36-rc7: kernel panic with SECURITY_TOMOYO=y
-In-Reply-To: <201010080010.o980ADB8027880@www262.sakura.ne.jp>
-Message-ID: <alpine.DEB.2.01.1010071717590.21082@trent.utfs.org>
-References: <alpine.DEB.2.01.1010071534370.21082@trent.utfs.org> <alpine.DEB.2.01.1010071637090.21082@trent.utfs.org> <201010080010.o980ADB8027880@www262.sakura.ne.jp>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1756330Ab0JHAUp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 20:20:45 -0400
+Received: from pmx.stpeter.com.ph ([122.52.208.90]:36954 "EHLO
+	pmx.stpeter.com.ph" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab0JHAUo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 20:20:44 -0400
+Message-ID: <20101008073257.422343e10n0gnnwg@webmail.stpeter.com.ph>
+Date: Fri, 08 Oct 2010 07:32:57 +0800
+From: "MR. PATRICK CHAN K.W." <patchan_kww@yahoo.com.hk>
+Reply-to: patrikchankwp@yahoo.com.hk
+To: undisclosed-recipients:;
+Subject: God dag til dig min ven.
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Oct 2010 at 09:10, Tetsuo Handa wrote:
-> Linux 2.6.36 includes TOMOYO 2.3 which is not compatible with
-> TOMOYO 2.2 included in Linux 2.6.30-2.6.35 .
+God dag til dig min ven.
 
-Yes, that's what I found out now, see my other reply to this thread.
+Det er forståeligt, at du kan blive en lille smule bange, fordi du  
+ikke kender mig, men jeg har en lukrativ forretning forslag af fælles  
+interesse til at dele med dig. Jeg fik din henvisning i min søgen  
+efter en person, der passer til min foreslåede forretningsforbindelsen.
 
-Thanks for the quick reply & again: sorry for the noise...
+Jeg er Mr. Patrick Chan K.W. lykkeligt gift med børn, og jeg er en  
+direktør for Hang Seng Bank Ltd, der er leder af Den Internationale  
+Remittance afdelingen. Jeg har et fortroligt forretning forslag for  
+dig. Jeg vil har brug for dig til at hjælpe mig i at udføre en  
+virksomheds projekt fra Hong Kong til dit land. Det indebærer  
+overførsel af en stor sum penge. Alt vedrørende denne transaktion skal  
+være juridisk gøres uden slinger i valsen. Venligst bestræbe sig på at  
+overholde yderste diskretion i alle spørgsmål vedrørende dette  
+spørgsmål.
 
-Christian.
--- 
-BOFH excuse #189:
+Når midlerne er blevet overført til din konto, skal vi deler i  
+forholdet der skal godkendes af os begge. Jeg vil foretrække du  
+kontakte mig på min private e-mail adresse nedenfor  
+(patrikchankwp@yahoo.com.hk), og endelig efter at jeg skal give dig  
+mere information om denne operation. Skulle du være interesseret,  
+bedes du sende følgende til mig hurtigst muligt:
 
-SCSI's too wide.
+1. Fulde navne
+2. Beskæftigelse
+3. Privat telefonnummer
+4. Løbende kontakt adresse
+
+Venligst, hvis du ikke er interesseret slette denne e-mail og ikke  
+jage mig, fordi jeg sætter min karriere og liv min familie på spil med  
+på dette projekt. Selv om intet vovet er intet vundet.
+
+Din tidligst svar på dette brev vil blive værdsat.
+
+Venlig hilsen,
+
+Patrick Chan K.W.
+
+
+
+----------------------------------------------------------------
+This message was sent using IMP, the Internet Messaging Program.
+
