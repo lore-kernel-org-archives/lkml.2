@@ -1,55 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753283Ab0JGRRk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 13:17:40 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:60922 "EHLO
-	mail6.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751861Ab0JGRRj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 13:17:39 -0400
-Date: Thu, 7 Oct 2010 11:17:43 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-Reply-To: linux-kernel@vger.kernel.org, tsi@ualberta.ca
-To: linux-kernel@vger.kernel.org
-Subject: x86_64 2.6.35.* kernels and Intel Xeon X5550
-Message-ID: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
-User-Agent: Alpine 2.00 (WNT 1167 2008-08-23)
+	id S1753511Ab0JGRSd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 13:18:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65237 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751514Ab0JGRSc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 13:18:32 -0400
+Message-ID: <4CAE00CB.1070400@redhat.com>
+Date: Thu, 07 Oct 2010 19:18:03 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v6 08/12] Handle async PF in a guest.
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com> <1286207794-16120-9-git-send-email-gleb@redhat.com> <4CADC6C3.3040305@redhat.com> <20101007171418.GA2397@redhat.com>
+In-Reply-To: <20101007171418.GA2397@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings.
+  On 10/07/2010 07:14 PM, Gleb Natapov wrote:
+> On Thu, Oct 07, 2010 at 03:10:27PM +0200, Avi Kivity wrote:
+> >   On 10/04/2010 05:56 PM, Gleb Natapov wrote:
+> >  >When async PF capability is detected hook up special page fault handler
+> >  >that will handle async page fault events and bypass other page faults to
+> >  >regular page fault handler. Also add async PF handling to nested SVM
+> >  >emulation. Async PF always generates exit to L1 where vcpu thread will
+> >  >be scheduled out until page is available.
+> >  >
+> >
+> >  Please separate guest and host changes.
+> >
+> >  >+void kvm_async_pf_task_wait(u32 token)
+> >  >+{
+> >  >+	u32 key = hash_32(token, KVM_TASK_SLEEP_HASHBITS);
+> >  >+	struct kvm_task_sleep_head *b =&async_pf_sleepers[key];
+> >  >+	struct kvm_task_sleep_node n, *e;
+> >  >+	DEFINE_WAIT(wait);
+> >  >+
+> >  >+	spin_lock(&b->lock);
+> >  >+	e = _find_apf_task(b, token);
+> >  >+	if (e) {
+> >  >+		/* dummy entry exist ->   wake up was delivered ahead of PF */
+> >  >+		hlist_del(&e->link);
+> >  >+		kfree(e);
+> >  >+		spin_unlock(&b->lock);
+> >  >+		return;
+> >  >+	}
+> >  >+
+> >  >+	n.token = token;
+> >  >+	n.cpu = smp_processor_id();
+> >  >+	init_waitqueue_head(&n.wq);
+> >  >+	hlist_add_head(&n.link,&b->list);
+> >  >+	spin_unlock(&b->lock);
+> >  >+
+> >  >+	for (;;) {
+> >  >+		prepare_to_wait(&n.wq,&wait, TASK_UNINTERRUPTIBLE);
+> >  >+		if (hlist_unhashed(&n.link))
+> >  >+			break;
+> >  >+		local_irq_enable();
+> >
+> >  Suppose we take another apf here.  And another, and another (for
+> >  different pages, while executing schedule()).  What's to prevent
+> >  kernel stack overflow?
+> >
+> Host side keeps track of outstanding apfs and will not send apf for the
+> same phys address twice. It will halt vcpu instead.
 
-I administer a cluster composed of a mixture of various Opteron models and 
-Intel Xeon X5550's.  The 2.6.34.*, and prior, kernels run fine on all of 
-them.  The 2.6.35 series also runs fine on the Opterons, but not on the 
-Xeon's.  All of these are CONFIG_GENERIC_CPU kernels.
+What about different pages, running the scheduler code?
 
-On the Xeon's, 2.6.35 hangs early on, upon the first test of trace events 
-(in kernel/trace/trace_events.c:event_trace_self_tests()).  When disabling 
-all tracing, debugging, etc., it still hangs but slightly later.  The 
-megaraid_sas module is loaded, detects the adapter, but never gets around 
-to registering it with the SCSI layer.
+Oh, and we'll run the scheduler recursively.
 
-Core2-specific kernels also hang the same way, as do UP kernels.  I've 
-tried backing out certain commits that seemed likely candidates, but have 
-yet to stumble upon the one (or more) that is causing this.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-Does anyone have any ideas?
-
-Thanks.
-
-Marc.
-
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
