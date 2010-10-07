@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760612Ab0JGNa1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 09:30:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59968 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760554Ab0JGNa0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 09:30:26 -0400
-Message-ID: <4CADCB4E.60509@redhat.com>
-Date: Thu, 07 Oct 2010 15:29:50 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S932672Ab0JGNfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 09:35:38 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60227 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760534Ab0JGNfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 09:35:37 -0400
+Date: Thu, 7 Oct 2010 14:35:29 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mario Limonciello <superm1@ubuntu.com>
+Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
+        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
+Message-ID: <20101007133529.GA21782@srcf.ucam.org>
+References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com> <20101007111510.GA19624@srcf.ucam.org> <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com>
 MIME-Version: 1.0
-To: Rik van Riel <riel@redhat.com>
-CC: Gleb Natapov <gleb@redhat.com>, kvm@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v6 02/12] Halt vcpu if page it tries to access is swapped
- out.
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com> <1286207794-16120-3-git-send-email-gleb@redhat.com> <4CAD97D0.70100@redhat.com> <4CADCA1E.1080207@redhat.com>
-In-Reply-To: <4CADCA1E.1080207@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/07/2010 03:24 PM, Rik van Riel wrote:
-> On 10/07/2010 05:50 AM, Avi Kivity wrote:
->
->>> +static bool can_do_async_pf(struct kvm_vcpu *vcpu)
->>> +{
->>> + if (unlikely(!irqchip_in_kernel(vcpu->kvm) ||
->>> + kvm_event_needs_reinjection(vcpu)))
->>> + return false;
->>> +
->>> + return kvm_x86_ops->interrupt_allowed(vcpu);
->>> +}
->>
->> Strictly speaking, if the cpu can handle NMIs it can take an apf?
->
-> Strictly speaking, yes.
->
-> However, it may not be able to DO anything with it, since
-> it won't be able to reschedule the context it's running :)
->
+On Thu, Oct 07, 2010 at 08:30:57AM -0500, Mario Limonciello wrote:
 
-I was thinking about keeping the watchdog nmi handler responsive.
+>    In this specific scenario that Ken Yu submitted this patch for, the
+>    firmware will return the same return codes for the SMI's as a functional
+>    machine will.  Machines affected by this will fail to recover after rfkill
+>    is toggled twice.  The symptom will be that the soft block always appears
+>    set to the same setting with continued keypresses.
+>    During the prototype phase this option is quite useful to help debug the
+>    problem it addresses.
+
+Is the kernel able to unblock it under those circumstances?
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Matthew Garrett | mjg59@srcf.ucam.org
