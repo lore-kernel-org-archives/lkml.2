@@ -1,110 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab0JGGYT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 02:24:19 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:54541 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751574Ab0JGGYS (ORCPT
+	id S1755322Ab0JGG0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 02:26:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59893 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab0JGG0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 02:24:18 -0400
-Date: Thu, 7 Oct 2010 02:24:14 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+	Thu, 7 Oct 2010 02:26:34 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 7 Oct 2010 15:21:11 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>, David Rientjes <rientjes@google.com>,
-        Nick Piggin <nickpiggin@yahoo.com.au>,
-        Cedric Le Goater <clg@vnet.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [RFC PATCH] Prio_heap: heap_remove(), heap_maximum(),
-	heap_replace() and heap_cherrypick()
-Message-ID: <20101007062414.GA28631@Krystal>
-References: <20101006180323.GB21652@Krystal> <20101007034234.GM4195@balbir.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101007034234.GM4195@balbir.in.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 02:18:20 up 14 days, 10:20,  2 users,  load average: 0.23, 0.18,
-	0.11
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: [PATCH] memcg: reduce lock time at move charge (Was Re: [PATCH
+ 04/10] memcg: disable local interrupts in lock_page_cgroup()
+Message-Id: <20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-5-git-send-email-gthelen@google.com>
+	<20101005160332.GB9515@barrios-desktop>
+	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
+	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
+	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
+	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Balbir Singh (balbir@linux.vnet.ibm.com) wrote:
-> * Mathieu Desnoyers <mathieu.desnoyers@efficios.com> [2010-10-06 14:03:23]:
-> 
-> > These added interfaces lets prio_heap users lookup the top of heap item without
-> > performing any insertion, perform removal of the topmost heap entry, and also
-> > replacement of topmost heap entry. This is useful if one need to use the result
-> > of the lookup to determine if the current maximum should simply be removed or if
-> > it should be replaced.
+On Thu, 7 Oct 2010 11:17:43 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+ 
+> > hmm, if we'll do that, I think we need to do that under pte_lock in
+> > mem_cgroup_move_charge_pte_range(). But, we can't do wait_on_page_writeback()
+> > under pte_lock, right? Or, we need re-organize current move-charge implementation.
 > > 
-> > This is used by the Generic Ring Buffer to perform timestamp-based fusion-merge
-> > of per-cpu buffer records into a single stream.
-> >
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > Cc: Paul Menage <menage@google.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> > Cc: Nick Piggin <nickpiggin@yahoo.com.au>
-> > Cc: Balbir Singh <balbir@in.ibm.com>
-> > Cc: Cedric Le Goater <clg@fr.ibm.com>
-> > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > ---
+> Nice catch. I think releaseing pte_lock() is okay. (and it should be released)
 > 
-> The patchset looks good to me, one comment on cherry picking below
+> IIUC, task's css_set() points to new cgroup when "move" is called. Then,
+> it's not necessary to take pte_lock, I guess.
+> (And taking pte_lock too long is not appreciated..)
 > 
-> Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
-
-Thanks!
-
-[...]
-> > +/**
-> > + * heap_cherrypick - remove a given element from the heap
-> > + * @heap: the heap to be operated on
-> > + * @p: the element
-> > + *
-> > + * Remove the given element from the heap. Return the element if present, else
-> > + * return NULL. This algorithm has a complexity of O(n), which is higher than
-> > + * O(log(n)) provided by the rest of this API.
-> > + */
-> > +extern void *heap_cherrypick(struct ptr_heap *heap, void *p);
+> I'll write a sample patch today.
 > 
-> One way to reduce cherrypick'ing in O(n) if n is large, is to sort the
-> entire heap using heapify() and then doing a binary search. The cost
-> of sorting is high, so it depends on how often and in what phases we
-> cherry pick.
+Here.
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I need this to implement the ring buffer iterator "reset" primitive, which is
-very infrequently called. So for my use-case, I really prefer to keep very fast
-add/remove/get max (as implemented currently) without sorting the rest of the
-heap. What you propose looks more like a balanced binary tree, which we already
-have in the kernel, but clearly adds some overhead by requiring to keep the
-whole tree sorted.
+Now, at task migration among cgroup, memory cgroup scans page table and moving
+account if flags are properly set.
 
-Thanks,
+The core code, mem_cgroup_move_charge_pte_range() does
 
-Mathieu
+ 	pte_offset_map_lock();
+	for all ptes in a page table:
+		1. look into page table, find_and_get a page
+		2. remove it from LRU.
+		3. move charge.
+		4. putback to LRU. put_page()
+	pte_offset_map_unlock();
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+for pte entries on a 3rd(2nd) level page table.
+
+This pte_offset_map_lock seems a bit long. This patch modifies a rountine as
+
+	pte_offset_map_lock()
+	for 32 pages:
+		      find_and_get a page
+		      record it
+	pte_offset_map_unlock()
+	for all recorded pages
+		      isolate it from LRU.
+		      move charge
+		      putback to LRU
+	for all recorded pages
+		      put_page()
+
+Note: newly-charged pages while we move account are charged to the new group.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   92 ++++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 60 insertions(+), 32 deletions(-)
+
+Index: mmotm-0928/mm/memcontrol.c
+===================================================================
+--- mmotm-0928.orig/mm/memcontrol.c
++++ mmotm-0928/mm/memcontrol.c
+@@ -4475,17 +4475,22 @@ one_by_one:
+  *
+  * Called with pte lock held.
+  */
+-union mc_target {
+-	struct page	*page;
+-	swp_entry_t	ent;
+-};
+ 
+ enum mc_target_type {
+-	MC_TARGET_NONE,	/* not used */
++	MC_TARGET_NONE, /* used as failure code(0) */
+ 	MC_TARGET_PAGE,
+ 	MC_TARGET_SWAP,
+ };
+ 
++struct mc_target {
++	enum mc_target_type type;
++	union {
++		struct page	*page;
++		swp_entry_t	ent;
++	} val;
++};
++
++
+ static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
+ 						unsigned long addr, pte_t ptent)
+ {
+@@ -4561,7 +4566,7 @@ static struct page *mc_handle_file_pte(s
+ }
+ 
+ static int is_target_pte_for_mc(struct vm_area_struct *vma,
+-		unsigned long addr, pte_t ptent, union mc_target *target)
++		unsigned long addr, pte_t ptent, struct mc_target *target)
+ {
+ 	struct page *page = NULL;
+ 	struct page_cgroup *pc;
+@@ -4587,7 +4592,7 @@ static int is_target_pte_for_mc(struct v
+ 		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
+ 			ret = MC_TARGET_PAGE;
+ 			if (target)
+-				target->page = page;
++				target->val.page = page;
+ 		}
+ 		if (!ret || !target)
+ 			put_page(page);
+@@ -4597,8 +4602,10 @@ static int is_target_pte_for_mc(struct v
+ 			css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
+ 		ret = MC_TARGET_SWAP;
+ 		if (target)
+-			target->ent = ent;
++			target->val.ent = ent;
+ 	}
++	if (target)
++		target->type = ret;
+ 	return ret;
+ }
+ 
+@@ -4751,6 +4758,9 @@ static void mem_cgroup_cancel_attach(str
+ 	mem_cgroup_clear_mc();
+ }
+ 
++
++#define MC_MOVE_ONCE		(32)
++
+ static int mem_cgroup_move_charge_pte_range(pmd_t *pmd,
+ 				unsigned long addr, unsigned long end,
+ 				struct mm_walk *walk)
+@@ -4759,26 +4769,47 @@ static int mem_cgroup_move_charge_pte_ra
+ 	struct vm_area_struct *vma = walk->private;
+ 	pte_t *pte;
+ 	spinlock_t *ptl;
++	struct mc_target *target;
++	int index, num;
++
++	target = kzalloc(sizeof(struct mc_target) *MC_MOVE_ONCE, GFP_KERNEL);
++	if (!target)
++		return -ENOMEM;
+ 
+ retry:
+ 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
+-	for (; addr != end; addr += PAGE_SIZE) {
++	for (num = 0; num < MC_MOVE_ONCE && addr != end; addr += PAGE_SIZE) {
+ 		pte_t ptent = *(pte++);
+-		union mc_target target;
+-		int type;
++		ret = is_target_pte_for_mc(vma, addr, ptent, &target[num]);
++		if (!ret)
++			continue;
++		target[num++].type = ret;
++	}
++	pte_unmap_unlock(pte - 1, ptl);
++	cond_resched();
++
++	ret = 0;
++	index = 0;
++	do {
++		struct mc_target *mt;
+ 		struct page *page;
+ 		struct page_cgroup *pc;
+ 		swp_entry_t ent;
+ 
+-		if (!mc.precharge)
+-			break;
++		if (!mc.precharge) {
++			ret = mem_cgroup_do_precharge(1);
++			if (ret)
++				goto out;
++			continue;
++		}
++
++		mt = &target[index++];
+ 
+-		type = is_target_pte_for_mc(vma, addr, ptent, &target);
+-		switch (type) {
++		switch (mt->type) {
+ 		case MC_TARGET_PAGE:
+-			page = target.page;
++			page = mt->val.page;
+ 			if (isolate_lru_page(page))
+-				goto put;
++				break;
+ 			pc = lookup_page_cgroup(page);
+ 			if (!mem_cgroup_move_account(pc,
+ 						mc.from, mc.to, false)) {
+@@ -4787,11 +4818,9 @@ retry:
+ 				mc.moved_charge++;
+ 			}
+ 			putback_lru_page(page);
+-put:			/* is_target_pte_for_mc() gets the page */
+-			put_page(page);
+ 			break;
+ 		case MC_TARGET_SWAP:
+-			ent = target.ent;
++			ent = mt->val.ent;
+ 			if (!mem_cgroup_move_swap_account(ent,
+ 						mc.from, mc.to, false)) {
+ 				mc.precharge--;
+@@ -4802,21 +4831,20 @@ put:			/* is_target_pte_for_mc() gets th
+ 		default:
+ 			break;
+ 		}
++	} while (index < num);
++out:
++	for (index = 0; index < num; index++) {
++		if (target[index].type == MC_TARGET_PAGE)
++			put_page(target[index].val.page);
++		target[index].type = MC_TARGET_NONE;
+ 	}
+-	pte_unmap_unlock(pte - 1, ptl);
++
++	if (ret)
++		return ret;
+ 	cond_resched();
+ 
+-	if (addr != end) {
+-		/*
+-		 * We have consumed all precharges we got in can_attach().
+-		 * We try charge one by one, but don't do any additional
+-		 * charges to mc.to if we have failed in charge once in attach()
+-		 * phase.
+-		 */
+-		ret = mem_cgroup_do_precharge(1);
+-		if (!ret)
+-			goto retry;
+-	}
++	if (addr != end)
++		goto retry;
+ 
+ 	return ret;
+ }
+
