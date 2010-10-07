@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760257Ab0JGJ4Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 05:56:25 -0400
-Received: from asmtpout024.mac.com ([17.148.16.99]:58679 "EHLO
-	asmtpout024.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754160Ab0JGJ4Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 05:56:24 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; CHARSET=US-ASCII
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-07_06:2010-10-07,2010-10-07,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010070024
-From: Elvis Dowson <elvis.dowson@mac.com>
-Subject: Debugging Linux OMAP kernel with kgdb and Eclipse
-Date: Thu, 07 Oct 2010 13:55:24 +0400
-Message-id: <1A4750AE-4E56-4376-A187-0742A81AAA53@mac.com>
-To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-X-Mailer: Apple Mail (2.1081)
+	id S1760269Ab0JGKBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 06:01:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43074 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760252Ab0JGKBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 06:01:21 -0400
+Message-ID: <4CAD9A2D.7020009@redhat.com>
+Date: Thu, 07 Oct 2010 12:00:13 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Gleb Natapov <gleb@minantech.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Gleb Natapov <gleb@redhat.com>,
+        kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org
+Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to provide
+ fast guest write interface
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com> <1286207794-16120-5-git-send-email-gleb@redhat.com> <20101005165738.GA32750@amt.cnet> <20101006111417.GX11145@redhat.com> <20101006143847.GB31423@amt.cnet> <20101006200836.GC4120@minantech.com>
+In-Reply-To: <20101006200836.GC4120@minantech.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-       I'm trying to setup a kernel debugging environment for the Gumstix Overo Earth (TI OMAP 3503) + Palo43 using Eclipse. 
+  On 10/06/2010 10:08 PM, Gleb Natapov wrote:
+> >  Malicious userspace can cause entry to be cached, ioctl
+> >  SET_USER_MEMORY_REGION 2^32 times, generation number will match,
+> >  mark_page_dirty_in_slot will be called with pointer to freed memory.
+> >
+> Hmm. To zap all cached entires on overflow we need to track them. If we
+> will track then we can zap them on each slot update and drop "generation"
+> entirely.
 
-I have enabled kgdb in the kernel (linux-omap-2.6.32 based android kernel).
+To track them you need locking.
 
-My bootargs were
+Isn't SET_USER_MEMORY_REGION so slow that calling it 2^32 times isn't 
+really feasible?
 
-# setenv console ttyS2,115200n8
-# setenv mmcargs 'setenv bootargs console=${console} vram=12M omapfb.vram=0:4M omapfb.mode=dvi:${dvimode} omapdss.def_disp=${defaultdisplay} root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait init=/init kgdboc=${console} kgdbwait'
+In any case, can use u64 generation count.
 
-The kernel boots and waits correctly for input as follows:
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-console [ttyS2] enabled
-kgdb: Registered I/O driver kgdboc.
-kgdb: Waiting for connection from remote gdb...
-
-I have also configure Eclipse IDE, and built the kernel, and when I run it in debug mode, it launches the kernel and the whole android OS boots correctly, and Eclipse IDE shows a number of threads running, but I can seem to see any source code highlighted, even through I set a breakpoint in board-overo.c (my board file) for the init board routine. It should have stopped and paused execution at the breakpoint. 
-
-Question 01: When building from Eclipse IDE, it builds uImage, but for the debug settings, I selected vmlinux that was generated in the root folder. I ran uImage on the target board, but for the executable for the debug session I used vmimage. Is that correct?
-
-When I launch Eclipse debugger, I can see a number of threads running, it doesn't display any source code, I can't pause any threads, and the breakpoints don't appear to be working. 
-
-What should I do ?
-
-Best regards,
-
-Elvis Dowson
