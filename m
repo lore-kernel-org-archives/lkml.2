@@ -1,106 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760082Ab0JGDmH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Oct 2010 23:42:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18602 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754888Ab0JGDmF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Oct 2010 23:42:05 -0400
-Subject: Re: [PATCH v3 1/1] nouveau: ratelimit IRQ messages
-From: Ben Skeggs <bskeggs@redhat.com>
-Reply-To: bskeggs@redhat.com
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: jirislaby@gmail.com, linux-kernel@vger.kernel.org
-In-Reply-To: <1286284053-2510-1-git-send-email-jslaby@suse.cz>
-References: <1286284053-2510-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 13:41:35 +1000
-Message-ID: <1286422895.2468.2.camel@nisroch>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1760090Ab0JGDmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Oct 2010 23:42:44 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:37135 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760005Ab0JGDmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Oct 2010 23:42:43 -0400
+Date: Thu, 7 Oct 2010 09:12:35 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>, David Rientjes <rientjes@google.com>,
+        Nick Piggin <nickpiggin@yahoo.com.au>,
+        Cedric Le Goater <clg@vnet.ibm.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [RFC PATCH] Prio_heap: heap_remove(), heap_maximum(),
+ heap_replace() and heap_cherrypick()
+Message-ID: <20101007034234.GM4195@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101006180323.GB21652@Krystal>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101006180323.GB21652@Krystal>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-05 at 15:07 +0200, Jiri Slaby wrote:
-> There are two messages in the ISR of nouveau which might be printed out
-> hundred times in a second. Ratelimit them. (We need to move
-> nouveau_ratelimit to the top of the file.)
-> 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Ben Skeggs <bskeggs@redhat.com>
-> Reviewed-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> ---
-> 
-> 
-> Rebased on the top of nouveau git.
-Thank you, I've pushed this to nouveau git now.
+* Mathieu Desnoyers <mathieu.desnoyers@efficios.com> [2010-10-06 14:03:23]:
 
-Ben.
+> These added interfaces lets prio_heap users lookup the top of heap item without
+> performing any insertion, perform removal of the topmost heap entry, and also
+> replacement of topmost heap entry. This is useful if one need to use the result
+> of the lookup to determine if the current maximum should simply be removed or if
+> it should be replaced.
 > 
+> This is used by the Generic Ring Buffer to perform timestamp-based fusion-merge
+> of per-cpu buffer records into a single stream.
+>
+> Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Cc: Paul Menage <menage@google.com>
+> Cc: David Rientjes <rientjes@google.com>
+> Cc: Nick Piggin <nickpiggin@yahoo.com.au>
+> Cc: Balbir Singh <balbir@in.ibm.com>
+> Cc: Cedric Le Goater <clg@fr.ibm.com>
+> Cc: "Eric W. Biederman" <ebiederm@xmission.com>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Linus Torvalds <torvalds@linux-foundation.org>
+> ---
+
+The patchset looks good to me, one comment on cherry picking below
+
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+ 
+
+>  include/linux/prio_heap.h |   44 ++++++++++++++++++++++
+>  lib/prio_heap.c           |   91 ++++++++++++++++++++++++++++++++++++----------
+>  2 files changed, 116 insertions(+), 19 deletions(-)
 > 
->  drivers/gpu/drm/nouveau/nouveau_irq.c |   26 ++++++++++++++------------
->  1 files changed, 14 insertions(+), 12 deletions(-)
+> Index: linux.trees.git/include/linux/prio_heap.h
+> ===================================================================
+> --- linux.trees.git.orig/include/linux/prio_heap.h	2010-07-06 14:25:29.000000000 -0400
+> +++ linux.trees.git/include/linux/prio_heap.h	2010-07-07 10:04:33.000000000 -0400
+> @@ -23,6 +23,18 @@ struct ptr_heap {
+>  };
 > 
-> diff --git a/drivers/gpu/drm/nouveau/nouveau_irq.c b/drivers/gpu/drm/nouveau/nouveau_irq.c
-> index 6fd51a5..b9e1ffe 100644
-> --- a/drivers/gpu/drm/nouveau/nouveau_irq.c
-> +++ b/drivers/gpu/drm/nouveau/nouveau_irq.c
-> @@ -42,6 +42,13 @@
->  #include "nouveau_connector.h"
->  #include "nv50_display.h"
->  
-> +static DEFINE_RATELIMIT_STATE(nouveau_ratelimit_state, 3 * HZ, 20);
-> +
-> +static int nouveau_ratelimit(void)
+>  /**
+> + * heap_maximum - return the largest element in the heap
+> + * @heap: the heap to be operated on
+> + *
+> + * Returns the largest element in the heap, without performing any modification
+> + * to the heap structure. Returns NULL if the heap is empty.
+> + */
+> +static inline void *heap_maximum(const struct ptr_heap *heap)
 > +{
-> +	return __ratelimit(&nouveau_ratelimit_state);
+> +	return heap->size ? heap->ptrs[0] : NULL;
 > +}
 > +
->  void
->  nouveau_irq_preinstall(struct drm_device *dev)
->  {
-> @@ -213,11 +220,12 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
->  				u32 ib_get = nv_rd32(dev, 0x003334);
->  				u32 ib_put = nv_rd32(dev, 0x003330);
->  
-> -				NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d Get 0x%02x%08x "
-> +				if (nouveau_ratelimit())
-> +					NV_INFO(dev, "PFIFO_DMA_PUSHER - Ch %d Get 0x%02x%08x "
->  					     "Put 0x%02x%08x IbGet 0x%08x IbPut 0x%08x "
->  					     "State 0x%08x Push 0x%08x\n",
-> -					chid, ho_get, get, ho_put, put, ib_get, ib_put,
-> -					state, push);
-> +						chid, ho_get, get, ho_put, put,
-> +						ib_get, ib_put, state, push);
->  
->  				/* METHOD_COUNT, in DMA_STATE on earlier chipsets */
->  				nv_wr32(dev, 0x003364, 0x00000000);
-> @@ -266,8 +274,9 @@ nouveau_fifo_irq_handler(struct drm_device *dev)
->  		}
->  
->  		if (status) {
-> -			NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
-> -				status, chid);
-> +			if (nouveau_ratelimit())
-> +				NV_INFO(dev, "PFIFO_INTR 0x%08x - Ch %d\n",
-> +					status, chid);
->  			nv_wr32(dev, NV03_PFIFO_INTR_0, status);
->  			status = 0;
->  		}
-> @@ -544,13 +553,6 @@ nouveau_pgraph_intr_notify(struct drm_device *dev, uint32_t nsource)
->  		nouveau_graph_dump_trap_info(dev, "PGRAPH_NOTIFY", &trap);
->  }
->  
-> -static DEFINE_RATELIMIT_STATE(nouveau_ratelimit_state, 3 * HZ, 20);
-> -
-> -static int nouveau_ratelimit(void)
-> -{
-> -	return __ratelimit(&nouveau_ratelimit_state);
-> -}
-> -
->  
->  static inline void
->  nouveau_pgraph_intr_error(struct drm_device *dev, uint32_t nsource)
+> +/**
+>   * heap_init - initialize an empty heap with a given memory size
+>   * @heap: the heap structure to be initialized
+>   * @size: amount of memory to use in bytes
+> @@ -53,6 +65,38 @@ void heap_free(struct ptr_heap *heap);
+>   */
+>  extern void *heap_insert(struct ptr_heap *heap, void *p);
+> 
+> +/**
+> + * heap_remove - remove the largest element from the heap
+> + * @heap: the heap to be operated on
+> + *
+> + * Returns the largest element in the heap. It removes this element from the
+> + * heap. Returns NULL if the heap is empty.
+> + */
+> +extern void *heap_remove(struct ptr_heap *heap);
+> 
+> +/**
+> + * heap_cherrypick - remove a given element from the heap
+> + * @heap: the heap to be operated on
+> + * @p: the element
+> + *
+> + * Remove the given element from the heap. Return the element if present, else
+> + * return NULL. This algorithm has a complexity of O(n), which is higher than
+> + * O(log(n)) provided by the rest of this API.
+> + */
+> +extern void *heap_cherrypick(struct ptr_heap *heap, void *p);
 
+One way to reduce cherrypick'ing in O(n) if n is large, is to sort the
+entire heap using heapify() and then doing a binary search. The cost
+of sorting is high, so it depends on how often and in what phases we
+cherry pick.
 
+-- 
+	Three Cheers,
+	Balbir
