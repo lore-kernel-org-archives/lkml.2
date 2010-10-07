@@ -1,93 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760242Ab0JGJn2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 05:43:28 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:54462 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760187Ab0JGJn1 (ORCPT
+	id S1760246Ab0JGJok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 05:44:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60450 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753695Ab0JGJoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 05:43:27 -0400
-To: Valerie Aurora <vaurora@redhat.com>
-CC: miklos@szeredi.hu, linuxram@us.ibm.com, mszeredi2@gmail.com,
-        viro@zeniv.linux.org.uk, hch@infradead.org, agruen@suse.de,
-        npiggin@kernel.dk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-reply-to: <20101006183140.GD18479@shell> (message from Valerie Aurora on
-	Wed, 6 Oct 2010 14:31:41 -0400)
-Subject: Re: [PATCH 01/34] VFS: Make clone_mnt() and copy_tree() return error codes
-References: <1284675145-4391-1-git-send-email-vaurora@redhat.com> <1284675145-4391-2-git-send-email-vaurora@redhat.com> <E1P1FnW-0001yC-Ts@pomaz-ex.szeredi.hu> <20100930214123.GA490@shell> <20100930214418.GB490@shell> <20101001003342.GI9247@ram-laptop> <20101001015857.GA5003@ram-laptop> <AANLkTin0k-Sz8Y6dwm9s6isKgDPgcqpg0NON5kuiOcJ3@mail.gmail.com> <20101006183140.GD18479@shell>
-Message-Id: <E1P3n00-0000rf-ID@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 07 Oct 2010 11:42:52 +0200
+	Thu, 7 Oct 2010 05:44:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=fBCqcdyrlIgHAuum2EDV0bF2wQwvURqU251b/YmLR6NJ2hlRdf/4Mlzygid9ayZB93
+         TkSQ0EpUQn5KWZQwxOicse6l003tkQ0GjrziWPzZV2+SY0ZzHoTYuZbpaz29REgBCmIa
+         t/Bi12pTHuuRh8k7hT3uSl0gx4uVD3LTPlszM=
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        Hemant Pedanekar <hemantp@ti.com>, Arnd Hannemann <arnd@arndnet.de>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Date: Thu,  7 Oct 2010 12:44:22 +0300
+Message-Id: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+X-Mailer: git-send-email 1.7.3.1.2.g7fe2b
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Oct 2010, Valerie Aurora wrote:
-> On Fri, Oct 01, 2010 at 11:12:48AM +0200, Szeredi Miklos wrote:
-> > On Fri, Oct 1, 2010 at 3:58 AM, Ram Pai <linuxram@us.ibm.com> wrote:
-> > > > > > > @@ -1212,11 +1216,12 @@ struct vfsmount *copy_tree(struct vfsmount *mnt, struct dentry *dentry,
-> > > > > > > ? ? ? ? struct path path;
-> > > > > > >
-> > > > > > > ? ? ? ? if (!(flag & CL_COPY_ALL) && IS_MNT_UNBINDABLE(mnt))
-> > > > > > > - ? ? ? ? ? ? ? return NULL;
-> > > > > > > + ? ? ? ? ? ? ? return ERR_PTR(-EINVAL);
-> > > > >
-> > > > > Ram, do you remember how this worked?
-> > > >
-> > > > Oops. That should be a OR condition. there is one other check in that
-> > > > function that should also be a OR condition.
-> > >
-> > > I may be wrong here. Can't exactly recollect what CL_COPY_ALL flag means. Al Viro
-> > > might remember? ?If CL_COPY_ALL means, to clone everything irrespective of any other
-> > > flags, then the above code seems right.
-> > 
-> > CL_COPY_ALL means clone the mount despite MNT_UNBINDABLE.  It is used
-> > for cloning the whole namespace and for collect_mounts(), both of
-> > which ignore MNT_UNBINDABLE.
-> > 
-> > Of the two remaining callers of copy_tree() do_loopback already checks
-> > MNT_UNBINDABLE on the root of the tree to be copied.
-> 
-> I reviewed and tested and agree.
-> 
-> But I don't think this change should go into stable.  It doesn't fix
-> any existing bug and I don't like perturbing the code in stable for a
-> code cleanup.
+Many drivers are broken, and there's no alternative in sight. Such a big
+change should stay as a warning for now, and only later should it
+actually fail.
 
-Right.
+The drivers are not doing something correct, we get it, but for now it's
+better to allow them to work (they do 99% of the time anyway) rather
+than to force everyone to revert this patch in their internal trees
+until there's a solution. A slightly broken functionality is better than
+no functionality at all.
 
-> > So that leaves the one in pnode.c.   That one will be called when
-> > attaching a new mount or mount tree.  If the root of that tree is
-> > unbindable then the propagation will fail with -ENOMEM which is wrong,
-> > it should simply skip the whole tree and not try to propagate.   Calls
-> 
-> Not try to propagate - and return an error?  Or succeed and ignore?
+A warning lets people know that what they are doing is not right, and
+they should fix it.
 
-I thought succeed and ignore is the right answer, but I'm not sure
-now.
+Cc: Han Jonghun <jonghun79.han@gmail.com>
+Cc: Hemant Pedanekar <hemantp@ti.com>
+Cc: Arnd Hannemann <arnd@arndnet.de>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+---
+ arch/arm/mm/ioremap.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> > which result in propagation are  do_loopback, do_move_mount and
-> > do_add_mount.  Of this do_loopback and do_move_mount already check for
-> > MNT_UNBINDABLE, do_add_mount doesn't check, but should probably just
-> > mask out MNT_UNBINDABLE.
-> 
-> Hm, if we stop trusting callers of do_add_mount(), we should probably
-> do a lot more than just mask this out.  Interestingly, most out-of-VFS
-> callers just seem to add MNT_SHRINKABLE, maybe we should export
-> do_add_shrinkable() instead or something like that?
-> 
-> > So in the end that check in copy_tree() should never actually trigger
-> > and can be turned into a WARN_ON
-> 
-> WARN_ON() makes sense.
-> 
-> > Additionally the propagation code should perhaps be more defensive and
-> > skip MNT_UNBINDABLE source mounts.
-> 
-> Maybe WARN_ON() here too?
+For issues related to this:
+http://article.gmane.org/gmane.linux.ports.arm.kernel/84454
+http://article.gmane.org/gmane.linux.ports.sh.devel/8560
+http://www.spinics.net/lists/linux-fbdev/msg01745.html
+http://article.gmane.org/gmane.linux.drivers.video-input-infrastructure/22271
 
-Yes, I think so.
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index ab50627..ccff7da 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -204,8 +204,7 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+ 	/*
+ 	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
+ 	 */
+-	if (WARN_ON(pfn_valid(pfn)))
+-		return NULL;
++	WARN_ON(pfn_valid(pfn));
+ 
+ 	type = get_mem_type(mtype);
+ 	if (!type)
+-- 
+1.7.3.1.2.g7fe2b
 
-Thanks,
-Miklos
