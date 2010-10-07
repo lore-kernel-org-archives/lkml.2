@@ -1,144 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab0JGPwn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 11:52:43 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51470 "EHLO bear.ext.ti.com"
+	id S1752889Ab0JGP6G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 11:58:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9641 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752682Ab0JGPwm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 11:52:42 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Marcel Holtmann <marcel@holtmann.org>
-CC: "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "johan.hedberg@gmail.com" <johan.hedberg@gmail.com>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Thu, 7 Oct 2010 21:22:32 +0530
-Subject: RE: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-Thread-Topic: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-Thread-Index: ActmN0SnfyL4J6bhRreUT8WzfvuVdAAAB51w
-Message-ID: <19F8576C6E063C45BE387C64729E739404AA21D1C1@dbde02.ent.ti.com>
-References: <1286404493-23816-1-git-send-email-pavan-savoy@ti.com>
-	 <1286404493-23816-2-git-send-email-pavan-savoy@ti.com>
-	 <1286445948.6145.70.camel@aeonflux>
-	 <19F8576C6E063C45BE387C64729E739404AA21D19E@dbde02.ent.ti.com>
-	 <1286464659.6145.144.camel@aeonflux>
-	 <19F8576C6E063C45BE387C64729E739404AA21D1B4@dbde02.ent.ti.com>
-	 <1286465843.6145.157.camel@aeonflux>
-	 <19F8576C6E063C45BE387C64729E739404AA21D1BD@dbde02.ent.ti.com>
- <1286466576.6145.161.camel@aeonflux>
-In-Reply-To: <1286466576.6145.161.camel@aeonflux>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1750826Ab0JGP6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 11:58:04 -0400
+Date: Thu, 7 Oct 2010 12:42:48 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Gleb Natapov <gleb@minantech.com>, Gleb Natapov <gleb@redhat.com>,
+        kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org
+Subject: Re: [PATCH v6 04/12] Add memory slot versioning and use it to
+ provide fast guest write interface
+Message-ID: <20101007154248.GA30949@amt.cnet>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+ <1286207794-16120-5-git-send-email-gleb@redhat.com>
+ <20101005165738.GA32750@amt.cnet>
+ <20101006111417.GX11145@redhat.com>
+ <20101006143847.GB31423@amt.cnet>
+ <20101006200836.GC4120@minantech.com>
+ <4CAD9A2D.7020009@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CAD9A2D.7020009@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Marcel Holtmann [mailto:marcel@holtmann.org]
-> Sent: Thursday, October 07, 2010 10:50 AM
-> To: Savoy, Pavan
-> Cc: linux-bluetooth@vger.kernel.org; johan.hedberg@gmail.com; greg@kroah.com;
-> linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
+On Thu, Oct 07, 2010 at 12:00:13PM +0200, Avi Kivity wrote:
+>  On 10/06/2010 10:08 PM, Gleb Natapov wrote:
+> >>  Malicious userspace can cause entry to be cached, ioctl
+> >>  SET_USER_MEMORY_REGION 2^32 times, generation number will match,
+> >>  mark_page_dirty_in_slot will be called with pointer to freed memory.
+> >>
+> >Hmm. To zap all cached entires on overflow we need to track them. If we
+> >will track then we can zap them on each slot update and drop "generation"
+> >entirely.
 > 
-> Hi Pavan,
+> To track them you need locking.
 > 
-> > > > > > > Registering the Bluetooth HCI driver in module_init/module_exit is
-> not
-> > > > > > > acceptable. Turn your shared transport into a proper bus.
-> > > > > >
-> > > > > > Yes, you did comment on it before, I remember, I did prototype the
-> > > driver as
-> > > > > > a bus driver, However I didn't find any advantages by converting it
-> to a
-> > > bus
-> > > > > > driver.
-> > > > > > As in, currently the shared transport driver is a line discipline
-> driver
-> > > > > because
-> > > > > > it is the only way it can communicate over TTY without being tightly
-> > > coupled
-> > > > > with the UART driver.
-> > > > > >
-> > > > > > > We want to be able to have generic kernels where this module is
-> > > enabled,
-> > > > > > > but no Shared Transport is available.
-> > > > > >
-> > > > > > Oh if this is the reason I cannot have hci_register/_unregister in
-> > > > > module_init/_exit, Can I do this module "depends" on TI_ST, Then it
-> would
-> > > not
-> > > > > > even be visible to build if TI_ST is not selected.
-> > > > >
-> > > > > this is not helping either. Then TI_ST can not be selected and so you
-> > > > > still end up with some weird platform specific kernels. We don't want
-> > > > > that. We want generic kernels that can detect the hardware they are
-> > > > > running on.
-> > > > >
-> > > > > As I said, I will not accept this driver if it registers HCI device in
-> > > > > module_init. No other driver is doing this and it is in general a
-> really
-> > > > > really really bad idea.
-> > > > >
-> > > >
-> > > > Ok, now I am beginning to get what you say, Let me check, may be what
-> > > > I can do is, have something like a st_prepare() function called in the
-> > > > module_init, and a _probe function of the bluetooth driver will be
-> called,
-> > > > _ONLY_ if the _probe of my platform driver has been called..
-> > > > Do you think this would be a good idea?
-> > > >
-> > > > Note: the TI_ST driver is also a platform device driver, so that TI_ST's
-> > > > Probe is not called, if a arch/xx/board-xx doesn't add it.
-> > >
-> > > that that should be your bus right there.
-> >
-> > I understand the perspective, but "bus" is not device-driver type of model
-> right? I mean I need a device which will be added in some platform specific
-> > board file, and the driver in my driver core file.
-> >
-> > > Let me repeat this. If you register the HCI device in module_init then
-> > > it will be registered on all platform this module is selected. Even if
-> > > the kernel runs on x86. And that is not acceptable. Registering devices
-> > > in module_init is a bad idea no matter what. That is why all other
-> > > drivers just register a driver here and not a device.
-> >
-> > I did initially think about making each of the protocol drivers a
-> > platform devices as well.
-> > As in Bluetooth/FM/GPS TI_ST driver would also be a platform device and its
-> _probe doing the HCI/v4L2/character device registration.
-> >
-> > So which one do you think makes more sense here?
-> > 1. Do I EXPORT a new symbol called st_prepare? And allow hci registration
-> there?
-> >
-> > 2. Or make Bluetooth device a platform device and this driver a platform
-> driver
-> > and add this Bluetooth device only when I add TI_ST platform device?
-> 
-> then make them a platform device. Since you do need a proper parent for
-> these devices anyway. Otherwise a lot of logic within sysfs will fail.
+> Isn't SET_USER_MEMORY_REGION so slow that calling it 2^32 times
+> isn't really feasible?
 
-Hnm, OK, Thanks. This also sort of helps me out in future if I wanted to support
-multiple TI_ST devices (very hypothetical)
+Assuming it takes 1ms, it would take 49 days.
 
-Ok, I will send out a patch for this. I will also make sure the patch I send
-would be for addition of driver as you suggested and not to move from staging.
+> In any case, can use u64 generation count.
 
-Thanks,
-Pavan.
-
-> Regards
-> 
-> Marcel
-> 
+Agree.
 
