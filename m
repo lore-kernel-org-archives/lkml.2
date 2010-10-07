@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0JGTMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 15:12:15 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55321 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753846Ab0JGTMO (ORCPT
+	id S1754225Ab0JGTPE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 15:15:04 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:44722 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754066Ab0JGTPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 15:12:14 -0400
-Date: Thu, 7 Oct 2010 20:38:01 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Savoy, Pavan" <pavan_savoy@ti.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
-Subject: Re: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
-Message-ID: <20101007203801.1c55a1d3@lxorguk.ukuu.org.uk>
-In-Reply-To: <19F8576C6E063C45BE387C64729E739404AA21D220@dbde02.ent.ti.com>
-References: <1286381895-11329-1-git-send-email-pavan_savoy@ti.com>
-	<1286381895-11329-2-git-send-email-pavan_savoy@ti.com>
-	<4CACD234.7020900@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21CEA1@dbde02.ent.ti.com>
-	<4CACF5A7.3010601@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21CEC6@dbde02.ent.ti.com>
-	<4CAD7DAB.8030209@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21D193@dbde02.ent.ti.com>
-	<4CAE10C0.9000106@gmail.com>
-	<19F8576C6E063C45BE387C64729E739404AA21D220@dbde02.ent.ti.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	Thu, 7 Oct 2010 15:15:03 -0400
+Date: Thu, 07 Oct 2010 22:14:01 +0300 (EEST)
+Message-Id: <20101007.221401.226802875.Hiroshi.DOYU@nokia.com>
+To: x0095840@ti.com
+Cc: felipe.contreras@nokia.com, ameya.palande@nokia.com, david.cohen@nokia.com,
+        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
+        linux-omap@vger.kernel.org
+Subject: Re: [PATCH] iovmm: IVA2 MMU range is from 0x11000000 to 0xFFFFFFFF
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <1286477021-23169-1-git-send-email-x0095840@ti.com>
+References: <1286477021-23169-1-git-send-email-x0095840@ti.com>
+X-Mailer: Mew version 7.0.50 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Oct 2010 19:14:09.0008 (UTC) FILETIME=[D14E4F00:01CB6653]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The situation here was to access the UART from a kernel driver. Say we have
-> a V4L2 FM radio over the UART, How can I write a v4L2 driver? I has to be a 
-> line discipline driver correct?
+From: ext Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCH] iovmm: IVA2 MMU range is from 0x11000000 to 0xFFFFFFFF
+Date: Thu, 7 Oct 2010 20:43:41 +0200
 
-Why would you want to ? you can just control it from user space. If you
-did want to drive it from the kernel then an ldisc would be one way to do
-it I guess.
+> IV2 MMU capable addresses start from 0x11000000
 
-Alan
+Wouldn't it be better to add an general API to configure the valid
+'da' range in advance?
+
+I don't think that it's a good idea to introduce the iommu
+instance("iva2:iommu") specific code here.
