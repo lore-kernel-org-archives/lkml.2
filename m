@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab0JGVr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:47:56 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:45856 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753993Ab0JGVrz (ORCPT
+	id S1754456Ab0JGVr6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:47:58 -0400
+Received: from asmtpout026.mac.com ([17.148.16.101]:56266 "EHLO
+	asmtpout026.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753993Ab0JGVr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:47:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="57100461"
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Mike Frysinger <vapier@gentoo.org>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-In-Reply-To: <20101007211513.GB26660@suse.de>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
-	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
-	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007211513.GB26660@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 14:47:18 -0700
-Message-ID: <1286488038.23836.101.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Oct 2010 17:47:56 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+From: Elvis Dowson <elvis.dowson@mac.com>
+Subject: kgdb errors with serial console
+Date: Fri, 08 Oct 2010 01:47:09 +0400
+Message-id: <BDD07355-7199-4A2E-8426-F6D43EA5D313@mac.com>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 14:15 -0700, Greg KH wrote:
-> On Thu, Oct 07, 2010 at 01:51:18PM -0700, Daniel Walker wrote:
-> > Your making too many assumptions .. You might be able to modify the
-> > kernel, and not the userspace. So you couldn't tweak the device
-> > creation .. It's much easier in the server world ..
-> 
-> You're saying it's easier to replace an embedded kernel than a userspace
-> file on an embedded system?  Heh, that's funny.
+Hi,
+        I'm getting the following errors when attempting to use kgdb with the serial console. Any idea how I can resolve this issue? 
 
-I'm saying it _can_ happen that it's easier to replace the kernel.. I'm
-not saying it's always the case. We're talking about debugging
-situations in an embedded environment which don't always follow a normal
-path.
+The correct serial parameters when I use kermit with the target board is 
 
-> > > We've said no over a period of about ten years to a lot of attempts to
-> > > just borrow the ttyS0 range. If we'd said yes it would have been a
-> > > complete mess by now.
-> > > 
-> > > So the answer is no.
-> > 
-> > Nothing can be unilateral, there's always room for exceptions. You
-> > should say something more like "it's possible, but unlikely".
-> 
-> Hm, how about this, as the TTY and serial driver[1] maintainer, I will
-> not accept this kind of patch at all.
-> 
-> Is that final enough for you?
+set flow-control off
+set carrier-watch none
+set speed 115200
 
-So you don't like it, that's fair enough .. <thinks>I wonder what other
-maintainers I can send this too</thinks> ;)
+and it connects correctly.
 
-Can you be more specific about your objections .. The discussion over
-the ttyS* thing is still happening. I'm waiting for Hyok to give a good
-reason for why he wrote that part of it. I can imagine good reasons for
-why that part would exist, which is what I'm discussing with Alan and
-Mike.
+I'm not sure if the gdb configuration commands for the serial port are sufficient, and if there is a parameter that I am missing here. The host is connected to the target using an FTDI USB to serial converter, so it appears as /dev/ttyUSB0 on the host and as ttyS2 on the target.
 
-Daniel
+# su
+# cd /tool/patches/android-rowboat-froyo-2.2-patchwork/kernel
+# arm-angstrom-linux-gnueabi-gdb
+(gdb) file vmlinux
+Reading symbols from /tool/patches/android-rowboat-froyo-2.2-patchwork/kernel/vmlinux...done.
 
--- 
+(gdb) set remotebaud 115200
+(gdb) set remoteflow 0
+(gdb) set debug remote 1
+(gdb) set debug serial 1
+(gdb) target remote /dev/ttyUSB0
 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Remote debugging using /dev/ttyUSB0
+Sending packet: $qSupported#37...[
+r +]Ack
+[$][q][S][u][p][p][o][r][t][e][d][#][3][7]Packet received: qSupported
+Packet qSupported (supported-packets) is supported
+warning: unrecognized item "qSupported" in "qSupported" response
+Sending packet: $Hg0#df...[+]Ack
+[$][H][g][0][#][d][f]Packet received: Hg0
+Sending packet: $?#3f...[+]Ack
+[$][?][#][3][f]Packet received: ?
+Sending packet: $Hc-1#09...[+]Ack
+[$][H][c][-][1][#][0][9]Packet received: Hc-1
+Sending packet: $qC#b4...[+]Ack
+[$][q][C][#][b][4]Packet received: qC
+Sending packet: $qAttached#8f...[+]Ack
+[$][q][A][t][t][a][c][h][e][d][#][8][f]Packet received: qAttached
+Packet qAttached (query-attached) is supported
+Sending packet: $qOffsets#4b...[+]Ack
+[$][q][O][f][f][s][\r][\r][\n][e][t][s][#][4][b]Bad checksum, sentsum=0x4b, csum=0x6f, buf=qOffs\r\r\nets
+[-][<Timeout: 2 seconds>]Timed out.
+[-][<Timeout: 2 seconds>]Timed out.
+Ignoring packet error, continuing...
+Malformed response to offset query, qOffs
+ets
+(gdb) 
+
+
+Best regards,
+
+Elvis Dowson
+
 
