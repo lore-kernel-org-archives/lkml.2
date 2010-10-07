@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760664Ab0JGOF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 10:05:27 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36141 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754540Ab0JGOF0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 10:05:26 -0400
-Message-ID: <4CADD3A3.5090401@kernel.org>
-Date: Thu, 07 Oct 2010 16:05:23 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1760677Ab0JGOFt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 10:05:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44311 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab0JGOFs (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 7 Oct 2010 10:05:48 -0400
+Date: Thu, 7 Oct 2010 10:05:26 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: Fitzhardinge <jeremy@goop.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        Jeremy@rcsinet11.oracle.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [Xen-devel] Re: [PATCH 09/22] xen: Find an unbound irq number
+ in reverse order (high to low).
+Message-ID: <20101007140526.GA9437@dumpdata.com>
+References: <1286216015-9710-1-git-send-email-konrad.wilk@oracle.com>
+ <1286216015-9710-10-git-send-email-konrad.wilk@oracle.com>
+ <alpine.DEB.2.00.1010051617160.2440@kaball-desktop>
+ <20101006225956.GB20211@dumpdata.com>
+ <alpine.DEB.2.00.1010071130410.2440@kaball-desktop>
 MIME-Version: 1.0
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-CC: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: -mm: xfs lockdep warning
-References: <201009161546.16909.ruirui.r.yang@tieto.com>	<20100917005227.GJ24409@dastard>	<20100920191355.GA28443@infradead.org>	<AANLkTi=45J+=ytj=NC4bYTVJFRakNQQiFd35K7mrf+Gq@mail.gmail.com>	<4CA997DF.5030008@kernel.org>	<20101004092107.GJ4681@dastard>	<AANLkTi=3jjoCtYoK0endt8OM=omygO284WN2ZQZ=jceo@mail.gmail.com>	<4CAB5779.5020901@kernel.org>	<AANLkTineNfy+hfnK-sjHNB+h05oC4qbJ+81pg95Bmn=b@mail.gmail.com>	<4CAC366E.7070609@kernel.org>	<4CAC38D9.8020407@kernel.org>	<AANLkTikw=ObzgWu35fsuriC-jVrzDRHRfFJeT8-4-ndY@mail.gmail.com>	<4CAC934E.2030807@kernel.org>	<AANLkTinrBeMDyQJaYJFALTPpOgEaAy7yoPdyQ0Gpay3G@mail.gmail.com>	<4CACC0CD.5000001@kernel.org>	<4CADAB97.4020500@kernel.org> <AANLkTikRZZMq9GkaCn_BB7H=F0iGj3P-XbiaEU3RoN5V@mail.gmail.com>
-In-Reply-To: <AANLkTikRZZMq9GkaCn_BB7H=F0iGj3P-XbiaEU3RoN5V@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 07 Oct 2010 14:05:25 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1010071130410.2440@kaball-desktop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 10/07/2010 03:21 PM, Torsten Kaiser wrote:
->> Can you test whether the following patch fix the issue?
+On Thu, Oct 07, 2010 at 11:38:49AM +0100, Stefano Stabellini wrote:
+> On Wed, 6 Oct 2010, Konrad Rzeszutek Wilk wrote:
+> > > 
+> > > Unfortunately this is the wrong way to fix the issue: Xen has a range of
+> > > allowed pirq for each domain and we don't know exactly what is the
+> > > maximum pirq (see my patch "xen: get the maximum number of pirqs from
+> > > xen" [1]).
+> > 
+> > > Considering that we might use the irq number returned by
+> > > find_unbound_irq through xen_allocate_pirq as pirq number in some cases,
+> > 
+> > Ah, but we wouldn't! We would end up only using the 'find_unbound_irq' for
+> > event channels. For IRQs that are for physical devices (either being
+> > real devices passed in or QEMU PCI devices) we end up requesting an IRQ that
+> > matches whatever the device has defined in dev->irq (or whatever the
+> > vectors values for MSI/MSI-X devices that is provided) via the Xen PCI frontend
+> > driver (in case of QEMU whatever its emulation provides).
+> > 
+> > > starting from the highest value could be unsafe.
+> > > In practice it should be impossible to see this issue because it can
+> > > only happen if the irq returned by xen_allocate_pirq is higher than the
+> > > max pirq in xen. However AFAIK when we call xen_allocate_pirq with the
+> > > intention of using the return value as pirq we always fall in the if
+> > > (identity_mapped_irq(gsi) || !xen_initial_domain()) that avoid calling
+> > > find_unbound_irq.
+> > 
+> > Right, and we end up using an the pirq/gsi number at that point. This
+> > patch would not touch that logic.
 > 
-> Yes. After adding this patch to 2.6.36-rc6 it survived my testcase. It
-> first seems to get stuck again, but after less then a minute the
-> system recovered and all compiles finished successfully.
+> What about adding a comment on top of xen_allocate_pirq like the
+> following:
 > 
-> I suspect the combination of CFLAGs, the gcc version and maybe even
-> changes in KOffice from 2.2.1 to 2.2.2 are import for my testcase. It
-> looks like at the start of the complies something is really eating an
-> enormous amount of memory and I did not hit such a case with earlier
-> kernels.
+> /* xen_allocate_irq might allocate irqs from the top down, as a
+>  * consequence don't assume that the irq number returned has a low value
+>  * or can be used as a pirq number unless you know otherwise.
+>  *
+>  * One notable exception is when xen_allocate_irq is called passing an
+>  * hardware gsi as argument, in that case the irq number returned
+>  * matches the gsi number passed as first argument.
+>  */
 
-It's great to hear that the patch helped but would you be able to
-repeat the same test w/ 2.6.35 and see whether there's any noticeable
-difference?  Some level of stuttering is expected if the system is hit
-with sudden huge spike of memory pressure but let's see if it has
-regressed somehow.
-
-Thanks.
-
--- 
-tejun
+Done!
