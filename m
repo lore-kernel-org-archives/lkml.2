@@ -1,66 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756594Ab0JGVYx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 17:24:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17728 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753181Ab0JGVYv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 17:24:51 -0400
-Subject: Re: Linux 2.6.36-rc7
-From: Eric Paris <eparis@redhat.com>
-To: John Stoffel <john@stoffel.org>
-Cc: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        agruen@suse.de
-In-Reply-To: <19630.13234.840343.153381@quad.stoffel.home>
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
-	 <201010071710.46938.tvrtko.ursulin@sophos.com>
-	 <201010071815.54303.tvrtko.ursulin@sophos.com>
-	 <1286472835.2656.15.camel@dhcp231-98.rdu.redhat.com>
-	 <19630.13234.840343.153381@quad.stoffel.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Oct 2010 17:24:34 -0400
-Message-ID: <1286486674.2571.16.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756631Ab0JGVZD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 17:25:03 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:35066 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756609Ab0JGVZA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 17:25:00 -0400
+Date: Thu, 7 Oct 2010 22:24:51 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Mario Limonciello <superm1@ubuntu.com>
+Cc: Keng-Yu Lin <keng-yu.lin@canonical.com>, len.brown@intel.com,
+        alan-jenkins@tuffmail.co.uk, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] dell-laptop: Add hwswitch_only module parameter
+Message-ID: <20101007212451.GA1458@srcf.ucam.org>
+References: <1286422207-14248-1-git-send-email-keng-yu.lin@canonical.com> <20101007111510.GA19624@srcf.ucam.org> <AANLkTinus8SxbXt14qabXgpbFXF4U+uNoKA-=eDuOjmp@mail.gmail.com> <20101007133529.GA21782@srcf.ucam.org> <AANLkTi=kTQpTkCF6-DE+LdNLH_aki9bD9NPF0L2qRr=Q@mail.gmail.com> <20101007205049.GB32726@srcf.ucam.org> <AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=bj3T5hcX9r3j5kyEQkNb7PAZK948kcrx4R8tC@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 16:55 -0400, John Stoffel wrote:
+On Thu, Oct 07, 2010 at 03:53:37PM -0500, Mario Limonciello wrote:
 
-> So what happens when you try to register a priority level and someone
-> else has already gotten that level?  Does the call fail?  Do you get
-> bumped down to the next open level?  Can you *tell* what level you're
-> at and whether or not some other decision maker is ahead of you? 
+> Yes the issue is the firmware's response to the keystroke.  The
+> intention here is to individual submit machines in future patches as
+> they're discovered.  The parameter's primary purpose is to assist in
+> building the list.  If someone reports a bug with these symptoms, they
+> can add the parameter to their kernel command line, and report if it
+> helps them.  If it helps, their machine can be added to the DMI table.
 
-Well it hasn't been discussed and implemented so I can't answer that.
-*smile*
+Sorry, I'm not adding this as a module option. How can you not know 
+which machines are affected?
 
-I will tell you that the way I envision it working (and being backwards
-compatible) is that priority 0 is the last thing to be serviced.  If 2
-things register at the same priority the order between them getting
-events is unpredictable.  So when an HSM uses the interface it would use
-the highest priority.  An AV vendor might use (highest priority / 2)
-while normal inotify like listeners would all be happy using priority 0.
-
-> But I'd really like some docs in the next release which tells me as a
-> poor dumb sysadmin how it can and should be used and what the gotchas
-> are.
-
-We have example man-like pages in the commit logs which I expected to be
-used as the basis for man pages once the interface was accepted.  They
-aren't perfect but they are
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=52c923dd079df49f58016a9e56df184b132611d6
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=2a3edf86040a7e15684525a2aadc29f532c51325
-
-You'll also find an example program which shows all of the features at
-
-http://git.kernel.org/?p=linux/kernel/git/agruen/fanotify-example.git;a=summary
-
-I don't think digging around in kernel code is the right way   :)
-
--Eric
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
