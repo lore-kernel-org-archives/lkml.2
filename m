@@ -1,77 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751101Ab0JGWA7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 18:00:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:56178 "EHLO mx1.suse.de"
+	id S1751645Ab0JGWEN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 18:04:13 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:48572 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751174Ab0JGWA5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 18:00:57 -0400
-Date: Thu, 7 Oct 2010 14:52:21 -0700
-From: Greg KH <gregkh@suse.de>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Mike Frysinger <vapier@gentoo.org>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-Message-ID: <20101007215221.GA11478@suse.de>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
- <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
- <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
- <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
- <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
- <20101007211513.GB26660@suse.de>
- <1286488038.23836.101.camel@c-dwalke-linux.qualcomm.com>
+	id S1750770Ab0JGWEM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 18:04:12 -0400
+From: "Menon, Nishanth" <nm@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-pm <linux-pm@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, l-o <linux-omap@vger.kernel.org>,
+        l-a <linux-arm-kernel@lists.infradead.org>,
+        Paul <paulmck@linux.vnet.ibm.com>
+Date: Thu, 7 Oct 2010 17:03:20 -0500
+Subject: RE: [PATCH] power: introduce library for device-specific OPPs
+Thread-Topic: [PATCH] power: introduce library for device-specific OPPs
+Thread-Index: Actmam6qwvp7g+66SW+8t2WBMbrGPgAAD9Fw
+Message-ID: <7A436F7769CA33409C6B44B358BFFF0C014F748B07@dlee02.ent.ti.com>
+References: <1286357180-21565-1-git-send-email-nm@ti.com>
+ <201010072354.57011.rjw@sisk.pl>
+In-Reply-To: <201010072354.57011.rjw@sisk.pl>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286488038.23836.101.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 02:47:18PM -0700, Daniel Walker wrote:
-> On Thu, 2010-10-07 at 14:15 -0700, Greg KH wrote:
-> > On Thu, Oct 07, 2010 at 01:51:18PM -0700, Daniel Walker wrote:
-> > > Your making too many assumptions .. You might be able to modify the
-> > > kernel, and not the userspace. So you couldn't tweak the device
-> > > creation .. It's much easier in the server world ..
-> > 
-> > You're saying it's easier to replace an embedded kernel than a userspace
-> > file on an embedded system?  Heh, that's funny.
+> -----Original Message-----
+> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
+> Sent: Thursday, October 07, 2010 4:55 PM
+
+
 > 
-> I'm saying it _can_ happen that it's easier to replace the kernel.. I'm
-> not saying it's always the case. We're talking about debugging
-> situations in an embedded environment which don't always follow a normal
-> path.
-
-Nothing is "normal", so stop trying to say it is easier in the "server"
-world please.
-
-> > > > We've said no over a period of about ten years to a lot of attempts to
-> > > > just borrow the ttyS0 range. If we'd said yes it would have been a
-> > > > complete mess by now.
-> > > > 
-> > > > So the answer is no.
-> > > 
-> > > Nothing can be unilateral, there's always room for exceptions. You
-> > > should say something more like "it's possible, but unlikely".
-> > 
-> > Hm, how about this, as the TTY and serial driver[1] maintainer, I will
-> > not accept this kind of patch at all.
-> > 
-> > Is that final enough for you?
+> Hi,
 > 
-> So you don't like it, that's fair enough .. <thinks>I wonder what other
-> maintainers I can send this too</thinks> ;)
+> On Wednesday, October 06, 2010, Nishanth Menon wrote:
+> > SoCs have a standard set of tuples consisting of frequency and
+> > voltage pairs that the device will support per voltage domain. These
+> > are called Operating Performance Points or OPPs. The actual
+> > definitions of OPP varies over silicon versions. For a specific domain,
+> > we can have a set of {frequency, voltage} pairs. As the kernel boots
+> > and more information is available, a default set of these are activated
+> > based on the precise nature of device. Further on operation, based on
+> > conditions prevailing in the system (such as temperature), some OPP
+> > availability may be temporarily controlled by the SoC frameworks.
+> >
+> > To implement an OPP, some sort of power management support is necessary
+> > hence this library depends on CONFIG_PM.
 > 
-> Can you be more specific about your objections
+> The patch generally looks good to me, I only have a couple of cosmetic
+Thanks for the great reviews.. It did bump up the resultant patch.
 
-See everything that Mike and Alan wrote, do I need to repeat it?
+> remarks
+> (below).
+> 
+> ...
+> > +static int opp_set_availability(struct device *dev, unsigned long freq,
+> > +		bool availability_req)
+> > +{
+> > +	struct device_opp *tmp_dev_opp, *dev_opp = NULL;
+> > +	struct opp *new_opp, *tmp_opp, *opp = ERR_PTR(-ENODEV);
+> > +	int r = 0;
+> > +
+> > +	/* keep the node allocated */
+> > +	new_opp = kmalloc(sizeof(struct opp), GFP_KERNEL);
+> > +	if (!new_opp) {
+> > +		pr_warning("Unable to allocate opp\n");
+> 
+> Please add an identification string to the messages, something like
+> "OPP: Unable to allocat object\n" (and similarly in the other messages).
+> That would help to find the source of a message in case there's any
+> problem.
 
-greg k-h
+pr_fmt has been reformatted for this. The actual message which will appear
+is as follows:
+opp_set_availability: Unable to allocate opp
+
+is'nt that good enough considering that all functions are opp_ prefixed? 
+I can modify pr_fmt to add "OPP:" but I kinda think it is redundant. But I
+have no strong opinions on that and look forward to your recommendations.
+
+> 
+> 
+> > +		return -ENOMEM;
+> > +	}
+> > +
+> > +	mutex_lock(&dev_opp_list_lock);
+> > +
+> > +	/* Find the device_opp */
+> > +	list_for_each_entry(tmp_dev_opp, &dev_opp_list, node) {
+> > +		if (dev == tmp_dev_opp->dev) {
+> > +			dev_opp = tmp_dev_opp;
+> > +			break;
+> > +		}
+> > +	}
+> > +	if (IS_ERR(dev_opp)) {
+> > +		r = PTR_ERR(dev_opp);
+> > +		pr_warning("Unable to find device\n");
+> > +		goto out1;
+> 
+> I'd prefer this lable to be called "unlock".  It will be a bit more
+> informative.
+Ack. Fixing in v6 if you are ok with the above.
+
+Regards,
+Nishanth Menon
+
