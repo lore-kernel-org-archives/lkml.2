@@ -1,112 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab0JHWHD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 18:07:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18692 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754187Ab0JHWHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 18:07:00 -0400
-Date: Fri, 8 Oct 2010 17:25:01 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dean Nelson <dnelson@redhat.com>
-Subject: Re: [PATCH 2/2] kvm, MCE, Send SRAR SIGBUS directly
-Message-ID: <20101008202501.GA2291@amt.cnet>
-References: <1286526255.7768.96.camel@yhuang-dev>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286526255.7768.96.camel@yhuang-dev>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1759850Ab0JHWIT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 18:08:19 -0400
+Received: from asmtpout023.mac.com ([17.148.16.98]:42623 "EHLO
+	asmtpout023.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753308Ab0JHWIS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 18:08:18 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010080153
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-08_16:2010-10-08,2010-10-08,1970-01-01 signatures=0
+Subject: Re: kgdb errors with serial console
+From: Elvis Dowson <elvis.dowson@mac.com>
+In-reply-to: <4CAF19FA.7010206@windriver.com>
+Date: Sat, 09 Oct 2010 02:07:59 +0400
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Content-transfer-encoding: 8BIT
+Message-id: <FEFCC5ED-AFF1-4F97-B49C-BE3CFB96295B@mac.com>
+References: <BDD07355-7199-4A2E-8426-F6D43EA5D313@mac.com>
+ <4CAE4BB6.7080509@windriver.com>
+ <7BA01CAF-DD25-4AB6-9498-8AB89E2EDDE1@mac.com>
+ <4CAE5B40.3070701@windriver.com>
+ <917F9CCC-F3D3-4E23-B955-412F08CE8E2E@mac.com> <4CAF19FA.7010206@windriver.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:24:15PM +0800, Huang Ying wrote:
-> Originally, SRAR SIGBUS is sent to QEMU-KVM via touching the poisoned
-> page. But commit 96054569190bdec375fe824e48ca1f4e3b53dd36 prevents the
-> signal from being sent. So now the signal is sent via
-> force_sig_info_fault directly.
-> 
-> Reported-by: Dean Nelson <dnelson@redhat.com>
-> Signed-off-by: Huang Ying <ying.huang@intel.com>
-> ---
->  arch/x86/include/asm/signal.h |    3 +++
->  arch/x86/kvm/mmu.c            |   15 +++------------
->  arch/x86/mm/fault.c           |    6 +++---
->  3 files changed, 9 insertions(+), 15 deletions(-)
-> 
-> --- a/arch/x86/include/asm/signal.h
-> +++ b/arch/x86/include/asm/signal.h
-> @@ -258,6 +258,9 @@ struct pt_regs;
->  
->  #define ptrace_signal_deliver(regs, cookie) do { } while (0)
->  
-> +void force_sig_info_fault(int si_signo, int si_code, unsigned long address,
-> +			  struct task_struct *tsk);
-> +
->  #endif /* __KERNEL__ */
->  #endif /* __ASSEMBLY__ */
->  
-> --- a/arch/x86/mm/fault.c
-> +++ b/arch/x86/mm/fault.c
-> @@ -158,9 +158,8 @@ is_prefetch(struct pt_regs *regs, unsign
->  	return prefetch;
->  }
->  
-> -static void
-> -force_sig_info_fault(int si_signo, int si_code, unsigned long address,
-> -		     struct task_struct *tsk)
-> +void force_sig_info_fault(int si_signo, int si_code, unsigned long address,
-> +			  struct task_struct *tsk)
->  {
->  	siginfo_t info;
->  
-> @@ -172,6 +171,7 @@ force_sig_info_fault(int si_signo, int s
->  
->  	force_sig_info(si_signo, &info, tsk);
->  }
-> +EXPORT_SYMBOL_GPL(force_sig_info_fault);
->  
->  DEFINE_SPINLOCK(pgd_lock);
->  LIST_HEAD(pgd_list);
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -39,6 +39,7 @@
->  #include <asm/cmpxchg.h>
->  #include <asm/io.h>
->  #include <asm/vmx.h>
-> +#include <asm/signal.h>
->  
->  /*
->   * When setting this variable to true it enables Two-Dimensional-Paging
-> @@ -2104,22 +2105,12 @@ static int __direct_map(struct kvm_vcpu
->  	return pt_write;
->  }
->  
-> -static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
-> -{
-> -	char buf[1];
-> -	void __user *hva;
-> -	int r;
-> -
-> -	/* Touch the page, so send SIGBUS */
-> -	hva = (void __user *)gfn_to_hva(kvm, gfn);
-> -	r = copy_from_user(buf, hva, 1);
-> -}
-> -
->  static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
->  {
->  	kvm_release_pfn_clean(pfn);
->  	if (is_hwpoison_pfn(pfn)) {
-> -		kvm_send_hwpoison_signal(kvm, gfn);
-> +		force_sig_info_fault(SIGBUS, BUS_MCEERR_AR,
-> +				     gfn_to_hva(kvm, gfn), current);
->  		return 0;
->  	} else if (is_fault_pfn(pfn))
->  		return -EFAULT;
+Hi Jason,
+                  There was a setting in Eclipse that allowed me to increase the timeout, located under Windows > Preferences > C/C++ > Debug
 
-Better fill siginfo and use force_sig_info, which is already exported.
+I increase the settings to 120000(ms) for the debugger time out and 60000(ms) for the launcher. 
+
+So, it didn't time out, but it kept repeating the same sequence over and over again, I haven't yet set a break-point. 
+
+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001d
+
+and then after sometime, stops with the timeout error. This is with kernel linux-omap-2.6.32. 
+
+Here is the log file for this session:
+
+
+w +$qSupported#37
+r +$#00
+w +$Hg0#df
+r +$OK#9a
+w +$?#3f
+r +$S05#b8
+w +$Hc-1#09
+r +$OK#9a
+w +$qC#b4
+r +$QC00000000fffffffe#43
+w +$qAttached#8f
+r +$#00
+w +$qOffsets#4b
+r +$#00
+w +$g#67
+r +$140000009301008001000000844ec7c0acf16fc067000000010000000700000000e823cf00e823cf930100209301004020de58c0a8de58c0749409c0849409c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093010040#a9
+w +$mc0099484,4#a2
+r +$ffdeffe7#fd
+w +$mc0099480,4#9e
+r +$5ff07ff5#69
+w +$mc0099484,4#a2
+r +$ffdeffe7#fd
+w +$mc0099480,4#9e
+r +$5ff07ff5#69
+w +$mc0099484,4#a2
+r +$ffdeffe7#fd
+w +$mc0099484,4#a2
+r +$ffdeffe7#fd
+w +$mc0099484,4#a2
+r +$ffdeffe7#fd
+w +$qSymbol::#5b
+r +$#00
+w +
+c info proc
+End of log
+
+Best regards,
+
+Elvis
