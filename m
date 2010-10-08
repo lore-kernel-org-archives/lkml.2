@@ -1,88 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab0JHK4K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:56:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:53169 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab0JHK4H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:56:07 -0400
-Date: Fri, 8 Oct 2010 10:54:27 GMT
-From: tip-bot for Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        lm-sensors@lm-sensors.org, jin.dongming@np.css.fujitsu.com,
-        seto.hidetoshi@jp.fujitsu.com, khali@linux-fr.org, tglx@linutronix.de,
-        fenghua.yu@initel.com, guenter.roeck@ericsson.com, mingo@elte.hu,
-        len.brown@intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jin.dongming@np.css.fujitsu.com, lm-sensors@lm-sensors.org,
-        seto.hidetoshi@jp.fujitsu.com, khali@linux-fr.org, tglx@linutronix.de,
-        fenghua.yu@initel.com, guenter.roeck@ericsson.com, len.brown@intel.com,
-        mingo@elte.hu
-In-Reply-To: <4C7625D1.4060201@np.css.fujitsu.com>
-References: <4C7625D1.4060201@np.css.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, mce, therm_throt.c: Fix missing curly braces in error handling logic
-Message-ID: <tip-b62be8ea9db4048112219ff6d6ce5f183179d4dc@git.kernel.org>
-Git-Commit-ID: b62be8ea9db4048112219ff6d6ce5f183179d4dc
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 08 Oct 2010 10:54:29 +0000 (UTC)
+	id S1755422Ab0JHLFP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 07:05:15 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46561 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752137Ab0JHLFN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 07:05:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=dZ6os6ck8mREtmQvFyi5hHAQ6WLJPOcHLDQuCwUbxpvsVULGgQdbtB2aVNdMi/rkAL
+         H22tzOtVTXA/SrAK+RLM4mX7xdj8+nt7bG7Hvn62Kj+CIa2dmDm8Esc0MSJPZS5UaZH8
+         7WmDq/6QejzdqzLcQ2VOk6wupZtoi/pVDsbHc=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] jbd: Convert bitops to buffer fns
+Date: Fri,  8 Oct 2010 20:05:06 +0900
+Message-Id: <1286535906-8215-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b62be8ea9db4048112219ff6d6ce5f183179d4dc
-Gitweb:     http://git.kernel.org/tip/b62be8ea9db4048112219ff6d6ce5f183179d4dc
-Author:     Jin Dongming <jin.dongming@np.css.fujitsu.com>
-AuthorDate: Thu, 26 Aug 2010 17:29:05 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 8 Oct 2010 10:29:20 +0200
+Convert set/clear_bit(BH_JWrite, ...) to set/clear_buffer_jwrite()
+for consistency.
 
-x86, mce, therm_throt.c: Fix missing curly braces in error handling logic
-
-When the feature PTS is not supported by CPU, the sysfile
-package_power_limit_count for package should not be
-generated.
-
-This patch is used for fixing missing { and }.
-
-The patch is not complete as there are other error handling
-problems in this function - but that can wait until the
-merge window.
-
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Reviewed-by: Fenghua Yu <fenghua.yu@initel.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Cc: Brown Len <len.brown@intel.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: lm-sensors@lm-sensors.org <lm-sensors@lm-sensors.org>
-LKML-Reference: <4C7625D1.4060201@np.css.fujitsu.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 ---
- arch/x86/kernel/cpu/mcheck/therm_throt.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ fs/jbd/commit.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/therm_throt.c b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-index d9368ee..169d880 100644
---- a/arch/x86/kernel/cpu/mcheck/therm_throt.c
-+++ b/arch/x86/kernel/cpu/mcheck/therm_throt.c
-@@ -216,7 +216,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_core_power_limit_count.attr,
- 					      thermal_attr_group.name);
--	if (cpu_has(c, X86_FEATURE_PTS))
-+	if (cpu_has(c, X86_FEATURE_PTS)) {
- 		err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					      &attr_package_throttle_count.attr,
- 					      thermal_attr_group.name);
-@@ -224,6 +224,7 @@ static __cpuinit int thermal_throttle_add_dev(struct sys_device *sys_dev,
- 			err = sysfs_add_file_to_group(&sys_dev->kobj,
- 					&attr_package_power_limit_count.attr,
- 					thermal_attr_group.name);
-+	}
+diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+index 95d8c11..c842832 100644
+--- a/fs/jbd/commit.c
++++ b/fs/jbd/commit.c
+@@ -617,7 +617,7 @@ void journal_commit_transaction(journal_t *journal)
+                    (this will requeue both the metadata buffer and the
+                    temporary IO buffer). new_bh goes on BJ_IO*/
  
- 	return err;
- }
+-		set_bit(BH_JWrite, &jh2bh(jh)->b_state);
++		set_buffer_jwrite(jh2bh(jh));
+ 		/*
+ 		 * akpm: journal_write_metadata_buffer() sets
+ 		 * new_bh->b_transaction to commit_transaction.
+@@ -627,7 +627,7 @@ void journal_commit_transaction(journal_t *journal)
+ 		JBUFFER_TRACE(jh, "ph3: write metadata");
+ 		flags = journal_write_metadata_buffer(commit_transaction,
+ 						      jh, &new_jh, blocknr);
+-		set_bit(BH_JWrite, &jh2bh(new_jh)->b_state);
++		set_buffer_jwrite(jh2bh(new_jh));
+ 		wbuf[bufs++] = jh2bh(new_jh);
+ 
+ 		/* Record the new block's tag in the current descriptor
+@@ -737,7 +737,7 @@ wait_for_iobuf:
+                    shadowed buffer */
+ 		jh = commit_transaction->t_shadow_list->b_tprev;
+ 		bh = jh2bh(jh);
+-		clear_bit(BH_JWrite, &bh->b_state);
++		clear_buffer_jwrite(bh);
+ 		J_ASSERT_BH(bh, buffer_jbddirty(bh));
+ 
+ 		/* The metadata is now released for reuse, but we need
+-- 
+1.7.2.2
+
