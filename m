@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753822Ab0JHHBz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:01:55 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:44700 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753008Ab0JHHBy (ORCPT
+	id S1754006Ab0JHHDV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:03:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62600 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0JHHDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:01:54 -0400
-Date: Fri, 8 Oct 2010 03:01:54 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/18] fs: keep inode with backing-dev
-Message-ID: <20101008070154.GB23595@lst.de>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-4-git-send-email-david@fromorbit.com>
+	Fri, 8 Oct 2010 03:03:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=dmHUNonOuFbd16lYOf3YSHvhz/HpYT9LbHO3bSTfir0S+NQyQB6D9JOhgwvZznc5g0
+         bvpU6dmnzBp9UiZZMoGt1RG+/wXSChp9CgLbv9aZoVK3g8xJmh+lAHk2CgPJKnbZwEih
+         B171ZXBNp/KEz7n9k17Q17if1pErHaGePmsUc=
+Date: Fri, 8 Oct 2010 09:03:07 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Achim Leubner <achim_leubner@adaptec.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org
+Subject: [patch] gdth: integer overflow in ioctl
+Message-ID: <20101008070307.GF11681@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Achim Leubner <achim_leubner@adaptec.com>,
+	"James E.J. Bottomley" <James.Bottomley@suse.de>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286515292-15882-4-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:21:17PM +1100, Dave Chinner wrote:
-> From: Nick Piggin <npiggin@suse.de>
-> 
-> Having inode on writeback lists of a different bdi than
-> inode->i_mapping->backing_dev_info makes it very difficult to do
-> per-bdi locking of the writeback lists. Add functions to move these
-> inodes over when the mapping backing dev is changed.
-> 
-> Also, rename i_mapping.backing_dev_info to i_mapping.a_bdi while we're
-> here. Succinct is nice, and it catches conversion errors.
+gdth_ioctl_alloc() takes the size variable as an int.
+copy_from_user() takes the size variable as an unsigned long.
+gen.data_len and gen.sense_len are unsigned longs.
+On x86_64 longs are 64 bit and ints are 32 bit.
 
-NAK.  This is fixed by my patch to always use s_bdi for writeback
-purposed that hit Linus' tree two days ago.
+We could pass in a very large number and the allocation would truncate
+the size to 32 bits and allocate a small buffer.  Then when we do the
+copy_from_user(), it would result in a memory corruption.
 
+CC: stable@kernel.org
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
+index b860d65..4cf7ffa 100644
+--- a/drivers/scsi/gdth.c
++++ b/drivers/scsi/gdth.c
+@@ -4175,6 +4175,14 @@ static int ioc_general(void __user *arg, char *cmnd)
+     ha = gdth_find_ha(gen.ionode);
+     if (!ha)
+         return -EFAULT;
++
++    if (gen.data_len > INT_MAX)
++        return -EINVAL;
++    if (gen.sense_len > INT_MAX)
++        return -EINVAL;
++    if (gen.data_len + gen.sense_len > INT_MAX)
++        return -EINVAL;
++
+     if (gen.data_len + gen.sense_len != 0) {
+         if (!(buf = gdth_ioctl_alloc(ha, gen.data_len + gen.sense_len,
+                                      FALSE, &paddr)))
