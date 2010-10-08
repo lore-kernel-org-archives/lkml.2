@@ -1,41 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932083Ab0JHIXk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 04:23:40 -0400
-Received: from verein.lst.de ([213.95.11.210]:48279 "EHLO verein.lst.de"
+	id S1755934Ab0JHIYT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 04:24:19 -0400
+Received: from mga09.intel.com ([134.134.136.24]:20068 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755670Ab0JHIXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 04:23:38 -0400
-Date: Fri, 8 Oct 2010 10:22:31 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Daniel Phillips <phillips@phunq.net>
-Cc: Cong Meng <mcpacino@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Christoph Hellwig <hch@lst.de>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: introduce dm-snap-mv
-Message-ID: <20101008082231.GA2054@lst.de>
-References: <20101006083150.GA15758@zhongling> <201010071431.14937.phillips@phunq.net>
+	id S1755585Ab0JHIYR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 04:24:17 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,302,1283756400"; 
+   d="scan'208";a="665368431"
+Subject: [PATCH 1/2] kvm, MCE, Add MCG_SER_P into KVM_MCE_CAP_SUPPORTED
+From: Huang Ying <ying.huang@intel.com>
+To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Cc: "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>, Dean Nelson <dnelson@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Oct 2010 16:24:14 +0800
+Message-ID: <1286526254.7768.95.camel@yhuang-dev>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010071431.14937.phillips@phunq.net>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 02:31:14PM -0700, Daniel Phillips wrote:
-> Hi Meng,
-> 
-> The patch looks sensible, however the question is: why do you want to
-> do this?  Would it not be better to generalize your metadata format to
-> accomodate the device's native blocksize?
+Now we have MCG_SER_P (and corresponding SRAO/SRAR MCE) support in
+kernel and QEMU-KVM, the MCG_SER_P should be added into
+KVM_MCE_CAP_SUPPORTED to make all these code really works.
 
-Even if it uses fixed 4k sectors it should just read them in smaller
-chunks OR even better stop using buffer heads and just read them
-manually using submit_bio.  BHs really shouldn't be used outside of
-filesystems, and even there they slowly are on their way out.
+Reported-by: Dean Nelson <dnelson@redhat.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ arch/x86/kvm/x86.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -71,7 +71,7 @@
+ #define CR8_RESERVED_BITS (~(unsigned long)X86_CR8_TPR)
+ 
+ #define KVM_MAX_MCE_BANKS 32
+-#define KVM_MCE_CAP_SUPPORTED MCG_CTL_P
++#define KVM_MCE_CAP_SUPPORTED (MCG_CTL_P | MCG_SER_P)
+ 
+ /* EFER defaults:
+  * - enable syscall per default because its emulated by KVM
+
 
