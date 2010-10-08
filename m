@@ -1,91 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0JHHuL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:50:11 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:60386 "EHLO
+	id S1754836Ab0JHHvO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:51:14 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:59316 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754459Ab0JHHuK (ORCPT
+	with ESMTP id S1753565Ab0JHHvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:50:10 -0400
-Date: Fri, 8 Oct 2010 18:50:01 +1100
+	Fri, 8 Oct 2010 03:51:13 -0400
+Date: Fri, 8 Oct 2010 18:51:09 +1100
 From: Dave Chinner <david@fromorbit.com>
 To: Christoph Hellwig <hch@lst.de>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        chris.mason@oracle.com, linux-btrfs@vger.kernel.org
-Subject: Re: [PATCH 09/18] fs: rework icount to be a locked variable
-Message-ID: <20101008075001.GT4681@dastard>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
+Message-ID: <20101008075109.GU4681@dastard>
 References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-10-git-send-email-david@fromorbit.com>
- <20101008072749.GB7831@lst.de>
+ <1286515292-15882-12-git-send-email-david@fromorbit.com>
+ <20101008073306.GD7831@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101008072749.GB7831@lst.de>
+In-Reply-To: <20101008073306.GD7831@lst.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 03:27:49AM -0400, Christoph Hellwig wrote:
-> > index 2953e9f..9f04478 100644
-> > --- a/fs/btrfs/inode.c
-> > +++ b/fs/btrfs/inode.c
-> > @@ -1964,8 +1964,14 @@ void btrfs_add_delayed_iput(struct inode *inode)
-> >  	struct btrfs_fs_info *fs_info = BTRFS_I(inode)->root->fs_info;
-> >  	struct delayed_iput *delayed;
+On Fri, Oct 08, 2010 at 03:33:06AM -0400, Christoph Hellwig wrote:
+> On Fri, Oct 08, 2010 at 04:21:25PM +1100, Dave Chinner wrote:
+> > From: Nick Piggin <npiggin@suse.de>
+> > 
+> > Protect the inod hash with a single lock is not scalable.  Convert
+> 
+> s/inod/inode/
+> 
+> >  	p = &root->inode_tree.rb_node;
+> >  	parent = NULL;
 > >  
-> > -	if (atomic_add_unless(&inode->i_count, -1, 1))
-> > +	/* XXX: filesystems should not play refcount games like this */
-> > +	spin_lock(&inode->i_lock);
-> > +	if (inode->i_ref > 1) {
-> > +		inode->i_ref--;
-> > +		spin_unlock(&inode->i_lock);
-> >  		return;
-> > +	}
-> > +	spin_unlock(&inode->i_lock);
+> > -	if (hlist_unhashed(&inode->i_hash))
+> > +	if (hlist_bl_unhashed(&inode->i_hash))
 > 
-> Yeah, all that i_count/i_ref mess in btrfs needs some serious work.
-> Chris?
-> 
-> > +
-> > +/*
-> > + * inode_lock must be held
-> > + */
-> > +void iref_locked(struct inode *inode)
-> > +{
-> > +	inode->i_ref++;
-> > +}
-> >  EXPORT_SYMBOL_GPL(iref_locked);
-> 
-> I'm a big fan of _GPL exports, but adding this for a trivial counter
-> increment seems a bit weird. 
+> Maybe introduce an inode_unhashed helper for this check which we're
+> doing in quite a lot of places?
 
-OK, will drop the _GPL.
-> 
-> >  int iref_read(struct inode *inode)
-> >  {
-> > -	return atomic_read(&inode->i_count);
-> > +	int ref;
-> > +
-> > +	spin_lock(&inode->i_lock);
-> > +	ref = inode->i_ref;
-> > +	spin_unlock(&inode->i_lock);
-> > +	return ref;
-> >  }
-> 
-> There's no need to lock a normal 32-bit variable for readers.
-
-Ok, but will need a memory barrier instead?
-
-> 
-> > +		inode->i_ref--;
-> > +		if (inode->i_ref == 0) {
-> 
-> 		if (--inode->i_ref == 0) {
-> 
-> might be a bit more idiomatic.
-
-OK.
+Ok, makes sense.
 
 Cheers,
 
