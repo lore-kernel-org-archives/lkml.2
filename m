@@ -1,55 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757586Ab0JHNs1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 09:48:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51542 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab0JHNs0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 09:48:26 -0400
-Date: Fri, 8 Oct 2010 09:48:21 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/18] fs: introduce a per-cpu last_ino allocator
-Message-ID: <20101008134821.GA15157@infradead.org>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-16-git-send-email-david@fromorbit.com>
- <20101008095658.GA19804@ZenIV.linux.org.uk>
- <20101008100346.GA27737@infradead.org>
- <1286533219.2959.128.camel@edumazet-laptop>
+	id S1757570Ab0JHNuL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 09:50:11 -0400
+Received: from ns1.wincor-nixdorf.com ([80.154.98.129]:49573 "EHLO
+	mxpdbe1.wincor-nixdorf.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752417Ab0JHNuK convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 09:50:10 -0400
+X-Greylist: delayed 413 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Oct 2010 09:50:10 EDT
+Message-ID: <4CAF1310.2050400@wincor-nixdorf.com>
+Date: Fri, 08 Oct 2010 14:48:16 +0200
+From: Frank Salomon <frank.salomon@wincor-nixdorf.com>
+Reply-To: frank.salomon@wincor-nixdorf.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.4) Gecko/20030624 
+    Netscape/7.1
+X-Accept-Language: en-us, en
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286533219.2959.128.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: driver or calculation of load average wrong ?
+References: <20101008004801.2f0dee47@absol.kitzblitz> 
+    <1286540528.5117.1399034495@webmail.messagingengine.com> 
+    <1286540749.5791.1399035245@webmail.messagingengine.com>
+In-Reply-To: <1286540749.5791.1399035245@webmail.messagingengine.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format="flowed"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 12:20:19PM +0200, Eric Dumazet wrote:
-> If iunique() was scalable, sockets could use it, so that we can have
-> hard guarantee two sockets on machine dont have same inum.
-> 
-> A reasonable compromise here is to use a simple and scalable allocator,
-> and take the risk two sockets have same inum.
-> 
-> While it might break some applications playing fstats() games, on
-> sockets, current schem is vastly faster.
-> 
-> I worked with machines with millions of opened socket concurrently,
-> iunique() was not an option, and application didnt care of possible inum
-> clash.
 
-The current version of iuniqueue is indeed rather suboptimal.  As is
-the pure counter approach.  I think the right way to deal with it
-is to use an idr allocator.  This means the filesystem needs to
-explicitly free the inode number when the inode is gone, but that
-just makes the usage more clear.  Together with the lazy assignment
-scheme for synthetic filesystems that should give us both speed and
-correctness.
+Hello All,
 
+I have the following configuration:
+- CentOS 5
+- kernel 2.6.20.1
+- My own driver in a kernel_thread:
+		while ( 1 ){
+			printk ( KERN_INFO "go sleep, %lu\n", jiffies );
+			current -> state = TASK_UNINTERRUPTIBLE;
+			schedule_timeout ( msecs_to_jiffies(4000) );
+			printk ( KERN_INFO "wakeup, %lu\n", jiffies );
+		}
+
+Each time I load the driver, the load average in /proc/loadavg reached:
+	$ cat /proc/loadavg
+	0.99 0.62 0.26 1/47 2868
+Without my driver:
+	$ cat /proc/loadavg
+	0.03 0.03 0.00 1/47 2867
+
+I changed nr_active(void) in kernel/sched.c:
+unsigned long nr_active(void)
+{
+         unsigned long i, running = 0, uninterruptible = 0;
+
+         for_each_online_cpu(i) {
+                 running += cpu_rq(i)->nr_running;
+                 uninterruptible += cpu_rq(i)->nr_uninterruptible;
+         }
+
+         if (unlikely((long)uninterruptible < 0))
+                 uninterruptible = 0;
+
+// original:     return running + uninterruptible;
+         return running;
+}
+
+Driver loaded or not:
+	$ cat /proc/loadavg
+	0.03 0.03 0.00 1/47 2867
+
+Any help or comments would be really great?
+
+Best regards, thanks, Frank
+
+
+
+
+WINCOR NIXDORF International GmbH
+Sitz der Gesellschaft: Paderborn
+Registergericht Paderborn HRB 3507
+Geschäftsführer: Eckard Heidloff (Vorsitzender), Stefan Auerbach, Dr. Jürgen Wunram
+Vorsitzender des Aufsichtsrats: Karl-Heinz Stiller
+Steuernummer: 339/5884/0020 - Ust-ID Nr.: DE812927716 - WEEE-Reg.-Nr. DE44477193
+
+Diese E-Mail enthält vertrauliche Informationen.
+Wenn Sie nicht der richtige Adressat sind oder diese E-Mail irrtümlich erhalten haben,
+informieren Sie bitte sofort den Absender und vernichten Sie diese E-Mail.
+Das unerlaubte Kopieren sowie die unbefugte Weitergabe dieser E-Mail ist nicht gestattet.
+
+This e-mail may contain confidential information.
+If you are not the intended recipient (or have received this e-mail in error)
+please notify the sender immediately and destroy this e-mail.
+Any unauthorised copying, disclosure or distribution of the material in this e-mail is strictly forbidden.
