@@ -1,39 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932202Ab0JHKTV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:19:21 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:50191 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756961Ab0JHKTU (ORCPT
+	id S932251Ab0JHKT0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:19:26 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:58459 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab0JHKTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:19:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=SuVPRqKY0PtS1PeGPHY+KBGkvyZ2IAFqM/z7I3De8EuBeka+jBWTMvTsFbAo2SD7/d
-         mvfKzEJSmOqOx9/tEVz6wxGu+XY9pmCS9yUH75VCpMAjt7lU0TMZpp9uYFsHUe4DWc2W
-         S5sNwfr4cCbLqFIcVsJosl+iFEtWRvQcf9a4s=
+	Fri, 8 Oct 2010 06:19:23 -0400
+Date: Fri, 8 Oct 2010 11:19:21 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/18] fs: introduce a per-cpu last_ino allocator
+Message-ID: <20101008101921.GD19804@ZenIV.linux.org.uk>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-16-git-send-email-david@fromorbit.com>
+ <87d3rl5c1h.fsf@basil.nowhere.org>
+ <20101008095824.GB19804@ZenIV.linux.org.uk>
+ <20101008100944.GE13352@basil.fritz.box>
 MIME-Version: 1.0
-Date: Fri, 8 Oct 2010 06:19:19 -0400
-Message-ID: <AANLkTik6XbkhvwO1OgkgXDmBSVL8_s24zTEVwkK9Uwo4@mail.gmail.com>
-Subject: [PATCH 0/3] Staging: speakup: Fixed a few things
-From: T Dent <tdent48227@gmail.com>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008100944.GE13352@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg,
+On Fri, Oct 08, 2010 at 12:09:44PM +0200, Andi Kleen wrote:
 
-Here a few changes I did that you should apply. I will do more general
-cleanups, when I get home from school. But this is all I can do at the
-current time.
+> > Can be done if you bother to add ->getattr() for those, but you'll need
+> > to do some kind of lazy allocation of inumbers for those; fstat() _will_
+> > want st_ino.
+> 
+> Why not just put 0 in st_ino for sockets/pipes/etc. ? 
 
-Patch series is based off your staging-next tree
-commit-588abaa64b76005f6ab1a7d40770dcef12fd00ad.
-
-Thanks,
-
-Tracey Dent
+Because it's a userland-visible change; right now you can compare
+i_ino for sockets...
