@@ -1,123 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758702Ab0JHPrs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 11:47:48 -0400
-Received: from exprod5og105.obsmtp.com ([64.18.0.180]:33585 "EHLO
-	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab0JHPrr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 11:47:47 -0400
+	id S1758772Ab0JHPwZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 11:52:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44936 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758619Ab0JHPwY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 11:52:24 -0400
+Message-ID: <4CAF3E04.1050304@redhat.com>
+Date: Fri, 08 Oct 2010 17:51:32 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <1262629066-18398-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20100104181634.GA18258@rakim.wolfsonmicro.main>
-	<1262629066-18398-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Date: Fri, 8 Oct 2010 08:27:10 -0500
-Message-ID: <AANLkTimWPZJzp61uCNMcu1o8Nra4_FQyUhjrtox2sxB2@mail.gmail.com>
-Subject: Re: [PATCH 1/3] regulator: Add notifier event on regulator disable
-From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
-        Lun Chang <w13550@motorola.com>
+To: bo yang <boyang1288@gmail.com>
+CC: linux-scsi@vger.kernel.org, akpm@osdl.org, linux-kernel@vger.kernel.org,
+        James.Bottomley@suse.de, bo.yang@lsi.com
+Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS drive
+References: <AANLkTin53S+C_+QzF-drs5BUAx=k7YeiHrTaQGTFSc_a@mail.gmail.com>
+In-Reply-To: <AANLkTin53S+C_+QzF-drs5BUAx=k7YeiHrTaQGTFSc_a@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-CFilter-Loop: Reflected
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jan 4, 2010 at 12:17 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> The intended use case is for drivers which disable regulators to save
-> power but need to do some work to restore the hardware state when
-> restarting.  If the supplies are not actually disabled due to board
-> limits or sharing with other active devices this notifier allows the
-> driver to avoid unneeded reinitialisation, particularly when used with
-> runtime PM.
+On 09/23/2010 04:36 AM, bo yang wrote:
+> This patch is too big.  I am using attachment to submit.  Please
+> use attached file to apply.  Also let me know if it can't be accepted.
 >
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> To add the Online controller reset support, driver need to do:
+> a). reset the controller chips -- Xscale and Gen2 which will change
+> the function calls and add the reset function related to this two
+> chips.
+> b). during the reset, driver will store the pending cmds which not
+> returned by FW to driver's pending queue.  Driver will re-issue those
+> pending cmds again to FW after the OCR finished.
+> c). In driver's timeout routine, driver will report to OS as reset.
+> Also driver's queue routine will block the cmds until the OCR
+> finished.
+> d). in Driver's ISR routine, if driver get the FW state as state
+> change, FW in Failure status and FW support online controller
+> reset (OCR), driver will start to do the controller reset.
+> e). In driver's IOCTL routine, the application cmds will wait for the
+> OCR to finish, then issue the cmds to FW.
+>
+> Signed-off-by Bo Yang<bo.yang@lsi.com>
+>
 > ---
->  drivers/regulator/core.c           |    7 +++++--
->  include/linux/regulator/consumer.h |    4 +++-
->  2 files changed, 8 insertions(+), 3 deletions(-)
->
-> diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-> index 686ef27..cce76a8 100644
-> --- a/drivers/regulator/core.c
-> +++ b/drivers/regulator/core.c
-> @@ -1341,6 +1341,9 @@ static int _regulator_disable(struct regulator_dev *rdev)
->                                       __func__, rdev_get_name(rdev));
->                                return ret;
->                        }
-> +
-> +                       _notifier_call_chain(rdev, REGULATOR_EVENT_DISABLE,
-> +                                            NULL);
->                }
->
->                /* decrease our supplies ref count and disable if required */
-> @@ -1399,8 +1402,8 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
->                        return ret;
->                }
->                /* notify other consumers that power has been forced off */
-> -               _notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE,
-> -                       NULL);
-> +               _notifier_call_chain(rdev, REGULATOR_EVENT_FORCE_DISABLE |
-> +                       REGULATOR_EVENT_DISABLE, NULL);
->        }
->
->        /* decrease our supplies ref count and disable if required */
-> diff --git a/include/linux/regulator/consumer.h b/include/linux/regulator/consumer.h
-> index 030d922..28c9fd0 100644
-> --- a/include/linux/regulator/consumer.h
-> +++ b/include/linux/regulator/consumer.h
-> @@ -89,8 +89,9 @@
->  * REGULATION_OUT Regulator output is out of regulation.
->  * FAIL           Regulator output has failed.
->  * OVER_TEMP      Regulator over temp.
-> - * FORCE_DISABLE  Regulator shut down by software.
-> + * FORCE_DISABLE  Regulator forcibly shut down by software.
->  * VOLTAGE_CHANGE Regulator voltage changed.
-> + * DISABLE        Regulator was disabled.
->  *
->  * NOTE: These events can be OR'ed together when passed into handler.
->  */
-> @@ -102,6 +103,7 @@
->  #define REGULATOR_EVENT_OVER_TEMP              0x10
->  #define REGULATOR_EVENT_FORCE_DISABLE          0x20
->  #define REGULATOR_EVENT_VOLTAGE_CHANGE         0x40
-> +#define REGULATOR_EVENT_DISABLE                0x80
->
->  struct regulator;
->
-> --
-> 1.6.5.7
+>  drivers/scsi/megaraid/megaraid_sas.c |  756 ++++++++++++++++++++++++++++++++---
+>  drivers/scsi/megaraid/megaraid_sas.h |   88 +++-
+>  2 files changed, 787 insertions(+), 57 deletions(-)
+Hi Bo,
+in the workqueue function you sleep for 30s,
+it's scheduled here - schedule_work(&instance->work_init);
 
-Mark et al, sorry to drag up something from nine months ago, but I'm
-having a problem with this patch. I have a regulator A that sets
-regulator B as its supply. When I call set_supply to add B as the
-supply for A, regulator A gets added to the supply_list for regulator
-B.
++process_fw_state_change_wq(struct work_struct *work)
++{
+...
++		/*waitting for about 20 second before start the second init*/
++		for (wait = 0; wait < 30; wait++) {
++			msleep(1000);
++		}
 
-When I call regulator_disable(A), I end up with a call chain like this:
+- this is not a good practice to sleep for a so long time I think
+- you should use in your exit function some synchronization 
+  for example 'cancel_work_sync', without that if someone rmmods your 
+  module, it could then lead to a memory corruption
 
-regulator_disable(A)
-- mutex_lock(A)
-- _regulator_disable(A)
--- _regulator_disable(B)
---- _notifier_call_chain(B)
----- mutex_lock(A)
+Tomas
 
-Which results in dead lock since we trying to acquire the mutex lock
-for regulator A which we already hold.
 
-When I call regulator_disable(A), regulator_disable grabs the
-mutex_lock for A. Then while inside _regulator_disable,
-regulator_disable(B) is called since B is the supply for A. With this
-patch, _regulator_disable(B) ends up calling _notifier_call_chain(B).
-A is in the supply_list for B, so inside the notifier loop we try to
-grab the mutext_lock for A again.
 
-Am I doing something wrong in how I am setting up B as the supply for
-A or is this bug in the regulator core code?
-
-Thanks,
- - Jeff
