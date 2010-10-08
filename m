@@ -1,305 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758521Ab0JHQw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:52:56 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45035 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754147Ab0JHQwz (ORCPT
+	id S1758774Ab0JHQzR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:55:17 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:60811 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757551Ab0JHQzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:52:55 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 1/2] mfd: Factor out WM831x I2C I/O from the core driver
-Date: Fri,  8 Oct 2010 09:52:58 -0700
-Message-Id: <1286556780-5610-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
+	Fri, 8 Oct 2010 12:55:16 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19631.19630.584400.854655@quad.stoffel.home>
+Date: Fri, 8 Oct 2010 12:54:06 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: John Stoffel <john@stoffel.org>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "agruen@suse.de" <agruen@suse.de>
+Subject: Re: Linux 2.6.36-rc7
+In-Reply-To: <201010081717.25940.tvrtko.ursulin@sophos.com>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+	<1286486674.2571.16.camel@localhost.localdomain>
+	<19631.15310.568446.991954@quad.stoffel.home>
+	<201010081717.25940.tvrtko.ursulin@sophos.com>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for the addition of SPI support for the WM831x move the I2C
-specific code into a separate file with a separate Kconfig option so the
-I2C support can be excluded from the build.
+>>>>> "Tvrtko" == Tvrtko Ursulin <tvrtko.ursulin@sophos.com> writes:
 
-Also update the 1133-EV1 PMIC module support for SMDK6410 to use the new
-symbol.
+Tvrtko> On Friday 08 Oct 2010 16:42:06 John Stoffel wrote:
+>> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+Eric> I will tell you that the way I envision it working (and being
+Eric> backwards compatible) is that priority 0 is the last thing to be
+Eric> serviced.  If 2 things register at the same priority the order
+Eric> between them getting events is unpredictable.  So when an HSM
+Eric> uses the interface it would use the highest priority.  An AV
+Eric> vendor might use (highest priority / 2) while normal inotify
+Eric> like listeners would all be happy using priority 0.
+>> 
+>> Ugh, I'd prefer that priority 0 is first (highest), but I can see how
+>> that would make ABI problems, assuming we don't punt on releasing the
+>> ABI now.
+>> 
+>> So if the order is undefined now, that's not good.  Well... maybe it's
+>> acceptable, but I can see all kinds of problems cropping up.
+>> Hopefully they're processed in order of notifier creation instead.  So
+>> if I insert a notifier, anyone who inserts a notifier after me gets
+>> serviced after my notifier gets run.  That would seem to be the
+>> logical and sane semantics to use here.
+>> 
+>> Again, I'm really approaching this as a SysAdmin who'd love to use
+>> this in an HSM environment, so ordering is a *key* requirement.
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- arch/arm/mach-s3c64xx/Kconfig   |    1 +
- drivers/mfd/Kconfig             |   14 +++--
- drivers/mfd/Makefile            |    1 +
- drivers/mfd/wm831x-core.c       |  138 +-------------------------------------
- include/linux/mfd/wm831x/core.h |   12 ++++
- 5 files changed, 27 insertions(+), 139 deletions(-)
+Tvrtko> Ordering by time of registration? I thought of that but it
+Tvrtko> falls flat once any service needs to restart or be restarted.
 
-diff --git a/arch/arm/mach-s3c64xx/Kconfig b/arch/arm/mach-s3c64xx/Kconfig
-index 1e4d78a..546db5c 100644
---- a/arch/arm/mach-s3c64xx/Kconfig
-+++ b/arch/arm/mach-s3c64xx/Kconfig
-@@ -185,6 +185,7 @@ config SMDK6410_WM1192_EV1
- 	select REGULATOR_WM831X
- 	select S3C24XX_GPIO_EXTRA64
- 	select MFD_WM831X
-+	select MFD_WM831X_I2C
- 	help
- 	  The Wolfson Microelectronics 1192-EV1 is a WM831x based PMIC
- 	  daughtercard for the Samsung SMDK6410 reference platform.
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 6c6b9f0..608a277 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -315,14 +315,18 @@ config MFD_WM8400
- 	  the functionality of the device.
- 
- config MFD_WM831X
--	bool "Support Wolfson Microelectronics WM831x/2x PMICs"
-+	bool
-+	depends on GENERIC_HARDIRQS
-+
-+config MFD_WM831X_I2C
-+	bool "Support Wolfson Microelectronics WM831x/2x PMICs with I2C"
- 	select MFD_CORE
- 	depends on I2C=y && GENERIC_HARDIRQS
- 	help
--	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs.
--	  This driver provides common support for accessing the device,
--	  additional drivers must be enabled in order to use the
--	  functionality of the device.
-+	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs
-+	  when controlled using I2C.  This driver provides common support
-+	  for accessing the device, additional drivers must be enabled in
-+	  order to use the functionality of the device.
- 
- config MFD_WM8350
- 	bool
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 70b2699..c9ef41b 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -24,6 +24,7 @@ obj-$(CONFIG_MFD_TC6393XB)	+= tc6393xb.o tmio_core.o
- obj-$(CONFIG_MFD_WM8400)	+= wm8400-core.o
- wm831x-objs			:= wm831x-core.o wm831x-irq.o wm831x-otp.o
- obj-$(CONFIG_MFD_WM831X)	+= wm831x.o
-+obj-$(CONFIG_MFD_WM831X_I2C)	+= wm831x-i2c.o
- wm8350-objs			:= wm8350-core.o wm8350-regmap.o wm8350-gpio.o
- wm8350-objs			+= wm8350-irq.o
- obj-$(CONFIG_MFD_WM8350)	+= wm8350.o
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index ad36579..7d2563f 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -14,7 +14,6 @@
- 
- #include <linux/kernel.h>
- #include <linux/module.h>
--#include <linux/i2c.h>
- #include <linux/bcd.h>
- #include <linux/delay.h>
- #include <linux/mfd/core.h>
-@@ -90,15 +89,6 @@ int wm831x_isinkv_values[WM831X_ISINK_MAX_ISEL + 1] = {
- };
- EXPORT_SYMBOL_GPL(wm831x_isinkv_values);
- 
--enum wm831x_parent {
--	WM8310 = 0x8310,
--	WM8311 = 0x8311,
--	WM8312 = 0x8312,
--	WM8320 = 0x8320,
--	WM8321 = 0x8321,
--	WM8325 = 0x8325,
--};
--
- static int wm831x_reg_locked(struct wm831x *wm831x, unsigned short reg)
- {
- 	if (!wm831x->locked)
-@@ -1447,7 +1437,7 @@ static struct mfd_cell backlight_devs[] = {
- /*
-  * Instantiate the generic non-control parts of the device.
-  */
--static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
-+int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
- {
- 	struct wm831x_pdata *pdata = wm831x->dev->platform_data;
- 	int rev;
-@@ -1673,7 +1663,7 @@ err:
- 	return ret;
- }
- 
--static void wm831x_device_exit(struct wm831x *wm831x)
-+void wm831x_device_exit(struct wm831x *wm831x)
- {
- 	wm831x_otp_exit(wm831x);
- 	mfd_remove_devices(wm831x->dev);
-@@ -1683,7 +1673,7 @@ static void wm831x_device_exit(struct wm831x *wm831x)
- 	kfree(wm831x);
- }
- 
--static int wm831x_device_suspend(struct wm831x *wm831x)
-+int wm831x_device_suspend(struct wm831x *wm831x)
- {
- 	int reg, mask;
- 
-@@ -1719,126 +1709,6 @@ static int wm831x_device_suspend(struct wm831x *wm831x)
- 	return 0;
- }
- 
--static int wm831x_i2c_read_device(struct wm831x *wm831x, unsigned short reg,
--				  int bytes, void *dest)
--{
--	struct i2c_client *i2c = wm831x->control_data;
--	int ret;
--	u16 r = cpu_to_be16(reg);
--
--	ret = i2c_master_send(i2c, (unsigned char *)&r, 2);
--	if (ret < 0)
--		return ret;
--	if (ret != 2)
--		return -EIO;
--
--	ret = i2c_master_recv(i2c, dest, bytes);
--	if (ret < 0)
--		return ret;
--	if (ret != bytes)
--		return -EIO;
--	return 0;
--}
--
--/* Currently we allocate the write buffer on the stack; this is OK for
-- * small writes - if we need to do large writes this will need to be
-- * revised.
-- */
--static int wm831x_i2c_write_device(struct wm831x *wm831x, unsigned short reg,
--				   int bytes, void *src)
--{
--	struct i2c_client *i2c = wm831x->control_data;
--	unsigned char msg[bytes + 2];
--	int ret;
--
--	reg = cpu_to_be16(reg);
--	memcpy(&msg[0], &reg, 2);
--	memcpy(&msg[2], src, bytes);
--
--	ret = i2c_master_send(i2c, msg, bytes + 2);
--	if (ret < 0)
--		return ret;
--	if (ret < bytes + 2)
--		return -EIO;
--
--	return 0;
--}
--
--static int wm831x_i2c_probe(struct i2c_client *i2c,
--			    const struct i2c_device_id *id)
--{
--	struct wm831x *wm831x;
--
--	wm831x = kzalloc(sizeof(struct wm831x), GFP_KERNEL);
--	if (wm831x == NULL)
--		return -ENOMEM;
--
--	i2c_set_clientdata(i2c, wm831x);
--	wm831x->dev = &i2c->dev;
--	wm831x->control_data = i2c;
--	wm831x->read_dev = wm831x_i2c_read_device;
--	wm831x->write_dev = wm831x_i2c_write_device;
--
--	return wm831x_device_init(wm831x, id->driver_data, i2c->irq);
--}
--
--static int wm831x_i2c_remove(struct i2c_client *i2c)
--{
--	struct wm831x *wm831x = i2c_get_clientdata(i2c);
--
--	wm831x_device_exit(wm831x);
--
--	return 0;
--}
--
--static int wm831x_i2c_suspend(struct i2c_client *i2c, pm_message_t mesg)
--{
--	struct wm831x *wm831x = i2c_get_clientdata(i2c);
--
--	return wm831x_device_suspend(wm831x);
--}
--
--static const struct i2c_device_id wm831x_i2c_id[] = {
--	{ "wm8310", WM8310 },
--	{ "wm8311", WM8311 },
--	{ "wm8312", WM8312 },
--	{ "wm8320", WM8320 },
--	{ "wm8321", WM8321 },
--	{ "wm8325", WM8325 },
--	{ }
--};
--MODULE_DEVICE_TABLE(i2c, wm831x_i2c_id);
--
--
--static struct i2c_driver wm831x_i2c_driver = {
--	.driver = {
--		   .name = "wm831x",
--		   .owner = THIS_MODULE,
--	},
--	.probe = wm831x_i2c_probe,
--	.remove = wm831x_i2c_remove,
--	.suspend = wm831x_i2c_suspend,
--	.id_table = wm831x_i2c_id,
--};
--
--static int __init wm831x_i2c_init(void)
--{
--	int ret;
--
--	ret = i2c_add_driver(&wm831x_i2c_driver);
--	if (ret != 0)
--		pr_err("Failed to register wm831x I2C driver: %d\n", ret);
--
--	return ret;
--}
--subsys_initcall(wm831x_i2c_init);
--
--static void __exit wm831x_i2c_exit(void)
--{
--	i2c_del_driver(&wm831x_i2c_driver);
--}
--module_exit(wm831x_i2c_exit);
--
--MODULE_DESCRIPTION("I2C support for the WM831X AudioPlus PMIC");
-+MODULE_DESCRIPTION("Core support for the WM831X AudioPlus PMIC");
- MODULE_LICENSE("GPL");
- MODULE_AUTHOR("Mark Brown");
-diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
-index eb5bd4e..a1239c4 100644
---- a/include/linux/mfd/wm831x/core.h
-+++ b/include/linux/mfd/wm831x/core.h
-@@ -238,6 +238,15 @@ struct regulator_dev;
- 
- #define WM831X_NUM_IRQ_REGS 5
- 
-+enum wm831x_parent {
-+	WM8310 = 0x8310,
-+	WM8311 = 0x8311,
-+	WM8312 = 0x8312,
-+	WM8320 = 0x8320,
-+	WM8321 = 0x8321,
-+	WM8325 = 0x8325,
-+};
-+
- struct wm831x {
- 	struct mutex io_lock;
- 
-@@ -285,6 +294,9 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
- int wm831x_bulk_read(struct wm831x *wm831x, unsigned short reg,
- 		     int count, u16 *buf);
- 
-+int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq);
-+void wm831x_device_exit(struct wm831x *wm831x);
-+int wm831x_device_suspend(struct wm831x *wm831x);
- int wm831x_irq_init(struct wm831x *wm831x, int irq);
- void wm831x_irq_exit(struct wm831x *wm831x);
- 
--- 
-1.7.1
+Yup, it can fail, esp if you have indexing before the HSM
+retrieval... :]  That could lead to all kinds of silliness.
 
+But then again, how *serious* is it when it does fail?  For example,
+we use CommVault at work on Netapps to do HSM for some data.  CV
+leaves a little stub file holding the key to the content to be
+restored, and a note for the end user saying "Don't mess with this
+file, it's a pointer to your data.  Call your SysAdmin if you see
+this..."
+
+So that's one way of approaching the error handling case.
+
+Tvrtko> Priority is also not that great concept. I may have proposed
+Tvrtko> classes or something similar at some point, don't remember any
+Tvrtko> more. It would be equivalent to having allocated priority
+Tvrtko> ranges, like:
+
+Tvrtko> 1000 - pre-content
+Tvrtko> =100 - access-control
+Tvrtko> <100 - content
+
+Umm, why is there only one value for the access-control part?  Are you
+saying there should only be one program to decide on access control?
+Shouldnt' there be more?   So I think you're classes are just passed
+in by the notifier setup call:
+
+   flags = FANOTIFY_PRE_CONTENT & FANOTIFY_EXCLUSIVE;
+   add_notifier(filesystem,flags,&hook);
+
+   flags = ACCESS & SUFFICIENT;
+   add_notififier(filesystem,flags,&hook);
+
+And you'd have flags like:
+
+    PRE_ACCESS 	     1
+    ACCESS	     2
+    POST_ACCESS	     4
+    EXCLUSIVE	     8
+    SUFFICIENT	     16	/* Passing this means all ACCESS is allowed */
+    		        /* even with other ACCESS notifiers in the
+			chain */
+
+so say where in the process you need to be.  The EXCLUSIVE flag means
+we want to be the only one doing this and to bail if someone else is
+already registered.  
+
+Tvrtko> Doesn't really solve ordering inside groups so maybe we do not
+Tvrtko> need priorities at all just these three classes?
+
+Ordering is a key thing.  In most cases, you don't care, but for some
+cases you really do care.  
+
+Maybe we should take some of the ideas used by PAM for ordering to
+used as a basis?  
+
+John
