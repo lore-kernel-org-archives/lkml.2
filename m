@@ -1,112 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755096Ab0JHHyG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:54:06 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:16722 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753920Ab0JHHyD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:54:03 -0400
-Subject: Re: [PATCH 1/1] omap: Ptr "isr_reg" tracked as NULL was
- dereferenced
-From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-To: ext Kevin Hilman <khilman@deeprootsystems.com>, balbi@ti.com
-Cc: "tony@atomide.com" <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "zmc@lurian.net" <zmc@lurian.net>, a.j.buxton@gmail.com
-In-Reply-To: <1286346802.24366.89.camel@ekuznets-lx-nokia>
-References: <cover.1286261378.git.EXT-Eugeny.Kuznetsov@nokia.com>
-	 <131d16236d19895323fca2f058d65f1f116bacad.1286261378.git.EXT-Eugeny.Kuznetsov@nokia.com>
-	 <20101005093206.GB2977@legolas.emea.dhcp.ti.com>
-	 <877hhwvg3r.fsf@deeprootsystems.com>
-	 <1286346802.24366.89.camel@ekuznets-lx-nokia>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 11:49:19 +0400
-Message-ID: <1286524159.24366.126.camel@ekuznets-lx-nokia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Oct 2010 07:53:10.0059 (UTC) FILETIME=[D9E337B0:01CB66BD]
-X-Nokia-AV: Clean
+	id S1755035Ab0JHHzP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:55:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13999 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751988Ab0JHHzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 03:55:14 -0400
+Date: Fri, 8 Oct 2010 09:54:14 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v6 07/12] Add async PF initialization to PV guest.
+Message-ID: <20101008075414.GB8354@redhat.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+ <1286207794-16120-8-git-send-email-gleb@redhat.com>
+ <4CADC229.9040402@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CADC229.9040402@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-06 at 10:33 +0400, Evgeny Kuznetsov wrote:
-> On Tue, 2010-10-05 at 08:01 -0700, ext Kevin Hilman wrote:
-> > Felipe Balbi <balbi@ti.com> writes:
-> > 
-> > > Hi,
-> > >
-> > > On Tue, Oct 05, 2010 at 03:42:10AM -0500, Evgeny Kuznetsov wrote:
-> > >>+	if (!isr_reg) {
-> > >>+		printk(KERN_ERR "FATAL: Incorrect GPIO method %i\n",
-> > >>+				bank->method);
-> > >>+		BUG();
-> > >>+		}
-> > >
-> > > this could be simply:
-> > >
-> > > BUG_ON(!isr_reg);
-> > 
-> > WARN_ON is better.
-> > 
-> > A BUG() will panic the kernel and stop everything.  This is not an error
-> > condition that should prevent the entire kernel from running.
+On Thu, Oct 07, 2010 at 02:50:49PM +0200, Avi Kivity wrote:
+>  On 10/04/2010 05:56 PM, Gleb Natapov wrote:
+> >Enable async PF in a guest if async PF capability is discovered.
+> >
+> >
+> >+void __cpuinit kvm_guest_cpu_init(void)
+> >+{
+> >+	if (!kvm_para_available())
+> >+		return;
+> >+
+> >+	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF)&&  kvmapf) {
+> >+		u64 pa = __pa(&__get_cpu_var(apf_reason));
+> >+
+> >+		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
+> >+					  pa | KVM_ASYNC_PF_ENABLED, pa>>  32))
 > 
-
-
-
-> 'isr_reg' is dereferenced later in code:
-> 	...
-> 	isr_saved = isr = __raw_readl(isr_reg) & enabled;
-> 	...
-> So this will stop kernel anyway.
-> I just hoped to help in understanding of issue by log line. WARN_ON
-> could be used for this.
+> native_ versions of processor accessors shouldn't be used generally.
 > 
-> As a variant compilation error could be added, to prevent situation when
-> kernel is incorrectly configured.
-> E.g.:
-> #if !defined(CONFIG_ARCH_OMAP1) &&		
-> 	!defined(CONFIG_ARCH_OMAP15XX) &&	
-> 	!defined(CONFIG_ARCH_OMAP16XX) &&	
-> 	!defined(CONFIG_ARCH_OMAP730) &&	
-> 	!defined(CONFIG_ARCH_OMAP850) &&	
-> 	!defined(CONFIG_ARCH_OMAP2) &&	
-> 	!defined(CONFIG_ARCH_OMAP3) &&	
-> 	!defined(CONFIG_ARCH_OMAP4)
+> Also, the MSR isn't documented to fail on valid input, so you can
+> use a normal wrmsrl() here.
 > 
-> #error "Incorrect arch configuration"
-> #endif
+Kernel will oops on wrong write then. OK, why not.
+
+> >+			return;
+> >+		__get_cpu_var(apf_reason).enabled = 1;
+> >+		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
+> >+		       smp_processor_id());
+> >+	}
+> >+}
+> >+
+> >
+> >+static int kvm_pv_reboot_notify(struct notifier_block *nb,
+> >+				unsigned long code, void *unused)
+> >+{
+> >+	if (code == SYS_RESTART)
+> >+		on_each_cpu(kvm_pv_disable_apf, NULL, 1);
+> >+	return NOTIFY_DONE;
+> >+}
+> >+
+> >+static struct notifier_block kvm_pv_reboot_nb = {
+> >+	.notifier_call = kvm_pv_reboot_notify,
+> >+};
 > 
-> But there are still cases when 'isr_reg' could have NULL value (if
-> 'bank->method' is not equal to configured one).
+> Does this handle kexec?
 > 
-> Regards,
-> Evgeny
+Yes.
 
-If 'isr_reg' is NULL then interrupt could not be handled. We may unmask
-the GPIO bank interrupt to continue handle GPIO interrupts for other
-lines. And exit handler to prevent kernel oops since 'isr_reg' is
-dereferenced later in code(see my message above).
+> >+
+> >+static void kvm_guest_cpu_notify(void *dummy)
+> >+{
+> >+	if (!dummy)
+> >+		kvm_guest_cpu_init();
+> >+	else
+> >+		kvm_pv_disable_apf(NULL);
+> >+}
+> 
+> Why are you making decisions based on a dummy input?
+> 
+> The whole thing looks strange.  Use two functions?
+> 
+What is so strange? Type of notification is passed as a parameter.
+The code that does this is just under the function. I can rename
+dummy to something else. Or make it two functions.
 
-if (WARN_ON(!isr_reg)) {
-	desc->chip->unmask(irq);
-	return;
-	}
-
-One thing I warn about that we could not clear edge sensitive
-interrupts:
-	_enable_gpio_irqbank(bank, isr_saved & ~level_mask, 0);
-	_clear_gpio_irqbank(bank, isr_saved & ~level_mask);
-	_enable_gpio_irqbank(bank, isr_saved & ~level_mask, 1);
-
-
-What do you think?
-
-Evgeny.
-
-
+--
+			Gleb.
