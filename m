@@ -1,88 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab0JHQDY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:03:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65465 "EHLO mx1.redhat.com"
+	id S1757351Ab0JHQHB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:07:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53934 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753149Ab0JHQDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:03:23 -0400
-Message-ID: <4CAF40A0.5020506@redhat.com>
-Date: Fri, 08 Oct 2010 18:02:40 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1753952Ab0JHQG7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 12:06:59 -0400
+Date: Fri, 8 Oct 2010 12:06:44 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: rusty@rustcorp.com.au
+Cc: Christoph Hellwig <hch@infradead.org>, Ryan Harper <ryanh@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, Mikulas Patocka <mpatocka@redhat.com>,
+        dm-devel@redhat.com, Vivek Goyal <vgoyal@redhat.com>,
+        john.cooper@redhat.com, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [2.6.36 REGRESSION] Re: virtio-blk: put request that was created to
+ retrieve the device id
+Message-ID: <20101008160643.GA32005@redhat.com>
+References: <20100909175537.GA9589@redhat.com>
+ <20100909183554.GK30086@us.ibm.com>
+ <20100909191555.GA14486@redhat.com>
+ <20100909194300.GA16908@redhat.com>
+ <20100909201445.GA19656@redhat.com>
+ <20100909203052.GL30086@us.ibm.com>
+ <20100909210042.GA22092@redhat.com>
+ <20100909211504.GA24506@infradead.org>
+ <20100917145848.GK30086@us.ibm.com>
+ <20100921210033.GA24729@infradead.org>
 MIME-Version: 1.0
-To: "Yang, Bo" <Bo.Yang@lsi.com>
-CC: James Bottomley <James.Bottomley@suse.de>, bo yang <boyang1288@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Subject: Re: [PATCH 2/5] scsi: megaraid_sas - support devices update flag
-References: <AANLkTim3OKvhov1uCj5g6YgmOzR1rDogLmtJMTkbYq5V@mail.gmail.com> <1286490947.23573.3.camel@mulgrave.site> <4B6A08C587958942AA3002690DD4F8C30100F54C90@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30100F54C90@cosmail02.lsi.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100921210033.GA24729@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2010 03:47 PM, Yang, Bo wrote:
-> James,
->
-> Thanks for getting the online controller reset in.  I downloaded patch 2/5 from  http://marc.info/?l=linux-scsi&m=128521127203199&w=2 and I can apply it without errors.
->
-> Can you try it again?  otherwise I need to re-attach it.
->   
-I've tried it (http://marc.info/?l=linux-scsi&m=128521127203199&w=2) and it is broken.
-If you look at the end of the patche there should be 3 lines of the original code after 
-the last + sign.
+Hi Rusty,
 
-tomash
+On Tue, Sep 21 2010 at  5:00pm -0400,
+Christoph Hellwig <hch@infradead.org> wrote:
 
-Broken:
-+	driver_remove_file(&megasas_pci_driver.driver,
- 			   &driver_attr_release_date);
- 	driver_remove_file(&megasas_pci_driver.driver, &driver_attr_version);
---
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> On Fri, Sep 17, 2010 at 09:58:48AM -0500, Ryan Harper wrote:
+> > Since __bio_map_kern() sets up bio->bi_end_io = bio_map_kern_endio
+> > (which does a bio_put(bio)) doesn't that ensure we don't leak?
+> 
+> Indeed, that should take care of it.
+> 
 
-Works for me:
-+	driver_remove_file(&megasas_pci_driver.driver,
- 			   &driver_attr_release_date);
- 	driver_remove_file(&megasas_pci_driver.driver, &driver_attr_version);
- <- this line is missing in your patch
---
-To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+We need to fix this regression for 2.6.36.  Not sure what else I need to
+do to get this on your radar.  It's a pretty significant show-stopper
+for 2.6.36 guests that use virtio-blk with a udev enabled distro.
 
+Here is a reference to my original patch (which Ryan and hch have both
+reviewed): https://patchwork.kernel.org/patch/165571/
 
-
-> Thanks,
->
-> Bo Yang    
->
-> -----Original Message-----
-> From: James Bottomley [mailto:James.Bottomley@suse.de] 
-> Sent: Thursday, October 07, 2010 6:36 PM
-> To: bo yang
-> Cc: Yang, Bo; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/5] scsi: megaraid_sas - support devices update flag
->
-> On Wed, 2010-09-22 at 22:50 -0400, bo yang wrote:
->   
->> Driver added the Device update flag to tell LSI application driver
->> will do the device Update.  LSI MegaRAID SAS application will check
->> this flag to decide if it is need to update the Device or not.
->>     
-> Well, the good news is I've got the Online Controller reset update. The
-> bad news is that this patch now fails to apply: looks like an attachment
-> problem again:
->
-> Applying: megaraid_sas: support devices update flag
-> fatal: corrupt patch at line 70
-> Patch failed at 0001 megaraid_sas: support devices update flag
->
-> James
->
->
-> N�����r��y���b�X��ǧv�^�)޺{.n�+����{���"�{ay�ʇڙ�,j��f���h���z��w������j:+v���w�j�m��������zZ+��ݢj"��!tml=
-
+Thanks,
+Mike
