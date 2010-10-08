@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759453Ab0JHS5a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:57:30 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56324 "EHLO
+	id S1759472Ab0JHS54 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:57:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56328 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754532Ab0JHS53 (ORCPT
+	by vger.kernel.org with ESMTP id S1754532Ab0JHS5z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:57:29 -0400
-Date: Fri, 8 Oct 2010 11:57:40 -0700
+	Fri, 8 Oct 2010 14:57:55 -0400
+Date: Fri, 8 Oct 2010 11:58:08 -0700
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jeffrey Carlyle <jeff.carlyle@motorola.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Lun Chang <L.chang@motorola.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] regulator: avoid deadlock when disabling regulator
- with supply
-Message-ID: <20101008185739.GA6098@opensource.wolfsonmicro.com>
-References: <20101008163033.GA5092@opensource.wolfsonmicro.com>
- <1286563435-31239-1-git-send-email-jeff.carlyle@motorola.com>
+To: Stefan Schmidt <stefan@datenfreihafen.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        patches@opensource.wolfsonmicro.com
+Subject: Re: [PATCH 1/2] mfd: Factor out WM831x I2C I/O from the core driver
+Message-ID: <20101008185807.GB6098@opensource.wolfsonmicro.com>
+References: <1286556780-5610-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <20101008185708.GA4989@excalibur.local>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286563435-31239-1-git-send-email-jeff.carlyle@motorola.com>
+In-Reply-To: <20101008185708.GA4989@excalibur.local>
 X-Cookie: Q:	Are we not men?
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 01:43:54PM -0500, Jeffrey Carlyle wrote:
+On Fri, Oct 08, 2010 at 08:57:08PM +0200, Stefan Schmidt wrote:
+> Hello.
+> 
+> On Fri, 2010-10-08 at 09:52, Mark Brown wrote:
+> > In preparation for the addition of SPI support for the WM831x move the I2C
+> > specific code into a separate file with a separate Kconfig option so the
+> > I2C support can be excluded from the build.
 
-> I have a regulator A that sets regulator B as its supply. When I call
-> set_supply to add B as the supply for A, regulator A gets added to the
-> supply_list for regulator B.
+> The factored out file is missing here. Makefile has a reference for wm831x-i2c,
+> but you seemed to have forgotten to git add it.
 
-Looks good, thanks!
-
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-but some stylistic things below:
-
-> Change-Id: I769669452b9e1b59b252298d589738aabb03529c
-
-Hrm?
-
->  static int _regulator_get_voltage(struct regulator_dev *rdev);
->  static int _regulator_get_current_limit(struct regulator_dev *rdev);
->  static unsigned int _regulator_get_mode(struct regulator_dev *rdev);
-> @@ -1343,12 +1344,14 @@ int regulator_enable(struct regulator *regulator)
->  	mutex_lock(&rdev->mutex);
->  	ret = _regulator_enable(rdev);
->  	mutex_unlock(&rdev->mutex);
-> +
->  	return ret;
->  }
->  EXPORT_SYMBOL_GPL(regulator_enable);
-
-Random indentation change here.
-
-> +
-> +	if (supply_rdev)
-> +		regulator_disable(
-> +				get_device_regulator(rdev_get_dev(supply_rdev))
-> +				);
-> +
-
-Eew, indentation!  In cases like this it's better to just ignore the
-excesive line length.
+Gah, will resend shortly.
