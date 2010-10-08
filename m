@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932153Ab0JHKAi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:00:38 -0400
-Received: from [150.82.175.143] ([150.82.175.143]:53858 "EHLO
+	id S932178Ab0JHKAn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:00:43 -0400
+Received: from [150.82.175.143] ([150.82.175.143]:53862 "EHLO
 	dhcpa11143.tky.aist.go.jp" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753665Ab0JHKAf (ORCPT
+	by vger.kernel.org with ESMTP id S1753665Ab0JHKAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:00:35 -0400
+	Fri, 8 Oct 2010 06:00:40 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org
-Subject: [PATCH 3/5] kvm: stop including asm-generic/bitops/le.h directly
-Date: Fri,  8 Oct 2010 19:03:11 +0900
-Message-Id: <1286532193-29814-3-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>,
+        Andy Grover <andy.grover@oracle.com>, rds-devel@oss.oracle.com,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 4/5] rds: stop including asm-generic/bitops/le.h directly
+Date: Fri,  8 Oct 2010 19:03:12 +0900
+Message-Id: <1286532193-29814-4-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.1.231.gd0b16
 In-Reply-To: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
 References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
@@ -34,34 +35,55 @@ An alternative approach is introducing little endian bit operations
 in linux/bitops.h. But it needs to touch more files than this change does.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>
-Cc: kvm@vger.kernel.org
+Cc: Andy Grover <andy.grover@oracle.com>
+Cc: rds-devel@oss.oracle.com
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 ---
- virt/kvm/kvm_main.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ net/rds/cong.c |    9 ++++-----
+ 1 files changed, 4 insertions(+), 5 deletions(-)
 
-diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
-index 5186e72..780b71d 100644
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -52,7 +52,6 @@
- #include <asm/io.h>
- #include <asm/uaccess.h>
- #include <asm/pgtable.h>
+diff --git a/net/rds/cong.c b/net/rds/cong.c
+index 0871a29..5bd0f36 100644
+--- a/net/rds/cong.c
++++ b/net/rds/cong.c
+@@ -33,8 +33,7 @@
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/rbtree.h>
+-
 -#include <asm-generic/bitops/le.h>
++#include <linux/bitops.h>
  
- #include "coalesced_mmio.h"
+ #include "rds.h"
  
-@@ -1208,7 +1207,7 @@ void mark_page_dirty(struct kvm *kvm, gfn_t gfn)
- 	if (memslot && memslot->dirty_bitmap) {
- 		unsigned long rel_gfn = gfn - memslot->base_gfn;
+@@ -285,7 +284,7 @@ void rds_cong_set_bit(struct rds_cong_map *map, __be16 port)
+ 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
+ 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
  
--		generic___set_le_bit(rel_gfn, memslot->dirty_bitmap);
-+		ext2_set_bit(rel_gfn, memslot->dirty_bitmap);
- 	}
+-	generic___set_le_bit(off, (void *)map->m_page_addrs[i]);
++	ext2_set_bit(off, (void *)map->m_page_addrs[i]);
  }
  
+ void rds_cong_clear_bit(struct rds_cong_map *map, __be16 port)
+@@ -299,7 +298,7 @@ void rds_cong_clear_bit(struct rds_cong_map *map, __be16 port)
+ 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
+ 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
+ 
+-	generic___clear_le_bit(off, (void *)map->m_page_addrs[i]);
++	ext2_clear_bit(off, (void *)map->m_page_addrs[i]);
+ }
+ 
+ static int rds_cong_test_bit(struct rds_cong_map *map, __be16 port)
+@@ -310,7 +309,7 @@ static int rds_cong_test_bit(struct rds_cong_map *map, __be16 port)
+ 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
+ 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
+ 
+-	return generic_test_le_bit(off, (void *)map->m_page_addrs[i]);
++	return ext2_test_bit(off, (void *)map->m_page_addrs[i]);
+ }
+ 
+ void rds_cong_add_socket(struct rds_sock *rs)
 -- 
 1.7.1.231.gd0b16
 
