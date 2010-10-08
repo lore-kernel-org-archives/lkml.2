@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754137Ab0JHS1t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:27:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60163 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752158Ab0JHS1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:27:48 -0400
-Date: Fri, 8 Oct 2010 12:27:45 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: David Miller <davem@davemloft.net>
-Cc: dilinger@queued.net, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/2 v2] of: move phandle/ihandle into types.h and
- export to userspace
-Message-ID: <20101008182745.GI3863@angua.secretlab.ca>
-References: <20101008171210.GE3863@angua.secretlab.ca>
- <20101008.101759.193728130.davem@davemloft.net>
- <20101008173650.GH3863@angua.secretlab.ca>
- <20101008.104557.59696706.davem@davemloft.net>
+	id S1755355Ab0JHS1x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:27:53 -0400
+Received: from www.tglx.de ([62.245.132.106]:54827 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754235Ab0JHS1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 14:27:51 -0400
+Date: Fri, 8 Oct 2010 20:27:31 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Andi Kleen <andi@firstfloor.org>
+cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        Andi Kleen <ak@linux.intel.com>, ralf@linux-mips.org,
+        tony.luck@intel.com
+Subject: Re: [PATCH] Define _addr_lsb in siginfo_t for mips and ia64
+In-Reply-To: <1286560501-26843-1-git-send-email-andi@firstfloor.org>
+Message-ID: <alpine.LFD.2.00.1010082015480.13094@localhost6.localdomain6>
+References: <1286560501-26843-1-git-send-email-andi@firstfloor.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008.104557.59696706.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 10:45:57AM -0700, David Miller wrote:
-> From: Grant Likely <grant.likely@secretlab.ca>
-> Date: Fri, 8 Oct 2010 11:36:50 -0600
-> 
-> > Weird.  Yeah, no other platforms expect to get a phandle type
-> > definition from the kernel headers.  The only thing driving this
-> > conversation is from arch/sparc/include/asm/Kbuild:
-> > 
-> > header-y += openprom.h
-> 
-> It was probably at one point for the sake of asm/openpromio.h but
-> that header has no dependencies on openprom.h
-> 
-> The only hit I can find in google code search, for non-kernel code, is
-> the SILO bootloader.
-> 
-> But that tree includes it's own copy of include/asm/openprom.h so
-> the actual kernel copy isn't even used.
-> 
-> I'd say we can stop exporting that header and also therefore not
-> worry about making phandle_t visible to userspace.
+On Fri, 8 Oct 2010, Andi Kleen wrote:
 
-Yay!  That simplifies everything, and I believe it also means that the
-phandle/ihandle definitions can remain where they currently are in
-linux/of.h
+> From: Andi Kleen <ak@linux.intel.com>
+> 
+> Define an _addr_lsb field in the mips and ia64 siginfo_ts, following
+> the asm-generic version. This just puts the field over padding.
+> 
+> This fixes a compilation problem introduced with a337fda.
 
-Andres, can you post an updated series that includes removing
-openprom.h from the header export list?
+But it does not fix the mess you created in kernel/signal.c (aside of
+the completely braindaed #ifdef, it's whitespace damaged) with a two
+days old patch which has neither seen next, nor been reviewed by
+people who care about core code nor been cross-compiled which is
+mandatory for core kernel code changes.
 
-Thanks,
-g.
+The correct fix is to revert the patch in kernel/signal.c and fix this
+proper in .37. This put_user is missing since .32 when you introduced
+that grossly misnamed si extension, so there is no rush to get this in
+during the late -rc cycle.
+
+Thanks
+
+	tglx
+
+> Cc: ralf@linux-mips.org
+> Cc: tony.luck@intel.com
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/ia64/include/asm/siginfo.h |    1 +
+>  arch/mips/include/asm/siginfo.h |    1 +
+>  2 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/ia64/include/asm/siginfo.h b/arch/ia64/include/asm/siginfo.h
+> index 118d429..d20bf96 100644
+> --- a/arch/ia64/include/asm/siginfo.h
+> +++ b/arch/ia64/include/asm/siginfo.h
+> @@ -62,6 +62,7 @@ typedef struct siginfo {
+>  			int _imm;		/* immediate value for "break" */
+>  			unsigned int _flags;	/* see below */
+>  			unsigned long _isr;	/* isr */
+> +			short _addr_lsb;
+>  		} _sigfault;
+>  
+>  		/* SIGPOLL */
+> diff --git a/arch/mips/include/asm/siginfo.h b/arch/mips/include/asm/siginfo.h
+> index 96e28f1..709f7d4 100644
+> --- a/arch/mips/include/asm/siginfo.h
+> +++ b/arch/mips/include/asm/siginfo.h
+> @@ -88,6 +88,7 @@ typedef struct siginfo {
+>  #ifdef __ARCH_SI_TRAPNO
+>  			int _trapno;	/* TRAP # which caused the signal */
+>  #endif
+> +			short _addr_lsb;	
+>  		} _sigfault;
+>  
+>  		/* SIGPOLL, SIGXFSZ (To do ...)  */
+> -- 
+> 1.7.1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
