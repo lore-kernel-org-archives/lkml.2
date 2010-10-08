@@ -1,49 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756618Ab0JHJSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 05:18:06 -0400
-Received: from mail.atheros.com ([12.19.149.2]:48226 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754198Ab0JHJSF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 05:18:05 -0400
-Message-ID: <4CAEE1DB.1070202@Atheros.com>
-Date: Fri, 8 Oct 2010 14:48:19 +0530
-From: Suraj Sumangala <suraj@Atheros.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1755896Ab0JHJZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 05:25:05 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:41238
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754362Ab0JHJZC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 05:25:02 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275bhz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9YSTG-01-APC-02
+X-M-MSG: 
+Date: Fri, 8 Oct 2010 11:24:52 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] apic, x86: Use BIOS settings for IBS and MCE
+ threshold interrupt LVT offsets
+Message-ID: <20101008092452.GE13563@erda.amd.com>
+References: <1286360874-1471-1-git-send-email-robert.richter@amd.com>
+ <1286360874-1471-3-git-send-email-robert.richter@amd.com>
+ <20101006194150.GA17647@lenovo>
 MIME-Version: 1.0
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "marcel@holtmann.org" <marcel@holtmann.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>
-Subject: Re: Peculiar stuff in hci_ath3k/badness in hci_uart
-References: <20101007214134.6bcd2e8f@lxorguk.ukuu.org.uk>
-In-Reply-To: <20101007214134.6bcd2e8f@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20101006194150.GA17647@lenovo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On 06.10.10 15:41:50, Cyrill Gorcunov wrote:
+> On Wed, Oct 06, 2010 at 12:27:54PM +0200, Robert Richter wrote:
+> > We want the BIOS to setup the EILVT APIC registers. The offsets were
+> > hardcoded and BIOS settings were overwritten by the OS. Now, the
+> > subsystems for MCE threshold and IBS determine the LVT offset from the
+> > registers the BIOS has setup. If the BIOS setup is buggy on a family
+> > 10h system, a workaround enables IBS. If the OS determines an invalid
+> > register setup, a "[Firmware Bug]: " error message is reported.
+> > 
+> > We need this change also for upcomming cpu families.
+> > 
+> > Signed-off-by: Robert Richter <robert.richter@amd.com>
+> > ---
+> 
+> Hi Robert, a few comments
+> 
+> ...  
+> >  /*
+> >   * Program the next event, relative to now
+> > diff --git a/arch/x86/kernel/cpu/mcheck/mce_amd.c b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> > index 5e97529..e13d4bd 100644
+> > --- a/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> > +++ b/arch/x86/kernel/cpu/mcheck/mce_amd.c
+> > @@ -131,7 +131,8 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+> >  	u32 low = 0, high = 0, address = 0;
+> >  	unsigned int bank, block;
+> >  	struct thresh_restart tr;
+> > -	u8 lvt_off;
+> > +	int lvt_off = -1;
+> > +	u8 offset;
+> >  
+> >  	for (bank = 0; bank < NR_BANKS; ++bank) {
+> >  		for (block = 0; block < NR_BLOCKS; ++block) {
+> > @@ -165,8 +166,28 @@ void mce_amd_feature_init(struct cpuinfo_x86 *c)
+> >  			if (shared_bank[bank] && c->cpu_core_id)
+> >  				break;
+> >  #endif
+> > -			lvt_off = setup_APIC_eilvt_mce(THRESHOLD_APIC_VECTOR,
+> > -						       APIC_EILVT_MSG_FIX, 0);
+> > +			offset = (high & MASK_LVTOFF_HI) >> 20;
+> > +			if (lvt_off < 0) {
+> > +				if (setup_APIC_eilvt(offset,
+> > +						     THRESHOLD_APIC_VECTOR,
+> > +						     APIC_EILVT_MSG_FIX, 0)) {
+> > +					pr_err(FW_BUG "cpu %d, failed to "
+> > +					       "setup threshold interrupt "
+> > +					       "for bank %d, block %d "
+> > +					       "(MSR%08X=0x%x%08x)",
+> > +					       smp_processor_id(), bank, block,
+> > +					       address, high, low);
+> > +					continue;
+> > +				}
+> > +				lvt_off = offset;
+> > +			} else if (lvt_off != offset) {
+> 
+> Could we put explicit type specificator here? For better readbility.
+> ...
 
-On 10/8/2010 2:11 AM, Alan Cox wrote:
-> Noticed this while looking at Savoy's stuff
->
->
-> ath_wakeup_ar3k:
->
->         int status = tty->driver->ops->tiocmget(tty, NULL);
->
-I agree, it will be a problem if the underlying driver try to access the 
-"struct file". Is there any other way I can get the MCR status here 
-without providing user space pointer?
+Cyrill,
 
->
-> Fortunately I looked further and the further I looked the more fun it gets
->
-> in hci_uart we have
->
->                  len = tty->ops->write(tty, skb->data, skb->len);
->
-Regards
-Suraj
+Do you mean an explicit type cast here, or something else?
+
+> 
+> > +static int force_ibs_eilvt_setup(void)
+> > +{
+> > +	int i;
+> > +	int ret;
+> > +
+> > +	/* find the next free available EILVT entry */
+> > +	for (i = 1; i < 4; i++) {
+> 
+> APIC_EILVT_NR_MAX here, no?
+
+Yes, will update this if a -v2 patch set will be necessary.
+
+Thanks for review,
+
+-Robert
+
+> 
+> > +		if (!eilvt_is_available(i))
+> > +			continue;
+> > +		ret = setup_ibs_ctl(i);
+> > +		if (ret)
+> > +			return ret;
+> > +		return 0;
+> >  	}
+> >  
+>  
+>   Cyrill
+> 
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
