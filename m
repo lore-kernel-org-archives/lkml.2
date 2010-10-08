@@ -1,105 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759680Ab0JHX0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 19:26:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57852 "EHLO ogre.sisk.pl"
+	id S1759640Ab0JHXkE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 19:40:04 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56451 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759260Ab0JHX0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 19:26:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: PATCH: PM / Runtime: Remove idle notification after failing suspend (was: Re: [linux-pm] [PATCH] PM: add synchronous ...)
-Date: Sat, 9 Oct 2010 01:24:56 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
-References: <Pine.LNX.4.44L0.1010021004150.15874-100000@netrider.rowland.org> <201010030006.33454.rjw@sisk.pl>
-In-Reply-To: <201010030006.33454.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754790Ab0JHXkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 19:40:03 -0400
+Subject: Re: [RFC PATCH 02/11] ppc: allow direct and iommu to coexist
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: miltonm@bga.com, Paul Mackerras <paulus@samba.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1286559192-10898-3-git-send-email-nacc@us.ibm.com>
+References: <1286559192-10898-1-git-send-email-nacc@us.ibm.com>
+	 <1286559192-10898-3-git-send-email-nacc@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 09 Oct 2010 10:38:56 +1100
+Message-ID: <1286581136.2463.421.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010090124.56493.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 03, 2010, Rafael J. Wysocki wrote:
-> On Saturday, October 02, 2010, Alan Stern wrote:
-> > On Fri, 1 Oct 2010, Rafael J. Wysocki wrote:
-> ...
+On Fri, 2010-10-08 at 10:33 -0700, Nishanth Aravamudan wrote:
+> Replace the union with just the multiple fields, ifdef on CONFIG_PPC64.
 > 
-> > > If we removed the immediate idle notification after a successful resume, it
-> > > might need to be reworked slightly.
-> > 
-> > My suggestion was that we remove the idle notification after a failed 
-> > suspend, not the notification after a successful resume.
+> Future pseries boxes will allow a 64 bit dma mapping covering all
+> memory, coexisting with a smaller iommu window in 32 bit pci space.
 > 
-> And I said I was fine with that.
+> The cell fixed mapping would also like both to coexist.
+> 
+> Signed-off-by: Milton Miller <miltonm@bga.com>
+> Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+> ---
+> I used the ifdef guard of CONFIG_PPC64 according to the current makefile
+> for iommu.c.  One set is burried in the middle of iommu.h.
 
-Actaully, I think we can do that right away.
+I dislike the ifdef's ...
 
-Thanks,
-Rafael
+Also, why remove the union ? IE. Do we really them to co-exist for a
+given device ? I'm doing something similar for another (not released
+yet) processor where I'm flicking between direct and iommu at
+set_dma_mask time, it's easy enough to change the union content.
+
+Cheers,
+Ben.
+
+> ---
+>  arch/powerpc/include/asm/device.h      |   14 ++++++--------
+>  arch/powerpc/include/asm/dma-mapping.h |    4 ++--
+>  arch/powerpc/include/asm/iommu.h       |    6 ++++--
+>  3 files changed, 12 insertions(+), 12 deletions(-)
+> 
+> diff --git a/arch/powerpc/include/asm/device.h b/arch/powerpc/include/asm/device.h
+> index 16d25c0..ed883ea 100644
+> --- a/arch/powerpc/include/asm/device.h
+> +++ b/arch/powerpc/include/asm/device.h
+> @@ -19,14 +19,12 @@ struct dev_archdata {
+>  	/* DMA operations on that device */
+>  	struct dma_map_ops	*dma_ops;
+>  
+> -	/*
+> -	 * When an iommu is in use, dma_data is used as a ptr to the base of the
+> -	 * iommu_table.  Otherwise, it is a simple numerical offset.
+> -	 */
+> -	union {
+> -		dma_addr_t	dma_offset;
+> -		void		*iommu_table_base;
+> -	} dma_data;
+> +	/* dma_offset is used by swiotlb and direct dma ops, but no iommu */
+> +	dma_addr_t	dma_offset;
+> +
+> +#ifdef CONFIG_PPC64
+> +	void		*iommu_table_base;
+> +#endif
+>  
+>  #ifdef CONFIG_SWIOTLB
+>  	dma_addr_t		max_direct_dma_addr;
+> diff --git a/arch/powerpc/include/asm/dma-mapping.h b/arch/powerpc/include/asm/dma-mapping.h
+> index 8c9c6ad..644103a 100644
+> --- a/arch/powerpc/include/asm/dma-mapping.h
+> +++ b/arch/powerpc/include/asm/dma-mapping.h
+> @@ -100,7 +100,7 @@ static inline void set_dma_ops(struct device *dev, struct dma_map_ops *ops)
+>  static inline dma_addr_t get_dma_offset(struct device *dev)
+>  {
+>  	if (dev)
+> -		return dev->archdata.dma_data.dma_offset;
+> +		return dev->archdata.dma_offset;
+>  
+>  	return PCI_DRAM_OFFSET;
+>  }
+> @@ -108,7 +108,7 @@ static inline dma_addr_t get_dma_offset(struct device *dev)
+>  static inline void set_dma_offset(struct device *dev, dma_addr_t off)
+>  {
+>  	if (dev)
+> -		dev->archdata.dma_data.dma_offset = off;
+> +		dev->archdata.dma_offset = off;
+>  }
+>  
+>  /* this will be removed soon */
+> diff --git a/arch/powerpc/include/asm/iommu.h b/arch/powerpc/include/asm/iommu.h
+> index edfc980..0f605a4 100644
+> --- a/arch/powerpc/include/asm/iommu.h
+> +++ b/arch/powerpc/include/asm/iommu.h
+> @@ -70,15 +70,17 @@ struct iommu_table {
+>  
+>  struct scatterlist;
+>  
+> +#ifdef CONFIG_PPC64
+>  static inline void set_iommu_table_base(struct device *dev, void *base)
+>  {
+> -	dev->archdata.dma_data.iommu_table_base = base;
+> +	dev->archdata.iommu_table_base = base;
+>  }
+>  
+>  static inline void *get_iommu_table_base(struct device *dev)
+>  {
+> -	return dev->archdata.dma_data.iommu_table_base;
+> +	return dev->archdata.iommu_table_base;
+>  }
+> +#endif
+>  
+>  /* Frees table for an individual device node */
+>  extern void iommu_free_table(struct iommu_table *tbl, const char *node_name);
 
 
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM / Runtime: Remove idle notification after failing suspend
-
-If runtime suspend of a device fails returning -EAGAIN or -EBUSY,
-which means that it's safe to try to suspend it again, the PM core
-runs the runtime idle helper function for it.  Unfortunately this may
-lead to problems, for example for PCI devices whose drivers don't
-implement the ->runtime_idle() callback, because in that case the
-PCI bus type's ->runtime_idle() always calls pm_runtime_suspend()
-for the given device.  Thus, if it is automatically called by a
-driver's ->runtime_suspend() returning -EAGAIN or -EBUSY, it will
-cause the suspend to happen again possibly causing a busy loop to
-appear.  To avoid that, remove the idle notification after failing
-runtime suspend of a device altogether and let the callers of
-pm_runtime_suspend() repeat the operation if need be.
-
-Reported-by: Alan Stern <stern@rowland.harvard.edu>
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/base/power/runtime.c |   11 ++---------
- 1 file changed, 2 insertions(+), 9 deletions(-)
-
-Index: linux-2.6/drivers/base/power/runtime.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/runtime.c
-+++ linux-2.6/drivers/base/power/runtime.c
-@@ -281,7 +281,6 @@ static int rpm_suspend(struct device *de
- {
- 	int (*callback)(struct device *);
- 	struct device *parent = NULL;
--	bool notify = false;
- 	int retval;
- 
- 	dev_dbg(dev, "%s flags 0x%x\n", __func__, rpmflags);
-@@ -383,13 +382,10 @@ static int rpm_suspend(struct device *de
- 	if (retval) {
- 		__update_runtime_status(dev, RPM_ACTIVE);
- 		dev->power.deferred_resume = 0;
--		if (retval == -EAGAIN || retval == -EBUSY) {
--			if (dev->power.timer_expires == 0)
--				notify = true;
-+		if (retval == -EAGAIN || retval == -EBUSY)
- 			dev->power.runtime_error = 0;
--		} else {
-+		else
- 			pm_runtime_cancel_pending(dev);
--		}
- 	} else {
-  no_callback:
- 		__update_runtime_status(dev, RPM_SUSPENDED);
-@@ -408,9 +404,6 @@ static int rpm_suspend(struct device *de
- 		goto out;
- 	}
- 
--	if (notify)
--		rpm_idle(dev, 0);
--
- 	if (parent && !parent->power.ignore_children) {
- 		spin_unlock_irq(&dev->power.lock);
- 
