@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab0JHT7S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 15:59:18 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:27802 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758046Ab0JHT7Q (ORCPT
+	id S932865Ab0JHT7N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 15:59:13 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:1771 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757681Ab0JHT7L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 15:59:16 -0400
-Subject: [PATCH 01/13] cciss: remove controllers supported by hpsa
+	Fri, 8 Oct 2010 15:59:11 -0400
+Subject: [PATCH 00/13] Patches for cciss and hpsa 
 To: axboe@kernel.dk, James.Bottomley@HansenPartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, thenzl@redhat.com, mike.miller@hp.com,
         linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 08 Oct 2010 15:06:06 -0500
-Message-ID: <20101008200606.24279.37953.stgit@beardog.cce.hp.com>
-In-Reply-To: <20101008200453.24279.6638.stgit@beardog.cce.hp.com>
-References: <20101008200453.24279.6638.stgit@beardog.cce.hp.com>
+Date: Fri, 08 Oct 2010 15:06:00 -0500
+Message-ID: <20101008200453.24279.6638.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -24,89 +22,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+The following series:
 
-We would prefer not to have any overlap between the two drivers.
-Remove the cciss_allow_hpsa option, as it it is no longer needed.
+* Fixes the "reset_devices" behavior of cciss and hpsa on newer
+  controllers which use the "doorbell" method of resetting (this
+  means kdump will work now on those controllers that have the
+  doorbell reset capability).
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+* Remove support from cciss for controllers which are supported
+  by hpsa so there is no overlap (except by use of hpsa_allow_any=1
+  module parameter).
+
+* Allow hpsa to use either "performant" (default) or "simple" mode of
+  controller operation selectable by module parameter.
+
+* Some small miscellaneous fixes for cciss and hpsa.
+
 ---
- drivers/block/cciss.c |   38 +-------------------------------------
- 1 files changed, 1 insertions(+), 37 deletions(-)
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 5e4fadc..ca900ea 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -66,12 +66,6 @@ MODULE_SUPPORTED_DEVICE("HP Smart Array Controllers");
- MODULE_VERSION("3.6.26");
- MODULE_LICENSE("GPL");
- 
--static int cciss_allow_hpsa;
--module_param(cciss_allow_hpsa, int, S_IRUGO|S_IWUSR);
--MODULE_PARM_DESC(cciss_allow_hpsa,
--	"Prevent cciss driver from accessing hardware known to be "
--	" supported by the hpsa driver");
--
- #include "cciss_cmd.h"
- #include "cciss.h"
- #include <linux/cciss_ioctl.h>
-@@ -98,18 +92,6 @@ static const struct pci_device_id cciss_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSD,     0x103C, 0x3215},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSC,     0x103C, 0x3237},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSC,     0x103C, 0x323D},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3241},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3243},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3245},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3247},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3250},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3251},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
--	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
- 	{0,}
- };
- 
-@@ -137,23 +119,9 @@ static struct board_type products[] = {
- 	{0x3214103C, "Smart Array E200i", &SA5_access},
- 	{0x3215103C, "Smart Array E200i", &SA5_access},
- 	{0x3237103C, "Smart Array E500", &SA5_access},
--/* controllers below this line are also supported by the hpsa driver. */
--#define HPSA_BOUNDARY 0x3223103C
- 	{0x3223103C, "Smart Array P800", &SA5_access},
- 	{0x3234103C, "Smart Array P400", &SA5_access},
- 	{0x323D103C, "Smart Array P700m", &SA5_access},
--	{0x3241103C, "Smart Array P212", &SA5_access},
--	{0x3243103C, "Smart Array P410", &SA5_access},
--	{0x3245103C, "Smart Array P410i", &SA5_access},
--	{0x3247103C, "Smart Array P411", &SA5_access},
--	{0x3249103C, "Smart Array P812", &SA5_access},
--	{0x324A103C, "Smart Array P712m", &SA5_access},
--	{0x324B103C, "Smart Array P711m", &SA5_access},
--	{0x3250103C, "Smart Array", &SA5_access},
--	{0x3251103C, "Smart Array", &SA5_access},
--	{0x3252103C, "Smart Array", &SA5_access},
--	{0x3253103C, "Smart Array", &SA5_access},
--	{0x3254103C, "Smart Array", &SA5_access},
- };
- 
- /* How long to wait (in milliseconds) for board to go into simple mode */
-@@ -3985,13 +3953,9 @@ static int __devinit cciss_lookup_board_id(struct pci_dev *pdev, u32 *board_id)
- 	*board_id = ((subsystem_device_id << 16) & 0xffff0000) |
- 			subsystem_vendor_id;
- 
--	for (i = 0; i < ARRAY_SIZE(products); i++) {
--		/* Stand aside for hpsa driver on request */
--		if (cciss_allow_hpsa && products[i].board_id == HPSA_BOUNDARY)
--			return -ENODEV;
-+	for (i = 0; i < ARRAY_SIZE(products); i++)
- 		if (*board_id == products[i].board_id)
- 			return i;
--	}
- 	dev_warn(&pdev->dev, "unrecognized board ID: 0x%08x, ignoring.\n",
- 		*board_id);
- 	return -ENODEV;
+Stephen M. Cameron (13):
+      cciss: remove controllers supported by hpsa
+      hpsa: fix board status waiting code
+      hpsa: Use kernel provided PCI state save and restore functions
+      hpsa: limit commands allocated on reset_devices
+      hpsa: do not reset unknown boards on reset_devices
+      cciss: fix board status waiting code
+      cciss: Use kernel provided PCI state save and restore functions
+      cciss: limit commands allocated on reset_devices
+      cciss: use usleep_range not msleep for small sleeps
+      hpsa: take the adapter lock in hpsa_wait_for_mode_change_ack
+      hpsa: allow driver to put controller in either simple or performant mode
+      hpsa: use usleep_range not msleep for small sleeps
+      hpsa: defend against zero sized buffers in passthru ioctls
 
+
+ Documentation/scsi/hpsa.txt |    6 +
+ drivers/block/cciss.c       |  160 +++++++++++++-----------------------
+ drivers/block/cciss.h       |    4 +
+ drivers/scsi/hpsa.c         |  192 +++++++++++++++++++++----------------------
+ drivers/scsi/hpsa.h         |    4 +
+ 5 files changed, 164 insertions(+), 202 deletions(-)
+
+-- 
+Signature
