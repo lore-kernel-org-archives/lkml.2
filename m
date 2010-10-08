@@ -1,99 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752297Ab0JHBYo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 21:24:44 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:55714 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab0JHBYn (ORCPT
+	id S1752277Ab0JHBfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 21:35:37 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:36568 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751268Ab0JHBff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 21:24:43 -0400
-Date: Fri, 8 Oct 2010 10:12:22 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v2] memcg: reduce lock time at move charge (Was Re:
- [PATCH 04/10] memcg: disable local interrupts in lock_page_cgroup()
-Message-Id: <20101008101222.1aab03ae.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101007161454.84570cf9.akpm@linux-foundation.org>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
-	<20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007161454.84570cf9.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Oct 2010 21:35:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=YVFCjsz2gisdUyivgtIcREhmvFOhwtqqSDwGtckb72smQVN+uKYWYGx7ocM9cdGVOy
+         1eQL7qb++Vej9xaC5MWT3+FEXR7z+PCfEIC98nzC9TkPktCy0LmnwZVBvvo1o0+gikJv
+         v5mktrri05bYrgT8LHqbKm28Zd09GYQXOYASk=
+MIME-Version: 1.0
+Date: Thu, 7 Oct 2010 21:35:33 -0400
+Message-ID: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com>
+Subject: [PATCH 00/33] Staging: Fixed <module-objs> to <module>-y
+From: T Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        sam@ravnborg.org, linux-kbuild@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010 16:14:54 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+I patch against the next-20101006 tree.
 
-> On Thu, 7 Oct 2010 17:04:05 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > Now, at task migration among cgroup, memory cgroup scans page table and moving
-> > account if flags are properly set.
-> > 
-> > The core code, mem_cgroup_move_charge_pte_range() does
-> > 
-> >  	pte_offset_map_lock();
-> > 	for all ptes in a page table:
-> > 		1. look into page table, find_and_get a page
-> > 		2. remove it from LRU.
-> > 		3. move charge.
-> > 		4. putback to LRU. put_page()
-> > 	pte_offset_map_unlock();
-> > 
-> > for pte entries on a 3rd level? page table.
-> > 
-> > This pte_offset_map_lock seems a bit long. This patch modifies a rountine as
-> > 
-> > 	for 32 pages: pte_offset_map_lock()
-> > 		      find_and_get a page
-> > 		      record it
-> > 		      pte_offset_map_unlock()
-> > 	for all recorded pages
-> > 		      isolate it from LRU.
-> > 		      move charge
-> > 		      putback to LRU
-> > 	for all recorded pages
-> > 		      put_page()
-> 
-> The patch makes the code larger, more complex and slower!
-> 
-Before this patch:
-   text    data     bss     dec     hex filename
-  27163   11782    4100   43045    a825 mm/memcontrol.o
-
-After this patch:
-   text    data     bss     dec     hex filename
-  27307   12294    4100   43701    aab5 mm/memcontrol.o
-
-hmm, allocating mc.target[] statically might be bad, but I'm now wondering
-whether I could allocate mc itself dynamically(I'll try).
-
-> I do think we're owed a more complete description of its benefits than
-> "seems a bit long".  Have problems been observed?  Any measurements
-> taken?
-> 
-IIUC, this patch is necessary for "[PATCH] memcg: lock-free clear page writeback"
-later, but I agree we should describe it.
+The patch series replace use of <module>-objs with <module>-y in the
+staging directory.
 
 Thanks,
-Daisuke Nishimura.
+
+Tracey Dent
