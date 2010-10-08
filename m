@@ -1,69 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab0JHNma (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 09:42:30 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:46854 "EHLO
+	id S1757498Ab0JHNmZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 09:42:25 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:46844 "EHLO
 	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932148Ab0JHNm1 (ORCPT
+	with ESMTP id S1753587Ab0JHNmY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 09:42:27 -0400
+	Fri, 8 Oct 2010 09:42:24 -0400
 From: Samu Onkalo <samu.p.onkalo@nokia.com>
 To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
         alan@lxorguk.ukuu.org.uk
-Subject: [PATCHv2 4/5] misc: update apds990x driver to Kconfig and Makefile
-Date: Fri,  8 Oct 2010 16:42:03 +0300
-Message-Id: <1286545324-18506-5-git-send-email-samu.p.onkalo@nokia.com>
+Subject: [PATCHv2 0/5] BH1770GLC, SFH7770 and APDS990x als / proximity sensor drivers
+Date: Fri,  8 Oct 2010 16:41:59 +0300
+Message-Id: <1286545324-18506-1-git-send-email-samu.p.onkalo@nokia.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1286545324-18506-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1286545324-18506-1-git-send-email-samu.p.onkalo@nokia.com>
-X-OriginalArrivalTime: 08 Oct 2010 13:42:16.0625 (UTC) FILETIME=[9F038A10:01CB66EE]
+X-OriginalArrivalTime: 08 Oct 2010 13:42:09.0609 (UTC) FILETIME=[9AD4FB90:01CB66EE]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Compilation support for apds990x driver
+Patch set contains two drivers. One for BH1770GLC / SFH7770 chips and
+one for APDS990X chip.
 
-Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
----
- drivers/misc/Kconfig  |   11 +++++++++++
- drivers/misc/Makefile |    1 +
- 2 files changed, 12 insertions(+), 0 deletions(-)
+Both drivers have similar sysfs based interface. Both supports
+pm_runtime and regulator frame work. There is short documentation
+for both drivers.
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index f2e8065..cc7c363 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -324,6 +324,17 @@ config SENSORS_BHSFH
-            To compile this driver as a module, choose M here: the
-            module will be called bhsfh. If unsure, say N here.
- 
-+config SENSORS_APDS990X
-+	 tristate "APDS990X combined als and proximity sensors"
-+	 depends on I2C
-+	 default n
-+	 ---help---
-+	   Say Y here if you want to build a driver for Avago APDS990x
-+	   combined ambient light and proximity sensor chip
-+
-+	   To compile this driver as a module, choose M here: the
-+	   module will be called apds990x. If unsure, say N here.
-+
- config HMC6352
- 	tristate "Honeywell HMC6352 compass"
- 	depends on I2C
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index fd5a4b7..b90cea7 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -17,6 +17,7 @@ obj-$(CONFIG_TIFM_7XX1)       	+= tifm_7xx1.o
- obj-$(CONFIG_PHANTOM)		+= phantom.o
- obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
- obj-$(CONFIG_SENSORS_BHSFH)	+= bhsfh.o
-+obj-$(CONFIG_SENSORS_APDS990X)	+= apds990x.o
- obj-$(CONFIG_SGI_IOC4)		+= ioc4.o
- obj-$(CONFIG_ENCLOSURE_SERVICES) += enclosure.o
- obj-$(CONFIG_KGDB_TESTS)	+= kgdbts.o
--- 
-1.6.0.4
+Unfortunately I can't promise data sheets to public access.
+
+Changes in patch set version 2:
+- sysfs naming convention changed
+- sysfs sensor_range entries added
+- "xxx yyy" sysfs entries changes to two separate entries
+- 10x sysfs entry replaced with %d.%d
+- const added to tables
+- meaning of rate entries changed to Hertz
+- various mutex corrections and comments
+- cleaned up bracket
+- rate selection selects closest one instead strict match
+- Documentation updated to match changes
+- Some bug fixes which I noticed in tests
+- Some code cleanup
+- EAGAIN is not returned in sysfs read. Instead wait for result or
+  timeout with -EIO (something is broken if timeout happens)
+
+Tested on top of 2.6.36-rc5
+
+Samu Onkalo (5):
+  misc: Driver for bh1770glc / sfh7770 ALS and proximity sensor
+  misc: update bhsfh driver to Kconfig and Makefile
+  misc: Driver for APDS990X ALS and proximity sensors
+  misc: update apds990x driver to Kconfig and Makefile
+  Documentation: Short descriptions for bhsfh and apds990x drivers
+
+ Documentation/misc-devices/apds990x.txt |  152 ++++
+ Documentation/misc-devices/bhsfh.txt    |  148 ++++
+ drivers/misc/Kconfig                    |   21 +
+ drivers/misc/Makefile                   |    2 +
+ drivers/misc/apds990x.c                 | 1303 ++++++++++++++++++++++++++++
+ drivers/misc/bhsfh.c                    | 1443 +++++++++++++++++++++++++++++++
+ include/linux/i2c/apds990x.h            |   58 ++
+ include/linux/i2c/bhsfh.h               |   42 +
+ 8 files changed, 3169 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/misc-devices/apds990x.txt
+ create mode 100644 Documentation/misc-devices/bhsfh.txt
+ create mode 100644 drivers/misc/apds990x.c
+ create mode 100644 drivers/misc/bhsfh.c
+ create mode 100644 include/linux/i2c/apds990x.h
+ create mode 100644 include/linux/i2c/bhsfh.h
 
