@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757074Ab0JHMpm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 08:45:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45405 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753107Ab0JHMpk convert rfc822-to-8bit (ORCPT
+	id S1756695Ab0JHMwf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 08:52:35 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:55700 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753429Ab0JHMwe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 08:45:40 -0400
-Subject: Re: [PATCH 3/5] kvm: stop including asm-generic/bitops/le.h directly
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1286532193-29814-3-git-send-email-akinobu.mita@gmail.com>
-Date: Fri, 8 Oct 2010 14:45:38 +0200
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <782A742D-14BD-4B77-A8B5-9C49850A24AE@suse.de>
-References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com> <1286532193-29814-3-git-send-email-akinobu.mita@gmail.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-X-Mailer: Apple Mail (2.1081)
+	Fri, 8 Oct 2010 08:52:34 -0400
+Message-Id: <1286542354.10969.1399038639@webmail.messagingengine.com>
+X-Sasl-Enc: DbR18pfLHdHWP5y13Nlw9EpSnTbhtxnYk8mniRCBFluA 1286542354
+From: "Jack Stone" <jwjstone@fastmail.fm>
+To: "Nicolas Kaiser" <nikai@nikai.net>,
+        "Dan Williams" <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+X-Mailer: MessagingEngine.com Webmail Interface
+In-Reply-To: <1286540528.5117.1399034495@webmail.messagingengine.com>
+References: <20101008004801.2f0dee47@absol.kitzblitz>
+ <1286540528.5117.1399034495@webmail.messagingengine.com>
+Subject: Re: [PATCH] dma/timberdale: simplify conditional
+Date: Fri, 08 Oct 2010 13:52:34 +0100
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+It's just not my day today.
 
-On 08.10.2010, at 12:03, Akinobu Mita wrote:
+I had a look on LXR and rx is defined as a bool so we're safe in this
+case but might be worth a comment or even !! to future proof it.
 
-> asm-generic/bitops/le.h is only intended to be included directly from
-> asm-generic/bitops/ext2-non-atomic.h or asm-generic/bitops/minix-le.h
-> which implements generic ext2 or minix bit operations.
-> 
-> This stops including asm-generic/bitops/le.h directly and use ext2
-> non-atomic bit operations instead.
-> 
-> An alternative approach is introducing little endian bit operations
-> in linux/bitops.h. But it needs to touch more files than this change does.
-
-That's properly a better idea, given the fact that ext2_set_bit doesn't really say too much to the reader :).
-
-
-Alex
-
+Sorry for all the noise, Jack
