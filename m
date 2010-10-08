@@ -1,323 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759597Ab0JHUet (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 16:34:49 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:48392 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755003Ab0JHUer (ORCPT
+	id S1759622Ab0JHUfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 16:35:09 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:3400 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755003Ab0JHUfH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 16:34:47 -0400
-Subject: [RFC PATCH] Bug during kexec...not all cpus are stopped
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: kexec@lists.infradead.org, the arch/x86 maintainers <x86@kernel.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Dan Hecht <dhecht@vmware.com>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Fri, 08 Oct 2010 13:34:47 -0700
-Message-Id: <1286570087.8769.27.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Oct 2010 16:35:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=eLGkbQ7ZjGyLZBgLnsuQfmfynlqPkEYl02uL9sjLSBoviqo7CW3YLIRIjvIBCrCYbG
+         jZTKpg8SS0fudGPks0Mw==
+MIME-Version: 1.0
+In-Reply-To: <1286522543.8189.13.camel@marge.simson.net>
+References: <1285633798-26886-1-git-send-email-ncrao@google.com>
+ <1285682273.7469.3.camel@marge.simson.net> <AANLkTin=Dic2UE55yUaam8NzGHTib=9s=x-wyzk03BU0@mail.gmail.com>
+ <1285724758.7440.11.camel@marge.simson.net> <AANLkTi=TQnYGLPC=Pi0o1As83W6VdWdjvimZNSrGT4qW@mail.gmail.com>
+ <1286161717.7410.12.camel@marge.simson.net> <AANLkTinf7fj5A4DnQOWdj8QeMhf4exPGgpMUdTGA9mTC@mail.gmail.com>
+ <1286522543.8189.13.camel@marge.simson.net>
+From: Nikhil Rao <ncrao@google.com>
+Date: Fri, 8 Oct 2010 13:34:42 -0700
+Message-ID: <AANLkTim8m6r_8pFO6o0uOnki6mNoaR+8NZ4M0pO3H515@mail.gmail.com>
+Subject: Re: [PATCH 0/3][RFC] Improve load balancing when tasks have large
+ weight differential
+To: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 8, 2010 at 12:22 AM, Mike Galbraith <efault@gmx.de> wrote:
+> On Wed, 2010-10-06 at 01:23 -0700, Nikhil Rao wrote:
+>> On Sun, Oct 3, 2010 at 8:08 PM, Mike Galbraith <efault@gmx.de> wrote:
+>> > On Wed, 2010-09-29 at 12:32 -0700, Nikhil Rao wrote:
+>> >> The closest I have is a quad-core dual-socket machine (MC, CPU
+>> >> domains). And I'm having trouble reproducing it on that machine as
+>> >> well :-( I ran 5 soaker threads (one of them niced to -15) for a few
+>> >> hours and didn't see the problem. Can you please give me some trace
+>> >> data & schedstats to work with?
+>> >
+>> > Booting with isolcpus or offlining the excess should help.
+>> >
+>>
+>> Sorry for the late reply. Booting with isolcpus did the trick, thanks.
+>>
+>> ... and now to dig into why this is happening.
+>
+> I was poking it (again) yesterday, and it's kind of annoying.  I can't
+> call this behavior black/white broken.  It's freeing up a cache for a
+> very high priority task, which is kinda nice, but SMP nice is costing
+> 25% of my box's processor power in this case too.  Hrmph.
+>
 
-Before starting the new kernel kexec calls machine_shutdown to stop all
-the cpus, which internally calls native_smp_send_stop. AFAIU, kexec
-expects that all the cpus are now halted after that call returns.
-Now, looking at the code for native_smp_send_stop, it assumes that all
-the processors have processed the REBOOT ipi in 1 second after the IPI
-was sent.
-native_smp_send_stop()
----------------------------------------------------------
-	apic->send_IPI_allbutself(REBOOT_VECTOR);
+I agree that freeing up the cache for the high priority task is a nice
+side-effect of weight-based balancing. However, with sufficient number
+of low weight tasks on the system, or with a small nudge to affinity
+masks, the niced task will end up sharing cache with low weight tasks.
+In that sense, I think this is a tad bit more black than white :-) It
+would be nice to make the load balancer more cache aware, but that's
+for a different RFC. :-)
 
-        /* Don't wait longer than a second */
-        wait = USEC_PER_SEC;
-        while (num_online_cpus() > 1 && wait--)
-        	udelay(1);
----------------------------------------------------------
+Further, once a sched group reaches a certain "bad state", where the
+niced task is the only task in a sched group with more than 1 cpu, it
+does not recover from that state easily. This leads to the sub-optimal
+utilization situation that we have been chasing down. In this
+situation, even though the sched group has capacity, it does not pull
+tasks because sds.this_load >> sds.max_load, and f_b_g() returns NULL.
 
-It just returns after that 1 second irrespective of whether all cpus
-were halted or not. This brings up a issue in the kexec case, since we
-can have the BSP starting the new kernel and AP's still processing the
-REBOOT IPI simultaneously.
+A sched group reaches this state because either (i). a niced task is
+pulled into an empty sched group, or (ii). all other tasks in the
+sched group are pulled away from the group. The patches in this
+patchset try to prevent the latter, i.e. prevent low weight tasks from
+being pulled away from the sched group. However, there are still many
+ways to end up in the bad state. From empirical evidence, it seems to
+happen more probability on a machine with fewer cpus. I have verified
+that with the appropriate test setup, this also happens on the
+quad-socket, quad-core machines as well (i.e. set affinity of the
+normal tasks to socket-0 and niced task to socket-1, and then reset
+affinities).
 
-Many distribution kernels use kexec to load the newly installed kernel
-during the installation phase, in virtualized environment with the host
-heavily overcommitted, we have seen some instances when vcpu fails to
-process the IPI in the allotted 1 sec and as a result the AP's end up
-accessing uninitialized state (the BSP has already gone ahead with
-setting up the new state) and causing GPF's.
+I have attached a patch that tackles the problem in different way.
+Instead of preventing the sched group from entering the bad state, it
+shortcuts the checks in fbg if the group has extra capacity, where
+extra capacity is defined as group_capacity > nr_running. The patch
+exposes a sched feature called PREFER_UTILIZATION (disabled by
+default). When this is enabled, f_b_g shortcuts the checks if the
+local group has capacity. This actually works quite well. I tested
+this on a quad-core dual-socket (with isolcpus) and waited for the
+machine to enter the bad state. On flipping the sched feature,
+utilization immediately shoots up to 100% (of non-isolated cores). I
+have some data below.
 
-IMO, kexec expects machine_shutdown to return only after all cpus are
-stopped.
+This is very experimental and has not been tested beyond this case and
+some basic load balance tests. If you see a better way to do this
+please let me know.
 
-The patch below should fix the issue, comments ??
+w/ PREFER_UTILIZATION disabled
 
---
-machine_shutdown now takes a parameter "wait", if it is true, it waits
-until all the cpus are halted. All the callers except kexec still
-fallback to the earlier version of the shutdown call, where it just
-waited for max 1 sec before returning.
+Cpu(s): 34.3% us,  0.2% sy,  0.0% ni, 65.1% id,  0.4% wa,  0.0% hi,  0.0% si
+Mem:  16463308k total,   996368k used, 15466940k free,    12304k buffers
+Swap:        0k total,        0k used,        0k free,   756244k cached
 
-Signed-off-by: Alok N Kataria <akataria@vmware.com>
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+ 7651 root       5 -15  5876   84    0 R   98  0.0  37:35.97 lat
+ 7652 root      20   0  5876   84    0 R   49  0.0  19:49.02 lat
+ 7654 root      20   0  5876   84    0 R   49  0.0  20:48.93 lat
+ 7655 root      20   0  5876   84    0 R   49  0.0  19:25.74 lat
+ 7653 root      20   0  5876   84    0 R   47  0.0  20:02.16 lat
 
-Index: linux-2.6/arch/x86/include/asm/reboot.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/reboot.h	2010-03-26 16:57:18.000000000 -0700
-+++ linux-2.6/arch/x86/include/asm/reboot.h	2010-10-07 16:41:58.000000000 -0700
-@@ -9,7 +9,7 @@ struct machine_ops {
- 	void (*restart)(char *cmd);
- 	void (*halt)(void);
- 	void (*power_off)(void);
--	void (*shutdown)(void);
-+	void (*shutdown)(int wait);
- 	void (*crash_shutdown)(struct pt_regs *);
- 	void (*emergency_restart)(void);
+w/ PREFER_UTILIZATION enabled
+
+Cpu(s): 52.3% us,  0.0% sy,  0.0% ni, 47.6% id,  0.0% wa,  0.0% hi,  0.0% si
+Mem:  16463308k total,  1002852k used, 15460456k free,    12304k buffers
+Swap:        0k total,        0k used,        0k free,   756312k cached
+
+  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+ 7651 root       5 -15  5876   84    0 R  100  0.0  38:12.37 lat
+ 7655 root      20   0  5876   84    0 R   99  0.0  19:49.99 lat
+ 7652 root      20   0  5876   84    0 R   80  0.0  20:09.80 lat
+ 7653 root      20   0  5876   84    0 R   60  0.0  20:22.13 lat
+ 7654 root      20   0  5876   84    0 R   58  0.0  21:07.88 lat
+
+---
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 6d934e8..04e5553 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2030,12 +2030,14 @@ struct sd_lb_stats {
+ 	unsigned long this_load;
+ 	unsigned long this_load_per_task;
+ 	unsigned long this_nr_running;
++	unsigned long this_has_capacity;
+
+ 	/* Statistics of the busiest group */
+ 	unsigned long max_load;
+ 	unsigned long busiest_load_per_task;
+ 	unsigned long busiest_nr_running;
+ 	unsigned long busiest_group_capacity;
++	unsigned long busiest_has_capacity;
+
+ 	int group_imb; /* Is there imbalance in this sd */
+ #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
+@@ -2058,6 +2060,7 @@ struct sg_lb_stats {
+ 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
+ 	unsigned long group_capacity;
+ 	int group_imb; /* Is there an imbalance in the group ? */
++	int group_has_capacity; /* Is there extra capacity in the group? */
  };
-@@ -17,7 +17,7 @@ struct machine_ops {
- extern struct machine_ops machine_ops;
- 
- void native_machine_crash_shutdown(struct pt_regs *regs);
--void native_machine_shutdown(void);
-+void native_machine_shutdown(int wait);
- void machine_real_restart(const unsigned char *code, int length);
- 
- typedef void (*nmi_shootdown_cb)(int, struct die_args*);
-Index: linux-2.6/arch/x86/include/asm/smp.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/smp.h	2010-08-03 12:43:47.000000000 -0700
-+++ linux-2.6/arch/x86/include/asm/smp.h	2010-10-07 16:37:41.000000000 -0700
-@@ -50,7 +50,7 @@ struct smp_ops {
- 	void (*smp_prepare_cpus)(unsigned max_cpus);
- 	void (*smp_cpus_done)(unsigned max_cpus);
- 
--	void (*smp_send_stop)(void);
-+	void (*smp_send_stop)(int wait);
- 	void (*smp_send_reschedule)(int cpu);
- 
- 	int (*cpu_up)(unsigned cpu);
-@@ -71,9 +71,9 @@ extern void set_cpu_sibling_map(int cpu)
- #endif
- extern struct smp_ops smp_ops;
- 
--static inline void smp_send_stop(void)
-+static inline void smp_send_stop(int wait)
- {
--	smp_ops.smp_send_stop();
-+	smp_ops.smp_send_stop(wait);
+
+ /**
+@@ -2458,6 +2461,9 @@ static inline void update_sg_lb_stats(struct
+sched_domain *sd,
+ 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
+ 	if (!sgs->group_capacity)
+ 		sgs->group_capacity = fix_small_capacity(sd, group);
++
++	if (sgs->group_capacity > sgs->sum_nr_running)
++		sgs->group_has_capacity = 1;
  }
- 
- static inline void smp_prepare_boot_cpu(void)
-Index: linux-2.6/arch/x86/kernel/kvmclock.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/kvmclock.c	2010-08-03 12:43:47.000000000 -0700
-+++ linux-2.6/arch/x86/kernel/kvmclock.c	2010-10-07 16:43:28.000000000 -0700
-@@ -174,10 +174,10 @@ static void kvm_crash_shutdown(struct pt
- }
- #endif
- 
--static void kvm_shutdown(void)
-+static void kvm_shutdown(int wait)
- {
- 	native_write_msr(msr_kvm_system_time, 0, 0);
--	native_machine_shutdown();
-+	native_machine_shutdown(wait);
- }
- 
- void __init kvmclock_init(void)
-Index: linux-2.6/arch/x86/kernel/reboot.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/reboot.c	2010-08-03 12:43:47.000000000 -0700
-+++ linux-2.6/arch/x86/kernel/reboot.c	2010-10-07 16:45:24.000000000 -0700
-@@ -616,7 +616,7 @@ static void native_machine_emergency_res
- 	}
- }
- 
--void native_machine_shutdown(void)
-+void native_machine_shutdown(int wait)
- {
- 	/* Stop the cpus and apics */
- #ifdef CONFIG_SMP
-@@ -641,7 +641,7 @@ void native_machine_shutdown(void)
- 	/* O.K Now that I'm on the appropriate processor,
- 	 * stop all of the others.
- 	 */
--	smp_send_stop();
-+	smp_send_stop(wait);
- #endif
- 
- 	lapic_shutdown();
-@@ -670,14 +670,14 @@ static void native_machine_restart(char 
- 	printk("machine restart\n");
- 
- 	if (!reboot_force)
--		machine_shutdown();
-+		machine_shutdown(0);
- 	__machine_emergency_restart(0);
- }
- 
- static void native_machine_halt(void)
- {
- 	/* stop other cpus and apics */
--	machine_shutdown();
-+	machine_shutdown(0);
- 
- 	tboot_shutdown(TB_SHUTDOWN_HALT);
- 
-@@ -689,7 +689,7 @@ static void native_machine_power_off(voi
- {
- 	if (pm_power_off) {
- 		if (!reboot_force)
--			machine_shutdown();
-+			machine_shutdown(0);
- 		pm_power_off();
- 	}
- 	/* a fallback in case there is no PM info available */
-@@ -712,9 +712,9 @@ void machine_power_off(void)
- 	machine_ops.power_off();
- }
- 
--void machine_shutdown(void)
-+void machine_shutdown(int wait)
- {
--	machine_ops.shutdown();
-+	machine_ops.shutdown(wait);
- }
- 
- void machine_emergency_restart(void)
-Index: linux-2.6/arch/x86/kernel/smp.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/smp.c	2010-10-07 16:30:34.000000000 -0700
-+++ linux-2.6/arch/x86/kernel/smp.c	2010-10-07 16:34:16.000000000 -0700
-@@ -159,10 +159,10 @@ asmlinkage void smp_reboot_interrupt(voi
- 	irq_exit();
- }
- 
--static void native_smp_send_stop(void)
-+static void native_smp_send_stop(int wait)
- {
- 	unsigned long flags;
--	unsigned long wait;
-+	unsigned long timeout;
- 
- 	if (reboot_force)
- 		return;
-@@ -179,9 +179,9 @@ static void native_smp_send_stop(void)
- 	if (num_online_cpus() > 1) {
- 		apic->send_IPI_allbutself(REBOOT_VECTOR);
- 
--		/* Don't wait longer than a second */
--		wait = USEC_PER_SEC;
--		while (num_online_cpus() > 1 && wait--)
-+		/* Don't wait longer than a second if this not a synchronous call */
-+		timeout = USEC_PER_SEC;
-+		while (num_online_cpus() > 1 && (wait || timeout--))
- 			udelay(1);
- 	}
- 
-Index: linux-2.6/arch/x86/xen/enlighten.c
-===================================================================
---- linux-2.6.orig/arch/x86/xen/enlighten.c	2010-08-30 16:20:50.000000000 -0700
-+++ linux-2.6/arch/x86/xen/enlighten.c	2010-10-07 16:49:00.000000000 -0700
-@@ -1018,7 +1018,7 @@ static void xen_reboot(int reason)
- 	struct sched_shutdown r = { .reason = reason };
- 
- #ifdef CONFIG_SMP
--	smp_send_stop();
-+	smp_send_stop(0);
- #endif
- 
- 	if (HYPERVISOR_sched_op(SCHEDOP_shutdown, &r))
-Index: linux-2.6/arch/x86/xen/smp.c
-===================================================================
---- linux-2.6.orig/arch/x86/xen/smp.c	2010-08-30 16:20:50.000000000 -0700
-+++ linux-2.6/arch/x86/xen/smp.c	2010-10-07 16:46:27.000000000 -0700
-@@ -400,7 +400,7 @@ static void stop_self(void *v)
- 	BUG();
- }
- 
--static void xen_smp_send_stop(void)
-+static void xen_smp_send_stop(int wait)
- {
- 	smp_call_function(stop_self, NULL, 0);
- }
-Index: linux-2.6/drivers/s390/char/sclp_quiesce.c
-===================================================================
---- linux-2.6.orig/drivers/s390/char/sclp_quiesce.c	2010-08-03 12:45:04.000000000 -0700
-+++ linux-2.6/drivers/s390/char/sclp_quiesce.c	2010-10-07 16:49:12.000000000 -0700
-@@ -29,7 +29,7 @@ static void do_machine_quiesce(void)
- {
- 	psw_t quiesce_psw;
- 
--	smp_send_stop();
-+	smp_send_stop(0);
- 	quiesce_psw.mask = PSW_BASE_BITS | PSW_MASK_WAIT;
- 	quiesce_psw.addr = 0xfff;
- 	__load_psw(quiesce_psw);
-Index: linux-2.6/include/linux/reboot.h
-===================================================================
---- linux-2.6.orig/include/linux/reboot.h	2010-08-03 12:46:08.000000000 -0700
-+++ linux-2.6/include/linux/reboot.h	2010-10-07 16:44:21.000000000 -0700
-@@ -51,7 +51,7 @@ extern void machine_restart(char *cmd);
- extern void machine_halt(void);
- extern void machine_power_off(void);
- 
--extern void machine_shutdown(void);
-+extern void machine_shutdown(int wait);
- struct pt_regs;
- extern void machine_crash_shutdown(struct pt_regs *);
- 
-Index: linux-2.6/include/linux/smp.h
-===================================================================
---- linux-2.6.orig/include/linux/smp.h	2010-08-03 12:46:08.000000000 -0700
-+++ linux-2.6/include/linux/smp.h	2010-10-07 16:49:41.000000000 -0700
-@@ -43,7 +43,7 @@ int smp_call_function_single(int cpuid, 
- /*
-  * stops all CPUs but the current one:
+
+ /**
+@@ -2556,12 +2562,14 @@ static inline void update_sd_lb_stats(struct
+sched_domain *sd, int this_cpu,
+ 			sds->this = sg;
+ 			sds->this_nr_running = sgs.sum_nr_running;
+ 			sds->this_load_per_task = sgs.sum_weighted_load;
++			sds->this_has_capacity = sgs.group_has_capacity;
+ 		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
+ 			sds->max_load = sgs.avg_load;
+ 			sds->busiest = sg;
+ 			sds->busiest_nr_running = sgs.sum_nr_running;
+ 			sds->busiest_group_capacity = sgs.group_capacity;
+ 			sds->busiest_load_per_task = sgs.sum_weighted_load;
++			sds->busiest_has_capacity = sgs.group_has_capacity;
+ 			sds->group_imb = sgs.group_imb;
+ 		}
+
+@@ -2820,6 +2828,10 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
+ 	if (!sds.busiest || sds.busiest_nr_running == 0)
+ 		goto out_balanced;
+
++	if (sched_feat(PREFER_UTILIZATION) &&
++			sds.this_has_capacity && !sds.busiest_has_capacity)
++		goto force_balance;
++
+ 	if (sds.this_load >= sds.max_load)
+ 		goto out_balanced;
+
+@@ -2831,6 +2843,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
+ 	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
+ 		goto out_balanced;
+
++force_balance:
+ 	/* Looks like there is an imbalance. Compute it */
+ 	calculate_imbalance(&sds, this_cpu, imbalance);
+ 	return sds.busiest;
+diff --git a/kernel/sched_features.h b/kernel/sched_features.h
+index 83c66e8..9b93862 100644
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -61,3 +61,9 @@ SCHED_FEAT(ASYM_EFF_LOAD, 1)
+  * release the lock. Decreases scheduling overhead.
   */
--extern void smp_send_stop(void);
-+extern void smp_send_stop(int wait);
- 
- /*
-  * sends a 'reschedule' event to another CPU:
-@@ -116,7 +116,7 @@ extern unsigned int setup_max_cpus;
- 
- #else /* !SMP */
- 
--static inline void smp_send_stop(void) { }
-+static inline void smp_send_stop(int wait) { }
- 
- /*
-  *	These macros fold the SMP functionality into a single CPU system
-Index: linux-2.6/kernel/kexec.c
-===================================================================
---- linux-2.6.orig/kernel/kexec.c	2010-10-07 14:33:57.000000000 -0700
-+++ linux-2.6/kernel/kexec.c	2010-10-07 16:45:38.000000000 -0700
-@@ -1538,7 +1538,7 @@ int kernel_kexec(void)
- 	{
- 		kernel_restart_prepare(NULL);
- 		printk(KERN_EMERG "Starting new kernel\n");
--		machine_shutdown();
-+		machine_shutdown(1);
- 	}
- 
- 	machine_kexec(kexec_image);
-Index: linux-2.6/kernel/panic.c
-===================================================================
---- linux-2.6.orig/kernel/panic.c	2010-08-30 16:22:03.000000000 -0700
-+++ linux-2.6/kernel/panic.c	2010-10-07 16:50:05.000000000 -0700
-@@ -94,7 +94,7 @@ NORET_TYPE void panic(const char * fmt, 
- 	 * unfortunately means it may not be hardened to work in a panic
- 	 * situation.
- 	 */
--	smp_send_stop();
-+	smp_send_stop(0);
- 
- 	atomic_notifier_call_chain(&panic_notifier_list, 0, buf);
- 
-
-
+ SCHED_FEAT(OWNER_SPIN, 1)
++
++/*
++ * Prefer utilization over fairness when balancing tasks with large weight
++ * differential.
++ */
++SCHED_FEAT(PREFER_UTILIZATION, 0)
