@@ -1,261 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759916Ab0JHXtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 19:49:23 -0400
-Received: from gate.crashing.org ([63.228.1.57]:37841 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752223Ab0JHXtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 19:49:22 -0400
-Subject: Re: [RFC PATCH 03/11] ppc: Create ops to choose between direct
- window and iommu based on device mask
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Nishanth Aravamudan <nacc@us.ibm.com>
-Cc: miltonm@bga.com, Paul Mackerras <paulus@samba.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Kumar Gala <galak@kernel.crashing.org>,
-        Scott Wood <scottwood@freescale.com>,
-        Anton Vorontsov <avorontsov@mvista.com>, linuxppc-dev@lists.ozlabs.org,
+	id S1759900Ab0JHXzb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 19:55:31 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:9525 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759496Ab0JHXza convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 19:55:30 -0400
+X-RZG-AUTH: :IGUKb2CkcrLHmZv+FHarxbxlXmJO7WRQLa+vsyW+4RLunWeioNr6KNslwIQ=
+X-RZG-CLASS-ID: mo00
+From: Stephan Linz <linz@li-pro.net>
+Organization: Li-Pro.Net
+To: Tony Lindgren <tony@atomide.com>
+Subject: Re: [PATCH v4 0/4] LogicPD minimal board support for LV_SOM and Torpedo
+Date: Sat, 9 Oct 2010 01:55:25 +0200
+User-Agent: KMail/1.11.4 (Linux/2.6.28-19-generic; KDE/4.2.4; x86_64; ; )
+Cc: Tim Nordell <tim.nordell@logicpd.com>,
+        linux-arm-kernel@lists.infradead.org, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-In-Reply-To: <1286559192-10898-4-git-send-email-nacc@us.ibm.com>
-References: <1286559192-10898-1-git-send-email-nacc@us.ibm.com>
-	 <1286559192-10898-4-git-send-email-nacc@us.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 09 Oct 2010 10:44:53 +1100
-Message-ID: <1286581493.2463.428.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+References: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com> <20100928171908.GE3117@atomide.com>
+In-Reply-To: <20100928171908.GE3117@atomide.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
+Message-Id: <201010090155.25932.linz@li-pro.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 10:33 -0700, Nishanth Aravamudan wrote:
-> Also allow the coherent ops to be iommu if only the coherent mask is too
-> small, mostly for driver that do not set set the coherent mask but also
-> don't use the coherent api.
+Hi Tony,
+Hi Tim,
 
-You are doing the transition at map_sg time which is a hot path, I don't
-like that. Also you add all those "choose" variants of the dma ops...
-not very nice at all.
-
-You may want to look at the patches I posted to the list a while back
-for doing direct DMA on Bimini:
-
-[PATCH 1/2] powerpc/dma: Add optional platform override of dma_set_mask()
-[PATCH 2/2] powerpc/dart_iommu: Support for 64-bit iommu bypass window on PCIe
-
-Cheers,
-Ben.
-
-> Signed-off-by: Milton Miller <miltonm@bga.com>
-> Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-> ---
->  arch/powerpc/include/asm/dma-mapping.h |    2 +
->  arch/powerpc/kernel/Makefile           |    2 +-
->  arch/powerpc/kernel/dma-choose64.c     |  167 ++++++++++++++++++++++++++++++++
->  3 files changed, 170 insertions(+), 1 deletions(-)
->  create mode 100644 arch/powerpc/kernel/dma-choose64.c
-> 
-> diff --git a/arch/powerpc/include/asm/dma-mapping.h b/arch/powerpc/include/asm/dma-mapping.h
-> index 644103a..9ffb16a 100644
-> --- a/arch/powerpc/include/asm/dma-mapping.h
-> +++ b/arch/powerpc/include/asm/dma-mapping.h
-> @@ -68,6 +68,8 @@ static inline unsigned long device_to_mask(struct device *dev)
->   */
->  #ifdef CONFIG_PPC64
->  extern struct dma_map_ops dma_iommu_ops;
-> +extern struct dma_map_ops dma_choose64_ops;
-> +extern struct dma_map_ops dma_iommu_coherent_ops;
->  #endif
->  extern struct dma_map_ops dma_direct_ops;
->  
-> diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
-> index 1dda701..21b8ea1 100644
-> --- a/arch/powerpc/kernel/Makefile
-> +++ b/arch/powerpc/kernel/Makefile
-> @@ -82,7 +82,7 @@ obj-y				+= time.o prom.o traps.o setup-common.o \
->  				   udbg.o misc.o io.o dma.o \
->  				   misc_$(CONFIG_WORD_SIZE).o
->  obj-$(CONFIG_PPC32)		+= entry_32.o setup_32.o
-> -obj-$(CONFIG_PPC64)		+= dma-iommu.o iommu.o
-> +obj-$(CONFIG_PPC64)		+= dma-iommu.o iommu.o dma-choose64.o
->  obj-$(CONFIG_KGDB)		+= kgdb.o
->  obj-$(CONFIG_PPC_OF_BOOT_TRAMPOLINE)	+= prom_init.o
->  obj-$(CONFIG_MODULES)		+= ppc_ksyms.o
-> diff --git a/arch/powerpc/kernel/dma-choose64.c b/arch/powerpc/kernel/dma-choose64.c
-> new file mode 100644
-> index 0000000..17c716f
-> --- /dev/null
-> +++ b/arch/powerpc/kernel/dma-choose64.c
-> @@ -0,0 +1,167 @@
-> +/*
-> + * Copyright (C) 2006 Benjamin Herrenschmidt, IBM Corporation
-> + *
-> + * Provide default implementations of the DMA mapping callbacks for
-> + * directly mapped busses.
-> + */
-> +
-> +#include <linux/device.h>
-> +#include <linux/dma-mapping.h>
-> +#include <linux/bug.h>
-> +
-> +/*
-> + * DMA operations that choose between a 64-bit direct mapping and and iommu
-> + *
-> + * This set of dma ops chooses between directing to a static 1:1 mapping
-> + * that may require a 64 bit address and a iommu based on the declared
-> + * streaming and coherent masks for the device.  The choice is made on
-> + * the first dma map call.
-> + */
-> +
-> +/* first BUG ops for calls out of sequence */
-> +
-> +void *dma_bug_alloc_coherent(struct device *dev, size_t size,
-> +				dma_addr_t *dma_handle, gfp_t flag)
-> +{
-> +	BUG();
-> +
-> +	return NULL;
-> +}
-> +
-> +void dma_bug_free_coherent(struct device *dev, size_t size,
-> +			      void *vaddr, dma_addr_t dma_handle)
-> +{
-> +	BUG();
-> +}
-> +
-> +static int dma_bug_dma_supported(struct device *dev, u64 mask)
-> +{
-> +	BUG();
-> +
-> +	return 0;
-> +}
-> +
-> +static int dma_bug_map_sg(struct device *dev, struct scatterlist *sgl,
-> +			     int nents, enum dma_data_direction direction,
-> +			     struct dma_attrs *attrs)
-> +{
-> +	BUG();
-> +
-> +	return 0;
-> +}
-> +
-> +
-> +static void dma_bug_unmap_sg(struct device *dev, struct scatterlist *sg,
-> +				int nents, enum dma_data_direction direction,
-> +				struct dma_attrs *attrs)
-> +{
-> +	BUG();
-> +}
-> +
-> +static dma_addr_t dma_bug_map_page(struct device *dev,
-> +					     struct page *page,
-> +					     unsigned long offset,
-> +					     size_t size,
-> +					     enum dma_data_direction dir,
-> +					     struct dma_attrs *attrs)
-> +{
-> +	BUG();
-> +
-> +	return DMA_ERROR_CODE;
-> +}
-> +
-> +
-> +static void dma_bug_unmap_page(struct device *dev,
-> +					 dma_addr_t dma_address,
-> +					 size_t size,
-> +					 enum dma_data_direction direction,
-> +					 struct dma_attrs *attrs)
-> +{
-> +	BUG();
-> +}
-> +
-> +
-> +static struct dma_map_ops *choose(struct device *dev)
-> +{
-> +	if (dma_direct_ops.dma_supported(dev, device_to_mask(dev))) {
-> +		if (dma_direct_ops.dma_supported(dev, dev->coherent_dma_mask))
-> +			return &dma_direct_ops;
-> +		return &dma_iommu_coherent_ops;
-> +	}
-> +	return &dma_iommu_ops;
-> +}
-> +
-> +void *dma_choose64_alloc_coherent(struct device *dev, size_t size,
-> +				dma_addr_t *dma_handle, gfp_t flag)
-> +{
-> +	struct dma_map_ops *new = choose(dev);
-> +
-> +	set_dma_ops(dev, new);
-> +	return new->alloc_coherent(dev, size, dma_handle, flag);
-> +}
-> +
-> +static int dma_choose64_map_sg(struct device *dev, struct scatterlist *sgl,
-> +			     int nents, enum dma_data_direction direction,
-> +			     struct dma_attrs *attrs)
-> +{
-> +	struct dma_map_ops *new = choose(dev);
-> +
-> +	set_dma_ops(dev, new);
-> +	return new->map_sg(dev, sgl, nents, direction, attrs);
-> +}
-> +
-> +
-> +static int dma_choose64_dma_supported(struct device *dev, u64 mask)
-> +{
-> +	return dma_direct_ops.dma_supported(dev, mask) ||
-> +		dma_iommu_ops.dma_supported(dev, mask);
-> +}
-> +
-> +static dma_addr_t dma_choose64_map_page(struct device *dev,
-> +					     struct page *page,
-> +					     unsigned long offset,
-> +					     size_t size,
-> +					     enum dma_data_direction dir,
-> +					     struct dma_attrs *attrs)
-> +{
-> +	struct dma_map_ops *new = choose(dev);
-> +
-> +	set_dma_ops(dev, new);
-> +	return new->map_page(dev, page, offset, size, dir, attrs);
-> +}
-> +
-> +struct dma_map_ops dma_choose64_ops = {
-> +	.alloc_coherent	= dma_choose64_alloc_coherent,
-> +	.free_coherent	= dma_bug_free_coherent,
-> +	.map_sg		= dma_choose64_map_sg,
-> +	.unmap_sg	= dma_bug_unmap_sg,
-> +	.dma_supported	= dma_choose64_dma_supported,
-> +	.map_page	= dma_choose64_map_page,
-> +	.unmap_page	= dma_bug_unmap_page,
-> +};
-> +EXPORT_SYMBOL(dma_choose64_ops);
-> +
-> +/* set these up to BUG() until we initialze them in the arch initcall below */
-> +struct dma_map_ops dma_iommu_coherent_ops = {
-> +	.alloc_coherent	= dma_bug_alloc_coherent,
-> +	.free_coherent	= dma_bug_free_coherent,
-> +	.map_sg		= dma_bug_map_sg,
-> +	.unmap_sg	= dma_bug_unmap_sg,
-> +	.dma_supported	= dma_bug_dma_supported,
-> +	.map_page	= dma_bug_map_page,
-> +	.unmap_page	= dma_bug_unmap_page,
-> +};
-> +EXPORT_SYMBOL(dma_iommu_coherent_ops);
-> +
-> +static int setup_choose64_ops(void)
-> +{
-> +	dma_iommu_coherent_ops = dma_direct_ops;
-> +	dma_iommu_coherent_ops.alloc_coherent = dma_iommu_ops.alloc_coherent;
-> +	dma_iommu_coherent_ops.free_coherent = dma_iommu_ops.free_coherent;
-> +
-> +	/* should we be stricter? */
-> +	dma_iommu_coherent_ops.dma_supported = dma_choose64_dma_supported;
-> +
-> +	return 0;
-> +}
-> +arch_initcall(setup_choose64_ops);
+nice to see my patches here on the Linux mailinglists. I have not been working 
+on it for a long time. Tim, how we can work together? Are you working for 
+LogicPD?
 
 
+Bye,
+Stephan
 
+Am Dienstag, 28. September 2010, um 19:19:09 schrieb Tony Lindgren:
+> * Tim Nordell <tim.nordell@logicpd.com> [100927 08:57]:
+> > This was tested (and based) against 2.6.36-rc5
+> >
+> > Difference from patch v3 1/4:
+> >  - Merged DEBUG_LL support patch (patch v3 5/5) into first patch
+> >  - Added "select OMAP_PACKAGE_CBB" into Kconfig for both boards
+> >
+> > Tim Nordell (4):
+> >   Adding LogicPD OMAP3 board support
+> >   ARM: OMAP3LOGIC: Adding SDMMC support
+> >   ARM: OMAP3: Add generic smsc911x support when connected to GPMC
+> >   ARM: OMAP3LOGIC: Added SMSC Ethernet board support
+> >
+> >  arch/arm/mach-omap2/Kconfig                     |   20 ++
+> >  arch/arm/mach-omap2/Makefile                    |    7 +
+> >  arch/arm/mach-omap2/board-omap3logic.c          |  244
+> > +++++++++++++++++++++++ arch/arm/mach-omap2/gpmc-smsc911x.c             |
+> >  113 +++++++++++ arch/arm/plat-omap/include/plat/gpmc-smsc911x.h |   35
+> > ++++
+> >  arch/arm/plat-omap/include/plat/uncompress.h    |    2 +
+> >  6 files changed, 421 insertions(+), 0 deletions(-)
+> >  create mode 100644 arch/arm/mach-omap2/board-omap3logic.c
+> >  create mode 100644 arch/arm/mach-omap2/gpmc-smsc911x.c
+> >  create mode 100644 arch/arm/plat-omap/include/plat/gpmc-smsc911x.h
+>
+> Thanks, queuing all of them for the upcoming merge window.
+> I've updated the MMC related patch with the following to
+> keep it compiling with the MMC related platform init changes.
+>
+> Regards,
+>
+> Tony
+>
+> --- a/arch/arm/mach-omap2/board-omap3logic.c
+> +++ b/arch/arm/mach-omap2/board-omap3logic.c
+> @@ -26,6 +26,7 @@
+>  #include <linux/regulator/machine.h>
+>
+>  #include <linux/i2c/twl.h>
+> +#include <linux/mmc/host.h>
+>
+>  #include <mach/hardware.h>
+>  #include <asm/mach-types.h>
+> @@ -112,7 +113,7 @@ static struct omap2_hsmmc_info __initdata
+> board_mmc_info[] = { {
+>  		.name		= "external",
+>  		.mmc		= 1,
+> -		.wires		= 4,
+> +		.caps		= MMC_CAP_4_BIT_DATA,
+>  		.gpio_cd	= -EINVAL,
+>  		.gpio_wp	= -EINVAL,
+>  	},
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+
+-- 
+Viele Grüße,
+Stephan Linz
+______________________________________________________________________________
+OpenDCC: http://www.li-pro.net/opendcc.phtml
+PC/M: http://www.li-pro.net/pcm.phtml
+CDK4AVR: http://cdk4avr.sourceforge.net/
+CDK4NIOS: http://cdk4nios.sourceforge.net/
+CDK4MSP: http://cdk4msp.sourceforge.net/
+CPM4L: http://download.opensuse.org/repositories/home:/rexut:/CPM4L
