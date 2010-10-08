@@ -1,130 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab0JHW64 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 18:58:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65235 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752635Ab0JHW6y (ORCPT
+	id S1757627Ab0JHXFH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 19:05:07 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33343 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754727Ab0JHXFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 18:58:54 -0400
-Message-ID: <4CAFA1DB.6010802@kernel.org>
-Date: Fri, 08 Oct 2010 15:57:31 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Fri, 8 Oct 2010 19:05:05 -0400
+Date: Sat, 9 Oct 2010 00:04:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Hannemann <arnd@arndnet.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Hemant Pedanekar <hemantp@ti.com>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Message-ID: <20101008230451.GB10975@n2100.arm.linux.org.uk>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com> <20101007192245.GC26435@n2100.arm.linux.org.uk> <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com> <20101008175308.GA10975@n2100.arm.linux.org.uk> <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
 MIME-Version: 1.0
-To: Russ Anderson <rja@sgi.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        "H. Peter Anvin" <h.peter.anvin@intel.com>,
-        Jack Steiner <steiner@sgi.com>
-Subject: Re: [BUG] x86: bootmem broken on SGI UV
-References: <20101008213429.GB7223@sgi.com>
-In-Reply-To: <20101008213429.GB7223@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2010 02:34 PM, Russ Anderson wrote:
-> 	[BUG] x86: bootmem broken on SGI UV
-> 
-> Recent community kernels do not boot on SGI UV x86 hardware with
-> more than one socket.  I suspect the problem is due to recent 
-> bootmem/e820 changes.
-> 
-> What is happening is the e280 table defines a memory range.
-> 
->  BIOS-e820: 0000000100000000 - 0000001080000000 (usable)
-> 
-> The SRAT table shows that memory range is spread over two nodes.
-> 
->  SRAT: Node 0 PXM 0 100000000-800000000
->  SRAT: Node 1 PXM 1 800000000-1000000000
->  SRAT: Node 0 PXM 0 1000000000-1080000000
-> 
-> Previously, the kernel early_node_map[] would show three entries
-> with the proper node.
->                                                                                 
-> [    0.000000]     0: 0x00100000 -> 0x00800000
-> [    0.000000]     1: 0x00800000 -> 0x01000000
-> [    0.000000]     0: 0x01000000 -> 0x01080000
-> 
-> The problem is recent community kernel early_node_map[] shows 
-> only two entries with the node 0 entry overlapping the node 1
-> entry.
-> 
->     0: 0x00100000 -> 0x01080000
->     1: 0x00800000 -> 0x01000000
-> 
-> This results in the range 0x800000 -> 0x1000000 getting freed twice
-> (by free_all_memory_core_early()) resulting in nasty warnings.
+On Fri, Oct 08, 2010 at 10:37:10PM +0300, Felipe Contreras wrote:
+> People have been discussing them, but you can't expect a perfect
+> solution to pop up within one release cycle, specially when people
+> have real issues to deal with.
 
-please check
+Two release cycles.  It was queued for the previous release, was posted
+to the mailing list, was de-queued, and then re-added for the last merge
+window.
 
-[PATCH] x86, numa: Fix cross nodes mem conf
+That's not no warning - that's almost six months.
 
-Russ reported SGI UV is broken recently. He said:
+http://lists.arm.linux.org.uk/lurker/message/20100408.094818.d6854bd5.en.html
 
-| The SRAT table shows that memory range is spread over two nodes.
-|
-| SRAT: Node 0 PXM 0 100000000-800000000
-| SRAT: Node 1 PXM 1 800000000-1000000000
-| SRAT: Node 0 PXM 0 1000000000-1080000000
-|
-|Previously, the kernel early_node_map[] would show three entries
-|with the proper node.
-|
-|[    0.000000]     0: 0x00100000 -> 0x00800000
-|[    0.000000]     1: 0x00800000 -> 0x01000000
-|[    0.000000]     0: 0x01000000 -> 0x01080000
-|
-|The problem is recent community kernel early_node_map[] shows
-|only two entries with the node 0 entry overlapping the node 1
-|entry.
-|
-|    0: 0x00100000 -> 0x01080000
-|    1: 0x00800000 -> 0x01000000
+So what you're telling me is that in six months, not one driver has been
+touched to address this issue?  So, if no one in that time has done any
+work on this, then what use is it going to be making the kernel issue
+a warning instead?
 
-After looking at the changelog, it turns out it is broken for a while by
-following commit
-
-|commit 8716273caef7f55f39fe4fc6c69c5f9f197f41f1
-|Author: David Rientjes <rientjes@google.com>
-|Date:   Fri Sep 25 15:20:04 2009 -0700
-|
-|    x86: Export srat physical topology
-
-before that commit, register_active_regions() is called SRAT memory entries.
-
-Try to use nodememblk_range[] instead of nodes[].
-
-For stable tree: from 2.6.33 to 2.3.36 need this patch by
-changing memblock_x86_register_active_regions() with e820_register_active_regions()
-
-Reported-by: Russ Anderson <rja@sgi.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: stable@kernel.org
-
----
- arch/x86/mm/srat_64.c |    8 +++++---
- 1 file changed, 5 insertions(+), 3 deletions(-)
-
-Index: linux-2.6/arch/x86/mm/srat_64.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/srat_64.c
-+++ linux-2.6/arch/x86/mm/srat_64.c
-@@ -421,9 +421,11 @@ int __init acpi_scan_nodes(unsigned long
- 		return -1;
- 	}
- 
--	for_each_node_mask(i, nodes_parsed)
--		memblock_x86_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
--						nodes[i].end >> PAGE_SHIFT);
-+	for (i = 0; i < num_node_memblks; i++)
-+		memblock_x86_register_active_regions(memblk_nodeid[i],
-+						node_memblk_range[i].start >> PAGE_SHIFT,
-+						node_memblk_range[i].end >> PAGE_SHIFT);
-+
- 	/* for out of order entries in SRAT */
- 	sort_node_map();
- 	if (!nodes_cover_memory(nodes)) {
+So, since this has been known about for six months to the day, I completely
+fail to see how making this a warning instead will create the necessary
+motivation for the issue to be addressed.
