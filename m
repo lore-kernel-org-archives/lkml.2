@@ -1,59 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab0JHRRj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 13:17:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43343
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932433Ab0JHRRi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 13:17:38 -0400
-Date: Fri, 08 Oct 2010 10:17:59 -0700 (PDT)
-Message-Id: <20101008.101759.193728130.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: dilinger@queued.net, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, sam@ravnborg.org,
-        devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH 1/2 v2] of: move phandle/ihandle into types.h and
- export to userspace
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101008171210.GE3863@angua.secretlab.ca>
-References: <20101008004354.13b5b254@debxo>
-	<20101008171210.GE3863@angua.secretlab.ca>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1758495Ab0JHR1Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 13:27:24 -0400
+Received: from mail.atheros.com ([12.19.149.2]:60034 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757630Ab0JHR1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 13:27:23 -0400
+Message-ID: <4CAF5488.3030706@Atheros.com>
+Date: Fri, 8 Oct 2010 22:57:36 +0530
+From: Suraj Sumangala <suraj@Atheros.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Luis Rodriguez <Luis.Rodriguez@Atheros.com>
+CC: Suraj Sumangala <Suraj.Sumangala@Atheros.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or replace
+ ath3k-1.fw ?
+References: <20101008170258.GJ10149@tux>
+In-Reply-To: <20101008170258.GJ10149@tux>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 8 Oct 2010 11:12:10 -0600
+Hi Luis,
 
-> On Fri, Oct 08, 2010 at 12:43:54AM -0700, Andres Salomon wrote:
->> 
->> We need phandle for some exported sparc headers; of.h isn't an
->> exported header, and it would be silly to export it when all we
->> really need is one or two types from it.  Also, later patches
->> use phandle in structs that are exported to userspace, so export
->> a __kernel_phandle type.
->> 
->> Signed-off-by: Andres Salomon <dilinger@queued.net>
-> 
-> Looks okay to me.  I'm build testing it now on powerpc and
-> microblaze.  If davem agrees, then I'll pick it up into my
-> devicetree-next branch.
-> 
-> Question though; since sparc userspace is the only user of this,
-> should the types.h header avoid exposing it on non-sparc?
+On 10/8/2010 10:32 PM, Luis Rodriguez wrote:
+> Suraj,
+>
+> What is the difference between ath3k-2.fw and ath3k-1.fw ?
 
-I can't think of anything in Sparc userspace that needs the
-phandle_t type.
+This is the same question for which I have been trying to get an answer.
+The only information that I got was it fixes some critical bug and 
+support shared antenna.
 
-In fact I was a bit confused when you asked Andres to expose
-it to userspace.
+If ath3k-2.fw is an upgrade of ath3k-1.fw why do we need to name it 
+differently?
 
-What I remember from a previous thread is that some other platforms
-use the type in their DT device-tree building tools or whatever, but
-they define phandle_t for themselves I remember specifically
-mentioning sparc has no use for this currently.
+>
+> Won't the API change now that you are addressing the sflash
+> configuration fix? Would it not help to identify the two
+> different firmwares then?
+>
+> David, Marcel, what are your preferences for a firmware upgrade
+> where the firmware does not change API (lets just pretend it does
+> not for a moment) ? Do we keep the same filename?
+
+Marcel had answered me before. It makes sense to have same file name.
+Other ways we end up changing the driver whenever there is a firmware 
+change.
+
+>
+> In this particular case I would assume our new sflash configuration
+> fix that might be being worked on might change the re-enumerated
+> USB device IDs so it seems to me a good idea to use a new filename.
+> I should note ath3k-2.fw already made it to linux-firmware.git...
+>
+> I last tried to document a thread we had over this here:
+>
+> http://wireless.kernel.org/en/developers/Documentation/firmware-versioning
+>
+> Does this sound sane? If so then the sflash configuration fix
+> would seem to me like it would require a new filename. Now, while
+> we're at it, how about bug fixes?
+>
+> Suraj -- keep these discussions public please....
+>
+>    Luis
+
+Regards
+Suraj
+
