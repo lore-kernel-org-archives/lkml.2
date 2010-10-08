@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932103Ab0JHPGD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 11:06:03 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:59069 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758499Ab0JHPF7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758627Ab0JHPGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 11:06:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50134 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757334Ab0JHPF7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 8 Oct 2010 11:05:59 -0400
-Subject: Re: Linux 2.6.36-rc7
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Michal Marek <mmarek@suse.cz>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-In-Reply-To: <20101007114938.ad3d2c76.sfr@canb.auug.org.au>
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
-	 <20101007114938.ad3d2c76.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 10:05:56 -0500
-Message-ID: <1286550357.2985.90.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+Message-ID: <4CAF3356.8080103@suse.cz>
+Date: Fri, 08 Oct 2010 17:05:58 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: linux-next: build warnings after merge of the kbuild-current
+ tree
+References: <20101006114433.4fbe86ef.sfr@canb.auug.org.au> <4CAC59D4.5010505@suse.cz> <1286365363.4281.5.camel@e102109-lin.cambridge.arm.com> <20101008145141.GA13688@sepie.suse.cz> <20101008150343.GF4088@hack>
+In-Reply-To: <20101008150343.GF4088@hack>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 11:49 +1100, Stephen Rothwell wrote:
-> Hi Linus,
+On 8.10.2010 17:03, Américo Wang wrote:
+> On Fri, Oct 08, 2010 at 04:51:41PM +0200, Michal Marek wrote:
+>>
+>>From ca22d6b4c7c26a8ff9092036a9524bc5ba817277 Mon Sep 17 00:00:00 2001
+>> From: Michal Marek <mmarek@suse.cz>
+>> Date: Fri, 8 Oct 2010 16:40:27 +0200
+>> Subject: [PATCH] kconfig: Temporarily disable dependency warnings
+>>
+>> After fixing a use-after-free bug in kconfig, a 'make defconfig' or
+>> 'make allmodconfig' fills the screen with warnings that were not
+>> detected before. Given that we are close to the release now, disable the
+>> warnings temporarily and deal with them after 2.6.36.
+>>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
+>>
+>> diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+>> index 943712c..d3cfa49 100644
+>> --- a/scripts/kconfig/symbol.c
+>> +++ b/scripts/kconfig/symbol.c
+>> @@ -350,7 +350,7 @@ void sym_calc_value(struct symbol *sym)
+>> 				}
+>> 			}
+>> 		calc_newval:
+>> -			if (sym->dir_dep.tri == no && sym->rev_dep.tri != no) {
+>> +			if (0 && sym->dir_dep.tri == no && sym->rev_dep.tri != no) {
+>> 				fprintf(stderr, "warning: (");
+>> 				expr_fprint(sym->rev_dep.expr, stderr);
+>> 				fprintf(stderr, ") selects %s which has unmet direct dependencies (",
 > 
-> On Wed, 6 Oct 2010 14:45:13 -0700 Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >
-> > This should be the last -rc, I'm not seeing any reason to keep
-> > delaying a real release. There was still more changes to
-> > drivers/gpu/drm than I really would have hoped for, but they all look
-> > harmless and good. Famous last words.
-> 
-> I have no idea how critical any of this stuff is, but linux-next contain
-> the following in it's "current" trees i.e. stuff that is supposed to go
-> into 2.6.36.  These are from the arm-current, scsi-rc-fixes, net-current,
-> wireless-current, kbuild-current, input-current and ide-curent trees
-> (contacts cc'd).
+> Well, this is an odd way to comment a block of code out,
+> usually we use #ifdef 0 instead. :)
 
-The SCSI rc-fixes stuff is critical if you run into the bugs, but the
-bugs are fairly rare cases for most people.  I'd still like to get them
-in, though (and I have another 3 rc fixes candidates going through the
-test pipeline).
+Right, but that's a tiny technical detail now :).
 
-James
-
-
+Michal
