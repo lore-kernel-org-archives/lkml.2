@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759417Ab0JHSyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:54:12 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55809 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754162Ab0JHSyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:54:11 -0400
-Date: Fri, 8 Oct 2010 14:54:09 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 11/18] fs: Introduce per-bucket inode hash locks
-Message-ID: <20101008185409.GA29251@infradead.org>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-12-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286515292-15882-12-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1759463Ab0JHSzE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:55:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35594 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753610Ab0JHSzC (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 8 Oct 2010 14:55:02 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: hpa@zytor.com, linux-kernel@vger.kernel.org, x86@kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] x86/ia64/iommu: Bugfixes to IOMMU_INIT macros and its friends.
+Date: Fri,  8 Oct 2010 14:53:46 -0400
+Message-Id: <1286564028-2352-1-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +struct inode_hash_bucket {
-> +	struct hlist_bl_head head;
-> +};
-> +
-> +static inline void spin_lock_bucket(struct inode_hash_bucket *b)
-> +{
-> +	bit_spin_lock(0, (unsigned long *)b);
-> +}
-> +
-> +static inline void spin_unlock_bucket(struct inode_hash_bucket *b)
-> +{
-> +	__bit_spin_unlock(0, (unsigned long *)b);
-> +}
+These two patches fix two issues with the IOMMU "modularize" system
+that was posted on LKML:
+http://marc.info/?i=1282845485-8991-2-git-send-email-konrad.wilk@oracle.com
 
-I've looked at the dcache version of this again, and I really hate
-duplicating these helpers in the dcache code aswell.  IMHO they
-should simple operate directly on the hlist_bl_head, as that's
-what it was designed for.  I also don't really see any point in
-wrapping the hlist_bl_head as inode_hash_bucket.  If the bucket naming
-is important we could rename the hlist_bl stuff to bl_hash, and the
-hlist_bl_head could become bl_hash_bucket.
+The first:
+ ia64/iommu: Add a dummy iommu_table.h file in IA64.
+
+is to fix a compile error on IA64, where the DMAR IOMMU is utilized. For right
+I am just posting a compile fix. I do have a experimental branch where the
+IA64 support also utilizes this mechanism, but it is not ready yet for prime-time.
+
+The other:
+ x86/iommu: Update header comments with appropriate naming.
+
+just updates the header comments as they diverged a bit.
+
+Please pull both of these patches in your x86/iommu branch.
+
+They are also available at:
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git devel/iommu-0.3.ontip.bugfix
+
+Thank you!
+
+Konrad Rzeszutek Wilk (2):
+      ia64/iommu: Add a dummy iommu_table.h file in IA64.
+      x86/iommu: Update header comments with appropriate naming.
+
+
+ arch/ia64/include/asm/iommu_table.h |    6 ++++++
+ arch/x86/include/asm/iommu_table.h  |    7 +++----
+ 2 files changed, 9 insertions(+), 4 deletions(-)
 
