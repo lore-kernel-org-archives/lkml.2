@@ -1,116 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756689Ab0JHThP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 15:37:15 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:42753 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752481Ab0JHThM convert rfc822-to-8bit (ORCPT
+	id S932618Ab0JHTta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 15:49:30 -0400
+Received: from mail128.messagelabs.com ([216.82.250.131]:22412 "EHLO
+	mail128.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab0JHTta (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 15:37:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=qi4wj2JmWBOGBNzBcy7IUlpYtl3t6jL0ZsIJzg6oNfHxk4/2m6aSZF65XdeqGca5KW
-         X2ARDO9rgWxG9/XZnZH8nDfWEvq3ULkOatWUqno0e861rDN5Hs+YsWFem8cx86X9nh3i
-         2Q4G2ZWFOs0Eez0PcCk26FmQyt7SJxvBUoHdA=
-MIME-Version: 1.0
-In-Reply-To: <20101008175308.GA10975@n2100.arm.linux.org.uk>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	<20101007192245.GC26435@n2100.arm.linux.org.uk>
-	<AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
-	<20101008175308.GA10975@n2100.arm.linux.org.uk>
-Date: Fri, 8 Oct 2010 22:37:10 +0300
-Message-ID: <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Hemant Pedanekar <hemantp@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Oct 2010 15:49:30 -0400
+X-VirusChecked: Checked
+X-Env-Sender: jcarlyle@motorola.com
+X-Msg-Ref: server-4.tower-128.messagelabs.com!1286567368!35703548!1
+X-StarScan-Version: 6.2.4; banners=-,-,-
+X-Originating-IP: [129.188.136.8]
+From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Lun Chang <L.chang@motorola.com>, <linux-kernel@vger.kernel.org>,
+        Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Subject: [PATCH v2] regulator: avoid deadlock when disabling regulator with supply
+Date: Fri,  8 Oct 2010 14:49:19 -0500
+Message-Id: <1286567360-11337-1-git-send-email-jeff.carlyle@motorola.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <20101008185739.GA6098@opensource.wolfsonmicro.com>
+References: <20101008185739.GA6098@opensource.wolfsonmicro.com>
+X-CFilter-Loop: Reflected
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 8:53 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Oct 08, 2010 at 12:32:35PM +0300, Felipe Contreras wrote:
->> I think when _you_ remove functionality from the architecture, you
->> should provide a mechanism that drivers can migrate to. Since there's
->> nothing like that, not even a guideline, you are breaking the drivers
->> willingly, and expecting other people to fix a difficult problem that
->> you yourself have no idea how to fix properly.
->
-> We can either wait for people to complain about silent data corruption
-> or we can be compliant with the architecture specification.  Which is
-> better - to avoid data corruption and be correct, or allow a system to
-> become flakey and corrupt people's data.
+I have a regulator A that sets regulator B as its supply. When I call
+set_supply to add B as the supply for A, regulator A gets added to the
+supply_list for regulator B.
 
-The data corruption would happen only on the memory areas that are
-doubly mapped, right? So the misbehavior would only be visible on the
-driver. Then what is better? A driver that works 99% of the time, or a
-driver that doesn't work at all?
+When I call regulator_disable(A), I end up with a call chain like this:
 
-Besides, there are many ARMv6 and ARMv7 devices that are already
-shipping with this "wrong" ioremap() and I don't see them blowing up,
-so I presume whatever issue is caused by this cannot be so drastic as
-to not allow anybody doing this ever from the exact point you found
-the issue.
+regulator_disable(A)
+> mutex_lock(A)
+> _regulator_disable(A)
+>> _regulator_disable(B)
+>>> _notifier_call_chain(B)
+>>>> mutex_lock(A)
 
-Do you have a test that provides numbers on how often do issues popup,
-and under which situations?
+Which results in dead lock since we are trying to acquire the mutex lock
+for regulator A which we already hold.
 
-> What I care about is system correctness and people's data - having
-> multiple mappings with different attributes is documented in very clear
-> terms as being 'unpredictable' and therefore it isn't permissible to
-> allow the practice that worked with previous processors (inherently
-> due to their cache architecture) to continue forward onto processors
-> with a different cache architecture.
+This patch addresses this issue by moving the call to disable regulator
+B outside of the lock aquired inside the initial call to
+regulator_disable.
 
-Of course, it shouldn't be permissible, but you shouldn't just disable
-features from one release to the next, each time you find out they are
-not proper; there should be some grace period, specially if there's no
-alternative.
+This change also addresses the issue of not acquiring the mutex for
+regulator B before calling _regulator_disable(B).
 
-> As already discussed, it's nigh on impossible to unmap the existing
-> direct mapped region (read the previous discussions about why this is)
-> - which is precisely why there is no direct alternative solution.
->
-> The only possible solution is to exclude some memory at boot time from
-> the system direct map so that it never appears in the direct map, and
-> use ioremap on _that_.  Another possible alternative is to use highmem,
-> obtain highmem pages (making sure that it doesn't fall back to lowmem)
-> and remap them using interfaces such as vmap.
->
-> So there are solutions to the problem, but it seems that _no one_ is
-> willing to discuss it other than "we want our old way back".
+Signed-off-by: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+---
+ drivers/regulator/core.c |   35 ++++++++++++++++++++++++++---------
+ 1 files changed, 26 insertions(+), 9 deletions(-)
 
-People have been discussing them, but you can't expect a perfect
-solution to pop up within one release cycle, specially when people
-have real issues to deal with.
-
-Be realistic, what is going to happen is that people are going to give
-up on having their drivers working on .26, revert the patch, and since
-the drivers are already not working, the fix can wait, right? Maybe
-after .27, or some other time, a seasoned developer would have time to
-get this fixed properly, or they are going to come with workarounds
-like manually reserving memory with mem= bootarg:
-http://article.gmane.org/gmane.linux.ports.arm.omap/44516
-
-> If you want the old way back, apply pressure to silicon vendors and
-> ARM Ltd to change the architecture to lift this restriction - which
-> will probably mean doing away with aggressive speculative prefetching
-> so that it's possible to predict what will be in the cache at any
-> point in time.
-
-Nobody is asking for the old way back, what is being asked is a *grace
-period*, have a warning right now, then disable completely later on.
-
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index cc8b337..2d215b5 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -63,7 +63,8 @@ struct regulator {
+ };
+ 
+ static int _regulator_is_enabled(struct regulator_dev *rdev);
+-static int _regulator_disable(struct regulator_dev *rdev);
++static int _regulator_disable(struct regulator_dev *rdev,
++		struct regulator_dev **supply_rdev_ptr);
+ static int _regulator_get_voltage(struct regulator_dev *rdev);
+ static int _regulator_get_current_limit(struct regulator_dev *rdev);
+ static unsigned int _regulator_get_mode(struct regulator_dev *rdev);
+@@ -1348,7 +1349,8 @@ int regulator_enable(struct regulator *regulator)
+ EXPORT_SYMBOL_GPL(regulator_enable);
+ 
+ /* locks held by regulator_disable() */
+-static int _regulator_disable(struct regulator_dev *rdev)
++static int _regulator_disable(struct regulator_dev *rdev,
++		struct regulator_dev **supply_rdev_ptr)
+ {
+ 	int ret = 0;
+ 
+@@ -1376,8 +1378,7 @@ static int _regulator_disable(struct regulator_dev *rdev)
+ 		}
+ 
+ 		/* decrease our supplies ref count and disable if required */
+-		if (rdev->supply)
+-			_regulator_disable(rdev->supply);
++		*supply_rdev_ptr = rdev->supply;
+ 
+ 		rdev->use_count = 0;
+ 	} else if (rdev->use_count > 1) {
+@@ -1407,17 +1408,29 @@ static int _regulator_disable(struct regulator_dev *rdev)
+ int regulator_disable(struct regulator *regulator)
+ {
+ 	struct regulator_dev *rdev = regulator->rdev;
++	struct regulator_dev *supply_rdev = NULL;
+ 	int ret = 0;
+ 
+ 	mutex_lock(&rdev->mutex);
+-	ret = _regulator_disable(rdev);
++	ret = _regulator_disable(rdev, &supply_rdev);
+ 	mutex_unlock(&rdev->mutex);
++
++	/* decrease our supplies ref count and disable if required */
++	while (supply_rdev != NULL) {
++		rdev = supply_rdev;
++
++		mutex_lock(&rdev->mutex);
++		_regulator_disable(rdev, &supply_rdev);
++		mutex_unlock(&rdev->mutex);
++	}
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regulator_disable);
+ 
+ /* locks held by regulator_force_disable() */
+-static int _regulator_force_disable(struct regulator_dev *rdev)
++static int _regulator_force_disable(struct regulator_dev *rdev,
++		struct regulator_dev **supply_rdev_ptr)
+ {
+ 	int ret = 0;
+ 
+@@ -1436,8 +1449,7 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
+ 	}
+ 
+ 	/* decrease our supplies ref count and disable if required */
+-	if (rdev->supply)
+-		_regulator_disable(rdev->supply);
++	*supply_rdev_ptr = rdev->supply;
+ 
+ 	rdev->use_count = 0;
+ 	return ret;
+@@ -1454,12 +1466,17 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
+  */
+ int regulator_force_disable(struct regulator *regulator)
+ {
++	struct regulator_dev *supply_rdev = NULL;
+ 	int ret;
+ 
+ 	mutex_lock(&regulator->rdev->mutex);
+ 	regulator->uA_load = 0;
+-	ret = _regulator_force_disable(regulator->rdev);
++	ret = _regulator_force_disable(regulator->rdev, &supply_rdev);
+ 	mutex_unlock(&regulator->rdev->mutex);
++
++	if (supply_rdev)
++		regulator_disable(get_device_regulator(rdev_get_dev(supply_rdev)));
++
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(regulator_force_disable);
 -- 
-Felipe Contreras
+1.6.3.3
+
