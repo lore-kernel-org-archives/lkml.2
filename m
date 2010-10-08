@@ -1,202 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932602Ab0JHRvQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 13:51:16 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:49459 "EHLO e9.ny.us.ibm.com"
+	id S932677Ab0JHRwn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 13:52:43 -0400
+Received: from kroah.org ([198.145.64.141]:44783 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759287Ab0JHRvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 13:51:14 -0400
-Date: Fri, 8 Oct 2010 12:51:15 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: kirkland@canonical.com, jmorris@namei.org, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 1/3] ecryptfs: release keys loaded in
- ecryptfs_keyring_auth_tok_for_sig()
-Message-ID: <20101008175115.GA15669@boomer>
-References: <201010061831.06856.roberto.sassu@polito.it>
+	id S932552Ab0JHRwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 13:52:41 -0400
+Date: Fri, 8 Oct 2010 10:52:34 -0700
+From: Greg KH <greg@kroah.com>
+To: Tatyana Brokhman <tlinder@codeaurora.org>
+Cc: linux-usb@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] usb: usb3.0 ch9 definitions
+Message-ID: <20101008175234.GA25525@kroah.com>
+References: <1286544380-27299-1-git-send-email-tlinder@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201010061831.06856.roberto.sassu@polito.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1286544380-27299-1-git-send-email-tlinder@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Oct 06, 2010 at 06:31:06PM +0200, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> This patch allows keys requested in the function ecryptfs_keyring_auth_tok_for_sig() 
-> to be released when they are no longer required. In particular keys are directly released 
-> in the same function if the obtained authentication token is not valid.
-> Further, a new function parameter 'auth_tok_key' has been added to 
-> ecryptfs_find_auth_tok_for_sig() in order to provide callers the key pointer to be passed 
-> to key_put().
+On Fri, Oct 08, 2010 at 03:26:18PM +0200, Tatyana Brokhman wrote:
+> Adding SuperSpeed usb definitions as defined by ch9 of the USB3.0 spec.
+> This patch is a preparation for adding SuperSpeed support to the gadget
+> framework.
 > 
-> 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+> Signed-off-by: Tatyana Brokhman<tlinder@codeaurora.org>
 > ---
-
-Hi Roberto - Thanks for the fix. This is messy (calling key_put *some*
-of the time), but there's not a better way to do it. In the future, we
-may not want to save off a pointer to the key in the global_auth_tok and
-always ask the kernel keyring for the key. Then we will pick up the
-access checks provided by the keyring. But until then, this will do.
-
-BTW, your commit message body should be wrapped at 72 columns for nice
-formatting in the git log. I fixed that, made a small change (see
-below), and committed the patch to
-git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
-
-Thanks again for noticing and fixing this bug.
-
->  fs/ecryptfs/keystore.c |   34 ++++++++++++++++++++++++++++------
->  1 files changed, 28 insertions(+), 6 deletions(-)
+>  include/linux/usb/ch9.h |   58 ++++++++++++++++++++++++++++++++++++++++++++++-
+>  1 files changed, 57 insertions(+), 1 deletions(-)
 > 
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 73811cf..77580db 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -446,6 +446,7 @@ out:
->   */
->  static int
->  ecryptfs_find_auth_tok_for_sig(
-> +	struct key **auth_tok_key,
->  	struct ecryptfs_auth_tok **auth_tok,
->  	struct ecryptfs_mount_crypt_stat *mount_crypt_stat,
->  	char *sig)
-> @@ -453,12 +454,12 @@ ecryptfs_find_auth_tok_for_sig(
->  	struct ecryptfs_global_auth_tok *global_auth_tok;
->  	int rc = 0;
+> diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
+> index da2ed77..d83115e 100644
+> --- a/include/linux/usb/ch9.h
+> +++ b/include/linux/usb/ch9.h
+> @@ -123,8 +123,23 @@
+>  #define USB_DEVICE_A_ALT_HNP_SUPPORT	5	/* (otg) other RH port does */
+>  #define USB_DEVICE_DEBUG_MODE		6	/* (special devices only) */
 >  
-> +	(*auth_tok_key) = NULL;
->  	(*auth_tok) = NULL;
->  	if (ecryptfs_find_global_auth_tok_for_sig(&global_auth_tok,
->  						  mount_crypt_stat, sig)) {
-> -		struct key *auth_tok_key;
->  
-> -		rc = ecryptfs_keyring_auth_tok_for_sig(&auth_tok_key, auth_tok,
-> +		rc = ecryptfs_keyring_auth_tok_for_sig(auth_tok_key, auth_tok,
->  						       sig);
->  	} else
->  		(*auth_tok) = global_auth_tok->global_auth_tok;
-> @@ -509,6 +510,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
->  			     char *filename, size_t filename_size)
->  {
->  	struct ecryptfs_write_tag_70_packet_silly_stack *s;
-> +	struct key *auth_tok_key = NULL;
->  	int rc = 0;
->  
->  	s = kmalloc(sizeof(*s), GFP_KERNEL);
-> @@ -606,6 +608,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
->  	}
->  	dest[s->i++] = s->cipher_code;
->  	rc = ecryptfs_find_auth_tok_for_sig(
-> +		&auth_tok_key,
->  		&s->auth_tok, mount_crypt_stat,
->  		mount_crypt_stat->global_default_fnek_sig);
->  	if (rc) {
-> @@ -753,6 +756,8 @@ out_free_unlock:
->  out_unlock:
->  	mutex_unlock(s->tfm_mutex);
->  out:
-> +	if (auth_tok_key)
-> +		key_put(auth_tok_key);
->  	kfree(s);
->  	return rc;
->  }
-> @@ -798,6 +803,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
->  			     char *data, size_t max_packet_size)
->  {
->  	struct ecryptfs_parse_tag_70_packet_silly_stack *s;
-> +	struct key *auth_tok_key = NULL;
->  	int rc = 0;
->  
->  	(*packet_size) = 0;
-> @@ -910,7 +916,8 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
->  	 * >= ECRYPTFS_MAX_IV_BYTES. */
->  	memset(s->iv, 0, ECRYPTFS_MAX_IV_BYTES);
->  	s->desc.info = s->iv;
-> -	rc = ecryptfs_find_auth_tok_for_sig(&s->auth_tok, mount_crypt_stat,
-> +	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
-> +					    &s->auth_tok, mount_crypt_stat,
->  					    s->fnek_sig_hex);
->  	if (rc) {
->  		printk(KERN_ERR "%s: Error attempting to find auth tok for "
-> @@ -986,6 +993,8 @@ out:
->  		(*filename_size) = 0;
->  		(*filename) = NULL;
->  	}
-> +	if (auth_tok_key)
-> +		key_put(auth_tok_key);
->  	kfree(s);
->  	return rc;
->  }
-> @@ -1557,14 +1566,19 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
->  		       ECRYPTFS_VERSION_MAJOR,
->  		       ECRYPTFS_VERSION_MINOR);
->  		rc = -EINVAL;
-> -		goto out;
-> +		goto out_release_key;
->  	}
->  	if ((*auth_tok)->token_type != ECRYPTFS_PASSWORD
->  	    && (*auth_tok)->token_type != ECRYPTFS_PRIVATE_KEY) {
->  		printk(KERN_ERR "Invalid auth_tok structure "
->  		       "returned from key query\n");
->  		rc = -EINVAL;
-> -		goto out;
-> +		goto out_release_key;
-> +	}
-> +out_release_key:
-> +	if (rc) {
-> +		key_put(*auth_tok_key);
-> +		(*auth_tok_key) = NULL;
->  	}
->  out:
->  	return rc;
-> @@ -1688,6 +1702,7 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_stat *crypt_stat,
->  	struct ecryptfs_auth_tok_list_item *auth_tok_list_item;
->  	size_t tag_11_contents_size;
->  	size_t tag_11_packet_size;
-> +	struct key *auth_tok_key;
+> +/*
+> + * New Feature Selectors as added by USB 3.0
+> + * See USB 3.0 spec Table 9-6
+> + */
+> +#define USB_DEVICE_U1_ENABLE	48	/* dev may initiate U1 transition */
+> +#define USB_DEVICE_U2_ENABLE	49	/* dev may initiate U2 transition*/
 
-This needs to be initialized to NULL. Otherwise, the key_put()'s below
-can do bad things in bad places. :)
+You forget the space on a number of comments, please fix that up.
 
->  	int rc = 0;
->  
->  	INIT_LIST_HEAD(&auth_tok_list);
-> @@ -1784,6 +1799,10 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_stat *crypt_stat,
->  	 * just one will be sufficient to decrypt to get the FEK. */
->  find_next_matching_auth_tok:
->  	found_auth_tok = 0;
-> +	if (auth_tok_key) {
-> +		key_put(auth_tok_key);
-> +		auth_tok_key = NULL;
-> +	}
->  	list_for_each_entry(auth_tok_list_item, &auth_tok_list, list) {
->  		candidate_auth_tok = &auth_tok_list_item->auth_tok;
->  		if (unlikely(ecryptfs_verbosity > 0)) {
-> @@ -1800,7 +1819,8 @@ find_next_matching_auth_tok:
->  			rc = -EINVAL;
->  			goto out_wipe_list;
->  		}
-> -		ecryptfs_find_auth_tok_for_sig(&matching_auth_tok,
-> +		ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
-> +					       &matching_auth_tok,
->  					       crypt_stat->mount_crypt_stat,
->  					       candidate_auth_tok_sig);
->  		if (matching_auth_tok) {
-> @@ -1866,6 +1886,8 @@ found_matching_auth_tok:
->  out_wipe_list:
->  	wipe_auth_tok_list(&auth_tok_list);
->  out:
-> +	if (auth_tok_key)
-> +		key_put(auth_tok_key);
->  	return rc;
->  }
->  
-> -- 
-> 1.7.2.3
+> +struct usb_ss_cap_descriptor {		/* Link Power Management */
+> +	__u8  bLength;
+> +	__u8  bDescriptorType;
+> +	__u8  bDevCapabilityType;
+> +	__u8  bmAttributes;
+> +#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
+> +	__le16 wSpeedSupported;
+> +#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
+> +#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
+> +#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
+> +#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
+> +	__u8  bFunctionalitySupport;
+> +	__u8  bU1devExitLat;
+> +	__u16 bU2DevExitLat;
 
+As was pointed out, this still needs to be __le16, as that's the format
+of the data, not if it's a bit field or not.
 
+thanks,
+
+greg k-h
