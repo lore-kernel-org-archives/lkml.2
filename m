@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759791Ab0JHVug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 17:50:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33782 "EHLO mx2.suse.de"
+	id S1759891Ab0JHVvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 17:51:21 -0400
+Received: from www.tglx.de ([62.245.132.106]:47703 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755303Ab0JHVuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 17:50:35 -0400
-From: Andreas Gruenbacher <agruen@suse.de>
-Organization: SUSE Labs, Novell Inc.
-To: David Daney <ddaney@caviumnetworks.com>
-Subject: Re: Linux 2.6.36-rc7
-Date: Fri, 8 Oct 2010 23:50:00 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: Eric Paris <eparis@redhat.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <201010081406.10190.agruen@suse.de> <4CAF47F3.3070800@caviumnetworks.com>
-In-Reply-To: <4CAF47F3.3070800@caviumnetworks.com>
+	id S1757503Ab0JHVvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 17:51:19 -0400
+Date: Fri, 8 Oct 2010 23:50:42 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+In-Reply-To: <4CAD4EC3.5060809@kernel.org>
+Message-ID: <alpine.LFD.2.00.1010082346310.13094@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com> <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6>
+ <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6> <4CACFC23.4080504@kernel.org> <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6> <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org> <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6>
+ <4CAD4EC3.5060809@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010082350.01135.agruen@suse.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 October 2010 18:33:55 David Daney wrote:
-> On 10/08/2010 05:06 AM, Andreas Gruenbacher wrote:
-> > On Thursday 07 October 2010 19:49:28 Eric Paris wrote:
-> >> The safest thing would probably be to punt the syscalls to 2.6.37.
-> >> Which is sad since I know a number of people are already working against
-> >> them, but maybe that proves it's the best approach?
-> >
-> > I agree with removing the syscalls from 2.6.36 because of the following
-> > reasons:
+On Wed, 6 Oct 2010, Yinghai Lu wrote:
+> On 10/06/2010 09:01 PM, Thomas Gleixner wrote:
+> > Well, I'm not too happy about this preallocated stuff anyway, which is
+> > the reason for the warning below.
+> >  
+> >> [   80.726176] WARNING: at drivers/pci/intr_remapping.c:67 irq_2_iommu_alloc+0x52/0xdc()
+> >> [   80.745935] Hardware name: Sun Fire X4800
+> >> [   80.746179] irq_2_iommu!=NULL irq 8
+> > 
 > 
-> How would the mechanics of this be achieved?
-> 
-> Is it enough to just unconditionally return -ENOSYS from the sys_*() 
-> functions?  Or should all the patches be reverted?
+> no, irq_2_iommu are all dynamically allocated even for irq < 16.
 
-Whatever works I guess ... they would get reactivated pretty soon, anyway.
+I know. I was talking about the preallocated irq descriptors and the
+handling of it in general.
 
-Andreas
+Nevertheless, that irq_2_iommu stuff does not need it's own allocation
+function. It's bound to a specific irq_cfg anyway, so the next logical
+step is to move irq_2_iommu into struct irq_cfg and get rid of the
+extra allocation/free in intr_remapping.c.
+
+Thanks,
+	
+	tglx
