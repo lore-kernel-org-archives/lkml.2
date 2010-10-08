@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932442Ab0JHQjk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:39:40 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:41859 "EHLO e3.ny.us.ibm.com"
+	id S1757438Ab0JHQml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:42:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54083 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932410Ab0JHQji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:39:38 -0400
-Date: Fri, 8 Oct 2010 22:09:32 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 01/10] taskstats: Use real microsecond granularity
- for CPU times
-Message-ID: <20101008163932.GG5327@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <1285249681.1837.28.camel@holzheu-laptop>
- <1285250452.1837.78.camel@holzheu-laptop>
- <20101007050820.GP4195@balbir.in.ibm.com>
- <1286550492.1958.0.camel@holzheu-laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1286550492.1958.0.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754108Ab0JHQmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 12:42:40 -0400
+Subject: Re: Linux 2.6.36-rc7
+From: Eric Paris <eparis@redhat.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: John Stoffel <john@stoffel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "agruen@suse.de" <agruen@suse.de>
+In-Reply-To: <201010081717.25940.tvrtko.ursulin@sophos.com>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+	 <1286486674.2571.16.camel@localhost.localdomain>
+	 <19631.15310.568446.991954@quad.stoffel.home>
+	 <201010081717.25940.tvrtko.ursulin@sophos.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Oct 2010 12:41:46 -0400
+Message-ID: <1286556106.2682.66.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-10-08 17:08:12]:
+On Fri, 2010-10-08 at 17:17 +0100, Tvrtko Ursulin wrote:
+> On Friday 08 Oct 2010 16:42:06 John Stoffel wrote:
 
-> On Thu, 2010-10-07 at 10:38 +0530, Balbir Singh wrote:
-> > * Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-09-23 16:00:52]:
-> > 
-> > > Subject: [PATCH] taskstats: Use real microsecond granularity for CPU times
-> > > 
-> > > From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > > 
-> > > The taskstats interface uses microsecond granularity for the user and
-> > > system time values. The conversion from cputime to the taskstats values
-> > > uses the cputime_to_msecs primitive which effectively limits the 
-> > > granularity to milliseconds. Add the cputime_to_usecs primitive for
-> > > architectures that have better, more precise CPU time values. Remove
-> > > cputime_to_msecs primitive because there is no more user left.
-> > > 
-> > > Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-> > 
-> > Looks good to me.
+> Priority is also not that great concept. I may have proposed classes or
+> something similar at some point, don't remember any more. It would be
+> equivalent to having allocated priority ranges, like:
 > 
-> Can I take that as an Acked-by?
->
+> >1000 - pre-content
+> >=100 - access-control
+> <100 - content
+> 
+> Doesn't really solve ordering inside groups so maybe we do not need priorities
+> at all just these three classes?
 
-Certainly
+I originally thought of trying to enumerate the types of users and came
+up with the same 3 you did.  Then I thought it better to give a general
+priority field which we could indicate in documentation something like
+those 3 classes (exactly like you did above).  I don't want to hard code
+some limited number of types of users into the interface. (ok it's going
+to limited, I was thinking 8 bits, but maybe others think we need more?)
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
+As an extreme example going with 3 fixed type of users (and thus
+equivalently only 3 priorities) would not allow for hierarchies of
+hierarchical storage managers.  What if priority MAX only brought in
+enough info for priority MAX-1 to bring in the real file?  If they had
+to share the single 'pre-content' priority we have another ordering
+problem.
 
--- 
-	Three Cheers,
-	Balbir
+-Eric
+
