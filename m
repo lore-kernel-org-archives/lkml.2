@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756889Ab0JHJvs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 05:51:48 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:52533 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756776Ab0JHJvq (ORCPT
+	id S1756896Ab0JHJxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 05:53:40 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49548 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752185Ab0JHJxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 05:51:46 -0400
-Date: Fri, 8 Oct 2010 20:51:42 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/18] fs: Implement lazy LRU updates for inodes.
-Message-ID: <20101008095142.GA4681@dastard>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-5-git-send-email-david@fromorbit.com>
- <20101008090802.GV19804@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008090802.GV19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 8 Oct 2010 05:53:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=k01qGotVrrmetodSFfCRl5qtj7YmpD6urF/LMZfddgQDjCrA24ATCexOLYs7TxKJd9
+         qoyKtUXwST3FP5GjwymipMB83UnT0WMJVcxUgWUuF6unfAhiFVvm31gkxY688c0C02Tt
+         SpNrsNf6iePeJMOsmtqUTsF2Ps8IkEByx2mEE=
+Subject: [PATCH] intel_pmic_gpio: fix off-by-one value range checking
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Matthew Garrett <mjg@redhat.com>, Alek Du <alek.du@intel.com>,
+        Alan Cox <alan@linux.intel.com>, platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Fri, 08 Oct 2010 17:54:31 +0800
+Message-Id: <1286531671.6060.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 10:08:02AM +0100, Al Viro wrote:
-> On Fri, Oct 08, 2010 at 04:21:18PM +1100, Dave Chinner wrote:
-> 
-> >  void __iget(struct inode *inode)
-> >  {
-> > -	if (atomic_inc_return(&inode->i_count) != 1)
-> > -		return;
-> > -
-> > -	if (!(inode->i_state & (I_DIRTY|I_SYNC)))
-> > -		list_move(&inode->i_list, &inode_in_use);
-> > -	percpu_counter_dec(&nr_inodes_unused);
-> > +	atomic_inc(&inode->i_count);
-> >  }
-> 
-> Umm...  Are you sure we don't rely on implict barriers present in the current
-> version?
+In pmic_irq_type(), we use gpio as array index for trigger,
+thus the valid value range for gpio should be 0 .. NUM_GPIO - 1.
 
-I'll confess that I have no idea what you are talking about, Al.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/intel_pmic_gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Instead, I'll ask if the conversion later one where all accesses and
-modifications to the reference count are moved under the
-inode->i_lock is sufficient to provide the necessary memory
-barriers?
-
-Cheers,
-
-Dave.
+diff --git a/drivers/platform/x86/intel_pmic_gpio.c b/drivers/platform/x86/intel_pmic_gpio.c
+index c6e2a1d..f540ff9 100644
+--- a/drivers/platform/x86/intel_pmic_gpio.c
++++ b/drivers/platform/x86/intel_pmic_gpio.c
+@@ -197,7 +197,7 @@ static int pmic_irq_type(unsigned irq, unsigned type)
+ 	u32 gpio = irq - pg->irq_base;
+ 	unsigned long flags;
+ 
+-	if (gpio > pg->chip.ngpio)
++	if (gpio >= pg->chip.ngpio)
+ 		return -EINVAL;
+ 
+ 	spin_lock_irqsave(&pg->irqtypes.lock, flags);
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.2
+
+
+
