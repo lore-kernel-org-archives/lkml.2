@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753005Ab0JHFuh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 01:50:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37614 "EHLO mx1.suse.de"
+	id S1753530Ab0JHFvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 01:51:16 -0400
+Received: from mga11.intel.com ([192.55.52.93]:3282 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752408Ab0JHFug convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 01:50:36 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Assign CPUs to nodes in round-robin manner on Fake NUMA.
-Date: Fri, 8 Oct 2010 11:23:32 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
-        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
-References: <201009301734.10787.knikanth@suse.de> <20101007004252.599b6888.akpm@linux-foundation.org>
-In-Reply-To: <20101007004252.599b6888.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Message-Id: <201010081123.32920.knikanth@suse.de>
+	id S1752541Ab0JHFvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 01:51:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,301,1283756400"; 
+   d="scan'208";a="845001990"
+From: Chen Gong <gong.chen@linux.intel.com>
+To: lm-sensors@lm-sensors.org
+Cc: JBeulich@novell.com, guenter.roeck@ericsson.com,
+        linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH V2 1/2] hwmon: uniform the init style of pkgtemp
+Date: Fri,  8 Oct 2010 13:53:35 +0800
+Message-Id: <1286517216-15640-2-git-send-email-gong.chen@linux.intel.com>
+X-Mailer: git-send-email 1.7.2.2.173.g515cc
+In-Reply-To: <1286517216-15640-1-git-send-email-gong.chen@linux.intel.com>
+References: <1286517216-15640-1-git-send-email-gong.chen@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 October 2010 13:12:52 Andrew Morton wrote:
-> On Thu, 30 Sep 2010 17:34:10 +0530 Nikanth Karthikesan <knikanth@suse.de> 
-wrote:
-> > Assign CPUs to nodes in round-robin manner on Fake NUMA.
-> >
-> > commit d9c2d5ac6af87b4491bff107113aaf16f6c2b2d9
-> > "x86, numa: Use near(er) online node instead of roundrobin for NUMA"
-> > changed NUMA initialization on Intel to choose the nearest online node or
-> > first node. Fake NUMA would be better of with round-robin initialization,
-> > instead of the all CPUS on first node. Change the choice of first node,
-> > back to round-robin.
-> 
-> Why would fake NUMA "be better off with round-robin initialization"?
-> 
+pkgtemp is derived from coretemp, so some reasonable
+logics should be applied onto pkgtemp, too. Such as
+the init logic here.
 
-For testing NUMA kernel behaviour without cpusets and NUMA aware applications, 
-it would be better to have cpus in different nodes, rather than all in a 
-single node. With cpusets migration of tasks scenarios cannot not be tested.
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+---
+ drivers/hwmon/pkgtemp.c |   22 ++++++++--------------
+ 1 files changed, 8 insertions(+), 14 deletions(-)
 
-I guess having it round-robin shouldn't affect the use cases for all cpus on 
-the first node.
+diff --git a/drivers/hwmon/pkgtemp.c b/drivers/hwmon/pkgtemp.c
+index f119039..29fef42 100644
+--- a/drivers/hwmon/pkgtemp.c
++++ b/drivers/hwmon/pkgtemp.c
+@@ -35,6 +35,7 @@
+ #include <linux/cpu.h>
+ #include <asm/msr.h>
+ #include <asm/processor.h>
++#include <asm/smp.h>
+ 
+ #define DRVNAME	"pkgtemp"
+ 
+@@ -392,7 +393,6 @@ static struct notifier_block pkgtemp_cpu_notifier __refdata = {
+ static int __init pkgtemp_init(void)
+ {
+ 	int i, err = -ENODEV;
+-	struct pdev_entry *p, *n;
+ 
+ 	/* quick check if we run Intel */
+ 	if (cpu_data(0).x86_vendor != X86_VENDOR_INTEL)
+@@ -402,31 +402,25 @@ static int __init pkgtemp_init(void)
+ 	if (err)
+ 		goto exit;
+ 
+-	for_each_online_cpu(i) {
+-		err = pkgtemp_device_add(i);
+-		if (err)
+-			goto exit_devices_unreg;
+-	}
++	for_each_online_cpu(i)
++		pkgtemp_device_add(i);
++
++#ifndef CONFIG_HOTPLUG_CPU
+ 	if (list_empty(&pdev_list)) {
+ 		err = -ENODEV;
+ 		goto exit_driver_unreg;
+ 	}
++#endif
+ 
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	register_hotcpu_notifier(&pkgtemp_cpu_notifier);
+ #endif
+ 	return 0;
+ 
+-exit_devices_unreg:
+-	mutex_lock(&pdev_list_mutex);
+-	list_for_each_entry_safe(p, n, &pdev_list, list) {
+-		platform_device_unregister(p->pdev);
+-		list_del(&p->list);
+-		kfree(p);
+-	}
+-	mutex_unlock(&pdev_list_mutex);
++#ifndef CONFIG_HOTPLUG_CPU
+ exit_driver_unreg:
+ 	platform_driver_unregister(&pkgtemp_driver);
++#endif
+ exit:
+ 	return err;
+ }
+-- 
+1.7.2.2.173.g515cc
 
->From the code comments in arch/x86/mm/numa_64.c:759 looks like this used to be 
-the case, which was changed by commit d9c2d5ac6. It changed from roundrobin to 
-nearer or first node. And I couldn't find any reason for this change in its 
-changelog.
-
-Thanks
-Nikanth
-
-> > ---
-> >
-> > diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
-> > index 85f69cd..47dd171 100644
-> > --- a/arch/x86/kernel/cpu/intel.c
-> > +++ b/arch/x86/kernel/cpu/intel.c
-> > @@ -283,9 +283,7 @@ static void __cpuinit srat_detect_node(struct
-> > cpuinfo_x86 *c) /* Don't do the funky fallback heuristics the AMD version
-> > employs for now. */
-> >  	node = apicid_to_node[apicid];
-> > -	if (node == NUMA_NO_NODE)
-> > -		node = first_node(node_online_map);
-> > -	else if (!node_online(node)) {
-> > +	if (node == NUMA_NO_NODE || !node_online(node)) {
-> >  		/* reuse the value from init_cpu_to_node() */
-> >  		node = cpu_to_node(cpu);
-> >  	}
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> > in the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> 
