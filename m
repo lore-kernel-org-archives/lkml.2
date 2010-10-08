@@ -1,95 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758450Ab0JHOyz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 10:54:55 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:59218 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758420Ab0JHOyy convert rfc822-to-8bit (ORCPT
+	id S1758515Ab0JHO6K (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:58:10 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:60412 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753691Ab0JHO6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 10:54:54 -0400
-From: "Savoy, Pavan" <pavan_savoy@ti.com>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-CC: "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>,
-        "greg@kroah.com" <greg@kroah.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Oct 2010 20:24:41 +0530
-Subject: RE: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-Thread-Topic: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-Thread-Index: ActmxBoaXVmrIZigRYa1xxxykcw0JgANGdIA
-Message-ID: <19F8576C6E063C45BE387C64729E739404AA3B766D@dbde02.ent.ti.com>
-References: <1286477237-7526-1-git-send-email-pavan_savoy@ti.com>
-	 <1286477237-7526-2-git-send-email-pavan_savoy@ti.com>
-	 <20101007184534.GB13602@vigoh> <1286527062.6145.182.camel@aeonflux>
-In-Reply-To: <1286527062.6145.182.camel@aeonflux>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 8 Oct 2010 10:58:07 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: linux-input@vger.kernel.org, xorg-devel@lists.x.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Takashi Iwai <tiwai@suse.de>,
+        Chris Bagwell <chris@cnpbagwell.com>,
+        Andy Whitcroft <apw@canonical.com>,
+        Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Duncan McGreggor <duncan.mcgreggor@canonical.com>
+Subject: [PATCH 1/3] Input: synaptics - add multitouch support
+Date: Fri,  8 Oct 2010 10:57:58 -0400
+Message-Id: <1286549880-32580-2-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>
+References: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Newer Synaptics devices support multitouch. It appears there is no touch
+tracking, so the non-slotted protocol is used.
 
+Multitouch mode is disabled by default because it makes click-and-drag
+on touchpads with integrated buttons even more difficult than it already
+is. Maybe if/when the X synaptics input module works around this issue
+we can enable it by default.
 
-> -----Original Message-----
-> From: Marcel Holtmann [mailto:marcel@holtmann.org]
-> Sent: Friday, October 08, 2010 3:38 AM
-> To: Gustavo F. Padovan
-> Cc: Savoy, Pavan; linux-bluetooth@vger.kernel.org; greg@kroah.com; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 1/2] drivers:bluetooth: TI_ST bluetooth driver
-> 
-> Hi Gustavo,
-> 
-> > Change the commit subject to "Bluetooth: TI_ST bluetooth driver"
-> >
-> > * pavan_savoy@ti.com <pavan_savoy@ti.com> [2010-10-07 14:47:16 -0400]:
-> >
-> > > From: Pavan Savoy <pavan_savoy@ti.com>
-> > >
-> > > This is the bluetooth protocol driver for the TI WiLink7 chipsets.
-> > > Texas Instrument's WiLink chipsets combine wireless technologies
-> > > like BT, FM, GPS and WLAN onto a single chip.
-> > >
-> > > This Bluetooth driver works on top of the TI_ST shared transport
-> > > line discipline driver which also allows other drivers like
-> > > FM V4L2 and GPS character driver to make use of the same UART interface.
-> > >
-> > > Signed-off-by: Pavan Savoy <pavan_savoy@ti.com>
-> > > ---
-> > >  drivers/bluetooth/bt_ti.c |  489
-> +++++++++++++++++++++++++++++++++++++++++++++
-> > >  1 files changed, 489 insertions(+), 0 deletions(-)
-> > >  create mode 100644 drivers/bluetooth/bt_ti.c
-> >
-> > We don't have filename with bt_.. in drivers/bluetooth/. Maybe ti_st.c
-> > should be a better name, or something like that.
-> 
-> actually we have the bt prefix for company generic ones where they
-> didn't wanna use the hardware name.
-> 
-> So I prefer to use the hardware for a driver since it is much more clear
-> that way. You acronym naming here is bad. It is confusing like hell.
-> 
-> What about just calling this btwilink.c or something. I just spinning
-> ideas here.
+Credit goes to Tobyn Bertram for reverse engineering the protocol.
 
-Ok, I like btwilink.c too. Does bt_wilink.c sound OK?
-I have sent a patch with ti_st.c as of now.
+Reported-by: Tobyn Bertram
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ drivers/input/mouse/synaptics.c |   78 +++++++++++++++++++++++++++++++++++----
+ drivers/input/mouse/synaptics.h |    3 +
+ 2 files changed, 73 insertions(+), 8 deletions(-)
 
-Please review, and provide comments. I will incorporate comments and change
-Name in the next version of the patch.
-
-Thanks,
-Pavan
-
-> Regards
-> 
-> Marcel
-> 
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 96b70a4..990598f 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -44,6 +44,10 @@
+ #define YMIN_NOMINAL 1408
+ #define YMAX_NOMINAL 4448
+ 
++static bool synaptics_multitouch;
++module_param(synaptics_multitouch, bool, 0644);
++MODULE_PARM_DESC(synaptics_multitouch,
++		 "Enable multitouch mode on Synaptics devices");
+ 
+ /*****************************************************************************
+  *	Stuff we need even when we do not want native Synaptics support
+@@ -279,6 +283,22 @@ static void synaptics_set_rate(struct psmouse *psmouse, unsigned int rate)
+ 	synaptics_mode_cmd(psmouse, priv->mode);
+ }
+ 
++static void synaptics_set_multitouch_mode(struct psmouse *psmouse)
++{
++	static unsigned char param = 0xc8;
++	struct synaptics_data *priv = psmouse->private;
++
++	if (!SYN_CAP_MULTITOUCH(priv->ext_cap_0c) || !synaptics_multitouch)
++		return;
++	if (psmouse_sliced_command(psmouse, SYN_QUE_MODEL))
++		return;
++	if (ps2_command(&psmouse->ps2dev, &param, PSMOUSE_CMD_SETRATE))
++		return;
++
++	priv->multitouch = 1;
++	printk(KERN_INFO "Synaptics: Multitouch mode enabled\n");
++}
++
+ /*****************************************************************************
+  *	Synaptics pass-through PS/2 port support
+  ****************************************************************************/
+@@ -362,18 +382,30 @@ static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data
+ 	memset(hw, 0, sizeof(struct synaptics_hw_state));
+ 
+ 	if (SYN_MODEL_NEWABS(priv->model_id)) {
+-		hw->x = (((buf[3] & 0x10) << 8) |
+-			 ((buf[1] & 0x0f) << 8) |
+-			 buf[4]);
+-		hw->y = (((buf[3] & 0x20) << 7) |
+-			 ((buf[1] & 0xf0) << 4) |
+-			 buf[5]);
+-
+-		hw->z = buf[2];
+ 		hw->w = (((buf[0] & 0x30) >> 2) |
+ 			 ((buf[0] & 0x04) >> 1) |
+ 			 ((buf[3] & 0x04) >> 2));
+ 
++		if (SYN_MULTITOUCH(priv, hw)) {
++			/* Multitouch data is half normal resolution */
++			hw->x = (((buf[4] & 0x0f) << 8) |
++				 buf[1]) << 1;
++			hw->y = (((buf[4] & 0xf0) << 4) |
++				 buf[2]) << 1;
++
++			hw->z = ((buf[3] & 0x30) |
++				 (buf[5] & 0x0f)) << 1;
++		} else {
++			hw->x = (((buf[3] & 0x10) << 8) |
++				 ((buf[1] & 0x0f) << 8) |
++				 buf[4]);
++			hw->y = (((buf[3] & 0x20) << 7) |
++				 ((buf[1] & 0xf0) << 4) |
++				 buf[5]);
++
++			hw->z = buf[2];
++		}
++
+ 		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+ 		hw->right = (buf[0] & 0x02) ? 1 : 0;
+ 
+@@ -445,6 +477,18 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 
+ 	synaptics_parse_hw_state(psmouse->packet, priv, &hw);
+ 
++	if (SYN_MULTITOUCH(priv, &hw)) {
++		if (hw.z > 0) {
++			input_report_abs(dev, ABS_MT_POSITION_X, hw.x);
++			input_report_abs(dev, ABS_MT_POSITION_Y,
++					 YMAX_NOMINAL + YMIN_NOMINAL - hw.y);
++			input_report_abs(dev, ABS_MT_PRESSURE, hw.z);
++		}
++
++		input_mt_sync(dev);
++		return;
++	}
++
+ 	if (hw.scroll) {
+ 		priv->scroll += hw.scroll;
+ 
+@@ -499,6 +543,12 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 	if (hw.z > 0) {
+ 		input_report_abs(dev, ABS_X, hw.x);
+ 		input_report_abs(dev, ABS_Y, YMAX_NOMINAL + YMIN_NOMINAL - hw.y);
++		if (priv->multitouch) {
++			input_report_abs(dev, ABS_MT_POSITION_X, hw.x);
++			input_report_abs(dev, ABS_MT_POSITION_Y,
++					 YMAX_NOMINAL + YMIN_NOMINAL - hw.y);
++			input_report_abs(dev, ABS_MT_PRESSURE, hw.z);
++		}
+ 	}
+ 	input_report_abs(dev, ABS_PRESSURE, hw.z);
+ 
+@@ -525,6 +575,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 	for (i = 0; i < SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap); i++)
+ 		input_report_key(dev, BTN_0 + i, hw.ext_buttons & (1 << i));
+ 
++	if (priv->multitouch)
++		input_mt_sync(dev);
+ 	input_sync(dev);
+ }
+ 
+@@ -605,6 +657,14 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+ 			     YMIN_NOMINAL, priv->y_max ?: YMAX_NOMINAL, 0, 0);
+ 	input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
+ 
++	if (priv->multitouch) {
++		input_set_abs_params(dev, ABS_MT_POSITION_X, XMIN_NOMINAL,
++				     priv->x_max ?: XMAX_NOMINAL, 0, 0);
++		input_set_abs_params(dev, ABS_MT_POSITION_Y, YMIN_NOMINAL,
++				     priv->y_max ?: YMAX_NOMINAL, 0, 0);
++		input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
++	}
++
+ 	if (SYN_CAP_PALMDETECT(priv->capabilities))
+ 		input_set_abs_params(dev, ABS_TOOL_WIDTH, 0, 15, 0, 0);
+ 
+@@ -745,6 +805,8 @@ int synaptics_init(struct psmouse *psmouse)
+ 		goto init_fail;
+ 	}
+ 
++	synaptics_set_multitouch_mode(psmouse);
++
+ 	priv->pkt_type = SYN_MODEL_NEWABS(priv->model_id) ? SYN_NEWABS : SYN_OLDABS;
+ 
+ 	printk(KERN_INFO "Synaptics Touchpad, model: %ld, fw: %ld.%ld, id: %#lx, caps: %#lx/%#lx/%#lx\n",
+diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+index b6aa7d2..5126c9c 100644
+--- a/drivers/input/mouse/synaptics.h
++++ b/drivers/input/mouse/synaptics.h
+@@ -53,6 +53,7 @@
+ #define SYN_CAP_PRODUCT_ID(ec)		(((ec) & 0xff0000) >> 16)
+ #define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100100)
+ #define SYN_CAP_MAX_DIMENSIONS(ex0c)	((ex0c) & 0x020000)
++#define SYN_CAP_MULTITOUCH(ex0c)	((ex0c) & 0x080000)
+ 
+ /* synaptics modes query bits */
+ #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
+@@ -78,6 +79,7 @@
+ #define SYN_NEWABS_STRICT		1
+ #define SYN_NEWABS_RELAXED		2
+ #define SYN_OLDABS			3
++#define SYN_MULTITOUCH(priv, hw)	((priv)->multitouch && (hw)->w == 2)
+ 
+ /*
+  * A structure to describe the state of the touchpad hardware (buttons and pad)
+@@ -110,6 +112,7 @@ struct synaptics_data {
+ 	unsigned char pkt_type;			/* packet type - old, new, etc */
+ 	unsigned char mode;			/* current mode byte */
+ 	int scroll;
++	int multitouch;				/* Whether device provides MT */
+ };
+ 
+ void synaptics_module_init(void);
+-- 
+1.7.1
 
