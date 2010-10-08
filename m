@@ -1,55 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757041Ab0JHKGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:06:37 -0400
-Received: from mga11.intel.com ([192.55.52.93]:44618 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756990Ab0JHKGg convert rfc822-to-8bit (ORCPT
+	id S1756992Ab0JHKJu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:09:50 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:50087 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752267Ab0JHKJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:06:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,302,1283756400"; 
-   d="scan'208";a="614635332"
-From: "Wu, Xia" <xia.wu@intel.com>
-To: Christoph Hellwig <hch@lst.de>, Yong Wang <yong.y.wang@linux.intel.com>
-CC: Jens Axboe <jaxboe@fusionio.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Date: Fri, 8 Oct 2010 18:04:44 +0800
-Subject: RE: [PATCH] bdi: use deferable timer for sync_supers task
-Thread-Topic: [PATCH] bdi: use deferable timer for sync_supers task
-Thread-Index: ActmytHoEYGgq7d/Qx+YxEVW0Xs1NAAA1ojg
-Message-ID: <A24AE1FFE7AEC5489F83450EE98351BF227AB58D43@shsmsx502.ccr.corp.intel.com>
-References: <20101008083514.GA12402@ywang-moblin2.bj.intel.com>
- <20101008092520.GB5426@lst.de>
-In-Reply-To: <20101008092520.GB5426@lst.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Oct 2010 06:09:49 -0400
+Date: Fri, 8 Oct 2010 12:09:44 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/18] fs: introduce a per-cpu last_ino allocator
+Message-ID: <20101008100944.GE13352@basil.fritz.box>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-16-git-send-email-david@fromorbit.com>
+ <87d3rl5c1h.fsf@basil.nowhere.org>
+ <20101008095824.GB19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008095824.GB19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 08, 2010 at 10:58:24AM +0100, Al Viro wrote:
+> On Fri, Oct 08, 2010 at 10:22:34AM +0200, Andi Kleen wrote:
+> > Dave Chinner <david@fromorbit.com> writes:
+> > 
+> > > From: Eric Dumazet <eric.dumazet@gmail.com>
+> > >
+> > > new_inode() dirties a contended cache line to get increasing
+> > > inode numbers. This limits performance on workloads that cause
+> > > significant parallel inode allocation.
+> > >
+> > > Solve this problem by using a per_cpu variable fed by the shared
+> > > last_ino in batches of 1024 allocations.  This reduces contention on
+> > > the shared last_ino, and give same spreading ino numbers than before
+> > > (i.e. same wraparound after 2^32 allocations).
+> > 
+> > This doesn't help for Unix disk file systems, so not fully sure why you
+> > need it for XFS.
+> > 
+> > But looks reasonable, although it would be better to simply fix 
+> > sockets/pipes/etc. to not allocate an inode numbers.
+> 
+> Can be done if you bother to add ->getattr() for those, but you'll need
+> to do some kind of lazy allocation of inumbers for those; fstat() _will_
+> want st_ino.
 
-On Fri, Oct 08, 2010 at 04:35:14PM +0800, Yong Wang wrote:
-> > sync_supers task currently wakes up periodically for superblock
-> > writeback. This hurts power on battery driven devices. This patch
-> > turns this housekeeping timer into a deferable timer so that it
-> > does not fire when system is really idle.
+Why not just put 0 in st_ino for sockets/pipes/etc. ? 
 
-> How long can the timer be defereed?  We can't simply stop writing
-> out data for a long time.  I think the current timer value should be
-> the upper bound, but allowing to fire earlier to run during the
-> same wakeup cycle as others is fine.
-
-If the system is in sleep state, this timer can be deferred to the next wake-up interrupt.
-If the system is busy, this timer will fire at the scheduled time.
-
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
