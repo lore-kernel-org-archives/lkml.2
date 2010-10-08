@@ -1,285 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab0JHHnp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:43:45 -0400
-Received: from mga01.intel.com ([192.55.52.88]:24878 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754096Ab0JHHno convert rfc822-to-8bit (ORCPT
+	id S1754619Ab0JHHqt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:46:49 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:49375 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751628Ab0JHHqs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:43:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,302,1283756400"; 
-   d="scan'208";a="614588469"
-From: "Ma, Ling" <ling.ma@intel.com>
-To: "miaox@cn.fujitsu.com" <miaox@cn.fujitsu.com>,
-        Ingo Molnar <mingo@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "Zhao, Yakui" <yakui.zhao@intel.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Date: Fri, 8 Oct 2010 15:42:45 +0800
-Subject: RE: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy()
- for unaligned copy
-Thread-Topic: [PATCH V2 -tip] lib,x86_64: improve the performance of
- memcpy() for unaligned copy
-Thread-Index: ActmunUmXQFXYZz4QQurqSqGvJnPpAAANI+g
-Message-ID: <C10D3FB0CD45994C8A51FEC1227CE22F15C916E769@shsmsx502.ccr.corp.intel.com>
-References: <4CAEC81C.1070108@cn.fujitsu.com>
-In-Reply-To: <4CAEC81C.1070108@cn.fujitsu.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 8 Oct 2010 03:46:48 -0400
+Date: Fri, 8 Oct 2010 18:46:43 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/18] fs: Clean up inode reference counting
+Message-ID: <20101008074643.GS4681@dastard>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-7-git-send-email-david@fromorbit.com>
+ <20101008072051.GE23595@lst.de>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008072051.GE23595@lst.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Could you please give us full address for each comparison result,we will do some tests on my machine.
-For unaligned cases older cpus will crossing cache line and slow down caused by load and store, but for nhm, no necessary to care about it.
-By the way in kernel 64bit mode, our access mode should be around 8byte aligned.
+On Fri, Oct 08, 2010 at 03:20:51AM -0400, Christoph Hellwig wrote:
+> On Fri, Oct 08, 2010 at 04:21:20PM +1100, Dave Chinner wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > Lots of filesystem code open codes the act of getting a reference to
+> > an inode.  Factor the open coded inode lock, increment, unlock into
+> > a function iref().  Then rename __iget to iref_locked so that nothing
+> > is directly incrementing the inode reference count for trivial
+> > operations.
+> > 
+> > Originally based on a patch from Nick Piggin.
+> 
+> > +++ b/fs/anon_inodes.c
+> > @@ -111,10 +111,9 @@ struct file *anon_inode_getfile(const char *name,
+> >  	path.mnt = mntget(anon_inode_mnt);
+> >  	/*
+> >  	 * We know the anon_inode inode count is always greater than zero,
+> > -	 * so we can avoid doing an igrab() and we can use an open-coded
+> > -	 * atomic_inc().
+> > +	 * so we can avoid doing an igrab() by using iref().
+> 
+> I don't think there's a point keeping this comment.
 
-Thanks
-Ling 
+OK.
 
-> -----Original Message-----
-> From: Miao Xie [mailto:miaox@cn.fujitsu.com]
-> Sent: Friday, October 08, 2010 3:28 PM
-> To: Ingo Molnar; Andi Kleen; Ma, Ling; H. Peter Anvin; Thomas Gleixner; Zhao,
-> Yakui
-> Cc: Linux Kernel
-> Subject: [PATCH V2 -tip] lib,x86_64: improve the performance of memcpy() for
-> unaligned copy
 > 
-> memcpy of x86_64 hasn't been optimized for the unaligned copy like other
-> architecture, this patch fixed this problem.
+> > @@ -297,7 +297,7 @@ static void inode_wait_for_writeback(struct inode *inode)
+> >  
+> >  /*
+> >   * Write out an inode's dirty pages.  Called under inode_lock.  Either the
+> > - * caller has ref on the inode (either via __iget or via syscall against an fd)
+> > + * caller has ref on the inode (either via iref_locked or via syscall against an fd)
 > 
-> I have tested this patch by my benchmark tool(doing 500 bytes memory copy
-> for 5,000,000 times)with various alignments and buffer sizes on my Core2
-> box.
+> I'd say just drop the mentioning of how we got a reference to the inode,
+
+OK.
+
+> it's just too confusing in this context.
 > 
-> Len	Src/Dst	Old memcpy	New memcpy
-> 	align
-> ---	-------	-------------	-------------
-> 1	0/0	0s 47015us	0s 28265us
-> 1	0/4	0s 28201us	0s 28199us
-> 1	4/0	0s 28200us	0s 28199us
-> 1	4/4	0s 28199us	0s 28206us
-> 7	0/0	0s 24441us	0s 24438us
-> 7	0/4	0s 24439us	0s 24438us
-> 7	4/0	0s 24439us	0s 24438us
-> 7	4/4	0s 24439us	0s 24439us
-> 8	0/0	0s 20699us	0s 20687us
-> 8	0/4	0s 20689us	0s 20901us
-> 8	4/0	0s 20692us	0s 20679us
-> 8	4/4	0s 20679us	0s 20679us
-> 16	0/0	0s 18807us	0s 18802us
-> 16	0/4	0s 26319us	0s 18800us
-> 16	4/0	0s 18800us	0s 18806us
-> 16	4/4	0s 26317us	0s 18803us
-> 32	0/0	0s 35728us	0s 18800us
-> 32	0/4	0s 35716us	0s 18800us
-> 32	4/0	0s 35717us	0s 18800us
-> 32	4/4	0s 35724us	0s 18803us
-> 48	0/0	0s 26897us	0s 30080us
-> 48	0/4	0s 33837us	0s 33838us
-> 48	4/0	0s 27600us	0s 30079us
-> 48	4/4	0s 30087us	0s 33854us
-> 64	0/0	0s 41369us	0s 45115us
-> 64	0/4	0s 62042us	0s 65800us
-> 64	4/0	0s 56400us	0s 58278us
-> 64	4/4	0s 84596us	0s 84606us
-> 80	0/0	0s 35877us	0s 37611us
-> 80	0/4	0s 77083us	0s 56404us
-> 80	4/0	0s 52652us	0s 55611us
-> 80	4/4	0s 75200us	0s 78968us
-> 128	0/0	0s 52642us	0s 56403us
-> 128	0/4	0s 95883us	0s 95891us
-> 128	4/0	0s 114683us	0s 108511us
-> 128	4/4	0s 144780us	0s 110927us
-> 256	0/0	0s 80832us	0s 86489us
-> 256	0/4	0s 178586us	0s 163562us
-> 256	4/0	0s 208670us	0s 181719us
-> 256	4/4	0s 270705us	0s 148525us
-> 512	0/0	0s 156049us	0s 148348us
-> 512	0/4	0s 313933us	0s 298908us
-> 512	4/0	0s 411671us	0s 329025us
-> 512	4/4	0s 516971us	0s 208746us
-> 1024	0/0	0s 297067us	0s 274019us
-> 1024	0/4	0s 584703us	0s 569604us
-> 1024	4/0	0s 818104us	0s 616419us
-> 1024	4/4	1s 22839us	0s 328953us
-> 2048	0/0	0s 577077us	0s 524148us
-> 2048	0/4	1s 125953us	1s 111258us
-> 2048	4/0	1s 894000us	1s 202724us
-> 2048	4/4	2s 331807us	0s 822437us
-> 4096	0/0	1s 25881us	1s 34128us
-> 4096	0/4	2s 619273us	2s 606489us
-> 4096	4/0	3s 553989us	2s 390272us
-> 4096	4/4	4s 737789us	1s 433213us
+> > --- a/fs/inode.c
+> > +++ b/fs/inode.c
+> > @@ -313,11 +313,20 @@ static void init_once(void *foo)
+> >  
+> >  	inode_init_once(inode);
+> >  }
+> > +EXPORT_SYMBOL_GPL(iref_locked);
 > 
-> Signed-off-by: Miao Xie <miaox@cn.fujitsu.com>
-> ---
->  arch/x86/lib/memcpy_64.S |  135
-> +++++++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 134 insertions(+), 1 deletions(-)
+> I think the export is placed incorrectly here.
+
+Fmeh - guilt has an annoying habit of applying patches silently
+when there are context mismatches. I've fixed this mismatch about 5
+times in the past 2 days, and it keeps creeping back in as I update
+patches earlier in the series. I'll fix it up in the next pass.
+
+> > +
+> > +void iref(struct inode *inode)
+> > +{
+> > +	spin_lock(&inode_lock);
+> > +	iref_locked(inode);
+> > +	spin_unlock(&inode_lock);
+> > +}
+> > +EXPORT_SYMBOL_GPL(iref);
 > 
-> diff --git a/arch/x86/lib/memcpy_64.S b/arch/x86/lib/memcpy_64.S
-> index 75ef61e..b0224f8 100644
-> --- a/arch/x86/lib/memcpy_64.S
-> +++ b/arch/x86/lib/memcpy_64.S
-> @@ -46,9 +46,39 @@ ENTRY(memcpy)
->  	 * Use 32bit CMP here to avoid long NOP padding.
->  	 */
->  	cmp  $0x20, %edx
-> -	jb .Lhandle_tail
-> +	jbe .Lhandle_tail
 > 
->  	/*
-> +	 * the code for unaligned copy is good for large-size copy(>100),
-> +	 * so if the size is small, we needn't check dst and src is aligned
-> +	 * or not.
-> +	 */
-> +	cmp $100, %edx
-> +	jb .Lboth_aligned
-> +
-> +	/*
-> +	 * unaligned access always leads to bad performance, so in order to
-> +	 * avoid unaligned access, we align the address(both src and dest)
-> +	 * first, and then copy from a aligned src to an aligned dst by using
-> +	 * shifts.
-> +	 * But we found if src is aligned, although dest is unaligned, the
-> +	 * performance of generic memory copy (That is reading data aligned
-> +	 * from the source and writing data unaligned to the dest) is better
-> +	 * than the one that uses shifts to avoid unaligned access.
-> +	 * So if src is aligned, we needn't check dest is aligned or not, just
-> +	 * goto .Lboth_aligned
-> +	 */
-> +	test $7, %esi		/* src align check */
-> +	jz .Lboth_aligned
-> +
-> +	/* if dest and src both are unaligned, goto unaligned copy */
-> +	test $7, %edi
-> +	jnz .Ldst_unaligned
-> +
-> +	jmp .Lsrc_unaligned_dst_aligned
-> +
-> +.Lboth_aligned:
-> +	/*
->  	 * We check whether memory false dependece could occur,
->  	 * then jump to corresponding copy mode.
->  	 */
-> @@ -166,6 +196,109 @@ ENTRY(memcpy)
+> > +void iref_locked(struct inode *inode)
+> >  {
+> >  	atomic_inc(&inode->i_count);
+> >  }
 > 
->  .Lend:
->  	retq
-> +
-> +	.p2align 4
-> +.Ldst_unaligned:
-> +	movq %rdi, %rcx
-> +	andq $7, %rcx		/* Align the destination */
-> +	negq %rcx
-> +	andq $7, %rcx
-> +	subq %rcx, %rdx
-> +
-> +	/* tune dst address */
-> +	movq (%rsi), %r8
-> +	movq %r8, (%rdi)
-> +	addq %rcx, %rdi
-> +	addq %rcx, %rsi
-> +
-> +	test $7, %esi		/* src align check */
-> +	jz .Lboth_aligned
-> +
-> +	.p2align 4
-> +.Lsrc_unaligned_dst_aligned:
-> +	push %rbx
-> +	push %r12
-> +	push %r13
-> +	push %r14
-> +	push %r15
-> +	/*
-> +	 * Calculate how to shift a word read at the memory operation
-> +	 * aligned srcp to make it aligned for copy.
-> +	 */
-> +	movq %rsi, %r14
-> +	andq $7, %r14
-> +	shlq $3, %r14
-> +
-> +	movq $64, %r15
-> +	subq %r14, %r15
-> +
-> +	andq $-8, %rsi		/* src aligned */
-> +	movq 0*8(%rsi), %r8
-> +
-> +	movq %rdx, %rbx
-> +	shrq $5, %rbx
-> +	jz .Lsrc_unaligned_less32
-> +
-> +	/*
-> +	 * %r8 : store src[0]
-> +	 * %r9 : store src[1]
-> +	 * %r10: store src[2]
-> +	 * %r11: store src[3]
-> +	 * %r12: store src[4]
-> +	 * %r13: store the tmp data
-> +	 */
-> +	.p2align 4
-> +.Lsrc_unaligned_loop32:
-> +	movq 1*8(%rsi), %r9
-> +	movq 2*8(%rsi), %r10
-> +	movq 3*8(%rsi), %r11
-> +	movq 4*8(%rsi), %r12
-> +
-> +	movq %r9, %r13
-> +	movb %r14b, %cl
-> +	shrq %cl, %r8
-> +	shrq %cl, %r13
-> +	movb %r15b, %cl
-> +	shlq  %cl, %r9
-> +	orq %r8, %r9
-> +	movq %r10, %r8
-> +	shlq  %cl, %r10
-> +	orq %r13, %r10
-> +
-> +	movq %r11, %r13
-> +	movb %r14b, %cl
-> +	shrq %cl, %r8
-> +	shrq %cl, %r13
-> +	movb %r15b, %cl
-> +	shlq  %cl, %r11
-> +	orq %r8, %r11
-> +	movq %r12, %r8
-> +	shlq  %cl, %r12
-> +	orq %r13, %r12
-> +
-> +	movq %r9, 0*8(%rdi)
-> +	movq %r10, 1*8(%rdi)
-> +	movq %r11, 2*8(%rdi)
-> +	movq %r12, 3*8(%rdi)
-> +
-> +	leaq 4*8(%rdi), %rdi
-> +	leaq 4*8(%rsi), %rsi
-> +	decq %rbx
-> +	jnz .Lsrc_unaligned_loop32
-> +
-> +	.p2align 4
-> +.Lsrc_unaligned_less32:
-> +	shrq $3, %r14
-> +	addq %r14, %rsi
-> +	pop %r15
-> +	pop %r14
-> +	pop %r13
-> +	pop %r12
-> +	pop %rbx
-> +	andq $31, %rdx
-> +	jnz .Lhandle_tail
-> +	retq
-> +
->  	CFI_ENDPROC
->  ENDPROC(memcpy)
->  ENDPROC(__memcpy)
-> --
-> 1.7.0.1
+> Please add a kerneldoc comment for both exported functions.
+
+OK.
+
+> Also what's the point of taking inode_lock in iref when the only thing
+> we do is an atomic_in?  It's probably better only having iref for now
+> and only introduce iref_locked once the non-atomic increment needs
+> i_lock.
+
+Because in the next couple of patches the atomic-ness goes away, and
+the inode lock keeps everything "sane" until all the locking
+conversion is completed.
+
+> Also any chance to get an assert under a debug option the the reference
+> count really is non-zero?
+
+For iref()? Sure, but I think WARN_ON_ONCE() is better for the moment,
+though.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
