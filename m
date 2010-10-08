@@ -1,47 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab0JHKNi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:13:38 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37685 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754911Ab0JHKNh (ORCPT
+	id S1757212Ab0JHKNt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:13:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:33332 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756867Ab0JHKNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:13:37 -0400
+	Fri, 8 Oct 2010 06:13:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=D+eoL9qA6WA518LmNaLZIUBtbhaDFg/3InVxMfWrP38smNRwzOIz1hmNMLiS39eG8/
-         tX2wffxynPNv8WMmoUyyth1FbhH4F1cdoDGOz/T9v/JTnwLizjjyXrIyjSMV6MIOnDcB
-         0x0y8+ZSvQGCYquGQgccHIZdckRMRlxWbV5UY=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=g28bKZaUlMlVqlwHGki7ahn/cyXrkO1yDY01dFdIpQKwXD7YDUX4b9VKVF2QCTBz3Q
+         ea0vLAE9ObZeI6LMnHMtqrFaK0unfLt1/af+QNX3Uuinxa4Ykd40D7mBdSUYD2rx9JBI
+         Xwn9MliHSyLdXpD99xBBnVXrrPG21xkCrgwRk=
 From: Tracey Dent <tdent48227@gmail.com>
 To: greg@kroah.com
 Cc: linux-kernel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 1/3] Staging: speakup: Makefile: Makefile clean up
-Date: Fri,  8 Oct 2010 06:13:28 -0400
-Message-Id: <1286532810-5370-1-git-send-email-tdent48227@gmail.com>
+Subject: [PATCH 3/3] Staging: speakup: keyhelp: Coding style fix
+Date: Fri,  8 Oct 2010 06:13:30 -0400
+Message-Id: <1286532810-5370-3-git-send-email-tdent48227@gmail.com>
 X-Mailer: git-send-email 1.7.3.1.104.gc752e
+In-Reply-To: <1286532810-5370-1-git-send-email-tdent48227@gmail.com>
+References: <1286532810-5370-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replaced <modules>-objs with <modules>-y in Makefile.
+Put { on previous line, on line 34. Checkpatch.pl caught this.
 ---
- drivers/staging/speakup/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/staging/speakup/keyhelp.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/staging/speakup/Makefile b/drivers/staging/speakup/Makefile
-index 9923463..c5e43a5 100644
---- a/drivers/staging/speakup/Makefile
-+++ b/drivers/staging/speakup/Makefile
-@@ -15,7 +15,7 @@ obj-$(CONFIG_SPEAKUP_SYNTH_TXPRT) += speakup_txprt.o
- obj-$(CONFIG_SPEAKUP_SYNTH_DUMMY) += speakup_dummy.o
+diff --git a/drivers/staging/speakup/keyhelp.c b/drivers/staging/speakup/keyhelp.c
+index 81c627c..a74500a 100644
+--- a/drivers/staging/speakup/keyhelp.c
++++ b/drivers/staging/speakup/keyhelp.c
+@@ -30,11 +30,11 @@ static const int num_key_names = MSG_KEYNAMES_END - MSG_KEYNAMES_START + 1;
+ static u_short key_offsets[MAXFUNCS], key_data[MAXKEYS];
+ static u_short masks[] = { 32, 16, 8, 4, 2, 1 };
  
- obj-$(CONFIG_SPEAKUP) += speakup.o
--speakup-objs := \
-+speakup-y := \
- 	buffers.o \
- 	devsynth.o \
- 	i18n.o \
+-static short letter_offsets[26] =
+-{ -1, -1, -1, -1, -1, -1, -1, -1,
+-  -1, -1, -1, -1, -1, -1, -1, -1,
+-  -1, -1, -1, -1, -1, -1, -1, -1,
+-  -1, -1 };
++static short letter_offsets[26] = { 
++	-1, -1, -1, -1, -1, -1, -1, -1,
++	-1, -1, -1, -1, -1, -1, -1, -1,
++	-1, -1, -1, -1, -1, -1, -1, -1,
++	-1, -1 };
+ 
+ static u_char funcvals[] = {
+ 	ATTRIB_BLEEP_DEC, ATTRIB_BLEEP_INC, BLEEPS_DEC, BLEEPS_INC,
 -- 
 1.7.3.1.104.gc752e
 
