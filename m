@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757145Ab0JHMlY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 08:41:24 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:63459 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755551Ab0JHMlX (ORCPT
+	id S1757074Ab0JHMpm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 08:45:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45405 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753107Ab0JHMpk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 08:41:23 -0400
-From: "Hans-Peter Jansen" <hpj@urpla.net>
-To: linux-kernel@vger.kernel.org
-Subject: [Fun] Moving an linux server with 7 years uptime 7 kilometer via subway
-Date: Fri, 8 Oct 2010 14:41:10 +0200
-User-Agent: KMail/1.9.10
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201010081441.10756.hpj@urpla.net>
-X-Provags-ID: V02:K0:NvMj4rYm+tFMzln8n2hENeblax2+f2oMdyI1JCLFDac
- CJdJQEgbQF1NLeT90m5q9qMtzHdBBzALbDuQ4CqIydvhObZmtB
- Kr7sr4+hl8hhUUZBdFmYhhS2MAvYFbVKoLduy2Pq585XyBqchF
- zJ1dfJTr5HAnLHLak4GU/jop8KOmsVzpIVkojTWlRwWdEAmvgP
- 3BZFaCbTRzKEc9tYPIeuAGV7I3xvrzNmb1STrC4NIc=
+	Fri, 8 Oct 2010 08:45:40 -0400
+Subject: Re: [PATCH 3/5] kvm: stop including asm-generic/bitops/le.h directly
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1286532193-29814-3-git-send-email-akinobu.mita@gmail.com>
+Date: Fri, 8 Oct 2010 14:45:38 +0200
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <782A742D-14BD-4B77-A8B5-9C49850A24AE@suse.de>
+References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com> <1286532193-29814-3-git-send-email-akinobu.mita@gmail.com>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[From the sense relieved department]
 
-just discovered:
+On 08.10.2010, at 12:03, Akinobu Mita wrote:
 
-http://www.youtube.com/watch?v=vQ5MA685ApE&feature=mfu_in_order
+> asm-generic/bitops/le.h is only intended to be included directly from
+> asm-generic/bitops/ext2-non-atomic.h or asm-generic/bitops/minix-le.h
+> which implements generic ext2 or minix bit operations.
+> 
+> This stops including asm-generic/bitops/le.h directly and use ext2
+> non-atomic bit operations instead.
+> 
+> An alternative approach is introducing little endian bit operations
+> in linux/bitops.h. But it needs to touch more files than this change does.
 
-A few guys moving a linux server with 7 years uptime to a new 
-destination in Hamburg via subway without disrupting power supply, just 
-to keep the uptime (and get some fun out of it). They claim, it's 8 
-years and two month now.
+That's properly a better idea, given the fact that ext2_set_bit doesn't really say too much to the reader :).
 
-Sound is german only, but anyway. Unfortunately, all proofs, they're not 
-faking are blured...
 
-Reminded me, that I had my personal _diskless_ WS running for about a 
-few month without reboots in that time frame (although also often using 
-evil technology like VMWare for a XP VM, etc..).
+Alex
 
-These solid as a rock 2.4 kernels aren't beaten since then.
-
-Can-we-have-a-little-more-stability-back-ly-y'rs,
-Pete
