@@ -1,127 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753664Ab0JHGWH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 02:22:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38023 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab0JHGWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 02:22:05 -0400
-X-User-Agent: K-9 Mail for Android
-References: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com> <tip-68f4d5a00adaab33b136fce2c72d5c377b39b0b0@git.kernel.org> <4CAEB1BA.2030604@kernel.org>
-In-Reply-To: <4CAEB1BA.2030604@kernel.org>
+	id S1753462Ab0JHG0g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 02:26:36 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:58423 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752083Ab0JHG0e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 02:26:34 -0400
+X-Nat-Received: from [202.181.97.72]:57634 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1286519179.9940
+Message-Id: <201010080626.o986QJX4002281@www262.sakura.ne.jp>
+Subject: Re: 2.6.36-rc7: kernel panic with SECURITY_TOMOYO=y
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: kosaki.motohiro@jp.fujitsu.com
+Cc: linux-kernel@vger.kernel.org, takedakn@nttdata.co.jp,
+        lists@nerdbynature.de, kawime@gmx.de, jkosina@suse.cz,
+        linux-security-module@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [tip:x86/setup] x86, setup: Use string copy operation to optimze copy in kernel compression
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Thu, 07 Oct 2010 23:21:37 -0700
-To: Yinghai Lu <yinghai@kernel.org>, mingo@redhat.com,
-        linux-kernel@vger.kernel.org, yakui.zhao@intel.com, tglx@linutronix.de
-CC: linux-tip-commits@vger.kernel.org
-Message-ID: <95a57ba2-94d7-4115-b9b3-d4b595ad9552@email.android.com>
+Content-Transfer-Encoding: 7bit
+Date: Fri, 08 Oct 2010 15:26:19 +0900
+References: <alpine.DEB.2.01.1010071534370.21082@trent.utfs.org> <alpine.DEB.2.01.1010071637090.21082@trent.utfs.org> <20101008134644.8049.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20101008134644.8049.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 08102010 #4288303, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Almost certainly still faster than bytewise copy!
+Jiri Kosina wrote: ( http://lkml.org/lkml/2010/8/11/80 )
+> > The panic message was:
+> > >  Profile %u (used by '%s') not defined.
+> >
+> > Profile 0 (used by '0') not defined.
+> 
+> Looking at the code ...
+> 
+>      void tomoyo_check_profile(void)
+>      {
+>              struct tomoyo_domain_info *domain;
+>              const int idx = tomoyo_read_lock();
+>              tomoyo_policy_loaded = true;
+>              /* Check all profiles currently assigned to domains are defined. */
+>              list_for_each_entry_rcu(domain, &tomoyo_domain_list, list) {
+>                      const u8 profile = domain->profile;
+>                      if (tomoyo_profile_ptr[profile])
+>                              continue;
+>                      panic("Profile %u (used by '%s') not defined.\n",
+>                            profile, domain->domainname->name);
+>              }
+>              tomoyo_read_unlock(idx);
+>              if (tomoyo_profile_version != 20090903)
+>                      panic("Profile version %u is not supported.\n",
+>                            tomoyo_profile_version);
+>              printk(KERN_INFO "TOMOYO: 2.3.0\n");
+>              printk(KERN_INFO "Mandatory Access Control activated.\n");
+>      }
+> 
+> makes one wonder whether not having up-to-date userspace really does
+> qualify for unconditional kernel panic.
 
-"Yinghai Lu" <yinghai@kernel.org> wrote:
+KOSAKI Motohiro wrote:
+> Handa-san, please see this panic message again.
+> 
+> > Kernel panic - not syncing: Profile uersion 0 is not supported
+> 
+> Profile?
+> This message doesn't have any information which should we look!
+> And, 'profile' is wrong word. TOMOYO have to recommend to upgrade
+> userland tools here at minimum.
 
->On 10/07/2010 10:40 PM, tip-bot for Zhao Yakui wrote:
->> Commit-ID:  68f4d5a00adaab33b136fce2c72d5c377b39b0b0
->> Gitweb:     http://git.kernel.org/tip/68f4d5a00adaab33b136fce2c72d5c377b39b0b0
->> Author:     Zhao Yakui <yakui.zhao@intel.com>
->> AuthorDate: Fri, 8 Oct 2010 09:47:33 +0800
->> Committer:  H. Peter Anvin <hpa@zytor.com>
->> CommitDate: Thu, 7 Oct 2010 21:23:09 -0700
->> 
->> x86, setup: Use string copy operation to optimze copy in kernel compression
->> 
->> The kernel decompression code parses the ELF header and then copies
->> the segment to the corresponding destination.  Currently it uses slow
->> byte-copy code.  This patch makes it use the string copy operations
->> instead.
->> 
->> In the test the copy performance can be improved very significantly after using
->> the string copy operation mechanism.
->>         1. The copy time can be reduced from 150ms to 20ms on one Atom machine
->> 	2. The copy time can be reduced about 80% on another machine
->> 		The time is reduced from 7ms to 1.5ms when using 32-bit kernel.
->> 		The time is reduced from 10ms to 2ms when using 64-bit kernel.
->> 
->> Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
->> LKML-Reference: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
->> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
->> ---
->>  arch/x86/boot/compressed/misc.c |   29 +++++++++++++++++++++++------
->>  1 files changed, 23 insertions(+), 6 deletions(-)
->> 
->> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
->> index 8f7bef8..23f315c 100644
->> --- a/arch/x86/boot/compressed/misc.c
->> +++ b/arch/x86/boot/compressed/misc.c
->> @@ -229,18 +229,35 @@ void *memset(void *s, int c, size_t n)
->>  		ss[i] = c;
->>  	return s;
->>  }
->> -
->> +#ifdef CONFIG_X86_32
->>  void *memcpy(void *dest, const void *src, size_t n)
->>  {
->> -	int i;
->> -	const char *s = src;
->> -	char *d = dest;
->> +	int d0, d1, d2;
->> +	asm volatile(
->> +		"rep ; movsl\n\t"
->> +		"movl %4,%%ecx\n\t"
->> +		"rep ; movsb\n\t"
->> +		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
->> +		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
->> +		: "memory");
->>  
->> -	for (i = 0; i < n; i++)
->> -		d[i] = s[i];
->>  	return dest;
->>  }
->> +#else
->> +void *memcpy(void *dest, const void *src, size_t n)
->> +{
->> +	long d0, d1, d2;
->> +	asm volatile(
->> +		"rep ; movsq\n\t"
->> +		"movq %4,%%rcx\n\t"
->> +		"rep ; movsb\n\t"
->> +		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
->> +		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
->> +		: "memory");
->>  
->> +	return dest;
->> +}
->> +#endif
->>  
->>  static void error(char *x)
->>  {
->
->wonder if it would have problem with some old AMD K8 systems.
->
->in amd.c
->
->        /* On C+ stepping K8 rep microcode works well for copy/memset */
->        if (c->x86 == 0xf) {
->                u32 level;
->
->                level = cpuid_eax(1);
->                if ((level >= 0x0f48 && level < 0x0f50) || level >= 0x0f58)
->                        set_cpu_cap(c, X86_FEATURE_REP_GOOD);
->...
->
->        }
->        if (c->x86 >= 0x10)
->                set_cpu_cap(c, X86_FEATURE_REP_GOOD);
->
->Yinghai
+I see. What about this?
 
+>From cc7601c18982909987bbb48971acb86a69a3317a Mon Sep 17 00:00:00 2001
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Date: Fri, 8 Oct 2010 14:43:22 +0900
+Subject: [PATCH] TOMOYO: Print URL information before panic().
+
+Configuration files for TOMOYO 2.3 are not compatible with TOMOYO 2.2.
+But current panic() message is too unfriendly and is confusing users.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+ security/tomoyo/common.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
+index c668b44..1f0d45a 100644
+--- a/security/tomoyo/common.c
++++ b/security/tomoyo/common.c
+@@ -2051,13 +2051,22 @@ void tomoyo_check_profile(void)
+ 		const u8 profile = domain->profile;
+ 		if (tomoyo_profile_ptr[profile])
+ 			continue;
++		printk(KERN_ERR "You need to define profile %u before using it.\n",
++		       profile);
++		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
++		       "for more information.\n");
+ 		panic("Profile %u (used by '%s') not defined.\n",
+ 		      profile, domain->domainname->name);
+ 	}
+ 	tomoyo_read_unlock(idx);
+-	if (tomoyo_profile_version != 20090903)
++	if (tomoyo_profile_version != 20090903) {
++		printk(KERN_ERR "You need to install userland programs for "
++		       "TOMOYO 2.3 and initialize policy configuration.\n");
++		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
++		       "for more information.\n");
+ 		panic("Profile version %u is not supported.\n",
+ 		      tomoyo_profile_version);
++	}
+ 	printk(KERN_INFO "TOMOYO: 2.3.0\n");
+ 	printk(KERN_INFO "Mandatory Access Control activated.\n");
+ }
 -- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+1.7.1
