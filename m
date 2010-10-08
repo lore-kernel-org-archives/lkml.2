@@ -1,104 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab0JHQ2M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:28:12 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42335 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753264Ab0JHQ2L (ORCPT
+	id S1756368Ab0JHQaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:30:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40670 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752427Ab0JHQaW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:28:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Nd1z9RQda2Lqzn82yghXWdZAJT1Aq8fR2yKAhqkkxlb7t+vrhnUjlNN+ajPVIz3Kl4
-         oWm/0EpfnJexKJENoUv6ej7bqHIVh7zjeEZMDsFhw6amKsS9ZsiBZ3sxidMsCzuQipgn
-         5FUWMGmy+xMWD8lBMpWPZJKyI2jsdsNqG7cAU=
-Date: Sat, 9 Oct 2010 00:30:15 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
-        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
-        ML netdev <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: IPv4: sysctl table check failed [was: mmotm 2010-10-07-14-08
-	uploaded]
-Message-ID: <20101008163015.GB5724@hack>
-References: <201010072140.o97Le69i025659@imap1.linux-foundation.org> <4CAE4479.6010606@gmail.com> <1286490135.6536.75.camel@edumazet-laptop> <20101007152806.119d1522.akpm@linux-foundation.org>
+	Fri, 8 Oct 2010 12:30:22 -0400
+Date: Fri, 8 Oct 2010 09:30:34 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+        Lun Chang <w13550@motorola.com>
+Subject: Re: [PATCH 1/3] regulator: Add notifier event on regulator disable
+Message-ID: <20101008163033.GA5092@opensource.wolfsonmicro.com>
+References: <20100104181634.GA18258@rakim.wolfsonmicro.main>
+ <1262629066-18398-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+ <AANLkTimWPZJzp61uCNMcu1o8Nra4_FQyUhjrtox2sxB2@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101007152806.119d1522.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTimWPZJzp61uCNMcu1o8Nra4_FQyUhjrtox2sxB2@mail.gmail.com>
+X-Cookie: Don't read everything you believe.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 03:28:06PM -0700, Andrew Morton wrote:
->On Fri, 08 Oct 2010 00:22:15 +0200
->Eric Dumazet <eric.dumazet@gmail.com> wrote:
->
->> Le vendredi 08 octobre 2010 __ 00:06 +0200, Jiri Slaby a __crit :
->> > On 10/07/2010 11:08 PM, akpm@linux-foundation.org wrote:
->> > > The mm-of-the-moment snapshot 2010-10-07-14-08 has been uploaded to
->> > 
->> > Hi, I got bunch of "sysctl table check failed" below. All seem to be
->> > related to ipv4:
->> 
->> I would say, sysctl check is buggy :(
->> 
->> min/max are optional
->> 
->> [PATCH] sysctl: min/max bounds are optional
->> 
->> sysctl check complains when proc_doulongvec_minmax or
->> proc_doulongvec_ms_jiffies_minmax are used by a vector of longs (with
->> more than one element), with no min or max value specified.
->> 
->> This is unexpected, given we had a bug on this min/max handling :)
->> 
->> Reported-by: Jiri Slaby <jirislaby@gmail.com>
->> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->> ---
->>  kernel/sysctl_check.c |    9 ---------
->>  1 file changed, 9 deletions(-)
->> 
->> diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
->> index 04cdcf7..10b90d8 100644
->> --- a/kernel/sysctl_check.c
->> +++ b/kernel/sysctl_check.c
->> @@ -143,15 +143,6 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
->>  				if (!table->maxlen)
->>  					set_fail(&fail, table, "No maxlen");
->>  			}
->> -			if ((table->proc_handler == proc_doulongvec_minmax) ||
->> -			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
->> -				if (table->maxlen > sizeof (unsigned long)) {
->> -					if (!table->extra1)
->> -						set_fail(&fail, table, "No min");
->> -					if (!table->extra2)
->> -						set_fail(&fail, table, "No max");
->> -				}
->> -			}
->>  #ifdef CONFIG_PROC_SYSCTL
->>  			if (table->procname && !table->proc_handler)
->>  				set_fail(&fail, table, "No proc_handler");
->
->That will probably fix it ;)
+On Fri, Oct 08, 2010 at 08:27:10AM -0500, Jeffrey Carlyle wrote:
 
+> Am I doing something wrong in how I am setting up B as the supply for
+> A or is this bug in the regulator core code?
 
-Yeah, it looks good for me too,
-
-Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
-
->
->net-avoid-limits-overflow.patch is dependent on this patch.  Unless
->Eric B squeaks I'll plan on sending this patch in for 2.6.37.
->
-
-Eirc B reminded me we should check the code in sysctl_check.c,
-but I forgot. The patch from Eric D is exactly what we need here.
-
-Thanks.
-
+Nothing in mainline chains regulators so this will just have bitrotted.
