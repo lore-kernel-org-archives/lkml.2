@@ -1,152 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759565Ab0JHUSE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 16:18:04 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:35162 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab0JHUSD (ORCPT
+	id S932956Ab0JHUXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 16:23:22 -0400
+Received: from out1.ip04ir2.opaltelecom.net ([62.24.128.240]:13043 "EHLO
+	out1.ip04ir2.opaltelecom.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754655Ab0JHUXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 16:18:03 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource allocation
-Date: Fri, 8 Oct 2010 14:16:57 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        clemens@ladisch.de, Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <20101006225834.GE2945@ram-laptop> <201010071541.07084.bjorn.helgaas@hp.com> <20101008173224.GA4468@ram-laptop>
-In-Reply-To: <20101008173224.GA4468@ram-laptop>
+	Fri, 8 Oct 2010 16:23:21 -0400
+X-Greylist: delayed 610 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Oct 2010 16:23:20 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ApEBALIXr0xcB+hA/2dsb2JhbAAH4jGFRwSFCQ
+X-IronPort-AV: E=Sophos;i="4.57,305,1283727600"; 
+   d="scan'208";a="307204540"
+Message-ID: <4CAF7B6C.2050202@talktalk.net>
+Date: Fri, 08 Oct 2010 21:13:32 +0100
+From: Duncan Simpson <dpsimpson@talktalk.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100805 Icedove/3.0.6
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org
+Subject: Firmware loading race condition (+fix)
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010081416.57454.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 08, 2010 11:32:24 am Ram Pai wrote:
-> On Thu, Oct 07, 2010 at 03:41:04PM -0600, Bjorn Helgaas wrote:
-> > On Thursday, October 07, 2010 02:42:13 pm Ram Pai wrote:
-> > > On Wed, Oct 06, 2010 at 10:13:02PM -0600, Bjorn Helgaas wrote:
-> > > > On Wed, Oct 06, 2010 at 05:30:41PM -0700, Ram Pai wrote:
-> > > > > On Wed, Oct 06, 2010 at 05:39:53PM -0600, Bjorn Helgaas wrote:
-> > > > > > On Wed, Oct 06, 2010 at 03:58:34PM -0700, Ram Pai wrote:
-> > > > > > >         PCI: override BIOS/firmware memory resource allocation
-> > > > > > > 		through command line parameters
-> > > > > > > 
-> > > > > > > 	Platforms that are unaware of  SRIOV  BARs  fail to allocate MMIO
-> > > > > > > 	resources  to SRIOV PCIe  devices. Hence  on  such  platforms the
-> > > > > > > 	OS fails to  enable  SRIOV.
-> > > > > > > 	Some  platforms  where  BIOS/uEFI resource   allocations  conflict
-> > > > > > > 	the conflicting devices are disabled.
-> > > > > > > 
-> > > > > > > 	Ideally we  would  want  the  OS  to detect and fix automatically
-> > > > > > > 	such problems and conflicts.  However previous  attempts to do so
-> > > > > > > 	have led to regression on legacy platforms.
-> > > > > > 
-> > > > > > I'm sorry to be a nay-sayer, but I think we just haven't tried hard
-> > > > > > enough.  Our ACPI/PCI/e820 resource management is not well integrated,
-> > > > > > and I suspect if we straightened that out, we could avoid some of the
-> > > > > > regressions we saw with previous attempts.
-> > > > > 
-> > > > > Can you be more specific as to what can be done to fix it automatically?
-> > > > > 
-> > > > > Neither accepting this approach nor telling what needs to be straightened out
-> > > > > to automatically fix all the systems out there, is just a deadend.
-> > > > 
-> > > > Yeah, I guess that wasn't really fair, sorry.  And keep in mind that I'm
-> > > > not the PCI maintainer, so these are just my opinions, nothing like an
-> > > > official "nack."
-> > > > 
-> > > > I did look at this dmesg log from the thread you referenced:
-> > > >     http://marc.info/?l=linux-kernel&m=127178918128740&w=2
-> > > > but it looks to me like we just completely botched it.  I don't see an
-> > > > SRIOV device or anything else that didn't have resources, so as far as I
-> > > > can tell, we started with working resource assignments from the BIOS,
-> > > > threw them away, and started over from scratch.  We failed because we
-> > > > tried to assign I/O port space to bridges with nothing behind them, and
-> > > > there was nothing left by the time we got to the 0000:09:04.0 device
-> > > > that actually *did* need the space.
-> > > 
-> > > hmm.. is that possible? Yinghai's patch sized the resource requirement of each
-> > > of the bridges, before actually allocating them. Which means a bridge with
-> > > no device behind it would not get any i/o space.
-> > 
-> > Here's what I see in the dmesg log referenced above:
-> > 
-> >     ACPI: PCI Root Bridge [PCI0] (0000:00)
-> >     pci_root PNP0A08:00: host bridge window [io 0x0000-0x0cf7]
-> >     pci_root PNP0A08:00: host bridge window [io 0x0d00-0xffff]
-> >     pci 0000:00:1c.0: PCI bridge to [bus 04-09]
-> >     pci 0000:00:1c.0:   bridge window [io 0xd000-0xdfff]
-> >     pci 0000:04:00.0: PCI bridge to [bus 05-09]
-> >     pci 0000:04:00.0:   bridge window [io 0xd000-0xdfff]
-> >     pci 0000:05:01.0: PCI bridge to [bus 08-09]
-> >     pci 0000:05:01.0:   bridge window [io 0xd000-0xdfff]
-> >     pci 0000:08:00.0: PCI bridge to [bus 09-09]
-> >     pci 0000:08:00.0:   bridge window [io 0xd000-0xdfff]
-> >     pci 0000:09:04.0: found [13f6:8788] class 000401 header type 00
-> >     pci 0000:09:04.0: reg 10: [io  0xd800-0xd8ff]
-> >     pci 0000:05:02.0: PCI bridge to [bus 07-07]
-> >     pci 0000:05:02.0:   bridge window [io 0xf000-0x0000] (disabled)
-> >     pci 0000:05:03.0: PCI bridge to [bus 06-06]
-> >     pci 0000:05:03.0:   bridge window [io 0xf000-0x0000] (disabled)
-> >     
-> > The above is the state as we got it from BIOS.  Despite all the bridges,
-> > 09:04.0 is the only device below the 00:1c.0 bridge, and it requires only
-> > 0x100 I/O ports.
-> > 
-> > There are no devices on buses 06 (below 05:03.0) or 07 (below 05:02.0).
-> > 
-> > I didn't look at Yinghai's patch to figure out *why*, but it sure looks like
-> > we released the 09:04.0 space, then tried to assign 0x2000 ports to 05:01.0 
-> > (which needs 0x100 and had 0x1000 originally), 0x1000 to 05:02.0 (which needs
-> > none), and 0x1000 to 05:03.0 (which also needs none):
-> > 
-> >     PCI: No. 3 try to assign unassigned res
-> >     release child resource [io  0xd800-0xd8ff]
-> >     pci 0000:08:00.0: resource 7 [io 0xd000-0xdfff] released
-> >     pci 0000:04:00.0: BAR 7: can't assign io (size 0x4000)
-> >     pci 0000:05:01.0: BAR 7: can't assign io (size 0x2000)
-> >     pci 0000:05:02.0: BAR 7: can't assign io (size 0x1000)
-> >     pci 0000:05:03.0: BAR 7: can't assign io (size 0x1000)
-> >     pci 0000:08:00.0: BAR 7: can't assign io (size 0x1000)
-> 
-> Actually the message preceeding to them  are even more surprising:
-> 
-> Apr 20 20:31:42 [kernel] pci 0000:04:00.0: BAR 8: can't assign mem (size
-> 0xc00000)
-> Apr 20 20:31:42 [kernel] pci 0000:05:01.0: BAR 8: can't assign mem (size
-> 0x200000)
-> Apr 20 20:31:42 [kernel] pci 0000:05:01.0: BAR 9: can't assign mem pref
-> (size 0x200000)
-> Apr 20 20:31:42 [kernel] pci 0000:05:02.0: BAR 8: can't assign mem (size
-> 0x400000)
-> Apr 20 20:31:42 [kernel] pci 0000:05:03.0: BAR 7: can't assign io (size
-> 0x1000)
-> 
-> Do these bridges have IOV BARs and those BARs are demanding i/o resources?
-> Something is really funny with this machine. Or I am reading this wrong?
+There is a nasty race condition in base/firmware_class.c which
+*definitely* affects the bnx2 drivers, and almost certainly also
+affects the bnx2x driver. When you load the firmware the first 5
+events which happen are:
 
-I don't see anything strange about the machine, but I don't understand
-what Yinghai's patch was doing.  The lspci output is here:
-    http://marc.info/?l=linux-pci&m=127184080929189&w=2
+1. _request_firmware generates uevent which starts hotplug
+2. The hotplug script loads the mips firmware
+3. unregistering the device generates another uevent
+4. _request_firmware removes the device
+5. The hotplug script tries to reload the *same* firmware again
 
-I don't see any SRIOV devices, and this kernel wasn't built with IOV
-support anyway.  The messages above are attempts to assign resources
-for bridge windows.
+Step 5 is the wrong thing. Effects range from kernel null pointer
+deference via the device not working due to incorrect firmware to
+annoying but harmless error messages. Let it suffice to say I had
+some serious hardware with 4 on board bnx2 devices of which at
+one reliably does not work (assumming, as was usually the case,
+the kernel null pointer dererefence timing was avoided).
 
-But the only real device in the whole hierarchy behind 00:1c.0
-is 09:04.0, which doesn't require memory space, so I have no idea
-why we're trying to open memory windows.
+My employer wants the fix below to be sent upstream from an email
+address which does not allow them to be identified. The fix below
+solves the problem by adding DEVSTATUS to the environment which is
+0 at step 2 and either 2 or 4, depending on whether the firmware
+loading worked or not, at step 5.
 
-This is what I meant about "we haven't tried hard enough yet."  I'd
-rather spend time fixing the problems like this, than just putting the
-buggy code in and adding a kernel parameter to enable it.  That
-guarantees that we'll never get enough testing to really shake it
-out.
+The hotplug script has to be changed to only load the firmware is
+DEVSTATUS is 0. The patch fixes the simple hotplug script in the
+Documentation directory to do this. Please Cc: responses to me
+because I do not have sufficient bandwidth to read LKML in addition
+to the mail I currently receive.
 
-Bjorn
+If your hardware only has one piece of firmware or you use built
+in firmware or never experience unfortunate timing you wont
+experience this particular bug, which I suspect has been present
+for a long time. I think the only multiple firmware drivers are
+currently bnx2 and bnx2x.
+
+When the fix is applied all 4 bnx2 interfaces on the box which had
+problems all work and can be relied upon to work.
+
+Duncan (-:
+
+diff -ur linux-2.6.35.7/Documentation/firmware_class/hotplug-script linux-2.6.35.7.new/Documentation/firmware_class/hotplug-script
+--- linux-2.6.35.7/Documentation/firmware_class/hotplug-script	2010-09-29 02:09:08.000000000 +0100
++++ linux-2.6.35.7.new/Documentation/firmware_class/hotplug-script	2010-10-08 17:20:12.989065696 +0100
+@@ -2,13 +2,15 @@
+
+ # Simple hotplug script sample:
+ #
+-# Both $DEVPATH and $FIRMWARE are already provided in the environment.
+-
++# $DEVSTATUS, $DEVPATH and $FIRMWARE are already in the environment.
++	
+ HOTPLUG_FW_DIR=/usr/lib/hotplug/firmware/
+
+-echo 1 > /sys/$DEVPATH/loading
+-cat $HOTPLUG_FW_DIR/$FIRMWARE > /sys/$DEVPATH/data
+-echo 0 > /sys/$DEVPATH/loading
++if [ $DEVSTATUS -eq 0 ]; then
++    echo 1 > /sys/$DEVPATH/loading
++    cat $HOTPLUG_FW_DIR/$FIRMWARE > /sysfs/$DEVPATH/data
++    echo 0 > /sys/$DEVPATH/loading
++fi
+
+ # To cancel the load in case of error:
+ #
+diff -ur linux-2.6.35.7/Documentation/firmware_class/README linux-2.6.35.7.new/Documentation/firmware_class/README
+--- linux-2.6.35.7/Documentation/firmware_class/README	2010-09-29 02:09:08.000000000 +0100
++++ linux-2.6.35.7.new/Documentation/firmware_class/README	2010-10-08 17:18:40.078685400 +0100
+@@ -56,13 +56,15 @@
+  Sample/simple hotplug script:
+  ============================
+
+-	# Both $DEVPATH and $FIRMWARE are already provided in the environment.
+-
++	# $DEVSTATUS, $DEVPATH and $FIRMWARE are already in the environment.
++	
+ 	HOTPLUG_FW_DIR=/usr/lib/hotplug/firmware/
+
+-	echo 1 > /sys/$DEVPATH/loading
+-	cat $HOTPLUG_FW_DIR/$FIRMWARE > /sysfs/$DEVPATH/data
+-	echo 0 > /sys/$DEVPATH/loading
++	if [ $DEVSTATUS -eq 0 ]; then
++	    echo 1 > /sys/$DEVPATH/loading
++	    cat $HOTPLUG_FW_DIR/$FIRMWARE > /sysfs/$DEVPATH/data
++	    echo 0 > /sys/$DEVPATH/loading
++	fi
+
+  Random notes:
+  ============
+@@ -80,6 +82,11 @@
+    user contexts to request firmware asynchronously, but can't be called
+    in atomic contexts.
+
++ - after the load has finished or been aborted the script is called
++   with DEVSTATUS either 2 (success) or 4 (aborted/failed). Bad things
++   can happen if you try loading firmware in either case, especially
++   if a device has 2 or more distinct pieces of firmware.
++
+
+  about in-kernel persistence:
+  ---------------------------
+diff -ur linux-2.6.35.7/drivers/base/firmware_class.c linux-2.6.35.7.new/drivers/base/firmware_class.c
+--- linux-2.6.35.7/drivers/base/firmware_class.c	2010-09-29 02:09:08.000000000 +0100
++++ linux-2.6.35.7.new/drivers/base/firmware_class.c	2010-10-08 17:32:16.298766180 +0100
+@@ -168,6 +168,8 @@
+ 		return -ENOMEM;
+ 	if (add_uevent_var(env, "ASYNC=%d", fw_priv->nowait))
+ 		return -ENOMEM;
++	if (add_uevent_var(env, "DEVSTATUS=%d", fw_priv->status))
++		return -ENOMEM;
+
+ 	return 0;
+ }
+@@ -227,6 +229,12 @@
+ 	case 1:
+ 		mutex_lock(&fw_lock);
+ 		if (!fw_priv->fw) {
++			dev_err(dev, "%s: unexpected value (1) after loading %s completed.\n", __func__, fw_priv->fw_id);
++			mutex_unlock(&fw_lock);
++			break;
++		}
++		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)!=0) {
++			dev_err(dev, "%s: unexpected value (1) after while %s loading.\n", __func__, fw_priv->fw_id);
+ 			mutex_unlock(&fw_lock);
+ 			break;
+ 		}
+@@ -259,6 +267,7 @@
+ 			fw_priv->page_array_size = 0;
+ 			fw_priv->nr_pages = 0;
+ 			complete(&fw_priv->completion);
++			set_bit(FW_STATUS_DONE, &fw_priv->status);
+ 			clear_bit(FW_STATUS_LOADING, &fw_priv->status);
+ 			break;
+ 		}
+@@ -565,7 +574,6 @@
+
+ 		kobject_uevent(&f_dev->kobj, KOBJ_ADD);
+ 		wait_for_completion(&fw_priv->completion);
+-		set_bit(FW_STATUS_DONE, &fw_priv->status);
+ 		del_timer_sync(&fw_priv->timeout);
+ 	} else
+ 		wait_for_completion(&fw_priv->completion);
