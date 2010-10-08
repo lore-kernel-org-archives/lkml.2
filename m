@@ -1,50 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab0JHJcK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 05:32:10 -0400
-Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:60693 "EHLO
-	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754804Ab0JHJcH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755289Ab0JHJcH (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 8 Oct 2010 05:32:07 -0400
-Date: Fri, 8 Oct 2010 11:29:27 +0200
-From: Nicolas Kaiser <nikai@nikai.net>
-To: Matt Carlson <mcarlson@broadcom.com>
-Cc: Michael Chan <mchan@broadcom.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] net/tg3: simplify conditional
-Message-ID: <20101008112927.0ca949cf@absol.kitzblitz>
-Organization: -
-X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
- N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
-X-Mailer: Claws Mail (Linux)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Received: from zeniv.linux.org.uk ([195.92.253.2]:50927 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752605Ab0JHJcD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 05:32:03 -0400
+Date: Fri, 8 Oct 2010 10:32:02 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/18] fs: rework icount to be a locked variable
+Message-ID: <20101008093202.GX19804@ZenIV.linux.org.uk>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-10-git-send-email-david@fromorbit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286515292-15882-10-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simplify: ((a && !b) || (!a && b)) => (a != b)
+On Fri, Oct 08, 2010 at 04:21:23PM +1100, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> The inode reference count is currently an atomic variable so that it can be
+> sampled/modified outside the inode_lock. However, the inode_lock is still
+> needed to synchronise the final reference count and checks against the inode
+> state.
+> 
+> To avoid needing the protection of the inode lock, protect the inode reference
+> count with the per-inode i_lock and convert it to a normal variable. To avoid
+> existing out-of-tree code accidentally compiling against the new method, rename
+> the i_count field to i_ref. This is relatively straight forward as there
+> are limited external references to the i_count field remaining.
 
-Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
----
- drivers/net/tg3.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+You are overdoing the information hiding here; _way_ too many small
+functions that don't buy you anything so far, AFAICS.  Moreover, why
+the hell not make them static inlines and get rid of the exports?
 
-diff --git a/drivers/net/tg3.c b/drivers/net/tg3.c
-index 16e1a95..714f0fb 100644
---- a/drivers/net/tg3.c
-+++ b/drivers/net/tg3.c
-@@ -9967,8 +9967,7 @@ static int tg3_set_pauseparam(struct net_device *dev, struct ethtool_pauseparam
- 
- 		if (!(phydev->supported & SUPPORTED_Pause) ||
- 		    (!(phydev->supported & SUPPORTED_Asym_Pause) &&
--		     ((epause->rx_pause && !epause->tx_pause) ||
--		      (!epause->rx_pause && epause->tx_pause))))
-+		     (epause->rx_pause != epause->tx_pause)))
- 			return -EINVAL;
- 
- 		tp->link_config.flowctrl = 0;
--- 
-1.7.2.2
+> -	if (atomic_add_unless(&inode->i_count, -1, 1))
+> +	/* XXX: filesystems should not play refcount games like this */
+> +	spin_lock(&inode->i_lock);
+> +	if (inode->i_ref > 1) {
+> +		inode->i_ref--;
+> +		spin_unlock(&inode->i_lock);
+>  		return;
+> +	}
+> +	spin_unlock(&inode->i_lock);
+
+... or, perhaps, they needs a helper along the lines of "try to do iput()
+if it's known to hit easy case".
+
+I really don't like the look of code around -ENOSPC returns, though.
+What exactly is going on there?  Can it e.g. interfere with that
+delayed iput stuff?
+
+>  void iref(struct inode *inode)
+>  {
+>  	spin_lock(&inode_lock);
+> +	spin_lock(&inode->i_lock);
+>  	iref_locked(inode);
+> +	spin_unlock(&inode->i_lock);
+>  	spin_unlock(&inode_lock);
+>  }
+
+*cringe*
+
+>  int iref_read(struct inode *inode)
+>  {
+> -	return atomic_read(&inode->i_count);
+> +	int ref;
+> +
+> +	spin_lock(&inode->i_lock);
+> +	ref = inode->i_ref;
+> +	spin_unlock(&inode->i_lock);
+> +	return ref;
+
+What's the point of locking here?
+
+> @@ -1324,8 +1359,16 @@ void iput(struct inode *inode)
+>  	if (inode) {
+>  		BUG_ON(inode->i_state & I_CLEAR);
+>  
+> -		if (atomic_dec_and_lock(&inode->i_count, &inode_lock))
+> +		spin_lock(&inode_lock);
+> +		spin_lock(&inode->i_lock);
+> +		inode->i_ref--;
+> +		if (inode->i_ref == 0) {
+> +			spin_unlock(&inode->i_lock);
+>  			iput_final(inode);
+> +			return;
+> +		}
+
+*UGH*  So you take inode_lock on every damn iput()?
+>  		state->owner = owner;
+>  		atomic_inc(&owner->so_count);
+>  		list_add(&state->inode_states, &nfsi->open_states);
+> -		state->inode = igrab(inode);
+>  		spin_unlock(&inode->i_lock);
+> +		state->inode = igrab(inode);
+
+Why is that safe?
+
+> --- a/fs/notify/inode_mark.c
+> +++ b/fs/notify/inode_mark.c
+> @@ -257,7 +257,8 @@ void fsnotify_unmount_inodes(struct list_head *list)
+>  		 * actually evict all unreferenced inodes from icache which is
+>  		 * unnecessarily violent and may in fact be illegal to do.
+>  		 */
+> -		if (!iref_read(inode))
+> +		spin_lock(&inode->i_lock);
+> +		if (!inode->i_ref)
+>  			continue;
+
+Really?
