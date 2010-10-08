@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932340Ab0JHQpb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:45:31 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:20343 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387Ab0JHQpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:45:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6130"; a="57199972"
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-In-Reply-To: <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
-	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
-	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
-	 <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com>
-	 <20101008091331.74871a42@lxorguk.ukuu.org.uk>
-	 <1286551434.4153.21.camel@m0nster>
-	 <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
+	id S1757620Ab0JHQvP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:51:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21067 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932375Ab0JHQvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 12:51:14 -0400
+Subject: Re: [BUG][PATCH][2.6.36-rc3] fanotify: Do not ignore result of
+ permission decisions
+From: Eric Paris <eparis@redhat.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: Andreas Gruenbacher <agruen@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+In-Reply-To: <201010081711.24373.tvrtko.ursulin@sophos.com>
+References: <201009071608.02290.tvrtko.ursulin@sophos.com>
+	 <201009080924.04841.tvrtko.ursulin@sophos.com>
+	 <201010081500.40494.agruen@suse.de>
+	 <201010081711.24373.tvrtko.ursulin@sophos.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 09:45:28 -0700
-Message-ID: <1286556328.4153.142.camel@m0nster>
+Date: Fri, 08 Oct 2010 12:51:00 -0400
+Message-ID: <1286556660.2682.72.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
-> > I'm assuming Hyok added this because it wasn't easy or possible to
-> > change the file system .. I can imagine there are debugging situations
-> > where that's true.
+On Fri, 2010-10-08 at 17:11 +0100, Tvrtko Ursulin wrote:
+> On Friday 08 Oct 2010 14:00:40 Andreas Gruenbacher wrote:
+> > Tvrtko,
+> >
+> > On Wednesday 08 September 2010 10:24:04 Tvrtko Ursulin wrote:
+
+> > >                 }
+> > >
+> > > +#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+> > > +               /* If a listener denied on a permission event we will
+> > > remember the reason +                  and run the rest with a
+> > > non-permission mask only. This allows other +                  listeners
+> > > to receive non-permission notifications but we do not care +
+> > >      about further permission checks and want to deny this event. */ +
+> > >             if (unlikely((res == -EPERM) && (mask &
+> > > FS_ALL_PERM_EVENTS))) {
+> >
+> > We should probably stop processing here whenever res != 0, for any mask.
+> > (The fanotify and inotify handle_event callbacks can return -ENOMEM right
+> > now, but this doesn't seem very useful and should probably be fixed:
+> > fsnotify has no way of doing anything about -ENOMEM.
 > 
-> Well stop assuming. You cc'd Hyok so let him speak for himself if he
-> cares about it and has an example.
-
-I've been waiting, but he's not lightning fast responding it seems.
-
-> > I don't think the kernel is going to implode if we allow an optional
-> > ttyS override for debugging purposes.. I just don't see that "screwing"
-> > up the kernel.
+> I wasn't 100% sure of how fanotify works, or in other words can there be more
+> events in this mask after perm events are removed. If it can then we should
+> send them to other listeners. Eric?
 > 
-> That is perhaps why you are not a subsystem maintainer.
+> Also if ENOMEM, why not try sending to other listeners?
 
-No, I'm sure it's not.
+No, you'll never have a PERM_EVENT and something else at the same time.
+If it's a PERM_EVENT denial we wouldn't really want to even notify
+others, since the operation won't have actually taken place (perm event
+denials should be passed all the way back up the stack)
 
-What I was telling Greg is that this type of override is allowed right
-now, if you mod the source (everything is allowed if you mod the source
-right?) ..
+As to ENOMEM that's a little harder I guess.  We don't have to stop just
+because inotify got ENOMEM, but we should stop if PERM_EVENTS got an
+ENOMEM.
 
-Daniel
+I'd really rather not put CONFIG_FANOTIFY_ACCESS_PERMISSIONS in this
+file.  fsnotify.c should be notifier agnostic.
 
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
+How about just:
 
+if (unlikely(ret && (mask & ALL_PERM)))
+	return ret
 
