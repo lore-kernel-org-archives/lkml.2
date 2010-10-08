@@ -1,44 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758740Ab0JHPNu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 11:13:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:25197 "EHLO mga02.intel.com"
+	id S1758430Ab0JHP1E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 11:27:04 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56122 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758721Ab0JHPNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 11:13:48 -0400
-Message-Id: <8u3s94$gntt66@orsmga002.jf.intel.com>
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,303,1283756400"; 
-   d="scan'208";a="561968326"
-Date: Fri, 08 Oct 2010 16:13:45 +0100
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [git pull] Prevent i915 module unload
-Cc: linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-From: Chris Wilson <chris@chris-wilson.co.uk>
+	id S1752483Ab0JHP1B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 11:27:01 -0400
+Date: Fri, 8 Oct 2010 17:26:04 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] jbd: Convert bitops to buffer fns
+Message-ID: <20101008152604.GA20805@quack.suse.cz>
+References: <1286535906-8215-1-git-send-email-namhyung@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286535906-8215-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus, early in this cycle Daniel Vetter supplied a number of fixes
-for memory corruption bugs following module unload of i915.ko. We
-postponed these to the next cycle. However, as Thomas Gleixner pointed
-out, we should have not left the known memory corruption bugs lie in the
-kernel and should have prevented the module unload instead.
--Chris
+On Fri 08-10-10 20:05:06, Namhyung Kim wrote:
+> Convert set/clear_bit(BH_JWrite, ...) to set/clear_buffer_jwrite()
+> for consistency.
+  Thanks. Merged.
 
-The following changes since commit 6b0cd00bc396daf5c2dcf17a8d82055335341f46:
+								Honza
 
-  Merge branch 'hwpoison-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6 (2010-10-07 13:59:32 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ickle/drm-intel.git drm-intel-fixes
-
-Chris Wilson (1):
-      drm/i915: Prevent module unload to avoid random memory corruption
-
- drivers/gpu/drm/i915/i915_dma.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
-
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+> ---
+>  fs/jbd/commit.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
+> index 95d8c11..c842832 100644
+> --- a/fs/jbd/commit.c
+> +++ b/fs/jbd/commit.c
+> @@ -617,7 +617,7 @@ void journal_commit_transaction(journal_t *journal)
+>                     (this will requeue both the metadata buffer and the
+>                     temporary IO buffer). new_bh goes on BJ_IO*/
+>  
+> -		set_bit(BH_JWrite, &jh2bh(jh)->b_state);
+> +		set_buffer_jwrite(jh2bh(jh));
+>  		/*
+>  		 * akpm: journal_write_metadata_buffer() sets
+>  		 * new_bh->b_transaction to commit_transaction.
+> @@ -627,7 +627,7 @@ void journal_commit_transaction(journal_t *journal)
+>  		JBUFFER_TRACE(jh, "ph3: write metadata");
+>  		flags = journal_write_metadata_buffer(commit_transaction,
+>  						      jh, &new_jh, blocknr);
+> -		set_bit(BH_JWrite, &jh2bh(new_jh)->b_state);
+> +		set_buffer_jwrite(jh2bh(new_jh));
+>  		wbuf[bufs++] = jh2bh(new_jh);
+>  
+>  		/* Record the new block's tag in the current descriptor
+> @@ -737,7 +737,7 @@ wait_for_iobuf:
+>                     shadowed buffer */
+>  		jh = commit_transaction->t_shadow_list->b_tprev;
+>  		bh = jh2bh(jh);
+> -		clear_bit(BH_JWrite, &bh->b_state);
+> +		clear_buffer_jwrite(bh);
+>  		J_ASSERT_BH(bh, buffer_jbddirty(bh));
+>  
+>  		/* The metadata is now released for reuse, but we need
+> -- 
+> 1.7.2.2
+> 
 -- 
-Chris Wilson, Intel Open Source Technology Centre
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
