@@ -1,59 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab0JHQml (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:42:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54083 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754108Ab0JHQmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:42:40 -0400
-Subject: Re: Linux 2.6.36-rc7
-From: Eric Paris <eparis@redhat.com>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: John Stoffel <john@stoffel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "agruen@suse.de" <agruen@suse.de>
-In-Reply-To: <201010081717.25940.tvrtko.ursulin@sophos.com>
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
-	 <1286486674.2571.16.camel@localhost.localdomain>
-	 <19631.15310.568446.991954@quad.stoffel.home>
-	 <201010081717.25940.tvrtko.ursulin@sophos.com>
+	id S932340Ab0JHQpb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:45:31 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:20343 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757387Ab0JHQpa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 12:45:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6130"; a="57199972"
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
+        "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+In-Reply-To: <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
+	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
+	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
+	 <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com>
+	 <20101008091331.74871a42@lxorguk.ukuu.org.uk>
+	 <1286551434.4153.21.camel@m0nster>
+	 <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 12:41:46 -0400
-Message-ID: <1286556106.2682.66.camel@localhost.localdomain>
+Date: Fri, 08 Oct 2010 09:45:28 -0700
+Message-ID: <1286556328.4153.142.camel@m0nster>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 17:17 +0100, Tvrtko Ursulin wrote:
-> On Friday 08 Oct 2010 16:42:06 John Stoffel wrote:
-
-> Priority is also not that great concept. I may have proposed classes or
-> something similar at some point, don't remember any more. It would be
-> equivalent to having allocated priority ranges, like:
+On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
+> > I'm assuming Hyok added this because it wasn't easy or possible to
+> > change the file system .. I can imagine there are debugging situations
+> > where that's true.
 > 
-> >1000 - pre-content
-> >=100 - access-control
-> <100 - content
+> Well stop assuming. You cc'd Hyok so let him speak for himself if he
+> cares about it and has an example.
+
+I've been waiting, but he's not lightning fast responding it seems.
+
+> > I don't think the kernel is going to implode if we allow an optional
+> > ttyS override for debugging purposes.. I just don't see that "screwing"
+> > up the kernel.
 > 
-> Doesn't really solve ordering inside groups so maybe we do not need priorities
-> at all just these three classes?
+> That is perhaps why you are not a subsystem maintainer.
 
-I originally thought of trying to enumerate the types of users and came
-up with the same 3 you did.  Then I thought it better to give a general
-priority field which we could indicate in documentation something like
-those 3 classes (exactly like you did above).  I don't want to hard code
-some limited number of types of users into the interface. (ok it's going
-to limited, I was thinking 8 bits, but maybe others think we need more?)
+No, I'm sure it's not.
 
-As an extreme example going with 3 fixed type of users (and thus
-equivalently only 3 priorities) would not allow for hierarchies of
-hierarchical storage managers.  What if priority MAX only brought in
-enough info for priority MAX-1 to bring in the real file?  If they had
-to share the single 'pre-content' priority we have another ordering
-problem.
+What I was telling Greg is that this type of override is allowed right
+now, if you mod the source (everything is allowed if you mod the source
+right?) ..
 
--Eric
+Daniel
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
 
