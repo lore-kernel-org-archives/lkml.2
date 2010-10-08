@@ -1,83 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757961Ab0JHNx7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 09:53:59 -0400
-Received: from exprod5og110.obsmtp.com ([64.18.0.20]:41560 "HELO
-	exprod5og110.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757676Ab0JHNx5 (ORCPT
+	id S1757676Ab0JHNzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 09:55:41 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:41401 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754459Ab0JHNzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 09:53:57 -0400
-X-Greylist: delayed 2005 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Oct 2010 09:53:57 EDT
-Message-ID: <4CAF2275.7010500@panasas.com>
-Date: Fri, 08 Oct 2010 09:53:57 -0400
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Thunderbird/3.1.1
+	Fri, 8 Oct 2010 09:55:39 -0400
+Date: Sat, 9 Oct 2010 00:55:35 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 18/18] fs: Reduce inode I_FREEING and factor inode
+ disposal
+Message-ID: <20101008135535.GF4681@dastard>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-19-git-send-email-david@fromorbit.com>
+ <20101008101819.GC19804@ZenIV.linux.org.uk>
+ <20101008105249.GE4681@dastard>
+ <20101008121052.GE19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        open-osd <osd-dev@open-osd.org>, Benny Halevy <bhalevy@panasas.com>
-Subject: [PATCH 1/2] exofs: Fix double page_unlock BUG in write_begin/end
-References: <4CAF1AA1.1090801@panasas.com>
-In-Reply-To: <4CAF1AA1.1090801@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Oct 2010 13:53:56.0099 (UTC) FILETIME=[3FEECD30:01CB66F0]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008121052.GE19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Oct 08, 2010 at 01:10:52PM +0100, Al Viro wrote:
+> On Fri, Oct 08, 2010 at 09:52:49PM +1100, Dave Chinner wrote:
+> > On Fri, Oct 08, 2010 at 11:18:19AM +0100, Al Viro wrote:
+> > > On Fri, Oct 08, 2010 at 04:21:32PM +1100, Dave Chinner wrote:
+> > > 
+> > > > +			spin_unlock(&sb->s_inodes_lock);
+> > > >  
+> > > > -			spin_lock(&inode_lru_lock);
+> > > > -			list_move(&inode->i_lru, dispose);
+> > > > -			spin_unlock(&inode_lru_lock);
+> > > > +			dispose_one_inode(inode);
+> > > >  
+> > > > -			percpu_counter_dec(&nr_inodes_unused);
+> > > > +			spin_lock(&sb->s_inodes_lock);
+> > > 
+> > > And now you've unlocked the list and even blocked.  What's going to
+> > > keep next valid through that fun?
+> > 
+> > See the comment at the start of the loop in invalidate_list():
+> > 
+> >                 /*
+> >                  * We can reschedule here without worrying about the list's
+> >                  * consistency because the per-sb list of inodes must not
+> >                  * change during umount anymore, and because iprune_sem keeps
+> >                  * shrink_icache_memory() away.
+> >                  */
+> > 		cond_resched_lock(&sb->s_inodes_lock);
+> > 
+> > Hence I've assumed it's ok to add another point that drops locks and blocks
+> > inside the loop and next will still be valid.
+> 
+> I'm not convinced, TBH; IOW, the original might have been broken by that.
+> The trouble is, this function is called not only on umount().  Block device
+> invalidation paths also can lead to it. 
 
-This BUG is there since the first submit of the code, but only triggered
-in last Kernel. It's timing related do to the asynchronous object-creation
-behaviour of exofs. (Which should be investigated farther)
+Yeah, I see that now. Thanks for pointing it out.
 
-The bug is obvious hence the fixed.
+> Moreover, even for umount-only
+> side of things, remember that there's fsnotify as well.
 
-Signed-off-by: Boaz Harrosh <Boaz Harrosh bharrosh@panasas.com>
----
- fs/exofs/inode.c |    8 +++++++-
- 1 files changed, 7 insertions(+), 1 deletions(-)
+I thought that the fsnotify_unmount_inodes() cleaned everything up
+before we called invalidate_list().
 
-diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
-index 2f623ac..1cf2286 100644
---- a/fs/exofs/inode.c
-+++ b/fs/exofs/inode.c
-@@ -54,6 +54,9 @@ struct page_collect {
- 	unsigned nr_pages;
- 	unsigned long length;
- 	loff_t pg_first; /* keep 64bit also in 32-arches */
-+	bool read_4_write; /* This means two things: that the read is sync
-+			    * And the pages should not be unlocked.
-+			    */
- };
- 
- static void _pcol_init(struct page_collect *pcol, unsigned expected_pages,
-@@ -71,6 +74,7 @@ static void _pcol_init(struct page_collect *pcol, unsigned expected_pages,
- 	pcol->nr_pages = 0;
- 	pcol->length = 0;
- 	pcol->pg_first = -1;
-+	pcol->read_4_write = false;
- }
- 
- static void _pcol_reset(struct page_collect *pcol)
-@@ -347,7 +351,8 @@ static int readpage_strip(void *data, struct page *page)
- 		if (PageError(page))
- 			ClearPageError(page);
- 
--		unlock_page(page);
-+		if (!pcol->read_4_write)
-+			unlock_page(page);
- 		EXOFS_DBGMSG("readpage_strip(0x%lx, 0x%lx) empty page,"
- 			     " splitting\n", inode->i_ino, page->index);
- 
-@@ -428,6 +433,7 @@ static int _readpage(struct page *page, bool is_sync)
- 	/* readpage_strip might call read_exec(,is_sync==false) at several
- 	 * places but not if we have a single page.
- 	 */
-+	pcol.read_4_write = is_sync;
- 	ret = readpage_strip(&pcol, page);
- 	if (ret) {
- 		EXOFS_ERR("_readpage => %d\n", ret);
+> Original code
+> did _everything_ except the actual dropping inodes without releasing
+> inode_lock.  I'm not saying that change is broken (or, in case of
+> non-umount paths, makes breakage worse), but I'd like to see more analysis
+> of that area.
+
+I think I'll avoid the whole issue right now by not making this
+change to invalidate_list()....
+
+Cheers,
+
+Dave.
 -- 
-1.7.2
-
+Dave Chinner
+david@fromorbit.com
