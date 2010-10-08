@@ -1,74 +1,307 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757620Ab0JHQvP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:51:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21067 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932375Ab0JHQvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:51:14 -0400
-Subject: Re: [BUG][PATCH][2.6.36-rc3] fanotify: Do not ignore result of
- permission decisions
-From: Eric Paris <eparis@redhat.com>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: Andreas Gruenbacher <agruen@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-In-Reply-To: <201010081711.24373.tvrtko.ursulin@sophos.com>
-References: <201009071608.02290.tvrtko.ursulin@sophos.com>
-	 <201009080924.04841.tvrtko.ursulin@sophos.com>
-	 <201010081500.40494.agruen@suse.de>
-	 <201010081711.24373.tvrtko.ursulin@sophos.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 12:51:00 -0400
-Message-ID: <1286556660.2682.72.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1758882Ab0JHQw4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:52:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45036 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757234Ab0JHQwz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 12:52:55 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 2/2] mfd: Add WM831x SPI support
+Date: Fri,  8 Oct 2010 09:52:59 -0700
+Message-Id: <1286556780-5610-2-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1286556780-5610-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+References: <1286556780-5610-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 17:11 +0100, Tvrtko Ursulin wrote:
-> On Friday 08 Oct 2010 14:00:40 Andreas Gruenbacher wrote:
-> > Tvrtko,
-> >
-> > On Wednesday 08 September 2010 10:24:04 Tvrtko Ursulin wrote:
+Implement support for controlling WM831x and WM832x devices using SPI.
 
-> > >                 }
-> > >
-> > > +#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-> > > +               /* If a listener denied on a permission event we will
-> > > remember the reason +                  and run the rest with a
-> > > non-permission mask only. This allows other +                  listeners
-> > > to receive non-permission notifications but we do not care +
-> > >      about further permission checks and want to deny this event. */ +
-> > >             if (unlikely((res == -EPERM) && (mask &
-> > > FS_ALL_PERM_EVENTS))) {
-> >
-> > We should probably stop processing here whenever res != 0, for any mask.
-> > (The fanotify and inotify handle_event callbacks can return -ENOMEM right
-> > now, but this doesn't seem very useful and should probably be fixed:
-> > fsnotify has no way of doing anything about -ENOMEM.
-> 
-> I wasn't 100% sure of how fanotify works, or in other words can there be more
-> events in this mask after perm events are removed. If it can then we should
-> send them to other listeners. Eric?
-> 
-> Also if ENOMEM, why not try sending to other listeners?
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/Kconfig      |   10 ++
+ drivers/mfd/Makefile     |    1 +
+ drivers/mfd/wm831x-spi.c |  232 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 243 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/wm831x-spi.c
 
-No, you'll never have a PERM_EVENT and something else at the same time.
-If it's a PERM_EVENT denial we wouldn't really want to even notify
-others, since the operation won't have actually taken place (perm event
-denials should be passed all the way back up the stack)
-
-As to ENOMEM that's a little harder I guess.  We don't have to stop just
-because inotify got ENOMEM, but we should stop if PERM_EVENTS got an
-ENOMEM.
-
-I'd really rather not put CONFIG_FANOTIFY_ACCESS_PERMISSIONS in this
-file.  fsnotify.c should be notifier agnostic.
-
-How about just:
-
-if (unlikely(ret && (mask & ALL_PERM)))
-	return ret
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 608a277..40aa2e8 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -328,6 +328,16 @@ config MFD_WM831X_I2C
+ 	  for accessing the device, additional drivers must be enabled in
+ 	  order to use the functionality of the device.
+ 
++config MFD_WM831X_SPI
++	bool "Support Wolfson Microelectronics WM831x/2x PMICs with SPI"
++	select MFD_CORE
++	depends on SPI_MASTER && GENERIC_HARDIRQS
++	help
++	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs
++	  when controlled using SPI.  This driver provides common support
++	  for accessing the device, additional drivers must be enabled in
++	  order to use the functionality of the device.
++
+ config MFD_WM8350
+ 	bool
+ 	depends on GENERIC_HARDIRQS
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index c9ef41b..f54b365 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_MFD_WM8400)	+= wm8400-core.o
+ wm831x-objs			:= wm831x-core.o wm831x-irq.o wm831x-otp.o
+ obj-$(CONFIG_MFD_WM831X)	+= wm831x.o
+ obj-$(CONFIG_MFD_WM831X_I2C)	+= wm831x-i2c.o
++obj-$(CONFIG_MFD_WM831X_SPI)	+= wm831x-spi.o
+ wm8350-objs			:= wm8350-core.o wm8350-regmap.o wm8350-gpio.o
+ wm8350-objs			+= wm8350-irq.o
+ obj-$(CONFIG_MFD_WM8350)	+= wm8350.o
+diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
+new file mode 100644
+index 0000000..073d4c6
+--- /dev/null
++++ b/drivers/mfd/wm831x-spi.c
+@@ -0,0 +1,232 @@
++/*
++ * wm831x-spi.c  --  SPI access for Wolfson WM831x PMICs
++ *
++ * Copyright 2009,2010 Wolfson Microelectronics PLC.
++ *
++ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
++ *
++ *  This program is free software; you can redistribute  it and/or modify it
++ *  under  the terms of  the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the  License, or (at your
++ *  option) any later version.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/spi/spi.h>
++
++#include <linux/mfd/wm831x/core.h>
++
++static int wm831x_spi_read_device(struct wm831x *wm831x, unsigned short reg,
++				  int bytes, void *dest)
++{
++	u16 tx_val;
++	u16 *d = dest;
++	int r, ret;
++
++	/* Go register at a time */
++	for (r = reg; r < reg + (bytes / 2); r++) {
++		tx_val = r | 0x8000;
++
++		ret = spi_write_then_read(wm831x->control_data,
++					  (u8 *)&tx_val, 2, (u8 *)d, 2);
++		if (ret != 0)
++			return ret;
++
++		*d = be16_to_cpu(*d);
++
++		d++;
++	}
++
++	return 0;
++}
++
++static int wm831x_spi_write_device(struct wm831x *wm831x, unsigned short reg,
++				   int bytes, void *src)
++{
++	struct spi_device *spi = wm831x->control_data;
++	u16 *s = src;
++	u16 data[2];
++	int ret;
++
++	/* Go register at a time */
++	for (r = reg; r < reg + (bytes / 2); r++) {
++		data[0] = r;
++		data[1] = *s++;
++
++		ret = spi_write(spi, (char *)&data, sizeof(data));
++		if (ret != 0)
++			return ret;
++	}
++
++	return 0;
++}
++
++static int __devinit wm831x_spi_probe(struct spi_device *spi)
++{
++	struct wm831x *wm831x;
++	enum wm831x_parent type;
++
++	/* Currently SPI support for ID tables is unmerged, we're faking it */
++	if (strcmp(spi->modalias, "wm8310") == 0)
++		type = WM8310;
++	else if (strcmp(spi->modalias, "wm8311") == 0)
++		type = WM8311;
++	else if (strcmp(spi->modalias, "wm8312") == 0)
++		type = WM8312;
++	else if (strcmp(spi->modalias, "wm8320") == 0)
++		type = WM8320;
++	else if (strcmp(spi->modalias, "wm8321") == 0)
++		type = WM8321;
++	else if (strcmp(spi->modalias, "wm8325") == 0)
++		type = WM8325;
++	else {
++		dev_err(&spi->dev, "Unknown device type\n");
++		return -EINVAL;
++	}
++
++	wm831x = kzalloc(sizeof(struct wm831x), GFP_KERNEL);
++	if (wm831x == NULL)
++		return -ENOMEM;
++
++	spi->bits_per_word = 16;
++	spi->mode = SPI_MODE_0;
++
++	dev_set_drvdata(&spi->dev, wm831x);
++	wm831x->dev = &spi->dev;
++	wm831x->control_data = spi;
++	wm831x->read_dev = wm831x_spi_read_device;
++	wm831x->write_dev = wm831x_spi_write_device;
++
++	return wm831x_device_init(wm831x, type, spi->irq);
++}
++
++static int __devexit wm831x_spi_remove(struct spi_device *spi)
++{
++	struct wm831x *wm831x = dev_get_drvdata(&spi->dev);
++
++	wm831x_device_exit(wm831x);
++
++	return 0;
++}
++
++static int wm831x_spi_suspend(struct spi_device *spi, pm_message_t m)
++{
++	struct wm831x *wm831x = dev_get_drvdata(&spi->dev);
++
++	return wm831x_device_suspend(wm831x);
++}
++
++static struct spi_driver wm8310_spi_driver = {
++	.driver = {
++		.name	= "wm8310",
++		.bus	= &spi_bus_type,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= wm831x_spi_probe,
++	.remove		= __devexit_p(wm831x_spi_remove),
++	.suspend	= wm831x_spi_suspend,
++};
++
++static struct spi_driver wm8311_spi_driver = {
++	.driver = {
++		.name	= "wm8311",
++		.bus	= &spi_bus_type,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= wm831x_spi_probe,
++	.remove		= __devexit_p(wm831x_spi_remove),
++	.suspend	= wm831x_spi_suspend,
++};
++
++static struct spi_driver wm8312_spi_driver = {
++	.driver = {
++		.name	= "wm8312",
++		.bus	= &spi_bus_type,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= wm831x_spi_probe,
++	.remove		= __devexit_p(wm831x_spi_remove),
++	.suspend	= wm831x_spi_suspend,
++};
++
++static struct spi_driver wm8320_spi_driver = {
++	.driver = {
++		.name	= "wm8320",
++		.bus	= &spi_bus_type,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= wm831x_spi_probe,
++	.remove		= __devexit_p(wm831x_spi_remove),
++	.suspend	= wm831x_spi_suspend,
++};
++
++static struct spi_driver wm8321_spi_driver = {
++	.driver = {
++		.name	= "wm8321",
++		.bus	= &spi_bus_type,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= wm831x_spi_probe,
++	.remove		= __devexit_p(wm831x_spi_remove),
++	.suspend	= wm831x_spi_suspend,
++};
++
++static struct spi_driver wm8325_spi_driver = {
++	.driver = {
++		.name	= "wm8325",
++		.bus	= &spi_bus_type,
++		.owner	= THIS_MODULE,
++	},
++	.probe		= wm831x_spi_probe,
++	.remove		= __devexit_p(wm831x_spi_remove),
++	.suspend	= wm831x_spi_suspend,
++};
++
++static int __init wm831x_spi_init(void)
++{
++	int ret;
++
++	ret = spi_register_driver(&wm8310_spi_driver);
++	if (ret != 0)
++		pr_err("Failed to register WM8310 SPI driver: %d\n", ret);
++
++	ret = spi_register_driver(&wm8311_spi_driver);
++	if (ret != 0)
++		pr_err("Failed to register WM8311 SPI driver: %d\n", ret);
++
++	ret = spi_register_driver(&wm8312_spi_driver);
++	if (ret != 0)
++		pr_err("Failed to register WM8312 SPI driver: %d\n", ret);
++
++	ret = spi_register_driver(&wm8320_spi_driver);
++	if (ret != 0)
++		pr_err("Failed to register WM8320 SPI driver: %d\n", ret);
++
++	ret = spi_register_driver(&wm8321_spi_driver);
++	if (ret != 0)
++		pr_err("Failed to register WM8321 SPI driver: %d\n", ret);
++
++	ret = spi_register_driver(&wm8325_spi_driver);
++	if (ret != 0)
++		pr_err("Failed to register WM8325 SPI driver: %d\n", ret);
++
++	return 0;
++}
++subsys_initcall(wm831x_spi_init);
++
++static void __exit wm831x_spi_exit(void)
++{
++	spi_unregister_driver(&wm8325_spi_driver);
++	spi_unregister_driver(&wm8321_spi_driver);
++	spi_unregister_driver(&wm8320_spi_driver);
++	spi_unregister_driver(&wm8312_spi_driver);
++	spi_unregister_driver(&wm8311_spi_driver);
++	spi_unregister_driver(&wm8310_spi_driver);
++}
++module_exit(wm831x_spi_exit);
++
++MODULE_DESCRIPTION("SPI support for WM831x/2x AudioPlus PMICs");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Mark Brown");
+-- 
+1.7.1
 
