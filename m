@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab0JHHtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:49:33 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:33657 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753024Ab0JHHtc (ORCPT
+	id S1754805Ab0JHHuL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:50:11 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:60386 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754459Ab0JHHuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:49:32 -0400
-Date: Fri, 8 Oct 2010 03:49:32 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/18] fs: Protect inode->i_state with th einode->i_lock
-Message-ID: <20101008074932.GC24089@infradead.org>
+	Fri, 8 Oct 2010 03:50:10 -0400
+Date: Fri, 8 Oct 2010 18:50:01 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        chris.mason@oracle.com, linux-btrfs@vger.kernel.org
+Subject: Re: [PATCH 09/18] fs: rework icount to be a locked variable
+Message-ID: <20101008075001.GT4681@dastard>
 References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-15-git-send-email-david@fromorbit.com>
+ <1286515292-15882-10-git-send-email-david@fromorbit.com>
+ <20101008072749.GB7831@lst.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286515292-15882-15-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20101008072749.GB7831@lst.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:21:28PM +1100, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+On Fri, Oct 08, 2010 at 03:27:49AM -0400, Christoph Hellwig wrote:
+> > index 2953e9f..9f04478 100644
+> > --- a/fs/btrfs/inode.c
+> > +++ b/fs/btrfs/inode.c
+> > @@ -1964,8 +1964,14 @@ void btrfs_add_delayed_iput(struct inode *inode)
+> >  	struct btrfs_fs_info *fs_info = BTRFS_I(inode)->root->fs_info;
+> >  	struct delayed_iput *delayed;
+> >  
+> > -	if (atomic_add_unless(&inode->i_count, -1, 1))
+> > +	/* XXX: filesystems should not play refcount games like this */
+> > +	spin_lock(&inode->i_lock);
+> > +	if (inode->i_ref > 1) {
+> > +		inode->i_ref--;
+> > +		spin_unlock(&inode->i_lock);
+> >  		return;
+> > +	}
+> > +	spin_unlock(&inode->i_lock);
 > 
-> We currently protect the per-inode state flags with the inode_lock.
-> Using a global lock to protect per-object state is overkill when we
-> coul duse a per-inode lock to protect the state.  Use the
-> inode->i_lock for this, and wrap all the state changes and checks
-> with the inode->i_lock.
+> Yeah, all that i_count/i_ref mess in btrfs needs some serious work.
+> Chris?
 > 
-> Based on work originally written by Nick Piggin.
+> > +
+> > +/*
+> > + * inode_lock must be held
+> > + */
+> > +void iref_locked(struct inode *inode)
+> > +{
+> > +	inode->i_ref++;
+> > +}
+> >  EXPORT_SYMBOL_GPL(iref_locked);
+> 
+> I'm a big fan of _GPL exports, but adding this for a trivial counter
+> increment seems a bit weird. 
 
-> @@ -884,9 +897,9 @@ struct inode *new_inode(struct super_block *sb)
->  	inode = alloc_inode(sb);
->  	if (inode) {
->  		spin_lock(&inode_lock);
-> -		__inode_add_to_lists(sb, NULL, inode);
->  		inode->i_ino = ++last_ino;
->  		inode->i_state = 0;
-> +		__inode_add_to_lists(sb, NULL, inode);
->  		spin_unlock(&inode_lock);
->  	}
->  	return inode;
+OK, will drop the _GPL.
+> 
+> >  int iref_read(struct inode *inode)
+> >  {
+> > -	return atomic_read(&inode->i_count);
+> > +	int ref;
+> > +
+> > +	spin_lock(&inode->i_lock);
+> > +	ref = inode->i_ref;
+> > +	spin_unlock(&inode->i_lock);
+> > +	return ref;
+> >  }
+> 
+> There's no need to lock a normal 32-bit variable for readers.
 
-What's the point in doing this move?
+Ok, but will need a memory barrier instead?
 
-> @@ -953,8 +966,8 @@ static struct inode *get_new_inode(struct super_block *sb,
->  			if (set(inode, data))
->  				goto set_failed;
->  
-> -			__inode_add_to_lists(sb, b, inode);
->  			inode->i_state = I_NEW;
-> +			__inode_add_to_lists(sb, b, inode);
+> 
+> > +		inode->i_ref--;
+> > +		if (inode->i_ref == 0) {
+> 
+> 		if (--inode->i_ref == 0) {
+> 
+> might be a bit more idiomatic.
 
-Same here.
+OK.
 
+Cheers,
 
-
-Otherwise it looks good.  But all this moving around of i_lock really
-hurts my brain.  I guess I'll need to review the placement on a tree
-with the fully applied series again.
-
-
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
