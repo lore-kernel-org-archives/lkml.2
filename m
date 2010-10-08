@@ -1,71 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753769Ab0JHFzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 01:55:08 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:37009 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752924Ab0JHFzG (ORCPT
+	id S1753649Ab0JHGF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 02:05:28 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40355 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751279Ab0JHGF0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 01:55:06 -0400
-Date: Fri, 08 Oct 2010 14:55:21 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: [GIT PULL] Samsung fixes for 2.6.36
-To: "'Linus Torvalds'" <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, "'Ben Dooks'" <ben-linux@fluff.org>
-Message-id: <00e101cb66ad$6788e030$369aa090$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: ActmrWRnHyKlUyOdSiOKlwocJjeTdg==
+	Fri, 8 Oct 2010 02:05:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=kU2MBBu9XxByoahAxo4M24n0VRPrph4jCtRL1lTafd8n1w4S9FfipCDPAW2B+mFFk+
+         jDrYu0NVUB0hd5MMFRa2Jy5L3F0ff4gNB0cgKi9b8AUbDba9M4vOr05/FoZYUSrDr4oZ
+         TOKkhmBxDQulU26K5u4HDgy2EMqTcR3l6dl1E=
+MIME-Version: 1.0
+In-Reply-To: <6lwrd5r5bkngwsfbw998jv3h.1286513980329@email.android.com>
+References: <6lwrd5r5bkngwsfbw998jv3h.1286513980329@email.android.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Fri, 8 Oct 2010 02:05:05 -0400
+X-Google-Sender-Auth: equTSPm7S6y5kZFVe4fSUv8zXKg
+Message-ID: <AANLkTin-eNQ9HSpfShGk8tC6e5AEv-dZXH_BPY6JUE0Y@mail.gmail.com>
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
+        Kukjin Kim <kgene.kim@samsung.com>, Feng Tang <feng.tang@intel.com>,
+        Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Oct 8, 2010 at 00:59, Daniel Walker wrote:
+> I'm not disputing the serial core part. I ok with converting it to tty.
 
-Please pull Samsung fixes from:
+sorry, i missed the distinction you were making with the "disputation" qualifier
 
-git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
-
-These things are for bug fix on 2.6.36.
-If any problems, please let me know.
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-
-The following changes since commit cb655d0f3d57c23db51b981648e452988c0223f9:
-
-  Linux 2.6.36-rc7 (2010-10-06 13:39:52 -0700)
-
-are available in the git repository at:
-   git://git.kernel.org/pub/scm/linux/kernel/git/kgene/linux-samsung.git
-s5p-fixes-for-linus
-
-Kukjin Kim (1):
-      ARM: SAMSUNG: Fix build warnings because of unused codes
-
-Marek Szyprowski (1):
-      ARM: SAMSUNG: Add a workaround for get_clock() for serial driver
-
-SeungChull Suh (1):
-      ARM: S5P: Bug fix on errors of build with CONFIG_PREEMPT_NONE
-
- arch/arm/mach-s5p6440/cpu.c   |    1 +
- arch/arm/mach-s5p6442/cpu.c   |    1 +
- arch/arm/mach-s5pc100/cpu.c   |    1 +
- arch/arm/mach-s5pv210/clock.c |    5 -----
- arch/arm/mach-s5pv210/cpu.c   |    1 +
- arch/arm/plat-samsung/adc.c   |    1 -
- arch/arm/plat-samsung/clock.c |   27 ++++++++++++++++++++++++++-
- 7 files changed, 30 insertions(+), 7 deletions(-)
-
+please dont top post
+-mike
