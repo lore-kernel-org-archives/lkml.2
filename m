@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753649Ab0JHGF2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 02:05:28 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40355 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751279Ab0JHGF0 (ORCPT
+	id S1753106Ab0JHGLN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 02:11:13 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:40736 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab0JHGLL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 02:05:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=kU2MBBu9XxByoahAxo4M24n0VRPrph4jCtRL1lTafd8n1w4S9FfipCDPAW2B+mFFk+
-         jDrYu0NVUB0hd5MMFRa2Jy5L3F0ff4gNB0cgKi9b8AUbDba9M4vOr05/FoZYUSrDr4oZ
-         TOKkhmBxDQulU26K5u4HDgy2EMqTcR3l6dl1E=
+	Fri, 8 Oct 2010 02:11:11 -0400
+Date: Fri, 8 Oct 2010 08:11:07 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: manual merge of the hwpoison tree with Linus' tree
+Message-ID: <20101008061106.GB13352@basil.fritz.box>
+References: <20101008144037.f487b6d7.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <6lwrd5r5bkngwsfbw998jv3h.1286513980329@email.android.com>
-References: <6lwrd5r5bkngwsfbw998jv3h.1286513980329@email.android.com>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 8 Oct 2010 02:05:05 -0400
-X-Google-Sender-Auth: equTSPm7S6y5kZFVe4fSUv8zXKg
-Message-ID: <AANLkTin-eNQ9HSpfShGk8tC6e5AEv-dZXH_BPY6JUE0Y@mail.gmail.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Feng Tang <feng.tang@intel.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008144037.f487b6d7.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 00:59, Daniel Walker wrote:
-> I'm not disputing the serial core part. I ok with converting it to tty.
+On Fri, Oct 08, 2010 at 02:40:37PM +1100, Stephen Rothwell wrote:
+> Hi Andi,
+> 
+> Today's linux-next merge of the hwpoison tree got a conflict in
+> mm/memory-failure.c between commit
+> 0d9ee6a2d4a6e92c49e6fa9469e5731d21ee203e ("HWPOISON: Report correct
+> address granuality for AO huge page errors") from Linus' tree and commit
+> 3c5ca5455796841ac3cd706a91ba8dada908c375 ("HWPOISON: Report correct
+> address granuality for AO huge page errors") from the hwpoison tree.
+> 
+> Slightly different versions of the same patch.  I used the version from
 
-sorry, i missed the distinction you were making with the "disputation" qualifier
+Yes I did a rebase here.
 
-please dont top post
--mike
+> Linus' tree (since it was committed later).  The conflict looked like this:
+
+I will rebase the tree. Thanks for catching.
+
+
+-Andi
