@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab0JHSd5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:33:57 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:50418 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab0JHSdy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:33:54 -0400
-Date: Fri, 8 Oct 2010 12:33:51 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: matt mooney <mfm@muteddisk.com>
-Cc: kernel-janitors@vger.kernel.org,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        spi-devel-general@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 22/24] spi: change to new flag variable
-Message-ID: <20101008183351.GK3863@angua.secretlab.ca>
-References: <e0bdab5d2e8c52041c003de68ba774c3e706716c.1285355033.git.mfm@muteddisk.com>
- <58b418c2e7311bffb13606a6b94e33ddb7569346.1285355033.git.mfm@muteddisk.com>
+	id S1759166Ab0JHSe4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:34:56 -0400
+Received: from kroah.org ([198.145.64.141]:38279 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752414Ab0JHSez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 14:34:55 -0400
+Date: Fri, 8 Oct 2010 11:33:47 -0700
+From: Greg KH <greg@kroah.com>
+To: matt mooney <mfmooney@gmail.com>
+Cc: T Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, sam@ravnborg.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 00/33] Staging: Fixed <module-objs> to <module>-y
+Message-ID: <20101008183347.GA23712@kroah.com>
+References: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com>
+ <AANLkTinynZj9bYFAyfRTF2uopmLe6Ls4YGdZPqCAJTpR@mail.gmail.com>
+ <20101008134654.GA6600@kroah.com>
+ <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <58b418c2e7311bffb13606a6b94e33ddb7569346.1285355033.git.mfm@muteddisk.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 12:17:32PM -0700, matt mooney wrote:
-> Replace EXTRA_CFLAGS with ccflags-y.
+On Fri, Oct 08, 2010 at 11:09:11AM -0700, matt mooney wrote:
+> On Fri, Oct 8, 2010 at 6:46 AM, Greg KH <greg@kroah.com> wrote:
+> > On Fri, Oct 08, 2010 at 12:16:35AM -0700, matt mooney wrote:
+> >> On Thu, Oct 7, 2010 at 6:35 PM, T Dent <tdent48227@gmail.com> wrote:
+> >> > I patch against the next-20101006 tree.
+> >> >
+> >> > The patch series replace use of <module>-objs with <module>-y in the
+> >> > staging directory.
+> >>
+> >> Commit messages are written in the present tense. You happen to be
+> >> using two different tenses within the commit message, which is truly
+> >> odd.  And why did you not split apart those atrocious statements with
+> >> the infinite column width?
+> >
+> > As Dan said, we understand what is happening here, and we do not have
+> > grammer police for changelog comments, thank goodness.
+> >
+> >> This patch series adds little benefit.  As Sam has suggested, a more
+> >> general cleanup would be a better goal, and staging is an area that
+> >> needs extra attention some of which has already been pointed out in
+> >> other emails.
+> >
+> > But these patches are all good to have, so I will be applying them,
+> > please don't think they are unwanted at all.
+> >
 > 
-> Signed-off-by: matt mooney <mfm@muteddisk.com>
+> This is good to know. I wonder how well received these changes will be
+> in other parts of the kernel though.
 
-Applied, thanks.
+It depends on the subsystem maintainer.
 
-g.
+good luck,
 
-> ---
->  drivers/spi/Makefile |    4 +---
->  1 files changed, 1 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
-> index e9cbd18..66c0c47 100644
-> --- a/drivers/spi/Makefile
-> +++ b/drivers/spi/Makefile
-> @@ -2,9 +2,7 @@
->  # Makefile for kernel SPI drivers.
->  #
->  
-> -ifeq ($(CONFIG_SPI_DEBUG),y)
-> -EXTRA_CFLAGS += -DDEBUG
-> -endif
-> +ccflags-$(CONFIG_SPI_DEBUG) := -DDEBUG
->  
->  # small core, mostly translating board-specific
->  # config declarations into driver model code
-> -- 
-> 1.7.2.1
-> 
+greg k-h
