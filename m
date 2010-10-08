@@ -1,86 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab0JHI3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 04:29:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35072 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722Ab0JHI3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 04:29:23 -0400
-Message-ID: <4CAED656.2080300@redhat.com>
-Date: Fri, 08 Oct 2010 10:29:10 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Matthew Wilcox <matthew@wil.cx>, Pavel Emelyanov <xemul@parallels.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        xiyou.wangcong@gmail.com
-Subject: Re: [PATCH v2] procfs: fix numbering in /proc/locks
-References: <4CA484BA.7090809@redhat.com>	<4CAB1693.2080301@redhat.com> <20101007162702.7db08f5b.akpm@linux-foundation.org>
-In-Reply-To: <20101007162702.7db08f5b.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756080Ab0JHIch (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 04:32:37 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:39959 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755777Ab0JHIce (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 04:32:34 -0400
+Subject: Re: [PATCH 1/2] drivers:staging:ti-st: move TI_ST from staging
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Savoy, Pavan" <pavan_savoy@ti.com>, Jiri Slaby <jirislaby@gmail.com>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        linux-bluetooth@vger.kernel.org
+In-Reply-To: <20101007213503.657bcab0@lxorguk.ukuu.org.uk>
+References: <1286381895-11329-1-git-send-email-pavan_savoy@ti.com>
+	 <1286381895-11329-2-git-send-email-pavan_savoy@ti.com>
+	 <4CACD234.7020900@gmail.com>
+	 <19F8576C6E063C45BE387C64729E739404AA21CEA1@dbde02.ent.ti.com>
+	 <4CACF5A7.3010601@gmail.com>
+	 <19F8576C6E063C45BE387C64729E739404AA21CEC6@dbde02.ent.ti.com>
+	 <4CAD7DAB.8030209@gmail.com>
+	 <19F8576C6E063C45BE387C64729E739404AA21D193@dbde02.ent.ti.com>
+	 <4CAE10C0.9000106@gmail.com>
+	 <19F8576C6E063C45BE387C64729E739404AA21D220@dbde02.ent.ti.com>
+	 <20101007203801.1c55a1d3@lxorguk.ukuu.org.uk>
+	 <19F8576C6E063C45BE387C64729E739404AA21D23B@dbde02.ent.ti.com>
+	 <20101007213503.657bcab0@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Oct 2010 10:32:26 +0200
+Message-ID: <1286526746.6145.178.camel@aeonflux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2010 01:27 AM, Andrew Morton wrote:
-> On Tue, 05 Oct 2010 14:14:11 +0200
-> Jerome Marchand <jmarchan@redhat.com> wrote:
-> 
->> On 09/30/2010 02:38 PM, Jerome Marchand wrote:
->>>
->>> The lock number in /proc/locks (first field) is implemented by a counter
->>> (private field of struct seq_file) which is incremented at each call of
->>> locks_show() and reset to 1 in locks_start() whatever the offset is. It
->>> should be reset according to the actual position in the list.
->>>
->>> Moreover, locks_show() can be called twice to print a single line thus
->>> skipping a number. The counter should be incremented in locks_next().
->>>
->>> Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
->>> ---
->>>  locks.c |    4 ++--
->>>  1 file changed, 2 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/fs/locks.c b/fs/locks.c
->>> index ab24d49..49d7343 100644
->>> --- a/fs/locks.c
->>> +++ b/fs/locks.c
->>> @@ -2166,19 +2166,19 @@ static int locks_show(struct seq_file *f, void *v)
->>>  	list_for_each_entry(bfl, &fl->fl_block, fl_block)
->>>  		lock_get_status(f, bfl, (long)f->private, " ->");
->>>  
->>> -	f->private++;
->>>  	return 0;
->>>  }
->>>  
->>>  static void *locks_start(struct seq_file *f, loff_t *pos)
->>>  {
->>>  	lock_kernel();
->>> -	f->private = (void *)1;
->>> +	f->private = (void *) (*pos + 1);
->>
->> That cast trigger a warning on some arch:
->> "warning: cast to pointer from integer of different size"
->>
->> There is no real risk here. At worst /proc/locks will show wrong number
->> if there is more than 2^32 locks, but should I mute the warning it with
->> something like:
->>         f->private = (void *) (size_t) (*pos + 1);
->> ?
-> 
-> Putting a loff_t into a void* is a pretty alarming thing to do.  If
-> we're really going to do that then use a (long) cast and put a very
-> good comment at the code site explaining why the bug doesn't matter, so
-> people aren't misled.
-> 
-> But really, why sweat it?  kmalloc the eight bytes, make ->private
-> point at that and we never have to think about it again.  Bonus points
-> for doing this without any typecasts ;)
-> 
+Hi Alan,
 
-That's definitely cleaner. I'll do that.
+> > ldisc is the ONLY way to do it, isn't it? Do I have any other option?
+> 
+> Userspace but even then it wouldn't solve your problem
+> 
+> > The situation was something similar here.
+> > What I was trying to get to is how we can have a per-device context if a driver is just a line discipline driver?
+> 
+> tty->driver_data
+> 		TTY private data
+> tty->disc_data
+> 		LDISC per instance private data
+> 
+> So when your ldisc is opened attach your data to the tty->disc_data, and
+> when it is closed free the data.
+> 
+> > I have 3 sub-devices if you will on a device which is interfaced over UART,
+> > One of them is Bluetooth which requires any UART Bluetooth device to have its
+> > Own line discipline - N_HCI.
+> 
+> The problem is that your chip by the sound of it does not talk the
+> bluetooth ldisc - it talks something more complex.
+> 
+> The obvious question then is
+> 
+> Does it talk
+> 
+> 1.	HCI with bits nailed on
+> 2.	Something rather different which contains muxed data some of
+> which is reformatted up to create HCI
+> 
+> In the first case it may be worth seeing if the existing N_HCI could
+> support forwarding unknown frame types to a helper. In the latter it's a
+> lot trickier. It is possible to create a mux tty layer (see n_gsm.c) but
+> that is almost certainly overkill for this.
+> 
+> I wonder what Marcel thinks in terms of re-using the bluetooth ldisc ?
 
-Thanks,
-Jerome
+If you get a sane proposal, then yes, N_HCI could act as multiplexer and
+forward certain frame types.
+
+This all depends on how clear the separation is. If you expect to send
+HCI commands from these "clients" then there is a problem with the
+Bluetooth subsystem and its enforced flow control. You don't wanna mess
+with that since it has side effects. And I am not giving outside drivers
+real control over. The Bluetooth drivers have to stay dumb transport
+drivers without any Bluetooth core logic.
+
+So can you give me a few quick hints on what you would need to forward
+actually.
+
+Regards
+
+Marcel
+
+
