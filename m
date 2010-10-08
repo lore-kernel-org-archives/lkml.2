@@ -1,89 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759850Ab0JHWIT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 18:08:19 -0400
-Received: from asmtpout023.mac.com ([17.148.16.98]:42623 "EHLO
-	asmtpout023.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753308Ab0JHWIS convert rfc822-to-8bit (ORCPT
+	id S1755538Ab0JHWQe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 18:16:34 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56970 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753429Ab0JHWQd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 18:08:18 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010080153
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-08_16:2010-10-08,2010-10-08,1970-01-01 signatures=0
-Subject: Re: kgdb errors with serial console
-From: Elvis Dowson <elvis.dowson@mac.com>
-In-reply-to: <4CAF19FA.7010206@windriver.com>
-Date: Sat, 09 Oct 2010 02:07:59 +0400
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Content-transfer-encoding: 8BIT
-Message-id: <FEFCC5ED-AFF1-4F97-B49C-BE3CFB96295B@mac.com>
-References: <BDD07355-7199-4A2E-8426-F6D43EA5D313@mac.com>
- <4CAE4BB6.7080509@windriver.com>
- <7BA01CAF-DD25-4AB6-9498-8AB89E2EDDE1@mac.com>
- <4CAE5B40.3070701@windriver.com>
- <917F9CCC-F3D3-4E23-B955-412F08CE8E2E@mac.com> <4CAF19FA.7010206@windriver.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-X-Mailer: Apple Mail (2.1081)
+	Fri, 8 Oct 2010 18:16:33 -0400
+Message-ID: <4CAF97E8.7000505@kernel.org>
+Date: Fri, 08 Oct 2010 15:15:04 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Russ Anderson <rja@sgi.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        "H. Peter Anvin" <h.peter.anvin@intel.com>,
+        Jack Steiner <steiner@sgi.com>
+Subject: Re: [BUG] x86: bootmem broken on SGI UV
+References: <20101008213429.GB7223@sgi.com>
+In-Reply-To: <20101008213429.GB7223@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-                  There was a setting in Eclipse that allowed me to increase the timeout, located under Windows > Preferences > C/C++ > Debug
+On 10/08/2010 02:34 PM, Russ Anderson wrote:
+> 	[BUG] x86: bootmem broken on SGI UV
+> 
+> Recent community kernels do not boot on SGI UV x86 hardware with
+> more than one socket.  I suspect the problem is due to recent 
+> bootmem/e820 changes.
+> 
+> What is happening is the e280 table defines a memory range.
+> 
+>  BIOS-e820: 0000000100000000 - 0000001080000000 (usable)
+> 
+> The SRAT table shows that memory range is spread over two nodes.
+> 
+>  SRAT: Node 0 PXM 0 100000000-800000000
+>  SRAT: Node 1 PXM 1 800000000-1000000000
+>  SRAT: Node 0 PXM 0 1000000000-1080000000
+> 
+> Previously, the kernel early_node_map[] would show three entries
+> with the proper node.
+>                                                                                 
+> [    0.000000]     0: 0x00100000 -> 0x00800000
+> [    0.000000]     1: 0x00800000 -> 0x01000000
+> [    0.000000]     0: 0x01000000 -> 0x01080000
+> 
+> The problem is recent community kernel early_node_map[] shows 
+> only two entries with the node 0 entry overlapping the node 1
+> entry.
+> 
+>     0: 0x00100000 -> 0x01080000
+>     1: 0x00800000 -> 0x01000000
+> 
 
-I increase the settings to 120000(ms) for the debugger time out and 60000(ms) for the launcher. 
+found the root cause, will send patch out today or tomorrow.
 
-So, it didn't time out, but it kept repeating the same sequence over and over again, I haven't yet set a break-point. 
+Thanks
 
-$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001de3#f1+$04d04d02#f2+$60509fe5#04+$047089e5#d6+$60509fe5#04+$047089e5#d6+$60509fe5#04+$60509fe5#04+$60509fe5#04+$44d04de2#2b+$04001d
-
-and then after sometime, stops with the timeout error. This is with kernel linux-omap-2.6.32. 
-
-Here is the log file for this session:
-
-
-w +$qSupported#37
-r +$#00
-w +$Hg0#df
-r +$OK#9a
-w +$?#3f
-r +$S05#b8
-w +$Hc-1#09
-r +$OK#9a
-w +$qC#b4
-r +$QC00000000fffffffe#43
-w +$qAttached#8f
-r +$#00
-w +$qOffsets#4b
-r +$#00
-w +$g#67
-r +$140000009301008001000000844ec7c0acf16fc067000000010000000700000000e823cf00e823cf930100209301004020de58c0a8de58c0749409c0849409c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000093010040#a9
-w +$mc0099484,4#a2
-r +$ffdeffe7#fd
-w +$mc0099480,4#9e
-r +$5ff07ff5#69
-w +$mc0099484,4#a2
-r +$ffdeffe7#fd
-w +$mc0099480,4#9e
-r +$5ff07ff5#69
-w +$mc0099484,4#a2
-r +$ffdeffe7#fd
-w +$mc0099484,4#a2
-r +$ffdeffe7#fd
-w +$mc0099484,4#a2
-r +$ffdeffe7#fd
-w +$qSymbol::#5b
-r +$#00
-w +
-c info proc
-End of log
-
-Best regards,
-
-Elvis
+Yinghai
