@@ -1,85 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933052Ab0JHUCk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 16:02:40 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35536 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824Ab0JHUCj (ORCPT
+	id S933094Ab0JHUCp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 16:02:45 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:54560 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932824Ab0JHUCl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 16:02:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=SDbMX89eH3c2wOhCrpmnKp9mV5vTiL3OxdTialFdZCc2mBWnYuOTnyTaf2XNl+adkw
-         UGqrGwEQTeeGW3CEdDTMiM6YnkJhuZ7C6zwNOrRjxORTzYYRstPd+eANzVXhOpA0HaQr
-         g7D9PeO3T3BVgghOqNmqnuDyfFO5JXzfOMul4=
+	Fri, 8 Oct 2010 16:02:41 -0400
+Date: Fri, 8 Oct 2010 22:02:39 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: matt mooney <mfmooney@gmail.com>
+Cc: Greg KH <greg@kroah.com>, T Dent <tdent48227@gmail.com>,
+        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH 00/33] Staging: Fixed <module-objs> to <module>-y
+Message-ID: <20101008200239.GA28912@merkur.ravnborg.org>
+References: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com> <AANLkTinynZj9bYFAyfRTF2uopmLe6Ls4YGdZPqCAJTpR@mail.gmail.com> <20101008134654.GA6600@kroah.com> <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Fri, 8 Oct 2010 12:54:24 -0700
-Message-ID: <AANLkTin9AwTa8x6faFEXBbrGZa4mg3AeDfeEmmdaF9_d@mail.gmail.com>
-Subject: Roaming / offchannel enhancements for broadcast / multicast frames
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Cc: Matt Smith <Matt.Smith@atheros.com>,
-        Srinivasa Duvvuri <Srinivasa.Duvvuri@atheros.com>,
-        Carolyn Waller <Carolyn.Waller@atheros.com>,
-        Amod Bodas <Amod.Bodas@atheros.com>,
-        David Quan <David.Quan@atheros.com>,
-        Bennyam Malavazi <Bennyam.Malavazi@atheros.com>,
-        Cliff Holden <Cliff.Holden@atheros.com>,
-        Aeolus Yang <Aeolus.Yang@atheros.com>, Kevin Hayes <kevin@atheros.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We spoke about how to handle broadcast / multicast frames when going
-offchannel at the Wireless Summit [1]. A lot of these talks were lead
-due to a Chrome side open bug
-[2].  Chrome has dealt the critical issues by preventing doing a scan
-when we are doing DHCP but we need a resolution in the long term. At
-the summit I do not believe we made any solid conclusions but we did
-throw out a lot of ideas. After the summit a few of us at Atheros met
-and reviewed strategies to consider for doing this the best way
-possible. I'd like to summarize our latest conclusions and plan on
-addressing this and see if we can reach some consensus and priorities.
+On Fri, Oct 08, 2010 at 11:09:11AM -0700, matt mooney wrote:
+> On Fri, Oct 8, 2010 at 6:46 AM, Greg KH <greg@kroah.com> wrote:
+> > On Fri, Oct 08, 2010 at 12:16:35AM -0700, matt mooney wrote:
+> >> On Thu, Oct 7, 2010 at 6:35 PM, T Dent <tdent48227@gmail.com> wrote:
+> >> > I patch against the next-20101006 tree.
+> >> >
+> >> > The patch series replace use of <module>-objs with <module>-y in the
+> >> > staging directory.
+> >>
+> >> Commit messages are written in the present tense. You happen to be
+> >> using two different tenses within the commit message, which is truly
+> >> odd.  And why did you not split apart those atrocious statements with
+> >> the infinite column width?
+> >
+> > As Dan said, we understand what is happening here, and we do not have
+> > grammer police for changelog comments, thank goodness.
+> >
+> >> This patch series adds little benefit.  As Sam has suggested, a more
+> >> general cleanup would be a better goal, and staging is an area that
+> >> needs extra attention some of which has already been pointed out in
+> >> other emails.
+> >
+> > But these patches are all good to have, so I will be applying them,
+> > please don't think they are unwanted at all.
+> >
+> 
+> This is good to know. I wonder how well received these changes will be
+> in other parts of the kernel though. I purposefully started in a
+> subsystem you maintain since I figured any criticism from you would be
+> constructive and you wouldn't just knack without reason.
 
-First, we need a force scan command API. This can be used by userspace
-when it knows it wants to roam and it can allow mac80211 to drop
-broadcast / multicast frames as there is a priority to roam / scan
-over keeping these frames. Then we can implement a deadzone event that
-userspace can pick up which will let userspace know we can RX from an
-AP but cannot TX to it. We can send this event once the connection
-monitor hits a trigger but the beacon monitor is still OK. Note how
-some hardware has its own beacon monitor so we'll also need these
-drivers to send these events to mac80211. Userspace may want to force
-a roam when this deadzone event hits. Once we have these two in place
-we can then ignore bgscan requests (when associated) unless a force
-scan command has been issued by userspace, or unless we are idle. To
-determine if we are idle we can use the existing dynamic power save
-timers.
+In staging it is OK with small very janitorial patches - at
+least I see lots of these applied there.
+But in the world outside staging most maintainers would expect
+you to do a full update if you decide to clean up their Makefile.
+If the updates are bigger then split it up.
 
-Then we need to move to mac80211 the code that checks we have RX'd all
-multicast frames / broadcast frames prior to going to power save or
-going offchannel. In the worst case scenario we will have missed the
-last broadcast / multicast frame, so we can rely on the next beacon as
-an indication the AP is done with all buffered broadcast / multicast
-frames. ath9k already has code for all of this, so this just need to
-be shifted to mac80211 for drivers that do software scan. In the worst
-case scenario and unfortunately this seems to be the most common one,
-a DTIM of 1 is used and we will have to be on channel and awake every
-beacon interval. In this case we may want to optimize scan time by not
-scanning passive scan channels. I still do believe we will drop some
-broadcast / multicast frames in this case though, but avoiding a
-bgscan  when we are not-idle should cure most critical frame drops.
+But for trivial updates batch the Makefiles.
 
-I've documented all this on our respective TODO wiki [3]. If you have
-further ideas or tweaks to this approach please chime in and feel free
-do edit the wiki as you see fit. this is a good time to invite people
-to also subscribe to the wiki for edits.
+If you final patches end up:
+1) Making the files more readable, and more standard looking
+2) and do not add a lot of lines
 
-  Luis
+then you will likely see that most maintainers will accept it.
 
-[1] http://wireless.kernel.org/en/developers/Summits/SanFranciscoBayArea-2010
-[2] http://code.google.com/p/chromium-os/issues/detail?id=5713&q=ath9k&colspec=ID%20Stars%20Pri%20Area%20Type%20Status%20Summary%20Modified%20Owner%20Mstone
-[3] http://wireless.kernel.org/en/developers/todo-list
+But you also have to convince tham that you did a proper job
+testing your changes.
+
+A good test on Makefile cleanup is that nothing should rebuild
+due to the patch being applied. This simple test have saved me
+from a few brown papaer bag bugs in the past.
+
+	Sam
