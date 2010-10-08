@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab0JHNvp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 09:51:45 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:31613 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753628Ab0JHNvo (ORCPT
+	id S1757808Ab0JHNxK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 09:53:10 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53070 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756729Ab0JHNxI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 09:51:44 -0400
-Message-ID: <4CAF21CE.5000901@atmel.com>
-Date: Fri, 08 Oct 2010 15:51:10 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        Anders Larsen <al@alarsen.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Andrew Victor <avictor.za@gmail.com>, linux-arm-kernel@lists.infradead.org,
+	Fri, 8 Oct 2010 09:53:08 -0400
+Date: Fri, 8 Oct 2010 09:53:04 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: AT91: Fix power-saving in idle-mode on 926T processors
-References: <20101007194415.GA24709@alarsen.net> <20101008122918.GA30252@game.jcrosoft.org>
-In-Reply-To: <20101008122918.GA30252@game.jcrosoft.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 09/18] fs: rework icount to be a locked variable
+Message-ID: <20101008135303.GA15316@infradead.org>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-10-git-send-email-david@fromorbit.com>
+ <20101008093202.GX19804@ZenIV.linux.org.uk>
+ <20101008101549.GC4681@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008101549.GC4681@dastard>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell,
-
-Le 08/10/2010 14:29, Jean-Christophe PLAGNIOL-VILLARD :
-> On 21:44 Thu 07 Oct     , Anders Larsen wrote:
->> According to Atmel, their 926T processors (AT91 post RM9200) requires
->> 'Wait for Interrupt' mode be entered right after disabling the processor clock
->> in order to minimise current consumption when idle, so do both provided we're
->> not running on a 920T (an RM9200).
->>
->> Furthermore, get rid of the #ifndef CONFIG_DEBUG_KERNEL, since arch_idle()
->> can be turned off completely with the kernel parameter 'nohlt'.
->>
->> Signed-off-by: Anders Larsen <al@alarsen.net>
->> Cc: Andrew Victor <avictor.za@gmail.com>
-> please rebase against this branch
+On Fri, Oct 08, 2010 at 09:15:49PM +1100, Dave Chinner wrote:
+> > You are overdoing the information hiding here; _way_ too many small
+> > functions that don't buy you anything so far, AFAICS.
 > 
-> git://github.com/at91linux/linux-2.6-at91.git branch for-rmk
+> See akpm's comments on the previous version of the series.
 
-This patch seems already in your "master" branch
-(5c189208b606a85b4e97109af70d59f10a42fdfd).
-
-Do you want me to rebase this patch or do you mange merging with "AT91:
-fix use of clock disable on idle for AT91x40 devices"
-(cb809b1a5ebffca8cf0314b788919989e8e4ab5f) ?
-already in your "devel" and "devel-stable" branches?
-
-Best regards,
--- 
-Nicolas Ferre
+It's one persons opinion.  I tend to disagree with lots of it.  iref
+is a good new helper for filesystems to use, but for the unlocked
+read it's reather pointless.  iref_locked is even more pointless -
+it's only used in core fs code (fs/inode.c, fs/fs-writeback.c,
+fs/drop_caches.c, fs/notify/inode_mark.c and fs/quota/dquot.c) and
+an opencoded increment would be a lot more readable.
 
