@@ -1,44 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754070Ab0JGX5e (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 19:57:34 -0400
-Received: from trent.utfs.org ([194.246.123.103]:32810 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753057Ab0JGX5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 19:57:33 -0400
-Date: Thu, 7 Oct 2010 16:57:32 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: takedakn@nttdata.co.jp, penguin-kernel@I-love.SAKURA.ne.jp
-Subject: Re: 2.6.36-rc7: kernel panic with SECURITY_TOMOYO=y
-In-Reply-To: <alpine.DEB.2.01.1010071534370.21082@trent.utfs.org>
-Message-ID: <alpine.DEB.2.01.1010071637090.21082@trent.utfs.org>
-References: <alpine.DEB.2.01.1010071534370.21082@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755189Ab0JHACL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 20:02:11 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:59236 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754978Ab0JHACJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 20:02:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=I0yhKmJkL7mOhOySm6RbzLTBMjdxWhbKIs12N2WRjJgqoHRNQ8ivqDzmPe768TKR/h
+         NPJ0M2W0fKGl7YSF9fEA1jfe6fvRQiXL9v2mcDa4b/mCELqnLsDNPOFdc3S9TkJBlwJk
+         lffBPeQjv1Rr77J5u2pyecpXBQKU/4/4rvCPY=
+From: Tracey Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        sam@ravnborg.org, linux-kbuild@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH 07/33] Staging: cxt1e1: Makefile: replace the use of <module>-objs with <module>-y
+Date: Thu,  7 Oct 2010 20:01:27 -0400
+Message-Id: <1286496113-11897-7-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.1.50.g1e633
+In-Reply-To: <1286496113-11897-1-git-send-email-tdent48227@gmail.com>
+References: <1286496113-11897-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010 at 15:43, Christian Kujau wrote:
-> Kernel panic - not syncing: Profile uersion 0 is not supported
+Changed <module>-objs to <module>-y in Makefile.
 
-OK, I just saw that security/tomoyo/common.c panics when:
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
+---
+ drivers/staging/cxt1e1/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-        if (tomoyo_profile_version != 20090903)
-                panic("Profile version %u is not supported.\n",
-                      tomoyo_profile_version);
-
-If it's imperative that the profile version is somewhat current (mine was 
-not, I had old tomoyo-ccstools installed), I would have expected a 
-slightly more descriptive error messages (apart from that panic), but now 
-I know. Upgraded to tomoyo-tools-2.3.0-20100820 did the trick.
-
-Sorry for the noise...
-
-Christian.
+diff --git a/drivers/staging/cxt1e1/Makefile b/drivers/staging/cxt1e1/Makefile
+index a524a62..e99b823 100644
+--- a/drivers/staging/cxt1e1/Makefile
++++ b/drivers/staging/cxt1e1/Makefile
+@@ -4,7 +4,7 @@ ccflags-y := -DSBE_PMCC4_ENABLE
+ ccflags-y += -DSBE_ISR_TASKLET
+ ccflags-y += -DSBE_INCLUDE_SYMBOLS
+ 
+-cxt1e1-objs += 	\
++cxt1e1-y := 	\
+   ossiRelease.o 	\
+   musycc.o 		\
+   pmcc4_drv.o 		\
 -- 
-BOFH excuse #86:
+1.7.3.1.50.g1e633
 
-Runt packets
