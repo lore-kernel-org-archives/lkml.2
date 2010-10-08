@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757372Ab0JHNYy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 09:24:54 -0400
-Received: from phunq.net ([64.81.85.152]:43923 "EHLO moonbase.phunq.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752417Ab0JHNYx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 09:24:53 -0400
-From: Daniel Phillips <phillips@phunq.net>
-To: Christoph Hellwig <hch@lst.de>
-Subject: Re: introduce dm-snap-mv
-Date: Fri, 8 Oct 2010 06:22:57 -0700
-User-Agent: KMail/1.9.9
-Cc: McPacino <mcpacino@gmail.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Alexander Viro <viro@zeniv.linux.org.uk>,
-        Nick Piggin <npiggin@kernel.dk>
-References: <20101006083150.GA15758@zhongling> <AANLkTim9KFuP1_mrUUsMOEspxkfA=SZW2dmTX4WJbfep@mail.gmail.com> <20101008092427.GA5426@lst.de>
-In-Reply-To: <20101008092427.GA5426@lst.de>
+	id S1757417Ab0JHNZF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 09:25:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13375 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757387Ab0JHNZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 09:25:02 -0400
+Message-ID: <4CAF1B90.3080703@redhat.com>
+Date: Fri, 08 Oct 2010 09:24:32 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.8) Gecko/20100806 Fedora/3.1.2-1.fc13 Lightning/1.0b2pre Thunderbird/3.1.2
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+To: Michel Lespinasse <walken@google.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/3] Retry page fault when blocking on disk transfer.
+References: <1286265215-9025-1-git-send-email-walken@google.com> <1286265215-9025-3-git-send-email-walken@google.com> <4CAB628D.3030205@redhat.com> <AANLkTimdACZ9Xm01DM2+E64+T5XfLffrkFBhf7CJ286p@mail.gmail.com> <20101008043956.GA25662@google.com>
+In-Reply-To: <20101008043956.GA25662@google.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201010080622.58095.phillips@phunq.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 October 2010, Christoph Hellwig wrote:
-> On Fri, Oct 08, 2010 at 05:14:27PM +0800, McPacino wrote:
-> > Hi Christoph,
-> > 
-> > I have to take care the cache problem If using the bio directly.
-> > BHs can be released by kernel when necessary.
-> > 
-> > Is there any existing code using bio to read/write metadata
-> > blocks? How do they handle the timing freeing bios? I really
-> > wish to learn something form it.
-> 
-> If you actually need caching just use the pagecache, e.g.
-> read_mapping_page to read in your data.  That completely abstracts
-> away the underlying block size.
+On 10/08/2010 12:39 AM, Michel Lespinasse wrote:
+> On Tue, Oct 05, 2010 at 03:44:22PM -0700, Michel Lespinasse wrote:
+>> On Tue, Oct 5, 2010 at 10:38 AM, Rik van Riel<riel@redhat.com>  wrote:
+>>> Looks like it should be relatively easy to do something
+>>> similar in do_swap_page also.
+>>
+>> Good idea. We don't make use of swap too much, which is probably why
+>> we didn't have that in our kernel, but it seems like a good idea just
+>> for uniformity. I'll add this in a follow-on patch.
+>
+> So here's the patch. Sorry for the delay - it did not take long to write,
+> but I couldn't test it before today.
+>
+> Please have a look - I'd like to add this to the series I sent earlier.
+>
+> ----------------------------------- 8<  ---------------------------------
+>
+> Retry page fault when blocking on swap in
+>
+> This change is the cousin of 'Retry page fault when blocking
+> on disk transfer'. The idea here is to reduce mmap_sem hold times
+> that are caused by disk transfers when swapping in pages. We drop
+> mmap_sem while waiting for the page lock, and return the VM_FAULT_RETRY
+> flag. do_page_fault will then re-acquire mmap_sem and retry the
+> page fault. It is expected that upon retry the page will now be cached,
+> and thus the retry will complete with a low mmap_sem hold time.
+>
+> Signed-off-by: Michel Lespinasse<walken@google.com>
+>
+> diff --git a/mm/memory.c b/mm/memory.c
+> index b068c68..0ec70b4 100644
+> --- a/mm/memory.c
+> +++ b/mm/memory.c
+> @@ -2613,6 +2613,21 @@ int vmtruncate_range(struct inode *inode, loff_t offset, loff_t end)
+>   	return 0;
+>   }
+>
+> +static inline int lock_page_or_retry(struct page *page, struct mm_struct *mm,
+> +				     unsigned int flags)
+> +{
+> +	if (trylock_page(page))
+> +		return 1;
+> +	if (!(flags&  FAULT_FLAG_ALLOW_RETRY)) {
+> +		__lock_page(page);
+> +		return 1;
+> +	}
+> +
+> +	up_read(&mm->mmap_sem);
+> +	wait_on_page_locked(page);
+> +	return 0;
+> +}
 
-And that will automatically give him the PAGE_CACHE_SIZE objects he
-wants.  I still don't understand why his model cannot be generalized
-to arbitrary block size specifiable at create time.
+Wait a moment.  Your other patch 2/3 also has a
+lock_page_or_retry function.  That one is in
+filemap.c and takes slightly different arguments,
+to do essentially the same thing...
 
-Regards,
++/*
++ * Lock the page, unless this would block and the caller indicated that it
++ * can handle a retry.
++ */
++static int lock_page_or_retry(struct page *page,
++			      struct vm_area_struct *vma, struct vm_fault *vmf)
++{
 
-Daniel
+Is there a way the two functions can be merged
+into one?
+
+-- 
+All rights reversed
