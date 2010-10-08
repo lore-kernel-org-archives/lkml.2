@@ -1,70 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933149Ab0JHV0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 17:26:12 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:44131 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933065Ab0JHV0K (ORCPT
+	id S1755194Ab0JHVan (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 17:30:43 -0400
+Received: from piggy.nteb.no ([217.168.83.69]:37942 "EHLO mailrelay.nteb.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750729Ab0JHVam convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 17:26:10 -0400
-Date: Fri, 8 Oct 2010 14:26:06 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, hch@lst.de
-Subject: Re: Performance testing of various barrier reduction patches [was:
-	Re: [RFC v4] ext4: Coordinate fsync requests]
-Message-ID: <20101008212606.GE25624@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com> <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca> <20100927230111.GV25555@tux1.beaverton.ibm.com>
+	Fri, 8 Oct 2010 17:30:42 -0400
+X-Greylist: delayed 567 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Oct 2010 17:30:42 EDT
+From: Kjersti Andreassen <Kjersti.Andreassen@vikna.kommune.no>
+To: "info@helpdesk.com" <info@helpdesk.com>
+Date: Fri, 8 Oct 2010 23:13:18 +0200
+Subject: Your Webmail Quota Has Exceeded The Set Quota/Limit Which Is 20GB.
+Thread-Topic: Your Webmail Quota Has Exceeded The Set Quota/Limit Which Is
+ 20GB.
+Thread-Index: AQHLZy2hNBdd+kKvnUGzdxlxPqte1A==
+Message-ID: <FF7FF0EF69AFB84E871AA340020C3D189B75F45258@EXCH01.vikna1.local>
+Accept-Language: en-US, nb-NO
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US, nb-NO
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100927230111.GV25555@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Sep 27, 2010 at 04:01:11PM -0700, Darrick J. Wong wrote:
-> 
-> Other than those regressions, the jbd2 fsync coordination is about as fast as
-> sending the flush directly from ext4.  Unfortunately, where there _are_
-> regressions they seem rather large, which makes this approach (as implemented,
-> anyway) less attractive.  Perhaps there is a better way to do it?
-
-Hmm, not much chatter for two weeks.  Either I've confused everyone with the
-humongous spreadsheet, or ... something?
-
-I've performed some more extensive performance and safety testing with the
-fsync coordination patch.  The results have been merged into the spreadsheet
-that I linked to in the last email, though in general the results have not
-really changed much at all.
-
-I see two trends happening here with regards to comparing the use of jbd2 to
-coordinate the flushes vs. measuring and coodinating flushes directly in ext4.
-The first is that for loads that most benefit from having any kind of fsync
-coordination (i.e. storage with slow flushes), the jbd2 approach provides the
-same or slightly better performance than the direct approach.  However, for
-storage with fast flushes, the jbd2 approach seems to cause major slowdowns
-even compared to not changing any code at all.  To me this would suggest that
-ext4 needs to coordinate the fsyncs directly, even at a higher code maintenance
-cost, because a huge performance regression isn't good.
-
-Other people in my group have been running their own performance comparisons
-between no-coordination, jbd2-coordination, and direct-coordination, and what
-I'm hearing is tha the direct-coordination mode is slightly faster than jbd2
-coordination, though either are better than no coordination at all.  Happily, I
-haven't seen an increase in fsck complaints in my poweroff testing.
-
-Given the nearness of the merge window, perhaps we ought to discuss this on
-Monday's ext4 call?  In the meantime I'll clean up the fsync coordination patch
-so that it doesn't have so many debugging knobs and whistles.
-
-Thanks,
-
---D
+Your Webmail Quota Has Exceeded The Set Quota/Limit Which Is 20GB.
+You Are Currently Running On 23GB Due To Hidden Files And Folder On Your Mailbox.
+Please Click the Link Below To Validate Your Mailbox And Increase Your Quota.
+http://www.my3q.com/survey/343/support404/11712.phtml
+Failure To Click This Link And Validate Your Quota May Result In Loss Of Important Information In Your Mailbox/Or Cause Limited Access To It.
+Thanks
+HELP DESK
