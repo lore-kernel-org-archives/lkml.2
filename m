@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759911Ab0JHVzj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 17:55:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25634 "EHLO mx1.redhat.com"
+	id S1759785Ab0JHWBV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 18:01:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54384 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750802Ab0JHVzh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 17:55:37 -0400
-Message-ID: <4CAF937C.4020500@redhat.com>
-Date: Fri, 08 Oct 2010 17:56:12 -0400
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1755493Ab0JHWBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 18:01:20 -0400
+Message-ID: <4CAF9448.7070906@zytor.com>
+Date: Fri, 08 Oct 2010 14:59:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: djwong@us.ibm.com
-CC: Andreas Dilger <adilger.kernel@dilger.ca>, "Ted Ts'o" <tytso@mit.edu>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, hch@lst.de, Josef Bacik <josef@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: Re: Performance testing of various barrier reduction patches [was:
- Re: [RFC v4] ext4: Coordinate fsync requests]
-References: <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com> <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca> <20100927230111.GV25555@tux1.beaverton.ibm.com> <20101008212606.GE25624@tux1.beaverton.ibm.com>
-In-Reply-To: <20101008212606.GE25624@tux1.beaverton.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andreas Gruenbacher <agruen@suse.de>
+CC: David Daney <ddaney@caviumnetworks.com>, Eric Paris <eparis@redhat.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: Linux 2.6.36-rc7
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <201010081406.10190.agruen@suse.de> <4CAF47F3.3070800@caviumnetworks.com> <201010082350.01135.agruen@suse.de>
+In-Reply-To: <201010082350.01135.agruen@suse.de>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/08/2010 05:26 PM, Darrick J. Wong wrote:
-> On Mon, Sep 27, 2010 at 04:01:11PM -0700, Darrick J. Wong wrote:
->> Other than those regressions, the jbd2 fsync coordination is about as fast as
->> sending the flush directly from ext4.  Unfortunately, where there _are_
->> regressions they seem rather large, which makes this approach (as implemented,
->> anyway) less attractive.  Perhaps there is a better way to do it?
-> Hmm, not much chatter for two weeks.  Either I've confused everyone with the
-> humongous spreadsheet, or ... something?
->
-> I've performed some more extensive performance and safety testing with the
-> fsync coordination patch.  The results have been merged into the spreadsheet
-> that I linked to in the last email, though in general the results have not
-> really changed much at all.
->
-> I see two trends happening here with regards to comparing the use of jbd2 to
-> coordinate the flushes vs. measuring and coodinating flushes directly in ext4.
-> The first is that for loads that most benefit from having any kind of fsync
-> coordination (i.e. storage with slow flushes), the jbd2 approach provides the
-> same or slightly better performance than the direct approach.  However, for
-> storage with fast flushes, the jbd2 approach seems to cause major slowdowns
-> even compared to not changing any code at all.  To me this would suggest that
-> ext4 needs to coordinate the fsyncs directly, even at a higher code maintenance
-> cost, because a huge performance regression isn't good.
->
-> Other people in my group have been running their own performance comparisons
-> between no-coordination, jbd2-coordination, and direct-coordination, and what
-> I'm hearing is tha the direct-coordination mode is slightly faster than jbd2
-> coordination, though either are better than no coordination at all.  Happily, I
-> haven't seen an increase in fsck complaints in my poweroff testing.
->
-> Given the nearness of the merge window, perhaps we ought to discuss this on
-> Monday's ext4 call?  In the meantime I'll clean up the fsync coordination patch
-> so that it doesn't have so many debugging knobs and whistles.
->
-> Thanks,
->
-> --D
+On 10/08/2010 02:50 PM, Andreas Gruenbacher wrote:
+> On Friday 08 October 2010 18:33:55 David Daney wrote:
+>> On 10/08/2010 05:06 AM, Andreas Gruenbacher wrote:
+>>> On Thursday 07 October 2010 19:49:28 Eric Paris wrote:
+>>>> The safest thing would probably be to punt the syscalls to 2.6.37.
+>>>> Which is sad since I know a number of people are already working against
+>>>> them, but maybe that proves it's the best approach?
+>>>
+>>> I agree with removing the syscalls from 2.6.36 because of the following
+>>> reasons:
+>>
+>> How would the mechanics of this be achieved?
+>>
+>> Is it enough to just unconditionally return -ENOSYS from the sys_*() 
+>> functions?  Or should all the patches be reverted?
+> 
+> Whatever works I guess ... they would get reactivated pretty soon, anyway.
+> 
 
-Hi Darrick,
+Returning -ENOSYS should be sufficient (that's what a non-system-call
+does); it would *also* be good to block any headers from getting
+exported to userspace so people don't end up with compiling against the
+wrong version of the kernel headers and then wonder why their code
+doesn't work in the future.
 
-We have been busily testing various combinations at Red Hat (we being not me 
-:)), but here is one test that we used a long time back to validate the batching 
-impact.
-
-You need a slow, poky S-ATA drive - the slower it spins, the better.
-
-A single fs_mark run against that drive should drive some modest number of 
-files/sec with 1 thread:
-
-
-[root@tunkums /]# fs_mark -s 20480 -n 500 -L 5 -d /test/foo
-
-On my disk, I see:
-
-      5          500        20480         31.8             6213
-
-Now run with 4 threads to give the code a chance to coalesce.
-
-On my box, I see it jump up:
-
-      5         2000        20480        113.0            25092
-
-And at 8 threads it jumps again:
-
-      5         4000        20480        179.0            49480
-
-This work load is very device specific. On a very low latency device (arrays, 
-high performance SSD), the coalescing "wait" time could be slower than just 
-dispatching the command. Ext3/4 work done by Josef a few years back was meant to 
-use high res timers to dynamically adjust that wait to avoid slowing down.
-
-Have we tested the combined patchset with this?
-
-Thanks!
-
-Ric
-
-
-
-
-
-
+	-hpa
