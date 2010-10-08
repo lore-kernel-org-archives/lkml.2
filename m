@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab0JHAIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 20:08:46 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32878 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755165Ab0JHAIH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 20:08:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,299,1283756400"; 
-   d="scan'208";a="614496510"
-Subject: [PATCH] move async raid6 test to lib/Kconfig.debug
-To: linux-kernel@vger.kernel.org
-From: Dan Williams <dan.j.williams@intel.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-        David Woodhouse <David.Woodhouse@intel.com>
-Date: Thu, 07 Oct 2010 17:10:09 -0700
-Message-ID: <20101008001009.7641.43321.stgit@localhost.localdomain>
-User-Agent: StGit/0.15-6-g0854
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1756713Ab0JHAJJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 20:09:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55788 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab0JHACI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 20:02:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=PjM9By8JU7RkxDZD6IqInAPFWwYRBA+cTJCKO+UVdVV0WdlL1nFiUwQutP+MhRSBMb
+         3+yOkPrtSsN4EHfJE0uX2B2Cn7c+guNYDzIAP9xKw/yNaIWXIMGlqKlYPILFflGgh2h2
+         faPFEvzsD+U7hYVHsgrGB0NW/yZtig8v49XR4=
+From: Tracey Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
+        sam@ravnborg.org, linux-kbuild@vger.kernel.org,
+        Tracey Dent <tdent48227@gmail.com>
+Subject: [PATCH 06/33] Staging: cx25821: Makefile: replace the use of <module>-objs with <module>-y
+Date: Thu,  7 Oct 2010 20:01:26 -0400
+Message-Id: <1286496113-11897-6-git-send-email-tdent48227@gmail.com>
+X-Mailer: git-send-email 1.7.3.1.50.g1e633
+In-Reply-To: <1286496113-11897-1-git-send-email-tdent48227@gmail.com>
+References: <1286496113-11897-1-git-send-email-tdent48227@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The prompt for "Self test for hardware accelerated raid6 recovery" does not
-belong in the top level configuration menu.  All the options in
-crypto/async_tx/Kconfig are selected and do not depend on CRYPTO.
-Kconfig.debug seems like a reasonable fit.
+Changed <module>-objs to <module>-y in Makefile.
 
-Cc: Herbert Xu <herbert@gondor.apana.org.au>
-Cc: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Tracey Dent <tdent48227@gmail.com>
 ---
- crypto/async_tx/Kconfig |   13 -------------
- lib/Kconfig.debug       |   13 +++++++++++++
- 2 files changed, 13 insertions(+), 13 deletions(-)
+ drivers/staging/cx25821/Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/crypto/async_tx/Kconfig b/crypto/async_tx/Kconfig
-index 5de2ed1..1b11abb 100644
---- a/crypto/async_tx/Kconfig
-+++ b/crypto/async_tx/Kconfig
-@@ -24,19 +24,6 @@ config ASYNC_RAID6_RECOV
- 	select ASYNC_PQ
- 	select ASYNC_XOR
- 
--config ASYNC_RAID6_TEST
--	tristate "Self test for hardware accelerated raid6 recovery"
--	depends on ASYNC_RAID6_RECOV
--	select ASYNC_MEMCPY
--	---help---
--	  This is a one-shot self test that permutes through the
--	  recovery of all the possible two disk failure scenarios for a
--	  N-disk array.  Recovery is performed with the asynchronous
--	  raid6 recovery routines, and will optionally use an offload
--	  engine if one is available.
--
--	  If unsure, say N.
--
- config ASYNC_TX_DISABLE_PQ_VAL_DMA
- 	bool
- 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 1b4afd2..0deaf81 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1150,6 +1150,19 @@ config ATOMIC64_SELFTEST
- 
- 	  If unsure, say N.
- 
-+config ASYNC_RAID6_TEST
-+	tristate "Self test for hardware accelerated raid6 recovery"
-+	depends on ASYNC_RAID6_RECOV
-+	select ASYNC_MEMCPY
-+	---help---
-+	  This is a one-shot self test that permutes through the
-+	  recovery of all the possible two disk failure scenarios for a
-+	  N-disk array.  Recovery is performed with the asynchronous
-+	  raid6 recovery routines, and will optionally use an offload
-+	  engine if one is available.
-+
-+	  If unsure, say N.
-+
- source "samples/Kconfig"
- 
- source "lib/Kconfig.kgdb"
+diff --git a/drivers/staging/cx25821/Makefile b/drivers/staging/cx25821/Makefile
+index 6448364..aedde18 100644
+--- a/drivers/staging/cx25821/Makefile
++++ b/drivers/staging/cx25821/Makefile
+@@ -1,4 +1,4 @@
+-cx25821-objs   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
++cx25821-y   := cx25821-core.o cx25821-cards.o cx25821-i2c.o \
+ 		       cx25821-gpio.o cx25821-medusa-video.o \
+ 		       cx25821-video.o cx25821-video-upstream.o \
+ 		       cx25821-video-upstream-ch2.o \
+-- 
+1.7.3.1.50.g1e633
 
