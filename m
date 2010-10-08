@@ -1,92 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758745Ab0JHQLQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:11:16 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:9086 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757804Ab0JHQLP (ORCPT
+	id S1758887Ab0JHQL3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:11:29 -0400
+Received: from mx6.sophos.com ([213.31.172.36]:59714 "EHLO mx6.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758841Ab0JHQL1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:11:15 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="57091533"
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Greg KH <gregkh@suse.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mike Frysinger <vapier@gentoo.org>,
-        linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Feng Tang <feng.tang@intel.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-In-Reply-To: <20101008154058.GA19202@suse.de>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
-	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
-	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
-	 <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com>
-	 <20101008091331.74871a42@lxorguk.ukuu.org.uk>
-	 <1286551434.4153.21.camel@m0nster>  <20101008154058.GA19202@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 09:11:13 -0700
-Message-ID: <1286554273.4153.97.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Oct 2010 12:11:27 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Andreas Gruenbacher <agruen@suse.de>
+Subject: Re: [BUG][PATCH][2.6.36-rc3] fanotify: Do not ignore result of permission decisions
+Date: Fri, 8 Oct 2010 17:11:23 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.4.4; x86_64; ; )
+CC: Eric Paris <eparis@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
+References: <201009071608.02290.tvrtko.ursulin@sophos.com> <201009080924.04841.tvrtko.ursulin@sophos.com> <201010081500.40494.agruen@suse.de>
+In-Reply-To: <201010081500.40494.agruen@suse.de>
+MIME-Version: 1.0
+Message-ID: <201010081711.24373.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/10/2010 17:11:25,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/10/2010 17:11:25,
+	Serialize complete at 08/10/2010 17:11:25
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 08:40 -0700, Greg KH wrote:
-> On Fri, Oct 08, 2010 at 08:23:54AM -0700, Daniel Walker wrote:
-> > > And if your hypothetical user isn't able to do this then maybe instead of
-> > > trying to screw up the kernel for everyone they should ask an
-> > > undergraduate student who is smart enough to help them.
-> > 
-> > I don't think the kernel is going to implode if we allow an optional
-> > ttyS override for debugging purposes.. I just don't see that "screwing"
-> > up the kernel. I can even embedded that inside the C file, and not make
-> > it a Kconfig option ..
-> 
-> I admire your persistence, but perhaps you should take a step back and
-> look at the history here.  You just want this override.  Then someone
-> else does, and then, someone else.  Eventually we are all overridden.
-> 
-> Remember, you aren't unique here, as much as you might feel like you are
-> :)
+On Friday 08 Oct 2010 14:00:40 Andreas Gruenbacher wrote:
+> Tvrtko,
+>
+> On Wednesday 08 September 2010 10:24:04 Tvrtko Ursulin wrote:
+> > Improved version of the fix which does not include the check
+> > when permission events are not enabled in configuration and
+> > stops processing if no interesting events remain.
+> >
+> > Current code ignores access replies to permission decisions so
+> > fix it in a way which will allow all listeners to still receive
+> > non permission events.
+>
+> I agree with the patch (see comments below), but this explanation is close
+> to incomprehensible and not good as a commit message.
 
-It's not that _I_ want it .. If you look at the code it's not that huge
-a part of the source .. It's got it's own ttyJ already, and it's
-ifdefe'd. It would be pretty easy to remove it. The other thing is that
-it's not something I use, so for me it's kind of take it or leave it.
+How about this:
 
-So why am I arguing to keep it? Well the original author added it for a
-purpose, which I can't assume was useless .. I can also imagine
-situations when it would be helpful to do this.
+Current code incorrectly ignores responses to permission decisions. When a
+single deny response has been received record it and do not send more
+permission events. However still send non-permission events to other clients.
 
-To me it's more a question of if the override is useful or not .. If
-it's useful then it's just about organizing the code so the kernel
-doesn't melt down if we allow it.
+> > Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+> > ---
+> >
+> >  fs/notify/fsnotify.c             |   32 ++++++++++++++++++++++++--------
+> >  include/linux/fsnotify_backend.h |    4 ++++
+> >  2 files changed, 28 insertions(+), 8 deletions(-)
+> >
+> > diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
+> > index 3680242..2350a53 100644
+> > --- a/fs/notify/fsnotify.c
+> > +++ b/fs/notify/fsnotify.c
+> > @@ -224,7 +224,7 @@ int fsnotify(struct inode *to_tell, __u32 mask, void
+> > *data, int data_is,
+> >
+> >         struct fsnotify_group *inode_group, *vfsmount_group;
+> >         struct fsnotify_event *event = NULL;
+> >         struct vfsmount *mnt;
+> >
+> > -       int idx, ret = 0;
+> > +       int idx, ret = 0, res;
+> >
+> >         /* global tests shouldn't care about events on child only the
+> >         specific event */ __u32 test_mask = (mask & ~FS_EVENT_ON_CHILD);
+> >
+> > @@ -275,20 +275,36 @@ int fsnotify(struct inode *to_tell, __u32 mask,
+> > void *data, int data_is,
+> >
+> >                 if (inode_group > vfsmount_group) {
+> >
+> >                         /* handle inode */
+> >
+> > -                       send_to_group(to_tell, NULL, inode_mark, NULL,
+> > mask, data, -                                     data_is, cookie,
+> > file_name, &event); +                       res = send_to_group(to_tell,
+> > NULL, inode_mark, NULL, mask, data, +
+> >        data_is, cookie, file_name, &event);
+> >
+> >                         /* we didn't use the vfsmount_mark */
+> >                         vfsmount_group = NULL;
+> >
+> >                 } else if (vfsmount_group > inode_group) {
+> >
+> > -                       send_to_group(to_tell, mnt, NULL, vfsmount_mark,
+> > mask, data, -                                     data_is, cookie,
+> > file_name, &event); +                       res = send_to_group(to_tell,
+> > mnt, NULL, vfsmount_mark, mask, data, +
+> >          data_is, cookie, file_name, &event);
+> >
+> >                         inode_group = NULL;
+> >
+> >                 } else {
+> >
+> > -                       send_to_group(to_tell, mnt, inode_mark,
+> > vfsmount_mark, -                                     mask, data,
+> > data_is, cookie, file_name, -
+> > &event);
+> > +                       res = send_to_group(to_tell, mnt, inode_mark,
+> > vfsmount_mark, +                                           mask, data,
+> > data_is, cookie, file_name, +
+> > &event);
+> >
+> >                 }
+> >
+> > +#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
+> > +               /* If a listener denied on a permission event we will
+> > remember the reason +                  and run the rest with a
+> > non-permission mask only. This allows other +                  listeners
+> > to receive non-permission notifications but we do not care +
+> >      about further permission checks and want to deny this event. */ +
+> >             if (unlikely((res == -EPERM) && (mask &
+> > FS_ALL_PERM_EVENTS))) {
+>
+> We should probably stop processing here whenever res != 0, for any mask.
+> (The fanotify and inotify handle_event callbacks can return -ENOMEM right
+> now, but this doesn't seem very useful and should probably be fixed:
+> fsnotify has no way of doing anything about -ENOMEM.
 
-Thinking about it overrides are actually allowed right now, it's just
-that you have to mod the source some to do it.
+I wasn't 100% sure of how fanotify works, or in other words can there be more
+events in this mask after perm events are removed. If it can then we should
+send them to other listeners. Eric?
 
-> Please listen to what Alan and Mike are saying, experience matters, and
-> they are trying to impart it to you, despite your most fervent attempts
-> to avoid it.
+Also if ENOMEM, why not try sending to other listeners?
 
-The whole "fervent" thing is kind of funny to me.. I'm just persistent,
-that's what it's comes down to. Like I said above I'm not "in love" with
-this feature. I am actually taking Mike and Alan's advice by the way, so
-it's not like I'm not listening (or reading in this case)..
+> > +                       mask &= ~FS_ALL_PERM_EVENTS;
+> > +                       ret = res;
+> > +                       /* Stop processing if no interesting events
+> > remains. */ +                       if (!(mask & (ALL_FSNOTIFY_EVENTS &
+> > ~FS_EVENT_ON_CHILD))) +                               break;
+> > +               }
+> > +#else
+> > +               (void)res;
+> > +#endif
+> > +
+> >
+> >                 if (inode_group)
+> >
+> >                         inode_node = srcu_dereference(inode_node->next,
+> >
+> >                                                       &fsnotify_mark_srcu
+> >                                                       );
+> >
+> > diff --git a/include/linux/fsnotify_backend.h
+> > b/include/linux/fsnotify_backend.h index e40190d..c8aea03 100644
+> > --- a/include/linux/fsnotify_backend.h
+> > +++ b/include/linux/fsnotify_backend.h
+> > @@ -64,6 +64,10 @@
+> >
+> >  #define FS_MOVE                        (FS_MOVED_FROM | FS_MOVED_TO)
+> >
+> > +/* All events which require a permission response from userspace */
+> > +#define FS_ALL_PERM_EVENTS (FS_OPEN_PERM |\
+> > +                           FS_ACCESS_PERM)
+>
+> When dealing with the result of ->handle_event as I propose, this
+> definition isn't needed.
 
-Daniel
+Yep, I am just unsure what is overall right thing to do. Lets see what Eric
+says..
 
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
+Tvrtko
 
-
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
