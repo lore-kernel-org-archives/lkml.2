@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758445Ab0JHO6J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 10:58:09 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:60409 "EHLO
+	id S1758615Ab0JHO6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:58:30 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:60482 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753748Ab0JHO6H (ORCPT
+	with ESMTP id S1753893Ab0JHO6K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 10:58:07 -0400
+	Fri, 8 Oct 2010 10:58:10 -0400
 From: Chase Douglas <chase.douglas@canonical.com>
 To: linux-input@vger.kernel.org, xorg-devel@lists.x.org
 Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Takashi Iwai <tiwai@suse.de>,
@@ -15,44 +15,89 @@ Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, Takashi Iwai <tiwai@suse.de>,
         Henrik Rydberg <rydberg@euromail.se>, linux-kernel@vger.kernel.org,
         Peter Hutterer <peter.hutterer@who-t.net>,
         Duncan McGreggor <duncan.mcgreggor@canonical.com>
-Subject: [PATCH 0/3] Input: synaptics - multitouch and multifinger support
-Date: Fri,  8 Oct 2010 10:57:57 -0400
-Message-Id: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>
+Subject: [PATCH 3/3] Input: synaptics - remove touches over button click area
+Date: Fri,  8 Oct 2010 10:58:00 -0400
+Message-Id: <1286549880-32580-4-git-send-email-chase.douglas@canonical.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1286549880-32580-3-git-send-email-chase.douglas@canonical.com>
+References: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>
+ <1286549880-32580-2-git-send-email-chase.douglas@canonical.com>
+ <1286549880-32580-3-git-send-email-chase.douglas@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tobyn Bertram reverse engineered the multitouch protocol for Synaptics devices.
-I've been able to take his work and produce a series of commits to enable MT
-and multifinger (MF) support.
+Now that we have proper multitouch support, we can handle integrated
+buttons better. If we know the top of the buttons on the touchpad, we
+can ignore any touches that occur within the touchpad area while a
+button is clicked. It may be possible to get the button area by querying
+the device, but for now allow the user to manually set it.
 
-Unfortunately, there's a tricky issue with some Synaptics touchpads that have
-integrated buttons. For example, the left and right buttons on the touchpad of
-my Dell Mini 1012 consist of the lower ~20% of the touchpad surface. The
-touchpad physically clicks under these areas.
+A note on why this works: the Synaptics touchpads have pseudo touch
+tracking. When two touches are on the touchpad, an MT touch packet with
+just the X, Y, and pressure values is sent before a normal Synaptics
+touch packet. When one touch is obviously in motion and the other is
+stationary, the touchpad controller sends the touch in motion in the
+normal packet and the stationary touch in the MT packet. Single touch
+emulation is provided by the normal packet, so an action like clicking
+a button and dragging with another finger still works as expected.
 
-The X synaptics input module now has a parameter to disable touches occuring
-over the button area, but this solution still doesn't work perfectly. If you
-click a button and drag with another finger near the clicking finger, the
-touchpad gets confused.
+Tested on a Dell Mini 1012 with synaptics_multitouch=1 and
+synaptics_button_thresh=4100.
 
-Now that we have full MT support, we can try to handle this scenario better.
-What I've found to work best is to make touches vanish if they occur over the
-button area of the trackpad while any button is held. This works in conjunction
-with the X synaptics driver to disable single touch control over the button
-area. With full MT support, the touchpad doesn't seem to get confused when a
-click and drag occurs with two fingers close to each other, and it enables MT
-gestures and MF support across the entire trackpad when no buttons are held.
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ drivers/input/mouse/synaptics.c |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-The first question is whether this seems appropriate to others, or if some
-other method would work better. Secondarily, should the solution occur in the
-kernel, like I have in the third patch of this series, or should it occur in
-the X input module? Although we don't have this information today, we may be
-able to query the touchpad in the future to know the area of the integrated
-buttons. If that were possible, would the recommended location for the hack
-change?
+diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+index 7289d88..e67778d 100644
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -49,6 +49,12 @@ module_param(synaptics_multitouch, bool, 0644);
+ MODULE_PARM_DESC(synaptics_multitouch,
+ 		 "Enable multitouch mode on Synaptics devices");
+ 
++static int synaptics_button_thresh = YMIN_NOMINAL + YMAX_NOMINAL;
++module_param(synaptics_button_thresh, int, 0644);
++MODULE_PARM_DESC(synaptics_button_thres,
++		 "Y coordinate threshold of integrated buttons on Synaptics "
++		 "devices");
++
+ /*****************************************************************************
+  *	Stuff we need even when we do not want native Synaptics support
+  ****************************************************************************/
+@@ -463,6 +469,10 @@ static void synaptics_parse_hw_state(unsigned char buf[], struct synaptics_data
+ 	}
+ }
+ 
++#define TOUCH_OVER_BUTTON(hw) (((hw).left || (hw).middle || (hw).right) && \
++			       (YMAX_NOMINAL + YMIN_NOMINAL - (hw).y > \
++				synaptics_button_thresh))
++
+ /*
+  *  called for each full received packet from the touchpad
+  */
+@@ -477,7 +487,7 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 	synaptics_parse_hw_state(psmouse->packet, priv, &hw);
+ 
+ 	if (SYN_MULTITOUCH(priv, &hw)) {
+-		if (hw.z > 0) {
++		if (hw.z > 0 && !TOUCH_OVER_BUTTON(hw)) {
+ 			input_report_abs(dev, ABS_MT_POSITION_X, hw.x);
+ 			input_report_abs(dev, ABS_MT_POSITION_Y,
+ 					 YMAX_NOMINAL + YMIN_NOMINAL - hw.y);
+@@ -509,6 +519,10 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+ 		return;
+ 	}
+ 
++	/* If touch occurs over depressed button, ignore it */
++	if (TOUCH_OVER_BUTTON(hw))
++		hw.z = 0;
++
+ 	if (hw.z > 0) {
+ 		priv->num_fingers++;
+ 		finger_width = 5;
+-- 
+1.7.1
 
-Thanks,
-
--- Chase
