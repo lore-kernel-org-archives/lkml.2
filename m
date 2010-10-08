@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755707Ab0JHIPy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 04:15:54 -0400
-Received: from verein.lst.de ([213.95.11.210]:45254 "EHLO verein.lst.de"
+	id S1755820Ab0JHIQU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 04:16:20 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:39400 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752722Ab0JHIPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 04:15:52 -0400
-Date: Fri, 8 Oct 2010 10:15:33 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/18] fs: Clean up inode reference counting
-Message-ID: <20101008081533.GA1728@lst.de>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com> <1286515292-15882-7-git-send-email-david@fromorbit.com> <20101008072051.GE23595@lst.de> <20101008074643.GS4681@dastard>
-Mime-Version: 1.0
+	id S1755640Ab0JHIQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 04:16:18 -0400
+Date: Fri, 8 Oct 2010 10:16:04 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@kernel.org>
+Cc: Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Section mismatches in memblock
+Message-ID: <20101008081604.GB13754@elte.hu>
+References: <4CABAAB4.3090707@zytor.com>
+ <4CABB4FD.2090304@kernel.org>
+ <4CABDF3A.2020501@zytor.com>
+ <4CABE739.8050001@kernel.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101008074643.GS4681@dastard>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <4CABE739.8050001@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 06:46:43PM +1100, Dave Chinner wrote:
-> > Also any chance to get an assert under a debug option the the reference
-> > count really is non-zero?
+
+* H. Peter Anvin <hpa@kernel.org> wrote:
+
+> On 10/05/2010 07:30 PM, H. Peter Anvin wrote:
+> > 
+> > Wrong functions!  Furhtermore, at least the tip tree definitely does not
+> > have __init_memblock here:
+> > 
 > 
-> For iref()? Sure, but I think WARN_ON_ONCE() is better for the moment,
-> though.
+> Nevermind.  I had missed that Ingo had put stuff into core/memblock on
+> top of x86/memblock, just to be confusing.
 
-I don't think a WARN_ON_ONCE is too helpful - there could be all kinds
-of different filesystems having that issue.  Also I think a plain
-WARN_ON is cheaper than a WARN_ON_ONCE and this is a rather hot
-codepath.
+Correct - we better keep it as a generic, non-x86 topic as it affects 
+other architectures. We can zap x86/memblock (it's fully contained in 
+core/memblock) so that it's not confusing.
 
+Thanks,
+
+	Ingo
