@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759461Ab0JHTKl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 15:10:41 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:40025 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754242Ab0JHTKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 15:10:39 -0400
-Date: Fri, 8 Oct 2010 14:10:45 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Roberto Sassu <roberto.sassu@polito.it>
-Cc: kirkland@canonical.com, jmorris@namei.org, akpm@linux-foundation.org,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/3] ecryptfs: checking return code of
- ecryptfs_find_auth_tok_for_sig()
-Message-ID: <20101008191045.GC15669@boomer>
-References: <201010061831.15661.roberto.sassu@polito.it>
+	id S1759533Ab0JHTKy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 15:10:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49851 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759489Ab0JHTKw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 15:10:52 -0400
+Date: Fri, 8 Oct 2010 15:10:47 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>,
+        Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 15/18] fs: introduce a per-cpu last_ino allocator
+Message-ID: <20101008191047.GA29976@infradead.org>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-16-git-send-email-david@fromorbit.com>
+ <20101008095658.GA19804@ZenIV.linux.org.uk>
+ <20101008100346.GA27737@infradead.org>
+ <1286533219.2959.128.camel@edumazet-laptop>
+ <20101008134821.GA15157@infradead.org>
+ <1286546772.2959.372.camel@edumazet-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201010061831.15661.roberto.sassu@polito.it>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1286546772.2959.372.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed Oct 06, 2010 at 06:31:15PM +0200, Roberto Sassu <roberto.sassu@polito.it> wrote:
-> This patch replaces the check of the 'matching_auth_tok' pointer with
-> the exit status of ecryptfs_find_auth_tok_for_sig().
-> This avoids to use authentication tokens obtained through the function 
-> ecryptfs_keyring_auth_tok_for_sig which are not valid.
+On Fri, Oct 08, 2010 at 04:06:12PM +0200, Eric Dumazet wrote:
+> On 32bit arches, inum for sockets/pipes could be pretty fast
 > 
+> unsigned u32 rnd_val __read_mostly; /* seeded at boot time */
 > 
-> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
-> ---
-
-Nice catch - applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
-
-Thanks!
-
->  fs/ecryptfs/keystore.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+> unsigned u32 get_inum(struct inode *ino, size_t size)
+> {
+> 	return rnd_val ^ ((long)ino + random32() % size);
+> }
 > 
-> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
-> index 77580db..643d011 100644
-> --- a/fs/ecryptfs/keystore.c
-> +++ b/fs/ecryptfs/keystore.c
-> @@ -1819,11 +1819,11 @@ find_next_matching_auth_tok:
->  			rc = -EINVAL;
->  			goto out_wipe_list;
->  		}
-> -		ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
-> +		rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
->  					       &matching_auth_tok,
->  					       crypt_stat->mount_crypt_stat,
->  					       candidate_auth_tok_sig);
-> -		if (matching_auth_tok) {
-> +		if (!rc) {
->  			found_auth_tok = 1;
->  			goto found_matching_auth_tok;
->  		}
-> -- 
-> 1.7.2.3
+> (Ie , use fact that an inode is a kernel object, with a given address
+> and a given size, two inodes cannot overlap)
 
+Yeah, we could probably do this.  From looking at the remaining users
+of the last_ino replacement this could probably work for them.
 
