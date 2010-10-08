@@ -1,76 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758274Ab0JHOmt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 10:42:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:46469 "EHLO mga01.intel.com"
+	id S1758305Ab0JHOvq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:51:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:54743 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757269Ab0JHOmt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 10:42:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,302,1283756400"; 
-   d="scan'208";a="845124402"
-Date: Fri, 8 Oct 2010 22:42:36 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Yong Wang <yong.y.wang@linux.intel.com>
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "Wu, Xia" <xia.wu@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] bdi: use deferable timer for sync_supers task
-Message-ID: <20101008144236.GA27331@localhost>
-References: <20101008083514.GA12402@ywang-moblin2.bj.intel.com>
- <20101008092520.GB5426@lst.de>
- <A24AE1FFE7AEC5489F83450EE98351BF227AB58D43@shsmsx502.ccr.corp.intel.com>
- <1286532586.2095.55.camel@localhost>
- <A24AE1FFE7AEC5489F83450EE98351BF227AB58D51@shsmsx502.ccr.corp.intel.com>
- <1286533687.2095.58.camel@localhost>
- <20101008102709.GA12682@ywang-moblin2.bj.intel.com>
- <20101008135704.GB25439@localhost>
+	id S1757342Ab0JHOvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 10:51:44 -0400
+Date: Fri, 8 Oct 2010 16:51:41 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnaud Lacombe <lacombar@gmail.com>
+Subject: Re: linux-next: build warnings after merge of the kbuild-current
+ tree
+Message-ID: <20101008145141.GA13688@sepie.suse.cz>
+References: <20101006114433.4fbe86ef.sfr@canb.auug.org.au>
+ <4CAC59D4.5010505@suse.cz>
+ <1286365363.4281.5.camel@e102109-lin.cambridge.arm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101008135704.GB25439@localhost>
+In-Reply-To: <1286365363.4281.5.camel@e102109-lin.cambridge.arm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 09:57:04PM +0800, Wu Fengguang wrote:
-> On Fri, Oct 08, 2010 at 06:27:09PM +0800, Yong Wang wrote:
-> > On Fri, Oct 08, 2010 at 01:28:07PM +0300, Artem Bityutskiy wrote:
-> > > On Fri, 2010-10-08 at 18:27 +0800, Wu, Xia wrote:
-> > > > > However, when the next wake-up interrupt happens is not defined. It can
-> > > > > happen 1ms after, or 1 minute after, or 1 hour after. What Christoph
-> > > > > says is that there should be some guarantee that sb writeout starts,
-> > > > > say, within 5 to 10 seconds interval. Deferrable timers do not guarantee
-> > > > > this. But take a look at the range hrtimers - they do exactly this.
-> > > > 
-> > > > If the system is in sleep state, is there any data which should be written?
-> > > 
-> > > May be yes, may be no.
-> > > 
+On Wed, Oct 06, 2010 at 12:42:43PM +0100, Catalin Marinas wrote:
+> On Wed, 2010-10-06 at 12:13 +0100, Michal Marek wrote:
+> > On 6.10.2010 02:44, Stephen Rothwell wrote:
+> > > After merging the kbuild-current tree, today's (and yesterday's)
+> > > linux-next build (x86_64 allmodconfig and other builds as well) produced
+> > > these warnings:
+> > >
+> > > warning: [...] selects I2C_ALGOBIT which has unmet direct dependencies (I2C && !I2C_HELPER_AUTO)
+> > > [...]
+> > > warning: [...] selects VIDEO_TVAUDIO which has unmet direct dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+> > >
+> > > After reverting commit ff5ff6060bf880aac233e68dd666cbe9e39ec620
+> > > ("kconfig: delay symbol direct dependency initialization") it produces no
+> > > such warnings.
 > > 
-> > Thanks for the quick response, Artem. May I know what might need to be
-> > written out when system is really idle?
+> > I'm aware of them. I'm talking with Jean Delvare about fixing the I2C
+> > warnings, see http://lkml.org/lkml/2010/10/5/83. The drivers/media/video
+> > warnings will need the same care. I don't know if we manage to fix these
+> > in time, so maybe the kconfig fix will have to way for 2.6.36.1.
 > 
-> system idle != no dirty inodes
-
-Ah sorry -- I missed the context. Please ignore the following
-paragraphs for sync_supers..
-
-Thanks,
-Fengguang
-
-> Imagine an application dirties 100MB data and quits. The system then
-> goes quiet for very long time. In this case we still want the flusher
-> thread to wake up within 30 seconds to flush the 100MB dirty data.
-> It's a contract that dirty data will be synced to disk after 30s
-> (which is the default value of /proc/sys/vm/dirty_expire_centisecs).
+> The kconfig commit ff5ff6060 fixes a bug with commit 246cf9c26 which was
+> using some structures after they were freed. Because of the bug, it just
+> happened that it wasn't showing these kconfig warnings. A worst thing is
+> kbuild segfaulting or getting into an infinite loop (as reported/fixed
+> by Arnaud).
 > 
-> Note that 30s is not an exact value. A dirty page may be synced to
-> disk when it's been dirtied for 35s. The 5s error comes from the
-> flusher wakeup interval (/proc/sys/vm/dirty_writeback_centisecs).
-> 
-> Thanks,
-> Fengguang
+> I think the above commit is still needed before 2.6.36 and maybe push a
+> drivers/media/video warnings in 2.6.36.1.
+
+So my approach would be to disable the kconfig warnings *temporarily*
+for 2.6.36-final. The warnings have done a good job already during the
+2.6.36-rc phase and will serve us after 2.6.36 again, just the new load
+of warnings that every user is going to see is not really desirable at
+this point in time :-|.
+
+Opinions?
+
+Michal
+
+>From ca22d6b4c7c26a8ff9092036a9524bc5ba817277 Mon Sep 17 00:00:00 2001
+From: Michal Marek <mmarek@suse.cz>
+Date: Fri, 8 Oct 2010 16:40:27 +0200
+Subject: [PATCH] kconfig: Temporarily disable dependency warnings
+
+After fixing a use-after-free bug in kconfig, a 'make defconfig' or
+'make allmodconfig' fills the screen with warnings that were not
+detected before. Given that we are close to the release now, disable the
+warnings temporarily and deal with them after 2.6.36.
+
+Signed-off-by: Michal Marek <mmarek@suse.cz>
+
+diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
+index 943712c..d3cfa49 100644
+--- a/scripts/kconfig/symbol.c
++++ b/scripts/kconfig/symbol.c
+@@ -350,7 +350,7 @@ void sym_calc_value(struct symbol *sym)
+ 				}
+ 			}
+ 		calc_newval:
+-			if (sym->dir_dep.tri == no && sym->rev_dep.tri != no) {
++			if (0 && sym->dir_dep.tri == no && sym->rev_dep.tri != no) {
+ 				fprintf(stderr, "warning: (");
+ 				expr_fprint(sym->rev_dep.expr, stderr);
+ 				fprintf(stderr, ") selects %s which has unmet direct dependencies (",
