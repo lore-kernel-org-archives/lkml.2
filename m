@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754021Ab0JHHOS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:14:18 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:33209 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab0JHHOR (ORCPT
+	id S1754042Ab0JHHQi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:16:38 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43691 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab0JHHQg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:14:17 -0400
-Date: Fri, 8 Oct 2010 03:14:17 -0400
-From: Christoph Hellwig <hch@lst.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 05/18] fs: inode split IO and LRU lists
-Message-ID: <20101008071417.GD23595@lst.de>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-6-git-send-email-david@fromorbit.com>
+	Fri, 8 Oct 2010 03:16:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=SS01BU2lfR6JdyWZfTDFyYHmeyHqs2Pgs29Pa4lxwpWrioyVaBXPKkzAU9o9SYvGPq
+         eDEHn7jaR/DSS2M862SAfnBpCFLZt+AEfglqnyoilx6+2Npg/jy56SqgEsOtpzA0Mvxb
+         zoGpsDvmGWJN+sPdZ6ORpeM1LghXGBJ3f/SHU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286515292-15882-6-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com>
+References: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com>
+Date: Fri, 8 Oct 2010 00:16:35 -0700
+Message-ID: <AANLkTinynZj9bYFAyfRTF2uopmLe6Ls4YGdZPqCAJTpR@mail.gmail.com>
+Subject: Re: [PATCH 00/33] Staging: Fixed <module-objs> to <module>-y
+From: matt mooney <mfmooney@gmail.com>
+To: T Dent <tdent48227@gmail.com>
+Cc: greg@kroah.com, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, sam@ravnborg.org,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:21:19PM +1100, Dave Chinner wrote:
-> From: Nick Piggin <npiggin@suse.de>
-> 
-> The use of the same inode list structure (inode->i_list) for two
-> different list constructs with different lifecycles and purposes
-> makes it impossible to separate the locking of the different
-> operations. Therefore, to enable the separation of the locking of
-> the writeback and reclaim lists, split the inode->i_list into two
-> separate lists dedicated to their specific tracking functions.
+On Thu, Oct 7, 2010 at 6:35 PM, T Dent <tdent48227@gmail.com> wrote:
+> I patch against the next-20101006 tree.
+>
+> The patch series replace use of <module>-objs with <module>-y in the
+> staging directory.
 
-> @@ -410,7 +410,11 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
->  			redirty_tail(inode);
->  		} else {
->  			/* The inode is clean */
-> -			list_move(&inode->i_list, &inode_unused);
-> +			list_del_init(&inode->i_io);
-> +			if (list_empty(&inode->i_lru)) {
-> +				list_add(&inode->i_lru, &inode_unused);
-> +				percpu_counter_inc(&nr_inodes_unused);
-> +			}
+Commit messages are written in the present tense. You happen to be
+using two different tenses within the commit message, which is truly
+odd.  And why did you not split apart those atrocious statements with
+the infinite column width?
 
-This looks like it belongs into the earlier patch.  Also instead of
-making nr_inodes_unused non-static a helper to manipulate it might
-be a better idea.
+This patch series adds little benefit.  As Sam has suggested, a more
+general cleanup would be a better goal, and staging is an area that
+needs extra attention some of which has already been pointed out in
+other emails.
 
+-mfm
+
+-- 
+GPG-Key: 9AFE00EA
