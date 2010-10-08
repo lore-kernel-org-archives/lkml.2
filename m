@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932235Ab0JHKVX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:21:23 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:25695 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757104Ab0JHKVW convert rfc822-to-8bit (ORCPT
+	id S932188Ab0JHKW6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:22:58 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39970 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753745Ab0JHKW4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:21:22 -0400
-X-SpamScore: -28
-X-BigFish: VPS-28(zzbb2cK1432N98dN179dN9371Pzz1202hzz8275bhz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L9YVFD-02-DUV-02
-X-M-MSG: 
-Date: Fri, 8 Oct 2010 12:21:15 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] apic, x86: Use BIOS settings for IBS and MCE
- threshold interrupt LVT offsets
-Message-ID: <20101008102115.GG13563@erda.amd.com>
-References: <1286360874-1471-1-git-send-email-robert.richter@amd.com>
- <1286360874-1471-3-git-send-email-robert.richter@amd.com>
- <20101006194150.GA17647@lenovo>
- <20101008092452.GE13563@erda.amd.com>
- <AANLkTi=6O1nUC71OiwcJBjmH-naq3ofMXyA0BqoT7Q55@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=6O1nUC71OiwcJBjmH-naq3ofMXyA0BqoT7Q55@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Fri, 8 Oct 2010 06:22:56 -0400
+Date: Fri, 8 Oct 2010 11:48:55 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Suraj Sumangala <suraj@Atheros.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "marcel@holtmann.org" <marcel@holtmann.org>,
+        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>
+Subject: Re: Peculiar stuff in hci_ath3k/badness in hci_uart
+Message-ID: <20101008114855.7dfd255d@lxorguk.ukuu.org.uk>
+In-Reply-To: <4CAEE1DB.1070202@Atheros.com>
+References: <20101007214134.6bcd2e8f@lxorguk.ukuu.org.uk>
+	<4CAEE1DB.1070202@Atheros.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.10.10 05:37:24, Cyrill Gorcunov wrote:
-> On Fri, Oct 8, 2010 at 1:24 PM, Robert Richter <robert.richter@amd.com> wrote:
-> ...
-> >> > +                   } else if (lvt_off != offset) {
-> >>
-> >> Could we put explicit type specificator here? For better readbility.
-> >> ...
-> >
-> > Cyrill,
-> >
-> > Do you mean an explicit type cast here, or something else?
-> >
+On Fri, 8 Oct 2010 14:48:19 +0530
+Suraj Sumangala <suraj@Atheros.com> wrote:
+
+> Hi Alan,
 > 
-> Yeah, explicit type cast (not a big deal though since at moment
-> of course nothing can fire in this snippet, but I think for future
-> modifications better to have explicit cast).
-
-Hmm, don't think this is really necessary. As an alternative we could
-make variable offset an int too and then do an explicit cast when
-calling setup_APIC_eilvt().
-
-But I rather tend to leave it as it is.
-
--Robert
-
-> 
+> On 10/8/2010 2:11 AM, Alan Cox wrote:
+> > Noticed this while looking at Savoy's stuff
 > >
-> > Thanks for review,
 > >
-> > -Robert
+> > ath_wakeup_ar3k:
 > >
-> 
-> Cyrill
-> 
+> >         int status = tty->driver->ops->tiocmget(tty, NULL);
+> >
+> I agree, it will be a problem if the underlying driver try to access the 
+> "struct file". Is there any other way I can get the MCR status here 
+> without providing user space pointer?
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Currently no - that should get fixed in the tty layer and I will look
+into it end of next week as a priority.
 
+Alan
