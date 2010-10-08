@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755175Ab0JHWW6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 18:22:58 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:4144 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab0JHWW5 (ORCPT
+	id S1754899Ab0JHWeK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 18:34:10 -0400
+Received: from asmtpout026.mac.com ([17.148.16.101]:36853 "EHLO
+	asmtpout026.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754187Ab0JHWeI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 18:22:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6130"; a="57239341"
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-In-Reply-To: <AANLkTik6tNhKq5yTh5_qaY9JdOTPSTH1CzG+3B+qnb=N@mail.gmail.com>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
-	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
-	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
-	 <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com>
-	 <20101008091331.74871a42@lxorguk.ukuu.org.uk>
-	 <1286551434.4153.21.camel@m0nster>
-	 <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
-	 <1286556328.4153.142.camel@m0nster>
-	 <AANLkTikc8X0nz1cCxgfbaqLzCMiBLogLeU0ZdFoGEpP6@mail.gmail.com>
-	 <1286564491.4153.284.camel@m0nster>
-	 <AANLkTim5E5WwD64RJ7NAk6Zr9NZ6jstrKSmjRTL039VR@mail.gmail.com>
-	 <1286567442.4153.343.camel@m0nster>
-	 <AANLkTik6tNhKq5yTh5_qaY9JdOTPSTH1CzG+3B+qnb=N@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 15:22:44 -0700
-Message-ID: <1286576564.4153.504.camel@m0nster>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Oct 2010 18:34:08 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; CHARSET=US-ASCII
+Subject: Re: kgdb errors with serial console
+From: Elvis Dowson <elvis.dowson@mac.com>
+In-reply-to: <4CAF19FA.7010206@windriver.com>
+Date: Sat, 09 Oct 2010 02:33:30 +0400
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Message-id: <C90C915C-B8A6-47F3-9935-63C9A060BDB1@mac.com>
+References: <BDD07355-7199-4A2E-8426-F6D43EA5D313@mac.com>
+ <4CAE4BB6.7080509@windriver.com>
+ <7BA01CAF-DD25-4AB6-9498-8AB89E2EDDE1@mac.com>
+ <4CAE5B40.3070701@windriver.com>
+ <917F9CCC-F3D3-4E23-B955-412F08CE8E2E@mac.com> <4CAF19FA.7010206@windriver.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 18:02 -0400, Mike Frysinger wrote:
-> On Fri, Oct 8, 2010 at 15:50, Daniel Walker wrote:
-> > On Fri, 2010-10-08 at 15:20 -0400, Mike Frysinger wrote:
-> >> On Fri, Oct 8, 2010 at 15:01, Daniel Walker wrote:
-> >> > On Fri, 2010-10-08 at 14:38 -0400, Mike Frysinger wrote:
-> >> >> On Fri, Oct 8, 2010 at 12:45, Daniel Walker wrote:
-> >> >> > On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
-> >> >> >> > I don't think the kernel is going to implode if we allow an optional
-> >> >> >> > ttyS override for debugging purposes.. I just don't see that "screwing"
-> >> >> >> > up the kernel.
-> >> >> >>
-> >> >> >> That is perhaps why you are not a subsystem maintainer.
-> >> >> >
-> >> >> > No, I'm sure it's not.
-> >> >> >
-> >> >> > What I was telling Greg is that this type of override is allowed right
-> >> >> > now, if you mod the source (everything is allowed if you mod the source
-> >> >> > right?) ..
-> >> >>
-> >> >> just because someone can mod the source code to add a root shell
-> >> >> doesnt mean we should accept patches to do it
-> >> >
-> >> > That's not what I was getting at. If you can mod the source to add the
-> >> > override, then adding in a patch which also requires you to mod the
-> >> > source to add the override should be acceptable because it's no
-> >> > different that what we currently have.
-> >>
-> >> sorry, but you lost me.  all i see is "drop the hack code".
-> >
-> > I can make it simpler for you. You add code into Linux, people can
-> > modify it, and you can't control that.
-> 
-> while true, that lacks justification for merging hacks into mainline
+Hi Jason,
+                    Some good news. I switch the GDB command set from mi to mi1, and it seems to be working now. 
 
-No one is merging hack, or giving justification for that.. So not sure
-why your going down that thread again .
+What I did is added the kgdbwait command to the bootargs as follows (not sure if it was necessary, but will try once again without it)
 
-Daniel
+setenv mmcargs 'setenv bootargs console=${console} vram=12M omapfb.vram=0:4M omapfb.mode=dvi:${dvimode} omapdss.def_disp=${defaultdisplay} root=/dev/mmcblk0p2 rw rootfstype=ext3 rootwait kgdb=${console} kgdboc=${console} kgdbwait'
 
+Then I launched the debugger, and it did something, and resumed normally. 
 
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
+Then I manually went to the console and activated kgdb by typing 
 
+echo g > /proc/sysrq-trigger
+
+This caused the debugger on the Eclipse side to process something, and then it stopped in file kgdb.c at the call to arch_kgdb_breakpoint(), in the following method:
+
+void kgdb_breakpoint(void)
+{
+	atomic_set(&kgdb_setting_breakpoint, 1);
+	wmb(); /* Sync point before breakpoint */
+	arch_kgdb_breakpoint();
+	wmb(); /* Sync point after breakpoint */
+	atomic_set(&kgdb_setting_breakpoint, 0);
+}
+
+I can now clearly see all the registers and variables in Eclipse. 
+
+Question 02: sys_sync doesn't seem to be called in the ARM arch files, it only exists for x86 and sparc architectures.
+
+Is there any other kernel file I can set a break-point into, to be able to check if everything is working ok?
+
+For example, if I type a normal cd or ls command? 
+
+Best regards,
+
+Elvis
 
