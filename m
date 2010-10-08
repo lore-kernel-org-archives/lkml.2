@@ -1,53 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758024Ab0JHOYa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 10:24:30 -0400
-Received: from kroah.org ([198.145.64.141]:35622 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752919Ab0JHOY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 10:24:29 -0400
-Date: Fri, 8 Oct 2010 07:24:34 -0700
-From: Greg KH <greg@kroah.com>
-To: Tracey Dent <tdent48227@gmail.com>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        sam@ravnborg.org, linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 27/33] Staging: ti-st: Makefile: replace the use of
-	<module>-objs with <module>-y
-Message-ID: <20101008142434.GA23666@kroah.com>
-References: <1286496113-11897-1-git-send-email-tdent48227@gmail.com> <1286496113-11897-27-git-send-email-tdent48227@gmail.com>
+	id S1758096Ab0JHOZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:25:51 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42180 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754938Ab0JHOZu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 10:25:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=FMO+jMvpHISGAWBp13cpjl1GESXSkj+iUKR3/CraSLvmzrBw+A8MYbcuqtFjugzlFo
+         10vDX+2eW8F4Zh0R0hMSja1WF33lBNrxXPctCiVqyklIw2GAjKcnYVKOaWAEjfF57syf
+         XG4CqHemCKUMDJ3UJT+CXp4p+bvCeE5RKjbaU=
+Date: Fri, 8 Oct 2010 22:27:52 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: khaled MOHAMMED atteya <khaled.m.atteya@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: ask about include header file
+Message-ID: <20101008142752.GE4088@hack>
+References: <AANLkTikUoNwzHNyuWNGgJ6QkMNbbyTG7SmMQqZaR1E9_@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286496113-11897-27-git-send-email-tdent48227@gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <AANLkTikUoNwzHNyuWNGgJ6QkMNbbyTG7SmMQqZaR1E9_@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 08:01:47PM -0400, Tracey Dent wrote:
-> Changed <module>-objs to <module>-y in Makefile.
-> 
-> Signed-off-by: Tracey Dent <tdent48227@gmail.com>
-> ---
->  drivers/staging/ti-st/Makefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/ti-st/Makefile b/drivers/staging/ti-st/Makefile
-> index 0167d1d..4b6ca18 100644
-> --- a/drivers/staging/ti-st/Makefile
-> +++ b/drivers/staging/ti-st/Makefile
-> @@ -3,5 +3,5 @@
->  # and its protocol drivers (BT, FM, GPS)
->  #
->  obj-$(CONFIG_TI_ST) 		+= st_drv.o
-> -st_drv-objs			:= st_core.o st_kim.o st_ll.o
-> +st_drv-y			:= st_core.o st_kim.o st_ll.o
->  obj-$(CONFIG_ST_BT) 		+= bt_drv.o
+On Wed, Oct 06, 2010 at 08:25:09PM -0200, khaled MOHAMMED atteya wrote:
+>In arch/x86/kernel/entry_32.S(for example) , audit_syscall_entry
+>function is called by this statement "call audit_syscall_entry", and
+>when i search about this function declaration , i found it in
+>include/linux/audit.h , but i couldn't found #include linux/audit.h in
+>entry_32.S as i expected, why?
+>
 
-For some odd reason, this patch didn't apply to the tree, but all of the
-32 other patches in the series did.  Care to redo this one and resend it
-to me?
+Hey,
 
-thanks,
+that is asm, not C, asm doesn't need declarations, C does. :)
 
-greg k-h
+-- 
+Live like a child, think like the god.
+ 
