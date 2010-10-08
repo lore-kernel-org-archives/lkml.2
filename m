@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab0JHS1x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:27:53 -0400
-Received: from www.tglx.de ([62.245.132.106]:54827 "EHLO www.tglx.de"
+	id S1753348Ab0JHSc7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:32:59 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:36785 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754235Ab0JHS1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:27:51 -0400
-Date: Fri, 8 Oct 2010 20:27:31 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Andi Kleen <andi@firstfloor.org>
-cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        Andi Kleen <ak@linux.intel.com>, ralf@linux-mips.org,
-        tony.luck@intel.com
-Subject: Re: [PATCH] Define _addr_lsb in siginfo_t for mips and ia64
-In-Reply-To: <1286560501-26843-1-git-send-email-andi@firstfloor.org>
-Message-ID: <alpine.LFD.2.00.1010082015480.13094@localhost6.localdomain6>
-References: <1286560501-26843-1-git-send-email-andi@firstfloor.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751882Ab0JHSc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 14:32:58 -0400
+Date: Fri, 8 Oct 2010 11:34:24 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: grant.likely@secretlab.ca
+Cc: David Miller <davem@davemloft.net>, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH] sparc: stop exporting openprom.h header
+Message-ID: <20101008113424.2249c2df@debxo>
+In-Reply-To: <20101008.104557.59696706.davem@davemloft.net>
+References: <20101008171210.GE3863@angua.secretlab.ca>
+	<20101008.101759.193728130.davem@davemloft.net>
+	<20101008173650.GH3863@angua.secretlab.ca>
+	<20101008.104557.59696706.davem@davemloft.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Oct 2010, Andi Kleen wrote:
 
-> From: Andi Kleen <ak@linux.intel.com>
-> 
-> Define an _addr_lsb field in the mips and ia64 siginfo_ts, following
-> the asm-generic version. This just puts the field over padding.
-> 
-> This fixes a compilation problem introduced with a337fda.
+It's unknown why openprom.h was being exported; there doesn't seem to be any
+reason for it currently, and it creates headaches with userspace being able
+to potentially use the structures in there.  So, don't export it anymore.
 
-But it does not fix the mess you created in kernel/signal.c (aside of
-the completely braindaed #ifdef, it's whitespace damaged) with a two
-days old patch which has neither seen next, nor been reviewed by
-people who care about core code nor been cross-compiled which is
-mandatory for core kernel code changes.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ arch/sparc/include/asm/Kbuild |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-The correct fix is to revert the patch in kernel/signal.c and fix this
-proper in .37. This put_user is missing since .32 when you introduced
-that grossly misnamed si extension, so there is no rush to get this in
-during the late -rc cycle.
+diff --git a/arch/sparc/include/asm/Kbuild b/arch/sparc/include/asm/Kbuild
+index deeb0fb..3c93f08 100644
+--- a/arch/sparc/include/asm/Kbuild
++++ b/arch/sparc/include/asm/Kbuild
+@@ -7,7 +7,6 @@ header-y += display7seg.h
+ header-y += envctrl.h
+ header-y += fbio.h
+ header-y += jsflash.h
+-header-y += openprom.h
+ header-y += openpromio.h
+ header-y += perfctr.h
+ header-y += psrcompat.h
+-- 
+1.5.6.5
 
-Thanks
-
-	tglx
-
-> Cc: ralf@linux-mips.org
-> Cc: tony.luck@intel.com
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> ---
->  arch/ia64/include/asm/siginfo.h |    1 +
->  arch/mips/include/asm/siginfo.h |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/ia64/include/asm/siginfo.h b/arch/ia64/include/asm/siginfo.h
-> index 118d429..d20bf96 100644
-> --- a/arch/ia64/include/asm/siginfo.h
-> +++ b/arch/ia64/include/asm/siginfo.h
-> @@ -62,6 +62,7 @@ typedef struct siginfo {
->  			int _imm;		/* immediate value for "break" */
->  			unsigned int _flags;	/* see below */
->  			unsigned long _isr;	/* isr */
-> +			short _addr_lsb;
->  		} _sigfault;
->  
->  		/* SIGPOLL */
-> diff --git a/arch/mips/include/asm/siginfo.h b/arch/mips/include/asm/siginfo.h
-> index 96e28f1..709f7d4 100644
-> --- a/arch/mips/include/asm/siginfo.h
-> +++ b/arch/mips/include/asm/siginfo.h
-> @@ -88,6 +88,7 @@ typedef struct siginfo {
->  #ifdef __ARCH_SI_TRAPNO
->  			int _trapno;	/* TRAP # which caused the signal */
->  #endif
-> +			short _addr_lsb;	
->  		} _sigfault;
->  
->  		/* SIGPOLL, SIGXFSZ (To do ...)  */
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
