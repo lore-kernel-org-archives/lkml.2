@@ -1,83 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757693Ab0JHOUV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 10:20:21 -0400
-Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:57340 "EHLO
-	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753966Ab0JHOUU (ORCPT
+	id S1757950Ab0JHOVr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:21:47 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:36704 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757047Ab0JHOVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 10:20:20 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4CAF29F4.9010709@cam.ac.uk>
-Date: Fri, 08 Oct 2010 15:25:56 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100928 Lightning/1.0b3pre Thunderbird/3.1.4
+	Fri, 8 Oct 2010 10:21:46 -0400
+X-SpamScore: 1
+X-BigFish: VS1(zzzz1202hzz8275bhz32i87h2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L9Z5KW-02-0JD-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 7/7] oprofile, x86: Add support for IBS periodic op counter extension
+Date: Fri, 8 Oct 2010 15:56:32 +0200
+Message-ID: <1286546192-18593-8-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1286546192-18593-1-git-send-email-robert.richter@amd.com>
+References: <1286546192-18593-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-To: Samu Onkalo <samu.p.onkalo@nokia.com>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCHv2 2/5] misc: update bhsfh driver to Kconfig and Makefile
-References: <1286545324-18506-1-git-send-email-samu.p.onkalo@nokia.com> <1286545324-18506-3-git-send-email-samu.p.onkalo@nokia.com>
-In-Reply-To: <1286545324-18506-3-git-send-email-samu.p.onkalo@nokia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/10 14:42, Samu Onkalo wrote:
-> Compilation support for bhsfh driver
-> 
-> Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
-> ---
->  drivers/misc/Kconfig  |   10 ++++++++++
->  drivers/misc/Makefile |    1 +
->  2 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index b743312..f2e8065 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -314,6 +314,16 @@ config SENSORS_BH1780
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called bh1780gli.
->  
-> +config SENSORS_BHSFH
-> +         tristate "BH1770GLC / SFH7770 combined ALS / Proximity sensor";
-> +         depends on I2C
-> +         ---help---
-> +           Say Y here if you want to build a driver for BH1770GLC / SFH7770
-> +           combined ambient light and proximity sensor chip
-> +
-> +           To compile this driver as a module, choose M here: the
-> +           module will be called bhsfh. If unsure, say N here.
-> +
-Really not keen on the naming.  The above comment made me think this was
-a single chip integrating both of the parts.  Reading the code makes it clear
-that they just share an interface.  So please name it after one of them.
-Lots of reasons not to invent combined names like this.
-* non obvious thing to grep for.
-* 3rd part comes along with a different name. Do you change the driver name?
+The count value for IBS op sampling has been extended by 7 bits. The
+feature is reflected in bit 6 (OpCntExt) of the IBS capability
+register (CPUID Fn8000_001B_EAX).
 
-So best bet is always just to pick a supported part and name the driver after
-that.  The device table stuff and clear descriptions in kconfig will make
-it obvious what the part supports.
->  config HMC6352
->  	tristate "Honeywell HMC6352 compass"
->  	depends on I2C
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 42eab95..fd5a4b7 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -16,6 +16,7 @@ obj-$(CONFIG_TIFM_CORE)       	+= tifm_core.o
->  obj-$(CONFIG_TIFM_7XX1)       	+= tifm_7xx1.o
->  obj-$(CONFIG_PHANTOM)		+= phantom.o
->  obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
-> +obj-$(CONFIG_SENSORS_BHSFH)	+= bhsfh.o
->  obj-$(CONFIG_SGI_IOC4)		+= ioc4.o
->  obj-$(CONFIG_ENCLOSURE_SERVICES) += enclosure.o
->  obj-$(CONFIG_KGDB_TESTS)	+= kgdbts.o
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/include/asm/perf_event.h |   19 ++++++++++---------
+ arch/x86/oprofile/op_model_amd.c  |   22 +++++++++++++++++++---
+ 2 files changed, 29 insertions(+), 12 deletions(-)
+
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 6e742cc..550e26b 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -111,17 +111,18 @@ union cpuid10_edx {
+ #define X86_PMC_IDX_FIXED_BTS				(X86_PMC_IDX_FIXED + 16)
+ 
+ /* IbsFetchCtl bits/masks */
+-#define IBS_FETCH_RAND_EN		(1ULL<<57)
+-#define IBS_FETCH_VAL			(1ULL<<49)
+-#define IBS_FETCH_ENABLE		(1ULL<<48)
+-#define IBS_FETCH_CNT			0xFFFF0000ULL
+-#define IBS_FETCH_MAX_CNT		0x0000FFFFULL
++#define IBS_FETCH_RAND_EN	(1ULL<<57)
++#define IBS_FETCH_VAL		(1ULL<<49)
++#define IBS_FETCH_ENABLE	(1ULL<<48)
++#define IBS_FETCH_CNT		0xFFFF0000ULL
++#define IBS_FETCH_MAX_CNT	0x0000FFFFULL
+ 
+ /* IbsOpCtl bits */
+-#define IBS_OP_CNT_CTL			(1ULL<<19)
+-#define IBS_OP_VAL			(1ULL<<18)
+-#define IBS_OP_ENABLE			(1ULL<<17)
+-#define IBS_OP_MAX_CNT			0x0000FFFFULL
++#define IBS_OP_CNT_CTL		(1ULL<<19)
++#define IBS_OP_VAL		(1ULL<<18)
++#define IBS_OP_ENABLE		(1ULL<<17)
++#define IBS_OP_MAX_CNT		0x0000FFFFULL
++#define IBS_OP_MAX_CNT_EXT	0x007FFFFFULL	/* not a register bit mask */
+ 
+ #ifdef CONFIG_PERF_EVENTS
+ extern void init_hw_perf_events(void);
+diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
+index 9de33fa..65f0a1e 100644
+--- a/arch/x86/oprofile/op_model_amd.c
++++ b/arch/x86/oprofile/op_model_amd.c
+@@ -83,6 +83,7 @@ static struct ibs_state ibs_state;
+ #define IBS_CAPS_RDWROPCNT		(1U<<3)
+ #define IBS_CAPS_OPCNT			(1U<<4)
+ #define IBS_CAPS_BRNTRGT		(1U<<5)
++#define IBS_CAPS_OPCNTEXT		(1U<<6)
+ 
+ #define IBS_CAPS_DEFAULT		(IBS_CAPS_AVAIL		\
+ 					 | IBS_CAPS_FETCHSAM	\
+@@ -246,8 +247,16 @@ static inline void op_amd_start_ibs(void)
+ 
+ 	memset(&ibs_state, 0, sizeof(ibs_state));
+ 
++	/*
++	 * Note: Since the max count settings may out of range we
++	 * write back the actual used values so that userland can read
++	 * it.
++	 */
++
+ 	if (ibs_config.fetch_enabled) {
+-		val = (ibs_config.max_cnt_fetch >> 4) & IBS_FETCH_MAX_CNT;
++		val = ibs_config.max_cnt_fetch >> 4;
++		val = min(val, IBS_FETCH_MAX_CNT);
++		ibs_config.max_cnt_fetch = val << 4;
+ 		val |= ibs_config.rand_en ? IBS_FETCH_RAND_EN : 0;
+ 		val |= IBS_FETCH_ENABLE;
+ 		wrmsrl(MSR_AMD64_IBSFETCHCTL, val);
+@@ -261,6 +270,7 @@ static inline void op_amd_start_ibs(void)
+ 			 * op_amd_randomize_ibs_op() for details.
+ 			 */
+ 			val = clamp(val, 0x0081ULL, 0xFF80ULL);
++			ibs_config.max_cnt_op = val << 4;
+ 		} else {
+ 			/*
+ 			 * The start value is randomized with a
+@@ -268,9 +278,15 @@ static inline void op_amd_start_ibs(void)
+ 			 * with the half of the randomized range. Also
+ 			 * avoid underflows.
+ 			 */
+-			val = min(val + IBS_RANDOM_MAXCNT_OFFSET,
+-				  IBS_OP_MAX_CNT);
++			val += IBS_RANDOM_MAXCNT_OFFSET;
++			if (ibs_caps & IBS_CAPS_OPCNTEXT)
++				val = min(val, IBS_OP_MAX_CNT_EXT);
++			else
++				val = min(val, IBS_OP_MAX_CNT);
++			ibs_config.max_cnt_op =
++				(val - IBS_RANDOM_MAXCNT_OFFSET) << 4;
+ 		}
++		val = ((val & ~IBS_OP_MAX_CNT) << 4) | (val & IBS_OP_MAX_CNT);
+ 		val |= ibs_config.dispatched_ops ? IBS_OP_CNT_CTL : 0;
+ 		val |= IBS_OP_ENABLE;
+ 		ibs_state.ibs_op_ctl = val;
+-- 
+1.7.2.2
+
 
