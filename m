@@ -1,46 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab0JHS4S (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:56:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37019 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754532Ab0JHS4Q (ORCPT
+	id S1759453Ab0JHS5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:57:30 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56324 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754532Ab0JHS53 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:56:16 -0400
-Message-ID: <4CAF693B.9030706@oracle.com>
-Date: Fri, 08 Oct 2010 11:55:55 -0700
-From: Andy Grover <andy.grover@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.11) Gecko/20101007 Lightning/1.0b2 Thunderbird/3.1.5
+	Fri, 8 Oct 2010 14:57:29 -0400
+Date: Fri, 8 Oct 2010 11:57:40 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Jeffrey Carlyle <jeff.carlyle@motorola.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Lun Chang <L.chang@motorola.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] regulator: avoid deadlock when disabling regulator
+ with supply
+Message-ID: <20101008185739.GA6098@opensource.wolfsonmicro.com>
+References: <20101008163033.GA5092@opensource.wolfsonmicro.com>
+ <1286563435-31239-1-git-send-email-jeff.carlyle@motorola.com>
 MIME-Version: 1.0
-To: Akinobu Mita <akinobu.mita@gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>, rds-devel@oss.oracle.com,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/5] rds: stop including asm-generic/bitops/le.h directly
-References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com> <1286532193-29814-4-git-send-email-akinobu.mita@gmail.com>
-In-Reply-To: <1286532193-29814-4-git-send-email-akinobu.mita@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286563435-31239-1-git-send-email-jeff.carlyle@motorola.com>
+X-Cookie: Q:	Are we not men?
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2010 03:03 AM, Akinobu Mita wrote:
-> asm-generic/bitops/le.h is only intended to be included directly from
-> asm-generic/bitops/ext2-non-atomic.h or asm-generic/bitops/minix-le.h
-> which implements generic ext2 or minix bit operations.
->
-> This stops including asm-generic/bitops/le.h directly and use ext2
-> non-atomic bit operations instead.
->
-> An alternative approach is introducing little endian bit operations
-> in linux/bitops.h. But it needs to touch more files than this change does.
+On Fri, Oct 08, 2010 at 01:43:54PM -0500, Jeffrey Carlyle wrote:
 
-> -	generic___set_le_bit(off, (void *)map->m_page_addrs[i]);
-> +	ext2_set_bit(off, (void *)map->m_page_addrs[i]);
+> I have a regulator A that sets regulator B as its supply. When I call
+> set_supply to add B as the supply for A, regulator A gets added to the
+> supply_list for regulator B.
 
-I'd like a solution that doesn't have rds calling a function starting 
-with ext2_. Seems wrong.
+Looks good, thanks!
 
-Thanks -- Regards -- Andy
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+but some stylistic things below:
+
+> Change-Id: I769669452b9e1b59b252298d589738aabb03529c
+
+Hrm?
+
+>  static int _regulator_get_voltage(struct regulator_dev *rdev);
+>  static int _regulator_get_current_limit(struct regulator_dev *rdev);
+>  static unsigned int _regulator_get_mode(struct regulator_dev *rdev);
+> @@ -1343,12 +1344,14 @@ int regulator_enable(struct regulator *regulator)
+>  	mutex_lock(&rdev->mutex);
+>  	ret = _regulator_enable(rdev);
+>  	mutex_unlock(&rdev->mutex);
+> +
+>  	return ret;
+>  }
+>  EXPORT_SYMBOL_GPL(regulator_enable);
+
+Random indentation change here.
+
+> +
+> +	if (supply_rdev)
+> +		regulator_disable(
+> +				get_device_regulator(rdev_get_dev(supply_rdev))
+> +				);
+> +
+
+Eew, indentation!  In cases like this it's better to just ignore the
+excesive line length.
