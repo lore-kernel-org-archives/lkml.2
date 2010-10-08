@@ -1,39 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab0JHILH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 04:11:07 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:47373 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab0JHILF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 04:11:05 -0400
-Date: Fri, 8 Oct 2010 04:11:04 -0400
-From: Christoph Hellwig <hch@infradead.org>
+	id S1755707Ab0JHIPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 04:15:54 -0400
+Received: from verein.lst.de ([213.95.11.210]:45254 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752722Ab0JHIPw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 04:15:52 -0400
+Date: Fri, 8 Oct 2010 10:15:33 +0200
+From: Christoph Hellwig <hch@lst.de>
 To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/18] fs: Reduce inode I_FREEING and factor inode
- disposal
-Message-ID: <20101008081104.GA2239@infradead.org>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-19-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
+Cc: Christoph Hellwig <hch@lst.de>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/18] fs: Clean up inode reference counting
+Message-ID: <20101008081533.GA1728@lst.de>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com> <1286515292-15882-7-git-send-email-david@fromorbit.com> <20101008072051.GE23595@lst.de> <20101008074643.GS4681@dastard>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286515292-15882-19-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20101008074643.GS4681@dastard>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> After the inode scalability work, there is not a big reason to batch
-> up inodes to reclaim them, so we can dispose them as they are found
-> from the LRU. With similar reasoning, we can do the same during
-> unmount, completely removing the need for the dispose_list()
-> function.
+On Fri, Oct 08, 2010 at 06:46:43PM +1100, Dave Chinner wrote:
+> > Also any chance to get an assert under a debug option the the reference
+> > count really is non-zero?
+> 
+> For iref()? Sure, but I think WARN_ON_ONCE() is better for the moment,
+> though.
 
-Given that two of the three callers already remove the inode from the
-per-sb list what about doing that in the third also and stop bothering
-with it in dispose_one_inode?
+I don't think a WARN_ON_ONCE is too helpful - there could be all kinds
+of different filesystems having that issue.  Also I think a plain
+WARN_ON is cheaper than a WARN_ON_ONCE and this is a rather hot
+codepath.
 
