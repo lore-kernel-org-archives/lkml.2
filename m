@@ -1,178 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758887Ab0JHQL3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:11:29 -0400
-Received: from mx6.sophos.com ([213.31.172.36]:59714 "EHLO mx6.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758841Ab0JHQL1 convert rfc822-to-8bit (ORCPT
+	id S1758920Ab0JHQLm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:11:42 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59900 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758787Ab0JHQLk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:11:27 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Andreas Gruenbacher <agruen@suse.de>
-Subject: Re: [BUG][PATCH][2.6.36-rc3] fanotify: Do not ignore result of permission decisions
-Date: Fri, 8 Oct 2010 17:11:23 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.4.4; x86_64; ; )
-CC: Eric Paris <eparis@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>
-References: <201009071608.02290.tvrtko.ursulin@sophos.com> <201009080924.04841.tvrtko.ursulin@sophos.com> <201010081500.40494.agruen@suse.de>
-In-Reply-To: <201010081500.40494.agruen@suse.de>
+	Fri, 8 Oct 2010 12:11:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=q01zeDfG/jVL8YdRyzbCPONZmqAgj/9OOX3UZt+qWwVTaxSP4wEv5UhEB+EVRlr4iU
+         e3gCjEq6lW5QyC0AMoa+8g9VoFrifvkYPrDzZ4HXcBp0Zt08NgDykqumzDlbMTC/kGPz
+         st2KAA/MoXsbWbrrVYMU8dQlY9GEz4qVZ2mok=
+Date: Sat, 9 Oct 2010 00:13:44 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Robin Holt <holt@sgi.com>, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, Willy Tarreau <w@1wt.eu>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        James Morris <jmorris@namei.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>, ebiederm@xmission.com
+Subject: Re: [PATCH] sysctl: fix min/max handling in
+	__do_proc_doulongvec_minmax()
+Message-ID: <20101008161344.GG4088@hack>
+References: <20101004085913.GR14068@sgi.com> <1286183058.18293.26.camel@edumazet-laptop> <20101004093439.GG5189@cr0.nay.redhat.com> <1286187030.18293.33.camel@edumazet-laptop> <20101004103545.GJ5189@cr0.nay.redhat.com> <1286188701.18293.57.camel@edumazet-laptop> <20101005130117.GK5170@cr0.nay.redhat.com> <20101007071859.GD5471@cr0.nay.redhat.com> <20101007092538.GE5471@cr0.nay.redhat.com> <1286445081.2912.15.camel@edumazet-laptop>
 MIME-Version: 1.0
-Message-ID: <201010081711.24373.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/10/2010 17:11:25,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/10/2010 17:11:25,
-	Serialize complete at 08/10/2010 17:11:25
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286445081.2912.15.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 Oct 2010 14:00:40 Andreas Gruenbacher wrote:
-> Tvrtko,
+On Thu, Oct 07, 2010 at 11:51:21AM +0200, Eric Dumazet wrote:
+>Le jeudi 07 octobre 2010 à 17:25 +0800, Américo Wang a écrit :
+>> >>
+>> >
+>> >Here is the final one.
+>> 
+>> Oops, that one is not correct. Hopefully this one
+>> is correct.
+>> 
+>> --------------->
+>> 
+>> Eric D. noticed that we may trigger an OOPS if we leave ->extra{1,2}
+>> to NULL when we use proc_doulongvec_minmax().
+>> 
+>> Actually, we don't need to store min/max values in a vector,
+>> because all the elements in the vector should share the same min/max
+>> value, like what proc_dointvec_minmax() does.
+>> 
 >
-> On Wednesday 08 September 2010 10:24:04 Tvrtko Ursulin wrote:
-> > Improved version of the fix which does not include the check
-> > when permission events are not enabled in configuration and
-> > stops processing if no interesting events remain.
-> >
-> > Current code ignores access replies to permission decisions so
-> > fix it in a way which will allow all listeners to still receive
-> > non permission events.
+>If we assert same min/max limits are to be applied to all elements,
+>a much simpler fix than yours would be :
 >
-> I agree with the patch (see comments below), but this explanation is close
-> to incomprehensible and not good as a commit message.
-
-How about this:
-
-Current code incorrectly ignores responses to permission decisions. When a
-single deny response has been received record it and do not send more
-permission events. However still send non-permission events to other clients.
-
-> > Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-> > ---
-> >
-> >  fs/notify/fsnotify.c             |   32 ++++++++++++++++++++++++--------
-> >  include/linux/fsnotify_backend.h |    4 ++++
-> >  2 files changed, 28 insertions(+), 8 deletions(-)
-> >
-> > diff --git a/fs/notify/fsnotify.c b/fs/notify/fsnotify.c
-> > index 3680242..2350a53 100644
-> > --- a/fs/notify/fsnotify.c
-> > +++ b/fs/notify/fsnotify.c
-> > @@ -224,7 +224,7 @@ int fsnotify(struct inode *to_tell, __u32 mask, void
-> > *data, int data_is,
-> >
-> >         struct fsnotify_group *inode_group, *vfsmount_group;
-> >         struct fsnotify_event *event = NULL;
-> >         struct vfsmount *mnt;
-> >
-> > -       int idx, ret = 0;
-> > +       int idx, ret = 0, res;
-> >
-> >         /* global tests shouldn't care about events on child only the
-> >         specific event */ __u32 test_mask = (mask & ~FS_EVENT_ON_CHILD);
-> >
-> > @@ -275,20 +275,36 @@ int fsnotify(struct inode *to_tell, __u32 mask,
-> > void *data, int data_is,
-> >
-> >                 if (inode_group > vfsmount_group) {
-> >
-> >                         /* handle inode */
-> >
-> > -                       send_to_group(to_tell, NULL, inode_mark, NULL,
-> > mask, data, -                                     data_is, cookie,
-> > file_name, &event); +                       res = send_to_group(to_tell,
-> > NULL, inode_mark, NULL, mask, data, +
-> >        data_is, cookie, file_name, &event);
-> >
-> >                         /* we didn't use the vfsmount_mark */
-> >                         vfsmount_group = NULL;
-> >
-> >                 } else if (vfsmount_group > inode_group) {
-> >
-> > -                       send_to_group(to_tell, mnt, NULL, vfsmount_mark,
-> > mask, data, -                                     data_is, cookie,
-> > file_name, &event); +                       res = send_to_group(to_tell,
-> > mnt, NULL, vfsmount_mark, mask, data, +
-> >          data_is, cookie, file_name, &event);
-> >
-> >                         inode_group = NULL;
-> >
-> >                 } else {
-> >
-> > -                       send_to_group(to_tell, mnt, inode_mark,
-> > vfsmount_mark, -                                     mask, data,
-> > data_is, cookie, file_name, -
-> > &event);
-> > +                       res = send_to_group(to_tell, mnt, inode_mark,
-> > vfsmount_mark, +                                           mask, data,
-> > data_is, cookie, file_name, +
-> > &event);
-> >
-> >                 }
-> >
-> > +#ifdef CONFIG_FANOTIFY_ACCESS_PERMISSIONS
-> > +               /* If a listener denied on a permission event we will
-> > remember the reason +                  and run the rest with a
-> > non-permission mask only. This allows other +                  listeners
-> > to receive non-permission notifications but we do not care +
-> >      about further permission checks and want to deny this event. */ +
-> >             if (unlikely((res == -EPERM) && (mask &
-> > FS_ALL_PERM_EVENTS))) {
+>diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>index f88552c..8e45451 100644
+>--- a/kernel/sysctl.c
+>+++ b/kernel/sysctl.c
+>@@ -2485,7 +2485,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+> 		kbuf[left] = 0;
+> 	}
+> 
+>-	for (; left && vleft--; i++, min++, max++, first=0) {
+>+	for (; left && vleft--; i++, first=0) {
+> 		unsigned long val;
+> 
+> 		if (write) {
 >
-> We should probably stop processing here whenever res != 0, for any mask.
-> (The fanotify and inotify handle_event callbacks can return -ENOMEM right
-> now, but this doesn't seem very useful and should probably be fixed:
-> fsnotify has no way of doing anything about -ENOMEM.
-
-I wasn't 100% sure of how fanotify works, or in other words can there be more
-events in this mask after perm events are removed. If it can then we should
-send them to other listeners. Eric?
-
-Also if ENOMEM, why not try sending to other listeners?
-
-> > +                       mask &= ~FS_ALL_PERM_EVENTS;
-> > +                       ret = res;
-> > +                       /* Stop processing if no interesting events
-> > remains. */ +                       if (!(mask & (ALL_FSNOTIFY_EVENTS &
-> > ~FS_EVENT_ON_CHILD))) +                               break;
-> > +               }
-> > +#else
-> > +               (void)res;
-> > +#endif
-> > +
-> >
-> >                 if (inode_group)
-> >
-> >                         inode_node = srcu_dereference(inode_node->next,
-> >
-> >                                                       &fsnotify_mark_srcu
-> >                                                       );
-> >
-> > diff --git a/include/linux/fsnotify_backend.h
-> > b/include/linux/fsnotify_backend.h index e40190d..c8aea03 100644
-> > --- a/include/linux/fsnotify_backend.h
-> > +++ b/include/linux/fsnotify_backend.h
-> > @@ -64,6 +64,10 @@
-> >
-> >  #define FS_MOVE                        (FS_MOVED_FROM | FS_MOVED_TO)
-> >
-> > +/* All events which require a permission response from userspace */
-> > +#define FS_ALL_PERM_EVENTS (FS_OPEN_PERM |\
-> > +                           FS_ACCESS_PERM)
 >
-> When dealing with the result of ->handle_event as I propose, this
-> definition isn't needed.
+>Please dont send huge patches like this to 'fix' a bug,
+>especially on slow path.
 
-Yep, I am just unsure what is overall right thing to do. Lets see what Eric
-says..
+Well, my patch makes that horrible code a little better. :)
 
-Tvrtko
+>
+>First we fix the bug, _then_ we can try to make code more 
+>efficient or more pretty or shorter.
+>
+>So the _real_ question is :
+>
+>Should the min/max limits should be a single pair,
+>shared by all elements, or a vector of limits.
+>
 
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+Yes, actually I talked with Eric W. about this before
+sending the patch.
+
+I also checked the users of proc_doulongvec_minmax(),
+none of them are using more than one limit, so it is
+safe to remove that.
+
+
+-- 
+Live like a child, think like the god.
+ 
