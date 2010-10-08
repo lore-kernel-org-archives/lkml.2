@@ -1,148 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753730Ab0JHFvd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 01:51:33 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3282 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752663Ab0JHFvP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 01:51:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,301,1283756400"; 
-   d="scan'208";a="614564574"
-From: Chen Gong <gong.chen@linux.intel.com>
-To: lm-sensors@lm-sensors.org
-Cc: JBeulich@novell.com, guenter.roeck@ericsson.com,
-        linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
-Subject: [PATCH V2 2/2] hwmon: cleanup some hotplug related macro definition
-Date: Fri,  8 Oct 2010 13:53:36 +0800
-Message-Id: <1286517216-15640-3-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 1.7.2.2.173.g515cc
-In-Reply-To: <1286517216-15640-1-git-send-email-gong.chen@linux.intel.com>
-References: <1286517216-15640-1-git-send-email-gong.chen@linux.intel.com>
+	id S1753235Ab0JHFyf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 01:54:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55615 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab0JHFye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 01:54:34 -0400
+Message-ID: <4CAEB1BA.2030604@kernel.org>
+Date: Thu, 07 Oct 2010 22:52:58 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yakui.zhao@intel.com, tglx@linutronix.de
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/setup] x86, setup: Use string copy operation to optimze
+ copy in kernel compression
+References: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com> <tip-68f4d5a00adaab33b136fce2c72d5c377b39b0b0@git.kernel.org>
+In-Reply-To: <tip-68f4d5a00adaab33b136fce2c72d5c377b39b0b0@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_HOTPLUG_CPU is used too much in some drivers.
-This patch clean them up and add some proper __cpuinit definitons.
+On 10/07/2010 10:40 PM, tip-bot for Zhao Yakui wrote:
+> Commit-ID:  68f4d5a00adaab33b136fce2c72d5c377b39b0b0
+> Gitweb:     http://git.kernel.org/tip/68f4d5a00adaab33b136fce2c72d5c377b39b0b0
+> Author:     Zhao Yakui <yakui.zhao@intel.com>
+> AuthorDate: Fri, 8 Oct 2010 09:47:33 +0800
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Thu, 7 Oct 2010 21:23:09 -0700
+> 
+> x86, setup: Use string copy operation to optimze copy in kernel compression
+> 
+> The kernel decompression code parses the ELF header and then copies
+> the segment to the corresponding destination.  Currently it uses slow
+> byte-copy code.  This patch makes it use the string copy operations
+> instead.
+> 
+> In the test the copy performance can be improved very significantly after using
+> the string copy operation mechanism.
+>         1. The copy time can be reduced from 150ms to 20ms on one Atom machine
+> 	2. The copy time can be reduced about 80% on another machine
+> 		The time is reduced from 7ms to 1.5ms when using 32-bit kernel.
+> 		The time is reduced from 10ms to 2ms when using 64-bit kernel.
+> 
+> Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
+> LKML-Reference: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> ---
+>  arch/x86/boot/compressed/misc.c |   29 +++++++++++++++++++++++------
+>  1 files changed, 23 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+> index 8f7bef8..23f315c 100644
+> --- a/arch/x86/boot/compressed/misc.c
+> +++ b/arch/x86/boot/compressed/misc.c
+> @@ -229,18 +229,35 @@ void *memset(void *s, int c, size_t n)
+>  		ss[i] = c;
+>  	return s;
+>  }
+> -
+> +#ifdef CONFIG_X86_32
+>  void *memcpy(void *dest, const void *src, size_t n)
+>  {
+> -	int i;
+> -	const char *s = src;
+> -	char *d = dest;
+> +	int d0, d1, d2;
+> +	asm volatile(
+> +		"rep ; movsl\n\t"
+> +		"movl %4,%%ecx\n\t"
+> +		"rep ; movsb\n\t"
+> +		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
+> +		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
+> +		: "memory");
+>  
+> -	for (i = 0; i < n; i++)
+> -		d[i] = s[i];
+>  	return dest;
+>  }
+> +#else
+> +void *memcpy(void *dest, const void *src, size_t n)
+> +{
+> +	long d0, d1, d2;
+> +	asm volatile(
+> +		"rep ; movsq\n\t"
+> +		"movq %4,%%rcx\n\t"
+> +		"rep ; movsb\n\t"
+> +		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
+> +		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
+> +		: "memory");
+>  
+> +	return dest;
+> +}
+> +#endif
+>  
+>  static void error(char *x)
+>  {
 
-Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
----
- drivers/hwmon/coretemp.c    |    5 ++---
- drivers/hwmon/pkgtemp.c     |    9 ++-------
- drivers/hwmon/via-cputemp.c |    9 ++-------
- 3 files changed, 6 insertions(+), 17 deletions(-)
+wonder if it would have problem with some old AMD K8 systems.
 
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index a23b17a..2ec3cc3 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -490,7 +490,7 @@ exit:
- 	return err;
- }
- 
--static void coretemp_device_remove(unsigned int cpu)
-+static void __cpuinit coretemp_device_remove(unsigned int cpu)
- {
- 	struct pdev_entry *p;
- 	unsigned int i;
-@@ -569,9 +569,8 @@ exit:
- static void __exit coretemp_exit(void)
- {
- 	struct pdev_entry *p, *n;
--#ifdef CONFIG_HOTPLUG_CPU
-+
- 	unregister_hotcpu_notifier(&coretemp_cpu_notifier);
--#endif
- 	mutex_lock(&pdev_list_mutex);
- 	list_for_each_entry_safe(p, n, &pdev_list, list) {
- 		platform_device_unregister(p->pdev);
-diff --git a/drivers/hwmon/pkgtemp.c b/drivers/hwmon/pkgtemp.c
-index 29fef42..ee22313 100644
---- a/drivers/hwmon/pkgtemp.c
-+++ b/drivers/hwmon/pkgtemp.c
-@@ -340,8 +340,7 @@ exit:
- 	return err;
- }
- 
--#ifdef CONFIG_HOTPLUG_CPU
--static void pkgtemp_device_remove(unsigned int cpu)
-+static void __cpuinit pkgtemp_device_remove(unsigned int cpu)
- {
- 	struct pdev_entry *p;
- 	unsigned int i;
-@@ -388,7 +387,6 @@ static int __cpuinit pkgtemp_cpu_callback(struct notifier_block *nfb,
- static struct notifier_block pkgtemp_cpu_notifier __refdata = {
- 	.notifier_call = pkgtemp_cpu_callback,
- };
--#endif				/* !CONFIG_HOTPLUG_CPU */
- 
- static int __init pkgtemp_init(void)
- {
-@@ -412,9 +410,7 @@ static int __init pkgtemp_init(void)
- 	}
- #endif
- 
--#ifdef CONFIG_HOTPLUG_CPU
- 	register_hotcpu_notifier(&pkgtemp_cpu_notifier);
--#endif
- 	return 0;
- 
- #ifndef CONFIG_HOTPLUG_CPU
-@@ -428,9 +424,8 @@ exit:
- static void __exit pkgtemp_exit(void)
- {
- 	struct pdev_entry *p, *n;
--#ifdef CONFIG_HOTPLUG_CPU
-+
- 	unregister_hotcpu_notifier(&pkgtemp_cpu_notifier);
--#endif
- 	mutex_lock(&pdev_list_mutex);
- 	list_for_each_entry_safe(p, n, &pdev_list, list) {
- 		platform_device_unregister(p->pdev);
-diff --git a/drivers/hwmon/via-cputemp.c b/drivers/hwmon/via-cputemp.c
-index ffb793a..ebbdc25 100644
---- a/drivers/hwmon/via-cputemp.c
-+++ b/drivers/hwmon/via-cputemp.c
-@@ -237,8 +237,7 @@ exit:
- 	return err;
- }
- 
--#ifdef CONFIG_HOTPLUG_CPU
--static void via_cputemp_device_remove(unsigned int cpu)
-+static void __cpuinit via_cputemp_device_remove(unsigned int cpu)
- {
- 	struct pdev_entry *p, *n;
- 	mutex_lock(&pdev_list_mutex);
-@@ -272,7 +271,6 @@ static int __cpuinit via_cputemp_cpu_callback(struct notifier_block *nfb,
- static struct notifier_block via_cputemp_cpu_notifier __refdata = {
- 	.notifier_call = via_cputemp_cpu_callback,
- };
--#endif				/* !CONFIG_HOTPLUG_CPU */
- 
- static int __init via_cputemp_init(void)
- {
-@@ -313,9 +311,7 @@ static int __init via_cputemp_init(void)
- 		goto exit_driver_unreg;
- 	}
- 
--#ifdef CONFIG_HOTPLUG_CPU
- 	register_hotcpu_notifier(&via_cputemp_cpu_notifier);
--#endif
- 	return 0;
- 
- exit_devices_unreg:
-@@ -335,9 +331,8 @@ exit:
- static void __exit via_cputemp_exit(void)
- {
- 	struct pdev_entry *p, *n;
--#ifdef CONFIG_HOTPLUG_CPU
-+
- 	unregister_hotcpu_notifier(&via_cputemp_cpu_notifier);
--#endif
- 	mutex_lock(&pdev_list_mutex);
- 	list_for_each_entry_safe(p, n, &pdev_list, list) {
- 		platform_device_unregister(p->pdev);
--- 
-1.7.2.2.173.g515cc
+in amd.c
 
+        /* On C+ stepping K8 rep microcode works well for copy/memset */
+        if (c->x86 == 0xf) {
+                u32 level;
+
+                level = cpuid_eax(1);
+                if ((level >= 0x0f48 && level < 0x0f50) || level >= 0x0f58)
+                        set_cpu_cap(c, X86_FEATURE_REP_GOOD);
+...
+
+        }
+        if (c->x86 >= 0x10)
+                set_cpu_cap(c, X86_FEATURE_REP_GOOD);
+
+Yinghai
