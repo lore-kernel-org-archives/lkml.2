@@ -1,59 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab0JHSGa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:06:30 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:32694 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758997Ab0JHSG3 (ORCPT
+	id S932802Ab0JHSJP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:09:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:38677 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758997Ab0JHSJN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:06:29 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: .mK4WSoVM1nd3k0vvnG1.hJco126nA_H5QU_BSNHvGGSaZ1
- YUtpQt_lBHY.A6NFZIROMluDrE4GfvhZPJUAIaxvUV5TGTBv6QGGp_Lf.VL2
- 6QCAsC48h9gOEGzGyZ9ZAfo.jWHnRdcv7Ot3uS_UE2x2iHzseo2mt1TiNaR3
- XH8gQWCP0Wu7uX3gl2.lUVl5_5V2N8pqE1C_RaMpWsXksOyIaxk12_7tddst
- WvoYwVd9CPTZWZpEeUUV3wv.AxGGWFwMpJY3CntR.3cddY_6dRGraHpwgX7_
- ofw--
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 8 Oct 2010 12:56:03 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mel@csn.ul.ie>, Rob Mueller <robm@fastmail.fm>,
-        linux-kernel@vger.kernel.org, Bron Gondwana <brong@fastmail.fm>,
-        linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>
-Subject: Re: [resend][PATCH] mm: increase RECLAIM_DISTANCE to 30
-In-Reply-To: <20101008165930.GH5327@balbir.in.ibm.com>
-Message-ID: <alpine.DEB.2.00.1010081255010.32749@router.home>
-References: <20101008104852.803E.A69D9226@jp.fujitsu.com> <20101008090427.GB5327@balbir.in.ibm.com> <alpine.DEB.2.00.1010081044530.30029@router.home> <20101008165930.GH5327@balbir.in.ibm.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 8 Oct 2010 14:09:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=MTfep+7eqcnoL+SjLkBqImEXn5c2GoGgyJo6nwv+TKfzkVpXHVHXeDwQSeaoQzoFPz
+         Esutxwef/WI7ME6wzWRdKBMW7KoiVLaNnrPxwdTSRGoIJ6GJz9Brk9hA/oFVqiUcf2Ds
+         sfHaCTz5zp5gnQi+Za48EJFMvvcObtDTE7Kfc=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20101008134654.GA6600@kroah.com>
+References: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com>
+	<AANLkTinynZj9bYFAyfRTF2uopmLe6Ls4YGdZPqCAJTpR@mail.gmail.com>
+	<20101008134654.GA6600@kroah.com>
+Date: Fri, 8 Oct 2010 11:09:11 -0700
+Message-ID: <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
+Subject: Re: [PATCH 00/33] Staging: Fixed <module-objs> to <module>-y
+From: matt mooney <mfmooney@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: T Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org,
+        kernel-janitors@vger.kernel.org, sam@ravnborg.org,
+        linux-kbuild@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Oct 2010, Balbir Singh wrote:
-
-> * Christoph Lameter <cl@linux.com> [2010-10-08 10:45:16]:
+On Fri, Oct 8, 2010 at 6:46 AM, Greg KH <greg@kroah.com> wrote:
+> On Fri, Oct 08, 2010 at 12:16:35AM -0700, matt mooney wrote:
+>> On Thu, Oct 7, 2010 at 6:35 PM, T Dent <tdent48227@gmail.com> wrote:
+>> > I patch against the next-20101006 tree.
+>> >
+>> > The patch series replace use of <module>-objs with <module>-y in the
+>> > staging directory.
+>>
+>> Commit messages are written in the present tense. You happen to be
+>> using two different tenses within the commit message, which is truly
+>> odd.  And why did you not split apart those atrocious statements with
+>> the infinite column width?
 >
-> > On Fri, 8 Oct 2010, Balbir Singh wrote:
-> >
-> > > I am not sure if this makes sense, since RECLAIM_DISTANCE is supposed
-> > > to be a hardware parameter. Could you please help clarify what the
-> > > access latency of a node with RECLAIM_DISTANCE 20 to that of a node
-> > > with RECLAIM_DISTANCE 30 is? Has the hardware definition of reclaim
-> > > distance changed?
-> >
-> > 10 is the local distance. So 30 should be 3x the latency that a local
-> > access takes.
-> >
+> As Dan said, we understand what is happening here, and we do not have
+> grammer police for changelog comments, thank goodness.
 >
-> Does this patch then imply that we should do zone_reclaim only for 3x
-> nodes and not 2x nodes as we did earlier.
+>> This patch series adds little benefit.  As Sam has suggested, a more
+>> general cleanup would be a better goal, and staging is an area that
+>> needs extra attention some of which has already been pointed out in
+>> other emails.
+>
+> But these patches are all good to have, so I will be applying them,
+> please don't think they are unwanted at all.
+>
 
-It implies that zone reclaim is going to be automatically enabled if the
-maximum latency to the memory farthest away is 3 times or more that of a
-local memory access.
+This is good to know. I wonder how well received these changes will be
+in other parts of the kernel though. I purposefully started in a
+subsystem you maintain since I figured any criticism from you would be
+constructive and you wouldn't just knack without reason.
 
+Thanks,
+mfm
+
+
+-- 
+GPG-Key: 9AFE00EA
