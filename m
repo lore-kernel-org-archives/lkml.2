@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab0JHFXI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 01:23:08 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:46921 "EHLO
+	id S1753501Ab0JHFXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 01:23:42 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:35890 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752691Ab0JHFWe (ORCPT
+	with ESMTP id S1752855Ab0JHFWU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 01:22:34 -0400
+	Fri, 8 Oct 2010 01:22:20 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 17/18] fs: icache remove inode_lock
-Date: Fri,  8 Oct 2010 16:21:31 +1100
-Message-Id: <1286515292-15882-18-git-send-email-david@fromorbit.com>
+Subject: [PATCH 03/18] fs: keep inode with backing-dev
+Date: Fri,  8 Oct 2010 16:21:17 +1100
+Message-Id: <1286515292-15882-4-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286515292-15882-1-git-send-email-david@fromorbit.com>
 References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
@@ -20,1087 +20,1100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Nick Piggin <npiggin@suse.de>
 
-All the functionality that the inode_lock protected has now been
-wrapped up in new independent locks and/or functionality. Hence the
-inode_lock does not serve a purpose any longer and hence can now be
-removed.
+Having inode on writeback lists of a different bdi than
+inode->i_mapping->backing_dev_info makes it very difficult to do
+per-bdi locking of the writeback lists. Add functions to move these
+inodes over when the mapping backing dev is changed.
 
-Based on work originally done by Nick Piggin.
+Also, rename i_mapping.backing_dev_info to i_mapping.a_bdi while we're
+here. Succinct is nice, and it catches conversion errors.
 
+Signed-off-by: Nick Piggin <npiggin@suse.de>
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- Documentation/filesystems/Locking |    2 +-
- Documentation/filesystems/porting |   10 ++++-
- Documentation/filesystems/vfs.txt |    2 +-
- fs/buffer.c                       |    2 +-
- fs/drop_caches.c                  |    4 --
- fs/fs-writeback.c                 |   47 ++++-----------------
- fs/inode.c                        |   82 ++++---------------------------------
- fs/logfs/inode.c                  |    2 +-
- fs/notify/inode_mark.c            |   11 ++---
- fs/notify/mark.c                  |    1 -
- fs/notify/vfsmount_mark.c         |    1 -
- fs/ntfs/inode.c                   |    4 +-
- fs/ocfs2/inode.c                  |    2 +-
- fs/quota/dquot.c                  |   12 +----
- include/linux/fs.h                |    2 +-
- include/linux/writeback.h         |    3 -
- mm/backing-dev.c                  |    6 ---
- mm/filemap.c                      |    6 +-
- mm/rmap.c                         |    6 +-
- 19 files changed, 48 insertions(+), 157 deletions(-)
+ drivers/char/mem.c          |    2 +-
+ drivers/char/raw.c          |    2 +-
+ drivers/mtd/mtdchar.c       |    2 +-
+ fs/afs/write.c              |    6 ++--
+ fs/block_dev.c              |   13 +++++----
+ fs/btrfs/disk-io.c          |    2 +-
+ fs/btrfs/file.c             |    2 +-
+ fs/btrfs/inode.c            |   10 +++---
+ fs/buffer.c                 |    2 +-
+ fs/ceph/addr.c              |    2 +-
+ fs/ceph/inode.c             |    4 +-
+ fs/cifs/file.c              |    2 +-
+ fs/cifs/inode.c             |    2 +-
+ fs/configfs/inode.c         |    3 +-
+ fs/ext2/ialloc.c            |    2 +-
+ fs/fs-writeback.c           |    2 +-
+ fs/fuse/file.c              |    6 ++--
+ fs/fuse/inode.c             |    2 +-
+ fs/gfs2/glock.c             |    3 +-
+ fs/hugetlbfs/inode.c        |    3 +-
+ fs/inode.c                  |    6 ++--
+ fs/nfs/inode.c              |    3 +-
+ fs/nfs/write.c              |    7 ++---
+ fs/nilfs2/btnode.c          |    2 +-
+ fs/nilfs2/mdt.c             |    2 +-
+ fs/nilfs2/the_nilfs.c       |    2 +-
+ fs/ntfs/file.c              |    2 +-
+ fs/ocfs2/dlmfs/dlmfs.c      |    4 +-
+ fs/ocfs2/file.c             |    2 +-
+ fs/ramfs/inode.c            |    2 +-
+ fs/romfs/super.c            |    4 +-
+ fs/sysfs/inode.c            |    2 +-
+ fs/ubifs/dir.c              |    2 +-
+ fs/ubifs/super.c            |    2 +-
+ fs/xfs/linux-2.6/xfs_buf.c  |    4 +-
+ fs/xfs/linux-2.6/xfs_file.c |    2 +-
+ include/linux/backing-dev.h |   16 ++++++++---
+ include/linux/fs.h          |    2 +-
+ kernel/cgroup.c             |    2 +-
+ mm/backing-dev.c            |   61 ++++++++++++++++++++++++++++++++++++++++--
+ mm/fadvise.c                |    4 +-
+ mm/filemap.c                |    4 +-
+ mm/filemap_xip.c            |    2 +-
+ mm/page-writeback.c         |   15 +++++-----
+ mm/readahead.c              |    6 ++--
+ mm/shmem.c                  |    2 +-
+ mm/swap.c                   |    2 +-
+ mm/swap_state.c             |    2 +-
+ mm/swapfile.c               |    2 +-
+ mm/truncate.c               |    3 +-
+ mm/vmscan.c                 |    2 +-
+ 51 files changed, 155 insertions(+), 90 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 2db4283..e92dad2 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -114,7 +114,7 @@ alloc_inode:
- destroy_inode:
- dirty_inode:				(must not sleep)
- write_inode:
--drop_inode:				!!!inode_lock!!!
-+drop_inode:				!!!i_lock, sb_inode_list_lock!!!
- evict_inode:
- put_super:		write
- write_super:		read
-diff --git a/Documentation/filesystems/porting b/Documentation/filesystems/porting
-index b12c895..ab07213 100644
---- a/Documentation/filesystems/porting
-+++ b/Documentation/filesystems/porting
-@@ -299,7 +299,7 @@ be used instead.  It gets called whenever the inode is evicted, whether it has
- remaining links or not.  Caller does *not* evict the pagecache or inode-associated
- metadata buffers; getting rid of those is responsibility of method, as it had
- been for ->delete_inode().
--	->drop_inode() returns int now; it's called on final iput() with inode_lock
-+	->drop_inode() returns int now; it's called on final iput() with i_lock
- held and it returns true if filesystems wants the inode to be dropped.  As before,
- generic_drop_inode() is still the default and it's been updated appropriately.
- generic_delete_inode() is also alive and it consists simply of return 1.  Note that
-@@ -318,3 +318,11 @@ if it's zero is not *and* *never* *had* *been* enough.  Final unlink() and iput(
- may happen while the inode is in the middle of ->write_inode(); e.g. if you blindly
- free the on-disk inode, you may end up doing that while ->write_inode() is writing
- to it.
-+
-+
-+[mandatory]
-+	inode_lock is gone, replaced by fine grained locks. See fs/inode.c
-+for details of what locks to replace inode_lock with in order to protect
-+particular things. Most of the time, a filesystem only needs ->i_lock, which
-+protects *all* the inode state and its membership on lists that was
-+previously protected with inode_lock.
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index ed7e5ef..405beb2 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -246,7 +246,7 @@ or bottom half).
- 	should be synchronous or not, not all filesystems check this flag.
+diff --git a/drivers/char/mem.c b/drivers/char/mem.c
+index 1f528fa..2285c1e 100644
+--- a/drivers/char/mem.c
++++ b/drivers/char/mem.c
+@@ -872,7 +872,7 @@ static int memory_open(struct inode *inode, struct file *filp)
  
-   drop_inode: called when the last access to the inode is dropped,
--	with the inode_lock spinlock held.
-+	with the i_lock and sb_inode_list_lock spinlock held.
+ 	filp->f_op = dev->fops;
+ 	if (dev->dev_info)
+-		filp->f_mapping->backing_dev_info = dev->dev_info;
++		mapping_set_bdi(filp->f_mapping, dev->dev_info);
  
- 	This method should be either NULL (normal UNIX filesystem
- 	semantics) or "generic_delete_inode" (for filesystems that do not
-diff --git a/fs/buffer.c b/fs/buffer.c
-index b5c4153..99a9f8d 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -1145,7 +1145,7 @@ __getblk_slow(struct block_device *bdev, sector_t block, int size)
-  * inode list.
-  *
-  * mark_buffer_dirty() is atomic.  It takes bh->b_page->mapping->private_lock,
-- * mapping->tree_lock and the global inode_lock.
-+ * and mapping->tree_lock.
+ 	if (dev->fops->open)
+ 		return dev->fops->open(inode, filp);
+diff --git a/drivers/char/raw.c b/drivers/char/raw.c
+index b38942f..5baa83f 100644
+--- a/drivers/char/raw.c
++++ b/drivers/char/raw.c
+@@ -109,7 +109,7 @@ static int raw_release(struct inode *inode, struct file *filp)
+ 	if (--raw_devices[minor].inuse == 0) {
+ 		/* Here  inode->i_mapping == bdev->bd_inode->i_mapping  */
+ 		inode->i_mapping = &inode->i_data;
+-		inode->i_mapping->backing_dev_info = &default_backing_dev_info;
++		mapping_set_bdi(inode->i_mapping, &default_backing_dev_info);
+ 	}
+ 	mutex_unlock(&raw_mutex);
+ 
+diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
+index a825002..26af8b1 100644
+--- a/drivers/mtd/mtdchar.c
++++ b/drivers/mtd/mtdchar.c
+@@ -113,7 +113,7 @@ static int mtd_open(struct inode *inode, struct file *file)
+ 	if (mtd_ino->i_state & I_NEW) {
+ 		mtd_ino->i_private = mtd;
+ 		mtd_ino->i_mode = S_IFCHR;
+-		mtd_ino->i_data.backing_dev_info = mtd->backing_dev_info;
++		mapping_new_set_bdi(&mtd_ino->i_data, mtd->backing_dev_info);
+ 		unlock_new_inode(mtd_ino);
+ 	}
+ 	file->f_mapping = mtd_ino->i_mapping;
+diff --git a/fs/afs/write.c b/fs/afs/write.c
+index 722743b..b321bfc 100644
+--- a/fs/afs/write.c
++++ b/fs/afs/write.c
+@@ -438,7 +438,7 @@ no_more:
   */
- void mark_buffer_dirty(struct buffer_head *bh)
+ int afs_writepage(struct page *page, struct writeback_control *wbc)
  {
-diff --git a/fs/drop_caches.c b/fs/drop_caches.c
-index 00180dc..2105713 100644
---- a/fs/drop_caches.c
-+++ b/fs/drop_caches.c
-@@ -16,7 +16,6 @@ static void drop_pagecache_sb(struct super_block *sb, void *unused)
- {
- 	struct inode *inode, *toput_inode = NULL;
- 
--	spin_lock(&inode_lock);
- 	spin_lock(&sb->s_inodes_lock);
- 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
- 		spin_lock(&inode->i_lock);
-@@ -28,15 +27,12 @@ static void drop_pagecache_sb(struct super_block *sb, void *unused)
- 		iref_locked(inode);
- 		spin_unlock(&inode->i_lock);
- 		spin_unlock(&sb->s_inodes_lock);
--		spin_unlock(&inode_lock);
- 		invalidate_mapping_pages(inode->i_mapping, 0, -1);
- 		iput(toput_inode);
- 		toput_inode = inode;
--		spin_lock(&inode_lock);
- 		spin_lock(&sb->s_inodes_lock);
- 	}
- 	spin_unlock(&sb->s_inodes_lock);
--	spin_unlock(&inode_lock);
- 	iput(toput_inode);
- }
- 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 404d449..f8eb27c 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -184,7 +184,7 @@ static void requeue_io(struct inode *inode)
- static void inode_sync_complete(struct inode *inode)
- {
- 	/*
--	 * Prevent speculative execution through spin_unlock(&inode_lock);
-+	 * Prevent speculative execution through spin_unlock(&inode->i_lock);
- 	 */
- 	smp_mb();
- 	wake_up_bit(&inode->i_state, __I_SYNC);
-@@ -283,25 +283,21 @@ static void inode_wait_for_writeback(struct inode *inode)
- 	wqh = bit_waitqueue(&inode->i_state, __I_SYNC);
- 	while (inode->i_state & I_SYNC) {
- 		spin_unlock(&inode->i_lock);
--		spin_unlock(&inode_lock);
- 		__wait_on_bit(wqh, &wq, inode_wait, TASK_UNINTERRUPTIBLE);
--		spin_lock(&inode_lock);
- 		spin_lock(&inode->i_lock);
- 	}
- }
- 
- /*
-- * Write out an inode's dirty pages.  Called under inode_lock.  Either the
-- * caller has ref on the inode (either via iref_locked or via syscall against an fd)
-- * or the inode has I_WILL_FREE set (via generic_forget_inode)
-+ * Write out an inode's dirty pages.  Either the caller has ref on the inode
-+ * (either via iref_locked or via syscall against an fd) or the inode has
-+ * I_WILL_FREE set (via generic_forget_inode)
-  *
-  * If `wait' is set, wait on the writeout.
-  *
-  * The whole writeout design is quite complex and fragile.  We want to avoid
-  * starvation of particular inodes when others are being redirtied, prevent
-  * livelocks, etc.
-- *
-- * Called under inode_lock.
-  */
- static int
- writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
-@@ -346,7 +342,6 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 	inode->i_state |= I_SYNC;
- 	inode->i_state &= ~I_DIRTY_PAGES;
- 	spin_unlock(&inode->i_lock);
--	spin_unlock(&inode_lock);
- 
- 	ret = do_writepages(mapping, wbc);
- 
-@@ -366,12 +361,10 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 	 * due to delalloc, clear dirty metadata flags right before
- 	 * write_inode()
- 	 */
--	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
- 	dirty = inode->i_state & I_DIRTY;
- 	inode->i_state &= ~(I_DIRTY_SYNC | I_DIRTY_DATASYNC);
- 	spin_unlock(&inode->i_lock);
--	spin_unlock(&inode_lock);
- 	/* Don't write the inode if only I_DIRTY_PAGES was set */
- 	if (dirty & (I_DIRTY_SYNC | I_DIRTY_DATASYNC)) {
- 		int err = write_inode(inode, wbc);
-@@ -379,7 +372,6 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 			ret = err;
- 	}
- 
--	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
- 	inode->i_state &= ~I_SYNC;
- 	if (!(inode->i_state & I_FREEING)) {
-@@ -527,10 +519,8 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
- 			redirty_tail(inode);
- 			spin_unlock(&wb->b_lock);
- 		}
--		spin_unlock(&inode_lock);
- 		iput(inode);
- 		cond_resched();
--		spin_lock(&inode_lock);
- 		spin_lock(&wb->b_lock);
- 		if (wbc->nr_to_write <= 0) {
- 			wbc->more_io = 1;
-@@ -550,9 +540,7 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
- 
- 	if (!wbc->wb_start)
- 		wbc->wb_start = jiffies; /* livelock avoidance */
--	spin_lock(&inode_lock);
- 	spin_lock(&wb->b_lock);
--
- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- 		queue_io(wb, wbc->older_than_this);
- 
-@@ -572,7 +560,6 @@ void writeback_inodes_wb(struct bdi_writeback *wb,
- 			break;
- 	}
- 	spin_unlock(&wb->b_lock);
--	spin_unlock(&inode_lock);
- 	/* Leave any unwritten inodes on b_io */
- }
- 
-@@ -581,13 +568,11 @@ static void __writeback_inodes_sb(struct super_block *sb,
- {
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
--	spin_lock(&inode_lock);
- 	spin_lock(&wb->b_lock);
- 	if (!wbc->for_kupdate || list_empty(&wb->b_io))
- 		queue_io(wb, wbc->older_than_this);
- 	writeback_sb_inodes(sb, wb, wbc, true);
- 	spin_unlock(&wb->b_lock);
--	spin_unlock(&inode_lock);
- }
- 
- /*
-@@ -697,7 +682,6 @@ static long wb_writeback(struct bdi_writeback *wb,
- 		 * become available for writeback. Otherwise
- 		 * we'll just busyloop.
- 		 */
--		spin_lock(&inode_lock);
- 		if (!list_empty(&wb->b_more_io))  {
- 			spin_lock(&wb->b_lock);
- 			inode = list_entry(wb->b_more_io.prev,
-@@ -708,7 +692,6 @@ static long wb_writeback(struct bdi_writeback *wb,
- 			inode_wait_for_writeback(inode);
- 			spin_unlock(&inode->i_lock);
- 		}
--		spin_unlock(&inode_lock);
- 	}
- 
- 	return wrote;
-@@ -971,7 +954,6 @@ void __mark_inode_dirty(struct inode *inode, int flags)
- 	if (unlikely(block_dump))
- 		block_dump___mark_inode_dirty(inode);
- 
--	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
- 	if ((inode->i_state & flags) != flags) {
- 		const int was_dirty = inode->i_state & I_DIRTY;
-@@ -1029,8 +1011,6 @@ void __mark_inode_dirty(struct inode *inode, int flags)
- out_unlock:
- 	spin_unlock(&inode->i_lock);
- out:
--	spin_unlock(&inode_lock);
--
- 	if (wakeup_bdi)
- 		bdi_wakeup_thread_delayed(bdi);
- }
-@@ -1063,7 +1043,6 @@ static void wait_sb_inodes(struct super_block *sb)
- 	 */
- 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
- 
--	spin_lock(&inode_lock);
- 	spin_lock(&sb->s_inodes_lock);
- 
- 	/*
-@@ -1086,14 +1065,12 @@ static void wait_sb_inodes(struct super_block *sb)
- 		iref_locked(inode);
- 		spin_unlock(&inode->i_lock);
- 		spin_unlock(&sb->s_inodes_lock);
--		spin_unlock(&inode_lock);
- 		/*
--		 * We hold a reference to 'inode' so it couldn't have
--		 * been removed from s_inodes list while we dropped the
--		 * inode_lock.  We cannot iput the inode now as we can
--		 * be holding the last reference and we cannot iput it
--		 * under inode_lock. So we keep the reference and iput
--		 * it later.
-+		 * We hold a reference to 'inode' so it couldn't have been
-+		 * removed from s_inodes list while we dropped the
-+		 * s_inodes_lock.  We cannot iput the inode now as we can be
-+		 * holding the last reference and we cannot iput it under
-+		 * s_inodes_lock. So we keep the reference and iput it later.
- 		 */
- 		iput(old_inode);
- 		old_inode = inode;
-@@ -1102,11 +1079,9 @@ static void wait_sb_inodes(struct super_block *sb)
- 
- 		cond_resched();
- 
--		spin_lock(&inode_lock);
- 		spin_lock(&sb->s_inodes_lock);
- 	}
- 	spin_unlock(&sb->s_inodes_lock);
--	spin_unlock(&inode_lock);
- 	iput(old_inode);
- }
- 
-@@ -1209,9 +1184,7 @@ int write_inode_now(struct inode *inode, int sync)
- 		wbc.nr_to_write = 0;
- 
- 	might_sleep();
--	spin_lock(&inode_lock);
- 	ret = writeback_single_inode(inode, &wbc);
--	spin_unlock(&inode_lock);
- 	if (sync)
- 		inode_sync_wait(inode);
- 	return ret;
-@@ -1233,9 +1206,7 @@ int sync_inode(struct inode *inode, struct writeback_control *wbc)
- {
+-	struct backing_dev_info *bdi = page->mapping->backing_dev_info;
++	struct backing_dev_info *bdi = page->mapping->a_bdi;
+ 	struct afs_writeback *wb;
  	int ret;
  
--	spin_lock(&inode_lock);
- 	ret = writeback_single_inode(inode, wbc);
--	spin_unlock(&inode_lock);
- 	return ret;
- }
- EXPORT_SYMBOL(sync_inode);
-diff --git a/fs/inode.c b/fs/inode.c
-index 4ec360e..c778ec4 100644
---- a/fs/inode.c
-+++ b/fs/inode.c
-@@ -41,11 +41,9 @@
-  *   inode_lru, i_lru
-  *
-  * Lock orders
-- * inode_lock
-  *   inode hash bucket lock
-  *     inode->i_lock
-  *
-- * inode_lock
-  *   sb inode lock
-  *     inode_lru_lock
-  *       wb->b_lock
-@@ -118,14 +116,6 @@ static inline void spin_unlock_bucket(struct inode_hash_bucket *b)
- static struct inode_hash_bucket *inode_hashtable __read_mostly;
- 
- /*
-- * A simple spinlock to protect the list manipulations.
-- *
-- * NOTE! You also have to own the lock if you change
-- * the i_state of an inode while it is in use..
-- */
--DEFINE_SPINLOCK(inode_lock);
--
--/*
-  * iprune_sem provides exclusion between the kswapd or try_to_free_pages
-  * icache shrinking path, and the umount path.  Without this exclusion,
-  * by the time prune_icache calls iput for the inode whose pages it has
-@@ -357,7 +347,7 @@ static void init_once(void *foo)
- }
- 
- /*
-- * inode_lock must be held
-+ * i_lock must be held
-  */
- void iref_locked(struct inode *inode)
+@@ -469,7 +469,7 @@ static int afs_writepages_region(struct address_space *mapping,
+ 				 struct writeback_control *wbc,
+ 				 pgoff_t index, pgoff_t end, pgoff_t *_next)
  {
-@@ -369,11 +359,9 @@ EXPORT_SYMBOL_GPL(iref_locked);
- 
- void iref(struct inode *inode)
+-	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	struct backing_dev_info *bdi = mapping->a_bdi;
+ 	struct afs_writeback *wb;
+ 	struct page *page;
+ 	int ret, n;
+@@ -548,7 +548,7 @@ static int afs_writepages_region(struct address_space *mapping,
+ int afs_writepages(struct address_space *mapping,
+ 		   struct writeback_control *wbc)
  {
--	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
- 	iref_locked(inode);
- 	spin_unlock(&inode->i_lock);
--	spin_unlock(&inode_lock);
- }
- EXPORT_SYMBOL_GPL(iref);
+-	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	struct backing_dev_info *bdi = mapping->a_bdi;
+ 	pgoff_t start, end, next;
+ 	int ret;
  
-@@ -439,11 +427,9 @@ void __insert_inode_hash(struct inode *inode, unsigned long hashval)
- 	struct inode_hash_bucket *b;
- 
- 	b = inode_hashtable + hash(inode->i_sb, hashval);
--	spin_lock(&inode_lock);
- 	spin_lock_bucket(b);
- 	hlist_bl_add_head(&inode->i_hash, &b->head);
- 	spin_unlock_bucket(b);
--	spin_unlock(&inode_lock);
- }
- EXPORT_SYMBOL(__insert_inode_hash);
- 
-@@ -472,9 +458,7 @@ static void __remove_inode_hash(struct inode *inode)
-  */
- void remove_inode_hash(struct inode *inode)
- {
--	spin_lock(&inode_lock);
- 	__remove_inode_hash(inode);
--	spin_unlock(&inode_lock);
- }
- EXPORT_SYMBOL(remove_inode_hash);
- 
-@@ -526,12 +510,10 @@ static void dispose_list(struct list_head *head)
- 
- 		evict(inode);
- 
--		spin_lock(&inode_lock);
- 		__remove_inode_hash(inode);
- 		spin_lock(&inode->i_sb->s_inodes_lock);
- 		list_del_init(&inode->i_sb_list);
- 		spin_unlock(&inode->i_sb->s_inodes_lock);
--		spin_unlock(&inode_lock);
- 
- 		wake_up_inode(inode);
- 		destroy_inode(inode);
-@@ -558,7 +540,6 @@ static int invalidate_list(struct super_block *sb, struct list_head *head,
- 		 * change during umount anymore, and because iprune_sem keeps
- 		 * shrink_icache_memory() away.
- 		 */
--		cond_resched_lock(&inode_lock);
- 		cond_resched_lock(&sb->s_inodes_lock);
- 
- 		next = next->next;
-@@ -614,12 +595,10 @@ int invalidate_inodes(struct super_block *sb)
- 	LIST_HEAD(throw_away);
- 
- 	down_write(&iprune_sem);
--	spin_lock(&inode_lock);
- 	spin_lock(&sb->s_inodes_lock);
- 	fsnotify_unmount_inodes(&sb->s_inodes);
- 	busy = invalidate_list(sb, &sb->s_inodes, &throw_away);
- 	spin_unlock(&sb->s_inodes_lock);
--	spin_unlock(&inode_lock);
- 
- 	dispose_list(&throw_away);
- 	up_write(&iprune_sem);
-@@ -644,7 +623,7 @@ static int can_unuse(struct inode *inode)
- 
- /*
-  * Scan `goal' inodes on the unused list for freeable ones. They are moved to
-- * a temporary list and then are freed outside inode_lock by dispose_list().
-+ * a temporary list and then are freed outside LRU lock by dispose_list().
-  *
-  * Any inodes which are pinned purely because of attached pagecache have their
-  * pagecache removed.  We expect the final iput() on that inode to add it to
-@@ -662,7 +641,6 @@ static void prune_icache(int nr_to_scan)
- 	unsigned long reap = 0;
- 
- 	down_read(&iprune_sem);
--	spin_lock(&inode_lock);
- 	spin_lock(&inode_lru_lock);
- 	for (nr_scanned = 0; nr_scanned < nr_to_scan; nr_scanned++) {
- 		struct inode *inode;
-@@ -690,12 +668,10 @@ static void prune_icache(int nr_to_scan)
- 			iref_locked(inode);
- 			spin_unlock(&inode->i_lock);
- 			spin_unlock(&inode_lru_lock);
--			spin_unlock(&inode_lock);
- 			if (remove_inode_buffers(inode))
- 				reap += invalidate_mapping_pages(&inode->i_data,
- 								0, -1);
- 			iput(inode);
--			spin_lock(&inode_lock);
- 			spin_lock(&inode_lru_lock);
- 			spin_lock(&inode->i_lock);
- 
-@@ -733,7 +709,6 @@ static void prune_icache(int nr_to_scan)
- 	else
- 		__count_vm_events(PGINODESTEAL, reap);
- 	spin_unlock(&inode_lru_lock);
--	spin_unlock(&inode_lock);
- 
- 	dispose_list(&freeable);
- 	up_read(&iprune_sem);
-@@ -854,9 +829,9 @@ __inode_add_to_lists(struct super_block *sb, struct inode_hash_bucket *b,
-  * @inode: inode to mark in use
-  *
-  * When an inode is allocated it needs to be accounted for, added to the in use
-- * list, the owning superblock and the inode hash. This needs to be done under
-- * the inode_lock, so export a function to do this rather than the inode lock
-- * itself. We calculate the hash list to add to here so it is all internal
-+ * list, the owning superblock and the inode hash.
-+ *
-+ * We calculate the hash list to add to here so it is all internal
-  * which requires the caller to have already set up the inode number in the
-  * inode to add.
-  */
-@@ -864,9 +839,7 @@ void inode_add_to_lists(struct super_block *sb, struct inode *inode)
- {
- 	struct inode_hash_bucket *b = inode_hashtable + hash(sb, inode->i_ino);
- 
--	spin_lock(&inode_lock);
- 	__inode_add_to_lists(sb, b, inode);
--	spin_unlock(&inode_lock);
- }
- EXPORT_SYMBOL_GPL(inode_add_to_lists);
- 
-@@ -923,15 +896,11 @@ struct inode *new_inode(struct super_block *sb)
- {
- 	struct inode *inode;
- 
--	spin_lock_prefetch(&inode_lock);
--
- 	inode = alloc_inode(sb);
- 	if (inode) {
--		spin_lock(&inode_lock);
- 		inode->i_ino = last_ino_get();
- 		inode->i_state = 0;
- 		__inode_add_to_lists(sb, NULL, inode);
--		spin_unlock(&inode_lock);
- 	}
- 	return inode;
- }
-@@ -990,7 +959,6 @@ static struct inode *get_new_inode(struct super_block *sb,
- 	if (inode) {
- 		struct inode *old;
- 
--		spin_lock(&inode_lock);
- 		/* We released the lock, so.. */
- 		old = find_inode(sb, b, test, data);
- 		if (!old) {
-@@ -999,7 +967,6 @@ static struct inode *get_new_inode(struct super_block *sb,
- 
- 			inode->i_state = I_NEW;
- 			__inode_add_to_lists(sb, b, inode);
--			spin_unlock(&inode_lock);
- 
- 			/* Return the locked inode with I_NEW set, the
- 			 * caller is responsible for filling in the contents
-@@ -1014,7 +981,6 @@ static struct inode *get_new_inode(struct super_block *sb,
- 		 */
- 		iref_locked(old);
- 		spin_unlock(&old->i_lock);
--		spin_unlock(&inode_lock);
- 		destroy_inode(inode);
- 		inode = old;
- 		wait_on_inode(inode);
-@@ -1022,7 +988,6 @@ static struct inode *get_new_inode(struct super_block *sb,
- 	return inode;
- 
- set_failed:
--	spin_unlock(&inode_lock);
- 	destroy_inode(inode);
- 	return NULL;
- }
-@@ -1040,14 +1005,12 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
- 	if (inode) {
- 		struct inode *old;
- 
--		spin_lock(&inode_lock);
- 		/* We released the lock, so.. */
- 		old = find_inode_fast(sb, b, ino);
- 		if (!old) {
- 			inode->i_ino = ino;
- 			__inode_add_to_lists(sb, b, inode);
- 			inode->i_state = I_NEW;
--			spin_unlock(&inode_lock);
- 
- 			/* Return the locked inode with I_NEW set, the
- 			 * caller is responsible for filling in the contents
-@@ -1062,7 +1025,6 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
- 		 */
- 		iref_locked(old);
- 		spin_unlock(&old->i_lock);
--		spin_unlock(&inode_lock);
- 		destroy_inode(inode);
- 		inode = old;
- 		wait_on_inode(inode);
-@@ -1119,7 +1081,6 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
- 	static unsigned int counter;
- 	ino_t res;
- 
--	spin_lock(&inode_lock);
- 	spin_lock(&unique_lock);
- 	do {
- 		if (counter <= max_reserved)
-@@ -1127,7 +1088,6 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
- 		res = counter++;
- 	} while (!test_inode_iunique(sb, res));
- 	spin_unlock(&unique_lock);
--	spin_unlock(&inode_lock);
- 
- 	return res;
- }
-@@ -1135,7 +1095,6 @@ EXPORT_SYMBOL(iunique);
- 
- struct inode *igrab(struct inode *inode)
- {
--	spin_lock(&inode_lock);
- 	spin_lock(&inode->i_lock);
- 	if (!(inode->i_state & (I_FREEING|I_WILL_FREE))) {
- 		iref_locked(inode);
-@@ -1149,7 +1108,6 @@ struct inode *igrab(struct inode *inode)
- 		 */
- 		inode = NULL;
- 	}
--	spin_unlock(&inode_lock);
- 	return inode;
- }
- EXPORT_SYMBOL(igrab);
-@@ -1171,7 +1129,7 @@ EXPORT_SYMBOL(igrab);
-  *
-  * Otherwise NULL is returned.
-  *
-- * Note, @test is called with the inode_lock held, so can't sleep.
-+ * Note, @test is called with the i_lock held, so can't sleep.
-  */
- static struct inode *ifind(struct super_block *sb,
- 		struct inode_hash_bucket *b,
-@@ -1180,17 +1138,14 @@ static struct inode *ifind(struct super_block *sb,
- {
- 	struct inode *inode;
- 
--	spin_lock(&inode_lock);
- 	inode = find_inode(sb, b, test, data);
- 	if (inode) {
- 		iref_locked(inode);
- 		spin_unlock(&inode->i_lock);
--		spin_unlock(&inode_lock);
- 		if (likely(wait))
- 			wait_on_inode(inode);
- 		return inode;
- 	}
--	spin_unlock(&inode_lock);
- 	return NULL;
- }
- 
-@@ -1215,16 +1170,13 @@ static struct inode *ifind_fast(struct super_block *sb,
- {
- 	struct inode *inode;
- 
--	spin_lock(&inode_lock);
- 	inode = find_inode_fast(sb, b, ino);
- 	if (inode) {
- 		iref_locked(inode);
- 		spin_unlock(&inode->i_lock);
--		spin_unlock(&inode_lock);
- 		wait_on_inode(inode);
- 		return inode;
- 	}
--	spin_unlock(&inode_lock);
- 	return NULL;
- }
- 
-@@ -1247,7 +1199,7 @@ static struct inode *ifind_fast(struct super_block *sb,
-  *
-  * Otherwise NULL is returned.
-  *
-- * Note, @test is called with the inode_lock held, so can't sleep.
-+ * Note, @test is called with the i_lock held, so can't sleep.
-  */
- struct inode *ilookup5_nowait(struct super_block *sb, unsigned long hashval,
- 		int (*test)(struct inode *, void *), void *data)
-@@ -1275,7 +1227,7 @@ EXPORT_SYMBOL(ilookup5_nowait);
-  *
-  * Otherwise NULL is returned.
-  *
-- * Note, @test is called with the inode_lock held, so can't sleep.
-+ * Note, @test is called with the i_lock held, so can't sleep.
-  */
- struct inode *ilookup5(struct super_block *sb, unsigned long hashval,
- 		int (*test)(struct inode *, void *), void *data)
-@@ -1326,7 +1278,7 @@ EXPORT_SYMBOL(ilookup);
-  * inode and this is returned locked, hashed, and with the I_NEW flag set. The
-  * file system gets to fill it in before unlocking it via unlock_new_inode().
-  *
-- * Note both @test and @set are called with the inode_lock held, so can't sleep.
-+ * Note both @test and @set are called with the i_lock held, so can't sleep.
-  */
- struct inode *iget5_locked(struct super_block *sb, unsigned long hashval,
- 		int (*test)(struct inode *, void *),
-@@ -1391,7 +1343,6 @@ int insert_inode_locked(struct inode *inode)
- 	while (1) {
- 		struct hlist_bl_node *node;
- 		struct inode *old = NULL;
--		spin_lock(&inode_lock);
- 		spin_lock_bucket(b);
- 		hlist_bl_for_each_entry(old, node, &b->head, i_hash) {
- 			if (old->i_ino != ino)
-@@ -1408,13 +1359,11 @@ int insert_inode_locked(struct inode *inode)
- 		if (likely(!node)) {
- 			hlist_bl_add_head(&inode->i_hash, &b->head);
- 			spin_unlock_bucket(b);
--			spin_unlock(&inode_lock);
- 			return 0;
- 		}
- 		iref_locked(old);
- 		spin_unlock(&old->i_lock);
- 		spin_unlock_bucket(b);
--		spin_unlock(&inode_lock);
- 		wait_on_inode(old);
- 		if (unlikely(!hlist_bl_unhashed(&old->i_hash))) {
- 			iput(old);
-@@ -1437,7 +1386,6 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
- 		struct hlist_bl_node *node;
- 		struct inode *old = NULL;
- 
--		spin_lock(&inode_lock);
- 		spin_lock_bucket(b);
- 		hlist_bl_for_each_entry(old, node, &b->head, i_hash) {
- 			if (old->i_sb != sb)
-@@ -1454,13 +1402,11 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
- 		if (likely(!node)) {
- 			hlist_bl_add_head(&inode->i_hash, &b->head);
- 			spin_unlock_bucket(b);
--			spin_unlock(&inode_lock);
- 			return 0;
- 		}
- 		iref_locked(old);
- 		spin_unlock(&old->i_lock);
- 		spin_unlock_bucket(b);
--		spin_unlock(&inode_lock);
- 		wait_on_inode(old);
- 		if (unlikely(!hlist_bl_unhashed(&old->i_hash))) {
- 			iput(old);
-@@ -1523,15 +1469,12 @@ static void iput_final(struct inode *inode)
- 				return;
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 50e8c85..ac070d7 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -533,7 +533,7 @@ struct block_device *bdget(dev_t dev)
+ 		inode->i_bdev = bdev;
+ 		inode->i_data.a_ops = &def_blk_aops;
+ 		mapping_set_gfp_mask(&inode->i_data, GFP_USER);
+-		inode->i_data.backing_dev_info = &default_backing_dev_info;
++		mapping_new_set_bdi(&inode->i_data, &default_backing_dev_info);
+ 		spin_lock(&bdev_lock);
+ 		list_add(&bdev->bd_list, &all_bdevs);
+ 		spin_unlock(&bdev_lock);
+@@ -1390,7 +1390,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 				bdi = blk_get_backing_dev_info(bdev);
+ 				if (bdi == NULL)
+ 					bdi = &default_backing_dev_info;
+-				bdev->bd_inode->i_data.backing_dev_info = bdi;
++				mapping_set_bdi(&bdev->bd_inode->i_data, bdi);
  			}
- 			spin_unlock(&inode->i_lock);
--			spin_unlock(&inode_lock);
- 			return;
- 		}
- 		WARN_ON(inode->i_state & I_NEW);
- 		inode->i_state |= I_WILL_FREE;
- 		spin_unlock(&inode->i_lock);
--		spin_unlock(&inode_lock);
- 		write_inode_now(inode, 1);
--		spin_lock(&inode_lock);
- 		spin_lock(&inode->i_lock);
- 		WARN_ON(inode->i_state & I_NEW);
- 		inode->i_state &= ~I_WILL_FREE;
-@@ -1556,7 +1499,6 @@ static void iput_final(struct inode *inode)
- 	list_del_init(&inode->i_sb_list);
- 	spin_unlock(&sb->s_inodes_lock);
+ 			if (bdev->bd_invalidated)
+ 				rescan_partitions(disk, bdev);
+@@ -1405,8 +1405,8 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 			if (ret)
+ 				goto out_clear;
+ 			bdev->bd_contains = whole;
+-			bdev->bd_inode->i_data.backing_dev_info =
+-			   whole->bd_inode->i_data.backing_dev_info;
++			mapping_set_bdi(&bdev->bd_inode->i_data,
++			   whole->bd_inode->i_data.a_bdi);
+ 			bdev->bd_part = disk_get_part(disk, partno);
+ 			if (!(disk->flags & GENHD_FL_UP) ||
+ 			    !bdev->bd_part || !bdev->bd_part->nr_sects) {
+@@ -1439,7 +1439,7 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
+ 	disk_put_part(bdev->bd_part);
+ 	bdev->bd_disk = NULL;
+ 	bdev->bd_part = NULL;
+-	bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
++	mapping_set_bdi(&bdev->bd_inode->i_data, &default_backing_dev_info);
+ 	if (bdev != bdev->bd_contains)
+ 		__blkdev_put(bdev->bd_contains, mode, 1);
+ 	bdev->bd_contains = NULL;
+@@ -1533,7 +1533,8 @@ static int __blkdev_put(struct block_device *bdev, fmode_t mode, int for_part)
+ 		disk_put_part(bdev->bd_part);
+ 		bdev->bd_part = NULL;
+ 		bdev->bd_disk = NULL;
+-		bdev->bd_inode->i_data.backing_dev_info = &default_backing_dev_info;
++		mapping_set_bdi(&bdev->bd_inode->i_data,
++				&default_backing_dev_info);
+ 		if (bdev != bdev->bd_contains)
+ 			victim = bdev->bd_contains;
+ 		bdev->bd_contains = NULL;
+diff --git a/fs/btrfs/disk-io.c b/fs/btrfs/disk-io.c
+index 64f1008..05c3fc7 100644
+--- a/fs/btrfs/disk-io.c
++++ b/fs/btrfs/disk-io.c
+@@ -1636,7 +1636,7 @@ struct btrfs_root *open_ctree(struct super_block *sb,
+ 	 */
+ 	fs_info->btree_inode->i_size = OFFSET_MAX;
+ 	fs_info->btree_inode->i_mapping->a_ops = &btree_aops;
+-	fs_info->btree_inode->i_mapping->backing_dev_info = &fs_info->bdi;
++	mapping_new_set_bdi(fs_info->btree_inode->i_mapping, &fs_info->bdi);
  
--	spin_unlock(&inode_lock);
- 	evict(inode);
- 	remove_inode_hash(inode);
- 	wake_up_inode(inode);
-@@ -1576,7 +1518,6 @@ static void iput_final(struct inode *inode)
- void iput(struct inode *inode)
+ 	RB_CLEAR_NODE(&BTRFS_I(fs_info->btree_inode)->rb_node);
+ 	extent_io_tree_init(&BTRFS_I(fs_info->btree_inode)->io_tree,
+diff --git a/fs/btrfs/file.c b/fs/btrfs/file.c
+index e354c33..96e3883 100644
+--- a/fs/btrfs/file.c
++++ b/fs/btrfs/file.c
+@@ -872,7 +872,7 @@ static ssize_t btrfs_file_aio_write(struct kiocb *iocb,
+ 		goto out;
+ 	count = ocount;
+ 
+-	current->backing_dev_info = inode->i_mapping->backing_dev_info;
++	current->backing_dev_info = inode->i_mapping->a_bdi;
+ 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
+ 	if (err)
+ 		goto out;
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index c038644..c646c0c 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -2475,7 +2475,7 @@ static void btrfs_read_locked_inode(struct inode *inode)
+ 	switch (inode->i_mode & S_IFMT) {
+ 	case S_IFREG:
+ 		inode->i_mapping->a_ops = &btrfs_aops;
+-		inode->i_mapping->backing_dev_info = &root->fs_info->bdi;
++		mapping_new_set_bdi(inode->i_mapping, &root->fs_info->bdi);
+ 		BTRFS_I(inode)->io_tree.ops = &btrfs_extent_io_ops;
+ 		inode->i_fop = &btrfs_file_operations;
+ 		inode->i_op = &btrfs_file_inode_operations;
+@@ -2490,7 +2490,7 @@ static void btrfs_read_locked_inode(struct inode *inode)
+ 	case S_IFLNK:
+ 		inode->i_op = &btrfs_symlink_inode_operations;
+ 		inode->i_mapping->a_ops = &btrfs_symlink_aops;
+-		inode->i_mapping->backing_dev_info = &root->fs_info->bdi;
++		mapping_new_set_bdi(inode->i_mapping, &root->fs_info->bdi);
+ 		break;
+ 	default:
+ 		inode->i_op = &btrfs_special_inode_operations;
+@@ -4705,7 +4705,7 @@ static int btrfs_create(struct inode *dir, struct dentry *dentry,
+ 		drop_inode = 1;
+ 	else {
+ 		inode->i_mapping->a_ops = &btrfs_aops;
+-		inode->i_mapping->backing_dev_info = &root->fs_info->bdi;
++		mapping_new_set_bdi(inode->i_mapping, &root->fs_info->bdi);
+ 		inode->i_fop = &btrfs_file_operations;
+ 		inode->i_op = &btrfs_file_inode_operations;
+ 		BTRFS_I(inode)->io_tree.ops = &btrfs_extent_io_ops;
+@@ -6699,7 +6699,7 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
+ 		drop_inode = 1;
+ 	else {
+ 		inode->i_mapping->a_ops = &btrfs_aops;
+-		inode->i_mapping->backing_dev_info = &root->fs_info->bdi;
++		mapping_new_set_bdi(inode->i_mapping, &root->fs_info->bdi);
+ 		inode->i_fop = &btrfs_file_operations;
+ 		inode->i_op = &btrfs_file_inode_operations;
+ 		BTRFS_I(inode)->io_tree.ops = &btrfs_extent_io_ops;
+@@ -6739,7 +6739,7 @@ static int btrfs_symlink(struct inode *dir, struct dentry *dentry,
+ 
+ 	inode->i_op = &btrfs_symlink_inode_operations;
+ 	inode->i_mapping->a_ops = &btrfs_symlink_aops;
+-	inode->i_mapping->backing_dev_info = &root->fs_info->bdi;
++	mapping_new_set_bdi(inode->i_mapping, &root->fs_info->bdi);
+ 	inode_set_bytes(inode, name_len);
+ 	btrfs_i_size_write(inode, name_len - 1);
+ 	err = btrfs_update_inode(trans, root, inode);
+diff --git a/fs/buffer.c b/fs/buffer.c
+index 3e7dca2..b5c4153 100644
+--- a/fs/buffer.c
++++ b/fs/buffer.c
+@@ -3161,7 +3161,7 @@ void block_sync_page(struct page *page)
+ 	smp_mb();
+ 	mapping = page_mapping(page);
+ 	if (mapping)
+-		blk_run_backing_dev(mapping->backing_dev_info, page);
++		blk_run_backing_dev(mapping->a_bdi, page);
+ }
+ EXPORT_SYMBOL(block_sync_page);
+ 
+diff --git a/fs/ceph/addr.c b/fs/ceph/addr.c
+index efbc604..448400a 100644
+--- a/fs/ceph/addr.c
++++ b/fs/ceph/addr.c
+@@ -588,7 +588,7 @@ static int ceph_writepages_start(struct address_space *mapping,
+ 				 struct writeback_control *wbc)
  {
+ 	struct inode *inode = mapping->host;
+-	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	struct backing_dev_info *bdi = mapping->a_bdi;
+ 	struct ceph_inode_info *ci = ceph_inode(inode);
+ 	struct ceph_client *client;
+ 	pgoff_t index, start, end;
+diff --git a/fs/ceph/inode.c b/fs/ceph/inode.c
+index 62377ec..e427082 100644
+--- a/fs/ceph/inode.c
++++ b/fs/ceph/inode.c
+@@ -624,8 +624,8 @@ static int fill_inode(struct inode *inode,
+ 	}
+ 
+ 	inode->i_mapping->a_ops = &ceph_aops;
+-	inode->i_mapping->backing_dev_info =
+-		&ceph_sb_to_client(inode->i_sb)->backing_dev_info;
++	mapping_new_set_bdi(inode->i_mapping,
++			&ceph_sb_to_client(inode->i_sb)->backing_dev_info);
+ 
+ 	switch (inode->i_mode & S_IFMT) {
+ 	case S_IFIFO:
+diff --git a/fs/cifs/file.c b/fs/cifs/file.c
+index de748c6..3673e66 100644
+--- a/fs/cifs/file.c
++++ b/fs/cifs/file.c
+@@ -1337,7 +1337,7 @@ static int cifs_partialpagewrite(struct page *page, unsigned from, unsigned to)
+ static int cifs_writepages(struct address_space *mapping,
+ 			   struct writeback_control *wbc)
+ {
+-	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	struct backing_dev_info *bdi = mapping->a_bdi;
+ 	unsigned int bytes_to_write;
+ 	unsigned int bytes_written;
+ 	struct cifs_sb_info *cifs_sb;
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 53cce8c..63a0bdb 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -802,7 +802,7 @@ retry_iget5_locked:
+ 		if (inode->i_state & I_NEW) {
+ 			inode->i_ino = hash;
+ 			if (S_ISREG(inode->i_mode))
+-				inode->i_data.backing_dev_info = sb->s_bdi;
++				inode->i_data.a_bdi = sb->s_bdi;
+ #ifdef CONFIG_CIFS_FSCACHE
+ 			/* initialize per-inode cache cookie pointer */
+ 			CIFS_I(inode)->fscache = NULL;
+diff --git a/fs/configfs/inode.c b/fs/configfs/inode.c
+index cf78d44..40b2bec 100644
+--- a/fs/configfs/inode.c
++++ b/fs/configfs/inode.c
+@@ -136,7 +136,8 @@ struct inode * configfs_new_inode(mode_t mode, struct configfs_dirent * sd)
+ 	struct inode * inode = new_inode(configfs_sb);
  	if (inode) {
--		spin_lock(&inode_lock);
- 		spin_lock(&inode->i_lock);
- 		BUG_ON(inode->i_state & I_CLEAR);
+ 		inode->i_mapping->a_ops = &configfs_aops;
+-		inode->i_mapping->backing_dev_info = &configfs_backing_dev_info;
++		mapping_new_set_bdi(inode->i_mapping,
++				&configfs_backing_dev_info);
+ 		inode->i_op = &configfs_inode_operations;
  
-@@ -1586,7 +1527,6 @@ void iput(struct inode *inode)
- 			return;
- 		}
- 		spin_unlock(&inode->i_lock);
--		spin_lock(&inode_lock);
- 	}
- }
- EXPORT_SYMBOL(iput);
-@@ -1766,8 +1706,6 @@ EXPORT_SYMBOL(inode_wait);
-  * It doesn't matter if I_NEW is not set initially, a call to
-  * wake_up_inode() after removing from the hash list will DTRT.
-  *
-- * This is called with inode_lock held.
-- *
-  * Called with i_lock held and returns with it dropped.
-  */
- static void __wait_on_freeing_inode(struct inode *inode)
-@@ -1777,10 +1715,8 @@ static void __wait_on_freeing_inode(struct inode *inode)
- 	wq = bit_waitqueue(&inode->i_state, __I_NEW);
- 	prepare_to_wait(wq, &wait.wait, TASK_UNINTERRUPTIBLE);
- 	spin_unlock(&inode->i_lock);
--	spin_unlock(&inode_lock);
- 	schedule();
- 	finish_wait(wq, &wait.wait);
--	spin_lock(&inode_lock);
- }
+ 		if (sd->s_iattr) {
+diff --git a/fs/ext2/ialloc.c b/fs/ext2/ialloc.c
+index ad70479..29942f0 100644
+--- a/fs/ext2/ialloc.c
++++ b/fs/ext2/ialloc.c
+@@ -172,7 +172,7 @@ static void ext2_preread_inode(struct inode *inode)
+ 	struct ext2_group_desc * gdp;
+ 	struct backing_dev_info *bdi;
  
- static __initdata unsigned long ihash_entries;
-diff --git a/fs/logfs/inode.c b/fs/logfs/inode.c
-index d8c71ec..a67b607 100644
---- a/fs/logfs/inode.c
-+++ b/fs/logfs/inode.c
-@@ -286,7 +286,7 @@ static int logfs_write_inode(struct inode *inode, struct writeback_control *wbc)
- 	return ret;
- }
+-	bdi = inode->i_mapping->backing_dev_info;
++	bdi = inode->i_mapping->a_bdi;
+ 	if (bdi_read_congested(bdi))
+ 		return;
+ 	if (bdi_write_congested(bdi))
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 58a95b7..3209aff 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -74,7 +74,7 @@ static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
+ 	struct super_block *sb = inode->i_sb;
  
--/* called with inode_lock held */
-+/* called with i_lock held */
- static int logfs_drop_inode(struct inode *inode)
+ 	if (strcmp(sb->s_type->name, "bdev") == 0)
+-		return inode->i_mapping->backing_dev_info;
++		return inode->i_mapping->a_bdi;
+ 
+ 	return sb->s_bdi;
+ }
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index c822458..193a0d1 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -945,7 +945,7 @@ static ssize_t fuse_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+ 
+ 	/* We can write back this queue in page reclaim */
+-	current->backing_dev_info = mapping->backing_dev_info;
++	current->backing_dev_info = mapping->a_bdi;
+ 
+ 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
+ 	if (err)
+@@ -1133,7 +1133,7 @@ static void fuse_writepage_finish(struct fuse_conn *fc, struct fuse_req *req)
  {
- 	struct logfs_super *super = logfs_super(inode->i_sb);
-diff --git a/fs/notify/inode_mark.c b/fs/notify/inode_mark.c
-index 8a05213..57c28ae 100644
---- a/fs/notify/inode_mark.c
-+++ b/fs/notify/inode_mark.c
-@@ -22,7 +22,7 @@
- #include <linux/module.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
--#include <linux/writeback.h> /* for inode_lock */
-+#include <linux/writeback.h>
+ 	struct inode *inode = req->inode;
+ 	struct fuse_inode *fi = get_fuse_inode(inode);
+-	struct backing_dev_info *bdi = inode->i_mapping->backing_dev_info;
++	struct backing_dev_info *bdi = inode->i_mapping->a_bdi;
  
- #include <asm/atomic.h>
+ 	list_del(&req->writepages_entry);
+ 	dec_bdi_stat(bdi, BDI_WRITEBACK);
+@@ -1247,7 +1247,7 @@ static int fuse_writepage_locked(struct page *page)
+ 	req->end = fuse_writepage_end;
+ 	req->inode = inode;
  
-@@ -232,9 +232,8 @@ out:
-  * fsnotify_unmount_inodes - an sb is unmounting.  handle any watched inodes.
-  * @list: list of inodes being unmounted (sb->s_inodes)
-  *
-- * Called with inode_lock held, protecting the unmounting super block's list
-- * of inodes, and with iprune_mutex held, keeping shrink_icache_memory() at bay.
-- * We temporarily drop inode_lock, however, and CAN block.
-+ * Called with iprune_mutex held, keeping shrink_icache_memory() at bay.
-+ * sb_inode_list_lock to protect the super block's list of inodes.
+-	inc_bdi_stat(mapping->backing_dev_info, BDI_WRITEBACK);
++	inc_bdi_stat(mapping->a_bdi, BDI_WRITEBACK);
+ 	inc_zone_page_state(tmp_page, NR_WRITEBACK_TEMP);
+ 	end_page_writeback(page);
+ 
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index da9e6e1..5cf105c 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -256,7 +256,7 @@ struct inode *fuse_iget(struct super_block *sb, u64 nodeid,
+ 	if ((inode->i_state & I_NEW)) {
+ 		inode->i_flags |= S_NOATIME|S_NOCMTIME;
+ 		inode->i_generation = generation;
+-		inode->i_data.backing_dev_info = &fc->bdi;
++		mapping_new_set_bdi(&inode->i_data, &fc->bdi);
+ 		fuse_init_inode(inode, attr);
+ 		unlock_new_inode(inode);
+ 	} else if ((inode->i_mode ^ attr->mode) & S_IFMT) {
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index 9adf8f9..c8f4c50 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -8,6 +8,7 @@
   */
- void fsnotify_unmount_inodes(struct list_head *list)
- {
-@@ -288,13 +287,12 @@ void fsnotify_unmount_inodes(struct list_head *list)
- 		}
  
- 		/*
--		 * We can safely drop inode_lock here because we hold
-+		 * We can safely drop sb->s_inodes_lock here because we hold
- 		 * references on both inode and next_i.  Also no new inodes
- 		 * will be added since the umount has begun.  Finally,
- 		 * iprune_mutex keeps shrink_icache_memory() away.
- 		 */
- 		spin_unlock(&sb->s_inodes_lock);
--		spin_unlock(&inode_lock);
- 
- 		if (need_iput_tmp)
- 			iput(need_iput_tmp);
-@@ -306,7 +304,6 @@ void fsnotify_unmount_inodes(struct list_head *list)
- 
- 		iput(inode);
- 
--		spin_lock(&inode_lock);
- 		spin_lock(&sb->s_inodes_lock);
- 	}
- }
-diff --git a/fs/notify/mark.c b/fs/notify/mark.c
-index 325185e..50c0085 100644
---- a/fs/notify/mark.c
-+++ b/fs/notify/mark.c
-@@ -91,7 +91,6 @@
+ #include <linux/sched.h>
++#include <linux/backing-dev.h>
  #include <linux/slab.h>
  #include <linux/spinlock.h>
- #include <linux/srcu.h>
--#include <linux/writeback.h> /* for inode_lock */
+ #include <linux/buffer_head.h>
+@@ -797,7 +798,7 @@ int gfs2_glock_get(struct gfs2_sbd *sdp, u64 number,
+ 		mapping->flags = 0;
+ 		mapping_set_gfp_mask(mapping, GFP_NOFS);
+ 		mapping->assoc_mapping = NULL;
+-		mapping->backing_dev_info = s->s_bdi;
++		mapping_new_set_bdi(mapping, s->s_bdi);
+ 		mapping->writeback_index = 0;
+ 	}
  
- #include <asm/atomic.h>
+diff --git a/fs/hugetlbfs/inode.c b/fs/hugetlbfs/inode.c
+index 6e5bd42..a37920a 100644
+--- a/fs/hugetlbfs/inode.c
++++ b/fs/hugetlbfs/inode.c
+@@ -459,7 +459,8 @@ static struct inode *hugetlbfs_get_inode(struct super_block *sb, uid_t uid,
+ 		inode->i_uid = uid;
+ 		inode->i_gid = gid;
+ 		inode->i_mapping->a_ops = &hugetlbfs_aops;
+-		inode->i_mapping->backing_dev_info =&hugetlbfs_backing_dev_info;
++		mapping_new_set_bdi(inode->i_mapping,
++				&hugetlbfs_backing_dev_info);
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		INIT_LIST_HEAD(&inode->i_mapping->private_list);
+ 		info = HUGETLBFS_I(inode);
+diff --git a/fs/inode.c b/fs/inode.c
+index f04d501..22ef3f1 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -201,7 +201,7 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
+ 	mapping->flags = 0;
+ 	mapping_set_gfp_mask(mapping, GFP_HIGHUSER_MOVABLE);
+ 	mapping->assoc_mapping = NULL;
+-	mapping->backing_dev_info = &default_backing_dev_info;
++	mapping_new_set_bdi(mapping, &default_backing_dev_info);
+ 	mapping->writeback_index = 0;
  
-diff --git a/fs/notify/vfsmount_mark.c b/fs/notify/vfsmount_mark.c
-index 56772b5..6f8eefe 100644
---- a/fs/notify/vfsmount_mark.c
-+++ b/fs/notify/vfsmount_mark.c
-@@ -23,7 +23,6 @@
- #include <linux/mount.h>
- #include <linux/mutex.h>
- #include <linux/spinlock.h>
--#include <linux/writeback.h> /* for inode_lock */
+ 	/*
+@@ -212,8 +212,8 @@ int inode_init_always(struct super_block *sb, struct inode *inode)
+ 	if (sb->s_bdev) {
+ 		struct backing_dev_info *bdi;
  
- #include <asm/atomic.h>
- 
-diff --git a/fs/ntfs/inode.c b/fs/ntfs/inode.c
-index 93622b1..7c530f3 100644
---- a/fs/ntfs/inode.c
-+++ b/fs/ntfs/inode.c
-@@ -54,7 +54,7 @@
-  *
-  * Return 1 if the attributes match and 0 if not.
-  *
-- * NOTE: This function runs with the inode_lock spin lock held so it is not
-+ * NOTE: This function runs with the i_lock spin lock held so it is not
-  * allowed to sleep.
-  */
- int ntfs_test_inode(struct inode *vi, ntfs_attr *na)
-@@ -98,7 +98,7 @@ int ntfs_test_inode(struct inode *vi, ntfs_attr *na)
-  *
-  * Return 0 on success and -errno on error.
-  *
-- * NOTE: This function runs with the inode_lock spin lock held so it is not
-+ * NOTE: This function runs with the i_lock spin lock held so it is not
-  * allowed to sleep. (Hence the GFP_ATOMIC allocation.)
-  */
- static int ntfs_init_locked_inode(struct inode *vi, ntfs_attr *na)
-diff --git a/fs/ocfs2/inode.c b/fs/ocfs2/inode.c
-index eece3e0..65c61e2 100644
---- a/fs/ocfs2/inode.c
-+++ b/fs/ocfs2/inode.c
-@@ -1195,7 +1195,7 @@ void ocfs2_evict_inode(struct inode *inode)
- 	ocfs2_clear_inode(inode);
+-		bdi = sb->s_bdev->bd_inode->i_mapping->backing_dev_info;
+-		mapping->backing_dev_info = bdi;
++		bdi = sb->s_bdev->bd_inode->i_mapping->a_bdi;
++		mapping_new_set_bdi(mapping, bdi);
+ 	}
+ 	inode->i_private = NULL;
+ 	inode->i_mapping = mapping;
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 7d2d6c7..886be68 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -287,7 +287,8 @@ nfs_fhget(struct super_block *sb, struct nfs_fh *fh, struct nfs_fattr *fattr)
+ 		if (S_ISREG(inode->i_mode)) {
+ 			inode->i_fop = &nfs_file_operations;
+ 			inode->i_data.a_ops = &nfs_file_aops;
+-			inode->i_data.backing_dev_info = &NFS_SB(sb)->backing_dev_info;
++			mapping_new_set_bdi(&inode->i_data,
++						&NFS_SB(sb)->backing_dev_info);
+ 		} else if (S_ISDIR(inode->i_mode)) {
+ 			inode->i_op = NFS_SB(sb)->nfs_client->rpc_ops->dir_inode_ops;
+ 			inode->i_fop = &nfs_dir_operations;
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 874972d..a8baf4b 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -455,7 +455,7 @@ nfs_mark_request_commit(struct nfs_page *req)
+ 	nfsi->ncommit++;
+ 	spin_unlock(&inode->i_lock);
+ 	inc_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
+-	inc_bdi_stat(req->wb_page->mapping->backing_dev_info, BDI_RECLAIMABLE);
++	inc_bdi_stat(req->wb_page->mapping->a_bdi, BDI_RECLAIMABLE);
+ 	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
  }
  
--/* Called under inode_lock, with no more references on the
-+/* Called under i_lock, with no more references on the
-  * struct inode, so it's safe here to check the flags field
-  * and to manipulate i_nlink without any other locks. */
- int ocfs2_drop_inode(struct inode *inode)
-diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
-index c7b5fc6..533cd95 100644
---- a/fs/quota/dquot.c
-+++ b/fs/quota/dquot.c
-@@ -76,7 +76,7 @@
- #include <linux/buffer_head.h>
- #include <linux/capability.h>
- #include <linux/quotaops.h>
--#include <linux/writeback.h> /* for inode_lock, oddly enough.. */
-+#include <linux/writeback.h>
+@@ -466,7 +466,7 @@ nfs_clear_request_commit(struct nfs_page *req)
  
- #include <asm/uaccess.h>
- 
-@@ -896,7 +896,6 @@ static void add_dquot_ref(struct super_block *sb, int type)
- 	int reserved = 0;
- #endif
- 
--	spin_lock(&inode_lock);
- 	spin_lock(&sb->s_inodes_lock);
- 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
- 		spin_lock(&inode->i_lock);
-@@ -914,21 +913,18 @@ static void add_dquot_ref(struct super_block *sb, int type)
- 		iref_locked(inode);
- 		spin_unlock(&inode->i_lock);
- 		spin_unlock(&sb->s_inodes_lock);
--		spin_unlock(&inode_lock);
- 
- 		iput(old_inode);
- 		__dquot_initialize(inode, type);
- 		/* We hold a reference to 'inode' so it couldn't have been
--		 * removed from s_inodes list while we dropped the inode_lock.
-+		 * removed from s_inodes list while we dropped the lock.
- 		 * We cannot iput the inode now as we can be holding the last
--		 * reference and we cannot iput it under inode_lock. So we
-+		 * reference and we cannot iput it under the lock. So we
- 		 * keep the reference and iput it later. */
- 		old_inode = inode;
--		spin_lock(&inode_lock);
- 		spin_lock(&sb->s_inodes_lock);
+ 	if (test_and_clear_bit(PG_CLEAN, &(req)->wb_flags)) {
+ 		dec_zone_page_state(page, NR_UNSTABLE_NFS);
+-		dec_bdi_stat(page->mapping->backing_dev_info, BDI_RECLAIMABLE);
++		dec_bdi_stat(page->mapping->a_bdi, BDI_RECLAIMABLE);
+ 		return 1;
  	}
- 	spin_unlock(&sb->s_inodes_lock);
--	spin_unlock(&inode_lock);
- 	iput(old_inode);
+ 	return 0;
+@@ -1321,8 +1321,7 @@ nfs_commit_list(struct inode *inode, struct list_head *head, int how)
+ 		nfs_list_remove_request(req);
+ 		nfs_mark_request_commit(req);
+ 		dec_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
+-		dec_bdi_stat(req->wb_page->mapping->backing_dev_info,
+-				BDI_RECLAIMABLE);
++		dec_bdi_stat(req->wb_page->mapping->a_bdi, BDI_RECLAIMABLE);
+ 		nfs_clear_page_tag_locked(req);
+ 	}
+ 	nfs_commit_clear_lock(NFS_I(inode));
+diff --git a/fs/nilfs2/btnode.c b/fs/nilfs2/btnode.c
+index f78ab10..d74ed8f 100644
+--- a/fs/nilfs2/btnode.c
++++ b/fs/nilfs2/btnode.c
+@@ -59,7 +59,7 @@ void nilfs_btnode_cache_init(struct address_space *btnc,
+ 	btnc->flags = 0;
+ 	mapping_set_gfp_mask(btnc, GFP_NOFS);
+ 	btnc->assoc_mapping = NULL;
+-	btnc->backing_dev_info = bdi;
++	mapping_new_set_bdi(btnc, bdi);
+ 	btnc->a_ops = &def_btnode_aops;
+ }
  
- #ifdef CONFIG_QUOTA_DEBUG
-@@ -1009,7 +1005,6 @@ static void remove_dquot_ref(struct super_block *sb, int type,
- 	struct inode *inode;
- 	int reserved = 0;
+diff --git a/fs/nilfs2/mdt.c b/fs/nilfs2/mdt.c
+index d01aff4..7713861 100644
+--- a/fs/nilfs2/mdt.c
++++ b/fs/nilfs2/mdt.c
+@@ -517,7 +517,7 @@ nilfs_mdt_new_common(struct the_nilfs *nilfs, struct super_block *sb,
+ 		mapping->flags = 0;
+ 		mapping_set_gfp_mask(mapping, gfp_mask);
+ 		mapping->assoc_mapping = NULL;
+-		mapping->backing_dev_info = nilfs->ns_bdi;
++		mapping_new_set_bdi(mapping, nilfs->ns_bdi);
  
--	spin_lock(&inode_lock);
- 	spin_lock(&sb->s_inodes_lock);
- 	list_for_each_entry(inode, &sb->s_inodes, i_sb_list) {
- 		/*
-@@ -1025,7 +1020,6 @@ static void remove_dquot_ref(struct super_block *sb, int type,
+ 		inode->i_mapping = mapping;
+ 	}
+diff --git a/fs/nilfs2/the_nilfs.c b/fs/nilfs2/the_nilfs.c
+index ba7c10c..cb81695 100644
+--- a/fs/nilfs2/the_nilfs.c
++++ b/fs/nilfs2/the_nilfs.c
+@@ -729,7 +729,7 @@ int init_nilfs(struct the_nilfs *nilfs, struct nilfs_sb_info *sbi, char *data)
+ 
+ 	nilfs->ns_mount_state = le16_to_cpu(sbp->s_state);
+ 
+-	bdi = nilfs->ns_bdev->bd_inode->i_mapping->backing_dev_info;
++	bdi = nilfs->ns_bdev->bd_inode->i_mapping->a_bdi;
+ 	nilfs->ns_bdi = bdi ? : &default_backing_dev_info;
+ 
+ 	err = nilfs_store_log_cursor(nilfs, sbp);
+diff --git a/fs/ntfs/file.c b/fs/ntfs/file.c
+index 113ebd9..19f9447 100644
+--- a/fs/ntfs/file.c
++++ b/fs/ntfs/file.c
+@@ -2088,7 +2088,7 @@ static ssize_t ntfs_file_aio_write_nolock(struct kiocb *iocb,
+ 	pos = *ppos;
+ 	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+ 	/* We can write back this queue in page reclaim. */
+-	current->backing_dev_info = mapping->backing_dev_info;
++	current->backing_dev_info = mapping->a_bdi;
+ 	written = 0;
+ 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
+ 	if (err)
+diff --git a/fs/ocfs2/dlmfs/dlmfs.c b/fs/ocfs2/dlmfs/dlmfs.c
+index c2903b8..6b931db 100644
+--- a/fs/ocfs2/dlmfs/dlmfs.c
++++ b/fs/ocfs2/dlmfs/dlmfs.c
+@@ -403,7 +403,7 @@ static struct inode *dlmfs_get_root_inode(struct super_block *sb)
+ 		inode->i_mode = mode;
+ 		inode->i_uid = current_fsuid();
+ 		inode->i_gid = current_fsgid();
+-		inode->i_mapping->backing_dev_info = &dlmfs_backing_dev_info;
++		mapping_new_set_bdi(inode->i_mapping, &dlmfs_backing_dev_info);
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		inc_nlink(inode);
+ 
+@@ -428,7 +428,7 @@ static struct inode *dlmfs_get_inode(struct inode *parent,
+ 	inode->i_mode = mode;
+ 	inode->i_uid = current_fsuid();
+ 	inode->i_gid = current_fsgid();
+-	inode->i_mapping->backing_dev_info = &dlmfs_backing_dev_info;
++	mapping_new_set_bdi(inode->i_mapping, &dlmfs_backing_dev_info);
+ 	inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 
+ 	ip = DLMFS_I(inode);
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 9a03c15..863e016 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -2327,7 +2327,7 @@ relock:
+ 			goto out_dio;
  		}
- 	}
- 	spin_unlock(&sb->s_inodes_lock);
--	spin_unlock(&inode_lock);
- #ifdef CONFIG_QUOTA_DEBUG
- 	if (reserved) {
- 		printk(KERN_WARNING "VFS (%s): Writes happened after quota"
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 54c4e86..453e0b4 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1588,7 +1588,7 @@ struct super_operations {
- };
+ 	} else {
+-		current->backing_dev_info = file->f_mapping->backing_dev_info;
++		current->backing_dev_info = file->f_mapping->a_bdi;
+ 		written = generic_file_buffered_write(iocb, iov, nr_segs, *ppos,
+ 						      ppos, count, 0);
+ 		current->backing_dev_info = NULL;
+diff --git a/fs/ramfs/inode.c b/fs/ramfs/inode.c
+index a5ebae7..02d8ffb 100644
+--- a/fs/ramfs/inode.c
++++ b/fs/ramfs/inode.c
+@@ -60,7 +60,7 @@ struct inode *ramfs_get_inode(struct super_block *sb,
+ 	if (inode) {
+ 		inode_init_owner(inode, dir, mode);
+ 		inode->i_mapping->a_ops = &ramfs_aops;
+-		inode->i_mapping->backing_dev_info = &ramfs_backing_dev_info;
++		mapping_new_set_bdi(inode->i_mapping, &ramfs_backing_dev_info);
+ 		mapping_set_gfp_mask(inode->i_mapping, GFP_HIGHUSER);
+ 		mapping_set_unevictable(inode->i_mapping);
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+diff --git a/fs/romfs/super.c b/fs/romfs/super.c
+index 42d2135..bb4b195 100644
+--- a/fs/romfs/super.c
++++ b/fs/romfs/super.c
+@@ -356,8 +356,8 @@ static struct inode *romfs_iget(struct super_block *sb, unsigned long pos)
+ 		i->i_fop = &romfs_ro_fops;
+ 		i->i_data.a_ops = &romfs_aops;
+ 		if (i->i_sb->s_mtd)
+-			i->i_data.backing_dev_info =
+-				i->i_sb->s_mtd->backing_dev_info;
++			mapping_new_set_bdi(&i->i_data,
++				i->i_sb->s_mtd->backing_dev_info);
+ 		if (nextfh & ROMFH_EXEC)
+ 			mode |= S_IXUGO;
+ 		break;
+diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
+index cffb1fd..3d049e5 100644
+--- a/fs/sysfs/inode.c
++++ b/fs/sysfs/inode.c
+@@ -251,7 +251,7 @@ static void sysfs_init_inode(struct sysfs_dirent *sd, struct inode *inode)
  
- /*
-- * Inode state bits.  Protected by inode_lock.
-+ * Inode state bits.  Protected by i_lock.
-  *
-  * Three bits determine the dirty state of the inode, I_DIRTY_SYNC,
-  * I_DIRTY_DATASYNC and I_DIRTY_PAGES.
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index b182ccc..67be7a2 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -9,9 +9,6 @@
+ 	inode->i_private = sysfs_get(sd);
+ 	inode->i_mapping->a_ops = &sysfs_aops;
+-	inode->i_mapping->backing_dev_info = &sysfs_backing_dev_info;
++	mapping_new_set_bdi(inode->i_mapping, &sysfs_backing_dev_info);
+ 	inode->i_op = &sysfs_inode_operations;
  
- struct backing_dev_info;
+ 	set_default_inode_attr(inode, sd->s_mode);
+diff --git a/fs/ubifs/dir.c b/fs/ubifs/dir.c
+index 87ebcce..d669260 100644
+--- a/fs/ubifs/dir.c
++++ b/fs/ubifs/dir.c
+@@ -109,7 +109,7 @@ struct inode *ubifs_new_inode(struct ubifs_info *c, const struct inode *dir,
+ 			 ubifs_current_time(inode);
+ 	inode->i_mapping->nrpages = 0;
+ 	/* Disable readahead */
+-	inode->i_mapping->backing_dev_info = &c->bdi;
++	mapping_new_set_bdi(inode->i_mapping, &c->bdi);
  
--extern spinlock_t inode_lock;
--
--
- /*
-  * fs/fs-writeback.c
-  */
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 74e8269..0c0586b 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -73,7 +73,6 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
- 	struct inode *inode;
+ 	switch (mode & S_IFMT) {
+ 	case S_IFREG:
+diff --git a/fs/ubifs/super.c b/fs/ubifs/super.c
+index cd5900b..45888fb 100644
+--- a/fs/ubifs/super.c
++++ b/fs/ubifs/super.c
+@@ -157,7 +157,7 @@ struct inode *ubifs_iget(struct super_block *sb, unsigned long inum)
+ 		goto out_invalid;
  
- 	nr_wb = nr_dirty = nr_io = nr_more_io = 0;
--	spin_lock(&inode_lock);
- 	spin_lock(&wb->b_lock);
- 	list_for_each_entry(inode, &wb->b_dirty, i_io)
- 		nr_dirty++;
-@@ -82,7 +81,6 @@ static int bdi_debug_stats_show(struct seq_file *m, void *v)
- 	list_for_each_entry(inode, &wb->b_more_io, i_io)
- 		nr_more_io++;
- 	spin_unlock(&wb->b_lock);
--	spin_unlock(&inode_lock);
+ 	/* Disable read-ahead */
+-	inode->i_mapping->backing_dev_info = &c->bdi;
++	mapping_new_set_bdi(inode->i_mapping, &c->bdi);
  
- 	global_dirty_limits(&background_thresh, &dirty_thresh);
- 	bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-@@ -695,7 +693,6 @@ void mapping_set_bdi(struct address_space *mapping,
- 	if (unlikely(old == bdi))
+ 	switch (inode->i_mode & S_IFMT) {
+ 	case S_IFREG:
+diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
+index 286e36e..7038d77 100644
+--- a/fs/xfs/linux-2.6/xfs_buf.c
++++ b/fs/xfs/linux-2.6/xfs_buf.c
+@@ -630,7 +630,7 @@ xfs_buf_readahead(
+ {
+ 	struct backing_dev_info *bdi;
+ 
+-	bdi = target->bt_mapping->backing_dev_info;
++	bdi = target->bt_mapping->a_bdi;
+ 	if (bdi_read_congested(bdi))
  		return;
  
--	spin_lock(&inode_lock);
- 	bdi_lock_two(bdi, old);
- 	if (!list_empty(&inode->i_io)) {
- 		struct inode *i;
-@@ -727,7 +724,6 @@ found:
- 	mapping->a_bdi = bdi;
- 	spin_unlock(&bdi->wb.b_lock);
- 	spin_unlock(&old->wb.b_lock);
--	spin_unlock(&inode_lock);
+@@ -1580,7 +1580,7 @@ xfs_mapping_buftarg(
+ 		bdi = &default_backing_dev_info;
+ 	mapping = &inode->i_data;
+ 	mapping->a_ops = &mapping_aops;
+-	mapping->backing_dev_info = bdi;
++	mapping_new_set_bdi(mapping, bdi);
+ 	mapping_set_gfp_mask(mapping, GFP_NOFS);
+ 	btp->bt_mapping = mapping;
+ 	return 0;
+diff --git a/fs/xfs/linux-2.6/xfs_file.c b/fs/xfs/linux-2.6/xfs_file.c
+index ba8ad42..94cf85b 100644
+--- a/fs/xfs/linux-2.6/xfs_file.c
++++ b/fs/xfs/linux-2.6/xfs_file.c
+@@ -679,7 +679,7 @@ start:
+ 		goto out_unlock_internal;
+ 
+ 	/* We can write back this queue in page reclaim */
+-	current->backing_dev_info = mapping->backing_dev_info;
++	current->backing_dev_info = mapping->a_bdi;
+ 
+ 	if ((ioflags & IO_ISDIRECT)) {
+ 		if (mapping->nrpages) {
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 35b0074..31e1346 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -314,19 +314,27 @@ static inline bool bdi_cap_flush_forker(struct backing_dev_info *bdi)
+ 	return bdi == &default_backing_dev_info;
  }
- EXPORT_SYMBOL(mapping_set_bdi);
  
-@@ -743,7 +739,6 @@ void bdi_destroy(struct backing_dev_info *bdi)
++void mapping_set_bdi(struct address_space *mapping,
++					struct backing_dev_info *bdi);
++static inline void mapping_new_set_bdi(struct address_space *mapping,
++					struct backing_dev_info *bdi)
++{
++	mapping->a_bdi = bdi;
++}
++
+ static inline bool mapping_cap_writeback_dirty(struct address_space *mapping)
+ {
+-	return bdi_cap_writeback_dirty(mapping->backing_dev_info);
++	return bdi_cap_writeback_dirty(mapping->a_bdi);
+ }
+ 
+ static inline bool mapping_cap_account_dirty(struct address_space *mapping)
+ {
+-	return bdi_cap_account_dirty(mapping->backing_dev_info);
++	return bdi_cap_account_dirty(mapping->a_bdi);
+ }
+ 
+ static inline bool mapping_cap_swap_backed(struct address_space *mapping)
+ {
+-	return bdi_cap_swap_backed(mapping->backing_dev_info);
++	return bdi_cap_swap_backed(mapping->a_bdi);
+ }
+ 
+ static inline int bdi_sched_wait(void *word)
+@@ -345,7 +353,7 @@ static inline void blk_run_backing_dev(struct backing_dev_info *bdi,
+ static inline void blk_run_address_space(struct address_space *mapping)
+ {
+ 	if (mapping)
+-		blk_run_backing_dev(mapping->backing_dev_info, NULL);
++		blk_run_backing_dev(mapping->a_bdi, NULL);
+ }
+ 
+ #endif		/* _LINUX_BACKING_DEV_H */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 1fb92f9..6f0b07f 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -633,7 +633,7 @@ struct address_space {
+ 	pgoff_t			writeback_index;/* writeback starts here */
+ 	const struct address_space_operations *a_ops;	/* methods */
+ 	unsigned long		flags;		/* error bits/gfp mask */
+-	struct backing_dev_info *backing_dev_info; /* device readahead, etc */
++	struct backing_dev_info *a_bdi;		/* device readahead, etc */
+ 	spinlock_t		private_lock;	/* for use by the address_space */
+ 	struct list_head	private_list;	/* ditto */
+ 	struct address_space	*assoc_mapping;	/* ditto */
+diff --git a/kernel/cgroup.c b/kernel/cgroup.c
+index c9483d8..8f1952b 100644
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -782,7 +782,7 @@ static struct inode *cgroup_new_inode(mode_t mode, struct super_block *sb)
+ 		inode->i_uid = current_fsuid();
+ 		inode->i_gid = current_fsgid();
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+-		inode->i_mapping->backing_dev_info = &cgroup_backing_dev_info;
++		mapping_new_set_bdi(inode->i_mapping, &cgroup_backing_dev_info);
+ 	}
+ 	return inode;
+ }
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 65d4204..0188d99 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -671,6 +671,48 @@ err:
+ }
+ EXPORT_SYMBOL(bdi_init);
+ 
++void mapping_set_bdi(struct address_space *mapping,
++				struct backing_dev_info *bdi)
++{
++	struct inode *inode = mapping->host;
++	struct backing_dev_info *old = mapping->a_bdi;
++
++	if (unlikely(old == bdi))
++		return;
++
++	spin_lock(&inode_lock);
++	if (!list_empty(&inode->i_list)) {
++		struct inode *i;
++
++		list_for_each_entry(i, &old->wb.b_dirty, i_list) {
++			if (inode == i) {
++				list_del(&inode->i_list);
++				list_add(&inode->i_list, &bdi->wb.b_dirty);
++				goto found;
++			}
++		}
++		list_for_each_entry(i, &old->wb.b_io, i_list) {
++			if (inode == i) {
++				list_del(&inode->i_list);
++				list_add(&inode->i_list, &bdi->wb.b_io);
++				goto found;
++			}
++		}
++		list_for_each_entry(i, &old->wb.b_more_io, i_list) {
++			if (inode == i) {
++				list_del(&inode->i_list);
++				list_add(&inode->i_list, &bdi->wb.b_more_io);
++				goto found;
++			}
++		}
++		BUG();
++	}
++found:
++	mapping->a_bdi = bdi;
++	spin_unlock(&inode_lock);
++}
++EXPORT_SYMBOL(mapping_set_bdi);
++
+ void bdi_destroy(struct backing_dev_info *bdi)
+ {
+ 	int i;
+@@ -681,11 +723,24 @@ void bdi_destroy(struct backing_dev_info *bdi)
+ 	 */
+ 	if (bdi_has_dirty_io(bdi)) {
  		struct bdi_writeback *dst = &default_backing_dev_info.wb;
- 		struct inode *i, *tmp;
++		struct inode *i, *tmp;
  
--		spin_lock(&inode_lock);
- 		bdi_lock_two(bdi, &default_backing_dev_info);
- 		list_for_each_entry_safe(i, tmp, &bdi->wb.b_dirty, i_io) {
- 			list_del(&i->i_io);
-@@ -762,7 +757,6 @@ void bdi_destroy(struct backing_dev_info *bdi)
- 		}
- 		spin_unlock(&bdi->wb.b_lock);
- 		spin_unlock(&dst->b_lock);
--		spin_unlock(&inode_lock);
+ 		spin_lock(&inode_lock);
+-		list_splice(&bdi->wb.b_dirty, &dst->b_dirty);
+-		list_splice(&bdi->wb.b_io, &dst->b_io);
+-		list_splice(&bdi->wb.b_more_io, &dst->b_more_io);
++		list_for_each_entry_safe(i, tmp, &bdi->wb.b_dirty, i_list) {
++			list_del(&i->i_list);
++			list_add_tail(&i->i_list, &dst->b_dirty);
++			i->i_mapping->a_bdi = bdi;
++		}
++		list_for_each_entry_safe(i, tmp, &bdi->wb.b_io, i_list) {
++			list_del(&i->i_list);
++			list_add_tail(&i->i_list, &dst->b_io);
++			i->i_mapping->a_bdi = bdi;
++		}
++		list_for_each_entry_safe(i, tmp, &bdi->wb.b_more_io, i_list) {
++			list_del(&i->i_list);
++			list_add_tail(&i->i_list, &dst->b_more_io);
++			i->i_mapping->a_bdi = bdi;
++		}
+ 		spin_unlock(&inode_lock);
  	}
  
- 	bdi_unregister(bdi);
+diff --git a/mm/fadvise.c b/mm/fadvise.c
+index 8d723c9..72e3ac5 100644
+--- a/mm/fadvise.c
++++ b/mm/fadvise.c
+@@ -72,7 +72,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 	else
+ 		endbyte--;		/* inclusive */
+ 
+-	bdi = mapping->backing_dev_info;
++	bdi = mapping->a_bdi;
+ 
+ 	switch (advice) {
+ 	case POSIX_FADV_NORMAL:
+@@ -116,7 +116,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ 	case POSIX_FADV_NOREUSE:
+ 		break;
+ 	case POSIX_FADV_DONTNEED:
+-		if (!bdi_write_congested(mapping->backing_dev_info))
++		if (!bdi_write_congested(mapping->a_bdi))
+ 			filemap_flush(mapping);
+ 
+ 		/* First and last FULL page! */
 diff --git a/mm/filemap.c b/mm/filemap.c
-index 454d5ec..857fb34 100644
+index 3d4df44..454d5ec 100644
 --- a/mm/filemap.c
 +++ b/mm/filemap.c
-@@ -80,7 +80,7 @@
-  *  ->i_mutex
-  *    ->i_alloc_sem             (various)
-  *
-- *  ->inode_lock
-+ *  ->i_lock
-  *    ->sb_lock			(fs/fs-writeback.c)
-  *    ->mapping->tree_lock	(__sync_single_inode)
-  *
-@@ -98,8 +98,8 @@
-  *    ->zone.lru_lock		(check_pte_range->isolate_lru_page)
-  *    ->private_lock		(page_remove_rmap->set_page_dirty)
-  *    ->tree_lock		(page_remove_rmap->set_page_dirty)
-- *    ->inode_lock		(page_remove_rmap->set_page_dirty)
-- *    ->inode_lock		(zap_pte_range->set_page_dirty)
-+ *    ->i_lock			(page_remove_rmap->set_page_dirty)
-+ *    ->i_lock			(zap_pte_range->set_page_dirty)
-  *    ->private_lock		(zap_pte_range->__set_page_dirty_buffers)
-  *
-  *  ->task->proc_lock
-diff --git a/mm/rmap.c b/mm/rmap.c
-index 92e6757..dbfccae 100644
---- a/mm/rmap.c
-+++ b/mm/rmap.c
-@@ -31,11 +31,11 @@
-  *             swap_lock (in swap_duplicate, swap_info_get)
-  *               mmlist_lock (in mmput, drain_mmlist and others)
-  *               mapping->private_lock (in __set_page_dirty_buffers)
-- *               inode_lock (in set_page_dirty's __mark_inode_dirty)
-- *                 sb_lock (within inode_lock in fs/fs-writeback.c)
-+ *               i_lock (in set_page_dirty's __mark_inode_dirty)
-+ *                 sb_lock (within i_lock in fs/fs-writeback.c)
-  *                 mapping->tree_lock (widely used, in set_page_dirty,
-  *                           in arch-dependent flush_dcache_mmap_lock,
-- *                           within inode_lock in __sync_single_inode)
-+ *                           within i_lock in __sync_single_inode)
-  *
-  * (code doesn't rely on that order so it could be switched around)
-  * ->tasklist_lock
+@@ -136,7 +136,7 @@ void __remove_from_page_cache(struct page *page)
+ 	 */
+ 	if (PageDirty(page) && mapping_cap_account_dirty(mapping)) {
+ 		dec_zone_page_state(page, NR_FILE_DIRTY);
+-		dec_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
++		dec_bdi_stat(mapping->a_bdi, BDI_RECLAIMABLE);
+ 	}
+ }
+ 
+@@ -2373,7 +2373,7 @@ ssize_t __generic_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+ 
+ 	/* We can write back this queue in page reclaim */
+-	current->backing_dev_info = mapping->backing_dev_info;
++	current->backing_dev_info = mapping->a_bdi;
+ 	written = 0;
+ 
+ 	err = generic_write_checks(file, &pos, &count, S_ISBLK(inode->i_mode));
+diff --git a/mm/filemap_xip.c b/mm/filemap_xip.c
+index 83364df..cdca914 100644
+--- a/mm/filemap_xip.c
++++ b/mm/filemap_xip.c
+@@ -409,7 +409,7 @@ xip_file_write(struct file *filp, const char __user *buf, size_t len,
+ 	vfs_check_frozen(inode->i_sb, SB_FREEZE_WRITE);
+ 
+ 	/* We can write back this queue in page reclaim */
+-	current->backing_dev_info = mapping->backing_dev_info;
++	current->backing_dev_info = mapping->a_bdi;
+ 
+ 	ret = generic_write_checks(filp, &pos, &count, S_ISBLK(inode->i_mode));
+ 	if (ret)
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index e3bccac..e2d50b1 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -489,7 +489,7 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 	unsigned long pages_written = 0;
+ 	unsigned long pause = 1;
+ 	bool dirty_exceeded = false;
+-	struct backing_dev_info *bdi = mapping->backing_dev_info;
++	struct backing_dev_info *bdi = mapping->a_bdi;
+ 
+ 	for (;;) {
+ 		struct writeback_control wbc = {
+@@ -633,7 +633,7 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+ 	unsigned long *p;
+ 
+ 	ratelimit = ratelimit_pages;
+-	if (mapping->backing_dev_info->dirty_exceeded)
++	if (mapping->a_bdi->dirty_exceeded)
+ 		ratelimit = 8;
+ 
+ 	/*
+@@ -964,7 +964,7 @@ continue_unlock:
+ 			if (!clear_page_dirty_for_io(page))
+ 				goto continue_unlock;
+ 
+-			trace_wbc_writepage(wbc, mapping->backing_dev_info);
++			trace_wbc_writepage(wbc, mapping->a_bdi);
+ 			ret = (*writepage)(page, wbc, data);
+ 			if (unlikely(ret)) {
+ 				if (ret == AOP_WRITEPAGE_ACTIVATE) {
+@@ -1121,7 +1121,7 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ {
+ 	if (mapping_cap_account_dirty(mapping)) {
+ 		__inc_zone_page_state(page, NR_FILE_DIRTY);
+-		__inc_bdi_stat(mapping->backing_dev_info, BDI_RECLAIMABLE);
++		__inc_bdi_stat(mapping->a_bdi, BDI_RECLAIMABLE);
+ 		task_dirty_inc(current);
+ 		task_io_account_write(PAGE_CACHE_SIZE);
+ 	}
+@@ -1297,8 +1297,7 @@ int clear_page_dirty_for_io(struct page *page)
+ 		 */
+ 		if (TestClearPageDirty(page)) {
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
+-			dec_bdi_stat(mapping->backing_dev_info,
+-					BDI_RECLAIMABLE);
++			dec_bdi_stat(mapping->a_bdi, BDI_RECLAIMABLE);
+ 			return 1;
+ 		}
+ 		return 0;
+@@ -1313,7 +1312,7 @@ int test_clear_page_writeback(struct page *page)
+ 	int ret;
+ 
+ 	if (mapping) {
+-		struct backing_dev_info *bdi = mapping->backing_dev_info;
++		struct backing_dev_info *bdi = mapping->a_bdi;
+ 		unsigned long flags;
+ 
+ 		spin_lock_irqsave(&mapping->tree_lock, flags);
+@@ -1342,7 +1341,7 @@ int test_set_page_writeback(struct page *page)
+ 	int ret;
+ 
+ 	if (mapping) {
+-		struct backing_dev_info *bdi = mapping->backing_dev_info;
++		struct backing_dev_info *bdi = mapping->a_bdi;
+ 		unsigned long flags;
+ 
+ 		spin_lock_irqsave(&mapping->tree_lock, flags);
+diff --git a/mm/readahead.c b/mm/readahead.c
+index 77506a2..831b927 100644
+--- a/mm/readahead.c
++++ b/mm/readahead.c
+@@ -25,7 +25,7 @@
+ void
+ file_ra_state_init(struct file_ra_state *ra, struct address_space *mapping)
+ {
+-	ra->ra_pages = mapping->backing_dev_info->ra_pages;
++	ra->ra_pages = mapping->a_bdi->ra_pages;
+ 	ra->prev_pos = -1;
+ }
+ EXPORT_SYMBOL_GPL(file_ra_state_init);
+@@ -549,7 +549,7 @@ page_cache_async_readahead(struct address_space *mapping,
+ 	/*
+ 	 * Defer asynchronous read-ahead on IO congestion.
+ 	 */
+-	if (bdi_read_congested(mapping->backing_dev_info))
++	if (bdi_read_congested(mapping->a_bdi))
+ 		return;
+ 
+ 	/* do read-ahead */
+@@ -564,7 +564,7 @@ page_cache_async_readahead(struct address_space *mapping,
+ 	 * explicitly kick off the IO.
+ 	 */
+ 	if (PageUptodate(page))
+-		blk_run_backing_dev(mapping->backing_dev_info, NULL);
++		blk_run_backing_dev(mapping->a_bdi, NULL);
+ #endif
+ }
+ EXPORT_SYMBOL_GPL(page_cache_async_readahead);
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 080b09a..fbee46d 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -1588,7 +1588,7 @@ static struct inode *shmem_get_inode(struct super_block *sb, const struct inode
+ 	if (inode) {
+ 		inode_init_owner(inode, dir, mode);
+ 		inode->i_blocks = 0;
+-		inode->i_mapping->backing_dev_info = &shmem_backing_dev_info;
++		mapping_new_set_bdi(inode->i_mapping, &shmem_backing_dev_info);
+ 		inode->i_atime = inode->i_mtime = inode->i_ctime = CURRENT_TIME;
+ 		inode->i_generation = get_seconds();
+ 		info = SHMEM_I(inode);
+diff --git a/mm/swap.c b/mm/swap.c
+index 3ce7bc3..9352a37 100644
+--- a/mm/swap.c
++++ b/mm/swap.c
+@@ -501,7 +501,7 @@ void __init swap_setup(void)
+ 	unsigned long megs = totalram_pages >> (20 - PAGE_SHIFT);
+ 
+ #ifdef CONFIG_SWAP
+-	bdi_init(swapper_space.backing_dev_info);
++	bdi_init(swapper_space.a_bdi);
+ #endif
+ 
+ 	/* Use a smaller cluster for small-memory machines */
+diff --git a/mm/swap_state.c b/mm/swap_state.c
+index e10f583..6496074 100644
+--- a/mm/swap_state.c
++++ b/mm/swap_state.c
+@@ -45,7 +45,7 @@ struct address_space swapper_space = {
+ 	.tree_lock	= __SPIN_LOCK_UNLOCKED(swapper_space.tree_lock),
+ 	.a_ops		= &swap_aops,
+ 	.i_mmap_nonlinear = LIST_HEAD_INIT(swapper_space.i_mmap_nonlinear),
+-	.backing_dev_info = &swap_backing_dev_info,
++	.a_bdi		= &swap_backing_dev_info,
+ };
+ 
+ #define INC_CACHE_INFO(x)	do { swap_cache_info.x++; } while (0)
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 7c703ff..c14b755 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -116,7 +116,7 @@ void swap_unplug_io_fn(struct backing_dev_info *unused_bdi, struct page *page)
+ 		 */
+ 		WARN_ON(page_count(page) <= 1);
+ 
+-		bdi = bdev->bd_inode->i_mapping->backing_dev_info;
++		bdi = bdev->bd_inode->i_mapping->a_bdi;
+ 		blk_run_backing_dev(bdi, page);
+ 	}
+ 	up_read(&swap_unplug_sem);
+diff --git a/mm/truncate.c b/mm/truncate.c
+index ba887bf..bb79cef 100644
+--- a/mm/truncate.c
++++ b/mm/truncate.c
+@@ -75,8 +75,7 @@ void cancel_dirty_page(struct page *page, unsigned int account_size)
+ 		struct address_space *mapping = page->mapping;
+ 		if (mapping && mapping_cap_account_dirty(mapping)) {
+ 			dec_zone_page_state(page, NR_FILE_DIRTY);
+-			dec_bdi_stat(mapping->backing_dev_info,
+-					BDI_RECLAIMABLE);
++			dec_bdi_stat(mapping->a_bdi, BDI_RECLAIMABLE);
+ 			if (account_size)
+ 				task_io_account_cancelled_write(account_size);
+ 		}
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index c5dfabf..8f58773 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -366,7 +366,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+ 	}
+ 	if (mapping->a_ops->writepage == NULL)
+ 		return PAGE_ACTIVATE;
+-	if (!may_write_to_queue(mapping->backing_dev_info))
++	if (!may_write_to_queue(mapping->a_bdi))
+ 		return PAGE_KEEP;
+ 
+ 	if (clear_page_dirty_for_io(page)) {
 -- 
 1.7.1
 
