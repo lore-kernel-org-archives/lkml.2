@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab0JHKAn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:00:43 -0400
-Received: from [150.82.175.143] ([150.82.175.143]:53862 "EHLO
+	id S1756912Ab0JHKAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:00:32 -0400
+Received: from [150.82.175.143] ([150.82.175.143]:53847 "EHLO
 	dhcpa11143.tky.aist.go.jp" rhost-flags-FAIL-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753665Ab0JHKAk (ORCPT
+	by vger.kernel.org with ESMTP id S1753378Ab0JHKAb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:00:40 -0400
+	Fri, 8 Oct 2010 06:00:31 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
         Arnd Bergmann <arnd@arndb.de>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-        Andy Grover <andy.grover@oracle.com>, rds-devel@oss.oracle.com,
-        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
-Subject: [PATCH 4/5] rds: stop including asm-generic/bitops/le.h directly
-Date: Fri,  8 Oct 2010 19:03:12 +0900
-Message-Id: <1286532193-29814-4-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH 2/5] bitops: cleanup asm-generic/bitops/le.h
+Date: Fri,  8 Oct 2010 19:03:10 +0900
+Message-Id: <1286532193-29814-2-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.1.231.gd0b16
 In-Reply-To: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
 References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
@@ -24,66 +22,77 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-asm-generic/bitops/le.h is only intended to be included directly from
-asm-generic/bitops/ext2-non-atomic.h or asm-generic/bitops/minix-le.h
-which implements generic ext2 or minix bit operations.
-
-This stops including asm-generic/bitops/le.h directly and use ext2
-non-atomic bit operations instead.
-
-An alternative approach is introducing little endian bit operations
-in linux/bitops.h. But it needs to touch more files than this change does.
+ - Remove unused BITOP_WORD macro
+ - Merge definisions for big endian and little endian as much as possible
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Andy Grover <andy.grover@oracle.com>
-Cc: rds-devel@oss.oracle.com
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org
 ---
- net/rds/cong.c |    9 ++++-----
- 1 files changed, 4 insertions(+), 5 deletions(-)
+ include/asm-generic/bitops/le.h |   38 +++++++++++++++-----------------------
+ 1 files changed, 15 insertions(+), 23 deletions(-)
 
-diff --git a/net/rds/cong.c b/net/rds/cong.c
-index 0871a29..5bd0f36 100644
---- a/net/rds/cong.c
-+++ b/net/rds/cong.c
-@@ -33,8 +33,7 @@
- #include <linux/slab.h>
- #include <linux/types.h>
- #include <linux/rbtree.h>
+diff --git a/include/asm-generic/bitops/le.h b/include/asm-generic/bitops/le.h
+index 80e3bf1..db2be81 100644
+--- a/include/asm-generic/bitops/le.h
++++ b/include/asm-generic/bitops/le.h
+@@ -4,27 +4,28 @@
+ #include <asm/types.h>
+ #include <asm/byteorder.h>
+ 
+-#define BITOP_WORD(nr)		((nr) / BITS_PER_LONG)
+-#define BITOP_LE_SWIZZLE	((BITS_PER_LONG-1) & ~0x7)
 -
--#include <asm-generic/bitops/le.h>
-+#include <linux/bitops.h>
+ #if defined(__LITTLE_ENDIAN)
  
- #include "rds.h"
+-#define generic_test_le_bit(nr, addr) test_bit(nr, addr)
+-#define generic___set_le_bit(nr, addr) __set_bit(nr, addr)
+-#define generic___clear_le_bit(nr, addr) __clear_bit(nr, addr)
+-
+-#define generic_test_and_set_le_bit(nr, addr) test_and_set_bit(nr, addr)
+-#define generic_test_and_clear_le_bit(nr, addr) test_and_clear_bit(nr, addr)
++#define BITOP_LE_SWIZZLE	0
  
-@@ -285,7 +284,7 @@ void rds_cong_set_bit(struct rds_cong_map *map, __be16 port)
- 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
- 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
+-#define generic___test_and_set_le_bit(nr, addr) __test_and_set_bit(nr, addr)
+-#define generic___test_and_clear_le_bit(nr, addr) __test_and_clear_bit(nr, addr)
+-
+-#define generic_find_next_zero_le_bit(addr, size, offset) find_next_zero_bit(addr, size, offset)
++#define generic_find_next_zero_le_bit(addr, size, offset) \
++	find_next_zero_bit(addr, size, offset)
+ #define generic_find_next_le_bit(addr, size, offset) \
+-			find_next_bit(addr, size, offset)
++	find_next_bit(addr, size, offset)
  
--	generic___set_le_bit(off, (void *)map->m_page_addrs[i]);
-+	ext2_set_bit(off, (void *)map->m_page_addrs[i]);
- }
+ #elif defined(__BIG_ENDIAN)
  
- void rds_cong_clear_bit(struct rds_cong_map *map, __be16 port)
-@@ -299,7 +298,7 @@ void rds_cong_clear_bit(struct rds_cong_map *map, __be16 port)
- 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
- 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
++#define BITOP_LE_SWIZZLE	((BITS_PER_LONG-1) & ~0x7)
++
++extern unsigned long generic_find_next_zero_le_bit(const unsigned long *addr,
++		unsigned long size, unsigned long offset);
++extern unsigned long generic_find_next_le_bit(const unsigned long *addr,
++		unsigned long size, unsigned long offset);
++
++#else
++#error "Please fix <asm/byteorder.h>"
++#endif
++
+ #define generic_test_le_bit(nr, addr) \
+ 	test_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
+ #define generic___set_le_bit(nr, addr) \
+@@ -42,15 +43,6 @@
+ #define generic___test_and_clear_le_bit(nr, addr) \
+ 	__test_and_clear_bit((nr) ^ BITOP_LE_SWIZZLE, (addr))
  
--	generic___clear_le_bit(off, (void *)map->m_page_addrs[i]);
-+	ext2_clear_bit(off, (void *)map->m_page_addrs[i]);
- }
+-extern unsigned long generic_find_next_zero_le_bit(const unsigned long *addr,
+-		unsigned long size, unsigned long offset);
+-extern unsigned long generic_find_next_le_bit(const unsigned long *addr,
+-		unsigned long size, unsigned long offset);
+-
+-#else
+-#error "Please fix <asm/byteorder.h>"
+-#endif
+-
+ #define generic_find_first_zero_le_bit(addr, size) \
+         generic_find_next_zero_le_bit((addr), (size), 0)
  
- static int rds_cong_test_bit(struct rds_cong_map *map, __be16 port)
-@@ -310,7 +309,7 @@ static int rds_cong_test_bit(struct rds_cong_map *map, __be16 port)
- 	i = be16_to_cpu(port) / RDS_CONG_MAP_PAGE_BITS;
- 	off = be16_to_cpu(port) % RDS_CONG_MAP_PAGE_BITS;
- 
--	return generic_test_le_bit(off, (void *)map->m_page_addrs[i]);
-+	return ext2_test_bit(off, (void *)map->m_page_addrs[i]);
- }
- 
- void rds_cong_add_socket(struct rds_sock *rs)
 -- 
 1.7.1.231.gd0b16
 
