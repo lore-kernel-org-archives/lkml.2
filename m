@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab0JHKY0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:24:26 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:35617 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754020Ab0JHKYY convert rfc822-to-8bit (ORCPT
+	id S932309Ab0JHKYf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:24:35 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:60982 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab0JHKYe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:24:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ZR4pPUGtRtsPWV0EaaXUeLHBZdsxsELzLNE742X0EeLSIOWUDjSBXDdiq2WpwG4Ypp
-         QCtqqSWbHd6pVvJB/DZc110UXZhsbcU1ZnbJ45s3BRUfFfQO3PMUMyIOIdVb+ZnR3w1p
-         K6pMlj1QGRHkOlkhz81RP9SFQpX4SRE0c9TNo=
+	Fri, 8 Oct 2010 06:24:34 -0400
+Date: Fri, 8 Oct 2010 06:24:33 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/5] bitops: add generic implementation of ext2 atomic
+ bitops by test_and_{set,clear}_bit
+Message-ID: <20101008102433.GA24208@infradead.org>
+References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinP7tA87anzgN6Yi3p_FtJ7bJHmEZc6rKX=o+-R@mail.gmail.com>
-References: <20101005124521.GA2602@darkstar>
-	<201010061935.45010.rusty@rustcorp.com.au>
-	<AANLkTinP7tA87anzgN6Yi3p_FtJ7bJHmEZc6rKX=o+-R@mail.gmail.com>
-Date: Fri, 8 Oct 2010 18:24:23 +0800
-Message-ID: <AANLkTinLYy3vUp8VPzv=q3br-zBrE239MRpwMAAsmtKD@mail.gmail.com>
-Subject: Re: [PATCH] kvm: add oom notifier for virtio balloon
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        Anthony Liguori <anthony@codemonkey.ws>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 6, 2010 at 9:50 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Wed, Oct 6, 2010 at 5:05 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
->> On Tue, 5 Oct 2010 11:15:21 pm Dave Young wrote:
->>> Balloon could cause guest memory oom killing and panic.
->>>
->>> Add oom notify to leak some memory and retry fill balloon after 5 minutes.
->>
->> Have you tried registering a shrinker?  See mm.h.
->
-> Hi, thanks. I didn't know shrinker can shrink mem beyond slab. Will try
-Hi, rusty
+On Fri, Oct 08, 2010 at 07:03:09PM +0900, Akinobu Mita wrote:
+> This introduces asm-generic header file for generic implementation of
+> ext2 atomic bit operations by test_and_set_bit() and test_and_clear_bit().
+> 
+> alpha, arm, cris, frv, ia64, m68k, mn10300, parisc, powerpc, s390,
+> sparc64, x86, xtensa can use this header file in its asm/bitops.h.
 
-I did some test with shrinker, findings as following:
+Care to rename the functions to le_* instead of ext2_* while you're at
+it and documenting their semantics?
 
-1. shrinker is for ageable cache shrinking, balloon pages is a different kind
-2. oom notifier is a last minute shrink, but shrinker is more conservative.
-after my tests of "balloon 30" for a slackware 13.0 guest, free -m in guest
-oom notifier results 17M
-shrinker results 77M
-
-3. Aside of above use mutex locking in shrinker cause kernel hang, no
-idea how to fix it
-
-
->
->>
->> Thanks,
->> Rusty.
->>
->
->
->
-> --
-> Regards
-> dave
->
-
-
-
--- 
-Regards
-dave
