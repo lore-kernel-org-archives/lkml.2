@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932903Ab0JHUGh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 16:06:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34745 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932453Ab0JHUGg convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 16:06:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=gAzqr5LXz6qVLdCqCy4zqE0L2YHmMqbYZVcZtFvhdi+rg+INwllKvKbxqRsuW1z8gP
-         ThSjo2JyblbdgAE/fabw==
+	id S932940Ab0JHUJd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 16:09:33 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57650 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754926Ab0JHUJc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 16:09:32 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Sven Neumann <s.neumann@raumfeld.com>
+Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
+Date: Fri, 8 Oct 2010 22:08:25 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Daniel Mack <daniel@caiaq.de>, Colin Cross <ccross@android.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1286177435.2140.5.camel@sven> <201010072323.05218.rjw@sisk.pl> <1286526197.4493.19.camel@sven>
+In-Reply-To: <1286526197.4493.19.camel@sven>
 MIME-Version: 1.0
-In-Reply-To: <4CAF1B90.3080703@redhat.com>
-References: <1286265215-9025-1-git-send-email-walken@google.com>
-	<1286265215-9025-3-git-send-email-walken@google.com>
-	<4CAB628D.3030205@redhat.com>
-	<AANLkTimdACZ9Xm01DM2+E64+T5XfLffrkFBhf7CJ286p@mail.gmail.com>
-	<20101008043956.GA25662@google.com>
-	<4CAF1B90.3080703@redhat.com>
-Date: Fri, 8 Oct 2010 13:06:18 -0700
-Message-ID: <AANLkTinWxTT=+m_fAudc080OUMwacSefnMbSMBFZgPMH@mail.gmail.com>
-Subject: Re: [PATCH 2/3] Retry page fault when blocking on disk transfer.
-From: Michel Lespinasse <walken@google.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Nick Piggin <npiggin@kernel.dk>, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010082208.25767.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 6:24 AM, Rik van Riel <riel@redhat.com> wrote:
->> +static inline int lock_page_or_retry(struct page *page, struct mm_struct
->> *mm,
->> +                                    unsigned int flags)
->> +{
->> +       if (trylock_page(page))
->> +               return 1;
->> +       if (!(flags&  FAULT_FLAG_ALLOW_RETRY)) {
->> +               __lock_page(page);
->> +               return 1;
->> +       }
->> +
->> +       up_read(&mm->mmap_sem);
->> +       wait_on_page_locked(page);
->> +       return 0;
->> +}
->
-> Wait a moment.  Your other patch 2/3 also has a
-> lock_page_or_retry function.  That one is in
-> filemap.c and takes slightly different arguments,
-> to do essentially the same thing...
->
-> +/*
-> + * Lock the page, unless this would block and the caller indicated that it
-> + * can handle a retry.
-> + */
-> +static int lock_page_or_retry(struct page *page,
-> +                             struct vm_area_struct *vma, struct vm_fault
-> *vmf)
-> +{
->
-> Is there a way the two functions can be merged
-> into one?
+On Friday, October 08, 2010, Sven Neumann wrote:
+> On Thu, 2010-10-07 at 23:23 +0200, Rafael J. Wysocki wrote:
+> 
+> > > > I wonder what happens if you echo 0 to /sys/power/pm_async ?
+> > > 
+> > > Nothing happens. The problem persists (tested with 2.6.36-rc7). What
+> > > would you expect to happen?
+> > 
+> > Exactly that. :-)
+> > 
+> > Commit 152e1d5920 should not affect the non-async case (I'd be surprised if
+> > it did really) and things should work with /sys/power/pm_async = 0 anyway.
+> > 
+> > Please try check if you can reproduce with commt 152e1d5920 reverted and
+> > /sys/power/pm_async = 0.  If you can, that's a driver bug.
+> 
+> Ok, for the record, here's what I tried. I have rebooted between tests
+> to make sure there's no state pulled in from the previous test:
+> 
+>  2.6.36-rc7, no changes,      pm_async 1 :  suspend fails
+>  2.6.36-rc7, no changes,      pm_async 0 :  suspend fails
+> 
+>  2.6.36-rc7, 152e1d reverted, pm_async 1 :  suspend works
+>  2.6.36-rc7, 152e1d reverted, pm_async 0 :  suspend fails
+> 
+>  2.6.34.7, no changes,        pm_async 1 :  suspend works
+>  2.6.34.7, no changes,        pm_async 0 :  suspend works
+> 
+> I am not sure how this should be interpreted.
 
-Yes, this would be easy to do.
+There is a problem with the pxa2xx-mci.0 suspend that has been introduced
+some time after 2.6.34, but it is not related to commit 152e1d5920.  The
+problem was not visible with pm_async=1 because of the very bug fixed by
+commit 152e1d5920.
 
-The argument against it would be loss of inlining and, in the filemap
-version, the need to reference vma and vmf fields to find out the mm
-and flags values. We'd like to avoid doing that at least in the fast
-path when trylock_page succeeds - though, now that I think about it,
-both could be avoided with an inline function in a header returning
-trylock_page(page) || _lock_page_or_retry(mm, flags)
+Please see if the problem is there in 2.6.35 (please test with pm_async=0).
 
-Hmmm, this is actually quite similar to how other functions in
-pagemap.h / filemap.c are done...
-I'll send an updated series using this suggestion.
-
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Thanks,
+Rafael
