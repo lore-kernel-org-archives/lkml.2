@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753934Ab0JHGa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 02:30:57 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46850 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752083Ab0JHGaz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 02:30:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: Re: 2.6.36-rc7: kernel panic with SECURITY_TOMOYO=y
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        takedakn@nttdata.co.jp, lists@nerdbynature.de, kawime@gmx.de,
-        jkosina@suse.cz, linux-security-module@vger.kernel.org
-In-Reply-To: <201010080626.o986QJX4002281@www262.sakura.ne.jp>
-References: <20101008134644.8049.A69D9226@jp.fujitsu.com> <201010080626.o986QJX4002281@www262.sakura.ne.jp>
-Message-Id: <20101008153001.BCE5.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  8 Oct 2010 15:30:52 +0900 (JST)
+	id S1752947Ab0JHG5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 02:57:09 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:40979 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752014Ab0JHG5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 02:57:08 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX19dfp42VCxd0szEu1Kia6MIEVKys53RDQz+BvdTGF
+	0b60hLxrggTbx7
+Subject: Re: [PATCH 2/2] sched: use the old min_vruntime when normalizing
+ on dequeue
+From: Mike Galbraith <efault@gmx.de>
+To: Dima Zavin <dima@android.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+In-Reply-To: <AANLkTimR3pmxNF5TLTyEHZjPTrQeLrTB+HLsj-X6jPRx@mail.gmail.com>
+References: <1285742774-5013-1-git-send-email-dima@android.com>
+	 <1285742774-5013-2-git-send-email-dima@android.com>
+	 <AANLkTimR3pmxNF5TLTyEHZjPTrQeLrTB+HLsj-X6jPRx@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Oct 2010 08:57:03 +0200
+Message-Id: <1286521023.8189.0.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From cc7601c18982909987bbb48971acb86a69a3317a Mon Sep 17 00:00:00 2001
-> From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Fri, 8 Oct 2010 14:43:22 +0900
-> Subject: [PATCH] TOMOYO: Print URL information before panic().
+On Thu, 2010-10-07 at 14:00 -0700, Dima Zavin wrote: 
+> Mike,
 > 
-> Configuration files for TOMOYO 2.3 are not compatible with TOMOYO 2.2.
-> But current panic() message is too unfriendly and is confusing users.
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> ---
->  security/tomoyo/common.c |   11 ++++++++++-
->  1 files changed, 10 insertions(+), 1 deletions(-)
-> 
-> diff --git a/security/tomoyo/common.c b/security/tomoyo/common.c
-> index c668b44..1f0d45a 100644
-> --- a/security/tomoyo/common.c
-> +++ b/security/tomoyo/common.c
-> @@ -2051,13 +2051,22 @@ void tomoyo_check_profile(void)
->  		const u8 profile = domain->profile;
->  		if (tomoyo_profile_ptr[profile])
->  			continue;
-> +		printk(KERN_ERR "You need to define profile %u before using it.\n",
-> +		       profile);
-> +		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
-> +		       "for more information.\n");
->  		panic("Profile %u (used by '%s') not defined.\n",
->  		      profile, domain->domainname->name);
->  	}
->  	tomoyo_read_unlock(idx);
-> -	if (tomoyo_profile_version != 20090903)
-> +	if (tomoyo_profile_version != 20090903) {
-> +		printk(KERN_ERR "You need to install userland programs for "
-> +		       "TOMOYO 2.3 and initialize policy configuration.\n");
-> +		printk(KERN_ERR "Please see http://tomoyo.sourceforge.jp/2.3/ "
-> +		       "for more information.\n");
->  		panic("Profile version %u is not supported.\n",
->  		      tomoyo_profile_version);
-> +	}
->  	printk(KERN_INFO "TOMOYO: 2.3.0\n");
->  	printk(KERN_INFO "Mandatory Access Control activated.\n");
->  }
-> -- 
-> 1.7.1
+> Thanks for the Ack for patch 1/2, could you take a look at this one too?
 
+Ok, did that.  I'd do it like below instead.
 
-Looks good to me. thanks.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Should I re-upload the series as v2 or you can pick the latest from
+> patch 1 and take this one?
+
+Peter's the merge point, I just help break stuff ;-)
+
+I tested the below with pinned/unpinned mixes of sleepers and hogs, and
+saw no ill effects.  My thought on the logic is embedded in the comment.
+
+From: Dima Zavin <dima@android.com>
+Subject: [PATCH 2/2] sched: use the old min_vruntime when normalizing on dequeue
+Date: Tue, 28 Sep 2010 23:46:14 -0700
+
+After pulling the thread off the run-queue during a cgroup change,
+the cfs_rq.min_vruntime gets recalculated. The dequeued thread's vruntime
+then gets normalized to this new value. This can then lead to the thread
+getting an unfair boost in the new group if the vruntime of the next
+task in the old run-queue was way further ahead.
+
+Cc: Arve Hjønnevåg <arve@android.com>
+Signed-off-by: Dima Zavin <dima@android.com>
+---
+ kernel/sched_fair.c |   10 ++++++----
+ 1 file changed, 6 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/kernel/sched_fair.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_fair.c
++++ linux-2.6/kernel/sched_fair.c
+@@ -826,15 +826,17 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
+ 	if (se != cfs_rq->curr)
+ 		__dequeue_entity(cfs_rq, se);
+ 	account_entity_dequeue(cfs_rq, se);
+-	update_min_vruntime(cfs_rq);
+ 
+ 	/*
+-	 * Normalize the entity after updating the min_vruntime because the
+-	 * update can refer to the ->curr item and we need to reflect this
+-	 * movement in our normalized position.
++	 * Normalize vruntime prior to updating min_vruntime.  Any motion
++	 * referring to ->curr will have been captured by update_curr() above.
++	 * We don't want to preserve what lag might become as a result of
++	 * this dequeue, we want to preserve what lag is at dequeue time.
+ 	 */
+ 	if (!(flags & DEQUEUE_SLEEP))
+ 		se->vruntime -= cfs_rq->min_vruntime;
++
++	update_min_vruntime(cfs_rq);
+ }
+ 
+ /*
 
 
