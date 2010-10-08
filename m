@@ -1,50 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab0JHKW6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:22:58 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39970 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753745Ab0JHKW4 (ORCPT
+	id S932275Ab0JHKY0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:24:26 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:35617 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754020Ab0JHKYY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:22:56 -0400
-Date: Fri, 8 Oct 2010 11:48:55 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Suraj Sumangala <suraj@Atheros.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "marcel@holtmann.org" <marcel@holtmann.org>,
-        "linux-bluetooth@vger.kernel.org" <linux-bluetooth@vger.kernel.org>
-Subject: Re: Peculiar stuff in hci_ath3k/badness in hci_uart
-Message-ID: <20101008114855.7dfd255d@lxorguk.ukuu.org.uk>
-In-Reply-To: <4CAEE1DB.1070202@Atheros.com>
-References: <20101007214134.6bcd2e8f@lxorguk.ukuu.org.uk>
-	<4CAEE1DB.1070202@Atheros.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Oct 2010 06:24:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZR4pPUGtRtsPWV0EaaXUeLHBZdsxsELzLNE742X0EeLSIOWUDjSBXDdiq2WpwG4Ypp
+         QCtqqSWbHd6pVvJB/DZc110UXZhsbcU1ZnbJ45s3BRUfFfQO3PMUMyIOIdVb+ZnR3w1p
+         K6pMlj1QGRHkOlkhz81RP9SFQpX4SRE0c9TNo=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinP7tA87anzgN6Yi3p_FtJ7bJHmEZc6rKX=o+-R@mail.gmail.com>
+References: <20101005124521.GA2602@darkstar>
+	<201010061935.45010.rusty@rustcorp.com.au>
+	<AANLkTinP7tA87anzgN6Yi3p_FtJ7bJHmEZc6rKX=o+-R@mail.gmail.com>
+Date: Fri, 8 Oct 2010 18:24:23 +0800
+Message-ID: <AANLkTinLYy3vUp8VPzv=q3br-zBrE239MRpwMAAsmtKD@mail.gmail.com>
+Subject: Re: [PATCH] kvm: add oom notifier for virtio balloon
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        Anthony Liguori <anthony@codemonkey.ws>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Oct 2010 14:48:19 +0530
-Suraj Sumangala <suraj@Atheros.com> wrote:
+On Wed, Oct 6, 2010 at 9:50 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> On Wed, Oct 6, 2010 at 5:05 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> On Tue, 5 Oct 2010 11:15:21 pm Dave Young wrote:
+>>> Balloon could cause guest memory oom killing and panic.
+>>>
+>>> Add oom notify to leak some memory and retry fill balloon after 5 minutes.
+>>
+>> Have you tried registering a shrinker?  See mm.h.
+>
+> Hi, thanks. I didn't know shrinker can shrink mem beyond slab. Will try
+Hi, rusty
 
-> Hi Alan,
-> 
-> On 10/8/2010 2:11 AM, Alan Cox wrote:
-> > Noticed this while looking at Savoy's stuff
-> >
-> >
-> > ath_wakeup_ar3k:
-> >
-> >         int status = tty->driver->ops->tiocmget(tty, NULL);
-> >
-> I agree, it will be a problem if the underlying driver try to access the 
-> "struct file". Is there any other way I can get the MCR status here 
-> without providing user space pointer?
+I did some test with shrinker, findings as following:
 
-Currently no - that should get fixed in the tty layer and I will look
-into it end of next week as a priority.
+1. shrinker is for ageable cache shrinking, balloon pages is a different kind
+2. oom notifier is a last minute shrink, but shrinker is more conservative.
+after my tests of "balloon 30" for a slackware 13.0 guest, free -m in guest
+oom notifier results 17M
+shrinker results 77M
 
-Alan
+3. Aside of above use mutex locking in shrinker cause kernel hang, no
+idea how to fix it
+
+
+>
+>>
+>> Thanks,
+>> Rusty.
+>>
+>
+>
+>
+> --
+> Regards
+> dave
+>
+
+
+
+-- 
+Regards
+dave
