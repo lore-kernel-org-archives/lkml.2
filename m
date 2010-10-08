@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759207Ab0JHXZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 19:25:56 -0400
-Received: from kroah.org ([198.145.64.141]:34044 "EHLO coco.kroah.org"
+	id S1759680Ab0JHX0G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 19:26:06 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:57852 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863Ab0JHXZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 19:25:55 -0400
-Date: Fri, 8 Oct 2010 16:25:39 -0700
-From: Greg KH <greg@kroah.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Hemant Pedanekar <hemantp@ti.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Message-ID: <20101008232539.GA28697@kroah.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
- <20101007192245.GC26435@n2100.arm.linux.org.uk>
- <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
- <20101008175308.GA10975@n2100.arm.linux.org.uk>
- <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
- <20101008230451.GB10975@n2100.arm.linux.org.uk>
+	id S1759260Ab0JHX0E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 19:26:04 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: PATCH: PM / Runtime: Remove idle notification after failing suspend (was: Re: [linux-pm] [PATCH] PM: add synchronous ...)
+Date: Sat, 9 Oct 2010 01:24:56 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+References: <Pine.LNX.4.44L0.1010021004150.15874-100000@netrider.rowland.org> <201010030006.33454.rjw@sisk.pl>
+In-Reply-To: <201010030006.33454.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008230451.GB10975@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010090124.56493.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 09, 2010 at 12:04:51AM +0100, Russell King - ARM Linux wrote:
-> On Fri, Oct 08, 2010 at 10:37:10PM +0300, Felipe Contreras wrote:
-> > People have been discussing them, but you can't expect a perfect
-> > solution to pop up within one release cycle, specially when people
-> > have real issues to deal with.
+On Sunday, October 03, 2010, Rafael J. Wysocki wrote:
+> On Saturday, October 02, 2010, Alan Stern wrote:
+> > On Fri, 1 Oct 2010, Rafael J. Wysocki wrote:
+> ...
 > 
-> Two release cycles.  It was queued for the previous release, was posted
-> to the mailing list, was de-queued, and then re-added for the last merge
-> window.
+> > > If we removed the immediate idle notification after a successful resume, it
+> > > might need to be reworked slightly.
+> > 
+> > My suggestion was that we remove the idle notification after a failed 
+> > suspend, not the notification after a successful resume.
 > 
-> That's not no warning - that's almost six months.
-> 
-> http://lists.arm.linux.org.uk/lurker/message/20100408.094818.d6854bd5.en.html
-> 
-> So what you're telling me is that in six months, not one driver has been
-> touched to address this issue?  So, if no one in that time has done any
-> work on this, then what use is it going to be making the kernel issue
-> a warning instead?
-> 
-> So, since this has been known about for six months to the day, I completely
-> fail to see how making this a warning instead will create the necessary
-> motivation for the issue to be addressed.
+> And I said I was fine with that.
 
-I doubt that people even noticed that this was a problem.
+Actaully, I think we can do that right away.
 
-Unless you throw a run-time warning at them, or even better, break the
-build of their drivers, they will not notice.
+Thanks,
+Rafael
 
-Also, how can we fix this in a driver, what is the proper steps to do
-so?
 
-thanks,
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Runtime: Remove idle notification after failing suspend
 
-greg k-h
+If runtime suspend of a device fails returning -EAGAIN or -EBUSY,
+which means that it's safe to try to suspend it again, the PM core
+runs the runtime idle helper function for it.  Unfortunately this may
+lead to problems, for example for PCI devices whose drivers don't
+implement the ->runtime_idle() callback, because in that case the
+PCI bus type's ->runtime_idle() always calls pm_runtime_suspend()
+for the given device.  Thus, if it is automatically called by a
+driver's ->runtime_suspend() returning -EAGAIN or -EBUSY, it will
+cause the suspend to happen again possibly causing a busy loop to
+appear.  To avoid that, remove the idle notification after failing
+runtime suspend of a device altogether and let the callers of
+pm_runtime_suspend() repeat the operation if need be.
+
+Reported-by: Alan Stern <stern@rowland.harvard.edu>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/runtime.c |   11 ++---------
+ 1 file changed, 2 insertions(+), 9 deletions(-)
+
+Index: linux-2.6/drivers/base/power/runtime.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/runtime.c
++++ linux-2.6/drivers/base/power/runtime.c
+@@ -281,7 +281,6 @@ static int rpm_suspend(struct device *de
+ {
+ 	int (*callback)(struct device *);
+ 	struct device *parent = NULL;
+-	bool notify = false;
+ 	int retval;
+ 
+ 	dev_dbg(dev, "%s flags 0x%x\n", __func__, rpmflags);
+@@ -383,13 +382,10 @@ static int rpm_suspend(struct device *de
+ 	if (retval) {
+ 		__update_runtime_status(dev, RPM_ACTIVE);
+ 		dev->power.deferred_resume = 0;
+-		if (retval == -EAGAIN || retval == -EBUSY) {
+-			if (dev->power.timer_expires == 0)
+-				notify = true;
++		if (retval == -EAGAIN || retval == -EBUSY)
+ 			dev->power.runtime_error = 0;
+-		} else {
++		else
+ 			pm_runtime_cancel_pending(dev);
+-		}
+ 	} else {
+  no_callback:
+ 		__update_runtime_status(dev, RPM_SUSPENDED);
+@@ -408,9 +404,6 @@ static int rpm_suspend(struct device *de
+ 		goto out;
+ 	}
+ 
+-	if (notify)
+-		rpm_idle(dev, 0);
+-
+ 	if (parent && !parent->power.ignore_children) {
+ 		spin_unlock_irq(&dev->power.lock);
+ 
