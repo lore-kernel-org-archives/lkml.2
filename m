@@ -1,156 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932618Ab0JHTta (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 15:49:30 -0400
-Received: from mail128.messagelabs.com ([216.82.250.131]:22412 "EHLO
-	mail128.messagelabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab0JHTta (ORCPT
+	id S932684Ab0JHTu7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 15:50:59 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:41079 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754651Ab0JHTu6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 15:49:30 -0400
-X-VirusChecked: Checked
-X-Env-Sender: jcarlyle@motorola.com
-X-Msg-Ref: server-4.tower-128.messagelabs.com!1286567368!35703548!1
-X-StarScan-Version: 6.2.4; banners=-,-,-
-X-Originating-IP: [129.188.136.8]
-From: Jeffrey Carlyle <jeff.carlyle@motorola.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Lun Chang <L.chang@motorola.com>, <linux-kernel@vger.kernel.org>,
-        Jeffrey Carlyle <jeff.carlyle@motorola.com>
-Subject: [PATCH v2] regulator: avoid deadlock when disabling regulator with supply
-Date: Fri,  8 Oct 2010 14:49:19 -0500
-Message-Id: <1286567360-11337-1-git-send-email-jeff.carlyle@motorola.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <20101008185739.GA6098@opensource.wolfsonmicro.com>
-References: <20101008185739.GA6098@opensource.wolfsonmicro.com>
-X-CFilter-Loop: Reflected
+	Fri, 8 Oct 2010 15:50:58 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6130"; a="57117463"
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+In-Reply-To: <AANLkTim5E5WwD64RJ7NAk6Zr9NZ6jstrKSmjRTL039VR@mail.gmail.com>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
+	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
+	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
+	 <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com>
+	 <20101008091331.74871a42@lxorguk.ukuu.org.uk>
+	 <1286551434.4153.21.camel@m0nster>
+	 <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
+	 <1286556328.4153.142.camel@m0nster>
+	 <AANLkTikc8X0nz1cCxgfbaqLzCMiBLogLeU0ZdFoGEpP6@mail.gmail.com>
+	 <1286564491.4153.284.camel@m0nster>
+	 <AANLkTim5E5WwD64RJ7NAk6Zr9NZ6jstrKSmjRTL039VR@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 08 Oct 2010 12:50:41 -0700
+Message-ID: <1286567442.4153.343.camel@m0nster>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a regulator A that sets regulator B as its supply. When I call
-set_supply to add B as the supply for A, regulator A gets added to the
-supply_list for regulator B.
+On Fri, 2010-10-08 at 15:20 -0400, Mike Frysinger wrote:
+> On Fri, Oct 8, 2010 at 15:01, Daniel Walker wrote:
+> > On Fri, 2010-10-08 at 14:38 -0400, Mike Frysinger wrote:
+> >> On Fri, Oct 8, 2010 at 12:45, Daniel Walker wrote:
+> >> > On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
+> >> >> > I don't think the kernel is going to implode if we allow an optional
+> >> >> > ttyS override for debugging purposes.. I just don't see that "screwing"
+> >> >> > up the kernel.
+> >> >>
+> >> >> That is perhaps why you are not a subsystem maintainer.
+> >> >
+> >> > No, I'm sure it's not.
+> >> >
+> >> > What I was telling Greg is that this type of override is allowed right
+> >> > now, if you mod the source (everything is allowed if you mod the source
+> >> > right?) ..
+> >>
+> >> just because someone can mod the source code to add a root shell
+> >> doesnt mean we should accept patches to do it
+> >
+> > That's not what I was getting at. If you can mod the source to add the
+> > override, then adding in a patch which also requires you to mod the
+> > source to add the override should be acceptable because it's no
+> > different that what we currently have.
+> 
+> sorry, but you lost me.  all i see is "drop the hack code".
 
-When I call regulator_disable(A), I end up with a call chain like this:
+I can make it simpler for you. You add code into Linux, people can
+modify it, and you can't control that.
 
-regulator_disable(A)
-> mutex_lock(A)
-> _regulator_disable(A)
->> _regulator_disable(B)
->>> _notifier_call_chain(B)
->>>> mutex_lock(A)
+Daniel
 
-Which results in dead lock since we are trying to acquire the mutex lock
-for regulator A which we already hold.
 
-This patch addresses this issue by moving the call to disable regulator
-B outside of the lock aquired inside the initial call to
-regulator_disable.
-
-This change also addresses the issue of not acquiring the mutex for
-regulator B before calling _regulator_disable(B).
-
-Signed-off-by: Jeffrey Carlyle <jeff.carlyle@motorola.com>
----
- drivers/regulator/core.c |   35 ++++++++++++++++++++++++++---------
- 1 files changed, 26 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index cc8b337..2d215b5 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -63,7 +63,8 @@ struct regulator {
- };
- 
- static int _regulator_is_enabled(struct regulator_dev *rdev);
--static int _regulator_disable(struct regulator_dev *rdev);
-+static int _regulator_disable(struct regulator_dev *rdev,
-+		struct regulator_dev **supply_rdev_ptr);
- static int _regulator_get_voltage(struct regulator_dev *rdev);
- static int _regulator_get_current_limit(struct regulator_dev *rdev);
- static unsigned int _regulator_get_mode(struct regulator_dev *rdev);
-@@ -1348,7 +1349,8 @@ int regulator_enable(struct regulator *regulator)
- EXPORT_SYMBOL_GPL(regulator_enable);
- 
- /* locks held by regulator_disable() */
--static int _regulator_disable(struct regulator_dev *rdev)
-+static int _regulator_disable(struct regulator_dev *rdev,
-+		struct regulator_dev **supply_rdev_ptr)
- {
- 	int ret = 0;
- 
-@@ -1376,8 +1378,7 @@ static int _regulator_disable(struct regulator_dev *rdev)
- 		}
- 
- 		/* decrease our supplies ref count and disable if required */
--		if (rdev->supply)
--			_regulator_disable(rdev->supply);
-+		*supply_rdev_ptr = rdev->supply;
- 
- 		rdev->use_count = 0;
- 	} else if (rdev->use_count > 1) {
-@@ -1407,17 +1408,29 @@ static int _regulator_disable(struct regulator_dev *rdev)
- int regulator_disable(struct regulator *regulator)
- {
- 	struct regulator_dev *rdev = regulator->rdev;
-+	struct regulator_dev *supply_rdev = NULL;
- 	int ret = 0;
- 
- 	mutex_lock(&rdev->mutex);
--	ret = _regulator_disable(rdev);
-+	ret = _regulator_disable(rdev, &supply_rdev);
- 	mutex_unlock(&rdev->mutex);
-+
-+	/* decrease our supplies ref count and disable if required */
-+	while (supply_rdev != NULL) {
-+		rdev = supply_rdev;
-+
-+		mutex_lock(&rdev->mutex);
-+		_regulator_disable(rdev, &supply_rdev);
-+		mutex_unlock(&rdev->mutex);
-+	}
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regulator_disable);
- 
- /* locks held by regulator_force_disable() */
--static int _regulator_force_disable(struct regulator_dev *rdev)
-+static int _regulator_force_disable(struct regulator_dev *rdev,
-+		struct regulator_dev **supply_rdev_ptr)
- {
- 	int ret = 0;
- 
-@@ -1436,8 +1449,7 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
- 	}
- 
- 	/* decrease our supplies ref count and disable if required */
--	if (rdev->supply)
--		_regulator_disable(rdev->supply);
-+	*supply_rdev_ptr = rdev->supply;
- 
- 	rdev->use_count = 0;
- 	return ret;
-@@ -1454,12 +1466,17 @@ static int _regulator_force_disable(struct regulator_dev *rdev)
-  */
- int regulator_force_disable(struct regulator *regulator)
- {
-+	struct regulator_dev *supply_rdev = NULL;
- 	int ret;
- 
- 	mutex_lock(&regulator->rdev->mutex);
- 	regulator->uA_load = 0;
--	ret = _regulator_force_disable(regulator->rdev);
-+	ret = _regulator_force_disable(regulator->rdev, &supply_rdev);
- 	mutex_unlock(&regulator->rdev->mutex);
-+
-+	if (supply_rdev)
-+		regulator_disable(get_device_regulator(rdev_get_dev(supply_rdev)));
-+
- 	return ret;
- }
- EXPORT_SYMBOL_GPL(regulator_force_disable);
 -- 
-1.6.3.3
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
+Forum.
+
 
