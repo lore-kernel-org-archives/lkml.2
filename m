@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759295Ab0JHRej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 13:34:39 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:36963 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759208Ab0JHRdt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759212Ab0JHRdt (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 8 Oct 2010 13:33:49 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43095 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758890Ab0JHRdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 13:33:46 -0400
 From: Nishanth Aravamudan <nacc@us.ibm.com>
 To: nacc@us.ibm.com
 Cc: miltonm@bga.com, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Mackerras <paulus@samba.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Anton Blanchard <anton@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Kumar Gala <galak@kernel.crashing.org>,
+        Scott Wood <scottwood@freescale.com>,
+        Anton Vorontsov <avorontsov@mvista.com>, linuxppc-dev@lists.ozlabs.org,
         linux-kernel@vger.kernel.org
-Subject: [RFC PATCH 10/11] ppc/iommu: add routines to pseries iommu to map tces 1-1
-Date: Fri,  8 Oct 2010 10:33:11 -0700
-Message-Id: <1286559192-10898-11-git-send-email-nacc@us.ibm.com>
+Subject: [RFC PATCH 03/11] ppc: Create ops to choose between direct window and iommu based on device mask
+Date: Fri,  8 Oct 2010 10:33:04 -0700
+Message-Id: <1286559192-10898-4-git-send-email-nacc@us.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286559192-10898-1-git-send-email-nacc@us.ibm.com>
 References: <1286559192-10898-1-git-send-email-nacc@us.ibm.com>
@@ -24,121 +27,218 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Also allow the coherent ops to be iommu if only the coherent mask is too
+small, mostly for driver that do not set set the coherent mask but also
+don't use the coherent api.
+
 Signed-off-by: Milton Miller <miltonm@bga.com>
 Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
 ---
- arch/powerpc/platforms/pseries/iommu.c |   98 ++++++++++++++++++++++++++++++++
- 1 files changed, 98 insertions(+), 0 deletions(-)
+ arch/powerpc/include/asm/dma-mapping.h |    2 +
+ arch/powerpc/kernel/Makefile           |    2 +-
+ arch/powerpc/kernel/dma-choose64.c     |  167 ++++++++++++++++++++++++++++++++
+ 3 files changed, 170 insertions(+), 1 deletions(-)
+ create mode 100644 arch/powerpc/kernel/dma-choose64.c
 
-diff --git a/arch/powerpc/platforms/pseries/iommu.c b/arch/powerpc/platforms/pseries/iommu.c
-index 8ec81df..451d2d1 100644
---- a/arch/powerpc/platforms/pseries/iommu.c
-+++ b/arch/powerpc/platforms/pseries/iommu.c
-@@ -270,6 +270,104 @@ static unsigned long tce_get_pSeriesLP(struct iommu_table *tbl, long tcenum)
- 	return tce_ret;
- }
+diff --git a/arch/powerpc/include/asm/dma-mapping.h b/arch/powerpc/include/asm/dma-mapping.h
+index 644103a..9ffb16a 100644
+--- a/arch/powerpc/include/asm/dma-mapping.h
++++ b/arch/powerpc/include/asm/dma-mapping.h
+@@ -68,6 +68,8 @@ static inline unsigned long device_to_mask(struct device *dev)
+  */
+ #ifdef CONFIG_PPC64
+ extern struct dma_map_ops dma_iommu_ops;
++extern struct dma_map_ops dma_choose64_ops;
++extern struct dma_map_ops dma_iommu_coherent_ops;
+ #endif
+ extern struct dma_map_ops dma_direct_ops;
  
-+/* this is compatable with cells for the device tree property */
-+struct dynamic_dma_window_prop {
-+	__be32	liobn;		/* tce table number */
-+	__be32	dma_base[2];	/* address hi,lo */
-+	__be32	tce_shift;	/* ilog2(tce_page_size) */
-+	__be32	window_shift;	/* ilog2(tce_window_size) */
-+};
+diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
+index 1dda701..21b8ea1 100644
+--- a/arch/powerpc/kernel/Makefile
++++ b/arch/powerpc/kernel/Makefile
+@@ -82,7 +82,7 @@ obj-y				+= time.o prom.o traps.o setup-common.o \
+ 				   udbg.o misc.o io.o dma.o \
+ 				   misc_$(CONFIG_WORD_SIZE).o
+ obj-$(CONFIG_PPC32)		+= entry_32.o setup_32.o
+-obj-$(CONFIG_PPC64)		+= dma-iommu.o iommu.o
++obj-$(CONFIG_PPC64)		+= dma-iommu.o iommu.o dma-choose64.o
+ obj-$(CONFIG_KGDB)		+= kgdb.o
+ obj-$(CONFIG_PPC_OF_BOOT_TRAMPOLINE)	+= prom_init.o
+ obj-$(CONFIG_MODULES)		+= ppc_ksyms.o
+diff --git a/arch/powerpc/kernel/dma-choose64.c b/arch/powerpc/kernel/dma-choose64.c
+new file mode 100644
+index 0000000..17c716f
+--- /dev/null
++++ b/arch/powerpc/kernel/dma-choose64.c
+@@ -0,0 +1,167 @@
++/*
++ * Copyright (C) 2006 Benjamin Herrenschmidt, IBM Corporation
++ *
++ * Provide default implementations of the DMA mapping callbacks for
++ * directly mapped busses.
++ */
 +
-+static int tce_clearrange_multi_pSeriesLP(unsigned long start_pfn,
-+					unsigned long num_pfn, void *arg)
++#include <linux/device.h>
++#include <linux/dma-mapping.h>
++#include <linux/bug.h>
++
++/*
++ * DMA operations that choose between a 64-bit direct mapping and and iommu
++ *
++ * This set of dma ops chooses between directing to a static 1:1 mapping
++ * that may require a 64 bit address and a iommu based on the declared
++ * streaming and coherent masks for the device.  The choice is made on
++ * the first dma map call.
++ */
++
++/* first BUG ops for calls out of sequence */
++
++void *dma_bug_alloc_coherent(struct device *dev, size_t size,
++				dma_addr_t *dma_handle, gfp_t flag)
 +{
-+	struct dynamic_dma_window_prop *maprange = arg;
-+	int rc;
-+	u64 tce_size, num_tce, dma_offset;
-+	u32 tce_shift;
++	BUG();
 +
-+	tce_shift = be32_to_cpu(maprange->tce_shift);
-+	tce_size = 1ULL << tce_shift;
-+	num_tce = num_pfn << PAGE_SHIFT;
-+	dma_offset = start_pfn << PAGE_SHIFT;
-+
-+	/* round back to the beginning of the tce page size */
-+	num_tce += dma_offset & (tce_size - 1);
-+	dma_offset &= ~(tce_size - 1);
-+
-+	/* covert to number of tces */
-+	num_tce |= tce_size - 1;
-+	num_tce >>= tce_shift;
-+
-+	rc = plpar_tce_stuff(maprange->liobn, dma_offset, 0, num_tce);
-+
-+	return rc;
++	return NULL;
 +}
 +
-+static int tce_setrange_multi_pSeriesLP(unsigned long start_pfn,
-+					unsigned long num_pfn, void *arg)
++void dma_bug_free_coherent(struct device *dev, size_t size,
++			      void *vaddr, dma_addr_t dma_handle)
 +{
-+	struct dynamic_dma_window_prop *maprange = arg;
-+	u64 *tcep, tce_size, num_tce, dma_offset, next, proto_tce;
-+	u32 tce_shift;
-+	long rc = 0;
-+	long l, limit;
++	BUG();
++}
 +
-+	local_irq_disable();	/* to protect tcep and the page behind it */
-+	tcep = __get_cpu_var(tce_page);
++static int dma_bug_dma_supported(struct device *dev, u64 mask)
++{
++	BUG();
 +
-+	if (!tcep) {
-+		tcep = (u64 *)__get_free_page(GFP_ATOMIC);
-+		if (!tcep) {
-+			local_irq_enable();
-+			return -ENOMEM;
-+		}
-+		__get_cpu_var(tce_page) = tcep;
++	return 0;
++}
++
++static int dma_bug_map_sg(struct device *dev, struct scatterlist *sgl,
++			     int nents, enum dma_data_direction direction,
++			     struct dma_attrs *attrs)
++{
++	BUG();
++
++	return 0;
++}
++
++
++static void dma_bug_unmap_sg(struct device *dev, struct scatterlist *sg,
++				int nents, enum dma_data_direction direction,
++				struct dma_attrs *attrs)
++{
++	BUG();
++}
++
++static dma_addr_t dma_bug_map_page(struct device *dev,
++					     struct page *page,
++					     unsigned long offset,
++					     size_t size,
++					     enum dma_data_direction dir,
++					     struct dma_attrs *attrs)
++{
++	BUG();
++
++	return DMA_ERROR_CODE;
++}
++
++
++static void dma_bug_unmap_page(struct device *dev,
++					 dma_addr_t dma_address,
++					 size_t size,
++					 enum dma_data_direction direction,
++					 struct dma_attrs *attrs)
++{
++	BUG();
++}
++
++
++static struct dma_map_ops *choose(struct device *dev)
++{
++	if (dma_direct_ops.dma_supported(dev, device_to_mask(dev))) {
++		if (dma_direct_ops.dma_supported(dev, dev->coherent_dma_mask))
++			return &dma_direct_ops;
++		return &dma_iommu_coherent_ops;
 +	}
-+
-+	proto_tce = TCE_PCI_READ | TCE_PCI_WRITE;
-+
-+	tce_shift = be32_to_cpu(maprange->tce_shift);
-+	tce_size = 1ULL << tce_shift;
-+	next = start_pfn << PAGE_SHIFT;
-+	num_tce = num_pfn << PAGE_SHIFT;
-+
-+	/* round back to the beginning of the tce page size */
-+	num_tce += next & (tce_size - 1);
-+	next &= ~(tce_size - 1);
-+
-+	/* covert to number of tces */
-+	num_tce |= tce_size - 1;
-+	num_tce >>= maprange->tce_shift;
-+
-+	/* We can map max one pageful of TCEs at a time */
-+	do {
-+		/*
-+		 * Set up the page with TCE data, looping through and setting
-+		 * the values.
-+		 */
-+		limit = min_t(long, num_tce, 4096/TCE_ENTRY_SIZE);
-+		dma_offset = next;
-+
-+		for (l = 0; l < limit; l++) {
-+			tcep[l] = proto_tce | dma_offset;
-+			next += tce_size;
-+		}
-+
-+		rc = plpar_tce_put_indirect((u64)maprange->liobn,
-+					    (u64)dma_offset,
-+					    (u64)virt_to_abs(tcep),
-+					    limit);
-+
-+		num_tce -= limit;
-+	} while (num_tce > 0 && !rc);
-+
-+	/* error cleanup: caller will clear whole range */
-+
-+	local_irq_enable();
-+	return rc;
++	return &dma_iommu_ops;
 +}
 +
- #ifdef CONFIG_PCI
- static void iommu_table_setparms(struct pci_controller *phb,
- 				 struct device_node *dn,
++void *dma_choose64_alloc_coherent(struct device *dev, size_t size,
++				dma_addr_t *dma_handle, gfp_t flag)
++{
++	struct dma_map_ops *new = choose(dev);
++
++	set_dma_ops(dev, new);
++	return new->alloc_coherent(dev, size, dma_handle, flag);
++}
++
++static int dma_choose64_map_sg(struct device *dev, struct scatterlist *sgl,
++			     int nents, enum dma_data_direction direction,
++			     struct dma_attrs *attrs)
++{
++	struct dma_map_ops *new = choose(dev);
++
++	set_dma_ops(dev, new);
++	return new->map_sg(dev, sgl, nents, direction, attrs);
++}
++
++
++static int dma_choose64_dma_supported(struct device *dev, u64 mask)
++{
++	return dma_direct_ops.dma_supported(dev, mask) ||
++		dma_iommu_ops.dma_supported(dev, mask);
++}
++
++static dma_addr_t dma_choose64_map_page(struct device *dev,
++					     struct page *page,
++					     unsigned long offset,
++					     size_t size,
++					     enum dma_data_direction dir,
++					     struct dma_attrs *attrs)
++{
++	struct dma_map_ops *new = choose(dev);
++
++	set_dma_ops(dev, new);
++	return new->map_page(dev, page, offset, size, dir, attrs);
++}
++
++struct dma_map_ops dma_choose64_ops = {
++	.alloc_coherent	= dma_choose64_alloc_coherent,
++	.free_coherent	= dma_bug_free_coherent,
++	.map_sg		= dma_choose64_map_sg,
++	.unmap_sg	= dma_bug_unmap_sg,
++	.dma_supported	= dma_choose64_dma_supported,
++	.map_page	= dma_choose64_map_page,
++	.unmap_page	= dma_bug_unmap_page,
++};
++EXPORT_SYMBOL(dma_choose64_ops);
++
++/* set these up to BUG() until we initialze them in the arch initcall below */
++struct dma_map_ops dma_iommu_coherent_ops = {
++	.alloc_coherent	= dma_bug_alloc_coherent,
++	.free_coherent	= dma_bug_free_coherent,
++	.map_sg		= dma_bug_map_sg,
++	.unmap_sg	= dma_bug_unmap_sg,
++	.dma_supported	= dma_bug_dma_supported,
++	.map_page	= dma_bug_map_page,
++	.unmap_page	= dma_bug_unmap_page,
++};
++EXPORT_SYMBOL(dma_iommu_coherent_ops);
++
++static int setup_choose64_ops(void)
++{
++	dma_iommu_coherent_ops = dma_direct_ops;
++	dma_iommu_coherent_ops.alloc_coherent = dma_iommu_ops.alloc_coherent;
++	dma_iommu_coherent_ops.free_coherent = dma_iommu_ops.free_coherent;
++
++	/* should we be stricter? */
++	dma_iommu_coherent_ops.dma_supported = dma_choose64_dma_supported;
++
++	return 0;
++}
++arch_initcall(setup_choose64_ops);
 -- 
 1.7.1
 
