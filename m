@@ -1,153 +1,489 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab0JHCzU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 22:55:20 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:32992 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab0JHCzT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 22:55:19 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource allocation
-Date: Thu, 7 Oct 2010 15:41:04 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        clemens@ladisch.de, Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <20101006225834.GE2945@ram-laptop> <20101007041302.GA19867@helgaas.com> <20101007204213.GA4461@ram-laptop>
-In-Reply-To: <20101007204213.GA4461@ram-laptop>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1751537Ab0JHDDR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 23:03:17 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55780 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab0JHDDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Oct 2010 23:03:15 -0400
+Date: Fri, 8 Oct 2010 14:03:08 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Gregory Haskins <gregory.haskins@gmail.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the alacrity tree with Linus' and other
+ trees
+Message-Id: <20101008140308.33477d76.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010071541.07084.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 07, 2010 02:42:13 pm Ram Pai wrote:
-> On Wed, Oct 06, 2010 at 10:13:02PM -0600, Bjorn Helgaas wrote:
-> > On Wed, Oct 06, 2010 at 05:30:41PM -0700, Ram Pai wrote:
-> > > On Wed, Oct 06, 2010 at 05:39:53PM -0600, Bjorn Helgaas wrote:
-> > > > On Wed, Oct 06, 2010 at 03:58:34PM -0700, Ram Pai wrote:
-> > > > >         PCI: override BIOS/firmware memory resource allocation
-> > > > > 		through command line parameters
-> > > > > 
-> > > > > 	Platforms that are unaware of  SRIOV  BARs  fail to allocate MMIO
-> > > > > 	resources  to SRIOV PCIe  devices. Hence  on  such  platforms the
-> > > > > 	OS fails to  enable  SRIOV.
-> > > > > 	Some  platforms  where  BIOS/uEFI resource   allocations  conflict
-> > > > > 	the conflicting devices are disabled.
-> > > > > 
-> > > > > 	Ideally we  would  want  the  OS  to detect and fix automatically
-> > > > > 	such problems and conflicts.  However previous  attempts to do so
-> > > > > 	have led to regression on legacy platforms.
-> > > > 
-> > > > I'm sorry to be a nay-sayer, but I think we just haven't tried hard
-> > > > enough.  Our ACPI/PCI/e820 resource management is not well integrated,
-> > > > and I suspect if we straightened that out, we could avoid some of the
-> > > > regressions we saw with previous attempts.
-> > > 
-> > > Can you be more specific as to what can be done to fix it automatically?
-> > > 
-> > > Neither accepting this approach nor telling what needs to be straightened out
-> > > to automatically fix all the systems out there, is just a deadend.
-> > 
-> > Yeah, I guess that wasn't really fair, sorry.  And keep in mind that I'm
-> > not the PCI maintainer, so these are just my opinions, nothing like an
-> > official "nack."
-> > 
-> > I did look at this dmesg log from the thread you referenced:
-> >     http://marc.info/?l=linux-kernel&m=127178918128740&w=2
-> > but it looks to me like we just completely botched it.  I don't see an
-> > SRIOV device or anything else that didn't have resources, so as far as I
-> > can tell, we started with working resource assignments from the BIOS,
-> > threw them away, and started over from scratch.  We failed because we
-> > tried to assign I/O port space to bridges with nothing behind them, and
-> > there was nothing left by the time we got to the 0000:09:04.0 device
-> > that actually *did* need the space.
-> 
-> hmm.. is that possible? Yinghai's patch sized the resource requirement of each
-> of the bridges, before actually allocating them. Which means a bridge with
-> no device behind it would not get any i/o space.
+Hi Gregory,
 
-Here's what I see in the dmesg log referenced above:
+Today's linux-next merge of the alacrity tree got a conflict in
+include/linux/Kbuild between various commits from Linus' and other trees
+and various commits from the alacrity tree.
 
-    ACPI: PCI Root Bridge [PCI0] (0000:00)
-    pci_root PNP0A08:00: host bridge window [io 0x0000-0x0cf7]
-    pci_root PNP0A08:00: host bridge window [io 0x0d00-0xffff]
-    pci 0000:00:1c.0: PCI bridge to [bus 04-09]
-    pci 0000:00:1c.0:   bridge window [io 0xd000-0xdfff]
-    pci 0000:04:00.0: PCI bridge to [bus 05-09]
-    pci 0000:04:00.0:   bridge window [io 0xd000-0xdfff]
-    pci 0000:05:01.0: PCI bridge to [bus 08-09]
-    pci 0000:05:01.0:   bridge window [io 0xd000-0xdfff]
-    pci 0000:08:00.0: PCI bridge to [bus 09-09]
-    pci 0000:08:00.0:   bridge window [io 0xd000-0xdfff]
-    pci 0000:09:04.0: found [13f6:8788] class 000401 header type 00
-    pci 0000:09:04.0: reg 10: [io  0xd800-0xd8ff]
-    pci 0000:05:02.0: PCI bridge to [bus 07-07]
-    pci 0000:05:02.0:   bridge window [io 0xf000-0x0000] (disabled)
-    pci 0000:05:03.0: PCI bridge to [bus 06-06]
-    pci 0000:05:03.0:   bridge window [io 0xf000-0x0000] (disabled)
-    
-The above is the state as we got it from BIOS.  Despite all the bridges,
-09:04.0 is the only device below the 00:1c.0 bridge, and it requires only
-0x100 I/O ports.
+I fixed it up (see below) and can carry the fix as necessary.  The main
+problem is commit 60641aa1f379820e99ac7f45a38b43795670c741 ("include:
+replace unifdef-y with header-y") from Linus' tree.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-There are no devices on buses 06 (below 05:03.0) or 07 (below 05:02.0).
-
-I didn't look at Yinghai's patch to figure out *why*, but it sure looks like
-we released the 09:04.0 space, then tried to assign 0x2000 ports to 05:01.0 
-(which needs 0x100 and had 0x1000 originally), 0x1000 to 05:02.0 (which needs
-none), and 0x1000 to 05:03.0 (which also needs none):
-
-    PCI: No. 3 try to assign unassigned res
-    release child resource [io  0xd800-0xd8ff]
-    pci 0000:08:00.0: resource 7 [io 0xd000-0xdfff] released
-    pci 0000:04:00.0: BAR 7: can't assign io (size 0x4000)
-    pci 0000:05:01.0: BAR 7: can't assign io (size 0x2000)
-    pci 0000:05:02.0: BAR 7: can't assign io (size 0x1000)
-    pci 0000:05:03.0: BAR 7: can't assign io (size 0x1000)
-    pci 0000:08:00.0: BAR 7: can't assign io (size 0x1000)
-    pci 0000:09:04.0: BAR 0: can't assign io (size 0x100)
-    
-I think there are at least two things wrong here:
-
-  1) We rearranged things when we didn't need to, and
-  2) We assigned I/O ports to bridge that didn't need them
-
-Neither one is a terrible problem, so I think it's better to just fix
-them than to add a special alternate path and a kernel parameter to
-enable it.
-
-> > > The choice is between
-> > > 	(a) an automated patch with the risk of regressing some platforms.
-> > > 	(b) an semi-automated patch that does not regress *any* platform,
-> > > 		with the ability to fix platforms that are currently broken.
-> > > 	(c) status quo, which means broken platforms continue to be so.
-> > > 
-> > > I thought the initial proposal was to use (b), with the long
-> > > term goal of fixing it automatically, assuming that it is even possible.
-> > > 
-> > > Let me know if that is *not* the goal and I will change directions.
-> > 
-> > *My* goal is that a user would never need a kernel option except to help
-> > debug kernel problems.  I think of an option like "pci=override" as a
-> > band-aid that covers up a kernel problem without really fixing it, so I
-> > guess my choice would be (a).  Yes, there's a risk of regression, and we
-> > have to do everything we can to avoid it.  But the result is a more
-> > usable system.
-> 
-> Ok. I think we agree with your goal, but the disagreement is on the approach.
-> You want to take one big leap, whereas the consensus  I heard in earlier 
-> threads was that we need to take baby steps.
-
-We need baby steps in terms of a series of tiny patches.  I'm not yet
-convinced that we need to add a "mostly-working" alternate path and
-make the user figure out whether to use it.  That makes things more
-complicated and reduces testing coverage.
-
-Bjorn
+diff --cc include/linux/Kbuild
+index 3c44beb,1a31099..0000000
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@@ -125,105 -70,43 +125,106 @@@ header-y += fd.
+  header-y += fdreg.h
+  header-y += fib_rules.h
+  header-y += fiemap.h
+ +header-y += filter.h
+  header-y += firewire-cdev.h
+  header-y += firewire-constants.h
+ +header-y += flat.h
+ +header-y += fs.h
+  header-y += fuse.h
+ -header-y += genetlink.h
+ +header-y += futex.h
+ +header-y += gameport.h
+  header-y += gen_stats.h
+ +header-y += generic_serial.h
+ +header-y += genetlink.h
+  header-y += gfs2_ondisk.h
+  header-y += gigaset_dev.h
+ +header-y += hdlc.h
+ +header-y += hdlcdrv.h
+ +header-y += hdreg.h
+ +header-y += hid.h
+ +header-y += hiddev.h
+ +header-y += hidraw.h
+ +header-y += hpet.h
+  header-y += hysdn_if.h
+ +header-y += i2c-dev.h
+ +header-y += i2c.h
+  header-y += i2o-dev.h
+  header-y += i8k.h
+ +header-y += icmp.h
+ +header-y += icmpv6.h
+ +header-y += if.h
+ +header-y += if_addr.h
+  header-y += if_addrlabel.h
+  header-y += if_arcnet.h
+ +header-y += if_arp.h
+  header-y += if_bonding.h
+ +header-y += if_bridge.h
+  header-y += if_cablemodem.h
+ +header-y += if_ec.h
+ +header-y += if_eql.h
+ +header-y += if_ether.h
+  header-y += if_fc.h
+ -header-y += if.h
+ +header-y += if_fddi.h
+ +header-y += if_frad.h
+  header-y += if_hippi.h
+  header-y += if_infiniband.h
+ +header-y += if_link.h
+ +header-y += if_ltalk.h
+  header-y += if_packet.h
+ +header-y += if_phonet.h
+  header-y += if_plip.h
+  header-y += if_ppp.h
+ +header-y += if_pppol2tp.h
+ +header-y += if_pppox.h
+  header-y += if_slip.h
+  header-y += if_strip.h
+ +header-y += if_tr.h
+  header-y += if_tun.h
+ +header-y += if_tunnel.h
+ +header-y += if_vlan.h
+ +header-y += if_x25.h
+ +header-y += igmp.h
+ +header-y += in.h
+ +header-y += in6.h
+  header-y += in_route.h
+ +header-y += inet_diag.h
+ +header-y += inotify.h
+ +header-y += input.h
+++header-y += ioq.h
+  header-y += ioctl.h
+ +header-y += ip.h
+  header-y += ip6_tunnel.h
+ +header-y += ip_vs.h
+ +header-y += ipc.h
+ +header-y += ipmi.h
+  header-y += ipmi_msgdefs.h
+  header-y += ipsec.h
+ -header-y += ip_vs.h
+ +header-y += ipv6.h
+ +header-y += ipv6_route.h
+  header-y += ipx.h
+  header-y += irda.h
+ +header-y += irqnr.h
+ +header-y += isdn.h
+ +header-y += isdn_divertif.h
+ +header-y += isdn_ppp.h
+ +header-y += isdnif.h
+  header-y += iso_fs.h
+ +header-y += ivtv.h
+ +header-y += ivtvfb.h
+  header-y += ixjuser.h
+  header-y += jffs2.h
+ +header-y += joystick.h
+ +header-y += kd.h
+ +header-y += kdev_t.h
+ +header-y += kernel.h
+ +header-y += kernelcapi.h
+ +header-y += keyboard.h
+  header-y += keyctl.h
+ +header-y += l2tp.h
+  header-y += limits.h
+ +header-y += llc.h
+ +header-y += loop.h
+ +header-y += lp.h
+  header-y += magic.h
+  header-y += major.h
+  header-y += map_to_7segment.h
+@@@ -286,109 -136,259 +287,112 @@@ header-y += phantom.
+  header-y += phonet.h
+  header-y += pkt_cls.h
+  header-y += pkt_sched.h
+ +header-y += pktcdvd.h
+ +header-y += pmu.h
+ +header-y += poll.h
+  header-y += posix_types.h
+  header-y += ppdev.h
+ +header-y += ppp-comp.h
+ +header-y += ppp_defs.h
+ +header-y += pps.h
+  header-y += prctl.h
+ -header-y += qnxtypes.h
+ +header-y += ptrace.h
+  header-y += qnx4_fs.h
+ +header-y += qnxtypes.h
+ +header-y += quota.h
+  header-y += radeonfb.h
+ +header-y += random.h
+  header-y += raw.h
+ +header-y += rds.h
+ +header-y += reboot.h
+ +header-y += reiserfs_fs.h
+ +header-y += reiserfs_xattr.h
+  header-y += resource.h
+ +header-y += rfkill.h
+  header-y += romfs_fs.h
+  header-y += rose.h
+ +header-y += route.h
+ +header-y += rtc.h
+ +header-y += rtnetlink.h
+ +header-y += scc.h
+ +header-y += sched.h
+ +header-y += screen_info.h
+ +header-y += sdla.h
+ +header-y += securebits.h
+ +header-y += selinux_netlink.h
+ +header-y += sem.h
+ +header-y += serial.h
+ +header-y += serial_core.h
+  header-y += serial_reg.h
+ +header-y += serio.h
+ +header-y += shm.h
+++header-y += shm_signal.h
+ +header-y += signal.h
+ +header-y += signalfd.h
+ +header-y += smb.h
+ +header-y += smb_fs.h
+ +header-y += smb_mount.h
+  header-y += smbno.h
+  header-y += snmp.h
+ +header-y += socket.h
+  header-y += sockios.h
+  header-y += som.h
+ +header-y += sonet.h
+ +header-y += sonypi.h
+  header-y += sound.h
+ +header-y += soundcard.h
+ +header-y += stat.h
+ +header-y += stddef.h
+ +header-y += string.h
+  header-y += suspend_ioctls.h
+ +header-y += swab.h
+ +header-y += synclink.h
+ +header-y += sysctl.h
+  header-y += taskstats.h
+ +header-y += tcp.h
+  header-y += telephony.h
+  header-y += termios.h
+ +header-y += time.h
+  header-y += times.h
+ +header-y += timex.h
+  header-y += tiocl.h
+  header-y += tipc.h
+  header-y += tipc_config.h
+  header-y += toshiba.h
+ +header-y += tty.h
+ +header-y += types.h
+  header-y += udf_fs_i.h
+ +header-y += udp.h
+ +header-y += uinput.h
+ +header-y += uio.h
+  header-y += ultrasound.h
+  header-y += un.h
+ +header-y += unistd.h
+ +header-y += usbdevice_fs.h
+  header-y += utime.h
+ +header-y += utsname.h
+  header-y += veth.h
+ -header-y += videotext.h
+ -header-y += x25.h
+ -
+ -unifdef-y += acct.h
+ -unifdef-y += adb.h
+ -unifdef-y += adfs_fs.h
+ -unifdef-y += agpgart.h
+ -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/a.out.h \
+ -      		  $(srctree)/include/asm-$(SRCARCH)/a.out.h),)
+ -unifdef-y += a.out.h
+ -endif
+ -unifdef-y += apm_bios.h
+ -unifdef-y += atalk.h
+ -unifdef-y += atmdev.h
+ -unifdef-y += atm.h
+ -unifdef-y += atm_tcp.h
+ -unifdef-y += audit.h
+ -unifdef-y += auto_fs.h
+ -unifdef-y += auxvec.h
+ -unifdef-y += binfmts.h
+ -unifdef-y += blktrace_api.h
+ -unifdef-y += capability.h
+ -unifdef-y += capi.h
+ -unifdef-y += cciss_ioctl.h
+ -unifdef-y += cdrom.h
+ -unifdef-y += cm4000_cs.h
+ -unifdef-y += cn_proc.h
+ -unifdef-y += coda.h
+ -unifdef-y += connector.h
+ -unifdef-y += cuda.h
+ -unifdef-y += cyclades.h
+ -unifdef-y += dccp.h
+ -unifdef-y += dlm.h
+ -unifdef-y += dlm_plock.h
+ -unifdef-y += edd.h
+ -unifdef-y += elf.h
+ -unifdef-y += elfcore.h
+ -unifdef-y += errno.h
+ -unifdef-y += errqueue.h
+ -unifdef-y += ethtool.h
+ -unifdef-y += eventpoll.h
+ -unifdef-y += signalfd.h
+ -unifdef-y += ext2_fs.h
+ -unifdef-y += fb.h
+ -unifdef-y += fcntl.h
+ -unifdef-y += filter.h
+ -unifdef-y += flat.h
+ -unifdef-y += futex.h
+ -unifdef-y += fs.h
+ -unifdef-y += gameport.h
+ -unifdef-y += generic_serial.h
+ -unifdef-y += hdlcdrv.h
+ -unifdef-y += hdlc.h
+ -unifdef-y += hdreg.h
+ -unifdef-y += hid.h
+ -unifdef-y += hiddev.h
+ -unifdef-y += hidraw.h
+ -unifdef-y += hpet.h
+ -unifdef-y += i2c.h
+ -unifdef-y += i2c-dev.h
+ -unifdef-y += icmp.h
+ -unifdef-y += icmpv6.h
+ -unifdef-y += if_addr.h
+ -unifdef-y += if_arp.h
+ -unifdef-y += if_bridge.h
+ -unifdef-y += if_ec.h
+ -unifdef-y += if_eql.h
+ -unifdef-y += if_ether.h
+ -unifdef-y += if_fddi.h
+ -unifdef-y += if_frad.h
+ -unifdef-y += if_ltalk.h
+ -unifdef-y += if_link.h
+ -unifdef-y += if_phonet.h
+ -unifdef-y += if_pppol2tp.h
+ -unifdef-y += if_pppox.h
+ -unifdef-y += if_tr.h
+ -unifdef-y += if_tunnel.h
+ -unifdef-y += if_vlan.h
+ -unifdef-y += igmp.h
+ -unifdef-y += inet_diag.h
+ -unifdef-y += in.h
+ -unifdef-y += in6.h
+ -unifdef-y += inotify.h
+ -unifdef-y += input.h
+ -unifdef-y += ioq.h
+ -unifdef-y += ip.h
+ -unifdef-y += ipc.h
+ -unifdef-y += ipmi.h
+ -unifdef-y += ipv6.h
+ -unifdef-y += ipv6_route.h
+ -unifdef-y += isdn.h
+ -unifdef-y += isdnif.h
+ -unifdef-y += isdn_divertif.h
+ -unifdef-y += isdn_ppp.h
+ -unifdef-y += ivtv.h
+ -unifdef-y += ivtvfb.h
+ -unifdef-y += joystick.h
+ -unifdef-y += kdev_t.h
+ -unifdef-y += kd.h
+ -unifdef-y += kernelcapi.h
+ -unifdef-y += kernel.h
+ -unifdef-y += keyboard.h
+ -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm.h \
+ -      		  $(srctree)/include/asm-$(SRCARCH)/kvm.h),)
+ -unifdef-y += kvm.h
+ -endif
+ -ifneq ($(wildcard $(srctree)/arch/$(SRCARCH)/include/asm/kvm_para.h \
+ -		  $(srctree)/include/asm-$(SRCARCH)/kvm_para.h),)
+ -unifdef-y += kvm_para.h
+ -endif
+ -unifdef-y += llc.h
+ -unifdef-y += loop.h
+ -unifdef-y += lp.h
+ -unifdef-y += mempolicy.h
+ -unifdef-y += mii.h
+ -unifdef-y += mman.h
+ -unifdef-y += mroute.h
+ -unifdef-y += mroute6.h
+ -unifdef-y += msdos_fs.h
+ -unifdef-y += msg.h
+ -unifdef-y += nbd.h
+ -unifdef-y += ncp_fs.h
+ -unifdef-y += ncp.h
+ -unifdef-y += ncp_mount.h
+ -unifdef-y += netdevice.h
+ -unifdef-y += netfilter_bridge.h
+ -unifdef-y += netfilter_decnet.h
+ -unifdef-y += netfilter.h
+ -unifdef-y += netfilter_ipv4.h
+ -unifdef-y += netfilter_ipv6.h
+ -unifdef-y += net.h
+ -unifdef-y += netlink.h
+ -unifdef-y += nfs3.h
+ -unifdef-y += nfs4.h
+ -unifdef-y += nfsacl.h
+ -unifdef-y += nfs_fs.h
+ -unifdef-y += nfs.h
+ -unifdef-y += nfs_idmap.h
+ -unifdef-y += n_r3964.h
+ -unifdef-y += nubus.h
+ -unifdef-y += nvram.h
+ -unifdef-y += oom.h
+ -unifdef-y += parport.h
+ -unifdef-y += patchkey.h
+ -unifdef-y += pci.h
+ -unifdef-y += personality.h
+ -unifdef-y += pktcdvd.h
+ -unifdef-y += pmu.h
+ -unifdef-y += poll.h
+ -unifdef-y += ppp_defs.h
+ -unifdef-y += ppp-comp.h
+ -unifdef-y += pps.h
+ -unifdef-y += ptrace.h
+ -unifdef-y += quota.h
+ -unifdef-y += random.h
+ -unifdef-y += rfkill.h
+ -unifdef-y += irqnr.h
+ -unifdef-y += reboot.h
+ -unifdef-y += reiserfs_fs.h
+ -unifdef-y += reiserfs_xattr.h
+ -unifdef-y += route.h
+ -unifdef-y += rtc.h
+ -unifdef-y += rtnetlink.h
+ -unifdef-y += scc.h
+ -unifdef-y += sched.h
+ -unifdef-y += screen_info.h
+ -unifdef-y += sdla.h
+ -unifdef-y += securebits.h
+ -unifdef-y += selinux_netlink.h
+ -unifdef-y += sem.h
+ -unifdef-y += serial_core.h
+ -unifdef-y += serial.h
+ -unifdef-y += serio.h
+ -unifdef-y += shm.h
+ -unifdef-y += shm_signal.h
+ -unifdef-y += signal.h
+ -unifdef-y += smb_fs.h
+ -unifdef-y += smb.h
+ -unifdef-y += smb_mount.h
+ -unifdef-y += socket.h
+ -unifdef-y += sonet.h
+ -unifdef-y += sonypi.h
+ -unifdef-y += soundcard.h
+ -unifdef-y += stat.h
+ -unifdef-y += stddef.h
+ -unifdef-y += string.h
+ -unifdef-y += swab.h
+ -unifdef-y += synclink.h
+ -unifdef-y += sysctl.h
+ -unifdef-y += tcp.h
+ -unifdef-y += time.h
+ -unifdef-y += timex.h
+ -unifdef-y += tty.h
+ -unifdef-y += types.h
+ -unifdef-y += udp.h
+ -unifdef-y += uinput.h
+ -unifdef-y += uio.h
+ -unifdef-y += unistd.h
+ -unifdef-y += usbdevice_fs.h
+ -unifdef-y += utsname.h
+ -unifdef-y += vhost.h
+ -unifdef-y += vbus_pci.h
+ -unifdef-y += venet.h
+ -unifdef-y += videodev2.h
+ -unifdef-y += videodev.h
+ -unifdef-y += virtio_config.h
+ -unifdef-y += virtio_ids.h
+ -unifdef-y += virtio_blk.h
+ -unifdef-y += virtio_net.h
+ -unifdef-y += virtio_9p.h
+ -unifdef-y += virtio_balloon.h
+ -unifdef-y += virtio_console.h
+ -unifdef-y += virtio_pci.h
+ -unifdef-y += virtio_ring.h
+ -unifdef-y += virtio_rng.h
+ -unifdef-y += vt.h
+ -unifdef-y += wait.h
+ -unifdef-y += wanrouter.h
+ -unifdef-y += watchdog.h
+ -unifdef-y += wireless.h
+ -unifdef-y += xattr.h
+ -unifdef-y += xfrm.h
+ -
+ -objhdr-y += version.h
+ +header-y += vhost.h
+++header-y += vbus_pci.h
+++header-y += venet.h
+ +header-y += videodev.h
+ +header-y += videodev2.h
+ +header-y += virtio_9p.h
+ +header-y += virtio_balloon.h
+ +header-y += virtio_blk.h
+ +header-y += virtio_config.h
+ +header-y += virtio_console.h
+ +header-y += virtio_ids.h
+ +header-y += virtio_net.h
+ +header-y += virtio_pci.h
+ +header-y += virtio_ring.h
+ +header-y += virtio_rng.h
+ +header-y += vt.h
+ +header-y += wait.h
+ +header-y += wanrouter.h
+ +header-y += watchdog.h
+  header-y += wimax.h
+ -header-y += wimax/
+ +header-y += wireless.h
+ +header-y += x25.h
+ +header-y += xattr.h
+ +header-y += xfrm.h
