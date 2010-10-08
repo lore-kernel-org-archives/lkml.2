@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753188Ab0JHFWf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 01:22:35 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:44437 "EHLO
+	id S1753321Ab0JHFWi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 01:22:38 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:47974 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752865Ab0JHFWW (ORCPT
+	with ESMTP id S1752979Ab0JHFWc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 01:22:22 -0400
+	Fri, 8 Oct 2010 01:22:32 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 15/18] fs: introduce a per-cpu last_ino allocator
-Date: Fri,  8 Oct 2010 16:21:29 +1100
-Message-Id: <1286515292-15882-16-git-send-email-david@fromorbit.com>
+Subject: [PATCH 16/18] fs: Make iunique independent of inode_lock
+Date: Fri,  8 Oct 2010 16:21:30 +1100
+Message-Id: <1286515292-15882-17-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286515292-15882-1-git-send-email-david@fromorbit.com>
 References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
@@ -20,94 +20,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
+From: Nick Piggin <npiggin@suse.de>
 
-new_inode() dirties a contended cache line to get increasing
-inode numbers. This limits performance on workloads that cause
-significant parallel inode allocation.
+Before removing the inode_lock, the iunique counter needs to be made
+independent of the inode_lock. Add a new lock to protect the iunique
+counter and nest it inside the inode_lock to provide the same
+protection that the inode_lock currently provides.
 
-Solve this problem by using a per_cpu variable fed by the shared
-last_ino in batches of 1024 allocations.  This reduces contention on
-the shared last_ino, and give same spreading ino numbers than before
-(i.e. same wraparound after 2^32 allocations).
-
-Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
 Signed-off-by: Nick Piggin <npiggin@suse.de>
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
- fs/inode.c |   45 ++++++++++++++++++++++++++++++++++++++-------
- 1 files changed, 38 insertions(+), 7 deletions(-)
+ fs/inode.c |   33 ++++++++++++++++++++++++++++-----
+ 1 files changed, 28 insertions(+), 5 deletions(-)
 
 diff --git a/fs/inode.c b/fs/inode.c
-index d3bd08a..13e1325 100644
+index 13e1325..4ec360e 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -870,6 +870,43 @@ void inode_add_to_lists(struct super_block *sb, struct inode *inode)
+@@ -1070,6 +1070,30 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+ 	return inode;
  }
- EXPORT_SYMBOL_GPL(inode_add_to_lists);
  
 +/*
-+ * Each cpu owns a range of LAST_INO_BATCH numbers.
-+ * 'shared_last_ino' is dirtied only once out of LAST_INO_BATCH allocations,
-+ * to renew the exhausted range.
++ * search the inode cache for a matching inode number.
++ * If we find one, then the inode number we are trying to
++ * allocate is not unique and so we should not use it.
 + *
-+ * This does not significantly increase overflow rate because every CPU can
-+ * consume at most LAST_INO_BATCH-1 unused inode numbers. So there is
-+ * NR_CPUS*(LAST_INO_BATCH-1) wastage. At 4096 and 1024, this is ~0.1% of the
-+ * 2^32 range, and is a worst-case. Even a 50% wastage would only increase
-+ * overflow rate by 2x, which does not seem too significant.
-+ *
-+ * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
-+ * error if st_ino won't fit in target struct field. Use 32bit counter
-+ * here to attempt to avoid that.
++ * Returns 1 if the inode number is unique, 0 if it is not.
 + */
-+#define LAST_INO_BATCH 1024
-+static DEFINE_PER_CPU(unsigned int, last_ino);
-+
-+static unsigned int last_ino_get(void)
++static int test_inode_iunique(struct super_block * sb, unsigned long ino)
 +{
-+	unsigned int *p = &get_cpu_var(last_ino);
-+	unsigned int res = *p;
++	struct inode_hash_bucket *b = inode_hashtable + hash(sb, ino);
++	struct hlist_bl_node *node;
++	struct inode *inode;
 +
-+#ifdef CONFIG_SMP
-+	if (unlikely((res & (LAST_INO_BATCH-1)) == 0)) {
-+		static atomic_t shared_last_ino;
-+		int next = atomic_add_return(LAST_INO_BATCH, &shared_last_ino);
-+
-+		res = next - LAST_INO_BATCH;
++	spin_lock_bucket(b);
++	hlist_bl_for_each_entry(inode, node, &b->head, i_hash) {
++		if (inode->i_ino == ino && inode->i_sb == sb) {
++			spin_unlock_bucket(b);
++			return 0;
++		}
 +	}
-+#endif
-+
-+	*p = ++res;
-+	put_cpu_var(last_ino);
-+	return res;
++	spin_unlock_bucket(b);
++	return 1;
 +}
 +
  /**
-  *	new_inode 	- obtain an inode
+  *	iunique - get a unique inode number
   *	@sb: superblock
-@@ -884,12 +921,6 @@ EXPORT_SYMBOL_GPL(inode_add_to_lists);
-  */
- struct inode *new_inode(struct super_block *sb)
- {
--	/*
--	 * On a 32bit, non LFS stat() call, glibc will generate an EOVERFLOW
--	 * error if st_ino won't fit in target struct field. Use 32bit counter
--	 * here to attempt to avoid that.
--	 */
--	static unsigned int last_ino;
- 	struct inode *inode;
+@@ -1091,19 +1115,18 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
+ 	 * error if st_ino won't fit in target struct field. Use 32bit counter
+ 	 * here to attempt to avoid that.
+ 	 */
++	static DEFINE_SPINLOCK(unique_lock);
+ 	static unsigned int counter;
+-	struct inode *inode;
+-	struct inode_hash_bucket *b;
+ 	ino_t res;
  
- 	spin_lock_prefetch(&inode_lock);
-@@ -897,7 +928,7 @@ struct inode *new_inode(struct super_block *sb)
- 	inode = alloc_inode(sb);
- 	if (inode) {
- 		spin_lock(&inode_lock);
--		inode->i_ino = ++last_ino;
-+		inode->i_ino = last_ino_get();
- 		inode->i_state = 0;
- 		__inode_add_to_lists(sb, NULL, inode);
- 		spin_unlock(&inode_lock);
+ 	spin_lock(&inode_lock);
++	spin_lock(&unique_lock);
+ 	do {
+ 		if (counter <= max_reserved)
+ 			counter = max_reserved + 1;
+ 		res = counter++;
+-		b = inode_hashtable + hash(sb, res);
+-		inode = find_inode_fast(sb, b, res);
+-	} while (inode != NULL);
++	} while (!test_inode_iunique(sb, res));
++	spin_unlock(&unique_lock);
+ 	spin_unlock(&inode_lock);
+ 
+ 	return res;
 -- 
 1.7.1
 
