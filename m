@@ -1,86 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756709Ab0JHJ0I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 05:26:08 -0400
-Received: from cache.dhh-3.de ([62.89.186.8]:59924 "EHLO
-	mx01.instandbesetzt.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754788Ab0JHJ0F (ORCPT
+	id S1756588Ab0JHJ2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 05:28:12 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46389 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab0JHJ2K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 05:26:05 -0400
-Date: Fri, 8 Oct 2010 11:26:01 +0200
-From: Andreas Wiese <aw-lkml@meterriblecrew.net>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Ciaran McCreesh <ciaran.mccreesh@googlemail.com>, xfs@oss.sgi.com
-Subject: Re: fallocate() on XFS clobbers S*ID-bits
-Message-ID: <20101008092600.GA12718@incendiary.meterriblecrew.net>
-References: <20101007183418.GC5621@incendiary.meterriblecrew.net>
- <20101007232451.GO4681@dastard>
+	Fri, 8 Oct 2010 05:28:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lSB7vgeW44dWHGa8Jvcr+CXGXWrqkI1DjJ7dRGt352kIbuREcigc2AtfBRLnRXWqz7
+         Hl7GzwQ5JDQFa6zkgMbGUYhCnqFV2B3O1781LaS9ShtX9ngI/CzIJJD/8ZaTqfiYB4Gq
+         Nc5/pGQ1uDFeSUUs83kRD1+bvG71JDmBTJXK0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101007232451.GO4681@dastard>
-X-GPG-Key-ID: 0x08709798 (2048/4096bit RSA/RSA)
-X-GPG-Fingerprint: F8F1 7E3C 2C24 5189 FC21  61E9 1F99 AEB4 0870 9798
-X-Jabber-ID: aw@instandbesetzt.net (w/ GPG)
-X-Home: https://www.instandbesetzt.net/
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101008092427.GA5426@lst.de>
+References: <20101006083150.GA15758@zhongling>
+	<201010071431.14937.phillips@phunq.net>
+	<20101008082231.GA2054@lst.de>
+	<AANLkTim9KFuP1_mrUUsMOEspxkfA=SZW2dmTX4WJbfep@mail.gmail.com>
+	<20101008092427.GA5426@lst.de>
+Date: Fri, 8 Oct 2010 17:28:09 +0800
+Message-ID: <AANLkTikK1wiKiCN2N+YdUHtT5XiZx999yePrOO01pHTn@mail.gmail.com>
+Subject: Re: introduce dm-snap-mv
+From: McPacino <mcpacino@gmail.com>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Daniel Phillips <phillips@phunq.net>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dm-devel@redhat.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexander Viro <viro@zeniv.linux.org.uk>,
+        Nick Piggin <npiggin@kernel.dk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
-> [ added xfs list on cc ]
-> 
+Thank you very very much...
 
-Thanks. ;)
 
-> On Thu, Oct 07, 2010 at 08:34:19PM +0200, Andreas Wiese wrote:
-> > Hello.
-> > 
-> > I (with support from Cc'ed Ciaran) just noticed some odd behaviour with
-> > fallocate() on XFS.  After open()ing some file and setting it S*ID via
-> > fchmod(), S*ID bits vanish after calling fallocate() — as supposed to
-> > for non-root users, but it also happens for root.
-> > 
-> > Is this intended behaviour or did we spot a bug here?
-> > 
-> > At least on ext2 it works as expected, thus I guess it's the latter one.
-> 
-> ext2 does not support the fallocate syscall. How does ext4 behave?
-> 
-
-Oh, crap.  I first tested on tmpfs (which doesn't support fallocate,
-too) and had a » && errno != ENOTSUP« to avoid bailing out but forgot to
-warn. :/
-
-But I did now and ext4 does _not_ touch the permissions any further.
-
-> > I'm running v2.6.35.7 vanilla-kernel, but diffing fs/xfs to master
-> > doesn't seem to address this issue.
-> 
-> XFS has always cleared SUID/SGID bits when doing preallocation (via
-> XFS_IOC_RESVSP). Given that that XFS ioctl formed the model for
-> fallocate, I'd argue that the XFS behaviour is the on that should be
-> followed.
-> 
-
-If that's consense, we at least found a bug in ext4…
-
-> It'd be a bit silly for two different preallocation interfaces to
-> have different behaviour w.r.t. SUID bits, but it's not clear to me
-> which behaviour is correct. I'm happy to defer to whoever can say
-> what the behaviour is supposed to be here...
-> 
-
-I would appreciate that, too.
-
-And while on it… just tested BTRFS, which behaves like ext4 (not
-altering permissions).  CIFS and OCFS are not testable here due to lack
-of according servers.
-
-[snip…]
-
-HAND & LG -- aw
-np: Johnossi (Johnossi) — 08. Happiness a La Mode
+On Fri, Oct 8, 2010 at 5:24 PM, Christoph Hellwig <hch@lst.de> wrote:
+> On Fri, Oct 08, 2010 at 05:14:27PM +0800, McPacino wrote:
+>> Hi Christoph,
+>>
+>> I have to take care the cache problem If using the bio directly.
+>> BHs can be released by kernel when necessary.
+>>
+>> Is there any existing code using bio to read/write metadata
+>> blocks? How do they handle the timing freeing bios? I really
+>> wish to learn something form it.
+>
+> If you actually need caching just use the pagecache, e.g.
+> read_mapping_page to read in your data. �That completely abstracts
+> away the underlying block size.
+>
+>
