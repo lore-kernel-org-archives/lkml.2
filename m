@@ -1,92 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab0JHG5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 02:57:09 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:40979 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752014Ab0JHG5I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 02:57:08 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19dfp42VCxd0szEu1Kia6MIEVKys53RDQz+BvdTGF
-	0b60hLxrggTbx7
-Subject: Re: [PATCH 2/2] sched: use the old min_vruntime when normalizing
- on dequeue
-From: Mike Galbraith <efault@gmx.de>
-To: Dima Zavin <dima@android.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-In-Reply-To: <AANLkTimR3pmxNF5TLTyEHZjPTrQeLrTB+HLsj-X6jPRx@mail.gmail.com>
-References: <1285742774-5013-1-git-send-email-dima@android.com>
-	 <1285742774-5013-2-git-send-email-dima@android.com>
-	 <AANLkTimR3pmxNF5TLTyEHZjPTrQeLrTB+HLsj-X6jPRx@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 08:57:03 +0200
-Message-Id: <1286521023.8189.0.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1753266Ab0JHG7H (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 02:59:07 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54033 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752277Ab0JHG7E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 02:59:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=BYB5Eo1vGGg5sUdIb9ASl6i9NIPlZS43bzFBOfBzACopE1XBmVTHcrCaaJ7Gd5zILK
+         7reyZ2pn+kRfhkdOdUdiGm0zTFCX0oJ6dr3iiAvth5LwfOf6a//EghjAv3qb0RJw6aOV
+         4XtBnl2kQW6cjdvj+enfdAEtMEzSb6+XAIg4o=
+Message-ID: <4CAEC133.3030900@gmail.com>
+Date: Fri, 08 Oct 2010 08:58:59 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Valdis.Kletnieks@vt.edu
+CC: linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
+        linux-kbuild@vger.kernel.org
+Subject: make oldconfig warnings [was: mmotm 2010-10-07-14-08 uploaded]
+References: <201010072140.o97Le69i025659@imap1.linux-foundation.org> <37921.1286489353@localhost>
+In-Reply-To: <37921.1286489353@localhost>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-07 at 14:00 -0700, Dima Zavin wrote: 
-> Mike,
+Ccing linux-kbuild
+
+On 10/08/2010 12:09 AM, Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 07 Oct 2010 14:08:45 PDT, akpm@linux-foundation.org said:
+>> The mm-of-the-moment snapshot 2010-10-07-14-08 has been uploaded to
+>>
+>>    http://userweb.kernel.org/~akpm/mmotm/
 > 
-> Thanks for the Ack for patch 1/2, could you take a look at this one too?
+> 'make oldconfig' splatted this at the very end:
+> 
+>   NCP file system support (to mount NetWare volumes) (NCP_FS) [N/m/y/?] n
+>   Coda file system support (advanced network fs) (CODA_FS) [N/m/y/?] n
+>   Andrew File System support (AFS) (EXPERIMENTAL) (AFS_FS) [N/m/y/?] n
+> warning: (IEEE1394_PCILYNX && (PCI || BROKEN) && PCI && IEEE1394 && I2C || SFC && NETDEVICES && NETDEV_10000 && PCI && INET || I2C_VIA && I2C && PCI && EXPERIMENTAL || I2C_HYDRA && I2C && PCI && PPC_CHRP && EXPERIMENTAL || I2C_GPIO && I2C && GENERIC_GPIO || I2C_IXP2000 && I2C && ARCH_IXP2000 || I2C_SIMTEC && I2C || I2C_VERSATILE && I2C && (ARCH_VERSATILE || ARCH_REALVIEW || ARCH_VEXPRESS) || I2C_PARPORT && I2C && PARPORT || I2C_PARPORT_LIGHT && I2C || I2C_ACORN && I2C && ARCH_ACORN || SCx200_I2C && I2C && SCx200_GPIO || VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT && VIDEO_IR || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT && VIDEO_IR || VIDEO_CX23885 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && IR_CORE || VIDEO_AU0828 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && I2C && INPUT && DVB_CORE && USB && 
+V!
+>  IDEO_V4L2 || VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR || VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT && VIDEO_IR || VIDEO_SAA7164 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && PCI && I2C || DVB_PLUTO2 && MEDIA_SUPPORT && DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C || DRM && HAS_IOMEM && (AGP || AGP=n) && !EMULATED_CMPXCHG && MMU || FB_DDC && HAS_IOMEM && FB || FB_VIA && HAS_IOMEM && FB && PCI && X86 || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects I2C_ALGOBIT which has unmet direct dependencies (I2C && !I2C_HELPER_AUTO)
+> warning: (NETFILTER_XT_MATCH_REALM && NET && INET && NETFILTER && NETFILTER_XTABLES && NETFILTER_ADVANCED || NET_CLS_ROUTE4 && NET && NET_SCHED) selects NET_CLS_ROUTE which has unmet direct dependencies (NET && NET_SCHED)
 
-Ok, did that.  I'd do it like below instead.
+I have ton of them after doing oldconfig on my allmodconfig setup too:
 
-> Should I re-upload the series as v2 or you can pick the latest from
-> patch 1 and take this one?
+warning: (IEEE1394_PCILYNX && (PCI || BROKEN) && PCI && IEEE1394 && I2C
+|| SFC && NETDEVICES && NETDEV_10000 && PCI && INET || I2C_VIA && I2C &&
+PCI && EXPERIMENTAL || I2C_HYDRA && I2C && PCI && PPC_CHRP &&
+EXPERIMENTAL || I2C_GPIO && I2C && GENERIC_GPIO || I2C_IXP2000 && I2C &&
+ARCH_IXP2000 || I2C_SIMTEC && I2C || I2C_VERSATILE && I2C &&
+(ARCH_VERSATILE || ARCH_REALVIEW || ARCH_VEXPRESS) || I2C_PARPORT && I2C
+&& PARPORT || I2C_PARPORT_LIGHT && I2C || I2C_ACORN && I2C && ARCH_ACORN
+|| SCx200_I2C && I2C && SCx200_GPIO || VIDEO_BT848 && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT
+&& VIDEO_IR || VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT && VIDEO_IR ||
+VIDEO_CX23885 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && IR_CORE || VIDEO_AU0828
+&& MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && I2C && INPUT && DVB_CORE &&
+USB && VIDEO_V4L2 || VIDEO_IVTV && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR
+|| VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT && VIDEO_IR ||
+VIDEO_SAA7164 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+DVB_CORE && PCI && I2C || DVB_PLUTO2 && MEDIA_SUPPORT &&
+DVB_CAPTURE_DRIVERS && DVB_CORE && PCI && I2C || DRM && HAS_IOMEM &&
+(AGP || AGP=n) && !EMULATED_CMPXCHG && MMU || FB_DDC && HAS_IOMEM && FB
+|| FB_VIA && HAS_IOMEM && FB && PCI && X86 || VIDEO_CX25821 && STAGING
+&& !STAGING_EXCLUDE_BUILD && DVB_CORE && VIDEO_DEV && PCI && I2C &&
+INPUT && BKL) selects I2C_ALGOBIT which has unmet direct dependencies
+(I2C && !I2C_HELPER_AUTO)
+warning: (I2C_PCA_PLATFORM && I2C || I2C_PCA_ISA && I2C && ISA) selects
+I2C_ALGOPCA which has unmet direct dependencies (I2C && !I2C_HELPER_AUTO)
+warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT && VIDEO_IR &&
+VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TVAUDIO which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT && VIDEO_IR &&
+VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TDA7432 which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_MXB && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && PCI &&
+VIDEO_V4L2 && I2C && VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TDA9840
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && !VIDEO_HELPER_CHIPS_AUTO && I2C)
+warning: (VIDEO_MXB && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && PCI &&
+VIDEO_V4L2 && I2C && VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TEA6415C
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && !VIDEO_HELPER_CHIPS_AUTO && I2C)
+warning: (VIDEO_MXB && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && PCI &&
+VIDEO_V4L2 && I2C && VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TEA6420
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && !VIDEO_HELPER_CHIPS_AUTO && I2C)
+warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT && VIDEO_IR &&
+VIDEO_HELPER_CHIPS_AUTO || VIDEO_IVTV && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR
+|| VIDEO_PVRUSB2 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+V4L_USB_DRIVERS && USB && VIDEO_V4L2 && I2C && VIDEO_MEDIA ||
+VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT && VIDEO_IR &&
+VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_MSP3400 which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT &&
+VIDEO_IR) selects VIDEO_CS5345 which has unmet direct dependencies
+(MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO &&
+VIDEO_V4L2 && I2C)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR || VIDEO_PVRUSB2 &&
+MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && V4L_USB_DRIVERS && USB &&
+VIDEO_V4L2 && I2C && VIDEO_MEDIA) selects VIDEO_CS53L32A which has unmet
+direct dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR) selects VIDEO_M52790
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_CX88 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT && VIDEO_IR &&
+VIDEO_HELPER_CHIPS_AUTO || VIDEO_IVTV && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR
+|| VIDEO_PVRUSB2 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+V4L_USB_DRIVERS && USB && VIDEO_V4L2 && I2C && VIDEO_MEDIA) selects
+VIDEO_WM8775 which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR) selects VIDEO_WM8739
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR) selects VIDEO_VP27SMPX
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_BT848 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_DEV && PCI && I2C && VIDEO_V4L2 && INPUT && VIDEO_IR &&
+VIDEO_HELPER_CHIPS_AUTO || VIDEO_SAA7134 && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && VIDEO_DEV && PCI && I2C && INPUT
+&& VIDEO_IR && VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_SAA6588 which has
+unmet direct dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_LML33 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO) selects
+VIDEO_BT819 which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_LML33 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO ||
+VIDEO_ZORAN_AVS6EYES && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && EXPERIMENTAL &&
+VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_BT856 which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_AVS6EYES && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS
+&& VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && EXPERIMENTAL &&
+VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_BT866 which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_AVS6EYES && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS
+&& VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && EXPERIMENTAL &&
+VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_KS0127 which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_CAFE_CCIC && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+PCI && I2C && VIDEO_V4L2) selects VIDEO_OV7670 which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && I2C && VIDEO_V4L2)
+warning: (VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT &&
+VIDEO_IR && VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_MT9V011 which has
+unmet direct dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && I2C && VIDEO_V4L2)
+warning: (VIDEO_ZORAN_DC10 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO) selects
+VIDEO_SAA7110 which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_BUZ && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO ||
+VIDEO_ZORAN_LML33R10 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO ||
+VIDEO_MXB && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && PCI && VIDEO_V4L2
+&& I2C && VIDEO_HELPER_CHIPS_AUTO || VIDEO_IVTV && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR
+|| VIDEO_PVRUSB2 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+V4L_USB_DRIVERS && USB && VIDEO_V4L2 && I2C && VIDEO_MEDIA ||
+VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT && VIDEO_IR &&
+VIDEO_HELPER_CHIPS_AUTO || VIDEO_USBVISION && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && V4L_USB_DRIVERS && USB && I2C && VIDEO_V4L2 &&
+VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_SAA711X which has unmet direct
+dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR) selects VIDEO_SAA717X
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_EM28XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT &&
+VIDEO_IR && VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_TVP5150 which has
+unmet direct dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_DC30 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN && VIDEO_HELPER_CHIPS_AUTO) selects
+VIDEO_VPX3220 which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_CX23885 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && IR_CORE ||
+VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+PCI && I2C && INPUT && VIDEO_IR || VIDEO_PVRUSB2 && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && V4L_USB_DRIVERS && USB && VIDEO_V4L2 && I2C &&
+VIDEO_MEDIA || VIDEO_CX231XX && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS
+&& VIDEO_V4L2 && V4L_USB_DRIVERS && USB && VIDEO_DEV && I2C && INPUT &&
+VIDEO_IR || VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD &&
+DVB_CORE && VIDEO_DEV && PCI && I2C && INPUT && BKL) selects
+VIDEO_CX25840 which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_CX88_BLACKBIRD && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS
+&& VIDEO_V4L2 && VIDEO_CX88 || VIDEO_CX23885 && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && DVB_CORE && VIDEO_DEV && PCI &&
+I2C && INPUT && IR_CORE || VIDEO_IVTV && MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR
+|| VIDEO_CX18 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+DVB_CORE && PCI && I2C && EXPERIMENTAL && INPUT && VIDEO_IR ||
+VIDEO_PVRUSB2 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+V4L_USB_DRIVERS && USB && VIDEO_V4L2 && I2C && VIDEO_MEDIA ||
+VIDEO_CX25821 && STAGING && !STAGING_EXCLUDE_BUILD && DVB_CORE &&
+VIDEO_DEV && PCI && I2C && INPUT && BKL) selects VIDEO_CX2341X which has
+unmet direct dependencies (MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+!VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && VIDEO_V4L2_COMMON)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR) selects VIDEO_SAA7127
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_BUZ && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO) selects
+VIDEO_SAA7185 which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_LML33R10 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS
+&& VIDEO_V4L2 && VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO) selects
+VIDEO_ADV7170 which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_ZORAN_DC30 && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && VIDEO_ZORAN && VIDEO_HELPER_CHIPS_AUTO || VIDEO_ZORAN_DC10
+&& MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS && VIDEO_V4L2 &&
+VIDEO_ZORAN_ZR36060 && VIDEO_HELPER_CHIPS_AUTO) selects VIDEO_ADV7175
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR) selects VIDEO_UPD64031A
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
+warning: (VIDEO_IVTV && MEDIA_SUPPORT && VIDEO_CAPTURE_DRIVERS &&
+VIDEO_V4L2 && PCI && I2C && INPUT && VIDEO_IR) selects VIDEO_UPD64083
+which has unmet direct dependencies (MEDIA_SUPPORT &&
+VIDEO_CAPTURE_DRIVERS && !VIDEO_HELPER_CHIPS_AUTO && VIDEO_V4L2 && I2C)
 
-Peter's the merge point, I just help break stuff ;-)
+> Haven't had a chance to research it yet.
 
-I tested the below with pinned/unpinned mixes of sleepers and hogs, and
-saw no ill effects.  My thought on the logic is embedded in the comment.
+Neither me had.
 
-From: Dima Zavin <dima@android.com>
-Subject: [PATCH 2/2] sched: use the old min_vruntime when normalizing on dequeue
-Date: Tue, 28 Sep 2010 23:46:14 -0700
-
-After pulling the thread off the run-queue during a cgroup change,
-the cfs_rq.min_vruntime gets recalculated. The dequeued thread's vruntime
-then gets normalized to this new value. This can then lead to the thread
-getting an unfair boost in the new group if the vruntime of the next
-task in the old run-queue was way further ahead.
-
-Cc: Arve Hjønnevåg <arve@android.com>
-Signed-off-by: Dima Zavin <dima@android.com>
----
- kernel/sched_fair.c |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/kernel/sched_fair.c
-===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -826,15 +826,17 @@ dequeue_entity(struct cfs_rq *cfs_rq, st
- 	if (se != cfs_rq->curr)
- 		__dequeue_entity(cfs_rq, se);
- 	account_entity_dequeue(cfs_rq, se);
--	update_min_vruntime(cfs_rq);
- 
- 	/*
--	 * Normalize the entity after updating the min_vruntime because the
--	 * update can refer to the ->curr item and we need to reflect this
--	 * movement in our normalized position.
-+	 * Normalize vruntime prior to updating min_vruntime.  Any motion
-+	 * referring to ->curr will have been captured by update_curr() above.
-+	 * We don't want to preserve what lag might become as a result of
-+	 * this dequeue, we want to preserve what lag is at dequeue time.
- 	 */
- 	if (!(flags & DEQUEUE_SLEEP))
- 		se->vruntime -= cfs_rq->min_vruntime;
-+
-+	update_min_vruntime(cfs_rq);
- }
- 
- /*
-
-
+regards,
+-- 
+js
