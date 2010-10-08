@@ -1,84 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754031Ab0JHHTe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:19:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37304 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752743Ab0JHHTd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:19:33 -0400
-Date: Fri, 8 Oct 2010 07:18:57 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, balbi@ti.com, khilman@deeprootsystems.com,
-        tomi.valkeinen@nokia.com, notasas@gmail.com, benh@kernel.crashing.org,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, balbi@ti.com, khilman@deeprootsystems.com,
-        tomi.valkeinen@nokia.com, notasas@gmail.com, benh@kernel.crashing.org,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4CABFADA.9020305@kernel.org>
-References: <4CABFADA.9020305@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/memblock] memblock/arm: Fix memblock_region_is_memory() typo
-Message-ID: <tip-5fd03ddab7fdbc44bfb2d183a4531c26a8dbca5a@git.kernel.org>
-Git-Commit-ID: 5fd03ddab7fdbc44bfb2d183a4531c26a8dbca5a
-X-Mailer: tip-git-log-daemon
+	id S1754082Ab0JHHUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:20:53 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:54863 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753111Ab0JHHUw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 03:20:52 -0400
+Date: Fri, 8 Oct 2010 03:20:51 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/18] fs: Clean up inode reference counting
+Message-ID: <20101008072051.GE23595@lst.de>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-7-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 08 Oct 2010 07:19:00 +0000 (UTC)
+In-Reply-To: <1286515292-15882-7-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  5fd03ddab7fdbc44bfb2d183a4531c26a8dbca5a
-Gitweb:     http://git.kernel.org/tip/5fd03ddab7fdbc44bfb2d183a4531c26a8dbca5a
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Tue, 5 Oct 2010 21:28:10 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 8 Oct 2010 09:14:36 +0200
+On Fri, Oct 08, 2010 at 04:21:20PM +1100, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> Lots of filesystem code open codes the act of getting a reference to
+> an inode.  Factor the open coded inode lock, increment, unlock into
+> a function iref().  Then rename __iget to iref_locked so that nothing
+> is directly incrementing the inode reference count for trivial
+> operations.
+> 
+> Originally based on a patch from Nick Piggin.
 
-memblock/arm: Fix memblock_region_is_memory() typo
+> +++ b/fs/anon_inodes.c
+> @@ -111,10 +111,9 @@ struct file *anon_inode_getfile(const char *name,
+>  	path.mnt = mntget(anon_inode_mnt);
+>  	/*
+>  	 * We know the anon_inode inode count is always greater than zero,
+> -	 * so we can avoid doing an igrab() and we can use an open-coded
+> -	 * atomic_inc().
+> +	 * so we can avoid doing an igrab() by using iref().
 
-Fix typo in commit dbe3039 ("memblock/arm: Use memblock_region_is_memory()
-for omap fb") - it should be memblock_is_region_memory().
+I don't think there's a point keeping this comment.
 
-Reported-by: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Felipe Balbi <balbi@ti.com>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: ext Grazvydas Ignotas <notasas@gmail.com>
-LKML-Reference: <4CABFADA.9020305@kernel.org>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/arm/plat-omap/fb.c    |    2 +-
- drivers/video/omap2/vram.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> @@ -297,7 +297,7 @@ static void inode_wait_for_writeback(struct inode *inode)
+>  
+>  /*
+>   * Write out an inode's dirty pages.  Called under inode_lock.  Either the
+> - * caller has ref on the inode (either via __iget or via syscall against an fd)
+> + * caller has ref on the inode (either via iref_locked or via syscall against an fd)
 
-diff --git a/arch/arm/plat-omap/fb.c b/arch/arm/plat-omap/fb.c
-index 441af2b..7193481 100644
---- a/arch/arm/plat-omap/fb.c
-+++ b/arch/arm/plat-omap/fb.c
-@@ -173,7 +173,7 @@ static int check_fbmem_region(int region_idx, struct omapfb_mem_region *rg,
- 
- static int valid_sdram(unsigned long addr, unsigned long size)
- {
--	return memblock_region_is_memory(addr, size);
-+	return memblock_is_region_memory(addr, size);
- }
- 
- static int reserve_sdram(unsigned long addr, unsigned long size)
-diff --git a/drivers/video/omap2/vram.c b/drivers/video/omap2/vram.c
-index 34514a8..fed2a72 100644
---- a/drivers/video/omap2/vram.c
-+++ b/drivers/video/omap2/vram.c
-@@ -555,7 +555,7 @@ void __init omap_vram_reserve_sdram_memblock(void)
- 
- 	if (paddr) {
- 		if ((paddr & ~PAGE_MASK) ||
--		    !memblock_region_is_memory(paddr, size)) {
-+		    !memblock_is_region_memory(paddr, size)) {
- 			pr_err("Illegal SDRAM region for VRAM\n");
- 			return;
- 		}
+I'd say just drop the mentioning of how we got a reference to the inode,
+it's just too confusing in this context.
+
+> --- a/fs/inode.c
+> +++ b/fs/inode.c
+> @@ -313,11 +313,20 @@ static void init_once(void *foo)
+>  
+>  	inode_init_once(inode);
+>  }
+> +EXPORT_SYMBOL_GPL(iref_locked);
+
+I think the export is placed incorrectly here.
+
+> +
+> +void iref(struct inode *inode)
+> +{
+> +	spin_lock(&inode_lock);
+> +	iref_locked(inode);
+> +	spin_unlock(&inode_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(iref);
+
+
+> +void iref_locked(struct inode *inode)
+>  {
+>  	atomic_inc(&inode->i_count);
+>  }
+
+Please add a kerneldoc comment for both exported functions.
+Also what's the point of taking inode_lock in iref when the only thing
+we do is an atomic_in?  It's probably better only having iref for now
+and only introduce iref_locked once the non-atomic increment needs
+i_lock.
+
+Also any chance to get an assert under a debug option the the reference
+count really is non-zero?
+
+
