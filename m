@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab0JHUCp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 16:02:45 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:54560 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932824Ab0JHUCl (ORCPT
+	id S932903Ab0JHUGh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 16:06:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34745 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932453Ab0JHUGg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 16:02:41 -0400
-Date: Fri, 8 Oct 2010 22:02:39 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: matt mooney <mfmooney@gmail.com>
-Cc: Greg KH <greg@kroah.com>, T Dent <tdent48227@gmail.com>,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 00/33] Staging: Fixed <module-objs> to <module>-y
-Message-ID: <20101008200239.GA28912@merkur.ravnborg.org>
-References: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com> <AANLkTinynZj9bYFAyfRTF2uopmLe6Ls4YGdZPqCAJTpR@mail.gmail.com> <20101008134654.GA6600@kroah.com> <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
+	Fri, 8 Oct 2010 16:06:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gAzqr5LXz6qVLdCqCy4zqE0L2YHmMqbYZVcZtFvhdi+rg+INwllKvKbxqRsuW1z8gP
+         ThSjo2JyblbdgAE/fabw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4CAF1B90.3080703@redhat.com>
+References: <1286265215-9025-1-git-send-email-walken@google.com>
+	<1286265215-9025-3-git-send-email-walken@google.com>
+	<4CAB628D.3030205@redhat.com>
+	<AANLkTimdACZ9Xm01DM2+E64+T5XfLffrkFBhf7CJ286p@mail.gmail.com>
+	<20101008043956.GA25662@google.com>
+	<4CAF1B90.3080703@redhat.com>
+Date: Fri, 8 Oct 2010 13:06:18 -0700
+Message-ID: <AANLkTinWxTT=+m_fAudc080OUMwacSefnMbSMBFZgPMH@mail.gmail.com>
+Subject: Re: [PATCH 2/3] Retry page fault when blocking on disk transfer.
+From: Michel Lespinasse <walken@google.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
+        Ying Han <yinghan@google.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Nick Piggin <npiggin@kernel.dk>, Peter Zijlstra <peterz@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 11:09:11AM -0700, matt mooney wrote:
-> On Fri, Oct 8, 2010 at 6:46 AM, Greg KH <greg@kroah.com> wrote:
-> > On Fri, Oct 08, 2010 at 12:16:35AM -0700, matt mooney wrote:
-> >> On Thu, Oct 7, 2010 at 6:35 PM, T Dent <tdent48227@gmail.com> wrote:
-> >> > I patch against the next-20101006 tree.
-> >> >
-> >> > The patch series replace use of <module>-objs with <module>-y in the
-> >> > staging directory.
-> >>
-> >> Commit messages are written in the present tense. You happen to be
-> >> using two different tenses within the commit message, which is truly
-> >> odd.  And why did you not split apart those atrocious statements with
-> >> the infinite column width?
-> >
-> > As Dan said, we understand what is happening here, and we do not have
-> > grammer police for changelog comments, thank goodness.
-> >
-> >> This patch series adds little benefit.  As Sam has suggested, a more
-> >> general cleanup would be a better goal, and staging is an area that
-> >> needs extra attention some of which has already been pointed out in
-> >> other emails.
-> >
-> > But these patches are all good to have, so I will be applying them,
-> > please don't think they are unwanted at all.
-> >
-> 
-> This is good to know. I wonder how well received these changes will be
-> in other parts of the kernel though. I purposefully started in a
-> subsystem you maintain since I figured any criticism from you would be
-> constructive and you wouldn't just knack without reason.
+On Fri, Oct 8, 2010 at 6:24 AM, Rik van Riel <riel@redhat.com> wrote:
+>> +static inline int lock_page_or_retry(struct page *page, struct mm_struct
+>> *mm,
+>> +                                    unsigned int flags)
+>> +{
+>> +       if (trylock_page(page))
+>> +               return 1;
+>> +       if (!(flags&  FAULT_FLAG_ALLOW_RETRY)) {
+>> +               __lock_page(page);
+>> +               return 1;
+>> +       }
+>> +
+>> +       up_read(&mm->mmap_sem);
+>> +       wait_on_page_locked(page);
+>> +       return 0;
+>> +}
+>
+> Wait a moment.  Your other patch 2/3 also has a
+> lock_page_or_retry function.  That one is in
+> filemap.c and takes slightly different arguments,
+> to do essentially the same thing...
+>
+> +/*
+> + * Lock the page, unless this would block and the caller indicated that it
+> + * can handle a retry.
+> + */
+> +static int lock_page_or_retry(struct page *page,
+> +                             struct vm_area_struct *vma, struct vm_fault
+> *vmf)
+> +{
+>
+> Is there a way the two functions can be merged
+> into one?
 
-In staging it is OK with small very janitorial patches - at
-least I see lots of these applied there.
-But in the world outside staging most maintainers would expect
-you to do a full update if you decide to clean up their Makefile.
-If the updates are bigger then split it up.
+Yes, this would be easy to do.
 
-But for trivial updates batch the Makefiles.
+The argument against it would be loss of inlining and, in the filemap
+version, the need to reference vma and vmf fields to find out the mm
+and flags values. We'd like to avoid doing that at least in the fast
+path when trylock_page succeeds - though, now that I think about it,
+both could be avoided with an inline function in a header returning
+trylock_page(page) || _lock_page_or_retry(mm, flags)
 
-If you final patches end up:
-1) Making the files more readable, and more standard looking
-2) and do not add a lot of lines
+Hmmm, this is actually quite similar to how other functions in
+pagemap.h / filemap.c are done...
+I'll send an updated series using this suggestion.
 
-then you will likely see that most maintainers will accept it.
-
-But you also have to convince tham that you did a proper job
-testing your changes.
-
-A good test on Makefile cleanup is that nothing should rebuild
-due to the patch being applied. This simple test have saved me
-from a few brown papaer bag bugs in the past.
-
-	Sam
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
