@@ -1,105 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932236Ab0JHQUi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:20:38 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52872 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753378Ab0JHQUh (ORCPT
+	id S1756631Ab0JHQ2M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:28:12 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42335 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753264Ab0JHQ2L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:20:37 -0400
+	Fri, 8 Oct 2010 12:28:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=wPm07N0qrRVjcsOUcLFBNMFo0QXfj6jAoxwyx2AOldmMoozmMX5ucGk37/3OHTBsUC
-         tuEIrpjKNXBFvU3F+IkWnzAkPlFod12ev5OeR8PjK1YwUotLwl1qzfxz2R2fwX5ttr06
-         z19VSfOYbzWKwY9C9FpmqQl0cjECFAkDBK/Zc=
-Date: Sat, 9 Oct 2010 00:22:26 +0800
+        b=Nd1z9RQda2Lqzn82yghXWdZAJT1Aq8fR2yKAhqkkxlb7t+vrhnUjlNN+ajPVIz3Kl4
+         oWm/0EpfnJexKJENoUv6ej7bqHIVh7zjeEZMDsFhw6amKsS9ZsiBZ3sxidMsCzuQipgn
+         5FUWMGmy+xMWD8lBMpWPZJKyI2jsdsNqG7cAU=
+Date: Sat, 9 Oct 2010 00:30:15 +0800
 From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-        Robin Holt <holt@sgi.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org, James Morris <jmorris@namei.org>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        Patrick McHardy <kaber@trash.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
-Subject: Re: [PATCH] sysctl: fix min/max handling in
-	__do_proc_doulongvec_minmax()
-Message-ID: <20101008162226.GA5724@hack>
-References: <20101004103545.GJ5189@cr0.nay.redhat.com> <1286188701.18293.57.camel@edumazet-laptop> <20101005130117.GK5170@cr0.nay.redhat.com> <20101007071859.GD5471@cr0.nay.redhat.com> <20101007092538.GE5471@cr0.nay.redhat.com> <1286445081.2912.15.camel@edumazet-laptop> <m1iq1e3qnn.fsf@fess.ebiederm.org> <1286470743.2912.276.camel@edumazet-laptop> <20101007121840.ca49e2ac.akpm@linux-foundation.org> <m1vd5d3ia9.fsf@fess.ebiederm.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>, Jiri Slaby <jirislaby@gmail.com>,
+        linux-kernel@vger.kernel.org, mm-commits@vger.kernel.org,
+        ML netdev <netdev@vger.kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: IPv4: sysctl table check failed [was: mmotm 2010-10-07-14-08
+	uploaded]
+Message-ID: <20101008163015.GB5724@hack>
+References: <201010072140.o97Le69i025659@imap1.linux-foundation.org> <4CAE4479.6010606@gmail.com> <1286490135.6536.75.camel@edumazet-laptop> <20101007152806.119d1522.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1vd5d3ia9.fsf@fess.ebiederm.org>
+In-Reply-To: <20101007152806.119d1522.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 12:38:22PM -0700, Eric W. Biederman wrote:
->Andrew Morton <akpm@linux-foundation.org> writes:
+On Thu, Oct 07, 2010 at 03:28:06PM -0700, Andrew Morton wrote:
+>On Fri, 08 Oct 2010 00:22:15 +0200
+>Eric Dumazet <eric.dumazet@gmail.com> wrote:
 >
->> On Thu, 07 Oct 2010 18:59:03 +0200
->> Eric Dumazet <eric.dumazet@gmail.com> wrote:
+>> Le vendredi 08 octobre 2010 __ 00:06 +0200, Jiri Slaby a __crit :
+>> > On 10/07/2010 11:08 PM, akpm@linux-foundation.org wrote:
+>> > > The mm-of-the-moment snapshot 2010-10-07-14-08 has been uploaded to
+>> > 
+>> > Hi, I got bunch of "sysctl table check failed" below. All seem to be
+>> > related to ipv4:
+>> 
+>> I would say, sysctl check is buggy :(
+>> 
+>> min/max are optional
+>> 
+>> [PATCH] sysctl: min/max bounds are optional
+>> 
+>> sysctl check complains when proc_doulongvec_minmax or
+>> proc_doulongvec_ms_jiffies_minmax are used by a vector of longs (with
+>> more than one element), with no min or max value specified.
+>> 
+>> This is unexpected, given we had a bug on this min/max handling :)
+>> 
+>> Reported-by: Jiri Slaby <jirislaby@gmail.com>
+>> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>> ---
+>>  kernel/sysctl_check.c |    9 ---------
+>>  1 file changed, 9 deletions(-)
+>> 
+>> diff --git a/kernel/sysctl_check.c b/kernel/sysctl_check.c
+>> index 04cdcf7..10b90d8 100644
+>> --- a/kernel/sysctl_check.c
+>> +++ b/kernel/sysctl_check.c
+>> @@ -143,15 +143,6 @@ int sysctl_check_table(struct nsproxy *namespaces, struct ctl_table *table)
+>>  				if (!table->maxlen)
+>>  					set_fail(&fail, table, "No maxlen");
+>>  			}
+>> -			if ((table->proc_handler == proc_doulongvec_minmax) ||
+>> -			    (table->proc_handler == proc_doulongvec_ms_jiffies_minmax)) {
+>> -				if (table->maxlen > sizeof (unsigned long)) {
+>> -					if (!table->extra1)
+>> -						set_fail(&fail, table, "No min");
+>> -					if (!table->extra2)
+>> -						set_fail(&fail, table, "No max");
+>> -				}
+>> -			}
+>>  #ifdef CONFIG_PROC_SYSCTL
+>>  			if (table->procname && !table->proc_handler)
+>>  				set_fail(&fail, table, "No proc_handler");
 >
->>> Thats fine by me, thanks Eric.
->>> 
->>> Andrew, please remove previous patch from your tree and replace it by
->>> following one :
->>> 
->>> [PATCH v2] sysctl: fix min/max handling in __do_proc_doulongvec_minmax()
->>> 
->>> When proc_doulongvec_minmax() is used with an array of longs,
->>> and no min/max check requested (.extra1 or .extra2 being NULL), we
->>> dereference a NULL pointer for the second element of the array.
->>> 
->>> Noticed while doing some changes in network stack for the "16TB problem"
->>> 
->>> Fix is to not change min & max pointers in
->>> __do_proc_doulongvec_minmax(), so that all elements of the vector share
->>> an unique min/max limit, like proc_dointvec_minmax().
->>> 
->>> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
->>> ---
->>>  kernel/sysctl.c |    2 +-
->>>  1 file changed, 1 insertion(+), 1 deletion(-)
->>> 
->>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
->>> index f88552c..8e45451 100644
->>> --- a/kernel/sysctl.c
->>> +++ b/kernel/sysctl.c
->>> @@ -2485,7 +2485,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
->>>  		kbuf[left] = 0;
->>>  	}
->>>  
->>> -	for (; left && vleft--; i++, min++, max++, first=0) {
->>> +	for (; left && vleft--; i++, first=0) {
->>>  		unsigned long val;
->>>  
->>>  		if (write) {
->>
->> Did we check to see whether any present callers are passing in pointers
->> to arrays of min/max values?
+>That will probably fix it ;)
+
+
+Yeah, it looks good for me too,
+
+Acked-by: WANG Cong <xiyou.wangcong@gmail.com>
+
 >
->In 2.6.36 there are not any callers that pass in a vector of anything, I
->don't know about linux-next.  It looks to me like incrementing min and
->max was simply a bug.
+>net-avoid-limits-overflow.patch is dependent on this patch.  Unless
+>Eric B squeaks I'll plan on sending this patch in for 2.6.37.
 >
 
-Agreed, I checked them too.
+Eirc B reminded me we should check the code in sysctl_check.c,
+but I forgot. The patch from Eric D is exactly what we need here.
 
->> I wonder if there's any documentation for this interface which just
->> became wrong.
->
->Or it just became right.  Clearly no one has been expecting min
->and max to be vectors.
->
+Thanks.
 
-I think we need to document this before we rewrite the code.
-
--- 
-Live like a child, think like the god.
- 
