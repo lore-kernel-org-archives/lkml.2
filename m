@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759329Ab0JHRqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 13:46:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56148 "EHLO mx2.suse.de"
+	id S932572Ab0JHRsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 13:48:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33421 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759071Ab0JHRq3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 13:46:29 -0400
-Date: Fri, 08 Oct 2010 19:46:27 +0200
-Message-ID: <s5haamo4lxo.wl%tiwai@suse.de>
+	id S1759186Ab0JHRsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 13:48:41 -0400
+Date: Fri, 08 Oct 2010 19:48:39 +0200
+Message-ID: <s5h8w284lu0.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
 To: Chase Douglas <chase.douglas@canonical.com>
 Cc: linux-input@vger.kernel.org, xorg-devel@lists.x.org,
@@ -18,10 +18,10 @@ Cc: linux-input@vger.kernel.org, xorg-devel@lists.x.org,
         Peter Hutterer <peter.hutterer@who-t.net>,
         Duncan McGreggor <duncan.mcgreggor@canonical.com>
 Subject: Re: [PATCH 0/3] Input: synaptics - multitouch and multifinger support
-In-Reply-To: <1286558135.22715.162.camel@mini>
+In-Reply-To: <s5heic04p2p.wl%tiwai@suse.de>
 References: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>
 	<s5hfwwg4p4t.wl%tiwai@suse.de>
-	<1286558135.22715.162.camel@mini>
+	<s5heic04p2p.wl%tiwai@suse.de>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -31,10 +31,12 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 08 Oct 2010 13:15:35 -0400,
-Chase Douglas wrote:
+At Fri, 08 Oct 2010 18:38:38 +0200,
+Takashi Iwai wrote:
 > 
-> On Fri, 2010-10-08 at 18:37 +0200, Takashi Iwai wrote:
+> At Fri, 08 Oct 2010 18:37:22 +0200,
+> Takashi Iwai wrote:
+> > 
 > > At Fri,  8 Oct 2010 10:57:57 -0400,
 > > Chase Douglas wrote:
 > > > 
@@ -80,60 +82,183 @@ Chase Douglas wrote:
 > > everything about it in xorg driver.  I'm going to submit xorg
 > > patches.
 > 
-> So I'm confused. I was working off of source code posted to:
-> 
-> https://bugs.launchpad.net/utouch/+bug/633225
-> 
-> I was under the impression that someone else had reverse engineered the
-> protocol and written patches. But the code is exactly the same as what
-> you've posted here. If you're the originator of the work, and my patch
-> is accepted, I think we'll need your SOB on it. Of course, if your patch
-> is accepted then the point is moot :).
+> BTW, yet another kernel patch is missing; the support of embedded LED.
+> I've posted this once, but it seems forgotten since then.  Reposted
+> below.
 
-Hm, then this was a leak, likely taken from Novell bugzilla or build
-service.  The patch was written and published once before I was
-prohibited to send to upstream, so basically it was fine to go outside
-by itself ;)
+Oh, any yet another patch, which enables multi-touch mode forcibly.
+I see a similar option in your patch, so this might be useless.
 
-> My patch essentially is a rework of yours, incorporating changes that
-> allow for the driver to work in single touch and multitouch mode
-> simultaneously. As is done in other MT drivers, one touch is picked to
-> act as the single touch emulation.
-> 
-> However, as I sit here using the touchpad and thinking some more, I'm
-> not sure how to best handle single touch emulation for synaptics. Single
-> touch emulation only really works when touches are tracked. The touches
-> from the synaptics driver are swapped whenever one touch moves and the
-> other stays stationary. I think I'm noticing some issues with the
-> following sequence of events:
-> 
-> 1. Two touches begin, triggering a DOUBLETAP key event
-> 2. X synaptics treats DOUBLETAP as scroll events
-> 3. One touch moves up, it's sent as ABS_{X,Y}, scroll performed
-> 4. The touch in motion stops
-> 5. Other touch moves up, it's now sent as ABS_{X,Y}
-> 6. X synaptics scroll behaves poorly because this new touch's X,Y are in
-> a different place from the first touch's X,Y. Scrolling seems to snap
-> back to original location
-> 
-> Certainly it's not hard to perform touch tracking when only two touches
-> are active. However, Henrik, as the MT input guru, has resisted doing in
-> kernel tracking, at least in a hackish, per-driver manner. It's why he
-> wrote mtdev in user space, for example. However, unless mtdev is
-> extended to support single touch emulation, we're kind of stuck without
-> in kernel tracking.
+But, I found that some old laptops have a little MT-support although
+they have no such capability bit.  They can detect multi-fingers but
+can't track the positions, it seems.  We'd need to add some whitelist
+for such devices.
 
-Yeah, there are lots of rooms regarding the handling of multi-touch
-touchpad.
-
-I feel that handling the touchpad in the same way as touch-screen
-isn't always wise even though they are both multi-touch, since they
-are completely different devices; the movement of the former is
-relative while the latter takes always the absolute coordinate.
-
-Anyway, I'd love to help improving things once when I'm back to work.
-
-
-thanks,
 
 Takashi
+
+---
+From: Takashi Iwai <tiwai@suse.de>
+Subject: Add multi_touch parameter to psmouse driver
+
+The multi-touch feature of Synaptics device is disabled unless this option
+is set.  Setting to 2 forces the multi-touch mode no matter whether the
+feature is detected or not.
+
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+
+---
+ drivers/input/mouse/synaptics.c |  106 +++++++++++++++++++++++++++++++---------
+ 1 file changed, 83 insertions(+), 23 deletions(-)
+
+--- a/drivers/input/mouse/synaptics.c
++++ b/drivers/input/mouse/synaptics.c
+@@ -482,10 +482,88 @@
+ }
+ 
+ #ifdef CONFIG_MOUSE_PS2_SYNAPTICS_MULTI_TOUCH
+-#define is_multi_touch(priv)	(priv)->can_multi_touch
++static int multi_touch_flag;
++
++static void setup_multi_touch(struct psmouse *psmouse, int verbose);
++
++static struct psmouse *_psmouse;
++
++static int param_set_multi_touch(const char *val, const struct kernel_param *kp)
++{
++	int mode, mode_changed;
++
++	if (!val)
++		return -EINVAL;
++	mode = simple_strtol(val, NULL, 0);
++	if (mode < 0 || mode > 2)
++		return -EINVAL;
++	mode_changed = mode != multi_touch_flag;
++	multi_touch_flag = mode;
++	if (mode_changed)
++		setup_multi_touch(_psmouse, 1);
++	return 0;
++}
++
++#define param_check_multi_touch(name, p) __param_check(name, p, int)
++
++static struct kernel_param_ops param_ops_multi_touch = {
++	.set = param_set_multi_touch,
++	.get = param_get_int,
++};
++
++module_param_named(multi_touch, multi_touch_flag, multi_touch, 0644);
++
++static inline int is_multi_touch(struct synaptics_data *priv)
++{
++	return (multi_touch_flag == 2 ||
++		(priv->can_multi_touch && multi_touch_flag));
++}
++
++static void setup_multi_touch(struct psmouse *psmouse, int verbose)
++{
++	struct input_dev *dev;
++	struct synaptics_data *priv;
++
++	_psmouse = psmouse;
++	if (!psmouse)
++		return;
++	dev = psmouse->dev;
++	priv = psmouse->private;
++	if (!dev || !priv)
++		return;
++	if (is_multi_touch(priv) &&
++	    !synaptics_init_multi_touch(psmouse)) {
++		if (verbose)
++			printk(KERN_INFO "Synaptics: enabling multi-touch\n");
++		if (!SYN_CAP_MULTIFINGER(priv->capabilities)) {
++			__set_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
++			__set_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
++		}
++		input_set_abs_params(dev, ABS_MT_POSITION_X,
++				     XMIN_NOMINAL, XMAX_NOMINAL, 0, 0);
++		input_set_abs_params(dev, ABS_MT_POSITION_Y,
++				     YMIN_NOMINAL, YMAX_NOMINAL, 0, 0);
++		input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
++		input_abs_set_res(dev, ABS_MT_POSITION_X, priv->x_res);
++		input_abs_set_res(dev, ABS_MT_POSITION_Y, priv->y_res);
++	} else {
++		if (verbose)
++			printk(KERN_INFO "Synaptics: disabling multi-touch\n");
++		if (!SYN_CAP_MULTIFINGER(priv->capabilities)) {
++			__clear_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
++			__clear_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
++		}
++		__clear_bit(ABS_MT_POSITION_X, dev->absbit);
++		__clear_bit(ABS_MT_POSITION_Y, dev->absbit);
++		__clear_bit(ABS_MT_PRESSURE, dev->absbit);
++	}
++}
++
+ #else
+ #define is_multi_touch(priv)	0
++#define setup_multi_touch(ps, v) do { } while (0)
+ #endif
++
+ /* the multi-touch packet contains w=2 (like pen) */
+ #define is_multi_touch_packet(priv, hw) \
+ 	(is_multi_touch(priv) && (hw)->w == 2)
+@@ -781,7 +859,7 @@
+ 	__set_bit(BTN_LEFT, dev->keybit);
+ 	__set_bit(BTN_RIGHT, dev->keybit);
+ 
+-	if (SYN_CAP_MULTIFINGER(priv->capabilities) || is_multi_touch(priv)) {
++	if (SYN_CAP_MULTIFINGER(priv->capabilities)) {
+ 		__set_bit(BTN_TOOL_DOUBLETAP, dev->keybit);
+ 		__set_bit(BTN_TOOL_TRIPLETAP, dev->keybit);
+ 	}
+@@ -810,20 +888,11 @@
+ 		__clear_bit(BTN_RIGHT, dev->keybit);
+ 		__clear_bit(BTN_MIDDLE, dev->keybit);
+ 	}
+-
+-	if (is_multi_touch(priv)) {
+-		input_set_abs_params(dev, ABS_MT_POSITION_X,
+-				     XMIN_NOMINAL, XMAX_NOMINAL, 0, 0);
+-		input_set_abs_params(dev, ABS_MT_POSITION_Y,
+-				     YMIN_NOMINAL, YMAX_NOMINAL, 0, 0);
+-		input_set_abs_params(dev, ABS_MT_PRESSURE, 0, 255, 0, 0);
+-		input_abs_set_res(dev, ABS_MT_POSITION_X, priv->x_res);
+-		input_abs_set_res(dev, ABS_MT_POSITION_Y, priv->y_res);
+-	}
+ }
+ 
+ static void synaptics_disconnect(struct psmouse *psmouse)
+ {
++	setup_multi_touch(NULL, 0);
+ 	synaptics_free_led(psmouse);
+ 	synaptics_reset(psmouse);
+ 	kfree(psmouse->private);
+@@ -857,8 +926,7 @@
+ 	}
+ 
+ 	synaptics_sync_led(psmouse);
+-	if (is_multi_touch(priv))
+-		synaptics_init_multi_touch(psmouse);
++	setup_multi_touch(psmouse, 0);
+ 
+ 	return 0;
+ }
+@@ -937,16 +1005,8 @@
+ 	if (synaptics_init_led(psmouse) < 0)
+ 		goto init_fail;
+ 
+-	if (priv->can_multi_touch) {
+-		if (synaptics_init_multi_touch(psmouse)) {
+-			printk(KERN_WARNING "Synaptics: "
+-			       "unable to initialize multi-touch\n");
+-			priv->can_multi_touch = 0;
+-		} else
+-			printk(KERN_INFO "Synaptics: multi-touch enabled\n");
+-	}
+-
+ 	set_input_params(psmouse->dev, priv);
++	setup_multi_touch(psmouse, 0);
+ 
+ 	/*
+ 	 * Encode touchpad model so that it can be used to set
