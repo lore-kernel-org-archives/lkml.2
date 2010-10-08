@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932170Ab0JHKSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:18:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58451 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756914Ab0JHKSU (ORCPT
+	id S932202Ab0JHKTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:19:21 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:50191 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756961Ab0JHKTU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:18:20 -0400
-Date: Fri, 8 Oct 2010 11:18:19 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 18/18] fs: Reduce inode I_FREEING and factor inode
- disposal
-Message-ID: <20101008101819.GC19804@ZenIV.linux.org.uk>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-19-git-send-email-david@fromorbit.com>
+	Fri, 8 Oct 2010 06:19:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=SuVPRqKY0PtS1PeGPHY+KBGkvyZ2IAFqM/z7I3De8EuBeka+jBWTMvTsFbAo2SD7/d
+         mvfKzEJSmOqOx9/tEVz6wxGu+XY9pmCS9yUH75VCpMAjt7lU0TMZpp9uYFsHUe4DWc2W
+         S5sNwfr4cCbLqFIcVsJosl+iFEtWRvQcf9a4s=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286515292-15882-19-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Date: Fri, 8 Oct 2010 06:19:19 -0400
+Message-ID: <AANLkTik6XbkhvwO1OgkgXDmBSVL8_s24zTEVwkK9Uwo4@mail.gmail.com>
+Subject: [PATCH 0/3] Staging: speakup: Fixed a few things
+From: T Dent <tdent48227@gmail.com>
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, Tracey Dent <tdent48227@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:21:32PM +1100, Dave Chinner wrote:
+Greg,
 
-> +			spin_unlock(&sb->s_inodes_lock);
->  
-> -			spin_lock(&inode_lru_lock);
-> -			list_move(&inode->i_lru, dispose);
-> -			spin_unlock(&inode_lru_lock);
-> +			dispose_one_inode(inode);
->  
-> -			percpu_counter_dec(&nr_inodes_unused);
-> +			spin_lock(&sb->s_inodes_lock);
+Here a few changes I did that you should apply. I will do more general
+cleanups, when I get home from school. But this is all I can do at the
+current time.
 
-And now you've unlocked the list and even blocked.  What's going to
-keep next valid through that fun?
+Patch series is based off your staging-next tree
+commit-588abaa64b76005f6ab1a7d40770dcef12fd00ad.
 
-> +		spin_unlock(&inode_lru_lock);
-> +
-> +		dispose_one_inode(inode);
-> +		cond_resched();
-> +
-> +		spin_lock(&inode_lru_lock);
+Thanks,
 
-Same, only worse - in the previous you might hope for lack of activity
-on fs, in this one you really can't.
+Tracey Dent
