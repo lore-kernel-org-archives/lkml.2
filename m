@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755758Ab0JHIWh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 04:22:37 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:48919 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755221Ab0JHIWg (ORCPT
+	id S1755960Ab0JHIXW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 04:23:22 -0400
+Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:48156 "EHLO
+	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755640Ab0JHIXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 04:22:36 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/18] fs: introduce a per-cpu last_ino allocator
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
-	<1286515292-15882-16-git-send-email-david@fromorbit.com>
-Date: Fri, 08 Oct 2010 10:22:34 +0200
-In-Reply-To: <1286515292-15882-16-git-send-email-david@fromorbit.com> (Dave
-	Chinner's message of "Fri, 8 Oct 2010 16:21:29 +1100")
-Message-ID: <87d3rl5c1h.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 8 Oct 2010 04:23:20 -0400
+Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
+From: Sven Neumann <s.neumann@raumfeld.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Daniel Mack <daniel@caiaq.de>, Colin Cross <ccross@android.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <201010072323.05218.rjw@sisk.pl>
+References: <1286177435.2140.5.camel@sven> <201010070218.41944.rjw@sisk.pl>
+	 <1286463808.797.10.camel@bender>  <201010072323.05218.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Organization: RAUMFELD GmbH
+Date: Fri, 08 Oct 2010 10:23:17 +0200
+Message-ID: <1286526197.4493.19.camel@sven>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1286526200;0b53c7ff;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner <david@fromorbit.com> writes:
+On Thu, 2010-10-07 at 23:23 +0200, Rafael J. Wysocki wrote:
 
-> From: Eric Dumazet <eric.dumazet@gmail.com>
->
-> new_inode() dirties a contended cache line to get increasing
-> inode numbers. This limits performance on workloads that cause
-> significant parallel inode allocation.
->
-> Solve this problem by using a per_cpu variable fed by the shared
-> last_ino in batches of 1024 allocations.  This reduces contention on
-> the shared last_ino, and give same spreading ino numbers than before
-> (i.e. same wraparound after 2^32 allocations).
+> > > I wonder what happens if you echo 0 to /sys/power/pm_async ?
+> > 
+> > Nothing happens. The problem persists (tested with 2.6.36-rc7). What
+> > would you expect to happen?
+> 
+> Exactly that. :-)
+> 
+> Commit 152e1d5920 should not affect the non-async case (I'd be surprised if
+> it did really) and things should work with /sys/power/pm_async = 0 anyway.
+> 
+> Please try check if you can reproduce with commt 152e1d5920 reverted and
+> /sys/power/pm_async = 0.  If you can, that's a driver bug.
 
-This doesn't help for Unix disk file systems, so not fully sure why you
-need it for XFS.
+Ok, for the record, here's what I tried. I have rebooted between tests
+to make sure there's no state pulled in from the previous test:
 
-But looks reasonable, although it would be better to simply fix 
-sockets/pipes/etc. to not allocate an inode numbers.
+ 2.6.36-rc7, no changes,      pm_async 1 :  suspend fails
+ 2.6.36-rc7, no changes,      pm_async 0 :  suspend fails
 
-Acked-by: Andi Kleen <ak@linux.intel.com>
+ 2.6.36-rc7, 152e1d reverted, pm_async 1 :  suspend works
+ 2.6.36-rc7, 152e1d reverted, pm_async 0 :  suspend fails
 
--Andi
+ 2.6.34.7, no changes,        pm_async 1 :  suspend works
+ 2.6.34.7, no changes,        pm_async 0 :  suspend works
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
+I am not sure how this should be interpreted.
+
+
+Sven
+
+
+
