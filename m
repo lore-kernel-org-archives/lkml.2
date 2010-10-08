@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932811Ab0JHTBf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 15:01:35 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:29602 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652Ab0JHTBd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 15:01:33 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6130"; a="57216394"
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-In-Reply-To: <AANLkTikc8X0nz1cCxgfbaqLzCMiBLogLeU0ZdFoGEpP6@mail.gmail.com>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
-	 <20101007215019.17b4a34a@lxorguk.ukuu.org.uk>
-	 <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
-	 <20101007220538.2294a7e4@lxorguk.ukuu.org.uk>
-	 <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
-	 <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com>
-	 <20101008091331.74871a42@lxorguk.ukuu.org.uk>
-	 <1286551434.4153.21.camel@m0nster>
-	 <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
-	 <1286556328.4153.142.camel@m0nster>
-	 <AANLkTikc8X0nz1cCxgfbaqLzCMiBLogLeU0ZdFoGEpP6@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 12:01:31 -0700
-Message-ID: <1286564491.4153.284.camel@m0nster>
+	id S932892Ab0JHTB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 15:01:57 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38283
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932352Ab0JHTBz convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 15:01:55 -0400
+Date: Fri, 08 Oct 2010 12:02:16 -0700 (PDT)
+Message-Id: <20101008.120216.232734365.davem@davemloft.net>
+To: grant.likely@secretlab.ca
+Cc: dilinger@queued.net, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH] sparc: stop exporting openprom.h header
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <AANLkTikuaM5VZadCs302HwYYhOHi1Czw2BLam3ZQP=aj@mail.gmail.com>
+References: <20101008113424.2249c2df@debxo>
+	<20101008.115226.179923658.davem@davemloft.net>
+	<AANLkTikuaM5VZadCs302HwYYhOHi1Czw2BLam3ZQP=aj@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 14:38 -0400, Mike Frysinger wrote:
-> On Fri, Oct 8, 2010 at 12:45, Daniel Walker wrote:
-> > On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
-> >> > I don't think the kernel is going to implode if we allow an optional
-> >> > ttyS override for debugging purposes.. I just don't see that "screwing"
-> >> > up the kernel.
-> >>
-> >> That is perhaps why you are not a subsystem maintainer.
-> >
-> > No, I'm sure it's not.
-> >
-> > What I was telling Greg is that this type of override is allowed right
-> > now, if you mod the source (everything is allowed if you mod the source
-> > right?) ..
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 8 Oct 2010 13:00:25 -0600
+
+> On Fri, Oct 8, 2010 at 12:52 PM, David Miller <davem@davemloft.net> wrote:
+>> From: Andres Salomon <dilinger@queued.net>
+>> Date: Fri, 8 Oct 2010 11:34:24 -0700
+>>
+>>>
+>>> It's unknown why openprom.h was being exported; there doesn't seem to be any
+>>> reason for it currently, and it creates headaches with userspace being able
+>>> to potentially use the structures in there.  So, don't export it anymore.
+>>>
+>>> Signed-off-by: Andres Salomon <dilinger@queued.net>
+>>
+>> Acked-by: David S. Miller <davem@davemloft.net>
 > 
-> just because someone can mod the source code to add a root shell
-> doesnt mean we should accept patches to do it
+> I suppose it makes sense for me to pick this one up into my tree so it
+> is grouped with the rest of the pdt patches.  I'll pick it up once
+> Andres reposts the series.
 
-That's not what I was getting at. If you can mod the source to add the
-override, then adding in a patch which also requires you to mod the
-source to add the override should be acceptable because it's no
-different that what we currently have.
-
-Daniel
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora
-Forum.
-
-
+Yep, that makes sense.
