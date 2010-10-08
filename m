@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759841Ab0JHXmJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 19:42:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25700 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752163Ab0JHXmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 19:42:07 -0400
-Date: Fri, 8 Oct 2010 19:41:30 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@ftp.linux.org.uk, jmoyer@redhat.com, linux-fs@vger.kernel.org,
-        autofs@linux.kernel.org, linux-kernel@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, Ian Kent <raven@themaw.net>
-Subject: Re: [PATCH 05/17] Remove the automount through follow_link() kludge code from pathwalk
-Message-ID: <20101008234130.GE30846@shell>
-References: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk> <20100930181521.30939.31415.stgit@warthog.procyon.org.uk>
-Mime-Version: 1.0
+	id S1759837Ab0JHXpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 19:45:01 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35675 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752863Ab0JHXpA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 19:45:00 -0400
+Date: Sat, 9 Oct 2010 00:44:48 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Hannemann <arnd@arndnet.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Hemant Pedanekar <hemantp@ti.com>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Message-ID: <20101008234448.GD10975@n2100.arm.linux.org.uk>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com> <20101007192245.GC26435@n2100.arm.linux.org.uk> <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com> <20101008175308.GA10975@n2100.arm.linux.org.uk> <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com> <20101008230451.GB10975@n2100.arm.linux.org.uk> <20101008232539.GA28697@kroah.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100930181521.30939.31415.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20101008232539.GA28697@kroah.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 07:15:21PM +0100, David Howells wrote:
-> Remove the automount through follow_link() kludge code from pathwalk in favour
-> of using d_automount().
+On Fri, Oct 08, 2010 at 04:25:39PM -0700, Greg KH wrote:
+> I doubt that people even noticed that this was a problem.
+
+So what you're telling me is that ARM SoC people don't read the
+ARM kernel mailing list?  I might as well stop posting patches
+if no one's paying attention then! :-P
+
+Reality is that it was discussed, and I did propose solutions at
+the time.
+
+> Unless you throw a run-time warning at them, or even better, break the
+> build of their drivers, they will not notice.
 > 
-> Signed-off-by: David Howells <dhowells@redhat.com>
-> Acked-by: Ian Kent <raven@themaw.net>
-> ---
-> 
->  fs/namei.c |   17 +++--------------
->  1 files changed, 3 insertions(+), 14 deletions(-)
-> 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index c50b9d7..86421f9 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -861,17 +861,6 @@ fail:
->  }
->  
->  /*
-> - * This is a temporary kludge to deal with "automount" symlinks; proper
-> - * solution is to trigger them on follow_mount(), so that do_lookup()
-> - * would DTRT.  To be killed before 2.6.34-final.
-> - */
-> -static inline int follow_on_final(struct inode *inode, unsigned lookup_flags)
-> -{
-> -	return inode && unlikely(inode->i_op->follow_link) &&
-> -		((lookup_flags & LOOKUP_FOLLOW) || S_ISDIR(inode->i_mode));
-> -}
-> -
-> -/*
->   * Name resolution.
->   * This is the basic name resolution function, turning a pathname into
->   * the final dentry. We expect 'base' to be positive and a directory.
-> @@ -991,7 +980,8 @@ last_component:
->  		if (err)
->  			break;
->  		inode = next.dentry->d_inode;
-> -		if (follow_on_final(inode, lookup_flags)) {
-> +		if (inode && unlikely(inode->i_op->follow_link) &&
-> +		    (lookup_flags & LOOKUP_FOLLOW)) {
->  			err = do_follow_link(&next, nd);
->  			if (err)
->  				goto return_err;
-> @@ -1882,8 +1872,7 @@ reval:
->  		struct inode *inode = path.dentry->d_inode;
->  		void *cookie;
->  		error = -ELOOP;
-> -		/* S_ISDIR part is a temporary automount kludge */
-> -		if (!(nd.flags & LOOKUP_FOLLOW) && !S_ISDIR(inode->i_mode))
-> +		if (!(nd.flags & LOOKUP_FOLLOW))
->  			goto exit_dput;
->  		if (count++ == 32)
->  			goto exit_dput;
+> Also, how can we fix this in a driver, what is the proper steps to do
+> so?
 
-While you're removing kludges, I bet you can also remove this from
-__follow_link():
+On April 23rd:
+| I think a viable safe solution is to set aside some RAM at boot (which
+| the kernel doesn't manage at all) and then use ioremap on that; that
+| approach will still work with this patch in place.
 
-       if (path->mnt != nd->mnt) {
-               path_to_nameidata(path, nd);
-               dget(dentry);
-       }
-       mntget(path->mnt);
+On April 30th when discussing the omapfb driver:
+| There's really one option for this - in the machine's fixup handler, you
+| can walk the meminfo array and kick out some memory from that.  This will
+| prevent the kernel mapping that memory and make pfn_valid() fail for that
+| memory range.  Another advantage of this is that it won't break when we
+| switch to LMB.
 
-And replace with:
+So, as I say, there's been six months.  It was discussed.  But still
+we find that the drivers haven't been touched and now we're complaining
+that drivers are breaking.
 
-       if (path->mnt == nd->mnt)
-               mntget(path->mnt);
+If it hadn't been discussed, if solutions hadn't been proposed, then
+yes, it would be right to revert it out-right.  But that's not what
+happened.
 
-This reverts the non-helper-function parts of
-051d381259eb57d6074d02a6ba6e90e744f1a29f, which breaks union mounts.
+If we have to have another three months (or so), this time with a warning,
+then so be it, but let's make it plainly clear that it _will_ _definitely_
+be changing, and that drivers _will_ break unless they are fixed.
 
--VAL
+Unfortunately, what I fear is that nothing will happen because people
+want the ioremap-on-system-RAM to just work, and then we'll hit this
+exact same issue again in three months time.
