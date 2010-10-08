@@ -1,310 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933107Ab0JHVXO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 17:23:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51876 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933025Ab0JHVXO (ORCPT
+	id S933149Ab0JHV0M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 17:26:12 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:44131 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933065Ab0JHV0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 17:23:14 -0400
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 2/2] mfd: Add WM831x SPI support
-Date: Fri,  8 Oct 2010 14:23:23 -0700
-Message-Id: <1286573003-13889-2-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1286573003-13889-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <1286573003-13889-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+	Fri, 8 Oct 2010 17:26:10 -0400
+Date: Fri, 8 Oct 2010 14:26:06 -0700
+From: "Darrick J. Wong" <djwong@us.ibm.com>
+To: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: "Ted Ts'o" <tytso@mit.edu>, Mingming Cao <cmm@us.ibm.com>,
+        Ric Wheeler <rwheeler@redhat.com>,
+        linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, hch@lst.de
+Subject: Re: Performance testing of various barrier reduction patches [was:
+	Re: [RFC v4] ext4: Coordinate fsync requests]
+Message-ID: <20101008212606.GE25624@tux1.beaverton.ibm.com>
+Reply-To: djwong@us.ibm.com
+References: <20100805164504.GI2901@thunk.org> <20100806070424.GD2109@tux1.beaverton.ibm.com> <20100809195324.GG2109@tux1.beaverton.ibm.com> <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com> <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca> <20100927230111.GV25555@tux1.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100927230111.GV25555@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement support for controlling WM831x and WM832x devices using SPI.
+On Mon, Sep 27, 2010 at 04:01:11PM -0700, Darrick J. Wong wrote:
+> 
+> Other than those regressions, the jbd2 fsync coordination is about as fast as
+> sending the flush directly from ext4.  Unfortunately, where there _are_
+> regressions they seem rather large, which makes this approach (as implemented,
+> anyway) less attractive.  Perhaps there is a better way to do it?
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
+Hmm, not much chatter for two weeks.  Either I've confused everyone with the
+humongous spreadsheet, or ... something?
 
-Resending as my finger macro sent these to the ALSA list.
+I've performed some more extensive performance and safety testing with the
+fsync coordination patch.  The results have been merged into the spreadsheet
+that I linked to in the last email, though in general the results have not
+really changed much at all.
 
- drivers/mfd/Kconfig      |   10 ++
- drivers/mfd/Makefile     |    1 +
- drivers/mfd/wm831x-spi.c |  232 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 243 insertions(+), 0 deletions(-)
- create mode 100644 drivers/mfd/wm831x-spi.c
+I see two trends happening here with regards to comparing the use of jbd2 to
+coordinate the flushes vs. measuring and coodinating flushes directly in ext4.
+The first is that for loads that most benefit from having any kind of fsync
+coordination (i.e. storage with slow flushes), the jbd2 approach provides the
+same or slightly better performance than the direct approach.  However, for
+storage with fast flushes, the jbd2 approach seems to cause major slowdowns
+even compared to not changing any code at all.  To me this would suggest that
+ext4 needs to coordinate the fsyncs directly, even at a higher code maintenance
+cost, because a huge performance regression isn't good.
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 608a277..40aa2e8 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -328,6 +328,16 @@ config MFD_WM831X_I2C
- 	  for accessing the device, additional drivers must be enabled in
- 	  order to use the functionality of the device.
- 
-+config MFD_WM831X_SPI
-+	bool "Support Wolfson Microelectronics WM831x/2x PMICs with SPI"
-+	select MFD_CORE
-+	depends on SPI_MASTER && GENERIC_HARDIRQS
-+	help
-+	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs
-+	  when controlled using SPI.  This driver provides common support
-+	  for accessing the device, additional drivers must be enabled in
-+	  order to use the functionality of the device.
-+
- config MFD_WM8350
- 	bool
- 	depends on GENERIC_HARDIRQS
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index c9ef41b..f54b365 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -25,6 +25,7 @@ obj-$(CONFIG_MFD_WM8400)	+= wm8400-core.o
- wm831x-objs			:= wm831x-core.o wm831x-irq.o wm831x-otp.o
- obj-$(CONFIG_MFD_WM831X)	+= wm831x.o
- obj-$(CONFIG_MFD_WM831X_I2C)	+= wm831x-i2c.o
-+obj-$(CONFIG_MFD_WM831X_SPI)	+= wm831x-spi.o
- wm8350-objs			:= wm8350-core.o wm8350-regmap.o wm8350-gpio.o
- wm8350-objs			+= wm8350-irq.o
- obj-$(CONFIG_MFD_WM8350)	+= wm8350.o
-diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
-new file mode 100644
-index 0000000..073d4c6
---- /dev/null
-+++ b/drivers/mfd/wm831x-spi.c
-@@ -0,0 +1,232 @@
-+/*
-+ * wm831x-spi.c  --  SPI access for Wolfson WM831x PMICs
-+ *
-+ * Copyright 2009,2010 Wolfson Microelectronics PLC.
-+ *
-+ * Author: Mark Brown <broonie@opensource.wolfsonmicro.com>
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/spi/spi.h>
-+
-+#include <linux/mfd/wm831x/core.h>
-+
-+static int wm831x_spi_read_device(struct wm831x *wm831x, unsigned short reg,
-+				  int bytes, void *dest)
-+{
-+	u16 tx_val;
-+	u16 *d = dest;
-+	int r, ret;
-+
-+	/* Go register at a time */
-+	for (r = reg; r < reg + (bytes / 2); r++) {
-+		tx_val = r | 0x8000;
-+
-+		ret = spi_write_then_read(wm831x->control_data,
-+					  (u8 *)&tx_val, 2, (u8 *)d, 2);
-+		if (ret != 0)
-+			return ret;
-+
-+		*d = be16_to_cpu(*d);
-+
-+		d++;
-+	}
-+
-+	return 0;
-+}
-+
-+static int wm831x_spi_write_device(struct wm831x *wm831x, unsigned short reg,
-+				   int bytes, void *src)
-+{
-+	struct spi_device *spi = wm831x->control_data;
-+	u16 *s = src;
-+	u16 data[2];
-+	int ret;
-+
-+	/* Go register at a time */
-+	for (r = reg; r < reg + (bytes / 2); r++) {
-+		data[0] = r;
-+		data[1] = *s++;
-+
-+		ret = spi_write(spi, (char *)&data, sizeof(data));
-+		if (ret != 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int __devinit wm831x_spi_probe(struct spi_device *spi)
-+{
-+	struct wm831x *wm831x;
-+	enum wm831x_parent type;
-+
-+	/* Currently SPI support for ID tables is unmerged, we're faking it */
-+	if (strcmp(spi->modalias, "wm8310") == 0)
-+		type = WM8310;
-+	else if (strcmp(spi->modalias, "wm8311") == 0)
-+		type = WM8311;
-+	else if (strcmp(spi->modalias, "wm8312") == 0)
-+		type = WM8312;
-+	else if (strcmp(spi->modalias, "wm8320") == 0)
-+		type = WM8320;
-+	else if (strcmp(spi->modalias, "wm8321") == 0)
-+		type = WM8321;
-+	else if (strcmp(spi->modalias, "wm8325") == 0)
-+		type = WM8325;
-+	else {
-+		dev_err(&spi->dev, "Unknown device type\n");
-+		return -EINVAL;
-+	}
-+
-+	wm831x = kzalloc(sizeof(struct wm831x), GFP_KERNEL);
-+	if (wm831x == NULL)
-+		return -ENOMEM;
-+
-+	spi->bits_per_word = 16;
-+	spi->mode = SPI_MODE_0;
-+
-+	dev_set_drvdata(&spi->dev, wm831x);
-+	wm831x->dev = &spi->dev;
-+	wm831x->control_data = spi;
-+	wm831x->read_dev = wm831x_spi_read_device;
-+	wm831x->write_dev = wm831x_spi_write_device;
-+
-+	return wm831x_device_init(wm831x, type, spi->irq);
-+}
-+
-+static int __devexit wm831x_spi_remove(struct spi_device *spi)
-+{
-+	struct wm831x *wm831x = dev_get_drvdata(&spi->dev);
-+
-+	wm831x_device_exit(wm831x);
-+
-+	return 0;
-+}
-+
-+static int wm831x_spi_suspend(struct spi_device *spi, pm_message_t m)
-+{
-+	struct wm831x *wm831x = dev_get_drvdata(&spi->dev);
-+
-+	return wm831x_device_suspend(wm831x);
-+}
-+
-+static struct spi_driver wm8310_spi_driver = {
-+	.driver = {
-+		.name	= "wm8310",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= wm831x_spi_probe,
-+	.remove		= __devexit_p(wm831x_spi_remove),
-+	.suspend	= wm831x_spi_suspend,
-+};
-+
-+static struct spi_driver wm8311_spi_driver = {
-+	.driver = {
-+		.name	= "wm8311",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= wm831x_spi_probe,
-+	.remove		= __devexit_p(wm831x_spi_remove),
-+	.suspend	= wm831x_spi_suspend,
-+};
-+
-+static struct spi_driver wm8312_spi_driver = {
-+	.driver = {
-+		.name	= "wm8312",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= wm831x_spi_probe,
-+	.remove		= __devexit_p(wm831x_spi_remove),
-+	.suspend	= wm831x_spi_suspend,
-+};
-+
-+static struct spi_driver wm8320_spi_driver = {
-+	.driver = {
-+		.name	= "wm8320",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= wm831x_spi_probe,
-+	.remove		= __devexit_p(wm831x_spi_remove),
-+	.suspend	= wm831x_spi_suspend,
-+};
-+
-+static struct spi_driver wm8321_spi_driver = {
-+	.driver = {
-+		.name	= "wm8321",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= wm831x_spi_probe,
-+	.remove		= __devexit_p(wm831x_spi_remove),
-+	.suspend	= wm831x_spi_suspend,
-+};
-+
-+static struct spi_driver wm8325_spi_driver = {
-+	.driver = {
-+		.name	= "wm8325",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= wm831x_spi_probe,
-+	.remove		= __devexit_p(wm831x_spi_remove),
-+	.suspend	= wm831x_spi_suspend,
-+};
-+
-+static int __init wm831x_spi_init(void)
-+{
-+	int ret;
-+
-+	ret = spi_register_driver(&wm8310_spi_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register WM8310 SPI driver: %d\n", ret);
-+
-+	ret = spi_register_driver(&wm8311_spi_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register WM8311 SPI driver: %d\n", ret);
-+
-+	ret = spi_register_driver(&wm8312_spi_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register WM8312 SPI driver: %d\n", ret);
-+
-+	ret = spi_register_driver(&wm8320_spi_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register WM8320 SPI driver: %d\n", ret);
-+
-+	ret = spi_register_driver(&wm8321_spi_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register WM8321 SPI driver: %d\n", ret);
-+
-+	ret = spi_register_driver(&wm8325_spi_driver);
-+	if (ret != 0)
-+		pr_err("Failed to register WM8325 SPI driver: %d\n", ret);
-+
-+	return 0;
-+}
-+subsys_initcall(wm831x_spi_init);
-+
-+static void __exit wm831x_spi_exit(void)
-+{
-+	spi_unregister_driver(&wm8325_spi_driver);
-+	spi_unregister_driver(&wm8321_spi_driver);
-+	spi_unregister_driver(&wm8320_spi_driver);
-+	spi_unregister_driver(&wm8312_spi_driver);
-+	spi_unregister_driver(&wm8311_spi_driver);
-+	spi_unregister_driver(&wm8310_spi_driver);
-+}
-+module_exit(wm831x_spi_exit);
-+
-+MODULE_DESCRIPTION("SPI support for WM831x/2x AudioPlus PMICs");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Mark Brown");
--- 
-1.7.1
+Other people in my group have been running their own performance comparisons
+between no-coordination, jbd2-coordination, and direct-coordination, and what
+I'm hearing is tha the direct-coordination mode is slightly faster than jbd2
+coordination, though either are better than no coordination at all.  Happily, I
+haven't seen an increase in fsck complaints in my poweroff testing.
 
+Given the nearness of the merge window, perhaps we ought to discuss this on
+Monday's ext4 call?  In the meantime I'll clean up the fsync coordination patch
+so that it doesn't have so many debugging knobs and whistles.
+
+Thanks,
+
+--D
