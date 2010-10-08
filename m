@@ -1,68 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757874Ab0JHN5O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 09:57:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60266 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab0JHN5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 09:57:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,302,1283756400"; 
-   d="scan'208";a="614684771"
-Date: Fri, 8 Oct 2010 21:57:04 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Yong Wang <yong.y.wang@linux.intel.com>
-Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        "Wu, Xia" <xia.wu@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-Subject: Re: [PATCH] bdi: use deferable timer for sync_supers task
-Message-ID: <20101008135704.GB25439@localhost>
-References: <20101008083514.GA12402@ywang-moblin2.bj.intel.com>
- <20101008092520.GB5426@lst.de>
- <A24AE1FFE7AEC5489F83450EE98351BF227AB58D43@shsmsx502.ccr.corp.intel.com>
- <1286532586.2095.55.camel@localhost>
- <A24AE1FFE7AEC5489F83450EE98351BF227AB58D51@shsmsx502.ccr.corp.intel.com>
- <1286533687.2095.58.camel@localhost>
- <20101008102709.GA12682@ywang-moblin2.bj.intel.com>
+	id S932357Ab0JHOAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:00:48 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:1501 "EHLO
+	TX2EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932211Ab0JHOAp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 10:00:45 -0400
+X-SpamScore: -7
+X-BigFish: VS-7(zzzz1202hzz8275bh5eeePz32i87h2a8h)
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L9Z5KV-02-0J8-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 3/7] oprofile, x86: Check IBS capability bits 1 and 2
+Date: Fri, 8 Oct 2010 15:56:28 +0200
+Message-ID: <1286546192-18593-4-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.2.2
+In-Reply-To: <1286546192-18593-1-git-send-email-robert.richter@amd.com>
+References: <1286546192-18593-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008102709.GA12682@ywang-moblin2.bj.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 06:27:09PM +0800, Yong Wang wrote:
-> On Fri, Oct 08, 2010 at 01:28:07PM +0300, Artem Bityutskiy wrote:
-> > On Fri, 2010-10-08 at 18:27 +0800, Wu, Xia wrote:
-> > > > However, when the next wake-up interrupt happens is not defined. It can
-> > > > happen 1ms after, or 1 minute after, or 1 hour after. What Christoph
-> > > > says is that there should be some guarantee that sb writeout starts,
-> > > > say, within 5 to 10 seconds interval. Deferrable timers do not guarantee
-> > > > this. But take a look at the range hrtimers - they do exactly this.
-> > > 
-> > > If the system is in sleep state, is there any data which should be written?
-> > 
-> > May be yes, may be no.
-> > 
-> 
-> Thanks for the quick response, Artem. May I know what might need to be
-> written out when system is really idle?
+There are IBS CPUID feature flags in CPUID Fn8000_001B to detect if
+the cpu supports IBS fetch sampling (FetchSam) and/or IBS execution
+sampling (OpSam). This patch adds checks if the both features are
+available.
 
-system idle != no dirty inodes
+Spec:
 
-Imagine an application dirties 100MB data and quits. The system then
-goes quiet for very long time. In this case we still want the flusher
-thread to wake up within 30 seconds to flush the 100MB dirty data.
-It's a contract that dirty data will be synced to disk after 30s
-(which is the default value of /proc/sys/vm/dirty_expire_centisecs).
+ http://support.amd.com/us/Processor_TechDocs/31116.pdf
 
-Note that 30s is not an exact value. A dirty page may be synced to
-disk when it's been dirtied for 35s. The 5s error comes from the
-flusher wakeup interval (/proc/sys/vm/dirty_writeback_centisecs).
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/oprofile/op_model_amd.c |   59 ++++++++++++++++++++++++-------------
+ 1 files changed, 38 insertions(+), 21 deletions(-)
 
-Thanks,
-Fengguang
+diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
+index b67a6b5..96852d5 100644
+--- a/arch/x86/oprofile/op_model_amd.c
++++ b/arch/x86/oprofile/op_model_amd.c
+@@ -70,9 +70,22 @@ static u64 ibs_op_ctl;
+  * Same bit mask as for IBS cpuid feature flags (Fn8000_001B_EAX), but
+  * bit 0 is used to indicate the existence of IBS.
+  */
+-#define IBS_CAPS_AVAIL			(1LL<<0)
+-#define IBS_CAPS_RDWROPCNT		(1LL<<3)
+-#define IBS_CAPS_OPCNT			(1LL<<4)
++#define IBS_CAPS_AVAIL			(1U<<0)
++#define IBS_CAPS_FETCHSAM		(1U<<1)
++#define IBS_CAPS_OPSAM			(1U<<2)
++#define IBS_CAPS_RDWROPCNT		(1U<<3)
++#define IBS_CAPS_OPCNT			(1U<<4)
++
++#define IBS_CAPS_DEFAULT		(IBS_CAPS_AVAIL		\
++					 | IBS_CAPS_FETCHSAM	\
++					 | IBS_CAPS_OPSAM)
++
++/*
++ * IBS APIC setup
++ */
++#define IBSCTL				0x1cc
++#define IBSCTL_LVT_OFFSET_VALID		(1ULL<<8)
++#define IBSCTL_LVT_OFFSET_MASK		0x0F
+ 
+ /*
+  * IBS randomization macros
+@@ -92,12 +105,12 @@ static u32 get_ibs_caps(void)
+ 	/* check IBS cpuid feature flags */
+ 	max_level = cpuid_eax(0x80000000);
+ 	if (max_level < IBS_CPUID_FEATURES)
+-		return IBS_CAPS_AVAIL;
++		return IBS_CAPS_DEFAULT;
+ 
+ 	ibs_caps = cpuid_eax(IBS_CPUID_FEATURES);
+ 	if (!(ibs_caps & IBS_CAPS_AVAIL))
+ 		/* cpuid flags not valid */
+-		return IBS_CAPS_AVAIL;
++		return IBS_CAPS_DEFAULT;
+ 
+ 	return ibs_caps;
+ }
+@@ -527,22 +540,26 @@ static int setup_ibs_files(struct super_block *sb, struct dentry *root)
+ 	ibs_config.op_enabled = 0;
+ 	ibs_config.dispatched_ops = 0;
+ 
+-	dir = oprofilefs_mkdir(sb, root, "ibs_fetch");
+-	oprofilefs_create_ulong(sb, dir, "enable",
+-				&ibs_config.fetch_enabled);
+-	oprofilefs_create_ulong(sb, dir, "max_count",
+-				&ibs_config.max_cnt_fetch);
+-	oprofilefs_create_ulong(sb, dir, "rand_enable",
+-				&ibs_config.rand_en);
+-
+-	dir = oprofilefs_mkdir(sb, root, "ibs_op");
+-	oprofilefs_create_ulong(sb, dir, "enable",
+-				&ibs_config.op_enabled);
+-	oprofilefs_create_ulong(sb, dir, "max_count",
+-				&ibs_config.max_cnt_op);
+-	if (ibs_caps & IBS_CAPS_OPCNT)
+-		oprofilefs_create_ulong(sb, dir, "dispatched_ops",
+-					&ibs_config.dispatched_ops);
++	if (ibs_caps & IBS_CAPS_FETCHSAM) {
++		dir = oprofilefs_mkdir(sb, root, "ibs_fetch");
++		oprofilefs_create_ulong(sb, dir, "enable",
++					&ibs_config.fetch_enabled);
++		oprofilefs_create_ulong(sb, dir, "max_count",
++					&ibs_config.max_cnt_fetch);
++		oprofilefs_create_ulong(sb, dir, "rand_enable",
++					&ibs_config.rand_en);
++	}
++
++	if (ibs_caps & IBS_CAPS_OPSAM) {
++		dir = oprofilefs_mkdir(sb, root, "ibs_op");
++		oprofilefs_create_ulong(sb, dir, "enable",
++					&ibs_config.op_enabled);
++		oprofilefs_create_ulong(sb, dir, "max_count",
++					&ibs_config.max_cnt_op);
++		if (ibs_caps & IBS_CAPS_OPCNT)
++			oprofilefs_create_ulong(sb, dir, "dispatched_ops",
++						&ibs_config.dispatched_ops);
++	}
+ 
+ 	return 0;
+ }
+-- 
+1.7.2.2
+
+
