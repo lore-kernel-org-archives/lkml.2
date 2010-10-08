@@ -1,217 +1,308 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759622Ab0JHUfJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 16:35:09 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:3400 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755003Ab0JHUfH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 16:35:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=eLGkbQ7ZjGyLZBgLnsuQfmfynlqPkEYl02uL9sjLSBoviqo7CW3YLIRIjvIBCrCYbG
-         jZTKpg8SS0fudGPks0Mw==
+	id S1759576Ab0JHUka (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 16:40:30 -0400
+Received: from smtp6-g21.free.fr ([212.27.42.6]:54935 "EHLO smtp6-g21.free.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755003Ab0JHUk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 16:40:29 -0400
+Message-ID: <4CAF81BB.3020504@free.fr>
+Date: Fri, 08 Oct 2010 22:40:27 +0200
+From: matthieu castet <castet.matthieu@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; fr; rv:1.8.1.23) Gecko/20090823 SeaMonkey/1.1.18
 MIME-Version: 1.0
-In-Reply-To: <1286522543.8189.13.camel@marge.simson.net>
-References: <1285633798-26886-1-git-send-email-ncrao@google.com>
- <1285682273.7469.3.camel@marge.simson.net> <AANLkTin=Dic2UE55yUaam8NzGHTib=9s=x-wyzk03BU0@mail.gmail.com>
- <1285724758.7440.11.camel@marge.simson.net> <AANLkTi=TQnYGLPC=Pi0o1As83W6VdWdjvimZNSrGT4qW@mail.gmail.com>
- <1286161717.7410.12.camel@marge.simson.net> <AANLkTinf7fj5A4DnQOWdj8QeMhf4exPGgpMUdTGA9mTC@mail.gmail.com>
- <1286522543.8189.13.camel@marge.simson.net>
-From: Nikhil Rao <ncrao@google.com>
-Date: Fri, 8 Oct 2010 13:34:42 -0700
-Message-ID: <AANLkTim8m6r_8pFO6o0uOnki6mNoaR+8NZ4M0pO3H515@mail.gmail.com>
-Subject: Re: [PATCH 0/3][RFC] Improve load balancing when tasks have large
- weight differential
-To: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: Daniel Walker <dwalker@codeaurora.org>
+CC: Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+References: <4CAF723B.8060202@free.fr> <1286567718.4153.352.camel@m0nster>
+In-Reply-To: <1286567718.4153.352.camel@m0nster>
+Content-Type: multipart/mixed;
+ boundary="------------010405010405010905090004"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 12:22 AM, Mike Galbraith <efault@gmx.de> wrote:
-> On Wed, 2010-10-06 at 01:23 -0700, Nikhil Rao wrote:
->> On Sun, Oct 3, 2010 at 8:08 PM, Mike Galbraith <efault@gmx.de> wrote:
->> > On Wed, 2010-09-29 at 12:32 -0700, Nikhil Rao wrote:
->> >> The closest I have is a quad-core dual-socket machine (MC, CPU
->> >> domains). And I'm having trouble reproducing it on that machine as
->> >> well :-( I ran 5 soaker threads (one of them niced to -15) for a few
->> >> hours and didn't see the problem. Can you please give me some trace
->> >> data & schedstats to work with?
->> >
->> > Booting with isolcpus or offlining the excess should help.
->> >
+This is a multi-part message in MIME format.
+--------------010405010405010905090004
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+
+Daniel Walker a écrit :
+> On Fri, 2010-10-08 at 21:34 +0200, matthieu castet wrote:
+>> Hi,
 >>
->> Sorry for the late reply. Booting with isolcpus did the trick, thanks.
+>> for the record I attach a modified version of the original samsung one that I did.
 >>
->> ... and now to dig into why this is happening.
->
-> I was poking it (again) yesterday, and it's kind of annoying.  I can't
-> call this behavior black/white broken.  It's freeing up a cache for a
-> very high priority task, which is kinda nice, but SMP nice is costing
-> 25% of my box's processor power in this case too.  Hrmph.
->
+>> I improved a bit the reactivity, and did some hack to make polling in idle loop.
+>> With recent kernel this should be done in a thread with SCHED_IDLE policy.
+>>
+>> I also supported board with irq for rx and tx (not sure if the original driver supported it).
+> 
+> Do you use the CONFIG_SERIAL_DCC_STDSERIAL feature?
+> 
+No, I never used it
 
-I agree that freeing up the cache for the high priority task is a nice
-side-effect of weight-based balancing. However, with sufficient number
-of low weight tasks on the system, or with a small nudge to affinity
-masks, the niced task will end up sharing cache with low weight tasks.
-In that sense, I think this is a tad bit more black than white :-) It
-would be nice to make the load balancer more cache aware, but that's
-for a different RFC. :-)
+Matthieu
 
-Further, once a sched group reaches a certain "bad state", where the
-niced task is the only task in a sched group with more than 1 cpu, it
-does not recover from that state easily. This leads to the sub-optimal
-utilization situation that we have been chasing down. In this
-situation, even though the sched group has capacity, it does not pull
-tasks because sds.this_load >> sds.max_load, and f_b_g() returns NULL.
+PS : I attached a diff against the original version. Looking at it, I think the really interesting stuff is
+the dcc_idle that should called in a thread with low priority. The reactivity of the workqueue was very bad IIRC.
 
-A sched group reaches this state because either (i). a niced task is
-pulled into an empty sched group, or (ii). all other tasks in the
-sched group are pulled away from the group. The patches in this
-patchset try to prevent the latter, i.e. prevent low weight tasks from
-being pulled away from the sched group. However, there are still many
-ways to end up in the bad state. From empirical evidence, it seems to
-happen more probability on a machine with fewer cpus. I have verified
-that with the appropriate test setup, this also happens on the
-quad-socket, quad-core machines as well (i.e. set affinity of the
-normal tasks to socket-0 and niced task to socket-1, and then reset
-affinities).
+Irq stuff is only supported by few cpu, so I am not sure it worth to merge it.
 
-I have attached a patch that tackles the problem in different way.
-Instead of preventing the sched group from entering the bad state, it
-shortcuts the checks in fbg if the group has extra capacity, where
-extra capacity is defined as group_capacity > nr_running. The patch
-exposes a sched feature called PREFER_UTILIZATION (disabled by
-default). When this is enabled, f_b_g shortcuts the checks if the
-local group has capacity. This actually works quite well. I tested
-this on a quad-core dual-socket (with isolcpus) and waited for the
-machine to enter the bad state. On flipping the sched feature,
-utilization immediately shoots up to 100% (of non-isolated cores). I
-have some data below.
+--------------010405010405010905090004
+Content-Type: text/plain;
+ name="diff"
+Content-Transfer-Encoding: base64
+Content-Disposition: inline;
+ filename="diff"
 
-This is very experimental and has not been tested beyond this case and
-some basic load balance tests. If you see a better way to do this
-please let me know.
-
-w/ PREFER_UTILIZATION disabled
-
-Cpu(s): 34.3% us,  0.2% sy,  0.0% ni, 65.1% id,  0.4% wa,  0.0% hi,  0.0% si
-Mem:  16463308k total,   996368k used, 15466940k free,    12304k buffers
-Swap:        0k total,        0k used,        0k free,   756244k cached
-
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
- 7651 root       5 -15  5876   84    0 R   98  0.0  37:35.97 lat
- 7652 root      20   0  5876   84    0 R   49  0.0  19:49.02 lat
- 7654 root      20   0  5876   84    0 R   49  0.0  20:48.93 lat
- 7655 root      20   0  5876   84    0 R   49  0.0  19:25.74 lat
- 7653 root      20   0  5876   84    0 R   47  0.0  20:02.16 lat
-
-w/ PREFER_UTILIZATION enabled
-
-Cpu(s): 52.3% us,  0.0% sy,  0.0% ni, 47.6% id,  0.0% wa,  0.0% hi,  0.0% si
-Mem:  16463308k total,  1002852k used, 15460456k free,    12304k buffers
-Swap:        0k total,        0k used,        0k free,   756312k cached
-
-  PID USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
- 7651 root       5 -15  5876   84    0 R  100  0.0  38:12.37 lat
- 7655 root      20   0  5876   84    0 R   99  0.0  19:49.99 lat
- 7652 root      20   0  5876   84    0 R   80  0.0  20:09.80 lat
- 7653 root      20   0  5876   84    0 R   60  0.0  20:22.13 lat
- 7654 root      20   0  5876   84    0 R   58  0.0  21:07.88 lat
-
----
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 6d934e8..04e5553 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -2030,12 +2030,14 @@ struct sd_lb_stats {
- 	unsigned long this_load;
- 	unsigned long this_load_per_task;
- 	unsigned long this_nr_running;
-+	unsigned long this_has_capacity;
-
- 	/* Statistics of the busiest group */
- 	unsigned long max_load;
- 	unsigned long busiest_load_per_task;
- 	unsigned long busiest_nr_running;
- 	unsigned long busiest_group_capacity;
-+	unsigned long busiest_has_capacity;
-
- 	int group_imb; /* Is there imbalance in this sd */
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-@@ -2058,6 +2060,7 @@ struct sg_lb_stats {
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long group_capacity;
- 	int group_imb; /* Is there an imbalance in the group ? */
-+	int group_has_capacity; /* Is there extra capacity in the group? */
- };
-
- /**
-@@ -2458,6 +2461,9 @@ static inline void update_sg_lb_stats(struct
-sched_domain *sd,
- 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
- 	if (!sgs->group_capacity)
- 		sgs->group_capacity = fix_small_capacity(sd, group);
-+
-+	if (sgs->group_capacity > sgs->sum_nr_running)
-+		sgs->group_has_capacity = 1;
- }
-
- /**
-@@ -2556,12 +2562,14 @@ static inline void update_sd_lb_stats(struct
-sched_domain *sd, int this_cpu,
- 			sds->this = sg;
- 			sds->this_nr_running = sgs.sum_nr_running;
- 			sds->this_load_per_task = sgs.sum_weighted_load;
-+			sds->this_has_capacity = sgs.group_has_capacity;
- 		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
- 			sds->max_load = sgs.avg_load;
- 			sds->busiest = sg;
- 			sds->busiest_nr_running = sgs.sum_nr_running;
- 			sds->busiest_group_capacity = sgs.group_capacity;
- 			sds->busiest_load_per_task = sgs.sum_weighted_load;
-+			sds->busiest_has_capacity = sgs.group_has_capacity;
- 			sds->group_imb = sgs.group_imb;
- 		}
-
-@@ -2820,6 +2828,10 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	if (!sds.busiest || sds.busiest_nr_running == 0)
- 		goto out_balanced;
-
-+	if (sched_feat(PREFER_UTILIZATION) &&
-+			sds.this_has_capacity && !sds.busiest_has_capacity)
-+		goto force_balance;
-+
- 	if (sds.this_load >= sds.max_load)
- 		goto out_balanced;
-
-@@ -2831,6 +2843,7 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
- 	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
- 		goto out_balanced;
-
-+force_balance:
- 	/* Looks like there is an imbalance. Compute it */
- 	calculate_imbalance(&sds, this_cpu, imbalance);
- 	return sds.busiest;
-diff --git a/kernel/sched_features.h b/kernel/sched_features.h
-index 83c66e8..9b93862 100644
---- a/kernel/sched_features.h
-+++ b/kernel/sched_features.h
-@@ -61,3 +61,9 @@ SCHED_FEAT(ASYM_EFF_LOAD, 1)
-  * release the lock. Decreases scheduling overhead.
-  */
- SCHED_FEAT(OWNER_SPIN, 1)
-+
-+/*
-+ * Prefer utilization over fairness when balancing tasks with large weight
-+ * differential.
-+ */
-+SCHED_FEAT(PREFER_UTILIZATION, 0)
+LS0tIGRyaXZlcnMvc2VyaWFsL2RjYy5jCTIwMTAtMTAtMDggMjI6MjE6NTcuMDAwMDAwMDAw
+ICswMjAwCisrKyBkcml2ZXJzL3BhcnJvdC9zZXJpYWwvZGNjLmMJMjAxMC0xMC0wOCAyMjoy
+NDowNy4wMDAwMDAwMDAgKzAyMDAKQEAgLTYsNiArNiw3IEBACiAgKiBEQ0MoSlRBRzEpIHBy
+b3RvY29sIHZlcnNpb24gZm9yIEpUQUcgSUNFL0lDRCBEZWJ1Z2dlcnM6CiAgKiAJQ29weXJp
+Z2h0IChDKSAyMDAzLCAyMDA0LCAyMDA1IEh5b2sgUy4gQ2hvaSAoaHlvay5jaG9pQHNhbXN1
+bmcuY29tKQogICogCVNBTVNVTkcgRUxFQ1RST05JQ1MgQ28uLEx0ZC4KKyAqICBDb3B5cmln
+aHQgKEMpIDIwMDggUGFycm90IFNBIGJ5IG1hdHRoaWV1LmNhc3RldEBwYXJyb3QuY29tCiAg
+KgogICogVGhpcyBwcm9ncmFtIGlzIGZyZWUgc29mdHdhcmU7IHlvdSBjYW4gcmVkaXN0cmli
+dXRlIGl0IGFuZC9vciBtb2RpZnkKICAqIGl0IHVuZGVyIHRoZSB0ZXJtcyBvZiB0aGUgR05V
+IEdlbmVyYWwgUHVibGljIExpY2Vuc2UgdmVyc2lvbiAyIGFzCkBAIC0xOSw3ICsyMCw2IEBA
+CiAgKgogICovCiAKLSNpbmNsdWRlIDxsaW51eC9jb25maWcuaD4KICNpbmNsdWRlIDxsaW51
+eC9tb2R1bGUuaD4KICNpbmNsdWRlIDxsaW51eC90dHkuaD4KICNpbmNsdWRlIDxsaW51eC9p
+b3BvcnQuaD4KQEAgLTM1LDIxICszNSwyMSBAQAogCiAjaW5jbHVkZSA8bGludXgvc2VyaWFs
+X2NvcmUuaD4KIAotLyoKLSAqIGlmIHJlYWwgaXJxIGludGVycnVwdCB1c2VkIGZvciByZWNl
+aXZpbmcgY2hhcmFjdGVyLAotICogdW5jb21tZW50IGJlbG93IGxpbmUgYW5kIG1vZGlmeSB0
+aGUgRENDX0lSUSB0byBjb3JyZWN0IG9uZS4KLSAqIFVubGVzcyBwb2xsaW5nIG1ldGhvZCBp
+ZCB1c2VkLgotICovCi0vLyNkZWZpbmUgRENDX0lSUV9VU0VECi0vLyNkZWZpbmUgRENDX0lS
+UQkoSU5UX05fRVhUMCkKKy8qIGZvciBQT1JUX0RDQ19KVEFHMSAqLworI2luY2x1ZGUgPG1h
+Y2gvcGFycm90X2tlcm5lbF9pZHMuaD4KKworLy8jdW5kZWYgQ09ORklHX0FSQ0hfUEFSUk9U
+CisvKiBYWFggbWF5IGJlIHVzZSBhIHBsYXRmb3JtIGRyaXZlciBmb3IgdGhpcyAqLworI2lm
+ZGVmIENPTkZJR19BUkNIX1BBUlJPVAorI2RlZmluZSBEQ0NfSVJRX1VTRUQKKyNkZWZpbmUg
+SVJRX1JYIDI3CisjZGVmaW5lIElSUV9UWCAyOAorI2Vsc2UKKy8qIHBvbGxpbmcgbW9kZSAq
+LworI2RlZmluZSBJUlFfUlggMHgxMjM0NTY3OAorI2RlZmluZSBJUlFfVFggMAogCi0jaWZu
+ZGVmICBEQ0NfSVJRX1VTRUQKLSNkZWZpbmUgRENDX1BPTExfUlVOCQkwCi0jZGVmaW5lIERD
+Q19QT0xMX1NUT1AJCTEKLSNkZWZpbmUgRENDX1BPTExfU1RPUFBFRAkyCi1zdGF0aWMgc3Ry
+dWN0IHdvcmtfc3RydWN0IGRjY19wb2xsX3Rhc2s7Ci1zdGF0aWMgdm9pZCBkY2NfcG9sbCh2
+b2lkICpkYXRhKTsKLXN0YXRpYyBpbnQgZGNjX3BvbGxfc3RhdGUgPSBEQ0NfUE9MTF9TVE9Q
+UEVEOworI3dhcm5pbmcgcG9sbGluZyBtb2RlCiAjZW5kaWYKIAogI2RlZmluZSBVQVJUX05S
+CQkJMQkvKiB3ZSBoYXZlIG9ubHkgb25lIEpUQUcgcG9ydCAqLwpAQCAtNTcsMjQwICs1Nywz
+NTkgQEAKICNpZmRlZiBDT05GSUdfU0VSSUFMX0RDQ19TVERTRVJJQUwKIC8qIHVzZSB0dHlT
+IGZvciBlbXVsYXRpb24gb2Ygc3RhbmRhcmQgc2VyaWFsIGRyaXZlciAqLwogI2RlZmluZSBT
+RVJJQUxfRENDX05BTUUJCSJ0dHlTIgorI2RlZmluZSBTRVJJQUxfRENDX01BSk9SCVRUWV9N
+QUpPUgogI2RlZmluZSBTRVJJQUxfRENDX01JTk9SCTY0CiAjZWxzZQogLyogdXNlIHR0eUow
+KDEyOCkgKi8KICNkZWZpbmUgU0VSSUFMX0RDQ19OQU1FCQkidHR5SiIKLSNkZWZpbmUgU0VS
+SUFMX0RDQ19NSU5PUgkoNjQgKyA2NCkKKyNkZWZpbmUgU0VSSUFMX0RDQ19NQUpPUgkyMDQK
+KyNkZWZpbmUgU0VSSUFMX0RDQ19NSU5PUgkxODYKICNlbmRpZgotI2RlZmluZSBTRVJJQUxf
+RENDX01BSk9SCVRUWV9NQUpPUgogCiAvKiBEQ0MgU3RhdHVzIEJpdHMgKi8KICNkZWZpbmUg
+RENDX1NUQVRVU19SWAkJKDEgPDwgMCkKICNkZWZpbmUgRENDX1NUQVRVU19UWAkJKDEgPDwg
+MSkKIAorLyogZW5kIG9mIEpUQUcxIGRlcGVuZGVuY2llcyAqLwogCi1zdGF0aWMgdm9pZAot
+ZGNjX3B1dGNoYXIoc3RydWN0IHVhcnRfcG9ydCAqcG9ydCwgaW50IGNoKQotewotCXdoaWxl
+IChfX2RjY19nZXRzdGF0dXMoKSAmIERDQ19TVEFUVVNfVFgpCi0JCWNwdV9yZWxheCgpOwot
+CV9fZGNjX3B1dGNoYXIoKGNoYXIpKGNoICYgMHhGRikpOworc3RhdGljIHZvaWQgZGNjX3R4
+X2NoYXJzKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIGludCBtYXhfY291bnQpOworc3RhdGlj
+IHZvaWQgZGNjX3J4X2NoYXJzKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpOworI2lmZGVmIERD
+Q19JUlFfVVNFRCAvKiByZWFsIElSUSB1c2VkICovCisvKiBjaGVjayBpZiB0aGVyZSBpcyBh
+IGNoYXIgdG8gcmVhZCBhbmQgd2hlbiBkb24ndCByZWFkIHRvbyBtdWNoIGNoYXIgKi8KKyNk
+ZWZpbmUgZGNjX3R4X3JlYWR5KHBvcnQpIFwKKwkoKF9fZGNjX2dldHN0YXR1cygpICYgREND
+X1NUQVRVU19UWCkgPT0gMCkKKworZW51bSB7CisJVFhfT0ZGLAorCVRYX09OLAorfTsKK3N0
+YXRpYyBpbnQgZGNjX3R4X2VuYWJsZTsKK2VudW0geworCVJYX09GRiwKKwlSWF9PTiwKKwlS
+WF9QQVVTRSwKK307CitzdGF0aWMgaW50IGRjY19yeF9lbmFibGU7CisvKiBwb3J0IGxvY2tl
+ZCwgaW50ZXJydXB0cyBsb2NhbGx5IGRpc2FibGVkICovCitzdGF0aWMgdm9pZCBkY2Nfc3Rh
+cnRfdHgoc3RydWN0IHVhcnRfcG9ydCAqcG9ydCkKK3sKKwlpZiAoZGNjX3R4X2VuYWJsZSA9
+PSBUWF9PRkYpIHsKKwkJZW5hYmxlX2lycShwb3J0LT5pcnEpOworCQlkY2NfdHhfZW5hYmxl
+ID0gVFhfT047CisJfQogfQogCi1zdGF0aWMgaW5saW5lIHZvaWQKLXhtaXRfc3RyaW5nKHN0
+cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIGNoYXIgKnAsIGludCBsZW4pCisvKiBwb3J0IGxvY2tl
+ZCwgaW50ZXJydXB0cyBsb2NhbGx5IGRpc2FibGVkICovCitzdGF0aWMgdm9pZCBkY2Nfc3Rv
+cF90eChzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0KQogewotCWZvciAoIDsgbGVuOyBsZW4tLSwg
+cCsrKQotCQlkY2NfcHV0Y2hhcihwb3J0LCAqcCk7CisJaWYgKGRjY190eF9lbmFibGUgPT0g
+VFhfT04pIHsKKwkJZGlzYWJsZV9pcnEocG9ydC0+aXJxKTsKKwkJZGNjX3R4X2VuYWJsZSA9
+IFRYX09GRjsKKwl9CiB9CiAKLXN0YXRpYyBpbmxpbmUgdm9pZAotZGNjX3RyYW5zbWl0X2J1
+ZmZlcihzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0KQorLyogcG9ydCBsb2NrZWQsIGludGVycnVw
+dHMgbG9jYWxseSBkaXNhYmxlZCAqLworc3RhdGljIHZvaWQgZGNjX3N0b3Bfcngoc3RydWN0
+IHVhcnRfcG9ydCAqcG9ydCkKIHsKLQlzdHJ1Y3QgY2lyY19idWYgKnhtaXQgPSAmcG9ydC0+
+aW5mby0+eG1pdDsKLQlpbnQgcGVuZGluZ3MgPSB1YXJ0X2NpcmNfY2hhcnNfcGVuZGluZyh4
+bWl0KTsKKwlpZiAoZGNjX3J4X2VuYWJsZSA9PSBSWF9PTikgeworCQlkaXNhYmxlX2lycSgo
+aW50KXBvcnQtPm1lbWJhc2UpOworCX0KKwlkY2NfcnhfZW5hYmxlID0gUlhfT0ZGOworfQog
+Ci0JaWYocGVuZGluZ3MgKyB4bWl0LT50YWlsID4gVUFSVF9YTUlUX1NJWkUpCi0JewotCQl4
+bWl0X3N0cmluZyhwb3J0LCAmKHhtaXQtPmJ1Zlt4bWl0LT50YWlsXSksCi0JCQlVQVJUX1hN
+SVRfU0laRSAtIHhtaXQtPnRhaWwpOwotCQl4bWl0X3N0cmluZyhwb3J0LCAmKHhtaXQtPmJ1
+ZlswXSksIHhtaXQtPmhlYWQpOwotCX0gZWxzZQotCQl4bWl0X3N0cmluZyhwb3J0LCAmKHht
+aXQtPmJ1Zlt4bWl0LT50YWlsXSksIHBlbmRpbmdzKTsKKy8qIHBvcnQgbG9ja2VkLCBpbnRl
+cnJ1cHRzIGxvY2FsbHkgZGlzYWJsZWQgKi8KK3N0YXRpYyB2b2lkIGRjY190aHJvdHRsZV9y
+eChzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0LCBpbnQgc3RvcCkKK3sKKwlpZiAoc3RvcCAmJiBk
+Y2NfcnhfZW5hYmxlID09IFJYX09OKSB7CisJCWRpc2FibGVfaXJxKChpbnQpcG9ydC0+bWVt
+YmFzZSk7CisJCWRjY19yeF9lbmFibGUgPSBSWF9QQVVTRTsKKwl9CisJZWxzZSBpZiAoc3Rv
+cCA9PSAwICYmIGRjY19yeF9lbmFibGUgPT0gUlhfUEFVU0UpIHsKKwkJZW5hYmxlX2lycSgo
+aW50KXBvcnQtPm1lbWJhc2UpOworCQlkY2NfcnhfZW5hYmxlID0gUlhfT047CisJfQorfQog
+CQotCXhtaXQtPnRhaWwgPSAoeG1pdC0+dGFpbCArIHBlbmRpbmdzKSAmIChVQVJUX1hNSVRf
+U0laRS0xKTsKLQlwb3J0LT5pY291bnQudHggKz0gcGVuZGluZ3M7CisjaW5mZGVmIENPTkZJ
+R19TRVJJQUxfRENDX0lETEVfUE9MTAoraW50IGRjY19pZGxlKHZvaWQpCit7CisJcmV0dXJu
+IDA7Cit9CisjZW5kaWYKIAotc3RhdGljIGlubGluZSB2b2lkCi1kY2NfdHJhbnNtaXRfeF9j
+aGFyKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCitzdGF0aWMgaXJxcmV0dXJuX3QgZGNjX2lu
+dF9yeChpbnQgaXJxLCB2b2lkICpkZXZfaWQpCiB7Ci0JZGNjX3B1dGNoYXIocG9ydCwgcG9y
+dC0+eF9jaGFyKTsKLQlwb3J0LT5pY291bnQudHgrKzsKLQlwb3J0LT54X2NoYXIgPSAwOwor
+CXN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQgPSBkZXZfaWQ7CisJc3Bpbl9sb2NrKCZwb3J0LT5s
+b2NrKTsKKwlkY2NfcnhfY2hhcnMocG9ydCk7CisJc3Bpbl91bmxvY2soJnBvcnQtPmxvY2sp
+OworCisJcmV0dXJuIElSUV9IQU5ETEVEOwogfQogCi1zdGF0aWMgdm9pZAotZGNjX3N0YXJ0
+X3R4KHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCitzdGF0aWMgaXJxcmV0dXJuX3QgZGNjX2lu
+dF90eChpbnQgaXJxLCB2b2lkICpkZXZfaWQpCiB7Ci0JZGNjX3RyYW5zbWl0X2J1ZmZlcihw
+b3J0KTsKKwlzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0ID0gZGV2X2lkOworCXNwaW5fbG9jaygm
+cG9ydC0+bG9jayk7CisKKwlkY2NfdHhfY2hhcnMocG9ydCwgNjQpOworCXNwaW5fdW5sb2Nr
+KCZwb3J0LT5sb2NrKTsKKworCXJldHVybiBJUlFfSEFORExFRDsKIH0KIAotc3RhdGljIGlu
+bGluZSB2b2lkCi1kY2NfcnhfY2hhcnMoc3RydWN0IHVhcnRfcG9ydCAqcG9ydCkKK3N0YXRp
+YyBpbnQgZGNjX3N0YXJ0dXAoc3RydWN0IHVhcnRfcG9ydCAqcG9ydCkKIHsKLQl1bnNpZ25l
+ZCBjaGFyIGNoOwotCXN0cnVjdCB0dHlfc3RydWN0ICp0dHkgPSBwb3J0LT5pbmZvLT50dHk7
+CisJaW50IHJldHZhbDsKIAotCS8qCi0JICogY2hlY2sgaW5wdXQuCi0JICogY2hlY2tpbmcg
+SlRBRyBmbGFnIGlzIGJldHRlciB0byByZXNvbHZlIHRoZSBzdGF0dXMgdGVzdC4KLQkgKiBp
+bmNvdW50IGlzIE5PVCB1c2VkIGZvciBKVEFHMSBwcm90b2NvbC4KLQkgKi8KKwlkY2NfdHhf
+ZW5hYmxlID0gVFhfT047CisJZGNjX3J4X2VuYWJsZSA9IFJYX09OOworCS8qIEFsbG9jYXRl
+IHRoZSBJUlEgKi8KKwlyZXR2YWwgPSByZXF1ZXN0X2lycShwb3J0LT5pcnEsIGRjY19pbnRf
+dHgsIElSUUZfRElTQUJMRUQsCisJCQkgICAgICJzZXJpYWxfZGNjX3R4IiwgcG9ydCk7CisJ
+aWYgKHJldHZhbCkKKwkJcmV0dXJuIHJldHZhbDsKIAotCWlmIChfX2RjY19nZXRzdGF0dXMo
+KSAmIERDQ19TVEFUVVNfUlgpCi0JewotCQkvKiBmb3IgSlRBRyAxIHByb3RvY29sLCBpbmNv
+dW50IGlzIGFsd2F5cyAxLiAqLwotCQljaCA9IF9fZGNjX2dldGNoYXIoKTsKKwkvKiBBbGxv
+Y2F0ZSB0aGUgSVJRICovCisJcmV0dmFsID0gcmVxdWVzdF9pcnEoKGludClwb3J0LT5tZW1i
+YXNlLCBkY2NfaW50X3J4LCBJUlFGX0RJU0FCTEVELAorCQkJICAgICAic2VyaWFsX2RjY19y
+eCIsIHBvcnQpOworCWlmIChyZXR2YWwpCisJCXJldHVybiByZXR2YWw7CiAKLQkJaWYgKHR0
+eSkgewotCQkJdHR5X2luc2VydF9mbGlwX2NoYXIodHR5LCBjaCwgVFRZX05PUk1BTCk7Ci0J
+CQlwb3J0LT5pY291bnQucngrKzsKLQkJCXR0eV9mbGlwX2J1ZmZlcl9wdXNoKHR0eSk7Ci0J
+CX0KLQl9CisJcmV0dXJuIDA7CiB9CiAKLXN0YXRpYyBpbmxpbmUgdm9pZAotZGNjX292ZXJy
+dW5fY2hhcnMoc3RydWN0IHVhcnRfcG9ydCAqcG9ydCkKK3N0YXRpYyB2b2lkIGRjY19zaHV0
+ZG93bihzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0KQogewotCXBvcnQtPmljb3VudC5vdmVycnVu
+Kys7CisJZnJlZV9pcnEocG9ydC0+aXJxLCBwb3J0KTsKKwlmcmVlX2lycSgoaW50KXBvcnQt
+Pm1lbWJhc2UsIHBvcnQpOworfQorI2Vsc2UgLyogZW11bGF0aW9uIGJ5IHNjaGVkdWxlZCB3
+b3JrICovCitzdGF0aWMgdm9pZCBkY2NfcG9sbChzdHJ1Y3Qgd29ya19zdHJ1Y3QgKndvcmsp
+Oworc3RhdGljIERFQ0xBUkVfREVMQVlFRF9XT1JLKGRjY19wb2xsX3Rhc2ssIGRjY19wb2xs
+KTsKK3N0YXRpYyBzdHJ1Y3QgdWFydF9wb3J0IGRjY19wb3J0Oworc3RhdGljIGludCBkY2Nf
+YWN0aXZlOworCisvKiBpbiBwb2xsaW5nIG1vZGUsIHdlIHdhaXQgZm9yIHRoZSBuZXh0IGNo
+YXJhY3RlciAqLworc3RhdGljIGludCBkY2NfdHhfcmVhZHkoc3RydWN0IHVhcnRfcG9ydCAq
+cG9ydCkgeworCXdoaWxlIChfX2RjY19nZXRzdGF0dXMoKSAmIERDQ19TVEFUVVNfVFgpIHsK
+KwkJLyogd2hpbGUgd2FpdGluZywgd2UgY2FuIGNoZWNrIHJ4IDogaXQgaXMgZnJlZSAqLwor
+CQlkY2NfcnhfY2hhcnMocG9ydCk7CisJCWNwdV9yZWxheCgpOworCX0KKwlyZXR1cm4gMTsK
+IH0KIAotc3RhdGljIGlubGluZSB2b2lkCi1kY2NfdHhfY2hhcnMoc3RydWN0IHVhcnRfcG9y
+dCAqcG9ydCkKK3N0YXRpYyB2b2lkIGRjY19zdGFydF90eChzdHJ1Y3QgdWFydF9wb3J0ICpw
+b3J0KQogewotCXN0cnVjdCBjaXJjX2J1ZiAqeG1pdCA9ICZwb3J0LT5pbmZvLT54bWl0Owot
+Ci0JaWYgKHBvcnQtPnhfY2hhcikgewotCQlkY2NfdHJhbnNtaXRfeF9jaGFyKHBvcnQpOwot
+CQlyZXR1cm47IAotCX0KKwlkY2NfdHhfY2hhcnMocG9ydCwgMHhGRkZGKTsKK30KIAotCWlm
+ICh1YXJ0X2NpcmNfZW1wdHkoeG1pdCkgfHwgdWFydF90eF9zdG9wcGVkKHBvcnQpKQotCQly
+ZXR1cm47CitzdGF0aWMgdm9pZCBkY2Nfc3RvcF90eChzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0
+KQoreworfQogCi0JZGNjX3RyYW5zbWl0X2J1ZmZlcihwb3J0KTsKK3N0YXRpYyB2b2lkIGRj
+Y190aHJvdHRsZV9yeChzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0LCBpbnQgc3RvcCkKK3sKK30K
+IAotCWlmICh1YXJ0X2NpcmNfY2hhcnNfcGVuZGluZyh4bWl0KSA8IFdBS0VVUF9DSEFSUykK
+LQkJdWFydF93cml0ZV93YWtldXAocG9ydCk7CitzdGF0aWMgdm9pZCBkY2Nfc3RvcF9yeChz
+dHJ1Y3QgdWFydF9wb3J0ICpwb3J0KQorewogfQogCi0jaWZkZWYgRENDX0lSUV9VU0VEIC8q
+IHJlYWwgSVJRIHVzZWQgKi8KLXN0YXRpYyBpcnFyZXR1cm5fdAotZGNjX2ludChpbnQgaXJx
+LCB2b2lkICpkZXZfaWQsIHN0cnVjdCBwdF9yZWdzICpyZWdzKQorLyogeW91IGNhbiBjYWxs
+IHRoaXMgb24geW91ciBpZGxlIGxvb3AgaW5zdGVhZCBvZiBzbGVlcGluZworICovCisjaWZk
+ZWYgQ09ORklHX1NFUklBTF9EQ0NfSURMRV9QT0xMCitpbnQgZGNjX2lkbGUodm9pZCkKIHsK
+LQlzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0ID0gZGV2X2lkOwotCWludCBoYW5kbGVkID0gMDsK
+KwlzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0ID0gJmRjY19wb3J0OworCWlmIChkY2NfYWN0aXZl
+ID09IDApCisJCXJldHVybiAwOwogCiAJc3Bpbl9sb2NrKCZwb3J0LT5sb2NrKTsKIAkKIAlk
+Y2NfcnhfY2hhcnMocG9ydCk7Ci0JZGNjX3R4X2NoYXJzKHBvcnQpOworCWRjY190eF9jaGFy
+cyhwb3J0LCA2NCk7CisJZGNjX3J4X2NoYXJzKHBvcnQpOwogCi0JaGFuZGxlZCA9IDE7CiAJ
+c3Bpbl91bmxvY2soJnBvcnQtPmxvY2spOwotCQotCXJldHVybiBJUlFfUkVUVkFMKGhhbmRs
+ZWQpOworCXJldHVybiAwOwogfQotI2Vsc2UgLyogZW11bGF0aW9uIGJ5IHNjaGVkdWxlZCB3
+b3JrICovCi1zdGF0aWMgdm9pZAotZGNjX3BvbGwodm9pZCAqZGF0YSkKKyNlbmRpZgorCisv
+KiB3ZSBwb2xsIGRjYyBldmVyeSBqaWZmaWVzICovCitzdGF0aWMgdm9pZCBkY2NfcG9sbChz
+dHJ1Y3Qgd29ya19zdHJ1Y3QgKndvcmspCiB7Ci0Jc3RydWN0IHVhcnRfcG9ydCAqcG9ydCA9
+IGRhdGE7CisJc3RydWN0IHVhcnRfcG9ydCAqcG9ydCA9ICZkY2NfcG9ydDsKIAogCXNwaW5f
+bG9jaygmcG9ydC0+bG9jayk7CiAJCi0JaWYgKGRjY19wb2xsX3N0YXRlICE9IERDQ19QT0xM
+X1JVTikgewotCQlkY2NfcG9sbF9zdGF0ZSA9IERDQ19QT0xMX1NUT1BQRUQ7Ci0JCWdvdG8g
+ZGNjX3BvbGxfc3RvcDsKLQl9Ci0KIAlkY2NfcnhfY2hhcnMocG9ydCk7Ci0JZGNjX3R4X2No
+YXJzKHBvcnQpOworCWRjY190eF9jaGFycyhwb3J0LCAweEZGRkYpOworCWRjY19yeF9jaGFy
+cyhwb3J0KTsKIAogCXNjaGVkdWxlX2RlbGF5ZWRfd29yaygmZGNjX3BvbGxfdGFzaywgMSk7
+CiAKLWRjY19wb2xsX3N0b3A6CiAJc3Bpbl91bmxvY2soJnBvcnQtPmxvY2spOwogfQorc3Rh
+dGljIGludCBkY2Nfc3RhcnR1cChzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0KQoreworCS8qIHNo
+Y2VkdWxlIHRoZSBwb2xsaW5nIHdvcmsgKi8KKwlzY2hlZHVsZV9kZWxheWVkX3dvcmsoJmRj
+Y19wb2xsX3Rhc2ssIDEpOworCWRjY19hY3RpdmUgPSAxOworCisJcmV0dXJuIDA7Cit9CisK
+K3N0YXRpYyB2b2lkIGRjY19zaHV0ZG93bihzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0KQorewor
+CWNhbmNlbF9yZWFybWluZ19kZWxheWVkX3dvcmsoJmRjY19wb2xsX3Rhc2spOworCWRjY19h
+Y3RpdmUgPSAwOworfQogI2VuZGlmIC8qIGVuZCBvZiBEQ0NfSVJRX1VTRUQgKi8KIAotc3Rh
+dGljIHVuc2lnbmVkIGludAotZGNjX3R4X2VtcHR5KHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQp
+CisKK3N0YXRpYyB2b2lkIGRjY19wdXRjaGFyKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIGlu
+dCBjaCkKIHsKLQlyZXR1cm4gVElPQ1NFUl9URU1UOworCXdoaWxlIChfX2RjY19nZXRzdGF0
+dXMoKSAmIERDQ19TVEFUVVNfVFgpCisJCWNwdV9yZWxheCgpOworCV9fZGNjX3B1dGNoYXIo
+KGNoYXIpKGNoICYgMHhGRikpOwogfQogCi1zdGF0aWMgdW5zaWduZWQgaW50Ci1kY2NfZ2V0
+X21jdHJsKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCitzdGF0aWMgdm9pZCBkY2NfcnhfY2hh
+cnMoc3RydWN0IHVhcnRfcG9ydCAqcG9ydCkKIHsKLQlyZXR1cm4gVElPQ01fQ1RTIHwgVElP
+Q01fRFNSIHwgVElPQ01fQ0Q7CisJdW5zaWduZWQgY2hhciBjaDsKKwkvKiBtYXggY2hhciB0
+byBzZW5kICovCisJaW50IGNvdW50ID0gNjQ7CisJc3RydWN0IHR0eV9zdHJ1Y3QgKnR0eSA9
+IHBvcnQtPmluZm8tPnBvcnQudHR5OworCisJLyoKKwkgKiBjaGVjayBpbnB1dC4KKwkgKiBj
+aGVja2luZyBKVEFHIGZsYWcgaXMgYmV0dGVyIHRvIHJlc29sdmUgdGhlIHN0YXR1cyB0ZXN0
+LgorCSAqIGluY291bnQgaXMgTk9UIHVzZWQgZm9yIEpUQUcxIHByb3RvY29sLgorCSAqLwor
+CisJd2hpbGUgKF9fZGNjX2dldHN0YXR1cygpICYgRENDX1NUQVRVU19SWCAmJiBjb3VudC0t
+ID4gMCkgeworCQkvKiBmb3IgSlRBRyAxIHByb3RvY29sLCBpbmNvdW50IGlzIGFsd2F5cyAx
+LiAqLworCQljaCA9IF9fZGNjX2dldGNoYXIoKTsKKworCQl0dHlfaW5zZXJ0X2ZsaXBfY2hh
+cih0dHksIGNoLCBUVFlfTk9STUFMKTsKKwkJcG9ydC0+aWNvdW50LnJ4Kys7CisJfQorCXR0
+eV9mbGlwX2J1ZmZlcl9wdXNoKHR0eSk7CiB9CiAKLXN0YXRpYyBpbnQKLWRjY19zdGFydHVw
+KHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCitzdGF0aWMgdm9pZCBkY2NfdHhfY2hhcnMoc3Ry
+dWN0IHVhcnRfcG9ydCAqcG9ydCwgaW50IG1heF9jb3VudCkKIHsKLSNpZmRlZiBEQ0NfSVJR
+X1VTRUQgLyogcmVhbCBJUlEgdXNlZCAqLwotCWludCByZXR2YWw7CisJc3RydWN0IGNpcmNf
+YnVmICp4bWl0ID0gJnBvcnQtPmluZm8tPnhtaXQ7CiAKLQkvKiBBbGxvY2F0ZSB0aGUgSVJR
+ICovCi0JcmV0dmFsID0gcmVxdWVzdF9pcnEocG9ydC0+aXJxLCBkY2NfaW50LCBTQV9JTlRF
+UlJVUFQsCi0JCQkgICAgICJzZXJpYWxfZGNjIiwgcG9ydCk7Ci0JaWYgKHJldHZhbCkKLQkJ
+cmV0dXJuIHJldHZhbDsKLSNlbHNlIC8qIGVtdWxhdGlvbiAqLwotCS8qIEluaXRpYWxpemUg
+dGhlIHdvcmssIGFuZCBzaGNlZHVsZSBpdC4gKi8KLQlJTklUX1dPUksoJmRjY19wb2xsX3Rh
+c2ssIGRjY19wb2xsLCBwb3J0KTsKLQlzcGluX2xvY2soJnBvcnQtPmxvY2spOwotCWlmIChk
+Y2NfcG9sbF9zdGF0ZSAhPSBEQ0NfUE9MTF9SVU4pCi0JCWRjY19wb2xsX3N0YXRlID0gREND
+X1BPTExfUlVOOwotCXNjaGVkdWxlX2RlbGF5ZWRfd29yaygmZGNjX3BvbGxfdGFzaywgMSk7
+Ci0Jc3Bpbl91bmxvY2soJnBvcnQtPmxvY2spOwotI2VuZGlmCisJaWYgKHBvcnQtPnhfY2hh
+cikgeworCQlkY2NfcHV0Y2hhcihwb3J0LCBwb3J0LT54X2NoYXIpOworCQlwb3J0LT5pY291
+bnQudHgrKzsKKwkJcG9ydC0+eF9jaGFyID0gMDsKKwkJZ290byBvdXQ7CisJfQorCWlmICh1
+YXJ0X2NpcmNfZW1wdHkoeG1pdCkgfHwgdWFydF90eF9zdG9wcGVkKHBvcnQpKSB7CisJCWRj
+Y19zdG9wX3R4KHBvcnQpOworCQlnb3RvIG91dDsKKwl9CiAKLQlyZXR1cm4gMDsKKwl3aGls
+ZSAoIXVhcnRfY2lyY19lbXB0eSh4bWl0KSAmJiBkY2NfdHhfcmVhZHkocG9ydCkKKwkJCSYm
+IG1heF9jb3VudC0tID4gMCkgeworCQlfX2RjY19wdXRjaGFyKHhtaXQtPmJ1Zlt4bWl0LT50
+YWlsXSk7CisJCXhtaXQtPnRhaWwgPSAoeG1pdC0+dGFpbCArIDEpICYgKFVBUlRfWE1JVF9T
+SVpFIC0gMSk7CisJCXBvcnQtPmljb3VudC50eCsrOworCX0KKworCWlmICh1YXJ0X2NpcmNf
+Y2hhcnNfcGVuZGluZyh4bWl0KSA8IFdBS0VVUF9DSEFSUykgeworCQl1YXJ0X3dyaXRlX3dh
+a2V1cChwb3J0KTsKKwl9CisJaWYgKHVhcnRfY2lyY19lbXB0eSh4bWl0KSkgeworCQlkY2Nf
+c3RvcF90eChwb3J0KTsKKwl9CisKK291dDoKKwlyZXR1cm47CiB9CiAKLXN0YXRpYyB2b2lk
+Ci1kY2Nfc2h1dGRvd24oc3RydWN0IHVhcnRfcG9ydCAqcG9ydCkKK3N0YXRpYyB1bnNpZ25l
+ZCBpbnQgZGNjX3R4X2VtcHR5KHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCiB7Ci0jaWZkZWYg
+RENDX0lSUV9VU0VEIC8qIHJlYWwgSVJRIHVzZWQgKi8KLQlmcmVlX2lycShwb3J0LT5pcnEs
+IHBvcnQpOwotI2Vsc2UKLQlzcGluX2xvY2soJnBvcnQtPmxvY2spOwotCWRjY19wb2xsX3N0
+YXRlID0gRENDX1BPTExfU1RPUDsKLQlzcGluX3VubG9jaygmcG9ydC0+bG9jayk7Ci0jZW5k
+aWYKKwlyZXR1cm4gKF9fZGNjX2dldHN0YXR1cygpICYgRENDX1NUQVRVU19UWCkgPyAwOlRJ
+T0NTRVJfVEVNVDsKK30KKworc3RhdGljIHVuc2lnbmVkIGludCBkY2NfZ2V0X21jdHJsKHN0
+cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCit7CisJcmV0dXJuIFRJT0NNX0NUUyB8IFRJT0NNX0RT
+UiB8IFRJT0NNX0NEOworfQorCisvKiBuZWVkIGZvciB0aHJvdHRsZS91bnRocm90dGxlICov
+CitzdGF0aWMgdm9pZCBkY2Nfc2V0X21jdHJsKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQsIHVu
+c2lnbmVkIGludCBtY3RybCkKK3sKKwkvKiB0aHJvdHRsZSBjbGVhciBUSU9DTV9SVFMsIHVu
+dGhyb3R0bGUgc2V0IGl0ICovCisJZGNjX3Rocm90dGxlX3J4KHBvcnQsICEobWN0cmwgJiBU
+SU9DTV9SVFMpKTsKIH0KIAotc3RhdGljIHZvaWQKLWRjY19zZXRfdGVybWlvcyhzdHJ1Y3Qg
+dWFydF9wb3J0ICpwb3J0LCBzdHJ1Y3QgdGVybWlvcyAqdGVybWlvcywKLQkJICAgc3RydWN0
+IHRlcm1pb3MgKm9sZCkKK3N0YXRpYyB2b2lkIGRjY19zZXRfdGVybWlvcyhzdHJ1Y3QgdWFy
+dF9wb3J0ICpwb3J0LCBzdHJ1Y3Qga3Rlcm1pb3MgKnRlcm1pb3MsCisJCSAgIHN0cnVjdCBr
+dGVybWlvcyAqb2xkKQogewotI2lmZGVmIERDQ19JUlFfVVNFRAogCXVuc2lnbmVkIGxvbmcg
+ZmxhZ3M7Ci0jZW5kaWYKIAl1bnNpZ25lZCBpbnQgYmF1ZCwgcXVvdDsKIAogCS8qCkBAIC0z
+MTEsMjUgKzQzMCwxOSBAQAogCWJhdWQgPSB1YXJ0X2dldF9iYXVkX3JhdGUocG9ydCwgdGVy
+bWlvcywgb2xkLCAwLCBwb3J0LT51YXJ0Y2xrLzE2KTsgCiAJcXVvdCA9IHVhcnRfZ2V0X2Rp
+dmlzb3IocG9ydCwgYmF1ZCk7CiAKLSNpZmRlZiBEQ0NfSVJRX1VTRUQKIAlzcGluX2xvY2tf
+aXJxc2F2ZSgmcG9ydC0+bG9jaywgZmxhZ3MpOwotI2VuZGlmCiAKIAl1YXJ0X3VwZGF0ZV90
+aW1lb3V0KHBvcnQsIHRlcm1pb3MtPmNfY2ZsYWcsIGJhdWQpOwogCi0jaWZkZWYgRENDX0lS
+UV9VU0VECiAJc3Bpbl91bmxvY2tfaXJxcmVzdG9yZSgmcG9ydC0+bG9jaywgZmxhZ3MpOwot
+I2VuZGlmCiB9CiAKQEAgLTM2MywyOCArNDc0LDIzIEBACiB9CiAKIC8qIGR1bW15IG9wZXJh
+dGlvbiBoYW5kbGVycyBmb3IgdWFydF9vcHMgKi8KLXN0YXRpYyB2b2lkCi1kY2NfZHVtbXlf
+b3BzKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCitzdGF0aWMgdm9pZCBkY2NfZHVtbXlfb3Bz
+KHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQpCiB7CiB9Ci1zdGF0aWMgdm9pZAotZGNjX2R1bW15
+X29wc191aShzdHJ1Y3QgdWFydF9wb3J0ICpwb3J0LCB1bnNpZ25lZCBpbnQgdWkpCi17Ci19
+Ci1zdGF0aWMgdm9pZAotZGNjX2R1bW15X29wc19pKHN0cnVjdCB1YXJ0X3BvcnQgKnBvcnQs
+IGludCBpKQorCitzdGF0aWMgdm9pZCBkY2NfYnJlYWtfY3RsKHN0cnVjdCB1YXJ0X3BvcnQg
+KnBvcnQsIGludCBpKQogewogfQogCiBzdGF0aWMgc3RydWN0IHVhcnRfb3BzIGRjY19wb3Bz
+ID0gewogCS50eF9lbXB0eQk9IGRjY190eF9lbXB0eSwKLQkuc2V0X21jdHJsCT0gZGNjX2R1
+bW15X29wc191aSwKKwkuc2V0X21jdHJsCT0gZGNjX3NldF9tY3RybCwKIAkuZ2V0X21jdHJs
+CT0gZGNjX2dldF9tY3RybCwKLQkuc3RvcF90eAk9IGRjY19kdW1teV9vcHMsCisJLnN0b3Bf
+dHgJPSBkY2Nfc3RvcF90eCwKIAkuc3RhcnRfdHgJPSBkY2Nfc3RhcnRfdHgsCi0JLnN0b3Bf
+cngJPSBkY2NfZHVtbXlfb3BzLAorCS5zdG9wX3J4CT0gZGNjX3N0b3BfcngsCiAJLmVuYWJs
+ZV9tcwk9IGRjY19kdW1teV9vcHMsCi0JLmJyZWFrX2N0bAk9IGRjY19kdW1teV9vcHNfaSwK
+KwkuYnJlYWtfY3RsCT0gZGNjX2JyZWFrX2N0bCwKIAkuc3RhcnR1cAk9IGRjY19zdGFydHVw
+LAogCS5zaHV0ZG93bgk9IGRjY19zaHV0ZG93biwKIAkuc2V0X3Rlcm1pb3MJPSBkY2Nfc2V0
+X3Rlcm1pb3MsCkBAIC0zOTYsMTQgKzUwMiwxMCBAQAogfTsKIAogc3RhdGljIHN0cnVjdCB1
+YXJ0X3BvcnQgZGNjX3BvcnQgPSB7Ci0JLm1lbWJhc2UJPSAoY2hhciopMHgxMjM0NTY3OCwJ
+Lyogd2UgbmVlZCB0aGVzZSBnYXJiYWdlcyAqLwogCS5tYXBiYXNlCT0gMHgxMjM0NTY3OCwJ
+CS8qIGZvciBzZXJpYWxfY29yZS5jICovCiAJLmlvdHlwZQkJPSBVUElPX01FTSwJCi0jaWZk
+ZWYgRENDX0lSUV9VU0VECi0JLmlycQkJPSBEQ0NfSVJRLAotI2Vsc2UKLQkuaXJxCQk9IDAs
+Ci0jZW5kaWYKKwkubWVtYmFzZQk9IChjaGFyKilJUlFfUlgsCS8qIHdlIG5lZWQgdGhlc2Ug
+Z2FyYmFnZXMgKi8KKwkuaXJxCQk9IElSUV9UWCwKIAkudWFydGNsawk9IDE0NzQ1NjAwLAog
+CS5maWZvc2l6ZQk9IDAsCiAJLm9wcwkJPSAmZGNjX3BvcHMsCg==
+--------------010405010405010905090004--
