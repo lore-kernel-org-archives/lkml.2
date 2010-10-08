@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab0JHL6t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 07:58:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:50326 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752787Ab0JHL6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 07:58:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=EMCHdtj8dBk6tb0xJF3f4tfFPmza1HlS0vj7WKC13Yex/o1WUb18cWIO6vGe12y2Ju
-         ZRyFhupKF4+/3e5oKsY7f76TzrnyWIav0mB3d8phkl06jmPc8jgD7VfsDPYy5/nJaWao
-         hwwyztyD/Q7+JIevTWa0s/Ov0firBfHl3p/9g=
+	id S932232Ab0JHMDm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 08:03:42 -0400
+Received: from atl.turmel.org ([74.117.157.138]:44307 "EHLO atl.turmel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754639Ab0JHMDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 08:03:40 -0400
+Message-ID: <4CAF089B.40204@turmel.org>
+Date: Fri, 08 Oct 2010 08:03:39 -0400
+From: Phil Turmel <philip@turmel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101003 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-From: dave b <db.pub.mail@gmail.com>
-Date: Fri, 8 Oct 2010 22:58:27 +1100
-Message-ID: <AANLkTik9yFPpX55KSRt3y3LwEGHpAQafgKj5kKgUObm1@mail.gmail.com>
-Subject: [PATCH] minor spelling fix up to the documentation in drivers/md/dm-crypt.c
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+To: =?ISO-8859-1?Q?=22J=2EA=2E_Magall=F3n=22?= <jamagallon@ono.com>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Strange raid device numbering
+References: <20101008014318.04d7ded1@werewolf.home>
+In-Reply-To: <20101008014318.04d7ded1@werewolf.home>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-diff -Nurp drivers/md/dm-crypt.c.orig drivers/md/dm-crypt.c
---- drivers/md/dm-crypt.c.orig	2010-10-08 22:53:08.000000000 +1100
-+++ drivers/md/dm-crypt.c	2010-10-08 22:53:57.000000000 +1100
-@@ -97,7 +97,7 @@ struct crypt_config {
+Hi J.A.,
 
- 	/*
- 	 * pool for per bio private data, crypto requests and
--	 * encryption requeusts/buffer pages
-+	 * encryption requests/buffer pages
- 	 */
- 	mempool_t *io_pool;
- 	mempool_t *req_pool;
+On 10/07/2010 07:43 PM, J.A. Magallón wrote:
+> Hi...
+> 
+> I'm running kernel 2.6.36-rc6.
+> I have just built a simple raid0 array with two disks, and I followed what I
+> had always done:
 
-Signed-off-by: dave bl <db.pub.mail@gmail.com>
+[snip /]
+
+> Strangely, after I reboot, the system insists in numbering it as
+> md127, instead of md0.
+> 
+> Why ?
+> How can I force it to be md0 ? (its half aesthetics, half curiosity...)
+
+I'm gonna guess that you have some combination of an initramfs, and/or you
+don't have an /etc/mdadm.conf, and/or you haven't updated your initramfs with
+the latest copy of it.
+
+Raid auto-assembly in the kernel uses the minor numbers in the superblock (if
+it can).  Assembly by mdadm without instructions from mdadm.conf uses minor
+numbers from 127 and down.  (This may have changed in mdadm in the last few
+months, but I recently switched from kernel auto-assembly to initramfs
+assembly, so I can't say for sure.)
+
+I've chosen to *not* use mdadm.conf, and find all of my devices with "LABEL="
+syntax.
+
+HTH,
+
+Phil
