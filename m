@@ -1,77 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758875Ab0JHQRb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:17:31 -0400
-Received: from mx1.sophos.com ([195.166.81.52]:57771 "EHLO mx1.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753683Ab0JHQRa convert rfc822-to-8bit (ORCPT
+	id S932236Ab0JHQUi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:20:38 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52872 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab0JHQUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:17:30 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: John Stoffel <john@stoffel.org>
-Subject: Re: Linux 2.6.36-rc7
-Date: Fri, 8 Oct 2010 17:17:25 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.4.4; x86_64; ; )
-CC: Eric Paris <eparis@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "agruen@suse.de" <agruen@suse.de>
-References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <1286486674.2571.16.camel@localhost.localdomain> <19631.15310.568446.991954@quad.stoffel.home>
-In-Reply-To: <19631.15310.568446.991954@quad.stoffel.home>
+	Fri, 8 Oct 2010 12:20:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wPm07N0qrRVjcsOUcLFBNMFo0QXfj6jAoxwyx2AOldmMoozmMX5ucGk37/3OHTBsUC
+         tuEIrpjKNXBFvU3F+IkWnzAkPlFod12ev5OeR8PjK1YwUotLwl1qzfxz2R2fwX5ttr06
+         z19VSfOYbzWKwY9C9FpmqQl0cjECFAkDBK/Zc=
+Date: Sat, 9 Oct 2010 00:22:26 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
+        Robin Holt <holt@sgi.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Willy Tarreau <w@1wt.eu>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org, James Morris <jmorris@namei.org>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        Patrick McHardy <kaber@trash.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>
+Subject: Re: [PATCH] sysctl: fix min/max handling in
+	__do_proc_doulongvec_minmax()
+Message-ID: <20101008162226.GA5724@hack>
+References: <20101004103545.GJ5189@cr0.nay.redhat.com> <1286188701.18293.57.camel@edumazet-laptop> <20101005130117.GK5170@cr0.nay.redhat.com> <20101007071859.GD5471@cr0.nay.redhat.com> <20101007092538.GE5471@cr0.nay.redhat.com> <1286445081.2912.15.camel@edumazet-laptop> <m1iq1e3qnn.fsf@fess.ebiederm.org> <1286470743.2912.276.camel@edumazet-laptop> <20101007121840.ca49e2ac.akpm@linux-foundation.org> <m1vd5d3ia9.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Message-ID: <201010081717.25940.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/10/2010 17:17:26,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/10/2010 17:17:26,
-	Serialize complete at 08/10/2010 17:17:26
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1vd5d3ia9.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 08 Oct 2010 16:42:06 John Stoffel wrote:
-> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
-> Eric> I will tell you that the way I envision it working (and being
-> Eric> backwards compatible) is that priority 0 is the last thing to be
-> Eric> serviced.  If 2 things register at the same priority the order
-> Eric> between them getting events is unpredictable.  So when an HSM
-> Eric> uses the interface it would use the highest priority.  An AV
-> Eric> vendor might use (highest priority / 2) while normal inotify
-> Eric> like listeners would all be happy using priority 0.
+On Thu, Oct 07, 2010 at 12:38:22PM -0700, Eric W. Biederman wrote:
+>Andrew Morton <akpm@linux-foundation.org> writes:
 >
-> Ugh, I'd prefer that priority 0 is first (highest), but I can see how
-> that would make ABI problems, assuming we don't punt on releasing the
-> ABI now.
+>> On Thu, 07 Oct 2010 18:59:03 +0200
+>> Eric Dumazet <eric.dumazet@gmail.com> wrote:
 >
-> So if the order is undefined now, that's not good.  Well... maybe it's
-> acceptable, but I can see all kinds of problems cropping up.
-> Hopefully they're processed in order of notifier creation instead.  So
-> if I insert a notifier, anyone who inserts a notifier after me gets
-> serviced after my notifier gets run.  That would seem to be the
-> logical and sane semantics to use here.
+>>> Thats fine by me, thanks Eric.
+>>> 
+>>> Andrew, please remove previous patch from your tree and replace it by
+>>> following one :
+>>> 
+>>> [PATCH v2] sysctl: fix min/max handling in __do_proc_doulongvec_minmax()
+>>> 
+>>> When proc_doulongvec_minmax() is used with an array of longs,
+>>> and no min/max check requested (.extra1 or .extra2 being NULL), we
+>>> dereference a NULL pointer for the second element of the array.
+>>> 
+>>> Noticed while doing some changes in network stack for the "16TB problem"
+>>> 
+>>> Fix is to not change min & max pointers in
+>>> __do_proc_doulongvec_minmax(), so that all elements of the vector share
+>>> an unique min/max limit, like proc_dointvec_minmax().
+>>> 
+>>> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+>>> ---
+>>>  kernel/sysctl.c |    2 +-
+>>>  1 file changed, 1 insertion(+), 1 deletion(-)
+>>> 
+>>> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+>>> index f88552c..8e45451 100644
+>>> --- a/kernel/sysctl.c
+>>> +++ b/kernel/sysctl.c
+>>> @@ -2485,7 +2485,7 @@ static int __do_proc_doulongvec_minmax(void *data, struct ctl_table *table, int
+>>>  		kbuf[left] = 0;
+>>>  	}
+>>>  
+>>> -	for (; left && vleft--; i++, min++, max++, first=0) {
+>>> +	for (; left && vleft--; i++, first=0) {
+>>>  		unsigned long val;
+>>>  
+>>>  		if (write) {
+>>
+>> Did we check to see whether any present callers are passing in pointers
+>> to arrays of min/max values?
 >
-> Again, I'm really approaching this as a SysAdmin who'd love to use
-> this in an HSM environment, so ordering is a *key* requirement.
+>In 2.6.36 there are not any callers that pass in a vector of anything, I
+>don't know about linux-next.  It looks to me like incrementing min and
+>max was simply a bug.
+>
 
-Ordering by time of registration? I thought of that but it falls flat once any
-service needs to restart or be restarted.
+Agreed, I checked them too.
 
-Priority is also not that great concept. I may have proposed classes or
-something similar at some point, don't remember any more. It would be
-equivalent to having allocated priority ranges, like:
+>> I wonder if there's any documentation for this interface which just
+>> became wrong.
+>
+>Or it just became right.  Clearly no one has been expecting min
+>and max to be vectors.
+>
 
->1000 - pre-content
->=100 - access-control
-<100 - content
+I think we need to document this before we rewrite the code.
 
-Doesn't really solve ordering inside groups so maybe we do not need priorities
-at all just these three classes?
-
-Tvrtko
-
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+-- 
+Live like a child, think like the god.
+ 
