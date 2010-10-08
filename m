@@ -1,72 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758127Ab0JHOCZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 10:02:25 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:60257 "EHLO mgw-sa01.nokia.com"
+	id S1756530Ab0JHOES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:04:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47651 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755944Ab0JHOCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 10:02:23 -0400
-Subject: Re: [PATCH] bdi: use deferable timer for sync_supers task
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reply-To: Artem.Bityutskiy@nokia.com
-To: Yong Wang <yong.y.wang@linux.intel.com>
-Cc: "Wu, Xia" <xia.wu@intel.com>, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <jaxboe@fusionio.com>,
-        "Wu, Fengguang" <fengguang.wu@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-In-Reply-To: <20101008102709.GA12682@ywang-moblin2.bj.intel.com>
-References: <20101008083514.GA12402@ywang-moblin2.bj.intel.com>
-	 <20101008092520.GB5426@lst.de>
-	 <A24AE1FFE7AEC5489F83450EE98351BF227AB58D43@shsmsx502.ccr.corp.intel.com>
-	 <1286532586.2095.55.camel@localhost>
-	 <A24AE1FFE7AEC5489F83450EE98351BF227AB58D51@shsmsx502.ccr.corp.intel.com>
-	 <1286533687.2095.58.camel@localhost>
-	 <20101008102709.GA12682@ywang-moblin2.bj.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Nokia
-Date: Fri, 08 Oct 2010 16:59:21 +0300
-Message-ID: <1286546361.2095.92.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1752942Ab0JHOER (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 10:04:17 -0400
+Message-ID: <4CAF24DF.4090002@suse.cz>
+Date: Fri, 08 Oct 2010 16:04:15 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
+MIME-Version: 1.0
+To: alan.tull@freescale.com
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix LOCALVERSION append plus logic
+References: <1286482732-12087-1-git-send-email-alan.tull@freescale.com>
+In-Reply-To: <1286482732-12087-1-git-send-email-alan.tull@freescale.com>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 18:27 +0800, Yong Wang wrote:
-> On Fri, Oct 08, 2010 at 01:28:07PM +0300, Artem Bityutskiy wrote:
-> > On Fri, 2010-10-08 at 18:27 +0800, Wu, Xia wrote:
-> > > > However, when the next wake-up interrupt happens is not defined. It can
-> > > > happen 1ms after, or 1 minute after, or 1 hour after. What Christoph
-> > > > says is that there should be some guarantee that sb writeout starts,
-> > > > say, within 5 to 10 seconds interval. Deferrable timers do not guarantee
-> > > > this. But take a look at the range hrtimers - they do exactly this.
-> > > 
-> > > If the system is in sleep state, is there any data which should be written?
-> > 
-> > May be yes, may be no.
-> > 
+On 7.10.2010 22:18, alan.tull@freescale.com wrote:
+> From: Alan Tull <alan.tull@freescale.com>
 > 
-> Thanks for the quick response, Artem. May I know what might need to be
-> written out when system is really idle?
+> This change fixes the logic to do what the comment says
+> when CONFIG_LOCALVERSION_AUTO and CONFIG_LOCALVERSION are
+> both not set.
+> 
+> Also fix a spelling error in the comment.
+> 
+> If the kernel tree is in git, here's the config
+> permutations (with CONFIG_LOCALVERSION_AUTO turned off)
+> and the image name resulting:
+> 
+> CONFIG_LOCALVERSION=""
+> results:
+> patched   :   Linux-2.6.35.3+
 
-I do not understand the question. There is dirty data, and it should be
-flushed within some time interval.
+That's a result of patching the kernel and thus moving away from the
+v2.6.35.3 tag.
 
-Anyway, to make the long story short, I made an attempt to optimize this
-and stop arming the timer when we have no dirty data. But my solution
-was not accepted and Al asked me to just get rid of this timer and whole
-sync_supers(). He said this should be pushed down to individual FSes. I
-guess the idea is that
 
-1) some FSes actually abuse sb synching, e.g., JFFS2.
-2) other FSes can eventually optimize things for themselves.
+> unpatched :   Linux-2.6.35.3
+> 
+> CONFIG_LOCALVERSION="-something"
+> results:
+> patched   :   Linux-2.6.35.3-something
+> unpatched :   Linux-2.6.35.3-something+
 
-But I did not find time to do this so far.
+Dunno how you got this, was it really a clean 2.6.35.3?
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
 
+> Signed-off-by: Alan Tull <alan.tull@freescale.com>
+> ---
+>  scripts/setlocalversion |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+> index 64a9cb5..4488a33 100755
+> --- a/scripts/setlocalversion
+> +++ b/scripts/setlocalversion
+> @@ -160,9 +160,9 @@ if test "$CONFIG_LOCALVERSION_AUTO" = "y"; then
+>  	# full scm version string
+>  	res="$res$(scm_version)"
+>  else
+> -	# apped a plus sign if the repository is not in a clean tagged
+> +	# append a plus sign if the repository is not in a clean tagged
+>  	# state and  LOCALVERSION= is not specified
+> -	if test "${LOCALVERSION+set}" != "set"; then
+> +	if test "$CONFIG_LOCALVERSION" = ""; then
+>  		scm=$(scm_version --short)
+>  		res="$res${scm:++}"
+>  	fi
+
+CONFIG_LOCALVERSION does not play any role here, the documented way to
+disable the plus sign is the LOCALVERSION environment or make variable:
+
+make LOCALVERSION= all
+
+Michal
