@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757240Ab0JHKU7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 06:20:59 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55265 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756933Ab0JHKU5 (ORCPT
+	id S932235Ab0JHKVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 06:21:23 -0400
+Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:25695 "EHLO
+	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757104Ab0JHKVW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 06:20:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=eiwbPV1NKPS8vjrkbcSSkKr7nd/HJSVwz+kb1mAT3JeEPAWvCn2gt4xR606GZFcm3J
-         c05jrXoFH3nLyifg23wXOddRIOvy5tcjOyi4u/brnDcCOxKDWHc4m/JWA44k1xlyN5Ky
-         Oc2PW/H5WtVbHVa5oCEKRHn0YVYKUGKXG52rA=
-Subject: Re: [PATCH 15/18] fs: introduce a per-cpu last_ino allocator
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>, Dave Chinner <david@fromorbit.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20101008101921.GD19804@ZenIV.linux.org.uk>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
-	 <1286515292-15882-16-git-send-email-david@fromorbit.com>
-	 <87d3rl5c1h.fsf@basil.nowhere.org>
-	 <20101008095824.GB19804@ZenIV.linux.org.uk>
-	 <20101008100944.GE13352@basil.fritz.box>
-	 <20101008101921.GD19804@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 08 Oct 2010 12:20:47 +0200
-Message-ID: <1286533247.2959.129.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 8 Oct 2010 06:21:22 -0400
+X-SpamScore: -28
+X-BigFish: VPS-28(zzbb2cK1432N98dN179dN9371Pzz1202hzz8275bhz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L9YVFD-02-DUV-02
+X-M-MSG: 
+Date: Fri, 8 Oct 2010 12:21:15 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] apic, x86: Use BIOS settings for IBS and MCE
+ threshold interrupt LVT offsets
+Message-ID: <20101008102115.GG13563@erda.amd.com>
+References: <1286360874-1471-1-git-send-email-robert.richter@amd.com>
+ <1286360874-1471-3-git-send-email-robert.richter@amd.com>
+ <20101006194150.GA17647@lenovo>
+ <20101008092452.GE13563@erda.amd.com>
+ <AANLkTi=6O1nUC71OiwcJBjmH-naq3ofMXyA0BqoT7Q55@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=6O1nUC71OiwcJBjmH-naq3ofMXyA0BqoT7Q55@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 08 octobre 2010 Ã  11:19 +0100, Al Viro a Ã©crit :
-> On Fri, Oct 08, 2010 at 12:09:44PM +0200, Andi Kleen wrote:
+On 08.10.10 05:37:24, Cyrill Gorcunov wrote:
+> On Fri, Oct 8, 2010 at 1:24 PM, Robert Richter <robert.richter@amd.com> wrote:
+> ...
+> >> > +                   } else if (lvt_off != offset) {
+> >>
+> >> Could we put explicit type specificator here? For better readbility.
+> >> ...
+> >
+> > Cyrill,
+> >
+> > Do you mean an explicit type cast here, or something else?
+> >
 > 
-> > > Can be done if you bother to add ->getattr() for those, but you'll need
-> > > to do some kind of lazy allocation of inumbers for those; fstat() _will_
-> > > want st_ino.
-> > 
-> > Why not just put 0 in st_ino for sockets/pipes/etc. ? 
+> Yeah, explicit type cast (not a big deal though since at moment
+> of course nothing can fire in this snippet, but I think for future
+> modifications better to have explicit cast).
+
+Hmm, don't think this is really necessary. As an alternative we could
+make variable offset an int too and then do an explicit cast when
+calling setup_APIC_eilvt().
+
+But I rather tend to leave it as it is.
+
+-Robert
+
 > 
-> Because it's a userland-visible change; right now you can compare
-> i_ino for sockets...
+> >
+> > Thanks for review,
+> >
+> > -Robert
+> >
+> 
+> Cyrill
+> 
 
-lsof for example uses i_ino
-
-
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
