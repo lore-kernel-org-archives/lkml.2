@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab0JHMDm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 08:03:42 -0400
-Received: from atl.turmel.org ([74.117.157.138]:44307 "EHLO atl.turmel.org"
+	id S1756974Ab0JHMGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 08:06:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48960 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754639Ab0JHMDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 08:03:40 -0400
-Message-ID: <4CAF089B.40204@turmel.org>
-Date: Fri, 08 Oct 2010 08:03:39 -0400
-From: Phil Turmel <philip@turmel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20101003 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1753504Ab0JHMGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 08:06:45 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Eric Paris <eparis@redhat.com>
+Subject: Re: Linux 2.6.36-rc7
+Date: Fri, 8 Oct 2010 14:06:09 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <20101007190741.2dc62626@lxorguk.ukuu.org.uk> <1286473768.2656.21.camel@dhcp231-98.rdu.redhat.com>
+In-Reply-To: <1286473768.2656.21.camel@dhcp231-98.rdu.redhat.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?=22J=2EA=2E_Magall=F3n=22?= <jamagallon@ono.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Strange raid device numbering
-References: <20101008014318.04d7ded1@werewolf.home>
-In-Reply-To: <20101008014318.04d7ded1@werewolf.home>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010081406.10190.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi J.A.,
+On Thursday 07 October 2010 19:49:28 Eric Paris wrote:
+> The safest thing would probably be to punt the syscalls to 2.6.37.
+> Which is sad since I know a number of people are already working against
+> them, but maybe that proves it's the best approach?
 
-On 10/07/2010 07:43 PM, J.A. Magallón wrote:
-> Hi...
-> 
-> I'm running kernel 2.6.36-rc6.
-> I have just built a simple raid0 array with two disks, and I followed what I
-> had always done:
+I agree with removing the syscalls from 2.6.36 because of the following 
+reasons:
 
-[snip /]
+ * Reviewers have complained that the feature was not ready to be merged, yet.
 
-> Strangely, after I reboot, the system insists in numbering it as
-> md127, instead of md0.
-> 
-> Why ?
-> How can I force it to be md0 ? (its half aesthetics, half curiosity...)
+ * At least some of the criticism did not get addressed (neither discussed nor
+   fixed).
 
-I'm gonna guess that you have some combination of an initramfs, and/or you
-don't have an /etc/mdadm.conf, and/or you haven't updated your initramfs with
-the latest copy of it.
+ * Some weaknesses in the interface design were only identified and fixed late
+   in the -rc phase, changing the ABI.  There may be more issues, like the
+   priority discussion.  This might leave us with a broken ABI we would need
+   to support forever.
 
-Raid auto-assembly in the kernel uses the minor numbers in the superblock (if
-it can).  Assembly by mdadm without instructions from mdadm.conf uses minor
-numbers from 127 and down.  (This may have changed in mdadm in the last few
-months, but I recently switched from kernel auto-assembly to initramfs
-assembly, so I can't say for sure.)
+   (Making fanotify fit for HSM hasn't been thought through at all AFAIK but
+   fanotify has legitimate use cases apart from HSM, so I don't necessarily
+   consider this a blocker.)
 
-I've chosen to *not* use mdadm.conf, and find all of my devices with "LABEL="
-syntax.
+ * The code has shown to contain the kinds of bugs which show that it was not
+   tested very well before merging.
 
-HTH,
-
-Phil
+Thanks,
+Andreas
