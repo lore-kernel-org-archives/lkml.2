@@ -1,55 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab0JHFhE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 01:37:04 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:40121 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752249Ab0JHFhB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 01:37:01 -0400
-Date: Fri, 8 Oct 2010 06:36:56 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Maciej W. Rozycki" <macro@codesourcery.com>
-Cc: David Daney <ddaney@caviumnetworks.com>, Al Viro <viro@ftp.linux.org.uk>,
-        ralf@linux-mips.org, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, "Maciej W. Rozycki" <macro@linux-mips.org>
-Subject: Re: [PATCH 3/5] mips: sanitize restart logics
-Message-ID: <20101008053656.GU19804@ZenIV.linux.org.uk>
-References: <E1P0eK5-0006j5-4q@ZenIV.linux.org.uk>
- <4CA38538.8000007@caviumnetworks.com>
- <alpine.DEB.1.10.1009300218380.25860@tp.orcam.me.uk>
+	id S1752855Ab0JHFkn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 01:40:43 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55335 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752249Ab0JHFkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 01:40:42 -0400
+Date: Fri, 8 Oct 2010 05:40:23 GMT
+From: tip-bot for Zhao Yakui <yakui.zhao@intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yakui.zhao@intel.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yakui.zhao@intel.com, tglx@linutronix.de
+In-Reply-To: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
+References: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/setup] x86, setup: Use string copy operation to optimze copy in kernel compression
+Message-ID: <tip-68f4d5a00adaab33b136fce2c72d5c377b39b0b0@git.kernel.org>
+Git-Commit-ID: 68f4d5a00adaab33b136fce2c72d5c377b39b0b0
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.1.10.1009300218380.25860@tp.orcam.me.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 08 Oct 2010 05:40:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Sep 30, 2010 at 02:50:17AM +0100, Maciej W. Rozycki wrote:
-> On Wed, 29 Sep 2010, David Daney wrote:
->  Not exactly.  These GNU C library functions rely on the magic value of 
-> "1" there to recognise contexts they created themselves and which must 
-> therefore be handled by themselves internally (these contexts are not 
-> complete and only preserve the call-saved registers as specified by the 
-> respective MIPS ABIs, and are therefore unsafe to be passed to the 
-> rt_sigreturn(2) syscall).  All the other values, including of course "0", 
-> are not treated specially and the context is passed to rt_sigreturn(2) as 
-> usually.  This only matters in cases where e.g. setcontext(3) is used to 
-> exit from or return to a signal handler.
+Commit-ID:  68f4d5a00adaab33b136fce2c72d5c377b39b0b0
+Gitweb:     http://git.kernel.org/tip/68f4d5a00adaab33b136fce2c72d5c377b39b0b0
+Author:     Zhao Yakui <yakui.zhao@intel.com>
+AuthorDate: Fri, 8 Oct 2010 09:47:33 +0800
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Thu, 7 Oct 2010 21:23:09 -0700
 
-Nothing has changed in that respect; setup_sigcontext() (and its counterparts)
-do _not_ use regs->regs[0].  Note
-        err |= __put_user(0, &sc->sc_regs[0]);
-        for (i = 1; i < 32; i++)
-                err |= __put_user(regs->regs[i], &sc->sc_regs[i]);
-in there.  The whole point of ->regs[0] uses (both original and modified)
-is that $0 is constant 0 and thus the kernel is free to use that member
-of pt_regs to indicate that syscall restart might be needed.  So's libc,
-for that matter (to distinguish between sigreturn and setcontext ones).
-When sigframe is created we still discard the value - the fragment above
-is not modified at all.
+x86, setup: Use string copy operation to optimze copy in kernel compression
 
-BTW, with original code regs->regs[0] *can* be 1, if you are leaving syscall
-with -EINVAL.  It won't reach the userland, though.
+The kernel decompression code parses the ELF header and then copies
+the segment to the corresponding destination.  Currently it uses slow
+byte-copy code.  This patch makes it use the string copy operations
+instead.
+
+In the test the copy performance can be improved very significantly after using
+the string copy operation mechanism.
+        1. The copy time can be reduced from 150ms to 20ms on one Atom machine
+	2. The copy time can be reduced about 80% on another machine
+		The time is reduced from 7ms to 1.5ms when using 32-bit kernel.
+		The time is reduced from 10ms to 2ms when using 64-bit kernel.
+
+Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
+LKML-Reference: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/boot/compressed/misc.c |   29 +++++++++++++++++++++++------
+ 1 files changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
+index 8f7bef8..23f315c 100644
+--- a/arch/x86/boot/compressed/misc.c
++++ b/arch/x86/boot/compressed/misc.c
+@@ -229,18 +229,35 @@ void *memset(void *s, int c, size_t n)
+ 		ss[i] = c;
+ 	return s;
+ }
+-
++#ifdef CONFIG_X86_32
+ void *memcpy(void *dest, const void *src, size_t n)
+ {
+-	int i;
+-	const char *s = src;
+-	char *d = dest;
++	int d0, d1, d2;
++	asm volatile(
++		"rep ; movsl\n\t"
++		"movl %4,%%ecx\n\t"
++		"rep ; movsb\n\t"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
++		: "memory");
+ 
+-	for (i = 0; i < n; i++)
+-		d[i] = s[i];
+ 	return dest;
+ }
++#else
++void *memcpy(void *dest, const void *src, size_t n)
++{
++	long d0, d1, d2;
++	asm volatile(
++		"rep ; movsq\n\t"
++		"movq %4,%%rcx\n\t"
++		"rep ; movsb\n\t"
++		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
++		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
++		: "memory");
+ 
++	return dest;
++}
++#endif
+ 
+ static void error(char *x)
+ {
