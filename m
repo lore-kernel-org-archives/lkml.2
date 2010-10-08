@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759897Ab0JHXsL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 19:48:11 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55129 "EHLO gate.crashing.org"
+	id S1759916Ab0JHXtX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 19:49:23 -0400
+Received: from gate.crashing.org ([63.228.1.57]:37841 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751603Ab0JHXsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 19:48:10 -0400
+	id S1752223Ab0JHXtW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 19:49:22 -0400
 Subject: Re: [RFC PATCH 03/11] ppc: Create ops to choose between direct
  window and iommu based on device mask
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
@@ -21,8 +21,8 @@ In-Reply-To: <1286559192-10898-4-git-send-email-nacc@us.ibm.com>
 References: <1286559192-10898-1-git-send-email-nacc@us.ibm.com>
 	 <1286559192-10898-4-git-send-email-nacc@us.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 09 Oct 2010 10:43:19 +1100
-Message-ID: <1286581399.2463.425.camel@pasglop>
+Date: Sat, 09 Oct 2010 10:44:53 +1100
+Message-ID: <1286581493.2463.428.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -41,6 +41,12 @@ not very nice at all.
 
 You may want to look at the patches I posted to the list a while back
 for doing direct DMA on Bimini:
+
+[PATCH 1/2] powerpc/dma: Add optional platform override of dma_set_mask()
+[PATCH 2/2] powerpc/dart_iommu: Support for 64-bit iommu bypass window on PCIe
+
+Cheers,
+Ben.
 
 > Signed-off-by: Milton Miller <miltonm@bga.com>
 > Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
@@ -250,5 +256,6 @@ for doing direct DMA on Bimini:
 > +	return 0;
 > +}
 > +arch_initcall(setup_choose64_ops);
+
 
 
