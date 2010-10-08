@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758367Ab0JHQL7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 12:11:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36938 "EHLO mx1.redhat.com"
+	id S1758875Ab0JHQRb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 12:17:31 -0400
+Received: from mx1.sophos.com ([195.166.81.52]:57771 "EHLO mx1.sophos.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758925Ab0JHQL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 12:11:57 -0400
-Date: Fri, 8 Oct 2010 13:07:49 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
-        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-        cl@linux-foundation.org
-Subject: Re: [PATCH v6 03/12] Retry fault before vmentry
-Message-ID: <20101008160749.GA31315@amt.cnet>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-4-git-send-email-gleb@redhat.com>
- <20101005155409.GB28955@amt.cnet>
- <20101006110704.GW11145@redhat.com>
- <20101006142050.GA31423@amt.cnet>
- <20101007184457.GA8354@redhat.com>
+	id S1753683Ab0JHQRa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 12:17:30 -0400
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: John Stoffel <john@stoffel.org>
+Subject: Re: Linux 2.6.36-rc7
+Date: Fri, 8 Oct 2010 17:17:25 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.4.4; x86_64; ; )
+CC: Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "agruen@suse.de" <agruen@suse.de>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <1286486674.2571.16.camel@localhost.localdomain> <19631.15310.568446.991954@quad.stoffel.home>
+In-Reply-To: <19631.15310.568446.991954@quad.stoffel.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101007184457.GA8354@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Message-ID: <201010081717.25940.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/10/2010 17:17:26,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 08/10/2010 17:17:26,
+	Serialize complete at 08/10/2010 17:17:26
+X-TNEFEvaluated: 1
+Content-Transfer-Encoding: 7BIT
+Content-Type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 08:44:57PM +0200, Gleb Natapov wrote:
-> On Wed, Oct 06, 2010 at 11:20:50AM -0300, Marcelo Tosatti wrote:
-> > On Wed, Oct 06, 2010 at 01:07:04PM +0200, Gleb Natapov wrote:
-> > > > Can't you set a bit in vcpu->requests instead, and handle it in "out:"
-> > > > at the end of vcpu_enter_guest? 
-> > > > 
-> > > > To have a single entry point for pagefaults, after vmexit handling.
-> > > Jumping to "out:" will skip vmexit handling anyway, so we will not reuse
-> > > same call site anyway. I don't see yet why the way you propose will have
-> > > an advantage.
-> > 
-> > What i meant was to call pagefault handler after vmexit handling.
-> > 
-> > Because the way it is in your patch now, with pre pagefault on entry,
-> > one has to make an effort to verify ordering wrt other events on entry
-> > processing.
-> > 
-> What events do you have in mind?
+On Friday 08 Oct 2010 16:42:06 John Stoffel wrote:
+> >>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
+> Eric> I will tell you that the way I envision it working (and being
+> Eric> backwards compatible) is that priority 0 is the last thing to be
+> Eric> serviced.  If 2 things register at the same priority the order
+> Eric> between them getting events is unpredictable.  So when an HSM
+> Eric> uses the interface it would use the highest priority.  An AV
+> Eric> vendor might use (highest priority / 2) while normal inotify
+> Eric> like listeners would all be happy using priority 0.
+>
+> Ugh, I'd prefer that priority 0 is first (highest), but I can see how
+> that would make ABI problems, assuming we don't punt on releasing the
+> ABI now.
+>
+> So if the order is undefined now, that's not good.  Well... maybe it's
+> acceptable, but I can see all kinds of problems cropping up.
+> Hopefully they're processed in order of notifier creation instead.  So
+> if I insert a notifier, anyone who inserts a notifier after me gets
+> serviced after my notifier gets run.  That would seem to be the
+> logical and sane semantics to use here.
+>
+> Again, I'm really approaching this as a SysAdmin who'd love to use
+> this in an HSM environment, so ordering is a *key* requirement.
 
-TLB flushing, event injection, etc.
+Ordering by time of registration? I thought of that but it falls flat once any
+service needs to restart or be restarted.
 
-> > With pre pagefault after vmexit, its more natural.
-> > 
-> I do not see non-ugly way to pass information that is needed to perform
-> the prefault to the place you want me to put it. We can skip guest entry
-> in case prefault was done which will have the same effect as your
-> proposal, but I want to have a good reason to do so since otherwise we
-> will just do more work for nothing on guest entry.
+Priority is also not that great concept. I may have proposed classes or
+something similar at some point, don't remember any more. It would be
+equivalent to having allocated priority ranges, like:
 
-The reason is that it becomes similar to normal pagefault handling. I
-don't have a specific bug to give you as example.
+>1000 - pre-content
+>=100 - access-control
+<100 - content
 
-> 
-> > Does that make sense?
-> 
-> --
-> 			Gleb.
+Doesn't really solve ordering inside groups so maybe we do not need priorities
+at all just these three classes?
+
+Tvrtko
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
