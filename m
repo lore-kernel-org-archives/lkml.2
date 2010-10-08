@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab0JHHDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:03:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62600 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750960Ab0JHHDT (ORCPT
+	id S1753971Ab0JHHI7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:08:59 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:49160 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752287Ab0JHHI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:03:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=dmHUNonOuFbd16lYOf3YSHvhz/HpYT9LbHO3bSTfir0S+NQyQB6D9JOhgwvZznc5g0
-         bvpU6dmnzBp9UiZZMoGt1RG+/wXSChp9CgLbv9aZoVK3g8xJmh+lAHk2CgPJKnbZwEih
-         B171ZXBNp/KEz7n9k17Q17if1pErHaGePmsUc=
-Date: Fri, 8 Oct 2010 09:03:07 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Achim Leubner <achim_leubner@adaptec.com>
-Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] gdth: integer overflow in ioctl
-Message-ID: <20101008070307.GF11681@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Achim Leubner <achim_leubner@adaptec.com>,
-	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	Fri, 8 Oct 2010 03:08:58 -0400
+Date: Fri, 8 Oct 2010 03:08:56 -0400
+From: Christoph Hellwig <hch@lst.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 04/18] fs: Implement lazy LRU updates for inodes.
+Message-ID: <20101008070856.GC23595@lst.de>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-5-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1286515292-15882-5-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-gdth_ioctl_alloc() takes the size variable as an int.
-copy_from_user() takes the size variable as an unsigned long.
-gen.data_len and gen.sense_len are unsigned longs.
-On x86_64 longs are 64 bit and ints are 32 bit.
+Looks good,
 
-We could pass in a very large number and the allocation would truncate
-the size to 32 bits and allocate a small buffer.  Then when we do the
-copy_from_user(), it would result in a memory corruption.
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-CC: stable@kernel.org
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+A few nipicks on the comments or lack thereof below:
 
-diff --git a/drivers/scsi/gdth.c b/drivers/scsi/gdth.c
-index b860d65..4cf7ffa 100644
---- a/drivers/scsi/gdth.c
-+++ b/drivers/scsi/gdth.c
-@@ -4175,6 +4175,14 @@ static int ioc_general(void __user *arg, char *cmnd)
-     ha = gdth_find_ha(gen.ionode);
-     if (!ha)
-         return -EFAULT;
-+
-+    if (gen.data_len > INT_MAX)
-+        return -EINVAL;
-+    if (gen.sense_len > INT_MAX)
-+        return -EINVAL;
-+    if (gen.data_len + gen.sense_len > INT_MAX)
-+        return -EINVAL;
-+
-     if (gen.data_len + gen.sense_len != 0) {
-         if (!(buf = gdth_ioctl_alloc(ha, gen.data_len + gen.sense_len,
-                                      FALSE, &paddr)))
+> @@ -489,8 +484,15 @@ static void prune_icache(int nr_to_scan)
+>  
+>  		inode = list_entry(inode_unused.prev, struct inode, i_list);
+>  
+> -		if (inode->i_state || atomic_read(&inode->i_count)) {
+> +		if (atomic_read(&inode->i_count) ||
+> +		    (inode->i_state & ~I_REFERENCED)) {
+> +			list_del_init(&inode->i_list);
+> +			percpu_counter_dec(&nr_inodes_unused);
+> +			continue;
+> +		}
+> +		if (inode->i_state & I_REFERENCED) {
+>  			list_move(&inode->i_list, &inode_unused);
+> +			inode->i_state &= ~I_REFERENCED;
+>  			continue;
+
+I think this code could use some comments explaining the lazy LRU
+scheme.
+
+> -			if (inode != list_entry(inode_unused.next,
+> -						struct inode, i_list))
+> -				continue;	/* wrong inode or list_empty */
+> -			if (!can_unuse(inode))
+> +			/*
+> +			 * if we can't reclaim this inod immediately, give it
+> +			 * another pass through the free list so we don't spin
+> +			 * on it.
+
+s/inod/inode/
+
+> +
+> +	/*
+> +	 * We avoid moving dirty inodes back onto the LRU now because I_FREEING
+> +	 * is set and hence writeback_single_inode() won't move the inode
+> +	 * around.
+> +	 */
+> +	if (!list_empty(&inode->i_list)) {
+> +		list_del_init(&inode->i_list);
+> +		percpu_counter_dec(&nr_inodes_unused);
+> +	}
+> +
+
+The comment is a bit misleading.  We do not only avoid moving it to the
+LRU, but actively delete the inode from the LRU here.  I don't think the
+I_FREEING check isn't the only reason - the LRU code traditionally
+couldn't deal with unlinked inodes at all, although the switch to
+->evict_inode probably has fixed that.
+
+
