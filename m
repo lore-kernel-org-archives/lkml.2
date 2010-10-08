@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933081Ab0JHUAJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 16:00:09 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:3336 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933159Ab0JHUAD (ORCPT
+	id S933199Ab0JHUAT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 16:00:19 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:22417 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933159Ab0JHUAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 16:00:03 -0400
-Subject: [PATCH 10/13] hpsa: take the adapter lock in
-	hpsa_wait_for_mode_change_ack
+	Fri, 8 Oct 2010 16:00:12 -0400
+Subject: [PATCH 12/13] hpsa: use usleep_range not msleep for small sleeps
 To: axboe@kernel.dk, James.Bottomley@HansenPartnership.com
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, thenzl@redhat.com, mike.miller@hp.com,
         linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Fri, 08 Oct 2010 15:06:52 -0500
-Message-ID: <20101008200652.24279.82954.stgit@beardog.cce.hp.com>
+Date: Fri, 08 Oct 2010 15:07:03 -0500
+Message-ID: <20101008200703.24279.96566.stgit@beardog.cce.hp.com>
 In-Reply-To: <20101008200453.24279.6638.stgit@beardog.cce.hp.com>
 References: <20101008200453.24279.6638.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -27,54 +26,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Need to take the lock while accessing the register to check to
-see if config table changes have taken effect.
-
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/scsi/hpsa.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/scsi/hpsa.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/drivers/scsi/hpsa.c b/drivers/scsi/hpsa.c
-index d618432..ffc5f74 100644
+index a68dba7..c36427d 100644
 --- a/drivers/scsi/hpsa.c
 +++ b/drivers/scsi/hpsa.c
-@@ -3576,13 +3576,18 @@ static inline void hpsa_p600_dma_prefetch_quirk(struct ctlr_info *h)
- static void __devinit hpsa_wait_for_mode_change_ack(struct ctlr_info *h)
- {
- 	int i;
-+	u32 doorbell_value;
-+	unsigned long flags;
- 
- 	/* under certain very rare conditions, this can take awhile.
- 	 * (e.g.: hot replace a failed 144GB drive in a RAID 5 set right
- 	 * as we enter this code.)
- 	 */
- 	for (i = 0; i < MAX_CONFIG_WAIT; i++) {
--		if (!(readl(h->vaddr + SA5_DOORBELL) & CFGTBL_ChangeReq))
-+		spin_lock_irqsave(&h->lock, flags);
-+		doorbell_value = readl(h->vaddr + SA5_DOORBELL);
-+		spin_unlock_irqrestore(&h->lock, flags);
-+		if (!doorbell_value & CFGTBL_ChangeReq)
+@@ -3594,7 +3594,7 @@ static void __devinit hpsa_wait_for_mode_change_ack(struct ctlr_info *h)
+ 		if (!doorbell_value & CFGTBL_ChangeReq)
  			break;
  		/* delay and try again */
- 		msleep(10);
-@@ -3754,6 +3759,8 @@ static int __devinit hpsa_init_one(struct pci_dev *pdev,
- 	h->busy_initializing = 1;
- 	INIT_HLIST_HEAD(&h->cmpQ);
- 	INIT_HLIST_HEAD(&h->reqQ);
-+	spin_lock_init(&h->lock);
-+	spin_lock_init(&h->scan_lock);
- 	rc = hpsa_pci_init(h);
- 	if (rc != 0)
- 		goto clean1;
-@@ -3813,8 +3820,6 @@ static int __devinit hpsa_init_one(struct pci_dev *pdev,
+-		msleep(10);
++		usleep_range(10000, 20000);
  	}
- 	if (hpsa_allocate_sg_chain_blocks(h))
- 		goto clean4;
--	spin_lock_init(&h->lock);
--	spin_lock_init(&h->scan_lock);
- 	init_waitqueue_head(&h->scan_wait_queue);
- 	h->scan_finished = 1; /* no scan currently in progress */
+ }
  
 
