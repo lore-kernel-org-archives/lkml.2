@@ -1,71 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759528Ab0JHTU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 15:20:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38118 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758961Ab0JHTUZ (ORCPT
+	id S932855Ab0JHT2U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 15:28:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48248 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759367Ab0JHT2M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 15:20:25 -0400
+	Fri, 8 Oct 2010 15:28:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=CztqnuTBKN/dRr7FJxxJEgFbQr4WiLyyaAxFgAt3C6yH3tsk1g/z+hLrIXipU37Ku2
-         GAvaTWcmsszHhg9u72E/0JUDGRPawT/YVJr6CcYTJMBeWwugn4YiWiPu3j2YNrGuDtix
-         fulT5AEbsNECiPSjHKEYvNyDALOoGsXfSV2ZY=
-MIME-Version: 1.0
-In-Reply-To: <1286564491.4153.284.camel@m0nster>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
- <20101007215019.17b4a34a@lxorguk.ukuu.org.uk> <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
- <20101007220538.2294a7e4@lxorguk.ukuu.org.uk> <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
- <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
- <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com> <20101008091331.74871a42@lxorguk.ukuu.org.uk>
- <1286551434.4153.21.camel@m0nster> <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
- <1286556328.4153.142.camel@m0nster> <AANLkTikc8X0nz1cCxgfbaqLzCMiBLogLeU0ZdFoGEpP6@mail.gmail.com>
- <1286564491.4153.284.camel@m0nster>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Fri, 8 Oct 2010 15:20:03 -0400
-X-Google-Sender-Auth: s5G0XYu_o208PfitZxjAAE4nwIg
-Message-ID: <AANLkTim5E5WwD64RJ7NAk6Zr9NZ6jstrKSmjRTL039VR@mail.gmail.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
+        h=from:to:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=w73uqKyh/Tpraw6I6ywrJCir5LVlzPQk/MGHllbgebz2ePCIr9EFZcQnKgurPJUxI3
+         JYV+feYei8l8CrecyNIzg6i06BFKgWoF+GDjTJUovG6pd8+28cunuu8Vvaqpiz9jmBfF
+         q+J/OQxCOhjbW8r8SFhvy8lLcI4Dg3njC7YVw=
+From: Nicolas Palix <npalix.work@gmail.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, Nicolas Palix <npalix.work@gmail.com>,
+        Julia Lawall <julia@diku.dk>, Michal Marek <mmarek@suse.cz>,
+        Kulikov Vasiliy <segooon@gmail.com>,
+        Gilles Muller <Gilles.Muller@lip6.fr>, Sam Ravnborg <sam@ravnborg.org>,
+        Joerg Roedel <joerg.roedel@amd.com>, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, cocci@diku.dk
+Subject: [PATCH 2/6] Coccinelle: Update documentation
+Date: Fri,  8 Oct 2010 21:27:37 +0200
+Message-Id: <1286566061-17122-3-git-send-email-npalix.work@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1286566061-17122-1-git-send-email-npalix.work@gmail.com>
+References: <1286566061-17122-1-git-send-email-npalix.work@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 15:01, Daniel Walker wrote:
-> On Fri, 2010-10-08 at 14:38 -0400, Mike Frysinger wrote:
->> On Fri, Oct 8, 2010 at 12:45, Daniel Walker wrote:
->> > On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
->> >> > I don't think the kernel is going to implode if we allow an optional
->> >> > ttyS override for debugging purposes.. I just don't see that "screwing"
->> >> > up the kernel.
->> >>
->> >> That is perhaps why you are not a subsystem maintainer.
->> >
->> > No, I'm sure it's not.
->> >
->> > What I was telling Greg is that this type of override is allowed right
->> > now, if you mod the source (everything is allowed if you mod the source
->> > right?) ..
->>
->> just because someone can mod the source code to add a root shell
->> doesnt mean we should accept patches to do it
->
-> That's not what I was getting at. If you can mod the source to add the
-> override, then adding in a patch which also requires you to mod the
-> source to add the override should be acceptable because it's no
-> different that what we currently have.
+ - Add information about use of the C={1,2} make flag
+ - Add a description of the new chain mode mechanism
+ - Add a link to the wiki
 
-sorry, but you lost me.  all i see is "drop the hack code".
--mike
+Signed-off-by: Nicolas Palix <npalix.work@gmail.com>
+Signed-off-by: Julia Lawall <julia@diku.dk>
+---
+ Documentation/coccinelle.txt |   42 +++++++++++++++++++++++++++++++++++-------
+ 1 files changed, 35 insertions(+), 7 deletions(-)
+
+diff --git a/Documentation/coccinelle.txt b/Documentation/coccinelle.txt
+index cd2b028..a43eaeb 100644
+--- a/Documentation/coccinelle.txt
++++ b/Documentation/coccinelle.txt
+@@ -24,6 +24,9 @@ of many distributions, e.g. :
+ You can get the latest version released from the Coccinelle homepage at
+ http://coccinelle.lip6.fr/
+ 
++Information and tips about Coccinelle are also provided on the wiki
++pages at http://cocci.ekstranet.diku.dk/wiki/doku.php
++
+ Once you have it, run the following command:
+ 
+      	./configure
+@@ -41,20 +44,22 @@ A Coccinelle-specific target is defined in the top level
+ Makefile. This target is named 'coccicheck' and calls the 'coccicheck'
+ front-end in the 'scripts' directory.
+ 
+-Four modes are defined: report, patch, context, and org. The mode to
++Four modes are defined: patch, report, context, and org. The mode to
+ use is specified by setting the MODE variable with 'MODE=<mode>'.
+ 
++'patch' proposes a fix, when possible.
++
+ 'report' generates a list in the following format:
+   file:line:column-column: message
+ 
+-'patch' proposes a fix, when possible.
+-
+ 'context' highlights lines of interest and their context in a
+ diff-like style.Lines of interest are indicated with '-'.
+ 
+ 'org' generates a report in the Org mode format of Emacs.
+ 
+-Note that not all semantic patches implement all modes.
++Note that not all semantic patches implement all modes. To easy use
++of Coccinelle, the default mode is "chain" which tries the previous
++modes in the order above until one successes. 
+ 
+ To make a report for every semantic patch, run the following command:
+ 
+@@ -68,9 +73,9 @@ To produce patches, run:
+ 
+ 
+ The coccicheck target applies every semantic patch available in the
+-subdirectories of 'scripts/coccinelle' to the entire Linux kernel.
++sub-directories of 'scripts/coccinelle' to the entire Linux kernel.
+ 
+-For each semantic patch, a changelog message is proposed.  It gives a
++For each semantic patch, a commit message is proposed.  It gives a
+ description of the problem being checked by the semantic patch, and
+ includes a reference to Coccinelle.
+ 
+@@ -93,12 +98,35 @@ or
+ 	make coccicheck COCCI=<my_SP.cocci> MODE=report
+ 
+ 
++ Using Coccinelle on (modified) files
++~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++
++To apply Coccinelle on a file basis, instead of a directory basis, the
++following command may be used:
++    
++    make C=1 CHECK="scripts/coccicheck"
++    
++To check only newly edited code, use the value 2 for the C flag, i.e.
++    
++    make C=2 CHECK="scripts/coccicheck"
++    
++This runs every semantic patch in scripts/coccinelle by default. The
++COCCI variable may additionally be used to only apply a single
++semantic patch as shown in the previous section.
++
++The "chain" mode is the default. You can select another one with the
++MODE variable explained above.
++
++In this mode, there is no information about semantic patches
++displayed, and no commit message proposed.
++
++
+  Proposing new semantic patches
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 
+ New semantic patches can be proposed and submitted by kernel
+ developers. For sake of clarity, they should be organized in the
+-subdirectories of 'scripts/coccinelle/'.
++sub-directories of 'scripts/coccinelle/'.
+ 
+ 
+  Detailed description of the 'report' mode
+-- 
+1.7.0.4
+
