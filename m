@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932449Ab0JHRJo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 13:09:44 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:36308 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932423Ab0JHRJn (ORCPT
+	id S932466Ab0JHRMO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 13:12:14 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42306 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932387Ab0JHRMN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 13:09:43 -0400
-Date: Fri, 8 Oct 2010 18:09:41 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Andi Kleen <andi@firstfloor.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com, linux-mm@kvack.org,
-        Andi Kleen <ak@linux.intel.com>,
-        Manuel Lauss <manuel.lauss@googlemail.com>, linux-mips@linux-mips.org
-Subject: Re: [PATCH 2/4] HWPOISON: Copy si_addr_lsb to user
-Message-ID: <20101008170941.GA3025@linux-mips.org>
-References: <1286398141-13749-1-git-send-email-andi@firstfloor.org>
- <1286398141-13749-3-git-send-email-andi@firstfloor.org>
+	Fri, 8 Oct 2010 13:12:13 -0400
+Date: Fri, 8 Oct 2010 11:12:10 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Andres Salomon <dilinger@queued.net>
+Cc: sparclinux@vger.kernel.org, davem@davemloft.net,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: Re: [PATCH 1/2 v2] of: move phandle/ihandle into types.h and
+ export to userspace
+Message-ID: <20101008171210.GE3863@angua.secretlab.ca>
+References: <20101008004354.13b5b254@debxo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286398141-13749-3-git-send-email-andi@firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101008004354.13b5b254@debxo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 06, 2010 at 10:48:59PM +0200, Andi Kleen wrote:
-
-> The original hwpoison code added a new siginfo field si_addr_lsb to
-> pass the granuality of the fault address to user space. Unfortunately
-> this field was never copied to user space. Fix this here.
+On Fri, Oct 08, 2010 at 12:43:54AM -0700, Andres Salomon wrote:
 > 
-> I added explicit checks for the MCEERR codes to avoid having
-> to patch all potential callers to initialize the field.
+> We need phandle for some exported sparc headers; of.h isn't an
+> exported header, and it would be silly to export it when all we
+> really need is one or two types from it.  Also, later patches
+> use phandle in structs that are exported to userspace, so export
+> a __kernel_phandle type.
+> 
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-That doesn't fly, see below.
+Looks okay to me.  I'm build testing it now on powerpc and
+microblaze.  If davem agrees, then I'll pick it up into my
+devicetree-next branch.
 
-> --- a/kernel/signal.c
-> +++ b/kernel/signal.c
-> @@ -2215,6 +2215,14 @@ int copy_siginfo_to_user(siginfo_t __user *to, siginfo_t *from)
->  #ifdef __ARCH_SI_TRAPNO
->  		err |= __put_user(from->si_trapno, &to->si_trapno);
->  #endif
-> +#ifdef BUS_MCEERR_AO
-> +		/* 
-> +		 * Other callers might not initialize the si_lsb field,
-> +	 	 * so check explicitely for the right codes here.
-> +		 */
-> +		if (from->si_code == BUS_MCEERR_AR || from->si_code == BUS_MCEERR_AO)
-> +			err |= __put_user(from->si_addr_lsb, &to->si_addr_lsb);
-> +#endif
+Question though; since sparc userspace is the only user of this,
+should the types.h header avoid exposing it on non-sparc?
 
-include/asm-generic/siginfo.h defines BUS_MCEERR_AR unconditionally and is
-getting include in all <asm/siginfo.h> so that #ifdef condition is always
-true.  struct siginfo.si_addr_lsb is defined only for the generic struct
-siginfo.  The architectures that define HAVE_ARCH_SIGINFO_T (MIPS and
-IA-64) do not define this field so the build breaks.
+g.
 
-  Ralf
+> ---
+>  include/linux/of.h    |    3 ---
+>  include/linux/types.h |    7 +++++++
+>  2 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index cad7cf0..db184dc 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -25,9 +25,6 @@
+>  
+>  #ifdef CONFIG_OF
+>  
+> -typedef u32 phandle;
+> -typedef u32 ihandle;
+> -
+>  struct property {
+>  	char	*name;
+>  	int	length;
+> diff --git a/include/linux/types.h b/include/linux/types.h
+> index 01a082f..67a034a 100644
+> --- a/include/linux/types.h
+> +++ b/include/linux/types.h
+> @@ -178,10 +178,17 @@ typedef __u64 __bitwise __be64;
+>  typedef __u16 __bitwise __sum16;
+>  typedef __u32 __bitwise __wsum;
+>  
+> +/* Basic openboot/openfirmware types */
+> +typedef __u32 __kernel_phandle;
+> +typedef __u32 __kernel_ihandle;
+> +
+>  #ifdef __KERNEL__
+>  typedef unsigned __bitwise__ gfp_t;
+>  typedef unsigned __bitwise__ fmode_t;
+>  
+> +typedef __kernel_phandle phandle;
+> +typedef __kernel_ihandle ihandle;
+> +
+>  #ifdef CONFIG_PHYS_ADDR_T_64BIT
+>  typedef u64 phys_addr_t;
+>  #else
+> -- 
+> 1.5.6.5
+> 
