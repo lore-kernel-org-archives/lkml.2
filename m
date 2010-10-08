@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab0JHOJZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 10:09:25 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:58977 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752417Ab0JHOJY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 10:09:24 -0400
-Date: Sat, 9 Oct 2010 01:09:20 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/18] fs: rework icount to be a locked variable
-Message-ID: <20101008140920.GG4681@dastard>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-10-git-send-email-david@fromorbit.com>
- <20101008093202.GX19804@ZenIV.linux.org.uk>
- <20101008101549.GC4681@dastard>
- <20101008135303.GA15316@infradead.org>
+	id S1757294Ab0JHOQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 10:16:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42305 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753981Ab0JHOQf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 10:16:35 -0400
+Date: Fri, 8 Oct 2010 10:16:27 -0400
+From: Aristeu Rozanski <aris@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ping Cheng <pinglinux@gmail.com>
+Subject: [PATCH] wacom: fix pressure in Cintiq 21UX2
+Message-ID: <20101008141627.GN341@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101008135303.GA15316@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 09:53:04AM -0400, Christoph Hellwig wrote:
-> On Fri, Oct 08, 2010 at 09:15:49PM +1100, Dave Chinner wrote:
-> > > You are overdoing the information hiding here; _way_ too many small
-> > > functions that don't buy you anything so far, AFAICS.
-> > 
-> > See akpm's comments on the previous version of the series.
-> 
-> It's one persons opinion.  I tend to disagree with lots of it.  iref
-> is a good new helper for filesystems to use, but for the unlocked
-> read it's reather pointless.  iref_locked is even more pointless -
-> it's only used in core fs code (fs/inode.c, fs/fs-writeback.c,
-> fs/drop_caches.c, fs/notify/inode_mark.c and fs/quota/dquot.c) and
-> an opencoded increment would be a lot more readable.
+Currently the pressure range in Cintiq 21UX2 is limited to half of the
+supported. This patch fixes the problem.
 
-I don't care one way or the other and certainly not enough to argue
-about it. I'll change the code to match whatever is decreed as the
-Right Way To Do Stuff.
+Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-Cheers,
+---
+ drivers/input/tablet/wacom_wac.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+--- linus-2.6.orig/drivers/input/tablet/wacom_wac.c	2010-09-22 14:52:22.000000000 -0400
++++ linus-2.6/drivers/input/tablet/wacom_wac.c	2010-10-07 17:20:30.000000000 -0400
+@@ -442,7 +442,8 @@ static void wacom_intuos_general(struct 
+ 	/* general pen packet */
+ 	if ((data[1] & 0xb8) == 0xa0) {
+ 		t = (data[6] << 2) | ((data[7] >> 6) & 3);
+-		if (features->type >= INTUOS4S && features->type <= INTUOS4L)
++		if (features->type >= INTUOS4S && features->type <= INTUOS4L ||
++		    features->type == WACOM_21UX2)
+ 			t = (t << 1) | (data[1] & 1);
+ 		input_report_abs(input, ABS_PRESSURE, t);
+ 		input_report_abs(input, ABS_TILT_X,
