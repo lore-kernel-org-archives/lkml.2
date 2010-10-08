@@ -1,70 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab0JHBMH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 21:12:07 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:62398 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751314Ab0JHBMF (ORCPT
+	id S1752297Ab0JHBYo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 21:24:44 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:55714 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751314Ab0JHBYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 21:12:05 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Thu, 07 Oct 2010 21:12:03 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Daniel Walker <dwalker@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Saravana Kannan <skannan@codeaurora.org>,
-        Santosh Shilimkar <santosh.shilimkar@ti.com>,
-        Colin Cross <ccross@android.com>, linux-arm-kernel@lists.infradead.org,
-        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 1/3] [ARM] Translate delay.S into (mostly) C
-In-reply-to: <4CAE619A.2050302@codeaurora.org>
-Message-id: <alpine.LFD.2.00.1010072107560.3107@xanadu.home>
-References: <1285644827-6846-1-git-send-email-sboyd@codeaurora.org>
- <1285644827-6846-2-git-send-email-sboyd@codeaurora.org>
- <1286299355.18791.11.camel@c-dwalke-linux.qualcomm.com>
- <4CABEECB.4030301@codeaurora.org>
- <alpine.LFD.2.00.1010061024220.3107@xanadu.home>
- <4CACC053.2090509@codeaurora.org> <1286393743.22265.129.camel@m0nster>
- <alpine.LFD.2.00.1010061553350.3107@xanadu.home>
- <4CAE619A.2050302@codeaurora.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 7 Oct 2010 21:24:43 -0400
+Date: Fri, 8 Oct 2010 10:12:22 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v2] memcg: reduce lock time at move charge (Was Re:
+ [PATCH 04/10] memcg: disable local interrupts in lock_page_cgroup()
+Message-Id: <20101008101222.1aab03ae.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101007161454.84570cf9.akpm@linux-foundation.org>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-5-git-send-email-gthelen@google.com>
+	<20101005160332.GB9515@barrios-desktop>
+	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
+	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
+	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
+	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
+	<20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007161454.84570cf9.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Oct 2010, Stephen Boyd wrote:
+On Thu, 7 Oct 2010 16:14:54 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-> Why doesn't any other architecture use assembly for their lpj code? They
-> may use headers with assembly in them or C code with assembly in them,
-> but they don't write all of the delay code in assembly and rely on
-> function interleaving. This leads me to believe other arches aren't
-> concerned about compiler optimizations breaking lpj cmdline parameters,
-> so why should ARM be concerned?
+> On Thu, 7 Oct 2010 17:04:05 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
-> I tested the theory out and scaled down the CPU frequency to 19.2 MHz
-> and then called calibrate_delay(). Before and after applying this series
-> I got the same results.
+> > Now, at task migration among cgroup, memory cgroup scans page table and moving
+> > account if flags are properly set.
+> > 
+> > The core code, mem_cgroup_move_charge_pte_range() does
+> > 
+> >  	pte_offset_map_lock();
+> > 	for all ptes in a page table:
+> > 		1. look into page table, find_and_get a page
+> > 		2. remove it from LRU.
+> > 		3. move charge.
+> > 		4. putback to LRU. put_page()
+> > 	pte_offset_map_unlock();
+> > 
+> > for pte entries on a 3rd level? page table.
+> > 
+> > This pte_offset_map_lock seems a bit long. This patch modifies a rountine as
+> > 
+> > 	for 32 pages: pte_offset_map_lock()
+> > 		      find_and_get a page
+> > 		      record it
+> > 		      pte_offset_map_unlock()
+> > 	for all recorded pages
+> > 		      isolate it from LRU.
+> > 		      move charge
+> > 		      putback to LRU
+> > 	for all recorded pages
+> > 		      put_page()
 > 
-> Calibrating delay loop... 12.67 BogoMIPS (lpj=63360)
+> The patch makes the code larger, more complex and slower!
 > 
-> Jumping up to 1.2 GHz and calling calibrate_delay() gives me the same
-> before and after
+Before this patch:
+   text    data     bss     dec     hex filename
+  27163   11782    4100   43045    a825 mm/memcontrol.o
+
+After this patch:
+   text    data     bss     dec     hex filename
+  27307   12294    4100   43701    aab5 mm/memcontrol.o
+
+hmm, allocating mc.target[] statically might be bad, but I'm now wondering
+whether I could allocate mc itself dynamically(I'll try).
+
+> I do think we're owed a more complete description of its benefits than
+> "seems a bit long".  Have problems been observed?  Any measurements
+> taken?
 > 
-> Calibrating delay loop... 792.98 BogoMIPS (lpj=3964928)
+IIUC, this patch is necessary for "[PATCH] memcg: lock-free clear page writeback"
+later, but I agree we should describe it.
 
-OK, fair enough.
-
-> I don't have access to a machine capable of running slower than 19.2
-> MHz. Maybe machines running in the KHz range would experience differences?
-
-Don't worry, I doubt any ARM processor capable of running Linux ever was 
-that slow.
-
-
-Nicolas
+Thanks,
+Daisuke Nishimura.
