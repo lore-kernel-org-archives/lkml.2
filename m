@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759670Ab0JHVAs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 17:00:48 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49712
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755003Ab0JHVAr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 17:00:47 -0400
-Date: Fri, 08 Oct 2010 14:01:08 -0700 (PDT)
-Message-Id: <20101008.140108.116386012.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-next-2.6 2010-10-08
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101008201008.GA2414@tuxdriver.com>
-References: <20101008201008.GA2414@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S933031Ab0JHVDy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 17:03:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38186 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932914Ab0JHVDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 17:03:53 -0400
+From: Andreas Gruenbacher <agruen@suse.de>
+Organization: SUSE Labs, Novell Inc.
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Subject: Re: Linux 2.6.36-rc7
+Date: Fri, 8 Oct 2010 23:03:17 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
+Cc: John Stoffel <john@stoffel.org>, Eric Paris <eparis@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com> <19631.15310.568446.991954@quad.stoffel.home> <201010081717.25940.tvrtko.ursulin@sophos.com>
+In-Reply-To: <201010081717.25940.tvrtko.ursulin@sophos.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010082303.17706.agruen@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Fri, 8 Oct 2010 16:10:09 -0400
+On Friday 08 October 2010 18:17:25 Tvrtko Ursulin wrote:
+> Doesn't really solve ordering inside groups so maybe we do not need
+> priorities at all just these three classes?
 
-> This offering is mostly the usual driver updates and such for ath9k,
-> iwlwifi, rt2x00, wl1271, and a few others.  Also featured are a number
-> of mac80211, cfg80211 and nl80211 improvements from Johannes, as well
-> as some mac80211 scanning improvements from Stanislaw.  Johannes is
-> also sneaking a genetlink feature through this tree, of which you
-> are already aware. :-)
+Applications can easily make the priority they register with configurable (and 
+default to something in their "range" if we define such ranges).  Wouldn't 
+this be enough?
 
-That sneaky Johannes.
-
-Pulled, thanks John.
+Andreas
