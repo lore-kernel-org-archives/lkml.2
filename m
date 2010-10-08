@@ -1,103 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752855Ab0JHFkn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 01:40:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55335 "EHLO hera.kernel.org"
+	id S1753005Ab0JHFuh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 01:50:37 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37614 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab0JHFkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 01:40:42 -0400
-Date: Fri, 8 Oct 2010 05:40:23 GMT
-From: tip-bot for Zhao Yakui <yakui.zhao@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yakui.zhao@intel.com, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yakui.zhao@intel.com, tglx@linutronix.de
-In-Reply-To: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
-References: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/setup] x86, setup: Use string copy operation to optimze copy in kernel compression
-Message-ID: <tip-68f4d5a00adaab33b136fce2c72d5c377b39b0b0@git.kernel.org>
-Git-Commit-ID: 68f4d5a00adaab33b136fce2c72d5c377b39b0b0
-X-Mailer: tip-git-log-daemon
+	id S1752408Ab0JHFug convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 01:50:36 -0400
+From: Nikanth Karthikesan <knikanth@suse.de>
+Organization: suse.de
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Assign CPUs to nodes in round-robin manner on Fake NUMA.
+Date: Fri, 8 Oct 2010 11:23:32 +0530
+User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-default; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, x86@kernel.org,
+        Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+References: <201009301734.10787.knikanth@suse.de> <20101007004252.599b6888.akpm@linux-foundation.org>
+In-Reply-To: <20101007004252.599b6888.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 08 Oct 2010 05:40:24 +0000 (UTC)
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201010081123.32920.knikanth@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  68f4d5a00adaab33b136fce2c72d5c377b39b0b0
-Gitweb:     http://git.kernel.org/tip/68f4d5a00adaab33b136fce2c72d5c377b39b0b0
-Author:     Zhao Yakui <yakui.zhao@intel.com>
-AuthorDate: Fri, 8 Oct 2010 09:47:33 +0800
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Thu, 7 Oct 2010 21:23:09 -0700
+On Thursday 07 October 2010 13:12:52 Andrew Morton wrote:
+> On Thu, 30 Sep 2010 17:34:10 +0530 Nikanth Karthikesan <knikanth@suse.de> 
+wrote:
+> > Assign CPUs to nodes in round-robin manner on Fake NUMA.
+> >
+> > commit d9c2d5ac6af87b4491bff107113aaf16f6c2b2d9
+> > "x86, numa: Use near(er) online node instead of roundrobin for NUMA"
+> > changed NUMA initialization on Intel to choose the nearest online node or
+> > first node. Fake NUMA would be better of with round-robin initialization,
+> > instead of the all CPUS on first node. Change the choice of first node,
+> > back to round-robin.
+> 
+> Why would fake NUMA "be better off with round-robin initialization"?
+> 
 
-x86, setup: Use string copy operation to optimze copy in kernel compression
+For testing NUMA kernel behaviour without cpusets and NUMA aware applications, 
+it would be better to have cpus in different nodes, rather than all in a 
+single node. With cpusets migration of tasks scenarios cannot not be tested.
 
-The kernel decompression code parses the ELF header and then copies
-the segment to the corresponding destination.  Currently it uses slow
-byte-copy code.  This patch makes it use the string copy operations
-instead.
+I guess having it round-robin shouldn't affect the use cases for all cpus on 
+the first node.
 
-In the test the copy performance can be improved very significantly after using
-the string copy operation mechanism.
-        1. The copy time can be reduced from 150ms to 20ms on one Atom machine
-	2. The copy time can be reduced about 80% on another machine
-		The time is reduced from 7ms to 1.5ms when using 32-bit kernel.
-		The time is reduced from 10ms to 2ms when using 64-bit kernel.
+>From the code comments in arch/x86/mm/numa_64.c:759 looks like this used to be 
+the case, which was changed by commit d9c2d5ac6. It changed from roundrobin to 
+nearer or first node. And I couldn't find any reason for this change in its 
+changelog.
 
-Signed-off-by: Zhao Yakui <yakui.zhao@intel.com>
-LKML-Reference: <1286502453-7043-1-git-send-email-yakui.zhao@intel.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/boot/compressed/misc.c |   29 +++++++++++++++++++++++------
- 1 files changed, 23 insertions(+), 6 deletions(-)
+Thanks
+Nikanth
 
-diff --git a/arch/x86/boot/compressed/misc.c b/arch/x86/boot/compressed/misc.c
-index 8f7bef8..23f315c 100644
---- a/arch/x86/boot/compressed/misc.c
-+++ b/arch/x86/boot/compressed/misc.c
-@@ -229,18 +229,35 @@ void *memset(void *s, int c, size_t n)
- 		ss[i] = c;
- 	return s;
- }
--
-+#ifdef CONFIG_X86_32
- void *memcpy(void *dest, const void *src, size_t n)
- {
--	int i;
--	const char *s = src;
--	char *d = dest;
-+	int d0, d1, d2;
-+	asm volatile(
-+		"rep ; movsl\n\t"
-+		"movl %4,%%ecx\n\t"
-+		"rep ; movsb\n\t"
-+		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
-+		: "0" (n >> 2), "g" (n & 3), "1" (dest), "2" (src)
-+		: "memory");
- 
--	for (i = 0; i < n; i++)
--		d[i] = s[i];
- 	return dest;
- }
-+#else
-+void *memcpy(void *dest, const void *src, size_t n)
-+{
-+	long d0, d1, d2;
-+	asm volatile(
-+		"rep ; movsq\n\t"
-+		"movq %4,%%rcx\n\t"
-+		"rep ; movsb\n\t"
-+		: "=&c" (d0), "=&D" (d1), "=&S" (d2)
-+		: "0" (n >> 3), "g" (n & 7), "1" (dest), "2" (src)
-+		: "memory");
- 
-+	return dest;
-+}
-+#endif
- 
- static void error(char *x)
- {
+> > ---
+> >
+> > diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+> > index 85f69cd..47dd171 100644
+> > --- a/arch/x86/kernel/cpu/intel.c
+> > +++ b/arch/x86/kernel/cpu/intel.c
+> > @@ -283,9 +283,7 @@ static void __cpuinit srat_detect_node(struct
+> > cpuinfo_x86 *c) /* Don't do the funky fallback heuristics the AMD version
+> > employs for now. */
+> >  	node = apicid_to_node[apicid];
+> > -	if (node == NUMA_NO_NODE)
+> > -		node = first_node(node_online_map);
+> > -	else if (!node_online(node)) {
+> > +	if (node == NUMA_NO_NODE || !node_online(node)) {
+> >  		/* reuse the value from init_cpu_to_node() */
+> >  		node = cpu_to_node(cpu);
+> >  	}
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> 
