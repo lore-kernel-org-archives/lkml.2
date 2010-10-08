@@ -1,55 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758128Ab0JHPlS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 11:41:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51691 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752427Ab0JHPlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 11:41:17 -0400
-Date: Fri, 8 Oct 2010 08:40:58 -0700
-From: Greg KH <gregkh@suse.de>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Mike Frysinger <vapier@gentoo.org>,
-        linux-kernel@vger.kernel.org, "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Ben Dooks <ben-linux@fluff.org>, Alan Cox <alan@linux.intel.com>,
-        Kukjin Kim <kgene.kim@samsung.com>, Feng Tang <feng.tang@intel.com>,
-        Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-Message-ID: <20101008154058.GA19202@suse.de>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org> <20101007215019.17b4a34a@lxorguk.ukuu.org.uk> <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com> <20101007220538.2294a7e4@lxorguk.ukuu.org.uk> <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com> <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com> <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com> <20101008091331.74871a42@lxorguk.ukuu.org.uk> <1286551434.4153.21.camel@m0nster>
+	id S1758695Ab0JHPnI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 11:43:08 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:59963 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751516Ab0JHPnG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 11:43:06 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286551434.4153.21.camel@m0nster>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Transfer-Encoding: 7bit
+Message-ID: <19631.15310.568446.991954@quad.stoffel.home>
+Date: Fri, 8 Oct 2010 11:42:06 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: John Stoffel <john@stoffel.org>,
+        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        agruen@suse.de
+Subject: Re: Linux 2.6.36-rc7
+In-Reply-To: <1286486674.2571.16.camel@localhost.localdomain>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+	<201010071710.46938.tvrtko.ursulin@sophos.com>
+	<201010071815.54303.tvrtko.ursulin@sophos.com>
+	<1286472835.2656.15.camel@dhcp231-98.rdu.redhat.com>
+	<19630.13234.840343.153381@quad.stoffel.home>
+	<1286486674.2571.16.camel@localhost.localdomain>
+X-Mailer: VM 8.1.1 under 23.2.1 (x86_64-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 08:23:54AM -0700, Daniel Walker wrote:
-> > And if your hypothetical user isn't able to do this then maybe instead of
-> > trying to screw up the kernel for everyone they should ask an
-> > undergraduate student who is smart enough to help them.
-> 
-> I don't think the kernel is going to implode if we allow an optional
-> ttyS override for debugging purposes.. I just don't see that "screwing"
-> up the kernel. I can even embedded that inside the C file, and not make
-> it a Kconfig option ..
+>>>>> "Eric" == Eric Paris <eparis@redhat.com> writes:
 
-I admire your persistence, but perhaps you should take a step back and
-look at the history here.  You just want this override.  Then someone
-else does, and then, someone else.  Eventually we are all overridden.
+Eric> On Thu, 2010-10-07 at 16:55 -0400, John Stoffel wrote:
+>> So what happens when you try to register a priority level and someone
+>> else has already gotten that level?  Does the call fail?  Do you get
+>> bumped down to the next open level?  Can you *tell* what level you're
+>> at and whether or not some other decision maker is ahead of you? 
 
-Remember, you aren't unique here, as much as you might feel like you are
-:)
+Eric> Well it hasn't been discussed and implemented so I can't answer that.
+Eric> *smile*
 
-Please listen to what Alan and Mike are saying, experience matters, and
-they are trying to impart it to you, despite your most fervent attempts
-to avoid it.
+Ah, but you have implemented multiple notifiers registered at the same
+time, without priorities, right?  So that's just the degenerate case
+which I assume is handled already.
 
-good luck,
+Eric> I will tell you that the way I envision it working (and being
+Eric> backwards compatible) is that priority 0 is the last thing to be
+Eric> serviced.  If 2 things register at the same priority the order
+Eric> between them getting events is unpredictable.  So when an HSM
+Eric> uses the interface it would use the highest priority.  An AV
+Eric> vendor might use (highest priority / 2) while normal inotify
+Eric> like listeners would all be happy using priority 0.
 
-greg k-h
+Ugh, I'd prefer that priority 0 is first (highest), but I can see how
+that would make ABI problems, assuming we don't punt on releasing the
+ABI now.  
+
+So if the order is undefined now, that's not good.  Well... maybe it's
+acceptable, but I can see all kinds of problems cropping up.
+Hopefully they're processed in order of notifier creation instead.  So
+if I insert a notifier, anyone who inserts a notifier after me gets
+serviced after my notifier gets run.  That would seem to be the
+logical and sane semantics to use here.
+
+Again, I'm really approaching this as a SysAdmin who'd love to use
+this in an HSM environment, so ordering is a *key* requirement.
+
+Which is why I'm going to harp of the documentation in the Kernel from
+day one too.  
+
+>> But I'd really like some docs in the next release which tells me as a
+>> poor dumb sysadmin how it can and should be used and what the gotchas
+>> are.
+
+Eric> We have example man-like pages in the commit logs which I expected to be
+Eric> used as the basis for man pages once the interface was accepted.  They
+Eric> aren't perfect but they are
+
+Eric> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=52c923dd079df49f58016a9e56df184b132611d6
+Eric> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=2a3edf86040a7e15684525a2aadc29f532c51325
+
+Eric> You'll also find an example program which shows all of the
+Eric> features at
+
+Eric> http://git.kernel.org/?p=linux/kernel/git/agruen/fanotify-example.git;a=summary
+
+Eric> I don't think digging around in kernel code is the right way   :)
+
+Sure, but putting some design documentation which explains how it's
+expected to be used, with pointers to the canonical site holding docs
+and such *is* expected.  Just see the docs for inotify and such.  
+
+Thanks for the pointers, I'll try to find the time to look them over
+and make some more comments.
+
+John
