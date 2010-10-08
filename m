@@ -1,134 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0JHN0k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 09:26:40 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41821 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753396Ab0JHN0j (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 09:26:39 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6129"; a="57179956"
-From: Tatyana Brokhman <tlinder@codeaurora.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v4] usb: usb3.0 ch9 definitions
-Date: Fri,  8 Oct 2010 15:26:18 +0200
-Message-Id: <1286544380-27299-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.6.3.3
+	id S1757404Ab0JHN34 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 09:29:56 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:2223 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751419Ab0JHN3y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 09:29:54 -0400
+X-Greylist: delayed 1533 seconds by postgrey-1.27 at vger.kernel.org; Fri, 08 Oct 2010 09:29:46 EDT
+Subject: Re: [patches] avr32 signal fixes
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Al Viro <viro@ftp.linux.org.uk>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <E1P0QNV-0008RZ-1H@ZenIV.linux.org.uk>
+References: <E1P0QNV-0008RZ-1H@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Fri, 08 Oct 2010 14:40:39 +0200
+Message-ID: <1286541639.2874.19.camel@hcegtvedt>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Oct 2010 12:40:41.0622 (UTC) FILETIME=[049ED360:01CB66E6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding SuperSpeed usb definitions as defined by ch9 of the USB3.0 spec.
-This patch is a preparation for adding SuperSpeed support to the gadget
-framework.
+On Tue, 2010-09-28 at 03:57 +0100, Al Viro wrote:
 
-Signed-off-by: Tatyana Brokhman<tlinder@codeaurora.org>
----
- include/linux/usb/ch9.h |   58 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 57 insertions(+), 1 deletions(-)
+Hi Al,
 
-diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
-index da2ed77..d83115e 100644
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -123,8 +123,23 @@
- #define USB_DEVICE_A_ALT_HNP_SUPPORT	5	/* (otg) other RH port does */
- #define USB_DEVICE_DEBUG_MODE		6	/* (special devices only) */
- 
-+/*
-+ * New Feature Selectors as added by USB 3.0
-+ * See USB 3.0 spec Table 9-6
-+ */
-+#define USB_DEVICE_U1_ENABLE	48	/* dev may initiate U1 transition */
-+#define USB_DEVICE_U2_ENABLE	49	/* dev may initiate U2 transition*/
-+#define USB_DEVICE_LTM_ENABLE	50	/* dev may send LTM*/
-+#define USB_INTRF_FUNC_SUSPEND	0	/* function suspend*/
-+
-+#define USB_INTR_FUNC_SUSPEND_OPT_MASK	0xFF00
-+
- #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
- 
-+/* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
-+#define USB_DEV_STAT_U1_ENABLED		2	/* transition into U1 state */
-+#define USB_DEV_STAT_U2_ENABLED		3	/* transition into U2 state */
-+#define USB_DEV_STAT_LTM_ENABLED	4	/* Latency tolerance messages*/
- 
- /**
-  * struct usb_ctrlrequest - SETUP data for a USB device control request
-@@ -675,6 +690,7 @@ struct usb_bos_descriptor {
- 	__u8  bNumDeviceCaps;
- } __attribute__((packed));
- 
-+#define USB_DT_BOS_SIZE		5
- /*-------------------------------------------------------------------------*/
- 
- /* USB_DT_DEVICE_CAPABILITY:  grouped with BOS */
-@@ -712,16 +728,56 @@ struct usb_wireless_cap_descriptor {	/* Ultra Wide Band */
- 	__u8  bReserved;
- } __attribute__((packed));
- 
-+/* USB 2.0 Extension descriptor */
- #define	USB_CAP_TYPE_EXT		2
- 
- struct usb_ext_cap_descriptor {		/* Link Power Management */
- 	__u8  bLength;
- 	__u8  bDescriptorType;
- 	__u8  bDevCapabilityType;
--	__u8  bmAttributes;
-+	__le32 bmAttributes;
- #define USB_LPM_SUPPORT			(1 << 1)	/* supports LPM */
- } __attribute__((packed));
- 
-+#define USB_DT_USB_EXT_CAP_SIZE	7
-+
-+/*
-+ * SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed USB
-+ * specific device level capabilities
-+ */
-+#define		USB_SS_CAP_TYPE		3
-+struct usb_ss_cap_descriptor {		/* Link Power Management */
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u8  bDevCapabilityType;
-+	__u8  bmAttributes;
-+#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
-+	__le16 wSpeedSupported;
-+#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
-+#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
-+#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
-+#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
-+	__u8  bFunctionalitySupport;
-+	__u8  bU1devExitLat;
-+	__u16 bU2DevExitLat;
-+} __attribute__((packed));
-+
-+#define USB_DT_USB_SS_CAP_SIZE	10
-+
-+/*
-+ * Container ID Capability descriptor: Defines the instance unique ID used to
-+ * identify the instance across all operating modes
-+ */
-+#define	CONTAINER_ID_TYPE	4
-+struct usb_ss_container_id_descriptor {
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u8  bDevCapabilityType;
-+	__u8  bReserved;
-+	__u8  ContainerID[16]; /* 128-bit number */
-+} __attribute__((packed));
-+
-+#define USB_DT_USB_SS_CONTN_ID_SIZE	20
- /*-------------------------------------------------------------------------*/
- 
- /* USB_DT_WIRELESS_ENDPOINT_COMP:  companion descriptor associated with
+> 	Most of that stuff is quite obvious; the interesting
+> part is #6; there I'd taken a large chunk out of the asm glue
+> and hopefully sanitized it into something that just might
+> work correctly wrt syscall restarts.
+
+Thanks for this patch series. I'm currently a bit busy on something
+related, but hope to give your patches a go next week. I could not spot
+anything immediate by browsing the patches.
+
 -- 
-1.6.3.3
+Hans-Christian Egtvedt
 
---
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
