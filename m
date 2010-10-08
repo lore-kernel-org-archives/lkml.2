@@ -1,52 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759512Ab0JHS6k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:58:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58392
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757384Ab0JHS6j (ORCPT
+	id S932367Ab0JHTAs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 15:00:48 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:57851 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754655Ab0JHTAr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:58:39 -0400
-Date: Fri, 08 Oct 2010 11:59:00 -0700 (PDT)
-Message-Id: <20101008.115900.245387221.davem@davemloft.net>
-To: andy.grover@oracle.com
-Cc: akinobu.mita@gmail.com, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, arnd@arndb.de, akpm@linux-foundation.org,
-        rds-devel@oss.oracle.com, netdev@vger.kernel.org
-Subject: Re: [PATCH 4/5] rds: stop including asm-generic/bitops/le.h
- directly
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4CAF693B.9030706@oracle.com>
-References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
-	<1286532193-29814-4-git-send-email-akinobu.mita@gmail.com>
-	<4CAF693B.9030706@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 8 Oct 2010 15:00:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <20101008.115226.179923658.davem@davemloft.net>
+References: <20101008173650.GH3863@angua.secretlab.ca> <20101008.104557.59696706.davem@davemloft.net>
+ <20101008113424.2249c2df@debxo> <20101008.115226.179923658.davem@davemloft.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 8 Oct 2010 13:00:25 -0600
+X-Google-Sender-Auth: _1WGvIMryQyBYx63OhM0gX9UBVM
+Message-ID: <AANLkTikuaM5VZadCs302HwYYhOHi1Czw2BLam3ZQP=aj@mail.gmail.com>
+Subject: Re: [PATCH] sparc: stop exporting openprom.h header
+To: David Miller <davem@davemloft.net>
+Cc: dilinger@queued.net, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, sam@ravnborg.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andy Grover <andy.grover@oracle.com>
-Date: Fri, 08 Oct 2010 11:55:55 -0700
-
-> On 10/08/2010 03:03 AM, Akinobu Mita wrote:
->> asm-generic/bitops/le.h is only intended to be included directly from
->> asm-generic/bitops/ext2-non-atomic.h or asm-generic/bitops/minix-le.h
->> which implements generic ext2 or minix bit operations.
+On Fri, Oct 8, 2010 at 12:52 PM, David Miller <davem@davemloft.net> wrote:
+> From: Andres Salomon <dilinger@queued.net>
+> Date: Fri, 8 Oct 2010 11:34:24 -0700
+>
 >>
->> This stops including asm-generic/bitops/le.h directly and use ext2
->> non-atomic bit operations instead.
+>> It's unknown why openprom.h was being exported; there doesn't seem to be any
+>> reason for it currently, and it creates headaches with userspace being able
+>> to potentially use the structures in there.  So, don't export it anymore.
 >>
->> An alternative approach is introducing little endian bit operations
->> in linux/bitops.h. But it needs to touch more files than this change
->> does.
-> 
->> -	generic___set_le_bit(off, (void *)map->m_page_addrs[i]);
->> +	ext2_set_bit(off, (void *)map->m_page_addrs[i]);
-> 
-> I'd like a solution that doesn't have rds calling a function starting
-> with ext2_. Seems wrong.
+>> Signed-off-by: Andres Salomon <dilinger@queued.net>
+>
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Agreed.
+I suppose it makes sense for me to pick this one up into my tree so it
+is grouped with the rest of the pdt patches.  I'll pick it up once
+Andres reposts the series.
+
+g.
