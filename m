@@ -1,122 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759318Ab0JHRuH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 13:50:07 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:42204 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758269Ab0JHRuF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 13:50:05 -0400
-Date: Fri, 8 Oct 2010 23:19:58 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [BUGFIX] memcg CPU hotplug lockdep warning fix
-Message-ID: <20101008174958.GI5327@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
+	id S932602Ab0JHRvQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 13:51:16 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:49459 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759287Ab0JHRvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 13:51:14 -0400
+Date: Fri, 8 Oct 2010 12:51:15 -0500
+From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: kirkland@canonical.com, jmorris@namei.org, akpm@linux-foundation.org,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 1/3] ecryptfs: release keys loaded in
+ ecryptfs_keyring_auth_tok_for_sig()
+Message-ID: <20101008175115.GA15669@boomer>
+References: <201010061831.06856.roberto.sassu@polito.it>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <201010061831.06856.roberto.sassu@polito.it>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed Oct 06, 2010 at 06:31:06PM +0200, Roberto Sassu <roberto.sassu@polito.it> wrote:
+> This patch allows keys requested in the function ecryptfs_keyring_auth_tok_for_sig() 
+> to be released when they are no longer required. In particular keys are directly released 
+> in the same function if the obtained authentication token is not valid.
+> Further, a new function parameter 'auth_tok_key' has been added to 
+> ecryptfs_find_auth_tok_for_sig() in order to provide callers the key pointer to be passed 
+> to key_put().
+> 
+> 
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
+> ---
 
-memcg has lockdep warnings (sleep inside rcu lock)
+Hi Roberto - Thanks for the fix. This is messy (calling key_put *some*
+of the time), but there's not a better way to do it. In the future, we
+may not want to save off a pointer to the key in the global_auth_tok and
+always ask the kernel keyring for the key. Then we will pick up the
+access checks provided by the keyring. But until then, this will do.
 
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
+BTW, your commit message body should be wrapped at 72 columns for nice
+formatting in the git log. I fixed that, made a small change (see
+below), and committed the patch to
+git://git.kernel.org/pub/scm/linux/kernel/git/ecryptfs/ecryptfs-2.6.git#next
 
-Recent move to get_online_cpus() ends up calling get_online_cpus() from
-mem_cgroup_read_stat(). However mem_cgroup_read_stat() is called under rcu
-lock. get_online_cpus() can sleep. The dirty limit patches expose
-this BUG more readily due to their usage of mem_cgroup_page_stat()
+Thanks again for noticing and fixing this bug.
 
-This patch address this issue as identified by lockdep and moves the
-hotplug protection to a higher layer. This might increase the time
-required to hotplug, but not by much.
+>  fs/ecryptfs/keystore.c |   34 ++++++++++++++++++++++++++++------
+>  1 files changed, 28 insertions(+), 6 deletions(-)
+> 
+> diff --git a/fs/ecryptfs/keystore.c b/fs/ecryptfs/keystore.c
+> index 73811cf..77580db 100644
+> --- a/fs/ecryptfs/keystore.c
+> +++ b/fs/ecryptfs/keystore.c
+> @@ -446,6 +446,7 @@ out:
+>   */
+>  static int
+>  ecryptfs_find_auth_tok_for_sig(
+> +	struct key **auth_tok_key,
+>  	struct ecryptfs_auth_tok **auth_tok,
+>  	struct ecryptfs_mount_crypt_stat *mount_crypt_stat,
+>  	char *sig)
+> @@ -453,12 +454,12 @@ ecryptfs_find_auth_tok_for_sig(
+>  	struct ecryptfs_global_auth_tok *global_auth_tok;
+>  	int rc = 0;
+>  
+> +	(*auth_tok_key) = NULL;
+>  	(*auth_tok) = NULL;
+>  	if (ecryptfs_find_global_auth_tok_for_sig(&global_auth_tok,
+>  						  mount_crypt_stat, sig)) {
+> -		struct key *auth_tok_key;
+>  
+> -		rc = ecryptfs_keyring_auth_tok_for_sig(&auth_tok_key, auth_tok,
+> +		rc = ecryptfs_keyring_auth_tok_for_sig(auth_tok_key, auth_tok,
+>  						       sig);
+>  	} else
+>  		(*auth_tok) = global_auth_tok->global_auth_tok;
+> @@ -509,6 +510,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
+>  			     char *filename, size_t filename_size)
+>  {
+>  	struct ecryptfs_write_tag_70_packet_silly_stack *s;
+> +	struct key *auth_tok_key = NULL;
+>  	int rc = 0;
+>  
+>  	s = kmalloc(sizeof(*s), GFP_KERNEL);
+> @@ -606,6 +608,7 @@ ecryptfs_write_tag_70_packet(char *dest, size_t *remaining_bytes,
+>  	}
+>  	dest[s->i++] = s->cipher_code;
+>  	rc = ecryptfs_find_auth_tok_for_sig(
+> +		&auth_tok_key,
+>  		&s->auth_tok, mount_crypt_stat,
+>  		mount_crypt_stat->global_default_fnek_sig);
+>  	if (rc) {
+> @@ -753,6 +756,8 @@ out_free_unlock:
+>  out_unlock:
+>  	mutex_unlock(s->tfm_mutex);
+>  out:
+> +	if (auth_tok_key)
+> +		key_put(auth_tok_key);
+>  	kfree(s);
+>  	return rc;
+>  }
+> @@ -798,6 +803,7 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
+>  			     char *data, size_t max_packet_size)
+>  {
+>  	struct ecryptfs_parse_tag_70_packet_silly_stack *s;
+> +	struct key *auth_tok_key = NULL;
+>  	int rc = 0;
+>  
+>  	(*packet_size) = 0;
+> @@ -910,7 +916,8 @@ ecryptfs_parse_tag_70_packet(char **filename, size_t *filename_size,
+>  	 * >= ECRYPTFS_MAX_IV_BYTES. */
+>  	memset(s->iv, 0, ECRYPTFS_MAX_IV_BYTES);
+>  	s->desc.info = s->iv;
+> -	rc = ecryptfs_find_auth_tok_for_sig(&s->auth_tok, mount_crypt_stat,
+> +	rc = ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
+> +					    &s->auth_tok, mount_crypt_stat,
+>  					    s->fnek_sig_hex);
+>  	if (rc) {
+>  		printk(KERN_ERR "%s: Error attempting to find auth tok for "
+> @@ -986,6 +993,8 @@ out:
+>  		(*filename_size) = 0;
+>  		(*filename) = NULL;
+>  	}
+> +	if (auth_tok_key)
+> +		key_put(auth_tok_key);
+>  	kfree(s);
+>  	return rc;
+>  }
+> @@ -1557,14 +1566,19 @@ int ecryptfs_keyring_auth_tok_for_sig(struct key **auth_tok_key,
+>  		       ECRYPTFS_VERSION_MAJOR,
+>  		       ECRYPTFS_VERSION_MINOR);
+>  		rc = -EINVAL;
+> -		goto out;
+> +		goto out_release_key;
+>  	}
+>  	if ((*auth_tok)->token_type != ECRYPTFS_PASSWORD
+>  	    && (*auth_tok)->token_type != ECRYPTFS_PRIVATE_KEY) {
+>  		printk(KERN_ERR "Invalid auth_tok structure "
+>  		       "returned from key query\n");
+>  		rc = -EINVAL;
+> -		goto out;
+> +		goto out_release_key;
+> +	}
+> +out_release_key:
+> +	if (rc) {
+> +		key_put(*auth_tok_key);
+> +		(*auth_tok_key) = NULL;
+>  	}
+>  out:
+>  	return rc;
+> @@ -1688,6 +1702,7 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_stat *crypt_stat,
+>  	struct ecryptfs_auth_tok_list_item *auth_tok_list_item;
+>  	size_t tag_11_contents_size;
+>  	size_t tag_11_packet_size;
+> +	struct key *auth_tok_key;
 
-Warning messages
+This needs to be initialized to NULL. Otherwise, the key_put()'s below
+can do bad things in bad places. :)
 
-BUG: sleeping function called from invalid context at kernel/cpu.c:62
-in_atomic(): 0, irqs_disabled(): 0, pid: 6325, name: pagetest
-2 locks held by pagetest/6325:
-#0:  (&mm->mmap_sem){......}, at: [<ffffffff815e9503>]
-do_page_fault+0x27d/0x4a0
-#1:  (rcu_read_lock){......}, at: [<ffffffff811124a1>]
-mem_cgroup_page_stat+0x0/0x23f
-Pid: 6325, comm: pagetest Not tainted 2.6.36-rc5-mm1+ #201
-Call Trace:
-[<ffffffff81041224>] __might_sleep+0x12d/0x131
-[<ffffffff8104f4af>] get_online_cpus+0x1c/0x51
-[<ffffffff8110eedb>] mem_cgroup_read_stat+0x27/0xa3
-[<ffffffff811125d2>] mem_cgroup_page_stat+0x131/0x23f
-[<ffffffff811124a1>] ? mem_cgroup_page_stat+0x0/0x23f
-[<ffffffff810d57c3>] global_dirty_limits+0x42/0xf8
-[<ffffffff810d58b3>] throttle_vm_writeout+0x3a/0xb4
-[<ffffffff810dc2f8>] shrink_zone+0x3e6/0x3f8  
-[<ffffffff81074a35>] ? ktime_get_ts+0xb2/0xbf 
-[<ffffffff810dd1aa>] do_try_to_free_pages+0x106/0x478
-[<ffffffff810dd601>] try_to_free_mem_cgroup_pages+0xe5/0x14c
-[<ffffffff8110f947>] mem_cgroup_hierarchical_reclaim+0x314/0x3a2
-[<ffffffff81111b31>] __mem_cgroup_try_charge+0x29b/0x593
-[<ffffffff8111194a>] ? __mem_cgroup_try_charge+0xb4/0x593
-[<ffffffff81071258>] ? local_clock+0x40/0x59  
-[<ffffffff81009015>] ? sched_clock+0x9/0xd
-[<ffffffff810710d5>] ? sched_clock_local+0x1c/0x82
-[<ffffffff8111398a>] mem_cgroup_charge_common+0x4b/0x76
-[<ffffffff81141469>] ? bio_add_page+0x36/0x38 
-[<ffffffff81113ba9>] mem_cgroup_cache_charge+0x1f4/0x214
-[<ffffffff810cd195>] add_to_page_cache_locked+0x4a/0x148
-....
-
-
-Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
----
-
- mm/memcontrol.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+>  	int rc = 0;
+>  
+>  	INIT_LIST_HEAD(&auth_tok_list);
+> @@ -1784,6 +1799,10 @@ int ecryptfs_parse_packet_set(struct ecryptfs_crypt_stat *crypt_stat,
+>  	 * just one will be sufficient to decrypt to get the FEK. */
+>  find_next_matching_auth_tok:
+>  	found_auth_tok = 0;
+> +	if (auth_tok_key) {
+> +		key_put(auth_tok_key);
+> +		auth_tok_key = NULL;
+> +	}
+>  	list_for_each_entry(auth_tok_list_item, &auth_tok_list, list) {
+>  		candidate_auth_tok = &auth_tok_list_item->auth_tok;
+>  		if (unlikely(ecryptfs_verbosity > 0)) {
+> @@ -1800,7 +1819,8 @@ find_next_matching_auth_tok:
+>  			rc = -EINVAL;
+>  			goto out_wipe_list;
+>  		}
+> -		ecryptfs_find_auth_tok_for_sig(&matching_auth_tok,
+> +		ecryptfs_find_auth_tok_for_sig(&auth_tok_key,
+> +					       &matching_auth_tok,
+>  					       crypt_stat->mount_crypt_stat,
+>  					       candidate_auth_tok_sig);
+>  		if (matching_auth_tok) {
+> @@ -1866,6 +1886,8 @@ found_matching_auth_tok:
+>  out_wipe_list:
+>  	wipe_auth_tok_list(&auth_tok_list);
+>  out:
+> +	if (auth_tok_key)
+> +		key_put(auth_tok_key);
+>  	return rc;
+>  }
+>  
+> -- 
+> 1.7.2.3
 
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 116fecd..f4c5665 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -578,7 +578,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
- 	int cpu;
- 	s64 val = 0;
- 
--	get_online_cpus();
- 	for_each_online_cpu(cpu)
- 		val += per_cpu(mem->stat->count[idx], cpu);
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -586,7 +585,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
- 	val += mem->nocpu_base.count[idx];
- 	spin_unlock(&mem->pcp_counter_lock);
- #endif
--	put_online_cpus();
- 	return val;
- }
- 
-@@ -1284,6 +1282,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
- 	struct mem_cgroup *iter;
- 	s64 value;
- 
-+	get_online_cpus();
- 	rcu_read_lock();
- 	mem = mem_cgroup_from_task(current);
- 	if (mem && !mem_cgroup_is_root(mem)) {
-@@ -1305,6 +1304,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
- 	} else
- 		value = -EINVAL;
- 	rcu_read_unlock();
-+	put_online_cpus();
- 
- 	return value;
- }
-
--- 
-	Three Cheers,
-	Balbir
