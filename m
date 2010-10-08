@@ -1,108 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754400Ab0JHHmr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 03:42:47 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:49863 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753763Ab0JHHmq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 03:42:46 -0400
-Date: Fri, 8 Oct 2010 03:42:43 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 13/18] fs: split locking of inode writeback and LRU lists
-Message-ID: <20101008074243.GB24089@infradead.org>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-14-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286515292-15882-14-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1754677Ab0JHHm5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 03:42:57 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:33996 "EHLO lunge.queued.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754610Ab0JHHm4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 03:42:56 -0400
+Date: Fri, 8 Oct 2010 00:43:54 -0700
+From: Andres Salomon <dilinger@queued.net>
+To: sparclinux@vger.kernel.org
+Cc: davem@davemloft.net, grant.likely@secretlab.ca,
+        linux-kernel@vger.kernel.org, Sam Ravnborg <sam@ravnborg.org>,
+        devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 1/2 v2] of: move phandle/ihandle into types.h and export to
+ userspace
+Message-ID: <20101008004354.13b5b254@debxo>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 04:21:27PM +1100, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> Now that the inode LRU and IO lists are split apart, we can separate
-> the locking for them. The IO lists are only ever accessed in the
-> context of writeback, so a per-BDI lock for those lists separates
-> them out nicely.
 
-I think this description needs some updates.  It seems like it's from
-Nick's original patch that splits the lock, but at this point we still
-have inode_lock anyway.
+We need phandle for some exported sparc headers; of.h isn't an
+exported header, and it would be silly to export it when all we
+really need is one or two types from it.  Also, later patches
+use phandle in structs that are exported to userspace, so export
+a __kernel_phandle type.
 
->  
-> -static inline struct backing_dev_info *inode_to_bdi(struct inode *inode)
-> -{
-> -	struct super_block *sb = inode->i_sb;
-> -
-> -	if (strcmp(sb->s_type->name, "bdev") == 0)
-> -		return inode->i_mapping->a_bdi;
-> -
-> -	return sb->s_bdi;
-> -}
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ include/linux/of.h    |    3 ---
+ include/linux/types.h |    7 +++++++
+ 2 files changed, 7 insertions(+), 3 deletions(-)
 
-Please don't extent the scope of this one.  Just add a new inode_wb_del
-or similar helper to remove and inode from the writeback list.
-
->  		struct inode *inode = list_entry(wb->b_io.prev,
-> @@ -475,7 +475,6 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
->  				redirty_tail(inode);
->  				continue;
->  			}
-> -
->  			/*
->  			 * The inode belongs to a different superblock.
->  			 * Bounce back to the caller to unpin this and
-
-spurious whitespace change.
-
-> @@ -484,7 +483,7 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
->  			return 0;
->  		}
->  
-> -		if (inode->i_state & (I_NEW | I_WILL_FREE)) {
-> +		if (inode->i_state & (I_NEW | I_WILL_FREE | I_FREEING)) {
->  			requeue_io(inode);
->  			continue;
->  		}
-
-What does this have to do with the rest of the patch?
-
-> @@ -495,8 +494,11 @@ static int writeback_sb_inodes(struct super_block *sb, struct bdi_writeback *wb,
->  		if (inode_dirtied_after(inode, wbc->wb_start))
->  			return 1;
->  
-> -		BUG_ON(inode->i_state & I_FREEING);
-> +		spin_lock(&inode->i_lock);
->  		iref_locked(inode);
-> +		spin_unlock(&inode->i_lock);
-
-Shouldn't this become a plain iref now?
-
-> +/*
-> + * check against I_FREEING as inode writeback completion could race with
-> + * setting the I_FREEING and removing the inode from the LRU.
-> + */
-> +void inode_lru_list_add(struct inode *inode)
-> +{
-> +	spin_lock(&inode_lru_lock);
-> +	if (list_empty(&inode->i_lru) && !(inode->i_state & I_FREEING)) {
-> +		list_add(&inode->i_lru, &inode_lru);
-> +		percpu_counter_inc(&nr_inodes_unused);
-> +	}
-> +	spin_unlock(&inode_lru_lock);
-> +}
-
-Ah, here you introduce the lru list helpers I suggested earlier.  Moving
-them earlier in the series probably is a good idea to avoid exporting
-nr_inodes_unused, even if the locking for the helpers will change in
-this patch.
+diff --git a/include/linux/of.h b/include/linux/of.h
+index cad7cf0..db184dc 100644
+--- a/include/linux/of.h
++++ b/include/linux/of.h
+@@ -25,9 +25,6 @@
+ 
+ #ifdef CONFIG_OF
+ 
+-typedef u32 phandle;
+-typedef u32 ihandle;
+-
+ struct property {
+ 	char	*name;
+ 	int	length;
+diff --git a/include/linux/types.h b/include/linux/types.h
+index 01a082f..67a034a 100644
+--- a/include/linux/types.h
++++ b/include/linux/types.h
+@@ -178,10 +178,17 @@ typedef __u64 __bitwise __be64;
+ typedef __u16 __bitwise __sum16;
+ typedef __u32 __bitwise __wsum;
+ 
++/* Basic openboot/openfirmware types */
++typedef __u32 __kernel_phandle;
++typedef __u32 __kernel_ihandle;
++
+ #ifdef __KERNEL__
+ typedef unsigned __bitwise__ gfp_t;
+ typedef unsigned __bitwise__ fmode_t;
+ 
++typedef __kernel_phandle phandle;
++typedef __kernel_ihandle ihandle;
++
+ #ifdef CONFIG_PHYS_ADDR_T_64BIT
+ typedef u64 phys_addr_t;
+ #else
+-- 
+1.5.6.5
 
