@@ -1,53 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755428Ab0JHAJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Oct 2010 20:09:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59236 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753194Ab0JHACE (ORCPT
+	id S1754964Ab0JHAKW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Oct 2010 20:10:22 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:65526 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753194Ab0JHAKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Oct 2010 20:02:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=djNaBzM834bASh220Z4vX6Q8IBq3BsT2m84QdsSwKJpEFN+pRT2a1VuXz9bCSxUf7M
-         pf3BancY4B+mqyL6GxyAhJIqy6149VezpNVKzdC6mpHlq65eZJ3sHJa42TZOa43jZf5a
-         A/KjUNc6tMqYtPhhoNZKMOOh0uE4lU3UZW2Ls=
-From: Tracey Dent <tdent48227@gmail.com>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-        sam@ravnborg.org, linux-kbuild@vger.kernel.org,
-        Tracey Dent <tdent48227@gmail.com>
-Subject: [PATCH 03/33] Staging: bcm: Makefile: replace the use of <module>-objs with <module>-y
-Date: Thu,  7 Oct 2010 20:01:23 -0400
-Message-Id: <1286496113-11897-3-git-send-email-tdent48227@gmail.com>
-X-Mailer: git-send-email 1.7.3.1.50.g1e633
-In-Reply-To: <1286496113-11897-1-git-send-email-tdent48227@gmail.com>
-References: <1286496113-11897-1-git-send-email-tdent48227@gmail.com>
+	Thu, 7 Oct 2010 20:10:20 -0400
+X-Nat-Received: from [202.181.97.72]:60390 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1286496613.12823
+Message-Id: <201010080010.o980ADB8027880@www262.sakura.ne.jp>
+Subject: Re: 2.6.36-rc7: kernel panic with SECURITY_TOMOYO=y
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+To: lists@nerdbynature.de
+Cc: linux-kernel@vger.kernel.org, takedakn@nttdata.co.jp
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+Date: Fri, 08 Oct 2010 09:10:13 +0900
+References: <alpine.DEB.2.01.1010071534370.21082@trent.utfs.org> <alpine.DEB.2.01.1010071637090.21082@trent.utfs.org>
+In-Reply-To: <alpine.DEB.2.01.1010071637090.21082@trent.utfs.org>
+Content-Type: text/plain; charset="ISO-2022-JP"
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 07102010 #4280474, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changed <module>-objs to <module>-y in Makefile.
+Christian Kujau wrote:
+> Kernel panic - not syncing: Profile uersion 0 is not supported
 
-Signed-off-by: Tracey Dent <tdent48227@gmail.com>
----
- drivers/staging/bcm/Makefile |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Thank you for using TOMOYO.
 
-diff --git a/drivers/staging/bcm/Makefile b/drivers/staging/bcm/Makefile
-index 3fdec2e..c3ae25a 100644
---- a/drivers/staging/bcm/Makefile
-+++ b/drivers/staging/bcm/Makefile
-@@ -4,7 +4,7 @@
- 
- obj-$(CONFIG_BCM_WIMAX) +=	bcm_wimax.o
- 
--bcm_wimax-objs :=  InterfaceDld.o InterfaceIdleMode.o InterfaceInit.o InterfaceRx.o \
-+bcm_wimax-y :=  InterfaceDld.o InterfaceIdleMode.o InterfaceInit.o InterfaceRx.o \
- 		InterfaceIsr.o InterfaceMisc.o InterfaceTx.o \
- 		Arp.o CmHost.o Debug.o IPv6Protocol.o Qos.o Transmit.o\
- 		Bcmnet.o DDRInit.o HandleControlPacket.o\
--- 
-1.7.3.1.50.g1e633
+Linux 2.6.36 includes TOMOYO 2.3 which is not compatible with
+TOMOYO 2.2 included in Linux 2.6.30-2.6.35 .
 
+You need to delete /etc/tomoyo/ directory and recreate it using
+new userspace tools. Please see http://tomoyo.sourceforge.jp/2.3/ .
+
+Regards.
