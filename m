@@ -1,88 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab0JHEza (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 00:55:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55386 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750960Ab0JHEz3 (ORCPT
+	id S1752162Ab0JHEzk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 00:55:40 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:42710 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0JHEzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 00:55:29 -0400
-Date: Thu, 7 Oct 2010 21:55:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH v2] memcg: reduce lock time at move charge (Was Re:
- [PATCH 04/10] memcg: disable local interrupts in lock_page_cgroup()
-Message-Id: <20101007215556.21412ae6.akpm@linux-foundation.org>
-In-Reply-To: <20101008133712.2a836331.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-5-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
-	<20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007161454.84570cf9.akpm@linux-foundation.org>
-	<20101008133712.2a836331.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Fri, 8 Oct 2010 00:55:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christian Kujau <lists@nerdbynature.de>
+Subject: Re: 2.6.36-rc7: kernel panic with SECURITY_TOMOYO=y
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        takedakn@nttdata.co.jp, penguin-kernel@I-love.SAKURA.ne.jp
+In-Reply-To: <alpine.DEB.2.01.1010071637090.21082@trent.utfs.org>
+References: <alpine.DEB.2.01.1010071534370.21082@trent.utfs.org> <alpine.DEB.2.01.1010071637090.21082@trent.utfs.org>
+Message-Id: <20101008134644.8049.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri,  8 Oct 2010 13:55:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Oct 2010 13:37:12 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Thu, 7 Oct 2010 16:14:54 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 7 Oct 2010 at 15:43, Christian Kujau wrote:
+> > Kernel panic - not syncing: Profile uersion 0 is not supported
 > 
-> > On Thu, 7 Oct 2010 17:04:05 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > Now, at task migration among cgroup, memory cgroup scans page table and moving
-> > > account if flags are properly set.
-> > > 
-> > > The core code, mem_cgroup_move_charge_pte_range() does
-> > > 
-> > >  	pte_offset_map_lock();
-> > > 	for all ptes in a page table:
-> > > 		1. look into page table, find_and_get a page
-> > > 		2. remove it from LRU.
-> > > 		3. move charge.
-> > > 		4. putback to LRU. put_page()
-> > > 	pte_offset_map_unlock();
-> > > 
-> > > for pte entries on a 3rd level? page table.
-> > > 
-> > > This pte_offset_map_lock seems a bit long. This patch modifies a rountine as
-> > > 
-> > > 	for 32 pages: pte_offset_map_lock()
-> > > 		      find_and_get a page
-> > > 		      record it
-> > > 		      pte_offset_map_unlock()
-> > > 	for all recorded pages
-> > > 		      isolate it from LRU.
-> > > 		      move charge
-> > > 		      putback to LRU
-> > > 	for all recorded pages
-> > > 		      put_page()
-> > 
-> > The patch makes the code larger, more complex and slower!
-> > 
+> OK, I just saw that security/tomoyo/common.c panics when:
 > 
-> Slower ?
+>         if (tomoyo_profile_version != 20090903)
+>                 panic("Profile version %u is not supported.\n",
+>                       tomoyo_profile_version);
+> 
+> If it's imperative that the profile version is somewhat current (mine was 
+> not, I had old tomoyo-ccstools installed), I would have expected a 
+> slightly more descriptive error messages (apart from that panic), but now 
+> I know. Upgraded to tomoyo-tools-2.3.0-20100820 did the trick.
 
-Sure.  It walks the same data three times, potentially causing
-thrashing in the L1 cache.  It takes and releases locks at a higher
-frequency.  It increases the text size.
+I agree this zero information panic is suck.
+
+
+Handa-san, please see this panic message again.
+
+> Kernel panic - not syncing: Profile uersion 0 is not supported
+
+Profile?
+This message doesn't have any information which should we look!
+And, 'profile' is wrong word. TOMOYO have to recommend to upgrade
+userland tools here at minimum.
+
+The best way is, of cource, you don't break backward compatibility.
+
+
+
+> Call Trace:
+> [efB4fd60] [c0008c88] show_stack+0x48/0x168 (unreliable)
+> [ef84fda0] [c0375fe01 panic+0xa4/0x1ec
+> [ef84fdf0] [c01c5f30] tomoyo_close_control+0x0/0xa4
+> [efB4fe00] [c01cc2f0] tomoyo_load_policy+0xeB/0x11c
+
+
+
 
