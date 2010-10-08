@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759166Ab0JHSe4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 14:34:56 -0400
-Received: from kroah.org ([198.145.64.141]:38279 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752414Ab0JHSez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 14:34:55 -0400
-Date: Fri, 8 Oct 2010 11:33:47 -0700
-From: Greg KH <greg@kroah.com>
-To: matt mooney <mfmooney@gmail.com>
-Cc: T Dent <tdent48227@gmail.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org, sam@ravnborg.org,
-        linux-kbuild@vger.kernel.org
-Subject: Re: [PATCH 00/33] Staging: Fixed <module-objs> to <module>-y
-Message-ID: <20101008183347.GA23712@kroah.com>
-References: <AANLkTi=Hc2eWzOQ_xKBYsqfwkkiKGU0v42jUhLQ8K7dU@mail.gmail.com>
- <AANLkTinynZj9bYFAyfRTF2uopmLe6Ls4YGdZPqCAJTpR@mail.gmail.com>
- <20101008134654.GA6600@kroah.com>
- <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTi=9N4e7fBekOaUa7OmPcaqicAgkC2aDT0HbJE8p@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755606Ab0JHSgm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 14:36:42 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54950 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752158Ab0JHSgl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 14:36:41 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
+        ralf@linux-mips.org, tony.luck@intel.com
+Subject: [PATCH] Define _addr_lsb in siginfo_t for mips v2
+Date: Fri,  8 Oct 2010 20:36:15 +0200
+Message-Id: <1286562975-27974-1-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 11:09:11AM -0700, matt mooney wrote:
-> On Fri, Oct 8, 2010 at 6:46 AM, Greg KH <greg@kroah.com> wrote:
-> > On Fri, Oct 08, 2010 at 12:16:35AM -0700, matt mooney wrote:
-> >> On Thu, Oct 7, 2010 at 6:35 PM, T Dent <tdent48227@gmail.com> wrote:
-> >> > I patch against the next-20101006 tree.
-> >> >
-> >> > The patch series replace use of <module>-objs with <module>-y in the
-> >> > staging directory.
-> >>
-> >> Commit messages are written in the present tense. You happen to be
-> >> using two different tenses within the commit message, which is truly
-> >> odd.  And why did you not split apart those atrocious statements with
-> >> the infinite column width?
-> >
-> > As Dan said, we understand what is happening here, and we do not have
-> > grammer police for changelog comments, thank goodness.
-> >
-> >> This patch series adds little benefit.  As Sam has suggested, a more
-> >> general cleanup would be a better goal, and staging is an area that
-> >> needs extra attention some of which has already been pointed out in
-> >> other emails.
-> >
-> > But these patches are all good to have, so I will be applying them,
-> > please don't think they are unwanted at all.
-> >
-> 
-> This is good to know. I wonder how well received these changes will be
-> in other parts of the kernel though.
+From: Andi Kleen <ak@linux.intel.com>
 
-It depends on the subsystem maintainer.
+Define an _addr_lsb field in the mips and ia64 siginfo_ts, following
+the asm-generic version. This just puts the field over padding.
 
-good luck,
+This fixes a compilation problem introduced with a337fda.
 
-greg k-h
+v2: Drop ia64 hunk which is not needed
+
+Cc: ralf@linux-mips.org
+Cc: tony.luck@intel.com
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/mips/include/asm/siginfo.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/arch/mips/include/asm/siginfo.h b/arch/mips/include/asm/siginfo.h
+index 96e28f1..709f7d4 100644
+--- a/arch/mips/include/asm/siginfo.h
++++ b/arch/mips/include/asm/siginfo.h
+@@ -88,6 +88,7 @@ typedef struct siginfo {
+ #ifdef __ARCH_SI_TRAPNO
+ 			int _trapno;	/* TRAP # which caused the signal */
+ #endif
++			short _addr_lsb;	
+ 		} _sigfault;
+ 
+ 		/* SIGPOLL, SIGXFSZ (To do ...)  */
+-- 
+1.7.1
+
