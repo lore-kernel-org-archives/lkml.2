@@ -1,59 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab0JIHeG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 03:34:06 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43557 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751566Ab0JIHeE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 03:34:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=QpXgAWvMrmP1MHbptKqht5MvMb+fKYYSV9/1TKwD+LPA1vG/dcmaCiNpo5+v3YXSk9
-         GIilZMQK2EfBiwWlqshk2Scg0fDHLdVmog+3dHyluEKSELlUo+N0bTp7ttL8ilk0vSYF
-         pZkwQQfjxyX4g2KpVrjAZ3TZs/EJDKJkw1x48=
-From: Helmut Schaa <helmut.schaa@googlemail.com>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Subject: Re: Roaming / offchannel enhancements for broadcast / multicast frames
-Date: Sat, 9 Oct 2010 09:33:12 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34.7-0.3-desktop; KDE/4.5.1; x86_64; ; )
-Cc: Paul Stewart <pstew@google.com>,
-        "linux-wireless" <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Matt Smith <Matt.Smith@atheros.com>,
-        Srinivasa Duvvuri <Srinivasa.Duvvuri@atheros.com>,
-        Carolyn Waller <Carolyn.Waller@atheros.com>,
-        Amod Bodas <Amod.Bodas@atheros.com>,
-        David Quan <David.Quan@atheros.com>,
-        Bennyam Malavazi <Bennyam.Malavazi@atheros.com>,
-        Cliff Holden <Cliff.Holden@atheros.com>,
-        Aeolus Yang <Aeolus.Yang@atheros.com>, Kevin Hayes <kevin@atheros.com>
-References: <AANLkTin9AwTa8x6faFEXBbrGZa4mg3AeDfeEmmdaF9_d@mail.gmail.com> <AANLkTika+07mD==fPioanurwD-_s8aaJFc+nb4ZZOL0J@mail.gmail.com> <AANLkTimBXC9P7pf+-szK3A5FoS2Sjndr8AB9JR=7V-Sr@mail.gmail.com>
-In-Reply-To: <AANLkTimBXC9P7pf+-szK3A5FoS2Sjndr8AB9JR=7V-Sr@mail.gmail.com>
+	id S1753147Ab0JIHuH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 03:50:07 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:33490 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752677Ab0JIHuG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 03:50:06 -0400
+Date: Sat, 9 Oct 2010 02:50:02 -0500
+From: Robin Holt <holt@sgi.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Robin Holt <holt@sgi.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Convert max_user_watches to long.
+Message-ID: <20101009075002.GW14068@sgi.com>
+References: <20101001200143.GR14064@sgi.com>
+ <alpine.DEB.2.00.1010011335400.2305@ubuntu>
+ <m1vd5ll2hl.fsf@fess.ebiederm.org>
+ <alpine.DEB.2.00.1010020701320.1564@davide-laptop>
+ <20101004194411.GT14068@sgi.com>
+ <alpine.DEB.2.00.1010051841050.1941@ubuntu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010090933.13008.helmut.schaa@googlemail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1010051841050.1941@ubuntu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag 09 Oktober 2010 schrieb Luis R. Rodriguez: 
-> > There's an additional issue about what happens
-> > when we are in the middle of a bgscan and new tx traffic appears.
+On Tue, Oct 05, 2010 at 07:21:09PM -0700, Davide Libenzi wrote:
+> On Mon, 4 Oct 2010, Robin Holt wrote:
 > 
-> We can force going back on channel in this case I think.
+> > On a 16TB machine, max_user_watches has an integer overflow.  Convert it
+> > to use a long and handle the associated fallout.
+> > 
+> > 
+> > Signed-off-by: Robin Holt <holt@sgi.com>
+> > To: "Eric W. Biederman" <ebiederm@xmission.com>
+> > To: Davide Libenzi <davidel@xmailserver.org>
+> > To: linux-kernel@vger.kernel.org
+> > To: Pekka Enberg <penberg@cs.helsinki.fi>
+> > 
+> > ---
+> > 
+> > Davide,  I changed the logic a bit in ep_insert.  It looked to me like
+> > there was a window between when the epoll_watches is checked and when it
+> > is incremented where multiple epoll_insert callers could be adding watches
+> > at the same time and allow epoll_watches to exceed max_user_watches.
+> > Not sure of the case where this could happen, but I assume something
+> > like that must be possible or we would not be using atomics.  If that
+> > is not to your liking, I will happily remove it.
+> 
+> The case can happen, but the effect is not something we should be too 
+> worried about.
+> You seem to be leaking a count in case kmem_cache_alloc() and following 
+> fail.
+> I'd rather not have that code there, and have the patch cover the 'long' 
+> conversion only.  Or you need a proper cleanup goto target.
 
-This already happens (scan.c):
+Bah.  Too rushed when I made that.  Here is the conversion only patch.  If
+this is acceptable, what is the normal submission path for fs/eventpoll.c?
 
-523                 if (associated && ( !tx_empty || bad_latency ||
-524                     listen_int_exceeded))
-525                         local->next_scan_state = SCAN_ENTER_OPER_CHANNEL;
-526                 else
-527                         local->next_scan_state = SCAN_SET_CHANNEL;
+Robin
 
-When the currently scanned channel is finished and tx traffic arrived
-mac80211 will switch back to the operating channel. However, this doesn't
-immediately switch back but waits for the channel scan to be completed.
+------------------------------------------------------------------------
+
+On a 16TB machine, max_user_watches has an integer overflow.  Convert it
+to use a long and handle the associated fallout.
+
+
+Signed-off-by: Robin Holt <holt@sgi.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+To: linux-kernel@vger.kernel.org
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+
+---
+
+ fs/eventpoll.c        |   20 ++++++++++++--------
+ include/linux/sched.h |    2 +-
+ 2 files changed, 13 insertions(+), 9 deletions(-)
+
+Index: pv1010933/fs/eventpoll.c
+===================================================================
+--- pv1010933.orig/fs/eventpoll.c	2010-10-04 14:41:59.000000000 -0500
++++ pv1010933/fs/eventpoll.c	2010-10-09 02:40:07.360573988 -0500
+@@ -220,7 +220,7 @@ struct ep_send_events_data {
+  * Configuration options available inside /proc/sys/fs/epoll/
+  */
+ /* Maximum number of epoll watched descriptors, per user */
+-static int max_user_watches __read_mostly;
++static long max_user_watches __read_mostly;
+ 
+ /*
+  * This mutex is used to serialize ep_free() and eventpoll_release_file().
+@@ -243,16 +243,18 @@ static struct kmem_cache *pwq_cache __re
+ 
+ #include <linux/sysctl.h>
+ 
+-static int zero;
++static long zero;
++static long long_max = LONG_MAX;
+ 
+ ctl_table epoll_table[] = {
+ 	{
+ 		.procname	= "max_user_watches",
+ 		.data		= &max_user_watches,
+-		.maxlen		= sizeof(int),
++		.maxlen		= sizeof(max_user_watches),
+ 		.mode		= 0644,
+-		.proc_handler	= proc_dointvec_minmax,
++		.proc_handler	= proc_doulongvec_minmax,
+ 		.extra1		= &zero,
++		.extra2		= &long_max,
+ 	},
+ 	{ }
+ };
+@@ -564,7 +566,7 @@ static int ep_remove(struct eventpoll *e
+ 	/* At this point it is safe to free the eventpoll item */
+ 	kmem_cache_free(epi_cache, epi);
+ 
+-	atomic_dec(&ep->user->epoll_watches);
++	atomic_long_dec(&ep->user->epoll_watches);
+ 
+ 	return 0;
+ }
+@@ -900,11 +902,12 @@ static int ep_insert(struct eventpoll *e
+ {
+ 	int error, revents, pwake = 0;
+ 	unsigned long flags;
++	long user_watches;
+ 	struct epitem *epi;
+ 	struct ep_pqueue epq;
+ 
+-	if (unlikely(atomic_read(&ep->user->epoll_watches) >=
+-		     max_user_watches))
++	user_watches = atomic_long_read(&ep->user->epoll_watches);
++	if (user_watches >= max_user_watches)
+ 		return -ENOSPC;
+ 	if (!(epi = kmem_cache_alloc(epi_cache, GFP_KERNEL)))
+ 		return -ENOMEM;
+@@ -968,7 +971,7 @@ static int ep_insert(struct eventpoll *e
+ 
+ 	spin_unlock_irqrestore(&ep->lock, flags);
+ 
+-	atomic_inc(&ep->user->epoll_watches);
++	atomic_long_inc(&ep->user->epoll_watches);
+ 
+ 	/* We have to call this outside the lock */
+ 	if (pwake)
+@@ -1422,6 +1425,7 @@ static int __init eventpoll_init(void)
+ 	 */
+ 	max_user_watches = (((si.totalram - si.totalhigh) / 25) << PAGE_SHIFT) /
+ 		EP_ITEM_COST;
++	BUG_ON(max_user_watches < 0);
+ 
+ 	/* Initialize the structure used to perform safe poll wait head wake ups */
+ 	ep_nested_calls_init(&poll_safewake_ncalls);
+Index: pv1010933/include/linux/sched.h
+===================================================================
+--- pv1010933.orig/include/linux/sched.h	2010-10-04 14:41:59.000000000 -0500
++++ pv1010933/include/linux/sched.h	2010-10-04 14:42:01.123824797 -0500
+@@ -666,7 +666,7 @@ struct user_struct {
+ 	atomic_t inotify_devs;	/* How many inotify devs does this user have opened? */
+ #endif
+ #ifdef CONFIG_EPOLL
+-	atomic_t epoll_watches;	/* The number of file descriptors currently watched */
++	atomic_long_t epoll_watches; /* The number of file descriptors currently watched */
+ #endif
+ #ifdef CONFIG_POSIX_MQUEUE
+ 	/* protected by mq_lock	*/
