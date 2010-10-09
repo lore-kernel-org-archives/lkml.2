@@ -1,71 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760001Ab0JIMLB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 08:11:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54243 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755285Ab0JIMK7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 08:10:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Fh7TfyVs/8sYrLCr44jRTSYU9VLolEsGI57l6KExNXCJAhU9E8UPMaw2nzuwGPb/Zk
-         wERXMGBa9OY0lK8m7joU+zRyRX8V3WUG4W7ZX3yLdlnoVEGrxn025NRQaLMRGxs14+3/
-         lvfy9nxuYCBPmfk/QavHKJV0Y+cKFqC8M7Cnk=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikdxSQD+9UY70PtCPMgnrovx-dWjrrPJ0AZyG4X@mail.gmail.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	<20101009092127.GB20975@n2100.arm.linux.org.uk>
-	<AANLkTimtdV8THgnQL1RxaqLzCUwO27AZSMPi=UtgpML7@mail.gmail.com>
-	<201010091311.26335.arnd@arndb.de>
-	<AANLkTikdxSQD+9UY70PtCPMgnrovx-dWjrrPJ0AZyG4X@mail.gmail.com>
-Date: Sat, 9 Oct 2010 15:10:57 +0300
-Message-ID: <AANLkTi=37SCuwwze4KS_yOdmi8bvJP_OexHaYLw-AXfJ@mail.gmail.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
+	id S1760065Ab0JIMNe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 08:13:34 -0400
+Received: from www.tglx.de ([62.245.132.106]:57319 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753931Ab0JIMNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 08:13:33 -0400
+Date: Sat, 9 Oct 2010 14:12:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
-        Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+In-Reply-To: <4CB013CB.1040904@kernel.org>
+Message-ID: <alpine.LFD.2.00.1010091409450.2640@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com> <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6>
+ <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6> <4CACFC23.4080504@kernel.org> <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6> <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org> <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6>
+ <4CAD4EC3.5060809@kernel.org> <alpine.LFD.2.00.1010082346310.13094@localhost6.localdomain6> <alpine.LFD.2.00.1010082351450.13094@localhost6.localdomain6> <4CAFEEFA.1070000@kernel.org> <alpine.LFD.2.00.1010090758420.13094@localhost6.localdomain6>
+ <4CB013CB.1040904@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 9, 2010 at 2:43 PM, Dave Airlie <airlied@gmail.com> wrote:
->> The few drivers that may be hit by this are typically in drivers/staging
->> exactly because issues like this have not been fixed yet.
->>
->> We should probably just fix the non-staging drivers that are hit by
->> this now and declare the issue done.
->>
->> When you say that "many drivers broken", can you list the ones you know
->> about? It would probably help resolve this the right way.
->
-> I'm guessing some closed source graphics drivers for ARM do all kinds
-> of wrong crap, and Nokia use them a lot, and nobody wants to tell the
-> closed vendors to change their drivers because it costs money.
+On Sat, 9 Oct 2010, Yinghai Lu wrote:
+> On 10/08/2010 11:10 PM, Thomas Gleixner wrote:
+> >> [   59.449366] IP: [<ffffffff8147d715>] acpi_pci_irq_find_prt_entry+0x85/0xb1
+> > 
+> > I can hardly see how this is related to the irq work.
+> > 
+> >> [   71.076886] Pid: 1, comm: swapper Tainted: G        W   2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171      /Sun Fire x4800
+> >> [   71.096947] RIP: 0010:[<ffffffff8141e232>]  [<ffffffff8141e232>] strcmp+0x4/0x21
+> > 
+> > Ditto.
+> 
+> don't know.
+> 
+> but without merging your branch, those problems don't come out.
+> 
+> only thing i can think about that you real free irq code could
+> stress or expose other subsystem's bug etc.
 
-You are over simplifying things.
+The first crash is in early boot and that code just fiddles with acpi
+internal stuff.
 
- 1) The code is open[1]
- 2) the decision comes from TI, Nokia can only do so much before shipping
- 3) I know many people in Nokia have pushed very hard, and cleaned up
-the driver a lot themselves
- 4) There are other companies, Intel is using SGX too
+Is that fully reproducible ? If yes, any chance you can bisect it ?
 
-Anyway, there are other examples, like tidspbridge, which Nokia has
-spent a lot of time cleaning up, and TI made a great effort to push
-into staging. And others already in mainline, like
-sh_mobile_ceu_camera.
+Thanks,
 
-[1] http://meego.gitorious.org/meego-os-base/kernel-source/trees/master/patches
-
--- 
-Felipe Contreras
+	tglx
