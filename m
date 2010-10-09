@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760038Ab0JIA41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 20:56:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:34387 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752013Ab0JIA40 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 20:56:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=drYLS8THEXSsLLyDbih4w+21fjJvxXQ/XnftYq0+CiqzK1xTBMlwmPoglWRVHBHHfy
-         XcQYPajGYoPGsbx0sPuhZfzoHtMcWtcCdXA4nhqZmT6KQ7URoWcgKVoQ93RpvHNPptBz
-         BDgQifJ155GAmVwBHyG+jndpiGyyF4SRlUjbA=
+	id S1760059Ab0JIBF3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 21:05:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752013Ab0JIBF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 21:05:28 -0400
+Date: Fri, 8 Oct 2010 21:37:08 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dean Nelson <dnelson@redhat.com>
+Subject: Re: [PATCH 2/2] kvm, MCE, Send SRAR SIGBUS directly
+Message-ID: <20101009003708.GA18859@amt.cnet>
+References: <1286526255.7768.96.camel@yhuang-dev>
+ <20101008202501.GA2291@amt.cnet>
 MIME-Version: 1.0
-In-Reply-To: <20101008234448.GD10975@n2100.arm.linux.org.uk>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	<20101007192245.GC26435@n2100.arm.linux.org.uk>
-	<AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
-	<20101008175308.GA10975@n2100.arm.linux.org.uk>
-	<AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
-	<20101008230451.GB10975@n2100.arm.linux.org.uk>
-	<20101008232539.GA28697@kroah.com>
-	<20101008234448.GD10975@n2100.arm.linux.org.uk>
-Date: Sat, 9 Oct 2010 03:56:23 +0300
-Message-ID: <AANLkTinhwORqdWU43yr1AXJGZm2zPKGG+Q9twruNs2aH@mail.gmail.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Hemant Pedanekar <hemantp@ti.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008202501.GA2291@amt.cnet>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/9 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Fri, Oct 08, 2010 at 04:25:39PM -0700, Greg KH wrote:
->> Also, how can we fix this in a driver, what is the proper steps to do
->> so?
->
-> On April 23rd:
-> | I think a viable safe solution is to set aside some RAM at boot (which
-> | the kernel doesn't manage at all) and then use ioremap on that; that
-> | approach will still work with this patch in place.
->
-> On April 30th when discussing the omapfb driver:
-> | There's really one option for this - in the machine's fixup handler, you
-> | can walk the meminfo array and kick out some memory from that.  This will
-> | prevent the kernel mapping that memory and make pfn_valid() fail for that
-> | memory range.  Another advantage of this is that it won't break when we
-> | switch to LMB.
+On Fri, Oct 08, 2010 at 05:25:01PM -0300, Marcelo Tosatti wrote:
+> On Fri, Oct 08, 2010 at 04:24:15PM +0800, Huang Ying wrote:
+> > Originally, SRAR SIGBUS is sent to QEMU-KVM via touching the poisoned
+> > page. But commit 96054569190bdec375fe824e48ca1f4e3b53dd36 prevents the
+> > signal from being sent. So now the signal is sent via
+> > force_sig_info_fault directly.
+> > 
+> > Reported-by: Dean Nelson <dnelson@redhat.com>
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  arch/x86/include/asm/signal.h |    3 +++
+> >  arch/x86/kvm/mmu.c            |   15 +++------------
+> >  arch/x86/mm/fault.c           |    6 +++---
+> >  3 files changed, 9 insertions(+), 15 deletions(-)
+> > 
+> >  static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
+> >  {
+> >  	kvm_release_pfn_clean(pfn);
+> >  	if (is_hwpoison_pfn(pfn)) {
+> > -		kvm_send_hwpoison_signal(kvm, gfn);
+> > +		force_sig_info_fault(SIGBUS, BUS_MCEERR_AR,
+> > +				     gfn_to_hva(kvm, gfn), current);
+> >  		return 0;
+> >  	} else if (is_fault_pfn(pfn))
+> >  		return -EFAULT;
+> 
+> Better fill siginfo and use force_sig_info, which is already exported.
 
-These are not solutions, these are pointers to find the solutions.
+Thats wrong, its not exported. But there is no need to force delivery,
+so i've changed it to use send_sig_info.
 
-How do you set aside some RAM at boot for that? Is there anything like
-memblock to do that? Or do you expect to set aside some memory with
-mem=X, and manually specify the address in the .config?
+Applied the other patches, thanks.
 
-> Unfortunately, what I fear is that nothing will happen because people
-> want the ioremap-on-system-RAM to just work, and then we'll hit this
-> exact same issue again in three months time.
-
-Nobody has ever said, or suggested anything like that.
-
-What people want is:
-1) A solution in place
-2) Time to implement that solution in their drivers
-
-And since you did, let me say what I fear: that many more people will
-find drivers totally broken on 2.6.36.
-
--- 
-Felipe Contreras
