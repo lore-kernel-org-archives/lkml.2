@@ -1,99 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab0JIL0I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 07:26:08 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51895 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754694Ab0JIL0H (ORCPT
+	id S1760282Ab0JILbI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 07:31:08 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:41533 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab0JILbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 07:26:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=X7H1O01Go0pAmMecCOfe0/OA6c3Kn9rS3QWUGLLyYH3bWTufNHBsMBEsUAf7I2g7gL
-         r/b1fDQUDH8KwcryacMqBXG1Mnq94WhbARHKkZ9nwcufx3EP0ALdQuoFosJSQY4FNHgq
-         aziFtokO53H5mk456Ule2GPBh0c7GxKfl/C6Q=
+	Sat, 9 Oct 2010 07:31:06 -0400
+Message-ID: <4CB05276.70705@xs4all.nl>
+Date: Sat, 09 Oct 2010 13:31:02 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20100812115430.2b5d8683@starbug.prg01.itonis.net>
-References: <20100812115430.2b5d8683@starbug.prg01.itonis.net>
-Date: Sat, 9 Oct 2010 13:26:05 +0200
-Message-ID: <AANLkTinbgud9enM1XDQrdZVBtGnTFaUeoEL-D8Z2FmJh@mail.gmail.com>
-Subject: Fwd: [PATCH] forcedeth: reconfigure multicast packet filter only when needed
-From: =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
-To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Cc: davem@davemloft.net, shemminger@vyatta.com, aabdulla@nvidia.com,
-        ditto@google.com, makovick@gmail.com
-Content-Type: multipart/mixed; boundary=001636e1ea8499364504922d64a8
+To: linux-kernel@vger.kernel.org
+Subject: bug in 2.6.35.2
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636e1ea8499364504922d64a8
-Content-Type: text/plain; charset=ISO-8859-1
+Hello,
 
-Currently, the forcedeth driver reconfigures the packet filter every
-time a multicast stream is (un-)subscribed. As the receiving has to be
-stopped and started in this case, any multicast subscription can cause
-packet loss, allowing userspace applications to disrupt incoming
-traffic.
+I was just typing and this happened:
 
-With the following patch, nv_set_multicast first checks the cached
-state of the packet filter, and skips the reconfiguration if the state
-does not change. With the default settings, this can reduce some
-useless reconfiguration attempts. When switched to promiscuous mode,
-all reconfigurations are skipped with the patch, which can be used to
-mitigate packet loss problems when receiving and re-subscribing many
-multicasts simultaneously on a single machine.
+Oct  9 13:11:17 doos kernel: BUG: unable to handle kernel NULL pointer
+dereference at (null)
+Oct  9 13:11:17 doos kernel: IP: [<ffffffff81162475>]
+ext4_mb_good_group+0x55/0x120
+Oct  9 13:11:17 doos kernel: PGD 2e703067 PUD b7ca8067 PMD 0
+Oct  9 13:11:17 doos kernel: Oops: 0000 [#1] PREEMPT SMP
+Oct  9 13:11:17 doos kernel: last sysfs file:
+/sys/devices/virtual/net/vboxnet0/statistics/collisions
+Oct  9 13:11:17 doos kernel: CPU 0
+Oct  9 13:11:17 doos kernel: Modules linked in: vfat fat eeprom i2c_dev
+i2c_piix4 vboxnetadp vboxnetflt vboxdrv nls_utf8 nfs usb_storage isofs
+sit tunnel4 radeon ttm drm_kms_helper drm fb fbdev i2c_algo_bit
+cfbcopyarea cfbimgblt cfbfillrect rfcomm sco bridge stp llc bnep l2cap
+nfsd nfs_acl auth_rpcgss exportfs it87 hwmon_vid lockd sunrpc
+powernow_k8 mperf ipt_REJECT iptable_filter ipt_MASQUERADE iptable_nat
+nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 ip_tables
+nf_conntrack_netbios_ns ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 xt_state
+nf_conntrack ip6table_filter ip6_tables x_tables binfmt_misc dm_mirror
+dm_region_hash dm_log snd_hda_codec_atihdmi snd_hda_codec_realtek
+snd_hda_intel snd_hda_codec ppdev snd_seq snd_seq_device parport_pc
+parport snd_pcm pwc videodev usblp sg v4l1_compat k10temp ohci1394
+ieee1394 v4l2_compat_ioctl32 btusb snd_timer snd evdev bluetooth button
+snd_page_alloc sr_mod cdrom ide_pci_generic atiixp pata_atiixp ehci_hcd
+ohci_hcd sata_sil24 floppy [last unloaded: eeprom]
+Oct  9 13:11:17 doos kernel:
+Oct  9 13:11:17 doos kernel: Pid: 20976, comm: flush-253:4 Not tainted
+2.6.35.2 #2 GA-MA770-DS3/
+Oct  9 13:11:17 doos kernel: RIP: 0010:[<ffffffff81162475>]
+[<ffffffff81162475>] ext4_mb_good_group+0x55/0x120
+Oct  9 13:11:17 doos kernel: RSP: 0018:ffff8800b7cb3790  EFLAGS: 00010293
+Oct  9 13:11:17 doos kernel: RAX: 0000000000000000 RBX: ffff880036b6df40
+RCX: 0000000000000000
+Oct  9 13:11:17 doos kernel: RDX: 0000000000000000 RSI: ffff88012dc54000
+RDI: ffff88012f40d800
+Oct  9 13:11:17 doos kernel: RBP: 0000000000001300 R08: 0000000000000026
+R09: ffff88012e7cb0e0
+Oct  9 13:11:17 doos kernel: R10: 000000000000000b R11: dead000000200200
+R12: 0000000000000000
+Oct  9 13:11:17 doos kernel: R13: ffff8800b7cb3800 R14: 0000000000001300
+R15: 000000000000004f
+Oct  9 13:11:17 doos kernel: FS:  00007f57b23e3740(0000)
+GS:ffff880001800000(0000) knlGS:00000000f7790860
+Oct  9 13:11:17 doos kernel: CS:  0010 DS: 0000 ES: 0000 CR0:
+000000008005003b
+Oct  9 13:11:17 doos kernel: CR2: 0000000000000000 CR3: 000000002fcbd000
+CR4: 00000000000006f0
+Oct  9 13:11:17 doos kernel: DR0: 0000000000000000 DR1: 0000000000000000
+DR2: 0000000000000000
+Oct  9 13:11:17 doos kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0
+DR7: 0000000000000400
+Oct  9 13:11:17 doos kernel: Process flush-253:4 (pid: 20976, threadinfo
+ffff8800b7cb2000, task ffff88012ff82c70)
+Oct  9 13:11:17 doos kernel: Stack:
+Oct  9 13:11:17 doos kernel: 0000000000000000 ffffffff81034319
+0000000000000001 ffff880036b6df40
+Oct  9 13:11:17 doos kernel: <0> 0000000000000000 0000000000001200
+ffff8800b7cb3800 ffffffff81163128
+Oct  9 13:11:17 doos kernel: <0> ffff88012e076ec0 ffff88012f40d800
+ffffe8ffffc08d80 ffff88012e00ead8
+Oct  9 13:11:17 doos kernel: Call Trace:
+Oct  9 13:11:17 doos kernel: [<ffffffff81034319>] ? get_parent_ip+0x9/0x20
+Oct  9 13:11:17 doos kernel: [<ffffffff81163128>] ?
+ext4_mb_regular_allocator+0x178/0x3d0
+Oct  9 13:11:17 doos kernel: [<ffffffff81035bcf>] ?
+sub_preempt_count+0x7f/0xb0
+Oct  9 13:11:17 doos kernel: [<ffffffff8115ef98>] ?
+ext4_mb_normalize_request+0x298/0x4c0
+Oct  9 13:11:17 doos kernel: [<ffffffff81163643>] ?
+ext4_mb_new_blocks+0x2c3/0x3a0
+Oct  9 13:11:17 doos kernel: [<ffffffff810e63f6>] ?
+__find_get_block_slow+0xa6/0x120
+Oct  9 13:11:17 doos kernel: [<ffffffff811434f7>] ?
+ext4_alloc_branch+0x477/0x570
+Oct  9 13:11:17 doos kernel: [<ffffffff811413d3>] ?
+ext4_get_branch+0x113/0x140
+Oct  9 13:11:17 doos kernel: [<ffffffff811437d4>] ?
+ext4_ind_map_blocks+0x1e4/0x610
+Oct  9 13:11:17 doos kernel: [<ffffffff81035bcf>] ?
+sub_preempt_count+0x7f/0xb0
+Oct  9 13:11:17 doos kernel: [<ffffffff81143ebf>] ?
+ext4_map_blocks+0xdf/0x200
+Oct  9 13:11:17 doos kernel: [<ffffffff81144a28>] ?
+mpage_da_map_blocks+0xb8/0x460
+Oct  9 13:11:17 doos kernel: [<ffffffff81153178>] ?
+ext4_journal_start_sb+0xf8/0x130
+Oct  9 13:11:17 doos kernel: [<ffffffff8114554c>] ?
+ext4_da_writepages+0x2cc/0x510
+Oct  9 13:11:17 doos kernel: [<ffffffff81055c34>] ? bit_waitqueue+0x14/0xc0
+Oct  9 13:11:17 doos kernel: [<ffffffff810df764>] ?
+writeback_single_inode+0xd4/0x3c0
+Oct  9 13:11:17 doos kernel: [<ffffffff810dfee4>] ?
+writeback_sb_inodes+0x194/0x280
+Oct  9 13:11:17 doos kernel: [<ffffffff810e0873>] ?
+writeback_inodes_wb+0x63/0x180
+Oct  9 13:11:17 doos kernel: [<ffffffff810e0bb3>] ? wb_writeback+0x223/0x280
+Oct  9 13:11:17 doos kernel: [<ffffffff813a7f8e>] ?
+_raw_spin_lock_irqsave+0x1e/0x50
+Oct  9 13:11:17 doos kernel: [<ffffffff8104a01c>] ?
+try_to_del_timer_sync+0x6c/0x90
+Oct  9 13:11:17 doos kernel: [<ffffffff810e0db6>] ?
+wb_do_writeback+0x1a6/0x1b0
+Oct  9 13:11:17 doos kernel: [<ffffffff810e0e0b>] ?
+bdi_writeback_task+0x4b/0x130
+Oct  9 13:11:17 doos kernel: [<ffffffff81055c34>] ? bit_waitqueue+0x14/0xc0
+Oct  9 13:11:17 doos kernel: [<ffffffff810a1ce0>] ? bdi_start_fn+0x0/0xf0
+Oct  9 13:11:17 doos kernel: [<ffffffff810a1d5e>] ? bdi_start_fn+0x7e/0xf0
+Oct  9 13:11:17 doos kernel: [<ffffffff810a1ce0>] ? bdi_start_fn+0x0/0xf0
+Oct  9 13:11:17 doos kernel: [<ffffffff810558ae>] ? kthread+0x8e/0xa0
+Oct  9 13:11:17 doos kernel: [<ffffffff81003194>] ?
+kernel_thread_helper+0x4/0x10
+Oct  9 13:11:17 doos kernel: [<ffffffff81055820>] ? kthread+0x0/0xa0
+Oct  9 13:11:17 doos kernel: [<ffffffff81003190>] ?
+kernel_thread_helper+0x0/0x10
+Oct  9 13:11:17 doos kernel: Code: 00 8b 88 90 00 00 00 48 8b b0 30 02
+00 00 44 8b a0 00 03 00 00 41 d3 e8 48 8b 48 30 45 89 c0 4a 8b 04 c6 48
+ff c9 21 e9 83 fa 03 <4c> 8b 2c c8 0f 87 b1 00 00 00 41 f6 45 00 01 75
+57 41 8b 45 14
+Oct  9 13:11:17 doos kernel: RIP  [<ffffffff81162475>]
+ext4_mb_good_group+0x55/0x120
+Oct  9 13:11:17 doos kernel: RSP <ffff8800b7cb3790>
+Oct  9 13:11:17 doos kernel: CR2: 0000000000000000
+Oct  9 13:11:17 doos kernel: ---[ end trace 7ba0e2e548db085e ]---
+Oct  9 13:12:36 doos abrt: Kerneloops: Reported 1 kernel oopses to Abrt
 
-Signed-off-by: Jindrich Makovicka <makovick@gmail.com>
 
--- 
-Jindrich Makovicka
+Any idea?
 
---001636e1ea8499364504922d64a8
-Content-Type: text/x-patch; charset=US-ASCII; name="forcedeth.c.diff"
-Content-Disposition: attachment; filename="forcedeth.c.diff"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: 8695f0aba989faad_0.1
 
-LS0tIGZvcmNlZGV0aC5jLm9yaWcJMjAxMC0wNC0yNiAxNjo0ODozMC4wMDAwMDAwMDAgKzAyMDAK
-KysrIGZvcmNlZGV0aC5jCTIwMTAtMDUtMjEgMTM6MjI6MjUuNzA1OTA3Mjk0ICswMjAwCkBAIC04
-MzcsNiArODM3LDExIEBACiAJY2hhciBuYW1lX3J4W0lGTkFNU0laICsgM107ICAgICAgIC8qIC1y
-eCAgICAqLwogCWNoYXIgbmFtZV90eFtJRk5BTVNJWiArIDNdOyAgICAgICAvKiAtdHggICAgKi8K
-IAljaGFyIG5hbWVfb3RoZXJbSUZOQU1TSVogKyA2XTsgICAgLyogLW90aGVyICovCisKKwkvKiBj
-dXJyZW50IHBhY2tldCBmaWx0ZXIgc3RhdGUgKi8KKwl1MzIgY3VyX3BmZjsKKwl1MzIgY3VyX2Fk
-ZHJbMl07CisJdTMyIGN1cl9tYXNrWzJdOwogfTsKIAogLyoKQEAgLTMxMjgsMTcgKzMxMzMsMjgg
-QEAKIAl9CiAJYWRkclswXSB8PSBOVlJFR19NQ0FTVEFERFJBX0ZPUkNFOwogCXBmZiB8PSBOVlJF
-R19QRkZfQUxXQVlTOwotCXNwaW5fbG9ja19pcnEoJm5wLT5sb2NrKTsKLQludl9zdG9wX3J4KGRl
-dik7Ci0Jd3JpdGVsKGFkZHJbMF0sIGJhc2UgKyBOdlJlZ011bHRpY2FzdEFkZHJBKTsKLQl3cml0
-ZWwoYWRkclsxXSwgYmFzZSArIE52UmVnTXVsdGljYXN0QWRkckIpOwotCXdyaXRlbChtYXNrWzBd
-LCBiYXNlICsgTnZSZWdNdWx0aWNhc3RNYXNrQSk7Ci0Jd3JpdGVsKG1hc2tbMV0sIGJhc2UgKyBO
-dlJlZ011bHRpY2FzdE1hc2tCKTsKLQl3cml0ZWwocGZmLCBiYXNlICsgTnZSZWdQYWNrZXRGaWx0
-ZXJGbGFncyk7Ci0JZHByaW50ayhLRVJOX0lORk8gIiVzOiByZWNvbmZpZ3VyYXRpb24gZm9yIG11
-bHRpY2FzdCBsaXN0cy5cbiIsCi0JCWRldi0+bmFtZSk7Ci0JbnZfc3RhcnRfcngoZGV2KTsKLQlz
-cGluX3VubG9ja19pcnEoJm5wLT5sb2NrKTsKKwlpZiAobnAtPmN1cl9wZmYgIT0gKHBmZiAmIH5O
-VlJFR19QRkZfUEFVU0VfUlgpCisJICAgIHx8IG1lbWNtcChucC0+Y3VyX2FkZHIsIGFkZHIsIHNp
-emVvZihucC0+Y3VyX2FkZHIpKSAhPSAwCisJICAgIHx8IG1lbWNtcChucC0+Y3VyX21hc2ssIG1h
-c2ssIHNpemVvZihucC0+Y3VyX21hc2spKSAhPSAwKQorCXsKKwkJZHByaW50ayhLRVJOX0lORk8g
-IiVzOiByZWNvbmZpZ3VyYXRpb24gZm9yIG11bHRpY2FzdCBsaXN0cy5cbiIsCisJCQlkZXYtPm5h
-bWUpOworCQlzcGluX2xvY2tfaXJxKCZucC0+bG9jayk7CisJCW52X3N0b3BfcngoZGV2KTsKKwkJ
-d3JpdGVsKGFkZHJbMF0sIGJhc2UgKyBOdlJlZ011bHRpY2FzdEFkZHJBKTsKKwkJd3JpdGVsKGFk
-ZHJbMV0sIGJhc2UgKyBOdlJlZ011bHRpY2FzdEFkZHJCKTsKKwkJd3JpdGVsKG1hc2tbMF0sIGJh
-c2UgKyBOdlJlZ011bHRpY2FzdE1hc2tBKTsKKwkJd3JpdGVsKG1hc2tbMV0sIGJhc2UgKyBOdlJl
-Z011bHRpY2FzdE1hc2tCKTsKKwkJd3JpdGVsKHBmZiwgYmFzZSArIE52UmVnUGFja2V0RmlsdGVy
-RmxhZ3MpOworCQludl9zdGFydF9yeChkZXYpOworCQlzcGluX3VubG9ja19pcnEoJm5wLT5sb2Nr
-KTsKKwkJbWVtY3B5KG5wLT5jdXJfYWRkciwgYWRkciwgc2l6ZW9mKG5wLT5jdXJfYWRkcikpOwor
-CQltZW1jcHkobnAtPmN1cl9tYXNrLCBtYXNrLCBzaXplb2YobnAtPmN1cl9tYXNrKSk7CisJCW5w
-LT5jdXJfcGZmID0gcGZmICYgfk5WUkVHX1BGRl9QQVVTRV9SWDsKKwl9IGVsc2UgeworCQlkcHJp
-bnRrKEtFUk5fSU5GTyAiJXM6IHBmZiBzdGF0ZSB1bmNoYW5nZWQgLSBza2lwcGluZyByZWNvbmZp
-Z3VyYXRpb24uXG4iLAorCQkJZGV2LT5uYW1lKTsKKwl9CiB9CiAKIHN0YXRpYyB2b2lkIG52X3Vw
-ZGF0ZV9wYXVzZShzdHJ1Y3QgbmV0X2RldmljZSAqZGV2LCB1MzIgcGF1c2VfZmxhZ3MpCkBAIC01
-MzY5LDYgKzUzODUsMTIgQEAKIAl3cml0ZWwoTlZSRUdfTUNBU1RNQVNLQl9OT05FLCBiYXNlICsg
-TnZSZWdNdWx0aWNhc3RNYXNrQik7CiAJd3JpdGVsKDAsIGJhc2UgKyBOdlJlZ1BhY2tldEZpbHRl
-ckZsYWdzKTsKIAorCW5wLT5jdXJfcGZmID0gMDsKKwlucC0+Y3VyX2FkZHJbMF0gPSBOVlJFR19N
-Q0FTVEFERFJBX0ZPUkNFOworCW5wLT5jdXJfYWRkclsxXSA9IDA7CisJbnAtPmN1cl9tYXNrWzBd
-ID0gTlZSRUdfTUNBU1RNQVNLQV9OT05FOworCW5wLT5jdXJfbWFza1sxXSA9IE5WUkVHX01DQVNU
-TUFTS0JfTk9ORTsKKwogCXdyaXRlbCgwLCBiYXNlICsgTnZSZWdUcmFuc21pdHRlckNvbnRyb2wp
-OwogCXdyaXRlbCgwLCBiYXNlICsgTnZSZWdSZWNlaXZlckNvbnRyb2wpOwogCg==
---001636e1ea8499364504922d64a8--
+Udo
