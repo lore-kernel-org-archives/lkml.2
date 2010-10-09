@@ -1,83 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760082Ab0JIAsE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 20:48:04 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44534 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760027Ab0JIAq0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 20:46:26 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-sh@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 3/7] oprofile: Make op_name_from_perf_id() global
-Date: Sat,  9 Oct 2010 01:46:18 +0100
-Message-Id: <7b803da1bb48b15e29c966ff925cfb21f9015e6c.1286584677.git.matt@console-pimps.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <cover.1286584677.git.matt@console-pimps.org>
-References: <cover.1286584677.git.matt@console-pimps.org>
-In-Reply-To: <cover.1286584677.git.matt@console-pimps.org>
-References: <cover.1286584677.git.matt@console-pimps.org>
+	id S1760065Ab0JIAsy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 20:48:54 -0400
+Received: from mga02.intel.com ([134.134.136.20]:5041 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760027Ab0JIAsw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 20:48:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,306,1283756400"; 
+   d="scan'208";a="665635715"
+Subject: Re: [PATCH 2/2] kvm, MCE, Send SRAR SIGBUS directly
+From: Huang Ying <ying.huang@intel.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dean Nelson <dnelson@redhat.com>
+In-Reply-To: <20101008202501.GA2291@amt.cnet>
+References: <1286526255.7768.96.camel@yhuang-dev>
+	 <20101008202501.GA2291@amt.cnet>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 09 Oct 2010 08:48:50 +0800
+Message-ID: <1286585330.7768.99.camel@yhuang-dev>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make op_name_from_perf_id() global so that we have a way for each
-architecture to construct an oprofile name for op->cpu_type. We need to
-remove the argument from the function prototype so that we can hide all
-implementation details inside the function.
+On Sat, 2010-10-09 at 04:25 +0800, Marcelo Tosatti wrote:
+> On Fri, Oct 08, 2010 at 04:24:15PM +0800, Huang Ying wrote:
+> > Originally, SRAR SIGBUS is sent to QEMU-KVM via touching the poisoned
+> > page. But commit 96054569190bdec375fe824e48ca1f4e3b53dd36 prevents the
+> > signal from being sent. So now the signal is sent via
+> > force_sig_info_fault directly.
+> > 
+> > Reported-by: Dean Nelson <dnelson@redhat.com>
+> > Signed-off-by: Huang Ying <ying.huang@intel.com>
+> > ---
+> >  arch/x86/include/asm/signal.h |    3 +++
+> >  arch/x86/kvm/mmu.c            |   15 +++------------
+> >  arch/x86/mm/fault.c           |    6 +++---
+> >  3 files changed, 9 insertions(+), 15 deletions(-)
+> > 
+> > --- a/arch/x86/include/asm/signal.h
+> > +++ b/arch/x86/include/asm/signal.h
+> > @@ -258,6 +258,9 @@ struct pt_regs;
+> >  
+> >  #define ptrace_signal_deliver(regs, cookie) do { } while (0)
+> >  
+> > +void force_sig_info_fault(int si_signo, int si_code, unsigned long address,
+> > +			  struct task_struct *tsk);
+> > +
+> >  #endif /* __KERNEL__ */
+> >  #endif /* __ASSEMBLY__ */
+> >  
+> > --- a/arch/x86/mm/fault.c
+> > +++ b/arch/x86/mm/fault.c
+> > @@ -158,9 +158,8 @@ is_prefetch(struct pt_regs *regs, unsign
+> >  	return prefetch;
+> >  }
+> >  
+> > -static void
+> > -force_sig_info_fault(int si_signo, int si_code, unsigned long address,
+> > -		     struct task_struct *tsk)
+> > +void force_sig_info_fault(int si_signo, int si_code, unsigned long address,
+> > +			  struct task_struct *tsk)
+> >  {
+> >  	siginfo_t info;
+> >  
+> > @@ -172,6 +171,7 @@ force_sig_info_fault(int si_signo, int s
+> >  
+> >  	force_sig_info(si_signo, &info, tsk);
+> >  }
+> > +EXPORT_SYMBOL_GPL(force_sig_info_fault);
+> >  
+> >  DEFINE_SPINLOCK(pgd_lock);
+> >  LIST_HEAD(pgd_list);
+> > --- a/arch/x86/kvm/mmu.c
+> > +++ b/arch/x86/kvm/mmu.c
+> > @@ -39,6 +39,7 @@
+> >  #include <asm/cmpxchg.h>
+> >  #include <asm/io.h>
+> >  #include <asm/vmx.h>
+> > +#include <asm/signal.h>
+> >  
+> >  /*
+> >   * When setting this variable to true it enables Two-Dimensional-Paging
+> > @@ -2104,22 +2105,12 @@ static int __direct_map(struct kvm_vcpu
+> >  	return pt_write;
+> >  }
+> >  
+> > -static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
+> > -{
+> > -	char buf[1];
+> > -	void __user *hva;
+> > -	int r;
+> > -
+> > -	/* Touch the page, so send SIGBUS */
+> > -	hva = (void __user *)gfn_to_hva(kvm, gfn);
+> > -	r = copy_from_user(buf, hva, 1);
+> > -}
+> > -
+> >  static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
+> >  {
+> >  	kvm_release_pfn_clean(pfn);
+> >  	if (is_hwpoison_pfn(pfn)) {
+> > -		kvm_send_hwpoison_signal(kvm, gfn);
+> > +		force_sig_info_fault(SIGBUS, BUS_MCEERR_AR,
+> > +				     gfn_to_hva(kvm, gfn), current);
+> >  		return 0;
+> >  	} else if (is_fault_pfn(pfn))
+> >  		return -EFAULT;
+> 
+> Better fill siginfo and use force_sig_info, which is already exported.
 
-Signed-off-by: Matt Fleming <matt@console-pimps.org>
----
- arch/arm/oprofile/common.c |    6 ++++--
- include/linux/oprofile.h   |    4 ++++
- 2 files changed, 8 insertions(+), 2 deletions(-)
+It seems that force_sig_info is not exported for now.
 
-diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
-index 1e971a7..4f67cfa 100644
---- a/arch/arm/oprofile/common.c
-+++ b/arch/arm/oprofile/common.c
-@@ -155,8 +155,10 @@ static void op_perf_stop(void)
- }
- 
- 
--static char *op_name_from_perf_id(enum arm_perf_pmu_ids id)
-+char *op_name_from_perf_id(void)
- {
-+	enum arm_perf_pmu_ids id = armpmu_get_pmu_id();
-+
- 	switch (id) {
- 	case ARM_PERF_PMU_ID_XSCALE1:
- 		return "arm/xscale1";
-@@ -391,7 +393,7 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
- 	ops->start		= op_arm_start;
- 	ops->stop		= op_arm_stop;
- 	ops->shutdown		= op_arm_stop;
--	ops->cpu_type		= op_name_from_perf_id(armpmu_get_pmu_id());
-+	ops->cpu_type		= op_name_from_perf_id();
- 
- 	if (!ops->cpu_type)
- 		ret = -ENODEV;
-diff --git a/include/linux/oprofile.h b/include/linux/oprofile.h
-index 5171639..1574d4a 100644
---- a/include/linux/oprofile.h
-+++ b/include/linux/oprofile.h
-@@ -185,4 +185,8 @@ int oprofile_add_data(struct op_entry *entry, unsigned long val);
- int oprofile_add_data64(struct op_entry *entry, u64 val);
- int oprofile_write_commit(struct op_entry *entry);
- 
-+#ifdef CONFIG_PERF_EVENTS
-+char *op_name_from_perf_id(void);
-+#endif /* CONFIG_PERF_EVENTS */
-+
- #endif /* OPROFILE_H */
--- 
-1.7.1
+Best Regards,
+Huang Ying
+
 
