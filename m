@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751704Ab0JIF2l (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 01:28:41 -0400
-Received: from filter3.e-filtering.net ([64.251.173.164]:56870 "EHLO
-	filter3.e-filtering.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751582Ab0JIF2j (ORCPT
+	id S1752171Ab0JIFjV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 01:39:21 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:40494 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751319Ab0JIFjU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 01:28:39 -0400
-X-ASG-Debug-ID: 1286591171-64e102f60000-xx1T2L
-X-Barracuda-URL: http://64.251.173.164:8000/cgi-bin/mark.cgi
-Message-ID: <46d3973bf364762592b93973694c62ca.squirrel@macmail.rapidnet.com>
-Date: Fri, 8 Oct 2010 20:26:17 -0600
-X-ASG-Orig-Subj: 
-Subject: 
-From: "GABRIEL KANTE" <infor@rapidnet.com>
-Reply-To: GABKANTE@INFO.AL
-User-Agent: SquirrelMail/1.4.21
+	Sat, 9 Oct 2010 01:39:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=uhQGWpbxhfZcLyg5fjwChy4QZ2aGE6K3LduT/8wpOitGaH5TnhS9O8yi2YrRh9w28l
+         Ein8UCkZyL1uEGveMQIJprJzifLBpdX2Q3UbQC9nwJIRq2+uQ3l23+ZjdNu1y/d5zBSx
+         OFcYag79IyWtgrtOi4Fn4PDUTQGHmO4y+c1pA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-Barracuda-Connect: webmailvm1.gwtc.net[64.251.162.215]
-X-Barracuda-Start-Time: 1286591176
-X-Barracuda-Virus-Scanned: by E-Filtering Spam Firewall at e-filtering.net
-X-Barracuda-Spam-Score: 4.88
-X-Barracuda-Spam-Status: No, SCORE=4.88 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=5.0 KILL_LEVEL=6.0 tests=BSF_SC0_TG076, HEAD_LONG, MISSING_HEADERS, MISSING_SUBJECT, MISSING_SUBJECT_2, TO_CC_NONE
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.43151
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.50 HEAD_LONG              Message headers are very long
-	1.58 MISSING_HEADERS        Missing To: header
-	0.01 MISSING_SUBJECT        Missing Subject: header
-	0.00 TO_CC_NONE             No To: or Cc: header
-	1.28 MISSING_SUBJECT_2      Missing Subject: header
-	1.50 BSF_SC0_TG076          Custom Rule TG076
-To: unlisted-recipients:; (no To-header on input)
+In-Reply-To: <1286576564.4153.504.camel@m0nster>
+References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
+ <20101007215019.17b4a34a@lxorguk.ukuu.org.uk> <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
+ <20101007220538.2294a7e4@lxorguk.ukuu.org.uk> <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
+ <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
+ <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com> <20101008091331.74871a42@lxorguk.ukuu.org.uk>
+ <1286551434.4153.21.camel@m0nster> <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
+ <1286556328.4153.142.camel@m0nster> <AANLkTikc8X0nz1cCxgfbaqLzCMiBLogLeU0ZdFoGEpP6@mail.gmail.com>
+ <1286564491.4153.284.camel@m0nster> <AANLkTim5E5WwD64RJ7NAk6Zr9NZ6jstrKSmjRTL039VR@mail.gmail.com>
+ <1286567442.4153.343.camel@m0nster> <AANLkTik6tNhKq5yTh5_qaY9JdOTPSTH1CzG+3B+qnb=N@mail.gmail.com>
+ <1286576564.4153.504.camel@m0nster>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Sat, 9 Oct 2010 01:38:58 -0400
+X-Google-Sender-Auth: A-rI-QkGwgRqBUkHOpzfvhBgND8
+Message-ID: <AANLkTimRxjc_9_GRzysV_PeiyacQJz2cpP0h3TsMDMf9@mail.gmail.com>
+Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+        "Hyok S. Choi" <hyok.choi@samsung.com>,
+        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
+        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
+        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
+        Jason Wessel <jason.wessel@windriver.com>,
+        Philippe Langlais <philippe.langlais@stericsson.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am the son of the late Ahmed Tidiane Kante, former minister of geology
-and mines of the republic of Guinea.I write to seek your help in the
-retrieval of our money from US Bank account belonging to my late Dad.
+On Fri, Oct 8, 2010 at 18:22, Daniel Walker wrote:
+> On Fri, 2010-10-08 at 18:02 -0400, Mike Frysinger wrote:
+>> On Fri, Oct 8, 2010 at 15:50, Daniel Walker wrote:
+>> > On Fri, 2010-10-08 at 15:20 -0400, Mike Frysinger wrote:
+>> >> On Fri, Oct 8, 2010 at 15:01, Daniel Walker wrote:
+>> >> > On Fri, 2010-10-08 at 14:38 -0400, Mike Frysinger wrote:
+>> >> >> On Fri, Oct 8, 2010 at 12:45, Daniel Walker wrote:
+>> >> >> > On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
+>> >> >> >> > I don't think the kernel is going to implode if we allow an optional
+>> >> >> >> > ttyS override for debugging purposes.. I just don't see that "screwing"
+>> >> >> >> > up the kernel.
+>> >> >> >>
+>> >> >> >> That is perhaps why you are not a subsystem maintainer.
+>> >> >> >
+>> >> >> > No, I'm sure it's not.
+>> >> >> >
+>> >> >> > What I was telling Greg is that this type of override is allowed right
+>> >> >> > now, if you mod the source (everything is allowed if you mod the source
+>> >> >> > right?) ..
+>> >> >>
+>> >> >> just because someone can mod the source code to add a root shell
+>> >> >> doesnt mean we should accept patches to do it
+>> >> >
+>> >> > That's not what I was getting at. If you can mod the source to add the
+>> >> > override, then adding in a patch which also requires you to mod the
+>> >> > source to add the override should be acceptable because it's no
+>> >> > different that what we currently have.
+>> >>
+>> >> sorry, but you lost me.  all i see is "drop the hack code".
+>> >
+>> > I can make it simpler for you. You add code into Linux, people can
+>> > modify it, and you can't control that.
+>>
+>> while true, that lacks justification for merging hacks into mainline
+>
+> No one is merging hack, or giving justification for that.. So not sure
+> why your going down that thread again .
 
-thanks,
-Gabriel
-
+forget it; i'm completely bored with this whole driver now.  people
+have been clear on what it will take for this to be merged, so ball is
+in your court now.
+-mike
