@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759955Ab0JIAEM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 20:04:12 -0400
-Received: from usindmx01.hds.com ([207.126.252.12]:39559 "EHLO
-	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759587Ab0JIAEL convert rfc822-to-8bit (ORCPT
+	id S1759964Ab0JIAFp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 20:05:45 -0400
+Received: from asmtpout023.mac.com ([17.148.16.98]:53905 "EHLO
+	asmtpout023.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759808Ab0JIAFo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 20:04:11 -0400
-From: Seiji Aguchi <seiji.aguchi@hds.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
-        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
-        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Satoru Moriya <satoru.moriya@hds.com>,
-        "dle-develop@lists.sourceforge.net" 
-	<dle-develop@lists.sourceforge.net>,
-        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
-        "anton@samba.org" <anton@samba.org>,
-        "ben@decadent.org.uk" <ben@decadent.org.uk>,
-        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
-        "jason.wessel@windriver.com" <jason.wessel@windriver.com>
-Date: Fri, 8 Oct 2010 20:02:58 -0400
-Subject: RE: [RFC][PATCH] Fix kexec abort due to IPI from panic().
-Thread-Topic: [RFC][PATCH] Fix kexec abort due to IPI from panic().
-Thread-Index: ActeZWlIH8saK4u5SBSwPHVq2V1Y4gI3zRGQ
-Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C119E5ACE@USINDEVS01.corp.hds.com>
-References: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
-	<m1wrql2sf1.fsf@fess.ebiederm.org>
-	<5C4C569E8A4B9B42A84A977CF070A35B2C0DCFFB3E@USINDEVS01.corp.hds.com>
- <m1eicfp1fz.fsf@fess.ebiederm.org>
-In-Reply-To: <m1eicfp1fz.fsf@fess.ebiederm.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Fri, 8 Oct 2010 20:05:44 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
+ ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
+ adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010080176
+X-Proofpoint-Virus-Version: vendor=fsecure
+ engine=2.50.10432:5.2.15,1.0.148,0.0.0000
+ definitions=2010-10-08_17:2010-10-08,2010-10-08,1970-01-01 signatures=0
+Subject: Re: kgdb errors with serial console
+From: Elvis Dowson <elvis.dowson@mac.com>
+In-reply-to: <4CAF19FA.7010206@windriver.com>
+Date: Sat, 09 Oct 2010 04:05:16 +0400
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Message-id: <C07919DD-643F-4645-A261-91FB8F381A2C@mac.com>
+References: <BDD07355-7199-4A2E-8426-F6D43EA5D313@mac.com>
+ <4CAE4BB6.7080509@windriver.com>
+ <7BA01CAF-DD25-4AB6-9498-8AB89E2EDDE1@mac.com>
+ <4CAE5B40.3070701@windriver.com>
+ <917F9CCC-F3D3-4E23-B955-412F08CE8E2E@mac.com> <4CAF19FA.7010206@windriver.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Eric
+Hi Jason,
+                   Perhaps the debugger is timing out because it doesn't get a break point to debug a specific event? 
 
-Thank you for your detailed explanation.
-I understood historic backdrop of kexec in upstream kernel.
-I also understood the reason why you are worried about 
-kmsg_dump in kexec path.
+Could you tell me the order in which I should try it? 
 
-The problem is that kmsg_dumper or notifier calls are used by people 
-who are unfamiliar with kexec because they use blocking-functions 
-such as do_gettimeofday unconsciously.
+I think earlier on, when I used the kgdbwait bootarg, it ran and initialized eclipse debugger. Then when I entered the 
 
-And I still believe that kmsg_dumper in kexec path is an useful 
-A troubleshooting feature.
+echo g > /proc/sysrq-trigger
 
-When kexec on panic fails, it is difficult to investigate the reason 
-why kexec fails. It comes from lack of materials for the investigation.
+it just activated the debugger correctly because the kgdb_breakpoint method was called in file kgdb.c
 
-Kernel buffer is helpful for the investigation.
-So, I would like to continue the discussion about a way of getting 
-kernel buffer in kexec path.
+So, what should I do to test this? Do I write a small file, and add a call to kgdb_breakpoint in that example file, and then when I execute it, the debugger would get activated? 
 
-I'll participate in End User Summit and Linux Plumbers Conference.
-I'd like to meet with you if you join these conferences. 
+Is there any other test that I can run, without writing my own example ?
 
-Seiji
+Best regards,
+
+Elvis
