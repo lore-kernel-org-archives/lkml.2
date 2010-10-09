@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760124Ab0JIMx2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 08:53:28 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:37773 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755663Ab0JIMx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 08:53:27 -0400
-Subject: Re: Roaming / offchannel enhancements for broadcast / multicast
- frames
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Paul Stewart <pstew@google.com>
-Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Matt Smith <Matt.Smith@atheros.com>,
-        Srinivasa Duvvuri <Srinivasa.Duvvuri@atheros.com>,
-        Carolyn Waller <Carolyn.Waller@atheros.com>,
-        Amod Bodas <Amod.Bodas@atheros.com>,
-        David Quan <David.Quan@atheros.com>,
-        Bennyam Malavazi <Bennyam.Malavazi@atheros.com>,
-        Cliff Holden <Cliff.Holden@atheros.com>,
-        Aeolus Yang <Aeolus.Yang@atheros.com>, Kevin Hayes <kevin@atheros.com>
-In-Reply-To: <AANLkTika+07mD==fPioanurwD-_s8aaJFc+nb4ZZOL0J@mail.gmail.com>
-References: <AANLkTin9AwTa8x6faFEXBbrGZa4mg3AeDfeEmmdaF9_d@mail.gmail.com>
-	 <AANLkTika+07mD==fPioanurwD-_s8aaJFc+nb4ZZOL0J@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 09 Oct 2010 14:53:21 +0200
-Message-ID: <1286628801.3530.98.camel@jlt3.sipsolutions.net>
+	id S1759985Ab0JIM7u (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 08:59:50 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:46530 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755051Ab0JIM7t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 08:59:49 -0400
+Date: Sat, 9 Oct 2010 07:59:45 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        "H. Peter Anvin" <h.peter.anvin@intel.com>,
+        Jack Steiner <steiner@sgi.com>, rja@americas.sgi.com
+Subject: Re: [BUG] x86: bootmem broken on SGI UV
+Message-ID: <20101009125944.GA18248@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <20101008213429.GB7223@sgi.com> <4CAFA1DB.6010802@kernel.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CAFA1DB.6010802@kernel.org>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 17:08 -0700, Paul Stewart wrote:
+Yes, Yinghai's patch fixes the problem.
+Thank you very much.
 
-> > Userspace may want to force a roam when this deadzone event hits.
+
+On Fri, Oct 08, 2010 at 03:57:31PM -0700, Yinghai Lu wrote:
+> On 10/08/2010 02:34 PM, Russ Anderson wrote:
 > 
-> Why not just disassociate at this point?  I'm not sure what the
-> difference is between a "dead zone" situation and a reason to
-> completely disconnect.
-
-I'd tend to agree -- what point is there in receiving data when you
-can't even ACK it any more.. you'll just hurt everybody else by using
-huge amounts of airtime, and if the situation persists hopefully the AP
-will kick you off quickly anyway.
-
-> > Once we have these two in place we can then ignore bgscan requests
-> > (when associated) unless a force scan command has been issued by
-> > userspace, or unless we are idle.
+> After looking at the changelog, it turns out it is broken for a while by
+> following commit
 > 
-> By "ignore" do you mean "postpone" or or "return an appropriate error
-> to userspace"?  Either of those are acceptable.  Not doing anything at
-> all wouldn't be good.  There's an additional issue about what happens
-> when we are in the middle of a bgscan and new tx traffic appears.
-
-I really don't want to add API for "force" to userspace -- it's entirely
-pointless. If userspace wants their scan, so they'll always have to set
-the force flag anyway. Postponing it for a bit seems much saner. I think
-you're trying to solve a problem with say an existing NM that tries to
-scan every two minutes -- but that problem need not be solved at this
-layer.
-
-> > In the worst case scenario and unfortunately this seems to be the most
-> > common one, a DTIM of 1 is used and we will have to be on channel and
-> > awake every beacon interval. In this case we may want to optimize scan
-> > time by not scanning passive scan channels.
+> |commit 8716273caef7f55f39fe4fc6c69c5f9f197f41f1
+> |Author: David Rientjes <rientjes@google.com>
+> |Date:   Fri Sep 25 15:20:04 2009 -0700
+> |
+> |    x86: Export srat physical topology
 > 
-> A compromise would be to go off-channel for less than a full beacon
-> interval when doing background passive channel scans in DTIM=1
-> networks.  It's certainly better than (a) not scanning at all and (b)
-> arguably better than intentionally dropping mcast.  An 80% beacon-time
-> passive listen will get you 80% of the beacons, assuming linear
-> probability, and even more over time if you account for beacon skew
-> between networks.
+> before that commit, register_active_regions() is called SRAT memory entries.
+> 
+> Try to use nodememblk_range[] instead of nodes[].
+> 
+> For stable tree: from 2.6.33 to 2.3.36 need this patch by
+> changing memblock_x86_register_active_regions() with e820_register_active_regions()
+> 
+> Reported-by: Russ Anderson <rja@sgi.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: stable@kernel.org
+> 
+> ---
+>  arch/x86/mm/srat_64.c |    8 +++++---
+>  1 file changed, 5 insertions(+), 3 deletions(-)
+> 
+> Index: linux-2.6/arch/x86/mm/srat_64.c
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/mm/srat_64.c
+> +++ linux-2.6/arch/x86/mm/srat_64.c
+> @@ -421,9 +421,11 @@ int __init acpi_scan_nodes(unsigned long
+>  		return -1;
+>  	}
+>  
+> -	for_each_node_mask(i, nodes_parsed)
+> -		memblock_x86_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
+> -						nodes[i].end >> PAGE_SHIFT);
+> +	for (i = 0; i < num_node_memblks; i++)
+> +		memblock_x86_register_active_regions(memblk_nodeid[i],
+> +						node_memblk_range[i].start >> PAGE_SHIFT,
+> +						node_memblk_range[i].end >> PAGE_SHIFT);
+> +
+>  	/* for out of order entries in SRAT */
+>  	sort_node_map();
+>  	if (!nodes_cover_memory(nodes)) {
 
-Skew between APs is minimal -- the clocks are required to be accurate to
-5ppm IIRC.
-
-And in any case, there's no way to achieve perfect multicast reliability
-_anyway_, so I don't see why you're even trying? Can somebody actually
-come up with a problem statement? All I've seen so far is DHCP, but for
-just that, what's wrong with doing what you already do now?
-
-johannes
-
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
