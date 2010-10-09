@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755116Ab0JIIFq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 04:05:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:44955 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab0JIIFl (ORCPT
+	id S1755988Ab0JIIG5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 04:06:57 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:39597 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754498Ab0JIIGx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 04:05:41 -0400
-Date: Sat, 9 Oct 2010 04:05:37 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 14/18] fs: Protect inode->i_state with th einode->i_lock
-Message-ID: <20101009080537.GA15724@infradead.org>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-15-git-send-email-david@fromorbit.com>
- <20101008074932.GC24089@infradead.org>
- <20101008080428.GW4681@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008080428.GW4681@dastard>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 9 Oct 2010 04:06:53 -0400
+Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or
+ replace ath3k-1.fw ?
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Sven-Haegar Koch <haegar@sdinet.de>
+Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+        Suraj Sumangala <Suraj.Sumangala@atheros.com>,
+        Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+In-Reply-To: <alpine.DEB.2.02.1010090040240.19472@aurora.sdinet.de>
+References: <20101008170258.GJ10149@tux> <4CAF5488.3030706@Atheros.com>
+	 <20101008181508.GM10149@tux>
+	 <alpine.DEB.2.02.1010090040240.19472@aurora.sdinet.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 09 Oct 2010 10:06:39 +0200
+Message-ID: <1286611599.6145.435.camel@aeonflux>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 07:04:28PM +1100, Dave Chinner wrote:
-> > >  		inode->i_ino = ++last_ino;
-> > >  		inode->i_state = 0;
-> > > +		__inode_add_to_lists(sb, NULL, inode);
-> > >  		spin_unlock(&inode_lock);
-> > >  	}
-> > >  	return inode;
-> > 
-> > What's the point in doing this move?
-> 
-> hmmmm, let me think on that....
-> 
-> > 
-> > > @@ -953,8 +966,8 @@ static struct inode *get_new_inode(struct super_block *sb,
-> > >  			if (set(inode, data))
-> > >  				goto set_failed;
-> > >  
-> > > -			__inode_add_to_lists(sb, b, inode);
-> > >  			inode->i_state = I_NEW;
-> > > +			__inode_add_to_lists(sb, b, inode);
-> > 
-> > Same here.
-> 
-> Ah, done thinking now! I was so the i_state field had been set
-> before the inode was added to various lists and potentially
-> accessable to other threads. I should probably add a comment to that
-> effect, right?
+Hi Sven-Haeger,
 
-In addition to the comment get_new_inode_fast also needs the same
-treatment.  I also wonder if we need to set I_NEW in new_inode and
-then later call unlock_new_inode on it.  It's not on the hash at that
-point, but it is on the per-sbi list which we use for a few things.
-With current callers it seems safe, but the whole thing also is rather
-fragile.  Better left for another patch, though.
+> > > > I last tried to document a thread we had over this here:
+> > > >
+> > > > http://wireless.kernel.org/en/developers/Documentation/firmware-versioning
+> > > >
+> > 
+> > Thanks, I've updated that link above to document bug fixing does not require
+> > a filename change.
+> 
+> I would summarize it as:
+> 
+> If a new firmware version also works with an old driver, keep the filename.
+
+correct.
+
+> If a new firmware version also requires a new driver, change the name.
+> 
+> If a new driver requires a new firmware, change the name.
+
+These two depend. The exposed API stays the same. The firmware file
+itself is the same. Just the loading procedure is different. So no need
+to change the firmware name.
+
+Let me repeat this. If the API of the firmware exposed after loading it,
+breaks or is incompatible, then you need a new name.
+
+If you have generic commands to detect features in the firmware, then
+you should never be needed to change your firmware name. So you could
+extend the API as much as you like with keeping the same name.
+
+The different firmware names are for the driver to be able to detect the
+API of the firmware. And only if that is only possible via the filename
+you should use different filenames. Otherwise don't bother and use the
+generic feature detection of the firmware itself.
+
+And for Bluetooth in specific that is HCI. So any company needed
+different firmware filenames for Bluetooth have done something really
+really wrong in their development cycles.
+
+Regards
+
+Marcel
+
+
