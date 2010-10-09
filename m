@@ -1,97 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759951Ab0JIABJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 20:01:09 -0400
-Received: from kroah.org ([198.145.64.141]:36157 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759925Ab0JIABH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 20:01:07 -0400
-Date: Fri, 8 Oct 2010 17:00:46 -0700
-From: Greg KH <greg@kroah.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Hemant Pedanekar <hemantp@ti.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Message-ID: <20101009000046.GA30616@kroah.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
- <20101007192245.GC26435@n2100.arm.linux.org.uk>
- <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
- <20101008175308.GA10975@n2100.arm.linux.org.uk>
- <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
- <20101008230451.GB10975@n2100.arm.linux.org.uk>
- <20101008232539.GA28697@kroah.com>
- <20101008234448.GD10975@n2100.arm.linux.org.uk>
+	id S1759955Ab0JIAEM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 20:04:12 -0400
+Received: from usindmx01.hds.com ([207.126.252.12]:39559 "EHLO
+	usindmx01.hds.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759587Ab0JIAEL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 20:04:11 -0400
+From: Seiji Aguchi <seiji.aguchi@hds.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "xiyou.wangcong@gmail.com" <xiyou.wangcong@gmail.com>,
+        "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>,
+        "simon.kagstrom@netinsight.net" <simon.kagstrom@netinsight.net>,
+        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Satoru Moriya <satoru.moriya@hds.com>,
+        "dle-develop@lists.sourceforge.net" 
+	<dle-develop@lists.sourceforge.net>,
+        "David.Woodhouse@intel.com" <David.Woodhouse@intel.com>,
+        "anton@samba.org" <anton@samba.org>,
+        "ben@decadent.org.uk" <ben@decadent.org.uk>,
+        "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+        "jason.wessel@windriver.com" <jason.wessel@windriver.com>
+Date: Fri, 8 Oct 2010 20:02:58 -0400
+Subject: RE: [RFC][PATCH] Fix kexec abort due to IPI from panic().
+Thread-Topic: [RFC][PATCH] Fix kexec abort due to IPI from panic().
+Thread-Index: ActeZWlIH8saK4u5SBSwPHVq2V1Y4gI3zRGQ
+Message-ID: <5C4C569E8A4B9B42A84A977CF070A35B2C119E5ACE@USINDEVS01.corp.hds.com>
+References: <5C4C569E8A4B9B42A84A977CF070A35B2C0979C90E@USINDEVS01.corp.hds.com>
+	<m1wrql2sf1.fsf@fess.ebiederm.org>
+	<5C4C569E8A4B9B42A84A977CF070A35B2C0DCFFB3E@USINDEVS01.corp.hds.com>
+ <m1eicfp1fz.fsf@fess.ebiederm.org>
+In-Reply-To: <m1eicfp1fz.fsf@fess.ebiederm.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008234448.GD10975@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 09, 2010 at 12:44:48AM +0100, Russell King - ARM Linux wrote:
-> On Fri, Oct 08, 2010 at 04:25:39PM -0700, Greg KH wrote:
-> > I doubt that people even noticed that this was a problem.
-> 
-> So what you're telling me is that ARM SoC people don't read the
-> ARM kernel mailing list?  I might as well stop posting patches
-> if no one's paying attention then! :-P
-> 
-> Reality is that it was discussed, and I did propose solutions at
-> the time.
+Hi Eric
 
-Heh, fair enough
+Thank you for your detailed explanation.
+I understood historic backdrop of kexec in upstream kernel.
+I also understood the reason why you are worried about 
+kmsg_dump in kexec path.
 
-> > Unless you throw a run-time warning at them, or even better, break the
-> > build of their drivers, they will not notice.
-> > 
-> > Also, how can we fix this in a driver, what is the proper steps to do
-> > so?
-> 
-> On April 23rd:
-> | I think a viable safe solution is to set aside some RAM at boot (which
-> | the kernel doesn't manage at all) and then use ioremap on that; that
-> | approach will still work with this patch in place.
-> 
-> On April 30th when discussing the omapfb driver:
-> | There's really one option for this - in the machine's fixup handler, you
-> | can walk the meminfo array and kick out some memory from that.  This will
-> | prevent the kernel mapping that memory and make pfn_valid() fail for that
-> | memory range.  Another advantage of this is that it won't break when we
-> | switch to LMB.
+The problem is that kmsg_dumper or notifier calls are used by people 
+who are unfamiliar with kexec because they use blocking-functions 
+such as do_gettimeofday unconsciously.
 
-Ah, but no drivers have been fixed in any of these ways yet?
+And I still believe that kmsg_dumper in kexec path is an useful 
+A troubleshooting feature.
 
-> So, as I say, there's been six months.  It was discussed.  But still
-> we find that the drivers haven't been touched and now we're complaining
-> that drivers are breaking.
-> 
-> If it hadn't been discussed, if solutions hadn't been proposed, then
-> yes, it would be right to revert it out-right.  But that's not what
-> happened.
-> 
-> If we have to have another three months (or so), this time with a warning,
-> then so be it, but let's make it plainly clear that it _will_ _definitely_
-> be changing, and that drivers _will_ break unless they are fixed.
-> 
-> Unfortunately, what I fear is that nothing will happen because people
-> want the ioremap-on-system-RAM to just work, and then we'll hit this
-> exact same issue again in three months time.
+When kexec on panic fails, it is difficult to investigate the reason 
+why kexec fails. It comes from lack of materials for the investigation.
 
-But you can't expect that you make this change, and not fix up the
-drivers, and people would be happy, right?  The rule for API changes
-like this, or anything, is that the person making the change fixes the
-other drivers, and that seems to be the issue here.
+Kernel buffer is helpful for the investigation.
+So, I would like to continue the discussion about a way of getting 
+kernel buffer in kexec path.
 
-Any pointers to patches where people have fixed up the drivers?
+I'll participate in End User Summit and Linux Plumbers Conference.
+I'd like to meet with you if you join these conferences. 
 
-thanks,
-
-greg k-h
+Seiji
