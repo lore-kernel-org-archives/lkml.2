@@ -1,139 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760630Ab0JIXTo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 19:19:44 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48882 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756661Ab0JIXTn (ORCPT
+	id S932090Ab0JIXUV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 19:20:21 -0400
+Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:45935 "EHLO
+	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756661Ab0JIXUT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 19:19:43 -0400
-From: James Hogan <james@albanarts.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH 2/2] pm_trace: Add sysfs attr for rechecking dev hash.
-Date: Sun, 10 Oct 2010 00:13:13 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-custom+; KDE/4.4.5; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        markgross <markgross@thegnar.org>
-References: <201010092334.27808.james@albanarts.com> <201010092337.47821.james@albanarts.com> <201010100049.16054.rjw@sisk.pl>
-In-Reply-To: <201010100049.16054.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	Sat, 9 Oct 2010 19:20:19 -0400
+Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
+From: Sven Neumann <s.neumann@raumfeld.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
+        Colin Cross <ccross@android.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+In-Reply-To: <AANLkTinSmPpswdHaZnP2rN688Wu1=-2Y2RBzC4+1qTpM@mail.gmail.com>
+References: <1286177435.2140.5.camel@sven> <201010072323.05218.rjw@sisk.pl>
+	 <1286526197.4493.19.camel@sven> <201010082208.25767.rjw@sisk.pl>
+	 <AANLkTinSmPpswdHaZnP2rN688Wu1=-2Y2RBzC4+1qTpM@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: RAUMFELD GmbH
+Date: Sun, 10 Oct 2010 01:20:34 +0200
+Message-ID: <1286666434.26689.3.camel@bender>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010100013.14142.james@albanarts.com>
+X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1286666419;fe6bdbb3;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for taking a look...
-
-On Saturday 09 October 2010 23:49:15 Rafael J. Wysocki wrote:
-> On Sunday, October 10, 2010, James Hogan wrote:
-> > If the device which fails to resume is part of a loadable kernel module
-> > it won't be checked at startup against the magic number stored in the
-> > RTC.
-> > 
-> > Add a read-only sysfs attribute /sys/power/pm_trace_dev_hash which
-> > contains a list of newline separated devices (usually just the one)
-> > which currently match the last magic number. This allows the device
-> > which is failing to resume to be found after the modules are loaded
-> > again.
-> > 
-> > Signed-off-by: James Hogan <james@albanarts.com>
-> > ---
-> > 
-> >  Documentation/power/s2ram.txt |    7 +++++++
-> >  drivers/base/power/trace.c    |   27 +++++++++++++++++++++++++++
-> >  include/linux/resume-trace.h  |    2 ++
-> >  kernel/power/main.c           |   18 ++++++++++++++++++
-> >  4 files changed, 54 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/Documentation/power/s2ram.txt
-> > b/Documentation/power/s2ram.txt index 514b94f..3a2801a 100644
-> > --- a/Documentation/power/s2ram.txt
-> > +++ b/Documentation/power/s2ram.txt
-> > 
-> > @@ -49,6 +49,13 @@ machine that doesn't boot) is:
-> >     device (lspci and /sys/devices/pci* is your friend), and see if you
-> >     can fix it, disable it, or trace into its resume function.
-> > 
-> > +   If no device matches the hash, it may be a device from a loadable
-> > kernel +   module that is not loaded until after the hash is checked.
-> > You can check +   the hash against the current devices again after more
-> > modules are loaded +   using sysfs:
-> > +
-> > +	cat /sys/power/pm_trace_dev_hash
-> > +
+On Sat, 2010-10-09 at 03:07 +0200, Ohad Ben-Cohen wrote:
+> On Fri, Oct 8, 2010 at 10:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > There is a problem with the pxa2xx-mci.0 suspend that has been introduced
+> > some time after 2.6.34, but it is not related to commit 152e1d5920.
 > 
-> /sys/power/pm_trace_match perhaps?
-
-The magic number stores 1 "user" number (given in a RESUME_TRACE call) and 2 
-hashes (representing source file/line and device) in the RTC, but this sysfs 
-attribute only returns the matches for the device part, so I think it's 
-important to have dev or device in there in case we want attributes for 
-file/line (which doesn't work with modules at the moment either, but the 
-"user" number can be used as that's printed at boot directly), but I agree 
-that match is better than hash so I'm happy to change it to pm_trace_dev_match 
-or pm_trace_dev_matches.
-
+> Sven, what type of card do you have in that slot ? is it SDIO ? what's
+> the function driver ?
 > 
-> How do we ensure it prints things that make sense when the last resume was
-> successful or the system hasn't suspended at all?
-
-If the last resume was successful, then the stored magic number won't have 
-changed since the original boot, since it is read from the RTC in a 
-core_initcall function (early_resume_init()).
-
-The case of when pm_trace wasn't in use before boot is impossible to avoid 
-when using the RTC. There is a chance that a genuine RTC value will not match 
-any of the device hashes (there are 1009 possible device hash values), in 
-which case nothing will be output, but the same thing happens at boot when it 
-does it's first comparison against the devices and printk's any matches.
-
+> I have a hunch about this, but it may be a wild guess as I don't know
+> what's your setup exactly.
 > 
-> >  For example, the above happens to be the VGA device on my EVO, which I
-> >  used to run with "radeonfb" (it's an ATI Radeon mobility). It turns out
-> >  that "radeonfb" simply cannot resume that device - it tries to set the
-> > 
-> > diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
-> > index 17e24e3..e0cdba1 100644
-> > --- a/drivers/base/power/trace.c
-> > +++ b/drivers/base/power/trace.c
-> > @@ -207,6 +207,33 @@ static int show_dev_hash(unsigned int value)
-> > 
-> >  static unsigned int hash_value_early_read;
-> > 
-> > +int snprint_trace_dev_hash(char *buf, size_t size)
-> > +{
-> > +	unsigned int value = hash_value_early_read / (USERHASH * FILEHASH);
-> > +	int ret = 0;
-> > +	struct list_head *entry;
-> > +
-> > +	device_pm_lock();
-> > +	entry = dpm_list.prev;
-> > +	while (size && entry != &dpm_list) {
-> > +		struct device *dev = to_device(entry);
-> > +		unsigned int hash = hash_string(DEVSEED, dev_name(dev),
-> > +						DEVHASH);
-> > +		if (hash == value) {
-> > +			int len = snprintf(buf, size, "%s\n",
-> > +					    dev_driver_string(dev));
-> > +			if (len > size)
-> > +				len = size;
-> > +			buf += len;
-> > +			ret += len;
-> > +			size -= len;
+> Anyway, can you please try this and see if anything changes ?
 > 
-> Don't we want to break; here and if so then why?
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index c94565d..515ff39 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
+>         if (host->bus_ops && !host->bus_dead) {
+>                 if (host->bus_ops->suspend)
+>                         err = host->bus_ops->suspend(host);
+> +               if (err == -ENOSYS || !host->bus_ops->resume) {
+> +                       /*
+> +                        * We simply "remove" the card in this case.
+> +                        * It will be redetected on resume.
+> +                        */
+> +                       if (host->bus_ops->remove)
+> +                               host->bus_ops->remove(host);
+> +                       mmc_claim_host(host);
+> +                       mmc_detach_bus(host);
+> +                       mmc_release_host(host);
+> +                       host->pm_flags = 0;
+> +                       err = 0;
+> +               }
+>         }
+>         mmc_bus_put(host);
+> 
+> The reason I'm asking this is because it seems like commit
+> 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related
+> to mmc/sd card insert/removal during suspend/resume" has broken
+> suspending SDIO function drivers which don't have a suspend handler
+> (or do have one, but for some reason it returns -ENOSYS, like
+> libertas_sdio's does).
 
-No, because it's possible that two devices will hash to the same value, in 
-which case it is better to print both out so we know that the problem could be 
-in either one of them. I'll add a comment to that effect.
+That is exactly our setup (libertas over sdio). I will try your patch as
+soon as I get to the office on Monday morning and report back.
 
-Thanks
-James
+
+Thanks,
+Sven
+
+
