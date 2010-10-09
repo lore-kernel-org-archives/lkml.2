@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760049Ab0JIAq2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 20:46:28 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44499 "EHLO
+	id S1760106Ab0JIArb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 20:47:31 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:44547 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759979Ab0JIAqZ (ORCPT
+	by vger.kernel.org with ESMTP id S1760041Ab0JIAq2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 20:46:25 -0400
+	Fri, 8 Oct 2010 20:46:28 -0400
 From: Matt Fleming <matt@console-pimps.org>
 To: Robert Richter <robert.richter@amd.com>
 Cc: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
@@ -17,88 +17,87 @@ Cc: Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>, linux-arch@vger.kernel.org,
         linux-kernel@vger.kernel.org, Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
         Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH V5 0/7] Generalise ARM perf-events backend for oprofile
-Date: Sat,  9 Oct 2010 01:46:15 +0100
-Message-Id: <cover.1286584677.git.matt@console-pimps.org>
+Subject: [PATCH 5/7] ARM: oprofile: Move non-ARM code into separate init/exit
+Date: Sat,  9 Oct 2010 01:46:20 +0100
+Message-Id: <0de9eda11dbfe9c21348da07b57f04f35cd9effc.1286584677.git.matt@console-pimps.org>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <cover.1286584677.git.matt@console-pimps.org>
+References: <cover.1286584677.git.matt@console-pimps.org>
+In-Reply-To: <cover.1286584677.git.matt@console-pimps.org>
+References: <cover.1286584677.git.matt@console-pimps.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The perf-events backend for OProfile that Will Deacon wrote in
-8c1fc96f6fd1f361428ba805103af0d0eee65179 ("ARM: 6072/1: oprofile: use
-perf-events framework as backend") is of use to more architectures
-than just ARM. Move the code into drivers/oprofile/ so that SH can use
-it instead of the nearly identical copy of its OProfile code.
+In preparation for moving the majority of this oprofile code into an
+architecture-neutral place separate the architecture-independent code
+into oprofile_perf_init() and oprofile_perf_exit().
 
-The benefit of the backend is that it becomes necessary to only
-maintain one copy of the PMU accessor functions for each architecture,
-with bug fixes and new features benefiting both OProfile and perf.
+Signed-off-by: Matt Fleming <matt@console-pimps.org>
+Tested-by: Will Deacon <will.deacon@arm.com>
+---
+ arch/arm/oprofile/common.c |   27 +++++++++++++++++++--------
+ 1 files changed, 19 insertions(+), 8 deletions(-)
 
-Note that I haven't been able to test these patches on an ARM board to
-see if I've caused any regressions. If anyone else could do that I'd
-appreciate it. Though, I have been able to compile this version of the
-series.
-
-This patch series is based on,
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
-
-These patches can also be found at,
-
-    git://git.kernel.org/pub/scm/linux/kernel/git/mfleming/sh-2.6.git perf-oprofile
-
-
-Robert, I haven't rebased this work on your oprofile updates for
-2.6.37. If you need me to do that, just shout. If you have any comments
-I'll respin this ASAP but it's probably ready for merging now.
-
-
-Changes from v4:
- - SH is the only arch that doesn't default perf_pmu_name()
- - Changed perf_nr_counters to num_counters
+diff --git a/arch/arm/oprofile/common.c b/arch/arm/oprofile/common.c
+index fd6e323..8718311 100644
+--- a/arch/arm/oprofile/common.c
++++ b/arch/arm/oprofile/common.c
+@@ -349,7 +349,7 @@ static void arm_backtrace(struct pt_regs * const regs, unsigned int depth)
+ 		tail = user_backtrace(tail);
+ }
  
-Changes from v3:
- - New perf_pmu_name() function
- - Sprinkled an EXPORT_SYMBOL_GPL()
- - Don't repeatedly call perf_num_counters()
- - Change name of oprofile_driver to "oprofile-perf"
- - Hard overwrite the oprofile_operations in oprofile_perf_init()
- - Dropped the patch that made oprofile depend on HW_PERF_EVENTS for ARM
-
-Changes from v2:
- - Rebased against Robert's oprofile core branch
- - Moved even more of the ARM code into the generic oprofile code
- - Broke the patches up into more logical steps
-
-Changes from v1:
- - Prefix the new functons with "oprofile_" instead of "op_".
- - Fix ARM compilation errors
- - Move all the oprofile-perf logic into oprofile_perf.c
- - Include cleanup patch from Will
-
-Matt Fleming (7):
-  perf: Add helper function to return number of counters
-  perf: New helper function for pmu name
-  oprofile: Make op_name_from_perf_id() global
-  ARM: oprofile: Rename op_arm to oprofile_perf
-  ARM: oprofile: Move non-ARM code into separate init/exit
-  oprofile: Abstract the perf-events backend
-  sh: oprofile: Use perf-events oprofile backend
-
- arch/arm/kernel/perf_event.c     |    6 +
- arch/arm/oprofile/Makefile       |    4 +
- arch/arm/oprofile/common.c       |  309 +-----------------------------------
- arch/sh/Kconfig                  |   13 ++
- arch/sh/kernel/perf_event.c      |   18 ++
- arch/sh/oprofile/Makefile        |    4 +
- arch/sh/oprofile/common.c        |  115 +++-----------
- arch/sh/oprofile/op_impl.h       |   33 ----
- drivers/oprofile/oprofile_perf.c |  326 ++++++++++++++++++++++++++++++++++++++
- include/linux/oprofile.h         |    7 +
- include/linux/perf_event.h       |    2 +
- kernel/perf_event.c              |    5 +
- 12 files changed, 412 insertions(+), 430 deletions(-)
- delete mode 100644 arch/sh/oprofile/op_impl.h
- create mode 100644 drivers/oprofile/oprofile_perf.c
+-int __init oprofile_arch_init(struct oprofile_operations *ops)
++int __init oprofile_perf_init(struct oprofile_operations *ops)
+ {
+ 	int cpu, ret = 0;
+ 
+@@ -387,12 +387,11 @@ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ 		}
+ 	}
+ 
+-	ops->backtrace		= arm_backtrace;
+-	ops->create_files	= op_arm_create_files;
+-	ops->setup		= op_arm_setup;
+-	ops->start		= op_arm_start;
+-	ops->stop		= op_arm_stop;
+-	ops->shutdown		= op_arm_stop;
++	ops->create_files	= oprofile_perf_create_files;
++	ops->setup		= oprofile_perf_setup;
++	ops->start		= oprofile_perf_start;
++	ops->stop		= oprofile_perf_stop;
++	ops->shutdown		= oprofile_perf_stop;
+ 	ops->cpu_type		= op_name_from_perf_id();
+ 
+ 	if (!ops->cpu_type)
+@@ -410,7 +409,14 @@ out:
+ 	return ret;
+ }
+ 
+-void __exit oprofile_arch_exit(void)
++int __init oprofile_arch_init(struct oprofile_operations *ops)
++{
++	ops->backtrace		= arm_backtrace;
++
++	return oprofile_perf_init(ops);
++}
++
++void __exit oprofile_perf_exit(void)
+ {
+ 	int cpu, id;
+ 	struct perf_event *event;
+@@ -428,6 +434,11 @@ void __exit oprofile_arch_exit(void)
+ 	kfree(counter_config);
+ 	exit_driverfs();
+ }
++
++void __exit oprofile_arch_exit(void)
++{
++	oprofile_perf_exit();
++}
+ #else
+ int __init oprofile_arch_init(struct oprofile_operations *ops)
+ {
+-- 
+1.7.1
 
