@@ -1,191 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760234Ab0JIDaO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 23:30:14 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44368
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751814Ab0JIDaN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 23:30:13 -0400
-Date: Fri, 08 Oct 2010 20:30:34 -0700 (PDT)
-Message-Id: <20101008.203034.241431376.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-2
-Content-Transfer-Encoding: 8BIT
+	id S1760248Ab0JIDgN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 23:36:13 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:32426 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760211Ab0JIDgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 23:36:12 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 08 Oct 2010 23:36:11 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Greg KH <greg@kroah.com>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Hannemann <arnd@arndnet.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Hemant Pedanekar <hemantp@ti.com>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+In-reply-to: <20101008231926.GA28235@kroah.com>
+Message-id: <alpine.LFD.2.00.1010082242390.3107@xanadu.home>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+ <20101007192245.GC26435@n2100.arm.linux.org.uk>
+ <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
+ <20101008175308.GA10975@n2100.arm.linux.org.uk>
+ <20101008231926.GA28235@kroah.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 8 Oct 2010, Greg KH wrote:
 
-1) Memory out-of-bounds accesses in SCTP, from Dan Rosenberg.
+> On Fri, Oct 08, 2010 at 06:53:08PM +0100, Russell King - ARM Linux wrote:
+> > On Fri, Oct 08, 2010 at 12:32:35PM +0300, Felipe Contreras wrote:
+> > > I think when _you_ remove functionality from the architecture, you
+> > > should provide a mechanism that drivers can migrate to. Since there's
+> > > nothing like that, not even a guideline, you are breaking the drivers
+> > > willingly, and expecting other people to fix a difficult problem that
+> > > you yourself have no idea how to fix properly.
+> > 
+> > We can either wait for people to complain about silent data corruption
+> > or we can be compliant with the architecture specification.  Which is
+> > better - to avoid data corruption and be correct, or allow a system to
+> > become flakey and corrupt people's data.
+> > 
+> > What I care about is system correctness and people's data - having
+> > multiple mappings with different attributes is documented in very clear
+> > terms as being 'unpredictable' and therefore it isn't permissible to
+> > allow the practice that worked with previous processors (inherently
+> > due to their cache architecture) to continue forward onto processors
+> > with a different cache architecture.
+> > 
+> > As already discussed, it's nigh on impossible to unmap the existing
+> > direct mapped region (read the previous discussions about why this is)
+> > - which is precisely why there is no direct alternative solution.
+> 
+> Wait, let me get this straight:
+>   - drivers used to work on 2.6.35
 
-2) We accidently handle v3 queries imporperly when in IGMP v2 compat mode.
-   Fix from David Stevens.
+Possibly on pre ARMv6 only.  On ARMv6 and above, the discussed behavior 
+_never_ worked.  It is fundamental to the CPU design.
 
-3) Ref-after-put bug, and lack of dev_get_by_index() failure checking
-   in caif_connect(), from Eric Dumazet.
+>   - some ARM core code changed in .36-rc to fix this iomem problem that
+>     you found
 
-4) Bluetooh can deadlock on writes when socket send buffer fills us,
-   but the packets that would release that space are in the backlog,
-   because we hold the socket lock while sleeping and therefore can't
-   process those backlog packets.
+Nothing was fixed.  There is nothing to fix.  Simply that a wrong driver 
+assumption about the hardware capability was prohibited by the API.
 
-   Fix from Gustavo F. Padovan.
+>   - no drivers are notified of the api change as it's a run-time change,
+>     so the build doesn't break.
 
-5) IPV6 doesn't check all of the necessary routes when updating the
-   PMTU in response to an ICMP.  Fix from Maciej ¯enczykowski.
+There is no API change.  Simply an API misuse.  Granted, on pre ARMv6 
+this usage used to work, but on ARMv6 and above this never was supported 
+at all by the hardware.  The fact that the software has let it through 
+was a gross mistake, period.
 
-6) When global TCP memory hit is hit, we hang because the sk_wait_event()
-   third argument is wrong in sk_stream_wait_memory().
+>   - drivers break when run as the api stops returning valid addresses
 
-   This is a very very old bug, I am very surprised nobody else has hit
-   this problem.
+Such drivers on ARMv6 should *never* have worked in the first place.  
+When they did "work", they corrupted memory.
 
-   Fix by Nagendra Singh Tomar.
+>   - no known way is around to fix the broken drivers
 
-7) An old commit I made to fix a build failure with some drivers
-   was wrong, and didn't fix the INET_LRO dependency problems at
-   all.
+That's B/s.  As Russell said, there are known solutions that were 
+proposed at least six months ago.
 
-   So revert that and Ben Hutchings fixes it right by adding the
-   necessary "INET" dependencies to drivers which need "INET_LRO".
+> Um, this doesn't sound like a valid thing to be doing,
 
-8) Signedness overflow in offset check of cls_u32 packet scheduler
-   classifier module, from Dan Carpenter.
+Excuse me, but preventing data corruption is a damn valid thing to do.  
+The real problem is that people kept on abusing the API for something 
+that the hardware simply can't support, and the mere fact that things 
+_appears_ to just work by accident in 98% of the cases encourage people 
+to simply put their head in the sand and ignore the issue.  Sorry folks, 
+but that's not how computing works.  We're not amateurs for damn sake, 
+and when the ARM bible says this operation is UNSUPPORTED, it is 
+UNSUPPORTED.  Seeing people trying to fsck around the issue because of 
+laziness is revolting!
 
-9) Update Intel ethernet driver docs and MAINTAINERS netry, from Jeff Kirsher.
+> how do you expect
+> people to fix their code if they:
+> 	- don't realize it as the api change doesn't break the build
 
-10) SKGE on some motherboards can't do 64-bit DMA properly, fix from
-    Stanislaw Gruszka.
+The API should have complained the very first time they attempted the 
+operation in question.  It should never have worked.  I'm sorry but the 
+mere fact that the broken driver didn't receive an error before is no 
+excuse to *knowingly* let memory corruption go on.
 
-11) bond_masters sysfs file gives bogus WARN_ON, fix from Neil HOrman
+> 	- there is no way to fix their code
 
-12) Fix ath9k clock rate calcuation regression, from Felix Fietkau.
+Wrong.  See above.
 
-13) Kill AddBA timer, otherwise we reference a freed object.  Fix
-    from Johannes Berg.
+> This sounds like a huge regression that should be reverted, or am I
+> missing something here?
 
-14) Revert mac80211 change to use netif_receive_skb() instead of netif_rx()
-    since sometimes this ends up executing in the wrong context, from
-    John W. Linville.
+I'm afraid you are totally missing the point.
 
-15) Use strlcpy() in isdn to avoid going past the end of a buffer.  From
-    Dan Carpenter.
+The patch Russell introduced simply prevented an abuse of the API for 
+which there are documented evidences that such abuse is a source of 
+memory corruption.  This must not be allowed any longer, not even for a 
+warning period.  There is no regression what so ever as those driver 
+were always broken.  And I much prefer to have brokenness in the form of 
+driver initialization error rather than silent and random memory 
+corruptions.
 
-16) ETHTOOL_GRXCLSRLALL exposes kernel heap to userspace.  Fix from
-    Kees Cook.
+So folks please get real and understand that Russell was right.
 
-17) Revert ConfigReq rejection commit that causes failures in bluetooth
-    validation suite.  From Gustavo F. Padovan.
+The only compromise that may be made is to allow the API abuse on pre 
+ARMv6 implementations where this has no adverse effect, which is the 
+patch I just posted.  Granted, on pre ARMv6, the ioremap of system RAM 
+was fine and people legitimately relied on it in their drivers.  But 
+this just can't be allowed anymore on ARMv6.
 
-18) rfcomm_sk_state_change() needs to disable local interrupts to avoid
-    illegal lock state, also from Gustavo F. Padovan.
 
-Please pull, thanks a lot!
-
-The following changes since commit 6b0cd00bc396daf5c2dcf17a8d82055335341f46:
-
-  Merge branch 'hwpoison-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6 (2010-10-07 13:59:32 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Andrei Emeltchenko (1):
-      Bluetooth: fix MTU L2CAP configuration parameter
-
-Ben Hutchings (2):
-      Revert "ipv4: Make INET_LRO a bool instead of tristate."
-      netdev: Depend on INET before selecting INET_LRO
-
-Dan Carpenter (2):
-      cls_u32: signedness bug
-      isdn: strcpy() => strlcpy()
-
-Dan Rosenberg (2):
-      sctp: prevent reading out-of-bounds memory
-      sctp: Fix out-of-bounds reading in sctp_asoc_get_hmac()
-
-David S. Miller (3):
-      Merge branch 'master' of master.kernel.org:/.../torvalds/linux-2.6
-      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth-2.6
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
-
-David Stevens (1):
-      ipv4: correct IGMP behavior on v3 query during v2-compatibility mode
-
-Eric Dumazet (1):
-      caif: fix two caif_connect() bugs
-
-Felix Fietkau (1):
-      ath9k_hw: fix regression in ANI listen time calculation
-
-Gustavo F. Padovan (5):
-      Bluetooth: Simplify L2CAP Streaming mode sending
-      Bluetooth: Fix inconsistent lock state with RFCOMM
-      Revert "Bluetooth: Don't accept ConfigReq if we aren't in the BT_CONFIG state"
-      Bluetooth: Fix deadlock in the ERTM logic
-      Bluetooth: Disallow to change L2CAP_OPTIONS values when connected
-
-Jeff Kirsher (4):
-      ixgbevf.txt: Update ixgbevf documentation
-      e1000.txt: Update e1000 documentation
-      e1000e.txt: Add e1000e documentation
-      MAINTAINERS: update Intel LAN Ethernet info
-
-Johannes Berg (1):
-      mac80211: delete AddBA response timer
-
-John W. Linville (1):
-      Revert "mac80211: use netif_receive_skb in ieee80211_tx_status callpath"
-
-Kees Cook (1):
-      net: clear heap allocation for ETHTOOL_GRXCLSRLALL
-
-Maciej ¯enczykowski (1):
-      net: Fix IPv6 PMTU disc. w/ asymmetric routes
-
-Mat Martineau (1):
-      Bluetooth: Only enable L2CAP FCS for ERTM or streaming
-
-Nagendra Tomar (1):
-      net: Fix the condition passed to sk_wait_event()
-
-Neil Horman (1):
-      bonding: fix WARN_ON when writing to bond_master sysfs file
-
-Stanislaw Gruszka (1):
-      skge: add quirk to limit DMA
-
- Documentation/networking/e1000.txt   |  373 +++++++++-------------------------
- Documentation/networking/e1000e.txt  |  302 +++++++++++++++++++++++++++
- Documentation/networking/ixgbevf.txt |   40 +----
- MAINTAINERS                          |   16 ++-
- drivers/isdn/sc/interrupt.c          |   18 ++-
- drivers/net/Kconfig                  |    4 +-
- drivers/net/bonding/bond_main.c      |    9 +
- drivers/net/skge.c                   |   18 ++-
- drivers/net/wireless/ath/ath9k/ani.c |    2 +-
- include/net/bluetooth/bluetooth.h    |   18 ++
- net/bluetooth/l2cap.c                |   62 +++---
- net/bluetooth/rfcomm/sock.c          |    4 +
- net/caif/caif_socket.c               |   21 ++-
- net/core/ethtool.c                   |    2 +-
- net/core/stream.c                    |    8 +-
- net/ipv4/Kconfig                     |    2 +-
- net/ipv4/igmp.c                      |   14 ++-
- net/ipv6/route.c                     |   28 +++-
- net/mac80211/agg-tx.c                |    2 +
- net/mac80211/status.c                |    4 +-
- net/sched/cls_u32.c                  |    2 +-
- net/sctp/auth.c                      |    8 +-
- net/sctp/socket.c                    |   13 +-
- 23 files changed, 590 insertions(+), 380 deletions(-)
- create mode 100644 Documentation/networking/e1000e.txt
- mode change 100755 => 100644 Documentation/networking/ixgbevf.txt
+Nicolas
