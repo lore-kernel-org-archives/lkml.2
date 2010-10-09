@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751828Ab0JIFQ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 01:16:26 -0400
-Received: from filter3.e-filtering.net ([64.251.173.164]:58758 "EHLO
+	id S1751704Ab0JIF2l (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 01:28:41 -0400
+Received: from filter3.e-filtering.net ([64.251.173.164]:56870 "EHLO
 	filter3.e-filtering.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751413Ab0JIFQZ (ORCPT
+	with ESMTP id S1751582Ab0JIF2j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 01:16:25 -0400
-X-Greylist: delayed 1103 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Oct 2010 01:16:25 EDT
-X-ASG-Debug-ID: 1286590931-238f02700000-xx1T2L
+	Sat, 9 Oct 2010 01:28:39 -0400
+X-ASG-Debug-ID: 1286591171-64e102f60000-xx1T2L
 X-Barracuda-URL: http://64.251.173.164:8000/cgi-bin/mark.cgi
-Message-ID: <23c1997b62739721a7a15ca65c70253d.squirrel@macmail.rapidnet.com>
-Date: Fri, 8 Oct 2010 20:22:17 -0600
+Message-ID: <46d3973bf364762592b93973694c62ca.squirrel@macmail.rapidnet.com>
+Date: Fri, 8 Oct 2010 20:26:17 -0600
 X-ASG-Orig-Subj: 
 Subject: 
 From: "GABRIEL KANTE" <infor@rapidnet.com>
@@ -23,11 +22,11 @@ Content-Transfer-Encoding: 7BIT
 X-Priority: 3 (Normal)
 Importance: Normal
 X-Barracuda-Connect: webmailvm1.gwtc.net[64.251.162.215]
-X-Barracuda-Start-Time: 1286590936
+X-Barracuda-Start-Time: 1286591176
 X-Barracuda-Virus-Scanned: by E-Filtering Spam Firewall at e-filtering.net
 X-Barracuda-Spam-Score: 4.88
 X-Barracuda-Spam-Status: No, SCORE=4.88 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=5.0 KILL_LEVEL=6.0 tests=BSF_SC0_TG076, HEAD_LONG, MISSING_HEADERS, MISSING_SUBJECT, MISSING_SUBJECT_2, TO_CC_NONE
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.43149
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.43151
 	Rule breakdown below
 	 pts rule name              description
 	---- ---------------------- --------------------------------------------------
