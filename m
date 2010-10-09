@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932090Ab0JIXUV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 19:20:21 -0400
-Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:45935 "EHLO
-	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756661Ab0JIXUT (ORCPT
+	id S1760637Ab0JIX0L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 19:26:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38653 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757324Ab0JIX0K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 19:20:19 -0400
-Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
-From: Sven Neumann <s.neumann@raumfeld.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
-        Colin Cross <ccross@android.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <AANLkTinSmPpswdHaZnP2rN688Wu1=-2Y2RBzC4+1qTpM@mail.gmail.com>
-References: <1286177435.2140.5.camel@sven> <201010072323.05218.rjw@sisk.pl>
-	 <1286526197.4493.19.camel@sven> <201010082208.25767.rjw@sisk.pl>
-	 <AANLkTinSmPpswdHaZnP2rN688Wu1=-2Y2RBzC4+1qTpM@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: RAUMFELD GmbH
-Date: Sun, 10 Oct 2010 01:20:34 +0200
-Message-ID: <1286666434.26689.3.camel@bender>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
-X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1286666419;fe6bdbb3;
+	Sat, 9 Oct 2010 19:26:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinyA=bSeSe7eavUb7fuSgM8m=QQFGqCrNtCGqKa@mail.gmail.com>
+References: <AANLkTinyA=bSeSe7eavUb7fuSgM8m=QQFGqCrNtCGqKa@mail.gmail.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 9 Oct 2010 16:24:59 -0700
+Message-ID: <AANLkTikCHzaovYy+g8GBE7zwBOa-=pXk=WwQ_5ts1u5m@mail.gmail.com>
+Subject: Re: stable cc's in linux -next was Re: [BUG] x86: bootmem broken on
+ SGI UV
+To: Dave Airlie <airlied@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-09 at 03:07 +0200, Ohad Ben-Cohen wrote:
-> On Fri, Oct 8, 2010 at 10:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > There is a problem with the pxa2xx-mci.0 suspend that has been introduced
-> > some time after 2.6.34, but it is not related to commit 152e1d5920.
-> 
-> Sven, what type of card do you have in that slot ? is it SDIO ? what's
-> the function driver ?
-> 
-> I have a hunch about this, but it may be a wild guess as I don't know
-> what's your setup exactly.
-> 
-> Anyway, can you please try this and see if anything changes ?
-> 
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index c94565d..515ff39 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
->         if (host->bus_ops && !host->bus_dead) {
->                 if (host->bus_ops->suspend)
->                         err = host->bus_ops->suspend(host);
-> +               if (err == -ENOSYS || !host->bus_ops->resume) {
-> +                       /*
-> +                        * We simply "remove" the card in this case.
-> +                        * It will be redetected on resume.
-> +                        */
-> +                       if (host->bus_ops->remove)
-> +                               host->bus_ops->remove(host);
-> +                       mmc_claim_host(host);
-> +                       mmc_detach_bus(host);
-> +                       mmc_release_host(host);
-> +                       host->pm_flags = 0;
-> +                       err = 0;
-> +               }
->         }
->         mmc_bus_put(host);
-> 
-> The reason I'm asking this is because it seems like commit
-> 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related
-> to mmc/sd card insert/removal during suspend/resume" has broken
-> suspending SDIO function drivers which don't have a suspend handler
-> (or do have one, but for some reason it returns -ENOSYS, like
-> libertas_sdio's does).
+On Sat, Oct 9, 2010 at 2:34 PM, Dave Airlie <airlied@gmail.com> wrote:
+>
+> Do we track people dong this at all? I wonder how many patches in
+> linux-next have cc: stable in them but haven't been submitted to
+> Linus,
 
-That is exactly our setup (libertas over sdio). I will try your patch as
-soon as I get to the office on Monday morning and report back.
+The other side of that coin is to wonder how many patches get marked
+as "stable" when they definitely shouldn't be.
 
+I know that's a non-empty set. Too many developers think that the
+thing they fix is so important that it needs to be backported. And it
+doesn't help that Greg is sometimes over-eager to take things without
+them being even in my tree long enough to get much testing.
 
-Thanks,
-Sven
+Quite frankly, if somebody has something in "next" (and really meant
+for the _next_ merge window, not the current one) that is marked for
+stable, I think that shows uncommonly bad taste. And that, in turn,
+means that the "stable" tag is also very debatable. It clearly cannot
+be important enough to really be for stable if it's not even being
+aggressively pushed into the current -rc.
 
-
+                 Linus
