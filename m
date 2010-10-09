@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759964Ab0JIAFp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 20:05:45 -0400
-Received: from asmtpout023.mac.com ([17.148.16.98]:53905 "EHLO
-	asmtpout023.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759808Ab0JIAFo (ORCPT
+	id S1759968Ab0JIAIc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 20:08:32 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:41090 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751729Ab0JIAIa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 20:05:44 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0
- ipscore=0 suspectscore=5 phishscore=0 bulkscore=0 adultscore=0 classifier=spam
- adjust=0 reason=mlx engine=6.0.2-1004200000 definitions=main-1010080176
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=2.50.10432:5.2.15,1.0.148,0.0.0000
- definitions=2010-10-08_17:2010-10-08,2010-10-08,1970-01-01 signatures=0
-Subject: Re: kgdb errors with serial console
-From: Elvis Dowson <elvis.dowson@mac.com>
-In-reply-to: <4CAF19FA.7010206@windriver.com>
-Date: Sat, 09 Oct 2010 04:05:16 +0400
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Message-id: <C07919DD-643F-4645-A261-91FB8F381A2C@mac.com>
-References: <BDD07355-7199-4A2E-8426-F6D43EA5D313@mac.com>
- <4CAE4BB6.7080509@windriver.com>
- <7BA01CAF-DD25-4AB6-9498-8AB89E2EDDE1@mac.com>
- <4CAE5B40.3070701@windriver.com>
- <917F9CCC-F3D3-4E23-B955-412F08CE8E2E@mac.com> <4CAF19FA.7010206@windriver.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-X-Mailer: Apple Mail (2.1081)
+	Fri, 8 Oct 2010 20:08:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=QIXc0DBzE55PgP9L9L2/2ZoOZwLPP8mREGG3mvdqDy7rTXefte96WyhdUTMHUqWnmp
+         ErQodlYgkMSu4MsYWNHA==
+MIME-Version: 1.0
+In-Reply-To: <AANLkTin9AwTa8x6faFEXBbrGZa4mg3AeDfeEmmdaF9_d@mail.gmail.com>
+References: <AANLkTin9AwTa8x6faFEXBbrGZa4mg3AeDfeEmmdaF9_d@mail.gmail.com>
+Date: Fri, 8 Oct 2010 17:08:28 -0700
+Message-ID: <AANLkTika+07mD==fPioanurwD-_s8aaJFc+nb4ZZOL0J@mail.gmail.com>
+Subject: Re: Roaming / offchannel enhancements for broadcast / multicast frames
+From: Paul Stewart <pstew@google.com>
+To: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Cc: linux-wireless <linux-wireless@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, Matt Smith <Matt.Smith@atheros.com>,
+        Srinivasa Duvvuri <Srinivasa.Duvvuri@atheros.com>,
+        Carolyn Waller <Carolyn.Waller@atheros.com>,
+        Amod Bodas <Amod.Bodas@atheros.com>,
+        David Quan <David.Quan@atheros.com>,
+        Bennyam Malavazi <Bennyam.Malavazi@atheros.com>,
+        Cliff Holden <Cliff.Holden@atheros.com>,
+        Aeolus Yang <Aeolus.Yang@atheros.com>, Kevin Hayes <kevin@atheros.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-                   Perhaps the debugger is timing out because it doesn't get a break point to debug a specific event? 
+On Fri, Oct 8, 2010 at 12:54 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+> We spoke about how to handle broadcast / multicast frames when going
+> offchannel at the Wireless Summit [1]. A lot of these talks were lead
+> due to a Chrome side open bug [2].
 
-Could you tell me the order in which I should try it? 
+Thanks for getting the ball rolling, Luis.  Technically the bug is in
+ChromumOS ("Chrome" is a web browser).
 
-I think earlier on, when I used the kgdbwait bootarg, it ran and initialized eclipse debugger. Then when I entered the 
+> Userspace may want to force a roam when this deadzone event hits.
 
-echo g > /proc/sysrq-trigger
+Why not just disassociate at this point?  I'm not sure what the
+difference is between a "dead zone" situation and a reason to
+completely disconnect.
 
-it just activated the debugger correctly because the kgdb_breakpoint method was called in file kgdb.c
+> Once we have these two in place we can then ignore bgscan requests
+> (when associated) unless a force scan command has been issued by
+> userspace, or unless we are idle.
 
-So, what should I do to test this? Do I write a small file, and add a call to kgdb_breakpoint in that example file, and then when I execute it, the debugger would get activated? 
+By "ignore" do you mean "postpone" or or "return an appropriate error
+to userspace"?  Either of those are acceptable.  Not doing anything at
+all wouldn't be good.  There's an additional issue about what happens
+when we are in the middle of a bgscan and new tx traffic appears.
 
-Is there any other test that I can run, without writing my own example ?
+> In the worst case scenario and unfortunately this seems to be the most
+> common one, a DTIM of 1 is used and we will have to be on channel and
+> awake every beacon interval. In this case we may want to optimize scan
+> time by not scanning passive scan channels.
 
-Best regards,
+A compromise would be to go off-channel for less than a full beacon
+interval when doing background passive channel scans in DTIM=1
+networks.  It's certainly better than (a) not scanning at all and (b)
+arguably better than intentionally dropping mcast.  An 80% beacon-time
+passive listen will get you 80% of the beacons, assuming linear
+probability, and even more over time if you account for beacon skew
+between networks.
 
-Elvis
+--
+Paul
