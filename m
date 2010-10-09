@@ -1,134 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab0JIOq0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 10:46:26 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:34155 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874Ab0JIOqZ (ORCPT
+	id S1756141Ab0JIOwb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 10:52:31 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:35639 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753147Ab0JIOwa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 10:46:25 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6130"; a="57303280"
-From: Tatyana Brokhman <tlinder@codeaurora.org>
-To: linux-usb@vger.kernel.org
-Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Matthew Wilcox <willy@linux.intel.com>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+	Sat, 9 Oct 2010 10:52:30 -0400
+Date: Sat, 9 Oct 2010 08:52:27 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH v5] usb: usb3.0 ch9 definitions
-Date: Sat,  9 Oct 2010 16:46:12 +0200
-Message-Id: <1286635573-30035-1-git-send-email-tlinder@codeaurora.org>
-X-Mailer: git-send-email 1.6.3.3
+Subject: Re: [PATCH 14/18] fs: Protect inode->i_state with th einode->i_lock
+Message-ID: <20101009145227.GE10421@parisc-linux.org>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com> <1286515292-15882-15-git-send-email-david@fromorbit.com> <20101008074932.GC24089@infradead.org> <20101008080428.GW4681@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008080428.GW4681@dastard>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding SuperSpeed usb definitions as defined by ch9 of the USB3.0 spec.
-This patch is a preparation for adding SuperSpeed support to the gadget
-framework.
+On Fri, Oct 08, 2010 at 07:04:28PM +1100, Dave Chinner wrote:
+> > > @@ -884,9 +897,9 @@ struct inode *new_inode(struct super_block *sb)
+> > >  	inode = alloc_inode(sb);
+> > >  	if (inode) {
+> > >  		spin_lock(&inode_lock);
+> > > -		__inode_add_to_lists(sb, NULL, inode);
+> > >  		inode->i_ino = ++last_ino;
+> > >  		inode->i_state = 0;
+> > > +		__inode_add_to_lists(sb, NULL, inode);
+> > >  		spin_unlock(&inode_lock);
+> > >  	}
+> > >  	return inode;
+> > 
+> > What's the point in doing this move?
+> 
+> hmmmm, let me think on that....
+> 
+> > 
+> > > @@ -953,8 +966,8 @@ static struct inode *get_new_inode(struct super_block *sb,
+> > >  			if (set(inode, data))
+> > >  				goto set_failed;
+> > >  
+> > > -			__inode_add_to_lists(sb, b, inode);
+> > >  			inode->i_state = I_NEW;
+> > > +			__inode_add_to_lists(sb, b, inode);
+> > 
+> > Same here.
+> 
+> Ah, done thinking now! I was so the i_state field had been set
+> before the inode was added to various lists and potentially
+> accessable to other threads. I should probably add a comment to that
+> effect, right?
 
-Signed-off-by: Tatyana Brokhman<tlinder@codeaurora.org>
----
- include/linux/usb/ch9.h |   58 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 57 insertions(+), 1 deletions(-)
+If that can happen, don't we need a wmb() between the assignment to
+i_state and the list_add too?  If so, that's a good comment :-)
 
-diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
-index da2ed77..fc5506f 100644
---- a/include/linux/usb/ch9.h
-+++ b/include/linux/usb/ch9.h
-@@ -123,8 +123,23 @@
- #define USB_DEVICE_A_ALT_HNP_SUPPORT	5	/* (otg) other RH port does */
- #define USB_DEVICE_DEBUG_MODE		6	/* (special devices only) */
- 
-+/*
-+ * New Feature Selectors as added by USB 3.0
-+ * See USB 3.0 spec Table 9-6
-+ */
-+#define USB_DEVICE_U1_ENABLE	48	/* dev may initiate U1 transition */
-+#define USB_DEVICE_U2_ENABLE	49	/* dev may initiate U2 transition */
-+#define USB_DEVICE_LTM_ENABLE	50	/* dev may send LTM */
-+#define USB_INTRF_FUNC_SUSPEND	0	/* function suspend */
-+
-+#define USB_INTR_FUNC_SUSPEND_OPT_MASK	0xFF00
-+
- #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
- 
-+/* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
-+#define USB_DEV_STAT_U1_ENABLED		2	/* transition into U1 state */
-+#define USB_DEV_STAT_U2_ENABLED		3	/* transition into U2 state */
-+#define USB_DEV_STAT_LTM_ENABLED	4	/* Latency tolerance messages */
- 
- /**
-  * struct usb_ctrlrequest - SETUP data for a USB device control request
-@@ -675,6 +690,7 @@ struct usb_bos_descriptor {
- 	__u8  bNumDeviceCaps;
- } __attribute__((packed));
- 
-+#define USB_DT_BOS_SIZE		5
- /*-------------------------------------------------------------------------*/
- 
- /* USB_DT_DEVICE_CAPABILITY:  grouped with BOS */
-@@ -712,16 +728,56 @@ struct usb_wireless_cap_descriptor {	/* Ultra Wide Band */
- 	__u8  bReserved;
- } __attribute__((packed));
- 
-+/* USB 2.0 Extension descriptor */
- #define	USB_CAP_TYPE_EXT		2
- 
- struct usb_ext_cap_descriptor {		/* Link Power Management */
- 	__u8  bLength;
- 	__u8  bDescriptorType;
- 	__u8  bDevCapabilityType;
--	__u8  bmAttributes;
-+	__le32 bmAttributes;
- #define USB_LPM_SUPPORT			(1 << 1)	/* supports LPM */
- } __attribute__((packed));
- 
-+#define USB_DT_USB_EXT_CAP_SIZE	7
-+
-+/*
-+ * SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed USB
-+ * specific device level capabilities
-+ */
-+#define		USB_SS_CAP_TYPE		3
-+struct usb_ss_cap_descriptor {		/* Link Power Management */
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u8  bDevCapabilityType;
-+	__u8  bmAttributes;
-+#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
-+	__le16 wSpeedSupported;
-+#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
-+#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
-+#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
-+#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
-+	__u8  bFunctionalitySupport;
-+	__u8  bU1devExitLat;
-+	__le16 bU2DevExitLat;
-+} __attribute__((packed));
-+
-+#define USB_DT_USB_SS_CAP_SIZE	10
-+
-+/*
-+ * Container ID Capability descriptor: Defines the instance unique ID used to
-+ * identify the instance across all operating modes
-+ */
-+#define	CONTAINER_ID_TYPE	4
-+struct usb_ss_container_id_descriptor {
-+	__u8  bLength;
-+	__u8  bDescriptorType;
-+	__u8  bDevCapabilityType;
-+	__u8  bReserved;
-+	__u8  ContainerID[16]; /* 128-bit number */
-+} __attribute__((packed));
-+
-+#define USB_DT_USB_SS_CONTN_ID_SIZE	20
- /*-------------------------------------------------------------------------*/
- 
- /* USB_DT_WIRELESS_ENDPOINT_COMP:  companion descriptor associated with
 -- 
-1.6.3.3
-
---
-Sent by	an consultant of the Qualcomm Inovation Center, Inc.
-The Qualcomm Inovation Center, Inc.is a member of the Code Aurora Forum.
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
