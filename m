@@ -1,209 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab0JIUha (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 16:37:30 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:52575 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757119Ab0JIUh1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 16:37:27 -0400
-Date: Sat, 9 Oct 2010 16:37:24 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Paul Menage <menage@google.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>,
-        Nick Piggin <nickpiggin@yahoo.com.au>,
-        Balbir Singh <balbir@in.ibm.com>, Cedric Le Goater <clg@fr.ibm.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [PATCH] Prio_heap: heap_remove(), heap_maximum(),
-	heap_replace() and heap_cherrypick()
-Message-ID: <20101009203724.GB23472@Krystal>
-References: <20101007190322.GA27054@Krystal> <AANLkTimKV_wvYPAERm2mdK49YB44T9bZ2uTSQuVYFSv6@mail.gmail.com>
+	id S1760566Ab0JIUiZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 16:38:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24491 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757136Ab0JIUiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 16:38:24 -0400
+Message-ID: <4CB0D2AF.7080609@redhat.com>
+Date: Sat, 09 Oct 2010 22:38:07 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <AANLkTimKV_wvYPAERm2mdK49YB44T9bZ2uTSQuVYFSv6@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:30:46 up 17 days, 32 min,  1 user,  load average: 0.44, 0.18,
-	0.11
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: James Bottomley <James.Bottomley@suse.de>
+CC: bo yang <boyang1288@gmail.com>, linux-scsi@vger.kernel.org, akpm@osdl.org,
+        linux-kernel@vger.kernel.org, bo.yang@lsi.com
+Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS drive
+References: <AANLkTin53S+C_+QzF-drs5BUAx=k7YeiHrTaQGTFSc_a@mail.gmail.com>	 <4CAF3E04.1050304@redhat.com> <1286555954.2985.110.camel@mulgrave.site> <4CAF70CD.6020307@redhat.com>
+In-Reply-To: <4CAF70CD.6020307@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Menage (menage@google.com) wrote:
-> On Thu, Oct 7, 2010 at 12:03 PM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> > These added interfaces lets prio_heap users lookup the top of heap item without
-> > performing any insertion, perform removal of the topmost heap entry, and also
-> > replacement of topmost heap entry. This is useful if one need to use the result
-> > of the lookup to determine if the current maximum should simply be removed or if
-> > it should be replaced.
-> >
-> > This is used by the Generic Ring Buffer to perform timestamp-based fusion-merge
-> > of per-cpu buffer records into a single stream.
-> >
-> > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> 
-> Looks fine, other than a couple of suggestions to make the code
-> slightly clearer.
-> 
-> Acked-by: Paul Menage <menage@google.com>
-> 
-> > Acked-by: Balbir Singh <balbir@in.ibm.com>
-> > Cc: Paul Menage <menage@google.com>
-> > Cc: David Rientjes <rientjes@google.com>
-> > Cc: Cedric Le Goater <clg@fr.ibm.com>
-> > Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-> > Cc: Andrew Morton <akpm@linux-foundation.org>
-> > Cc: Linus Torvalds <torvalds@linux-foundation.org>
-> > ---
-> >  include/linux/prio_heap.h |   44 ++++++++++++++++++++++
-> >  lib/prio_heap.c           |   91 ++++++++++++++++++++++++++++++++++++----------
-> >  2 files changed, 116 insertions(+), 19 deletions(-)
-> >
-> > Index: linux.trees.git/include/linux/prio_heap.h
-> > ===================================================================
-> > --- linux.trees.git.orig/include/linux/prio_heap.h      2010-07-06 14:25:29.000000000 -0400
-> > +++ linux.trees.git/include/linux/prio_heap.h   2010-07-07 10:04:33.000000000 -0400
-> > @@ -23,6 +23,18 @@ struct ptr_heap {
-> >  };
-> >
-> >  /**
-> > + * heap_maximum - return the largest element in the heap
-> > + * @heap: the heap to be operated on
-> > + *
-> > + * Returns the largest element in the heap, without performing any modification
-> > + * to the heap structure. Returns NULL if the heap is empty.
-> > + */
-> > +static inline void *heap_maximum(const struct ptr_heap *heap)
-> > +{
-> > +       return heap->size ? heap->ptrs[0] : NULL;
-> > +}
-> > +
-> > +/**
-> >  * heap_init - initialize an empty heap with a given memory size
-> >  * @heap: the heap structure to be initialized
-> >  * @size: amount of memory to use in bytes
-> > @@ -53,6 +65,38 @@ void heap_free(struct ptr_heap *heap);
-> >  */
-> >  extern void *heap_insert(struct ptr_heap *heap, void *p);
-> >
-> > +/**
-> > + * heap_remove - remove the largest element from the heap
-> > + * @heap: the heap to be operated on
-> > + *
-> > + * Returns the largest element in the heap. It removes this element from the
-> > + * heap. Returns NULL if the heap is empty.
-> > + */
-> > +extern void *heap_remove(struct ptr_heap *heap);
-> >
-> > +/**
-> > + * heap_cherrypick - remove a given element from the heap
-> > + * @heap: the heap to be operated on
-> > + * @p: the element
-> > + *
-> > + * Remove the given element from the heap. Return the element if present, else
-> > + * return NULL. This algorithm has a complexity of O(n), which is higher than
-> > + * O(log(n)) provided by the rest of this API.
-> > + */
-> > +extern void *heap_cherrypick(struct ptr_heap *heap, void *p);
-> > +
-> > +/**
-> > + * heap_replace_max - replace the the largest element from the heap
-> > + * @heap: the heap to be operated on
-> > + * @p: the pointer to be inserted as topmost element replacement
-> > + *
-> > + * Returns the largest element in the heap. It removes this element from the
-> > + * heap. The heap is rebalanced only once after the insertion. Returns NULL if
-> > + * the heap is empty.
-> > + *
-> > + * This is the equivalent of calling heap_remove() and then heap_insert(), but
-> > + * it only rebalances the heap once.
-> > + */
-> > +extern void *heap_replace_max(struct ptr_heap *heap, void *p);
-> >
-> >  #endif /* _LINUX_PRIO_HEAP_H */
-> > Index: linux.trees.git/lib/prio_heap.c
-> > ===================================================================
-> > --- linux.trees.git.orig/lib/prio_heap.c        2010-07-06 14:25:29.000000000 -0400
-> > +++ linux.trees.git/lib/prio_heap.c     2010-07-07 10:18:32.000000000 -0400
-> > @@ -23,12 +23,49 @@ void heap_free(struct ptr_heap *heap)
-> >        kfree(heap->ptrs);
-> >  }
-> >
-> > -void *heap_insert(struct ptr_heap *heap, void *p)
-> > +static void heapify(struct ptr_heap *heap, void **ptrs, void *p, int pos)
-> 
-> I'd be inclined to not pass "ptrs" or "p" as an argument, and instead
-> get ptrs from heap->ptrs and p from ptrs[pos]. It makes it clearer
-> what heapify() is doing.
-
-OK.
-
-> 
-> > +void *heap_replace_max(struct ptr_heap *heap, void *p)
-> >  {
-> >        void *res;
-> >        void **ptrs = heap->ptrs;
-> >        int pos;
-> 
-> No need for "pos" - just pass a constant 0 to heapify()
-
-OK
-
-> >
-> > +       if (!heap->size) {
-> > +               ptrs[heap->size++] = p;
-> 
-> Maybe make this clearer?
-> 
->   ptrs[0] = p;
->   heap->size = 1;
-
-OK.
-
-> 
-> > +void *heap_remove(struct ptr_heap *heap)
-> > +{
-> > +       void **ptrs = heap->ptrs;
-> > +
-> > +       switch (heap->size) {
-> > +       case 0:
-> > +               return NULL;
-> > +       case 1:
-> > +               return ptrs[--heap->size];
-> 
-> Maybe clearer:
-> 
-> heap->size = 0;
-> return ptrs[0];
-
-Yep, I changed the same thing in heap_cherrypick too.
-
-Thanks!
-
-Mathieu
+On 10/08/2010 09:28 PM, Tomas Henzl wrote:
+> On 10/08/2010 06:39 PM, James Bottomley wrote:
+>   
+>> On Fri, 2010-10-08 at 17:51 +0200, Tomas Henzl wrote:
+>>   
+>>     
+>>> On 09/23/2010 04:36 AM, bo yang wrote:
+>>>     
+>>>       
+>>>> This patch is too big.  I am using attachment to submit.  Please
+>>>> use attached file to apply.  Also let me know if it can't be accepted.
+>>>>
+>>>> To add the Online controller reset support, driver need to do:
+>>>> a). reset the controller chips -- Xscale and Gen2 which will change
+>>>> the function calls and add the reset function related to this two
+>>>> chips.
+>>>> b). during the reset, driver will store the pending cmds which not
+>>>> returned by FW to driver's pending queue.  Driver will re-issue those
+>>>> pending cmds again to FW after the OCR finished.
+>>>> c). In driver's timeout routine, driver will report to OS as reset.
+>>>> Also driver's queue routine will block the cmds until the OCR
+>>>> finished.
+>>>> d). in Driver's ISR routine, if driver get the FW state as state
+>>>> change, FW in Failure status and FW support online controller
+>>>> reset (OCR), driver will start to do the controller reset.
+>>>> e). In driver's IOCTL routine, the application cmds will wait for the
+>>>> OCR to finish, then issue the cmds to FW.
+>>>>
+>>>> Signed-off-by Bo Yang<bo.yang@lsi.com>
+>>>>
+>>>> ---
+>>>>  drivers/scsi/megaraid/megaraid_sas.c |  756 ++++++++++++++++++++++++++++++++---
+>>>>  drivers/scsi/megaraid/megaraid_sas.h |   88 +++-
+>>>>  2 files changed, 787 insertions(+), 57 deletions(-)
+>>>>       
+>>>>         
+>>> Hi Bo,
+>>> in the workqueue function you sleep for 30s,
+>>> it's scheduled here - schedule_work(&instance->work_init);
+>>>
+>>> +process_fw_state_change_wq(struct work_struct *work)
+>>> +{
+>>> ...
+>>> +		/*waitting for about 20 second before start the second init*/
+>>> +		for (wait = 0; wait < 30; wait++) {
+>>> +			msleep(1000);
+>>> +		}
+>>>     
+>>>       
+>> this lot should be ssleep(20) if you want a 20 sec sleep.
+>>   
+>>     
+> please do that on every place where you use the 
+> "for (wait = 0; wait < n; wait++) msleep(1000);" construction
+>
+>   
+>>> - this is not a good practice to sleep for a so long time I think
+>>>     
+>>>       
+> this long sleep might might be ok, if the workqueue is used only rarely
+> is it so?
+>
+>   
+>>> - you should use in your exit function some synchronization 
+>>>   for example 'cancel_work_sync', without that if someone rmmods your 
+>>>   module, it could then lead to a memory corruption
+>>>     
+>>>       
+>> Actually flush_scheduled_work() should be fine ... it will force the
+>> module removal to wait for completion ... cancellation can be error
+>> prone, so just forcing the wait sounds easier.
+>>   
+>>     
+Another correction - flush_scheduled_work is already present in megass_detach_one
+it only should be moved away from the if statement.
 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+> someone told that cancel_work_sync is safer then flush_scheduled_work
+> but I'm not an expert, so ok 
+>
+> Tomas
+>
+>   
+>> James
+>>
+>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>   
+>>     
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
+
