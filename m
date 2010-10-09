@@ -1,19 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760510Ab0JIVyV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 17:54:21 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53733 "EHLO
+	id S1756198Ab0JIWMf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 18:12:35 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:53765 "EHLO
 	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab0JIVyU (ORCPT
+	with ESMTP id S1753550Ab0JIWMe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 17:54:20 -0400
+	Sat, 9 Oct 2010 18:12:34 -0400
 X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 9 Oct 2010 23:54:05 +0200 (CEST)
+Date: Sun, 10 Oct 2010 00:12:20 +0200 (CEST)
 From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 1/2] ieee1394: move init_ohci1394_dma to drivers/firewire/
+Subject: [PATCH 2/2] ieee1394: remove the old IEEE 1394 driver stack
 To: linux1394-devel@lists.sourceforge.net
 cc: linux-kernel@vger.kernel.org
-Message-ID: <tkrat.a80c49c9cfb3380e@s5r6.in-berlin.de>
+In-Reply-To: <tkrat.a80c49c9cfb3380e@s5r6.in-berlin.de>
+Message-ID: <tkrat.3d7c94e2ecb3a995@s5r6.in-berlin.de>
+References: <tkrat.a80c49c9cfb3380e@s5r6.in-berlin.de>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; CHARSET=us-ascii
 Content-Disposition: INLINE
@@ -21,253 +23,317 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-because drivers/ieee1394/ will be deleted.
+The drivers
+  - ohci1394 (controller driver)
+  - ieee1394 (core)
+  - dv1394, raw1394, video1394 (userspace ABI)
+  - eth1394, sbp2 (protocol drivers)
+are replaced by
+  - firewire-ohci (controller driver)
+  - firewire-core (core and userspace ABI)
+  - firewire-net, firewire-sbp2 (protocol drivers)
+which are more featureful, better performing, and more secure than the older
+drivers; all with a smaller and more modern code base.
 
-Additional changes:
-  - add some #include directives
-  - adjust to use firewire/ohci.h instead of ieee1394/ohci1394.h,
-    replace struct ti_ohci by a minimal struct ohci,
-    replace quadlet_t from ieee1394_types.h by u32
-  - two or three trivial stylistic changes
-  - __iomem annotation
+The driver firedtv in drivers/media/dvb/firewire/ contains backends to both
+ieee1394 and firewire-core.  Its ieee1394 backend code can be removed in an
+independent commit; firedtv as-is builds and works fine without ieee1394.
+
+The driver pcilynx (another controller driver) is deleted without replacement
+since PCILynx cards are exteremely rare.  Owners of these cards use them with
+the stand-alone bus sniffer driver nosy instead.
+
+The drivers nosy and init_ohci1394_dma which do not interact with either of
+the two IEEE 1394 stacks are not affected by the ieee1394 subsystem removal.
+
+There are still some issues with the newer firewire subsystem compared to
+the older one:
+  - The rare and quirky controllers ALi M52xx, Apple UniNorth v1, NVIDIA
+    NForce2 are even less well supported by firewire-ohci than by ohci1394.
+    I am looking into the M52xx issue.
+  - The experimental firewire-net is reportedly less stable than its
+    experimental cousin eth1394.
+  - Audio playback of a certain group of audio devices (ones based on DICE
+    chipset with EAP; supported by prerelease FFADO code) does not work yet.
+    This issue is still under investigation.
+  - There were some ieee1394 based out-of-the-mainline drivers.  Of them,
+    only lisight, an audio driver for iSight webcams, seems still useful.
+    Work is underway to reimplement it on top of firewire-core.
+
+All these remainig issues are minor; they should not stand in the way of
+overall better user experience of IEEE 1394 on Linux, together with a
+reduction in support efforts and maintenance burden.  The coexistence of two
+IEEE 1394 kernel driver stacks in the mainline since 2.6.22 shall end now,
+as announced earlier this year.
 
 Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
 ---
- drivers/firewire/Makefile                          |    1 +
- drivers/{ieee1394 => firewire}/init_ohci1394_dma.c |   77 +++++++++++++-------
- drivers/ieee1394/Makefile                          |    2 -
- 3 files changed, 52 insertions(+), 28 deletions(-)
- rename drivers/{ieee1394 => firewire}/init_ohci1394_dma.c (84%)
+ Documentation/ABI/obsolete/dv1394                  |    9 -
+ Documentation/ABI/removed/dv1394                   |   14 +
+ Documentation/ABI/removed/raw1394                  |   15 +
+ .../ABI/removed/raw1394_legacy_isochronous         |   16 -
+ Documentation/ABI/removed/video1394                |   16 +
+ Documentation/feature-removal-schedule.txt         |   10 -
+ drivers/Makefile                                   |    1 -
+ drivers/firewire/Kconfig                           |    5 -
+ drivers/ieee1394/Kconfig                           |  182 -
+ drivers/ieee1394/Makefile                          |   16 -
+ drivers/ieee1394/config_roms.c                     |  194 --
+ drivers/ieee1394/config_roms.h                     |   19 -
+ drivers/ieee1394/csr.c                             |  843 -----
+ drivers/ieee1394/csr.h                             |   99 -
+ drivers/ieee1394/csr1212.c                         | 1467 --------
+ drivers/ieee1394/csr1212.h                         |  383 ---
+ drivers/ieee1394/dma.c                             |  289 --
+ drivers/ieee1394/dma.h                             |   89 -
+ drivers/ieee1394/dv1394-private.h                  |  587 ----
+ drivers/ieee1394/dv1394.c                          | 2584 --------------
+ drivers/ieee1394/dv1394.h                          |  305 --
+ drivers/ieee1394/eth1394.c                         | 1736 ----------
+ drivers/ieee1394/eth1394.h                         |  234 --
+ drivers/ieee1394/highlevel.c                       |  691 ----
+ drivers/ieee1394/highlevel.h                       |  141 -
+ drivers/ieee1394/hosts.c                           |  249 --
+ drivers/ieee1394/hosts.h                           |  201 --
+ drivers/ieee1394/ieee1394-ioctl.h                  |  106 -
+ drivers/ieee1394/ieee1394.h                        |  220 --
+ drivers/ieee1394/ieee1394_core.c                   | 1380 --------
+ drivers/ieee1394/ieee1394_core.h                   |  172 -
+ drivers/ieee1394/ieee1394_hotplug.h                |   19 -
+ drivers/ieee1394/ieee1394_transactions.c           |  595 ----
+ drivers/ieee1394/ieee1394_transactions.h           |   40 -
+ drivers/ieee1394/ieee1394_types.h                  |   69 -
+ drivers/ieee1394/iso.c                             |  568 ----
+ drivers/ieee1394/iso.h                             |  195 --
+ drivers/ieee1394/nodemgr.c                         | 1901 -----------
+ drivers/ieee1394/nodemgr.h                         |  186 -
+ drivers/ieee1394/ohci1394.c                        | 3590 --------------------
+ drivers/ieee1394/ohci1394.h                        |  453 ---
+ drivers/ieee1394/pcilynx.c                         | 1554 ---------
+ drivers/ieee1394/pcilynx.h                         |  468 ---
+ drivers/ieee1394/raw1394-private.h                 |   81 -
+ drivers/ieee1394/raw1394.c                         | 3096 -----------------
+ drivers/ieee1394/raw1394.h                         |  191 --
+ drivers/ieee1394/sbp2.c                            | 2138 ------------
+ drivers/ieee1394/sbp2.h                            |  346 --
+ drivers/ieee1394/video1394.c                       | 1528 ---------
+ drivers/ieee1394/video1394.h                       |   67 -
+ 50 files changed, 45 insertions(+), 29313 deletions(-)
+ delete mode 100644 Documentation/ABI/obsolete/dv1394
+ create mode 100644 Documentation/ABI/removed/dv1394
+ create mode 100644 Documentation/ABI/removed/raw1394
+ delete mode 100644 Documentation/ABI/removed/raw1394_legacy_isochronous
+ create mode 100644 Documentation/ABI/removed/video1394
+ delete mode 100644 drivers/ieee1394/Kconfig
+ delete mode 100644 drivers/ieee1394/Makefile
+ delete mode 100644 drivers/ieee1394/config_roms.c
+ delete mode 100644 drivers/ieee1394/config_roms.h
+ delete mode 100644 drivers/ieee1394/csr.c
+ delete mode 100644 drivers/ieee1394/csr.h
+ delete mode 100644 drivers/ieee1394/csr1212.c
+ delete mode 100644 drivers/ieee1394/csr1212.h
+ delete mode 100644 drivers/ieee1394/dma.c
+ delete mode 100644 drivers/ieee1394/dma.h
+ delete mode 100644 drivers/ieee1394/dv1394-private.h
+ delete mode 100644 drivers/ieee1394/dv1394.c
+ delete mode 100644 drivers/ieee1394/dv1394.h
+ delete mode 100644 drivers/ieee1394/eth1394.c
+ delete mode 100644 drivers/ieee1394/eth1394.h
+ delete mode 100644 drivers/ieee1394/highlevel.c
+ delete mode 100644 drivers/ieee1394/highlevel.h
+ delete mode 100644 drivers/ieee1394/hosts.c
+ delete mode 100644 drivers/ieee1394/hosts.h
+ delete mode 100644 drivers/ieee1394/ieee1394-ioctl.h
+ delete mode 100644 drivers/ieee1394/ieee1394.h
+ delete mode 100644 drivers/ieee1394/ieee1394_core.c
+ delete mode 100644 drivers/ieee1394/ieee1394_core.h
+ delete mode 100644 drivers/ieee1394/ieee1394_hotplug.h
+ delete mode 100644 drivers/ieee1394/ieee1394_transactions.c
+ delete mode 100644 drivers/ieee1394/ieee1394_transactions.h
+ delete mode 100644 drivers/ieee1394/ieee1394_types.h
+ delete mode 100644 drivers/ieee1394/iso.c
+ delete mode 100644 drivers/ieee1394/iso.h
+ delete mode 100644 drivers/ieee1394/nodemgr.c
+ delete mode 100644 drivers/ieee1394/nodemgr.h
+ delete mode 100644 drivers/ieee1394/ohci1394.c
+ delete mode 100644 drivers/ieee1394/ohci1394.h
+ delete mode 100644 drivers/ieee1394/pcilynx.c
+ delete mode 100644 drivers/ieee1394/pcilynx.h
+ delete mode 100644 drivers/ieee1394/raw1394-private.h
+ delete mode 100644 drivers/ieee1394/raw1394.c
+ delete mode 100644 drivers/ieee1394/raw1394.h
+ delete mode 100644 drivers/ieee1394/sbp2.c
+ delete mode 100644 drivers/ieee1394/sbp2.h
+ delete mode 100644 drivers/ieee1394/video1394.c
+ delete mode 100644 drivers/ieee1394/video1394.h
 
-diff --git a/drivers/firewire/Makefile b/drivers/firewire/Makefile
-index 3c6a7fb..e3870d5 100644
---- a/drivers/firewire/Makefile
-+++ b/drivers/firewire/Makefile
-@@ -13,3 +13,4 @@ obj-$(CONFIG_FIREWIRE_OHCI) += firewire-ohci.o
- obj-$(CONFIG_FIREWIRE_SBP2) += firewire-sbp2.o
- obj-$(CONFIG_FIREWIRE_NET)  += firewire-net.o
- obj-$(CONFIG_FIREWIRE_NOSY) += nosy.o
-+obj-$(CONFIG_PROVIDE_OHCI1394_DMA_INIT) += init_ohci1394_dma.o
-diff --git a/drivers/ieee1394/init_ohci1394_dma.c b/drivers/firewire/init_ohci1394_dma.c
-similarity index 84%
-rename from drivers/ieee1394/init_ohci1394_dma.c
-rename to drivers/firewire/init_ohci1394_dma.c
-index ddaab6e..09157a0 100644
---- a/drivers/ieee1394/init_ohci1394_dma.c
-+++ b/drivers/firewire/init_ohci1394_dma.c
-@@ -32,23 +32,42 @@
-  * Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  */
- 
--#include <linux/interrupt.h>	/* for ohci1394.h */
- #include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/kernel.h>
- #include <linux/pci.h>		/* for PCI defines */
--#include <linux/init_ohci1394_dma.h>
-+#include <linux/string.h>
-+
- #include <asm/pci-direct.h>	/* for direct PCI config space access */
- #include <asm/fixmap.h>
- 
--#include "ieee1394_types.h"
--#include "ohci1394.h"
-+#include <linux/init_ohci1394_dma.h>
-+#include "ohci.h"
- 
- int __initdata init_ohci1394_dma_early;
- 
-+struct ohci {
-+	struct pci_dev *dev;
-+	void __iomem *registers;
-+};
-+
-+static inline void reg_write(const struct ohci *ohci, int offset, u32 data)
-+{
-+	writel(data, ohci->registers + offset);
-+}
-+
-+static inline u32 reg_read(const struct ohci *ohci, int offset)
-+{
-+	return readl(ohci->registers + offset);
-+}
-+
-+#define OHCI_LOOP_COUNT		100	/* Number of loops for reg read waits */
-+
- /* Reads a PHY register of an OHCI-1394 controller */
--static inline u8 __init get_phy_reg(struct ti_ohci *ohci, u8 addr)
-+static inline u8 __init get_phy_reg(struct ohci *ohci, u8 addr)
- {
- 	int i;
--	quadlet_t r;
-+	u32 r;
- 
- 	reg_write(ohci, OHCI1394_PhyControl, (addr << 8) | 0x00008000);
- 
-@@ -63,22 +82,22 @@ static inline u8 __init get_phy_reg(struct ti_ohci *ohci, u8 addr)
- }
- 
- /* Writes to a PHY register of an OHCI-1394 controller */
--static inline void __init set_phy_reg(struct ti_ohci *ohci, u8 addr, u8 data)
-+static inline void __init set_phy_reg(struct ohci *ohci, u8 addr, u8 data)
- {
- 	int i;
- 
- 	reg_write(ohci, OHCI1394_PhyControl, (addr << 8) | data | 0x00004000);
- 
- 	for (i = 0; i < OHCI_LOOP_COUNT; i++) {
--		u32 r = reg_read(ohci, OHCI1394_PhyControl);
--		if (!(r & 0x00004000))
-+		if (!(reg_read(ohci, OHCI1394_PhyControl) & 0x00004000))
- 			break;
- 		mdelay(1);
- 	}
- }
- 
- /* Resets an OHCI-1394 controller (for sane state before initialization) */
--static inline void __init init_ohci1394_soft_reset(struct ti_ohci *ohci) {
-+static inline void __init init_ohci1394_soft_reset(struct ohci *ohci)
-+{
- 	int i;
- 
- 	reg_write(ohci, OHCI1394_HCControlSet, OHCI1394_HCControl_softReset);
-@@ -91,10 +110,14 @@ static inline void __init init_ohci1394_soft_reset(struct ti_ohci *ohci) {
- 	}
- }
- 
-+#define OHCI1394_MAX_AT_REQ_RETRIES	0xf
-+#define OHCI1394_MAX_AT_RESP_RETRIES	0x2
-+#define OHCI1394_MAX_PHYS_RESP_RETRIES	0x8
-+
- /* Basic OHCI-1394 register and port inititalization */
--static inline void __init init_ohci1394_initialize(struct ti_ohci *ohci)
-+static inline void __init init_ohci1394_initialize(struct ohci *ohci)
- {
--	quadlet_t bus_options;
-+	u32 bus_options;
- 	int num_ports, i;
- 
- 	/* Put some defaults to these undefined bus options */
-@@ -116,7 +139,7 @@ static inline void __init init_ohci1394_initialize(struct ti_ohci *ohci)
- 
- 	/* enable phys */
- 	reg_write(ohci, OHCI1394_LinkControlSet,
--			OHCI1394_LinkControl_RcvPhyPkt);
-+			OHCI1394_LinkControl_rcvPhyPkt);
- 
- 	/* Don't accept phy packets into AR request context */
- 	reg_write(ohci, OHCI1394_LinkControlClear, 0x00000400);
-@@ -128,7 +151,7 @@ static inline void __init init_ohci1394_initialize(struct ti_ohci *ohci)
- 	reg_write(ohci, OHCI1394_IsoXmitIntEventClear, 0xffffffff);
- 
- 	/* Accept asyncronous transfer requests from all nodes for now */
--	reg_write(ohci,OHCI1394_AsReqFilterHiSet, 0x80000000);
-+	reg_write(ohci, OHCI1394_AsReqFilterHiSet, 0x80000000);
- 
- 	/* Specify asyncronous transfer retries */
- 	reg_write(ohci, OHCI1394_ATRetries,
-@@ -137,7 +160,8 @@ static inline void __init init_ohci1394_initialize(struct ti_ohci *ohci)
- 		  (OHCI1394_MAX_PHYS_RESP_RETRIES<<8));
- 
- 	/* We don't want hardware swapping */
--	reg_write(ohci, OHCI1394_HCControlClear, OHCI1394_HCControl_noByteSwap);
-+	reg_write(ohci, OHCI1394_HCControlClear,
-+		  OHCI1394_HCControl_noByteSwapData);
- 
- 	/* Enable link */
- 	reg_write(ohci, OHCI1394_HCControlSet, OHCI1394_HCControl_linkEnable);
-@@ -164,11 +188,11 @@ static inline void __init init_ohci1394_initialize(struct ti_ohci *ohci)
-  * has to be enabled after each bus reset when needed. We resort
-  * to polling here because on early boot, we have no interrupts.
-  */
--static inline void __init init_ohci1394_wait_for_busresets(struct ti_ohci *ohci)
-+static inline void __init init_ohci1394_wait_for_busresets(struct ohci *ohci)
- {
- 	int i, events;
- 
--	for (i=0; i < 9; i++) {
-+	for (i = 0; i < 9; i++) {
- 		mdelay(200);
- 		events = reg_read(ohci, OHCI1394_IntEventSet);
- 		if (events & OHCI1394_busReset)
-@@ -182,18 +206,18 @@ static inline void __init init_ohci1394_wait_for_busresets(struct ti_ohci *ohci)
-  * This enables remote DMA access over IEEE1394 from every host for the low
-  * 4GB of address space. DMA accesses above 4GB are not available currently.
-  */
--static inline void __init init_ohci1394_enable_physical_dma(struct ti_ohci *hci)
-+static inline void __init init_ohci1394_enable_physical_dma(struct ohci *ohci)
- {
--	reg_write(hci, OHCI1394_PhyReqFilterHiSet, 0xffffffff);
--	reg_write(hci, OHCI1394_PhyReqFilterLoSet, 0xffffffff);
--	reg_write(hci, OHCI1394_PhyUpperBound, 0xffff0000);
-+	reg_write(ohci, OHCI1394_PhyReqFilterHiSet, 0xffffffff);
-+	reg_write(ohci, OHCI1394_PhyReqFilterLoSet, 0xffffffff);
-+	reg_write(ohci, OHCI1394_PhyUpperBound, 0xffff0000);
- }
- 
- /**
-  * init_ohci1394_reset_and_init_dma - init controller and enable DMA
-  * This initializes the given controller and enables physical DMA engine in it.
-  */
--static inline void __init init_ohci1394_reset_and_init_dma(struct ti_ohci *ohci)
-+static inline void __init init_ohci1394_reset_and_init_dma(struct ohci *ohci)
- {
- 	/* Start off with a soft reset, clears everything to a sane state. */
- 	init_ohci1394_soft_reset(ohci);
-@@ -225,7 +249,7 @@ static inline void __init init_ohci1394_reset_and_init_dma(struct ti_ohci *ohci)
- static inline void __init init_ohci1394_controller(int num, int slot, int func)
- {
- 	unsigned long ohci_base;
--	struct ti_ohci ohci;
-+	struct ohci ohci;
- 
- 	printk(KERN_INFO "init_ohci1394_dma: initializing OHCI-1394"
- 			 " at %02x:%02x.%x\n", num, slot, func);
-@@ -235,7 +259,7 @@ static inline void __init init_ohci1394_controller(int num, int slot, int func)
- 
- 	set_fixmap_nocache(FIX_OHCI1394_BASE, ohci_base);
- 
--	ohci.registers = (void *)fix_to_virt(FIX_OHCI1394_BASE);
-+	ohci.registers = (void __iomem *)fix_to_virt(FIX_OHCI1394_BASE);
- 
- 	init_ohci1394_reset_and_init_dma(&ohci);
- }
-@@ -247,6 +271,7 @@ static inline void __init init_ohci1394_controller(int num, int slot, int func)
- void __init init_ohci1394_dma_on_all_controllers(void)
- {
- 	int num, slot, func;
-+	u32 class;
- 
- 	if (!early_pci_allowed())
- 		return;
-@@ -255,9 +280,9 @@ void __init init_ohci1394_dma_on_all_controllers(void)
- 	for (num = 0; num < 32; num++) {
- 		for (slot = 0; slot < 32; slot++) {
- 			for (func = 0; func < 8; func++) {
--				u32 class = read_pci_config(num,slot,func,
-+				class = read_pci_config(num, slot, func,
- 							PCI_CLASS_REVISION);
--				if ((class == 0xffffffff))
-+				if (class == 0xffffffff)
- 					continue; /* No device at this func */
- 
- 				if (class>>8 != PCI_CLASS_SERIAL_FIREWIRE_OHCI)
-diff --git a/drivers/ieee1394/Makefile b/drivers/ieee1394/Makefile
-index 1f8153b..427b86b 100644
---- a/drivers/ieee1394/Makefile
-+++ b/drivers/ieee1394/Makefile
-@@ -14,5 +14,3 @@ obj-$(CONFIG_IEEE1394_RAWIO) += raw1394.o
- obj-$(CONFIG_IEEE1394_SBP2) += sbp2.o
- obj-$(CONFIG_IEEE1394_DV1394) += dv1394.o
- obj-$(CONFIG_IEEE1394_ETH1394) += eth1394.o
+diff --git a/Documentation/ABI/obsolete/dv1394 b/Documentation/ABI/obsolete/dv1394
+deleted file mode 100644
+index 2ee3686..0000000
+--- a/Documentation/ABI/obsolete/dv1394
++++ /dev/null
+@@ -1,9 +0,0 @@
+-What:		dv1394 (a.k.a. "OHCI-DV I/O support" for FireWire)
+-Contact:	linux1394-devel@lists.sourceforge.net
+-Description:
+-	New application development should use raw1394 + userspace libraries
+-	instead, notably libiec61883 which is functionally equivalent.
 -
--obj-$(CONFIG_PROVIDE_OHCI1394_DMA_INIT) += init_ohci1394_dma.o
--- 
-1.7.2.2
+-Users:
+-	ffmpeg/libavformat (used by a variety of media players)
+-	dvgrab v1.x (replaced by dvgrab2 on top of raw1394 and resp. libraries)
+diff --git a/Documentation/ABI/removed/dv1394 b/Documentation/ABI/removed/dv1394
+new file mode 100644
+index 0000000..c2310b6
+--- /dev/null
++++ b/Documentation/ABI/removed/dv1394
+@@ -0,0 +1,14 @@
++What:		dv1394 (a.k.a. "OHCI-DV I/O support" for FireWire)
++Date:		May 2010 (scheduled), finally removed in kernel v2.6.37
++Contact:	linux1394-devel@lists.sourceforge.net
++Description:
++	/dev/dv1394/* were character device files, one for each FireWire
++	controller and for NTSC and PAL respectively, from which DV data
++	could be received by read() or transmitted by write().  A few
++	ioctl()s allowed limited control.
++	This special-purpose interface has been superseded by libraw1394 +
++	libiec61883 which are functionally equivalent, support HDV, and
++	transparently work on top of the newer firewire kernel drivers.
++
++Users:
++	ffmpeg/libavformat (if configured for DV1394)
+diff --git a/Documentation/ABI/removed/raw1394 b/Documentation/ABI/removed/raw1394
+new file mode 100644
+index 0000000..490aa1e
+--- /dev/null
++++ b/Documentation/ABI/removed/raw1394
+@@ -0,0 +1,15 @@
++What:		raw1394 (a.k.a. "Raw IEEE1394 I/O support" for FireWire)
++Date:		May 2010 (scheduled), finally removed in kernel v2.6.37
++Contact:	linux1394-devel@lists.sourceforge.net
++Description:
++	/dev/raw1394 was a character device file that allowed low-level
++	access to FireWire buses.  Its major drawbacks were its inability
++	to implement sensible device security policies, and its low level
++	of abstraction that required userspace clients do duplicate much
++	of the kernel's ieee1394 core functionality.
++	Replaced by /dev/fw*, i.e. the <linux/firewire-cdev.h> ABI of
++	firewire-core.
++
++Users:
++	libraw1394 (works with firewire-cdev too, transparent to library ABI
++	users)
+diff --git a/Documentation/ABI/removed/raw1394_legacy_isochronous b/Documentation/ABI/removed/raw1394_legacy_isochronous
+deleted file mode 100644
+index 1b62962..0000000
+--- a/Documentation/ABI/removed/raw1394_legacy_isochronous
++++ /dev/null
+@@ -1,16 +0,0 @@
+-What:		legacy isochronous ABI of raw1394 (1st generation iso ABI)
+-Date:		June 2007 (scheduled), removed in kernel v2.6.23
+-Contact:	linux1394-devel@lists.sourceforge.net
+-Description:
+-	The two request types RAW1394_REQ_ISO_SEND, RAW1394_REQ_ISO_LISTEN have
+-	been deprecated for quite some time.  They are very inefficient as they
+-	come with high interrupt load and several layers of callbacks for each
+-	packet.  Because of these deficiencies, the video1394 and dv1394 drivers
+-	and the 3rd-generation isochronous ABI in raw1394 (rawiso) were created.
+-
+-Users:
+-	libraw1394 users via the long deprecated API raw1394_iso_write,
+-	raw1394_start_iso_write, raw1394_start_iso_rcv, raw1394_stop_iso_rcv
+-
+-	libdc1394, which optionally uses these old libraw1394 calls
+-	alternatively to the more efficient video1394 ABI
+diff --git a/Documentation/ABI/removed/video1394 b/Documentation/ABI/removed/video1394
+new file mode 100644
+index 0000000..c39c25a
+--- /dev/null
++++ b/Documentation/ABI/removed/video1394
+@@ -0,0 +1,16 @@
++What:		video1394 (a.k.a. "OHCI-1394 Video support" for FireWire)
++Date:		May 2010 (scheduled), finally removed in kernel v2.6.37
++Contact:	linux1394-devel@lists.sourceforge.net
++Description:
++	/dev/video1394/* were character device files, one for each FireWire
++	controller, which were used for isochronous I/O.  It was added as an
++	alternative to raw1394's isochronous I/O functionality which had
++	performance issues in its first generation.  Any video1394 user had
++	to use raw1394 + libraw1394 too because video1394 did not provide
++	asynchronous I/O for device discovery and configuration.
++	Replaced by /dev/fw*, i.e. the <linux/firewire-cdev.h> ABI of
++	firewire-core.
++
++Users:
++	libdc1394 (works with firewire-cdev too, transparent to library ABI
++	users)
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index 1571c0c..fe2a4ba 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -637,16 +637,6 @@ Who:	Thomas Gleixner <tglx@linutronix.de>
+ 
+ ----------------------------
+ 
+-What:	old ieee1394 subsystem (CONFIG_IEEE1394)
+-When:	2.6.37
+-Files:	drivers/ieee1394/ except init_ohci1394_dma.c
+-Why:	superseded by drivers/firewire/ (CONFIG_FIREWIRE) which offers more
+-	features, better performance, and better security, all with smaller
+-	and more modern code base
+-Who:	Stefan Richter <stefanr@s5r6.in-berlin.de>
+-
+-----------------------------
+-
+ What:	The acpi_sleep=s4_nonvs command line option
+ When:	2.6.37
+ Files:	arch/x86/kernel/acpi/sleep.c
+diff --git a/drivers/Makefile b/drivers/Makefile
+index 0bbb456..d9dda3b 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -51,7 +51,6 @@ obj-y				+= net/
+ obj-$(CONFIG_ATM)		+= atm/
+ obj-$(CONFIG_FUSION)		+= message/
+ obj-y				+= firewire/
+-obj-y				+= ieee1394/
+ obj-$(CONFIG_UIO)		+= uio/
+ obj-y				+= cdrom/
+ obj-y				+= auxdisplay/
+diff --git a/drivers/firewire/Kconfig b/drivers/firewire/Kconfig
+index fcf3ea2..40a222e 100644
+--- a/drivers/firewire/Kconfig
++++ b/drivers/firewire/Kconfig
+@@ -3,9 +3,6 @@ menu "IEEE 1394 (FireWire) support"
+ 	# firewire-core does not depend on PCI but is
+ 	# not useful without PCI controller driver
+ 
+-comment "You can enable one or both FireWire driver stacks."
+-comment "The newer stack is recommended."
+-
+ config FIREWIRE
+ 	tristate "FireWire driver stack"
+ 	select CRC_ITU_T
+@@ -64,8 +61,6 @@ config FIREWIRE_NET
+ 	  To compile this driver as a module, say M here:  The module will be
+ 	  called firewire-net.
+ 
+-source "drivers/ieee1394/Kconfig"
+-
+ config FIREWIRE_NOSY
+ 	tristate "Nosy - a FireWire traffic sniffer for PCILynx cards"
+ 	depends on PCI
+diff --git a/drivers/ieee1394/Kconfig b/drivers/ieee1394/Kconfig
+deleted file mode 100644
+index e02096c..0000000
+--- a/drivers/ieee1394/Kconfig
++++ /dev/null
 
+[...useless all-minus diff hunks deleted...]
+Wasn't there a git option to create a shorter diff without all this noise?
 
 -- 
 Stefan Richter
--=====-==-=- =-=- -=--=
+-=====-==-=- =-=- -=-=-
 http://arcgraph.de/sr/
 
