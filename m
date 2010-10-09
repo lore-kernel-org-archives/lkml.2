@@ -1,124 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760566Ab0JIUiZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 16:38:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24491 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757136Ab0JIUiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 16:38:24 -0400
-Message-ID: <4CB0D2AF.7080609@redhat.com>
-Date: Sat, 09 Oct 2010 22:38:07 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1760593Ab0JIUqr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 16:46:47 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61067 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760545Ab0JIUqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 16:46:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Yi5nJxOppcjh0gQTJC3543WJOpxwIhF24XmgXEoYa3TqMNunW6m87byIsLjzcZdcWM
+         YIvM3VZBbm1/I00wv/+EfNFgfHw3sRggFy9scraUmBUTDgHOCEQy16FU564GOWJ6Ppsc
+         UeM72EfpjFArPV0ECWgcjREk5o7H2DCQQW5HU=
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: bo yang <boyang1288@gmail.com>, linux-scsi@vger.kernel.org, akpm@osdl.org,
-        linux-kernel@vger.kernel.org, bo.yang@lsi.com
-Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
- MegaRAID SAS drive
-References: <AANLkTin53S+C_+QzF-drs5BUAx=k7YeiHrTaQGTFSc_a@mail.gmail.com>	 <4CAF3E04.1050304@redhat.com> <1286555954.2985.110.camel@mulgrave.site> <4CAF70CD.6020307@redhat.com>
-In-Reply-To: <4CAF70CD.6020307@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20101009113213.62c2f131@nehalam>
+References: <20100812115430.2b5d8683@starbug.prg01.itonis.net>
+	<AANLkTinbgud9enM1XDQrdZVBtGnTFaUeoEL-D8Z2FmJh@mail.gmail.com>
+	<20101009113213.62c2f131@nehalam>
+Date: Sat, 9 Oct 2010 22:46:44 +0200
+Message-ID: <AANLkTimMRQ+cmoCJTjWeSga+YrGDCGiBOCp5rJK+vF3Q@mail.gmail.com>
+Subject: Re: [PATCH] forcedeth: reconfigure multicast packet filter only when needed
+From: =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org, davem@davemloft.net,
+        aabdulla@nvidia.com, mditto@google.com
+Content-Type: multipart/mixed; boundary=00032557497e9ad9de04923539c8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2010 09:28 PM, Tomas Henzl wrote:
-> On 10/08/2010 06:39 PM, James Bottomley wrote:
->   
->> On Fri, 2010-10-08 at 17:51 +0200, Tomas Henzl wrote:
->>   
->>     
->>> On 09/23/2010 04:36 AM, bo yang wrote:
->>>     
->>>       
->>>> This patch is too big.  I am using attachment to submit.  Please
->>>> use attached file to apply.  Also let me know if it can't be accepted.
->>>>
->>>> To add the Online controller reset support, driver need to do:
->>>> a). reset the controller chips -- Xscale and Gen2 which will change
->>>> the function calls and add the reset function related to this two
->>>> chips.
->>>> b). during the reset, driver will store the pending cmds which not
->>>> returned by FW to driver's pending queue.  Driver will re-issue those
->>>> pending cmds again to FW after the OCR finished.
->>>> c). In driver's timeout routine, driver will report to OS as reset.
->>>> Also driver's queue routine will block the cmds until the OCR
->>>> finished.
->>>> d). in Driver's ISR routine, if driver get the FW state as state
->>>> change, FW in Failure status and FW support online controller
->>>> reset (OCR), driver will start to do the controller reset.
->>>> e). In driver's IOCTL routine, the application cmds will wait for the
->>>> OCR to finish, then issue the cmds to FW.
->>>>
->>>> Signed-off-by Bo Yang<bo.yang@lsi.com>
->>>>
->>>> ---
->>>>  drivers/scsi/megaraid/megaraid_sas.c |  756 ++++++++++++++++++++++++++++++++---
->>>>  drivers/scsi/megaraid/megaraid_sas.h |   88 +++-
->>>>  2 files changed, 787 insertions(+), 57 deletions(-)
->>>>       
->>>>         
->>> Hi Bo,
->>> in the workqueue function you sleep for 30s,
->>> it's scheduled here - schedule_work(&instance->work_init);
->>>
->>> +process_fw_state_change_wq(struct work_struct *work)
->>> +{
->>> ...
->>> +		/*waitting for about 20 second before start the second init*/
->>> +		for (wait = 0; wait < 30; wait++) {
->>> +			msleep(1000);
->>> +		}
->>>     
->>>       
->> this lot should be ssleep(20) if you want a 20 sec sleep.
->>   
->>     
-> please do that on every place where you use the 
-> "for (wait = 0; wait < n; wait++) msleep(1000);" construction
->
->   
->>> - this is not a good practice to sleep for a so long time I think
->>>     
->>>       
-> this long sleep might might be ok, if the workqueue is used only rarely
-> is it so?
->
->   
->>> - you should use in your exit function some synchronization 
->>>   for example 'cancel_work_sync', without that if someone rmmods your 
->>>   module, it could then lead to a memory corruption
->>>     
->>>       
->> Actually flush_scheduled_work() should be fine ... it will force the
->> module removal to wait for completion ... cancellation can be error
->> prone, so just forcing the wait sounds easier.
->>   
->>     
-Another correction - flush_scheduled_work is already present in megass_detach_one
-it only should be moved away from the if statement.
+--00032557497e9ad9de04923539c8
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: quoted-printable
 
-
-> someone told that cancel_work_sync is safer then flush_scheduled_work
-> but I'm not an expert, so ok 
+2010/10/9 Stephen Hemminger <shemminger@vyatta.com>:
+> On Sat, 9 Oct 2010 13:26:05 +0200
+> Jind=F8ich Makovi=E8ka <makovick@gmail.com> wrote:
 >
-> Tomas
+>> +
+>> + =A0 =A0 /* current packet filter state */
+>> + =A0 =A0 u32 cur_pff;
+>> + =A0 =A0 u32 cur_addr[2];
+>> + =A0 =A0 u32 cur_mask[2];
+>> =A0};
 >
->   
->> James
->>
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>   
->>     
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   
+> No big deal, but couldn't you just put those temporary variables
+> on the stack. and reread the current value before stopping.
 
+Sure, this version should do the same (still untested, I don't have a
+machine with nForce here at the moment). I just wanted to avoid more
+NIC register accesses, but it's probably a premature optimization.
+
+Regards,
+--=20
+Jindrich Makovicka
+
+--00032557497e9ad9de04923539c8
+Content-Type: text/x-patch; charset=US-ASCII; name="forcedeth2.diff"
+Content-Disposition: attachment; filename="forcedeth2.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gf2y5ky80
+
+LS0tIGZvcmNlZGV0aC5jLm9yaWcJMjAxMC0xMC0wNyAwODo1Njo1NS41NjQ1MTExNTMgKzAyMDAK
+KysrIGZvcmNlZGV0aC5jCTIwMTAtMTAtMDkgMjI6MzQ6NTMuMTUxNTIzNTExICswMjAwCkBAIC0z
+MDI3LDkgKzMwMjcsMTUgQEAKIHsKIAlzdHJ1Y3QgZmVfcHJpdiAqbnAgPSBuZXRkZXZfcHJpdihk
+ZXYpOwogCXU4IF9faW9tZW0gKmJhc2UgPSBnZXRfaHdiYXNlKGRldik7Ci0JdTMyIGFkZHJbMl07
+Ci0JdTMyIG1hc2tbMl07Ci0JdTMyIHBmZiA9IHJlYWRsKGJhc2UgKyBOdlJlZ1BhY2tldEZpbHRl
+ckZsYWdzKSAmIE5WUkVHX1BGRl9QQVVTRV9SWDsKKwl1MzIgYWRkclsyXSwgcHJldl9hZGRyWzJd
+OworCXUzMiBtYXNrWzJdLCBwcmV2X21hc2tbMl07CisJdTMyIHByZXZfcGZmID0gcmVhZGwoYmFz
+ZSArIE52UmVnUGFja2V0RmlsdGVyRmxhZ3MpOworCXUzMiBwZmYgPSBwcmV2X3BmZiAmIE5WUkVH
+X1BGRl9QQVVTRV9SWDsKKworCXByZXZfYWRkclswXSA9IHJlYWRsKGJhc2UgKyBOdlJlZ011bHRp
+Y2FzdEFkZHJBKTsKKwlwcmV2X2FkZHJbMV0gPSByZWFkbChiYXNlICsgTnZSZWdNdWx0aWNhc3RB
+ZGRyQik7CisJcHJldl9tYXNrWzBdID0gcmVhZGwoYmFzZSArIE52UmVnTXVsdGljYXN0TWFza0Ep
+OworCXByZXZfbWFza1sxXSA9IHJlYWRsKGJhc2UgKyBOdlJlZ011bHRpY2FzdE1hc2tCKTsKIAog
+CW1lbXNldChhZGRyLCAwLCBzaXplb2YoYWRkcikpOwogCW1lbXNldChtYXNrLCAwLCBzaXplb2Yo
+bWFzaykpOwpAQCAtMzA3MiwxNyArMzA3OCwyNSBAQAogCX0KIAlhZGRyWzBdIHw9IE5WUkVHX01D
+QVNUQUREUkFfRk9SQ0U7CiAJcGZmIHw9IE5WUkVHX1BGRl9BTFdBWVM7Ci0Jc3Bpbl9sb2NrX2ly
+cSgmbnAtPmxvY2spOwotCW52X3N0b3BfcngoZGV2KTsKLQl3cml0ZWwoYWRkclswXSwgYmFzZSAr
+IE52UmVnTXVsdGljYXN0QWRkckEpOwotCXdyaXRlbChhZGRyWzFdLCBiYXNlICsgTnZSZWdNdWx0
+aWNhc3RBZGRyQik7Ci0Jd3JpdGVsKG1hc2tbMF0sIGJhc2UgKyBOdlJlZ011bHRpY2FzdE1hc2tB
+KTsKLQl3cml0ZWwobWFza1sxXSwgYmFzZSArIE52UmVnTXVsdGljYXN0TWFza0IpOwotCXdyaXRl
+bChwZmYsIGJhc2UgKyBOdlJlZ1BhY2tldEZpbHRlckZsYWdzKTsKLQlkcHJpbnRrKEtFUk5fSU5G
+TyAiJXM6IHJlY29uZmlndXJhdGlvbiBmb3IgbXVsdGljYXN0IGxpc3RzLlxuIiwKLQkJZGV2LT5u
+YW1lKTsKLQludl9zdGFydF9yeChkZXYpOwotCXNwaW5fdW5sb2NrX2lycSgmbnAtPmxvY2spOwor
+CWlmIChwcmV2X3BmZiAhPSBwZmYKKwkgICAgfHwgbWVtY21wKHByZXZfYWRkciwgYWRkciwgc2l6
+ZW9mKHByZXZfYWRkcikpICE9IDAKKwkgICAgfHwgbWVtY21wKHByZXZfbWFzaywgbWFzaywgc2l6
+ZW9mKHByZXZfbWFzaykpICE9IDApCisJeworCQlkcHJpbnRrKEtFUk5fSU5GTyAiJXM6IHJlY29u
+ZmlndXJhdGlvbiBmb3IgbXVsdGljYXN0IGxpc3RzLlxuIiwKKwkJCWRldi0+bmFtZSk7CisJCXNw
+aW5fbG9ja19pcnEoJm5wLT5sb2NrKTsKKwkJbnZfc3RvcF9yeChkZXYpOworCQl3cml0ZWwoYWRk
+clswXSwgYmFzZSArIE52UmVnTXVsdGljYXN0QWRkckEpOworCQl3cml0ZWwoYWRkclsxXSwgYmFz
+ZSArIE52UmVnTXVsdGljYXN0QWRkckIpOworCQl3cml0ZWwobWFza1swXSwgYmFzZSArIE52UmVn
+TXVsdGljYXN0TWFza0EpOworCQl3cml0ZWwobWFza1sxXSwgYmFzZSArIE52UmVnTXVsdGljYXN0
+TWFza0IpOworCQl3cml0ZWwocGZmLCBiYXNlICsgTnZSZWdQYWNrZXRGaWx0ZXJGbGFncyk7CisJ
+CW52X3N0YXJ0X3J4KGRldik7CisJCXNwaW5fdW5sb2NrX2lycSgmbnAtPmxvY2spOworCX0gZWxz
+ZSB7CisJCWRwcmludGsoS0VSTl9JTkZPICIlczogcGZmIHN0YXRlIHVuY2hhbmdlZCAtIHNraXBw
+aW5nIHJlY29uZmlndXJhdGlvbi5cbiIsCisJCQlkZXYtPm5hbWUpOworCX0KIH0KIAogc3RhdGlj
+IHZvaWQgbnZfdXBkYXRlX3BhdXNlKHN0cnVjdCBuZXRfZGV2aWNlICpkZXYsIHUzMiBwYXVzZV9m
+bGFncykK
+--00032557497e9ad9de04923539c8--
