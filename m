@@ -1,92 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab0JIDTP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 23:19:15 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59982 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab0JIDTN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 23:19:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EgOA8I9GRux9KWVVZHkbyO+2qVZ/oq6nNoyEJ5rSLpQ+PtqTtru5uHxE8IHE4fvnn9
-         BZBhH3jGGk0967Exf3NOL4WJJeRnlm+uigb+WFfwXzdCGE6qX01JYF/xe0WGMzz4ZWUj
-         8Dg1v2HqyKGifzl+PBOrGTr1vcXDsIhd5nnEM=
-MIME-Version: 1.0
-In-Reply-To: <20101008155343.GD5327@balbir.in.ibm.com>
-References: <20101005124521.GA2602@darkstar>
-	<20101008130916.GC5327@balbir.in.ibm.com>
-	<AANLkTimd2Z3Yy9yxHZA6raeFxp6L7Wtvy5rLSrMyjEU1@mail.gmail.com>
-	<20101008155343.GD5327@balbir.in.ibm.com>
-Date: Sat, 9 Oct 2010 11:19:12 +0800
-Message-ID: <AANLkTinoOkZ50B8SUvU=bZLiopSFpamGm+abHaC9CWLX@mail.gmail.com>
-Subject: Re: [PATCH] kvm: add oom notifier for virtio balloon
-From: Dave Young <hidave.darkstar@gmail.com>
-To: balbir@linux.vnet.ibm.com
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Anthony Liguori <anthony@codemonkey.ws>
-Content-Type: text/plain; charset=UTF-8
+	id S1760234Ab0JIDaO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 23:30:14 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44368
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751814Ab0JIDaN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 23:30:13 -0400
+Date: Fri, 08 Oct 2010 20:30:34 -0700 (PDT)
+Message-Id: <20101008.203034.241431376.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-2
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 11:53 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> * Dave Young <hidave.darkstar@gmail.com> [2010-10-08 21:33:02]:
->
->> On Fri, Oct 8, 2010 at 9:09 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
->> > * Dave Young <hidave.darkstar@gmail.com> [2010-10-05 20:45:21]:
->> >
->> >> Balloon could cause guest memory oom killing and panic.
->> >>
->> >> Add oom notify to leak some memory and retry fill balloon after 5 minutes.
->> >>
->> >> At the same time add a mutex to protect balloon operations
->> >> because we need leak balloon in oom notifier and give back freed value.
->> >>
->> >> Thanks Anthony Liguori for his sugestion about inflate retrying.
->> >> Sometimes it will cause endless inflate/oom/delay loop,
->> >> so I think next step is to add an option to do noretry-when-oom balloon.
->> >>
->> >> Signed-off-by: Dave Young <hidave.darkstar@gmail.com>
->> >
->> > Won't __GFP_NORETRY prevent OOM? Could you please describe how you
->> > tested the patch?
->>
->> I have not tried __GFP_NORETRY, it should work, but balloon thread
->> will keep wasting cpu resource to allocating.
->>
->>
->> To test the patch, just balloon to small than minimal memory.
->>
->> I use "balloon 30" in qemu monitor to limit slackware guest memory
->> usage. The normal memory used is ~40M.
->>
->> Actually we need to differentiate the process which caused oom. If it
->> is balloon thread we should just stop ballooning, if it is others we
->> can do something like this patch, e.g. retry ballooning after 5
->> minutes.
->
-> Ideally the balloon thread should never OOM with __GFP_NORETRY (IIRC).
-> The other situation should be dealt with, we should free up any pages
-> we have. I wonder if the timeout should be a sysctl tunable.
 
-balbir, you are right,  the oom is not from balloon alloc_page.
-balloon thread cause memory low, then afterwards vm readahead code
-cause oom. With oom notifier patch oom killing does not happen in my
-test
+1) Memory out-of-bounds accesses in SCTP, from Dan Rosenberg.
 
->
-> --
->        Three Cheers,
->        Balbir
->
+2) We accidently handle v3 queries imporperly when in IGMP v2 compat mode.
+   Fix from David Stevens.
 
+3) Ref-after-put bug, and lack of dev_get_by_index() failure checking
+   in caif_connect(), from Eric Dumazet.
 
+4) Bluetooh can deadlock on writes when socket send buffer fills us,
+   but the packets that would release that space are in the backlog,
+   because we hold the socket lock while sleeping and therefore can't
+   process those backlog packets.
 
--- 
-Regards
-dave
+   Fix from Gustavo F. Padovan.
+
+5) IPV6 doesn't check all of the necessary routes when updating the
+   PMTU in response to an ICMP.  Fix from Maciej �enczykowski.
+
+6) When global TCP memory hit is hit, we hang because the sk_wait_event()
+   third argument is wrong in sk_stream_wait_memory().
+
+   This is a very very old bug, I am very surprised nobody else has hit
+   this problem.
+
+   Fix by Nagendra Singh Tomar.
+
+7) An old commit I made to fix a build failure with some drivers
+   was wrong, and didn't fix the INET_LRO dependency problems at
+   all.
+
+   So revert that and Ben Hutchings fixes it right by adding the
+   necessary "INET" dependencies to drivers which need "INET_LRO".
+
+8) Signedness overflow in offset check of cls_u32 packet scheduler
+   classifier module, from Dan Carpenter.
+
+9) Update Intel ethernet driver docs and MAINTAINERS netry, from Jeff Kirsher.
+
+10) SKGE on some motherboards can't do 64-bit DMA properly, fix from
+    Stanislaw Gruszka.
+
+11) bond_masters sysfs file gives bogus WARN_ON, fix from Neil HOrman
+
+12) Fix ath9k clock rate calcuation regression, from Felix Fietkau.
+
+13) Kill AddBA timer, otherwise we reference a freed object.  Fix
+    from Johannes Berg.
+
+14) Revert mac80211 change to use netif_receive_skb() instead of netif_rx()
+    since sometimes this ends up executing in the wrong context, from
+    John W. Linville.
+
+15) Use strlcpy() in isdn to avoid going past the end of a buffer.  From
+    Dan Carpenter.
+
+16) ETHTOOL_GRXCLSRLALL exposes kernel heap to userspace.  Fix from
+    Kees Cook.
+
+17) Revert ConfigReq rejection commit that causes failures in bluetooth
+    validation suite.  From Gustavo F. Padovan.
+
+18) rfcomm_sk_state_change() needs to disable local interrupts to avoid
+    illegal lock state, also from Gustavo F. Padovan.
+
+Please pull, thanks a lot!
+
+The following changes since commit 6b0cd00bc396daf5c2dcf17a8d82055335341f46:
+
+  Merge branch 'hwpoison-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/ak/linux-mce-2.6 (2010-10-07 13:59:32 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Andrei Emeltchenko (1):
+      Bluetooth: fix MTU L2CAP configuration parameter
+
+Ben Hutchings (2):
+      Revert "ipv4: Make INET_LRO a bool instead of tristate."
+      netdev: Depend on INET before selecting INET_LRO
+
+Dan Carpenter (2):
+      cls_u32: signedness bug
+      isdn: strcpy() => strlcpy()
+
+Dan Rosenberg (2):
+      sctp: prevent reading out-of-bounds memory
+      sctp: Fix out-of-bounds reading in sctp_asoc_get_hmac()
+
+David S. Miller (3):
+      Merge branch 'master' of master.kernel.org:/.../torvalds/linux-2.6
+      Merge branch 'master' of git://git.kernel.org/.../padovan/bluetooth-2.6
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+
+David Stevens (1):
+      ipv4: correct IGMP behavior on v3 query during v2-compatibility mode
+
+Eric Dumazet (1):
+      caif: fix two caif_connect() bugs
+
+Felix Fietkau (1):
+      ath9k_hw: fix regression in ANI listen time calculation
+
+Gustavo F. Padovan (5):
+      Bluetooth: Simplify L2CAP Streaming mode sending
+      Bluetooth: Fix inconsistent lock state with RFCOMM
+      Revert "Bluetooth: Don't accept ConfigReq if we aren't in the BT_CONFIG state"
+      Bluetooth: Fix deadlock in the ERTM logic
+      Bluetooth: Disallow to change L2CAP_OPTIONS values when connected
+
+Jeff Kirsher (4):
+      ixgbevf.txt: Update ixgbevf documentation
+      e1000.txt: Update e1000 documentation
+      e1000e.txt: Add e1000e documentation
+      MAINTAINERS: update Intel LAN Ethernet info
+
+Johannes Berg (1):
+      mac80211: delete AddBA response timer
+
+John W. Linville (1):
+      Revert "mac80211: use netif_receive_skb in ieee80211_tx_status callpath"
+
+Kees Cook (1):
+      net: clear heap allocation for ETHTOOL_GRXCLSRLALL
+
+Maciej �enczykowski (1):
+      net: Fix IPv6 PMTU disc. w/ asymmetric routes
+
+Mat Martineau (1):
+      Bluetooth: Only enable L2CAP FCS for ERTM or streaming
+
+Nagendra Tomar (1):
+      net: Fix the condition passed to sk_wait_event()
+
+Neil Horman (1):
+      bonding: fix WARN_ON when writing to bond_master sysfs file
+
+Stanislaw Gruszka (1):
+      skge: add quirk to limit DMA
+
+ Documentation/networking/e1000.txt   |  373 +++++++++-------------------------
+ Documentation/networking/e1000e.txt  |  302 +++++++++++++++++++++++++++
+ Documentation/networking/ixgbevf.txt |   40 +----
+ MAINTAINERS                          |   16 ++-
+ drivers/isdn/sc/interrupt.c          |   18 ++-
+ drivers/net/Kconfig                  |    4 +-
+ drivers/net/bonding/bond_main.c      |    9 +
+ drivers/net/skge.c                   |   18 ++-
+ drivers/net/wireless/ath/ath9k/ani.c |    2 +-
+ include/net/bluetooth/bluetooth.h    |   18 ++
+ net/bluetooth/l2cap.c                |   62 +++---
+ net/bluetooth/rfcomm/sock.c          |    4 +
+ net/caif/caif_socket.c               |   21 ++-
+ net/core/ethtool.c                   |    2 +-
+ net/core/stream.c                    |    8 +-
+ net/ipv4/Kconfig                     |    2 +-
+ net/ipv4/igmp.c                      |   14 ++-
+ net/ipv6/route.c                     |   28 +++-
+ net/mac80211/agg-tx.c                |    2 +
+ net/mac80211/status.c                |    4 +-
+ net/sched/cls_u32.c                  |    2 +-
+ net/sctp/auth.c                      |    8 +-
+ net/sctp/socket.c                    |   13 +-
+ 23 files changed, 590 insertions(+), 380 deletions(-)
+ create mode 100644 Documentation/networking/e1000e.txt
+ mode change 100755 => 100644 Documentation/networking/ixgbevf.txt
