@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755423Ab0JIGuO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 02:50:14 -0400
+	id S933042Ab0JIGt7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 02:49:59 -0400
 Received: from mga11.intel.com ([192.55.52.93]:7021 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933121Ab0JIGuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 02:50:00 -0400
+	id S1754419Ab0JIGt4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 02:49:56 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,307,1283756400"; 
-   d="scan'208";a="614941834"
+   d="scan'208";a="614941819"
 From: Huang Ying <ying.huang@intel.com>
 To: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Robert Richter <robert.richter@amd.com>,
         Huang Ying <ying.huang@intel.com>
-Subject: [PATCH -v3 6/6] x86, NMI, Remove do_nmi_callback logic
-Date: Sat,  9 Oct 2010 14:49:47 +0800
-Message-Id: <1286606987-19879-6-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v3 3/6] x86, NMI, Rewrite NMI handler
+Date: Sat,  9 Oct 2010 14:49:44 +0800
+Message-Id: <1286606987-19879-3-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
 References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
@@ -25,153 +25,205 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-do_nmi_callback related logic is removed, because it is useless, just
-adds code complexity.
+The original NMI handler is quite outdated in many aspects. This patch
+try to fix it.
 
-unknown_nmi_panic sysctl is reserved to keep kernel ABI unchanged.
+The order to process the NMI sources are changed as follow:
+
+notify_die(DIE_NMI_IPI);
+notify_die(DIE_NMI);
+/* process io port 0x61 */
+nmi_watchdog_touch();
+unknown_nmi();
+
+DIE_NMI_IPI is used to process CPU specific NMI sources, such as perf
+event, oprofile, crash IPI, etc. While DIE_NMI is used to process
+non-CPU-specific NMI sources, such as APEI (ACPI Platform Error
+Interface) GHES (Generic Hardware Error Source), etc. Non-CPU-specific
+NMI sources can be processed on any CPU,
+
+DIE_NMI_IPI must be processed before DIE_NMI. For example, perf event
+trigger a NMI on CPU 1, at the same time, APEI GHES trigger another
+NMI on CPU 0. If DIE_NMI is processed before DIE_NMI_IPI, it is
+possible that APEI GHES is processed on CPU 1, while unknown NMI is
+gotten on CPU 0.
+
+In this new order of processing, performance sensitive NMI sources
+such as oprofile or perf event will have better performance because
+the time consuming IO port reading is done after them.
+
+Only one NMI is eaten for each NMI handler call, even for PCI SERR and
+IOCHK NMIs. Because one NMI should be raised for each of them, eating
+too many NMI will cause unnecessary unknown NMI.
+
+The die value used in NMI sources are fixed accordingly.
+
+The NMI handler in the patch is designed by Andi Kleen.
+
+v3:
+
+- Make DIE_NMI and DIE_NMI_UNKNOWN work in more traditional way.
+
+v2:
+
+- Split process NMI reason (0x61) on non-BSP into another patch
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- arch/x86/include/asm/nmi.h    |   10 +++++++++-
- arch/x86/kernel/apic/hw_nmi.c |    1 -
- arch/x86/kernel/apic/nmi.c    |   29 +----------------------------
- arch/x86/kernel/traps.c       |   16 ++++++++++------
- 4 files changed, 20 insertions(+), 36 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c  |    1 
+ arch/x86/kernel/traps.c           |   78 +++++++++++++++++++-------------------
+ arch/x86/oprofile/nmi_int.c       |    1 
+ arch/x86/oprofile/nmi_timer_int.c |    2 
+ drivers/char/ipmi/ipmi_watchdog.c |    2 
+ drivers/watchdog/hpwdt.c          |    2 
+ 6 files changed, 43 insertions(+), 43 deletions(-)
 
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -30,9 +30,17 @@ extern void setup_apic_nmi_watchdog(void
- extern void stop_apic_nmi_watchdog(void *);
- extern void disable_timer_nmi_watchdog(void);
- extern void enable_timer_nmi_watchdog(void);
--extern int nmi_watchdog_tick(struct pt_regs *regs, unsigned reason);
- extern void cpu_nmi_set_wd_enabled(void);
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1245,7 +1245,6 @@ perf_event_nmi_handler(struct notifier_b
+ 		return NOTIFY_DONE;
  
-+#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
-+extern int nmi_watchdog_tick(struct pt_regs *regs);
-+#else
-+static inline int nmi_watchdog_tick(struct pt_regs *regs)
-+{
-+	return 0;
-+}
-+#endif
-+
- extern atomic_t nmi_active;
- extern unsigned int nmi_watchdog;
- #define NMI_NONE	0
---- a/arch/x86/kernel/apic/hw_nmi.c
-+++ b/arch/x86/kernel/apic/hw_nmi.c
-@@ -100,7 +100,6 @@ void acpi_nmi_disable(void) { return; }
- #endif
- atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
- EXPORT_SYMBOL(nmi_active);
--int unknown_nmi_panic;
- void cpu_nmi_set_wd_enabled(void) { return; }
- void stop_apic_nmi_watchdog(void *unused) { return; }
- void setup_apic_nmi_watchdog(void *unused) { return; }
---- a/arch/x86/kernel/apic/nmi.c
-+++ b/arch/x86/kernel/apic/nmi.c
-@@ -37,7 +37,6 @@
- 
- #include <asm/mach_traps.h>
- 
--int unknown_nmi_panic;
- int nmi_watchdog_enabled;
- 
- /* For reliability, we're prepared to waste bits here. */
-@@ -389,7 +388,7 @@ void touch_nmi_watchdog(void)
- EXPORT_SYMBOL(touch_nmi_watchdog);
- 
- notrace __kprobes int
--nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
-+nmi_watchdog_tick(struct pt_regs *regs)
- {
- 	/*
- 	 * Since current_thread_info()-> is always on the stack, and we
-@@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(
- 	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
- }
- 
--static int __init setup_unknown_nmi_panic(char *str)
--{
--	unknown_nmi_panic = 1;
--	return 1;
--}
--__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
--
--static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
--{
--	unsigned char reason = get_nmi_reason();
--	char buf[64];
--
--	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
--	die_nmi(buf, regs, 1); /* Always panic here */
--	return 0;
--}
--
- /*
-  * proc handler for /proc/sys/kernel/nmi
-  */
-@@ -540,15 +522,6 @@ int proc_nmi_enabled(struct ctl_table *t
- 
- #endif /* CONFIG_SYSCTL */
- 
--int do_nmi_callback(struct pt_regs *regs, int cpu)
--{
--#ifdef CONFIG_SYSCTL
--	if (unknown_nmi_panic)
--		return unknown_nmi_panic_callback(regs, cpu);
--#endif
--	return 0;
--}
--
- void arch_trigger_all_cpu_backtrace(void)
- {
- 	int i;
+ 	switch (cmd) {
+-	case DIE_NMI:
+ 	case DIE_NMI_IPI:
+ 		break;
+ 	case DIE_NMIUNKNOWN:
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -84,6 +84,7 @@ EXPORT_SYMBOL_GPL(used_vectors);
- static int ignore_nmis;
+@@ -385,53 +385,55 @@ static notrace __kprobes void default_do
+ 	unsigned char reason = 0;
+ 	int cpu;
  
- int unknown_nmi_as_hwerr;
-+int unknown_nmi_panic;
- 
- /*
-  * Prevent NMI reason port (0x61) being accessed simultaneously, can
-@@ -308,6 +309,13 @@ gp_in_kernel:
- 	die("general protection fault", regs, error_code);
- }
- 
-+static int __init setup_unknown_nmi_panic(char *str)
-+{
-+	unknown_nmi_panic = 1;
-+	return 1;
-+}
-+__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+-	cpu = smp_processor_id();
++	/*
++	 * CPU-specific NMI must be processed before non-CPU-specific
++	 * NMI, otherwise we may lose it, because the CPU-specific
++	 * NMI can not be detected/processed on other CPUs.
++	 */
 +
- static notrace __kprobes void
- pci_serr_error(unsigned char reason, struct pt_regs *regs)
- {
-@@ -391,7 +399,7 @@ unknown_nmi_error(unsigned char reason,
- 		 reason, smp_processor_id());
++	/*
++	 * CPU-specific NMI: send to specific CPU or NMI sources must
++	 * be processed on specific CPU
++	 */
++	if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, 0, 2, SIGINT)
++	    == NOTIFY_STOP)
++		return;
  
- 	pr_emerg("Do you have a strange power saving mode enabled?\n");
--	if (panic_on_unrecovered_nmi)
-+	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
- 		panic("NMI: Not continuing");
++	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
++	cpu = smp_processor_id();
+ 	/* Only the BSP gets external NMIs from the system. */
+-	if (!cpu)
++	if (!cpu) {
+ 		reason = get_nmi_reason();
+-
+-	if (!(reason & NMI_REASON_MASK)) {
+-		if (notify_die(DIE_NMI_IPI, "nmi_ipi", regs, reason, 2, SIGINT)
+-								== NOTIFY_STOP)
+-			return;
+-
+-#ifdef CONFIG_X86_LOCAL_APIC
+-		if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
+-							== NOTIFY_STOP)
++		if (reason & NMI_REASON_MASK) {
++			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
++			    == NOTIFY_STOP)
++				return;
++			if (reason & NMI_REASON_SERR)
++				pci_serr_error(reason, regs);
++			else if (reason & NMI_REASON_IOCHK)
++				io_check_error(reason, regs);
++#ifdef CONFIG_X86_32
++			/*
++			 * Reassert NMI in case it became active
++			 * meanwhile as it's edge-triggered:
++			 */
++			reassert_nmi();
++#endif
+ 			return;
++		}
++	}
  
- 	pr_emerg("Dazed and confused, but trying to continue\n");
-@@ -442,12 +450,8 @@ unlock_return:
- 	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
- 		return;
- 
--#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
--	if (nmi_watchdog_tick(regs, reason))
--		return;
--	if (do_nmi_callback(regs, cpu))
-+	if (nmi_watchdog_tick(regs))
- 		return;
+-#ifndef CONFIG_LOCKUP_DETECTOR
+-		/*
+-		 * Ok, so this is none of the documented NMI sources,
+-		 * so it must be the NMI watchdog.
+-		 */
+-		if (nmi_watchdog_tick(regs, reason))
+-			return;
+-		if (!do_nmi_callback(regs, cpu))
+-#endif /* !CONFIG_LOCKUP_DETECTOR */
+-			unknown_nmi_error(reason, regs);
+-#else
+-		unknown_nmi_error(reason, regs);
 -#endif
++	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
++		return;
  
- 	unknown_nmi_error(reason, regs);
++#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
++	if (nmi_watchdog_tick(regs, reason))
+ 		return;
+-	}
+-	if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT) == NOTIFY_STOP)
++	if (do_nmi_callback(regs, cpu))
+ 		return;
+-
+-	/* AK: following checks seem to be broken on modern chipsets. FIXME */
+-	if (reason & NMI_REASON_SERR)
+-		pci_serr_error(reason, regs);
+-	if (reason & NMI_REASON_IOCHK)
+-		io_check_error(reason, regs);
+-#ifdef CONFIG_X86_32
+-	/*
+-	 * Reassert NMI in case it became active meanwhile
+-	 * as it's edge-triggered:
+-	 */
+-	reassert_nmi();
+ #endif
++
++	unknown_nmi_error(reason, regs);
  }
+ 
+ dotraplinkage notrace __kprobes void
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -64,7 +64,6 @@ static int profile_exceptions_notify(str
+ 	int ret = NOTIFY_DONE;
+ 
+ 	switch (val) {
+-	case DIE_NMI:
+ 	case DIE_NMI_IPI:
+ 		if (ctr_running)
+ 			model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
+--- a/arch/x86/oprofile/nmi_timer_int.c
++++ b/arch/x86/oprofile/nmi_timer_int.c
+@@ -25,7 +25,7 @@ static int profile_timer_exceptions_noti
+ 	int ret = NOTIFY_DONE;
+ 
+ 	switch (val) {
+-	case DIE_NMI:
++	case DIE_NMI_IPI:
+ 		oprofile_add_sample(args->regs, 0);
+ 		ret = NOTIFY_STOP;
+ 		break;
+--- a/drivers/char/ipmi/ipmi_watchdog.c
++++ b/drivers/char/ipmi/ipmi_watchdog.c
+@@ -1080,7 +1080,7 @@ ipmi_nmi(struct notifier_block *self, un
+ {
+ 	struct die_args *args = data;
+ 
+-	if (val != DIE_NMI)
++	if (val != DIE_NMIUNKNOWN)
+ 		return NOTIFY_OK;
+ 
+ 	/* Hack, if it's a memory or I/O error, ignore it. */
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -469,7 +469,7 @@ static int hpwdt_pretimeout(struct notif
+ 	unsigned long rom_pl;
+ 	static int die_nmi_called;
+ 
+-	if (ulReason != DIE_NMI && ulReason != DIE_NMI_IPI)
++	if (ulReason != DIE_NMIUNKNOWN)
+ 		goto out;
+ 
+ 	if (!hpwdt_nmi_decoding)
