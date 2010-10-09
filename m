@@ -1,74 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab0JIOhf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 10:37:35 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34073 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755781Ab0JIOhd (ORCPT
+	id S1760288Ab0JIOn6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 10:43:58 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:59961 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756016Ab0JIOn5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 10:37:33 -0400
-Date: Sat, 9 Oct 2010 15:37:09 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+	Sat, 9 Oct 2010 10:43:57 -0400
+From: Arnd Bergmann <arnd@arndb.de>
 To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Dave Airlie <airlied@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-arm-kernel@lists.infradead.org, Arnd Hannemann <arnd@arndnet.de>,
-        Hemant Pedanekar <hemantp@ti.com>, Greg KH <greg@kroah.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>
 Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Message-ID: <20101009143709.GB25564@n2100.arm.linux.org.uk>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com> <20101009092127.GB20975@n2100.arm.linux.org.uk> <AANLkTimtdV8THgnQL1RxaqLzCUwO27AZSMPi=UtgpML7@mail.gmail.com> <201010091311.26335.arnd@arndb.de> <AANLkTikdxSQD+9UY70PtCPMgnrovx-dWjrrPJ0AZyG4X@mail.gmail.com> <AANLkTi=37SCuwwze4KS_yOdmi8bvJP_OexHaYLw-AXfJ@mail.gmail.com>
+Date: Sat, 9 Oct 2010 16:43:24 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
+        Greg KH <greg@kroah.com>, "linux-main" <linux-kernel@vger.kernel.org>,
+        "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
+        Han Jonghun <jonghun79.han@gmail.com>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com> <201010091311.26335.arnd@arndb.de> <AANLkTimDd10oj=rruYcB=qTaWWMAJvSCQAJNi+nQqzp7@mail.gmail.com>
+In-Reply-To: <AANLkTimDd10oj=rruYcB=qTaWWMAJvSCQAJNi+nQqzp7@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTi=37SCuwwze4KS_yOdmi8bvJP_OexHaYLw-AXfJ@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010091643.25065.arnd@arndb.de>
+X-Provags-ID: V02:K0:124jwgB2XYmOiR13F4SUal8MJcpLEoMObjRuDvUFC07
+ xC2y6cfWFwNJPDqnojR8ggVmoApAGDg+Lv44O7paxSr2fXyAMy
+ Z5HjORUj/I4UVrRCOe4QoWeZbdSVG99eaAxfx8gYhtrAZZK2gv
+ uq6LkEL+Xfsg4jQny1sK45blIAMByElkk6m7z7M1/4CtteTE6h
+ ZZJCZIlE/LmQnw6LVh3Eg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 09, 2010 at 03:10:57PM +0300, Felipe Contreras wrote:
-> On Sat, Oct 9, 2010 at 2:43 PM, Dave Airlie <airlied@gmail.com> wrote:
-> >> The few drivers that may be hit by this are typically in drivers/staging
-> >> exactly because issues like this have not been fixed yet.
-> >>
-> >> We should probably just fix the non-staging drivers that are hit by
-> >> this now and declare the issue done.
-> >>
-> >> When you say that "many drivers broken", can you list the ones you know
-> >> about? It would probably help resolve this the right way.
-> >
-> > I'm guessing some closed source graphics drivers for ARM do all kinds
-> > of wrong crap, and Nokia use them a lot, and nobody wants to tell the
-> > closed vendors to change their drivers because it costs money.
-> 
-> You are over simplifying things.
-> 
->  1) The code is open[1]
->  2) the decision comes from TI, Nokia can only do so much before shipping
+On Saturday 09 October 2010 13:59:45 Felipe Contreras wrote:
+> I know of tidspbridge, in my original mail I listed some links, one
+> which mentions: sh_mobile_ceu_camera, maybe i.MX31 users of the
+> mx3_camera driver: pcm037 and mx31moboard.
+>
+> http://article.gmane.org/gmane.linux.ports.sh.devel/8560
 
-Well -
+sh_mobile_ceu_camera looks fine on mainline. It only remaps
+the mmio registers, so no problem there. No arm platform even
+declares the device, so the report must be with an external tree.
 
-1. TI had been complaining last December about vmalloc() creating mappings
-   with different shared-ness attributes causing problems with OMAP.
+The mx3_camera driver also looks fine, there is only one ioremap
+in there, which is completely sane.
+ 
+> From the looks of it, PowerVR SGX seems like it will be broken too:
+> http://meego.gitorious.org/meego-os-base/kernel-source/trees/master/patches
 
-2. May 10, TI on the three-weekly conference call were warned about this
-   change to ioremap with system RAM - and this was noted in the minutes
-   and circulated.  It was brought up again on June 21st, and yet again
-   on August 2nd.
+Not our problem, they already have a forked kernel tree with broken
+drivers, they can fix it themselves or submit an acceptable driver
+upstream if they want people to care about not breaking it.
 
-So, the major players in the OMAP community were repeatedly made plainly
-aware of this change and some were aware of the problems caused by
-violating these kinds of restrictions.
+> But my guess is that most of the issues would be found after releasing
+> .36, and of course the current issues cannot possibly be fixed in that
+> time-frame.
 
-You tell me - if I've raised the issue on the mailing list to which OMAP
-people are aware of (and note that there was a reply from OMAP folk in
-the inital thread), if I've raised it several times with TI in conference
-calls which include the major players, and still OMAP drivers are doing
-things wrongly.
+My guess is that tidspbridge is the only driver that someone (i.e. you)
+cares about being broken more than it already is in the mainline kernel. :-)
 
-You can lead the horse to water but you can not make it drink.  At some
-point it either drinks or dies.  In this case, it seems death is the
-favoured option as the warnings have been repeatedly ignored.
+How about the patch below?
+
+	Arnd
+---
+staging/tidspbridge: add memory consistency to TODO list
+
+This driver uses ioremap on regular memory to get an uncached mapping,
+which causes problems on ARMv6 and higher due to aliasing with the
+cached linar kernel mapping.
+
+Make sure this gets fixed before the driver graduates from staging.
+
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+diff --git a/drivers/staging/tidspbridge/TODO b/drivers/staging/tidspbridge/TODO
+index 54f4a29..187363f 100644
+--- a/drivers/staging/tidspbridge/TODO
++++ b/drivers/staging/tidspbridge/TODO
+@@ -13,6 +13,7 @@
+ * Audit and clean up header files folder
+ * Use kernel coding style
+ * checkpatch.pl fixes
++* allocate ext_mem_pool from consistent memory instead of using ioremap
+ 
+ Please send any patches to Greg Kroah-Hartman <greg@kroah.com>
+ and Omar Ramirez Luna <omar.ramirez@ti.com>.
