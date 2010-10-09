@@ -1,76 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760068Ab0JIVaY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 17:30:24 -0400
-Received: from kroah.org ([198.145.64.141]:56574 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757185Ab0JIVaX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 17:30:23 -0400
-Date: Sat, 9 Oct 2010 14:20:47 -0700
-From: Greg KH <greg@kroah.com>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-Message-ID: <20101009212047.GB27180@kroah.com>
-References: <4CA653F0.1010008@vlnb.net> <4CA656AD.8020408@vlnb.net>
+	id S1760151Ab0JIVfA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 17:35:00 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41825 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753906Ab0JIVe7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 17:34:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=P6jD1+/GogXY5GZIm/IYRTL4TRLMrxxz+m7S0boY2AfNTD2TvefDaVXGczISIy7UmS
+         DO/FSPa0Mymqe5+YM5sDqReXSx+N9kOvxmqh9M5h76ik+HO4u8Pp3NUuhkyDNiw89jfj
+         rHY7BJm81TR5REDmz63JuoB4yKIskH9/boBWc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA656AD.8020408@vlnb.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Date: Sun, 10 Oct 2010 07:34:58 +1000
+Message-ID: <AANLkTinyA=bSeSe7eavUb7fuSgM8m=QQFGqCrNtCGqKa@mail.gmail.com>
+Subject: stable cc's in linux -next was Re: [BUG] x86: bootmem broken on SGI UV
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 02, 2010 at 01:46:21AM +0400, Vladislav Bolkhovitin wrote:
-> This patch contains SYSFS interface implementation.
+On Sun, Oct 10, 2010 at 4:39 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, Oct 9, 2010 at 11:06 AM, Yinghai Lu <yinghai@kernel.org> wrote:
+>>
+>> It is too late for put in 2.6.36. Linus already had -rc7, and assume he will have final .36 this week.
+>
+> Anything that is worth tagging for stable is worth fixing before the
+> final release (probably Wednesday).
 
-Nice, but you forgot to document it.  All sysfs changes need to be
-documented in Documentation/ABI/
+Do we track people dong this at all? I wonder how many patches in
+linux-next have cc: stable in them but haven't been submitted to
+Linus,
 
-Please add a file to this patch that does so.
+I know in some cases people want to soak test them for a bit longer
+but not sure how much actual coverage next provides.
 
-> +static void scst_tgtt_release(struct kobject *kobj)
-> +{
-> +	struct scst_tgt_template *tgtt;
-> +
-> +	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
-> +	complete_all(&tgtt->tgtt_kobj_release_cmpl);
-> +	return;
-
-Don't you also need to free the memory of your kobject here?
-
-> +static void scst_tgt_release(struct kobject *kobj)
-> +{
-> +	struct scst_tgt *tgt;
-> +
-> +	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-> +	complete_all(&tgt->tgt_kobj_release_cmpl);
-> +	return;
-
-Same here, no kfree?
-
-> +static void scst_acg_release(struct kobject *kobj)
-> +{
-> +	struct scst_acg *acg;
-> +
-> +	acg = container_of(kobj, struct scst_acg, acg_kobj);
-> +	complete_all(&acg->acg_kobj_release_cmpl);
-
-And here.
-
-thanks,
-
-greg k-h
+Dave.
