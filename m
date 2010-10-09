@@ -1,91 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab0JIFjV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 01:39:21 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:40494 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751319Ab0JIFjU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 01:39:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=uhQGWpbxhfZcLyg5fjwChy4QZ2aGE6K3LduT/8wpOitGaH5TnhS9O8yi2YrRh9w28l
-         Ein8UCkZyL1uEGveMQIJprJzifLBpdX2Q3UbQC9nwJIRq2+uQ3l23+ZjdNu1y/d5zBSx
-         OFcYag79IyWtgrtOi4Fn4PDUTQGHmO4y+c1pA=
+	id S1752251Ab0JIFnG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 01:43:06 -0400
+Received: from [211.233.36.121] ([211.233.36.121]:59124 "EHLO mail.nstek.com"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751450Ab0JIFnE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 01:43:04 -0400
+Message-Id: <201010090537.o995bRp4031301@mail.nstek.com>
+Reply-To: <tonwill@sify.com>
+From: "Tony Williams" <tonwill@sify.com>
+Subject: INFORMATION
+Date: Fri, 8 Oct 2010 22:39:42 -0700
 MIME-Version: 1.0
-In-Reply-To: <1286576564.4153.504.camel@m0nster>
-References: <1286476616-3373-1-git-send-email-dwalker@codeaurora.org>
- <20101007215019.17b4a34a@lxorguk.ukuu.org.uk> <1286483766.23836.39.camel@c-dwalke-linux.qualcomm.com>
- <20101007220538.2294a7e4@lxorguk.ukuu.org.uk> <1286484678.23836.49.camel@c-dwalke-linux.qualcomm.com>
- <AANLkTimxUAV1=cSJoZFbYiv8JLT+QT=OLEXynxaUtfOS@mail.gmail.com>
- <1286486094.23836.59.camel@c-dwalke-linux.qualcomm.com> <20101008091331.74871a42@lxorguk.ukuu.org.uk>
- <1286551434.4153.21.camel@m0nster> <20101008175636.766dd1f5@lxorguk.ukuu.org.uk>
- <1286556328.4153.142.camel@m0nster> <AANLkTikc8X0nz1cCxgfbaqLzCMiBLogLeU0ZdFoGEpP6@mail.gmail.com>
- <1286564491.4153.284.camel@m0nster> <AANLkTim5E5WwD64RJ7NAk6Zr9NZ6jstrKSmjRTL039VR@mail.gmail.com>
- <1286567442.4153.343.camel@m0nster> <AANLkTik6tNhKq5yTh5_qaY9JdOTPSTH1CzG+3B+qnb=N@mail.gmail.com>
- <1286576564.4153.504.camel@m0nster>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Sat, 9 Oct 2010 01:38:58 -0400
-X-Google-Sender-Auth: A-rI-QkGwgRqBUkHOpzfvhBgND8
-Message-ID: <AANLkTimRxjc_9_GRzysV_PeiyacQJz2cpP0h3TsMDMf9@mail.gmail.com>
-Subject: Re: [PATCH] serial: DCC(JTAG) serial and console emulation support
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-        "Hyok S. Choi" <hyok.choi@samsung.com>,
-        Tony Lindgren <tony@atomide.com>, Jeff Ohlstein <johlstei@quicinc.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Ben Dooks <ben-linux@fluff.org>,
-        Alan Cox <alan@linux.intel.com>, Kukjin Kim <kgene.kim@samsung.com>,
-        Feng Tang <feng.tang@intel.com>, Tobias Klauser <tklauser@distanz.ch>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        Philippe Langlais <philippe.langlais@stericsson.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+To: <lingzig2003@yahoo.com.cn>
+To: <linsueford@yahoo.com>
+To: <linniej55@yahoo.com>
+To: <linkinpark0134@yahoo.com>
+To: <linh_workin@yahoo.com>
+To: <lingyunhu2000@yahoo.com>
+To: <linfay69@yahoo.com>
+To: <linux-kernel@vger.kernel.org>
+To: <linsey.ab@verizon.net>
+To: <linian@thekeep.fsnet.co.uk>
+To: <linux-howto@sunsite.unc.edu>
+To: <linux-questions-only@ssc.com>
+To: <linux-gcc@soemail.rutgers.edu>
+To: <linvillecent@skybest.com>
+To: <linkpartners@seznam.cz>
+To: <linux@seaq.com.co>
+To: <linjames@salamander.com>
+To: <linh.trimmer@pfrd.ocgov.com>
+To: <line.loquet@pandora.be>
+To: <linux-mm-www@nl.linux.org>
+To: <linuxsa@linuxsa.org.au>
+To: <linux@linux.ucla.edu>
+To: <linuxdoctor@linux.ca>
+To: <linux-mips@linux-mips.org>
+To: <linux-cvs@linux-mips.org>
+To: <linux-aio@kvack.org>
+To: <linn.m.reynolds@kp.org>
+To: <linnes@innu.ca>
+To: <link.exchange@inmail.cz>
+To: <ling-tex@ifi.uio.no>
+To: <linnc@howrey.com>
+To: <linseyearly@hotmail.com>
+To: <linkmanson@hotmail.com>
+To: <linkinparkjchd@hotmail.com>
+To: <linimon@freefall.freebsd.org>
+To: <linimon@freebsd.org>
+To: <linux-user@egr.msu.edu>
+To: <linnrandom@earthllink.net>
+To: <linux-megaraid-devel-admin@dell.com>
+To: <linux-megaraid-devel@dell.com>
+To: <linux-megaraid-announce@dell.com>
+To: <linh.lieu@deacons.com.au>
+To: <linux@cyberramp.net>
+To: <lin-sue@cox.net>
+To: <linebacker55@comcast.net>
+To: <lintonpd@bektel.com>
+To: <linksmudd@aol.com>
+To: <linf@aol.com>
+To: <lineswest@aol.com>
+To: <linneag@ampdmobile.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 18:22, Daniel Walker wrote:
-> On Fri, 2010-10-08 at 18:02 -0400, Mike Frysinger wrote:
->> On Fri, Oct 8, 2010 at 15:50, Daniel Walker wrote:
->> > On Fri, 2010-10-08 at 15:20 -0400, Mike Frysinger wrote:
->> >> On Fri, Oct 8, 2010 at 15:01, Daniel Walker wrote:
->> >> > On Fri, 2010-10-08 at 14:38 -0400, Mike Frysinger wrote:
->> >> >> On Fri, Oct 8, 2010 at 12:45, Daniel Walker wrote:
->> >> >> > On Fri, 2010-10-08 at 17:56 +0100, Alan Cox wrote:
->> >> >> >> > I don't think the kernel is going to implode if we allow an optional
->> >> >> >> > ttyS override for debugging purposes.. I just don't see that "screwing"
->> >> >> >> > up the kernel.
->> >> >> >>
->> >> >> >> That is perhaps why you are not a subsystem maintainer.
->> >> >> >
->> >> >> > No, I'm sure it's not.
->> >> >> >
->> >> >> > What I was telling Greg is that this type of override is allowed right
->> >> >> > now, if you mod the source (everything is allowed if you mod the source
->> >> >> > right?) ..
->> >> >>
->> >> >> just because someone can mod the source code to add a root shell
->> >> >> doesnt mean we should accept patches to do it
->> >> >
->> >> > That's not what I was getting at. If you can mod the source to add the
->> >> > override, then adding in a patch which also requires you to mod the
->> >> > source to add the override should be acceptable because it's no
->> >> > different that what we currently have.
->> >>
->> >> sorry, but you lost me.  all i see is "drop the hack code".
->> >
->> > I can make it simpler for you. You add code into Linux, people can
->> > modify it, and you can't control that.
->>
->> while true, that lacks justification for merging hacks into mainline
->
-> No one is merging hack, or giving justification for that.. So not sure
-> why your going down that thread again .
-
-forget it; i'm completely bored with this whole driver now.  people
-have been clear on what it will take for this to be merged, so ball is
-in your court now.
--mike
+<<< No Message Collected >>>
