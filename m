@@ -1,76 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759968Ab0JIAIc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 20:08:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:41090 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751729Ab0JIAIa (ORCPT
+	id S1759976Ab0JIALL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 20:11:11 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50406 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752063Ab0JIALK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 20:08:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QIXc0DBzE55PgP9L9L2/2ZoOZwLPP8mREGG3mvdqDy7rTXefte96WyhdUTMHUqWnmp
-         ErQodlYgkMSu4MsYWNHA==
+	Fri, 8 Oct 2010 20:11:10 -0400
+Date: Sat, 9 Oct 2010 01:10:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <greg@kroah.com>
+Cc: Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Message-ID: <20101009001052.GA14675@n2100.arm.linux.org.uk>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com> <20101007192245.GC26435@n2100.arm.linux.org.uk> <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com> <20101008175308.GA10975@n2100.arm.linux.org.uk> <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com> <20101008230451.GB10975@n2100.arm.linux.org.uk> <20101008232539.GA28697@kroah.com> <20101008234448.GD10975@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin9AwTa8x6faFEXBbrGZa4mg3AeDfeEmmdaF9_d@mail.gmail.com>
-References: <AANLkTin9AwTa8x6faFEXBbrGZa4mg3AeDfeEmmdaF9_d@mail.gmail.com>
-Date: Fri, 8 Oct 2010 17:08:28 -0700
-Message-ID: <AANLkTika+07mD==fPioanurwD-_s8aaJFc+nb4ZZOL0J@mail.gmail.com>
-Subject: Re: Roaming / offchannel enhancements for broadcast / multicast frames
-From: Paul Stewart <pstew@google.com>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Cc: linux-wireless <linux-wireless@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, Matt Smith <Matt.Smith@atheros.com>,
-        Srinivasa Duvvuri <Srinivasa.Duvvuri@atheros.com>,
-        Carolyn Waller <Carolyn.Waller@atheros.com>,
-        Amod Bodas <Amod.Bodas@atheros.com>,
-        David Quan <David.Quan@atheros.com>,
-        Bennyam Malavazi <Bennyam.Malavazi@atheros.com>,
-        Cliff Holden <Cliff.Holden@atheros.com>,
-        Aeolus Yang <Aeolus.Yang@atheros.com>, Kevin Hayes <kevin@atheros.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101008234448.GD10975@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 12:54 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
-> We spoke about how to handle broadcast / multicast frames when going
-> offchannel at the Wireless Summit [1]. A lot of these talks were lead
-> due to a Chrome side open bug [2].
+On Sat, Oct 09, 2010 at 12:44:48AM +0100, Russell King - ARM Linux wrote:
+> So, as I say, there's been six months.  It was discussed.  But still
+> we find that the drivers haven't been touched and now we're complaining
+> that drivers are breaking.
+> 
+> If it hadn't been discussed, if solutions hadn't been proposed, then
+> yes, it would be right to revert it out-right.  But that's not what
+> happened.
+> 
+> If we have to have another three months (or so), this time with a warning,
+> then so be it, but let's make it plainly clear that it _will_ _definitely_
+> be changing, and that drivers _will_ break unless they are fixed.
+> 
+> Unfortunately, what I fear is that nothing will happen because people
+> want the ioremap-on-system-RAM to just work, and then we'll hit this
+> exact same issue again in three months time.
 
-Thanks for getting the ball rolling, Luis.  Technically the bug is in
-ChromumOS ("Chrome" is a web browser).
+There is another solution to this which will be architecturally compliant
+- as we can detect system ram ioremaps, we can force them to have the
+same memory type, sharability and cache attributes as the existing
+mappings rather than merely failing them.  But this is not what drivers
+want.
 
-> Userspace may want to force a roam when this deadzone event hits.
+The reason they play the ioremap-system-RAM game is to get around the
+DMA coherence issues - rather than using the DMA API, because that
+suffers from being incapable of dealing with large contiguous chunks
+of memory.
 
-Why not just disassociate at this point?  I'm not sure what the
-difference is between a "dead zone" situation and a reason to
-completely disconnect.
+Anyway, to fill other observers in, the issue here is:
+- ARMv6 and above have weak memory ordering models.
 
-> Once we have these two in place we can then ignore bgscan requests
-> (when associated) unless a force scan command has been issued by
-> userspace, or unless we are idle.
+- ARMv6 and above can speculatively prefetch from any region which has
+  a 'normal memory' type.  As further hardware revisions are released,
+  the speculative prefetch becomes progressively more aggressive.
 
-By "ignore" do you mean "postpone" or or "return an appropriate error
-to userspace"?  Either of those are acceptable.  Not doing anything at
-all wouldn't be good.  There's an additional issue about what happens
-when we are in the middle of a bgscan and new tx traffic appears.
+- multiple mappings of the same physical address region with differing
+  memory type (strongly ordered, device, normal memory) becomes
+  unpredictable.  The memory type partly defines which reads/writes are
+  allowed to bypass other reads/writes.  Unpredictable here means that
+  there is no guarantee whether the access performed via the mapping
+  you've created will be done as per the memory type specified in that
+  mapping.
 
-> In the worst case scenario and unfortunately this seems to be the most
-> common one, a DTIM of 1 is used and we will have to be on channel and
-> awake every beacon interval. In this case we may want to optimize scan
-> time by not scanning passive scan channels.
+- multiple mappings of the same physical address region with differing
+  sharability attributes have been observed to cause systems to crash/hang,
+  but fall under the 'unpredictable' behaviour - which basically means
+  you don't know if the coherence hardware will be involved in the
+  access.
 
-A compromise would be to go off-channel for less than a full beacon
-interval when doing background passive channel scans in DTIM=1
-networks.  It's certainly better than (a) not scanning at all and (b)
-arguably better than intentionally dropping mcast.  An 80% beacon-time
-passive listen will get you 80% of the beacons, assuming linear
-probability, and even more over time if you account for beacon skew
-between networks.
+- multiple mappings of the same physical address region with differing
+  cache attributes is also unpredictable - you can't guarantee whether
+  the access will be performed using the cache attributes through the
+  mapping you're performing the access through.
 
---
-Paul
+In the case of system memory, this is normally mapped as 'normal memory'
+with write-back cache.  On uniprocessor systems, this is mapped as
+non-shared memory.
+
+ioremap() creates 'device' type mappings, which are marked as shared
+(some devices, the shared-ness is used as another address bit!)
+
+So, permitting ioremap of system RAM violates all three - which means
+there is no guarantee of ordering, sharedness or cache behaviour via
+mappings which alias with differing attributes.
