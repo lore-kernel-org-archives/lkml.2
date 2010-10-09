@@ -1,85 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760077Ab0JIBIQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 21:08:16 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34876 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759972Ab0JIBIP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 21:08:15 -0400
+	id S1760110Ab0JIBP3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 21:15:29 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:58635 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759930Ab0JIBP1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 21:15:27 -0400
+Date: Sat, 9 Oct 2010 06:45:20 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX] memcg CPU hotplug lockdep warning fix
+Message-ID: <20101009011520.GJ5327@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101008174958.GI5327@balbir.in.ibm.com>
+ <20101008114123.ff0592b7.akpm@linux-foundation.org>
 MIME-Version: 1.0
-X-Originating-IP: [46.116.86.31]
-In-Reply-To: <201010082208.25767.rjw@sisk.pl>
-References: <1286177435.2140.5.camel@sven> <201010072323.05218.rjw@sisk.pl>
- <1286526197.4493.19.camel@sven> <201010082208.25767.rjw@sisk.pl>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sat, 9 Oct 2010 03:07:50 +0200
-Message-ID: <AANLkTinSmPpswdHaZnP2rN688Wu1=-2Y2RBzC4+1qTpM@mail.gmail.com>
-Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
-To: Sven Neumann <s.neumann@raumfeld.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
-        Colin Cross <ccross@android.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101008114123.ff0592b7.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 10:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> There is a problem with the pxa2xx-mci.0 suspend that has been introduced
-> some time after 2.6.34, but it is not related to commit 152e1d5920.
+* Andrew Morton <akpm@linux-foundation.org> [2010-10-08 11:41:23]:
 
-Sven, what type of card do you have in that slot ? is it SDIO ? what's
-the function driver ?
-
-I have a hunch about this, but it may be a wild guess as I don't know
-what's your setup exactly.
-
-Anyway, can you please try this and see if anything changes ?
-
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index c94565d..515ff39 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
-        if (host->bus_ops && !host->bus_dead) {
-                if (host->bus_ops->suspend)
-                        err = host->bus_ops->suspend(host);
-+               if (err == -ENOSYS || !host->bus_ops->resume) {
-+                       /*
-+                        * We simply "remove" the card in this case.
-+                        * It will be redetected on resume.
-+                        */
-+                       if (host->bus_ops->remove)
-+                               host->bus_ops->remove(host);
-+                       mmc_claim_host(host);
-+                       mmc_detach_bus(host);
-+                       mmc_release_host(host);
-+                       host->pm_flags = 0;
-+                       err = 0;
-+               }
-        }
-        mmc_bus_put(host);
-
-The reason I'm asking this is because it seems like commit
-4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related
-to mmc/sd card insert/removal during suspend/resume" has broken
-suspending SDIO function drivers which don't have a suspend handler
-(or do have one, but for some reason it returns -ENOSYS, like
-libertas_sdio's does).
-
->  The
-> problem was not visible with pm_async=1 because of the very bug fixed by
-> commit 152e1d5920.
+> On Fri, 8 Oct 2010 23:19:58 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > 
+> > memcg has lockdep warnings (sleep inside rcu lock)
+> > 
+> > From: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > 
+> > Recent move to get_online_cpus() ends up calling get_online_cpus() from
+> > mem_cgroup_read_stat(). However mem_cgroup_read_stat() is called under rcu
+> > lock. get_online_cpus() can sleep. The dirty limit patches expose
+> > this BUG more readily due to their usage of mem_cgroup_page_stat()
+> > 
+> > This patch address this issue as identified by lockdep and moves the
+> > hotplug protection to a higher layer. This might increase the time
+> > required to hotplug, but not by much.
+> > 
+> > Warning messages
+> > 
+> > BUG: sleeping function called from invalid context at kernel/cpu.c:62
+> > in_atomic(): 0, irqs_disabled(): 0, pid: 6325, name: pagetest
+> > 2 locks held by pagetest/6325:
+> > #0:  (&mm->mmap_sem){......}, at: [<ffffffff815e9503>]
+> > do_page_fault+0x27d/0x4a0
+> > #1:  (rcu_read_lock){......}, at: [<ffffffff811124a1>]
+> > mem_cgroup_page_stat+0x0/0x23f
+> > Pid: 6325, comm: pagetest Not tainted 2.6.36-rc5-mm1+ #201
+> > Call Trace:
+> > [<ffffffff81041224>] __might_sleep+0x12d/0x131
+> > [<ffffffff8104f4af>] get_online_cpus+0x1c/0x51
+> > [<ffffffff8110eedb>] mem_cgroup_read_stat+0x27/0xa3
+> > [<ffffffff811125d2>] mem_cgroup_page_stat+0x131/0x23f
+> > [<ffffffff811124a1>] ? mem_cgroup_page_stat+0x0/0x23f
+> > [<ffffffff810d57c3>] global_dirty_limits+0x42/0xf8
+> > [<ffffffff810d58b3>] throttle_vm_writeout+0x3a/0xb4
+> > [<ffffffff810dc2f8>] shrink_zone+0x3e6/0x3f8  
+> > [<ffffffff81074a35>] ? ktime_get_ts+0xb2/0xbf 
+> > [<ffffffff810dd1aa>] do_try_to_free_pages+0x106/0x478
+> > [<ffffffff810dd601>] try_to_free_mem_cgroup_pages+0xe5/0x14c
+> > [<ffffffff8110f947>] mem_cgroup_hierarchical_reclaim+0x314/0x3a2
+> > [<ffffffff81111b31>] __mem_cgroup_try_charge+0x29b/0x593
+> > [<ffffffff8111194a>] ? __mem_cgroup_try_charge+0xb4/0x593
+> > [<ffffffff81071258>] ? local_clock+0x40/0x59  
+> > [<ffffffff81009015>] ? sched_clock+0x9/0xd
+> > [<ffffffff810710d5>] ? sched_clock_local+0x1c/0x82
+> > [<ffffffff8111398a>] mem_cgroup_charge_common+0x4b/0x76
+> > [<ffffffff81141469>] ? bio_add_page+0x36/0x38 
+> > [<ffffffff81113ba9>] mem_cgroup_cache_charge+0x1f4/0x214
+> > [<ffffffff810cd195>] add_to_page_cache_locked+0x4a/0x148
+> > ....
+> > 
+> > 
+> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+> > ---
+> > 
+> >  mm/memcontrol.c |    4 ++--
+> >  1 files changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > 
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 116fecd..f4c5665 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> > @@ -578,7 +578,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
+> >  	int cpu;
+> >  	s64 val = 0;
+> >  
+> > -	get_online_cpus();
+> >  	for_each_online_cpu(cpu)
+> >  		val += per_cpu(mem->stat->count[idx], cpu);
+> >  #ifdef CONFIG_HOTPLUG_CPU
+> > @@ -586,7 +585,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
+> >  	val += mem->nocpu_base.count[idx];
+> >  	spin_unlock(&mem->pcp_counter_lock);
+> >  #endif
+> > -	put_online_cpus();
+> >  	return val;
+> >  }
+> >  
+> > @@ -1284,6 +1282,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+> >  	struct mem_cgroup *iter;
+> >  	s64 value;
+> >  
+> > +	get_online_cpus();
+> >  	rcu_read_lock();
+> >  	mem = mem_cgroup_from_task(current);
+> >  	if (mem && !mem_cgroup_is_root(mem)) {
+> > @@ -1305,6 +1304,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+> >  	} else
+> >  		value = -EINVAL;
+> >  	rcu_read_unlock();
+> > +	put_online_cpus();
+> >  
+> >  	return value;
+> >  }
+> 
+> Confused again.  There's no mem_cgroup_page_stat() in mainline,
+> linux-next or in any patches in -mm.
 >
-> Please see if the problem is there in 2.6.35 (please test with pm_async=0).
->
-> Thanks,
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+
+Oops, sorry for the confusion. This patch applies on top of the dirty
+limit patches posted by Greg. I should have posted this in response to
+Greg's posting.
+
+-- 
+	Three Cheers,
+	Balbir
