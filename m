@@ -1,135 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760174Ab0JIB7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 21:59:31 -0400
-Received: from mga02.intel.com ([134.134.136.20]:58689 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760045Ab0JIB73 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 21:59:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,306,1283756400"; 
-   d="scan'208";a="562143911"
-From: Chen Gong <gong.chen@linux.intel.com>
-To: guenter.roeck@ericsson.com
-Cc: lm-sensors@lm-sensors.org, JBeulich@novell.com,
-        linux-kernel@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
-Subject: [PATCH] hwmon: cleanup useless hotplug related macro definition
-Date: Sat,  9 Oct 2010 10:01:48 +0800
-Message-Id: <1286589708-18478-2-git-send-email-gong.chen@linux.intel.com>
-X-Mailer: git-send-email 1.7.2.2.173.g515cc
-In-Reply-To: <1286517216-15640-3-git-send-email-gong.chen@linux.intel.com>
-References: <1286517216-15640-3-git-send-email-gong.chen@linux.intel.com>
+	id S1760169Ab0JICSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 22:18:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5152 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760136Ab0JICSb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 22:18:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=uxsjCD9KE7xYZuQR7WgJYnRyQP098e26MPfbUetC7l/OmRCTALnv6OBM2ZVqmdkuhL
+         Uof2gEdCpZXN/dVg2zHQ==
+MIME-Version: 1.0
+In-Reply-To: <20101009011520.GJ5327@balbir.in.ibm.com>
+References: <20101008174958.GI5327@balbir.in.ibm.com> <20101008114123.ff0592b7.akpm@linux-foundation.org>
+ <20101009011520.GJ5327@balbir.in.ibm.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Fri, 8 Oct 2010 19:18:05 -0700
+Message-ID: <AANLkTik-+WzhaqJ2KD56MkXGuqFgwejnX8OPbPF1=oqD@mail.gmail.com>
+Subject: Re: [BUGFIX] memcg CPU hotplug lockdep warning fix
+To: balbir@linux.vnet.ibm.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_HOTPLUG_CPU is used too much in some drivers.
-This patch clean them up.
+On Fri, Oct 8, 2010 at 6:15 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> * Andrew Morton <akpm@linux-foundation.org> [2010-10-08 11:41:23]:
+>
+>> On Fri, 8 Oct 2010 23:19:58 +0530
+>> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+>>
+>> >
+>> > memcg has lockdep warnings (sleep inside rcu lock)
+>> >
+>> > From: Balbir Singh <balbir@linux.vnet.ibm.com>
+>> >
+>> > Recent move to get_online_cpus() ends up calling get_online_cpus() from
+>> > mem_cgroup_read_stat(). However mem_cgroup_read_stat() is called under rcu
+>> > lock. get_online_cpus() can sleep. The dirty limit patches expose
+>> > this BUG more readily due to their usage of mem_cgroup_page_stat()
+>> >
+>> > This patch address this issue as identified by lockdep and moves the
+>> > hotplug protection to a higher layer. This might increase the time
+>> > required to hotplug, but not by much.
+>> >
+>> > Warning messages
+>> >
+>> > BUG: sleeping function called from invalid context at kernel/cpu.c:62
+>> > in_atomic(): 0, irqs_disabled(): 0, pid: 6325, name: pagetest
+>> > 2 locks held by pagetest/6325:
+>> > #0:  (&mm->mmap_sem){......}, at: [<ffffffff815e9503>]
+>> > do_page_fault+0x27d/0x4a0
+>> > #1:  (rcu_read_lock){......}, at: [<ffffffff811124a1>]
+>> > mem_cgroup_page_stat+0x0/0x23f
+>> > Pid: 6325, comm: pagetest Not tainted 2.6.36-rc5-mm1+ #201
+>> > Call Trace:
+>> > [<ffffffff81041224>] __might_sleep+0x12d/0x131
+>> > [<ffffffff8104f4af>] get_online_cpus+0x1c/0x51
+>> > [<ffffffff8110eedb>] mem_cgroup_read_stat+0x27/0xa3
+>> > [<ffffffff811125d2>] mem_cgroup_page_stat+0x131/0x23f
+>> > [<ffffffff811124a1>] ? mem_cgroup_page_stat+0x0/0x23f
+>> > [<ffffffff810d57c3>] global_dirty_limits+0x42/0xf8
+>> > [<ffffffff810d58b3>] throttle_vm_writeout+0x3a/0xb4
+>> > [<ffffffff810dc2f8>] shrink_zone+0x3e6/0x3f8
+>> > [<ffffffff81074a35>] ? ktime_get_ts+0xb2/0xbf
+>> > [<ffffffff810dd1aa>] do_try_to_free_pages+0x106/0x478
+>> > [<ffffffff810dd601>] try_to_free_mem_cgroup_pages+0xe5/0x14c
+>> > [<ffffffff8110f947>] mem_cgroup_hierarchical_reclaim+0x314/0x3a2
+>> > [<ffffffff81111b31>] __mem_cgroup_try_charge+0x29b/0x593
+>> > [<ffffffff8111194a>] ? __mem_cgroup_try_charge+0xb4/0x593
+>> > [<ffffffff81071258>] ? local_clock+0x40/0x59
+>> > [<ffffffff81009015>] ? sched_clock+0x9/0xd
+>> > [<ffffffff810710d5>] ? sched_clock_local+0x1c/0x82
+>> > [<ffffffff8111398a>] mem_cgroup_charge_common+0x4b/0x76
+>> > [<ffffffff81141469>] ? bio_add_page+0x36/0x38
+>> > [<ffffffff81113ba9>] mem_cgroup_cache_charge+0x1f4/0x214
+>> > [<ffffffff810cd195>] add_to_page_cache_locked+0x4a/0x148
+>> > ....
+>> >
+>> >
+>> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+>> > ---
+>> >
+>> >  mm/memcontrol.c |    4 ++--
+>> >  1 files changed, 2 insertions(+), 2 deletions(-)
+>> >
+>> >
+>> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> > index 116fecd..f4c5665 100644
+>> > --- a/mm/memcontrol.c
+>> > +++ b/mm/memcontrol.c
+>> > @@ -578,7 +578,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
+>> >     int cpu;
+>> >     s64 val = 0;
+>> >
+>> > -   get_online_cpus();
+>> >     for_each_online_cpu(cpu)
+>> >             val += per_cpu(mem->stat->count[idx], cpu);
+>> >  #ifdef CONFIG_HOTPLUG_CPU
+>> > @@ -586,7 +585,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
+>> >     val += mem->nocpu_base.count[idx];
+>> >     spin_unlock(&mem->pcp_counter_lock);
+>> >  #endif
+>> > -   put_online_cpus();
+>> >     return val;
+>> >  }
+>> >
+>> > @@ -1284,6 +1282,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+>> >     struct mem_cgroup *iter;
+>> >     s64 value;
+>> >
+>> > +   get_online_cpus();
+>> >     rcu_read_lock();
+>> >     mem = mem_cgroup_from_task(current);
+>> >     if (mem && !mem_cgroup_is_root(mem)) {
+>> > @@ -1305,6 +1304,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+>> >     } else
+>> >             value = -EINVAL;
+>> >     rcu_read_unlock();
+>> > +   put_online_cpus();
+>> >
+>> >     return value;
+>> >  }
+>>
+>> Confused again.  There's no mem_cgroup_page_stat() in mainline,
+>> linux-next or in any patches in -mm.
+>>
+>
+> Oops, sorry for the confusion. This patch applies on top of the dirty
+> limit patches posted by Greg. I should have posted this in response to
+> Greg's posting.
 
-Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
----
- drivers/hwmon/coretemp.c    |    3 +--
- drivers/hwmon/pkgtemp.c     |    7 +------
- drivers/hwmon/via-cputemp.c |    7 +------
- 3 files changed, 3 insertions(+), 14 deletions(-)
-
-diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
-index b4aea20..467488c 100644
---- a/drivers/hwmon/coretemp.c
-+++ b/drivers/hwmon/coretemp.c
-@@ -566,9 +566,8 @@ exit:
- static void __exit coretemp_exit(void)
- {
- 	struct pdev_entry *p, *n;
--#ifdef CONFIG_HOTPLUG_CPU
-+
- 	unregister_hotcpu_notifier(&coretemp_cpu_notifier);
--#endif
- 	mutex_lock(&pdev_list_mutex);
- 	list_for_each_entry_safe(p, n, &pdev_list, list) {
- 		platform_device_unregister(p->pdev);
-diff --git a/drivers/hwmon/pkgtemp.c b/drivers/hwmon/pkgtemp.c
-index a8fc35e..0798210 100644
---- a/drivers/hwmon/pkgtemp.c
-+++ b/drivers/hwmon/pkgtemp.c
-@@ -339,7 +339,6 @@ exit:
- 	return err;
- }
- 
--#ifdef CONFIG_HOTPLUG_CPU
- static void __cpuinit pkgtemp_device_remove(unsigned int cpu)
- {
- 	struct pdev_entry *p;
-@@ -387,7 +386,6 @@ static int __cpuinit pkgtemp_cpu_callback(struct notifier_block *nfb,
- static struct notifier_block pkgtemp_cpu_notifier __refdata = {
- 	.notifier_call = pkgtemp_cpu_callback,
- };
--#endif				/* !CONFIG_HOTPLUG_CPU */
- 
- static int __init pkgtemp_init(void)
- {
-@@ -411,9 +409,7 @@ static int __init pkgtemp_init(void)
- 	}
- #endif
- 
--#ifdef CONFIG_HOTPLUG_CPU
- 	register_hotcpu_notifier(&pkgtemp_cpu_notifier);
--#endif
- 	return 0;
- 
- #ifndef CONFIG_HOTPLUG_CPU
-@@ -427,9 +423,8 @@ exit:
- static void __exit pkgtemp_exit(void)
- {
- 	struct pdev_entry *p, *n;
--#ifdef CONFIG_HOTPLUG_CPU
-+
- 	unregister_hotcpu_notifier(&pkgtemp_cpu_notifier);
--#endif
- 	mutex_lock(&pdev_list_mutex);
- 	list_for_each_entry_safe(p, n, &pdev_list, list) {
- 		platform_device_unregister(p->pdev);
-diff --git a/drivers/hwmon/via-cputemp.c b/drivers/hwmon/via-cputemp.c
-index ba7839b..ec7fad7 100644
---- a/drivers/hwmon/via-cputemp.c
-+++ b/drivers/hwmon/via-cputemp.c
-@@ -235,7 +235,6 @@ exit:
- 	return err;
- }
- 
--#ifdef CONFIG_HOTPLUG_CPU
- static void __cpuinit via_cputemp_device_remove(unsigned int cpu)
- {
- 	struct pdev_entry *p, *n;
-@@ -270,7 +269,6 @@ static int __cpuinit via_cputemp_cpu_callback(struct notifier_block *nfb,
- static struct notifier_block via_cputemp_cpu_notifier __refdata = {
- 	.notifier_call = via_cputemp_cpu_callback,
- };
--#endif				/* !CONFIG_HOTPLUG_CPU */
- 
- static int __init via_cputemp_init(void)
- {
-@@ -311,9 +309,7 @@ static int __init via_cputemp_init(void)
- 		goto exit_driver_unreg;
- 	}
- 
--#ifdef CONFIG_HOTPLUG_CPU
- 	register_hotcpu_notifier(&via_cputemp_cpu_notifier);
--#endif
- 	return 0;
- 
- exit_devices_unreg:
-@@ -333,9 +329,8 @@ exit:
- static void __exit via_cputemp_exit(void)
- {
- 	struct pdev_entry *p, *n;
--#ifdef CONFIG_HOTPLUG_CPU
-+
- 	unregister_hotcpu_notifier(&via_cputemp_cpu_notifier);
--#endif
- 	mutex_lock(&pdev_list_mutex);
- 	list_for_each_entry_safe(p, n, &pdev_list, list) {
- 		platform_device_unregister(p->pdev);
--- 
-1.7.2.2.173.g515cc
-
+I plan to include Balbir's fix (above) in forthcoming memcg dirty
+limits series V2.  I'm running V2 through tests right now.
