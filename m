@@ -1,296 +1,476 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab0JIEaR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 00:30:17 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47908 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab0JIEaN (ORCPT
+	id S1751675Ab0JIEat (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 00:30:49 -0400
+Received: from 63.mail-out.ovh.net ([91.121.185.56]:37646 "HELO
+	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750756Ab0JIEaq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 00:30:13 -0400
-Message-ID: <4CAFEEFA.1070000@kernel.org>
-Date: Fri, 08 Oct 2010 21:26:34 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Sat, 9 Oct 2010 00:30:46 -0400
+Message-ID: <4CAFEFF1.8010202@example.com>
+Date: Sat, 09 Oct 2010 06:30:41 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: [patch 00/47] Sparse irq rework
-References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com> <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6> <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6> <4CACFC23.4080504@kernel.org> <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6> <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org> <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6> <4CAD4EC3.5060809@kernel.org> <alpine.LFD.2.00.1010082346310.13094@localhost6.localdomain6> <alpine.LFD.2.00.1010082351450.13094@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1010082351450.13094@localhost6.localdomain6>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: What is this? Should I worry?
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 17290163396550684952
+X-Ovh-Remote: 83.24.80.30 (dmy30.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/08/2010 02:54 PM, Thomas Gleixner wrote:
-> On Fri, 8 Oct 2010, Thomas Gleixner wrote:
-> 
->> On Wed, 6 Oct 2010, Yinghai Lu wrote:
->>> On 10/06/2010 09:01 PM, Thomas Gleixner wrote:
->>>> Well, I'm not too happy about this preallocated stuff anyway, which is
->>>> the reason for the warning below.
->>>>  
->>>>> [   80.726176] WARNING: at drivers/pci/intr_remapping.c:67 irq_2_iommu_alloc+0x52/0xdc()
->>>>> [   80.745935] Hardware name: Sun Fire X4800
->>>>> [   80.746179] irq_2_iommu!=NULL irq 8
->>>>
->>>
->>> no, irq_2_iommu are all dynamically allocated even for irq < 16.
->>
->> I know. I was talking about the preallocated irq descriptors and the
->> handling of it in general.
->>
->> Nevertheless, that irq_2_iommu stuff does not need it's own allocation
->> function. It's bound to a specific irq_cfg anyway, so the next logical
->> step is to move irq_2_iommu into struct irq_cfg and get rid of the
->> extra allocation/free in intr_remapping.c.
-> 
-> Forgot to say, that I updated the git tree with all the fallout
-> fixes.
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/tglx/linux-2.6-sparse-irq.git master
-> 
-> Can you please retest ?
-> 
+# uname -a
+Linux aapi205 2.6.36-rc7-git1 #1 SMP PREEMPT Fri Oct 8 10:49:47 CEST 
+2010 x86_64 GNU/Linux
 
-one warning and two panics
+This is what I have in syslog:
 
-[   37.369332] ------------[ cut here ]------------
-[   37.383782] WARNING: at drivers/pci/intr_remapping.c:67 irq_2_iommu_alloc+0x52/0xdc()
-[   37.384463] Hardware name: Sun Fire X4800
-[   37.403803] irq_2_iommu!=NULL irq 9
-[   37.404054] Modules linked in:
-[   37.404311] Pid: 1, comm: swapper Not tainted 2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171
-[   37.424042] Call Trace:
-[   37.424205]  [<ffffffff810787a0>] warn_slowpath_common+0x85/0x9d
-[   37.443822]  [<ffffffff8107885b>] warn_slowpath_fmt+0x46/0x48
-[   37.444383]  [<ffffffff8141c5f6>] ? radix_tree_lookup+0xb/0xd
-[   37.463788]  [<ffffffff8145f97c>] irq_2_iommu_alloc+0x52/0xdc
-[   37.464200]  [<ffffffff81ccc593>] ? _raw_spin_lock_irqsave+0x6d/0x7b
-[   37.483853]  [<ffffffff8145fb4d>] ? alloc_irte+0x97/0x168
-[   37.484296]  [<ffffffff8145fbce>] alloc_irte+0x118/0x168
-[   37.503774]  [<ffffffff8105062a>] setup_ioapic_irq+0x13f/0x331
-[   37.504278]  [<ffffffff81051d70>] setup_IO_APIC_irq_extra+0xce/0xde
-[   37.523868]  [<ffffffff8104c678>] acpi_gsi_to_irq+0x2a/0x31
-[   37.524475]  [<ffffffff814867c8>] ? acpi_ev_sci_xrupt_handler+0x0/0x2b
-[   37.543942]  [<ffffffff81475056>] acpi_os_install_interrupt_handler+0x31/0xa5
-[   37.563764]  [<ffffffff81486826>] acpi_ev_install_sci_handler+0x23/0x25
-[   37.564309]  [<ffffffff81485b41>] acpi_ev_install_xrupt_handlers+0x13/0x5f
-[   37.583694]  [<ffffffff8149fba1>] acpi_enable_subsystem+0x13a/0x145
-[   37.584429]  [<ffffffff827f0c75>] ? acpi_init+0x0/0x1a2
-[   37.603653]  [<ffffffff827f0a13>] acpi_bus_init+0x26/0x288
-[   37.604032]  [<ffffffff81cc920f>] ? printk+0x41/0x43
-[   37.623668]  [<ffffffff827f0cf4>] acpi_init+0x7f/0x1a2
-[   37.624130]  [<ffffffff810002da>] do_one_initcall+0x57/0x135
-[   37.643480]  [<ffffffff827bff7a>] kernel_init+0x167/0x1f1
-[   37.643871]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   37.663541]  [<ffffffff81ccd07c>] ? restore_args+0x0/0x30
-[   37.663951]  [<ffffffff827bfe13>] ? kernel_init+0x0/0x1f1
-[   37.683515]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
-[   37.684143] ---[ end trace 5003353dd8ff0030 ]---
+Oct  9 03:09:34 aapi205 kernel: [57001.468028] INFO: rcu_bh_state 
+detected stall on CPU 1 (t=0 jiffies)
+Oct  9 03:09:34 aapi205 kernel: [57001.468035] sending NMI to all CPUs:
+Oct  9 03:09:34 aapi205 kernel: [57001.468050] NMI backtrace for cpu 3
+Oct  9 03:09:34 aapi205 kernel: [57001.468053] CPU 3
+Oct  9 03:09:34 aapi205 kernel: [57001.468055] Modules linked in: 
+nvidia(P) binfmt_misc sco bnep rfcomm l2cap bluetooth rfkill ppdev lp 
+fuse ext3 jbd coretemp it87 hwmon_vid sbp2 loop snd_hda_codec_realtek 
+snd_hda_intel snd_hda_codec snd_pcm_oss snd_mixer_oss snd_pcm 
+snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event 
+snd_seq snd_timer snd_seq_device snd parport_pc soundcore i2c_i801 
+shpchp parport evdev pci_hotplug pcspkr snd_page_alloc psmouse serio_raw 
+i2c_core button intel_agp processor ext4 mbcache jbd2 crc16 sg sd_mod 
+sr_mod cdrom ata_piix ata_generic ahci libahci ide_pci_generic libata 
+ohci1394 ieee1394 jmicron thermal ide_core floppy scsi_mod uhci_hcd 
+r8169 mii thermal_sys ehci_hcd [last unloaded: nvidia]
+Oct  9 03:09:34 aapi205 kernel: [57001.468114]
+Oct  9 03:09:34 aapi205 kernel: [57001.468117] Pid: 0, comm: kworker/0:1 
+Tainted: P        W   2.6.36-rc7-git1 #1 EP45-UD3/EP45-UD3
+Oct  9 03:09:34 aapi205 kernel: [57001.468119] RIP: 
+0010:[<ffffffff81023948>]  [<ffffffff81023948>] native_safe_halt+0x6/0x8
+Oct  9 03:09:34 aapi205 kernel: [57001.468127] RSP: 
+0018:ffff88012f725e38  EFLAGS: 00000246
+Oct  9 03:09:34 aapi205 kernel: [57001.468129] RAX: 0000000000000000 
+RBX: ffff88012f090468 RCX: 0000000032101a16
+Oct  9 03:09:34 aapi205 kernel: [57001.468131] RDX: 000000004cafc0ce 
+RSI: 0000000225c17d03 RDI: ffff88012f090468
+Oct  9 03:09:34 aapi205 kernel: [57001.468134] RBP: ffff88012f725e38 
+R08: 000000000000e980 R09: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468136] R10: ffff88012f725e48 
+R11: 00000003810396ac R12: ffff88012f090000
+Oct  9 03:09:34 aapi205 kernel: [57001.468138] R13: 11dadfac561ea616 
+R14: 0000000000000000 R15: 0000000000000003
+Oct  9 03:09:34 aapi205 kernel: [57001.468141] FS: 
+0000000000000000(0000) GS:ffff880001b80000(0000) knlGS:0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468144] CS:  0010 DS: 0000 ES: 
+0000 CR0: 000000008005003b
+Oct  9 03:09:34 aapi205 kernel: [57001.468146] CR2: 00007fb6a5b91628 
+CR3: 000000012c9fd000 CR4: 00000000000006e0
+Oct  9 03:09:34 aapi205 kernel: [57001.468148] DR0: 0000000000000000 
+DR1: 0000000000000000 DR2: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468151] DR3: 0000000000000000 
+DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Oct  9 03:09:34 aapi205 kernel: [57001.468153] Process kworker/0:1 (pid: 
+0, threadinfo ffff88012f724000, task ffff88012f707000)
+Oct  9 03:09:34 aapi205 kernel: [57001.468155] Stack:
+Oct  9 03:09:34 aapi205 kernel: [57001.468157]  ffff88012f725e48 
+ffffffffa00f4f76 ffff88012f725e98 ffffffffa00f5012
+Oct  9 03:09:34 aapi205 kernel: [57001.468161] <0> 0000000000000400 
+ffff88012f090020 ffff88012f725e98 ffffffff81274dc3
+Oct  9 03:09:34 aapi205 kernel: [57001.468164] <0> ffff88012f090020 
+ffff88012f090020 ffff88012f090090 ffffffff816b9c78
+Oct  9 03:09:34 aapi205 kernel: [57001.468169] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468177]  [<ffffffffa00f4f76>] 
+acpi_idle_do_entry+0x39/0x62 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468182]  [<ffffffffa00f5012>] 
+acpi_idle_enter_c1+0x73/0xc2 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81274dc3>] ? 
+menu_select+0x17c/0x2ac
+Oct  9 03:09:34 aapi205 kernel: [57001.468191]  [<ffffffff81273ecf>] 
+cpuidle_idle_call+0xae/0x127
+Oct  9 03:09:34 aapi205 kernel: [57001.468194]  [<ffffffff81001c57>] 
+cpu_idle+0xb2/0x148
+Oct  9 03:09:34 aapi205 kernel: [57001.468198]  [<ffffffff8130ba26>] 
+start_secondary+0x25b/0x2a1
+Oct  9 03:09:34 aapi205 kernel: [57001.468201] Code: ff ff c9 c3 90 90 
+90 55 48 89 e5 9c 58 c9 c3 55 48 89 e5 57 9d c9 c3 55 48 89 e5 fa c9 c3 
+55 48 89 e5 fb c9 c3 55 48 89 e5 fb f4 <c9> c3 55 48 89 e5 f4 c9 c3 55 
+48 89 e5 0f 06 c9 c3 55 48 89 e5
+Oct  9 03:09:34 aapi205 kernel: [57001.468237] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468242]  [<ffffffffa00f4f76>] 
+acpi_idle_do_entry+0x39/0x62 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468247]  [<ffffffffa00f5012>] 
+acpi_idle_enter_c1+0x73/0xc2 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468250]  [<ffffffff81274dc3>] ? 
+menu_select+0x17c/0x2ac
+Oct  9 03:09:34 aapi205 kernel: [57001.468254]  [<ffffffff81273ecf>] 
+cpuidle_idle_call+0xae/0x127
+Oct  9 03:09:34 aapi205 kernel: [57001.468257]  [<ffffffff81001c57>] 
+cpu_idle+0xb2/0x148
+Oct  9 03:09:34 aapi205 kernel: [57001.468260]  [<ffffffff8130ba26>] 
+start_secondary+0x25b/0x2a1
+Oct  9 03:09:34 aapi205 kernel: [57001.468263] Pid: 0, comm: kworker/0:1 
+Tainted: P        W   2.6.36-rc7-git1 #1
+Oct  9 03:09:34 aapi205 kernel: [57001.468265] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468267]  <NMI> 
+[<ffffffff8100aba8>] ? show_regs+0x26/0x2b
+Oct  9 03:09:34 aapi205 kernel: [57001.468273]  [<ffffffff8101c9f0>] 
+nmi_watchdog_tick+0xaa/0x19a
+Oct  9 03:09:34 aapi205 kernel: [57001.468276]  [<ffffffff810048ea>] 
+do_nmi+0xdb/0x291
+Oct  9 03:09:34 aapi205 kernel: [57001.468280]  [<ffffffff81313ba0>] 
+nmi+0x20/0x30
+Oct  9 03:09:34 aapi205 kernel: [57001.468283]  [<ffffffff81023948>] ? 
+native_safe_halt+0x6/0x8
+Oct  9 03:09:34 aapi205 kernel: [57001.468285]  <<EOE>> 
+[<ffffffffa00f4f76>] acpi_idle_do_entry+0x39/0x62 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468294]  [<ffffffffa00f5012>] 
+acpi_idle_enter_c1+0x73/0xc2 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468297]  [<ffffffff81274dc3>] ? 
+menu_select+0x17c/0x2ac
+Oct  9 03:09:34 aapi205 kernel: [57001.468301]  [<ffffffff81273ecf>] 
+cpuidle_idle_call+0xae/0x127
+Oct  9 03:09:34 aapi205 kernel: [57001.468304]  [<ffffffff81001c57>] 
+cpu_idle+0xb2/0x148
+Oct  9 03:09:34 aapi205 kernel: [57001.468307]  [<ffffffff8130ba26>] 
+start_secondary+0x25b/0x2a1
+Oct  9 03:09:34 aapi205 kernel: [57001.468316] NMI backtrace for cpu 0
+Oct  9 03:09:34 aapi205 kernel: [57001.468318] CPU 0
+Oct  9 03:09:34 aapi205 kernel: [57001.468320] Modules linked in: 
+nvidia(P) binfmt_misc sco bnep rfcomm l2cap bluetooth rfkill ppdev lp 
+fuse ext3 jbd coretemp it87 hwmon_vid sbp2 loop snd_hda_codec_realtek 
+snd_hda_intel snd_hda_codec snd_pcm_oss snd_mixer_oss snd_pcm 
+snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event 
+snd_seq snd_timer snd_seq_device snd parport_pc soundcore i2c_i801 
+shpchp parport evdev pci_hotplug pcspkr snd_page_alloc psmouse serio_raw 
+i2c_core button intel_agp processor ext4 mbcache jbd2 crc16 sg sd_mod 
+sr_mod cdrom ata_piix ata_generic ahci libahci ide_pci_generic libata 
+ohci1394 ieee1394 jmicron thermal ide_core floppy scsi_mod uhci_hcd 
+r8169 mii thermal_sys ehci_hcd [last unloaded: nvidia]
+Oct  9 03:09:34 aapi205 kernel: [57001.468368]
+Oct  9 03:09:34 aapi205 kernel: [57001.468370] Pid: 0, comm: swapper 
+Tainted: P        W   2.6.36-rc7-git1 #1 EP45-UD3/EP45-UD3
+Oct  9 03:09:34 aapi205 kernel: [57001.468372] RIP: 
+0010:[<ffffffff81023948>]  [<ffffffff81023948>] native_safe_halt+0x6/0x8
+Oct  9 03:09:34 aapi205 kernel: [57001.468377] RSP: 
+0018:ffffffff81601e38  EFLAGS: 00000246
+Oct  9 03:09:34 aapi205 kernel: [57001.468380] RAX: 0000000000000000 
+RBX: ffff88012d4ddc68 RCX: 00000000323bd4d3
+Oct  9 03:09:34 aapi205 kernel: [57001.468382] RDX: 000000004cafc0ce 
+RSI: 0000000225c17d03 RDI: ffff88012d4ddc68
+Oct  9 03:09:34 aapi205 kernel: [57001.468384] RBP: ffffffff81601e38 
+R08: 0000000000000f86 R09: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468387] R10: ffff88012d4dd800 
+R11: ffffffff810396ac R12: ffff88012d4dd800
+Oct  9 03:09:34 aapi205 kernel: [57001.468389] R13: 11dadfac564a60d3 
+R14: ffffffffffffffff R15: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468392] FS: 
+0000000000000000(0000) GS:ffff880001a00000(0000) knlGS:0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468394] CS:  0010 DS: 0000 ES: 
+0000 CR0: 000000008005003b
+Oct  9 03:09:34 aapi205 kernel: [57001.468396] CR2: 00007fb6ab1d1000 
+CR3: 00000001088bd000 CR4: 00000000000006f0
+Oct  9 03:09:34 aapi205 kernel: [57001.468399] DR0: 0000000000000000 
+DR1: 0000000000000000 DR2: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468401] DR3: 0000000000000000 
+DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Oct  9 03:09:34 aapi205 kernel: [57001.468404] Process swapper (pid: 0, 
+threadinfo ffffffff81600000, task ffffffff81629020)
+Oct  9 03:09:34 aapi205 kernel: [57001.468405] Stack:
+Oct  9 03:09:34 aapi205 kernel: [57001.468407]  ffffffff81601e48 
+ffffffffa00f4f76 ffffffff81601e98 ffffffffa00f5012
+Oct  9 03:09:34 aapi205 kernel: [57001.468410] <0> 0000000000000000 
+ffff88012d4dd820 ffffffff81601e98 ffffffff81274dc3
+Oct  9 03:09:34 aapi205 kernel: [57001.468414] <0> ffff88012d4dd820 
+ffff88012d4dd820 ffff88012d4dd890 ffffffff816b9c78
+Oct  9 03:09:34 aapi205 kernel: [57001.468418] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468424]  [<ffffffffa00f4f76>] 
+acpi_idle_do_entry+0x39/0x62 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468429]  [<ffffffffa00f5012>] 
+acpi_idle_enter_c1+0x73/0xc2 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468433]  [<ffffffff81274dc3>] ? 
+menu_select+0x17c/0x2ac
+Oct  9 03:09:34 aapi205 kernel: [57001.468436]  [<ffffffff81273ecf>] 
+cpuidle_idle_call+0xae/0x127
+Oct  9 03:09:34 aapi205 kernel: [57001.468440]  [<ffffffff81001c57>] 
+cpu_idle+0xb2/0x148
+Oct  9 03:09:34 aapi205 kernel: [57001.468443]  [<ffffffff812fc4be>] 
+rest_init+0x92/0x96
+Oct  9 03:09:34 aapi205 kernel: [57001.468447]  [<ffffffff816d3d62>] 
+start_kernel+0x3d6/0x3e1
+Oct  9 03:09:34 aapi205 kernel: [57001.468451]  [<ffffffff816d32ac>] 
+x86_64_start_reservations+0xb3/0xb7
+Oct  9 03:09:34 aapi205 kernel: [57001.468454]  [<ffffffff816d33ab>] 
+x86_64_start_kernel+0xfb/0x10a
+Oct  9 03:09:34 aapi205 kernel: [57001.468456] Code: ff ff c9 c3 90 90 
+90 55 48 89 e5 9c 58 c9 c3 55 48 89 e5 57 9d c9 c3 55 48 89 e5 fa c9 c3 
+55 48 89 e5 fb c9 c3 55 48 89 e5 fb f4 <c9> c3 55 48 89 e5 f4 c9 c3 55 
+48 89 e5 0f 06 c9 c3 55 48 89 e5
+Oct  9 03:09:34 aapi205 kernel: [57001.468492] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468497]  [<ffffffffa00f4f76>] 
+acpi_idle_do_entry+0x39/0x62 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468502]  [<ffffffffa00f5012>] 
+acpi_idle_enter_c1+0x73/0xc2 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468505]  [<ffffffff81274dc3>] ? 
+menu_select+0x17c/0x2ac
+Oct  9 03:09:34 aapi205 kernel: [57001.468509]  [<ffffffff81273ecf>] 
+cpuidle_idle_call+0xae/0x127
+Oct  9 03:09:34 aapi205 kernel: [57001.468512]  [<ffffffff81001c57>] 
+cpu_idle+0xb2/0x148
+Oct  9 03:09:34 aapi205 kernel: [57001.468515]  [<ffffffff812fc4be>] 
+rest_init+0x92/0x96
+Oct  9 03:09:34 aapi205 kernel: [57001.468518]  [<ffffffff816d3d62>] 
+start_kernel+0x3d6/0x3e1
+Oct  9 03:09:34 aapi205 kernel: [57001.468521]  [<ffffffff816d32ac>] 
+x86_64_start_reservations+0xb3/0xb7
+Oct  9 03:09:34 aapi205 kernel: [57001.468524]  [<ffffffff816d33ab>] 
+x86_64_start_kernel+0xfb/0x10a
+Oct  9 03:09:34 aapi205 kernel: [57001.468527] Pid: 0, comm: swapper 
+Tainted: P        W   2.6.36-rc7-git1 #1
+Oct  9 03:09:34 aapi205 kernel: [57001.468529] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468531]  <NMI> 
+[<ffffffff8100aba8>] ? show_regs+0x26/0x2b
+Oct  9 03:09:34 aapi205 kernel: [57001.468536]  [<ffffffff8101c9f0>] 
+nmi_watchdog_tick+0xaa/0x19a
+Oct  9 03:09:34 aapi205 kernel: [57001.468539]  [<ffffffff810048ea>] 
+do_nmi+0xdb/0x291
+Oct  9 03:09:34 aapi205 kernel: [57001.468542]  [<ffffffff81313ba0>] 
+nmi+0x20/0x30
+Oct  9 03:09:34 aapi205 kernel: [57001.468546]  [<ffffffff810396ac>] ? 
+dequeue_task+0x75/0x85
+Oct  9 03:09:34 aapi205 kernel: [57001.468549]  [<ffffffff81023948>] ? 
+native_safe_halt+0x6/0x8
+Oct  9 03:09:34 aapi205 kernel: [57001.468551]  <<EOE>> 
+[<ffffffffa00f4f76>] acpi_idle_do_entry+0x39/0x62 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468560]  [<ffffffffa00f5012>] 
+acpi_idle_enter_c1+0x73/0xc2 [processor]
+Oct  9 03:09:34 aapi205 kernel: [57001.468563]  [<ffffffff81274dc3>] ? 
+menu_select+0x17c/0x2ac
+Oct  9 03:09:34 aapi205 kernel: [57001.468567]  [<ffffffff81273ecf>] 
+cpuidle_idle_call+0xae/0x127
+Oct  9 03:09:34 aapi205 kernel: [57001.468570]  [<ffffffff81001c57>] 
+cpu_idle+0xb2/0x148
+Oct  9 03:09:34 aapi205 kernel: [57001.468573]  [<ffffffff812fc4be>] 
+rest_init+0x92/0x96
+Oct  9 03:09:34 aapi205 kernel: [57001.468576]  [<ffffffff816d3d62>] 
+start_kernel+0x3d6/0x3e1
+Oct  9 03:09:34 aapi205 kernel: [57001.468580]  [<ffffffff816d32ac>] 
+x86_64_start_reservations+0xb3/0xb7
+Oct  9 03:09:34 aapi205 kernel: [57001.468583]  [<ffffffff816d33ab>] 
+x86_64_start_kernel+0xfb/0x10a
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] NMI backtrace for cpu 1
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] CPU 1
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Modules linked in: 
+nvidia(P) binfmt_misc sco bnep rfcomm l2cap bluetooth rfkill ppdev lp 
+fuse ext3 jbd coretemp it87 hwmon_vid sbp2 loop snd_hda_codec_realtek 
+snd_hda_intel snd_hda_codec snd_pcm_oss snd_mixer_oss snd_pcm 
+snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event 
+snd_seq snd_timer snd_seq_device snd parport_pc soundcore i2c_i801 
+shpchp parport evdev pci_hotplug pcspkr snd_page_alloc psmouse serio_raw 
+i2c_core button intel_agp processor ext4 mbcache jbd2 crc16 sg sd_mod 
+sr_mod cdrom ata_piix ata_generic ahci libahci ide_pci_generic libata 
+ohci1394 ieee1394 jmicron thermal ide_core floppy scsi_mod uhci_hcd 
+r8169 mii thermal_sys ehci_hcd [last unloaded: nvidia]
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Pid: 8181, comm: 
+firefox-bin Tainted: P        W   2.6.36-rc7-git1 #1 EP45-UD3/EP45-UD3
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] RIP: 
+0010:[<ffffffff811a2506>]  [<ffffffff811a2506>] __const_udelay+0x2f/0x3d
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] RSP: 
+0000:ffff880001a83dd8  EFLAGS: 00000002
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] RAX: 0000000001062560 
+RBX: 0000000000000001 RCX: ffff880001a80000
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] RDX: 00000000227cb1d2 
+RSI: 0000000000000002 RDI: 0000000000418958
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] RBP: ffff880001a83dd8 
+R08: 0000000000000002 R09: 00000000ffffffff
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] R10: 000000000000001f 
+R11: 0000000000000000 R12: ffff880001a8f450
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] R13: ffffffff8163f000 
+R14: 0000000000000000 R15: ffff880001a83f48
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] FS: 
+00007fb6c5516710(0000) GS:ffff880001a80000(0000) knlGS:0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] CS:  0010 DS: 0000 ES: 
+0000 CR0: 0000000080050033
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] CR2: 00007fb6ab1c9000 
+CR3: 00000000a8358000 CR4: 00000000000006e0
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] DR0: 0000000000000000 
+DR1: 0000000000000000 DR2: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] DR3: 0000000000000000 
+DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Process firefox-bin (pid: 
+8181, threadinfo ffff8800933e2000, task ffff8800ac1b3000)
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Stack:
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  ffff880001a83df8 
+ffffffff8101c813 0000000000000018 ffffffff8163f000
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] <0> ffff880001a83e48 
+ffffffff81091de0 ffff880001a83e38 ffffffff8103901e
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] <0> 00000000000129c0 
+0000000000000001 0000000000000001 0000000000000001
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  <IRQ>
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8101c813>] 
+arch_trigger_all_cpu_backtrace+0x51/0x5d
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81091de0>] 
+__rcu_pending+0x83/0x35c
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8103901e>] ? 
+account_user_time+0x6c/0x75
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff810921eb>] 
+rcu_check_callbacks+0x132/0x163
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8104d54e>] 
+update_process_times+0x3c/0x5b
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81067275>] 
+tick_sched_timer+0x6a/0x94
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8105d800>] 
+__run_hrtimer+0xcf/0x146
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8106720b>] ? 
+tick_sched_timer+0x0/0x94
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8105dabe>] 
+hrtimer_interrupt+0xc9/0x1c5
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81038cc8>] ? 
+add_preempt_count+0xad/0xb2
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8101c286>] 
+smp_apic_timer_interrupt+0x82/0x95
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81003513>] 
+apic_timer_interrupt+0x13/0x20
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  <EOI>
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Code: bd 00 00 00 00 48 
+89 e5 48 c7 c2 80 28 01 00 65 8b 0c 25 00 d4 00 00 48 63 c9 48 8b 0c cd 
+a0 96 6b 81 48 6b 94 0a 98 00 00 00 3e <f7> e2 48 8d 7a 01 ff 15 2e 31 
+4b 00 c9 c3 55 48 69 ff c7 10 00
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  <IRQ> 
+[<ffffffff8101c813>] arch_trigger_all_cpu_backtrace+0x51/0x5d
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81091de0>] 
+__rcu_pending+0x83/0x35c
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8103901e>] ? 
+account_user_time+0x6c/0x75
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff810921eb>] 
+rcu_check_callbacks+0x132/0x163
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8104d54e>] 
+update_process_times+0x3c/0x5b
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81067275>] 
+tick_sched_timer+0x6a/0x94
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8105d800>] 
+__run_hrtimer+0xcf/0x146
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8106720b>] ? 
+tick_sched_timer+0x0/0x94
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8105dabe>] 
+hrtimer_interrupt+0xc9/0x1c5
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81038cc8>] ? 
+add_preempt_count+0xad/0xb2
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8101c286>] 
+smp_apic_timer_interrupt+0x82/0x95
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81003513>] 
+apic_timer_interrupt+0x13/0x20
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  <EOI> Pid: 8181, comm: 
+firefox-bin Tainted: P        W   2.6.36-rc7-git1 #1
+Oct  9 03:09:34 aapi205 kernel: [57001.468187] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  <NMI> 
+[<ffffffff8100aba8>] ? show_regs+0x26/0x2b
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8101c9f0>] 
+nmi_watchdog_tick+0xaa/0x19a
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff810048ea>] 
+do_nmi+0xdb/0x291
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81313ba0>] 
+nmi+0x20/0x30
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff811a2506>] ? 
+__const_udelay+0x2f/0x3d
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  <<EOE>>  <IRQ> 
+[<ffffffff8101c813>] arch_trigger_all_cpu_backtrace+0x51/0x5d
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81091de0>] 
+__rcu_pending+0x83/0x35c
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8103901e>] ? 
+account_user_time+0x6c/0x75
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff810921eb>] 
+rcu_check_callbacks+0x132/0x163
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8104d54e>] 
+update_process_times+0x3c/0x5b
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81067275>] 
+tick_sched_timer+0x6a/0x94
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8105d800>] 
+__run_hrtimer+0xcf/0x146
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8106720b>] ? 
+tick_sched_timer+0x0/0x94
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8105dabe>] 
+hrtimer_interrupt+0xc9/0x1c5
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81038cc8>] ? 
+add_preempt_count+0xad/0xb2
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff8101c286>] 
+smp_apic_timer_interrupt+0x82/0x95
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  [<ffffffff81003513>] 
+apic_timer_interrupt+0x13/0x20
+Oct  9 03:09:34 aapi205 kernel: [57001.468187]  <EOI>
+Oct  9 03:09:34 aapi205 kernel: [57001.468909] NMI backtrace for cpu 2
+Oct  9 03:09:34 aapi205 kernel: [57001.468911] CPU 2
+Oct  9 03:09:34 aapi205 kernel: [57001.468913] Modules linked in: 
+nvidia(P) binfmt_misc sco bnep rfcomm l2cap bluetooth rfkill ppdev lp 
+fuse ext3 jbd coretemp it87 hwmon_vid sbp2 loop snd_hda_codec_realtek 
+snd_hda_intel snd_hda_codec snd_pcm_oss snd_mixer_oss snd_pcm 
+snd_seq_dummy snd_seq_oss snd_seq_midi snd_rawmidi snd_seq_midi_event 
+snd_seq snd_timer snd_seq_device snd parport_pc soundcore i2c_i801 
+shpchp parport evdev pci_hotplug pcspkr snd_page_alloc psmouse serio_raw 
+i2c_core button intel_agp processor ext4 mbcache jbd2 crc16 sg sd_mod 
+sr_mod cdrom ata_piix ata_generic ahci libahci ide_pci_generic libata 
+ohci1394 ieee1394 jmicron thermal ide_core floppy scsi_mod uhci_hcd 
+r8169 mii thermal_sys ehci_hcd [last unloaded: nvidia]
+Oct  9 03:09:34 aapi205 kernel: [57001.468964]
+Oct  9 03:09:34 aapi205 kernel: [57001.468967] Pid: 8180, comm: 
+firefox-bin Tainted: P        W   2.6.36-rc7-git1 #1 EP45-UD3/EP45-UD3
+Oct  9 03:09:34 aapi205 kernel: [57001.468970] RIP: 
+0033:[<00007fb6b595322b>]  [<00007fb6b595322b>] 0x7fb6b595322b
+Oct  9 03:09:34 aapi205 kernel: [57001.468977] RSP: 
+002b:00007fb6b47fdc40  EFLAGS: 00000246
+Oct  9 03:09:34 aapi205 kernel: [57001.468979] RAX: 0000000000000000 
+RBX: 00007fb6b4da4ae0 RCX: 00007fb6af5f4000
+Oct  9 03:09:34 aapi205 kernel: [57001.468982] RDX: 00007fb6af5f4000 
+RSI: 00007fb6b47fdc10 RDI: 00007fb6bbdb96a0
+Oct  9 03:09:34 aapi205 kernel: [57001.468984] RBP: 00007fb6af5f40d8 
+R08: 0000000000000048 R09: 00007fb6af5f4020
+Oct  9 03:09:34 aapi205 kernel: [57001.468987] R10: 0000000000000003 
+R11: 0000000000000805 R12: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468989] R13: 0000000000000003 
+R14: 00000000020100cc R15: 00000000000000cc
+Oct  9 03:09:34 aapi205 kernel: [57001.468992] FS: 
+00007fb6b47ff710(0000) GS:ffff880001b00000(0000) knlGS:0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.468995] CS:  0010 DS: 0000 ES: 
+0000 CR0: 0000000080050033
+Oct  9 03:09:34 aapi205 kernel: [57001.468998] CR2: 00007fb6ab1c4000 
+CR3: 00000000a8358000 CR4: 00000000000006e0
+Oct  9 03:09:34 aapi205 kernel: [57001.469000] DR0: 0000000000000000 
+DR1: 0000000000000000 DR2: 0000000000000000
+Oct  9 03:09:34 aapi205 kernel: [57001.469003] DR3: 0000000000000000 
+DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Oct  9 03:09:34 aapi205 kernel: [57001.469006] Process firefox-bin (pid: 
+8180, threadinfo ffff880052192000, task ffff88005969e000)
+Oct  9 03:09:34 aapi205 kernel: [57001.469008]
+Oct  9 03:09:34 aapi205 kernel: [57001.469009] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.469012] Pid: 8180, comm: 
+firefox-bin Tainted: P        W   2.6.36-rc7-git1 #1
+Oct  9 03:09:34 aapi205 kernel: [57001.469014] Call Trace:
+Oct  9 03:09:34 aapi205 kernel: [57001.469015]  <NMI> 
+[<ffffffff8100aba8>] ? show_regs+0x26/0x2b
+Oct  9 03:09:34 aapi205 kernel: [57001.469022]  [<ffffffff8101c9f0>] 
+nmi_watchdog_tick+0xaa/0x19a
+Oct  9 03:09:34 aapi205 kernel: [57001.469025]  [<ffffffff810048ea>] 
+do_nmi+0xdb/0x291
+Oct  9 03:09:34 aapi205 kernel: [57001.469028]  [<ffffffff81313ba0>] 
+nmi+0x20/0x30
 
+Should I worry?
 
-[   59.429741] BUG: unable to handle kernel NULL pointer dereference at (null)
-[   59.449366] IP: [<ffffffff8147d715>] acpi_pci_irq_find_prt_entry+0x85/0xb1
-[   59.469016] PGD 0 
-[   59.469224] Oops: 0000 [#1] SMP 
-[   59.469488] last sysfs file: 
-[   59.469725] CPU 0 
-[   59.488959] Modules linked in:
-[   59.489246] 
-[   59.489361] Pid: 1, comm: swapper Tainted: G        W   2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171      /Sun Fire X4800
-[   59.509192] RIP: 0010:[<ffffffff8147d715>]  [<ffffffff8147d715>] acpi_pci_irq_find_prt_entry+0x85/0xb1
-[   59.529156] RSP: 0018:ffff88385e455d70  EFLAGS: 00010206
-[   59.529481] RAX: 0000000000000000 RBX: 0000000000000000 RCX: ffff88305e460000
-[   59.549153] RDX: 0000000000000000 RSI: ffffffff8147d6d7 RDI: ffff88305e460000
-[   59.568832] RBP: ffff88385e455da0 R08: 0000000000000001 R09: 000000000000025a
-[   59.569424] R10: 0000000000000000 R11: 0000000000000001 R12: 0000000000000000
-[   59.589507] R13: 0000000000000084 R14: 0000000000000000 R15: 0000000000000001
-[   59.608643] FS:  0000000000000000(0000) GS:ffff880079c00000(0000) knlGS:0000000000000000
-[   59.609242] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   59.628759] CR2: 0000000000000000 CR3: 0000000002466000 CR4: 00000000000006f0
-[   59.629316] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   59.648990] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   59.668728] Process swapper (pid: 1, threadinfo ffff88385e454000, task ffff88305e460000)
-[   59.669392] Stack:
-[   59.688540]  ffff88385e455d90 ffff88085e93c000 ffffffff82808301 0000000000000000
-[   59.689144] <0> ffff88085e93c000 0000000000000001 ffff88385e455e10 ffffffff8147d766
-[   59.708944] <0> ffff88385e455dd0 0000000000000002 ffff88385e6a4700 ffffea00c54a73e0
-[   59.728590] Call Trace:
-[   59.728829]  [<ffffffff82808301>] ? pci_acpi_init+0x2e/0x89
-[   59.729292]  [<ffffffff8147d766>] acpi_pci_irq_lookup+0x25/0x1c3
-[   59.748704]  [<ffffffff82808301>] ? pci_acpi_init+0x2e/0x89
-[   59.749313]  [<ffffffff8147dd74>] acpi_pci_irq_enable+0x98/0x246
-[   59.768827]  [<ffffffff828083a7>] ? pci_subsys_init+0x0/0x4d
-[   59.769353]  [<ffffffff828083a7>] ? pci_subsys_init+0x0/0x4d
-[   59.788753]  [<ffffffff82808341>] pci_acpi_init+0x6e/0x89
-[   59.789250]  [<ffffffff828083b6>] pci_subsys_init+0xf/0x4d
-[   59.808714]  [<ffffffff810002da>] do_one_initcall+0x57/0x135
-[   59.828222]  [<ffffffff827bff7a>] kernel_init+0x167/0x1f1
-[   59.828677]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   59.848214]  [<ffffffff81ccd07c>] ? restore_args+0x0/0x30
-[   59.848709]  [<ffffffff827bfe13>] ? kernel_init+0x0/0x1f1
-[   59.868134]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
-[   59.868525] Code: b7 53 12 41 39 d5 75 20 0f b7 53 14 41 39 d4 75 17 0f b6 53 18 41 39 d7 75 0e 48 c7 c7 80 89 4a 82 e8 08 f6 84 00 eb 20 48 89 c3 <48> 8b 03 48 81 fb c0 89 4a 82 0f 18 08 75 bc 48 c7 c7 80 89 4a 
-[   59.908388] RIP  [<ffffffff8147d715>] acpi_pci_irq_find_prt_entry+0x85/0xb1
-[   59.908973]  RSP <ffff88385e455d70>
-[   59.928176] CR2: 0000000000000000
-[   59.928496] ---[ end trace 5003353dd8ff0031 ]---
-[   59.928831] Kernel panic - not syncing: Attempted to kill init!
-[   59.948349] Pid: 1, comm: swapper Tainted: G      D W   2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171
-[   59.968151] Call Trace:
-[   59.968346]  [<ffffffff81cc90be>] panic+0x91/0x1a1
-[   59.968787]  [<ffffffff81ccc63a>] ? _raw_write_unlock_irq+0x30/0x35
-[   59.988375]  [<ffffffff8107bbb2>] ? do_exit+0x2d8/0x6cb
-[   59.988861]  [<ffffffff8107b94c>] do_exit+0x72/0x6cb
-[   60.008172]  [<ffffffff81079e0d>] ? kmsg_dump+0x13b/0x156
-[   60.008525]  [<ffffffff81ccdece>] oops_end+0xb7/0xbf
-[   60.028120]  [<ffffffff8105b056>] no_context+0x1fc/0x20b
-[   60.028555]  [<ffffffff8105b1f7>] __bad_area_nosemaphore+0x192/0x1b5
-[   60.048409]  [<ffffffff81ccff3b>] ? do_page_fault+0x12d/0x3f1
-[   60.048996]  [<ffffffff8105b22d>] bad_area_nosemaphore+0x13/0x15
-[   60.068128]  [<ffffffff81cd0005>] do_page_fault+0x1f7/0x3f1
-[   60.068695]  [<ffffffff810a8162>] ? __lock_acquire+0x17cf/0x17e1
-[   60.088165]  [<ffffffff810a8162>] ? __lock_acquire+0x17cf/0x17e1
-[   60.107677]  [<ffffffff81ccd443>] ? error_sti+0x5/0x6
-[   60.108081]  [<ffffffff81ccc1b7>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-[   60.127699]  [<ffffffff81ccd25f>] page_fault+0x1f/0x30
-[   60.128081]  [<ffffffff8147d6d7>] ? acpi_pci_irq_find_prt_entry+0x47/0xb1
-[   60.147705]  [<ffffffff8147d715>] ? acpi_pci_irq_find_prt_entry+0x85/0xb1
-[   60.148453]  [<ffffffff82808301>] ? pci_acpi_init+0x2e/0x89
-[   60.167787]  [<ffffffff8147d766>] acpi_pci_irq_lookup+0x25/0x1c3
-[   60.168313]  [<ffffffff82808301>] ? pci_acpi_init+0x2e/0x89
-[   60.187769]  [<ffffffff8147dd74>] acpi_pci_irq_enable+0x98/0x246
-[   60.188167]  [<ffffffff828083a7>] ? pci_subsys_init+0x0/0x4d
-[   60.207818]  [<ffffffff828083a7>] ? pci_subsys_init+0x0/0x4d
-[   60.208205]  [<ffffffff82808341>] pci_acpi_init+0x6e/0x89
-[   60.227805]  [<ffffffff828083b6>] pci_subsys_init+0xf/0x4d
-[   60.228250]  [<ffffffff810002da>] do_one_initcall+0x57/0x135
-[   60.247819]  [<ffffffff827bff7a>] kernel_init+0x167/0x1f1
-[   60.248195]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   60.267709]  [<ffffffff81ccd07c>] ? restore_args+0x0/0x30
-[   60.268206]  [<ffffffff827bfe13>] ? kernel_init+0x0/0x1f1
-[   60.287632]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
+Regards,
 
-[   70.976633] ACPI: acpi_idle registered with cpuidle
-[   70.978833] Monitor-Mwait will be used to enter C-1 state
-[   70.996684] Monitor-Mwait will be used to enter C-3 state
-[   71.037469] BUG: unable to handle kernel NULL pointer dereference at (null)
-[   71.038065] IP: [<ffffffff8141e232>] strcmp+0x4/0x21
-[   71.056510] PGD 0 
-[   71.056743] Oops: 0000 [#1] SMP 
-[   71.056994] last sysfs file: 
-[   71.057194] CPU 49 
-[   71.057317] Modules linked in:
-[   71.076724] 
-[   71.076886] Pid: 1, comm: swapper Tainted: G        W   2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171      /Sun Fire x4800
-[   71.096947] RIP: 0010:[<ffffffff8141e232>]  [<ffffffff8141e232>] strcmp+0x4/0x21
-[   71.116524] RSP: 0018:ffff8810794c3c00  EFLAGS: 00010246
-[   71.117021] RAX: 0000000000000001 RBX: 0000000000000000 RCX: 0000000000000000
-[   71.136567] RDX: ffff88285b6b6064 RSI: ffff88285b6b6020 RDI: 0000000000000000
-[   71.137218] RBP: ffff8810794c3c00 R08: ffffffff82491388 R09: ffff883000000000
-[   71.156848] R10: 0000000000000000 R11: 0000000000000003 R12: ffff88285b7b7000
-[   71.176524] R13: ffff88285b6b6020 R14: 00000000ffffffef R15: 0000000000000001
-[   71.177081] FS:  0000000000000000(0000) GS:ffff88287f000000(0000) knlGS:0000000000000000
-[   71.196812] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[   71.216423] CR2: 0000000000000000 CR3: 0000000002466000 CR4: 00000000000006e0
-[   71.216993] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[   71.236653] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[   71.237309] Process swapper (pid: 1, threadinfo ffff8810794c2000, task ffff88305b4a8000)
-[   71.256941] Stack:
-[   71.257101]  ffff8810794c3c30 ffffffff81187d7c ffff8810794c3ca0 ffff881078bfda50
-[   71.276856] <0> ffff88103e8b0870 ffff8810794c3ce0 ffff8810794c3c60 ffffffff81187f2f
-[   71.296598] <0> ffff88103e8b0870 ffff88103eab7d00 ffff88103e8b0870 ffff8810794c3ce0
-[   71.297227] Call Trace:
-[   71.316487]  [<ffffffff81187d7c>] sysfs_find_dirent+0x3f/0x59
-[   71.316961]  [<ffffffff81187f2f>] __sysfs_add_one+0x2f/0x91
-[   71.336455]  [<ffffffff81187fb2>] sysfs_add_one+0x21/0xf6
-[   71.336871]  [<ffffffff81188804>] sysfs_do_create_link+0x108/0x1a5
-[   71.356562]  [<ffffffff81cccccc>] ? _raw_spin_unlock_irq+0x30/0x36
-[   71.357077]  [<ffffffff811888b4>] sysfs_create_link+0x13/0x15
-[   71.376588]  [<ffffffff815098f6>] driver_sysfs_add+0x70/0x95
-[   71.377087]  [<ffffffff81509b6f>] driver_probe_device+0x6e/0x151
-[   71.396602]  [<ffffffff81509cb3>] __driver_attach+0x61/0x85
-[   71.397034]  [<ffffffff81509c52>] ? __driver_attach+0x0/0x85
-[   71.416639]  [<ffffffff81508d5f>] bus_for_each_dev+0x5c/0x88
-[   71.417058]  [<ffffffff81509884>] driver_attach+0x1e/0x20
-[   71.436737]  [<ffffffff815094bd>] bus_add_driver+0xfd/0x254
-[   71.437164]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   71.456732]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   71.457236]  [<ffffffff81509f31>] driver_register+0x9b/0x108
-[   71.476676]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   71.496278]  [<ffffffff81479b71>] acpi_bus_register_driver+0x43/0x46
-[   71.496728]  [<ffffffff827f209b>] acpi_processor_init+0x93/0x10b
-[   71.516373]  [<ffffffff8109c5a2>] ? ktime_get+0x65/0xbf
-[   71.516814]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   71.536413]  [<ffffffff810002da>] do_one_initcall+0x57/0x135
-[   71.536865]  [<ffffffff827bff7a>] kernel_init+0x167/0x1f1
-[   71.556395]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   71.556900]  [<ffffffff81ccd07c>] ? restore_args+0x0/0x30
-[   71.576432]  [<ffffffff827bfe13>] ? kernel_init+0x0/0x1f1
-[   71.576874]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
-[   71.596481] Code: 48 ff c1 80 39 00 75 f8 eb 0d 48 ff c1 48 ff ca 75 05 c6 01 00 eb 0e 40 8a 3e 48 ff c6 40 84 ff 40 88 39 75 e5 c9 c3 55 48 89 e5 <8a> 07 8a 16 48 ff c7 48 ff c6 38 d0 74 07 19 c0 83 c8 01 eb 06 
-[   71.617378] RIP  [<ffffffff8141e232>] strcmp+0x4/0x21
-[   71.636558]  RSP <ffff8810794c3c00>
-[   71.636814] CR2: 0000000000000000
-[   71.656246] ---[ end trace b7b9396a6ed2edd4 ]---
-[   71.656712] Kernel panic - not syncing: Attempted to kill init!
-[   71.657202] Pid: 1, comm: swapper Tainted: G      D W   2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171
-[   71.676846] Call Trace:
-[   71.696196]  [<ffffffff81cc90be>] panic+0x91/0x1a1
-[   71.696532]  [<ffffffff81ccc63a>] ? _raw_write_unlock_irq+0x30/0x35
-[   71.716196]  [<ffffffff8107bbb2>] ? do_exit+0x2d8/0x6cb
-[   71.716710]  [<ffffffff8107b94c>] do_exit+0x72/0x6cb
-[   71.717104]  [<ffffffff81079e0d>] ? kmsg_dump+0x13b/0x156
-[   71.736627]  [<ffffffff81ccdece>] oops_end+0xb7/0xbf
-[   71.737111]  [<ffffffff8105b056>] no_context+0x1fc/0x20b
-[   71.756467]  [<ffffffff810a8162>] ? __lock_acquire+0x17cf/0x17e1
-[   71.756999]  [<ffffffff8105b1f7>] __bad_area_nosemaphore+0x192/0x1b5
-[   71.776547]  [<ffffffff81ccff3b>] ? do_page_fault+0x12d/0x3f1
-[   71.776908]  [<ffffffff8105b22d>] bad_area_nosemaphore+0x13/0x15
-[   71.796652]  [<ffffffff81cd0005>] do_page_fault+0x1f7/0x3f1
-[   71.816151]  [<ffffffff81ccd443>] ? error_sti+0x5/0x6
-[   71.816516]  [<ffffffff81ccc1b7>] ? trace_hardirqs_off_thunk+0x3a/0x3c
-[   71.836242]  [<ffffffff81ccd25f>] page_fault+0x1f/0x30
-[   71.836680]  [<ffffffff8141e232>] ? strcmp+0x4/0x21
-[   71.837084]  [<ffffffff81187d7c>] sysfs_find_dirent+0x3f/0x59
-[   71.856665]  [<ffffffff81187f2f>] __sysfs_add_one+0x2f/0x91
-[   71.876096]  [<ffffffff81187fb2>] sysfs_add_one+0x21/0xf6
-[   71.876533]  [<ffffffff81188804>] sysfs_do_create_link+0x108/0x1a5
-[   71.896120]  [<ffffffff81cccccc>] ? _raw_spin_unlock_irq+0x30/0x36
-[   71.896653]  [<ffffffff811888b4>] sysfs_create_link+0x13/0x15
-[   71.916203]  [<ffffffff815098f6>] driver_sysfs_add+0x70/0x95
-[   71.916754]  [<ffffffff81509b6f>] driver_probe_device+0x6e/0x151
-[   71.936229]  [<ffffffff81509cb3>] __driver_attach+0x61/0x85
-[   71.936711]  [<ffffffff81509c52>] ? __driver_attach+0x0/0x85
-[   71.956235]  [<ffffffff81508d5f>] bus_for_each_dev+0x5c/0x88
-[   71.956729]  [<ffffffff81509884>] driver_attach+0x1e/0x20
-[   71.976295]  [<ffffffff815094bd>] bus_add_driver+0xfd/0x254
-[   71.976802]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   71.996309]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   71.996810]  [<ffffffff81509f31>] driver_register+0x9b/0x108
-[   72.016264]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   72.016670]  [<ffffffff81479b71>] acpi_bus_register_driver+0x43/0x46
-[   72.036455]  [<ffffffff827f209b>] acpi_processor_init+0x93/0x10b
-[   72.056001]  [<ffffffff8109c5a2>] ? ktime_get+0x65/0xbf
-[   72.056441]  [<ffffffff827f2008>] ? acpi_processor_init+0x0/0x10b
-[   72.076026]  [<ffffffff810002da>] do_one_initcall+0x57/0x135
-[   72.076567]  [<ffffffff827bff7a>] kernel_init+0x167/0x1f1
-[   72.096004]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   72.096503]  [<ffffffff81ccd07c>] ? restore_args+0x0/0x30
-[   72.116022]  [<ffffffff827bfe13>] ? kernel_init+0x0/0x1f1
-[   72.116472]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
+Piotr Hosowicz
 
-
-
+-- 
+Janusz Korwin-Mikke:
+"ZUS z pewno¶ci± jest instytucj± przestêpcz±,
+ale nie mo¿na nazwaæ jej zorganizowan±."
+NP: Patrick O'Hearn - Facing the Sun
+NB: 2.6.36-rc7-git1
