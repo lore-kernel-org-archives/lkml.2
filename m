@@ -1,130 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760373Ab0JISDp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 14:03:45 -0400
-Received: from postdiluvian.org ([128.30.54.21]:53803 "EHLO
-	porklips.postdiluvian.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756641Ab0JISDm (ORCPT
+	id S1756641Ab0JISIF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 14:08:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43805 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754009Ab0JISID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 14:03:42 -0400
-X-Greylist: delayed 1249 seconds by postgrey-1.27 at vger.kernel.org; Sat, 09 Oct 2010 14:03:41 EDT
-Date: Sat, 9 Oct 2010 13:42:46 -0400
-From: Mark Mason <mason@postdiluvian.org>
-To: Iwo Mergler <iwo@call-direct.com.au>
-Cc: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Scheduler latency problems when using NAND
-Message-ID: <20101009174246.GA19591@postdiluvian.org>
-References: <20100929221401.GA32583@postdiluvian.org>
- <4CA3D92E.9060109@call-direct.com.au>
+	Sat, 9 Oct 2010 14:08:03 -0400
+Message-ID: <4CB0AF2A.2010605@kernel.org>
+Date: Sat, 09 Oct 2010 11:06:34 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CA3D92E.9060109@call-direct.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Robin Holt <holt@sgi.com>
+CC: Russ Anderson <rja@sgi.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        tglx@linutronix.de, "H. Peter Anvin" <h.peter.anvin@intel.com>,
+        Jack Steiner <steiner@sgi.com>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [BUG] x86: bootmem broken on SGI UV
+References: <20101008213429.GB7223@sgi.com> <4CAFA1DB.6010802@kernel.org> <20101009125944.GA18248@sgi.com> <20101009163908.GX14068@sgi.com>
+In-Reply-To: <20101009163908.GX14068@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iwo Mergler <iwo@call-direct.com.au> wrote:
-
-> Mark Mason wrote:
-> > Hi all,
-> > 
-> > I hope this is the right place for this question.  I'm having some
-> > problems with scheduler latency when using UBIFS, and I'm hoping for
-> > some suggestions.
-> <snip>
-> > The application is storing streaming video, almost entirely large
-> > sequential files, roughly 250K to 15M, to a 1.6G filesystem.  There's
-> > no seeking or rewriting, just creat, write, close, repeat.  No
-> > compression is used on the filesystem.
-> > 
-> > The problem I'm seeing is excessively large scheduler latency when
-> > data is flushed to NAND.
-> <snip>
-> > Does anyone have any suggestions, ideas, hints, advice, etc?
+On 10/09/2010 09:39 AM, Robin Holt wrote:
+> On Sat, Oct 09, 2010 at 07:59:45AM -0500, Russ Anderson wrote:
+>> Yes, Yinghai's patch fixes the problem.
+>> Thank you very much.
 > 
-> The Linux block cache is optimised for mechanical hard drives,
-> to minimise seek times. Some of the assumptions don't make much
-> sense with FLASH and streaming storage.
+> Will this be included in 2.6.36?  It is needed for boot in order for UV
+> systems to boot.
 > 
-> Maybe try to flush data whenever you have written a few blocks'
-> worth. Or have a look at the O_DIRECT flag (or madvise), although
-> I don't know how it interacts with UBIFS.
 
-I tried lowering dirty_writeback_centisecs and dirty_expire_centisecs,
-the latency dropped when I used values around 1 or 2 (down from 500 &
-3000), but it's still a problem.
+yes, it is needed for 2.6.33 .34 .35 .36
 
-> You could use a real filesystem to store the metadata for your
-> circular storage partition (file name, length, offset).
-> 
-> Maybe use raw UBI so you don't have to worry about bad blocks.
-> 
-> Either way, the time to erase a block and write a single page
-> is predictable and you can do it as soon as you get the data.
+It is too late for put in 2.6.36. Linus already had -rc7, and assume he will have final .36 this week.
 
-A custom filesystem would be good, but I still hold out hope that
-somebody has already fought this battle for me.
+Yinghai
 
-Regardless, it looks like I have a genuine hardware problem on my
-hands, and it's one that I would expect other people to have, although
-I suspect it wouldn't be an issue with reasonable flash loads.
+>>
+>> On Fri, Oct 08, 2010 at 03:57:31PM -0700, Yinghai Lu wrote:
+>>> On 10/08/2010 02:34 PM, Russ Anderson wrote:
+>>>
+>>> After looking at the changelog, it turns out it is broken for a while by
+>>> following commit
+>>>
+>>> |commit 8716273caef7f55f39fe4fc6c69c5f9f197f41f1
+>>> |Author: David Rientjes <rientjes@google.com>
+>>> |Date:   Fri Sep 25 15:20:04 2009 -0700
+>>> |
+>>> |    x86: Export srat physical topology
+>>>
+>>> before that commit, register_active_regions() is called SRAT memory entries.
+>>>
+>>> Try to use nodememblk_range[] instead of nodes[].
+>>>
+>>> For stable tree: from 2.6.33 to 2.3.36 need this patch by
+>>> changing memblock_x86_register_active_regions() with e820_register_active_regions()
+>>>
+>>> Reported-by: Russ Anderson <rja@sgi.com>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>> Cc: stable@kernel.org
+>>>
+>>> ---
+>>>  arch/x86/mm/srat_64.c |    8 +++++---
+>>>  1 file changed, 5 insertions(+), 3 deletions(-)
+>>>
+>>> Index: linux-2.6/arch/x86/mm/srat_64.c
+>>> ===================================================================
+>>> --- linux-2.6.orig/arch/x86/mm/srat_64.c
+>>> +++ linux-2.6/arch/x86/mm/srat_64.c
+>>> @@ -421,9 +421,11 @@ int __init acpi_scan_nodes(unsigned long
+>>>  		return -1;
+>>>  	}
+>>>  
+>>> -	for_each_node_mask(i, nodes_parsed)
+>>> -		memblock_x86_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
+>>> -						nodes[i].end >> PAGE_SHIFT);
+>>> +	for (i = 0; i < num_node_memblks; i++)
+>>> +		memblock_x86_register_active_regions(memblk_nodeid[i],
+>>> +						node_memblk_range[i].start >> PAGE_SHIFT,
+>>> +						node_memblk_range[i].end >> PAGE_SHIFT);
+>>> +
+>>>  	/* for out of order entries in SRAT */
+>>>  	sort_node_map();
+>>>  	if (!nodes_cover_memory(nodes)) {
+>>
+>> -- 
+>> Russ Anderson, OS RAS/Partitioning Project Lead  
+>> SGI - Silicon Graphics Inc          rja@sgi.com
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
 
-The flash driver (fsl_elbc_nand.c) goes to sleep right after it issues
-a page program, and a context switch to another high priority thread
-takes place promptly.  This thread is often one that reads from
-another (video) chip on the same bus as the flash (the MPC8315 LBC).
-The flash asserts its BUSY line while the page program is in
-operation.  When the other thread comes along to read from video chip,
-it's held off for the 200us duration of the page program (the LBC
-controller for the video chip is running in UPM mode, so the BUSY line
-is a BUSY line and not a TA line, in case any 83xx junkies are reading
-this).
-
-What I see on a logic analyzer is the BUSY line held by the flash for
-200us, a single 32 bit read of the video chip (broken up into two 16
-bit reads for the 16 bit bus), then another 200us BUSY from the flash,
-two more 16 bit reads, etc, all the way to the end of the logic
-analyzer screen.
-
-What I think is happening is that the flash background thread is
-running very efficiently - it comes in, issues a page program, and
-relinquishes the CPU.  The thread reading the video chip then runs,
-stalls for 200us waiting for a single read, gets its read, then is
-preempted for the flash BGT.
-
-My guess is that the scheduler sees the flash background thread as
-running almost not at all, and the video thread as running a lot more,
-although it's stalled for most of the first 200us of its time slice on
-a single bus transaction, so it can't really do anything with its time
-slice.  I further suspect that the scheduler is dynamically adjusting
-the priorities to boost the flash BGT, since it's using much less CPU
-time than the video thread, even though the video thread can't use
-most of its time slice.  Can someone tell me if this makes sense?
-
-I tried some messing with priorities, but ultimately the flash has to
-run, and it has to run frequently in very short bursts to issue all of
-the page programs.  The video chip needs to be serviced promptly, so
-there is always a significant chance that it will run right after a
-page program is issued.
-
-I tried disabling preemption for the duration of a transfer in the
-video driver so it wouldn't get preempted once it had waited its 200us
-to get the bus.  It helped, but ultimately there's still a 200us delay
-to perform a sequence of operations that usually take somewhere
-between 5 and 30 us.
-
-Most devices that would sit on the bus will only assert the BUSY line
-while the chip select is held.  The NAND, however, asserts BUSY for
-the duration of a page program.  So I could add a gate to the BUSY
-line to gate it with the chip select.  This would require a respin of
-the board, and I'm not 100% certain that it wouldn't confuse the
-8315's NAND controller.  I'm going to try this next week.  I could
-also take the bus controller out of flash (FCM) mode, depop the
-resistors to the NAND's BUSY line, and have the NAND layer talk to the
-NAND like it's just a chip on a plain old bus, and poll for BUSY.
-This option might be better than it sounds, since the delays are very
-predictable.
-
-Any words of wisdom?
