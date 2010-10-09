@@ -1,99 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760523Ab0JIT6I (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 15:58:08 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:58379 "EHLO
+	id S1760564Ab0JIT6O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 15:58:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:62180 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760502Ab0JIT6F (ORCPT
+	with ESMTP id S1760519Ab0JIT6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 15:58:05 -0400
+	Sat, 9 Oct 2010 15:58:09 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org,
-        Mathieu Lacage <mathieu.lacage@sophia.inria.fr>,
-        Mathieu Lacage <mathieu.lacage@inria.fr>,
+Cc: linux-arch@vger.kernel.org, Akinobu Mita <akinobu.mita@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 1/6] asm-generic: make atomic_add_unless a function
-Date: Sat,  9 Oct 2010 21:57:47 +0200
-Message-Id: <1286654272-21483-2-git-send-email-arnd@arndb.de>
+Subject: [PATCH 6/6] bitops: remove duplicated extern declarations
+Date: Sat,  9 Oct 2010 21:57:52 +0200
+Message-Id: <1286654272-21483-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286654272-21483-1-git-send-email-arnd@arndb.de>
 References: <1286654272-21483-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:oqIrxhImfGO+vwFxbk0CHoqirgXDB06hoZNzhnRn0Hd
- Rw0Y2uWNNmvFYNRIhMd7RDcgeeUBmZ8osfohBu9cOiGEUdbjNT
- frML0hBbgf/DzBsB45b3fhPpeD+FRWGdc1yA11TFR0TGOeLxMF
- 5U6KOJlUcVtTyHQ5bhnUe2yKsTOgtqQI9zysDTqOih/CHA5Jsl
- jC8H/mQme1YM3QC931DHg==
+X-Provags-ID: V02:K0:V+eOJJygEOQeRayAVI0KpV4aV2NWxT2DV2GeJU0pNa3
+ 0kP+WaUisdXUp46+UiEto4/vYlgm5i+yJzFS3VDygC5oU11Vmi
+ LwcKW33wVKvJz7+clOXdVRjI9kvv2hfwXxE4nMzUmRvXzRkV3i
+ eHABuFTML+NoQWwtit87+TXrY8FHYjSdv4EyA/2dIn3320q5KJ
+ knvv4or02lMT4+2rBYcRg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
+From: Akinobu Mita <akinobu.mita@gmail.com>
 
-atomic_add_unless is a macro so, bad things happen if the caller defines
-a local variable named c, just like like the local variable c defined by
-the macro. Thus, convert atomic_add_unless to a function. (bug triggered
-by net/ipv4/netfilter/ipt_CLUSTERIP.c: clusterip_config_find_get calls
-atomic_inc_not_zero)
+If CONFIG_GENERIC_FIND_NEXT_BIT is enabled, find_next_bit() and
+find_next_zero_bit() are doubly declared in asm-generic/bitops/find.h
+and linux/bitops.h.
 
-Signed-off-by: Mathieu Lacage <mathieu.lacage@inria.fr>
+asm/bitops.h includes asm-generic/bitops/find.h if and only if the
+architecture enables CONFIG_GENERIC_FIND_NEXT_BIT. And asm/bitops.h
+is included by linux/bitops.h
+
+So we can just remove the extern declarations of find_next_bit() and
+find_next_zero_bit() in linux/bitops.h.
+
+Also we can remove unneeded #ifndef CONFIG_GENERIC_FIND_NEXT_BIT in
+asm-generic/bitops/find.h.
+
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- include/asm-generic/atomic.h |   34 +++++++++++++++++-----------------
- 1 files changed, 17 insertions(+), 17 deletions(-)
+ include/asm-generic/bitops/find.h |   14 ++++++++++++--
+ include/linux/bitops.h            |   23 -----------------------
+ 2 files changed, 12 insertions(+), 25 deletions(-)
 
-diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
-index e53347f..a6cc019 100644
---- a/include/asm-generic/atomic.h
-+++ b/include/asm-generic/atomic.h
-@@ -119,14 +119,23 @@ static inline void atomic_dec(atomic_t *v)
- #define atomic_dec_and_test(v)		(atomic_sub_return(1, (v)) == 0)
- #define atomic_inc_and_test(v)		(atomic_add_return(1, (v)) == 0)
+diff --git a/include/asm-generic/bitops/find.h b/include/asm-generic/bitops/find.h
+index 30afec0..110fa70 100644
+--- a/include/asm-generic/bitops/find.h
++++ b/include/asm-generic/bitops/find.h
+@@ -1,13 +1,23 @@
+ #ifndef _ASM_GENERIC_BITOPS_FIND_H_
+ #define _ASM_GENERIC_BITOPS_FIND_H_
  
--#define atomic_add_unless(v, a, u)				\
--({								\
--	int c, old;						\
--	c = atomic_read(v);					\
--	while (c != (u) && (old = atomic_cmpxchg((v), c, c + (a))) != c) \
--		c = old;					\
--	c != (u);						\
--})
-+#define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
-+#define atomic_cmpxchg(v, old, new)	(cmpxchg(&((v)->counter), (old), (new)))
-+
-+#define cmpxchg_local(ptr, o, n)				  	       \
-+	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
-+			(unsigned long)(n), sizeof(*(ptr))))
-+
-+#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
-+
-+static inline int atomic_add_unless(atomic_t *v, int a, int u)
-+{
-+  int c, old;
-+  c = atomic_read(v);
-+  while (c != u && (old = atomic_cmpxchg(v, c, c + a)) != c)
-+    c = old;
-+  return c != u;
-+}
+-#ifndef CONFIG_GENERIC_FIND_NEXT_BIT
++/**
++ * find_next_bit - find the next set bit in a memory region
++ * @addr: The address to base the search on
++ * @offset: The bitnumber to start searching at
++ * @size: The bitmap size in bits
++ */
+ extern unsigned long find_next_bit(const unsigned long *addr, unsigned long
+ 		size, unsigned long offset);
  
- #define atomic_inc_not_zero(v) atomic_add_unless((v), 1, 0)
++/**
++ * find_next_zero_bit - find the next cleared bit in a memory region
++ * @addr: The address to base the search on
++ * @offset: The bitnumber to start searching at
++ * @size: The bitmap size in bits
++ */
+ extern unsigned long find_next_zero_bit(const unsigned long *addr, unsigned
+ 		long size, unsigned long offset);
+-#endif
  
-@@ -140,15 +149,6 @@ static inline void atomic_clear_mask(unsigned long mask, unsigned long *addr)
- 	raw_local_irq_restore(flags);
- }
+ #ifdef CONFIG_GENERIC_FIND_FIRST_BIT
  
--#define atomic_xchg(ptr, v)		(xchg(&(ptr)->counter, (v)))
--#define atomic_cmpxchg(v, old, new)	(cmpxchg(&((v)->counter), (old), (new)))
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index adb0f11..827cc95 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -149,28 +149,5 @@ extern unsigned long find_last_bit(const unsigned long *addr,
+ 				   unsigned long size);
+ #endif /* CONFIG_GENERIC_FIND_LAST_BIT */
+ 
+-#ifdef CONFIG_GENERIC_FIND_NEXT_BIT
 -
--#define cmpxchg_local(ptr, o, n)				  	       \
--	((__typeof__(*(ptr)))__cmpxchg_local_generic((ptr), (unsigned long)(o),\
--			(unsigned long)(n), sizeof(*(ptr))))
+-/**
+- * find_next_bit - find the next set bit in a memory region
+- * @addr: The address to base the search on
+- * @offset: The bitnumber to start searching at
+- * @size: The bitmap size in bits
+- */
+-extern unsigned long find_next_bit(const unsigned long *addr,
+-				   unsigned long size, unsigned long offset);
 -
--#define cmpxchg64_local(ptr, o, n) __cmpxchg64_local_generic((ptr), (o), (n))
+-/**
+- * find_next_zero_bit - find the next cleared bit in a memory region
+- * @addr: The address to base the search on
+- * @offset: The bitnumber to start searching at
+- * @size: The bitmap size in bits
+- */
 -
- /* Assume that atomic operations are already serializing */
- #define smp_mb__before_atomic_dec()	barrier()
- #define smp_mb__after_atomic_dec()	barrier()
+-extern unsigned long find_next_zero_bit(const unsigned long *addr,
+-					unsigned long size,
+-					unsigned long offset);
+-
+-#endif /* CONFIG_GENERIC_FIND_NEXT_BIT */
+ #endif /* __KERNEL__ */
+ #endif
 -- 
 1.7.1
 
