@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933160Ab0JIGuB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 02:50:01 -0400
+	id S1755423Ab0JIGuO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 02:50:14 -0400
 Received: from mga11.intel.com ([192.55.52.93]:7021 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754861Ab0JIGt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 02:49:58 -0400
+	id S933121Ab0JIGuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 02:50:00 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,307,1283756400"; 
-   d="scan'208";a="614941825"
+   d="scan'208";a="614941834"
 From: Huang Ying <ying.huang@intel.com>
 To: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
         "H. Peter Anvin" <hpa@zytor.com>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
         Robert Richter <robert.richter@amd.com>,
         Huang Ying <ying.huang@intel.com>
-Subject: [PATCH -v3 4/6] Make NMI reason io port (0x61) can be processed on any CPU
-Date: Sat,  9 Oct 2010 14:49:45 +0800
-Message-Id: <1286606987-19879-4-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v3 6/6] x86, NMI, Remove do_nmi_callback logic
+Date: Sat,  9 Oct 2010 14:49:47 +0800
+Message-Id: <1286606987-19879-6-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
 References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
@@ -25,84 +25,153 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In original NMI handler, NMI reason io port (0x61) is only processed
-on BSP. This makes it impossible to hot-remove BSP. To solve the
-issue, a raw spinlock is used to make the port can be processed on any
-CPU.
+do_nmi_callback related logic is removed, because it is useless, just
+adds code complexity.
+
+unknown_nmi_panic sysctl is reserved to keep kernel ABI unchanged.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 ---
- arch/x86/kernel/traps.c |   45 +++++++++++++++++++++++++--------------------
- 1 file changed, 25 insertions(+), 20 deletions(-)
+ arch/x86/include/asm/nmi.h    |   10 +++++++++-
+ arch/x86/kernel/apic/hw_nmi.c |    1 -
+ arch/x86/kernel/apic/nmi.c    |   29 +----------------------------
+ arch/x86/kernel/traps.c       |   16 ++++++++++------
+ 4 files changed, 20 insertions(+), 36 deletions(-)
 
+--- a/arch/x86/include/asm/nmi.h
++++ b/arch/x86/include/asm/nmi.h
+@@ -30,9 +30,17 @@ extern void setup_apic_nmi_watchdog(void
+ extern void stop_apic_nmi_watchdog(void *);
+ extern void disable_timer_nmi_watchdog(void);
+ extern void enable_timer_nmi_watchdog(void);
+-extern int nmi_watchdog_tick(struct pt_regs *regs, unsigned reason);
+ extern void cpu_nmi_set_wd_enabled(void);
+ 
++#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
++extern int nmi_watchdog_tick(struct pt_regs *regs);
++#else
++static inline int nmi_watchdog_tick(struct pt_regs *regs)
++{
++	return 0;
++}
++#endif
++
+ extern atomic_t nmi_active;
+ extern unsigned int nmi_watchdog;
+ #define NMI_NONE	0
+--- a/arch/x86/kernel/apic/hw_nmi.c
++++ b/arch/x86/kernel/apic/hw_nmi.c
+@@ -100,7 +100,6 @@ void acpi_nmi_disable(void) { return; }
+ #endif
+ atomic_t nmi_active = ATOMIC_INIT(0);           /* oprofile uses this */
+ EXPORT_SYMBOL(nmi_active);
+-int unknown_nmi_panic;
+ void cpu_nmi_set_wd_enabled(void) { return; }
+ void stop_apic_nmi_watchdog(void *unused) { return; }
+ void setup_apic_nmi_watchdog(void *unused) { return; }
+--- a/arch/x86/kernel/apic/nmi.c
++++ b/arch/x86/kernel/apic/nmi.c
+@@ -37,7 +37,6 @@
+ 
+ #include <asm/mach_traps.h>
+ 
+-int unknown_nmi_panic;
+ int nmi_watchdog_enabled;
+ 
+ /* For reliability, we're prepared to waste bits here. */
+@@ -389,7 +388,7 @@ void touch_nmi_watchdog(void)
+ EXPORT_SYMBOL(touch_nmi_watchdog);
+ 
+ notrace __kprobes int
+-nmi_watchdog_tick(struct pt_regs *regs, unsigned reason)
++nmi_watchdog_tick(struct pt_regs *regs)
+ {
+ 	/*
+ 	 * Since current_thread_info()-> is always on the stack, and we
+@@ -483,23 +482,6 @@ static void disable_ioapic_nmi_watchdog(
+ 	on_each_cpu(stop_apic_nmi_watchdog, NULL, 1);
+ }
+ 
+-static int __init setup_unknown_nmi_panic(char *str)
+-{
+-	unknown_nmi_panic = 1;
+-	return 1;
+-}
+-__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
+-
+-static int unknown_nmi_panic_callback(struct pt_regs *regs, int cpu)
+-{
+-	unsigned char reason = get_nmi_reason();
+-	char buf[64];
+-
+-	sprintf(buf, "NMI received for unknown reason %02x\n", reason);
+-	die_nmi(buf, regs, 1); /* Always panic here */
+-	return 0;
+-}
+-
+ /*
+  * proc handler for /proc/sys/kernel/nmi
+  */
+@@ -540,15 +522,6 @@ int proc_nmi_enabled(struct ctl_table *t
+ 
+ #endif /* CONFIG_SYSCTL */
+ 
+-int do_nmi_callback(struct pt_regs *regs, int cpu)
+-{
+-#ifdef CONFIG_SYSCTL
+-	if (unknown_nmi_panic)
+-		return unknown_nmi_panic_callback(regs, cpu);
+-#endif
+-	return 0;
+-}
+-
+ void arch_trigger_all_cpu_backtrace(void)
+ {
+ 	int i;
 --- a/arch/x86/kernel/traps.c
 +++ b/arch/x86/kernel/traps.c
-@@ -83,6 +83,12 @@ EXPORT_SYMBOL_GPL(used_vectors);
- 
+@@ -84,6 +84,7 @@ EXPORT_SYMBOL_GPL(used_vectors);
  static int ignore_nmis;
  
-+/*
-+ * Prevent NMI reason port (0x61) being accessed simultaneously, can
-+ * only be used in NMI handler.
-+ */
-+static DEFINE_RAW_SPINLOCK(nmi_reason_lock);
+ int unknown_nmi_as_hwerr;
++int unknown_nmi_panic;
+ 
+ /*
+  * Prevent NMI reason port (0x61) being accessed simultaneously, can
+@@ -308,6 +309,13 @@ gp_in_kernel:
+ 	die("general protection fault", regs, error_code);
+ }
+ 
++static int __init setup_unknown_nmi_panic(char *str)
++{
++	unknown_nmi_panic = 1;
++	return 1;
++}
++__setup("unknown_nmi_panic", setup_unknown_nmi_panic);
 +
- static inline void conditional_sti(struct pt_regs *regs)
+ static notrace __kprobes void
+ pci_serr_error(unsigned char reason, struct pt_regs *regs)
  {
- 	if (regs->flags & X86_EFLAGS_IF)
-@@ -383,7 +389,6 @@ unknown_nmi_error(unsigned char reason,
- static notrace __kprobes void default_do_nmi(struct pt_regs *regs)
- {
- 	unsigned char reason = 0;
--	int cpu;
+@@ -391,7 +399,7 @@ unknown_nmi_error(unsigned char reason,
+ 		 reason, smp_processor_id());
  
- 	/*
- 	 * CPU-specific NMI must be processed before non-CPU-specific
-@@ -400,28 +405,28 @@ static notrace __kprobes void default_do
- 		return;
+ 	pr_emerg("Do you have a strange power saving mode enabled?\n");
+-	if (panic_on_unrecovered_nmi)
++	if (unknown_nmi_panic || panic_on_unrecovered_nmi)
+ 		panic("NMI: Not continuing");
  
- 	/* Non-CPU-specific NMI: NMI sources can be processed on any CPU */
--	cpu = smp_processor_id();
--	/* Only the BSP gets external NMIs from the system. */
--	if (!cpu) {
--		reason = get_nmi_reason();
--		if (reason & NMI_REASON_MASK) {
--			if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
--			    == NOTIFY_STOP)
--				return;
--			if (reason & NMI_REASON_SERR)
--				pci_serr_error(reason, regs);
--			else if (reason & NMI_REASON_IOCHK)
--				io_check_error(reason, regs);
-+	raw_spin_lock(&nmi_reason_lock);
-+	reason = get_nmi_reason();
-+	if (reason & NMI_REASON_MASK) {
-+		if (notify_die(DIE_NMI, "nmi", regs, reason, 2, SIGINT)
-+		    == NOTIFY_STOP)
-+			goto unlock_return;
-+		if (reason & NMI_REASON_SERR)
-+			pci_serr_error(reason, regs);
-+		else if (reason & NMI_REASON_IOCHK)
-+			io_check_error(reason, regs);
- #ifdef CONFIG_X86_32
--			/*
--			 * Reassert NMI in case it became active
--			 * meanwhile as it's edge-triggered:
--			 */
--			reassert_nmi();
-+		/*
-+		 * Reassert NMI in case it became active
-+		 * meanwhile as it's edge-triggered:
-+		 */
-+		reassert_nmi();
- #endif
--			return;
--		}
-+unlock_return:
-+		raw_spin_unlock(&nmi_reason_lock);
-+		return;
- 	}
-+	raw_spin_unlock(&nmi_reason_lock);
- 
+ 	pr_emerg("Dazed and confused, but trying to continue\n");
+@@ -442,12 +450,8 @@ unlock_return:
  	if (notify_die(DIE_NMI, "nmi", regs, 0, 2, SIGINT) == NOTIFY_STOP)
  		return;
+ 
+-#if defined(CONFIG_X86_LOCAL_APIC) && !defined(CONFIG_LOCKUP_DETECTOR)
+-	if (nmi_watchdog_tick(regs, reason))
+-		return;
+-	if (do_nmi_callback(regs, cpu))
++	if (nmi_watchdog_tick(regs))
+ 		return;
+-#endif
+ 
+ 	unknown_nmi_error(reason, regs);
+ }
