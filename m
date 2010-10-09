@@ -1,50 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757327Ab0JILoy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 07:44:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46803 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab0JILox (ORCPT
+	id S1755539Ab0JIL4D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 07:56:03 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38937 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754881Ab0JIL4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 07:44:53 -0400
-Date: Sat, 9 Oct 2010 13:44:44 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
+	Sat, 9 Oct 2010 07:56:01 -0400
+Date: Sat, 9 Oct 2010 07:55:51 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
         Felipe Contreras <felipe.contreras@gmail.com>,
         Russell King - ARM Linux <linux@arm.linux.org.uk>,
         Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
         Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
         Han Jonghun <jonghun79.han@gmail.com>
 Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Message-ID: <20101009114444.GL29673@pengutronix.de>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com> <20101009092127.GB20975@n2100.arm.linux.org.uk> <AANLkTimtdV8THgnQL1RxaqLzCUwO27AZSMPi=UtgpML7@mail.gmail.com> <201010091311.26335.arnd@arndb.de>
+Message-ID: <20101009115551.GA19947@infradead.org>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+ <20101009092127.GB20975@n2100.arm.linux.org.uk>
+ <AANLkTimtdV8THgnQL1RxaqLzCUwO27AZSMPi=UtgpML7@mail.gmail.com>
+ <201010091311.26335.arnd@arndb.de>
+ <AANLkTikdxSQD+9UY70PtCPMgnrovx-dWjrrPJ0AZyG4X@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201010091311.26335.arnd@arndb.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikdxSQD+9UY70PtCPMgnrovx-dWjrrPJ0AZyG4X@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Sat, Oct 09, 2010 at 09:43:50PM +1000, Dave Airlie wrote:
+> I'm guessing some closed source graphics drivers for ARM do all kinds
+> of wrong crap, and Nokia use them a lot, and nobody wants to tell the
+> closed vendors to change their drivers because it costs money.
 
-On Sat, Oct 09, 2010 at 01:11:26PM +0200, Arnd Bergmann wrote:
-> When you say that "many drivers broken", can you list the ones you know
-> about? It would probably help resolve this the right way.
-I know about the camera stuff on mx3/pcm037.  See
-pcm037_camera_alloc_dma in arch/arm/mach-mx3/mach-pcm037.c.
+In which case Russell's message to tell them to sodd off is exactly the
+right thing to do.  I've never figured out why Felipe cars so much, but
+if he's one of the users of utterly buggy binary drivers that would
+explain his weird actions here.
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
