@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760587Ab0JIT6W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 15:58:22 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59476 "EHLO
+	id S1760550Ab0JIT6N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 15:58:13 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:62491 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760519Ab0JIT6R (ORCPT
+	with ESMTP id S1760528Ab0JIT6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 15:58:17 -0400
+	Sat, 9 Oct 2010 15:58:09 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org,
-        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+Cc: linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Akinobu Mita <akinobu.mita@gmail.com>,
+        Andrea Gelmini <andrea.gelmini@gelma.net>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 3/6] asm-generic: fcntl: make exported headers use strict posix types
-Date: Sat,  9 Oct 2010 21:57:49 +0200
-Message-Id: <1286654272-21483-4-git-send-email-arnd@arndb.de>
+        Chris Metcalf <cmetcalf@tilera.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Lucian Adrian Grijincu <lucian.grijincu@gmail.com>,
+        Mathieu Lacage <mathieu.lacage@inria.fr>,
+        Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org
+Subject: [PATCH 0/6] asm-generic updates for 2.6.37
+Date: Sat,  9 Oct 2010 21:57:46 +0200
+Message-Id: <1286654272-21483-1-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1286654272-21483-1-git-send-email-arnd@arndb.de>
-References: <1286654272-21483-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:CU+ctAFbGq7J/J2Selt34bUsBVk/IbnZHwbar8NTNBg
- q2iL1Dux+yAB/YiZXD4QrICY6quVGwlEsFMaVOPBwl7qmovRON
- z3JsNbddVdlsK0U/Fe67RGaTagDucn9QkItsSJ8JmyiGk0sPvU
- SHJRb3kBTDp88ziQgtnXudPgVBRmbgG0nPC0bFECkzTiFgLUZU
- Sh+2isp8Gcqd+E1hncTJQ==
+X-Provags-ID: V02:K0:tcPuey7bkAm1TkLCjUn3mxIgB3wfD/5Z40vvYSknL0z
+ iBDBJBPz2xJhWNToP5e21omJE6nn7BdW8j+LSgUmwnJ3tX5HWq
+ RGddWCQiSnYuOix+k1KXyrLgTsxhlK7FZklbHhL1B5oQCHtzrz
+ sjPWrCZIHA5G3M2ZaY85rytdc7wZz1tuoLInXbVz113C09KhC5
+ lncHQvFZkkXBSV/7APW3g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+These are the patches that I have queued up for asm-generic
+for the next merge window and that should now show up
+in linux-next.
 
-All 'pid_t' were changed to '__kernel_pid_t' in a previous commit:
-make exported headers use strict posix types
+Please tell me if there is something else that should be there
+or if one of them should not be. Otherwise I'll submit them
+for inclusion in 2.6.37-rc1.
 
-    A number of standard posix types are used in exported headers,
-    which is not allowed if __STRICT_KERNEL_NAMES is defined. In order
-    to get rid of the non-__STRICT_KERNEL_NAMES part and to make sane
-    headers the default, we have to change them all to safe types.
-
-but a later change introduced 'pid_t' again:
-    fcntl: add F_[SG]ETOWN_EX
-
-This makes asm-generic/fcntl.h d use strict posix types again.
-
-Signed-off-by: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+	Arnd
 ---
- include/asm-generic/fcntl.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/asm-generic/fcntl.h b/include/asm-generic/fcntl.h
-index a70b2d2..0fc16e3 100644
---- a/include/asm-generic/fcntl.h
-+++ b/include/asm-generic/fcntl.h
-@@ -122,7 +122,7 @@
- 
- struct f_owner_ex {
- 	int	type;
--	pid_t	pid;
-+	__kernel_pid_t	pid;
- };
- 
- /* for F_[GET|SET]FL */
--- 
-1.7.1
+Akinobu Mita (2):
+  bitops: make asm-generic/bitops/find.h more generic
+  bitops: remove duplicated extern declarations
 
+Andrea Gelmini (1):
+  asm-generic: kdebug.h: Checkpatch cleanup
+
+Lucian Adrian Grijincu (1):
+  asm-generic: fcntl: make exported headers use strict posix types
+
+Mathieu Lacage (2):
+  asm-generic: make atomic_add_unless a function
+  asm-generic: cmpxchg does not handle non-long arguments
+
+ arch/tile/include/asm/bitops.h    |    1 +
+ arch/x86/include/asm/bitops.h     |    2 +
+ include/asm-generic/atomic.h      |   34 ++++++++++++++--------------
+ include/asm-generic/bitops/find.h |   39 ++++++++++++++++++++++++++++++-
+ include/asm-generic/fcntl.h       |    2 +-
+ include/asm-generic/kdebug.h      |    2 +-
+ include/asm-generic/system.h      |   20 +---------------
+ include/linux/bitops.h            |   45 -------------------------------------
+ 8 files changed, 60 insertions(+), 85 deletions(-)
+
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: Andrea Gelmini <andrea.gelmini@gelma.net>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Metcalf <cmetcalf@tilera.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Lucian Adrian Grijincu <lucian.grijincu@gmail.com>
+Cc: Mathieu Lacage <mathieu.lacage@inria.fr>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: x86@kernel.org
