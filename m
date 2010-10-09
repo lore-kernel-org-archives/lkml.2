@@ -1,90 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760288Ab0JIOn6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 10:43:58 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:59961 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756016Ab0JIOn5 (ORCPT
+	id S1754561Ab0JIOq0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 10:46:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:34155 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751874Ab0JIOqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 10:43:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Date: Sat, 9 Oct 2010 16:43:24 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
-        Greg KH <greg@kroah.com>, "linux-main" <linux-kernel@vger.kernel.org>,
-        "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com> <201010091311.26335.arnd@arndb.de> <AANLkTimDd10oj=rruYcB=qTaWWMAJvSCQAJNi+nQqzp7@mail.gmail.com>
-In-Reply-To: <AANLkTimDd10oj=rruYcB=qTaWWMAJvSCQAJNi+nQqzp7@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010091643.25065.arnd@arndb.de>
-X-Provags-ID: V02:K0:124jwgB2XYmOiR13F4SUal8MJcpLEoMObjRuDvUFC07
- xC2y6cfWFwNJPDqnojR8ggVmoApAGDg+Lv44O7paxSr2fXyAMy
- Z5HjORUj/I4UVrRCOe4QoWeZbdSVG99eaAxfx8gYhtrAZZK2gv
- uq6LkEL+Xfsg4jQny1sK45blIAMByElkk6m7z7M1/4CtteTE6h
- ZZJCZIlE/LmQnw6LVh3Eg==
+	Sat, 9 Oct 2010 10:46:25 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6130"; a="57303280"
+From: Tatyana Brokhman <tlinder@codeaurora.org>
+To: linux-usb@vger.kernel.org
+Cc: linux-arm-msm@vger.kernel.org, Tatyana Brokhman <tlinder@codeaurora.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Matthew Wilcox <willy@linux.intel.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH v5] usb: usb3.0 ch9 definitions
+Date: Sat,  9 Oct 2010 16:46:12 +0200
+Message-Id: <1286635573-30035-1-git-send-email-tlinder@codeaurora.org>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 09 October 2010 13:59:45 Felipe Contreras wrote:
-> I know of tidspbridge, in my original mail I listed some links, one
-> which mentions: sh_mobile_ceu_camera, maybe i.MX31 users of the
-> mx3_camera driver: pcm037 and mx31moboard.
->
-> http://article.gmane.org/gmane.linux.ports.sh.devel/8560
+Adding SuperSpeed usb definitions as defined by ch9 of the USB3.0 spec.
+This patch is a preparation for adding SuperSpeed support to the gadget
+framework.
 
-sh_mobile_ceu_camera looks fine on mainline. It only remaps
-the mmio registers, so no problem there. No arm platform even
-declares the device, so the report must be with an external tree.
-
-The mx3_camera driver also looks fine, there is only one ioremap
-in there, which is completely sane.
- 
-> From the looks of it, PowerVR SGX seems like it will be broken too:
-> http://meego.gitorious.org/meego-os-base/kernel-source/trees/master/patches
-
-Not our problem, they already have a forked kernel tree with broken
-drivers, they can fix it themselves or submit an acceptable driver
-upstream if they want people to care about not breaking it.
-
-> But my guess is that most of the issues would be found after releasing
-> .36, and of course the current issues cannot possibly be fixed in that
-> time-frame.
-
-My guess is that tidspbridge is the only driver that someone (i.e. you)
-cares about being broken more than it already is in the mainline kernel. :-)
-
-How about the patch below?
-
-	Arnd
+Signed-off-by: Tatyana Brokhman<tlinder@codeaurora.org>
 ---
-staging/tidspbridge: add memory consistency to TODO list
+ include/linux/usb/ch9.h |   58 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 57 insertions(+), 1 deletions(-)
 
-This driver uses ioremap on regular memory to get an uncached mapping,
-which causes problems on ARMv6 and higher due to aliasing with the
-cached linar kernel mapping.
-
-Make sure this gets fixed before the driver graduates from staging.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-
-diff --git a/drivers/staging/tidspbridge/TODO b/drivers/staging/tidspbridge/TODO
-index 54f4a29..187363f 100644
---- a/drivers/staging/tidspbridge/TODO
-+++ b/drivers/staging/tidspbridge/TODO
-@@ -13,6 +13,7 @@
- * Audit and clean up header files folder
- * Use kernel coding style
- * checkpatch.pl fixes
-+* allocate ext_mem_pool from consistent memory instead of using ioremap
+diff --git a/include/linux/usb/ch9.h b/include/linux/usb/ch9.h
+index da2ed77..fc5506f 100644
+--- a/include/linux/usb/ch9.h
++++ b/include/linux/usb/ch9.h
+@@ -123,8 +123,23 @@
+ #define USB_DEVICE_A_ALT_HNP_SUPPORT	5	/* (otg) other RH port does */
+ #define USB_DEVICE_DEBUG_MODE		6	/* (special devices only) */
  
- Please send any patches to Greg Kroah-Hartman <greg@kroah.com>
- and Omar Ramirez Luna <omar.ramirez@ti.com>.
++/*
++ * New Feature Selectors as added by USB 3.0
++ * See USB 3.0 spec Table 9-6
++ */
++#define USB_DEVICE_U1_ENABLE	48	/* dev may initiate U1 transition */
++#define USB_DEVICE_U2_ENABLE	49	/* dev may initiate U2 transition */
++#define USB_DEVICE_LTM_ENABLE	50	/* dev may send LTM */
++#define USB_INTRF_FUNC_SUSPEND	0	/* function suspend */
++
++#define USB_INTR_FUNC_SUSPEND_OPT_MASK	0xFF00
++
+ #define USB_ENDPOINT_HALT		0	/* IN/OUT will STALL */
+ 
++/* Bit array elements as returned by the USB_REQ_GET_STATUS request. */
++#define USB_DEV_STAT_U1_ENABLED		2	/* transition into U1 state */
++#define USB_DEV_STAT_U2_ENABLED		3	/* transition into U2 state */
++#define USB_DEV_STAT_LTM_ENABLED	4	/* Latency tolerance messages */
+ 
+ /**
+  * struct usb_ctrlrequest - SETUP data for a USB device control request
+@@ -675,6 +690,7 @@ struct usb_bos_descriptor {
+ 	__u8  bNumDeviceCaps;
+ } __attribute__((packed));
+ 
++#define USB_DT_BOS_SIZE		5
+ /*-------------------------------------------------------------------------*/
+ 
+ /* USB_DT_DEVICE_CAPABILITY:  grouped with BOS */
+@@ -712,16 +728,56 @@ struct usb_wireless_cap_descriptor {	/* Ultra Wide Band */
+ 	__u8  bReserved;
+ } __attribute__((packed));
+ 
++/* USB 2.0 Extension descriptor */
+ #define	USB_CAP_TYPE_EXT		2
+ 
+ struct usb_ext_cap_descriptor {		/* Link Power Management */
+ 	__u8  bLength;
+ 	__u8  bDescriptorType;
+ 	__u8  bDevCapabilityType;
+-	__u8  bmAttributes;
++	__le32 bmAttributes;
+ #define USB_LPM_SUPPORT			(1 << 1)	/* supports LPM */
+ } __attribute__((packed));
+ 
++#define USB_DT_USB_EXT_CAP_SIZE	7
++
++/*
++ * SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed USB
++ * specific device level capabilities
++ */
++#define		USB_SS_CAP_TYPE		3
++struct usb_ss_cap_descriptor {		/* Link Power Management */
++	__u8  bLength;
++	__u8  bDescriptorType;
++	__u8  bDevCapabilityType;
++	__u8  bmAttributes;
++#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
++	__le16 wSpeedSupported;
++#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
++#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
++#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
++#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
++	__u8  bFunctionalitySupport;
++	__u8  bU1devExitLat;
++	__le16 bU2DevExitLat;
++} __attribute__((packed));
++
++#define USB_DT_USB_SS_CAP_SIZE	10
++
++/*
++ * Container ID Capability descriptor: Defines the instance unique ID used to
++ * identify the instance across all operating modes
++ */
++#define	CONTAINER_ID_TYPE	4
++struct usb_ss_container_id_descriptor {
++	__u8  bLength;
++	__u8  bDescriptorType;
++	__u8  bDevCapabilityType;
++	__u8  bReserved;
++	__u8  ContainerID[16]; /* 128-bit number */
++} __attribute__((packed));
++
++#define USB_DT_USB_SS_CONTN_ID_SIZE	20
+ /*-------------------------------------------------------------------------*/
+ 
+ /* USB_DT_WIRELESS_ENDPOINT_COMP:  companion descriptor associated with
+-- 
+1.6.3.3
+
+--
+Sent by	an consultant of the Qualcomm Inovation Center, Inc.
+The Qualcomm Inovation Center, Inc.is a member of the Code Aurora Forum.
