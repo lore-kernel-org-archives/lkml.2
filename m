@@ -1,196 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab0JIGun (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 02:50:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:7021 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755183Ab0JIGt7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 02:49:59 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,307,1283756400"; 
-   d="scan'208";a="614941829"
-From: Huang Ying <ying.huang@intel.com>
-To: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>,
-        Huang Ying <ying.huang@intel.com>
-Subject: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
-Date: Sat,  9 Oct 2010 14:49:46 +0800
-Message-Id: <1286606987-19879-5-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
-References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
+	id S1754561Ab0JIHFs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 03:05:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45909 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752677Ab0JIHFp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 03:05:45 -0400
+Message-ID: <4CB013CB.1040904@kernel.org>
+Date: Sat, 09 Oct 2010 00:03:39 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com> <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6> <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6> <4CACFC23.4080504@kernel.org> <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6> <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org> <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6> <4CAD4EC3.5060809@kernel.org> <alpine.LFD.2.00.1010082346310.13094@localhost6.localdomain6> <alpine.LFD.2.00.1010082351450.13094@localhost6.localdomain6> <4CAFEEFA.1070000@kernel.org> <alpine.LFD.2.00.1010090758420.13094@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1010090758420.13094@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In general, unknown NMI is used by hardware and firmware to notify
-fatal hardware errors to OS. So the Linux should treat unknown NMI as
-hardware error and go panic upon unknown NMI for better error
-containment.
+On 10/08/2010 11:10 PM, Thomas Gleixner wrote:
+> On Fri, 8 Oct 2010, Yinghai Lu wrote:
+> 
+>> On 10/08/2010 02:54 PM, Thomas Gleixner wrote:
+>>> On Fri, 8 Oct 2010, Thomas Gleixner wrote:
+>>>
+>>>> On Wed, 6 Oct 2010, Yinghai Lu wrote:
+>>>>> On 10/06/2010 09:01 PM, Thomas Gleixner wrote:
+>>>>>> Well, I'm not too happy about this preallocated stuff anyway, which is
+>>>>>> the reason for the warning below.
+>>>>>>  
+>>>>>>> [   80.726176] WARNING: at drivers/pci/intr_remapping.c:67 irq_2_iommu_alloc+0x52/0xdc()
+>>>>>>> [   80.745935] Hardware name: Sun Fire X4800
+>>>>>>> [   80.746179] irq_2_iommu!=NULL irq 8
+>>>>>>
+>>>>>
+>>>>> no, irq_2_iommu are all dynamically allocated even for irq < 16.
+>>>>
+>>>> I know. I was talking about the preallocated irq descriptors and the
+>>>> handling of it in general.
+>>>>
+>>>> Nevertheless, that irq_2_iommu stuff does not need it's own allocation
+>>>> function. It's bound to a specific irq_cfg anyway, so the next logical
+>>>> step is to move irq_2_iommu into struct irq_cfg and get rid of the
+>>>> extra allocation/free in intr_remapping.c.
+>>>
+>>> Forgot to say, that I updated the git tree with all the fallout
+>>> fixes.
+>>>
+>>> git://git.kernel.org/pub/scm/linux/kernel/git/tglx/linux-2.6-sparse-irq.git master
+>>>
+>>> Can you please retest ?
+>>>
+>>
+>> one warning and two panics
+>>
+>> [   37.369332] ------------[ cut here ]------------
+>> [   37.383782] WARNING: at drivers/pci/intr_remapping.c:67 irq_2_iommu_alloc+0x52/0xdc()
+>> [   37.384463] Hardware name: Sun Fire X4800
+>> [   37.403803] irq_2_iommu!=NULL irq 9
+>> [   37.404054] Modules linked in:
+>> [   37.404311] Pid: 1, comm: swapper Not tainted 2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171
+> 
+> Hmm, so that interrupt is already set up in the iommmu.
+>  
+>> [   59.429741] BUG: unable to handle kernel NULL pointer dereference at (null)
+>> [   59.449366] IP: [<ffffffff8147d715>] acpi_pci_irq_find_prt_entry+0x85/0xb1
+> 
+> I can hardly see how this is related to the irq work.
+> 
+>> [   71.076886] Pid: 1, comm: swapper Tainted: G        W   2.6.36-rc7-tip-yh-01944-ge8a4c5f-dirty #171      /Sun Fire x4800
+>> [   71.096947] RIP: 0010:[<ffffffff8141e232>]  [<ffffffff8141e232>] strcmp+0x4/0x21
+> 
+> Ditto.
 
-But there are some broken hardware, which will generate unknown NMI
-not for hardware error. To support these machines, a white list
-mechanism is provided to treat unknown NMI as hardware error only on
-some known working system.
+don't know.
 
-These systems are identified via the presentation of APEI HEST or
-some PCI ID of the host bridge. The PCI ID of host bridge instead of
-DMI ID is used, so that the checking can be done based on the platform
-type instead of motherboard. This should be simpler and sufficient.
+but without merging your branch, those problems don't come out.
 
-The method to identify the platforms is designed by Andi Kleen.
+only thing i can think about that you real free irq code could stress or expose other subsystem's bug etc.
 
-
-v3:
-
-- Change document and comments
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- arch/x86/include/asm/nmi.h |    1 
- arch/x86/kernel/Makefile   |    2 +
- arch/x86/kernel/hwerr.c    |   62 +++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/traps.c    |   11 +++++++
- drivers/acpi/apei/hest.c   |    8 +++++
- 5 files changed, 84 insertions(+)
- create mode 100644 arch/x86/kernel/hwerr.c
-
---- a/arch/x86/include/asm/nmi.h
-+++ b/arch/x86/include/asm/nmi.h
-@@ -44,6 +44,7 @@ struct ctl_table;
- extern int proc_nmi_enabled(struct ctl_table *, int ,
- 			void __user *, size_t *, loff_t *);
- extern int unknown_nmi_panic;
-+extern int unknown_nmi_as_hwerr;
- 
- void arch_trigger_all_cpu_backtrace(void);
- #define arch_trigger_all_cpu_backtrace arch_trigger_all_cpu_backtrace
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -119,6 +119,8 @@ obj-$(CONFIG_X86_CHECK_BIOS_CORRUPTION)
- 
- obj-$(CONFIG_SWIOTLB)			+= pci-swiotlb.o
- 
-+obj-y					+= hwerr.o
-+
- ###
- # 64 bit specific files
- ifeq ($(CONFIG_X86_64),y)
---- /dev/null
-+++ b/arch/x86/kernel/hwerr.c
-@@ -0,0 +1,62 @@
-+/*
-+ * Hardware error architecture dependent processing
-+ *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/pci.h>
-+#include <linux/init.h>
-+#include <linux/nmi.h>
-+
-+/*
-+ * In general, unknown NMI is used by hardware and firmware to notify
-+ * fatal hardware errors to OS. So the Linux should treat unknown NMI
-+ * as hardware error and go panic upon unknown NMI for better error
-+ * containment.
-+ *
-+ * But there are some broken hardware, which will generate unknown NMI
-+ * not for hardware error. To support these systems, a white list
-+ * mechanism is used to treat unknown NMI as hardware error only on
-+ * some known working system.
-+ *
-+ * The PCI ID of host bridge instead of DMI ID is used, so that the
-+ * checking can be done based on the platform instead of motherboard.
-+ * This should be simpler and sufficient.
-+ */
-+static const
-+struct pci_device_id unknown_nmi_as_hwerr_platform[] __initdata = {
-+	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x3406) },
-+	{ 0, }
-+};
-+
-+int __init check_unknown_nmi_as_hwerr(void)
-+{
-+	struct pci_dev *dev = NULL;
-+
-+	for_each_pci_dev(dev) {
-+		if (pci_match_id(unknown_nmi_as_hwerr_platform, dev)) {
-+			pr_info(
-+"Host bridge is identified, will treat unknown NMI as hardware error!\n");
-+			unknown_nmi_as_hwerr = 1;
-+			break;
-+		}
-+	}
-+
-+	return 0;
-+}
-+late_initcall(check_unknown_nmi_as_hwerr);
---- a/arch/x86/kernel/traps.c
-+++ b/arch/x86/kernel/traps.c
-@@ -83,6 +83,8 @@ EXPORT_SYMBOL_GPL(used_vectors);
- 
- static int ignore_nmis;
- 
-+int unknown_nmi_as_hwerr;
-+
- /*
-  * Prevent NMI reason port (0x61) being accessed simultaneously, can
-  * only be used in NMI handler.
-@@ -366,6 +368,15 @@ unknown_nmi_error(unsigned char reason,
- 	if (notify_die(DIE_NMIUNKNOWN, "nmi", regs, reason, 2, SIGINT) ==
- 			NOTIFY_STOP)
- 		return;
-+	/*
-+	 * On some platforms, hardware errors may be notified via
-+	 * unknown NMI
-+	 */
-+	if (unknown_nmi_as_hwerr)
-+		panic(
-+		"NMI for hardware error without error record: Not continuing\n"
-+		"Please check BIOS/BMC log for further information.");
-+
- #ifdef CONFIG_MCA
- 	/*
- 	 * Might actually be able to figure out what the guilty party
---- a/drivers/acpi/apei/hest.c
-+++ b/drivers/acpi/apei/hest.c
-@@ -35,6 +35,7 @@
- #include <linux/highmem.h>
- #include <linux/io.h>
- #include <linux/platform_device.h>
-+#include <linux/nmi.h>
- #include <acpi/apei.h>
- 
- #include "apei-internal.h"
-@@ -225,6 +226,13 @@ static int __init hest_init(void)
- 	if (rc)
- 		goto err;
- 
-+	/*
-+	 * System has proper HEST should treat unknown NMI as fatal
-+	 * hardware error notification
-+	 */
-+	pr_info("HEST is valid, will treat unknown NMI as hardware error!\n");
-+	unknown_nmi_as_hwerr = 1;
-+
- 	rc = hest_ghes_dev_register(ghes_count);
- 	if (rc)
- 		goto err;
+Yinghai
