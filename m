@@ -1,61 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760059Ab0JIBF3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 21:05:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1025 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752013Ab0JIBF2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 21:05:28 -0400
-Date: Fri, 8 Oct 2010 21:37:08 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: Avi Kivity <avi@redhat.com>, "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dean Nelson <dnelson@redhat.com>
-Subject: Re: [PATCH 2/2] kvm, MCE, Send SRAR SIGBUS directly
-Message-ID: <20101009003708.GA18859@amt.cnet>
-References: <1286526255.7768.96.camel@yhuang-dev>
- <20101008202501.GA2291@amt.cnet>
+	id S1760077Ab0JIBIQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 21:08:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:34876 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759972Ab0JIBIP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 8 Oct 2010 21:08:15 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008202501.GA2291@amt.cnet>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Originating-IP: [46.116.86.31]
+In-Reply-To: <201010082208.25767.rjw@sisk.pl>
+References: <1286177435.2140.5.camel@sven> <201010072323.05218.rjw@sisk.pl>
+ <1286526197.4493.19.camel@sven> <201010082208.25767.rjw@sisk.pl>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sat, 9 Oct 2010 03:07:50 +0200
+Message-ID: <AANLkTinSmPpswdHaZnP2rN688Wu1=-2Y2RBzC4+1qTpM@mail.gmail.com>
+Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
+To: Sven Neumann <s.neumann@raumfeld.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
+        Colin Cross <ccross@android.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 05:25:01PM -0300, Marcelo Tosatti wrote:
-> On Fri, Oct 08, 2010 at 04:24:15PM +0800, Huang Ying wrote:
-> > Originally, SRAR SIGBUS is sent to QEMU-KVM via touching the poisoned
-> > page. But commit 96054569190bdec375fe824e48ca1f4e3b53dd36 prevents the
-> > signal from being sent. So now the signal is sent via
-> > force_sig_info_fault directly.
-> > 
-> > Reported-by: Dean Nelson <dnelson@redhat.com>
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > ---
-> >  arch/x86/include/asm/signal.h |    3 +++
-> >  arch/x86/kvm/mmu.c            |   15 +++------------
-> >  arch/x86/mm/fault.c           |    6 +++---
-> >  3 files changed, 9 insertions(+), 15 deletions(-)
-> > 
-> >  static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
-> >  {
-> >  	kvm_release_pfn_clean(pfn);
-> >  	if (is_hwpoison_pfn(pfn)) {
-> > -		kvm_send_hwpoison_signal(kvm, gfn);
-> > +		force_sig_info_fault(SIGBUS, BUS_MCEERR_AR,
-> > +				     gfn_to_hva(kvm, gfn), current);
-> >  		return 0;
-> >  	} else if (is_fault_pfn(pfn))
-> >  		return -EFAULT;
-> 
-> Better fill siginfo and use force_sig_info, which is already exported.
+On Fri, Oct 8, 2010 at 10:08 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> There is a problem with the pxa2xx-mci.0 suspend that has been introduced
+> some time after 2.6.34, but it is not related to commit 152e1d5920.
 
-Thats wrong, its not exported. But there is no need to force delivery,
-so i've changed it to use send_sig_info.
+Sven, what type of card do you have in that slot ? is it SDIO ? what's
+the function driver ?
 
-Applied the other patches, thanks.
+I have a hunch about this, but it may be a wild guess as I don't know
+what's your setup exactly.
 
+Anyway, can you please try this and see if anything changes ?
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index c94565d..515ff39 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
+        if (host->bus_ops && !host->bus_dead) {
+                if (host->bus_ops->suspend)
+                        err = host->bus_ops->suspend(host);
++               if (err == -ENOSYS || !host->bus_ops->resume) {
++                       /*
++                        * We simply "remove" the card in this case.
++                        * It will be redetected on resume.
++                        */
++                       if (host->bus_ops->remove)
++                               host->bus_ops->remove(host);
++                       mmc_claim_host(host);
++                       mmc_detach_bus(host);
++                       mmc_release_host(host);
++                       host->pm_flags = 0;
++                       err = 0;
++               }
+        }
+        mmc_bus_put(host);
+
+The reason I'm asking this is because it seems like commit
+4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related
+to mmc/sd card insert/removal during suspend/resume" has broken
+suspending SDIO function drivers which don't have a suspend handler
+(or do have one, but for some reason it returns -ENOSYS, like
+libertas_sdio's does).
+
+>  The
+> problem was not visible with pm_async=1 because of the very bug fixed by
+> commit 152e1d5920.
+>
+> Please see if the problem is there in 2.6.35 (please test with pm_async=0).
+>
+> Thanks,
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
