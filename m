@@ -1,144 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760169Ab0JICSd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 8 Oct 2010 22:18:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5152 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760136Ab0JICSb convert rfc822-to-8bit (ORCPT
+	id S1760188Ab0JIClo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 8 Oct 2010 22:41:44 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:27247 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760136Ab0JICln (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 8 Oct 2010 22:18:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=uxsjCD9KE7xYZuQR7WgJYnRyQP098e26MPfbUetC7l/OmRCTALnv6OBM2ZVqmdkuhL
-         Uof2gEdCpZXN/dVg2zHQ==
-MIME-Version: 1.0
-In-Reply-To: <20101009011520.GJ5327@balbir.in.ibm.com>
-References: <20101008174958.GI5327@balbir.in.ibm.com> <20101008114123.ff0592b7.akpm@linux-foundation.org>
- <20101009011520.GJ5327@balbir.in.ibm.com>
-From: Greg Thelen <gthelen@google.com>
-Date: Fri, 8 Oct 2010 19:18:05 -0700
-Message-ID: <AANLkTik-+WzhaqJ2KD56MkXGuqFgwejnX8OPbPF1=oqD@mail.gmail.com>
-Subject: Re: [BUGFIX] memcg CPU hotplug lockdep warning fix
-To: balbir@linux.vnet.ibm.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Fri, 8 Oct 2010 22:41:43 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Fri, 08 Oct 2010 22:41:42 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Greg KH <greg@kroah.com>, Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Hannemann <arnd@arndnet.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Hemant Pedanekar <hemantp@ti.com>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+In-reply-to: <20101009002546.GB14675@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.00.1010082210150.3107@xanadu.home>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+ <20101007192245.GC26435@n2100.arm.linux.org.uk>
+ <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
+ <20101008175308.GA10975@n2100.arm.linux.org.uk>
+ <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
+ <20101008230451.GB10975@n2100.arm.linux.org.uk>
+ <20101008232539.GA28697@kroah.com>
+ <20101008234448.GD10975@n2100.arm.linux.org.uk>
+ <20101009000046.GA30616@kroah.com>
+ <20101009002546.GB14675@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 8, 2010 at 6:15 PM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> * Andrew Morton <akpm@linux-foundation.org> [2010-10-08 11:41:23]:
->
->> On Fri, 8 Oct 2010 23:19:58 +0530
->> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
->>
->> >
->> > memcg has lockdep warnings (sleep inside rcu lock)
->> >
->> > From: Balbir Singh <balbir@linux.vnet.ibm.com>
->> >
->> > Recent move to get_online_cpus() ends up calling get_online_cpus() from
->> > mem_cgroup_read_stat(). However mem_cgroup_read_stat() is called under rcu
->> > lock. get_online_cpus() can sleep. The dirty limit patches expose
->> > this BUG more readily due to their usage of mem_cgroup_page_stat()
->> >
->> > This patch address this issue as identified by lockdep and moves the
->> > hotplug protection to a higher layer. This might increase the time
->> > required to hotplug, but not by much.
->> >
->> > Warning messages
->> >
->> > BUG: sleeping function called from invalid context at kernel/cpu.c:62
->> > in_atomic(): 0, irqs_disabled(): 0, pid: 6325, name: pagetest
->> > 2 locks held by pagetest/6325:
->> > #0:  (&mm->mmap_sem){......}, at: [<ffffffff815e9503>]
->> > do_page_fault+0x27d/0x4a0
->> > #1:  (rcu_read_lock){......}, at: [<ffffffff811124a1>]
->> > mem_cgroup_page_stat+0x0/0x23f
->> > Pid: 6325, comm: pagetest Not tainted 2.6.36-rc5-mm1+ #201
->> > Call Trace:
->> > [<ffffffff81041224>] __might_sleep+0x12d/0x131
->> > [<ffffffff8104f4af>] get_online_cpus+0x1c/0x51
->> > [<ffffffff8110eedb>] mem_cgroup_read_stat+0x27/0xa3
->> > [<ffffffff811125d2>] mem_cgroup_page_stat+0x131/0x23f
->> > [<ffffffff811124a1>] ? mem_cgroup_page_stat+0x0/0x23f
->> > [<ffffffff810d57c3>] global_dirty_limits+0x42/0xf8
->> > [<ffffffff810d58b3>] throttle_vm_writeout+0x3a/0xb4
->> > [<ffffffff810dc2f8>] shrink_zone+0x3e6/0x3f8
->> > [<ffffffff81074a35>] ? ktime_get_ts+0xb2/0xbf
->> > [<ffffffff810dd1aa>] do_try_to_free_pages+0x106/0x478
->> > [<ffffffff810dd601>] try_to_free_mem_cgroup_pages+0xe5/0x14c
->> > [<ffffffff8110f947>] mem_cgroup_hierarchical_reclaim+0x314/0x3a2
->> > [<ffffffff81111b31>] __mem_cgroup_try_charge+0x29b/0x593
->> > [<ffffffff8111194a>] ? __mem_cgroup_try_charge+0xb4/0x593
->> > [<ffffffff81071258>] ? local_clock+0x40/0x59
->> > [<ffffffff81009015>] ? sched_clock+0x9/0xd
->> > [<ffffffff810710d5>] ? sched_clock_local+0x1c/0x82
->> > [<ffffffff8111398a>] mem_cgroup_charge_common+0x4b/0x76
->> > [<ffffffff81141469>] ? bio_add_page+0x36/0x38
->> > [<ffffffff81113ba9>] mem_cgroup_cache_charge+0x1f4/0x214
->> > [<ffffffff810cd195>] add_to_page_cache_locked+0x4a/0x148
->> > ....
->> >
->> >
->> > Signed-off-by: Balbir Singh <balbir@linux.vnet.ibm.com>
->> > ---
->> >
->> >  mm/memcontrol.c |    4 ++--
->> >  1 files changed, 2 insertions(+), 2 deletions(-)
->> >
->> >
->> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> > index 116fecd..f4c5665 100644
->> > --- a/mm/memcontrol.c
->> > +++ b/mm/memcontrol.c
->> > @@ -578,7 +578,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
->> >     int cpu;
->> >     s64 val = 0;
->> >
->> > -   get_online_cpus();
->> >     for_each_online_cpu(cpu)
->> >             val += per_cpu(mem->stat->count[idx], cpu);
->> >  #ifdef CONFIG_HOTPLUG_CPU
->> > @@ -586,7 +585,6 @@ static s64 mem_cgroup_read_stat(struct mem_cgroup *mem,
->> >     val += mem->nocpu_base.count[idx];
->> >     spin_unlock(&mem->pcp_counter_lock);
->> >  #endif
->> > -   put_online_cpus();
->> >     return val;
->> >  }
->> >
->> > @@ -1284,6 +1282,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
->> >     struct mem_cgroup *iter;
->> >     s64 value;
->> >
->> > +   get_online_cpus();
->> >     rcu_read_lock();
->> >     mem = mem_cgroup_from_task(current);
->> >     if (mem && !mem_cgroup_is_root(mem)) {
->> > @@ -1305,6 +1304,7 @@ s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
->> >     } else
->> >             value = -EINVAL;
->> >     rcu_read_unlock();
->> > +   put_online_cpus();
->> >
->> >     return value;
->> >  }
->>
->> Confused again.  There's no mem_cgroup_page_stat() in mainline,
->> linux-next or in any patches in -mm.
->>
->
-> Oops, sorry for the confusion. This patch applies on top of the dirty
-> limit patches posted by Greg. I should have posted this in response to
-> Greg's posting.
+On Sat, 9 Oct 2010, Russell King - ARM Linux wrote:
 
-I plan to include Balbir's fix (above) in forthcoming memcg dirty
-limits series V2.  I'm running V2 through tests right now.
+> On Fri, Oct 08, 2010 at 05:00:46PM -0700, Greg KH wrote:
+> > But you can't expect that you make this change, and not fix up the
+> > drivers, and people would be happy, right?  The rule for API changes
+> > like this, or anything, is that the person making the change fixes the
+> > other drivers, and that seems to be the issue here.
+> 
+> Let's entirely revert the change and wait for people's data to be
+> corrupted then.  I don't have the time nor the motivation to work
+> through crap driver code to fix up these unreliable games which are
+> already illegal on platforms such as x86.
+> 
+> If people want their system to be unpredictable, then let's carry on
+> giving them the rope to hang themselves in that manner.
+> 
+> > Any pointers to patches where people have fixed up the drivers?
+> 
+> Despite the discussion, I'm unaware of anyone really taking the issue
+> seriously and producing any patches during the last six months.
+> 
+> So, I say sod it, let's revert the change.
+
+I think that the real issue here is to avoid breaking those drivers 
+which were using this legitimately.  So what about this compromize 
+instead:
+
+diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+index 99627d3..4f071e4 100644
+--- a/arch/arm/mm/ioremap.c
++++ b/arch/arm/mm/ioremap.c
+@@ -201,6 +201,15 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+ 	if (pfn >= 0x100000 && (__pfn_to_phys(pfn) & ~SUPERSECTION_MASK))
+ 		return NULL;
+ 
++	/*
++	 * Warn if RAM is mapped to discourage this usage. Let's forbid it
++	 * outright on ARMv6+ where this became architecturally undefined
++	 * in theory and causes memory corruption in practice.
++	 */
++	if (WARN_ON(pfn_valid(pfn)))
++		if (__LINUX_ARM_ARCH__ >= 6)
++			return NULL;
++
+ 	type = get_mem_type(mtype);
+ 	if (!type)
+ 		return NULL;
+
+Nicolas
