@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab0JJTmz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:42:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33064 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751193Ab0JJTmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:42:53 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-Date: Sun, 10 Oct 2010 21:41:45 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Johannes Berg <johannes@sipsolutions.net>
-References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera> <xpndfyzv9iD.A.STG.7qfsMB@chimera> <4CB211C7.20809@gmail.com>
-In-Reply-To: <4CB211C7.20809@gmail.com>
+	id S1751443Ab0JJToQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:44:16 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37113 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750836Ab0JJToP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 15:44:15 -0400
+Date: Sun, 10 Oct 2010 21:44:05 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Vasiliy Kulikov <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] arch: arm/imx: fix memory init in imx_dma_request()
+Message-ID: <20101010194405.GS29673@pengutronix.de>
+References: <1286731703-17775-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010102141.45916.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286731703-17775-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 10, 2010, Justin P. Mattock wrote:
->   On 10/10/2010 10:51 AM, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> >
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> >
-> >
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19392
-> > Subject		: WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-> > Submitter	: Justin Mattock<justinmattock@gmail.com>
-> > Date		: 2010-09-28 22:30 (13 days old)
-> > Message-ID	:<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>
-> > References	: http://marc.info/?l=linux-kernel&m=128571307018635&w=2
-> >
-> >
-> >
-> as far as I know this is still here.. I can pull the latest to see
-> if it's been fixed, as well as the wireless tree to see.
+On Sun, Oct 10, 2010 at 09:28:23PM +0400, Vasiliy Kulikov wrote:
+> imx_dma_request() didn't fill struct pointed by imxdma with zeroes
+> as it passed sizeof(pointer), not sizeof(struct) to memset().
+> 
+> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
+Acked-and-tested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 
-Well, please do.
+Thanks
+Uwe
 
-Rafael
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
