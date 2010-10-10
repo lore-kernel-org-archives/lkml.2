@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab0JJUSM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 16:18:12 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:48850 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751294Ab0JJUSJ (ORCPT
+	id S1751328Ab0JJUUi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 16:20:38 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53058 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab0JJUUh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 16:18:09 -0400
-Date: Sun, 10 Oct 2010 16:18:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: linux-pm@lists.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: PATCH: PM / Runtime: Remove idle notification after failing
- suspend (was: Re: [linux-pm] [PATCH] PM: add synchronous ...)
-In-Reply-To: <201010090124.56493.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1010101616410.30042-100000@netrider.rowland.org>
+	Sun, 10 Oct 2010 16:20:37 -0400
+Date: Sun, 10 Oct 2010 22:20:31 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        device-mapper development <dm-devel@redhat.com>, pedrib@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [dm-devel] DM-CRYPT: Scale to multiple CPUs v3
+Message-ID: <20101010202031.GD21681@basil.fritz.box>
+References: <20101010130842.GE8256@basil.fritz.box>
+ <4CB1DD1A.5080906@redhat.com>
+ <20101010162257.GA1272@redhat.com>
+ <20101010170151.GD28828@agk-dp.fab.redhat.com>
+ <20101010174454.GA21681@basil.fritz.box>
+ <20101010181736.GE28828@agk-dp.fab.redhat.com>
+ <20101010185100.GB21681@basil.fritz.box>
+ <20101010190734.GH28828@agk-dp.fab.redhat.com>
+ <20101010191640.GC21681@basil.fritz.box>
+ <4CB21492.8050101@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB21492.8050101@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 9 Oct 2010, Rafael J. Wysocki wrote:
+> But previously, there were threads per device, so if one IO thread blocks,
+> others stacked mappings can continue
+> Now I see possibility for deadlock there because we have one io thread now
+> (assuming that 1 CPU situation Alasdair mentioned).
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Runtime: Remove idle notification after failing suspend
-> 
-> If runtime suspend of a device fails returning -EAGAIN or -EBUSY,
-> which means that it's safe to try to suspend it again, the PM core
-> runs the runtime idle helper function for it.  Unfortunately this may
-> lead to problems, for example for PCI devices whose drivers don't
-> implement the ->runtime_idle() callback, because in that case the
-> PCI bus type's ->runtime_idle() always calls pm_runtime_suspend()
-> for the given device.  Thus, if it is automatically called by a
-> driver's ->runtime_suspend() returning -EAGAIN or -EBUSY, it will
-> cause the suspend to happen again possibly causing a busy loop to
-> appear.  To avoid that, remove the idle notification after failing
-> runtime suspend of a device altogether and let the callers of
-> pm_runtime_suspend() repeat the operation if need be.
-> 
-> Reported-by: Alan Stern <stern@rowland.harvard.edu>
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+That path calls the crypto worker thread, not the IO worker thread?
+crypto worker should be fine here, only IO worker would be a problem
+I think because crypto doesn't really block on nested IO.
 
-This is fine as far as I'm concerned.
-
-Alan Stern
+-Andi
 
