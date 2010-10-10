@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab0JJTVh (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:21:37 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:32892 "EHLO ogre.sisk.pl"
+	id S1751922Ab0JJTVp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:21:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:32903 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750818Ab0JJTVf convert rfc822-to-8bit (ORCPT
+	id S1751661Ab0JJTVn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:21:35 -0400
+	Sun, 10 Oct 2010 15:21:43 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Chris Wilson" <chris@chris-wilson.co.uk>,
-        "Dave Airlie" <airlied@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>
+        Florian Mickler <florian@mickler.org>, "Jan Kara" <jack@suse.cz>,
+        "Zdenek Kabelac" <zdenek.kabelac@gmail.com>
 References: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 In-Reply-To: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -19,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <yeAD7A8RDxC.A.zQB.QzgsMB@chimera>
-Subject: [Bug #16265] Why is kslowd accumulating so much CPU time?
+Message-ID: <yeAD7A8RDxC.A.qDB.xygsMB@chimera>
+Subject: [Bug #16312] WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 10 Oct 2010 21:18:50 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -35,14 +34,15 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16265
-Subject		: Why is kslowd accumulating so much CPU time?
-Submitter	: Theodore Ts'o <tytso@mit.edu>
-Date		: 2010-06-09 18:36 (124 days old)
-First-Bad-Commit: http://git.kernel.org/linus/fbf81762e385d3d45acad057b654d56972acf58c
-Message-ID	: <E1OMQ88-0002a1-Gb@closure.thunk.org>
-References	: http://marc.info/?l=linux-kernel&m=127610857819033&w=4
-		  http://bugs.freedesktop.org/show_bug.cgi?id=29536
-Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16312
+Subject		: WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
+Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Date		: 2010-06-28 9:40 (105 days old)
+Message-ID	: <AANLkTin24fr5O4_q5Xbo9Y_NKkEmtcp6Hgmr9_4qXaFz@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127771804806465&w=2
+		  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/00884.html
+Handled-By	: Jan Kara <jack@suse.cz>
+		  Jan Kara <jack@suse.cz>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=30282
 
 
