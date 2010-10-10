@@ -1,67 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760680Ab0JJAAd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 20:00:33 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59758 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752479Ab0JJAAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 20:00:32 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Greg KH <greg@kroah.com>
-Subject: Re: stable cc's in linux -next was Re: [BUG] x86: bootmem broken on SGI UV
-Date: Sun, 10 Oct 2010 01:59:16 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Dave Airlie <airlied@gmail.com>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>, Jan Kara <jack@suse.cz>
-References: <AANLkTinyA=bSeSe7eavUb7fuSgM8m=QQFGqCrNtCGqKa@mail.gmail.com> <201010100138.18129.rjw@sisk.pl> <20101009235211.GC15564@kroah.com>
-In-Reply-To: <20101009235211.GC15564@kroah.com>
+	id S1755949Ab0JJBCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 21:02:09 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47367 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753091Ab0JJBCH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 21:02:07 -0400
+From: James Hogan <james@albanarts.com>
+To: linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: [PATCH v2 0/2] pm_trace: Add locking and add sysfs attr for rechecking dev hash.
+Date: Sun, 10 Oct 2010 02:02:00 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-custom+; KDE/4.4.5; x86_64; ; )
+Cc: Randy Dunlap <rdunlap@xenotime.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        markgross <markgross@thegnar.org>, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Greg Kroah-Hartman" <gregkh@suse.de>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010100159.17140.rjw@sisk.pl>
+Message-Id: <201010100202.01605.james@albanarts.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 10, 2010, Greg KH wrote:
-> On Sun, Oct 10, 2010 at 01:38:17AM +0200, Rafael J. Wysocki wrote:
-> > On Sunday, October 10, 2010, Linus Torvalds wrote:
-> > > On Sat, Oct 9, 2010 at 2:34 PM, Dave Airlie <airlied@gmail.com> wrote:
-> > > >
-> > > > Do we track people dong this at all? I wonder how many patches in
-> > > > linux-next have cc: stable in them but haven't been submitted to
-> > > > Linus,
-> > > 
-> > > The other side of that coin is to wonder how many patches get marked
-> > > as "stable" when they definitely shouldn't be.
-> > > 
-> > > I know that's a non-empty set. Too many developers think that the
-> > > thing they fix is so important that it needs to be backported. And it
-> > > doesn't help that Greg is sometimes over-eager to take things without
-> > > them being even in my tree long enough to get much testing.
-> > > 
-> > > Quite frankly, if somebody has something in "next" (and really meant
-> > > for the _next_ merge window, not the current one) that is marked for
-> > > stable, I think that shows uncommonly bad taste. And that, in turn,
-> > > means that the "stable" tag is also very debatable. It clearly cannot
-> > > be important enough to really be for stable if it's not even being
-> > > aggressively pushed into the current -rc.
-> > 
-> > Well, I know of at least one regression fix that is waiting in linux-next
-> > for the upcoming merge window and it most likely is tagged as -stable material.
-> 
-> Which one is it?
+A fix and an improvement to the pm_trace code.
 
-Quoting from the Stephen's list:
+The improvement allows finding out via sysfs which device was last traced when
+the device is part of a kernel module (which means it doesn't get printed on
+next boot since it isn't loaded yet).
 
-commit 01ea50638bc04ca5259f5711fcdedefcdde1cf43
-Author: Signed-off-by: Jan Kara <jack@suse.cz>
+Changes in v2:
+- renamed sysfs attr pm_trace_dev_hash to pm_trace_dev_match
+- renamed snprint_trace_dev_hash to show_trace_dev_match
+- added comment in show_trace_dev_match referring to the fact that multiple
+  devices could match the hash and they all need printing out
+- added documentation to Documentation/ABI/testing/sysfs-power
+- minor rewording in Documentation/power/s2ram.txt
 
-    block: Fix race during disk initialization
+James Hogan (2):
+  pm_trace: Lock pm device list mutex.
+  pm_trace: Add sysfs attr for rechecking dev hash.
 
-Thanks,
-Rafael
+ Documentation/ABI/testing/sysfs-power |   29 ++++++++++++++++++++++++++
+ Documentation/power/s2ram.txt         |    7 ++++++
+ drivers/base/power/trace.c            |   36 ++++++++++++++++++++++++++++++++-
+ include/linux/resume-trace.h          |    2 +
+ kernel/power/main.c                   |   18 ++++++++++++++++
+ 5 files changed, 91 insertions(+), 1 deletions(-)
+
+-- 
+1.7.2.3
