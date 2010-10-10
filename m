@@ -1,16 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750842Ab0JJTW3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:22:29 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:32943 "EHLO ogre.sisk.pl"
+	id S1752451Ab0JJTWJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:22:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:32917 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751314Ab0JJTW1 convert rfc822-to-8bit (ORCPT
+	id S1750842Ab0JJTWF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:22:27 -0400
+	Sun, 10 Oct 2010 15:22:05 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Justin Piszcz" <jpiszcz@lucidpixels.com>
+        "Albert Gall" <ss3vdr@gmail.com>,
+        "Alex Deucher" <alexdeucher@gmail.com>,
+        "Dave Airlie" <airlied@redhat.com>,
+        "Jerome Glisse" <jglisse@redhat.com>
 References: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 In-Reply-To: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +21,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <yeAD7A8RDxC.A.AP.mwgsMB@chimera>
-Subject: [Bug #16562] 2.6.35: cpu_idle bug report / on i7 870 cpu (x86_64)
+Message-ID: <yeAD7A8RDxC.A.Cm.-wgsMB@chimera>
+Subject: [Bug #16515] [bisected] Radeon rv280 can't boot on kernel 2.6.35.
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 10 Oct 2010 21:18:51 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +37,11 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16562
-Subject		: 2.6.35: cpu_idle bug report / on i7 870 cpu (x86_64)
-Submitter	: Justin Piszcz <jpiszcz@lucidpixels.com>
-Date		: 2010-08-06 22:09 (66 days old)
-Message-ID	: <alpine.DEB.2.00.1008061800530.5241@p34.internal.lan>
-References	: http://marc.info/?l=linux-kernel&m=128113260904048&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
+Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
+Submitter	: Albert Gall <ss3vdr@gmail.com>
+Date		: 2010-08-04 16:10 (68 days old)
+First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
+Handled-By	: Alex Deucher <alexdeucher@gmail.com>
 
 
