@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab0JJJEe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 05:04:34 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:45417 "EHLO lunge.queued.net"
+	id S932123Ab0JJJEu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 05:04:50 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:45423 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752987Ab0JJJEc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 05:04:32 -0400
-Date: Sun, 10 Oct 2010 02:06:09 -0700
+	id S1752987Ab0JJJEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 05:04:49 -0400
+Date: Sun, 10 Oct 2010 02:06:26 -0700
 From: Andres Salomon <dilinger@queued.net>
 To: Grant Likely <grant.likely@secretlab.ca>
 Cc: devicetree-discuss@lists.ozlabs.org, David Miller <davem@davemloft.net>,
         sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/5] of: add package-to-path support to pdt
-Message-ID: <20101010020609.3adde588@debxo>
+Subject: [PATCH 5/5] x86: OLPC: add OLPC device-tree support
+Message-ID: <20101010020626.102437f5@debxo>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -22,93 +22,299 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-package-to-path is a PROM function which tells us the real (full) name of the
-node.  This provides a hook for that in the prom ops struct, and makes use
-of it in the pdt code when attempting to determine a node's name.  If the
-hook is available, try using it (falling back to looking at the "name"
-property if it fails).
+Make use of PROC_DEVICETREE to export the tree, and sparc's PROMTREE code to
+call into OLPC's Open Firmware to build the tree.
 
 Signed-off-by: Andres Salomon <dilinger@queued.net>
 ---
- drivers/of/pdt.c       |   43 ++++++++++++++++++++++++++++++++++++++++++-
- include/linux/of_pdt.h |    3 +++
- 2 files changed, 45 insertions(+), 1 deletions(-)
+ arch/x86/Kconfig                |    2 +
+ arch/x86/include/asm/olpc_ofw.h |    4 +
+ arch/x86/include/asm/prom.h     |    1 +
+ arch/x86/kernel/Makefile        |    1 +
+ arch/x86/kernel/olpc_ofw.c      |    8 ++
+ arch/x86/kernel/olpc_prom.c     |  152 +++++++++++++++++++++++++++++++++++++++
+ drivers/of/pdt.c                |    2 +
+ fs/proc/proc_devtree.c          |    4 +
+ include/linux/of_pdt.h          |    1 +
+ 9 files changed, 175 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/prom.h
+ create mode 100644 arch/x86/kernel/olpc_prom.c
 
-diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
-index 31a4fb8..28295d0 100644
---- a/drivers/of/pdt.c
-+++ b/drivers/of/pdt.c
-@@ -132,6 +132,47 @@ static char * __init of_pdt_get_one_property(phandle node, const char *name)
- 	return buf;
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index cea0cd9..7d4ef72 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -2069,6 +2069,8 @@ config OLPC_OPENFIRMWARE
+ 	bool "Support for OLPC's Open Firmware"
+ 	depends on !X86_64 && !X86_PAE
+ 	default y if OLPC
++	select OF
++	select OF_PROMTREE
+ 	help
+ 	  This option adds support for the implementation of Open Firmware
+ 	  that is used on the OLPC XO-1 Children's Machine.
+diff --git a/arch/x86/include/asm/olpc_ofw.h b/arch/x86/include/asm/olpc_ofw.h
+index 08fde47..13075df 100644
+--- a/arch/x86/include/asm/olpc_ofw.h
++++ b/arch/x86/include/asm/olpc_ofw.h
+@@ -28,4 +28,8 @@ static inline void setup_olpc_ofw_pgd(void) { }
+ 
+ #endif /* !CONFIG_OLPC_OPENFIRMWARE */
+ 
++#ifdef CONFIG_PROC_DEVICETREE
++extern void olpc_prom_build_devicetree(void);
++#endif /* CONFIG_PROC_DEVICETREE */
++
+ #endif /* _ASM_X86_OLPC_OFW_H */
+diff --git a/arch/x86/include/asm/prom.h b/arch/x86/include/asm/prom.h
+new file mode 100644
+index 0000000..b4ec95f
+--- /dev/null
++++ b/arch/x86/include/asm/prom.h
+@@ -0,0 +1 @@
++/* dummy prom.h; here to make linux/of.h's #includes happy */
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index fedf32a..ced0c9a 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -107,6 +107,7 @@ scx200-y			+= scx200_32.o
+ 
+ obj-$(CONFIG_OLPC)		+= olpc.o
+ obj-$(CONFIG_OLPC_OPENFIRMWARE)	+= olpc_ofw.o
++obj-$(CONFIG_PROC_DEVICETREE)	+= olpc_prom.o
+ obj-$(CONFIG_X86_MRST)		+= mrst.o
+ 
+ microcode-y				:= microcode_core.o
+diff --git a/arch/x86/kernel/olpc_ofw.c b/arch/x86/kernel/olpc_ofw.c
+index 3218aa7..6c4d243 100644
+--- a/arch/x86/kernel/olpc_ofw.c
++++ b/arch/x86/kernel/olpc_ofw.c
+@@ -1,5 +1,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/of.h>
++#include <linux/of_pdt.h>
+ #include <linux/init.h>
+ #include <asm/page.h>
+ #include <asm/setup.h>
+@@ -38,6 +40,12 @@ void __init setup_olpc_ofw_pgd(void)
+ 	/* implicit optimization barrier here due to uninline function return */
+ 
+ 	early_iounmap(base, sizeof(olpc_ofw_pgd) * PTRS_PER_PGD);
++
++#ifdef CONFIG_PROC_DEVICETREE
++	/* OFW set up succesfully; use it for the device tree */
++	of_pdt_init_devicetree = olpc_prom_build_devicetree;
++#endif
++
  }
  
-+static char * __init of_pdt_try_pkg2path(phandle node)
-+{
-+	char *res, *buf = NULL;
-+	int len;
-+
-+	if (!of_pdt_prom_ops->pkg2path)
-+		return NULL;
-+
-+	if (of_pdt_prom_ops->pkg2path(node, buf, 0, &len))
-+		return NULL;
-+	buf = prom_early_alloc(len + 1);
-+	if (of_pdt_prom_ops->pkg2path(node, buf, len, &len)) {
-+		pr_err("%s: package-to-path failed\n", __func__);
-+		return NULL;
-+	}
-+
-+	res = strrchr(buf, '/');
-+	if (!res) {
-+		pr_err("%s: couldn't find / in %s\n", __func__, buf);
-+		return NULL;
-+	}
-+	return res+1;
-+}
-+
+ int __olpc_ofw(const char *name, int nr_args, const void **args, int nr_res,
+diff --git a/arch/x86/kernel/olpc_prom.c b/arch/x86/kernel/olpc_prom.c
+new file mode 100644
+index 0000000..e2ecaf2
+--- /dev/null
++++ b/arch/x86/kernel/olpc_prom.c
+@@ -0,0 +1,152 @@
 +/*
-+ * When fetching the node's name, first try using package-to-path; if
-+ * that fails (either because the arch hasn't supplied a PROM callback,
-+ * or some other random failure), fall back to just looking at the node's
-+ * 'name' property.
++ * olpc_prom.c: OLPC-specific OFW device tree support code.
++ *
++ * Paul Mackerras	August 1996.
++ * Copyright (C) 1996-2005 Paul Mackerras.
++ *
++ *  Adapted for 64bit PowerPC by Dave Engebretsen and Peter Bergner.
++ *    {engebret|bergner}@us.ibm.com
++ *
++ *  Adapted for sparc by David S. Miller davem@davemloft.net
++ *  Adapted for x86/OLPC by Andres Salomon <dilinger@queued.net>
++ *
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
 + */
-+static char * __init of_pdt_build_name(phandle node)
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/of.h>
++#include <linux/of_pdt.h>
++#include <asm/olpc_ofw.h>
++
++static phandle __init olpc_prom_getsibling(phandle node)
 +{
-+	char *buf;
++	const void *args[] = { (void *)node };
++	void *res[] = { &node };
 +
-+	buf = of_pdt_try_pkg2path(node);
-+	if (!buf)
-+		buf = of_pdt_get_one_property(node, "name");
++	if (node == -1)
++		return 0;
 +
-+	return buf;
++	if (olpc_ofw("peer", args, res) || node == -1)
++		return 0;
++
++	return node;
 +}
 +
- static struct device_node * __init of_pdt_create_node(phandle node,
- 						    struct device_node *parent)
++static phandle __init olpc_prom_getchild(phandle node)
++{
++	const void *args[] = { (void *)node };
++	void *res[] = { &node };
++
++	if (node == -1)
++		return 0;
++
++	if (olpc_ofw("child", args, res) || node == -1) {
++		pr_err("PROM: %s: fetching child failed!\n", __func__);
++		return 0;
++	}
++
++	return node;
++}
++
++static int __init olpc_prom_getproplen(phandle node, const char *prop)
++{
++	const void *args[] = { (void *)node, prop };
++	int len;
++	void *res[] = { &len };
++
++	if (node == -1)
++		return -1;
++
++	if (olpc_ofw("getproplen", args, res)) {
++		pr_err("PROM: %s: getproplen failed!\n", __func__);
++		return -1;
++	}
++
++	return len;
++}
++
++static int __init olpc_prom_getproperty(phandle node, const char *prop,
++		char *buf, int bufsize)
++{
++	int plen;
++
++	plen = olpc_prom_getproplen(node, prop);
++	if (plen > bufsize || plen < 1)
++		return -1;
++	else {
++		const void *args[] = { (void *)node, prop, buf, (void *)plen };
++		void *res[] = { &plen };
++
++		if (olpc_ofw("getprop", args, res)) {
++			pr_err("PROM: %s: getprop failed!\n", __func__);
++			return -1;
++		}
++	}
++
++	return plen;
++}
++
++static int __init olpc_prom_nextprop(phandle node, char *prev, char *buf)
++{
++	const void *args[] = { (void *)node, prev, buf };
++	int success;
++	void *res[] = { &success };
++
++	buf[0] = '\0';
++
++	if (node == -1)
++		return -1;
++
++	if (olpc_ofw("nextprop", args, res) || success != 1)
++		return -1;
++
++	return 0;
++}
++
++static int __init olpc_prom_pkg2path(phandle node, char *buf,
++		const int buflen, int *len)
++{
++	const void *args[] = { (void *)node, buf, (void *)buflen };
++	void *res[] = { len };
++
++	if (node == -1)
++		return -1;
++
++	if (olpc_ofw("package-to-path", args, res) || *len < 1)
++		return -1;
++
++	return 0;
++}
++
++void * __init prom_early_alloc(unsigned long size)
++{
++	/* this is called late enough that we can alloc normally */
++	return kzalloc(size, GFP_KERNEL);
++}
++
++static struct of_pdt_ops prom_olpc_ops __initdata = {
++	.nextprop = olpc_prom_nextprop,
++	.getproplen = olpc_prom_getproplen,
++	.getproperty = olpc_prom_getproperty,
++	.getchild = olpc_prom_getchild,
++	.getsibling = olpc_prom_getsibling,
++	.pkg2path = olpc_prom_pkg2path,
++};
++
++void __init olpc_prom_build_devicetree(void)
++{
++	phandle root;
++
++	root = olpc_prom_getsibling(0);
++	if (root < 0) {
++		pr_err("PROM: unable to get root node from OFW!\n");
++		return;
++	}
++	of_pdt_build_devicetree(root, &prom_olpc_ops);
++}
+diff --git a/drivers/of/pdt.c b/drivers/of/pdt.c
+index 28295d0..07e3daa 100644
+--- a/drivers/of/pdt.c
++++ b/drivers/of/pdt.c
+@@ -29,6 +29,8 @@ static struct of_pdt_ops *of_pdt_prom_ops __initdata;
+ void __initdata (*of_pdt_build_more)(struct device_node *dp,
+ 		struct device_node ***nextp);
+ 
++void __initdata (*of_pdt_init_devicetree)(void);
++
+ #if defined(CONFIG_SPARC)
+ unsigned int of_pdt_unique_id __initdata;
+ 
+diff --git a/fs/proc/proc_devtree.c b/fs/proc/proc_devtree.c
+index d9396a4..9779039 100644
+--- a/fs/proc/proc_devtree.c
++++ b/fs/proc/proc_devtree.c
+@@ -11,6 +11,7 @@
+ #include <linux/stat.h>
+ #include <linux/string.h>
+ #include <linux/of.h>
++#include <linux/of_pdt.h>
+ #include <linux/module.h>
+ #include <linux/slab.h>
+ #include <asm/prom.h>
+@@ -228,6 +229,9 @@ void __init proc_device_tree_init(void)
  {
-@@ -146,7 +187,7 @@ static struct device_node * __init of_pdt_create_node(phandle node,
+ 	struct device_node *root;
  
- 	kref_init(&dp->kref);
- 
--	dp->name = of_pdt_get_one_property(node, "name");
-+	dp->name = of_pdt_build_name(node);
- 	dp->type = of_pdt_get_one_property(node, "device_type");
- 	dp->phandle = node;
- 
++	if (of_pdt_init_devicetree)
++		of_pdt_init_devicetree();
++
+ 	proc_device_tree = proc_mkdir("device-tree", NULL);
+ 	if (proc_device_tree == NULL)
+ 		return;
 diff --git a/include/linux/of_pdt.h b/include/linux/of_pdt.h
-index 0f7d0c5..c65a18a 100644
+index c65a18a..5b29aef 100644
 --- a/include/linux/of_pdt.h
 +++ b/include/linux/of_pdt.h
-@@ -29,6 +29,9 @@ struct of_pdt_ops {
- 	/* phandles are 0 if no child or sibling exists */
- 	phandle (*getchild)(phandle parent);
- 	phandle (*getsibling)(phandle node);
-+
-+	/* return 0 on success; fill in 'len' with number of bytes in path */
-+	int (*pkg2path)(phandle node, char *buf, const int buflen, int *len);
- };
+@@ -38,6 +38,7 @@ extern void *prom_early_alloc(unsigned long size);
  
- extern void *prom_early_alloc(unsigned long size);
+ /* for building the device tree */
+ extern void of_pdt_build_devicetree(phandle root_node, struct of_pdt_ops *ops);
++extern void (*of_pdt_init_devicetree)(void);
+ 
+ extern void (*of_pdt_build_more)(struct device_node *dp,
+ 		struct device_node ***nextp);
 -- 
 1.5.6.5
 
