@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab0JJTWN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:22:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:32923 "EHLO ogre.sisk.pl"
+	id S1752887Ab0JJTWf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:22:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:32950 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab0JJTWK convert rfc822-to-8bit (ORCPT
+	id S1752692Ab0JJTWd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:22:10 -0400
+	Sun, 10 Oct 2010 15:22:33 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Vladislav Bolkhovitin" <vst@vlnb.net>
+        "Dan Dart" <dandart@googlemail.com>
 References: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 In-Reply-To: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +18,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <yeAD7A8RDxC.A.OV.owgsMB@chimera>
-Subject: [Bug #16549] 2.6.35: suspicious rcu_dereference_check() usage
+Message-ID: <yeAD7A8RDxC.A.y1H.CwgsMB@chimera>
+Subject: [Bug #17261] Freezes on bootup
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 10 Oct 2010 21:18:51 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,11 +34,9 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16549
-Subject		: 2.6.35: suspicious rcu_dereference_check() usage
-Submitter	: Vladislav Bolkhovitin <vst@vlnb.net>
-Date		: 2010-08-04 10:56 (68 days old)
-Message-ID	: <4C594740.1090608@vlnb.net>
-References	: http://marc.info/?l=linux-kernel&m=128091938215177&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17261
+Subject		: Freezes on bootup
+Submitter	: Dan Dart <dandart@googlemail.com>
+Date		: 2010-08-29 09:00 (43 days old)
 
 
