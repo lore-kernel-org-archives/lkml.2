@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752517Ab0JJXee (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 19:34:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55372 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752460Ab0JJXed (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 19:34:33 -0400
-Message-ID: <4CB24D7D.1060309@monstr.eu>
-Date: Mon, 11 Oct 2010 09:34:21 +1000
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.18 (X11/20081120)
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
-        john.williams@petalogix.com, edgar.iglesias@gmail.com, duyl@xilinx.com,
-        linnj@xilinx.com, microblaze-uclinux@itee.uq.edu.au
-Subject: Re: Microblaze little-endian port + driver changes
-References: <1285739538-29058-1-git-send-email-monstr@monstr.eu> <AANLkTinTgO_kk=gcd50UQnwsm47fwyOX3BbGhJ1pPxUP@mail.gmail.com>
-In-Reply-To: <AANLkTinTgO_kk=gcd50UQnwsm47fwyOX3BbGhJ1pPxUP@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752531Ab0JJXgH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 19:36:07 -0400
+Received: from smtp13.ono.com ([62.42.230.16]:47529 "EHLO resmaa13.ono.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752326Ab0JJXgF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 19:36:05 -0400
+Date: Mon, 11 Oct 2010 01:36:03 +0200
+From: "J.A. =?ISO-8859-1?B?TWFnYWxs824=?=" <jamagallon@ono.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: cifs or win, who is slow ?
+Message-ID: <20101011013603.15f1c75c@werewolf.home>
+X-Mailer: Claws Mail 3.7.6cvs54 (GTK+ 2.22.0; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
-> On Tue, Sep 28, 2010 at 11:52 PM, Michal Simek <monstr@monstr.eu> wrote:
->> Hi everybody,
->>
->> here is the first bunch of patches which is necessary to apply
->> to get microblaze little-endian AXI version work.
->>
->> All patches are placed in microblaze-next branch and they are also
->> merged to linux-next branch.
->>
->> Grant: I would like to ask you if you can please take a look
->> at little-endian driver changes.
-> 
-> [cc'ing sfr re: pending linux-next merge conflict]
-> 
-> Hi Michal,
-> 
-> Can you please remove the following patches from your linux-next branch:
-> 
-> of: GPIO: Fix OF probing on little-endian systems
-> of: MTD: Fix OF probing on little-endian systems
-> of: Fix uart16550 initialization on little-endian systems
+Hi all...
 
-Removed from microblaze-next branch.
+I have a curious problem sharing files with windows.
+I have a home linus desktop/server, my main box, and a Win7 HTPC.
+I share files from linux via samba. I auto-mount the htpc drive
+from linux via cifs filesystem.
+Both are connected to a WRT320N router, running dd-wrt. Wired network
+is gigabit in both boxes.
 
-Regards,
-Michal
+Now the weird part. If I read or write files from the linux box to the
+win drive automounted on linux, I get speeds in the order of 8 Mbits/s.
+If I do the same from the win box to samba in the linuz box, I get 70 Mbits
+thoughput. Both reading and writing.
+So operating from the linux box through cifs is much slower than working
+from the win box through samba.
+But....
+if I access the window share without the automounter, just through the
+Network browsing feature in Gnome, I get again good speeds, about 40 Mbits/s.
 
+Mount state is the same, whatever the method I use to acces the windows
+drive:
+
+//htpc/media/ /net/htpc/media cifs rw,relatime,unc=\\htpc\media,username=media,uid=3001,forceuid,gid=3000,forcegid,addr=192.168.1.20,file_mode=0664,dir_mode=0775,serverino,rsize=16384,wsize=57344 0 0
+
+Anybody has noticed this ? Any clue ?
+Is Linux CIFS slow or is win7 server slow ?
+
+TIA
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+J.A. Magallon <jamagallon()ono!com>     \               Software is like sex:
+                                         \         It's better when it's free
