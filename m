@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760752Ab0JJDsq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 23:48:46 -0400
-Received: from smtp104.sbc.mail.ac4.yahoo.com ([76.13.13.243]:48520 "HELO
-	smtp104.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1760742Ab0JJDsm (ORCPT
+	id S1760739Ab0JJDsh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 23:48:37 -0400
+Received: from smtp102.sbc.mail.ac4.yahoo.com ([76.13.13.241]:33646 "HELO
+	smtp102.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760724Ab0JJDsf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 23:48:42 -0400
+	Sat, 9 Oct 2010 23:48:35 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: AXF_p4kVM1m.D5Spp_NWOZtTzboovSQFnm7ia9elpotwFo0
- qT7Cq8ATaci1KuWvzEFX7zf7pclLRMlZs5Lwa5FwoaRVlpQ47Zc_vsaYQJRJ
- SYqVXPIGc1WHE0HnQE5XPAbU4j81cYoeN3Z7DnBp_XrPR_jdI_F6KV21Xb12
- PV5FQW7AVM908Y3XnDGMtm_L_1o7R4KuXanjjjIUsMpx9JGrygYXjn8rE5xU
- G_oC0Qe6sGu6dmtgDH5MVmH3AyT7aeG_35C2QP.LnF3hb_o_Wd8SFmG9bH3q
- pFlTZG3lGgx5FQnvqW10rU4ZG22eMAB18gVC8GSHxtYHkqB7DbU4WrdG2Vo_
- zGMLW4JBWMCNuqWZUoQ--
+X-YMail-OSG: Ge.znLoVM1n5CIZgLkwg7rt009TttwH715ZXbRLTNMV8_kx
+ gSGsUFfqJRaW1pl2M92ygdI1RHf8OyjuTC7n8cxooVQdlzFWw2rIBaw8Olnx
+ Qm0qtXuA.YWXb7vavnlCXSJdsfNsb2CR.Rf1_ccQfJmk1hk3JDXQthEQ_ru5
+ AvOVJ0lrW11AGqBh4cd1tbwUWMo8OSExT7CjnP.RhJdoGUp.vnH8JpKcrbXx
+ mJx8LkzoQ8JTbkQrXievb3aVzj0gqTxNr7EqfXINZTL47.4qKBBFkuhSnDj4
+ SBsHEs8.UvH6mD5q5uJOVmiXQd3D522EakI6qIzna.ATsqdu4h1MQpSPwy2h
+ R_e_3hcYh
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: linux-scsi <linux-scsi@vger.kernel.org>,
@@ -25,9 +25,9 @@ Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
         James Bottomley <James.Bottomley@suse.de>,
         Boaz Harrosh <bharrosh@panasas.com>,
         Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 2/4] tcm: Convert IBLOCK, FILEIO and RAMDISK subsystem code to transport_emulate_control_cdb()
-Date: Sat,  9 Oct 2010 20:48:37 -0700
-Message-Id: <1286682517-4863-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 1/4] tcm: Unify subsystem plugin control CDB emulation
+Date: Sat,  9 Oct 2010 20:48:28 -0700
+Message-Id: <1286682508-4842-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,457 +35,171 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch converts the IBLOCK, FILEIO, and RAMDISK subsystem plugins to use
-the unified caller transport_emulate_control_cdb() introduced in commit 4254bfebd2e.
+This patch adds a generic transport_emulate_control_cdb() caller used
+by virtual IBLOCK, FILEIO and RAMDISK subsystem plugins for both
+completely generic TCM CDB emulation, and CDB emulation requiring
+information from subsystem plugin dependent code.
 
-This includes adding new [iblock,file,rd]_cdb_template API callers using existing
-code for INQUIRY, READ_CAPACITY, SA READ_CAPACITY_16 and UNMAP CDB emulation, and
-removes the legacy *_emulate_scsi_cdb() and their usage int *_do_task() dispatch
-callers.
+For the latter case inside of target_core_transport.h, this patch adds:
+
+	struct se_subsystem_api_cdb {
+	       int (*emulate_inquiry)(struct se_task *);
+	       int (*emulate_read_cap)(struct se_task *);
+	       int (*emulate_read_cap16)(struct se_task *);
+	       int (*emulate_unmap)(struct se_task *);
+	};
+
+along with a struct se_subsystem_api->sub_cdb pointer that we now
+expect IBLOCK, FILEIO and RAMDISK to set up this pointer before
+calling transport_subsystem_register().
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- drivers/target/target_core_file.c   |  145 +++++++++-------------------------
- drivers/target/target_core_iblock.c |   87 +++------------------
- drivers/target/target_core_rd.c     |   91 +++-------------------
- 3 files changed, 62 insertions(+), 261 deletions(-)
+ drivers/target/target_core_transport.c |   88 ++++++++++++++++++++++++++++++++
+ include/target/target_core_transport.h |   17 ++++++
+ 2 files changed, 105 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/target/target_core_file.c b/drivers/target/target_core_file.c
-index 1215f3c..33c6510 100644
---- a/drivers/target/target_core_file.c
-+++ b/drivers/target/target_core_file.c
-@@ -408,122 +408,47 @@ static int fd_emulate_read_cap16(struct se_task *task)
- 		blocks_long);
+diff --git a/drivers/target/target_core_transport.c b/drivers/target/target_core_transport.c
+index aaec0cc..2c86d0f 100644
+--- a/drivers/target/target_core_transport.c
++++ b/drivers/target/target_core_transport.c
+@@ -5574,6 +5574,94 @@ int transport_generic_write_same(struct se_cmd *cmd, struct block_device *bdev)
  }
+ EXPORT_SYMBOL(transport_generic_write_same);
  
--/*	fd_emulate_scsi_cdb():
-- *
-- *
-- */
--static int fd_emulate_scsi_cdb(struct se_task *task)
-+static int fd_emulate_unmap(struct se_task *task)
- {
- 	struct se_cmd *cmd = TASK_CMD(task);
- 	struct fd_dev *fd_dev = task->se_dev->dev_ptr;
--	struct fd_request *fd_req = task->transport_req;
- 	struct file *f = fd_dev->fd_file;
- 	struct inode *i;
- 	struct block_device *bd;
- 	int ret;
- 
--	switch (fd_req->fd_scsi_cdb[0]) {
--	case INQUIRY:
--		if (fd_emulate_inquiry(task) < 0)
--			return PYX_TRANSPORT_INVALID_CDB_FIELD;
--		break;
--	case READ_CAPACITY:
--		ret = fd_emulate_read_cap(task);
--		if (ret < 0)
--			return ret;
--		break;
--	case MODE_SENSE:
--		ret = transport_generic_emulate_modesense(TASK_CMD(task),
--				fd_req->fd_scsi_cdb, fd_req->fd_buf, 0,
--				TYPE_DISK);
--		if (ret < 0)
--			return ret;
--		break;
--	case MODE_SENSE_10:
--		ret = transport_generic_emulate_modesense(TASK_CMD(task),
--				fd_req->fd_scsi_cdb, fd_req->fd_buf, 1,
--				TYPE_DISK);
--		if (ret < 0)
--			return ret;
--		break;
--	case SERVICE_ACTION_IN:
--		if ((T_TASK(cmd)->t_task_cdb[1] & 0x1f) !=
--		     SAI_READ_CAPACITY_16) {
--			printk(KERN_ERR "Unsupported SA: 0x%02x\n",
--				T_TASK(cmd)->t_task_cdb[1] & 0x1f);
--			return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
--		}
--		ret = fd_emulate_read_cap16(task);
--		if (ret < 0)
--			return ret;
--		break;
--	case REQUEST_SENSE:
--		ret = transport_generic_emulate_request_sense(cmd,
--				T_TASK(cmd)->t_task_cdb);
--		if (ret < 0)
--			return ret;
--		break;
--	case UNMAP:
--		i = igrab(f->f_mapping->host);
--		if (!(i)) {
--			printk(KERN_ERR "FILEIO: Unable to locate inode for"
--					" backend for UNMAP\n");
--			return PYX_TRANSPORT_LU_COMM_FAILURE;
--		}
--		/*
--		 * Currently for struct file w/o a struct block_device
--		 * backend we return a success..
--		 */	
--		if (!(S_ISBLK(i->i_mode))) {
--			printk(KERN_WARNING "Ignoring UNMAP for non BD"
--					" backend for struct file\n");
--			iput(i);
--			return PYX_TRANSPORT_LU_COMM_FAILURE;
--		}
--		bd = I_BDEV(f->f_mapping->host);
--		if (!(bd)) {
--			printk(KERN_ERR "FILEIO: Unable to locate struct"
--					" block_device for UNMAP\n");
--			iput(i);
--			return PYX_TRANSPORT_LU_COMM_FAILURE;
--		}
--		/*
--		 * Now call the transport_generic_unmap() -> blkdev_issue_discard()
--		 * wrapper to translate SCSI UNMAP into Linux/BLOCK discards on
--		 * LBA+Range descriptors in the UNMAP write paylaod.
--		 */
--		ret = transport_generic_unmap(cmd, bd);
--		if (ret < 0) {
--			iput(i);
--			return ret;
--		}
-+	i = igrab(f->f_mapping->host);
-+	if (!(i)) {
-+		printk(KERN_ERR "FILEIO: Unable to locate inode for"
-+				" backend for UNMAP\n");
-+		return PYX_TRANSPORT_LU_COMM_FAILURE;
-+	}
-+	/*
-+	 * Currently for struct file w/o a struct block_device
-+	 * backend we return a success..
-+	 */	
-+	if (!(S_ISBLK(i->i_mode))) {
-+		printk(KERN_WARNING "Ignoring UNMAP for non BD"
-+				" backend for struct file\n");
- 		iput(i);
--		break;
--	case ALLOW_MEDIUM_REMOVAL:
--	case ERASE:
--	case REZERO_UNIT:
--	case SEEK_10:
--	case SPACE:
--	case START_STOP:
--	case SYNCHRONIZE_CACHE:
--	case TEST_UNIT_READY:
--	case VERIFY:
--	case WRITE_FILEMARKS:
--	case RESERVE:
--	case RESERVE_10:
--	case RELEASE:
--	case RELEASE_10:
--		break;
--	default:
--		printk(KERN_ERR "Unsupported SCSI Opcode: 0x%02x for FILEIO\n",
--				fd_req->fd_scsi_cdb[0]);
--		return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
-+		return PYX_TRANSPORT_LU_COMM_FAILURE;
- 	}
-+	bd = I_BDEV(f->f_mapping->host);
-+	if (!(bd)) {
-+		printk(KERN_ERR "FILEIO: Unable to locate struct"
-+				" block_device for UNMAP\n");
-+		iput(i);
-+		return PYX_TRANSPORT_LU_COMM_FAILURE;
-+	}
-+	/*
-+	 * Now call the transport_generic_unmap() -> blkdev_issue_discard()
-+	 * wrapper to translate SCSI UNMAP into Linux/BLOCK discards on
-+	 * LBA+Range descriptors in the UNMAP write paylaod.
-+	 */
-+	ret = transport_generic_unmap(cmd, bd);
-+	iput(i);
- 
--	task->task_scsi_status = GOOD;
--	transport_complete_task(task, 1);
--
--	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
-+	return ret;
- }
- 
- static int fd_emulate_write_same_unmap(struct se_task *task)
-@@ -856,7 +781,7 @@ static int fd_do_task(struct se_task *task)
- 	int ret = 0;
- 
- 	if (!(TASK_CMD(task)->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB))
--		return fd_emulate_scsi_cdb(task);
-+		return transport_emulate_control_cdb(task);
- 	else if (T_TASK(cmd)->t_tasks_unmap)
- 		return fd_emulate_write_same_unmap(task);
- 
-@@ -1288,11 +1213,19 @@ static struct se_subsystem_api fileio_template = {
- 	.write_pending		= NULL,
- };
- 
-+static struct se_subsystem_api_cdb fileio_cdb_template = {
-+	.emulate_inquiry	= fd_emulate_inquiry,
-+	.emulate_read_cap	= fd_emulate_read_cap,
-+	.emulate_read_cap16	= fd_emulate_read_cap16,
-+	.emulate_unmap		= fd_emulate_unmap,
-+};
++/*
++ * Used by TCM subsystem plugins IBLOCK, FILEIO, and RAMDISK as a
++ * generic non SCF_SCSI_DATA_SG_IO_CDB ops.
++ */
++int transport_emulate_control_cdb(struct se_task *task)
++{
++	struct se_cmd *cmd = TASK_CMD(task);
++	struct se_device *dev = SE_DEV(cmd);
++	struct se_subsystem_api_cdb *api_cdb = TRANSPORT(dev)->sub_cdb;
++	int ret;
 +
- int __init fileio_module_init(void)
- {
- 	int ret;
- 
- 	INIT_LIST_HEAD(&fileio_template.sub_api_list);
-+	fileio_template.sub_cdb = &fileio_cdb_template;
- 
- 	ret = transport_subsystem_register(&fileio_template, THIS_MODULE);
- 	if (ret < 0)
-diff --git a/drivers/target/target_core_iblock.c b/drivers/target/target_core_iblock.c
-index 44d54a6..d102e0b 100644
---- a/drivers/target/target_core_iblock.c
-+++ b/drivers/target/target_core_iblock.c
-@@ -468,84 +468,13 @@ static int iblock_emulate_read_cap16(struct se_task *task)
- 				TASK_CMD(task), blocks_long);
- }
- 
--static int iblock_emulate_scsi_cdb(struct se_task *task)
-+static int iblock_emulate_unmap(struct se_task *task)
- {
- 	struct iblock_dev *ibd = task->se_dev->dev_ptr;
- 	struct block_device *bd = ibd->ibd_bd;
- 	struct se_cmd *cmd = TASK_CMD(task);
--	int ret;
--
--	switch (T_TASK(cmd)->t_task_cdb[0]) {
--	case INQUIRY:
--		if (iblock_emulate_inquiry(task) < 0)
--			return PYX_TRANSPORT_INVALID_CDB_FIELD;
--		break;
--	case READ_CAPACITY:
--		ret = iblock_emulate_read_cap(task);
--		if (ret < 0)
--			return ret;
--		break;
--	case MODE_SENSE:
--		ret = transport_generic_emulate_modesense(TASK_CMD(task),
--				T_TASK(cmd)->t_task_cdb,
--				T_TASK(cmd)->t_task_buf, 0, TYPE_DISK);
--		if (ret < 0)
--			return ret;
--		break;
--	case MODE_SENSE_10:
--		ret = transport_generic_emulate_modesense(TASK_CMD(task),
--				T_TASK(cmd)->t_task_cdb,
--			T_TASK(cmd)->t_task_buf, 1, TYPE_DISK);
--		if (ret < 0)
--			return ret;
--		break;
--	case SERVICE_ACTION_IN:
--		if ((T_TASK(cmd)->t_task_cdb[1] & 0x1f) !=
--		     SAI_READ_CAPACITY_16) {
--			printk(KERN_ERR "Unsupported SA: 0x%02x\n",
--				T_TASK(cmd)->t_task_cdb[1] & 0x1f);
--			return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
--		}
--		ret = iblock_emulate_read_cap16(task);
--		if (ret < 0)
--			return ret;
--		break;
--	case REQUEST_SENSE:
--		ret = transport_generic_emulate_request_sense(cmd,
--				T_TASK(cmd)->t_task_cdb);
--		if (ret < 0)
--			return ret;
--		break;
--	case UNMAP:
--		ret = transport_generic_unmap(cmd, bd);
--		if (ret < 0)
--			return ret;
--		break;
--	case ALLOW_MEDIUM_REMOVAL:
--	case ERASE:
--	case REZERO_UNIT:
--	case SEEK_10:
--	case SPACE:
--	case START_STOP:
--	case SYNCHRONIZE_CACHE:
--	case TEST_UNIT_READY:
--	case VERIFY:
--	case WRITE_FILEMARKS:
--	case RESERVE:
--	case RESERVE_10:
--	case RELEASE:
--	case RELEASE_10:
--		break;
--	default:
--		printk(KERN_ERR "Unsupported SCSI Opcode: 0x%02x for iBlock\n",
--				T_TASK(cmd)->t_task_cdb[0]);
--		return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
--	}
--
--	task->task_scsi_status = GOOD;
--	transport_complete_task(task, 1);
--
--	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
++	switch (T_TASK(cmd)->t_task_cdb[0]) {
++	case INQUIRY:
++		if (api_cdb->emulate_inquiry(task) < 0)
++			return PYX_TRANSPORT_INVALID_CDB_FIELD;
++		break;
++	case READ_CAPACITY:
++		ret = api_cdb->emulate_read_cap(task);	
++		if (ret < 0)
++			return ret;
++		break;
++	case MODE_SENSE:
++		ret = transport_generic_emulate_modesense(TASK_CMD(task),
++				T_TASK(cmd)->t_task_cdb,
++				T_TASK(cmd)->t_task_buf, 0,
++				TRANSPORT(dev)->get_device_type(dev));
++		if (ret < 0)
++			return ret;
++		break;
++	case MODE_SENSE_10:
++		ret = transport_generic_emulate_modesense(TASK_CMD(task),
++				T_TASK(cmd)->t_task_cdb,
++				T_TASK(cmd)->t_task_buf, 1,
++				TRANSPORT(dev)->get_device_type(dev));
++		if (ret < 0)
++			return ret;
++		break;
++	case SERVICE_ACTION_IN:
++		switch (T_TASK(cmd)->t_task_cdb[1] & 0x1f) {
++		case SAI_READ_CAPACITY_16:
++			ret = api_cdb->emulate_read_cap16(task);
++			if (ret < 0)
++				return ret;
++			break;
++		default:
++			printk(KERN_ERR "Unsupported SA: 0x%02x\n",
++				T_TASK(cmd)->t_task_cdb[1] & 0x1f);
++			return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
++		}
++	case REQUEST_SENSE:
++		ret = transport_generic_emulate_request_sense(cmd,
++				T_TASK(cmd)->t_task_cdb);
++		if (ret < 0)
++			return ret;
++		break;
++	case UNMAP:
++		if (!(api_cdb->emulate_unmap)) {
++			printk(KERN_ERR "UNMAP emulation not supported for: %s\n",
++					TRANSPORT(dev)->name);
++			return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
++		}
++		ret = api_cdb->emulate_unmap(task);
++		if (ret < 0)
++			return ret;
++		break;
++	case ALLOW_MEDIUM_REMOVAL:
++	case ERASE:
++	case REZERO_UNIT:
++	case SEEK_10:
++	case SPACE:
++	case START_STOP:
++	case TEST_UNIT_READY:
++	case VERIFY:
++	case WRITE_FILEMARKS:
++		break;
++	default:
++		printk(KERN_ERR "Unsupported SCSI Opcode: 0x%02x for %s\n",
++			T_TASK(cmd)->t_task_cdb[0], TRANSPORT(dev)->name);
++		return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
++	}
 +	
-+	return transport_generic_unmap(cmd, bd);
- }
++	task->task_scsi_status = GOOD;
++	transport_complete_task(task, 1);
++
++	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
++}
++EXPORT_SYMBOL(transport_emulate_control_cdb);
++
+ static inline void transport_dev_get_mem_buf(
+ 	struct se_device *dev,
+ 	struct se_cmd *cmd)
+diff --git a/include/target/target_core_transport.h b/include/target/target_core_transport.h
+index 74a56f1..0374876 100644
+--- a/include/target/target_core_transport.h
++++ b/include/target/target_core_transport.h
+@@ -241,6 +241,7 @@ extern int transport_generic_emulate_request_sense(struct se_cmd *,
+ extern int transport_get_sense_data(struct se_cmd *);
+ extern int transport_generic_unmap(struct se_cmd *, struct block_device *);
+ extern int transport_generic_write_same(struct se_cmd *, struct block_device *);
++extern int transport_emulate_control_cdb(struct se_task *);
+ extern struct se_cmd *transport_allocate_passthrough(unsigned char *, int, u32,
+ 						void *, u32, u32, void *);
+ extern void transport_passthrough_release(struct se_cmd *);
+@@ -314,6 +315,17 @@ struct se_mem {
+ } ____cacheline_aligned;
  
- static int iblock_emulate_write_same_unmap(struct se_task *task)
-@@ -654,7 +583,7 @@ static int iblock_do_task(struct se_task *task)
- 	int ret;
- 
- 	if (!(TASK_CMD(task)->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB))
--		return iblock_emulate_scsi_cdb(task);
-+		return transport_emulate_control_cdb(task);
- 	else if (T_TASK(task->task_se_cmd)->t_tasks_unmap)
- 		return iblock_emulate_write_same_unmap(task);
- 
-@@ -1205,11 +1134,19 @@ static struct se_subsystem_api iblock_template = {
- 	.write_pending		= NULL,
- };
- 
-+static struct se_subsystem_api_cdb iblock_cdb_template = {
-+	.emulate_inquiry	= iblock_emulate_inquiry,
-+	.emulate_read_cap	= iblock_emulate_read_cap,
-+	.emulate_read_cap16	= iblock_emulate_read_cap16,
-+	.emulate_unmap		= iblock_emulate_unmap,
+ /*
++ * Used as a minimal template for per CDB specific emulation into TCM
++ * subsystem plugins.for those CDBs that cannot be emulated generically.
++ */
++struct se_subsystem_api_cdb {
++	int (*emulate_inquiry)(struct se_task *);
++	int (*emulate_read_cap)(struct se_task *);
++	int (*emulate_read_cap16)(struct se_task *);
++	int (*emulate_unmap)(struct se_task *);
 +};
 +
- int __init iblock_module_init(void)
- {
- 	int ret;
- 
- 	INIT_LIST_HEAD(&iblock_template.sub_api_list);
-+	iblock_template.sub_cdb = &iblock_cdb_template;
- 
- 	ret = transport_subsystem_register(&iblock_template, THIS_MODULE);
- 	if (ret < 0)
-diff --git a/drivers/target/target_core_rd.c b/drivers/target/target_core_rd.c
-index c6e128a..fe27e59 100644
---- a/drivers/target/target_core_rd.c
-+++ b/drivers/target/target_core_rd.c
-@@ -434,84 +434,6 @@ static int rd_emulate_read_cap16(struct se_task *task)
- 				blocks_long);
- }
- 
--/*	rd_emulate_scsi_cdb():
-- *
-- *
-- */
--static int rd_emulate_scsi_cdb(struct se_task *task)
--{
--	int ret;
--	struct se_cmd *cmd = TASK_CMD(task);
--	struct rd_request *rd_req = task->transport_req;
--
--	switch (rd_req->rd_scsi_cdb[0]) {
--	case INQUIRY:
--		if (rd_emulate_inquiry(task) < 0)
--			return PYX_TRANSPORT_INVALID_CDB_FIELD;
--		break;
--	case READ_CAPACITY:
--		ret = rd_emulate_read_cap(task);
--		if (ret < 0)
--			return ret;
--		break;
--	case MODE_SENSE:
--		ret = transport_generic_emulate_modesense(TASK_CMD(task),
--				rd_req->rd_scsi_cdb, rd_req->rd_buf, 0,
--				TYPE_DISK);
--		if (ret < 0)
--			return ret;
--		break;
--	case MODE_SENSE_10:
--		ret = transport_generic_emulate_modesense(TASK_CMD(task),
--				rd_req->rd_scsi_cdb, rd_req->rd_buf, 1,
--				TYPE_DISK);
--		if (ret < 0)
--			return ret;
--		break;
--	case SERVICE_ACTION_IN:
--		if ((T_TASK(cmd)->t_task_cdb[1] & 0x1f) !=
--		     SAI_READ_CAPACITY_16) {
--			printk(KERN_ERR "Unsupported SA: 0x%02x\n",
--					T_TASK(cmd)->t_task_cdb[1] & 0x1f);
--			return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
--		}
--		ret = rd_emulate_read_cap16(task);
--		if (ret < 0)
--			return ret;
--		break;
--	case REQUEST_SENSE:
--		ret = transport_generic_emulate_request_sense(cmd,
--				T_TASK(cmd)->t_task_cdb);
--		if (ret < 0)
--			return ret;
--		break;
--	case ALLOW_MEDIUM_REMOVAL:
--	case ERASE:
--	case REZERO_UNIT:
--	case SEEK_10:
--	case SPACE:
--	case START_STOP:
--	case SYNCHRONIZE_CACHE:
--	case TEST_UNIT_READY:
--	case VERIFY:
--	case WRITE_FILEMARKS:
--	case RESERVE:
--	case RESERVE_10:
--	case RELEASE:
--	case RELEASE_10:
--		break;
--	default:
--		printk(KERN_ERR "Unsupported SCSI Opcode: 0x%02x for"
--			" RAMDISKs\n", rd_req->rd_scsi_cdb[0]);
--		return PYX_TRANSPORT_UNKNOWN_SAM_OPCODE;
--	}
--
--	task->task_scsi_status = GOOD;
--	transport_complete_task(task, 1);
--
--	return PYX_TRANSPORT_SENT_TO_TRANSPORT;
--}
--
- /*	rd_get_sg_table():
-  *
-  *
-@@ -789,7 +711,7 @@ static int rd_MEMCPY_do_task(struct se_task *task)
- 	int ret;
- 
- 	if (!(TASK_CMD(task)->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB))
--		return rd_emulate_scsi_cdb(task);
-+		return transport_emulate_control_cdb(task);
- 
- 	req->rd_lba = task->task_lba;
- 	req->rd_page = (req->rd_lba * DEV_ATTRIB(dev)->block_size) / PAGE_SIZE;
-@@ -1117,7 +1039,7 @@ static int rd_DIRECT_allocate_DMA(struct se_cmd *cmd, u32 length, u32 dma_size)
- static int rd_DIRECT_do_task(struct se_task *task)
- {
- 	if (!(TASK_CMD(task)->se_cmd_flags & SCF_SCSI_DATA_SG_IO_CDB))
--		return rd_emulate_scsi_cdb(task);
-+		return transport_emulate_control_cdb(task);
- 
++/*
+  * 	Each type of disk transport supported MUST have a template defined
+  *	within its .h file.
+  */
+@@ -339,6 +351,11 @@ struct se_subsystem_api {
+ 	 */
+ 	struct module *sub_owner;
  	/*
- 	 * At this point the locally allocated RD tables have been mapped
-@@ -1535,12 +1457,21 @@ static struct se_subsystem_api rd_mcp_template = {
- 	.write_pending		= NULL,
- };
- 
-+static struct se_subsystem_api_cdb rd_cdb_template = {
-+	.emulate_inquiry	= rd_emulate_inquiry,
-+	.emulate_read_cap	= rd_emulate_read_cap,
-+	.emulate_read_cap16	= rd_emulate_read_cap16,
-+	.emulate_unmap		= NULL,
-+};
-+
- int __init rd_module_init(void)
- {
- 	int ret;
- 
- 	INIT_LIST_HEAD(&rd_dr_template.sub_api_list);
-+	rd_dr_template.sub_cdb = &rd_cdb_template;
- 	INIT_LIST_HEAD(&rd_mcp_template.sub_api_list);
-+	rd_mcp_template.sub_cdb = &rd_cdb_template;
- 
- 	ret = transport_subsystem_register(&rd_dr_template, NULL);
- 	if (ret < 0)
++	 * Set of function pointers use for per CDB context emulation
++	 * by virtual IBLOCK, FILEIO, and RAMDISK subsystem plugins.
++	 */
++	struct se_subsystem_api_cdb *sub_cdb;
++	/*
+ 	 * Counter for struct se_hba reference
+ 	 */
+ 	atomic_t sub_api_hba_cnt;
 -- 
 1.5.6.5
 
