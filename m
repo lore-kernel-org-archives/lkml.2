@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0JJP64 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 11:58:56 -0400
-Received: from smtp5.freeserve.com ([193.252.22.128]:3288 "EHLO
-	smtp5.freeserve.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab0JJP6y (ORCPT
+	id S1755072Ab0JJQGN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 12:06:13 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:50920 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751813Ab0JJQGM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 11:58:54 -0400
-X-Greylist: delayed 598 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Oct 2010 11:58:54 EDT
-X-ME-UUID: 20101010154853894.15CA01C00043@mwinf3417.me.freeserve.com
-Date: Sun, 10 Oct 2010 16:48:18 +0100
-From: Chris Vine <chris@cvine.freeserve.co.uk>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Lenovo S12 2.6.36-rc7 lockup
-Message-ID: <20101010164818.6617102c@boulder.homenet>
-In-Reply-To: <20101010135912.76eb61b7@boulder.homenet>
-References: <20101010135912.76eb61b7@boulder.homenet>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 10 Oct 2010 12:06:12 -0400
+Date: Sun, 10 Oct 2010 18:06:08 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
+        device-mapper development <dm-devel@redhat.com>, pedrib@gmail.com,
+        linux-kernel@vger.kernel.org, Alasdair G Kergon <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>
+Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
+Message-ID: <20101010160608.GE26728@basil.fritz.box>
+References: <20101010115941.GA8539@basil.fritz.box>
+ <4CB1B3B9.4030205@redhat.com>
+ <20101010130842.GE8256@basil.fritz.box>
+ <4CB1DD1A.5080906@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB1DD1A.5080906@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Oct 2010 13:59:12 +0100
-Chris Vine <chris@cvine.freeserve.co.uk> wrote:
-> Hi,
+On Sun, Oct 10, 2010 at 05:34:50PM +0200, Milan Broz wrote:
+> On 10/10/2010 03:08 PM, Andi Kleen wrote:
+> > I did it intentionally not split up because a split up is unlikely
+> > to be bisectable. I think there is no need for any splitups.
 > 
-> kernel 2.6.36-rc7 completely locks up my Lenovo S12 notebook on
-> boot-up. It happens early enough in boot-up that nothing appears in
-> any of the system log files.  The last message printed to the console
-> is "Using IPI - No Shortcut mode".
+> Shrug. The main encryption thread and ESSIV per-cpu are two separate
+> things from my point of view.
+
+Is not obvious to me.
+
 > 
-> The lock up does not occur with kernel 2.6.35.6.  I do not know in
-> what version of 2.6.36-rc this first arose.
-> 
-> The kernel configuration is set out below.
-> 
-> Chris
-[snip]
+> Anyway, the ball is on DM maintainer's playground now.
 
-On testing now with the earlier 2.6.36-rc6, I see that it is not a
-lock-up but a hang, in that it partly responds to the keyboard.  With
-rc6 boot-up can proceed further than with rc7 (but very slowly) if
-keyboard keys are more or less randomly pressed.  Boot up is never
-completed though with rc6, even though it proceeds further.
+Well I was told already for 2.6.35 it was ready to merge
+(and also I already have an active user base, people are using
+it because it's solving a wide spread problem) 
 
-Chris
+I am frankly somewhat surprised things should be suddenly 
+completely open now again and such contortions as you
+did to the patch should be needed.
 
+-Andi
 
+-- 
+ak@linux.intel.com -- Speaking for myself only.
