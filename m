@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752152Ab0JJOGM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 10:06:12 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37739 "EHLO mx2.mail.elte.hu"
+	id S1752828Ab0JJOIu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 10:08:50 -0400
+Received: from sh.osrg.net ([192.16.179.4]:55456 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029Ab0JJOGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 10:06:11 -0400
-Date: Sun, 10 Oct 2010 16:05:54 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Robin Holt <holt@sgi.com>
-Cc: Russ Anderson <rja@sgi.com>, Yinghai Lu <yinghai@kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
-        "H. Peter Anvin" <h.peter.anvin@intel.com>,
-        Jack Steiner <steiner@sgi.com>
-Subject: Re: [BUG] x86: bootmem broken on SGI UV
-Message-ID: <20101010140554.GB20400@elte.hu>
-References: <20101008213429.GB7223@sgi.com>
- <4CAFA1DB.6010802@kernel.org>
- <20101009125944.GA18248@sgi.com>
- <20101009163908.GX14068@sgi.com>
- <20101010104129.GB30271@elte.hu>
- <20101010104319.GA9862@elte.hu>
- <20101010114459.GY14068@sgi.com>
- <20101010115605.GC14064@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101010115605.GC14064@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1751599Ab0JJOIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 10:08:48 -0400
+Date: Sun, 10 Oct 2010 23:08:22 +0900
+To: mitov@issp.bas.bg
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+        linux-media@vger.kernel.org, g.liakhovetski@gmx.de
+Subject: Re: [RFC][PATCH] add
+ dma_reserve_coherent_memory()/dma_free_reserved_memory() API
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <201008201450.12585.mitov@issp.bas.bg>
+References: <201008201113.46036.mitov@issp.bas.bg>
+	<20100820173349E.fujita.tomonori@lab.ntt.co.jp>
+	<201008201450.12585.mitov@issp.bas.bg>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20101010230323B.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 10 Oct 2010 23:08:24 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 20 Aug 2010 14:50:12 +0300
+Marin Mitov <mitov@issp.bas.bg> wrote:
 
-* Robin Holt <holt@sgi.com> wrote:
-
-> On Sun, Oct 10, 2010 at 06:44:59AM -0500, Robin Holt wrote:
-> > On Sun, Oct 10, 2010 at 12:43:19PM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Ingo Molnar <mingo@elte.hu> wrote:
-> > > 
-> > > > 
-> > > > * Robin Holt <holt@sgi.com> wrote:
-> > > > 
-> > > > > On Sat, Oct 09, 2010 at 07:59:45AM -0500, Russ Anderson wrote:
-> > > > > > Yes, Yinghai's patch fixes the problem.
-> > > > > > Thank you very much.
-> > > > > 
-> > > > > Will this be included in 2.6.36?  It is needed for boot in order for UV
-> > > > > systems to boot.
-> > > > 
-> > > > -tip uses memblock APIs. If this happens with vanilla -git as well 
-> > > > then we need a bootmem backport for the fix.
-> > > 
-> > > And to answer your question: yes, we can queue it up for -final as well 
-> > > if it's a recent regression - 'doesnt boot at all' bugs are nasty. But 
-> > > i'm not sure this is a bootmem problem so please double check vanilla 
-> > > v2.6.36-rc7 as well.
+> On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
+> > On Fri, 20 Aug 2010 11:13:45 +0300
+> > Marin Mitov <mitov@issp.bas.bg> wrote:
 > > 
-> > The 36-rc7 kernel does not boot at all either.  I don't have any 
-> > decent debug tools to dig in further.  It does fail on the same 
-> > machine that Russ was testing with, but passes on any that have a 
-> > single blade as the kernel Russ first identified as being a problem 
-> > had.  Based upon my vague recollection of the boot messages, it 
-> > appears to fail in a similar point in boot.  I would assume it is a 
-> > similar problem.
+> > > > > This tric is already used in drivers/staging/dt3155v4l.c
+> > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
+> > > > > 
+> > > > > Here proposed for general use by popular demand from video4linux folks.
+> > > > > Helps for videobuf-dma-contig framework.
+> > > > 
+> > > > What you guys exactly want to do? If you just want to pre-allocate
+> > > > coherent memory for latter usage,
+> > > 
+> > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
+> > > We use coherent memory because it turns out to be contiguous.
+> > 
+> > Hmm, you don't care about coherency? You just need contiguous memory?
 > 
-> 2.6.35 fails as well.  I will bisect for as long as time permits.
+> Yes. We just need contiguous memory. Coherency is important as far as when dma
+> transfer finishes user land is able to see the new data. Could be done by something like
+> dma_{,un}map_single()
 
-That's really bad. If this means that you have not booted vanilla 
-mainline on UV in that timeframe _at all_, and that it was perma-broken 
-since 2009 when that commit Yinghai identified went upstream, then 
-there's little point in squeezing this fix into v2.6.36-final.
+Anyone is working on this?
 
--rcs are strictly for regression fixes.
+KAMEZAWA posted a patch to improve the generic page allocator to
+allocate physically contiguous memory. He said that he can push it
+into mainline.
 
-If you want upstream to care about you then you absolutely have the duty 
-to at minimum test latest mainline ...
-
-Thanks,
-
-	Ingo
+The approach enables us to solve this issue without adding any new
+API.
