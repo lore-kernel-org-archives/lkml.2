@@ -1,55 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab0JJTHv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:07:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11728 "EHLO mx1.redhat.com"
+	id S1752152Ab0JJTMI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:12:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:32841 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab0JJTHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:07:50 -0400
-Date: Sun, 10 Oct 2010 20:07:34 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Milan Broz <mbroz@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-        Andi Kleen <ak@linux.intel.com>,
-        device-mapper development <dm-devel@redhat.com>, pedrib@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [dm-devel] DM-CRYPT: Scale to multiple CPUs v3
-Message-ID: <20101010190734.GH28828@agk-dp.fab.redhat.com>
-Mail-Followup-To: Andi Kleen <andi@firstfloor.org>,
-	Milan Broz <mbroz@redhat.com>, Mike Snitzer <snitzer@redhat.com>,
-	Andi Kleen <ak@linux.intel.com>,
-	device-mapper development <dm-devel@redhat.com>, pedrib@gmail.com,
-	linux-kernel@vger.kernel.org
-References: <20101010115941.GA8539@basil.fritz.box> <4CB1B3B9.4030205@redhat.com> <20101010130842.GE8256@basil.fritz.box> <4CB1DD1A.5080906@redhat.com> <20101010162257.GA1272@redhat.com> <20101010170151.GD28828@agk-dp.fab.redhat.com> <20101010174454.GA21681@basil.fritz.box> <20101010181736.GE28828@agk-dp.fab.redhat.com> <20101010185100.GB21681@basil.fritz.box>
+	id S1751262Ab0JJTMF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 15:12:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: 2.6.36-rc7-git2: Reported regressions 2.6.34 -> 2.6.35
+Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101010185100.GB21681@basil.fritz.box>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
+Date: Sun, 10 Oct 2010 21:10:34 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > AFAIK Nested dm-crypt is not extreme for some folk who have routine
-> > configurations using it.  But if in_interrupt is set how does this code
-                                     ^^^^^^^^^^^
-> > work for them now compared to how it worked before?
+This message contains a list of some post-2.6.34 regressions introduced before
+2.6.35, for which there are no fixes in the mainline known to the tracking team.
+If any of them have been fixed already, please let us know.
 
-On Sun, Oct 10, 2010 at 08:51:00PM +0200, Andi Kleen wrote:
-> Previously they will all pile up on the single worker thread.
-> Now in the nested case the nested work is run in their own
-> context. This should actually scale better because you
-> get parallelism too, not contention on a single resource.
- 
-Not if in_interrupt is set though?
-+       if (per_cpu(io_wq_cpu, cpu) == current && !in_interrupt()) {
+If you know of any other unresolved post-2.6.34 regressions, please let us know
+either and we'll add them to the list.  Also, please let us know if any
+of the entries below are invalid.
 
-What I am missing here?
+Each entry from the list will be sent additionally in an automatic reply to
+this message with CCs to the people involved in reporting and handling the
+issue.
 
-(And assume there is only 1 CPU too for worst case behaviour, presumably.)
 
-Alasdair
+Listed regressions statistics:
+
+  Date          Total  Pending  Unresolved
+  ----------------------------------------
+  2010-10-10      143       23          19
+  2010-10-03      141       21          17
+  2010-09-26      139       24          21
+  2010-09-20      137       27          25
+  2010-09-12      135       26          25
+  2010-08-30      124       38          34
+  2010-08-01      100       27          23
+  2010-07-23       94       33          25
+  2010-07-09       79       45          37
+  2010-06-21       46       37          26
+  2010-06-09       15       13          10
+
+
+Unresolved regressions
+----------------------
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20002
+Subject		: x86_64 2.6.35.* kernels and Intel Xeon X5550
+Submitter	: Marc Aurele La France <tsi@ualberta.ca>
+Date		: 2010-10-07 17:17 (4 days old)
+Message-ID	: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
+References	: http://marc.info/?l=linux-kernel&m=128647187628706&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19792
+Subject		: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
+Submitter	: Sven Neumann <s.neumann@raumfeld.com>
+Date		: 2010-10-04 7:30 (7 days old)
+Message-ID	: <1286177435.2140.5.camel@sven>
+References	: http://marc.info/?l=linux-kernel&m=128617869729382&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19612
+Subject		: Computer fails to hibernate - problem idling SMP CPU's
+Submitter	:  <tempo444z@gmail.com>
+Date		: 2010-10-02 22:26 (9 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19302
+Subject		: PROBLEM: kernel crash on USB-modem (Huawei E1750) hangup.
+Submitter	: O01eg <O01eg@yandex.ru>
+Date		: 2010-09-26 19:50 (15 days old)
+Message-ID	: <op.vjnn1up1yohvy1@localhost>
+References	: http://marc.info/?l=linux-kernel&m=128553111709569&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=18522
+Subject		: cdrom drive doesn't detect removal
+Submitter	: Maxim Levitsky <maximlevitsky@gmail.com>
+Date		: 2010-09-12 9:49 (29 days old)
+First-Bad-Commit: http://git.kernel.org/linus/6b4517a7913a09d3259bb1d21c9cb300f12294bd
+Message-ID	: <1284284969.2928.18.camel@maxim-laptop>
+References	: http://marc.info/?l=linux-kernel&m=128428499013930&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17812
+Subject		: Kernel completely frozen when memory is full
+Submitter	: Mickey86 <mikael.cordon@gmail.com>
+Date		: 2010-09-05 13:09 (36 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17261
+Subject		: Freezes on bootup
+Submitter	: Dan Dart <dandart@googlemail.com>
+Date		: 2010-08-29 09:00 (43 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16891
+Subject		: Kernel panic while loading intel module during boot
+Submitter	: Anisse Astier <anisse@astier.eu>
+Date		: 2010-08-24 13:19 (48 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16691
+Subject		: IPW5100: iwlagn broken with 2.6.34.x to 2.6.35.2 update
+Submitter	: Can Celasun <dcelasun@gmail.com>
+Date		: 2010-08-21 08:28 (51 days old)
+References	: http://www.spinics.net/lists/linux-wireless/msg57237.html
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16614
+Subject		: [2.6.35] usb 2.0 em28xx  kernel panic general protection fault: 0000 [#1] SMP          RIP: 0010:[<ffffffffa004fbc5>]  [<ffffffffa004fbc5>] em28xx_isoc_copy_vbi+0x62e/0x812 [em28xx]
+Submitter	: Sander Eikelenboom <linux@eikelenboom.it>
+Date		: 2010-08-10 22:12 (62 days old)
+Message-ID	: <61936849.20100811001257@eikelenboom.it>
+References	: http://marc.info/?l=linux-kernel&m=128152075830927&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16562
+Subject		: 2.6.35: cpu_idle bug report / on i7 870 cpu (x86_64)
+Submitter	: Justin Piszcz <jpiszcz@lucidpixels.com>
+Date		: 2010-08-06 22:09 (66 days old)
+Message-ID	: <alpine.DEB.2.00.1008061800530.5241@p34.internal.lan>
+References	: http://marc.info/?l=linux-kernel&m=128113260904048&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16549
+Subject		: 2.6.35: suspicious rcu_dereference_check() usage
+Submitter	: Vladislav Bolkhovitin <vst@vlnb.net>
+Date		: 2010-08-04 10:56 (68 days old)
+Message-ID	: <4C594740.1090608@vlnb.net>
+References	: http://marc.info/?l=linux-kernel&m=128091938215177&w=2
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16525
+Subject		: unexpected high load since 2.6.35
+Submitter	: MadLoisae@gmx.net <MadLoisae@gmx.net>
+Date		: 2010-08-02 20:53 (70 days old)
+Message-ID	: <4C573041.1070103@gmx.net>
+References	: http://marc.info/?l=linux-kernel&m=128078243726655&w=2
+		  http://lkml.org/lkml/2010/9/14/105
+		  http://lkml.org/lkml/2010/9/27/328
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
+Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
+Submitter	: Albert Gall <ss3vdr@gmail.com>
+Date		: 2010-08-04 16:10 (68 days old)
+First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
+Handled-By	: Alex Deucher <alexdeucher@gmail.com>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16488
+Subject		: [i915] Framebuffer ID error after suspend/hibernate leading to X crash
+Submitter	: Milan Bouchet-Valat <nalimilan@club.fr>
+Date		: 2010-08-01 08:55 (71 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16458
+Subject		: Bluetooth disabled after resume
+Submitter	: AttilaN <attila123456@gmail.com>
+Date		: 2010-07-25 09:33 (78 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16380
+Subject		: Loop devices act strangely in 2.6.35
+Submitter	: Artem S. Tashkinov <t.artem@mailcity.com>
+Date		: 2010-07-13 23:21 (90 days old)
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16265
+Subject		: Why is kslowd accumulating so much CPU time?
+Submitter	: Theodore Ts'o <tytso@mit.edu>
+Date		: 2010-06-09 18:36 (124 days old)
+First-Bad-Commit: http://git.kernel.org/linus/fbf81762e385d3d45acad057b654d56972acf58c
+Message-ID	: <E1OMQ88-0002a1-Gb@closure.thunk.org>
+References	: http://marc.info/?l=linux-kernel&m=127610857819033&w=4
+		  http://bugs.freedesktop.org/show_bug.cgi?id=29536
+Handled-By	: Chris Wilson <chris@chris-wilson.co.uk>
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16221
+Subject		: 2.6.35-rc2-git5 -- [drm:drm_mode_getfb] *ERROR* invalid framebuffer id
+Submitter	: Miles Lane <miles.lane@gmail.com>
+Date		: 2010-06-11 20:31 (122 days old)
+Message-ID	: <AANLkTim0jVRyqkwlGOcrg_XTvUQwcBYfWJX-aRzkkrLG@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127628828119623&w=2
+
+
+Regressions with patches
+------------------------
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17772
+Subject		: Unable to locate IOAPIC for GSI *
+Submitter	: zersaa <zersaa@gmail.com>
+Date		: 2010-09-04 21:28 (37 days old)
+Handled-By	: Eric W. Biederman <ebiederm@xmission.com>
+Patch		: https://patchwork.kernel.org/patch/104501/
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16462
+Subject		: unable to connect to hidden SSID AP on legal channel 13
+Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
+Date		: 2010-07-25 17:06 (78 days old)
+Handled-By	: Johannes Berg <johannes.berg@intel.com>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=31862
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16312
+Subject		: WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
+Submitter	: Zdenek Kabelac <zdenek.kabelac@gmail.com>
+Date		: 2010-06-28 9:40 (105 days old)
+Message-ID	: <AANLkTin24fr5O4_q5Xbo9Y_NKkEmtcp6Hgmr9_4qXaFz@mail.gmail.com>
+References	: http://marc.info/?l=linux-kernel&m=127771804806465&w=2
+		  http://lkml.indiana.edu/hypermail/linux/kernel/1007.3/00884.html
+Handled-By	: Jan Kara <jack@suse.cz>
+		  Jan Kara <jack@suse.cz>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=30282
+
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16228
+Subject		: BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
+Submitter	: Brian Bloniarz <brian.bloniarz@gmail.com>
+Date		: 2010-06-16 17:57 (117 days old)
+Handled-By	: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Patch		: https://patchwork.kernel.org/patch/189182/
+		  https://patchwork.kernel.org/patch/189232/
+		  https://patchwork.kernel.org/patch/189242/
+		  https://patchwork.kernel.org/patch/189252/
+
+
+For details, please visit the bug entries and follow the links given in
+references.
+
+As you can see, there is a Bugzilla entry for each of the listed regressions.
+There also is a Bugzilla entry used for tracking the regressions introduced
+between 2.6.34 and 2.6.35, unresolved as well as resolved, at:
+
+http://bugzilla.kernel.org/show_bug.cgi?id=16055
+
+Please let the tracking team know if there are any Bugzilla entries that
+should be added to the list in there.
+
+Thanks!
 
