@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752445Ab0JJXFU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 19:05:20 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:62020 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751539Ab0JJXFT (ORCPT
+	id S1752517Ab0JJXee (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 19:34:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:55372 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752460Ab0JJXed (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 19:05:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=SE6OiR9qLD2KJupwccZt/HJA5cBx0YpCIHudOOmGVPZOiGt9naqbYzVwOmO/lRyvxv
-         vlMWJpI5dBtYS0z6NW6SWTXiwDBdRbZxY2kX7JiiShhiI6sdXlxPXGTT/AKVIz3lMa6r
-         fzGwZt/QMQ1HDRHbOrnDxROsw3cR/K1jC0vTg=
+	Sun, 10 Oct 2010 19:34:33 -0400
+Message-ID: <4CB24D7D.1060309@monstr.eu>
+Date: Mon, 11 Oct 2010 09:34:21 +1000
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.18 (X11/20081120)
 MIME-Version: 1.0
-In-Reply-To: <1286639626.1891.0.camel@laptop>
-References: <1286612169-27529-1-git-send-email-linus.walleij@stericsson.com>
-	<1286639626.1891.0.camel@laptop>
-Date: Mon, 11 Oct 2010 01:05:18 +0200
-Message-ID: <AANLkTi=JfJknPNMiMXnK=kZj+ECJTE423AfjuiE67afu@mail.gmail.com>
-Subject: Re: [PATCH] sched: SCHED_RESET_ON_FORK to recalculate load weights
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>, stable@kernel.org
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+        john.williams@petalogix.com, edgar.iglesias@gmail.com, duyl@xilinx.com,
+        linnj@xilinx.com, microblaze-uclinux@itee.uq.edu.au
+Subject: Re: Microblaze little-endian port + driver changes
+References: <1285739538-29058-1-git-send-email-monstr@monstr.eu> <AANLkTinTgO_kk=gcd50UQnwsm47fwyOX3BbGhJ1pPxUP@mail.gmail.com>
+In-Reply-To: <AANLkTinTgO_kk=gcd50UQnwsm47fwyOX3BbGhJ1pPxUP@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/9 Peter Zijlstra <peterz@infradead.org>:
-
-> On Sat, 2010-10-09 at 10:16 +0200, Linus Walleij wrote:
+Grant Likely wrote:
+> On Tue, Sep 28, 2010 at 11:52 PM, Michal Simek <monstr@monstr.eu> wrote:
+>> Hi everybody,
 >>
->> So we always need to call set_load_weight(), not just if the
->> niceval was changed, because the scheduler gives
->> SCHED_RR/SCHED_FIFO processes very high weights.
->
-> SCHED_RR/FIFO never uses that weight, we should remove all that cruft..
+>> here is the first bunch of patches which is necessary to apply
+>> to get microblaze little-endian AXI version work.
+>>
+>> All patches are placed in microblaze-next branch and they are also
+>> merged to linux-next branch.
+>>
+>> Grant: I would like to ask you if you can please take a look
+>> at little-endian driver changes.
+> 
+> [cc'ing sfr re: pending linux-next merge conflict]
+> 
+> Hi Michal,
+> 
+> Can you please remove the following patches from your linux-next branch:
+> 
+> of: GPIO: Fix OF probing on little-endian systems
+> of: MTD: Fix OF probing on little-endian systems
+> of: Fix uart16550 initialization on little-endian systems
 
-Hm I wonder if that is an ACK or "please throughly rewrite the
-scheduler" request ;-)
+Removed from microblaze-next branch.
 
-Anyway I also saw you have started to get rid of RT weights it in
-commit e51fd5e2, so in set_load_weight():
+Regards,
+Michal
 
-       if (task_has_rt_policy(p)) {
-                p->se.load.weight = prio_to_weight[0] * 2;
-                p->se.load.inv_weight = prio_to_wmult[0] >> 1;
-                return;
-        }
 
-is now replaced by this:
-
-        if (task_has_rt_policy(p)) {
-                p->se.load.weight = 0;
-                p->se.load.inv_weight = WMULT_CONST;
-                return;
-        }
-
-I backported that commit onto 2.6.34 (bah, just patch -p1)
-and tested. The problem persists, but mutates:
-
-Whereas before this commit the problem was that processes came
-back with enormous weights after forking of an RT process flagged
-with SCHED_RESET_ON_FORK, the problem is now the reverse:
-the process comes back with load weight zero making the forked
-process totally numb (when it has enormous weights it would atlest
-respond), so this patch is still needed to bring the weight back in
-balance AFAICT.
-
-Yours,
-Linus Walleij
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
