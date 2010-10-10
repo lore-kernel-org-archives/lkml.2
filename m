@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751443Ab0JJToQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:44:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37113 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab0JJToP (ORCPT
+	id S1751546Ab0JJTrK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:47:10 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55260 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751258Ab0JJTrH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:44:15 -0400
-Date: Sun, 10 Oct 2010 21:44:05 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] arch: arm/imx: fix memory init in imx_dma_request()
-Message-ID: <20101010194405.GS29673@pengutronix.de>
-References: <1286731703-17775-1-git-send-email-segooon@gmail.com>
+	Sun, 10 Oct 2010 15:47:07 -0400
+From: James Hogan <james@albanarts.com>
+To: Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH 2/2] pm_trace: Add sysfs attr for rechecking dev hash.
+Date: Sun, 10 Oct 2010 20:47:01 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-custom+; KDE/4.4.5; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        markgross <markgross@thegnar.org>
+References: <201010092334.27808.james@albanarts.com> <201010092337.47821.james@albanarts.com> <20101010180400.GA19524@elf.ucw.cz>
+In-Reply-To: <20101010180400.GA19524@elf.ucw.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1286731703-17775-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010102047.01950.james@albanarts.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 09:28:23PM +0400, Vasiliy Kulikov wrote:
-> imx_dma_request() didn't fill struct pointed by imxdma with zeroes
-> as it passed sizeof(pointer), not sizeof(struct) to memset().
+Hi Pavel,
+
+On Sunday 10 October 2010 19:04:00 Pavel Machek wrote:
+> Hi!
 > 
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-Acked-and-tested-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> > If the device which fails to resume is part of a loadable kernel module
+> > it won't be checked at startup against the magic number stored in the
+> > RTC.
+> > 
+> > Add a read-only sysfs attribute /sys/power/pm_trace_dev_hash which
+> > contains a list of newline separated devices (usually just the one)
+> > which currently match the last magic number. This allows the device
+> > which is failing to resume to be found after the modules are loaded
+> > again.
+> > 
+> > --- a/Documentation/power/s2ram.txt
+> > +++ b/Documentation/power/s2ram.txt
+> > 
+> > @@ -49,6 +49,13 @@ machine that doesn't boot) is:
+> >     device (lspci and /sys/devices/pci* is your friend), and see if you
+> >     can fix it, disable it, or trace into its resume function.
+> > 
+> > +   If no device matches the hash, it may be a device from a loadable
+> > kernel +   module that is not loaded until after the hash is checked.
+> > You can check +   the hash against the current devices again after more
+> > modules are loaded +   using sysfs:
+> > +
+> > +	cat /sys/power/pm_trace_dev_hash
+> > +
+> 
+> Yep, but exact semantics of that sysfs file should probably be linked
+> in the sysfs documentation...
+> 								Pavel
 
-Thanks
-Uwe
+To clarify, do you mean I should link to Documentation/ABI/testing/sysfs-power 
+from Documentation/power/s2ram.txt, or just make sure the syfs file is 
+documented in Documentation/ABI/testing/sysfs-power (which is done in v2 of 
+this patch)?
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Thanks for taking a look
+James
