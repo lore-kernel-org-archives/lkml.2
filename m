@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab0JJPBN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 11:01:13 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:52584 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab0JJPBL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 11:01:11 -0400
-X-Greylist: delayed 1174 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Oct 2010 11:01:10 EDT
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Date: Sun, 10 Oct 2010 17:36:47 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.36-rc7; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        g.liakhovetski@gmx.de
-References: <201008201113.46036.mitov@issp.bas.bg> <201008201450.12585.mitov@issp.bas.bg> <20101010230323B.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20101010230323B.fujita.tomonori@lab.ntt.co.jp>
+	id S1752972Ab0JJPH3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 11:07:29 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:56751 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751555Ab0JJPH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 11:07:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=sXsr3gUxTPRmjHBZ+5SOKLSKv3fdMz7fwfGbi4HAH07k4iw8sqbS3vO9nEMUN92PDM
+         O9AvtcyVK8qWiQjb+w9NySY54QMD69Ra3H3xoMAFaavKV6AQKOKOcnUYyrRUGeJYVegx
+         zlMJFzHVIgZfbW/HjoKhQBEj4MIDY6QNFI/PQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010101736.54199.mitov@issp.bas.bg>
+In-Reply-To: <20101008102433.GA24208@infradead.org>
+References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
+	<20101008102433.GA24208@infradead.org>
+Date: Mon, 11 Oct 2010 00:07:26 +0900
+Message-ID: <AANLkTikjb8aTBoXm3+9ULQDB9OvdxwHcQ=BSS4aBJm9i@mail.gmail.com>
+Subject: Re: [PATCH 1/5] bitops: add generic implementation of ext2 atomic
+ bitops by test_and_{set,clear}_bit
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, October 10, 2010 05:08:22 pm FUJITA Tomonori wrote:
-> On Fri, 20 Aug 2010 14:50:12 +0300
-> Marin Mitov <mitov@issp.bas.bg> wrote:
-> 
-> > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> > > On Fri, 20 Aug 2010 11:13:45 +0300
-> > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > 
-> > > > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > > > 
-> > > > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > > > Helps for videobuf-dma-contig framework.
-> > > > > 
-> > > > > What you guys exactly want to do? If you just want to pre-allocate
-> > > > > coherent memory for latter usage,
-> > > > 
-> > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > > > We use coherent memory because it turns out to be contiguous.
-> > > 
-> > > Hmm, you don't care about coherency? You just need contiguous memory?
-> > 
-> > Yes. We just need contiguous memory. Coherency is important as far as when dma
-> > transfer finishes user land is able to see the new data. Could be done by something like
-> > dma_{,un}map_single()
-> 
-> Anyone is working on this?
+2010/10/8 Christoph Hellwig <hch@infradead.org>:
+> On Fri, Oct 08, 2010 at 07:03:09PM +0900, Akinobu Mita wrote:
+>> This introduces asm-generic header file for generic implementation of
+>> ext2 atomic bit operations by test_and_set_bit() and test_and_clear_bit().
+>>
+>> alpha, arm, cris, frv, ia64, m68k, mn10300, parisc, powerpc, s390,
+>> sparc64, x86, xtensa can use this header file in its asm/bitops.h.
+>
+> Care to rename the functions to le_* instead of ext2_* while you're at
+> it and documenting their semantics?
 
-I am not, sorry.
+OK, as several people requested in another threads, I'll introduce
+little endian bit operations for all architectures and rename ext2
+bitops to le bitops.
 
-> 
-> KAMEZAWA posted a patch to improve the generic page allocator to
-> allocate physically contiguous memory. He said that he can push it
-> into mainline.
+BTW, I have a question about ext2 atomic bit operations.
 
-I am waiting for the new videobuf2 framework to become part of the kernel.
-Then KAMEZAWA's improvements can help.
+Some architectures use spinlock to implement it
+(asm-generic/bitops/ext2-atomic.h). Most other architectures use
+test_and_set_bit() and test_and_clear_bit() as this patch shows.
 
-Marin Mitov
-
-> 
-> The approach enables us to solve this issue without adding any new
-> API.
-> 
+Why are there two implementations? test_and_{set,clear}_bit() are more
+costly operations than spinlock for some architectures?
