@@ -1,57 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab0JJPH3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 11:07:29 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:56751 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751555Ab0JJPH1 (ORCPT
+	id S1755195Ab0JJPJj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 11:09:39 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:41838 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751707Ab0JJPJh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 11:07:27 -0400
+	Sun, 10 Oct 2010 11:09:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=sXsr3gUxTPRmjHBZ+5SOKLSKv3fdMz7fwfGbi4HAH07k4iw8sqbS3vO9nEMUN92PDM
-         O9AvtcyVK8qWiQjb+w9NySY54QMD69Ra3H3xoMAFaavKV6AQKOKOcnUYyrRUGeJYVegx
-         zlMJFzHVIgZfbW/HjoKhQBEj4MIDY6QNFI/PQ=
+         :cc:content-type:content-transfer-encoding;
+        b=xVfG5lRLT5buG/3NM4xLfGrW7G9cD7R3fcP+QBZg/h1tvhg3Nvg0+kVysTkEK0tMy+
+         K+3JP4HWTqYNlOWOcmiBx/gSw2PGDxTJnvxUU4/mkktLKoHCWRG0b4XCLZb6uFzM202Z
+         OmIqf/V7n3Cv26yBjnqZ1TNTMu+1h+zXigDnY=
 MIME-Version: 1.0
-In-Reply-To: <20101008102433.GA24208@infradead.org>
+In-Reply-To: <20101008.115900.245387221.davem@davemloft.net>
 References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com>
-	<20101008102433.GA24208@infradead.org>
-Date: Mon, 11 Oct 2010 00:07:26 +0900
-Message-ID: <AANLkTikjb8aTBoXm3+9ULQDB9OvdxwHcQ=BSS4aBJm9i@mail.gmail.com>
-Subject: Re: [PATCH 1/5] bitops: add generic implementation of ext2 atomic
- bitops by test_and_{set,clear}_bit
+	<1286532193-29814-4-git-send-email-akinobu.mita@gmail.com>
+	<4CAF693B.9030706@oracle.com>
+	<20101008.115900.245387221.davem@davemloft.net>
+Date: Mon, 11 Oct 2010 00:09:36 +0900
+Message-ID: <AANLkTikM35ovGdikDQ6nHs6_GUDF6KTqjjEM20oymOhL@mail.gmail.com>
+Subject: Re: [PATCH 4/5] rds: stop including asm-generic/bitops/le.h directly
 From: Akinobu Mita <akinobu.mita@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andrew Morton <akpm@linux-foundation.org>
+To: David Miller <davem@davemloft.net>
+Cc: andy.grover@oracle.com, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, arnd@arndb.de, akpm@linux-foundation.org,
+        rds-devel@oss.oracle.com, netdev@vger.kernel.org,
+        Alexander Graf <agraf@suse.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/8 Christoph Hellwig <hch@infradead.org>:
-> On Fri, Oct 08, 2010 at 07:03:09PM +0900, Akinobu Mita wrote:
->> This introduces asm-generic header file for generic implementation of
->> ext2 atomic bit operations by test_and_set_bit() and test_and_clear_bit().
->>
->> alpha, arm, cris, frv, ia64, m68k, mn10300, parisc, powerpc, s390,
->> sparc64, x86, xtensa can use this header file in its asm/bitops.h.
+2010/10/9 David Miller <davem@davemloft.net>:
+> From: Andy Grover <andy.grover@oracle.com>
+> Date: Fri, 08 Oct 2010 11:55:55 -0700
 >
-> Care to rename the functions to le_* instead of ext2_* while you're at
-> it and documenting their semantics?
+>> On 10/08/2010 03:03 AM, Akinobu Mita wrote:
+>>> asm-generic/bitops/le.h is only intended to be included directly from
+>>> asm-generic/bitops/ext2-non-atomic.h or asm-generic/bitops/minix-le.h
+>>> which implements generic ext2 or minix bit operations.
+>>>
+>>> This stops including asm-generic/bitops/le.h directly and use ext2
+>>> non-atomic bit operations instead.
+>>>
+>>> An alternative approach is introducing little endian bit operations
+>>> in linux/bitops.h. But it needs to touch more files than this change
+>>> does.
+>>
+>>> -    generic___set_le_bit(off, (void *)map->m_page_addrs[i]);
+>>> +    ext2_set_bit(off, (void *)map->m_page_addrs[i]);
+>>
+>> I'd like a solution that doesn't have rds calling a function starting
+>> with ext2_. Seems wrong.
+>
+> Agreed.
 
-OK, as several people requested in another threads, I'll introduce
-little endian bit operations for all architectures and rename ext2
-bitops to le bitops.
-
-BTW, I have a question about ext2 atomic bit operations.
-
-Some architectures use spinlock to implement it
-(asm-generic/bitops/ext2-atomic.h). Most other architectures use
-test_and_set_bit() and test_and_clear_bit() as this patch shows.
-
-Why are there two implementations? test_and_{set,clear}_bit() are more
-costly operations than spinlock for some architectures?
+OK, I'll rewrite the patch series to take the alternative approach.
