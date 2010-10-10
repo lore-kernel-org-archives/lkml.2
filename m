@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752451Ab0JJTWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:22:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:32917 "EHLO ogre.sisk.pl"
+	id S1753108Ab0JJTYt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:24:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:32925 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750842Ab0JJTWF convert rfc822-to-8bit (ORCPT
+	id S1752465Ab0JJTWL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:22:05 -0400
+	Sun, 10 Oct 2010 15:22:11 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Albert Gall" <ss3vdr@gmail.com>,
-        "Alex Deucher" <alexdeucher@gmail.com>,
-        "Dave Airlie" <airlied@redhat.com>,
-        "Jerome Glisse" <jglisse@redhat.com>
+        "MadLoisae@gmx.net" <MadLoisae@gmx.net>,
+        "Peter Zijlstra" <a.p.zijlstra@chello.nl>, 2010-04-22@ogre.sisk.pl,
+        "21:50:19"@ogre.sisk.pl
 References: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 In-Reply-To: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -21,8 +20,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <yeAD7A8RDxC.A.Cm.-wgsMB@chimera>
-Subject: [Bug #16515] [bisected] Radeon rv280 can't boot on kernel 2.6.35.
+Message-ID: <yeAD7A8RDxC.A.2e.5wgsMB@chimera>
+Subject: [Bug #16525] unexpected high load since 2.6.35
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 10 Oct 2010 21:18:51 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -37,11 +36,13 @@ introduced between 2.6.34 and 2.6.35.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16515
-Subject		: [bisected] Radeon rv280 can't boot on kernel 2.6.35.
-Submitter	: Albert Gall <ss3vdr@gmail.com>
-Date		: 2010-08-04 16:10 (68 days old)
-First-Bad-Commit: http://git.kernel.org/linus/https://bugzilla.kernel.org/attachment.cgi?id=27350
-Handled-By	: Alex Deucher <alexdeucher@gmail.com>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16525
+Subject		: unexpected high load since 2.6.35
+Submitter	: MadLoisae@gmx.net <MadLoisae@gmx.net>
+Date		: 2010-08-02 20:53 (70 days old)
+Message-ID	: <4C573041.1070103@gmx.net>
+References	: http://marc.info/?l=linux-kernel&m=128078243726655&w=2
+		  http://lkml.org/lkml/2010/9/14/105
+		  http://lkml.org/lkml/2010/9/27/328
 
 
