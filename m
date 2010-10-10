@@ -1,258 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757616Ab0JJQff (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 12:35:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53555 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757472Ab0JJQfc (ORCPT
+	id S1755841Ab0JJQht (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 12:37:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55175 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751211Ab0JJQhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 12:35:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=qT6Z9KCwn25ULres35F7z21dPGwXJXco3M8UPdzhmw9s2m/0HaRLGGJVP0Yf3+OKbg
-         0wR7b9oNVuXS0BRa7ABfKIqsqjllmZ9oBnUUGTI1OnD+B+8mz7Z/r39TlNiv4XNh1wt3
-         G/ShdQrp/C2D+nNNlQ8ZRxbmXdhMKBbwH6oJg=
-Message-ID: <4CB1EA8D.3000108@gmail.com>
-Date: Sun, 10 Oct 2010 18:32:13 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Sun, 10 Oct 2010 12:37:48 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH 1/5] bitops: add generic implementation of ext2 atomic bitops by test_and_{set,clear}_bit
+Date: Sun, 10 Oct 2010 18:36:52 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+References: <1286532193-29814-1-git-send-email-akinobu.mita@gmail.com> <20101008102433.GA24208@infradead.org> <AANLkTikjb8aTBoXm3+9ULQDB9OvdxwHcQ=BSS4aBJm9i@mail.gmail.com>
+In-Reply-To: <AANLkTikjb8aTBoXm3+9ULQDB9OvdxwHcQ=BSS4aBJm9i@mail.gmail.com>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: [PATCH 09/16] pramfs: dir operations
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010101836.52406.arnd@arndb.de>
+X-Provags-ID: V02:K0:rFR9uGS2glNqXZq2eeUidoHp0kcqSK4En8GadVTtSQt
+ 46R1uNSZ9f4GkcgAqqu1dP0DTBnMIJSz+zU7m9PlmiB1RQS3w+
+ I50jMm+N58TWrhlKO5kOKludU7SxV+WNO2lfClsi0gdMfblsGy
+ /gY+//xLEx3ci0DbEzY7Qj928XTsn6p5S744nOod14LumFBCIW
+ Z3Kn764FyOiceiJGwCrxA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
+On Sunday 10 October 2010 17:07:26 Akinobu Mita wrote:
+> Some architectures use spinlock to implement it
+> (asm-generic/bitops/ext2-atomic.h). Most other architectures use
+> test_and_set_bit() and test_and_clear_bit() as this patch shows.
+> 
+> Why are there two implementations? test_and_{set,clear}_bit() are more
+> costly operations than spinlock for some architectures?
 
-File operations for directories.
+I would guess that is only true on architectures that implement all atomics
+using a hashed spinlock like cris, sparc32 or parisc. This way the user
+can decide which spinlock to use rather than have the arch code calculate
+a hash on the pointer.
 
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
-diff -Nurp linux-2.6.36-orig/fs/pramfs/dir.c linux-2.6.36/fs/pramfs/dir.c
---- linux-2.6.36-orig/fs/pramfs/dir.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.36/fs/pramfs/dir.c	2010-09-17 19:08:54.000000000 +0200
-@@ -0,0 +1,215 @@
-+/*
-+ * FILE NAME fs/pramfs/dir.c
-+ *
-+ * BRIEF DESCRIPTION
-+ *
-+ * File operations for directories.
-+ *
-+ * Copyright 2009-2010 Marco Stornelli <marco.stornelli@gmail.com>
-+ * Copyright 2003 Sony Corporation
-+ * Copyright 2003 Matsushita Electric Industrial Co., Ltd.
-+ * 2003-2004 (c) MontaVista Software, Inc. , Steve Longerbeam
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/fs.h>
-+#include <linux/pagemap.h>
-+#include "pram.h"
-+
-+/*
-+ *	Parent is locked.
-+ */
-+int pram_add_link(struct dentry *dentry, struct inode *inode)
-+{
-+	struct inode *dir = dentry->d_parent->d_inode;
-+	struct pram_inode *pidir, *pi, *pitail = NULL;
-+	u64 tail_ino, prev_ino;
-+
-+	const char *name = dentry->d_name.name;
-+
-+	int namelen = dentry->d_name.len > PRAM_NAME_LEN ?
-+		PRAM_NAME_LEN : dentry->d_name.len;
-+
-+	pidir = pram_get_inode(dir->i_sb, dir->i_ino);
-+	pi = pram_get_inode(dir->i_sb, inode->i_ino);
-+
-+	dir->i_mtime = dir->i_ctime = CURRENT_TIME;
-+
-+	tail_ino = be64_to_cpu(pidir->i_type.dir.tail);
-+	if (tail_ino != 0) {
-+		pitail = pram_get_inode(dir->i_sb, tail_ino);
-+		pram_memunlock_inode(pitail);
-+		pitail->i_d.d_next = cpu_to_be64(inode->i_ino);
-+		pram_memlock_inode(pitail);
-+
-+		prev_ino = tail_ino;
-+
-+		pram_memunlock_inode(pidir);
-+		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
-+		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
-+		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
-+		pram_memlock_inode(pidir);
-+	} else {
-+		/* the directory is empty */
-+		prev_ino = 0;
-+
-+		pram_memunlock_inode(pidir);
-+		pidir->i_type.dir.tail = cpu_to_be64(inode->i_ino);
-+		pidir->i_type.dir.head = cpu_to_be64(inode->i_ino);
-+		pidir->i_mtime = cpu_to_be32(dir->i_mtime.tv_sec);
-+		pidir->i_ctime = cpu_to_be32(dir->i_ctime.tv_sec);
-+		pram_memlock_inode(pidir);
-+	}
-+
-+
-+	pram_memunlock_inode(pi);
-+	pi->i_d.d_prev = cpu_to_be64(prev_ino);
-+	pi->i_d.d_parent = cpu_to_be64(dir->i_ino);
-+	memcpy(pi->i_d.d_name, name, namelen);
-+	pi->i_d.d_name[namelen] = '\0';
-+	pram_memlock_inode(pi);
-+	return 0;
-+}
-+
-+int pram_remove_link(struct inode *inode)
-+{
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *prev = NULL;
-+	struct pram_inode *next = NULL;
-+	struct pram_inode *pidir, *pi;
-+
-+	pi = pram_get_inode(sb, inode->i_ino);
-+	pidir = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_parent));
-+	if (!pidir)
-+		return -EACCES;
-+
-+	if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.head)) {
-+		/* first inode in directory */
-+		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
-+
-+		if (next) {
-+			pram_memunlock_inode(next);
-+			next->i_d.d_prev = 0;
-+			pram_memlock_inode(next);
-+
-+			pram_memunlock_inode(pidir);
-+			pidir->i_type.dir.head = pi->i_d.d_next;
-+		} else {
-+			pram_memunlock_inode(pidir);
-+			pidir->i_type.dir.head = 0;
-+			pidir->i_type.dir.tail = 0;
-+		}
-+		pram_memlock_inode(pidir);
-+	} else if (inode->i_ino == be64_to_cpu(pidir->i_type.dir.tail)) {
-+		/* last inode in directory */
-+		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
-+
-+		pram_memunlock_inode(prev);
-+		prev->i_d.d_next = 0;
-+		pram_memlock_inode(prev);
-+
-+		pram_memunlock_inode(pidir);
-+		pidir->i_type.dir.tail = pi->i_d.d_prev;
-+		pram_memlock_inode(pidir);
-+	} else {
-+		/* somewhere in the middle */
-+		prev = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_prev));
-+		next = pram_get_inode(sb, be64_to_cpu(pi->i_d.d_next));
-+
-+		if (prev && next) {
-+			pram_memunlock_inode(prev);
-+			prev->i_d.d_next = pi->i_d.d_next;
-+			pram_memlock_inode(prev);
-+
-+			pram_memunlock_inode(next);
-+			next->i_d.d_prev = pi->i_d.d_prev;
-+			pram_memlock_inode(next);
-+		}
-+	}
-+
-+	pram_memunlock_inode(pi);
-+	pi->i_d.d_next = 0;
-+	pi->i_d.d_prev = 0;
-+	pi->i_d.d_parent = 0;
-+	pram_memlock_inode(pi);
-+
-+	return 0;
-+}
-+
-+#define S_SHIFT 12
-+static unsigned int dtype_by_mode[S_IFMT >> S_SHIFT] = {
-+	[S_IFREG >> S_SHIFT]    DT_REG,
-+	[S_IFDIR >> S_SHIFT]    DT_DIR,
-+	[S_IFCHR >> S_SHIFT]    DT_CHR,
-+	[S_IFBLK >> S_SHIFT]    DT_BLK,
-+	[S_IFIFO >> S_SHIFT]    DT_FIFO,
-+	[S_IFSOCK >> S_SHIFT]   DT_SOCK,
-+	[S_IFLNK >> S_SHIFT]    DT_LNK,
-+};
-+
-+static int pram_readdir(struct file *filp, void *dirent, filldir_t filldir)
-+{
-+	struct inode *inode = filp->f_dentry->d_inode;
-+	struct super_block *sb = inode->i_sb;
-+	struct pram_inode *pi;
-+	int namelen, ret = 0;
-+	char *name;
-+	ino_t ino;
-+
-+	pi = pram_get_inode(sb, inode->i_ino);
-+
-+	switch ((unsigned long)filp->f_pos) {
-+	case 0:
-+		ret = filldir(dirent, ".", 1, 0, inode->i_ino, DT_DIR);
-+		filp->f_pos++;
-+		return ret;
-+	case 1:
-+		ret = filldir(dirent, "..", 2, 1, be64_to_cpu(pi->i_d.d_parent), DT_DIR);
-+		ino = be64_to_cpu(pi->i_type.dir.head);
-+		filp->f_pos = ino ? ino : 2;
-+		return ret;
-+	case 2:
-+		ino = be64_to_cpu(pi->i_type.dir.head);
-+		if (ino) {
-+			filp->f_pos = ino;
-+			pi = pram_get_inode(sb, ino);
-+			break;
-+		} else {
-+			/* the directory is empty */
-+			filp->f_pos = 2;
-+			return 0;
-+		}
-+	case 3:
-+		return 0;
-+	default:
-+		ino = filp->f_pos;
-+		pi = pram_get_inode(sb, ino);
-+		break;
-+	}
-+
-+	while (pi && !be16_to_cpu(pi->i_links_count)) {
-+		ino = filp->f_pos = be64_to_cpu(pi->i_d.d_next);
-+		pi = pram_get_inode(sb, ino);
-+	}
-+
-+	if (pi) {
-+		name = pi->i_d.d_name;
-+		namelen = strlen(name);
-+
-+		ret = filldir(dirent, name, namelen,
-+			      filp->f_pos, ino,
-+			      dtype_by_mode[(be16_to_cpu(pi->i_mode) & S_IFMT)>>S_SHIFT]);
-+		filp->f_pos = pi->i_d.d_next ? be64_to_cpu(pi->i_d.d_next) : 3;
-+	} else
-+		filp->f_pos = 3;
-+
-+	return ret;
-+}
-+
-+struct file_operations pram_dir_operations = {
-+	.read		= generic_read_dir,
-+	.readdir	= pram_readdir,
-+	.fsync		= noop_fsync,
-+};
- 
+This is an ext2 specific micro-optimization that I don't think makes
+sense in the generic le bitops code.
+
+	Arnd
