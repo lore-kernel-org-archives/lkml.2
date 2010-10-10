@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab0JJOY1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 10:24:27 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:33515 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751546Ab0JJOYZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 10:24:25 -0400
-From: "Pedanekar, Hemant" <hemantp@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-CC: linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Date: Sun, 10 Oct 2010 19:53:51 +0530
-Subject: RE: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Thread-Topic: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Thread-Index: Actn0WyR7C/8HV0QTbmKWHC9OS0+iAAtAogQ
-Message-ID: <2A3DCF3DA181AD40BDE86A3150B27B6B0356711C7F@dbde02.ent.ti.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
- <20101009135210.GA25564@n2100.arm.linux.org.uk>
- <AANLkTi=Sv35ipSGzSoJMjdoNU-Qee9csviPL3yMSM3uf@mail.gmail.com>
- <20101009164517.GA28183@n2100.arm.linux.org.uk>
-In-Reply-To: <20101009164517.GA28183@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	id S1753336Ab0JJO0X (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 10:26:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30789 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751801Ab0JJO0V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 10:26:21 -0400
+Date: Sun, 10 Oct 2010 16:25:51 +0200
+From: Gleb Natapov <gleb@redhat.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        avi@redhat.com, mingo@elte.hu, a.p.zijlstra@chello.nl,
+        tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
+        cl@linux-foundation.org
+Subject: Re: [PATCH v6 10/12] Handle async PF in non preemptable context
+Message-ID: <20101010142551.GQ2397@redhat.com>
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
+ <1286207794-16120-11-git-send-email-gleb@redhat.com>
+ <20101005195149.GC1786@amt.cnet>
+ <20101006104132.GS11145@redhat.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101006104132.GS11145@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote on Saturday, October 09, 2010 10:15 PM:
-
-> On Sat, Oct 09, 2010 at 07:07:01PM +0300, Felipe Contreras wrote:
->> On Sat, Oct 9, 2010 at 4:52 PM, Russell King - ARM Linux
->> <linux@arm.linux.org.uk> wrote:
->>> On Thu, Oct 07, 2010 at 12:44:22PM +0300, Felipe Contreras wrote:
->>>> For issues related to this:
->>>> http://article.gmane.org/gmane.linux.ports.arm.kernel/84454
->>> 
->>> This one nicely shows some of the problems which can occur with the
->>> memory type attributes - and this is not attributable to ioremap().
->>> 
->>> ioremap() is used to map devices.  It creates device memory type mappings.
->>> If what you're mapping doesn't support device memory type mappings, then
->>> accesses via an ioremap()'d region isn't going to work - as this guy is
->>> observing. 
->>> 
->>> That's not because ioremap() is doing something wrong. It's doing what
->>> it's meant to do.  The use is wrong, and is completely unrelated to the
->>> issue you've raised.
->> 
->> Ok, I was confused by Catalin's comment which does point to ioremap() on
->> normal RAM: http://article.gmane.org/gmane.linux.ports.arm.kernel/84504
+On Wed, Oct 06, 2010 at 12:41:32PM +0200, Gleb Natapov wrote:
+> On Tue, Oct 05, 2010 at 04:51:50PM -0300, Marcelo Tosatti wrote:
+> > On Mon, Oct 04, 2010 at 05:56:32PM +0200, Gleb Natapov wrote:
+> > > If async page fault is received by idle task or when preemp_count is
+> > > not zero guest cannot reschedule, so do sti; hlt and wait for page to be
+> > > ready. vcpu can still process interrupts while it waits for the page to
+> > > be ready.
+> > > 
+> > > Acked-by: Rik van Riel <riel@redhat.com>
+> > > Signed-off-by: Gleb Natapov <gleb@redhat.com>
+> > > ---
+> > >  arch/x86/kernel/kvm.c |   40 ++++++++++++++++++++++++++++++++++------
+> > >  1 files changed, 34 insertions(+), 6 deletions(-)
+> > > 
+> > > diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+> > > index 36fb3e4..f73946f 100644
+> > > --- a/arch/x86/kernel/kvm.c
+> > > +++ b/arch/x86/kernel/kvm.c
+> > > @@ -37,6 +37,7 @@
+> > >  #include <asm/cpu.h>
+> > >  #include <asm/traps.h>
+> > >  #include <asm/desc.h>
+> > > +#include <asm/tlbflush.h>
+> > >  
+> > >  #define MMU_QUEUE_SIZE 1024
+> > >  
+> > > @@ -78,6 +79,8 @@ struct kvm_task_sleep_node {
+> > >  	wait_queue_head_t wq;
+> > >  	u32 token;
+> > >  	int cpu;
+> > > +	bool halted;
+> > > +	struct mm_struct *mm;
+> > >  };
+> > >  
+> > >  static struct kvm_task_sleep_head {
+> > > @@ -106,6 +109,11 @@ void kvm_async_pf_task_wait(u32 token)
+> > >  	struct kvm_task_sleep_head *b = &async_pf_sleepers[key];
+> > >  	struct kvm_task_sleep_node n, *e;
+> > >  	DEFINE_WAIT(wait);
+> > > +	int cpu, idle;
+> > > +
+> > > +	cpu = get_cpu();
+> > > +	idle = idle_cpu(cpu);
+> > > +	put_cpu();
+> > >  
+> > >  	spin_lock(&b->lock);
+> > >  	e = _find_apf_task(b, token);
+> > > @@ -119,19 +127,33 @@ void kvm_async_pf_task_wait(u32 token)
+> > >  
+> > >  	n.token = token;
+> > >  	n.cpu = smp_processor_id();
+> > > +	n.mm = current->active_mm;
+> > > +	n.halted = idle || preempt_count() > 1;
+> > > +	atomic_inc(&n.mm->mm_count);
+> > 
+> > Can't see why this reference is needed.
+> I thought that if kernel thread does fault on behalf of some
+> process mm can go away while kernel thread is sleeping. But it looks
+> like kernel thread increase reference to mm it runs with by himself, so
+> may be this is redundant (but not harmful).
 > 
-> Me too - it doesn't appear to relate to the specified problem.  You
-> don't want to map RAM as device nor strongly ordered, and we still
-> don't know what this "MMR" is.
-> 
+Actually it is not redundant. Kernel thread will release reference to
+active_mm on reschedule.
 
-Just to add, the issue I faced was a different issue and more to do with
-specific access requirement for particular memory mapped region and what memory
-types could be used for defining mappings of the region (or passed as ioremap
-parameter). To summarize, I needed to use type=MT_STRONGLY_ORDERED to make access
-to the peripheral registers work, which, unfortunately is not available in the
-kernel.
-
-(BTW, I had referred MMR as memory mapped registers of the concerned peripheral.)
-
--
-Hemant
-
+--
+			Gleb.
