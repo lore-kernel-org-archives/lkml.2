@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753193Ab0JJOtz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 10:49:55 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:52498 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751578Ab0JJOty (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 10:49:54 -0400
-Date: Sun, 10 Oct 2010 15:49:53 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
- kernels
-Message-ID: <20101010144952.GF19804@ZenIV.linux.org.uk>
-References: <20101007174948.GT19804@ZenIV.linux.org.uk>
- <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
+	id S1753620Ab0JJOwN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 10:52:13 -0400
+Received: from kroah.org ([198.145.64.141]:41123 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398Ab0JJOwM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 10:52:12 -0400
+Date: Sun, 10 Oct 2010 07:52:54 -0700
+From: Greg KH <greg@kroah.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: Alon Ziv <alon+git@nolaviz.org>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] Add Opticon OPN2001 write support
+Message-ID: <20101010145254.GA463@kroah.com>
+References: <1286692340-18639-1-git-send-email-alon-git@nolaviz.org> <1286692340-18639-3-git-send-email-alon-git@nolaviz.org> <4CB19B1F.9000300@ru.mvista.com> <20101010123453.GA21060@kroah.com> <4CB1C68F.1080905@mvista.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4CB1C68F.1080905@mvista.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 11:47:20AM +0200, Geert Uytterhoeven wrote:
-> > The cheapest way to reproduce is to boot with init=/bin/sh, then
-> > mount /proc and have stat("/proc/2/exe", &st) called; if stat()
-> > returns 0, we are fscked. ??The critical part is between return
-> > from proc_exe_link() (we'll leave it via if (!mm) return -ENOENT;)
-> > to return from __do_follow_link() -> do_follow_link() -> link_path_walk().
-> 
-> I booted 2.6.36-rc7-atari-00360-g0dd2e6a (my current private test kernel) with
-> init=/bin/sh, mounted /proc, and tried
-> 
->     for i in $(seq 1000); do stat /proc/2/exe; done
-> 
-> a few times, but I didn't see any ida_remove messages.
-> It cannot read the /proc/2/exe symlink, though.
-> 
-> This is on aranym-0.9.9-1 from Ubuntu/amd64.
+On Sun, Oct 10, 2010 at 05:58:39PM +0400, Sergei Shtylyov wrote:
+> Hello.
+>
+> On 10/10/10 16:34, Greg KH wrote:
+>
+>>>> OPN2001 expects write operations to arrive as a vendor-specific command
+>>>> through the control pipe (instead of using a separate bulk-out pipe).
+>
+>>>> Signed-off-by: Alon Ziv<alon-git@nolaviz.org>
+>>>> ---
+>>>>    drivers/usb/serial/opticon.c |   30 ++++++++++++++++++++++++++----
+>>>>    1 files changed, 26 insertions(+), 4 deletions(-)
+>
+>>>> diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
+>>>> index 9ff19c8..4fe7c3d 100644
+>>>> --- a/drivers/usb/serial/opticon.c
+>>>> +++ b/drivers/usb/serial/opticon.c
+>>> [...]
+>
+>>>> +	} else {
+>>>> +		struct usb_ctrlrequest *dr;
+>>>> +
+>>>> +		dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
+>
+>>>     sizeof(*dr) is a preferred form.
+>
+>> No, people disagree on this, there is no 'preferred' form, you are free
+>> to use either way.
+>
+>    Please refer to the CodingStyle chapter 14. This is preferred form, 
+> according to it...
 
-stat -L /proc/2/exec, otherwise you'll hit lstat() instead of stat().
-And FWIW 0.9.10-1 squeeze/amd64 also triggers here...
+Hm, I didn't realize it had been written down.
+
+Anyway, again, no big deal, it's up to the author/maintainer which way
+they prefer, and for me, I can handle it either way.
+
+thanks,
+
+greg k-h
