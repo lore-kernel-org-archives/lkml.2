@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760718Ab0JJB4Y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 21:56:24 -0400
-Received: from [69.28.251.93] ([69.28.251.93]:59951 "EHLO b32.net"
+	id S1760716Ab0JJB5x (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 21:57:53 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:60267 "EHLO b32.net"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752872Ab0JJB4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 21:56:23 -0400
+	id S1752872Ab0JJB5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 9 Oct 2010 21:57:52 -0400
 From: Kevin Cernekee <cernekee@gmail.com>
-Date: Sat, 9 Oct 2010 18:50:13 -0700
-Subject: [PATCH 1/2] MIPS: Reinstate plat_map_dma_mem_page()
+Date: Sat, 9 Oct 2010 18:53:42 -0700
+Subject: [PATCH v3 2/2] MIPS: HIGHMEM DMA on noncoherent MIPS32 processors
 To: Ralf Baechle <ralf@linux-mips.org>
-Cc: <ddaney@caviumnetworks.com>, <linux-mips@linux-mips.org>,
+Cc: <dediao@cisco.com>, <ddaney@caviumnetworks.com>, <dvomlehn@cisco.com>,
+        <sshtylyov@mvista.com>, <linux-mips@linux-mips.org>,
         <linux-kernel@vger.kernel.org>
-Message-Id: <9ab1e21b7c9b1b40a3de371d3a35ebd3@localhost>
+Message-Id: <f3f140ca90dc9dac2f645748bc3a0150@localhost>
 User-Agent: vim 7.2
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -21,151 +22,244 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Patch is against linux-queue.git]
+[v3: Patch has been rebased against linux-queue.git, which uses the new
+dma-mapping-common.h API.]
 
-plat_map_dma_mem_page() is required in order to translate a "struct page"
-directly to a physical address.  plat_map_dma_mem() is not effective on
-HIGHMEM pages.
+The MIPS DMA coherency functions do not work properly (i.e. kernel oops)
+when HIGHMEM pages are passed in as arguments.  This patch uses the PPC
+approach of calling kmap_atomic() with IRQs disabled to temporarily map
+high pages, in order to flush them out to memory.
 
+Signed-off-by: Dezhong Diao <dediao@cisco.com>
 Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
 ---
- .../include/asm/mach-cavium-octeon/dma-coherence.h |    6 ++++++
- arch/mips/include/asm/mach-generic/dma-coherence.h |    6 ++++++
- arch/mips/include/asm/mach-ip27/dma-coherence.h    |    8 ++++++++
- arch/mips/include/asm/mach-ip32/dma-coherence.h    |   13 +++++++++++++
- arch/mips/include/asm/mach-jazz/dma-coherence.h    |    6 ++++++
- .../mips/include/asm/mach-loongson/dma-coherence.h |    6 ++++++
- arch/mips/include/asm/mach-powertv/dma-coherence.h |    6 ++++++
- 7 files changed, 51 insertions(+), 0 deletions(-)
+ arch/mips/mm/dma-default.c |  117 ++++++++++++++++++++++++++-----------------
+ 1 files changed, 71 insertions(+), 46 deletions(-)
 
-diff --git a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
-index a3f6676..dfdcf49 100644
---- a/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-cavium-octeon/dma-coherence.h
-@@ -23,6 +23,12 @@ static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr,
- 	BUG();
- }
+diff --git a/arch/mips/mm/dma-default.c b/arch/mips/mm/dma-default.c
+index 4fc1a0f..035c191 100644
+--- a/arch/mips/mm/dma-default.c
++++ b/arch/mips/mm/dma-default.c
+@@ -15,18 +15,18 @@
+ #include <linux/scatterlist.h>
+ #include <linux/string.h>
+ #include <linux/gfp.h>
++#include <linux/highmem.h>
  
-+static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
-+	struct page *page)
-+{
-+	BUG();
-+}
-+
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
+ #include <asm/cache.h>
+ #include <asm/io.h>
+ 
+ #include <dma-coherence.h>
+ 
+-static inline unsigned long dma_addr_to_virt(struct device *dev,
++static inline struct page *dma_addr_to_page(struct device *dev,
  	dma_addr_t dma_addr)
  {
-diff --git a/arch/mips/include/asm/mach-generic/dma-coherence.h b/arch/mips/include/asm/mach-generic/dma-coherence.h
-index 8259966..8da9807 100644
---- a/arch/mips/include/asm/mach-generic/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-generic/dma-coherence.h
-@@ -17,6 +17,12 @@ static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr,
- 	return virt_to_phys(addr);
+-	unsigned long addr = plat_dma_addr_to_phys(dev, dma_addr);
+-
+-	return (unsigned long)phys_to_virt(addr);
++	return pfn_to_page(
++		plat_dma_addr_to_phys(dev, dma_addr) >> PAGE_SHIFT);
  }
  
-+static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
-+	struct page *page)
-+{
-+	return page_to_phys(page);
-+}
-+
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
- 	dma_addr_t dma_addr)
+ /*
+@@ -148,20 +148,20 @@ static void mips_dma_free_coherent(struct device *dev, size_t size, void *vaddr,
+ 	free_pages(addr, get_order(size));
+ }
+ 
+-static inline void __dma_sync(unsigned long addr, size_t size,
++static inline void __dma_sync_virtual(void *addr, size_t size,
+ 	enum dma_data_direction direction)
  {
-diff --git a/arch/mips/include/asm/mach-ip27/dma-coherence.h b/arch/mips/include/asm/mach-ip27/dma-coherence.h
-index 2a55c55..016d098 100644
---- a/arch/mips/include/asm/mach-ip27/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-ip27/dma-coherence.h
-@@ -26,6 +26,14 @@ static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr,
- 	return pa;
+ 	switch (direction) {
+ 	case DMA_TO_DEVICE:
+-		dma_cache_wback(addr, size);
++		dma_cache_wback((unsigned long)addr, size);
+ 		break;
+ 
+ 	case DMA_FROM_DEVICE:
+-		dma_cache_inv(addr, size);
++		dma_cache_inv((unsigned long)addr, size);
+ 		break;
+ 
+ 	case DMA_BIDIRECTIONAL:
+-		dma_cache_wback_inv(addr, size);
++		dma_cache_wback_inv((unsigned long)addr, size);
+ 		break;
+ 
+ 	default:
+@@ -169,12 +169,52 @@ static inline void __dma_sync(unsigned long addr, size_t size,
+ 	}
  }
  
-+static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
-+	struct page *page)
++/*
++ * A single sg entry may refer to multiple physically contiguous
++ * pages. But we still need to process highmem pages individually.
++ * If highmem is not configured then the bulk of this loop gets
++ * optimized out.
++ */
++static inline void __dma_sync(struct page *page,
++	unsigned long offset, size_t size, enum dma_data_direction direction)
 +{
-+	dma_addr_t pa = dev_to_baddr(dev, page_to_phys(page));
++	size_t left = size;
 +
-+	return pa;
++	do {
++		size_t len = left;
++
++		if (PageHighMem(page)) {
++			unsigned long flags;
++			void *addr;
++
++			if (offset + len > PAGE_SIZE) {
++				if (offset >= PAGE_SIZE) {
++					page += offset >> PAGE_SHIFT;
++					offset &= ~PAGE_MASK;
++				}
++				len = PAGE_SIZE - offset;
++			}
++
++			local_irq_save(flags);
++			addr = kmap_atomic(page, KM_SYNC_DCACHE);
++			__dma_sync_virtual(addr + offset, len, direction);
++			kunmap_atomic(addr, KM_SYNC_DCACHE);
++			local_irq_restore(flags);
++		} else
++			__dma_sync_virtual(page_address(page) + offset,
++					   size, direction);
++		offset = 0;
++		page++;
++		left -= len;
++	} while (left);
 +}
 +
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
- 	dma_addr_t dma_addr)
+ static void mips_dma_unmap_page(struct device *dev, dma_addr_t dma_addr,
+ 	size_t size, enum dma_data_direction direction, struct dma_attrs *attrs)
  {
-diff --git a/arch/mips/include/asm/mach-ip32/dma-coherence.h b/arch/mips/include/asm/mach-ip32/dma-coherence.h
-index f204a1f..c8fb5aa 100644
---- a/arch/mips/include/asm/mach-ip32/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-ip32/dma-coherence.h
-@@ -37,6 +37,19 @@ static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr,
- 	return pa;
- }
+ 	if (cpu_is_noncoherent_r10000(dev))
+-		__dma_sync(dma_addr_to_virt(dev, dma_addr), size,
+-		           direction);
++		__dma_sync(dma_addr_to_page(dev, dma_addr),
++			   dma_addr & ~PAGE_MASK, size, direction);
  
-+static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
-+	struct page *page)
-+{
-+	dma_addr_t pa;
-+
-+	pa = page_to_phys(page) & RAM_OFFSET_MASK;
-+
-+	if (dev == NULL)
-+		pa += CRIME_HI_MEM_BASE;
-+
-+	return pa;
-+}
-+
- /* This is almost certainly wrong but it's what dma-ip32.c used to use  */
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
- 	dma_addr_t dma_addr)
-diff --git a/arch/mips/include/asm/mach-jazz/dma-coherence.h b/arch/mips/include/asm/mach-jazz/dma-coherence.h
-index f2bc39a..302101b 100644
---- a/arch/mips/include/asm/mach-jazz/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-jazz/dma-coherence.h
-@@ -17,6 +17,12 @@ static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr, size_t
- 	return vdma_alloc(virt_to_phys(addr), size);
+ 	plat_unmap_dma_mem(dev, dma_addr, size, direction);
  }
+@@ -185,13 +225,11 @@ static int mips_dma_map_sg(struct device *dev, struct scatterlist *sg,
+ 	int i;
  
-+static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
-+	struct page *page)
-+{
-+	return vdma_alloc(page_to_phys(page), PAGE_SIZE);
-+}
-+
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
- 	dma_addr_t dma_addr)
+ 	for (i = 0; i < nents; i++, sg++) {
+-		unsigned long addr;
+-
+-		addr = (unsigned long) sg_virt(sg);
+-		if (!plat_device_is_coherent(dev) && addr)
+-			__dma_sync(addr, sg->length, direction);
+-		sg->dma_address = plat_map_dma_mem(dev,
+-				                   (void *)addr, sg->length);
++		if (!plat_device_is_coherent(dev))
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
++		sg->dma_address = plat_map_dma_mem_page(dev, sg_page(sg)) +
++				  sg->offset;
+ 	}
+ 
+ 	return nents;
+@@ -201,30 +239,23 @@ static dma_addr_t mips_dma_map_page(struct device *dev, struct page *page,
+ 	unsigned long offset, size_t size, enum dma_data_direction direction,
+ 	struct dma_attrs *attrs)
  {
-diff --git a/arch/mips/include/asm/mach-loongson/dma-coherence.h b/arch/mips/include/asm/mach-loongson/dma-coherence.h
-index 8daeaee..981c75f 100644
---- a/arch/mips/include/asm/mach-loongson/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-loongson/dma-coherence.h
-@@ -19,6 +19,12 @@ static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr,
- 	return virt_to_phys(addr) | 0x80000000;
+-	unsigned long addr;
+-
+-	addr = (unsigned long) page_address(page) + offset;
+-
+ 	if (!plat_device_is_coherent(dev))
+-		__dma_sync(addr, size, direction);
++		__dma_sync(page, offset, size, direction);
+ 
+-	return plat_map_dma_mem(dev, (void *)addr, size);
++	return plat_map_dma_mem_page(dev, page) + offset;
  }
  
-+static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
-+					       struct page *page)
-+{
-+	return page_to_phys(page) | 0x80000000;
-+}
-+
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
- 	dma_addr_t dma_addr)
+ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+ 	int nhwentries, enum dma_data_direction direction,
+ 	struct dma_attrs *attrs)
  {
-diff --git a/arch/mips/include/asm/mach-powertv/dma-coherence.h b/arch/mips/include/asm/mach-powertv/dma-coherence.h
-index 647de8c..f76029c 100644
---- a/arch/mips/include/asm/mach-powertv/dma-coherence.h
-+++ b/arch/mips/include/asm/mach-powertv/dma-coherence.h
-@@ -70,6 +70,12 @@ static inline dma_addr_t plat_map_dma_mem(struct device *dev, void *addr,
- 		return phys_to_dma(virt_to_phys(addr));
+-	unsigned long addr;
+ 	int i;
+ 
+ 	for (i = 0; i < nhwentries; i++, sg++) {
+ 		if (!plat_device_is_coherent(dev) &&
+-		    direction != DMA_TO_DEVICE) {
+-			addr = (unsigned long) sg_virt(sg);
+-			if (addr)
+-				__dma_sync(addr, sg->length, direction);
+-		}
++		    direction != DMA_TO_DEVICE)
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
+ 		plat_unmap_dma_mem(dev, sg->dma_address, sg->length, direction);
+ 	}
+ }
+@@ -232,24 +263,18 @@ static void mips_dma_unmap_sg(struct device *dev, struct scatterlist *sg,
+ static void mips_dma_sync_single_for_cpu(struct device *dev,
+ 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
+ {
+-	if (cpu_is_noncoherent_r10000(dev)) {
+-		unsigned long addr;
+-
+-		addr = dma_addr_to_virt(dev, dma_handle);
+-		__dma_sync(addr, size, direction);
+-	}
++	if (cpu_is_noncoherent_r10000(dev))
++		__dma_sync(dma_addr_to_page(dev, dma_handle),
++			   dma_handle & ~PAGE_MASK, size, direction);
  }
  
-+static inline dma_addr_t plat_map_dma_mem_page(struct device *dev,
-+	struct page *page)
-+{
-+	return phys_to_dma(page_to_phys(page));
-+}
-+
- static inline unsigned long plat_dma_addr_to_phys(struct device *dev,
- 	dma_addr_t dma_addr)
+ static void mips_dma_sync_single_for_device(struct device *dev,
+ 	dma_addr_t dma_handle, size_t size, enum dma_data_direction direction)
  {
+ 	plat_extra_sync_for_device(dev);
+-	if (!plat_device_is_coherent(dev)) {
+-		unsigned long addr;
+-
+-		addr = dma_addr_to_virt(dev, dma_handle);
+-		__dma_sync(addr, size, direction);
+-	}
++	if (!plat_device_is_coherent(dev))
++		__dma_sync(dma_addr_to_page(dev, dma_handle),
++			   dma_handle & ~PAGE_MASK, size, direction);
+ }
+ 
+ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+@@ -260,8 +285,8 @@ static void mips_dma_sync_sg_for_cpu(struct device *dev,
+ 	/* Make sure that gcc doesn't leave the empty loop body.  */
+ 	for (i = 0; i < nelems; i++, sg++) {
+ 		if (cpu_is_noncoherent_r10000(dev))
+-			__dma_sync((unsigned long)page_address(sg_page(sg)),
+-			           sg->length, direction);
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
+ 	}
+ }
+ 
+@@ -273,8 +298,8 @@ static void mips_dma_sync_sg_for_device(struct device *dev,
+ 	/* Make sure that gcc doesn't leave the empty loop body.  */
+ 	for (i = 0; i < nelems; i++, sg++) {
+ 		if (!plat_device_is_coherent(dev))
+-			__dma_sync((unsigned long)page_address(sg_page(sg)),
+-			           sg->length, direction);
++			__dma_sync(sg_page(sg), sg->offset, sg->length,
++				   direction);
+ 	}
+ }
+ 
+@@ -295,7 +320,7 @@ void mips_dma_cache_sync(struct device *dev, void *vaddr, size_t size,
+ 
+ 	plat_extra_sync_for_device(dev);
+ 	if (!plat_device_is_coherent(dev))
+-		__dma_sync((unsigned long)vaddr, size, direction);
++		__dma_sync_virtual(vaddr, size, direction);
+ }
+ 
+ static struct dma_map_ops mips_default_dma_map_ops = {
 -- 
 1.7.0.4
 
