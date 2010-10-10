@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753061Ab0JJOJO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 10:09:14 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:35890 "EHLO
+	id S1753006Ab0JJONO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 10:13:14 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51725 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752447Ab0JJOJM (ORCPT
+	with ESMTP id S1751854Ab0JJONN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 10:09:12 -0400
-Date: Sun, 10 Oct 2010 16:09:08 +0200
+	Sun, 10 Oct 2010 10:13:13 -0400
+Date: Sun, 10 Oct 2010 16:13:11 +0200
 From: Andi Kleen <andi@firstfloor.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: Andi Kleen <andi@firstfloor.org>, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: REGRESSION 2.6.36: radeon KMS console switch broken
-Message-ID: <20101010140908.GA26728@basil.fritz.box>
-References: <20101010123000.GD8256@basil.fritz.box>
- <20101010134429.GA1581@arch.trippelsdorf.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
+Message-ID: <20101010141311.GB26728@basil.fritz.box>
+References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
+ <1286606987-19879-5-git-send-email-ying.huang@intel.com>
+ <20101010150713.3cd3eed2@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101010134429.GA1581@arch.trippelsdorf.de>
+In-Reply-To: <20101010150713.3cd3eed2@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 03:44:29PM +0200, Markus Trippelsdorf wrote:
-> On Sun, Oct 10, 2010 at 02:30:00PM +0200, Andi Kleen wrote:
-> > 
-> > Hi,
-> > 
-> > I see a radeon regression here with 2.6.36-rc7.
-> > 
-> > I updated a system from 2.6.35 to 2.6.36-rc7. Now I cannot 
-> > switch to the text console from the X server anymore; the screen just 
-> > keeps displaying the X desktop. Eventually when I switch back
-> > to X things work again. 
-> > 
-> > The console switching worked in 2.6.35 
-> > (I had occasional GPU hangs in .35, but console switch always worked)
-> > I didn't change the Xserver userland.
-> > 
-> > The system has a ATI Technologies Inc RV710/730 running Dual Head.
+On Sun, Oct 10, 2010 at 03:07:13PM +0100, Alan Cox wrote:
+> On Sat,  9 Oct 2010 14:49:46 +0800
+> Huang Ying <ying.huang@intel.com> wrote:
 > 
-> You're using the radeonhd driver, which is not supported and outdated.
-> Try to remove  /usr/lib64/xorg/modules/drivers/radeonhd_drv.so and start
-> X again...
+> > In general, unknown NMI is used by hardware and firmware to notify
+> > fatal hardware errors to OS. So the Linux should treat unknown NMI as
+> > hardware error and go panic upon unknown NMI for better error
+> > containment.
+> 
+> Not entirely true. Older machines use NMI for all sorts of interesting
+> purposes. In particular many 486 laptops trigger NMI as part of power
+> manaagement, (Hence the choice of the dazed and confused message)
 
-No you misread the Xorg.0.log: 
+In general, on any post stone age x86 system, ...
 
-[    50.161] (II) Module radeonhd: vendor="AMD GPG"
-...
-[    51.636] (EE) FATAL: RadeonHD presently does not work with kernel modesetting (KMS).
-...
-[    50.167] (II) LoadModule: "radeon"
-....
-[    52.214] (II) UnloadModule: "radeonhd"
-...
+> > These systems are identified via the presentation of APEI HEST or
+> > some PCI ID of the host bridge. The PCI ID of host bridge instead of
+> > DMI ID is used, so that the checking can be done based on the platform
+> > type instead of motherboard. This should be simpler and sufficient.
+> > 
+> > The method to identify the platforms is designed by Andi Kleen.
+> 
+> Why not make the new flag also a boot option so you can force it on for
+> platforms where we don't auto whitelist it.
 
-It's using radeon.
+You can already set it at run time using sysctl.
 
-Besides if radeonhd stopped working that would be a regression too, but that's
-not what we have here.
-
+echo 1 > /proc/sys/kernel/panic_on_unrecovered_nmi
+echo 1 > /proc/sys/kernel/panic_on_io_nmi
 
 -Andi
 
