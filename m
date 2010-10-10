@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751769Ab0JJUnG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 16:43:06 -0400
-Received: from govgate1.tstechnology.net ([137.191.227.11]:60835 "EHLO
-	govgate1.tstechnology.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751181Ab0JJUnD convert rfc822-to-8bit (ORCPT
+	id S1751683Ab0JJUrf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 16:47:35 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:59143 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750761Ab0JJUrd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 16:43:03 -0400
-X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Sun, 10 Oct 2010 16:43:03 EDT
-Date: Sun, 10 Oct 2010 21:25:03 +0100
-From: Euroguidance <euroguidance@fas.ie>
-Subject: Reply to ksenia.gutseri@gala.net
-Message-id: <CA058BBFEA662C4990F65E0584A37F9A03F54FE7@FASEX01.fasoffice.com>
-MIME-version: 1.0
-X-MIMEOLE: Produced By Microsoft Exchange V6.5
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-Thread-Topic: Reply to ksenia.gutseri@gala.net
-Thread-Index: ActouTcc4T1QTL3uTM6kGSiejdI5oA==
-Content-class: urn:content-classes:message
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-X-OriginalArrivalTime: 10 Oct 2010 20:25:05.0167 (UTC)
- FILETIME=[3969E1F0:01CB68B9]
-To: undisclosed-recipients:;
+	Sun, 10 Oct 2010 16:47:33 -0400
+Date: Sun, 10 Oct 2010 22:47:19 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: James Hogan <james@albanarts.com>, Greg KH <greg@kroah.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        markgross <markgross@thegnar.org>
+Subject: Re: [PATCH 2/2] pm_trace: Add sysfs attr for rechecking dev hash.
+Message-ID: <20101010204719.GA3388@elf.ucw.cz>
+References: <201010092334.27808.james@albanarts.com>
+ <201010092337.47821.james@albanarts.com>
+ <20101010180400.GA19524@elf.ucw.cz>
+ <201010102047.01950.james@albanarts.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201010102047.01950.james@albanarts.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
- 
-Please respond.
-Greetings,I am Mrs. Ksenia Gutseriyev, the wife of Russian multi
-billionaire Mr. Mikhail Gutseriyev's, the former owner of Russneft Oil
-Company in Russia , i have a proposal for you If you know you can do this,
-contact me via my private box: ksenia.gutseri@gala.net <mailto:ksenia.gutseri@gala.net>  so  that I can
-furnish you with more details but if my offer is of no appeal to you,
-delete this message and forget I ever contacted you. I await
-your reply,
-Regards,
-Mrs. Ksenia Gutseriyev 
- 
-This e-mail and any attached files are from FAS and are confidential.  This E-mail is intended only for the addressee indicated in the message.  If you are not the intended recipient you must not disclose, copy, distribute or use the information but please delete the email as soon as possible.  Any views or opinions expressed in the email are those of the sender only and not necessarily those of FAS.  FAS - Training and Employment Authority  P.O. Box 456, 27-33 Upper Baggot Street, Dublin 4, Ireland.  Tel: 353-1-6070500, Fax: 353-1-6070600, Email: info@fas.ie.
+On Sun 2010-10-10 20:47:01, James Hogan wrote:
+> Hi Pavel,
+> 
+> On Sunday 10 October 2010 19:04:00 Pavel Machek wrote:
+> > Hi!
+> > 
+> > > If the device which fails to resume is part of a loadable kernel module
+> > > it won't be checked at startup against the magic number stored in the
+> > > RTC.
+> > > 
+> > > Add a read-only sysfs attribute /sys/power/pm_trace_dev_hash which
+> > > contains a list of newline separated devices (usually just the one)
+> > > which currently match the last magic number. This allows the device
+> > > which is failing to resume to be found after the modules are loaded
+> > > again.
+> > > 
+> > > --- a/Documentation/power/s2ram.txt
+> > > +++ b/Documentation/power/s2ram.txt
+> > > 
+> > > @@ -49,6 +49,13 @@ machine that doesn't boot) is:
+> > >     device (lspci and /sys/devices/pci* is your friend), and see if you
+> > >     can fix it, disable it, or trace into its resume function.
+> > > 
+> > > +   If no device matches the hash, it may be a device from a loadable
+> > > kernel +   module that is not loaded until after the hash is checked.
+> > > You can check +   the hash against the current devices again after more
+> > > modules are loaded +   using sysfs:
+> > > +
+> > > +	cat /sys/power/pm_trace_dev_hash
+> > > +
+> > 
+> > Yep, but exact semantics of that sysfs file should probably be linked
+> > in the sysfs documentation...
+> > 								Pavel
+> 
+> To clarify, do you mean I should link to Documentation/ABI/testing/sysfs-power 
+> from Documentation/power/s2ram.txt, or just make sure the syfs file is 
+> documented in Documentation/ABI/testing/sysfs-power (which is done in v2 of 
+> this patch)?
+
+v2 of the patch is probably ok.
+
+Also, sysfs should be one entry per file, and strictly speaking, this
+one is not. That may be fine... but as this is debugging facility,
+perhaps it should go to debugfs? Maybe cc gregkh...
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
