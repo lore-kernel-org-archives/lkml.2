@@ -1,73 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751546Ab0JJTrK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:47:10 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55260 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab0JJTrH (ORCPT
+	id S1751611Ab0JJTwf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:52:35 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:48791 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751418Ab0JJTwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:47:07 -0400
-From: James Hogan <james@albanarts.com>
-To: Pavel Machek <pavel@ucw.cz>
-Subject: Re: [PATCH 2/2] pm_trace: Add sysfs attr for rechecking dev hash.
-Date: Sun, 10 Oct 2010 20:47:01 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-custom+; KDE/4.4.5; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-doc@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        markgross <markgross@thegnar.org>
-References: <201010092334.27808.james@albanarts.com> <201010092337.47821.james@albanarts.com> <20101010180400.GA19524@elf.ucw.cz>
-In-Reply-To: <20101010180400.GA19524@elf.ucw.cz>
+	Sun, 10 Oct 2010 15:52:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=YhBN/F4f6ZI+vMz8lqUy0hWWGTWt1pQdfHb4Wby4ywY19NZPuGnluHGR0FsTTLrKTH
+         yWxDmRGDfYYyeAanSdBjY5s+27SvhxfE0cM4CVNhfq9LsAKtD5JXAtTfIDj72rUGPs9c
+         Jf7/lg6sus9TQ4dgKef9/hKZcKg+9OcPiMGyk=
+Message-ID: <4CB21988.1010108@gmail.com>
+Date: Sun, 10 Oct 2010 12:52:40 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Johannes Berg <johannes@sipsolutions.net>
+Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475
+ ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera> <xpndfyzv9iD.A.STG.7qfsMB@chimera> <4CB211C7.20809@gmail.com> <201010102141.45916.rjw@sisk.pl>
+In-Reply-To: <201010102141.45916.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010102047.01950.james@albanarts.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Pavel,
+  On 10/10/2010 12:41 PM, Rafael J. Wysocki wrote:
+> On Sunday, October 10, 2010, Justin P. Mattock wrote:
+>>    On 10/10/2010 10:51 AM, Rafael J. Wysocki wrote:
+>>> This message has been generated automatically as a part of a summary report
+>>> of recent regressions.
+>>>
+>>> The following bug entry is on the current list of known regressions
+>>> from 2.6.35.  Please verify if it still should be listed and let the tracking team
+>>> know (either way).
+>>>
+>>>
+>>> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19392
+>>> Subject		: WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+>>> Submitter	: Justin Mattock<justinmattock@gmail.com>
+>>> Date		: 2010-09-28 22:30 (13 days old)
+>>> Message-ID	:<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>
+>>> References	: http://marc.info/?l=linux-kernel&m=128571307018635&w=2
+>>>
+>>>
+>>>
+>> as far as I know this is still here.. I can pull the latest to see
+>> if it's been fixed, as well as the wireless tree to see.
+> Well, please do.
+>
+> Rafael
+>
 
-On Sunday 10 October 2010 19:04:00 Pavel Machek wrote:
-> Hi!
-> 
-> > If the device which fails to resume is part of a loadable kernel module
-> > it won't be checked at startup against the magic number stored in the
-> > RTC.
-> > 
-> > Add a read-only sysfs attribute /sys/power/pm_trace_dev_hash which
-> > contains a list of newline separated devices (usually just the one)
-> > which currently match the last magic number. This allows the device
-> > which is failing to resume to be found after the modules are loaded
-> > again.
-> > 
-> > --- a/Documentation/power/s2ram.txt
-> > +++ b/Documentation/power/s2ram.txt
-> > 
-> > @@ -49,6 +49,13 @@ machine that doesn't boot) is:
-> >     device (lspci and /sys/devices/pci* is your friend), and see if you
-> >     can fix it, disable it, or trace into its resume function.
-> > 
-> > +   If no device matches the hash, it may be a device from a loadable
-> > kernel +   module that is not loaded until after the hash is checked.
-> > You can check +   the hash against the current devices again after more
-> > modules are loaded +   using sysfs:
-> > +
-> > +	cat /sys/power/pm_trace_dev_hash
-> > +
-> 
-> Yep, but exact semantics of that sysfs file should probably be linked
-> in the sysfs documentation...
-> 								Pavel
+yeah.. just a painful machine to do so on...(slooooow)
+but will sit though it..(I'll start on monday)
 
-To clarify, do you mean I should link to Documentation/ABI/testing/sysfs-power 
-from Documentation/power/s2ram.txt, or just make sure the syfs file is 
-documented in Documentation/ABI/testing/sysfs-power (which is done in v2 of 
-this patch)?
-
-Thanks for taking a look
-James
+Justin P. Mattock
