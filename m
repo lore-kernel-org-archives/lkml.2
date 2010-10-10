@@ -1,95 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760686Ab0JJBK1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 21:10:27 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:36770 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757439Ab0JJBKZ convert rfc822-to-8bit (ORCPT
+	id S1760695Ab0JJBQ3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 21:16:29 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:60551 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757179Ab0JJBQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 21:10:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=nXuK4X1CNq89wd+ODqe6k2jQiJrlrUaaZ8hDLS5yCXjc1+b5UXILPuFs8t4XS7oAYQ
-         fpVSm4Kx2T2IKQbMZEZg==
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikz8=H9=O2RR9J0=rHm7pcwabnMupKfiSfGnt1k@mail.gmail.com>
-References: <AANLkTikkv4htP1f=KFwSaa8=K6LicDN0eusXctow-Efb@mail.gmail.com>
- <20101006.003541.71128466.davem@davemloft.net> <AANLkTikx+GadeYfg5rZNxsEig-0Af97ER7V94fjaVc+U@mail.gmail.com>
- <AANLkTimF7piLEy7BUP4-BnmiiGT4NimZw0gE+kmYQd-c@mail.gmail.com> <AANLkTikz8=H9=O2RR9J0=rHm7pcwabnMupKfiSfGnt1k@mail.gmail.com>
-From: =?UTF-8?B?Q2h1bmctWWloIFdhbmcgKOeOi+W0h+aHvyk=?= 
-	<cywang@google.com>
-Date: Sat, 9 Oct 2010 18:10:01 -0700
-Message-ID: <AANLkTikemrEFhgWNSf0wzW2C-yeC3_0qLrE6sW8wqyja@mail.gmail.com>
-Subject: Re: [PATCH] net: Fix sk_dst_check() to reset the obsolete dst_entry
- of a socket.
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, timo.teras@iki.fi
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Sat, 9 Oct 2010 21:16:27 -0400
+X-Sasl-enc: SOJLSRLx4nSJOLHXLVf96vcy0YZPpuLcSG38oDvyMQbw 1286673385
+Subject: Re: [PATCH 05/17] Remove the automount through follow_link()
+ kludge code from pathwalk
+From: Ian Kent <raven@themaw.net>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: David Howells <dhowells@redhat.com>, viro@ftp.linux.org.uk,
+        jmoyer@redhat.com, linux-fs@vger.kernel.org, autofs@linux.kernel.org,
+        linux-kernel@vger.kernel.org, linux-afs@lists.infradead.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org
+In-Reply-To: <20101008234130.GE30846@shell>
+References: <20100930181455.30939.53914.stgit@warthog.procyon.org.uk>
+	 <20100930181521.30939.31415.stgit@warthog.procyon.org.uk>
+	 <20101008234130.GE30846@shell>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 10 Oct 2010 09:16:12 +0800
+Message-ID: <1286673372.3691.14.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After I gave it a try, that patch worked. Please ignore my patch then. Thanks!
+On Fri, 2010-10-08 at 19:41 -0400, Valerie Aurora wrote:
+> On Thu, Sep 30, 2010 at 07:15:21PM +0100, David Howells wrote:
+> > Remove the automount through follow_link() kludge code from pathwalk in favour
+> > of using d_automount().
+> > 
+> > Signed-off-by: David Howells <dhowells@redhat.com>
+> > Acked-by: Ian Kent <raven@themaw.net>
+> > ---
+> > 
+> >  fs/namei.c |   17 +++--------------
+> >  1 files changed, 3 insertions(+), 14 deletions(-)
+> > 
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index c50b9d7..86421f9 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -861,17 +861,6 @@ fail:
+> >  }
+> >  
+> >  /*
+> > - * This is a temporary kludge to deal with "automount" symlinks; proper
+> > - * solution is to trigger them on follow_mount(), so that do_lookup()
+> > - * would DTRT.  To be killed before 2.6.34-final.
+> > - */
+> > -static inline int follow_on_final(struct inode *inode, unsigned lookup_flags)
+> > -{
+> > -	return inode && unlikely(inode->i_op->follow_link) &&
+> > -		((lookup_flags & LOOKUP_FOLLOW) || S_ISDIR(inode->i_mode));
+> > -}
+> > -
+> > -/*
+> >   * Name resolution.
+> >   * This is the basic name resolution function, turning a pathname into
+> >   * the final dentry. We expect 'base' to be positive and a directory.
+> > @@ -991,7 +980,8 @@ last_component:
+> >  		if (err)
+> >  			break;
+> >  		inode = next.dentry->d_inode;
+> > -		if (follow_on_final(inode, lookup_flags)) {
+> > +		if (inode && unlikely(inode->i_op->follow_link) &&
+> > +		    (lookup_flags & LOOKUP_FOLLOW)) {
+> >  			err = do_follow_link(&next, nd);
+> >  			if (err)
+> >  				goto return_err;
+> > @@ -1882,8 +1872,7 @@ reval:
+> >  		struct inode *inode = path.dentry->d_inode;
+> >  		void *cookie;
+> >  		error = -ELOOP;
+> > -		/* S_ISDIR part is a temporary automount kludge */
+> > -		if (!(nd.flags & LOOKUP_FOLLOW) && !S_ISDIR(inode->i_mode))
+> > +		if (!(nd.flags & LOOKUP_FOLLOW))
+> >  			goto exit_dput;
+> >  		if (count++ == 32)
+> >  			goto exit_dput;
+> 
+> While you're removing kludges, I bet you can also remove this from
+> __follow_link():
+> 
+>        if (path->mnt != nd->mnt) {
+>                path_to_nameidata(path, nd);
+>                dget(dentry);
+>        }
+>        mntget(path->mnt);
+> 
+> And replace with:
+> 
+>        if (path->mnt == nd->mnt)
+>                mntget(path->mnt);
+> 
+> This reverts the non-helper-function parts of
+> 051d381259eb57d6074d02a6ba6e90e744f1a29f, which breaks union mounts.
 
-On Thu, Oct 7, 2010 at 12:37 PM, Chung-Yih Wang (王崇懿) <cywang@google.com> wrote:
-> As I am testing the l2tp/ipsec client(it is working fine on 2.6.32 but
-> failed on 2.6.35 with the same client). Please see the following log
-> dump for sk_dst_check().
->
-> <2>[  201.390289] ==== sk_dst_check sk=C7485800 dst=C717AC60
-> obsolete=FFFFFFFF cookie=0 check=C0296510
-> <2>[  211.247467] ==== sk_dst_check sk=C7485000 dst=C717AC60
-> obsolete=FFFFFFFF cookie=0 check=C0296510
->
-> [Basically, the ipsec tunnel is built and then free the dst_entry for
-> this l2tp socket. Therefore, the obsolete entry should be reset in
-> sk_dst_check(). However, the kernel 2.6.35 will do nothing here since
-> the ipv4_dst_check still return the obsolete entry even if it is
-> obsolete(dst->obsolete=2)]
->
-> <2>[  216.571350] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <6>[  218.069396] alg: No test for authenc(hmac(sha1),cbc(des3_ede))
-> (authenc(hmac(sha1-generic),cbc(des3_ede-generic)))
-> <6>[  218.164764] batt:  96%, 4114 mV, 0 mA (-6 avg), 27.2 C, 1305 mAh
-> <2>[  218.575561] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  220.580535] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  222.585754] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  224.591522] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  226.599212] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  228.602600] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  230.608062] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  232.613464] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  234.618896] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  236.623504] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  238.628936] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  240.634338] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  242.639709] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  244.645111] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  246.648864] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  248.654693] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  250.660125] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
-> <2>[  252.665527] ==== sk_dst_check sk=C7485400 dst=C6F670E0
-> obsolete=00000002 cookie=0 check=C0296510
->
+Yeah, I was thinking of including it as a separate patch but thought it
+best to leave it until after we got feedback on the patch series.
+
+Folding it into this patch just didn't occur to me, but then that change
+was done long before the kluge this reverts so maybe including it would
+have caused some mild confusion and distracted focus away from the main
+task of the series.
+
+Clearly this change can now also be reverted without affecting autofs4,
+as an independent patch or as a patch included in the union mounts
+series.
+
+David, thoughts?
+Ian
+
+
