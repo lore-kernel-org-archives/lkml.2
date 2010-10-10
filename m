@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752828Ab0JJOIu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 10:08:50 -0400
-Received: from sh.osrg.net ([192.16.179.4]:55456 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751599Ab0JJOIs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 10:08:48 -0400
-Date: Sun, 10 Oct 2010 23:08:22 +0900
-To: mitov@issp.bas.bg
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, g.liakhovetski@gmx.de
-Subject: Re: [RFC][PATCH] add
- dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <201008201450.12585.mitov@issp.bas.bg>
-References: <201008201113.46036.mitov@issp.bas.bg>
-	<20100820173349E.fujita.tomonori@lab.ntt.co.jp>
-	<201008201450.12585.mitov@issp.bas.bg>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20101010230323B.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sun, 10 Oct 2010 23:08:24 +0900 (JST)
+	id S1753061Ab0JJOJO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 10:09:14 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:35890 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752447Ab0JJOJM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 10:09:12 -0400
+Date: Sun, 10 Oct 2010 16:09:08 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Markus Trippelsdorf <markus@trippelsdorf.de>
+Cc: Andi Kleen <andi@firstfloor.org>, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: REGRESSION 2.6.36: radeon KMS console switch broken
+Message-ID: <20101010140908.GA26728@basil.fritz.box>
+References: <20101010123000.GD8256@basil.fritz.box>
+ <20101010134429.GA1581@arch.trippelsdorf.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101010134429.GA1581@arch.trippelsdorf.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 20 Aug 2010 14:50:12 +0300
-Marin Mitov <mitov@issp.bas.bg> wrote:
-
-> On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> > On Fri, 20 Aug 2010 11:13:45 +0300
-> > Marin Mitov <mitov@issp.bas.bg> wrote:
+On Sun, Oct 10, 2010 at 03:44:29PM +0200, Markus Trippelsdorf wrote:
+> On Sun, Oct 10, 2010 at 02:30:00PM +0200, Andi Kleen wrote:
 > > 
-> > > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > > 
-> > > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > > Helps for videobuf-dma-contig framework.
-> > > > 
-> > > > What you guys exactly want to do? If you just want to pre-allocate
-> > > > coherent memory for latter usage,
-> > > 
-> > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > > We use coherent memory because it turns out to be contiguous.
+> > Hi,
 > > 
-> > Hmm, you don't care about coherency? You just need contiguous memory?
+> > I see a radeon regression here with 2.6.36-rc7.
+> > 
+> > I updated a system from 2.6.35 to 2.6.36-rc7. Now I cannot 
+> > switch to the text console from the X server anymore; the screen just 
+> > keeps displaying the X desktop. Eventually when I switch back
+> > to X things work again. 
+> > 
+> > The console switching worked in 2.6.35 
+> > (I had occasional GPU hangs in .35, but console switch always worked)
+> > I didn't change the Xserver userland.
+> > 
+> > The system has a ATI Technologies Inc RV710/730 running Dual Head.
 > 
-> Yes. We just need contiguous memory. Coherency is important as far as when dma
-> transfer finishes user land is able to see the new data. Could be done by something like
-> dma_{,un}map_single()
+> You're using the radeonhd driver, which is not supported and outdated.
+> Try to remove  /usr/lib64/xorg/modules/drivers/radeonhd_drv.so and start
+> X again...
 
-Anyone is working on this?
+No you misread the Xorg.0.log: 
 
-KAMEZAWA posted a patch to improve the generic page allocator to
-allocate physically contiguous memory. He said that he can push it
-into mainline.
+[    50.161] (II) Module radeonhd: vendor="AMD GPG"
+...
+[    51.636] (EE) FATAL: RadeonHD presently does not work with kernel modesetting (KMS).
+...
+[    50.167] (II) LoadModule: "radeon"
+....
+[    52.214] (II) UnloadModule: "radeonhd"
+...
 
-The approach enables us to solve this issue without adding any new
-API.
+It's using radeon.
+
+Besides if radeonhd stopped working that would be a regression too, but that's
+not what we have here.
+
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
