@@ -1,64 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751854Ab0JJWhr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 18:37:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33299 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750823Ab0JJWhq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 18:37:46 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-Date: Mon, 11 Oct 2010 00:36:27 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Johannes Berg <johannes@sipsolutions.net>
-References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera> <201010102141.45916.rjw@sisk.pl> <4CB23F1A.9040606@gmail.com>
-In-Reply-To: <4CB23F1A.9040606@gmail.com>
+	id S1752248Ab0JJWvm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 18:51:42 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37083 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751443Ab0JJWvl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 18:51:41 -0400
+Date: Sun, 10 Oct 2010 17:51:34 -0500
+From: Robin Holt <holt@sgi.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
+        Yinghai Lu <yinghai@kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        "H. Peter Anvin" <h.peter.anvin@intel.com>,
+        Jack Steiner <steiner@sgi.com>
+Subject: Re: [BUG] x86: bootmem broken on SGI UV
+Message-ID: <20101010225134.GD14064@sgi.com>
+References: <20101008213429.GB7223@sgi.com>
+ <4CAFA1DB.6010802@kernel.org>
+ <20101009125944.GA18248@sgi.com>
+ <20101009163908.GX14068@sgi.com>
+ <20101010104129.GB30271@elte.hu>
+ <20101010104319.GA9862@elte.hu>
+ <20101010114459.GY14068@sgi.com>
+ <20101010115605.GC14064@sgi.com>
+ <20101010140554.GB20400@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010110036.27986.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101010140554.GB20400@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, October 11, 2010, Justin P. Mattock wrote:
->   On 10/10/2010 12:41 PM, Rafael J. Wysocki wrote:
-> > On Sunday, October 10, 2010, Justin P. Mattock wrote:
-> >>    On 10/10/2010 10:51 AM, Rafael J. Wysocki wrote:
-> >>> This message has been generated automatically as a part of a summary report
-> >>> of recent regressions.
-> >>>
-> >>> The following bug entry is on the current list of known regressions
-> >>> from 2.6.35.  Please verify if it still should be listed and let the tracking team
-> >>> know (either way).
-> >>>
-> >>>
-> >>> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19392
-> >>> Subject		: WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
-> >>> Submitter	: Justin Mattock<justinmattock@gmail.com>
-> >>> Date		: 2010-09-28 22:30 (13 days old)
-> >>> Message-ID	:<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>
-> >>> References	: http://marc.info/?l=linux-kernel&m=128571307018635&w=2
-> >>>
-> >>>
-> >>>
-> >> as far as I know this is still here.. I can pull the latest to see
-> >> if it's been fixed, as well as the wireless tree to see.
-> > Well, please do.
-> >
-> > Rafael
-> >
+On Sun, Oct 10, 2010 at 04:05:54PM +0200, Ingo Molnar wrote:
 > 
-> o.k. the wireless-testing tree still shows this thing as well.
-> (I'll have to go through the commit that the bisected resulted to see).
+> * Robin Holt <holt@sgi.com> wrote:
+> 
+> > On Sun, Oct 10, 2010 at 06:44:59AM -0500, Robin Holt wrote:
+> > > On Sun, Oct 10, 2010 at 12:43:19PM +0200, Ingo Molnar wrote:
+> > > > 
+> > > > * Ingo Molnar <mingo@elte.hu> wrote:
+> > > > 
+> > > > > 
+> > > > > * Robin Holt <holt@sgi.com> wrote:
+> > > > > 
+> > > > > > On Sat, Oct 09, 2010 at 07:59:45AM -0500, Russ Anderson wrote:
+> > > > > > > Yes, Yinghai's patch fixes the problem.
+> > > > > > > Thank you very much.
+> > > > > > 
+> > > > > > Will this be included in 2.6.36?  It is needed for boot in order for UV
+> > > > > > systems to boot.
+> > > > > 
+> > > > > -tip uses memblock APIs. If this happens with vanilla -git as well 
+> > > > > then we need a bootmem backport for the fix.
+> > > > 
+> > > > And to answer your question: yes, we can queue it up for -final as well 
+> > > > if it's a recent regression - 'doesnt boot at all' bugs are nasty. But 
+> > > > i'm not sure this is a bootmem problem so please double check vanilla 
+> > > > v2.6.36-rc7 as well.
+> > > 
+> > > The 36-rc7 kernel does not boot at all either.  I don't have any 
+> > > decent debug tools to dig in further.  It does fail on the same 
+> > > machine that Russ was testing with, but passes on any that have a 
+> > > single blade as the kernel Russ first identified as being a problem 
+> > > had.  Based upon my vague recollection of the boot messages, it 
+> > > appears to fail in a similar point in boot.  I would assume it is a 
+> > > similar problem.
+> > 
+> > 2.6.35 fails as well.  I will bisect for as long as time permits.
+> 
+> That's really bad. If this means that you have not booted vanilla 
+> mainline on UV in that timeframe _at all_, and that it was perma-broken 
+> since 2009 when that commit Yinghai identified went upstream, then 
+> there's little point in squeezing this fix into v2.6.36-final.
+> 
+> -rcs are strictly for regression fixes.
+> 
+> If you want upstream to care about you then you absolutely have the duty 
+> to at minimum test latest mainline ...
 
-OK, thanks for the update.
+Upstream boots on many UV systems.  Some have more constrained memory
+and end up with this weird mapping which causes the problem.  I am not
+sure how many of the machines end up with this config, but it is far
+from all of them.
 
-Rafael
+Jack does build and boot a kernel every night on many different
+configurations, just not this one.  I believe he and Russ are working
+on getting this configuration into his nightly testing.
+
+Robin
