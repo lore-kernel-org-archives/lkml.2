@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756000Ab0JJRID (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 13:08:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53123 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751793Ab0JJRIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 13:08:01 -0400
-Date: Sun, 10 Oct 2010 13:07:51 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Milan Broz <mbroz@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Andi Kleen <ak@linux.intel.com>,
-        device-mapper development <dm-devel@redhat.com>, pedrib@gmail.com,
-        linux-kernel@vger.kernel.org, Alasdair G Kergon <agk@redhat.com>
-Subject: Re: DM-CRYPT: Scale to multiple CPUs v3
-Message-ID: <20101010170750.GA1475@redhat.com>
-References: <20101010115941.GA8539@basil.fritz.box>
- <4CB1B3B9.4030205@redhat.com>
- <20101010130842.GE8256@basil.fritz.box>
- <4CB1DD1A.5080906@redhat.com>
- <20101010162257.GA1272@redhat.com>
- <4CB1ECCA.8040801@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB1ECCA.8040801@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1756258Ab0JJRK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 13:10:57 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36613 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751793Ab0JJRKz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 13:10:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jfnre6t6nK0cUq5j44d9AAM11lvudlbEqVIQVTyLGxsQfwtS+T9m6xOLBQ9S8+lR1q
+         5cCSd0vYD/qY2OzYnpV9Vzmro1jGNygJcuLiWgT5OCh+gU1l098A31lDGaXftJGVGnQT
+         0nCr20w4U/4CGoX2I8OnOT/Q24f8ij0qLejw8=
+From: Namhyung Kim <namhyung@gmail.com>
+To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] ext3: Remove unnecessary casts on bh->b_data
+Date: Mon, 11 Oct 2010 02:10:45 +0900
+Message-Id: <1286730645-4845-1-git-send-email-namhyung@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10 2010 at 12:41pm -0400,
-Milan Broz <mbroz@redhat.com> wrote:
+bh->b_data is already a pointer to char so casts to 'char *' should
+be meaningless. Remove them.
 
-> On 10/10/2010 06:22 PM, Mike Snitzer wrote:
-> > If you feel you shouldn't be doing any more to your split patches then
-> > I'll review all of this closer tomorrow.
-> 
-> I think there was small bugfix in my patchset (some missing free in error path)
-> and I change to use generic per-cpu IV struct (not ESSIV only) -
-> see patch already sent here https://www.redhat.com/archives/dm-devel/2010-July/msg00118.html
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+---
+ fs/ext3/balloc.c |    4 ++--
+ fs/ext3/super.c  |    6 +++---
+ 2 files changed, 5 insertions(+), 5 deletions(-)
 
-Sure, but Andi's v3 was adjusted with "Mark per CPU crypto work queues
-as CPU intensive."  Do your split patches do that?  I haven't looked at
-the actual changes closely yet, just patch headers...
+diff --git a/fs/ext3/balloc.c b/fs/ext3/balloc.c
+index 4a32511..a49ce4a 100644
+--- a/fs/ext3/balloc.c
++++ b/fs/ext3/balloc.c
+@@ -792,9 +792,9 @@ find_next_usable_block(ext3_grpblk_t start, struct buffer_head *bh,
+ 	if (here < 0)
+ 		here = 0;
  
-> Others are just small code shuffle changes (which I know agk is doing to all patches;-)
+-	p = ((char *)bh->b_data) + (here >> 3);
++	p = bh->b_data + (here >> 3);
+ 	r = memscan(p, 0, ((maxblocks + 7) >> 3) - (here >> 3));
+-	next = (r - ((char *)bh->b_data)) << 3;
++	next = (r - bh->b_data) << 3;
+ 
+ 	if (next < maxblocks && next >= start && ext3_test_allocatable(next, bh))
+ 		return next;
+diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+index 4caeffa..421fad7 100644
+--- a/fs/ext3/super.c
++++ b/fs/ext3/super.c
+@@ -1654,7 +1654,7 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
+ 	 * Note: s_es must be initialized as soon as possible because
+ 	 *       some ext3 macro-instructions depend on its value
+ 	 */
+-	es = (struct ext3_super_block *) (((char *)bh->b_data) + offset);
++	es = (struct ext3_super_block *) (bh->b_data + offset);
+ 	sbi->s_es = es;
+ 	sb->s_magic = le16_to_cpu(es->s_magic);
+ 	if (sb->s_magic != EXT3_SUPER_MAGIC)
+@@ -1765,7 +1765,7 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
+ 			       "error: can't read superblock on 2nd try");
+ 			goto failed_mount;
+ 		}
+-		es = (struct ext3_super_block *)(((char *)bh->b_data) + offset);
++		es = (struct ext3_super_block *)(bh->b_data + offset);
+ 		sbi->s_es = es;
+ 		if (es->s_magic != cpu_to_le16(EXT3_SUPER_MAGIC)) {
+ 			ext3_msg(sb, KERN_ERR,
+@@ -2168,7 +2168,7 @@ static journal_t *ext3_get_dev_journal(struct super_block *sb,
+ 		goto out_bdev;
+ 	}
+ 
+-	es = (struct ext3_super_block *) (((char *)bh->b_data) + offset);
++	es = (struct ext3_super_block *) (bh->b_data + offset);
+ 	if ((le16_to_cpu(es->s_magic) != EXT3_SUPER_MAGIC) ||
+ 	    !(le32_to_cpu(es->s_feature_incompat) &
+ 	      EXT3_FEATURE_INCOMPAT_JOURNAL_DEV)) {
+-- 
+1.7.0.4
 
-If this area is being actively changed behind the scenes then it is
-pointless to try to make sense of this now.  As you said, Alasdair needs
-to delegate and remove any doubt about where this patchset stands.
-
-> I'll send patch on top of Andi's v3 if it helps something. (When back to my devel machine).
-
-That'll be helpful (I'm sure Andi is interested).  In addition, updating
-your split patches like I suggested in my previous mail would be great
-too:
-1) combine patch 1 and 2 so result bisect safe
-2) fold Andi's v3 changes into the appropriate patch(es) of your split
-   patchset
-
-In the end I'd expect your (3?) split patches to be functionally
-identical to Andi's v3 patch (only differences being the missing free
-fix and your using per-cpu of a more generic IV struct).
-
-So expressing your differences as a follow-on patch ontop of Andi's v3
-patch would be great.  If Andi agrees with those changes then we can use
-your split patches for the final commit sequence.
-
-All patches would have both Andi's and your Signed-off-by.
-
-Thanks,
-Mike
