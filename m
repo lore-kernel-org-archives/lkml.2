@@ -1,92 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755678Ab0JJJrY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 05:47:24 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42202 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754303Ab0JJJrV convert rfc822-to-8bit (ORCPT
+	id S1756254Ab0JJJrj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 05:47:39 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:28115 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754745Ab0JJJrh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 05:47:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=A3bBQeysd4owmd7lse0ZvzuKjSUc3dXmGEILSu6f2g9h2ZMOftrGAlGQMNtcKGEFjA
-         r2QxBhJit+xjXt2ZHJWQ/QFF7tWHxNreCugqpMLRY6szBk8nQ/SM2pzsHZeixTuRlqa1
-         sSrq4tek43kHRYFBynH51hvzKEmD5poy+8QA0=
+	Sun, 10 Oct 2010 05:47:37 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6131"; a="57368630"
+Message-ID: <874c7b4e0f4fcbc99d074b23595454e5.squirrel@www.codeaurora.org>
+In-Reply-To: <20101010081012.GB18531@linux.intel.com>
+References: <1286635573-30035-1-git-send-email-tlinder@codeaurora.org>
+    <20101010081012.GB18531@linux.intel.com>
+Date: Sun, 10 Oct 2010 02:49:28 -0700 (PDT)
+Subject: Re: [PATCH v5] usb: usb3.0 ch9 definitions
+From: tlinder@codeaurora.org
+To: "Matthew Wilcox" <willy@linux.intel.com>
+Cc: "Tatyana Brokhman" <tlinder@codeaurora.org>, linux-usb@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        linux-kernel@vger.kernel.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-In-Reply-To: <20101007174948.GT19804@ZenIV.linux.org.uk>
-References: <20101007174948.GT19804@ZenIV.linux.org.uk>
-Date: Sun, 10 Oct 2010 11:47:20 +0200
-X-Google-Sender-Auth: JQZvgvrLvJJ-hl_OjUNlrc8sk8w
-Message-ID: <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
-Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent kernels
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 7, 2010 at 19:49, Al Viro <viro@zeniv.linux.org.uk> wrote:
->        I've spent quite a while hunting that crap down; reverting VFS fix
-> mentioned in original thread *does* get rid of the symptoms, but so does the
-> patch below.
+Hi Matthew
+
+Page 10-57 you're referring to defines the SuperSpeed USB Device
+Capability descriptor for Hub Class. The descriptor itself is defined in
+ch9 section 9.6.2.2 and the wReserved is not defined there. Thus the total
+length of the descriptor is 10 bytes and not 12.
+IMO we should follow the definition in ch9. It seems that ch 10 has a typo
+in it. You're right about the errata. I found no reference to this issue
+either.
+I'll contact USB-IF regarding this issue.
+Thanks for bringing this up!
+
+Best regards
+Tanya Brokhman
+
+> On Sat, Oct 09, 2010 at 04:46:12PM +0200, Tatyana Brokhman wrote:
+>> +/*
+>> + * SuperSpeed USB Capability descriptor: Defines the set of SuperSpeed
+>> USB
+>> + * specific device level capabilities
+>> + */
+>> +#define		USB_SS_CAP_TYPE		3
+>> +struct usb_ss_cap_descriptor {		/* Link Power Management */
+>> +	__u8  bLength;
+>> +	__u8  bDescriptorType;
+>> +	__u8  bDevCapabilityType;
+>> +	__u8  bmAttributes;
+>> +#define USB_LTM_SUPPORT			(1 << 1) /* supports LTM */
+>> +	__le16 wSpeedSupported;
+>> +#define USB_LOW_SPEED_OPERATION		(1)	 /* Low speed operation */
+>> +#define USB_FULL_SPEED_OPERATION	(1 << 1) /* Full speed operation */
+>> +#define USB_HIGH_SPEED_OPERATION	(1 << 2) /* High speed operation */
+>> +#define USB_5GBPS_OPERATION		(1 << 3) /* Operation at 5Gbps */
+>> +	__u8  bFunctionalitySupport;
+>> +	__u8  bU1devExitLat;
+>> +	__le16 bU2DevExitLat;
+>> +} __attribute__((packed));
+>> +
+>> +#define USB_DT_USB_SS_CAP_SIZE	10
 >
->        What happens is this: if ->follow_link() (usually something like
-> stat("/proc/2/fd", ...) done by pidof(8)) return ERR_PTR(-....), we return
-> to __do_follow_link() and do the following:
->        *p = dentry->d_inode->i_op->follow_link(dentry, nd);
->        error = PTR_ERR(*p);
->        if (!IS_ERR(*p)) {
->                char *s = nd_get_link(nd);
->                error = 0;
->                if (s)
->                        error = __vfs_follow_link(nd, s);
->                else if (nd->last_type == LAST_BIND) {
->                        error = force_reval_path(&nd->path, nd);
->                        if (error)
->                                path_put(&nd->path);
->                }
->        }
->        return error;
+> Hang on, if we're looking at page 10-57 of "USB 3 0 (11132008)-final.pdf",
+> it's 12 bytes long with the last two bytes being wReserved.  Is there
+> an erratum that changes this?  I just looked through
+> "USB3_Errata [June 2010].pdf" and don't see any errata that look germane.
 >
-> We _should_ return non-zero value; IS_ERR(ERR_PTR(-n)) is 1 and
-> PTR_ERR(ERR_PTR(n)) is -n.  What happens instead is that this thing
-> actually returns 0.  And no, it's not a miscompile.  Patch below
-> removes the symptoms of the bug, but only if both parts are present.
-> I.e. *not* doing "report = 1" in proc_pid_follow_link() gives us
-> visible breakage, despite the fact that report is initialized as
-> 1 and nothing except proc_pid_follow_link() ever tries to assign
-> anything to it.  Seeing that fs/namei.c and fs/proc/base.c are
-> compiled separately, we can exclude gcc problems.
 >
-> The cheapest way to reproduce is to boot with init=/bin/sh, then
-> mount /proc and have stat("/proc/2/exe", &st) called; if stat()
-> returns 0, we are fscked.  The critical part is between return
-> from proc_exe_link() (we'll leave it via if (!mm) return -ENOENT;)
-> to return from __do_follow_link() -> do_follow_link() -> link_path_walk().
 
-I booted 2.6.36-rc7-atari-00360-g0dd2e6a (my current private test kernel) with
-init=/bin/sh, mounted /proc, and tried
 
-    for i in $(seq 1000); do stat /proc/2/exe; done
-
-a few times, but I didn't see any ida_remove messages.
-It cannot read the /proc/2/exe symlink, though.
-
-This is on aranym-0.9.9-1 from Ubuntu/amd64.
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
