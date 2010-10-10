@@ -1,66 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328Ab0JJTj4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 15:39:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:35205 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750836Ab0JJTjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 15:39:55 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Vasiliy Kulikov <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] mfd/mc13xxx: don't open code kasprintf
-Date: Sun, 10 Oct 2010 21:39:46 +0200
-Message-Id: <1286739586-32745-1-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.2.3
-In-Reply-To: <1286731711-17865-1-git-send-email-segooon@gmail.com>
-References: <1286731711-17865-1-git-send-email-segooon@gmail.com>
+	id S1751473Ab0JJTmz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 15:42:55 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33064 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751193Ab0JJTmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 15:42:53 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: [Bug #19392] WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+Date: Sun, 10 Oct 2010 21:41:45 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Johannes Berg <johannes@sipsolutions.net>
+References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera> <xpndfyzv9iD.A.STG.7qfsMB@chimera> <4CB211C7.20809@gmail.com>
+In-Reply-To: <4CB211C7.20809@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010102141.45916.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This fixes an off by one error noticed by Vasiliy Kulikov en passant.
+On Sunday, October 10, 2010, Justin P. Mattock wrote:
+>   On 10/10/2010 10:51 AM, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.35.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=19392
+> > Subject		: WARNING: at drivers/net/wireless/ath/ath5k/base.c:3475 ath5k_bss_info_changed+0x44/0x168 [ath5k]()
+> > Submitter	: Justin Mattock<justinmattock@gmail.com>
+> > Date		: 2010-09-28 22:30 (13 days old)
+> > Message-ID	:<AANLkTim5WCGKPvEkOkO_YnMF9pg8mvLfQoFBNUFpfa_k@mail.gmail.com>
+> > References	: http://marc.info/?l=linux-kernel&m=128571307018635&w=2
+> >
+> >
+> >
+> as far as I know this is still here.. I can pull the latest to see
+> if it's been fixed, as well as the wireless tree to see.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- drivers/mfd/mc13xxx-core.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+Well, please do.
 
-diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-index 93258ad..b763b8c 100644
---- a/drivers/mfd/mc13xxx-core.c
-+++ b/drivers/mfd/mc13xxx-core.c
-@@ -687,7 +687,6 @@ EXPORT_SYMBOL_GPL(mc13783_adc_do_conversion);
- static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
- 		const char *format, void *pdata, size_t pdata_size)
- {
--	char buf[30];
- 	const char *name = mc13xxx_get_chipname(mc13xxx);
- 
- 	struct mfd_cell cell = {
-@@ -695,11 +694,7 @@ static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
- 		.data_size = pdata_size,
- 	};
- 
--	/* there is no asnprintf in the kernel :-( */
--	if (snprintf(buf, sizeof(buf), format, name) > sizeof(buf))
--		return -E2BIG;
--
--	cell.name = kmemdup(buf, strlen(buf) + 1, GFP_KERNEL);
-+	cell.name = kasprintf(GFP_KERNEL, format, name);
- 	if (!cell.name)
- 		return -ENOMEM;
- 
--- 
-1.7.2.3
-
+Rafael
