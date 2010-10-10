@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab0JJHfz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 03:35:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20982 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751703Ab0JJHfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 03:35:53 -0400
-Date: Sun, 10 Oct 2010 09:35:29 +0200
-From: Gleb Natapov <gleb@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: Re: [PATCH v6 03/12] Retry fault before vmentry
-Message-ID: <20101010073529.GL2397@redhat.com>
-References: <1286207794-16120-1-git-send-email-gleb@redhat.com>
- <1286207794-16120-4-git-send-email-gleb@redhat.com>
- <4CADBD13.4040609@redhat.com>
- <20101007172152.GB2397@redhat.com>
- <4CB0B778.6060005@redhat.com>
+	id S1752633Ab0JJHuA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 03:50:00 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:41211 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752524Ab0JJHt7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 03:49:59 -0400
+Message-ID: <4CB17019.7070002@euromail.se>
+Date: Sun, 10 Oct 2010 09:49:45 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100922 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB0B778.6060005@redhat.com>
+To: Takashi Iwai <tiwai@suse.de>, Chase Douglas <chase.douglas@canonical.com>
+CC: linux-input@vger.kernel.org, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] Input: synaptics - multitouch and multifinger support
+References: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com> <s5hfwwg4p4t.wl%tiwai@suse.de>
+In-Reply-To: <s5hfwwg4p4t.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1P4qfK-0001Fu-BN.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1P4qfK-0001Fu-BN cc3c915f5ced2e5e4d7e9463b6a23932
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Oct 09, 2010 at 08:42:00PM +0200, Avi Kivity wrote:
->  On 10/07/2010 07:21 PM, Gleb Natapov wrote:
-> >On Thu, Oct 07, 2010 at 02:29:07PM +0200, Avi Kivity wrote:
-> >>   On 10/04/2010 05:56 PM, Gleb Natapov wrote:
-> >>  >When page is swapped in it is mapped into guest memory only after guest
-> >>  >tries to access it again and generate another fault. To save this fault
-> >>  >we can map it immediately since we know that guest is going to access
-> >>  >the page. Do it only when tdp is enabled for now. Shadow paging case is
-> >>  >more complicated. CR[034] and EFER registers should be switched before
-> >>  >doing mapping and then switched back.
-> >>
-> >>  With non-pv apf, I don't think we can do shadow paging.  The guest
-> >Yes, with non-pv this trick will not work without tdp. I haven't even
-> >considered it for that case.
-> >
-> 
-> What about nnpt?  The same issues exist.
-> 
-I am not sure how nntp works. What is the problem there? In case of tdp
-prefault instantiates page in direct_map, how nntp interfere with that?
+Takashi, Chase,
 
---
-			Gleb.
+talk about Heinz effect. :-)
+
+Rather than taking any of the patches, I was wondering if we could get a single
+patch including all the later findings and considerations on what devices should
+have the multitouch mode. Also, unless there is a really really good reason for
+it, without kernel parameters. After all, these patches should only add new
+functionality without regressions.
+
+Regarding the clickpad functionality, it is similar to the macbook pads with
+integrated buttons, which has been implemented in userspace.
+
+Regarding the tracking aspect of pointer emulation, Chase is completely right,
+and this is a generic problem for several drivers. Tracking a single point by
+picking the closest contact is a linear problem and could easily be performed in
+interrupt context. I suggest we add it directly to the synaptics driver and then
+revisit the question of adding generic tracking support to the kernel. Dmitry,
+how does that sound to you?
+
+Cheers,
+Henrik
