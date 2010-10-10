@@ -1,170 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756083Ab0JJKPk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 06:15:40 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:53516 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754279Ab0JJKPi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 06:15:38 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+ndHZBErinNPhmBYcVXq/FjnlMdwM7iSIpi05BKY
-	Eng4jlQgVgtTFD
-Subject: Re: [PATCH 0/3][RFC] Improve load balancing when tasks have large
- weight differential
-From: Mike Galbraith <efault@gmx.de>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTim8m6r_8pFO6o0uOnki6mNoaR+8NZ4M0pO3H515@mail.gmail.com>
-References: <1285633798-26886-1-git-send-email-ncrao@google.com>
-	 <1285682273.7469.3.camel@marge.simson.net>
-	 <AANLkTin=Dic2UE55yUaam8NzGHTib=9s=x-wyzk03BU0@mail.gmail.com>
-	 <1285724758.7440.11.camel@marge.simson.net>
-	 <AANLkTi=TQnYGLPC=Pi0o1As83W6VdWdjvimZNSrGT4qW@mail.gmail.com>
-	 <1286161717.7410.12.camel@marge.simson.net>
-	 <AANLkTinf7fj5A4DnQOWdj8QeMhf4exPGgpMUdTGA9mTC@mail.gmail.com>
-	 <1286522543.8189.13.camel@marge.simson.net>
-	 <AANLkTim8m6r_8pFO6o0uOnki6mNoaR+8NZ4M0pO3H515@mail.gmail.com>
-Content-Type: text/plain
-Date: Sun, 10 Oct 2010 12:15:34 +0200
-Message-Id: <1286705734.7478.22.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1757308Ab0JJKUb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 06:20:31 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47619 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755750Ab0JJKU3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 06:20:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ObHRVKWw6yWJIiIl+kPz9ihyMlJQTk1HZDR4UTtlot6clgO90iGORsQKiNdLqLR57t
+         1hemmmrPGbAbceNbTVnhgggRDZaDqhq9VEysw0opBIHNP/CAiV6PjKRwwnFXipnq9PLf
+         v04vPS3BQSJI9vWARd/ODv6+4ZRkq0vKR+BIc=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Cc: Nohee Ko <noheek@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: [PATCH 1/3] staging: brcm80211: clean up custom ctype library again
+Date: Sun, 10 Oct 2010 13:20:11 +0300
+Message-Id: <86dfcd5dfdee8ce5ca558634d4606922f05e96e1.1286705921.git.andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 13:34 -0700, Nikhil Rao wrote:
+The similar cleanup was done before for softmac implementation.  But the
+fullmac driver brings this back. Remove it again.
 
-> I have attached a patch that tackles the problem in different way.
-> Instead of preventing the sched group from entering the bad state, it
-> shortcuts the checks in fbg if the group has extra capacity, where
-> extra capacity is defined as group_capacity > nr_running. The patch
-> exposes a sched feature called PREFER_UTILIZATION (disabled by
-> default). When this is enabled, f_b_g shortcuts the checks if the
-> local group has capacity. This actually works quite well.
-
-Yeah, it does seem to work well.
-
-I don't like the sched feature much though, a domain flag seems more
-appropriate.  I bent your patch up a bit to correct utilization woes
-during NEWIDLE balancing instead.. still seems to work fine.
-
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 ---
- kernel/sched_fair.c |   30 +++++++++++++++++++++++++++---
- 1 file changed, 27 insertions(+), 3 deletions(-)
+ drivers/staging/brcm80211/brcmfmac/bcmutils.c |   56 ++----------------------
+ drivers/staging/brcm80211/brcmfmac/wl_iw.h    |    1 -
+ drivers/staging/brcm80211/include/bcmutils.h  |   30 -------------
+ 3 files changed, 5 insertions(+), 82 deletions(-)
 
-Index: linux-2.6.36.git/kernel/sched_fair.c
-===================================================================
---- linux-2.6.36.git.orig/kernel/sched_fair.c
-+++ linux-2.6.36.git/kernel/sched_fair.c
-@@ -1764,6 +1764,10 @@ static void pull_task(struct rq *src_rq,
- 	set_task_cpu(p, this_cpu);
- 	activate_task(this_rq, p, 0);
- 	check_preempt_curr(this_rq, p, 0);
-+
-+	/* re-arm NEWIDLE balancing when moving tasks */
-+	src_rq->avg_idle = this_rq->avg_idle = 2*sysctl_sched_migration_cost;
-+	this_rq->idle_stamp = 0;
+diff --git a/drivers/staging/brcm80211/brcmfmac/bcmutils.c b/drivers/staging/brcm80211/brcmfmac/bcmutils.c
+index 7185943..f0685c1 100644
+--- a/drivers/staging/brcm80211/brcmfmac/bcmutils.c
++++ b/drivers/staging/brcm80211/brcmfmac/bcmutils.c
+@@ -28,8 +28,8 @@
+ #if defined(BCMEXTSUP)
+ #include <bcm_osl.h>
+ #endif
+-
+ #endif				/* BCMDRIVER */
++#include <linux/ctype.h>
+ #include <bcmendian.h>
+ #include <bcmdevs.h>
+ #include <bcmnvram.h>
+@@ -484,52 +484,6 @@ void *pktq_mdeq(struct pktq *pq, uint prec_bmp, int *prec_out)
  }
+ #endif				/* BCMDRIVER */
  
- /*
-@@ -2030,12 +2034,14 @@ struct sd_lb_stats {
- 	unsigned long this_load;
- 	unsigned long this_load_per_task;
- 	unsigned long this_nr_running;
-+	unsigned long this_has_capacity;
+-const unsigned char bcm_ctype[] = {
+-	_BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C,
+-	_BCM_C, _BCM_C | _BCM_S, _BCM_C | _BCM_S, _BCM_C | _BCM_S,
+-	_BCM_C | _BCM_S, _BCM_C | _BCM_S, _BCM_C,
+-	_BCM_C,			/* 8-15 */
+-	_BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C,
+-	_BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C, _BCM_C,
+-	_BCM_S | _BCM_SP, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,
+-	_BCM_P,
+-	_BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,
+-	_BCM_D, _BCM_D, _BCM_D, _BCM_D, _BCM_D, _BCM_D, _BCM_D, _BCM_D,
+-	_BCM_D, _BCM_D, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,
+-	_BCM_P, _BCM_U | _BCM_X, _BCM_U | _BCM_X, _BCM_U | _BCM_X,
+-	_BCM_U | _BCM_X, _BCM_U | _BCM_X,
+-	_BCM_U | _BCM_X, _BCM_U,
+-	_BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U,
+-	_BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U,
+-	_BCM_U, _BCM_U, _BCM_U, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,
+-	_BCM_P, _BCM_L | _BCM_X, _BCM_L | _BCM_X, _BCM_L | _BCM_X,
+-	_BCM_L | _BCM_X, _BCM_L | _BCM_X,
+-	_BCM_L | _BCM_X, _BCM_L,
+-	_BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L,
+-	_BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L,
+-	_BCM_L, _BCM_L, _BCM_L, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_C,
+-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 128-143 */
+-	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,	/* 144-159 */
+-	_BCM_S | _BCM_SP, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,
+-	_BCM_P, _BCM_P, _BCM_P,
+-	_BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,	/* 160-175 */
+-	_BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,
+-	_BCM_P, _BCM_P,
+-	_BCM_P, _BCM_P, _BCM_P, _BCM_P, _BCM_P,	/* 176-191 */
+-	_BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U,
+-	_BCM_U, _BCM_U,
+-	_BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U,	/* 192-207 */
+-	_BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_P, _BCM_U,
+-	_BCM_U, _BCM_U,
+-	_BCM_U, _BCM_U, _BCM_U, _BCM_U, _BCM_L,	/* 208-223 */
+-	_BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L,
+-	_BCM_L, _BCM_L,
+-	_BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L,	/* 224-239 */
+-	_BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_P, _BCM_L,
+-	_BCM_L, _BCM_L,
+-	_BCM_L, _BCM_L, _BCM_L, _BCM_L, _BCM_L	/* 240-255 */
+-};
+-
+ unsigned long bcm_strtoul(char *cp, char **endp, uint base)
+ {
+ 	unsigned long result, last_result = 0, value;
+@@ -537,7 +491,7 @@ unsigned long bcm_strtoul(char *cp, char **endp, uint base)
  
- 	/* Statistics of the busiest group */
- 	unsigned long max_load;
- 	unsigned long busiest_load_per_task;
- 	unsigned long busiest_nr_running;
- 	unsigned long busiest_group_capacity;
-+	unsigned long busiest_has_capacity;
+ 	minus = FALSE;
  
- 	int group_imb; /* Is there imbalance in this sd */
- #if defined(CONFIG_SCHED_MC) || defined(CONFIG_SCHED_SMT)
-@@ -2058,6 +2064,7 @@ struct sg_lb_stats {
- 	unsigned long sum_weighted_load; /* Weighted load of group's tasks */
- 	unsigned long group_capacity;
- 	int group_imb; /* Is there an imbalance in the group ? */
-+	int group_has_capacity; /* Is there extra capacity in the group? */
- };
+-	while (bcm_isspace(*cp))
++	while (isspace(*cp))
+ 		cp++;
  
- /**
-@@ -2454,6 +2461,9 @@ static inline void update_sg_lb_stats(st
- 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
- 	if (!sgs->group_capacity)
- 		sgs->group_capacity = fix_small_capacity(sd, group);
-+
-+	if (sgs->group_capacity > sgs->sum_nr_running)
-+		sgs->group_has_capacity = 1;
- }
+ 	if (cp[0] == '+')
+@@ -565,9 +519,9 @@ unsigned long bcm_strtoul(char *cp, char **endp, uint base)
  
- /**
-@@ -2552,12 +2562,14 @@ static inline void update_sd_lb_stats(st
- 			sds->this = sg;
- 			sds->this_nr_running = sgs.sum_nr_running;
- 			sds->this_load_per_task = sgs.sum_weighted_load;
-+			sds->this_has_capacity = sgs.group_has_capacity;
- 		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
- 			sds->max_load = sgs.avg_load;
- 			sds->busiest = sg;
- 			sds->busiest_nr_running = sgs.sum_nr_running;
- 			sds->busiest_group_capacity = sgs.group_capacity;
- 			sds->busiest_load_per_task = sgs.sum_weighted_load;
-+			sds->busiest_has_capacity = sgs.group_has_capacity;
- 			sds->group_imb = sgs.group_imb;
- 		}
+ 	result = 0;
  
-@@ -2754,6 +2766,15 @@ static inline void calculate_imbalance(s
- 		return fix_small_imbalance(sds, this_cpu, imbalance);
+-	while (bcm_isxdigit(*cp) &&
++	while (isxdigit(*cp) &&
+ 	       (value =
+-		bcm_isdigit(*cp) ? *cp - '0' : bcm_toupper(*cp) - 'A' + 10) <
++		isdigit(*cp) ? *cp - '0' : toupper(*cp) - 'A' + 10) <
+ 	       base) {
+ 		result = result * base + value;
+ 		/* Detected overflow */
+@@ -1796,7 +1750,7 @@ int bcm_format_ssid(char *buf, const unsigned char ssid[], uint ssid_len)
+ 		if (c == '\\') {
+ 			*p++ = '\\';
+ 			*p++ = '\\';
+-		} else if (bcm_isprint((unsigned char) c)) {
++		} else if (isprint((unsigned char) c)) {
+ 			*p++ = (char)c;
+ 		} else {
+ 			p += snprintf(p, (endp - p), "\\x%02X", c);
+diff --git a/drivers/staging/brcm80211/brcmfmac/wl_iw.h b/drivers/staging/brcm80211/brcmfmac/wl_iw.h
+index cca4fd7..3416597 100644
+--- a/drivers/staging/brcm80211/brcmfmac/wl_iw.h
++++ b/drivers/staging/brcm80211/brcmfmac/wl_iw.h
+@@ -58,7 +58,6 @@ typedef struct wl_iw_extra_params {
+ #define	WL_IW_RSSI_EXCELLENT	-57
+ #define	WL_IW_RSSI_INVALID	 0
+ #define MAX_WX_STRING 80
+-#define isprint(c) bcm_isprint(c)
+ #define WL_IW_SET_ACTIVE_SCAN	(SIOCIWFIRSTPRIV+1)
+ #define WL_IW_GET_RSSI			(SIOCIWFIRSTPRIV+3)
+ #define WL_IW_SET_PASSIVE_SCAN	(SIOCIWFIRSTPRIV+5)
+diff --git a/drivers/staging/brcm80211/include/bcmutils.h b/drivers/staging/brcm80211/include/bcmutils.h
+index 7dd9210..d0960b7 100644
+--- a/drivers/staging/brcm80211/include/bcmutils.h
++++ b/drivers/staging/brcm80211/include/bcmutils.h
+@@ -21,36 +21,6 @@
+ extern "C" {
+ #endif
  
- }
-+
-+bool check_utilization(struct sd_lb_stats *sds)
-+{
-+	if (!sds->this_has_capacity || sds->busiest_has_capacity)
-+		return false;
-+
-+	return true;
-+}
-+
- /******* find_busiest_group() helpers end here *********************/
- 
- /**
-@@ -2816,6 +2837,10 @@ find_busiest_group(struct sched_domain *
- 	if (!sds.busiest || sds.busiest_nr_running == 0)
- 		goto out_balanced;
- 
-+	/*  SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
-+	if (idle == CPU_NEWLY_IDLE && check_utilization(&sds))
-+		goto force_balance;
-+
- 	if (sds.this_load >= sds.max_load)
- 		goto out_balanced;
- 
-@@ -2827,6 +2852,7 @@ find_busiest_group(struct sched_domain *
- 	if (100 * sds.max_load <= sd->imbalance_pct * sds.this_load)
- 		goto out_balanced;
- 
-+force_balance:
- 	/* Looks like there is an imbalance. Compute it */
- 	calculate_imbalance(&sds, this_cpu, imbalance);
- 	return sds.busiest;
-@@ -3153,10 +3179,8 @@ static void idle_balance(int this_cpu, s
- 		interval = msecs_to_jiffies(sd->balance_interval);
- 		if (time_after(next_balance, sd->last_balance + interval))
- 			next_balance = sd->last_balance + interval;
--		if (pulled_task) {
--			this_rq->idle_stamp = 0;
-+		if (pulled_task)
- 			break;
--		}
- 	}
- 
- 	raw_spin_lock(&this_rq->lock);
-
+-#ifdef BRCM_FULLMAC
+-/* ctype replacement */
+-#define _BCM_U	0x01		/* upper */
+-#define _BCM_L	0x02		/* lower */
+-#define _BCM_D	0x04		/* digit */
+-#define _BCM_C	0x08		/* cntrl */
+-#define _BCM_P	0x10		/* punct */
+-#define _BCM_S	0x20		/* white space (space/lf/tab) */
+-#define _BCM_X	0x40		/* hex digit */
+-#define _BCM_SP	0x80		/* hard space (0x20) */
+-
+-	extern const unsigned char bcm_ctype[];
+-#define bcm_ismask(x)	(bcm_ctype[(int)(unsigned char)(x)])
+-
+-#define bcm_isalnum(c)	((bcm_ismask(c)&(_BCM_U|_BCM_L|_BCM_D)) != 0)
+-#define bcm_isalpha(c)	((bcm_ismask(c)&(_BCM_U|_BCM_L)) != 0)
+-#define bcm_iscntrl(c)	((bcm_ismask(c)&(_BCM_C)) != 0)
+-#define bcm_isdigit(c)	((bcm_ismask(c)&(_BCM_D)) != 0)
+-#define bcm_isgraph(c)	((bcm_ismask(c)&(_BCM_P|_BCM_U|_BCM_L|_BCM_D)) != 0)
+-#define bcm_islower(c)	((bcm_ismask(c)&(_BCM_L)) != 0)
+-#define bcm_isprint(c)	\
+-	((bcm_ismask(c)&(_BCM_P|_BCM_U|_BCM_L|_BCM_D|_BCM_SP)) != 0)
+-#define bcm_ispunct(c)	((bcm_ismask(c)&(_BCM_P)) != 0)
+-#define bcm_isspace(c)	((bcm_ismask(c)&(_BCM_S)) != 0)
+-#define bcm_isupper(c)	((bcm_ismask(c)&(_BCM_U)) != 0)
+-#define bcm_isxdigit(c)	((bcm_ismask(c)&(_BCM_D|_BCM_X)) != 0)
+-#define bcm_tolower(c)	(bcm_isupper((c)) ? ((c) + 'a' - 'A') : (c))
+-#define bcm_toupper(c)	(bcm_islower((c)) ? ((c) + 'A' - 'a') : (c))
+-#endif /* BRCM_FULLMAC */
+-
+ /* Buffer structure for collecting string-formatted data
+ * using bcm_bprintf() API.
+ * Use bcm_binit() to initialize before use
+-- 
+1.7.2.3
 
