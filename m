@@ -1,42 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758197Ab0JJRz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 13:55:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60891 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755919Ab0JJRxL convert rfc822-to-8bit (ORCPT
+	id S1755628Ab0JJSEM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 14:04:12 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57196 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753513Ab0JJSEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 13:53:11 -0400
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        "Christian Casteyde" <casteyde.christian@free.fr>
-References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera>
-In-Reply-To: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera>
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
+	Sun, 10 Oct 2010 14:04:10 -0400
+Date: Sun, 10 Oct 2010 20:04:00 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: James Hogan <james@albanarts.com>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-doc@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        markgross <markgross@thegnar.org>
+Subject: Re: [PATCH 2/2] pm_trace: Add sysfs attr for rechecking dev hash.
+Message-ID: <20101010180400.GA19524@elf.ucw.cz>
+References: <201010092334.27808.james@albanarts.com>
+ <201010092337.47821.james@albanarts.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-ID: <xpndfyzv9iD.A.B1G.9rfsMB@chimera>
-Subject: [Bug #17361] Random kmemcheck errors and kernel freeze on 2.6.36-rc*
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Sun, 10 Oct 2010 19:51:48 +0200 (CEST)
+In-Reply-To: <201010092337.47821.james@albanarts.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This message has been generated automatically as a part of a summary report
-of recent regressions.
+Hi!
 
-The following bug entry is on the current list of known regressions
-from 2.6.35.  Please verify if it still should be listed and let the tracking team
-know (either way).
+> If the device which fails to resume is part of a loadable kernel module
+> it won't be checked at startup against the magic number stored in the
+> RTC.
+> 
+> Add a read-only sysfs attribute /sys/power/pm_trace_dev_hash which
+> contains a list of newline separated devices (usually just the one)
+> which currently match the last magic number. This allows the device
+> which is failing to resume to be found after the modules are loaded
+> again.
 
+> --- a/Documentation/power/s2ram.txt
+> +++ b/Documentation/power/s2ram.txt
+> @@ -49,6 +49,13 @@ machine that doesn't boot) is:
+>     device (lspci and /sys/devices/pci* is your friend), and see if you can
+>     fix it, disable it, or trace into its resume function.
+>  
+> +   If no device matches the hash, it may be a device from a loadable kernel
+> +   module that is not loaded until after the hash is checked. You can check
+> +   the hash against the current devices again after more modules are loaded
+> +   using sysfs:
+> +
+> +	cat /sys/power/pm_trace_dev_hash
+> +
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=17361
-Subject		: Random kmemcheck errors and kernel freeze on 2.6.36-rc*
-Submitter	: Christian Casteyde <casteyde.christian@free.fr>
-Date		: 2010-08-29 19:59 (43 days old)
-
-
+Yep, but exact semantics of that sysfs file should probably be linked
+in the sysfs documentation...
+								Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
