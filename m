@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757557Ab0JJMid (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 08:38:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34423 "EHLO mx1.redhat.com"
+	id S1757589Ab0JJMja (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 08:39:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754429Ab0JJMic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 08:38:32 -0400
-Message-ID: <4CB1B3B9.4030205@redhat.com>
-Date: Sun, 10 Oct 2010 14:38:17 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
+	id S1754429Ab0JJMj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 08:39:29 -0400
+Message-ID: <4CB1B3E2.3000200@redhat.com>
+Date: Sun, 10 Oct 2010 14:38:58 +0200
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Andi Kleen <ak@linux.intel.com>
-CC: device-mapper development <dm-devel@redhat.com>,
-        Andi Kleen <andi@firstfloor.org>, pedrib@gmail.com,
-        linux-kernel@vger.kernel.org, Alasdair G Kergon <agk@redhat.com>,
-        Mike Snitzer <msnitzer@redhat.com>
-Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
-References: <20101010115941.GA8539@basil.fritz.box>
-In-Reply-To: <20101010115941.GA8539@basil.fritz.box>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Gleb Natapov <gleb@redhat.com>
+CC: kvm@vger.kernel.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: Re: [PATCH v6 08/12] Handle async PF in a guest.
+References: <1286207794-16120-1-git-send-email-gleb@redhat.com> <1286207794-16120-9-git-send-email-gleb@redhat.com> <4CADC6C3.3040305@redhat.com> <20101010123220.GN2397@redhat.com>
+In-Reply-To: <20101010123220.GN2397@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+  On 10/10/2010 02:32 PM, Gleb Natapov wrote:
+> On Thu, Oct 07, 2010 at 03:10:27PM +0200, Avi Kivity wrote:
+> >   On 10/04/2010 05:56 PM, Gleb Natapov wrote:
+> >  >When async PF capability is detected hook up special page fault handler
+> >  >that will handle async page fault events and bypass other page faults to
+> >  >regular page fault handler. Also add async PF handling to nested SVM
+> >  >emulation. Async PF always generates exit to L1 where vcpu thread will
+> >  >be scheduled out until page is available.
+> >  >
+> >
+> >  Please separate guest and host changes.
+> >
+> Hmm. There are only guest changes here as far as I can see.
 
-On 10/10/2010 01:59 PM, Andi Kleen wrote:
-> DM-CRYPT: Scale to multiple CPUs v3
-> 
-> [Due to popular demand this is a port of the dm-crypt scalability
-> patch to 2.6.36-rc7.  The 2.6.35 and .32 patches were widely used by
-> lots of users with good results. 
-> 
+ From the diffstat:
 
-Hi Andi,
+>   arch/x86/include/asm/kvm_para.h |   12 +++
+>   arch/x86/include/asm/traps.h    |    1 +
+>   arch/x86/kernel/entry_32.S      |   10 ++
+>   arch/x86/kernel/entry_64.S      |    3 +
+>   arch/x86/kernel/kvm.c           |  184 ++++++++++++++++++++++++++++++++++++++-
+>   arch/x86/kvm/svm.c              |   43 +++++++--
 
-please can you check split patches in
-http://mbroz.fedorapeople.org/dm-crypt/2.6.36-devel/
+svm.c is host code.
 
-is there some change in your new version?
+-- 
+error compiling committee.c: too many arguments to function
 
-Can I send this to dm-devel instead? 
-(It is better for review.)
-
-I know that I fixed some small bug there and these are heavily
-tested by me.
-
-Alasdair, _please_ can you include it in dm-tree?
-I asked you at least 5 times already, my last info is that
-you are planning this for 2.6.37, right?
-
-
->  static void kcryptd_queue_io(struct dm_crypt_io *io)
->  {
-> -	struct crypt_config *cc = io->target->private;
-> +	int cpu;
-> +
-> +	/*
-> +	 * Since we only have a single worker per CPU in extreme
-> +	 * cases there might be nesting (dm-crypt on another dm-crypt)
-> +	 * To avoid deadlock run the work directly then.
-> +	 */
-> +	cpu = get_cpu();
-> +	if (per_cpu(io_wq_cpu, cpu) == current && !in_interrupt()) {
-> +		put_cpu();
-> +		kcryptd_io(&io->work);
-> +		return;
-> +	}
-
-This is only place where I see problem - if running in crypto async mode,
-callback is called in interrupt mode (please correct me if I am wrong).
-
-So with async crypto and nested dm-crypt mapping this deadlock
-prevention doesn't work - so is there still possibility of deadlock?
-
-(I think we can ignore it for now, I tried create some "real world" deadlocky
-mappings some time ago and was not able to catch it even on high memory pressure.)
-
-Milan
