@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab0JJKoQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 06:44:16 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:59824 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932185Ab0JJKoO (ORCPT
+	id S932392Ab0JJKzH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 06:55:07 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:55581 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752547Ab0JJKzF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 06:44:14 -0400
-Subject: Re: [PATCH 3/3] staging: brcm80211: fix to use "%pM" flag to print
- MAC address
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Nohee Ko <noheek@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-In-Reply-To: <dc990a5f703e69ed428ac2f2479779d36ef1eb3f.1286705921.git.andy.shevchenko@gmail.com>
-References: <86dfcd5dfdee8ce5ca558634d4606922f05e96e1.1286705921.git.andy.shevchenko@gmail.com>
-	 <dc990a5f703e69ed428ac2f2479779d36ef1eb3f.1286705921.git.andy.shevchenko@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 10 Oct 2010 12:44:10 +0200
-Message-ID: <1286707450.3547.8.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Sun, 10 Oct 2010 06:55:05 -0400
+Message-ID: <4CB19B1F.9000300@ru.mvista.com>
+Date: Sun, 10 Oct 2010 14:53:19 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Alon Ziv <alon+git@nolaviz.org>
+CC: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] Add Opticon OPN2001 write support
+References: <1286692340-18639-1-git-send-email-alon-git@nolaviz.org> <1286692340-18639-3-git-send-email-alon-git@nolaviz.org>
+In-Reply-To: <1286692340-18639-3-git-send-email-alon-git@nolaviz.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-10 at 13:20 +0300, Andy Shevchenko wrote:
+Hello.
 
->  char *bcm_ether_ntoa(const struct ether_addr *ea, char *buf)
->  {
-> -	static const char template[] = "%02x:%02x:%02x:%02x:%02x:%02x";
-> -	snprintf(buf, 18, template,
-> -		 ea->octet[0] & 0xff, ea->octet[1] & 0xff, ea->octet[2] & 0xff,
-> -		 ea->octet[3] & 0xff, ea->octet[4] & 0xff, ea->octet[5] & 0xff);
-> +	snprintf(buf, 18, "%pM", ea->octet);
+On 10-10-2010 10:32, Alon Ziv wrote:
 
-That's a pretty strange use of snprintf -- just use sprintf if you don't
-have a real buffer length.
+> OPN2001 expects write operations to arrive as a vendor-specific command
+> through the control pipe (instead of using a separate bulk-out pipe).
 
-johannes
+> Signed-off-by: Alon Ziv<alon-git@nolaviz.org>
+> ---
+>   drivers/usb/serial/opticon.c |   30 ++++++++++++++++++++++++++----
+>   1 files changed, 26 insertions(+), 4 deletions(-)
 
+> diff --git a/drivers/usb/serial/opticon.c b/drivers/usb/serial/opticon.c
+> index 9ff19c8..4fe7c3d 100644
+> --- a/drivers/usb/serial/opticon.c
+> +++ b/drivers/usb/serial/opticon.c
+[...]
+> @@ -237,10 +240,29 @@ static int opticon_write(struct tty_struct *tty, struct usb_serial_port *port,
+>
+>   	usb_serial_debug_data(debug,&port->dev, __func__, count, buffer);
+>
+> -	usb_fill_bulk_urb(urb, serial->dev,
+> -			  usb_sndbulkpipe(serial->dev,
+> -					  port->bulk_out_endpointAddress),
+> -			  buffer, count, opticon_write_bulk_callback, priv);
+> +	if (port->bulk_out_endpointAddress) {
+> +		usb_fill_bulk_urb(urb, serial->dev,
+> +				  usb_sndbulkpipe(serial->dev,
+> +						  port->bulk_out_endpointAddress),
+> +				  buffer, count, opticon_write_bulk_callback, priv);
+
+    Please align all follow-up lines uniformly.
+
+> +	} else {
+> +		struct usb_ctrlrequest *dr;
+> +
+> +		dr = kmalloc(sizeof(struct usb_ctrlrequest), GFP_NOIO);
+
+    sizeof(*dr) is a preferred form.
+
+> +		usb_fill_control_urb(urb, serial->dev,
+> +			usb_sndctrlpipe(serial->dev, 0),
+> +			(unsigned char *)dr, buffer, count,
+> +			opticon_write_bulk_callback, priv);
+
+    More tabs needed for alignment, I think...
+
+WBR, Sergei
