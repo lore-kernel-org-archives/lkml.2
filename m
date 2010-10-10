@@ -1,161 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757427Ab0JJRA2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 13:00:28 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:44743 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751813Ab0JJRA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 13:00:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=L2+ZAk8JQOS7RXUFO22J8vmesCJ8/Xra9+JTfSv4OwCrNs19XWLzxQSVVjWGhRlkl4
-         ZCgiOP9d8PkCx2kVlPAtjDZNmpdHMgNocwRu4fjm8eq7wfKsnOXGJ3AvIa5YjAft982P
-         EO76Zs7BlX4DKRYykq6SBSMlofTwnmDLJwXDg=
-Message-ID: <4CB1EAAE.8010002@gmail.com>
-Date: Sun, 10 Oct 2010 18:32:46 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1755951Ab0JJRCE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 13:02:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58269 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756199Ab0JJRCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 13:02:03 -0400
+Date: Sun, 10 Oct 2010 18:01:51 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+        Andi Kleen <ak@linux.intel.com>,
+        device-mapper development <dm-devel@redhat.com>, pedrib@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: DM-CRYPT: Scale to multiple CPUs v3
+Message-ID: <20101010170151.GD28828@agk-dp.fab.redhat.com>
+Mail-Followup-To: Milan Broz <mbroz@redhat.com>,
+	Andi Kleen <andi@firstfloor.org>, Mike Snitzer <snitzer@redhat.com>,
+	Andi Kleen <ak@linux.intel.com>,
+	device-mapper development <dm-devel@redhat.com>, pedrib@gmail.com,
+	linux-kernel@vger.kernel.org
+References: <20101010115941.GA8539@basil.fritz.box> <4CB1B3B9.4030205@redhat.com> <20101010130842.GE8256@basil.fritz.box> <4CB1DD1A.5080906@redhat.com> <20101010162257.GA1272@redhat.com>
 MIME-Version: 1.0
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-CC: Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: [PATCH 10/16] pramfs: xip operations
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101010162257.GA1272@redhat.com>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marco Stornelli <marco.stornelli@gmail.com>
-
-XIP operations.
-
-Signed-off-by: Marco Stornelli <marco.stornelli@gmail.com>
----
-diff -Nurp linux-2.6.36-orig/fs/pramfs/xip.c linux-2.6.36/fs/pramfs/xip.c
---- linux-2.6.36-orig/fs/pramfs/xip.c	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.36/fs/pramfs/xip.c	2010-09-14 18:49:52.000000000 +0200
-@@ -0,0 +1,90 @@
-+/*
-+ * FILE NAME fs/pramfs/xip.c
-+ *
-+ * BRIEF DESCRIPTION
-+ *
-+ * XIP operations.
-+ *
-+ * Copyright 2009-2010 Marco Stornelli <marco.stornelli@gmail.com>
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#include <linux/mm.h>
-+#include <linux/fs.h>
-+#include <linux/genhd.h>
-+#include <linux/buffer_head.h>
-+#include "pram.h"
-+#include "xip.h"
-+
-+static int pram_find_and_alloc_blocks(struct inode *inode, sector_t iblock,
-+				     sector_t *data_block, int create)
-+{
-+	int err = -EIO;
-+	u64 block;
-+
-+	mutex_lock(&PRAM_I(inode)->truncate_lock);
-+
-+	block = pram_find_data_block(inode, iblock);
-+
-+	if (!block) {
-+		if (!create) {
-+			err = -ENODATA;
-+			goto err;
-+		}
-+
-+		err = pram_alloc_blocks(inode, iblock, 1);
-+		if (err)
-+			goto err;
-+
-+		block = pram_find_data_block(inode, iblock);
-+		if (!block) {
-+			err = -ENODATA;
-+			goto err;
-+		}
-+	}
-+
-+	*data_block = block;
-+	err = 0;
-+
-+ err:
-+	mutex_unlock(&PRAM_I(inode)->truncate_lock);
-+	return err;
-+}
-+
-+
-+static int __pram_get_block(struct inode *inode, pgoff_t pgoff, int create,
-+		   sector_t *result)
-+{
-+	int rc = 0;
-+	sector_t iblock;
-+
-+	/* find starting block number to access */
-+	iblock = (sector_t)pgoff << (PAGE_CACHE_SHIFT - inode->i_blkbits);
-+
-+	rc = pram_find_and_alloc_blocks(inode, iblock, result, create);
-+
-+	if (rc == -ENODATA)
-+		BUG_ON(create);
-+
-+	return rc;
-+}
-+
-+int pram_get_xip_mem(struct address_space *mapping, pgoff_t pgoff, int create,
-+				void **kmem, unsigned long *pfn)
-+{
-+	int rc;
-+	sector_t block;
-+
-+	/* first, retrieve the block */
-+	rc = __pram_get_block(mapping->host, pgoff, create, &block);
-+	if (rc)
-+		goto exit;
-+
-+	*kmem = pram_get_block(mapping->host->i_sb, block);
-+	*pfn = page_to_pfn(virt_to_page((unsigned long)*kmem));
-+
-+exit:
-+	return rc;
-+}
-diff -Nurp linux-2.6.36-orig/fs/pramfs/xip.h linux-2.6.36/fs/pramfs/xip.h
---- linux-2.6.36-orig/fs/pramfs/xip.h	1970-01-01 01:00:00.000000000 +0100
-+++ linux-2.6.36/fs/pramfs/xip.h	2010-09-14 18:49:52.000000000 +0200
-@@ -0,0 +1,24 @@
-+/*
-+ * FILE NAME fs/pramfs/xip.h
-+ *
-+ * BRIEF DESCRIPTION
-+ *
-+ * XIP operations.
-+ *
-+ * Copyright 2009-2010 Marco Stornelli <marco.stornelli@gmail.com>
-+ * This file is licensed under the terms of the GNU General Public
-+ * License version 2. This program is licensed "as is" without any
-+ * warranty of any kind, whether express or implied.
-+ */
-+
-+#ifdef CONFIG_PRAMFS_XIP
-+
-+int pram_get_xip_mem(struct address_space *, pgoff_t, int, void **,
-+							      unsigned long *);
-+
-+#else
-+
-+#define pram_get_xip_mem NULL
-+
-+#endif
-+
+On Sun, Oct 10, 2010 at 12:22:57PM -0400, Mike Snitzer wrote:
+> this out quite yet.  You have 4 patches yet you say conceptually there
+> are 2 distinct changes.
  
+IOW should we end up with 2 bisectable patches here?
+
+And the potentially-broken/poorly-performing stacked async should be
+explained in comments inline perhaps if we're choosing to ignore this
+apparent regression.
+
+Alasdair
+
