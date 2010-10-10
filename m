@@ -1,64 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753006Ab0JJONO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 10:13:14 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51725 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751854Ab0JJONN (ORCPT
+	id S1752986Ab0JJOY1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 10:24:27 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:33515 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751546Ab0JJOYZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 10:13:13 -0400
-Date: Sun, 10 Oct 2010 16:13:11 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
-Message-ID: <20101010141311.GB26728@basil.fritz.box>
-References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
- <1286606987-19879-5-git-send-email-ying.huang@intel.com>
- <20101010150713.3cd3eed2@lxorguk.ukuu.org.uk>
+	Sun, 10 Oct 2010 10:24:25 -0400
+From: "Pedanekar, Hemant" <hemantp@ti.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Felipe Contreras <felipe.contreras@gmail.com>
+CC: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Hannemann <arnd@arndnet.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        =?iso-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Date: Sun, 10 Oct 2010 19:53:51 +0530
+Subject: RE: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Thread-Topic: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Thread-Index: Actn0WyR7C/8HV0QTbmKWHC9OS0+iAAtAogQ
+Message-ID: <2A3DCF3DA181AD40BDE86A3150B27B6B0356711C7F@dbde02.ent.ti.com>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+ <20101009135210.GA25564@n2100.arm.linux.org.uk>
+ <AANLkTi=Sv35ipSGzSoJMjdoNU-Qee9csviPL3yMSM3uf@mail.gmail.com>
+ <20101009164517.GA28183@n2100.arm.linux.org.uk>
+In-Reply-To: <20101009164517.GA28183@n2100.arm.linux.org.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101010150713.3cd3eed2@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 03:07:13PM +0100, Alan Cox wrote:
-> On Sat,  9 Oct 2010 14:49:46 +0800
-> Huang Ying <ying.huang@intel.com> wrote:
+Russell King - ARM Linux wrote on Saturday, October 09, 2010 10:15 PM:
+
+> On Sat, Oct 09, 2010 at 07:07:01PM +0300, Felipe Contreras wrote:
+>> On Sat, Oct 9, 2010 at 4:52 PM, Russell King - ARM Linux
+>> <linux@arm.linux.org.uk> wrote:
+>>> On Thu, Oct 07, 2010 at 12:44:22PM +0300, Felipe Contreras wrote:
+>>>> For issues related to this:
+>>>> http://article.gmane.org/gmane.linux.ports.arm.kernel/84454
+>>> 
+>>> This one nicely shows some of the problems which can occur with the
+>>> memory type attributes - and this is not attributable to ioremap().
+>>> 
+>>> ioremap() is used to map devices.  It creates device memory type mappings.
+>>> If what you're mapping doesn't support device memory type mappings, then
+>>> accesses via an ioremap()'d region isn't going to work - as this guy is
+>>> observing. 
+>>> 
+>>> That's not because ioremap() is doing something wrong. It's doing what
+>>> it's meant to do.  The use is wrong, and is completely unrelated to the
+>>> issue you've raised.
+>> 
+>> Ok, I was confused by Catalin's comment which does point to ioremap() on
+>> normal RAM: http://article.gmane.org/gmane.linux.ports.arm.kernel/84504
 > 
-> > In general, unknown NMI is used by hardware and firmware to notify
-> > fatal hardware errors to OS. So the Linux should treat unknown NMI as
-> > hardware error and go panic upon unknown NMI for better error
-> > containment.
+> Me too - it doesn't appear to relate to the specified problem.  You
+> don't want to map RAM as device nor strongly ordered, and we still
+> don't know what this "MMR" is.
 > 
-> Not entirely true. Older machines use NMI for all sorts of interesting
-> purposes. In particular many 486 laptops trigger NMI as part of power
-> manaagement, (Hence the choice of the dazed and confused message)
 
-In general, on any post stone age x86 system, ...
+Just to add, the issue I faced was a different issue and more to do with
+specific access requirement for particular memory mapped region and what memory
+types could be used for defining mappings of the region (or passed as ioremap
+parameter). To summarize, I needed to use type=MT_STRONGLY_ORDERED to make access
+to the peripheral registers work, which, unfortunately is not available in the
+kernel.
 
-> > These systems are identified via the presentation of APEI HEST or
-> > some PCI ID of the host bridge. The PCI ID of host bridge instead of
-> > DMI ID is used, so that the checking can be done based on the platform
-> > type instead of motherboard. This should be simpler and sufficient.
-> > 
-> > The method to identify the platforms is designed by Andi Kleen.
-> 
-> Why not make the new flag also a boot option so you can force it on for
-> platforms where we don't auto whitelist it.
+(BTW, I had referred MMR as memory mapped registers of the concerned peripheral.)
 
-You can already set it at run time using sysctl.
+-
+Hemant
 
-echo 1 > /proc/sys/kernel/panic_on_unrecovered_nmi
-echo 1 > /proc/sys/kernel/panic_on_io_nmi
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
