@@ -1,211 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab0JJBHh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 9 Oct 2010 21:07:37 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:44180 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753091Ab0JJBHf (ORCPT
+	id S1760686Ab0JJBK1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 9 Oct 2010 21:10:27 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:36770 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757439Ab0JJBKZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 9 Oct 2010 21:07:35 -0400
-From: James Hogan <james@albanarts.com>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH v2 2/2] pm_trace: Add sysfs attr for rechecking dev hash.
-Date: Sun, 10 Oct 2010 02:06:39 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-custom+; KDE/4.4.5; x86_64; ; )
-Cc: linux-doc@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        Randy Dunlap <rdunlap@xenotime.net>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        markgross <markgross@thegnar.org>, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Greg Kroah-Hartman" <gregkh@suse.de>
-References: <201010100202.01605.james@albanarts.com>
-In-Reply-To: <201010100202.01605.james@albanarts.com>
+	Sat, 9 Oct 2010 21:10:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=nXuK4X1CNq89wd+ODqe6k2jQiJrlrUaaZ8hDLS5yCXjc1+b5UXILPuFs8t4XS7oAYQ
+         fpVSm4Kx2T2IKQbMZEZg==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010100206.39777.james@albanarts.com>
+In-Reply-To: <AANLkTikz8=H9=O2RR9J0=rHm7pcwabnMupKfiSfGnt1k@mail.gmail.com>
+References: <AANLkTikkv4htP1f=KFwSaa8=K6LicDN0eusXctow-Efb@mail.gmail.com>
+ <20101006.003541.71128466.davem@davemloft.net> <AANLkTikx+GadeYfg5rZNxsEig-0Af97ER7V94fjaVc+U@mail.gmail.com>
+ <AANLkTimF7piLEy7BUP4-BnmiiGT4NimZw0gE+kmYQd-c@mail.gmail.com> <AANLkTikz8=H9=O2RR9J0=rHm7pcwabnMupKfiSfGnt1k@mail.gmail.com>
+From: =?UTF-8?B?Q2h1bmctWWloIFdhbmcgKOeOi+W0h+aHvyk=?= 
+	<cywang@google.com>
+Date: Sat, 9 Oct 2010 18:10:01 -0700
+Message-ID: <AANLkTikemrEFhgWNSf0wzW2C-yeC3_0qLrE6sW8wqyja@mail.gmail.com>
+Subject: Re: [PATCH] net: Fix sk_dst_check() to reset the obsolete dst_entry
+ of a socket.
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, timo.teras@iki.fi
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the device which fails to resume is part of a loadable kernel module
-it won't be checked at startup against the magic number stored in the
-RTC.
+After I gave it a try, that patch worked. Please ignore my patch then. Thanks!
 
-Add a read-only sysfs attribute /sys/power/pm_trace_dev_match which
-contains a list of newline separated devices (usually just the one)
-which currently match the last magic number. This allows the device
-which is failing to resume to be found after the modules are loaded
-again.
-
-Signed-off-by: James Hogan <james@albanarts.com>
----
- Documentation/ABI/testing/sysfs-power |   29 +++++++++++++++++++++++++++++
- Documentation/power/s2ram.txt         |    7 +++++++
- drivers/base/power/trace.c            |   31 +++++++++++++++++++++++++++++++
- include/linux/resume-trace.h          |    2 ++
- kernel/power/main.c                   |   18 ++++++++++++++++++
- 5 files changed, 87 insertions(+), 0 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-power b/Documentation/ABI/testing/sysfs-power
-index 2875f1f..194ca44 100644
---- a/Documentation/ABI/testing/sysfs-power
-+++ b/Documentation/ABI/testing/sysfs-power
-@@ -99,9 +99,38 @@ Description:
- 
- 		dmesg -s 1000000 | grep 'hash matches'
- 
-+		If you do not get any matches (or they appear to be false
-+		positives), it is possible that the last PM event point
-+		referred to a device created by a loadable kernel module.  In
-+		this case cat /sys/power/pm_trace_dev_match (see below) after
-+		your system is started up and the kernel modules are loaded.
-+
- 		CAUTION: Using it will cause your machine's real-time (CMOS)
- 		clock to be set to a random invalid time after a resume.
- 
-+What;		/sys/power/pm_trace_dev_match
-+Date:		October 2010
-+Contact:	James Hogan <james@albanarts.com>
-+Description:
-+		The /sys/power/pm_trace_dev_match file contains the name of the
-+		device associated with the last PM event point saved in the RTC
-+		across reboots when pm_trace has been used.  More precisely it
-+		contains the list of current devices (including those
-+		registered by loadable kernel modules since boot) which match
-+		the device hash in the RTC at boot, with a newline after each
-+		one.
-+
-+		The advantage of this file over the hash matches printed to the
-+		kernel log (see /sys/power/pm_trace), is that it includes
-+		devices created after boot by loadable kernel modules.
-+
-+		Due to the small hash size necessary to fit in the RTC, it is
-+		possible that more than one device matches the hash, in which
-+		case further investigation is required to determine which
-+		device is causing the problem.  Note that genuine RTC clock
-+		values (such as when pm_trace has not been used), can still
-+		match a device and output it's name here.
-+
- What:		/sys/power/pm_async
- Date:		January 2009
- Contact:	Rafael J. Wysocki <rjw@sisk.pl>
-diff --git a/Documentation/power/s2ram.txt b/Documentation/power/s2ram.txt
-index 514b94f..1bdfa04 100644
---- a/Documentation/power/s2ram.txt
-+++ b/Documentation/power/s2ram.txt
-@@ -49,6 +49,13 @@ machine that doesn't boot) is:
-    device (lspci and /sys/devices/pci* is your friend), and see if you can
-    fix it, disable it, or trace into its resume function.
- 
-+   If no device matches the hash (or any matches appear to be false positives),
-+   the culprit may be a device from a loadable kernel module that is not loaded
-+   until after the hash is checked. You can check the hash against the current
-+   devices again after more modules are loaded using sysfs:
-+
-+	cat /sys/power/pm_trace_dev_match
-+
- For example, the above happens to be the VGA device on my EVO, which I
- used to run with "radeonfb" (it's an ATI Radeon mobility). It turns out
- that "radeonfb" simply cannot resume that device - it tries to set the
-diff --git a/drivers/base/power/trace.c b/drivers/base/power/trace.c
-index 17e24e3..9f4258d 100644
---- a/drivers/base/power/trace.c
-+++ b/drivers/base/power/trace.c
-@@ -207,6 +207,37 @@ static int show_dev_hash(unsigned int value)
- 
- static unsigned int hash_value_early_read;
- 
-+int show_trace_dev_match(char *buf, size_t size)
-+{
-+	unsigned int value = hash_value_early_read / (USERHASH * FILEHASH);
-+	int ret = 0;
-+	struct list_head *entry;
-+
-+	/*
-+	 * It's possible that multiple devices will match the hash and we can't
-+	 * tell which is the culprit, so it's best to output them all.
-+	 */
-+	device_pm_lock();
-+	entry = dpm_list.prev;
-+	while (size && entry != &dpm_list) {
-+		struct device *dev = to_device(entry);
-+		unsigned int hash = hash_string(DEVSEED, dev_name(dev),
-+						DEVHASH);
-+		if (hash == value) {
-+			int len = snprintf(buf, size, "%s\n",
-+					    dev_driver_string(dev));
-+			if (len > size)
-+				len = size;
-+			buf += len;
-+			ret += len;
-+			size -= len;
-+		}
-+		entry = entry->prev;
-+	}
-+	device_pm_unlock();
-+	return ret;
-+}
-+
- static int early_resume_init(void)
- {
- 	hash_value_early_read = read_magic_time();
-diff --git a/include/linux/resume-trace.h b/include/linux/resume-trace.h
-index bc8c388..f31db23 100644
---- a/include/linux/resume-trace.h
-+++ b/include/linux/resume-trace.h
-@@ -3,6 +3,7 @@
- 
- #ifdef CONFIG_PM_TRACE
- #include <asm/resume-trace.h>
-+#include <linux/types.h>
- 
- extern int pm_trace_enabled;
- 
-@@ -14,6 +15,7 @@ static inline int pm_trace_is_enabled(void)
- struct device;
- extern void set_trace_device(struct device *);
- extern void generate_resume_trace(const void *tracedata, unsigned int user);
-+extern int show_trace_dev_match(char *buf, size_t size);
- 
- #define TRACE_DEVICE(dev) do { \
- 	if (pm_trace_enabled) \
-diff --git a/kernel/power/main.c b/kernel/power/main.c
-index 62b0bc6..1a357b3 100644
---- a/kernel/power/main.c
-+++ b/kernel/power/main.c
-@@ -281,12 +281,30 @@ pm_trace_store(struct kobject *kobj, struct kobj_attribute *attr,
- }
- 
- power_attr(pm_trace);
-+
-+static ssize_t pm_trace_dev_match_show(struct kobject *kobj,
-+				       struct kobj_attribute *attr,
-+				       char *buf)
-+{
-+	return show_trace_dev_match(buf, PAGE_SIZE);
-+}
-+
-+static ssize_t
-+pm_trace_dev_match_store(struct kobject *kobj, struct kobj_attribute *attr,
-+			 const char *buf, size_t n)
-+{
-+	return -EINVAL;
-+}
-+
-+power_attr(pm_trace_dev_match);
-+
- #endif /* CONFIG_PM_TRACE */
- 
- static struct attribute * g[] = {
- 	&state_attr.attr,
- #ifdef CONFIG_PM_TRACE
- 	&pm_trace_attr.attr,
-+	&pm_trace_dev_match_attr.attr,
- #endif
- #ifdef CONFIG_PM_SLEEP
- 	&pm_async_attr.attr,
--- 
-1.7.2.3
-
+On Thu, Oct 7, 2010 at 12:37 PM, Chung-Yih Wang (王崇懿) <cywang@google.com> wrote:
+> As I am testing the l2tp/ipsec client(it is working fine on 2.6.32 but
+> failed on 2.6.35 with the same client). Please see the following log
+> dump for sk_dst_check().
+>
+> <2>[  201.390289] ==== sk_dst_check sk=C7485800 dst=C717AC60
+> obsolete=FFFFFFFF cookie=0 check=C0296510
+> <2>[  211.247467] ==== sk_dst_check sk=C7485000 dst=C717AC60
+> obsolete=FFFFFFFF cookie=0 check=C0296510
+>
+> [Basically, the ipsec tunnel is built and then free the dst_entry for
+> this l2tp socket. Therefore, the obsolete entry should be reset in
+> sk_dst_check(). However, the kernel 2.6.35 will do nothing here since
+> the ipv4_dst_check still return the obsolete entry even if it is
+> obsolete(dst->obsolete=2)]
+>
+> <2>[  216.571350] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <6>[  218.069396] alg: No test for authenc(hmac(sha1),cbc(des3_ede))
+> (authenc(hmac(sha1-generic),cbc(des3_ede-generic)))
+> <6>[  218.164764] batt:  96%, 4114 mV, 0 mA (-6 avg), 27.2 C, 1305 mAh
+> <2>[  218.575561] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  220.580535] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  222.585754] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  224.591522] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  226.599212] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  228.602600] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  230.608062] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  232.613464] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  234.618896] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  236.623504] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  238.628936] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  240.634338] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  242.639709] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  244.645111] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  246.648864] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  248.654693] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  250.660125] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+> <2>[  252.665527] ==== sk_dst_check sk=C7485400 dst=C6F670E0
+> obsolete=00000002 cookie=0 check=C0296510
+>
