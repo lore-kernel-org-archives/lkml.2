@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757562Ab0JJMhO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 08:37:14 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:56838 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754429Ab0JJMhL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 08:37:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=m1s4vtZeJLa1m6+LkD9XzBqXgU85Ea610PRyXZdPupmv0ZQylZXBZWb8vN14uC0Ohz
-         /eKFOVTbLkLZE7aWug0ZZCjGafNLlAg57fkchBVHfVrpmgBR5gtEdTc7U+ggcJyq9XU9
-         Gpam/gdri4reaFYeVUqpv8Tk96SDSIUm6t1PY=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Andreas Dilger <adilger.kernel@dilger.ca>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] ext3: Cleanup ext3_setup_super()
-Date: Sun, 10 Oct 2010 21:36:59 +0900
-Message-Id: <1286714219-3183-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757557Ab0JJMid (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 08:38:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34423 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754429Ab0JJMic (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 08:38:32 -0400
+Message-ID: <4CB1B3B9.4030205@redhat.com>
+Date: Sun, 10 Oct 2010 14:38:17 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
+MIME-Version: 1.0
+To: Andi Kleen <ak@linux.intel.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>, pedrib@gmail.com,
+        linux-kernel@vger.kernel.org, Alasdair G Kergon <agk@redhat.com>,
+        Mike Snitzer <msnitzer@redhat.com>
+Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v3
+References: <20101010115941.GA8539@basil.fritz.box>
+In-Reply-To: <20101010115941.GA8539@basil.fritz.box>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix mount-count check to emit warning only if s_max_mnt_count
-is greater than 0 according to man tune2fs(8). Also removes
-unnecessary casts.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
+On 10/10/2010 01:59 PM, Andi Kleen wrote:
+> DM-CRYPT: Scale to multiple CPUs v3
+> 
+> [Due to popular demand this is a port of the dm-crypt scalability
+> patch to 2.6.36-rc7.  The 2.6.35 and .32 patches were widely used by
+> lots of users with good results. 
+> 
 
-If this looks fine, I'll send the same patches for ext2 and ext4.
-Thanks.
+Hi Andi,
 
- fs/ext3/super.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+please can you check split patches in
+http://mbroz.fedorapeople.org/dm-crypt/2.6.36-devel/
 
-diff --git a/fs/ext3/super.c b/fs/ext3/super.c
-index 5dbf4db..4caeffa 100644
---- a/fs/ext3/super.c
-+++ b/fs/ext3/super.c
-@@ -1306,9 +1306,9 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
- 		ext3_msg(sb, KERN_WARNING,
- 			"warning: mounting fs with errors, "
- 			"running e2fsck is recommended");
--	else if ((__s16) le16_to_cpu(es->s_max_mnt_count) >= 0 &&
-+	else if ((__s16) le16_to_cpu(es->s_max_mnt_count) > 0 &&
- 		 le16_to_cpu(es->s_mnt_count) >=
--		 (unsigned short) (__s16) le16_to_cpu(es->s_max_mnt_count))
-+			le16_to_cpu(es->s_max_mnt_count))
- 		ext3_msg(sb, KERN_WARNING,
- 			"warning: maximal mount count reached, "
- 			"running e2fsck is recommended");
-@@ -1325,7 +1325,7 @@ static int ext3_setup_super(struct super_block *sb, struct ext3_super_block *es,
-                    valid forever! :) */
- 	es->s_state &= cpu_to_le16(~EXT3_VALID_FS);
- #endif
--	if (!(__s16) le16_to_cpu(es->s_max_mnt_count))
-+	if (!le16_to_cpu(es->s_max_mnt_count))
- 		es->s_max_mnt_count = cpu_to_le16(EXT3_DFL_MAX_MNT_COUNT);
- 	le16_add_cpu(&es->s_mnt_count, 1);
- 	es->s_mtime = cpu_to_le32(get_seconds());
--- 
-1.7.0.4
+is there some change in your new version?
 
+Can I send this to dm-devel instead? 
+(It is better for review.)
+
+I know that I fixed some small bug there and these are heavily
+tested by me.
+
+Alasdair, _please_ can you include it in dm-tree?
+I asked you at least 5 times already, my last info is that
+you are planning this for 2.6.37, right?
+
+
+>  static void kcryptd_queue_io(struct dm_crypt_io *io)
+>  {
+> -	struct crypt_config *cc = io->target->private;
+> +	int cpu;
+> +
+> +	/*
+> +	 * Since we only have a single worker per CPU in extreme
+> +	 * cases there might be nesting (dm-crypt on another dm-crypt)
+> +	 * To avoid deadlock run the work directly then.
+> +	 */
+> +	cpu = get_cpu();
+> +	if (per_cpu(io_wq_cpu, cpu) == current && !in_interrupt()) {
+> +		put_cpu();
+> +		kcryptd_io(&io->work);
+> +		return;
+> +	}
+
+This is only place where I see problem - if running in crypto async mode,
+callback is called in interrupt mode (please correct me if I am wrong).
+
+So with async crypto and nested dm-crypt mapping this deadlock
+prevention doesn't work - so is there still possibility of deadlock?
+
+(I think we can ignore it for now, I tried create some "real world" deadlocky
+mappings some time ago and was not able to catch it even on high memory pressure.)
+
+Milan
