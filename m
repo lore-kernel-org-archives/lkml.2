@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754961Ab0JKSyL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 14:54:11 -0400
-Received: from relay02.digicable.hu ([92.249.128.188]:57929 "EHLO
-	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab0JKSyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 14:54:10 -0400
-Message-ID: <4CB35D4C.9000406@freemail.hu>
-Date: Mon, 11 Oct 2010 20:54:04 +0200
-From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	id S1754930Ab0JKS6Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 14:58:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50668 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751930Ab0JKS6Q (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Mon, 11 Oct 2010 14:58:16 -0400
+Date: Mon, 11 Oct 2010 14:55:52 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        =?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
+        linux-kernel@vger.kernel.org, Becky Bruce <beckyb@kernel.crashing.org>
+Subject: Re: [PATCH] swiotlb: Use page alignment for early buffer allocation
+Message-ID: <20101011185552.GA29540@dumpdata.com>
+References: <4CB34C09.2060100@kernel.org>
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Oliver Neukum <oliver@neukum.org>, Joe Perches <joe@perches.com>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: don't trust report_size for buffer size
-References: <20101011182816.GA15451@outflux.net>
-In-Reply-To: <20101011182816.GA15451@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Original: 77.234.64.233
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB34C09.2060100@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook wrote:
-> If the iowarrior devices in this case statement support more than 8 bytes
-> per report, it is possible to write past the end of a kernel heap allocation.
-> This will probably never be possible, but change the allocation to be more
-> defensive anyway.
-
-I think this might be triggered from user space, indeed. The iowarrior_class.fops->write
-points directly to the function iowarrior_write(). The iowarrior_class itself
-is passed to the function usb_register_dev(), which means that the write() system
-call to the character device will result in calling the iowarrior_write() function.
-
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Acked-by: Márton Németh <nm127@freemail.hu>
-
-There might be similar problem also in the case USB_DEVICE_ID_CODEMERCS_IOW56. There
-is buf is allocated with usb_alloc_coherent() to the size dev->report_size. However,
-some lines later the copy_from_user() function tries to copy "count" number of
-bytes to the dev->report_size allocated buffer. Unfortunately I don't have such
-devices to try the driver so these are just coming from "static analysis".
-
-> ---
->  drivers/usb/misc/iowarrior.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+On Mon, Oct 11, 2010 at 10:40:25AM -0700, Yinghai Lu wrote:
 > 
-> diff --git a/drivers/usb/misc/iowarrior.c b/drivers/usb/misc/iowarrior.c
-> index bc88c79..8ed8d05 100644
-> --- a/drivers/usb/misc/iowarrior.c
-> +++ b/drivers/usb/misc/iowarrior.c
-> @@ -374,7 +374,7 @@ static ssize_t iowarrior_write(struct file *file,
->  	case USB_DEVICE_ID_CODEMERCS_IOWPV2:
->  	case USB_DEVICE_ID_CODEMERCS_IOW40:
->  		/* IOW24 and IOW40 use a synchronous call */
-> -		buf = kmalloc(8, GFP_KERNEL);	/* 8 bytes are enough for both products */
-> +		buf = kmalloc(count, GFP_KERNEL);
->  		if (!buf) {
->  			retval = -ENOMEM;
->  			goto exit;
+> We could call free_bootmem_late() if swiotlb is not used, and
+> it will shrink to page alignment.
+> 
+> So alloc them with page alignment at first, to avoid lose two pages
 
+Looks good to me. Fujita, you OK if I queue this up along with your
+other patch (swiotlb: make io_tlb_overflow static)
+
+> 
+> before patch:
+> [    0.000000]     memblock_x86_reserve_range: [00d3600000, 00d7600000]   swiotlb buffer
+> [    0.000000]     memblock_x86_reserve_range: [00d7e7ef40, 00d7e9ef40]     swiotlb list
+> [    0.000000]     memblock_x86_reserve_range: [00d7e3ef40, 00d7e7ef40]  swiotlb orig_ad
+> [    0.000000]     memblock_x86_reserve_range: [000008a000, 0000092000]  swiotlb overflo
+> 
+> after patch will get
+> [    0.000000]     memblock_x86_reserve_range: [00d3600000, 00d7600000]   swiotlb buffer
+> [    0.000000]     memblock_x86_reserve_range: [00d7e7e000, 00d7e9e000]     swiotlb list
+> [    0.000000]     memblock_x86_reserve_range: [00d7e3e000, 00d7e7e000]  swiotlb orig_ad
+> [    0.000000]     memblock_x86_reserve_range: [000008a000, 0000092000]  swiotlb overflo
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> Cc: Becky Bruce <beckyb@kernel.crashing.org>
+> 
+> ---
+>  lib/swiotlb.c |   16 ++++++++--------
+>  1 file changed, 8 insertions(+), 8 deletions(-)
+> 
+> Index: linux-2.6/lib/swiotlb.c
+> ===================================================================
+> --- linux-2.6.orig/lib/swiotlb.c
+> +++ linux-2.6/lib/swiotlb.c
+> @@ -147,16 +147,16 @@ void __init swiotlb_init_with_tbl(char *
+>  	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+>  	 * between io_tlb_start and io_tlb_end.
+>  	 */
+> -	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
+> +	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+>  	for (i = 0; i < io_tlb_nslabs; i++)
+>   		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
+>  	io_tlb_index = 0;
+> -	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
+> +	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+>  
+>  	/*
+>  	 * Get the overflow emergency buffer
+>  	 */
+> -	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
+> +	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+>  	if (!io_tlb_overflow_buffer)
+>  		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+>  	if (verbose)
+> @@ -182,7 +182,7 @@ swiotlb_init_with_default_size(size_t de
+>  	/*
+>  	 * Get IO TLB memory from the low pages
+>  	 */
+> -	io_tlb_start = alloc_bootmem_low_pages(bytes);
+> +	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+>  	if (!io_tlb_start)
+>  		panic("Cannot allocate SWIOTLB buffer");
+>  
+> @@ -308,13 +308,13 @@ void __init swiotlb_free(void)
+>  			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+>  	} else {
+>  		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+> -				  io_tlb_overflow);
+> +				  PAGE_ALIGN(io_tlb_overflow));
+>  		free_bootmem_late(__pa(io_tlb_orig_addr),
+> -				  io_tlb_nslabs * sizeof(phys_addr_t));
+> +				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+>  		free_bootmem_late(__pa(io_tlb_list),
+> -				  io_tlb_nslabs * sizeof(int));
+> +				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+>  		free_bootmem_late(__pa(io_tlb_start),
+> -				  io_tlb_nslabs << IO_TLB_SHIFT);
+> +				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+>  	}
+>  }
+>  
