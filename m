@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab0JKJFn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 05:05:43 -0400
-Received: from mgw-sa02.ext.nokia.com ([147.243.1.48]:40748 "EHLO
+	id S1754031Ab0JKJFu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 05:05:50 -0400
+Received: from mgw-sa02.ext.nokia.com ([147.243.1.48]:41304 "EHLO
 	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753129Ab0JKJFR (ORCPT
+	with ESMTP id S1753129Ab0JKJFp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 05:05:17 -0400
+	Mon, 11 Oct 2010 05:05:45 -0400
 From: Carlos Chinea <carlos.chinea@nokia.com>
 To: linux-kernel@vger.kernel.org
-Cc: linux-omap@vger.kernel.org
-Subject: [RFC PATCHv3 1/7] HSI: Introducing HSI framework
-Date: Mon, 11 Oct 2010 12:06:22 +0300
-Message-Id: <1286787988-29013-2-git-send-email-carlos.chinea@nokia.com>
+Cc: linux-omap@vger.kernel.org, Andras Domokos <andras.domokos@nokia.com>
+Subject: [RFC PATCHv3 4/7] HSI CHAR: Add HSI char device driver
+Date: Mon, 11 Oct 2010 12:06:25 +0300
+Message-Id: <1286787988-29013-5-git-send-email-carlos.chinea@nokia.com>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1286787988-29013-1-git-send-email-carlos.chinea@nokia.com>
 References: <1286787988-29013-1-git-send-email-carlos.chinea@nokia.com>
@@ -21,98 +21,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adds HSI framework in to the linux kernel.
+From: Andras Domokos <andras.domokos@nokia.com>
 
-High Speed Synchronous Serial Interface (HSI) is a
-serial interface mainly used for connecting application
-engines (APE) with cellular modem engines (CMT) in cellular
-handsets.
+Add HSI char device driver to the kernel.
 
-HSI provides multiplexing for up to 16 logical channels,
-low-latency and full duplex communication.
-
+Signed-off-by: Andras Domokos <andras.domokos@nokia.com>
 Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
 ---
- drivers/Kconfig         |    2 +
- drivers/Makefile        |    1 +
- drivers/hsi/Kconfig     |   13 ++
- drivers/hsi/Makefile    |    4 +
- drivers/hsi/hsi.c       |  516 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/hsi/hsi.h |  376 ++++++++++++++++++++++++++++++++++
- 6 files changed, 912 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hsi/Kconfig
- create mode 100644 drivers/hsi/Makefile
- create mode 100644 drivers/hsi/hsi.c
- create mode 100644 include/linux/hsi/hsi.h
+ drivers/hsi/clients/hsi_char.c | 1090 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/hsi/hsi_char.h   |   66 +++
+ 2 files changed, 1156 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hsi/clients/hsi_char.c
+ create mode 100644 include/linux/hsi/hsi_char.h
 
-diff --git a/drivers/Kconfig b/drivers/Kconfig
-index a2b902f..4fe39f9 100644
---- a/drivers/Kconfig
-+++ b/drivers/Kconfig
-@@ -50,6 +50,8 @@ source "drivers/i2c/Kconfig"
- 
- source "drivers/spi/Kconfig"
- 
-+source "drivers/hsi/Kconfig"
-+
- source "drivers/pps/Kconfig"
- 
- source "drivers/gpio/Kconfig"
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 63e3aa9..6c6922a 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -47,6 +47,7 @@ obj-$(CONFIG_SCSI)		+= scsi/
- obj-$(CONFIG_ATA)		+= ata/
- obj-$(CONFIG_MTD)		+= mtd/
- obj-$(CONFIG_SPI)		+= spi/
-+obj-$(CONFIG_HSI)		+= hsi/
- obj-y				+= net/
- obj-$(CONFIG_ATM)		+= atm/
- obj-$(CONFIG_FUSION)		+= message/
-diff --git a/drivers/hsi/Kconfig b/drivers/hsi/Kconfig
+diff --git a/drivers/hsi/clients/hsi_char.c b/drivers/hsi/clients/hsi_char.c
 new file mode 100644
-index 0000000..5af62ce
+index 0000000..2d376a1
 --- /dev/null
-+++ b/drivers/hsi/Kconfig
-@@ -0,0 +1,13 @@
-+#
-+# HSI driver configuration
-+#
-+menuconfig HSI
-+	bool "HSI support"
-+	---help---
-+	  The "High speed synchronous Serial Interface" is
-+	  synchronous serial interface used mainly to connect
-+	  application engines and cellular modems.
-+
-+if HSI
-+
-+endif # HSI
-diff --git a/drivers/hsi/Makefile b/drivers/hsi/Makefile
-new file mode 100644
-index 0000000..b42b6cf
---- /dev/null
-+++ b/drivers/hsi/Makefile
-@@ -0,0 +1,4 @@
-+#
-+# Makefile for HSI
-+#
-+obj-$(CONFIG_HSI)	+= hsi.o
-diff --git a/drivers/hsi/hsi.c b/drivers/hsi/hsi.c
-new file mode 100644
-index 0000000..78f1df4
---- /dev/null
-+++ b/drivers/hsi/hsi.c
-@@ -0,0 +1,516 @@
++++ b/drivers/hsi/clients/hsi_char.c
+@@ -0,0 +1,1090 @@
 +/*
-+ * hsi.c
++ * hsi-char.c
 + *
-+ * HSI core.
++ * HSI character device driver, implements the character device
++ * interface.
 + *
 + * Copyright (C) 2010 Nokia Corporation. All rights reserved.
 + *
-+ * Contact: Carlos Chinea <carlos.chinea@nokia.com>
++ * Contact: Andras Domokos <andras.domokos@nokia.com>
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License
@@ -120,7 +56,7 @@ index 0000000..78f1df4
 + *
 + * This program is distributed in the hope that it will be useful, but
 + * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 + * General Public License for more details.
 + *
 + * You should have received a copy of the GNU General Public License
@@ -128,513 +64,1086 @@ index 0000000..78f1df4
 + * Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA
 + * 02110-1301 USA
 + */
-+#include <linux/hsi/hsi.h>
-+#include <linux/compiler.h>
-+#include <linux/rwsem.h>
++
++#include <linux/errno.h>
++#include <linux/types.h>
++#include <asm/atomic.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/module.h>
 +#include <linux/list.h>
-+#include <linux/spinlock.h>
-+#include <linux/kobject.h>
 +#include <linux/slab.h>
-+#include <linux/string.h>
++#include <linux/poll.h>
++#include <linux/ioctl.h>
++#include <linux/wait.h>
++#include <linux/fs.h>
++#include <linux/sched.h>
++#include <linux/device.h>
++#include <linux/cdev.h>
++#include <linux/uaccess.h>
++#include <linux/scatterlist.h>
++#include <linux/hsi/hsi.h>
++#include <linux/hsi/hsi_char.h>
 +
-+struct hsi_cl_info {
-+	struct list_head	list;
-+	struct hsi_board_info	info;
++#define HSI_CHAR_CHANNELS	8
++#define HSI_CHAR_DEVS		8
++#define HSI_CHAR_MSGS		4
++
++#define HSI_CHST_UNAVAIL	0 /* SBZ! */
++#define HSI_CHST_AVAIL		1
++
++#define HSI_CHST_CLOSED		(0 << 4)
++#define HSI_CHST_CLOSING	(1 << 4)
++#define HSI_CHST_OPENING	(2 << 4)
++#define HSI_CHST_OPENED		(3 << 4)
++
++#define HSI_CHST_READOFF	(0 << 8)
++#define HSI_CHST_READON		(1 << 8)
++#define HSI_CHST_READING	(2 << 8)
++
++#define HSI_CHST_WRITEOFF	(0 << 12)
++#define HSI_CHST_WRITEON	(1 << 12)
++#define HSI_CHST_WRITING	(2 << 12)
++
++#define HSI_CHST_OC_MASK	0xf0
++#define HSI_CHST_RD_MASK	0xf00
++#define HSI_CHST_WR_MASK	0xf000
++
++#define HSI_CHST_OC(c)		((c)->state & HSI_CHST_OC_MASK)
++#define HSI_CHST_RD(c)		((c)->state & HSI_CHST_RD_MASK)
++#define HSI_CHST_WR(c)		((c)->state & HSI_CHST_WR_MASK)
++
++#define HSI_CHST_OC_SET(c, v) \
++	do { \
++		(c)->state &= ~HSI_CHST_OC_MASK; \
++		(c)->state |= v; \
++	} while (0);
++
++#define HSI_CHST_RD_SET(c, v) \
++	do { \
++		(c)->state &= ~HSI_CHST_RD_MASK; \
++		(c)->state |= v; \
++	} while (0);
++
++#define HSI_CHST_WR_SET(c, v) \
++	do { \
++		(c)->state &= ~HSI_CHST_WR_MASK; \
++		(c)->state |= v; \
++	} while (0);
++
++#define HSI_CHAR_POLL_RST	(-1)
++#define HSI_CHAR_POLL_OFF	0
++#define HSI_CHAR_POLL_ON	1
++
++#define HSI_CHAR_RX		0
++#define HSI_CHAR_TX		1
++
++struct hsi_char_channel {
++	unsigned int		ch;
++	unsigned int		state;
++	int			wlrefcnt;
++	int			rxpoll;
++	struct hsi_client	*cl;
++	struct list_head	free_msgs_list;
++	struct list_head	rx_msgs_queue;
++	struct list_head	tx_msgs_queue;
++	int			poll_event;
++	spinlock_t		lock;
++	struct fasync_struct	*async_queue;
++	wait_queue_head_t	rx_wait;
++	wait_queue_head_t	tx_wait;
 +};
 +
-+static LIST_HEAD(hsi_board_list);
-+
-+static struct device_type hsi_ctrl = {
-+	.name	= "hsi_controller",
++struct hsi_char_client_data {
++	atomic_t		refcnt;
++	int			attached;
++	atomic_t		breq;
++	struct hsi_char_channel	channels[HSI_CHAR_DEVS];
 +};
 +
-+static struct device_type hsi_cl = {
-+	.name	= "hsi_client",
-+};
++static unsigned int max_data_size = 0x1000;
++module_param(max_data_size, uint, 1);
++MODULE_PARM_DESC(max_data_size, "max read/write data size [4,8..65536] (^2)");
 +
-+static struct device_type hsi_port = {
-+	.name	= "hsi_port",
-+};
++static int channels_map[HSI_CHAR_DEVS] = {0, -1, -1 , -1, -1, -1, -1, -1};
++module_param_array(channels_map, int, NULL, 0);
++MODULE_PARM_DESC(channels_map, "Array of HSI channels ([0...7]) to be probed");
 +
-+static ssize_t modalias_show(struct device *dev,
-+			struct device_attribute *a __maybe_unused, char *buf)
++static dev_t hsi_char_dev;
++static struct hsi_char_client_data hsi_char_cl_data;
++
++static inline void hsi_char_msg_free(struct hsi_msg *msg)
 +{
-+	return sprintf(buf, "hsi:%s\n", dev_name(dev));
++	msg->complete = NULL;
++	msg->destructor = NULL;
++	kfree(sg_virt(msg->sgt.sgl));
++	hsi_free_msg(msg);
 +}
 +
-+static struct device_attribute hsi_bus_dev_attrs[] = {
-+	__ATTR_RO(modalias),
-+	__ATTR_NULL,
-+};
-+
-+static int hsi_bus_uevent(struct device *dev, struct kobj_uevent_env *env)
++static inline void hsi_char_msgs_free(struct hsi_char_channel *channel)
 +{
-+	add_uevent_var(env, "MODALIAS=hsi:%s", dev_name(dev));
++	struct hsi_msg *msg, *tmp;
 +
-+	return 0;
-+}
-+
-+static int hsi_bus_match(struct device *dev, struct device_driver *driver)
-+{
-+	return strcmp(dev_name(dev), driver->name) == 0;
-+}
-+
-+static struct bus_type hsi_bus_type = {
-+	.name		= "hsi",
-+	.dev_attrs	= hsi_bus_dev_attrs,
-+	.match		= hsi_bus_match,
-+	.uevent		= hsi_bus_uevent,
-+};
-+
-+static void hsi_client_release(struct device *dev)
-+{
-+	kfree(to_hsi_client(dev));
-+}
-+
-+static void hsi_new_client(struct hsi_port *port, struct hsi_board_info *info)
-+{
-+	struct hsi_client *cl;
-+	unsigned long flags;
-+
-+	cl = kzalloc(sizeof(*cl), GFP_KERNEL);
-+	if (!cl)
-+		return;
-+	cl->device.type = &hsi_cl;
-+	cl->tx_cfg = info->tx_cfg;
-+	cl->rx_cfg = info->rx_cfg;
-+	cl->device.bus = &hsi_bus_type;
-+	cl->device.parent = &port->device;
-+	cl->device.release = hsi_client_release;
-+	dev_set_name(&cl->device, info->name);
-+	cl->device.platform_data = info->platform_data;
-+	spin_lock_irqsave(&port->clock, flags);
-+	list_add_tail(&cl->link, &port->clients);
-+	spin_unlock_irqrestore(&port->clock, flags);
-+	if (info->archdata)
-+		cl->device.archdata = *info->archdata;
-+	if (device_register(&cl->device) < 0) {
-+		pr_err("hsi: failed to register client: %s\n", info->name);
-+		kfree(cl);
++	list_for_each_entry_safe(msg, tmp, &channel->free_msgs_list, link) {
++		list_del(&msg->link);
++		hsi_char_msg_free(msg);
++	}
++	list_for_each_entry_safe(msg, tmp, &channel->rx_msgs_queue, link) {
++		list_del(&msg->link);
++		hsi_char_msg_free(msg);
++	}
++	list_for_each_entry_safe(msg, tmp, &channel->tx_msgs_queue, link) {
++		list_del(&msg->link);
++		hsi_char_msg_free(msg);
 +	}
 +}
 +
-+/**
-+ * hsi_register_board_info - Register HSI clients information
-+ * @info: Array of HSI clients on the board
-+ * @len: Length of the array
-+ *
-+ * HSI clients are statically declared and registered on board files.
-+ *
-+ * HSI clients will be automatically registered to the HSI bus once the
-+ * controller and the port where the clients wishes to attach are registered
-+ * to it.
-+ *
-+ * Return -errno on failure, 0 on success.
-+ */
-+int __init hsi_register_board_info(struct hsi_board_info const *info,
-+							unsigned int len)
-+{
-+	struct hsi_cl_info *cl_info;
-+
-+	cl_info = kzalloc(sizeof(*cl_info) * len, GFP_KERNEL);
-+	if (!cl_info)
-+		return -ENOMEM;
-+
-+	for (; len; len--, info++, cl_info++) {
-+		cl_info->info = *info;
-+		list_add_tail(&cl_info->list, &hsi_board_list);
-+	}
-+
-+	return 0;
-+}
-+
-+static void hsi_scan_board_info(struct hsi_controller *hsi)
-+{
-+	struct hsi_cl_info *cl_info;
-+	struct hsi_port	*p;
-+
-+	list_for_each_entry(cl_info, &hsi_board_list, list)
-+		if (cl_info->info.hsi_id == hsi->id) {
-+			p = hsi_find_port_num(hsi, cl_info->info.port);
-+			if (!p)
-+				continue;
-+			hsi_new_client(p, &cl_info->info);
-+		}
-+}
-+
-+static int hsi_remove_client(struct device *dev, void *data __maybe_unused)
-+{
-+	struct hsi_client *cl = to_hsi_client(dev);
-+	struct hsi_port *port = to_hsi_port(dev->parent);
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&port->clock, flags);
-+	list_del(&cl->link);
-+	spin_unlock_irqrestore(&port->clock, flags);
-+	device_unregister(dev);
-+
-+	return 0;
-+}
-+
-+static int hsi_remove_port(struct device *dev, void *data __maybe_unused)
-+{
-+	device_for_each_child(dev, NULL, hsi_remove_client);
-+	device_unregister(dev);
-+
-+	return 0;
-+}
-+
-+static void hsi_controller_release(struct device *dev __maybe_unused)
-+{
-+}
-+
-+static void hsi_port_release(struct device *dev __maybe_unused)
-+{
-+}
-+
-+/**
-+ * hsi_unregister_controller - Unregister an HSI controller
-+ * @hsi: The HSI controller to register
-+ */
-+void hsi_unregister_controller(struct hsi_controller *hsi)
-+{
-+	device_for_each_child(&hsi->device, NULL, hsi_remove_port);
-+	device_unregister(&hsi->device);
-+}
-+EXPORT_SYMBOL_GPL(hsi_unregister_controller);
-+
-+/**
-+ * hsi_register_controller - Register an HSI controller and its ports
-+ * @hsi: The HSI controller to register
-+ *
-+ * Returns -errno on failure, 0 on success.
-+ */
-+int hsi_register_controller(struct hsi_controller *hsi)
-+{
-+	unsigned int i;
-+	int err;
-+
-+	hsi->device.type = &hsi_ctrl;
-+	hsi->device.bus = &hsi_bus_type;
-+	hsi->device.release = hsi_controller_release;
-+	err = device_register(&hsi->device);
-+	if (err < 0)
-+		return err;
-+	for (i = 0; i < hsi->num_ports; i++) {
-+		hsi->port[i].device.parent = &hsi->device;
-+		hsi->port[i].device.bus = &hsi_bus_type;
-+		hsi->port[i].device.release = hsi_port_release;
-+		hsi->port[i].device.type = &hsi_port;
-+		INIT_LIST_HEAD(&hsi->port[i].clients);
-+		spin_lock_init(&hsi->port[i].clock);
-+		err = device_register(&hsi->port[i].device);
-+		if (err < 0)
-+			goto out;
-+	}
-+	/* Populate HSI bus with HSI clients */
-+	hsi_scan_board_info(hsi);
-+
-+	return 0;
-+out:
-+	hsi_unregister_controller(hsi);
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(hsi_register_controller);
-+
-+/**
-+ * hsi_register_client_driver - Register an HSI client to the HSI bus
-+ * @drv: HSI client driver to register
-+ *
-+ * Returns -errno on failure, 0 on success.
-+ */
-+int hsi_register_client_driver(struct hsi_client_driver *drv)
-+{
-+	drv->driver.bus = &hsi_bus_type;
-+
-+	return driver_register(&drv->driver);
-+}
-+EXPORT_SYMBOL_GPL(hsi_register_client_driver);
-+
-+static inline int hsi_dummy_msg(struct hsi_msg *msg __maybe_unused)
-+{
-+	return 0;
-+}
-+
-+static inline int hsi_dummy_cl(struct hsi_client *cl __maybe_unused)
-+{
-+	return 0;
-+}
-+
-+/**
-+ * hsi_alloc_controller - Allocate an HSI controller and its ports
-+ * @n_ports: Number of ports on the HSI controller
-+ * @flags: Kernel allocation flags
-+ *
-+ * Return NULL on failure or a pointer to an hsi_controller on success.
-+ */
-+struct hsi_controller *hsi_alloc_controller(unsigned int n_ports, gfp_t flags)
-+{
-+	struct hsi_controller	*hsi;
-+	struct hsi_port		*port;
-+	unsigned int		i;
-+
-+	if (!n_ports)
-+		return NULL;
-+
-+	port = kzalloc(sizeof(*port)*n_ports, flags);
-+	if (!port)
-+		return NULL;
-+	hsi = kzalloc(sizeof(*hsi), flags);
-+	if (!hsi)
-+		goto out;
-+	for (i = 0; i < n_ports; i++) {
-+		dev_set_name(&port[i].device, "port%d", i);
-+		port[i].num = i;
-+		port[i].async = hsi_dummy_msg;
-+		port[i].setup = hsi_dummy_cl;
-+		port[i].flush = hsi_dummy_cl;
-+		port[i].start_tx = hsi_dummy_cl;
-+		port[i].stop_tx = hsi_dummy_cl;
-+		port[i].release = hsi_dummy_cl;
-+		mutex_init(&port[i].lock);
-+	}
-+	hsi->num_ports = n_ports;
-+	hsi->port = port;
-+
-+	return hsi;
-+out:
-+	kfree(port);
-+
-+	return NULL;
-+}
-+EXPORT_SYMBOL_GPL(hsi_alloc_controller);
-+
-+/**
-+ * hsi_free_controller - Free an HSI controller
-+ * @hsi: Pointer to HSI controller
-+ */
-+void hsi_free_controller(struct hsi_controller *hsi)
-+{
-+	if (!hsi)
-+		return;
-+
-+	kfree(hsi->port);
-+	kfree(hsi);
-+}
-+EXPORT_SYMBOL_GPL(hsi_free_controller);
-+
-+/**
-+ * hsi_free_msg - Free an HSI message
-+ * @msg: Pointer to the HSI message
-+ *
-+ * Client is responsible to free the buffers pointed by the scatterlists.
-+ */
-+void hsi_free_msg(struct hsi_msg *msg)
-+{
-+	if (!msg)
-+		return;
-+	sg_free_table(&msg->sgt);
-+	kfree(msg);
-+}
-+EXPORT_SYMBOL_GPL(hsi_free_msg);
-+
-+/**
-+ * hsi_alloc_msg - Allocate an HSI message
-+ * @nents: Number of memory entries
-+ * @flags: Kernel allocation flags
-+ *
-+ * nents can be 0. This mainly makes sense for read transfer.
-+ * In that case, HSI drivers will call the complete callback when
-+ * there is data to be read without consuming it.
-+ *
-+ * Return NULL on failure or a pointer to an hsi_msg on success.
-+ */
-+struct hsi_msg *hsi_alloc_msg(unsigned int nents, gfp_t flags)
++static inline struct hsi_msg *hsi_char_msg_alloc(unsigned int alloc_size)
 +{
 +	struct hsi_msg *msg;
-+	int err;
++	void *buf;
 +
-+	msg = kzalloc(sizeof(*msg), flags);
++	msg = hsi_alloc_msg(1, GFP_KERNEL);
 +	if (!msg)
-+		return NULL;
-+
-+	if (!nents)
-+		return msg;
-+
-+	err = sg_alloc_table(&msg->sgt, nents, flags);
-+	if (unlikely(err)) {
-+		kfree(msg);
-+		msg = NULL;
-+	}
-+
-+	return msg;
-+}
-+EXPORT_SYMBOL_GPL(hsi_alloc_msg);
-+
-+/**
-+ * hsi_async - Submit an HSI transfer to the controller
-+ * @cl: HSI client sending the transfer
-+ * @msg: The HSI transfer passed to controller
-+ *
-+ * The HSI message must have the channel, ttype, complete and destructor
-+ * fields set beforehand. If nents > 0 then the client has to initialize
-+ * also the scatterlists to point to the buffers to write to or read from.
-+ *
-+ * HSI controllers relay on pre-allocated buffers from their clients and they
-+ * do not allocate buffers on their own.
-+ *
-+ * Once the HSI message transfer finishes, the HSI controller calls the
-+ * complete callback with the status and actual_len fields of the HSI message
-+ * updated. The complete callback can be called before returning from
-+ * hsi_async.
-+ *
-+ * Returns -errno on failure or 0 on success
-+ */
-+int hsi_async(struct hsi_client *cl, struct hsi_msg *msg)
-+{
-+	struct hsi_port *port = hsi_get_port(cl);
-+
-+	if (!hsi_port_claimed(cl))
-+		return -EACCES;
-+
-+	WARN_ON_ONCE(!msg->destructor || !msg->complete);
-+	msg->cl = cl;
-+
-+	return port->async(msg);
-+}
-+EXPORT_SYMBOL_GPL(hsi_async);
-+
-+/**
-+ * hsi_claim_port - Claim the HSI client's port
-+ * @cl: HSI client that wants to claim its port
-+ * @share: Flag to indicate if the client wants to share the port or not.
-+ *
-+ * Returns -errno on failure, 0 on success.
-+ */
-+int hsi_claim_port(struct hsi_client *cl, unsigned int share)
-+{
-+	struct hsi_port *port = hsi_get_port(cl);
-+	int err = 0;
-+
-+	mutex_lock(&port->lock);
-+	if ((port->claimed) && (!port->shared || !share)) {
-+		err = -EBUSY;
++		goto out;
++	buf = kmalloc(alloc_size, GFP_KERNEL);
++	if (!buf) {
++		hsi_free_msg(msg);
 +		goto out;
 +	}
-+	port->claimed++;
-+	port->shared = !!share;
-+	cl->pclaimed = 1;
++	sg_init_one(msg->sgt.sgl, buf, alloc_size);
++	msg->context = buf;
++	return msg;
 +out:
-+	mutex_unlock(&port->lock);
-+
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(hsi_claim_port);
-+
-+/**
-+ * hsi_release_port - Release the HSI client's port
-+ * @cl: HSI client which previously claimed its port
-+ */
-+void hsi_release_port(struct hsi_client *cl)
-+{
-+	struct hsi_port *port = hsi_get_port(cl);
-+
-+	mutex_lock(&port->lock);
-+	/* Allow HW driver to do some cleanup */
-+	port->release(cl);
-+	if (cl->pclaimed)
-+		port->claimed--;
-+	BUG_ON(port->claimed < 0);
-+	cl->pclaimed = 0;
-+	if (!port->claimed)
-+		port->shared = 0;
-+	mutex_unlock(&port->lock);
-+}
-+EXPORT_SYMBOL_GPL(hsi_release_port);
-+
-+static int hsi_start_rx(struct hsi_client *cl, void *data __maybe_unused)
-+{
-+	if (cl->hsi_start_rx)
-+		(*cl->hsi_start_rx)(cl);
-+
-+	return 0;
++	return NULL;
 +}
 +
-+static int hsi_stop_rx(struct hsi_client *cl, void *data __maybe_unused)
++static inline int hsi_char_msgs_alloc(struct hsi_char_channel *channel)
 +{
-+	if (cl->hsi_stop_rx)
-+		(*cl->hsi_stop_rx)(cl);
++	struct hsi_msg *msg;
++	int i;
 +
-+	return 0;
-+}
-+
-+static int hsi_port_for_each_client(struct hsi_port *port, void *data,
-+				int (*fn)(struct hsi_client *cl, void *data))
-+{
-+	struct hsi_client *cl;
-+
-+	spin_lock(&port->clock);
-+	list_for_each_entry(cl, &port->clients, link) {
-+		spin_unlock(&port->clock);
-+		(*fn)(cl, data);
-+		spin_lock(&port->clock);
++	for (i = 0; i < HSI_CHAR_MSGS; i++) {
++		msg = hsi_char_msg_alloc(max_data_size);
++		if (!msg)
++			goto out;
++		msg->channel = channel->ch;
++		list_add_tail(&msg->link, &channel->free_msgs_list);
 +	}
-+	spin_unlock(&port->clock);
++	return 0;
++out:
++	hsi_char_msgs_free(channel);
++
++	return -ENOMEM;
++}
++
++static int _hsi_char_release(struct hsi_char_channel *channel, int remove)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(channel->cl);
++	int ret = 0, refcnt;
++
++	spin_lock_bh(&channel->lock);
++	if (HSI_CHST_OC(channel) != HSI_CHST_OPENED)
++		goto out;
++	HSI_CHST_OC_SET(channel, HSI_CHST_CLOSING);
++	spin_unlock_bh(&channel->lock);
++
++	while (channel->wlrefcnt > 0) {
++		hsi_stop_tx(channel->cl);
++		channel->wlrefcnt--;
++	}
++
++	if (channel->rxpoll == HSI_CHAR_POLL_ON)
++		channel->poll_event |= POLLERR;
++
++	wake_up_interruptible(&channel->rx_wait);
++	wake_up_interruptible(&channel->tx_wait);
++
++	refcnt = atomic_dec_return(&cl_data->refcnt);
++	if (!refcnt) {
++		hsi_flush(channel->cl);
++		hsi_release_port(channel->cl);
++		cl_data->attached = 0;
++	}
++	hsi_char_msgs_free(channel);
++
++	spin_lock_bh(&channel->lock);
++	if (remove)
++		channel->cl = NULL;
++	HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
++	HSI_CHST_RD_SET(channel, HSI_CHST_READOFF);
++	HSI_CHST_WR_SET(channel, HSI_CHST_WRITEOFF);
++out:
++	spin_unlock_bh(&channel->lock);
++
++	return ret;
++}
++
++static int __devinit hsi_char_probe(struct device *dev)
++{
++	struct hsi_char_client_data *cl_data = &hsi_char_cl_data;
++	struct hsi_char_channel *channel = cl_data->channels;
++	struct hsi_client *cl = to_hsi_client(dev);
++	int i;
++
++	for (i = 0; i < HSI_CHAR_DEVS; i++, channel++) {
++		if (channel->state == HSI_CHST_AVAIL)
++			channel->cl = cl;
++	}
++	cl->hsi_start_rx = NULL;
++	cl->hsi_stop_rx = NULL;
++	atomic_set(&cl_data->refcnt, 0);
++	atomic_set(&cl_data->breq, 1);
++	cl_data->attached = 0;
++	hsi_client_set_drvdata(cl, cl_data);
 +
 +	return 0;
 +}
 +
-+/**
-+ * hsi_event -Notifies clients about port events
-+ * @port: Port where the event occurred
-+ * @event: The event type
-+ *
-+ * Clients should not be concerned about wake line behavior. However, due
-+ * to a race condition in HSI HW protocol, clients need to be notified
-+ * about wake line changes, so they can implement a workaround for it.
-+ *
-+ * Events:
-+ * HSI_EVENT_START_RX - Incoming wake line high
-+ * HSI_EVENT_STOP_RX - Incoming wake line down
-+ */
-+void hsi_event(struct hsi_port *port, unsigned int event)
++static int __devexit hsi_char_remove(struct device *dev)
 +{
-+	int (*fn)(struct hsi_client *cl, void *data);
++	struct hsi_client *cl = to_hsi_client(dev);
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(cl);
++	struct hsi_char_channel *channel = cl_data->channels;
++	int i;
 +
-+	switch (event) {
-+	case HSI_EVENT_START_RX:
-+		fn = hsi_start_rx;
++	for (i = 0; i < HSI_CHAR_DEVS; i++, channel++) {
++		if (!(channel->state & HSI_CHST_AVAIL))
++			continue;
++		_hsi_char_release(channel, 1);
++	}
++
++	return 0;
++}
++
++static inline unsigned int hsi_char_msg_len_get(struct hsi_msg *msg)
++{
++	return msg->sgt.sgl->length;
++}
++
++static inline void hsi_char_msg_len_set(struct hsi_msg *msg, unsigned int len)
++{
++	msg->sgt.sgl->length = len;
++}
++
++static void hsi_char_data_available(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++	struct hsi_char_channel *channel = cl_data->channels + msg->channel;
++	int ret;
++
++	if (msg->status == HSI_STATUS_ERROR) {
++		ret = hsi_async_read(channel->cl, msg);
++		if (ret < 0) {
++			list_add_tail(&msg->link, &channel->free_msgs_list);
++			spin_lock_bh(&channel->lock);
++			list_add_tail(&msg->link, &channel->free_msgs_list);
++			channel->rxpoll = HSI_CHAR_POLL_OFF;
++			spin_unlock_bh(&channel->lock);
++		}
++	} else {
++		spin_lock_bh(&channel->lock);
++		channel->rxpoll = HSI_CHAR_POLL_OFF;
++		channel->poll_event |= (POLLIN | POLLRDNORM);
++		spin_unlock_bh(&channel->lock);
++		spin_lock_bh(&channel->lock);
++		list_add_tail(&msg->link, &channel->free_msgs_list);
++		spin_unlock_bh(&channel->lock);
++		wake_up_interruptible(&channel->rx_wait);
++	}
++}
++
++static void hsi_char_rx_completed(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++	struct hsi_char_channel *channel = cl_data->channels + msg->channel;
++
++	spin_lock_bh(&channel->lock);
++	list_add_tail(&msg->link, &channel->rx_msgs_queue);
++	spin_unlock_bh(&channel->lock);
++	wake_up_interruptible(&channel->rx_wait);
++}
++
++static void hsi_char_rx_msg_destructor(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++	struct hsi_char_channel *channel = cl_data->channels + msg->channel;
++
++	spin_lock_bh(&channel->lock);
++	list_add_tail(&msg->link, &channel->free_msgs_list);
++	HSI_CHST_RD_SET(channel, HSI_CHST_READOFF);
++	spin_unlock_bh(&channel->lock);
++}
++
++static void hsi_char_rx_poll_destructor(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++	struct hsi_char_channel *channel = cl_data->channels + msg->channel;
++
++	spin_lock_bh(&channel->lock);
++	list_add_tail(&msg->link, &channel->free_msgs_list);
++	channel->rxpoll = HSI_CHAR_POLL_RST;
++	spin_unlock_bh(&channel->lock);
++}
++
++static int hsi_char_rx_poll(struct hsi_char_channel *channel)
++{
++	struct hsi_msg *msg;
++	int ret = 0;
++
++	spin_lock_bh(&channel->lock);
++	if (list_empty(&channel->free_msgs_list)) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	if (channel->rxpoll == HSI_CHAR_POLL_ON)
++		goto out;
++	msg = list_first_entry(&channel->free_msgs_list, struct hsi_msg, link);
++	list_del(&msg->link);
++	channel->rxpoll = HSI_CHAR_POLL_ON;
++	spin_unlock_bh(&channel->lock);
++	hsi_char_msg_len_set(msg, 0);
++	msg->complete = hsi_char_data_available;
++	msg->destructor = hsi_char_rx_poll_destructor;
++	/* don't touch msg->context! */
++	ret = hsi_async_read(channel->cl, msg);
++	spin_lock_bh(&channel->lock);
++	if (ret < 0) {
++		list_add_tail(&msg->link, &channel->free_msgs_list);
++		channel->rxpoll = HSI_CHAR_POLL_OFF;
++		goto out;
++	}
++out:
++	spin_unlock_bh(&channel->lock);
++
++	return ret;
++}
++
++static void hsi_char_tx_completed(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++	struct hsi_char_channel *channel = cl_data->channels + msg->channel;
++
++	spin_lock_bh(&channel->lock);
++	list_add_tail(&msg->link, &channel->tx_msgs_queue);
++	channel->poll_event |= (POLLOUT | POLLWRNORM);
++	spin_unlock_bh(&channel->lock);
++	wake_up_interruptible(&channel->tx_wait);
++}
++
++static void hsi_char_tx_msg_destructor(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++	struct hsi_char_channel *channel = cl_data->channels + msg->channel;
++
++	spin_lock_bh(&channel->lock);
++	list_add_tail(&msg->link, &channel->free_msgs_list);
++	HSI_CHST_WR_SET(channel, HSI_CHST_WRITEOFF);
++	spin_unlock_bh(&channel->lock);
++}
++
++static void hsi_char_rx_poll_rst(struct hsi_client *cl)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(cl);
++	struct hsi_char_channel *channel = cl_data->channels;
++	int i;
++
++	for (i = 0; i < HSI_CHAR_DEVS; i++, channel++) {
++		if ((HSI_CHST_OC(channel) == HSI_CHST_OPENED) &&
++			(channel->rxpoll == HSI_CHAR_POLL_RST))
++			hsi_char_rx_poll(channel);
++	}
++}
++
++static void hsi_char_reset(struct hsi_client *cl)
++{
++	hsi_flush(cl);
++	hsi_char_rx_poll_rst(cl);
++}
++
++static void hsi_char_rx_cancel(struct hsi_char_channel *channel)
++{
++	hsi_flush(channel->cl);
++	hsi_char_rx_poll_rst(channel->cl);
++}
++
++static void hsi_char_tx_cancel(struct hsi_char_channel *channel)
++{
++	hsi_flush(channel->cl);
++	hsi_char_rx_poll_rst(channel->cl);
++}
++
++static void hsi_char_bcast_break(struct hsi_client *cl)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(cl);
++	struct hsi_char_channel *channel = cl_data->channels;
++	int i;
++
++	for (i = 0; i < HSI_CHAR_DEVS; i++, channel++) {
++		if (HSI_CHST_OC(channel) != HSI_CHST_OPENED)
++			continue;
++		channel->poll_event |= POLLPRI;
++		wake_up_interruptible(&channel->rx_wait);
++		wake_up_interruptible(&channel->tx_wait);
++	}
++}
++
++static void hsi_char_break_received(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++	int ret;
++
++	hsi_char_bcast_break(msg->cl);
++	ret = hsi_async_read(msg->cl, msg);
++	if (ret < 0) {
++		hsi_free_msg(msg);
++		atomic_inc(&cl_data->breq);
++	}
++}
++
++static void hsi_char_break_req_destructor(struct hsi_msg *msg)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(msg->cl);
++
++	hsi_free_msg(msg);
++	atomic_inc(&cl_data->breq);
++}
++
++static int hsi_char_break_request(struct hsi_client *cl)
++{
++	struct hsi_char_client_data *cl_data = hsi_client_drvdata(cl);
++	struct hsi_msg *msg;
++	int ret = 0;
++
++	if (!atomic_dec_and_test(&cl_data->breq)) {
++		atomic_inc(&cl_data->breq);
++		return -EBUSY;
++	}
++	msg = hsi_alloc_msg(0, GFP_KERNEL);
++	if (!msg)
++		return -ENOMEM;
++	msg->break_frame = 1;
++	msg->complete = hsi_char_break_received;
++	msg->destructor = hsi_char_break_req_destructor;
++	ret = hsi_async_read(cl, msg);
++	if (ret < 0)
++		hsi_free_msg(msg);
++
++	return ret;
++}
++
++static int hsi_char_break_send(struct hsi_client *cl)
++{
++	struct hsi_msg *msg;
++	int ret = 0;
++
++	msg = hsi_alloc_msg(0, GFP_ATOMIC);
++	if (!msg)
++		return -ENOMEM;
++	msg->break_frame = 1;
++	msg->complete = hsi_free_msg;
++	msg->destructor = hsi_free_msg;
++	ret = hsi_async_write(cl, msg);
++	if (ret < 0)
++		hsi_free_msg(msg);
++
++	return ret;
++}
++
++static inline int ssi_check_common_cfg(struct hsi_config *cfg)
++{
++	if ((cfg->mode != HSI_MODE_STREAM) && (cfg->mode != HSI_MODE_FRAME))
++		return -EINVAL;
++	if ((cfg->channels == 0) || (cfg->channels > HSI_CHAR_CHANNELS))
++		return -EINVAL;
++	if (cfg->channels & (cfg->channels - 1))
++		return -EINVAL;
++	if ((cfg->flow != HSI_FLOW_SYNC) && (cfg->flow != HSI_FLOW_PIPE))
++		return -EINVAL;
++
++	return 0;
++}
++
++static inline int ssi_check_rx_cfg(struct hsi_config *cfg)
++{
++	return ssi_check_common_cfg(cfg);
++}
++
++static inline int ssi_check_tx_cfg(struct hsi_config *cfg)
++{
++	int ret = ssi_check_common_cfg(cfg);
++
++	if (ret < 0)
++		return ret;
++	if ((cfg->arb_mode != HSI_ARB_RR) && (cfg->arb_mode != HSI_ARB_PRIO))
++		return -EINVAL;
++
++	return 0;
++}
++
++static inline int hsi_char_cfg_set(struct hsi_client *cl,
++						struct hsi_config *cfg, int dir)
++{
++	struct hsi_config *rxtx_cfg;
++	int ret = 0;
++
++	if (dir == HSI_CHAR_RX) {
++		rxtx_cfg = &cl->rx_cfg;
++		ret = ssi_check_rx_cfg(cfg);
++	} else {
++		rxtx_cfg = &cl->tx_cfg;
++		ret = ssi_check_tx_cfg(cfg);
++	}
++	if (ret < 0)
++		return ret;
++
++	*rxtx_cfg = *cfg;
++	ret = hsi_setup(cl);
++	if (ret < 0)
++		return ret;
++
++	if ((dir == HSI_CHAR_RX) && (cfg->mode == HSI_MODE_FRAME))
++		hsi_char_break_request(cl);
++
++	return ret;
++}
++
++static inline void hsi_char_cfg_get(struct hsi_client *cl,
++						struct hsi_config *cfg, int dir)
++{
++	struct hsi_config *rxtx_cfg;
++
++	if (dir == HSI_CHAR_RX)
++		rxtx_cfg = &cl->rx_cfg;
++	else
++		rxtx_cfg = &cl->tx_cfg;
++	*cfg = *rxtx_cfg;
++}
++
++static inline void hsi_char_rx2icfg(struct hsi_config *cfg,
++						struct hsc_rx_config *rx_cfg)
++{
++	cfg->mode = rx_cfg->mode;
++	cfg->flow = rx_cfg->flow;
++	cfg->channels = rx_cfg->channels;
++	cfg->speed = 0;
++	cfg->arb_mode = 0;
++}
++
++static inline void hsi_char_tx2icfg(struct hsi_config *cfg,
++						struct hsc_tx_config *tx_cfg)
++{
++	cfg->mode = tx_cfg->mode;
++	cfg->flow = tx_cfg->flow;
++	cfg->channels = tx_cfg->channels;
++	cfg->speed = tx_cfg->speed;
++	cfg->arb_mode = tx_cfg->arb_mode;
++}
++
++static inline void hsi_char_rx2ecfg(struct hsc_rx_config *rx_cfg,
++							struct hsi_config *cfg)
++{
++	rx_cfg->mode = cfg->mode;
++	rx_cfg->flow = cfg->flow;
++	rx_cfg->channels = cfg->channels;
++}
++
++static inline void hsi_char_tx2ecfg(struct hsc_tx_config *tx_cfg,
++							struct hsi_config *cfg)
++{
++	tx_cfg->mode = cfg->mode;
++	tx_cfg->flow = cfg->flow;
++	tx_cfg->channels = cfg->channels;
++	tx_cfg->speed = cfg->speed;
++	tx_cfg->arb_mode = cfg->arb_mode;
++}
++
++static ssize_t hsi_char_read(struct file *file, char __user *buf,
++						size_t len, loff_t *ppos)
++{
++	struct hsi_char_channel *channel = file->private_data;
++	struct hsi_msg *msg = NULL;
++	ssize_t ret;
++
++	if (len == 0) {
++		channel->poll_event &= ~POLLPRI;
++		return 0;
++	}
++	channel->poll_event &= ~POLLPRI;
++
++	if (!IS_ALIGNED(len, sizeof(u32)))
++		return -EINVAL;
++
++	if (len > max_data_size)
++		len = max_data_size;
++
++	spin_lock_bh(&channel->lock);
++	if (HSI_CHST_OC(channel) != HSI_CHST_OPENED) {
++		ret = -ENODEV;
++		goto out;
++	}
++	if (HSI_CHST_RD(channel) != HSI_CHST_READOFF) {
++		ret = -EBUSY;
++		goto out;
++	}
++	if (channel->ch >= channel->cl->rx_cfg.channels) {
++		ret = -ENODEV;
++		goto out;
++	}
++	if (list_empty(&channel->free_msgs_list)) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	msg = list_first_entry(&channel->free_msgs_list, struct hsi_msg, link);
++	list_del(&msg->link);
++	spin_unlock_bh(&channel->lock);
++	hsi_char_msg_len_set(msg, len);
++	msg->complete = hsi_char_rx_completed;
++	msg->destructor = hsi_char_rx_msg_destructor;
++	ret = hsi_async_read(channel->cl, msg);
++	spin_lock_bh(&channel->lock);
++	if (ret < 0)
++		goto out;
++	HSI_CHST_RD_SET(channel, HSI_CHST_READING);
++	msg = NULL;
++
++	for ( ; ; ) {
++		DEFINE_WAIT(wait);
++
++		if (!list_empty(&channel->rx_msgs_queue)) {
++			msg = list_first_entry(&channel->rx_msgs_queue,
++					struct hsi_msg, link);
++			HSI_CHST_RD_SET(channel, HSI_CHST_READOFF);
++			channel->poll_event &= ~(POLLIN | POLLRDNORM);
++			list_del(&msg->link);
++			spin_unlock_bh(&channel->lock);
++			if (msg->status == HSI_STATUS_ERROR) {
++				ret = -EIO;
++			} else {
++				ret = copy_to_user((void __user *)buf,
++						msg->context,
++						hsi_char_msg_len_get(msg));
++				if (ret)
++					ret = -EFAULT;
++				else
++					ret = hsi_char_msg_len_get(msg);
++			}
++			spin_lock_bh(&channel->lock);
++			break;
++		} else if (signal_pending(current)) {
++			spin_unlock_bh(&channel->lock);
++			hsi_char_rx_cancel(channel);
++			spin_lock_bh(&channel->lock);
++			HSI_CHST_RD_SET(channel, HSI_CHST_READOFF);
++			ret = -EINTR;
++			break;
++		} else if ((HSI_CHST_OC(channel) == HSI_CHST_CLOSING) ||
++				(HSI_CHST_OC(channel) == HSI_CHST_CLOSING)) {
++			ret = -EIO;
++			break;
++		}
++		prepare_to_wait(&channel->rx_wait, &wait, TASK_INTERRUPTIBLE);
++		spin_unlock_bh(&channel->lock);
++
++		schedule();
++
++		spin_lock_bh(&channel->lock);
++		finish_wait(&channel->rx_wait, &wait);
++	}
++out:
++	if (msg)
++		list_add_tail(&msg->link, &channel->free_msgs_list);
++	spin_unlock_bh(&channel->lock);
++
++	return ret;
++}
++
++static ssize_t hsi_char_write(struct file *file, const char __user *buf,
++						size_t len, loff_t *ppos)
++{
++	struct hsi_char_channel *channel = file->private_data;
++	struct hsi_msg *msg = NULL;
++	ssize_t ret;
++
++	if ((len == 0) || !IS_ALIGNED(len, sizeof(u32)))
++		return -EINVAL;
++
++	if (len > max_data_size)
++		len = max_data_size;
++
++	spin_lock_bh(&channel->lock);
++	if (HSI_CHST_OC(channel) != HSI_CHST_OPENED) {
++		ret = -ENODEV;
++		goto out;
++	}
++	if (HSI_CHST_WR(channel) != HSI_CHST_WRITEOFF) {
++		ret = -EBUSY;
++		goto out;
++	}
++	if (channel->ch >= channel->cl->tx_cfg.channels) {
++		ret = -ENODEV;
++		goto out;
++	}
++	if (list_empty(&channel->free_msgs_list)) {
++		ret = -ENOMEM;
++		goto out;
++	}
++	msg = list_first_entry(&channel->free_msgs_list, struct hsi_msg, link);
++	list_del(&msg->link);
++	HSI_CHST_WR_SET(channel, HSI_CHST_WRITEON);
++	spin_unlock_bh(&channel->lock);
++
++	if (copy_from_user(msg->context, (void __user *)buf, len)) {
++		spin_lock_bh(&channel->lock);
++		HSI_CHST_WR_SET(channel, HSI_CHST_WRITEOFF);
++		ret = -EFAULT;
++		goto out;
++	}
++
++	hsi_char_msg_len_set(msg, len);
++	msg->complete = hsi_char_tx_completed;
++	msg->destructor = hsi_char_tx_msg_destructor;
++	channel->poll_event &= ~(POLLOUT | POLLWRNORM);
++	ret = hsi_async_write(channel->cl, msg);
++	spin_lock_bh(&channel->lock);
++	if (ret < 0) {
++		channel->poll_event |= (POLLOUT | POLLWRNORM);
++		HSI_CHST_WR_SET(channel, HSI_CHST_WRITEOFF);
++		goto out;
++	}
++	HSI_CHST_WR_SET(channel, HSI_CHST_WRITING);
++	msg = NULL;
++
++	for ( ; ; ) {
++		DEFINE_WAIT(wait);
++
++		if (!list_empty(&channel->tx_msgs_queue)) {
++			msg = list_first_entry(&channel->tx_msgs_queue,
++					struct hsi_msg, link);
++			list_del(&msg->link);
++			HSI_CHST_WR_SET(channel, HSI_CHST_WRITEOFF);
++			if (msg->status == HSI_STATUS_ERROR)
++				ret = -EIO;
++			else
++				ret = hsi_char_msg_len_get(msg);
++			break;
++		} else if (signal_pending(current)) {
++			spin_unlock_bh(&channel->lock);
++			hsi_char_tx_cancel(channel);
++			spin_lock_bh(&channel->lock);
++			HSI_CHST_WR_SET(channel, HSI_CHST_WRITEOFF);
++			ret = -EINTR;
++			break;
++		} else if ((HSI_CHST_OC(channel) == HSI_CHST_CLOSING) ||
++				(HSI_CHST_OC(channel) == HSI_CHST_CLOSING)) {
++			ret = -EIO;
++			break;
++		}
++		prepare_to_wait(&channel->tx_wait, &wait, TASK_INTERRUPTIBLE);
++		spin_unlock_bh(&channel->lock);
++
++		schedule();
++
++		spin_lock_bh(&channel->lock);
++		finish_wait(&channel->tx_wait, &wait);
++	}
++out:
++	if (msg)
++		list_add_tail(&msg->link, &channel->free_msgs_list);
++
++	spin_unlock_bh(&channel->lock);
++
++	return ret;
++}
++
++static unsigned int hsi_char_poll(struct file *file, poll_table *wait)
++{
++	struct hsi_char_channel *channel = file->private_data;
++	unsigned int ret;
++
++	spin_lock_bh(&channel->lock);
++	if ((HSI_CHST_OC(channel) != HSI_CHST_OPENED) ||
++		(channel->ch >= channel->cl->rx_cfg.channels)) {
++		spin_unlock_bh(&channel->lock);
++		return -ENODEV;
++	}
++	poll_wait(file, &channel->rx_wait, wait);
++	poll_wait(file, &channel->tx_wait, wait);
++	ret = channel->poll_event;
++	spin_unlock_bh(&channel->lock);
++	hsi_char_rx_poll(channel);
++
++	return ret;
++}
++
++static long hsi_char_ioctl(struct file *file, unsigned int cmd,
++							unsigned long arg)
++{
++	struct hsi_char_channel *channel = file->private_data;
++	unsigned int state;
++	struct hsi_config cfg;
++	struct hsc_rx_config rx_cfg;
++	struct hsc_tx_config tx_cfg;
++	long ret = 0;
++
++	if (HSI_CHST_OC(channel) != HSI_CHST_OPENED)
++		return -ENODEV;
++
++	switch (cmd) {
++	case HSC_RESET:
++		hsi_char_reset(channel->cl);
 +		break;
-+	case HSI_EVENT_STOP_RX:
-+		fn = hsi_stop_rx;
++	case HSC_SET_PM:
++		if (copy_from_user(&state, (void __user *)arg, sizeof(state)))
++			return -EFAULT;
++		if (state == HSC_PM_DISABLE) {
++			ret = hsi_start_tx(channel->cl);
++			if (!ret)
++				channel->wlrefcnt++;
++		} else if ((state == HSC_PM_ENABLE)
++				&& (channel->wlrefcnt > 0)) {
++			ret = hsi_stop_tx(channel->cl);
++			if (!ret)
++				channel->wlrefcnt--;
++		} else {
++			ret = -EINVAL;
++		}
++		break;
++	case HSC_SEND_BREAK:
++		return hsi_char_break_send(channel->cl);
++	case HSC_SET_RX:
++		if (copy_from_user(&rx_cfg, (void __user *)arg, sizeof(rx_cfg)))
++			return -EFAULT;
++		hsi_char_rx2icfg(&cfg, &rx_cfg);
++		return hsi_char_cfg_set(channel->cl, &cfg, HSI_CHAR_RX);
++	case HSC_GET_RX:
++		hsi_char_cfg_get(channel->cl, &cfg, HSI_CHAR_RX);
++		hsi_char_rx2ecfg(&rx_cfg, &cfg);
++		if (copy_to_user((void __user *)arg, &rx_cfg, sizeof(rx_cfg)))
++			return -EFAULT;
++		break;
++	case HSC_SET_TX:
++		if (copy_from_user(&tx_cfg, (void __user *)arg, sizeof(tx_cfg)))
++			return -EFAULT;
++		hsi_char_tx2icfg(&cfg, &tx_cfg);
++		return hsi_char_cfg_set(channel->cl, &cfg, HSI_CHAR_TX);
++	case HSC_GET_TX:
++		hsi_char_cfg_get(channel->cl, &cfg, HSI_CHAR_TX);
++		hsi_char_tx2ecfg(&tx_cfg, &cfg);
++		if (copy_to_user((void __user *)arg, &tx_cfg, sizeof(tx_cfg)))
++			return -EFAULT;
 +		break;
 +	default:
-+		return;
++		return -ENOIOCTLCMD;
 +	}
-+	hsi_port_for_each_client(port, NULL, fn);
-+}
-+EXPORT_SYMBOL_GPL(hsi_event);
 +
-+static int __init hsi_init(void)
-+{
-+	return bus_register(&hsi_bus_type);
++	return ret;
 +}
-+postcore_initcall(hsi_init);
-diff --git a/include/linux/hsi/hsi.h b/include/linux/hsi/hsi.h
++
++static int hsi_char_open(struct inode *inode, struct file *file)
++{
++	struct hsi_char_client_data *cl_data = &hsi_char_cl_data;
++	struct hsi_char_channel *channel = cl_data->channels + iminor(inode);
++	int ret = 0, refcnt;
++
++	spin_lock_bh(&channel->lock);
++	if ((channel->state == HSI_CHST_UNAVAIL) || (!channel->cl)) {
++		ret = -ENODEV;
++		goto out;
++	}
++	if (HSI_CHST_OC(channel) != HSI_CHST_CLOSED) {
++		ret = -EBUSY;
++		goto out;
++	}
++	HSI_CHST_OC_SET(channel, HSI_CHST_OPENING);
++	spin_unlock_bh(&channel->lock);
++
++	refcnt = atomic_inc_return(&cl_data->refcnt);
++	if (refcnt == 1) {
++		if (cl_data->attached) {
++			atomic_dec(&cl_data->refcnt);
++			spin_lock_bh(&channel->lock);
++			HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
++			ret = -EBUSY;
++			goto out;
++		}
++		ret = hsi_claim_port(channel->cl, 0);
++		if (ret < 0) {
++			atomic_dec(&cl_data->refcnt);
++			spin_lock_bh(&channel->lock);
++			HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
++			goto out;
++		}
++		hsi_setup(channel->cl);
++	} else if (!cl_data->attached) {
++		atomic_dec(&cl_data->refcnt);
++		spin_lock_bh(&channel->lock);
++		HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
++		ret = -ENODEV;
++		goto out;
++	}
++	ret = hsi_char_msgs_alloc(channel);
++
++	if (ret < 0) {
++		refcnt = atomic_dec_return(&cl_data->refcnt);
++		if (!refcnt)
++			hsi_release_port(channel->cl);
++		spin_lock_bh(&channel->lock);
++		HSI_CHST_OC_SET(channel, HSI_CHST_CLOSED);
++		goto out;
++	}
++	if (refcnt == 1)
++		cl_data->attached = 1;
++	channel->wlrefcnt = 0;
++	channel->rxpoll = HSI_CHAR_POLL_OFF;
++	channel->poll_event = (POLLOUT | POLLWRNORM);
++	file->private_data = channel;
++	spin_lock_bh(&channel->lock);
++	HSI_CHST_OC_SET(channel, HSI_CHST_OPENED);
++out:
++	spin_unlock_bh(&channel->lock);
++
++	return ret;
++}
++
++static int hsi_char_release(struct inode *inode, struct file *file)
++{
++	struct hsi_char_channel *channel = file->private_data;
++	return _hsi_char_release(channel, 0);
++}
++
++static int hsi_char_fasync(int fd, struct file *file, int on)
++{
++	struct hsi_char_channel *channel = file->private_data;
++
++	if (fasync_helper(fd, file, on, &channel->async_queue) < 0)
++		return -EIO;
++
++	return 0;
++}
++
++static const struct file_operations hsi_char_fops = {
++	.owner		= THIS_MODULE,
++	.read		= hsi_char_read,
++	.write		= hsi_char_write,
++	.poll		= hsi_char_poll,
++	.unlocked_ioctl	= hsi_char_ioctl,
++	.open		= hsi_char_open,
++	.release	= hsi_char_release,
++	.fasync		= hsi_char_fasync,
++};
++
++static struct hsi_client_driver hsi_char_driver = {
++	.driver = {
++		.name	= "hsi_char",
++		.owner	= THIS_MODULE,
++		.probe	= hsi_char_probe,
++		.remove	= hsi_char_remove,
++	},
++};
++
++static inline void hsi_char_channel_init(struct hsi_char_channel *channel)
++{
++	channel->state = HSI_CHST_AVAIL;
++	INIT_LIST_HEAD(&channel->free_msgs_list);
++	init_waitqueue_head(&channel->rx_wait);
++	init_waitqueue_head(&channel->tx_wait);
++	spin_lock_init(&channel->lock);
++	INIT_LIST_HEAD(&channel->rx_msgs_queue);
++	INIT_LIST_HEAD(&channel->tx_msgs_queue);
++}
++
++static struct cdev hsi_char_cdev;
++
++static int __init hsi_char_init(void)
++{
++	char devname[] = "hsi_char";
++	struct hsi_char_client_data *cl_data = &hsi_char_cl_data;
++	struct hsi_char_channel *channel = cl_data->channels;
++	unsigned long ch_mask = 0;
++	unsigned int i;
++	int ret;
++
++	if ((max_data_size < 4) || (max_data_size > 0x10000) ||
++		(max_data_size & (max_data_size - 1))) {
++		pr_err("Invalid max read/write data size");
++		return -EINVAL;
++	}
++
++	for (i = 0; i < HSI_CHAR_DEVS && channels_map[i] >= 0; i++) {
++		if (channels_map[i] >= HSI_CHAR_DEVS) {
++			pr_err("Invalid HSI/SSI channel specified");
++			return -EINVAL;
++		}
++		set_bit(channels_map[i], &ch_mask);
++	}
++
++	if (i == 0) {
++		pr_err("No HSI channels available");
++		return -EINVAL;
++	}
++
++	memset(cl_data->channels, 0, sizeof(cl_data->channels));
++	for (i = 0; i < HSI_CHAR_DEVS; i++, channel++) {
++		channel->ch = i;
++		channel->state = HSI_CHST_UNAVAIL;
++		if (test_bit(i, &ch_mask))
++			hsi_char_channel_init(channel);
++	}
++
++	ret = hsi_register_client_driver(&hsi_char_driver);
++	if (ret) {
++		pr_err("Error while registering HSI/SSI driver %d", ret);
++		return ret;
++	}
++
++	ret = alloc_chrdev_region(&hsi_char_dev, 0, HSI_CHAR_DEVS, devname);
++	if (ret < 0) {
++		hsi_unregister_client_driver(&hsi_char_driver);
++		return ret;
++	}
++
++	cdev_init(&hsi_char_cdev, &hsi_char_fops);
++	ret = cdev_add(&hsi_char_cdev, hsi_char_dev, HSI_CHAR_DEVS);
++	if (ret) {
++		unregister_chrdev_region(hsi_char_dev, HSI_CHAR_DEVS);
++		hsi_unregister_client_driver(&hsi_char_driver);
++		return ret;
++	}
++
++	pr_info("HSI/SSI char device loaded\n");
++
++	return 0;
++}
++module_init(hsi_char_init);
++
++static void __exit hsi_char_exit(void)
++{
++	cdev_del(&hsi_char_cdev);
++	unregister_chrdev_region(hsi_char_dev, HSI_CHAR_DEVS);
++	hsi_unregister_client_driver(&hsi_char_driver);
++	pr_info("HSI char device removed\n");
++}
++module_exit(hsi_char_exit);
++
++MODULE_AUTHOR("Andras Domokos <andras.domokos@nokia.com>");
++MODULE_ALIAS("hsi:hsi_char");
++MODULE_DESCRIPTION("HSI character device");
++MODULE_LICENSE("GPL");
+diff --git a/include/linux/hsi/hsi_char.h b/include/linux/hsi/hsi_char.h
 new file mode 100644
-index 0000000..54ae22a
+index 0000000..b550362
 --- /dev/null
-+++ b/include/linux/hsi/hsi.h
-@@ -0,0 +1,376 @@
++++ b/include/linux/hsi/hsi_char.h
+@@ -0,0 +1,66 @@
 +/*
-+ * hsi.h
++ * hsi_char.h
 + *
-+ * HSI core header file.
++ * Part of the HSI character device driver.
 + *
 + * Copyright (C) 2010 Nokia Corporation. All rights reserved.
 + *
-+ * Contact: Carlos Chinea <carlos.chinea@nokia.com>
++ * Contact: Andras Domokos <andras.domokos at nokia.com>
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License
@@ -642,7 +1151,7 @@ index 0000000..54ae22a
 + *
 + * This program is distributed in the hope that it will be useful, but
 + * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 + * General Public License for more details.
 + *
 + * You should have received a copy of the GNU General Public License
@@ -651,358 +1160,48 @@ index 0000000..54ae22a
 + * 02110-1301 USA
 + */
 +
-+#ifndef __LINUX_HSI_H__
-+#define __LINUX_HSI_H__
 +
-+#include <linux/device.h>
-+#include <linux/mutex.h>
-+#include <linux/scatterlist.h>
-+#include <linux/spinlock.h>
-+#include <linux/list.h>
++#ifndef __HSI_CHAR_H
++#define __HSI_CHAR_H
 +
-+/* HSI message ttype */
-+#define HSI_MSG_READ	0
-+#define HSI_MSG_WRITE	1
++#define HSI_CHAR_MAGIC		'k'
++#define HSC_IOW(num, dtype)	_IOW(HSI_CHAR_MAGIC, num, dtype)
++#define HSC_IOR(num, dtype)	_IOR(HSI_CHAR_MAGIC, num, dtype)
++#define HSC_IOWR(num, dtype)	_IOWR(HSI_CHAR_MAGIC, num, dtype)
++#define HSC_IO(num)		_IO(HSI_CHAR_MAGIC, num)
 +
-+/* HSI configuration values */
-+#define HSI_MODE_STREAM	1
-+#define HSI_MODE_FRAME	2
-+#define HSI_FLOW_SYNC	0	/* Synchronized flow */
-+#define HSI_FLOW_PIPE	1	/* Pipelined flow */
-+#define HSI_ARB_RR	0	/* Round-robin arbitration */
-+#define HSI_ARB_PRIO	1	/* Channel priority arbitration */
++#define HSC_RESET		HSC_IO(16)
++#define HSC_SET_PM		HSC_IO(17)
++#define HSC_SEND_BREAK		HSC_IO(18)
++#define HSC_SET_RX		HSC_IOW(19, struct hsc_rx_config)
++#define HSC_GET_RX		HSC_IOW(20, struct hsc_rx_config)
++#define HSC_SET_TX		HSC_IOW(21, struct hsc_tx_config)
++#define HSC_GET_TX		HSC_IOW(22, struct hsc_tx_config)
 +
-+#define HSI_MAX_CHANNELS	16
++#define HSC_PM_DISABLE		0
++#define HSC_PM_ENABLE		1
 +
-+/* HSI message status codes */
-+enum {
-+	HSI_STATUS_COMPLETED,	/* Message transfer is completed */
-+	HSI_STATUS_PENDING,	/* Message pending to be read/write (POLL) */
-+	HSI_STATUS_PROCEEDING,	/* Message transfer is ongoing */
-+	HSI_STATUS_QUEUED,	/* Message waiting to be served */
-+	HSI_STATUS_ERROR,	/* Error when message transfer was ongoing */
++#define HSC_MODE_STREAM		1
++#define HSC_MODE_FRAME		2
++#define HSC_FLOW_SYNC		0
++#define HSC_ARB_RR		0
++#define HSC_ARB_PRIO		1
++
++struct hsc_rx_config {
++	uint32_t mode;
++	uint32_t flow;
++	uint32_t channels;
 +};
 +
-+/* HSI port event codes */
-+enum {
-+	HSI_EVENT_START_RX,
-+	HSI_EVENT_STOP_RX,
++struct hsc_tx_config {
++	uint32_t mode;
++	uint32_t flow;
++	uint32_t channels;
++	uint32_t speed;
++	uint32_t arb_mode;
 +};
 +
-+/**
-+ * struct hsi_config - Configuration for RX/TX HSI modules
-+ * @mode: Bit transmission mode (STREAM or FRAME)
-+ * @flow: Flow type (SYNCHRONIZED or PIPELINE)
-+ * @channels: Number of channels to use [1..16]
-+ * @speed: Max bit transmission speed (Kbit/s)
-+ * @arb_mode: Arbitration mode for TX frame (Round robin, priority)
-+ */
-+struct hsi_config {
-+	unsigned int	mode;
-+	unsigned int	flow;
-+	unsigned int	channels;
-+	unsigned int	speed;
-+	unsigned int	arb_mode; /* TX only */
-+};
-+
-+/**
-+ * struct hsi_board_info - HSI client board info
-+ * @name: Name for the HSI device
-+ * @hsi_id: HSI controller id where the client sits
-+ * @port: Port number in the controller where the client sits
-+ * @tx_cfg: HSI TX configuration
-+ * @rx_cfg: HSI RX configuration
-+ * @platform_data: Platform related data
-+ * @archdata: Architecture-dependent device data
-+ */
-+struct hsi_board_info {
-+	const char		*name;
-+	int			hsi_id;
-+	unsigned int		port;
-+	struct hsi_config	tx_cfg;
-+	struct hsi_config	rx_cfg;
-+	void			*platform_data;
-+	struct dev_archdata	*archdata;
-+};
-+
-+#ifdef CONFIG_HSI
-+extern int hsi_register_board_info(struct hsi_board_info const *info,
-+							unsigned int len);
-+#else
-+static inline int hsi_register_board_info(struct hsi_board_info const *info,
-+							unsigned int len)
-+{
-+	return 0;
-+}
-+#endif
-+
-+/**
-+ * struct hsi_client - HSI client attached to an HSI port
-+ * @device: Driver model representation of the device
-+ * @tx_cfg: HSI TX configuration
-+ * @rx_cfg: HSI RX configuration
-+ * @hsi_start_rx: Called after incoming wake line goes high
-+ * @hsi_stop_rx: Called after incoming wake line goes low
-+ */
-+struct hsi_client {
-+	struct device		device;
-+	struct hsi_config	tx_cfg;
-+	struct hsi_config	rx_cfg;
-+	void			(*hsi_start_rx)(struct hsi_client *cl);
-+	void			(*hsi_stop_rx)(struct hsi_client *cl);
-+	/* private: */
-+	unsigned int		pclaimed:1;
-+	struct list_head	link;
-+};
-+
-+#define to_hsi_client(dev) container_of(dev, struct hsi_client, device)
-+
-+static inline void hsi_client_set_drvdata(struct hsi_client *cl, void *data)
-+{
-+	dev_set_drvdata(&cl->device, data);
-+}
-+
-+static inline void *hsi_client_drvdata(struct hsi_client *cl)
-+{
-+	return dev_get_drvdata(&cl->device);
-+}
-+
-+/**
-+ * struct hsi_client_driver - Driver associated to an HSI client
-+ * @driver: Driver model representation of the driver
-+ */
-+struct hsi_client_driver {
-+	struct device_driver	driver;
-+};
-+
-+#define to_hsi_client_driver(drv) container_of(drv, struct hsi_client_driver,\
-+									driver)
-+
-+int hsi_register_client_driver(struct hsi_client_driver *drv);
-+
-+static inline void hsi_unregister_client_driver(struct hsi_client_driver *drv)
-+{
-+	driver_unregister(&drv->driver);
-+}
-+
-+/**
-+ * struct hsi_msg - HSI message descriptor
-+ * @link: Free to use by the current descriptor owner
-+ * @cl: HSI device client that issues the transfer
-+ * @sgt: Head of the scatterlist array
-+ * @context: Client context data associated to the transfer
-+ * @complete: Transfer completion callback
-+ * @destructor: Destructor to free resources when flushing
-+ * @status: Status of the transfer when completed
-+ * @actual_len: Actual length of data transfered on completion
-+ * @channel: Channel were to TX/RX the message
-+ * @ttype: Transfer type (TX if set, RX otherwise)
-+ * @break_frame: if true HSI will send/receive a break frame (FRAME MODE)
-+ */
-+struct hsi_msg {
-+	struct list_head	link;
-+	struct hsi_client	*cl;
-+	struct sg_table		sgt;
-+	void			*context;
-+
-+	void			(*complete)(struct hsi_msg *msg);
-+	void			(*destructor)(struct hsi_msg *msg);
-+
-+	int			status;
-+	unsigned int		actual_len;
-+	unsigned int		channel;
-+	unsigned int		ttype:1;
-+	unsigned int		break_frame:1;
-+};
-+
-+struct hsi_msg *hsi_alloc_msg(unsigned int n_frag, gfp_t flags);
-+void hsi_free_msg(struct hsi_msg *msg);
-+
-+/**
-+ * struct hsi_port - HSI port device
-+ * @device: Driver model representation of the device
-+ * @tx_cfg: Current TX path configuration
-+ * @rx_cfg: Current RX path configuration
-+ * @num: Port number
-+ * @shared: Set when port can be shared by different clients
-+ * @claimed: Reference count of clients which claimed the port
-+ * @lock: Serialize port claim
-+ * @async: Asynchronous transfer callback
-+ * @setup: Callback to set the HSI client configuration
-+ * @flush: Callback to clean the HW state and destroy all pending transfers
-+ * @start_tx: Callback to inform that a client wants to TX data
-+ * @stop_tx: Callback to inform that a client no longer wishes to TX data
-+ * @release: Callback to inform that a client no longer uses the port
-+ * @clients: List of hsi_clients using the port.
-+ * @clock: Lock to serialize access to the clients list.
-+ */
-+struct hsi_port {
-+	struct device			device;
-+	struct hsi_config		tx_cfg;
-+	struct hsi_config		rx_cfg;
-+	unsigned int			num;
-+	unsigned int			shared:1;
-+	int				claimed;
-+	struct mutex			lock;
-+	int				(*async)(struct hsi_msg *msg);
-+	int				(*setup)(struct hsi_client *cl);
-+	int				(*flush)(struct hsi_client *cl);
-+	int				(*start_tx)(struct hsi_client *cl);
-+	int				(*stop_tx)(struct hsi_client *cl);
-+	int				(*release)(struct hsi_client *cl);
-+	struct list_head		clients;
-+	spinlock_t			clock;
-+};
-+
-+#define to_hsi_port(dev) container_of(dev, struct hsi_port, device)
-+#define hsi_get_port(cl) to_hsi_port((cl)->device.parent)
-+
-+void hsi_event(struct hsi_port *port, unsigned int event);
-+int hsi_claim_port(struct hsi_client *cl, unsigned int share);
-+void hsi_release_port(struct hsi_client *cl);
-+
-+static inline int hsi_port_claimed(struct hsi_client *cl)
-+{
-+	return cl->pclaimed;
-+}
-+
-+static inline void hsi_port_set_drvdata(struct hsi_port *port, void *data)
-+{
-+	dev_set_drvdata(&port->device, data);
-+}
-+
-+static inline void *hsi_port_drvdata(struct hsi_port *port)
-+{
-+	return dev_get_drvdata(&port->device);
-+}
-+
-+/**
-+ * struct hsi_controller - HSI controller device
-+ * @device: Driver model representation of the device
-+ * @id: HSI controller ID
-+ * @num_ports: Number of ports in the HSI controller
-+ * @port: Array of HSI ports
-+ */
-+struct hsi_controller {
-+	struct device		device;
-+	int			id;
-+	unsigned int		num_ports;
-+	struct hsi_port		*port;
-+};
-+
-+#define to_hsi_controller(dev) container_of(dev, struct hsi_controller, device)
-+
-+struct hsi_controller *hsi_alloc_controller(unsigned int n_ports, gfp_t flags);
-+void hsi_free_controller(struct hsi_controller *hsi);
-+int hsi_register_controller(struct hsi_controller *hsi);
-+void hsi_unregister_controller(struct hsi_controller *hsi);
-+
-+static inline void hsi_controller_set_drvdata(struct hsi_controller *hsi,
-+								void *data)
-+{
-+	dev_set_drvdata(&hsi->device, data);
-+}
-+
-+static inline void *hsi_controller_drvdata(struct hsi_controller *hsi)
-+{
-+	return dev_get_drvdata(&hsi->device);
-+}
-+
-+static inline struct hsi_port *hsi_find_port_num(struct hsi_controller *hsi,
-+							unsigned int num)
-+{
-+	return (num < hsi->num_ports) ? &hsi->port[num] : NULL;
-+}
-+
-+/*
-+ * API for HSI clients
-+ */
-+int hsi_async(struct hsi_client *cl, struct hsi_msg *msg);
-+
-+/**
-+ * hsi_setup - Configure the client's port
-+ * @cl: Pointer to the HSI client
-+ *
-+ * When sharing ports, clients should either relay on a single
-+ * client setup or have the same setup for all of them.
-+ *
-+ * Return -errno on failure, 0 on success
-+ */
-+static inline int hsi_setup(struct hsi_client *cl)
-+{
-+	if (!hsi_port_claimed(cl))
-+		return -EACCES;
-+	return	hsi_get_port(cl)->setup(cl);
-+}
-+
-+/**
-+ * hsi_flush - Flush all pending transactions on the client's port
-+ * @cl: Pointer to the HSI client
-+ *
-+ * This function will destroy all pending hsi_msg in the port and reset
-+ * the HW port so it is ready to receive and transmit from a clean state.
-+ *
-+ * Return -errno on failure, 0 on success
-+ */
-+static inline int hsi_flush(struct hsi_client *cl)
-+{
-+	if (!hsi_port_claimed(cl))
-+		return -EACCES;
-+	return hsi_get_port(cl)->flush(cl);
-+}
-+
-+/**
-+ * hsi_async_read - Submit a read transfer
-+ * @cl: Pointer to the HSI client
-+ * @msg: HSI message descriptor of the transfer
-+ *
-+ * Return -errno on failure, 0 on success
-+ */
-+static inline int hsi_async_read(struct hsi_client *cl, struct hsi_msg *msg)
-+{
-+	msg->ttype = HSI_MSG_READ;
-+	return hsi_async(cl, msg);
-+}
-+
-+/**
-+ * hsi_async_write - Submit a write transfer
-+ * @cl: Pointer to the HSI client
-+ * @msg: HSI message descriptor of the transfer
-+ *
-+ * Return -errno on failure, 0 on success
-+ */
-+static inline int hsi_async_write(struct hsi_client *cl, struct hsi_msg *msg)
-+{
-+	msg->ttype = HSI_MSG_WRITE;
-+	return hsi_async(cl, msg);
-+}
-+
-+/**
-+ * hsi_start_tx - Signal the port that the client wants to start a TX
-+ * @cl: Pointer to the HSI client
-+ *
-+ * Return -errno on failure, 0 on success
-+ */
-+static inline int hsi_start_tx(struct hsi_client *cl)
-+{
-+	if (!hsi_port_claimed(cl))
-+		return -EACCES;
-+	return hsi_get_port(cl)->start_tx(cl);
-+}
-+
-+/**
-+ * hsi_stop_tx - Signal the port that the client no longer wants to transmit
-+ * @cl: Pointer to the HSI client
-+ *
-+ * Return -errno on failure, 0 on success
-+ */
-+static inline int hsi_stop_tx(struct hsi_client *cl)
-+{
-+	if (!hsi_port_claimed(cl))
-+		return -EACCES;
-+	return hsi_get_port(cl)->stop_tx(cl);
-+}
-+#endif /* __LINUX_HSI_H__ */
++#endif /* __HSI_CHAR_H */
 -- 
 1.5.6.5
 
