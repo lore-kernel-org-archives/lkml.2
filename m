@@ -1,46 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab0JKX2J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 19:28:09 -0400
-Received: from smtp5.freeserve.com ([193.252.22.128]:32689 "EHLO
-	smtp5.freeserve.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab0JKX2I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 19:28:08 -0400
-X-ME-UUID: 20101011232758791.C12321C00097@mwinf3411.me.freeserve.com
-Date: Tue, 12 Oct 2010 00:27:31 +0100
-From: Chris Vine <chris@cvine.freeserve.co.uk>
-To: Len Brown <lenb@kernel.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Lenovo S12 2.6.36-rc7 lockup
-Message-ID: <20101012002731.3226d5be@boulder.homenet>
-In-Reply-To: <alpine.LFD.2.00.1010111810530.3341@localhost.localdomain>
-References: <20101010135912.76eb61b7@boulder.homenet>
-	<alpine.LFD.2.00.1010111810530.3341@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754110Ab0JKX32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 19:29:28 -0400
+Received: from iona.labri.fr ([147.210.8.143]:57697 "EHLO iona.labri.fr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753449Ab0JKX31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 19:29:27 -0400
+X-Greylist: delayed 1743 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Oct 2010 19:29:26 EDT
+Date: Tue, 12 Oct 2010 01:00:17 +0200
+From: Samuel Thibault <samuel.thibault@ens-lyon.org>
+To: Tracey Dent <tdent48227@gmail.com>
+Cc: greg@kroah.com, w.d.hubbs@gmail.com, chris@the-brannons.com,
+        kirk@braille.uwo.ca, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] Staging: speakup: Added EXPORT_SYMBOL_GPL() markings.
+Message-ID: <20101011230017.GT4721@const.famille.thibault.fr>
+Mail-Followup-To: Samuel Thibault <samuel.thibault@ens-lyon.org>,
+	Tracey Dent <tdent48227@gmail.com>, greg@kroah.com,
+	w.d.hubbs@gmail.com, chris@the-brannons.com, kirk@braille.uwo.ca,
+	linux-kernel@vger.kernel.org
+References: <1286836590-6708-1-git-send-email-tdent48227@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286836590-6708-1-git-send-email-tdent48227@gmail.com>
+User-Agent: Mutt/1.5.12-2006-07-14
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Oct 2010 18:12:42 -0400 (EDT)
-Len Brown <lenb@kernel.org> wrote:
-> any difference if you boot with "intel_idle.max_cpus=0"?
-> 
-> thanks,
-> Len Brown, Intel Open Source Technology Center
- 
-No, that doesn't make any difference.
+Tracey Dent, le Mon 11 Oct 2010 18:36:30 -0400, a écrit :
+> -void speakup_clear_selection(void)
+> -{
+> -	sel_start = -1;
+> -}
 
-However, playing around with this has revealed that if I keep my finger
-continuously on a keyboard key (Ctrl or Alt are obviously good choices
-as they don't of themselves input anything) causes the notebook to
-behave more or less normally.  However, as soon as the key is released
-it goes into some kind of sleep state.  It looks as if it might be some
-kind of ACPI issue.
+Mmm, this won't be so simple actually, as speakup_set_selection and
+speakup_paste_selection will still be using speakup/selection.c's
+sel_start variable.  I guess all speakup/selection.c will need to be
+migrated to using drivers/char/selection.c functions at the same time.
 
-Chris
+speakup_paste_selection is basically like paste_selection, except that
+it can be called with in_atomic() being true.  Yes, it's a hack.  The
+calls to speakup_past_selection should first be moved to a helper
+thread, and then the main paste_selection function can be used instead.
 
+speakup_set_selection is basically like set_selection, except that it
+doesn't take a userland structure, but gets the values from kernelland
+speakup.  A kernel-land variant of set_selection should probably be
+defined that takes a kernelland structure. Apart from that, I don't
+think speakup_set_selection has anything particular compared to the main
+version.  Kirk, can you confirm?
 
+Samuel
