@@ -1,51 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751966Ab0JKEsM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 00:48:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41481 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab0JKEsL (ORCPT
+	id S1751782Ab0JKEuW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 00:50:22 -0400
+Received: from x35.xmailserver.org ([64.71.152.41]:57185 "EHLO
+	x35.xmailserver.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab0JKEuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 00:48:11 -0400
-Date: Mon, 11 Oct 2010 05:48:08 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Brad Boyer <flar@allandria.com>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
- kernels
-Message-ID: <20101011044808.GI19804@ZenIV.linux.org.uk>
-References: <20101007174948.GT19804@ZenIV.linux.org.uk>
- <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
- <20101010144952.GF19804@ZenIV.linux.org.uk>
- <AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
- <20101010235256.GG19804@ZenIV.linux.org.uk>
- <20101011024103.GH19804@ZenIV.linux.org.uk>
- <20101011043632.GA2566@cynthia.pants.nu>
+	Mon, 11 Oct 2010 00:50:21 -0400
+X-AuthUser: davidel@xmailserver.org
+Date: Sun, 10 Oct 2010 21:49:58 -0700 (PDT)
+From: Davide Libenzi <davidel@xmailserver.org>
+X-X-Sender: davide@davide-laptop
+To: Robin Holt <holt@sgi.com>
+cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Convert max_user_watches to long.
+In-Reply-To: <20101009075002.GW14068@sgi.com>
+Message-ID: <alpine.DEB.2.00.1010102148430.4151@davide-laptop>
+References: <20101001200143.GR14064@sgi.com> <alpine.DEB.2.00.1010011335400.2305@ubuntu> <m1vd5ll2hl.fsf@fess.ebiederm.org> <alpine.DEB.2.00.1010020701320.1564@davide-laptop> <20101004194411.GT14068@sgi.com> <alpine.DEB.2.00.1010051841050.1941@ubuntu>
+ <20101009075002.GW14068@sgi.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+X-GPG-FINGRPRINT: CFAE 5BEE FD36 F65E E640  56FE 0974 BF23 270F 474E
+X-GPG-PUBLIC_KEY: http://www.xmailserver.org/davidel.asc
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101011043632.GA2566@cynthia.pants.nu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 09:36:32PM -0700, Brad Boyer wrote:
+On Sat, 9 Oct 2010, Robin Holt wrote:
 
-> I presume the bug is that foo put the return value in %d0 while bar
-> should have its return value in %a0. This function isn't eligible
-> for the optimization being used due to this need to move the result
-> into a different register.
+> @@ -900,11 +902,12 @@ static int ep_insert(struct eventpoll *e
+>  {
+>  	int error, revents, pwake = 0;
+>  	unsigned long flags;
+> +	long user_watches;
+>  	struct epitem *epi;
+>  	struct ep_pqueue epq;
+>  
+> -	if (unlikely(atomic_read(&ep->user->epoll_watches) >=
+> -		     max_user_watches))
+> +	user_watches = atomic_long_read(&ep->user->epoll_watches);
+> +	if (user_watches >= max_user_watches)
+>  		return -ENOSPC;
 
-Yes.
+Is there a particular reason for adding an extra, otherwise unused, 
+user_watches variable?
 
-> > Spot the obvious bug...  BTW, why on the Earth does debian-ports m68k tree
-> > use gcc-4.3 with Cthulhu-scaring 700Kb gzipped patch and does *not* have
-> > gcc-4.4?
-> 
-> I believe that gcc-4.4 for m68k is being held up by the TLS support patches.
-> While I haven't been personally involved to any great degree, I got the
-> impression that the work is pretty much done other than getting it included.
 
-What do autobuilders use, BTW?
+- Davide
+
+
