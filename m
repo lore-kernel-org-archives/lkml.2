@@ -1,30 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754995Ab0JKPVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 11:21:47 -0400
-Received: from winexhub01.shsu.edu ([158.135.3.28]:49075 "EHLO smtp.shsu.edu"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754922Ab0JKPVq convert rfc822-to-8bit (ORCPT
+	id S1755114Ab0JKPXs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 11:23:48 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54873 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754825Ab0JKPXr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 11:21:46 -0400
-X-Greylist: delayed 316 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Oct 2010 11:21:45 EDT
-From: "Muwwakkil, Aesha" <STDASM24@SHSU.EDU>
-To: "info@admin.com" <info@admin.com>
-Date: Mon, 11 Oct 2010 10:16:27 -0500
-Subject: Your mailbox has exceeded the storage limit
-Thread-Topic: Your mailbox has exceeded the storage limit
-Thread-Index: AQHLaVdGIZzehqtzUUqT4JDTa2A07Q==
-Message-ID: <C78F961E328A0D42AF2E6A51930B06BC024225568556@EXMBX.SHSU.EDU>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
+	Mon, 11 Oct 2010 11:23:47 -0400
+Subject: Re: [PATCH] kconfig: Temporarily disable dependency warnings
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lacombar@gmail.com, xiyou.wangcong@gmail.com
+In-Reply-To: <1286660701-31557-1-git-send-email-mmarek@suse.cz>
+References: <20101008150343.GF4088@hack>
+	 <1286660701-31557-1-git-send-email-mmarek@suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Mon, 11 Oct 2010 16:23:00 +0100
+Message-ID: <1286810580.19739.108.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 11 Oct 2010 15:23:00.0466 (UTC) FILETIME=[30A9BD20:01CB6958]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your mailbox has exceeded the storage limit set by your administrator,you may not be able to send or receive new mail until you re-validate your mailbox.To re-validate your mailbox please CLICK HERE<http://w3t.org/cGf>.  System Administrator.
+On Sat, 2010-10-09 at 22:45 +0100, Michal Marek wrote:
+> After fixing a use-after-free bug in kconfig, a 'make defconfig' or
+> 'make allmodconfig' fills the screen with warnings that were not
+> detected before. Given that we are close to the release now, disable the
+> warnings temporarily and deal with them after 2.6.36.
+> 
+> Signed-off-by: Michal Marek <mmarek@suse.cz>
+
+Acked-by: Catalin Marinas <catalin.marinas@arm.com>
+
