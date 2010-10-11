@@ -1,214 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab0JKPho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 11:37:44 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:36293 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754843Ab0JKPhn (ORCPT
+	id S1755285Ab0JKPjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 11:39:54 -0400
+Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:37679 "EHLO
+	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab0JKPjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 11:37:43 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: Tomas Henzl <thenzl@redhat.com>
-CC: James Bottomley <James.Bottomley@suse.de>, bo yang <boyang1288@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Date: Mon, 11 Oct 2010 09:37:27 -0600
-Subject: RE: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
- MegaRAID SAS drive
-Thread-Topic: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
- MegaRAID SAS drive
-Thread-Index: ActpRyhmyFvFO3q/SPOH3+6Kt7i8ggAEOADA
-Message-ID: <4B6A08C587958942AA3002690DD4F8C30100FF9C58@cosmail02.lsi.com>
-References: <AANLkTin53S+C_+QzF-drs5BUAx=k7YeiHrTaQGTFSc_a@mail.gmail.com>
-	 <4CAF3E04.1050304@redhat.com> <1286555954.2985.110.camel@mulgrave.site>
- <4CAF70CD.6020307@redhat.com> <4CB0D2AF.7080609@redhat.com>
- <4B6A08C587958942AA3002690DD4F8C30100F5506B@cosmail02.lsi.com>
- <4CB30F27.9090009@redhat.com>
-In-Reply-To: <4CB30F27.9090009@redhat.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 11 Oct 2010 11:39:53 -0400
+X-SpamScore: -5
+X-BigFish: VPS-5(zzbb2cK98dN2f55kzz1202hzzz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0LA4U65-01-BFI-02
+X-M-MSG: 
+Date: Mon, 11 Oct 2010 17:39:42 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Maynard Johnson <maynardj@us.ibm.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        William Cohen <wcohen@redhat.com>,
+        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH] oprofile: disable write access to oprofilefs while
+ profiler is running
+Message-ID: <20101011153942.GU13563@erda.amd.com>
+References: <1286275017-32497-1-git-send-email-robert.richter@amd.com>
+ <20101005163338.GI13563@erda.amd.com>
+ <4CB31592.2080508@us.ibm.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <4CB31592.2080508@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9BFbvXc015918
 
-Tomas,
+On 11.10.10 09:48:02, Maynard Johnson wrote:
+> Robert, I don't have any issue with this patch except I'm not sure what problem 
+> it's fixing.  From my read of oprofile userland code, I don't see where 
+> profiling parameters are ever written to oprofilefs when profiling is active. 
+> Is your patch intended to guard against potential non-intentional cases 
+> occurring in userland code?  Or is there some case existing right now?
 
-The reason the driver does flush_scheduled_work() is driver did cancel_delayed_work().  I am not sure driver need to call flush_scheduled_work() if the scheduled work already done, but I will test this changes and submit another patch as soon as it works fine.  
+The kernel updates the counter configuration during profiling only
+when the counters are started. Since sampling data and its
+representation depends on the counter configuration, we do not want to
+change the configuration in-flight. Otherwise the daemon may not know
+which configuration was used for which sample.
 
-This change should not be the part of this patch, we would have the new patch submit after the verification. 
+Instead, userland is required to restart profiling which also flushes
+cpu buffers. Thus, the daemon always is aware of the configuration
+which was used when the kernel wrote a sample.
 
-Regards,
+This may happen e.g. for IBS samples, where certain options may be
+enabled using oprofilefs. We want to know which options are set while
+a sample is written and make sure, the options do not change. There is
+another case, the latest patch I sent that implements IBS branch
+target address reporting extends the IBS sample size if its option is
+set. To always proper parse the sampling data by the daemon, we must
+ensure the sampling data is consistent over one profiling session and
+sample size does not change.
 
-Bo Yang   
- 
------Original Message-----
-From: Tomas Henzl [mailto:thenzl@redhat.com] 
-Sent: Monday, October 11, 2010 9:21 AM
-To: Yang, Bo
-Cc: James Bottomley; bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
-Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS drive
+As we rely on not writing to the configuration while profiling and
+since this works with the current daemon, I added the check.
 
-On 10/11/2010 02:55 PM, Yang, Bo wrote:
-> Tomas,
->
->   
->> Another correction - flush_scheduled_work is already present in megass_detach_one
->> it only should be moved away from the if statement.
->>     
-> The flush_scheduled_work is for schedule_delayed_work().  We need to flush it and remove.
->   
-I'm not saying it should be removed, I think a move outside from the 'if' block
-makes it work for ev->hotplug_work and for the newly added instance->work_init
+-Robert
 
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
-index 55951f4..7773707 100644
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -4088,9 +4088,9 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
- 		struct megasas_aen_event *ev = instance->ev;
- 		cancel_delayed_work(
- 			(struct delayed_work *)&ev->hotplug_work);
--		flush_scheduled_work();
--		instance->ev = NULL;
- 	}
-+	flush_scheduled_work();
-+	instance->ev = NULL;
- 
- 	tasklet_kill(&instance->isr_tasklet);
- 
---
-
-> -----Original Message-----
-> From: Tomas Henzl [mailto:thenzl@redhat.com] 
-> Sent: Saturday, October 09, 2010 4:38 PM
-> To: James Bottomley
-> Cc: bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Yang, Bo
-> Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS drive
->
-> On 10/08/2010 09:28 PM, Tomas Henzl wrote:
->   
->> On 10/08/2010 06:39 PM, James Bottomley wrote:
->>   
->>     
->>> On Fri, 2010-10-08 at 17:51 +0200, Tomas Henzl wrote:
->>>   
->>>     
->>>       
->>>> On 09/23/2010 04:36 AM, bo yang wrote:
->>>>     
->>>>       
->>>>         
->>>>> This patch is too big.  I am using attachment to submit.  Please
->>>>> use attached file to apply.  Also let me know if it can't be accepted.
->>>>>
->>>>> To add the Online controller reset support, driver need to do:
->>>>> a). reset the controller chips -- Xscale and Gen2 which will change
->>>>> the function calls and add the reset function related to this two
->>>>> chips.
->>>>> b). during the reset, driver will store the pending cmds which not
->>>>> returned by FW to driver's pending queue.  Driver will re-issue those
->>>>> pending cmds again to FW after the OCR finished.
->>>>> c). In driver's timeout routine, driver will report to OS as reset.
->>>>> Also driver's queue routine will block the cmds until the OCR
->>>>> finished.
->>>>> d). in Driver's ISR routine, if driver get the FW state as state
->>>>> change, FW in Failure status and FW support online controller
->>>>> reset (OCR), driver will start to do the controller reset.
->>>>> e). In driver's IOCTL routine, the application cmds will wait for the
->>>>> OCR to finish, then issue the cmds to FW.
->>>>>
->>>>> Signed-off-by Bo Yang<bo.yang@lsi.com>
->>>>>
->>>>> ---
->>>>>  drivers/scsi/megaraid/megaraid_sas.c |  756 ++++++++++++++++++++++++++++++++---
->>>>>  drivers/scsi/megaraid/megaraid_sas.h |   88 +++-
->>>>>  2 files changed, 787 insertions(+), 57 deletions(-)
->>>>>       
->>>>>         
->>>>>           
->>>> Hi Bo,
->>>> in the workqueue function you sleep for 30s,
->>>> it's scheduled here - schedule_work(&instance->work_init);
->>>>
->>>> +process_fw_state_change_wq(struct work_struct *work)
->>>> +{
->>>> ...
->>>> +		/*waitting for about 20 second before start the second init*/
->>>> +		for (wait = 0; wait < 30; wait++) {
->>>> +			msleep(1000);
->>>> +		}
->>>>     
->>>>       
->>>>         
->>> this lot should be ssleep(20) if you want a 20 sec sleep.
->>>   
->>>     
->>>       
->> please do that on every place where you use the 
->> "for (wait = 0; wait < n; wait++) msleep(1000);" construction
->>
->>   
->>     
->>>> - this is not a good practice to sleep for a so long time I think
->>>>     
->>>>       
->>>>         
->> this long sleep might might be ok, if the workqueue is used only rarely
->> is it so?
->>
->>   
->>     
->>>> - you should use in your exit function some synchronization 
->>>>   for example 'cancel_work_sync', without that if someone rmmods your 
->>>>   module, it could then lead to a memory corruption
->>>>     
->>>>       
->>>>         
->>> Actually flush_scheduled_work() should be fine ... it will force the
->>> module removal to wait for completion ... cancellation can be error
->>> prone, so just forcing the wait sounds easier.
->>>   
->>>     
->>>       
-> Another correction - flush_scheduled_work is already present in megass_detach_one
-> it only should be moved away from the if statement.
->
->
->   
->> someone told that cancel_work_sync is safer then flush_scheduled_work
->> but I'm not an expert, so ok 
->>
->> Tomas
->>
->>   
->>     
->>> James
->>>
->>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>   
->>>     
->>>       
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>   
->>     
-> Nï¿½ï¿½ï¿½ï¿½ï¿½rï¿½ï¿½yï¿½ï¿½ï¿½bï¿½Xï¿½ï¿½Ç§vï¿½^ï¿½)Şº{.nï¿½+ï¿½ï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½"ï¿½{ayï¿½Ê‡Ú™ï¿½,jï¿½ï¿½fï¿½ï¿½ï¿½hï¿½ï¿½ï¿½zï¿½ï¿½wï¿½ï¿½ï¿½
-ï¿½ï¿½ï¿½j:+vï¿½ï¿½ï¿½wï¿½jï¿½mï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½zZ+ï¿½ï¿½İ¢j"ï¿½ï¿½!tml=
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
