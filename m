@@ -1,82 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab0JKWKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 18:10:18 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34911 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756463Ab0JKWKQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 18:10:16 -0400
-From: ebiederm@xmission.com (Eric W. Biederman)
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Alok Kataria <akataria@vmware.com>,
-        "kexec\@lists.infradead.org" <kexec@lists.infradead.org>,
-        Haren Myneni <hbabu@us.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Daniel Hecht <dhecht@vmware.com>,
-        jeremy@xensource.com
-References: <1286570087.8769.27.camel@ank32.eng.vmware.com>
-	<1286816964.1372.2.camel@ank32.eng.vmware.com>
-	<m1lj64ppri.fsf@fess.ebiederm.org>
-	<1286826083.1372.15.camel@ank32.eng.vmware.com>
-	<20101011213901.GR12743@redhat.com>
-Date: Mon, 11 Oct 2010 15:10:11 -0700
-In-Reply-To: <20101011213901.GR12743@redhat.com> (Vivek Goyal's message of
-	"Mon, 11 Oct 2010 17:39:01 -0400")
-Message-ID: <m1hbgs5qkc.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.157.188;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 98.207.157.188
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.5 XM_Body_Dirty_Words Contains a dirty word
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Vivek Goyal <vgoyal@redhat.com>
-X-Spam-Relay-Country: 
-Subject: Re: [RFC PATCH] Bug during kexec...not all cpus are stopped
-X-Spam-Flag: No
-X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	id S1756750Ab0JKWO1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 18:14:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43229 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756699Ab0JKWO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 18:14:26 -0400
+Subject: fanotify: disable fanotify syscalls
+From: Eric Paris <eparis@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andreas Gruenbacher <agruen@suse.de>,
+        David Daney <ddaney@caviumnetworks.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Tvrtko Ursulin <tvrtko.ursulin@sophos.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <4CAF9448.7070906@zytor.com>
+References: <AANLkTi=LsBNU+O2hqZUcM2nYM_ze6qPq3thwSZBMtY_v@mail.gmail.com>
+	 <201010081406.10190.agruen@suse.de> <4CAF47F3.3070800@caviumnetworks.com>
+	 <201010082350.01135.agruen@suse.de>  <4CAF9448.7070906@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 11 Oct 2010 18:13:31 -0400
+Message-ID: <1286835211.28329.22.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+This patch disables the fanotify syscalls by just not building them and
+letting the cond_syscall() statements in kernel/sys_ni.c redirect them
+to sys_ni_syscall().
 
-> On Mon, Oct 11, 2010 at 12:41:23PM -0700, Alok Kataria wrote:
+It was pointed out by Tvrtko Ursulin that the fanotify interface did not
+include an explicit prioritization between groups.  This is necessary
+for fanotify to be usable for hierarchical storage management software,
+as they must get first access to the file, before inotify-like notifiers
+see the file.
 
-> I don't think that kdump path uses smp_send_stop().
+This feature can be added in an ABI compatible way in the next release
+(by using a number of bits in the flags field to carry the info) but it
+was suggested by Alan that maybe we should just hold off and do it in
+the next cycle, likely with an (new) explicit argument to the syscall.
+I don't like this approach best as I know people are already starting to
+use the current interface, but Alan is all wise and noone on list backed
+me up with just using what we have.  I feel this is needlessly ripping
+the rug out from under people at the last minute, but if others think it
+needs to be a new argument it might be the best way forward.
 
-It doesn't.
+Three choices:
+Go with what we got (and implement the new feature next cycle).  Add a
+new field right now (and implement the new feature next cycle).  Wait
+till next cycle to release the ABI (and implement the new feature next
+cycle).  This is number 3.
 
-> IIUC, on x86, we directly send NMI to other cpus.
->
-> native_machine_crash_shutdown()
->   kdump_nmi_shootdown_cpus()
->         nmi_shootdown_cpus()
->            smp_send_nmi_allbutself
->                 apic->send_IPI_allbutself(NMI_VECTOR);
->
-> So above description should be limited to only panic() path.
+Signed-off-by: Eric Paris <eparis@redhat.com>
 
-Is it actually confusing?  With respect to documenting the line
-of thinking it seems reasonable.
+---
 
-> On a side note, I am wondering why panic() and kdump path can't share the
-> shutdown routine.
+ fs/notify/Kconfig    |    2 +-
+ include/linux/Kbuild |    1 -
+ 2 files changed, 1 insertion(+), 2 deletions(-)
 
-Hysterical raisins.  Andi's change to smp_send_stop says that NMIs not
-working on some boxes.  When someone wants to weed through all of the
-insanity it would probably be good to get the panic and the kdump paths
-sharing code.  For now simply separating panic and reboot should be
-enough, and it lets the code evolve where it needs to.
+diff --git a/fs/notify/Kconfig b/fs/notify/Kconfig
+index 22c629e..b388443 100644
+--- a/fs/notify/Kconfig
++++ b/fs/notify/Kconfig
+@@ -3,4 +3,4 @@ config FSNOTIFY
+ 
+ source "fs/notify/dnotify/Kconfig"
+ source "fs/notify/inotify/Kconfig"
+-source "fs/notify/fanotify/Kconfig"
++#source "fs/notify/fanotify/Kconfig"
+diff --git a/include/linux/Kbuild b/include/linux/Kbuild
+index 626b629..4e8ea8c 100644
+--- a/include/linux/Kbuild
++++ b/include/linux/Kbuild
+@@ -118,7 +118,6 @@ header-y += eventpoll.h
+ header-y += ext2_fs.h
+ header-y += fadvise.h
+ header-y += falloc.h
+-header-y += fanotify.h
+ header-y += fb.h
+ header-y += fcntl.h
+ header-y += fd.h
 
-Eric
+
