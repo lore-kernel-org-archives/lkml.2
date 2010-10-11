@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756442Ab0JKVLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 17:11:48 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:41529 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756330Ab0JKVLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 17:11:47 -0400
-From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 11 Oct 2010 14:11:40 -0700
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Marcio Saito <marcio@cyclades.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Avantika Mathur <mathur@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC] [PATCH] allow low HZ values?
-Message-ID: <20101011211140.GC953@tpepper-t61p.dolavim.us>
-References: <20101011201121.GA953@tpepper-t61p.dolavim.us>
- <alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
+	id S1756516Ab0JKVLz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 17:11:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48403 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756484Ab0JKVLx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 17:11:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=xpTIMAmbpxxeU/yZShGlBgCYlLL/O1sX2jzbT87vop/CCs0jxvB1ZJ2sEKoGHLihV4
+         QBLLDY8hT95FWFPVVDMhKxvEZYTUqX29v/cAY5i1fB4aie5B1YP4Xm7Scz4iZpGUV5+b
+         LvW5FjAMvjf2y2UDYHpWRgwMuedzhPfkHLwdI=
+Date: Mon, 11 Oct 2010 23:11:38 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
+        Jassi Brar <jassi.brar@samsung.com>, alsa-devel@alsa-project.org,
+        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [patch] ASoC: soc: snprintf() doesn't return negative
+Message-ID: <20101011211138.GL5851@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Liam Girdwood <lrg@slimlogic.co.uk>,
+	Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+	Peter Ujfalusi <peter.ujfalusi@nokia.com>,
+	Jassi Brar <jassi.brar@samsung.com>, alsa-devel@alsa-project.org,
+	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20101011035416.GD5851@bicker> <20101011104009.GB9231@rakim.wolfsonmicro.main> <20101011164038.GE5851@bicker> <20101011185148.GB22355@opensource.wolfsonmicro.com> <20101011194502.GK5851@bicker>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20101011194502.GK5851@bicker>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 11 Oct at 22:32:06 +0200 tglx@linutronix.de said:
-> On Mon, 11 Oct 2010, Tim Pepper wrote:
+On Mon, Oct 11, 2010 at 09:45:02PM +0200, Dan Carpenter wrote:
+> On Mon, Oct 11, 2010 at 07:51:48PM +0100, Mark Brown wrote:
+> > In actual fact quite a few devices have enough registers to be
+> > truncated, meaning that it's not only possible but likely we'll exercise
+> > the cases that deal with the end of buffer.  If snprintf() is returning
+> > values larger than buffer size it was given we're likely to have an
+> > issue but it seems that there's something missing in your analysis since
+> > we're never seeing WARN_ON()s and are instead seeing the behaviour the
+> > code is intended to give, which is to truncate the output when we run
+> > out of space.
+> > 
+> > Could you re-check your analysis, please?
 > 
-> > I'm not necessarily wanting to open up the age old question of "what is
-> > a good HZ", but we were doing some testing on timer tick overheads for
-> > HPC applications and this came up...
+> That's odd.  I'm sorry, I can't explain why you wouldn't see a stack
+> trace...  The code is straight forward:
 > 
-> Yeah. This comes always up when the timer tick overhead on HPC is
-> tested. And this patch is again the fundamentally wrong answer.
+>         /* Reject out-of-range values early.  Large positive sizes are
+>            used for unknown buffer sizes. */
+>         if (WARN_ON_ONCE((int) size < 0))
+>                 return 0;
+> 
+> It would still give you truncated output but after the NULL terminator
+> there would be information leaked from the kernel.  If the reader
+> program had allocated a large enough buffer to handle the extra
+> information it wouldn't cause a problem.
+> 
 
-Yep.  Long term no hz is definitely the goal.  I'm not sufficiently
-connected to the -rt space I guess to have followed that there's somebody
-again looking in that direction.  The rfc patch was mostly just a minimal
-is there anything simple we can do in the meantime exercise.
+Actually it will never cause a problem with userspace because we pass
+the size of the userspace buffer to the kernel.  The only issues are the
+information leak if the user passes in a 8k buffer and the also the
+WARN_ON_ONCE()
 
-> We have told HPC folks for years that we need a kind of "NOHZ" mode
-> for HPC where we can transparently switch off the tick when only one
-> user space bound thread is active and switch back to normal once this
-> thing terminates or goes into the kernel via a syscall.
 
-I'd not heard of this in between NOHZ-y idea...sounds promising.
-We'd talked about different non-idle no hz approaches in the past year
-or so, some of which were on the veeery complicated side of the spectrum.
+regards,
+dan carpenter
 
-> Sigh, nothing
-> happened ever except for repeating the same crap patches over and
-> over.
-
-I'll check out what Frederic is doing.  Thanks for the pointer and
-apologies for the noise.
-
--- 
-Tim Pepper  <lnxninja@linux.vnet.ibm.com>
-IBM Linux Technology Center
