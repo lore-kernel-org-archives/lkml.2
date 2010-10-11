@@ -1,62 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756015Ab0JKTfF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 15:35:05 -0400
-Received: from relay02.digicable.hu ([92.249.128.188]:40888 "EHLO
-	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753573Ab0JKTfE (ORCPT
+	id S1756046Ab0JKTfn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 15:35:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27088 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab0JKTfm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 15:35:04 -0400
-Message-ID: <4CB366E3.9070903@freemail.hu>
-Date: Mon, 11 Oct 2010 21:34:59 +0200
-From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Mon, 11 Oct 2010 15:35:42 -0400
+Message-ID: <4CB366B1.40405@kernel.org>
+Date: Mon, 11 Oct 2010 12:34:09 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Oliver Neukum <oliver@neukum.org>, Joe Perches <joe@perches.com>,
-        linux-usb@vger.kernel.org
-Subject: Re: [PATCH] usb: don't trust report_size for buffer size
-References: <20101011182816.GA15451@outflux.net> <4CB35D4C.9000406@freemail.hu> <20101011191119.GN4991@outflux.net>
-In-Reply-To: <20101011191119.GN4991@outflux.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree (tip
+ tree related)
+References: <20101011160429.81483d01.sfr@canb.auug.org.au> <4CB344C6.5040408@kernel.org> <4CB35EC1.5040909@zytor.com>
+In-Reply-To: <4CB35EC1.5040909@zytor.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Original: 77.234.64.233
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kees Cook wrote:
-> Hi Németh,
+On 10/11/2010 12:00 PM, H. Peter Anvin wrote:
+> On 10/11/2010 10:09 AM, Yinghai Lu wrote:
+>>
+>> make all functions in memblock.c without __init to carry __init_memblock.
+>>
+>>  
+>> -static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
+>> +static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_addr_t end,
+>>  					  phys_addr_t size, phys_addr_t align)
+>>  
+>> -static int memblock_search(struct memblock_type *type, phys_addr_t addr)
+>> +static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
+>>  
 > 
-> On Mon, Oct 11, 2010 at 08:54:04PM +0200, Németh Márton wrote:
->> There might be similar problem also in the case USB_DEVICE_ID_CODEMERCS_IOW56. There
->> is buf is allocated with usb_alloc_coherent() to the size dev->report_size. However,
->> some lines later the copy_from_user() function tries to copy "count" number of
->> bytes to the dev->report_size allocated buffer. Unfortunately I don't have such
->> devices to try the driver so these are just coming from "static analysis".
-> 
-> I don't think the USB_DEVICE_ID_CODEMERCS_IOW56 path is a problem:
-> 
->         if (count != dev->report_size) {
->                 retval = -EINVAL;
->                 goto exit;
->         }
+> Your patch description doesn't match what your patch does.  Please write
+> a correct description.
 
-You are right, I missed this condition.
+please check
 
->         switch (dev->product_id) {
-> ...
->         case USB_DEVICE_ID_CODEMERCS_IOW56:
-> ...
->                 buf = usb_alloc_coherent(dev->udev, dev->report_size,
->                                          GFP_KERNEL, &int_out_urb->transfer_dma);
-> ...
->                 if (copy_from_user(buf, user_buffer, count)) {
-> 
-> i.e. count must == dev->report_size, and the buf is allocated with size
-> dev->report_size even though copy_from_user uses "count".
-> 
-> -Kees
-> 
+[PATCH -v2] x86: Fix section mismatch with memblock_find_region()
 
+Stephen found
+
+WARNING: mm/built-in.o(.text+0x25ab8): Section mismatch in reference from the function memblock_find_base() to the function .init.text:memblock_find_region()
+The function memblock_find_base() references
+the function __init memblock_find_region().
+This is often because memblock_find_base lacks a __init 
+annotation or the annotation of memblock_find_region is wrong.
+
+So let memblock_find_region() to use __init_memblock insteaf of __init directly.
+
+Also make left function that doesn't have __init* to carry  __init_memblock.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ mm/memblock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -99,7 +99,7 @@ long __init_memblock memblock_overlaps_r
+  * are top-down.
+  */
+ 
+-static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
++static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_addr_t end,
+ 					  phys_addr_t size, phys_addr_t align)
+ {
+ 	phys_addr_t base, res_base;
+@@ -653,7 +653,7 @@ void __init memblock_enforce_memory_limi
+ 	}
+ }
+ 
+-static int memblock_search(struct memblock_type *type, phys_addr_t addr)
++static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
+ {
+ 	unsigned int left = 0, right = type->cnt;
+ 
