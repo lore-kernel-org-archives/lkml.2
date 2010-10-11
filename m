@@ -1,110 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab0JKWBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 18:01:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52417 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756470Ab0JKWBv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 18:01:51 -0400
-Date: Mon, 11 Oct 2010 22:01:26 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, rja@sgi.com, tglx@linutronix.de,
-        rientjes@google.com, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, rja@sgi.com, tglx@linutronix.de,
-        rientjes@google.com, hpa@linux.intel.com
-In-Reply-To: <4CB27BDF.5000800@kernel.org>
-References: <4CB27BDF.5000800@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, numa: For each node, register the memory blocks actually used
-Message-ID: <tip-e9aeb8fdb6b197b9b1e1c49717de892593bb811e@git.kernel.org>
-Git-Commit-ID: e9aeb8fdb6b197b9b1e1c49717de892593bb811e
-X-Mailer: tip-git-log-daemon
+	id S1756714Ab0JKWCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 18:02:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48022 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756513Ab0JKWCN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 18:02:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=vMd9jVIke4/dgmk+O/Z3a7IpWcinTLSqcyXsLUfG/VKKDMK5k4kiYOuukwZHdtlsRR
+         HKTD3q50eb/+l0jUvJXSNsQ45EN1Gq3173+SgcfeukiqfIS66Db8RMbsy2jEn6myfSWG
+         SmZwEFQS4hsK8ac1ROw2kTCt3wuPr/i8DZ2JM=
+Message-ID: <4CB38960.5070306@suse.cz>
+Date: Tue, 12 Oct 2010 00:02:08 +0200
+From: Jiri Slaby <jslaby@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Oct 2010 22:01:27 +0000 (UTC)
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: LKML <linux-kernel@vger.kernel.org>, clemens@ladisch.de, venki@google.com,
+        the arch/x86 maintainers <x86@kernel.org>
+Subject: Re: HPET causes tasks to freeze (still in 2.6.36-rc6)
+References: <4CA9F471.2080704@suse.cz> <alpine.LFD.2.00.1010041747550.14550@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1010041747550.14550@localhost6.localdomain6>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e9aeb8fdb6b197b9b1e1c49717de892593bb811e
-Gitweb:     http://git.kernel.org/tip/e9aeb8fdb6b197b9b1e1c49717de892593bb811e
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Sun, 10 Oct 2010 19:52:15 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 11 Oct 2010 13:46:34 -0700
+On 10/04/2010 06:31 PM, Thomas Gleixner wrote:
+> On Mon, 4 Oct 2010, Jiri Slaby wrote:
+>> HPET as a clocksource has still issues in the latest kernels (confirmed
+>> in 2.6.36-rc6) at least on x86_64. Unless clocksource=jiffies,
+>> clocksource=tsc or nolapic_timer is used, the system is unusable. Tasks
+>> are not woken unless mouse is moved, key is pressed (or other hard irq
+>> triggered). 2.6.32 seems to be the last working.
+> 
+> The problem is not clocksource related, it's NOHZ related.
+> 
+> clocksource=jiffies, clocksource=tsc are disabling NOHZ simply because
+> we can not do NOHZ neither with jiffies nor with a TSC which stops in
+> deeper C-states.
+> 
+> nolapic_timer installs a dummy lapic timer so the lapic is not used,
+> but HPET is used instead and NOHZ is disabled as well.
+> 
+> So the real problem is that the hpet broadcast interrupts which are
+> used to work around the lapic timer stops in C3 problem are not coming
+> through for whatever reason.
+> 
+> So the question is what changed in the ACPI/idle NOHZ code which might
+> expose this problem.
+> 
+> Can we get dmesg, output of proc/timer_list and output of
+> /proc/acpi/processor/CPU0/power for a .32 and a non working kernel
+> please ?
 
-x86, numa: For each node, register the memory blocks actually used
+Sure:
+http://labs.suse.cz/jslaby/bug-579932/
 
-Russ reported SGI UV is broken recently. He said:
-
-| The SRAT table shows that memory range is spread over two nodes.
-|
-| SRAT: Node 0 PXM 0 100000000-800000000
-| SRAT: Node 1 PXM 1 800000000-1000000000
-| SRAT: Node 0 PXM 0 1000000000-1080000000
-|
-|Previously, the kernel early_node_map[] would show three entries
-|with the proper node.
-|
-|[    0.000000]     0: 0x00100000 -> 0x00800000
-|[    0.000000]     1: 0x00800000 -> 0x01000000
-|[    0.000000]     0: 0x01000000 -> 0x01080000
-|
-|The problem is recent community kernel early_node_map[] shows
-|only two entries with the node 0 entry overlapping the node 1
-|entry.
-|
-|    0: 0x00100000 -> 0x01080000
-|    1: 0x00800000 -> 0x01000000
-
-After looking at the changelog, Found out that it has been broken for a while by
-following commit
-
-|commit 8716273caef7f55f39fe4fc6c69c5f9f197f41f1
-|Author: David Rientjes <rientjes@google.com>
-|Date:   Fri Sep 25 15:20:04 2009 -0700
-|
-|    x86: Export srat physical topology
-
-Before that commit, register_active_regions() is called for every SRAT memory
-entry right away.
-
-Use nodememblk_range[] instead of nodes[] in order to make sure we
-capture the actual memory blocks registered with each node.  nodes[]
-contains an extended range which spans all memory regions associated
-with a node, but that does not mean that all the memory in between are
-included.
-
-Reported-by: Russ Anderson <rja@sgi.com>
-Tested-by: Russ Anderson <rja@sgi.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4CB27BDF.5000800@kernel.org>
-Cc: David Rientjes <rientjes@google.com>
-Cc: <stable@kernel.org> 2.6.33 .34 .35 .36
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/srat_64.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index f9897f7..9c0d0d3 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -420,9 +420,11 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
- 		return -1;
- 	}
- 
--	for_each_node_mask(i, nodes_parsed)
--		e820_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
--						nodes[i].end >> PAGE_SHIFT);
-+	for (i = 0; i < num_node_memblks; i++)
-+		e820_register_active_regions(memblk_nodeid[i],
-+				node_memblk_range[i].start >> PAGE_SHIFT,
-+				node_memblk_range[i].end >> PAGE_SHIFT);
-+
- 	/* for out of order entries in SRAT */
- 	sort_node_map();
- 	if (!nodes_cover_memory(nodes)) {
+thanks,
+-- 
+js
+suse labs
