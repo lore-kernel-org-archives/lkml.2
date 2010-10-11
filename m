@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0JKGu1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 02:50:27 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:44537 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752638Ab0JKGu0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 02:50:26 -0400
-Date: Sun, 10 Oct 2010 23:50:15 -0700
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, David Miller <davem@davemloft.net>,
-        sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/7] sparc: make drivers/of/pdt.c no longer sparc-only
-Message-ID: <20101010235015.2954811f@uxo>
-In-Reply-To: <20101011040443.GA23588@angua.secretlab.ca>
-References: <20101010014358.30cb74b5@debxo>
-	<20101010020905.1e27c1b4@debxo>
-	<20101011040443.GA23588@angua.secretlab.ca>
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752838Ab0JKG5s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 02:57:48 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:61828 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752544Ab0JKG5q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 02:57:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=fDIQitEtANeeqDpC8Hui1TksJ+QKI9FX82TNeGkdwtFT74hol2F5EGuVuQQ62uLDMX
+         XIH/pEYyNJsoKufej6fnAN6P3SGa/xKtUWoQUN6fS9eVUqxccb02wtqetO5YEQBKU1EF
+         ebs93NYZqM/apSdfGsz5rsrpOOKhtrej26eGI=
+MIME-Version: 1.0
+In-Reply-To: <87aamm3si1.fsf@basil.nowhere.org>
+References: <4CB1EBA2.8090409@gmail.com>
+	<87aamm3si1.fsf@basil.nowhere.org>
+Date: Mon, 11 Oct 2010 08:57:45 +0200
+Message-ID: <AANLkTimGC_0W-=nSeoti6DLh5XNxvGwU6jqoGUkuOKPx@mail.gmail.com>
+Subject: Re: [PATCH 14(16] pramfs: memory protection
+From: Marco Stornelli <marco.stornelli@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>, linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Oct 2010 22:04:43 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
+2010/10/10 Andi Kleen <andi@firstfloor.org>:
+> Marco Stornelli <marco.stornelli@gmail.com> writes:
+>> +
+>> +     do {
+>> +             pgd = pgd_offset(&init_mm, address);
+>> +             if (pgd_none(*pgd) || unlikely(pgd_bad(*pgd)))
+>> +                     goto out;
+>> +
+>> +             pud = pud_offset(pgd, address);
+>> +             if (pud_none(*pud) || unlikely(pud_bad(*pud)))
+>> +                     goto out;
+>> +
+>> +             pmd = pmd_offset(pud, address);
+>> +             if (pmd_none(*pmd) || unlikely(pmd_bad(*pmd)))
+>> +                     goto out;
+>> +
+>> +             ptep = pte_offset_kernel(pmd, addr);
+>> +             pte = *ptep;
+>> +             if (pte_present(pte)) {
+>
+> This won't work at all on x86 because you don't handle large
+> pages.
 
-> On Sun, Oct 10, 2010 at 02:09:05AM -0700, Andres Salomon wrote:
-> > Whoops, that should've been 1/5, not 1/7.  Two additional x86
-> > patches snuck in there that are already in Grant's test-devicetree
-> > branch.
-> 
-> Note that of the two patches I'm carrying in test-devicetree, only one
-> of them is actually able to move into linux-next at this present time.
-> 
-> 1) of/irq: remove references to NO_IRQ in drivers/of/platform.c
-> 
-> I'm putting this one into next-devicetree now
-> 
-> 2) x86/of: define irq functions to allow drivers/of/* to build on x86
-> 
-> I've not yet received an ack from the x86 maintainers on this, so I
-> cannot put it into my next branch.  (Sorry I didn't notice this
-> earlier; it just dawned on me as I was looking over which patches I
-> needed to move over).  The same goes for the patch that actaully adds
-> OF support for x86 OLPC.  I'll need an ack from x86 folks before I
-> merge it.
-> 
-> g.
-
-Okay.  For reference, that patch is:
-
-https://patchwork.kernel.org/patch/168662/
-
-x86 folks, mind reviewing and providing an Ack or Nack?
+On x86 works because I tested. Maybe there's a particular
+configuration with large pages. Sincerly I'm only an "user", so if
+you/Linus or others want to change it or rewrite it, for me it's ok.
+The pte manipulation are a bit out of scope for a fs, so I let the
+things to the mm experts.
