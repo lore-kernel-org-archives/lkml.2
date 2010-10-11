@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab0JKUfs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 16:35:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:11771 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755726Ab0JKUfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 16:35:47 -0400
-Date: Mon, 11 Oct 2010 16:35:18 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Huang Ying <ying.huang@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH -v3 3/6] x86, NMI, Rewrite NMI handler
-Message-ID: <20101011203518.GB24567@redhat.com>
-References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
- <1286606987-19879-3-git-send-email-ying.huang@intel.com>
- <1286813635.2336.617.camel@twins>
+	id S1756204Ab0JKUkN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 16:40:13 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:42400 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756135Ab0JKUkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 16:40:12 -0400
+Message-ID: <20101011203508.2063.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+To: mel@csn.ul.ie (Mel Gorman)
+Date: Mon, 11 Oct 2010 15:35:08 -0500 (GMT+5)
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20101011143022.GD30667@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286813635.2336.617.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 06:13:55PM +0200, Peter Zijlstra wrote:
-> On Sat, 2010-10-09 at 14:49 +0800, Huang Ying wrote:
-> > notify_die(DIE_NMI_IPI);
-> > notify_die(DIE_NMI);
-> > /* process io port 0x61 */
-> > nmi_watchdog_touch();
-> > unknown_nmi(); 
+Mel Gorman writes:
 > 
-> Why keep NMI_IPI? What the heck is it for?
-> 
-> I'd like to see:
-> 
->  DIE_NMI
->  DIE_NMI_UNKNOWN
-> 
-> In DIE_NMI we walk the chain and deal with NMIs, in DIE_NMI_UNKNOWN we
-> try to consume extra NMIs where possible (like the much discussed extra
-> PMU interrupts).
+> A corruption of 4 bytes could be consistent with a pointer value being
+> written to an incorrect location.
 
-Yeah, there was another much discussed thread about creating an NMI
-notifier chain (instead of using the die_chain).  And then re-arrange
-handlers according to a priority scheme.
+The memory scribbles that I've looked at in detail and written down have
+been 0x86520000, 0xea5b0000, and 0x1d5f0000. They don't look very pointerish.
+The 2 low bytes being 0 in all 3 cases is an intriguing pattern though. That
+may not matter though because...
 
-I wouldn't mind have Ingo commit most of this patchset to a temporary
-work-in-progress branch and have us build more changes on top.  A lot of
-these changes are a good stepping stone towards simplifying things.
+> 
+> I think there is a slight bug but but not one that would cause corruption.
+> 
+> 	if ((order < MAX_ORDER-1) && pfn_valid_within(page_to_pfn(buddy))) {
 
-Cheers,
-Don
+I think you found it. Think harder about how it might cause corruption.
+Applying your suggested patch really seems to have fixed it. Starting from
+v2.6.36-rc7-69-g6b0cd00 I applied your patch, booted 6 times, all clean.
+Reverted your patch, booted once, and /sbin/e2fsck failed its md5sum check.
+Sent a copy of the "bad" /sbin/e2fsck to another machine, rebooted with an
+old good kernel, reapplied your patch to the new kernel, and got 6 more good
+boots.
+
+The bad copy of e2fsck differs from the good one in 2 separate locations,
+each 4 bytes wide. The bogus values are the 0xea5b0000 and 0x1d5f0000 which I
+mentioned already.
+
+> That looks like it can result in checking the buddy for an order-(MAX_ORDER-1)
+> page which is a bit bogus. Thing is, it should be harmless because there
+> isn't an unusual write made. In case it's some weird compiler optimisation
+> though, could you try this?
+> 
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 502a882..5b0eb8c 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -530,7 +530,7 @@ static inline void __free_one_page(struct page *page,
+>  	 * so it's less likely to be used soon and more likely to be merged
+>  	 * as a higher order page
+>  	 */
+> -	if ((order < MAX_ORDER-1) && pfn_valid_within(page_to_pfn(buddy))) {
+> +	if ((order < MAX_ORDER-2) && pfn_valid_within(page_to_pfn(buddy))) {
+>  		struct page *higher_page, *higher_buddy;
+>  		combined_idx = __find_combined_index(page_idx, order);
+>  		higher_page = page + combined_idx - page_idx;
+> 
+
+It doesn't look like there are any optimization tricks involved. I did a
+"make mm/page_alloc.s" before and after your patch, and the difference is
+simply this:
+
+--- mm/page_alloc.s.6b0cd00	2010-10-11 14:03:03.000000000 -0500
++++ mm/page_alloc.s.6b0cd00+mel	2010-10-11 14:03:49.000000000 -0500
+@@ -3885,7 +3885,7 @@
+ .L523:
+ 	mr 11,28	 # page_idx, page_idx.2227
+ .L526:
+-	cmplwi 7,29,9	 #, tmp222, order
++	cmplwi 7,29,8	 #, tmp222, order
+ 	lwz 0,0(30)	 #* page, tmp220
+ 	stw 29,12(30)	 # <variable>.D.6650.D.6646.private, order
+ 	oris 0,0,0x8	 #, tmp221, tmp220,
+@@ -4337,7 +4337,7 @@
+ 	add 30,31,11	 # buddy, page, tmp197
+ 	ble+ 7,.L578	 #
+ .L575:
+-	cmplwi 7,27,9	 #, tmp226, order
++	cmplwi 7,27,8	 #, tmp226, order
+ 	lwz 0,0(31)	 #* page, tmp224
+ 	stw 27,12(31)	 # <variable>.D.6650.D.6646.private, order
+ 	oris 0,0,0x8	 #, tmp225, tmp224,
+
+-- 
+Alan Curry
