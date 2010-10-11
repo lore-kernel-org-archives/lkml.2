@@ -1,677 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752829Ab0JKBch (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 21:32:37 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:19416 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab0JKBcf (ORCPT
+	id S1752788Ab0JKCXO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 22:23:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34082 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab0JKCXN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 21:32:35 -0400
-Date: Mon, 11 Oct 2010 10:32:33 +0900
-From: Minkyu Kang <mk7.kang@samsung.com>
-Subject: [PATCH v2] misc: adds support the FSA9480 USB Switch
-In-reply-to: <AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com>
-To: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>, kyungmin.park@samsung.com,
-        Greg KH <greg@kroah.com>, Ben Dooks <ben-i2c@fluff.org>
-Message-id: <4CB26931.5040105@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; ko; rv:1.9.2.7)
- Gecko/20100713 Thunderbird/3.1.1
-References: <4C7CD95A.5040309@samsung.com>
- <20100917150731.f1f44f3c.akpm@linux-foundation.org>
- <AANLkTim2UhJAhOw1qHvZ9bbctR0tNSMvE61T=sxffHxO@mail.gmail.com>
-X-OriginalArrivalTime: 11 Oct 2010 01:32:33.0118 (UTC)
- FILETIME=[2D3FCFE0:01CB68E4]
+	Sun, 10 Oct 2010 22:23:13 -0400
+Message-ID: <4CB27483.1000109@kernel.org>
+Date: Sun, 10 Oct 2010 19:20:51 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com> <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6> <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6> <4CACFC23.4080504@kernel.org> <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6> <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org> <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6> <4CAD4EC3.5060809@kernel.org> <alpine.LFD.2.00.1010082346310.13094@localhost6.localdomain6> <alpine.LFD.2.00.1010082351450.13094@localhost6.localdomain6> <4CAFEEFA.1070000@kernel.org> <4CB00122.3030301@kernel.org> <alpine.LFD.2.00.1010090829150.13094@localhost6.localdomain6> <4CB014F5.5080209@kernel.org> <alpine.LFD.2.00.1010101130160.2413@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1010101130160.2413@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The FSA9480 is a USB port accessory detector and switch.
-This patch adds support the FSA9480 USB Switch.
+On 10/10/2010 02:32 AM, Thomas Gleixner wrote:
+> On Sat, 9 Oct 2010, Yinghai Lu wrote:
+>> On 10/08/2010 11:34 PM, Thomas Gleixner wrote:
+>>> On Fri, 8 Oct 2010, Yinghai Lu wrote:
+>>>> +	/* only handle fall out from setup_IO_APIC_irqs() */
+>>>
+>>> What's the fallout ? And why are we coming here in the first place
+>>> when the irq is < 16 ?
+>>
+>> setup_IO_APIC_irqs only handle apic_id == 0 or apic_id > 0 but irq < 16 via acpi override.
+>>
+>> it seems IBM's system have apic_id == 1, and sci irq is using 30.
+>>
+>> so at that time add that setup_IO_APIC_irq_extra() to workaround it.
+>> but it seems we set that two time when irq < 16.
+>>
+>>>
+>>>> +	if (!((apic_id > 0) && (irq > 16)))
+>>>> +		return;
+> 
+> I added this into the queue, but simplified it to 
+> 
+>   if (apic_id == 0 || irq < NR_IRQS_LEGACY)
+> 
+> Folded in the other fix and pushed out an updated tree.
+> 
 
-Signed-off-by: Minkyu Kang <mk7.kang@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
-v2:
- use the threaded irq
- fix the sysfs
+ok. please check another small fix.
 
- drivers/misc/Kconfig    |    9 +
- drivers/misc/Makefile   |    1 +
- drivers/misc/fsa9480.c  |  544 +++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fsa9480.h |   40 ++++
- 4 files changed, 594 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/fsa9480.c
- create mode 100644 include/linux/fsa9480.h
-
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index b743312..bfd7ef7 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -390,6 +390,15 @@ config BMP085
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called bmp085.
+diff --git a/kernel/irq/irqdesc.c b/kernel/irq/irqdesc.c
+index b3805f3..2fb9df4 100644
+--- a/kernel/irq/irqdesc.c
++++ b/kernel/irq/irqdesc.c
+@@ -130,10 +130,11 @@ static struct irq_desc *alloc_desc(int irq, int node)
+ 	desc = kzalloc_node(sizeof(*desc), gfp, node);
+ 	if (!desc)
+ 		return NULL;
++
+ 	/* allocate based on nr_cpu_ids */
+ 	desc->kstat_irqs = kzalloc_node(nr_cpu_ids * sizeof(*desc->kstat_irqs),
+ 					 gfp, node);
+-	if (!desc)
++	if (!desc->kstat_irqs)
+ 		goto err_desc;
  
-+config USB_SWITCH_FSA9480
-+	tristate "FSA9480 USB Switch"
-+	depends on I2C
-+	help
-+	  The FSA9480 is a USB port accessory detector and switch.
-+	  The FSA9480 is fully controlled using I2C and enables USB data,
-+	  stereo and mono audio, video, microphone and UART data to use
-+	  a common connector port.
-+
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 42eab95..f1e9bf8 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -35,3 +35,4 @@ obj-y				+= eeprom/
- obj-y				+= cb710/
- obj-$(CONFIG_VMWARE_BALLOON)	+= vmw_balloon.o
- obj-$(CONFIG_ARM_CHARLCD)	+= arm-charlcd.o
-+obj-$(CONFIG_USB_SWITCH_FSA9480) += fsa9480.o
-diff --git a/drivers/misc/fsa9480.c b/drivers/misc/fsa9480.c
-new file mode 100644
-index 0000000..1abf6de
---- /dev/null
-+++ b/drivers/misc/fsa9480.c
-@@ -0,0 +1,544 @@
-+/*
-+ * fsa9480.c - FSA9480 micro USB switch device driver
-+ *
-+ * Copyright (C) 2010 Samsung Electronics
-+ * Minkyu Kang <mk7.kang@samsung.com>
-+ * Wonguk Jeong <wonguk.jeong@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/err.h>
-+#include <linux/i2c.h>
-+#include <linux/fsa9480.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-+#include <linux/workqueue.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+
-+/* FSA9480 I2C registers */
-+#define FSA9480_REG_DEVID		0x01
-+#define FSA9480_REG_CTRL		0x02
-+#define FSA9480_REG_INT1		0x03
-+#define FSA9480_REG_INT2		0x04
-+#define FSA9480_REG_INT1_MASK		0x05
-+#define FSA9480_REG_INT2_MASK		0x06
-+#define FSA9480_REG_ADC			0x07
-+#define FSA9480_REG_TIMING1		0x08
-+#define FSA9480_REG_TIMING2		0x09
-+#define FSA9480_REG_DEV_T1		0x0a
-+#define FSA9480_REG_DEV_T2		0x0b
-+#define FSA9480_REG_BTN1		0x0c
-+#define FSA9480_REG_BTN2		0x0d
-+#define FSA9480_REG_CK			0x0e
-+#define FSA9480_REG_CK_INT1		0x0f
-+#define FSA9480_REG_CK_INT2		0x10
-+#define FSA9480_REG_CK_INTMASK1		0x11
-+#define FSA9480_REG_CK_INTMASK2		0x12
-+#define FSA9480_REG_MANSW1		0x13
-+#define FSA9480_REG_MANSW2		0x14
-+
-+/* Control */
-+#define CON_SWITCH_OPEN		(1 << 4)
-+#define CON_RAW_DATA		(1 << 3)
-+#define CON_MANUAL_SW		(1 << 2)
-+#define CON_WAIT		(1 << 1)
-+#define CON_INT_MASK		(1 << 0)
-+#define CON_MASK		(CON_SWITCH_OPEN | CON_RAW_DATA | \
-+				CON_MANUAL_SW | CON_WAIT)
-+
-+/* Device Type 1 */
-+#define DEV_USB_OTG		(1 << 7)
-+#define DEV_DEDICATED_CHG	(1 << 6)
-+#define DEV_USB_CHG		(1 << 5)
-+#define DEV_CAR_KIT		(1 << 4)
-+#define DEV_UART		(1 << 3)
-+#define DEV_USB			(1 << 2)
-+#define DEV_AUDIO_2		(1 << 1)
-+#define DEV_AUDIO_1		(1 << 0)
-+
-+#define DEV_T1_USB_MASK		(DEV_USB_OTG | DEV_USB)
-+#define DEV_T1_UART_MASK	(DEV_UART)
-+#define DEV_T1_CHARGER_MASK	(DEV_DEDICATED_CHG | DEV_USB_CHG)
-+
-+/* Device Type 2 */
-+#define DEV_AV			(1 << 6)
-+#define DEV_TTY			(1 << 5)
-+#define DEV_PPD			(1 << 4)
-+#define DEV_JIG_UART_OFF	(1 << 3)
-+#define DEV_JIG_UART_ON		(1 << 2)
-+#define DEV_JIG_USB_OFF		(1 << 1)
-+#define DEV_JIG_USB_ON		(1 << 0)
-+
-+#define DEV_T2_USB_MASK		(DEV_JIG_USB_OFF | DEV_JIG_USB_ON)
-+#define DEV_T2_UART_MASK	(DEV_JIG_UART_OFF | DEV_JIG_UART_ON)
-+#define DEV_T2_JIG_MASK		(DEV_JIG_USB_OFF | DEV_JIG_USB_ON | \
-+				DEV_JIG_UART_OFF | DEV_JIG_UART_ON)
-+
-+/*
-+ * Manual Switch
-+ * D- [7:5] / D+ [4:2]
-+ * 000: Open all / 001: USB / 010: AUDIO / 011: UART / 100: V_AUDIO
-+ */
-+#define SW_VAUDIO		((4 << 5) | (4 << 2))
-+#define SW_UART			((3 << 5) | (3 << 2))
-+#define SW_AUDIO		((2 << 5) | (2 << 2))
-+#define SW_DHOST		((1 << 5) | (1 << 2))
-+#define SW_AUTO			((0 << 5) | (0 << 2))
-+
-+/* Interrupt 1 */
-+#define INT_DETACH		(1 << 1)
-+#define INT_ATTACH		(1 << 0)
-+
-+struct fsa9480_usbsw {
-+	struct i2c_client		*client;
-+	struct fsa9480_platform_data	*pdata;
-+	int				dev1;
-+	int				dev2;
-+	int				mansw;
-+};
-+
-+static struct fsa9480_usbsw *chip;
-+
-+static int fsa9480_write_reg(struct i2c_client *client,
-+		int reg, int value)
-+{
-+	int ret;
-+
-+	ret = i2c_smbus_write_byte_data(client, reg, value);
-+
-+	if (ret < 0)
-+		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
-+
-+	return ret;
-+}
-+
-+static int fsa9480_read_reg(struct i2c_client *client, int reg)
-+{
-+	int ret;
-+
-+	ret = i2c_smbus_read_byte_data(client, reg);
-+
-+	if (ret < 0)
-+		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
-+
-+	return ret;
-+}
-+
-+static int fsa9480_read_irq(struct i2c_client *client, int *value)
-+{
-+	int ret;
-+
-+	ret = i2c_smbus_read_i2c_block_data(client,
-+			FSA9480_REG_INT1, 2, (u8 *)value);
-+	*value &= 0xffff;
-+
-+	if (ret < 0)
-+		dev_err(&client->dev, "%s: err %d\n", __func__, ret);
-+
-+	return ret;
-+}
-+
-+void fsa9480_set_switch(const char *buf)
-+{
-+	struct fsa9480_usbsw *usbsw = chip;
-+	struct i2c_client *client = usbsw->client;
-+	unsigned int value;
-+	unsigned int path = 0;
-+
-+	value = fsa9480_read_reg(client, FSA9480_REG_CTRL);
-+
-+	if (!strncmp(buf, "VAUDIO", 6)) {
-+		path = SW_VAUDIO;
-+		value &= ~CON_MANUAL_SW;
-+	} else if (!strncmp(buf, "UART", 4)) {
-+		path = SW_UART;
-+		value &= ~CON_MANUAL_SW;
-+	} else if (!strncmp(buf, "AUDIO", 5)) {
-+		path = SW_AUDIO;
-+		value &= ~CON_MANUAL_SW;
-+	} else if (!strncmp(buf, "DHOST", 5)) {
-+		path = SW_DHOST;
-+		value &= ~CON_MANUAL_SW;
-+	} else if (!strncmp(buf, "AUTO", 4)) {
-+		path = SW_AUTO;
-+		value |= CON_MANUAL_SW;
-+	} else {
-+		printk(KERN_ERR "Wrong command\n");
-+		return;
-+	}
-+
-+	usbsw->mansw = path;
-+	fsa9480_write_reg(client, FSA9480_REG_MANSW1, path);
-+	fsa9480_write_reg(client, FSA9480_REG_CTRL, value);
-+}
-+EXPORT_SYMBOL(fsa9480_set_switch);
-+
-+ssize_t fsa9480_get_switch(char *buf)
-+{
-+	struct fsa9480_usbsw *usbsw = chip;
-+	struct i2c_client *client = usbsw->client;
-+	unsigned int value;
-+
-+	value = fsa9480_read_reg(client, FSA9480_REG_MANSW1);
-+
-+	if (value == SW_VAUDIO)
-+		return sprintf(buf, "VAUDIO\n");
-+	else if (value == SW_UART)
-+		return sprintf(buf, "UART\n");
-+	else if (value == SW_AUDIO)
-+		return sprintf(buf, "AUDIO\n");
-+	else if (value == SW_DHOST)
-+		return sprintf(buf, "DHOST\n");
-+	else if (value == SW_AUTO)
-+		return sprintf(buf, "AUTO\n");
-+	else
-+		return sprintf(buf, "%x", value);
-+}
-+EXPORT_SYMBOL(fsa9480_get_switch);
-+
-+static ssize_t fsa9480_show_device(struct device *dev,
-+				   struct device_attribute *attr,
-+				   char *buf)
-+{
-+	struct fsa9480_usbsw *usbsw = dev_get_drvdata(dev);
-+	struct i2c_client *client = usbsw->client;
-+	int dev1, dev2;
-+
-+	dev1 = fsa9480_read_reg(client, FSA9480_REG_DEV_T1);
-+	dev2 = fsa9480_read_reg(client, FSA9480_REG_DEV_T2);
-+
-+	if (!dev1 && !dev2)
-+		return sprintf(buf, "NONE\n");
-+
-+	/* USB */
-+	if (dev1 & DEV_T1_USB_MASK || dev2 & DEV_T2_USB_MASK)
-+		return sprintf(buf, "USB\n");
-+
-+	/* UART */
-+	if (dev1 & DEV_T1_UART_MASK || dev2 & DEV_T2_UART_MASK)
-+		return sprintf(buf, "UART\n");
-+
-+	/* CHARGER */
-+	if (dev1 & DEV_T1_CHARGER_MASK)
-+		return sprintf(buf, "CHARGER\n");
-+
-+	/* JIG */
-+	if (dev2 & DEV_T2_JIG_MASK)
-+		return sprintf(buf, "JIG\n");
-+
-+	return sprintf(buf, "UNKNOWN\n");
-+}
-+
-+static ssize_t fsa9480_show_manualsw(struct device *dev,
-+		struct device_attribute *attr, char *buf)
-+{
-+	return fsa9480_get_switch(buf);
-+
-+}
-+
-+static ssize_t fsa9480_set_manualsw(struct device *dev,
-+				    struct device_attribute *attr,
-+				    const char *buf, size_t count)
-+{
-+	fsa9480_set_switch(buf);
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(device, S_IRUGO, fsa9480_show_device, NULL);
-+static DEVICE_ATTR(switch, S_IRUGO | S_IWUGO,
-+		fsa9480_show_manualsw, fsa9480_set_manualsw);
-+
-+static struct attribute *fsa9480_attributes[] = {
-+	&dev_attr_device.attr,
-+	&dev_attr_switch.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group fsa9480_group = {
-+	.attrs = fsa9480_attributes,
-+};
-+
-+static void fsa9480_detect_dev(struct fsa9480_usbsw *usbsw, int intr)
-+{
-+	int val1, val2, ctrl;
-+	struct fsa9480_platform_data *pdata = usbsw->pdata;
-+	struct i2c_client *client = usbsw->client;
-+
-+	val1 = fsa9480_read_reg(client, FSA9480_REG_DEV_T1);
-+	val2 = fsa9480_read_reg(client, FSA9480_REG_DEV_T2);
-+	ctrl = fsa9480_read_reg(client, FSA9480_REG_CTRL);
-+
-+	dev_info(&client->dev, "intr: 0x%x, dev1: 0x%x, dev2: 0x%x\n",
-+			intr, val1, val2);
-+
-+	if (!intr)
-+		goto out;
-+
-+	if (intr & INT_ATTACH) {	/* Attached */
-+		/* USB */
-+		if (val1 & DEV_T1_USB_MASK || val2 & DEV_T2_USB_MASK) {
-+			if (pdata->usb_cb)
-+				pdata->usb_cb(FSA9480_ATTACHED);
-+
-+			if (usbsw->mansw) {
-+				fsa9480_write_reg(client,
-+					FSA9480_REG_MANSW1, usbsw->mansw);
-+			}
-+		}
-+
-+		/* UART */
-+		if (val1 & DEV_T1_UART_MASK || val2 & DEV_T2_UART_MASK) {
-+			if (pdata->uart_cb)
-+				pdata->uart_cb(FSA9480_ATTACHED);
-+
-+			if (!(ctrl & CON_MANUAL_SW)) {
-+				fsa9480_write_reg(client,
-+					FSA9480_REG_MANSW1, SW_UART);
-+			}
-+		}
-+
-+		/* CHARGER */
-+		if (val1 & DEV_T1_CHARGER_MASK) {
-+			if (pdata->charger_cb)
-+				pdata->charger_cb(FSA9480_ATTACHED);
-+		}
-+
-+		/* JIG */
-+		if (val2 & DEV_T2_JIG_MASK) {
-+			if (pdata->jig_cb)
-+				pdata->jig_cb(FSA9480_ATTACHED);
-+		}
-+	} else if (intr & INT_DETACH) {	/* Detached */
-+		/* USB */
-+		if (usbsw->dev1 & DEV_T1_USB_MASK ||
-+			usbsw->dev2 & DEV_T2_USB_MASK) {
-+			if (pdata->usb_cb)
-+				pdata->usb_cb(FSA9480_DETACHED);
-+		}
-+
-+		/* UART */
-+		if (usbsw->dev1 & DEV_T1_UART_MASK ||
-+			usbsw->dev2 & DEV_T2_UART_MASK) {
-+			if (pdata->uart_cb)
-+				pdata->uart_cb(FSA9480_DETACHED);
-+		}
-+
-+		/* CHARGER */
-+		if (usbsw->dev1 & DEV_T1_CHARGER_MASK) {
-+			if (pdata->charger_cb)
-+				pdata->charger_cb(FSA9480_DETACHED);
-+		}
-+
-+		/* JIG */
-+		if (usbsw->dev2 & DEV_T2_JIG_MASK) {
-+			if (pdata->jig_cb)
-+				pdata->jig_cb(FSA9480_DETACHED);
-+		}
-+	}
-+
-+	usbsw->dev1 = val1;
-+	usbsw->dev2 = val2;
-+
-+out:
-+	ctrl &= ~CON_INT_MASK;
-+	fsa9480_write_reg(client, FSA9480_REG_CTRL, ctrl);
-+}
-+
-+static irqreturn_t fsa9480_irq_handler(int irq, void *data)
-+{
-+	struct fsa9480_usbsw *usbsw = data;
-+	struct i2c_client *client = usbsw->client;
-+	int intr;
-+
-+	/* clear interrupt */
-+	fsa9480_read_irq(client, &intr);
-+
-+	/* device detection */
-+	fsa9480_detect_dev(usbsw, intr);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int fsa9480_irq_init(struct fsa9480_usbsw *usbsw)
-+{
-+	struct fsa9480_platform_data *pdata = usbsw->pdata;
-+	struct i2c_client *client = usbsw->client;
-+	int ret;
-+	int intr;
-+	unsigned int ctrl = CON_MASK;
-+
-+	/* clear interrupt */
-+	fsa9480_read_irq(client, &intr);
-+
-+	/* unmask interrupt (attach/detach only) */
-+	fsa9480_write_reg(client, FSA9480_REG_INT1_MASK, 0xfc);
-+	fsa9480_write_reg(client, FSA9480_REG_INT2_MASK, 0x1f);
-+
-+	usbsw->mansw = fsa9480_read_reg(client, FSA9480_REG_MANSW1);
-+
-+	if (usbsw->mansw)
-+		ctrl &= ~CON_MANUAL_SW;	/* Manual Switching Mode */
-+
-+	fsa9480_write_reg(client, FSA9480_REG_CTRL, ctrl);
-+
-+	if (pdata && pdata->cfg_gpio)
-+		pdata->cfg_gpio();
-+
-+	if (client->irq) {
-+		ret = request_threaded_irq(client->irq, NULL,
-+				fsa9480_irq_handler,
-+				IRQF_TRIGGER_LOW | IRQF_ONESHOT,
-+				"fsa9480 micro USB", usbsw);
-+		if (ret) {
-+			dev_err(&client->dev, "failed to reqeust IRQ\n");
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int __devinit fsa9480_probe(struct i2c_client *client,
-+			 const struct i2c_device_id *id)
-+{
-+	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
-+	struct fsa9480_usbsw *usbsw;
-+	int ret = 0;
-+
-+	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-+		return -EIO;
-+
-+	usbsw = kzalloc(sizeof(struct fsa9480_usbsw), GFP_KERNEL);
-+	if (!usbsw) {
-+		dev_err(&client->dev, "failed to allocate driver data\n");
-+		return -ENOMEM;
-+	}
-+
-+	usbsw->client = client;
-+	usbsw->pdata = client->dev.platform_data;
-+
-+	chip = usbsw;
-+
-+	i2c_set_clientdata(client, usbsw);
-+
-+	ret = fsa9480_irq_init(usbsw);
-+	if (ret)
-+		goto fail1;
-+
-+	ret = sysfs_create_group(&client->dev.kobj, &fsa9480_group);
-+	if (ret) {
-+		dev_err(&client->dev,
-+				"failed to create fsa9480 attribute group\n");
-+		goto fail2;
-+	}
-+
-+	/* ADC Detect Time: 500ms */
-+	fsa9480_write_reg(client, FSA9480_REG_TIMING1, 0x6);
-+
-+	if (chip->pdata->reset_cb)
-+		chip->pdata->reset_cb();
-+
-+	/* device detection */
-+	fsa9480_detect_dev(usbsw, INT_ATTACH);
-+
-+	return 0;
-+
-+fail2:
-+	if (client->irq)
-+		free_irq(client->irq, NULL);
-+fail1:
-+	i2c_set_clientdata(client, NULL);
-+	kfree(usbsw);
-+	return ret;
-+}
-+
-+static int __devexit fsa9480_remove(struct i2c_client *client)
-+{
-+	struct fsa9480_usbsw *usbsw = i2c_get_clientdata(client);
-+	if (client->irq)
-+		free_irq(client->irq, NULL);
-+	i2c_set_clientdata(client, NULL);
-+
-+	sysfs_remove_group(&client->dev.kobj, &fsa9480_group);
-+	kfree(usbsw);
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+
-+static int fsa9480_suspend(struct i2c_client *client, pm_message_t state)
-+{
-+	return 0;
-+}
-+
-+static int fsa9480_resume(struct i2c_client *client)
-+{
-+	struct fsa9480_usbsw *usbsw = i2c_get_clientdata(client);
-+	int dev1, dev2;
-+
-+	dev1 = fsa9480_read_reg(client, FSA9480_REG_DEV_T1);
-+	dev2 = fsa9480_read_reg(client, FSA9480_REG_DEV_T2);
-+
-+	/* device detection */
-+	fsa9480_detect_dev(usbsw, (dev1 || dev2) ? INT_ATTACH : INT_DETACH);
-+
-+	return 0;
-+}
-+
-+#else
-+
-+#define fsa9480_suspend NULL
-+#define fsa9480_resume NULL
-+
-+#endif /* CONFIG_PM */
-+
-+static const struct i2c_device_id fsa9480_id[] = {
-+	{"fsa9480", 0},
-+	{}
-+};
-+MODULE_DEVICE_TABLE(i2c, fsa9480_id);
-+
-+static struct i2c_driver fsa9480_i2c_driver = {
-+	.driver = {
-+		.name = "fsa9480",
-+	},
-+	.probe = fsa9480_probe,
-+	.remove = __devexit_p(fsa9480_remove),
-+	.resume = fsa9480_resume,
-+	.suspend = fsa9480_suspend,
-+	.id_table = fsa9480_id,
-+};
-+
-+static int __init fsa9480_init(void)
-+{
-+	return i2c_add_driver(&fsa9480_i2c_driver);
-+}
-+module_init(fsa9480_init);
-+
-+static void __exit fsa9480_exit(void)
-+{
-+	i2c_del_driver(&fsa9480_i2c_driver);
-+}
-+module_exit(fsa9480_exit);
-+
-+MODULE_AUTHOR("Minkyu Kang <mk7.kang@samsung.com>");
-+MODULE_DESCRIPTION("FSA9480 USB Switch driver");
-+MODULE_LICENSE("GPL");
-diff --git a/include/linux/fsa9480.h b/include/linux/fsa9480.h
-new file mode 100644
-index 0000000..5a2c00f
---- /dev/null
-+++ b/include/linux/fsa9480.h
-@@ -0,0 +1,40 @@
-+/*
-+ * Copyright (C) 2010 Samsung Electronics
-+ * Minkyu Kang <mk7.kang@samsung.com>
-+ * Wonguk Jeong <wonguk.jeong@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
-+ *
-+ */
-+
-+#ifndef _FSA9480_H_
-+#define _FSA9480_H_
-+
-+#define FSA9480_ATTACHED	1
-+#define FSA9480_DETACHED	0
-+
-+struct fsa9480_platform_data {
-+	void (*cfg_gpio) (void);
-+	void (*usb_cb) (u8 attached);
-+	void (*uart_cb) (u8 attached);
-+	void (*charger_cb) (u8 attached);
-+	void (*jig_cb) (u8 attached);
-+	void (*reset_cb) (void);
-+};
-+
-+void fsa9480_set_switch(const char *buf);
-+ssize_t fsa9480_get_switch(char *buf);
-+
-+#endif /* _FSA9480_H_ */
--- 
-1.7.0.4
-
+ 	if (alloc_masks(desc, gfp, node))
+@@ -226,6 +227,7 @@ struct irq_desc irq_desc[NR_IRQS] __cacheline_aligned_in_smp = {
+ static unsigned int kstat_irqs_all[NR_IRQS][NR_CPUS];
+ int __init early_irq_init(void)
+ {
++	int node = first_online_node;
+ 	struct irq_desc *desc;
+ 	int count;
+ 	int i;
+@@ -241,8 +243,8 @@ int __init early_irq_init(void)
+ 		desc[i].irq_data.irq = i;
+ 		desc[i].irq_data.chip = &no_irq_chip;
+ 		desc[i].kstat_irqs = kstat_irqs_all[i];
+-		alloc_masks(desc + i, GFP_KERNEL, first_online_node);
+-		desc_smp_init(desc + i, first_online_node);
++		alloc_masks(desc + i, GFP_KERNEL, node);
++		desc_smp_init(desc + i, node);
+ 		lockdep_set_class(&desc[i].lock, &irq_desc_lock_class);
+ 	}
+ 	return arch_early_irq_init();
