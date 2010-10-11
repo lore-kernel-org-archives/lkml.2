@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753561Ab0JKIj3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 04:39:29 -0400
-Received: from 68.mail-out.ovh.net ([91.121.185.69]:42579 "HELO
-	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753283Ab0JKIj2 (ORCPT
+	id S1753626Ab0JKIji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 04:39:38 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38505 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753434Ab0JKIj2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 11 Oct 2010 04:39:28 -0400
-Message-ID: <4CB2CD3A.4020203@example.com>
-Date: Mon, 11 Oct 2010 10:39:22 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100917 Icedove/3.0.8
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=s0kks2PwdzouAEZaWcSFrh9/os06sDu4SVgDkvlPX2WzVle1Ma0cjIJAokLgBrNxE2
+         eYPAWgMf5be5V8tnDEtX6myl2GClWQchEgzoyFTjyxyP2SKD2KbEfQcxrOz5zY3X3nfV
+         9Z/nZ8c98O+h3nNyCT7HNY4ZP4RSG9BqlY9XI=
 MIME-Version: 1.0
-To: Borislav Petkov <bp@alien8.de>, maciej.rutecki@gmail.com,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: What is this? Should I worry?
-References: <4CAFEFF1.8010202@example.com> <201010102039.31706.maciej.rutecki@gmail.com> <4CB20CED.8060403@example.com> <20101011061618.GA4899@liondog.tnic>
-In-Reply-To: <20101011061618.GA4899@liondog.tnic>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 14788413802358665579
-X-Ovh-Remote: 95.49.238.119 (afje119.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+In-Reply-To: <20101010235256.GG19804@ZenIV.linux.org.uk>
+References: <20101007174948.GT19804@ZenIV.linux.org.uk>
+	<AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
+	<20101010144952.GF19804@ZenIV.linux.org.uk>
+	<AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
+	<20101010235256.GG19804@ZenIV.linux.org.uk>
+Date: Mon, 11 Oct 2010 10:39:25 +0200
+X-Google-Sender-Auth: 173Z76bS3pdSppLs-hvXvZzIFKc
+Message-ID: <AANLkTinL7yVt7s+Ame_rK4sVWyRBjCQ2_7=5DZu2pWx4@mail.gmail.com>
+Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent kernels
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.10.2010 08:16, Borislav Petkov wrote:
-> From: Piotr Hosowicz<piotr@hosowicz.com>
-> Date: Sun, Oct 10, 2010 at 08:58:53PM +0200
->
->> On 10.10.2010 20:39, Maciej Rutecki wrote:
+On Mon, Oct 11, 2010 at 01:52, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> On Sun, Oct 10, 2010 at 10:18:03PM +0200, Geert Uytterhoeven wrote:
+>> >> This is on aranym-0.9.9-1 from Ubuntu/amd64.
+>> >
+>> > stat -L /proc/2/exec, otherwise you'll hit lstat() instead of stat().
+>> > And FWIW 0.9.10-1 squeeze/amd64 also triggers here...
 >>
->>> Can you check clean kernel (without any proprietary module)? That. 2.6.35
->>> works fine (it's a regression)?
->>
->> I build and boot every published kernel and this was the first time
->> I saw this error. I have NVidia graphics and use their driver.
+>> Still, just "stat: cannot stat `proc/2/exe': No such file or directory" here...
 >
-> and this time, test the kernel without the nvidia module - use a free
-> driver instead to rule out the possibility that the nvidia driver is the
-> culprit.
+> Interesting...  Which gcc version is used?
 
-The nouveau driver doesn't work for me. But I think that the NVidia 
-driver is not the culprit. I use it always and didn't have such problems.
+Good old gcc version 4.1.2 20061115 (prerelease) (Ubuntu 4.1.1-21)
 
-Regards,
+Gr{oetje,eeting}s,
 
-Piotr Hosowicz
+                        Geert
 
--- 
-- Jasiu, jakie jest najszybsze zwierze na swiecie?
-- Gepard, pszepani.
-- A najszybszy ptak?
-- Ptak geparda.
-NP:  -
-NB: 2.6.36-rc7-git2
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
