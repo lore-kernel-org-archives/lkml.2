@@ -1,74 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753744Ab0JKJ1I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 05:27:08 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:64029 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753424Ab0JKJ1G (ORCPT
+	id S1754023Ab0JKJ1W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 05:27:22 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:54182 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753483Ab0JKJ1H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 05:27:06 -0400
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <20101009164517.GA28183@n2100.arm.linux.org.uk>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	 <20101009135210.GA25564@n2100.arm.linux.org.uk>
-	 <AANLkTi=Sv35ipSGzSoJMjdoNU-Qee9csviPL3yMSM3uf@mail.gmail.com>
-	 <20101009164517.GA28183@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Mon, 11 Oct 2010 10:26:35 +0100
-Message-ID: <1286789195.19739.5.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Oct 2010 09:26:36.0459 (UTC) FILETIME=[66CD37B0:01CB6926]
+	Mon, 11 Oct 2010 05:27:07 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
+        linux-wimax@intel.com
+Subject: [PATCH 3/3] NET: wimax, fix use after free
+Date: Mon, 11 Oct 2010 11:26:58 +0200
+Message-Id: <1286789218-13976-3-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
+In-Reply-To: <1286789218-13976-1-git-send-email-jslaby@suse.cz>
+References: <1286789218-13976-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-10-09 at 17:45 +0100, Russell King - ARM Linux wrote:
-> On Sat, Oct 09, 2010 at 07:07:01PM +0300, Felipe Contreras wrote:
-> > On Sat, Oct 9, 2010 at 4:52 PM, Russell King - ARM Linux
-> > <linux@arm.linux.org.uk> wrote:
-> > > On Thu, Oct 07, 2010 at 12:44:22PM +0300, Felipe Contreras wrote:
-> > >> For issues related to this:
-> > >> http://article.gmane.org/gmane.linux.ports.arm.kernel/84454
-> > >
-> > > This one nicely shows some of the problems which can occur with the
-> > > memory type attributes - and this is not attributable to ioremap().
-> > >
-> > > ioremap() is used to map devices.  It creates device memory type mappings.
-> > > If what you're mapping doesn't support device memory type mappings, then
-> > > accesses via an ioremap()'d region isn't going to work - as this guy is
-> > > observing.
-> > >
-> > > That's not because ioremap() is doing something wrong.  It's doing what
-> > > it's meant to do.  The use is wrong, and is completely unrelated to the
-> > > issue you've raised.
-> >
-> > Ok, I was confused by Catalin's comment which does point to ioremap()
-> > on normal RAM:
-> > http://article.gmane.org/gmane.linux.ports.arm.kernel/84504
-> 
-> Me too - it doesn't appear to relate to the specified problem.  You
-> don't want to map RAM as device nor strongly ordered, and we still
-> don't know what this "MMR" is.
+Stanse found that i2400m_rx frees skb, but still uses skb->len even
+though it has skb_len defined. So use skb_len properly in the code.
 
-I don't know what MMR is either. But my comment is misleading, I think I
-was thinking about dma_alloc_coherent().
+And also define it unsinged int rather than size_t to solve
+compilation warnings.
 
-We could to allow ioremap_wc() or ioremap_cached() to normal RAM but
-that's probably outside the scope of ioremap* (and it would require
-initial cache maintenance to remove potential dirty cache lines).
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
+Cc: linux-wimax@intel.com
+---
+ drivers/net/wimax/i2400m/rx.c |   26 +++++++++++++-------------
+ 1 files changed, 13 insertions(+), 13 deletions(-)
 
+diff --git a/drivers/net/wimax/i2400m/rx.c b/drivers/net/wimax/i2400m/rx.c
+index c4876d0..844133b 100644
+--- a/drivers/net/wimax/i2400m/rx.c
++++ b/drivers/net/wimax/i2400m/rx.c
+@@ -1244,16 +1244,16 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
+ 	int i, result;
+ 	struct device *dev = i2400m_dev(i2400m);
+ 	const struct i2400m_msg_hdr *msg_hdr;
+-	size_t pl_itr, pl_size, skb_len;
++	size_t pl_itr, pl_size;
+ 	unsigned long flags;
+-	unsigned num_pls, single_last;
++	unsigned num_pls, single_last, skb_len;
+ 
+ 	skb_len = skb->len;
+-	d_fnstart(4, dev, "(i2400m %p skb %p [size %zu])\n",
++	d_fnstart(4, dev, "(i2400m %p skb %p [size %u])\n",
+ 		  i2400m, skb, skb_len);
+ 	result = -EIO;
+ 	msg_hdr = (void *) skb->data;
+-	result = i2400m_rx_msg_hdr_check(i2400m, msg_hdr, skb->len);
++	result = i2400m_rx_msg_hdr_check(i2400m, msg_hdr, skb_len);
+ 	if (result < 0)
+ 		goto error_msg_hdr_check;
+ 	result = -EIO;
+@@ -1261,10 +1261,10 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
+ 	pl_itr = sizeof(*msg_hdr) +	/* Check payload descriptor(s) */
+ 		num_pls * sizeof(msg_hdr->pld[0]);
+ 	pl_itr = ALIGN(pl_itr, I2400M_PL_ALIGN);
+-	if (pl_itr > skb->len) {	/* got all the payload descriptors? */
++	if (pl_itr > skb_len) {	/* got all the payload descriptors? */
+ 		dev_err(dev, "RX: HW BUG? message too short (%u bytes) for "
+ 			"%u payload descriptors (%zu each, total %zu)\n",
+-			skb->len, num_pls, sizeof(msg_hdr->pld[0]), pl_itr);
++			skb_len, num_pls, sizeof(msg_hdr->pld[0]), pl_itr);
+ 		goto error_pl_descr_short;
+ 	}
+ 	/* Walk each payload payload--check we really got it */
+@@ -1272,7 +1272,7 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
+ 		/* work around old gcc warnings */
+ 		pl_size = i2400m_pld_size(&msg_hdr->pld[i]);
+ 		result = i2400m_rx_pl_descr_check(i2400m, &msg_hdr->pld[i],
+-						  pl_itr, skb->len);
++						  pl_itr, skb_len);
+ 		if (result < 0)
+ 			goto error_pl_descr_check;
+ 		single_last = num_pls == 1 || i == num_pls - 1;
+@@ -1290,16 +1290,16 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
+ 	if (i < i2400m->rx_pl_min)
+ 		i2400m->rx_pl_min = i;
+ 	i2400m->rx_num++;
+-	i2400m->rx_size_acc += skb->len;
+-	if (skb->len < i2400m->rx_size_min)
+-		i2400m->rx_size_min = skb->len;
+-	if (skb->len > i2400m->rx_size_max)
+-		i2400m->rx_size_max = skb->len;
++	i2400m->rx_size_acc += skb_len;
++	if (skb_len < i2400m->rx_size_min)
++		i2400m->rx_size_min = skb_len;
++	if (skb_len > i2400m->rx_size_max)
++		i2400m->rx_size_max = skb_len;
+ 	spin_unlock_irqrestore(&i2400m->rx_lock, flags);
+ error_pl_descr_check:
+ error_pl_descr_short:
+ error_msg_hdr_check:
+-	d_fnend(4, dev, "(i2400m %p skb %p [size %zu]) = %d\n",
++	d_fnend(4, dev, "(i2400m %p skb %p [size %u]) = %d\n",
+ 		i2400m, skb, skb_len, result);
+ 	return result;
+ }
 -- 
-Catalin
+1.7.3.1
+
 
