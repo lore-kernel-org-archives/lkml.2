@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab0JKWCP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 18:02:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48022 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756513Ab0JKWCN (ORCPT
+	id S1756723Ab0JKWCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 18:02:34 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48891 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756470Ab0JKWCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 18:02:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=vMd9jVIke4/dgmk+O/Z3a7IpWcinTLSqcyXsLUfG/VKKDMK5k4kiYOuukwZHdtlsRR
-         HKTD3q50eb/+l0jUvJXSNsQ45EN1Gq3173+SgcfeukiqfIS66Db8RMbsy2jEn6myfSWG
-         SmZwEFQS4hsK8ac1ROw2kTCt3wuPr/i8DZ2JM=
-Message-ID: <4CB38960.5070306@suse.cz>
-Date: Tue, 12 Oct 2010 00:02:08 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100914 SUSE/3.1.4 Thunderbird/3.1.4
+	Mon, 11 Oct 2010 18:02:32 -0400
+Date: Mon, 11 Oct 2010 23:02:24 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Thorsten Glaser <tg@mirbsd.de>, linux-kernel@vger.kernel.org,
+        linux-m68k@vger.kernel.org
+Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
+ kernels
+Message-ID: <20101011220224.GM19804@ZenIV.linux.org.uk>
+References: <20101010144952.GF19804@ZenIV.linux.org.uk>
+ <AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
+ <20101010235256.GG19804@ZenIV.linux.org.uk>
+ <20101011024103.GH19804@ZenIV.linux.org.uk>
+ <20101011043632.GA2566@cynthia.pants.nu>
+ <20101011044808.GI19804@ZenIV.linux.org.uk>
+ <Pine.BSM.4.64L.1010111218040.23471@herc.mirbsd.org>
+ <20101011133545.GJ19804@ZenIV.linux.org.uk>
+ <m3wrpo24u0.fsf@hase.home>
+ <20101011142428.GK19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: LKML <linux-kernel@vger.kernel.org>, clemens@ladisch.de, venki@google.com,
-        the arch/x86 maintainers <x86@kernel.org>
-Subject: Re: HPET causes tasks to freeze (still in 2.6.36-rc6)
-References: <4CA9F471.2080704@suse.cz> <alpine.LFD.2.00.1010041747550.14550@localhost6.localdomain6>
-In-Reply-To: <alpine.LFD.2.00.1010041747550.14550@localhost6.localdomain6>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101011142428.GK19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/04/2010 06:31 PM, Thomas Gleixner wrote:
-> On Mon, 4 Oct 2010, Jiri Slaby wrote:
->> HPET as a clocksource has still issues in the latest kernels (confirmed
->> in 2.6.36-rc6) at least on x86_64. Unless clocksource=jiffies,
->> clocksource=tsc or nolapic_timer is used, the system is unusable. Tasks
->> are not woken unless mouse is moved, key is pressed (or other hard irq
->> triggered). 2.6.32 seems to be the last working.
-> 
-> The problem is not clocksource related, it's NOHZ related.
-> 
-> clocksource=jiffies, clocksource=tsc are disabling NOHZ simply because
-> we can not do NOHZ neither with jiffies nor with a TSC which stops in
-> deeper C-states.
-> 
-> nolapic_timer installs a dummy lapic timer so the lapic is not used,
-> but HPET is used instead and NOHZ is disabled as well.
-> 
-> So the real problem is that the hpet broadcast interrupts which are
-> used to work around the lapic timer stops in C3 problem are not coming
-> through for whatever reason.
-> 
-> So the question is what changed in the ACPI/idle NOHZ code which might
-> expose this problem.
-> 
-> Can we get dmesg, output of proc/timer_list and output of
-> /proc/acpi/processor/CPU0/power for a .32 and a non working kernel
-> please ?
+On Mon, Oct 11, 2010 at 03:24:28PM +0100, Al Viro wrote:
 
-Sure:
-http://labs.suse.cz/jslaby/bug-579932/
+> BTW, any comments on signal patchset?  Seems to work here, including the
+> stack expansion fixes, but that's on aranym.  I'll try to resurrect the
+> real hardware, but that may take a while.  If somebody could give it a beating
+> in the meanwhile...
 
-thanks,
--- 
-js
-suse labs
+Oh, lovely...  One more signal bug (and a lot more on m68knommu): if we
+strace a process and signal is delivered during pagefault handling, you'll
+lose the second call of syscall_trace() on sigreturn().  If the signal
+is delivered during a syscall or during an interrupt, syscall_trace() is
+called twice on sigreturn() (as it does on all platforms).  Fortunately,
+that's easy to fix - same as on alpha (calling syscall_trace in ret_from_signal
+if we are getting traced, just before doing RESTORE_SWITCH_STACK).  Will test
+and post...
+
+FWIW, on other targets we either have sys_{rt,}_sigreturn() done as normal
+functons (in which case the normal logics will take care of that), or
+have them return to place in (common) syscall exit path earlier than
+conditional call of syscall trace (mips, score), or check flags and do
+call ourselves (sparc, alpha since it had been fixed).  AFAICS, m68k and
+m68knommu are the only ones buggered that way.  On alpha we used to have
+it even worse - there we did only one call on sigreturn() unconditionally...
