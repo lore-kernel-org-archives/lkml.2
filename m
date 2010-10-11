@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab0JKOho (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 10:37:44 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:34661 "EHLO df.lth.se"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754918Ab0JKOhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 10:37:43 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
+	id S1755077Ab0JKOiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 10:38:18 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45691 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754926Ab0JKOiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 10:38:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=XN5Oq/1k81wED2pvs//0laqzS/xVj29S7zCgYvvtm5cCju//G4mW04wVIEtYFoPpta
+         6cwgIoshWY76GBWk0XaGQgGVPz75LXlvWubIJii+h4hS/b3nCno+Bwap4phVfCGYG2Hi
+         rcFZOoBeTXtWGuoEWMxBFGv2MXG003NNkzURI=
+MIME-Version: 1.0
+In-Reply-To: <1286781641.2336.63.camel@twins>
+References: <1286612169-27529-1-git-send-email-linus.walleij@stericsson.com>
+	<1286639626.1891.0.camel@laptop>
+	<AANLkTi=JfJknPNMiMXnK=kZj+ECJTE423AfjuiE67afu@mail.gmail.com>
+	<1286781641.2336.63.camel@twins>
+Date: Mon, 11 Oct 2010 16:38:14 +0200
+Message-ID: <AANLkTinSW-6OXkUeiaB7SZObXWBseJ9+HRRAqVnbrQFL@mail.gmail.com>
+Subject: Re: [PATCH] sched: SCHED_RESET_ON_FORK to recalculate load weights
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
         Lennart Poettering <lennart@poettering.net>, stable@kernel.org
-Subject: [PATCH] sched: drop all load weight manipulation for RT tasks
-Date: Mon, 11 Oct 2010 16:36:51 +0200
-Message-Id: <1286807811-10568-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.0
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Load weights are for the CFS, they do not belong in the RT
-task. This makes all RT scheduling classes leave the
-CFS weights alone.
+2010/10/11 Peter Zijlstra <peterz@infradead.org>:
 
-This fixes a real bug as well: I noticed the following
-phonomena: a process elevated to SCHED_RR forks with
-SCHED_RESET_ON_FORK set, and the child is indeed SCHED_OTHER,
-and the niceval is indeed reset to 0. However the
-weight inserted by set_load_weight() remains at 0. giving the
-task insignificat priority.
+> OK, so the problem is that if a RR/FIFO task does s fork() and it has
+> SCHED_RESET_ON_FORK set, the child normalization fails to properly set
+> the weight?
+>
+> Does (as Mike just suggested) removing that whole RT clause in
+> set_load_weight() work for you?
 
-With this fix, the weight is reset to what the task had before
-being elevated to SCHED_RR/SCHED_FIFO.
+Yep it sure does! Time to drop some weight.
+Sent a new patch for this...
 
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: stable@kernel.org
-Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
----
-Note: in 2.6.34 and earlier kernels, the phenomenon is the
-inverse: the tasks return from SCHED_RR/SCHED_FIFO with huge
-weights. For the stable series the earlier patch inserting
-recalculation of load weights at SCHED_RESET_ON_FORK is likely
-more desirable.
----
- kernel/sched.c |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
-
-diff --git a/kernel/sched.c b/kernel/sched.c
-index a04b8e6..07f39b5 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -1855,12 +1855,6 @@ static void dec_nr_running(struct rq *rq)
- 
- static void set_load_weight(struct task_struct *p)
- {
--	if (task_has_rt_policy(p)) {
--		p->se.load.weight = 0;
--		p->se.load.inv_weight = WMULT_CONST;
--		return;
--	}
--
- 	/*
- 	 * SCHED_IDLE tasks get minimal weight:
- 	 */
--- 
-1.7.2.3
-
+Yours,
+Linus Walleij
