@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755113Ab0JKSvv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 14:51:51 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54884 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754393Ab0JKSvu (ORCPT
+	id S1754961Ab0JKSyL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 14:54:11 -0400
+Received: from relay02.digicable.hu ([92.249.128.188]:57929 "EHLO
+	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab0JKSyK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 14:51:50 -0400
-Date: Mon, 11 Oct 2010 19:51:48 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        Jassi Brar <jassi.brar@samsung.com>, alsa-devel@alsa-project.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] ASoC: soc: snprintf() doesn't return negative
-Message-ID: <20101011185148.GB22355@opensource.wolfsonmicro.com>
-References: <20101011035416.GD5851@bicker> <20101011104009.GB9231@rakim.wolfsonmicro.main> <20101011164038.GE5851@bicker>
+	Mon, 11 Oct 2010 14:54:10 -0400
+Message-ID: <4CB35D4C.9000406@freemail.hu>
+Date: Mon, 11 Oct 2010 20:54:04 +0200
+From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101011164038.GE5851@bicker>
-X-Cookie: Your domestic life may be harmonious.
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Kees Cook <kees.cook@canonical.com>
+CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Oliver Neukum <oliver@neukum.org>, Joe Perches <joe@perches.com>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usb: don't trust report_size for buffer size
+References: <20101011182816.GA15451@outflux.net>
+In-Reply-To: <20101011182816.GA15451@outflux.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Original: 77.234.64.233
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 06:40:38PM +0200, Dan Carpenter wrote:
-> On Mon, Oct 11, 2010 at 11:40:09AM +0100, Mark Brown wrote:
+Kees Cook wrote:
+> If the iowarrior devices in this case statement support more than 8 bytes
+> per report, it is possible to write past the end of a kernel heap allocation.
+> This will probably never be possible, but change the allocation to be more
+> defensive anyway.
 
-> > I'm not going to apply this. snprintf() returns a signed type, checking
-> > that the return value is a reasonable thing to do here - at worst we're
-> > wasting a few cycles in code that's nowhere near a hot path, at best
-> > we're robust in the face of a decision to add error reporting to
-> > snprintf() so it's hard to see this change as an improvement.
+I think this might be triggered from user space, indeed. The iowarrior_class.fops->write
+points directly to the function iowarrior_write(). The iowarrior_class itself
+is passed to the function usb_register_dev(), which means that the write() system
+call to the character device will result in calling the iowarrior_write() function.
 
-> It's not a matter of cycles.  My check probably takes the exact same
-> number of cycles as your check.  The point is that checking for negative
-> doesn't make any sort of sense.  If we did return an error code then we
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Acked-by: Márton Németh <nm127@freemail.hu>
 
-Remember that we also have to be able to read the code; it's probably
-safe to assume that not everyone has the quirks of every snprintf()
-implementation committed to memory.  Except for the microoptimisation
-all you're doing here is making the code harder to read.
+There might be similar problem also in the case USB_DEVICE_ID_CODEMERCS_IOW56. There
+is buf is allocated with usb_alloc_coherent() to the size dev->report_size. However,
+some lines later the copy_from_user() function tries to copy "count" number of
+bytes to the dev->report_size allocated buffer. Unfortunately I don't have such
+devices to try the driver so these are just coming from "static analysis".
 
-> If "PAGE_SIZE - ret" is a negative number then it triggers a
-> WARN_ON_ONCE() in vsnprintf().  It's not possible in this case however.
-> Really the original code works fine in practice because the information
-> we are printing out is less than PAGE_SIZE.
+> ---
+>  drivers/usb/misc/iowarrior.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/usb/misc/iowarrior.c b/drivers/usb/misc/iowarrior.c
+> index bc88c79..8ed8d05 100644
+> --- a/drivers/usb/misc/iowarrior.c
+> +++ b/drivers/usb/misc/iowarrior.c
+> @@ -374,7 +374,7 @@ static ssize_t iowarrior_write(struct file *file,
+>  	case USB_DEVICE_ID_CODEMERCS_IOWPV2:
+>  	case USB_DEVICE_ID_CODEMERCS_IOW40:
+>  		/* IOW24 and IOW40 use a synchronous call */
+> -		buf = kmalloc(8, GFP_KERNEL);	/* 8 bytes are enough for both products */
+> +		buf = kmalloc(count, GFP_KERNEL);
+>  		if (!buf) {
+>  			retval = -ENOMEM;
+>  			goto exit;
 
-In actual fact quite a few devices have enough registers to be
-truncated, meaning that it's not only possible but likely we'll exercise
-the cases that deal with the end of buffer.  If snprintf() is returning
-values larger than buffer size it was given we're likely to have an
-issue but it seems that there's something missing in your analysis since
-we're never seeing WARN_ON()s and are instead seeing the behaviour the
-code is intended to give, which is to truncate the output when we run
-out of space.
-
-Could you re-check your analysis, please?
