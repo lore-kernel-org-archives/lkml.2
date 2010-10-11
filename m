@@ -1,47 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755956Ab0JKT5u (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 15:57:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56901 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753573Ab0JKT5t (ORCPT
+	id S1756072Ab0JKUDK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 16:03:10 -0400
+Received: from nm15.bullet.mail.ne1.yahoo.com ([98.138.90.78]:31777 "HELO
+	nm15.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755956Ab0JKUDI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 15:57:49 -0400
-Date: Mon, 11 Oct 2010 12:57:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: holzheu@linux.vnet.ibm.com
-Cc: Luck Tony <tony.luck@intel.com>, benh@kernel.crashing.org,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        linux-kernel@vger.kernel.org, Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH] taskstats: Use real microsecond granularity for CPU
- times
-Message-Id: <20101011125715.62001452.akpm@linux-foundation.org>
-In-Reply-To: <1286782004.1942.24.camel@holzheu-laptop>
-References: <1286782004.1942.24.camel@holzheu-laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Mon, 11 Oct 2010 16:03:08 -0400
+X-Yahoo-Newman-Id: 123567.76624.bm@omp1020.mail.ne1.yahoo.com
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: inblgc8VM1lh1_n0uQ6R69iy6tGq6ftXX8U1SeYUYo3zr1P
+ lgiKDX8uavuwaes1qxOV0RdlUTARYhHKCkNd_rZp9ZZh.DtefNzC_4lgX9hV
+ lKhd4Cf3ClRj20R2_beAHi3A2trw2ouNCVrz325EVuZkw1ny7CWbjq2VastP
+ _9KjSNOxFqXWqyl5Yh7u93ZjGVwoZcnpWXtAfgnxCrYFYGoBGuQkfdjeCm5u
+ OZlFrod6i0QSPOrkIAurZ_L7eSfAsTyoimP3wvQen6S10TE9BLsmIWK3Y7U_
+ g.af7RDlTSpGKHLJocy9p.hg-
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 0/4] tcm: Unify virtual subsystem plugin emulation code
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Boaz Harrosh <bharrosh@panasas.com>
+In-Reply-To: <20101010073202.GA16772@lst.de>
+References: <1286682498-4821-1-git-send-email-nab@linux-iscsi.org>
+	 <20101010073202.GA16772@lst.de>
+Content-Type: text/plain
+Date: Mon, 11 Oct 2010 12:56:51 -0700
+Message-Id: <1286827011.20358.35.camel@haakon2.linux-iscsi.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Oct 2010 09:26:44 +0200
-Michael Holzheu <holzheu@linux.vnet.ibm.com> wrote:
+On Sun, 2010-10-10 at 09:32 +0200, Christoph Hellwig wrote:
+> What you did in this patch is a good step toward getting rid of the
+> scsi logic in the backend, but it's quite enough yet.  For one thing
+> the backends really shouldn't know anything about scsi commands, so
+> the call to transport_emulate_control_cdb should happen before even
+> calling into the backend.
 
-> The taskstats interface uses microsecond granularity for the user and
-> system time values. The conversion from cputime to the taskstats values
-> uses the cputime_to_msecs primitive which effectively limits the 
-> granularity to milliseconds. Add the cputime_to_usecs primitive for
-> architectures that have better, more precise CPU time values. Remove
-> cputime_to_msecs primitive because there is no more user left.
+Hmmm, good point.  I was trying to avoid doing this initially because it
+adds more complexity when calling ->do_task() in target_core_transport.c
+__transport_execute_tasks(), but I would agree the tradeoff here to make
+IBLOCK, FILEIO and RAMDISK subsystem backend code SCSI control CDB
+emulation independent is worth it.
 
-Fair enough.
+> Second your ->emulate_foo callbacks still
+> are far too SCSI-specific, e.g. WRITE SAME witht unmap bit and UNMAP
+> emulation really should just go into a single ->discard callback
+> for the backend.  And instead of calling into the backend again for
+> readcap emulation just set block_size and size attributs on a per-
+> device object and let common code handle it.  Similarly for inquity
+> just set the device type and other variables and handle it in common
+> code.
 
-msecs_to_cputime() never had any callers, and it replacement
-usecs_to_cputime() doesn't have any callers either.  Maybe we should
-just zap it.
+Ok, I think this makes sense and should be easy enough for the cases
+that have been listed here.  However, there are still cases (namely DIF)
+that containing SCSI specific bits and would still be going into IBLOCK
+and FILEIO.
 
+> That avoid the special se_subsystem_api_cdb vector and simplifies
+> the code a lot conceptually a lot.  Together with calling
+> transport_emulate_control_cdb directly from core code before going
+> into ->do_task that does all the required work to make the backends
+> independent of the scsi protocol, so we could also use it e.g.
+> for ATA or virtio targets.
+
+Makes sense, I will drop struct se_subsystem_api_cdb, et al and post a
+followup patch series this afternoon.
+
+Thanks!
+
+--nab
 
