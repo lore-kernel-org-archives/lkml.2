@@ -1,72 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab0JKRyw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 13:54:52 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:53702 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755680Ab0JKRyv (ORCPT
+	id S1755983Ab0JKR7T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 13:59:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49417 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab0JKR7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 13:54:51 -0400
-Message-ID: <4CB34F53.6080409@euromail.se>
-Date: Mon, 11 Oct 2010 19:54:27 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100922 Thunderbird/3.1.4
+	Mon, 11 Oct 2010 13:59:17 -0400
+Message-ID: <4CB35050.7060207@kernel.org>
+Date: Mon, 11 Oct 2010 10:58:40 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-To: Chris Bagwell <chris@cnpbagwell.com>
-CC: Takashi Iwai <tiwai@suse.de>, Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, xorg-devel@lists.x.org,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Duncan McGreggor <duncan.mcgreggor@canonical.com>
-Subject: Re: [PATCH 3/3] Input: synaptics - remove touches over button click
- area
-References: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>	<1286549880-32580-2-git-send-email-chase.douglas@canonical.com>	<1286549880-32580-3-git-send-email-chase.douglas@canonical.com>	<1286549880-32580-4-git-send-email-chase.douglas@canonical.com>	<AANLkTi=QA5zgn=u39RyordViWw1CgpK9gy8kE_MdrpN3@mail.gmail.com>	<s5h7hho3bau.wl%tiwai@suse.de> <AANLkTi=G3xYm5+Wqv0quGGUhDEd7x8r7WJhN-tb6G=TA@mail.gmail.com>
-In-Reply-To: <AANLkTi=G3xYm5+Wqv0quGGUhDEd7x8r7WJhN-tb6G=TA@mail.gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH -v4] x86: Setup early console as early as possible in x86_start_kernel()
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1P5MZy-0007Jx-4G.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1P5MZy-0007Jx-4G 96a95045951dc0f5fdc382a75bbda5ca
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2010 07:46 PM, Chris Bagwell wrote:
-[...]
 
->>> I'm convinced now that clickpad style touchpads can't work without
->>> multi-touch and something like logic in xf86-input-multitouch.
->>
->> Actually Clickpad works without multi-touch patch.  With my patches to
->> synaptics, it worked in some level.  There are many restrictions (e.g.
->> pushing the button first then drag), though.
->>
-> 
-> True, but if I understand synaptic hardware MT behavior (sends
-> actively moving finger in higher resolution packet regardless of
-> original finger touch) then your patch will result in jumpy cursor on
-> X side and that side would need patches to attempt to guess invalid
-> data and discard.  I've worked on a few similar patches to various
-> xf86-input-* and generally they've failed to detect difference between
-> invalid packets vs. fast user movements.
-> 
-> The main point of my 3 options was to address jumpy cursor in
-> xf86-input-* that are not MT aware.  I think ABS_X/ABS_Y should only
-> allow its meaning to change at detectable time periods so user can
-> account for it and, specifically, that time period is best at
-> transition of BTN_TOOL_DOUBLETAP.
-> 
-> Assuming its easy enough to support exact rules for ABS_X/ABS_Y
-> changing meanings on kernel side (which I think it probably is pretty
-> easy), I think we should do it so that applications don't have to
-> become MT-aware as the official solution for jumpy cursors.
+Analyze "console=uart8250,io,0x3f8,115200n8" in i386_start_kernel/x86_64_start_kernel,
+and call setup_early_serial8250_console() to init early serial console.
 
+Only can handle io port kind of 8250, because mmio need ioremap.
 
-A solution like the one you describe was actually proposed and agreed upon in
-the beginning of this thread, so I think the only thing left to do is actually
-write the patch. :-) I can only assume that Takashi or Chase will be back in a
-bit with an update.
+Use boot_params.hdr.version instead of adding another variable, Suggested by hpa.
+Also need to apply this one after x86 memblock patchset.
 
-Cheers,
-Henrik
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ arch/x86/include/asm/setup.h |    2 ++
+ arch/x86/kernel/head.c       |   26 ++++++++++++++++++++++++++
+ arch/x86/kernel/head32.c     |    2 ++
+ arch/x86/kernel/head64.c     |   13 ++++++++++++-
+ kernel/printk.c              |    4 ++++
+ 5 files changed, 46 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/arch/x86/include/asm/setup.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/setup.h
++++ linux-2.6/arch/x86/include/asm/setup.h
+@@ -42,6 +42,8 @@ static inline void visws_early_detect(vo
+ #endif
+ 
+ extern unsigned long saved_video_mode;
++int setup_early_serial8250_console(char *cmdline);
++void setup_early_console(void);
+ 
+ extern void reserve_standard_io_resources(void);
+ extern void i386_reserve_resources(void);
+Index: linux-2.6/arch/x86/kernel/head.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head.c
++++ linux-2.6/arch/x86/kernel/head.c
+@@ -54,3 +54,29 @@ void __init reserve_ebda_region(void)
+ 	/* reserve all memory between lowmem and the 1MB mark */
+ 	memblock_x86_reserve_range(lowmem, 0x100000, "* BIOS reserved");
+ }
++
++void __init setup_early_console(void)
++{
++#ifdef CONFIG_SERIAL_8250_CONSOLE
++	char constr[64], *p, *q;
++
++	/* Can not handle mmio type 8250 uart yet, too early */
++	p = strstr(boot_command_line, "console=uart8250,io,");
++	if (!p)
++		p = strstr(boot_command_line, "console=uart,io,");
++	if (!p)
++		return;
++
++	p += 8;	/* sizeof "console=" */
++	q = strchr(p, ' ');
++	if ((q - p) >= sizeof(constr))
++		return;
++
++	memset(constr, 0, sizeof(constr));
++	memcpy(constr, p, q - p);
++
++	lockdep_init();
++
++	setup_early_serial8250_console(constr);
++#endif
++}
+Index: linux-2.6/arch/x86/kernel/head32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head32.c
++++ linux-2.6/arch/x86/kernel/head32.c
+@@ -31,6 +31,8 @@ static void __init i386_default_early_se
+ 
+ void __init i386_start_kernel(void)
+ {
++	setup_early_console();
++
+ 	memblock_init();
+ 
+ #ifdef CONFIG_X86_TRAMPOLINE
+Index: linux-2.6/arch/x86/kernel/head64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/head64.c
++++ linux-2.6/arch/x86/kernel/head64.c
+@@ -74,6 +74,10 @@ void __init x86_64_start_kernel(char * r
+ 	/* clear bss before set_intr_gate with early_idt_handler */
+ 	clear_bss();
+ 
++	/* boot_params is in bss */
++	copy_bootdata(__va(real_mode_data));
++	setup_early_console();
++
+ 	/* Make NULL pointers segfault */
+ 	zap_identity_mappings();
+ 
+@@ -97,7 +101,14 @@ void __init x86_64_start_kernel(char * r
+ 
+ void __init x86_64_start_reservations(char *real_mode_data)
+ {
+-	copy_bootdata(__va(real_mode_data));
++	/*
++	 * hdr.version is always not 0, so check it to see
++	 *  if boot_params is copied or not.
++	 */
++	if (!boot_params.hdr.version) {
++		copy_bootdata(__va(real_mode_data));
++		setup_early_console();
++	}
+ 
+ 	memblock_init();
+ 
+Index: linux-2.6/kernel/printk.c
+===================================================================
+--- linux-2.6.orig/kernel/printk.c
++++ linux-2.6/kernel/printk.c
+@@ -1232,6 +1232,10 @@ void register_console(struct console *ne
+ 	if (console_drivers && newcon->flags & CON_BOOT) {
+ 		/* find the last or real console */
+ 		for_each_console(bcon) {
++			/* not again */
++			if (bcon == newcon)
++				return;
++
+ 			if (!(bcon->flags & CON_BOOT)) {
+ 				printk(KERN_INFO "Too late to register bootconsole %s%d\n",
+ 					newcon->name, newcon->index);
