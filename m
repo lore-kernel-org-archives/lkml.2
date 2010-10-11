@@ -1,83 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab0JKHd2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 03:33:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47356 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab0JKHd1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 03:33:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,312,1283756400"; 
-   d="scan'208";a="615429362"
-From: "Berg, Johannes" <johannes.berg@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>,
-        Daniel J Blueman <daniel.blueman@gmail.com>
-Date: Mon, 11 Oct 2010 08:32:28 +0100
-Subject: RE: [Bug #16462] unable to connect to hidden SSID AP on legal
- channel 13
-Thread-Topic: [Bug #16462] unable to connect to hidden SSID AP on legal
- channel 13
-Thread-Index: ActosG9P5gkx88qjROSuMcouiGSrFAAZgBBA
-Message-ID: <C5C86A19469DAE48AAAD0E5F3716E44501D3D355C4@irsmsx504.ger.corp.intel.com>
-References: <pyPtebg28EI.A.ZPH.NvgsMB@chimera>
- <yeAD7A8RDxC.A.xu.dxgsMB@chimera>
-In-Reply-To: <yeAD7A8RDxC.A.xu.dxgsMB@chimera>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1753267Ab0JKHdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 03:33:37 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:40604 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab0JKHdf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 03:33:35 -0400
+Date: Mon, 11 Oct 2010 16:33:48 +0900
+From: Kukjin Kim <kgene.kim@samsung.com>
+Subject: RE: linux-next: manual merge of the sound-asoc tree with the s5p tree
+In-reply-to: <20101011133519.cf4fcaa8.sfr@canb.auug.org.au>
+To: "'Stephen Rothwell'" <sfr@canb.auug.org.au>,
+        "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>,
+        "'Liam Girdwood'" <lrg@slimlogic.co.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "'Dimitris Papastamos'" <dp@opensource.wolfsonmicro.com>
+Message-id: <009201cb6916$a9441740$fbcc45c0$%kim@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=us-ascii
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acto7PwFnYzcG9lQRBKfPEj3cehO5wAKUQ/A
+References: <20101011133519.cf4fcaa8.sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9B7Xjkj013869
 
-Rafael,
+Stephen Rothwell wrote:
+> 
+> Hi all,
+> 
+Hi...
 
-I believe that we have fixed the part of this bug that was a regression, namely being unable to connect to a non-hidden SSID, in 2.6.35 commit 3ee378d7e0dfdb9bb. Being able to connect to a hidden SSID I believe isn't a regression, and a patch for that is on its way upstream for 2.6.37. I think you should stop tracking this as a regression.
+Thank you for your information :-)
 
-johannes
+> Today's linux-next merge of the sound-asoc tree got a conflict in
+> arch/arm/mach-s3c64xx/dev-audio.c between commit
+> f08269d850e4ee0cd028cf5279cc08259d0469df ("ARM: S3C64XX: Change to using
+> s3c_gpio_cfgpin_range()") from the s5p tree and commit
+> e4b6b74ffd32d114227a5dcfe814e2cecd80554b ("ARM: S3C64XX: Fix fallthrough
+> bug in i2sv3 gpio configuration, improve logging") from the sound-asoc
+> tree.
+> 
+Hmm...how can/should I handle for it?
 
-> -----Original Message-----
-> From: Rafael J. Wysocki [mailto:rjw@sisk.pl]
-> Sent: Sunday, October 10, 2010 9:19 PM
-> To: Linux Kernel Mailing List
-> Cc: Kernel Testers List; Maciej Rutecki; Florian Mickler; Daniel J
-> Blueman; Berg, Johannes
-> Subject: [Bug #16462] unable to connect to hidden SSID AP on legal
-> channel 13
+> Both patches added the needed "break".  I fixed it up (see below) and can
+> carry the fix as necessary.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
 > 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
+> diff --cc arch/arm/mach-s3c64xx/dev-audio.c
+> index e4bb023,3838335..0000000
+> --- a/arch/arm/mach-s3c64xx/dev-audio.c
+> +++ b/arch/arm/mach-s3c64xx/dev-audio.c
+> @@@ -22,19 -22,31 +22,20 @@@
+>   #include <plat/audio.h>
+>   #include <plat/gpio-cfg.h>
 > 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+>  -#include <mach/gpio-bank-c.h>
+>  -#include <mach/gpio-bank-d.h>
+>  -#include <mach/gpio-bank-e.h>
+>  -#include <mach/gpio-bank-h.h>
+>  -
+>   static int s3c64xx_i2sv3_cfg_gpio(struct platform_device *pdev)
+>   {
+>  +	unsigned int base;
+>  +
+>   	switch (pdev->id) {
+>   	case 0:
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(0),
+> S3C64XX_GPD0_I2S0_CLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(1),
+> S3C64XX_GPD1_I2S0_CDCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(2),
+> S3C64XX_GPD2_I2S0_LRCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(3), S3C64XX_GPD3_I2S0_DI);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(4), S3C64XX_GPD4_I2S0_D0);
+>  +		base = S3C64XX_GPD(0);
+>   		break;
+>   	case 1:
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(0), S3C64XX_GPE0_I2S1_CLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(1),
+> S3C64XX_GPE1_I2S1_CDCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(2),
+> S3C64XX_GPE2_I2S1_LRCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(3), S3C64XX_GPE3_I2S1_DI);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(4), S3C64XX_GPE4_I2S1_D0);
+>  +		base = S3C64XX_GPE(0);
+>   		break;
+>   	default:
+> - 		printk(KERN_DEBUG "Invalid I2S Controller number!");
+> + 		printk(KERN_DEBUG "Invalid I2S Controller number: %d\n",
+> + 			pdev->id);
+>   		return -EINVAL;
+>   	}
 > 
+> @@@ -157,17 -170,24 +158,18 @@@ EXPORT_SYMBOL(s3c64xx_device_iisv4)
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16462
-> Subject		: unable to connect to hidden SSID AP on legal
-> channel 13
-> Submitter	: Daniel J Blueman <daniel.blueman@gmail.com>
-> Date		: 2010-07-25 17:06 (78 days old)
-> Handled-By	: Johannes Berg <johannes.berg@intel.com>
-> Patch		: https://bugzilla.kernel.org/attachment.cgi?id=31862
+>   static int s3c64xx_pcm_cfg_gpio(struct platform_device *pdev)
+>   {
+>  +	unsigned int base;
+>  +
+>   	switch (pdev->id) {
+>   	case 0:
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(0),
+> S3C64XX_GPD0_PCM0_SCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(1),
+> S3C64XX_GPD1_PCM0_EXTCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(2),
+> S3C64XX_GPD2_PCM0_FSYNC);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(3),
+> S3C64XX_GPD3_PCM0_SIN);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPD(4),
+> S3C64XX_GPD4_PCM0_SOUT);
+>  +		base = S3C64XX_GPD(0);
+>   		break;
+>   	case 1:
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(0),
+> S3C64XX_GPE0_PCM1_SCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(1),
+> S3C64XX_GPE1_PCM1_EXTCLK);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(2),
+> S3C64XX_GPE2_PCM1_FSYNC);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(3),
+> S3C64XX_GPE3_PCM1_SIN);
+>  -		s3c_gpio_cfgpin(S3C64XX_GPE(4),
+> S3C64XX_GPE4_PCM1_SOUT);
+>  +		base = S3C64XX_GPE(0);
+>   		break;
+>   	default:
+> - 		printk(KERN_DEBUG "Invalid PCM Controller number!");
+> + 		printk(KERN_DEBUG "Invalid PCM Controller number: %d\n",
+> + 			pdev->id);
+>   		return -EINVAL;
+>   	}
 > 
 
---------------------------------------------------------------------------------------
-Intel GmbH
-Dornacher Strasse 1
-85622 Feldkirchen/Muenchen, Deutschland 
-Sitz der Gesellschaft: Feldkirchen bei Muenchen
-Geschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes Schwaderer
-Registergericht: Muenchen HRB 47456 
-Ust.-IdNr./VAT Registration No.: DE129385895
-Citibank Frankfurt a.M. (BLZ 502 109 00) 600119052
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+
+Thanks.
+
+Best regards,
+Kgene.
+--
+Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
+SW Solution Development Team, Samsung Electronics Co., Ltd.
+
