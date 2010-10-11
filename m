@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754435Ab0JKMvE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 08:51:04 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45683 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754231Ab0JKMvD (ORCPT
+	id S1754459Ab0JKMwR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 08:52:17 -0400
+Received: from smtp109.prem.mail.ac4.yahoo.com ([76.13.13.92]:27718 "HELO
+	smtp109.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753920Ab0JKMwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 08:51:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UGP+r5R7kFcvp2NboxoaNnpE05c8FGr7gdN4miBz2pb41c7/kDckhOogEmAWpVE2wa
-         u/EtIn1GvCE1+XKCgDLJOfQo/YJzdMheJUt2HmT1kT8BMEIDEhr5gAnNkhY9d68eghBc
-         Rh3LzhMTIEyY2uDJ5Hn7YBxs6CR7jpBpIQG5I=
-Date: Mon, 11 Oct 2010 16:50:56 +0400
-From: Vasiliy Kulikov <segooon@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Ian Lartey <ian@opensource.wolfsonmicro.com>,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: wm8804: fix error handling code
-Message-ID: <20101011125056.GA25041@albatros>
-References: <1286731745-18169-1-git-send-email-segooon@gmail.com>
- <20101011120014.GJ9231@rakim.wolfsonmicro.main>
- <20101011121555.GA32652@albatros>
- <20101011123609.GL9231@rakim.wolfsonmicro.main>
+	Mon, 11 Oct 2010 08:52:16 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: JVeTZsYVM1lYPpayr6ZRQGT5wfFuegZvVadiQLWH0rCW5F2
+ 8ddYUMgrqyasSZV5audLmNBap.q29wKq.24Mmbhh3lqLzY4Ygyu8ClZsFXDB
+ Tqci.AEmh8TSWE3QM54hlinBK38KrFR6y1_h.dSNaFg1CKNNra16RBxSb1x9
+ 8mDSTHrOYcnhVl0K8U9UzCCe4SMngje9.EMcRtjCvzkeAJvEqM6VfwkYOZ2J
+ ma0JelYWjM7tg0zObQe.ssgdHAO4-
+X-Yahoo-Newman-Property: ymail-3
+Date: Mon, 11 Oct 2010 07:52:12 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: pacman@kosh.dhis.org
+cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        Mel Gorman <mel@csn.ul.ie>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+In-Reply-To: <20101009095718.1775.qmail@kosh.dhis.org>
+Message-ID: <alpine.DEB.2.00.1010110750390.6638@router.home>
+References: <20101009095718.1775.qmail@kosh.dhis.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101011123609.GL9231@rakim.wolfsonmicro.main>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 13:36 +0100, Mark Brown wrote:
-> On Mon, Oct 11, 2010 at 04:15:55PM +0400, Vasiliy Kulikov wrote:
-> > On Mon, Oct 11, 2010 at 13:00 +0100, Mark Brown wrote:
-> 
-> > > ...it's not clear to me that this change is an improvement - it'll make
-> > > the driver more fragile in the face of errors, I don't see a benefit in
-> > > refusing to register the variant for one bus if the other fails?
-> 
-> > I tried to implement your variant with depca driver in past, but it was
-> > rejected by David Miller:
-> > http://lists.openwall.net/netdev/2010/07/12/9
-> 
-> I disagree with David here, and in any case if you're going to make a
-> style change like this they really ought to be applied over all drivers
-> rather than just a few individual ones.
-
-It is not greppable situation to simply change the behavior of all
-drivers.  I was looking for memory leak bugs in drivers/net/ and fixed
-some of them.  Manual looking through _all_ drivers takes much more
-time.  In general I try to search for repeatable bugs with coccinelle,
-but it is rare case.
+The contents of those scribbles may reveal something. Are these 4 bytes a
+pointer? If so at what memory area are they pointing? A page struct?
 
 
-Thanks,
 
--- 
-Vasiliy
