@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755697Ab0JKRJd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 13:09:33 -0400
-Received: from mga03.intel.com ([143.182.124.21]:26948 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755668Ab0JKRJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 13:09:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,315,1283756400"; 
-   d="scan'208";a="334739737"
-Date: Mon, 11 Oct 2010 19:11:51 +0200
-From: Andi Kleen <ak@linux.intel.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "ralf@linux-mips.org" <ralf@linux-mips.org>
-Subject: Re: [PATCH] Define _addr_lsb in siginfo_t for mips and ia64
-Message-ID: <20101011171113.GA8959@gargoyle.nowhere.org>
-References: <1286560501-26843-1-git-send-email-andi@firstfloor.org>
- <987664A83D2D224EAE907B061CE93D530163EA9C09@orsmsx505.amr.corp.intel.com>
- <AANLkTin7_3_iwn2xf=wy9ho9GfCHw+eSTjv12z1ESWr5@mail.gmail.com>
+	id S1755742Ab0JKRKJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 13:10:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35978 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755585Ab0JKRKH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 13:10:07 -0400
+Message-ID: <4CB344C6.5040408@kernel.org>
+Date: Mon, 11 Oct 2010 10:09:26 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin7_3_iwn2xf=wy9ho9GfCHw+eSTjv12z1ESWr5@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build warning after merge of the final tree (tip
+ tree related)
+References: <20101011160429.81483d01.sfr@canb.auug.org.au>
+In-Reply-To: <20101011160429.81483d01.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 09:53:22AM -0700, Tony Luck wrote:
-> On Fri, Oct 8, 2010 at 11:13 AM, Luck, Tony <tony.luck@intel.com> wrote:
-> > ia64 has HAVE_ARCH_COPY_SIGINFO_TO_USER - so it doesn't see
-> > this build problem because the version of copy_siginfo_to_user()
-> > in kernel/signal.c isn't the one we use. So I don't think that
-> > we need this (unless someone has some plan to unify the
-> > ARCH specific version).
+On 10/10/2010 10:04 PM, Stephen Rothwell wrote:
+> Hi all,
 > 
-> I take this back ... in next-20101011 the disease has spread:
+> After merging the final tree, today's linux-next build (powerpc
+> allnoconfig) produced this warning:
+> 
+> WARNING: mm/built-in.o(.text+0x25ab8): Section mismatch in reference from the function memblock_find_base() to the function .init.text:memblock_find_region()
+> The function memblock_find_base() references
+> the function __init memblock_find_region().
+> This is often because memblock_find_base lacks a __init 
+> annotation or the annotation of memblock_find_region is wrong.
+> 
+> Introduced by commit 3661ca66a42e306aaf53246fb75aec1ea01be0f0 ("memblock:
+> Fix section mismatch warnings").
+> 
+please check
 
-Ok I will include the patch for ia64 in my tree -- unless you
-want to carry it.
+[PATCH] x86: Fix section mismatch with memblock_find_region
 
--Andi
+Stephen found
+
+WARNING: mm/built-in.o(.text+0x25ab8): Section mismatch in reference from the function memblock_find_base() to the function .init.text:memblock_find_region()
+The function memblock_find_base() references
+the function __init memblock_find_region().
+This is often because memblock_find_base lacks a __init 
+annotation or the annotation of memblock_find_region is wrong.
+
+make all functions in memblock.c without __init to carry __init_memblock.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ mm/memblock.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+Index: linux-2.6/mm/memblock.c
+===================================================================
+--- linux-2.6.orig/mm/memblock.c
++++ linux-2.6/mm/memblock.c
+@@ -99,7 +99,7 @@ long __init_memblock memblock_overlaps_r
+  * are top-down.
+  */
+ 
+-static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
++static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_addr_t end,
+ 					  phys_addr_t size, phys_addr_t align)
+ {
+ 	phys_addr_t base, res_base;
+@@ -653,7 +653,7 @@ void __init memblock_enforce_memory_limi
+ 	}
+ }
+ 
+-static int memblock_search(struct memblock_type *type, phys_addr_t addr)
++static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
+ {
+ 	unsigned int left = 0, right = type->cnt;
+ 
