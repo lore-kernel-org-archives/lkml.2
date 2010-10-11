@@ -1,80 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab0JKVLz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 17:11:55 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48403 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756484Ab0JKVLx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 17:11:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=xpTIMAmbpxxeU/yZShGlBgCYlLL/O1sX2jzbT87vop/CCs0jxvB1ZJ2sEKoGHLihV4
-         QBLLDY8hT95FWFPVVDMhKxvEZYTUqX29v/cAY5i1fB4aie5B1YP4Xm7Scz4iZpGUV5+b
-         LvW5FjAMvjf2y2UDYHpWRgwMuedzhPfkHLwdI=
-Date: Mon, 11 Oct 2010 23:11:38 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        Jassi Brar <jassi.brar@samsung.com>, alsa-devel@alsa-project.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] ASoC: soc: snprintf() doesn't return negative
-Message-ID: <20101011211138.GL5851@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Mark Brown <broonie@opensource.wolfsonmicro.com>,
-	Liam Girdwood <lrg@slimlogic.co.uk>,
-	Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-	Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-	Jassi Brar <jassi.brar@samsung.com>, alsa-devel@alsa-project.org,
-	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20101011035416.GD5851@bicker> <20101011104009.GB9231@rakim.wolfsonmicro.main> <20101011164038.GE5851@bicker> <20101011185148.GB22355@opensource.wolfsonmicro.com> <20101011194502.GK5851@bicker>
+	id S1756459Ab0JKVNL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 17:13:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756371Ab0JKVNK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 17:13:10 -0400
+Date: Mon, 11 Oct 2010 17:12:55 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Huang Ying <ying.huang@intel.com>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>
+Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
+Message-ID: <20101011211255.GA23882@redhat.com>
+References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
+ <1286606987-19879-5-git-send-email-ying.huang@intel.com>
+ <20101010150713.3cd3eed2@lxorguk.ukuu.org.uk>
+ <20101010141311.GB26728@basil.fritz.box>
+ <20101011210829.GA28823@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101011194502.GK5851@bicker>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101011210829.GA28823@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 09:45:02PM +0200, Dan Carpenter wrote:
-> On Mon, Oct 11, 2010 at 07:51:48PM +0100, Mark Brown wrote:
-> > In actual fact quite a few devices have enough registers to be
-> > truncated, meaning that it's not only possible but likely we'll exercise
-> > the cases that deal with the end of buffer.  If snprintf() is returning
-> > values larger than buffer size it was given we're likely to have an
-> > issue but it seems that there's something missing in your analysis since
-> > we're never seeing WARN_ON()s and are instead seeing the behaviour the
-> > code is intended to give, which is to truncate the output when we run
-> > out of space.
+On Mon, Oct 11, 2010 at 05:08:29PM -0400, Don Zickus wrote:
+> On Sun, Oct 10, 2010 at 04:13:11PM +0200, Andi Kleen wrote:
+> > > > These systems are identified via the presentation of APEI HEST or
+> > > > some PCI ID of the host bridge. The PCI ID of host bridge instead of
+> > > > DMI ID is used, so that the checking can be done based on the platform
+> > > > type instead of motherboard. This should be simpler and sufficient.
+> > > > 
+> > > > The method to identify the platforms is designed by Andi Kleen.
+> > > 
+> > > Why not make the new flag also a boot option so you can force it on for
+> > > platforms where we don't auto whitelist it.
 > > 
-> > Could you re-check your analysis, please?
+> > You can already set it at run time using sysctl.
+> > 
+> > echo 1 > /proc/sys/kernel/panic_on_unrecovered_nmi
+> > echo 1 > /proc/sys/kernel/panic_on_io_nmi
 > 
-> That's odd.  I'm sorry, I can't explain why you wouldn't see a stack
-> trace...  The code is straight forward:
+> I get the impression Alan was talking about the option
 > 
->         /* Reject out-of-range values early.  Large positive sizes are
->            used for unknown buffer sizes. */
->         if (WARN_ON_ONCE((int) size < 0))
->                 return 0;
+> unknown_nmi_as_hwerr
 > 
-> It would still give you truncated output but after the NULL terminator
-> there would be information leaked from the kernel.  If the reader
-> program had allocated a large enough buffer to handle the extra
-> information it wouldn't cause a problem.
-> 
+> which isn't hooked into a sysctl but will cause machines to panic.
 
-Actually it will never cause a problem with userspace because we pass
-the size of the userspace buffer to the kernel.  The only issues are the
-information leak if the user passes in a 8k buffer and the also the
-WARN_ON_ONCE()
+Gah.  disregard this, my brain is tired from a long day.
 
-
-regards,
-dan carpenter
-
+Cheers,
+Don
