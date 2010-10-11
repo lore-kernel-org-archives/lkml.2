@@ -1,113 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0JKLHQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 07:07:16 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:39806
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754132Ab0JKLHJ (ORCPT
+	id S1754041Ab0JKLHD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 07:07:03 -0400
+Received: from mgw-sa02.nokia.com ([147.243.1.48]:65527 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753017Ab0JKLG6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 07:07:09 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zzbb2cK1432N98dNzz1202hzz8275dhz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0LA4HJI-01-GGC-02
-X-M-MSG: 
-Date: Mon, 11 Oct 2010 13:06:54 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Matt Fleming <matt@console-pimps.org>, Paul Mundt <lethal@linux-sh.org>
-CC: Will Deacon <will.deacon@arm.com>, Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 7/7] sh: oprofile: Use perf-events oprofile backend
-Message-ID: <20101011110654.GR13563@erda.amd.com>
-References: <cover.1286584677.git.matt@console-pimps.org>
- <a0c83396f5fb8a29baff3daf43d29b2e601511ff.1286584677.git.matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <a0c83396f5fb8a29baff3daf43d29b2e601511ff.1286584677.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Mon, 11 Oct 2010 07:06:58 -0400
+From: Samu Onkalo <samu.p.onkalo@nokia.com>
+To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
+        alan@lxorguk.ukuu.org.uk
+Subject: [PATCHv3 2/5] misc: update bh1770glc driver to Kconfig and Makefile
+Date: Mon, 11 Oct 2010 14:06:46 +0300
+Message-Id: <1286795209-12487-3-git-send-email-samu.p.onkalo@nokia.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1286795209-12487-1-git-send-email-samu.p.onkalo@nokia.com>
+References: <1286795209-12487-1-git-send-email-samu.p.onkalo@nokia.com>
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.10.10 20:46:22, Matt Fleming wrote:
-> Now that we've got a generic perf-events based oprofile backend we might
-> as well make use of it seeing as SH doesn't do anything special with its
-> oprofile backend. Also introduce a new CONFIG_HW_PERF_EVENTS symbol so
-> that we can fallback to using the timer interrupt for oprofile if the
-> CPU doesn't support perf events.
-> 
-> Also, to avoid a section mismatch warning we need to annotate
-> oprofile_arch_exit() with an __exit marker.
-> 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> Acked-by: Paul Mundt <lethal@linux-sh.org>
-> ---
->  arch/sh/Kconfig            |   13 +++++
->  arch/sh/oprofile/Makefile  |    4 ++
->  arch/sh/oprofile/common.c  |  115 +++++++++-----------------------------------
->  arch/sh/oprofile/op_impl.h |   33 -------------
->  4 files changed, 40 insertions(+), 125 deletions(-)
->  delete mode 100644 arch/sh/oprofile/op_impl.h
+Compilation support for bh1770glc driver
 
-> -static int op_sh_create_files(struct super_block *sb, struct dentry *root)
-> +char *op_name_from_perf_id(void)
->  {
-> -	int i, ret = 0;
-> +	const char *pmu;
-> +	char buf[20];
-> +	int size;
->  
-> -	for (i = 0; i < model->num_counters; i++) {
-> -		struct dentry *dir;
-> -		char buf[4];
-> +	pmu = perf_pmu_name();
-> +	if (!pmu)
-> +		return NULL;
->  
-> -		snprintf(buf, sizeof(buf), "%d", i);
-> -		dir = oprofilefs_mkdir(sb, root, buf);
-> +	size = snprintf(buf, sizeof(buf), "sh/%s", pmu);
+Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+---
+ drivers/misc/Kconfig  |   10 ++++++++++
+ drivers/misc/Makefile |    1 +
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-Matt and Paul,
-
-are those (upper case) cpu_type strings already supported by the
-oprofile userland?
-
--Robert
-
-> +	if (size > -1 && size < sizeof(buf))
-> +		return buf;
->  
-> -		ret |= oprofilefs_create_ulong(sb, dir, "enabled", &ctr[i].enabled);
-> -		ret |= oprofilefs_create_ulong(sb, dir, "event", &ctr[i].event);
-> -		ret |= oprofilefs_create_ulong(sb, dir, "kernel", &ctr[i].kernel);
-> -		ret |= oprofilefs_create_ulong(sb, dir, "user", &ctr[i].user);
-> -
-> -		if (model->create_files)
-> -			ret |= model->create_files(sb, dir);
-> -		else
-> -			ret |= oprofilefs_create_ulong(sb, dir, "count", &ctr[i].count);
-> -
-> -		/* Dummy entries */
-> -		ret |= oprofilefs_create_ulong(sb, dir, "unit_mask", &ctr[i].unit_mask);
-> -	}
-> -
-> -	return ret;
-> +	return NULL;
->  }
-
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index b743312..a0ada25 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -314,6 +314,16 @@ config SENSORS_BH1780
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called bh1780gli.
+ 
++config SENSORS_BH1770
++         tristate "BH1770GLC / SFH7770 combined ALS - Proximity sensor"
++         depends on I2C
++         ---help---
++           Say Y here if you want to build a driver for BH1770GLC (ROHM) or
++	   SFH7770 (Osram) combined ambient light and proximity sensor chip.
++
++           To compile this driver as a module, choose M here: the
++           module will be called bh1770glc. If unsure, say N here.
++
+ config HMC6352
+ 	tristate "Honeywell HMC6352 compass"
+ 	depends on I2C
+diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+index 42eab95..f0567e0 100644
+--- a/drivers/misc/Makefile
++++ b/drivers/misc/Makefile
+@@ -16,6 +16,7 @@ obj-$(CONFIG_TIFM_CORE)       	+= tifm_core.o
+ obj-$(CONFIG_TIFM_7XX1)       	+= tifm_7xx1.o
+ obj-$(CONFIG_PHANTOM)		+= phantom.o
+ obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
++obj-$(CONFIG_SENSORS_BH1770)	+= bh1770glc.o
+ obj-$(CONFIG_SGI_IOC4)		+= ioc4.o
+ obj-$(CONFIG_ENCLOSURE_SERVICES) += enclosure.o
+ obj-$(CONFIG_KGDB_TESTS)	+= kgdbts.o
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.6.0.4
 
