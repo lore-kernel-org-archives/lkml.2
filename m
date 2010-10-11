@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab0JKOTK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 10:19:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45610 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754713Ab0JKOTH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 10:19:07 -0400
-Message-ID: <4CB31CAF.7020808@kernel.org>
-Date: Mon, 11 Oct 2010 16:18:23 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1754878Ab0JKOYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 10:24:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54731 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754709Ab0JKOYj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 10:24:39 -0400
+Date: Mon, 11 Oct 2010 15:24:28 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: Thorsten Glaser <tg@mirbsd.de>, linux-kernel@vger.kernel.org,
+        linux-m68k@vger.kernel.org
+Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
+ kernels
+Message-ID: <20101011142428.GK19804@ZenIV.linux.org.uk>
+References: <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
+ <20101010144952.GF19804@ZenIV.linux.org.uk>
+ <AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
+ <20101010235256.GG19804@ZenIV.linux.org.uk>
+ <20101011024103.GH19804@ZenIV.linux.org.uk>
+ <20101011043632.GA2566@cynthia.pants.nu>
+ <20101011044808.GI19804@ZenIV.linux.org.uk>
+ <Pine.BSM.4.64L.1010111218040.23471@herc.mirbsd.org>
+ <20101011133545.GJ19804@ZenIV.linux.org.uk>
+ <m3wrpo24u0.fsf@hase.home>
 MIME-Version: 1.0
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, hch@lst.de, hare@suse.de,
-        James.Bottomley@suse.de, axboe@kernel.dk, bharrosh@panasas.com,
-        jeff@garzik.org
-Subject: Re: [RFC v2 00/21] TCM Core and TCM_Loop patches for v2.6.37
-References: <1285195702-11421-1-git-send-email-nab@linux-iscsi.org>	 <20101006111621O.fujita.tomonori@lab.ntt.co.jp>	 <1286340405.5685.93.camel@haakon2.linux-iscsi.org>	 <20101006160434M.fujita.tomonori@lab.ntt.co.jp> <1286349898.5685.117.camel@haakon2.linux-iscsi.org> <4CAC833F.2010108@kernel.org> <4CACAE56.6090209@vlnb.net>
-In-Reply-To: <4CACAE56.6090209@vlnb.net>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Oct 2010 14:18:28 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m3wrpo24u0.fsf@hase.home>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 10/06/2010 07:13 PM, Vladislav Bolkhovitin wrote:
-> Tejun Heo, on 10/06/2010 06:10 PM wrote:
->> On 10/06/2010 09:24 AM, Nicholas A. Bellinger wrote:
->>>> I like to hear the opinions of SCSI maintainer and ATA folks.
->>>
->>> jejb, jgarzik, tejun and co..?  Any thoughts here..?
->>
->> I frankly have no idea whatsoever.  Is there something I can read to
->> educate myself on the subject?
+On Mon, Oct 11, 2010 at 04:15:35PM +0200, Andreas Schwab wrote:
+> Al Viro <viro@ZenIV.linux.org.uk> writes:
 > 
-> General information about a SCSI target subsystem you can find in
-> http://scst.sourceforge.net. More internal details about implementation
-> in http://scst.sourceforge.net/scst_pg.html. Features which are
-> implemented in http://scst.sourceforge.net/comparison.html.
+> > Below is what I'm using on top of mainline kernel; it's a combination of
+> > couple of patches in debian m68k kernel plus compile fixes.
 > 
-> Directly on the subject you can find some considerations in
-> http://lkml.org/lkml/2010/10/1/140 (second half of the message).
+> Try Geert's linux-m68k tree.
 > 
-> My opinion is that in ideal the SCSI initiator subsystem should be
-> drivers/scsi/initiator and the target subsystem - drivers/scsi/target
-> with shared code in drivers/scsi/. But in reality such big
-> reorganization is unlikely possible, so it's better to leave SCSI
-> initiator subsystem in drivers/scsi and the target subsystem - in the
-> separate directory in drivers/ (drivers/scst for SCST).
+> > This kind of miscompile is definitely triggered in a lot of places -
+> > anything that does return ERR_PTR(error) right after error = foo(...);
+> > is going to get fscked and it's not a rare thing.
+> 
+> Only if they are optimized into tail calls.
 
-Thanks for the pointers.  Yeah, it would be pretty interesting to have
-ATA support there too and for ATA I don't really see why anyone would
-mix the initiator and target driver implementations.  They may share
-protocol constants and some utility functions but that will be about
-it, so it will mostly be a completely separate subsystem and I think
-it probably is better to put it somewhere separate too.  I think it
-would be best if we can keep the two subsystems clearly separated.
-They're targeting very different and most likely disjoint audiences
-after all.
+And with -O2 4.3 does exactly that.
 
-Thanks.
-
--- 
-tejun
+BTW, any comments on signal patchset?  Seems to work here, including the
+stack expansion fixes, but that's on aranym.  I'll try to resurrect the
+real hardware, but that may take a while.  If somebody could give it a beating
+in the meanwhile...
