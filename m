@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab0JKOoz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 10:44:55 -0400
-Received: from mail.perches.com ([173.55.12.10]:2755 "EHLO mail.perches.com"
+	id S1755102Ab0JKOpn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 10:45:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49610 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754801Ab0JKOoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 10:44:54 -0400
-Subject: Re: get_maintainer
-From: Joe Perches <joe@perches.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1286789815.3634.5.camel@jlt3.sipsolutions.net>
-References: <1286789815.3634.5.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Oct 2010 07:44:53 -0700
-Message-ID: <1286808293.3416.18.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754665Ab0JKOpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 10:45:42 -0400
+Date: Mon, 11 Oct 2010 16:44:43 +0200
+From: Jan Kara <jack@suse.cz>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ext3: Return proper error code on ext3_fill_super()
+Message-ID: <20101011144443.GD3830@quack.suse.cz>
+References: <1286791686-2973-1-git-send-email-namhyung@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286791686-2973-1-git-send-email-namhyung@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-11 at 11:36 +0200, Johannes Berg wrote:
-> Would it be possible to modify the script to actually look at the
-> patches it found and not CC people if the changes to the file in
-> question are, say, less than 20% of the overall patch?
+On Mon 11-10-10 19:08:06, Namhyung Kim wrote:
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+  Looks OK. Merged.
 
-Hi Johannes.
-
-Pull this in some test branch and try it out.
-
-git://repo.or.cz/linux-2.6/get_maintainer.git 20100922_gm
-
-If you try this and find it less than adequate,
-please tell me why.
-
-Here's the patch series, which is in MM
-http://lkml.org/lkml/2010/9/22/464
-
-Here's a couple of recent longish threads about this.
-http://lkml.org/lkml/2010/9/10/94
-http://lkml.org/lkml/2010/9/25/184
-
-
-
+							Honza
+> ---
+>  fs/ext3/super.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/ext3/super.c b/fs/ext3/super.c
+> index 421fad7..75bbf77 100644
+> --- a/fs/ext3/super.c
+> +++ b/fs/ext3/super.c
+> @@ -1871,6 +1871,7 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
+>  	if (sbi->s_group_desc == NULL) {
+>  		ext3_msg(sb, KERN_ERR,
+>  			"error: not enough memory");
+> +		ret = -ENOMEM;
+>  		goto failed_mount;
+>  	}
+>  
+> @@ -1958,6 +1959,7 @@ static int ext3_fill_super (struct super_block *sb, void *data, int silent)
+>  	}
+>  	if (err) {
+>  		ext3_msg(sb, KERN_ERR, "error: insufficient memory");
+> +		ret = err;
+>  		goto failed_mount3;
+>  	}
+>  
+> -- 
+> 1.7.0.4
+> 
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
