@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755994Ab0JKTaF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 15:30:05 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:65255 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754692Ab0JKTaD (ORCPT
+	id S1755981Ab0JKTde (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 15:33:34 -0400
+Received: from smtp.srv.ualberta.ca ([129.128.5.19]:58385 "EHLO
+	mail2.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755408Ab0JKTdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 15:30:03 -0400
-Message-ID: <4CB36592.6060909@vlnb.net>
-Date: Mon, 11 Oct 2010 23:29:22 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Mon, 11 Oct 2010 15:33:33 -0400
+Date: Mon, 11 Oct 2010 13:33:15 -0600 (Mountain Daylight Time)
+From: Marc Aurele La France <tsi@ualberta.ca>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+Subject: Re: [Bug #20002] x86_64 2.6.35.* kernels and Intel Xeon X5550
+In-Reply-To: <yeAD7A8RDxC.A.dVH.UvgsMB@chimera>
+Message-ID: <alpine.WNT.1.10.1010111327090.1620@tsi>
+References: <pyPtebg28EI.A.ZPH.NvgsMB@chimera> <yeAD7A8RDxC.A.dVH.UvgsMB@chimera>
+User-Agent: Alpine 1.10 (WNT 962 2008-03-14)
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-References: <4CA653F0.1010008@vlnb.net> <4CA656AD.8020408@vlnb.net> <20101009212047.GB27180@kroah.com>
-In-Reply-To: <20101009212047.GB27180@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V02:K0:mMb8UjIFZt8o1IIKgCC+SFBg9bCVL94Vg6N1PfJC6ch
- NerD6TnZi2SxsqjXP7UnDZDIBtGNv+2BCjb7JN6qfjpLHAMR2s
- 4rufsB62WpwhKyyF/wQNA4nkED9ofVNCMsR+4DMwJVwoYN6QXg
- m+WA4Q2Q+HZGaBn1rKMeDBKeYZnlKFYXkroPOfwvNKIkHIfUHl
- CHMLfxny19iKn1LxDcIJQ==
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH, on 10/10/2010 01:20 AM wrote:
-> On Sat, Oct 02, 2010 at 01:46:21AM +0400, Vladislav Bolkhovitin wrote:
->> This patch contains SYSFS interface implementation.
-> 
-> Nice, but you forgot to document it.  All sysfs changes need to be
-> documented in Documentation/ABI/
-> 
-> Please add a file to this patch that does so.
+On Sun, 10 Oct 2010, Rafael J. Wysocki wrote:
 
-I'll do. I didn't know about this. Thanks for pointing on it.
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.34 and 2.6.35.
 
->> +static void scst_tgtt_release(struct kobject *kobj)
->> +{
->> +	struct scst_tgt_template *tgtt;
->> +
->> +	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
->> +	complete_all(&tgtt->tgtt_kobj_release_cmpl);
->> +	return;
-> 
-> Don't you also need to free the memory of your kobject here?
-> 
->> +static void scst_tgt_release(struct kobject *kobj)
->> +{
->> +	struct scst_tgt *tgt;
->> +
->> +	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
->> +	complete_all(&tgt->tgt_kobj_release_cmpl);
->> +	return;
-> 
-> Same here, no kfree?
-> 
->> +static void scst_acg_release(struct kobject *kobj)
->> +{
->> +	struct scst_acg *acg;
->> +
->> +	acg = container_of(kobj, struct scst_acg, acg_kobj);
->> +	complete_all(&acg->acg_kobj_release_cmpl);
-> 
-> And here.
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
+> be listed and let the tracking team know (either way).
 
-Thanks for the review. In all those functions kobjects for simplicity
-are embedded into the outer objects, so they will be freed as part of
-the outer objects free. Hence, kfree() for the kobjects in the release
-functions are not needed.
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20002
+> Subject	: x86_64 2.6.35.* kernels and Intel Xeon X5550
+> Submitter	: Marc Aurele La France <tsi@ualberta.ca>
+> Date		: 2010-10-07 17:17 (4 days old)
+> Message-ID	: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
+> References	: http://marc.info/?l=linux-kernel&m=128647187628706&w=2
 
-Thanks again,
-Vlad
+Yes, this is still an issue.  I'm still trying to track it down.  I've 
+generated a series of 2.6.35-rc[1-6] kernels, which I will try tomorrow 
+(after today's statuatory holiday).
+
+Thanks.
+
+Marc.
+
++----------------------------------+----------------------------------+
+|  Marc Aurele La France           |  work:   1-780-492-9310          |
+|  Academic Information and        |  fax:    1-780-492-1729          |
+|    Communications Technologies   |  email:  tsi@ualberta.ca         |
+|  352 General Services Building   +----------------------------------+
+|  University of Alberta           |                                  |
+|  Edmonton, Alberta               |    Standard disclaimers apply    |
+|  T6G 2H1                         |                                  |
+|  CANADA                          |                                  |
++----------------------------------+----------------------------------+
