@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755077Ab0JKOiS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 10:38:18 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45691 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754926Ab0JKOiQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 10:38:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=XN5Oq/1k81wED2pvs//0laqzS/xVj29S7zCgYvvtm5cCju//G4mW04wVIEtYFoPpta
-         6cwgIoshWY76GBWk0XaGQgGVPz75LXlvWubIJii+h4hS/b3nCno+Bwap4phVfCGYG2Hi
-         rcFZOoBeTXtWGuoEWMxBFGv2MXG003NNkzURI=
+	id S1755033Ab0JKOjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 10:39:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49393 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754836Ab0JKOjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 10:39:23 -0400
+Message-ID: <4CB32199.1000401@suse.cz>
+Date: Mon, 11 Oct 2010 16:39:21 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
 MIME-Version: 1.0
-In-Reply-To: <1286781641.2336.63.camel@twins>
-References: <1286612169-27529-1-git-send-email-linus.walleij@stericsson.com>
-	<1286639626.1891.0.camel@laptop>
-	<AANLkTi=JfJknPNMiMXnK=kZj+ECJTE423AfjuiE67afu@mail.gmail.com>
-	<1286781641.2336.63.camel@twins>
-Date: Mon, 11 Oct 2010 16:38:14 +0200
-Message-ID: <AANLkTinSW-6OXkUeiaB7SZObXWBseJ9+HRRAqVnbrQFL@mail.gmail.com>
-Subject: Re: [PATCH] sched: SCHED_RESET_ON_FORK to recalculate load weights
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        Lennart Poettering <lennart@poettering.net>, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Joe Perches <joe@perches.com>, Andy Whitcroft <apw@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] scripts/checkpatch.pl: Warn on non-executable files	created
+ with non 100644 file permissions
+References: <1286407891.32241.21.camel@Joe-Laptop> <20101007065438.GB12741@pengutronix.de>
+In-Reply-To: <20101007065438.GB12741@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/11 Peter Zijlstra <peterz@infradead.org>:
+On 7.10.2010 08:54, Wolfram Sang wrote:
+> On Wed, Oct 06, 2010 at 04:31:31PM -0700, Joe Perches wrote:
+>> +			my $mode = $1;
+>> +			my $file = $2;
+>> +			if ($mode ne "100644" && !($file =~ /\.(sh|pl|py|awk)$/)) {
+>> +				WARN("FILE '$file' should probably use file permission 100644 not $mode\n" . $herecurr);
+>> +			}
+> 
+> What about checking for no filename extension, too, and changing the message to
+> something like "use proper file permission or proper extension"?
 
-> OK, so the problem is that if a RR/FIFO task does s fork() and it has
-> SCHED_RESET_ON_FORK set, the child normalization fails to properly set
-> the weight?
->
-> Does (as Mike just suggested) removing that whole RT clause in
-> set_load_weight() work for you?
+That would result in too many false positives, I'm afraid. What about
+checking for files with a shebang?
 
-Yep it sure does! Time to drop some weight.
-Sent a new patch for this...
-
-Yours,
-Linus Walleij
+Michal
