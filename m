@@ -1,95 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab0JKGSA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 02:18:00 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:19161 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751876Ab0JKGR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 02:17:59 -0400
-Subject: Re: [PATCHv2 2/5] misc: update bhsfh driver to Kconfig and Makefile
-From: Onkalo Samu <samu.p.onkalo@nokia.com>
-Reply-To: samu.p.onkalo@nokia.com
-To: ext Jonathan Cameron <jic23@cam.ac.uk>
-Cc: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <4CAF29F4.9010709@cam.ac.uk>
-References: <1286545324-18506-1-git-send-email-samu.p.onkalo@nokia.com>
-	 <1286545324-18506-3-git-send-email-samu.p.onkalo@nokia.com>
-	 <4CAF29F4.9010709@cam.ac.uk>
-Content-Type: text/plain
-Organization: Nokia Oyj
-Date: Mon, 11 Oct 2010 09:17:40 +0300
-Message-Id: <1286777860.28027.5.camel@4fid08082>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Oct 2010 06:17:45.0338 (UTC) FILETIME=[04ED5DA0:01CB690C]
-X-Nokia-AV: Clean
+	id S1752555Ab0JKG05 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 02:26:57 -0400
+Received: from ns0.wincor-nixdorf.com ([80.154.98.130]:50854 "EHLO
+	mxpdbe2.wincor-nixdorf.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752362Ab0JKG05 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 02:26:57 -0400
+Message-ID: <4CB2ADB1.6070401@wincor-nixdorf.com>
+Date: Mon, 11 Oct 2010 08:24:49 +0200
+From: Frank Salomon <frank.salomon@wincor-nixdorf.com>
+Reply-To: frank.salomon@wincor-nixdorf.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.4) Gecko/20030624 
+    Netscape/7.1
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: driver or calculation of load average wrong ?
+Content-Type: text/plain; charset="ISO-8859-1"; format="flowed"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 16:25 +0200, ext Jonathan Cameron wrote:
-> On 10/08/10 14:42, Samu Onkalo wrote:
-> > Compilation support for bhsfh driver
-> > 
-> > Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
-> > ---
-> >  drivers/misc/Kconfig  |   10 ++++++++++
-> >  drivers/misc/Makefile |    1 +
-> >  2 files changed, 11 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> > index b743312..f2e8065 100644
-> > --- a/drivers/misc/Kconfig
-> > +++ b/drivers/misc/Kconfig
-> > @@ -314,6 +314,16 @@ config SENSORS_BH1780
-> >  	  This driver can also be built as a module.  If so, the module
-> >  	  will be called bh1780gli.
-> >  
-> > +config SENSORS_BHSFH
-> > +         tristate "BH1770GLC / SFH7770 combined ALS / Proximity sensor";
-> > +         depends on I2C
-> > +         ---help---
-> > +           Say Y here if you want to build a driver for BH1770GLC / SFH7770
-> > +           combined ambient light and proximity sensor chip
-> > +
-> > +           To compile this driver as a module, choose M here: the
-> > +           module will be called bhsfh. If unsure, say N here.
-> > +
-> Really not keen on the naming.  The above comment made me think this was
-> a single chip integrating both of the parts.  Reading the code makes it clear
-> that they just share an interface.  So please name it after one of them.
-> Lots of reasons not to invent combined names like this.
-> * non obvious thing to grep for.
-> * 3rd part comes along with a different name. Do you change the driver name?
-> 
-> So best bet is always just to pick a supported part and name the driver after
-> that.  The device table stuff and clear descriptions in kconfig will make
-> it obvious what the part supports.
+Hello All,
 
-ok, bhsfh.* > bh1770glc.*
-What do you think, is it ok to still keep BHSFH in definitions and in
-function names?
+I have the following configuration:
+- CentOS 5
+- kernel 2.6.20.1
+- My own driver in a kernel_thread:
+		while ( 1 ){
+			printk ( KERN_INFO "go sleep, %lu\n", jiffies );
+			current -> state = TASK_UNINTERRUPTIBLE;
+			schedule_timeout ( msecs_to_jiffies(4000) );
+			printk ( KERN_INFO "wakeup, %lu\n", jiffies );
+		}
+
+Each time I load the driver, the load average in /proc/loadavg reached:
+	$ cat /proc/loadavg
+	0.99 0.62 0.26 1/47 2868
+Without my driver:
+	$ cat /proc/loadavg
+	0.03 0.03 0.00 1/47 2867
+
+I changed nr_active(void) in kernel/sched.c:
+unsigned long nr_active(void)
+{
+          unsigned long i, running = 0, uninterruptible = 0;
+
+          for_each_online_cpu(i) {
+                  running += cpu_rq(i)->nr_running;
+                  uninterruptible += cpu_rq(i)->nr_uninterruptible;
+          }
+
+          if (unlikely((long)uninterruptible < 0))
+                  uninterruptible = 0;
+
+// original:     return running + uninterruptible;
+          return running;
+}
+
+Driver loaded or not:
+	$ cat /proc/loadavg
+	0.03 0.03 0.00 1/47 2867
+
+Any help or comments would be really great?
+
+Best regards, thanks, Frank
+-- 
+WINCOR NIXDORF International GmbH
+Retail Store Solutions
+Heinz-Nixdorf-Ring 1
+33106 Paderborn
+Tel. +49 (0) 30 5017 1335
+Fax +49 (0) 30 5017 1305
+mail frank.salomon@wincor-nixdorf.com
 
 
+WINCOR NIXDORF International GmbH
+Sitz der Gesellschaft: Paderborn
+Registergericht Paderborn HRB 3507
+Geschäftsführer: Eckard Heidloff (Vorsitzender), Stefan Auerbach, Dr. Jürgen Wunram
+Vorsitzender des Aufsichtsrats: Karl-Heinz Stiller
+Steuernummer: 339/5884/0020 - Ust-ID Nr.: DE812927716 - WEEE-Reg.-Nr. DE44477193
 
-> >  config HMC6352
-> >  	tristate "Honeywell HMC6352 compass"
-> >  	depends on I2C
-> > diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> > index 42eab95..fd5a4b7 100644
-> > --- a/drivers/misc/Makefile
-> > +++ b/drivers/misc/Makefile
-> > @@ -16,6 +16,7 @@ obj-$(CONFIG_TIFM_CORE)       	+= tifm_core.o
-> >  obj-$(CONFIG_TIFM_7XX1)       	+= tifm_7xx1.o
-> >  obj-$(CONFIG_PHANTOM)		+= phantom.o
-> >  obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
-> > +obj-$(CONFIG_SENSORS_BHSFH)	+= bhsfh.o
-> >  obj-$(CONFIG_SGI_IOC4)		+= ioc4.o
-> >  obj-$(CONFIG_ENCLOSURE_SERVICES) += enclosure.o
-> >  obj-$(CONFIG_KGDB_TESTS)	+= kgdbts.o
-> 
+Diese E-Mail enthält vertrauliche Informationen.
+Wenn Sie nicht der richtige Adressat sind oder diese E-Mail irrtümlich erhalten haben,
+informieren Sie bitte sofort den Absender und vernichten Sie diese E-Mail.
+Das unerlaubte Kopieren sowie die unbefugte Weitergabe dieser E-Mail ist nicht gestattet.
 
+This e-mail may contain confidential information.
+If you are not the intended recipient (or have received this e-mail in error)
+please notify the sender immediately and destroy this e-mail.
+Any unauthorised copying, disclosure or distribution of the material in this e-mail is strictly forbidden.
