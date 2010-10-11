@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab0JKLfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 07:35:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46616 "EHLO gate.crashing.org"
+	id S1754014Ab0JKLuq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 07:50:46 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:44488 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753072Ab0JKLfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 07:35:37 -0400
-Subject: Re: [patch 00/47] Sparse irq rework
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Yinghai Lu <yinghai@kernel.org>, Grant Likely <grant.likely@secretlab.ca>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
-        Linus Torvalds <torvalds@osdl.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        Peter Zijlstra <peterz@infradead.org>,
-        Paul Mundt <lethal@linux-sh.org>,
-        David Woodhouse <dwmw2@infradead.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-In-Reply-To: <alpine.LFD.2.00.1010110953420.2909@localhost6.localdomain6>
-References: <20100930221351.682772535@linutronix.de>
-	 <20101003112312.GB9844@angua.secretlab.ca>
-	 <20101003112920.GB32736@n2100.arm.linux.org.uk>
-	 <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com>
-	 <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6>
-	 <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6>
-	 <4CACFC23.4080504@kernel.org>
-	 <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6>
-	 <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org>
-	 <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6>
-	 <4CAD4EC3.5060809@kernel.org>
-	 <alpine.LFD.2.00.1010082346310.13094@localhost6.localdomain6>
-	 <alpine.LFD.2.00.1010082351450.13094@localhost6.localdomain6>
-	 <4CAFEEFA.1070000@kernel.org> <4CB00122.3030301@kernel.org>
-	 <alpine.LFD.2.00.1010090829150.13094@localhost6.localdomain6>
-	 <4CB014F5.5080209@kernel.org>
-	 <alpine.LFD.2.00.1010101130160.2413@localhost6.localdomain6>
-	 <4CB28988.4090207@kernel.org>
-	 <alpine.LFD.2.00.1010110953420.2909@localhost6.localdomain6>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Oct 2010 22:34:46 +1100
-Message-ID: <1286796886.5220.4.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752888Ab0JKLup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 07:50:45 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <19634.64018.979987.971553@pilspetsen.it.uu.se>
+Date: Mon, 11 Oct 2010 13:50:42 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Mikael Pettersson <mikpe@it.uu.se>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
+ kernels
+In-Reply-To: <19634.55413.877788.492484@pilspetsen.it.uu.se>
+References: <20101007174948.GT19804@ZenIV.linux.org.uk>
+	<AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
+	<20101010144952.GF19804@ZenIV.linux.org.uk>
+	<AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
+	<20101010235256.GG19804@ZenIV.linux.org.uk>
+	<20101011024103.GH19804@ZenIV.linux.org.uk>
+	<19634.55413.877788.492484@pilspetsen.it.uu.se>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mikael Pettersson writes:
+ > Al Viro writes:
+ >  > On Mon, Oct 11, 2010 at 12:52:56AM +0100, Al Viro wrote:
+ >  > > On Sun, Oct 10, 2010 at 10:18:03PM +0200, Geert Uytterhoeven wrote:
+ >  > > > >> This is on aranym-0.9.9-1 from Ubuntu/amd64.
+ >  > > > >
+ >  > > > > stat -L /proc/2/exec, otherwise you'll hit lstat() instead of stat().
+ >  > > > > And FWIW 0.9.10-1 squeeze/amd64 also triggers here...
+ >  > > > 
+ >  > > > Still, just "stat: cannot stat `proc/2/exe': No such file or directory" here...
+ >  > > 
+ >  > > Interesting...  Which gcc version is used?
+ >  > 
+ >  > Argh...  OK, going through aranym with debugger has exhonorated it.  My
+ >  > apologies ;-/  It *is* gcc in sid.  Testcase:
+ >  > 
+ >  > extern int foo(int);
+ >  > void *bar(int n)
+ >  > {
+ >  >         return (void *)foo(n);
+ >  > }
+ >  > 
+ >  > and gcc -S -O2 turns that into
+ >  > bar:
+ >  >         link.w %fp,#0
+ >  >         unlk %fp
+ >  >         jra foo
+ >  > 
+ >  > Spot the obvious bug...  BTW, why on the Earth does debian-ports m68k tree
+ >  > use gcc-4.3 with Cthulhu-scaring 700Kb gzipped patch and does *not* have
+ >  > gcc-4.4?
+ > 
+ > I can confirm that the bug exists in gcc-4.3.4 and gcc-4.4.5,
+ > but it has been fixed in gcc-4.5.1 which generates:
+ > 
+ > bar:
+ >         link.w %fp,#0
+ >         move.l 8(%fp),-(%sp)
+ >         jsr foo
+ >         move.l %d0,%a0
+ >         unlk %fp
+ >         rts
+ > 
+ > I don't yet know the gcc PR number or svn commit # for the fix
+ > (in case people want a backport).
 
-> Hmm, that's probably a problem for all legacy interrupts which are
-> never torn down once they are set up. And we set them all up during
-> early boot.
-> 
-> So either we special case the legacy area or remove the warning
-> alltogether.
-> 
-> Another option I discussed with Suresh recently is to remove the
-> allocator in intr_remapping.c and just embedd irq_2_iommu into
-> irq_cfg.
-
-Just in case that's of use, on powerpc, we just special case the legacy
-range. It's keep un-requestable unless somebody comes and explicitely
-claims it (using a special flag for our virq scheme, typically only 8259
-does it for us) and then we get 1:1 all pre-allocated and mostly
-immutable.
-
-Cheers,
-Ben.
-
+It's gcc PR41302 which was fixed for gcc trunk on November 4 2009
+in r153890.  The patch backports easily to gcc-4.4 and solves the
+test case there (manual inspection using a cross).  It also backports
+easily to gcc-4.3 but I haven't tested it there.
