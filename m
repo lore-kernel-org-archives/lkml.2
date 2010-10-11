@@ -1,136 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756139Ab0JKULc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 16:11:32 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:34796 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755940Ab0JKULb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 16:11:31 -0400
-From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
-Date: Mon, 11 Oct 2010 13:11:21 -0700
+	id S1756150Ab0JKULy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 16:11:54 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:42863 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755940Ab0JKULw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 16:11:52 -0400
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Marcio Saito <marcio@cyclades.com>, Jiri Slaby <jirislaby@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        John Stultz <johnstul@us.ibm.com>,
-        Avantika Mathur <mathur@linux.vnet.ibm.com>
-Subject: [RFC] [PATCH] allow low HZ values?
-Message-ID: <20101011201121.GA953@tpepper-t61p.dolavim.us>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
+        linux-security-module@vger.kernel.org, keyrings@linux-nfs.org,
+        linux-crypto@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+Subject: [PATCH v1.1 0/4] keys: trusted and encrypted keys 
+Date: Mon, 11 Oct 2010 16:11:39 -0400
+Message-Id: <1286827903-3066-1-git-send-email-zohar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'm not necessarily wanting to open up the age old question of "what is
-a good HZ", but we were doing some testing on timer tick overheads for
-HPC applications and this came up...
+Since the original posting, the encrypted keys are started at
+late_initcall, in order to wait for the crypto API to be
+initialized, minor changes were made to Kconfig, Roberto Sassu's
+fixes (adding missing 'update' keyword, freeing allocated memory
+on failure) were merged, increased the data size limit, based on
+Roberto's request, and added Rajiv Andrade's ack for the TPM
+patch.
 
-Below is a minimal hack at enabling lower HZ values.  The kernel builds
-and boots for me on x86_64 (simple laptop and kvm configs) and ppc64
-(misc. IBM System p) with each of the added HZ options.
+Trusted and Encrypted Keys are two new key types added to the
+existing kernel key ring service. Both of these new types are
+variable length symmetic keys, and in both cases all keys are
+created in the kernel, and user space sees, stores, and loads 
+only encrypted blobs. Trusted Keys require the availability of a
+Trusted Platform Module (TPM) chip for greater security, while
+Encrypted Keys can be used on any system. All user level blobs,
+are displayed and loaded in hex ascii for convenience, and
+are integrity verified.
 
-There's explicit code checking HZ down to 12, but HZ<100 wasn't a config
-option.  We collected some data at 10, 12 and 25.  There'd been some
-question of whether 10 would even work or not but it looks fine in the
-relatively minimal testing we did.  We tried 12 since the code seemed
-to allow for it.  And 25 as a "safe" lower value.  The only difference
-observed under load (ie: no no idle HZ in play) was the expected timer
-tick happening less often.  There was definitely surprise that nothing
-else seemed to break anywhere, especially at 10.
+Trusted Keys use a TPM both to generate and to seal the keys.
+Keys are sealed under a 2048 bit RSA key in the TPM, and optionally
+sealed to specified PCR (integrity measurement) values, and only
+unsealed by the TPM, if PCRs and blob integrity verifications match.
+A loaded Trusted Key can be updated with new (future) PCR values,
+so keys are easily migrated to new pcr values, such as when the
+kernel and initramfs are updated. The same key can have many
+saved blobs under different PCR values, so multiple boots are
+easily supported.
 
-Do people feel it is reasonable to have Kconfig bits to allow some lower
-HZ values?
+Trusted Keys are sealed under the SRK, which must have the default
+authorization value (20 zeros). This can be set at takeownership
+time with the trouser's utility "tpm_takeownership -u -z".
 
-If so, then there's the question of what breaks.  It's reasonable to
-think there are other going to be subtleties buried in code around
-assumptions on the likely range of HZ:
+Usage:
+    keyctl add trusted name "NEW keylen [hex_pcrinfo]" ring
+    keyctl add trusted name "LOAD hex_blob" ring
+    keyctl update key "UPDATE hex_pcrinfo"
+    keyctl print keyid
+    keyctl pipe keyid > filename
 
-- I'm not sure that what I did in inet_timewait_sock.h and jiffies.h is
-  reasonable.
-- arch/x86/kernel/i8253.c throws a warning at line 43 (v2.6.36-rc7):
-      warning: large integer implicitly truncated to unsigned type
-- drivers/char/cyclades.c's cy_ioctl() warns:
-      drivers/char/cyclades.c:2761: warning: division by zero
-- drivers, drivers, drivers across all the arch's could use sanity checking
+The key length for new keys are always in bytes.
+Trusted Keys can be 32 - 128 bytes (256 - 1024 bits), the upper
+limit is to fit within the 2048 bit SRK (RSA) keylength, with
+all necessary structure/padding. The keywords NEW, LOAD, and
+UPDATE can be all upper or all lower case.
+
+Encrypted keys do not depend on a TPM, and are faster, as they
+use AES for encryption/decryption. New keys are created from kernel
+generated random numbers, and are encrypted/decrypted using a
+specified 'master' key. The 'master' key can either be a trusted-key
+or user-key type. The main disadvantage of encrypted keys is that if
+they are not rooted in a trusted key, they are only as secure as the
+user key encrypting them. The master user key should therefore
+be loaded in as secure a way as possible, preferably early in
+boot.
+
+Usage:
+  keyctl add encrypted name "NEW master-key-name keylen" ring
+  keyctl add encrypted name "LOAD master-key-name keylen hex_blob" ring
+  keyctl update keyid "UPDATE master-key-name"
+
+The initial consumer of trusted keys is EVM, which at boot time
+needs a high quality symmetric key for HMAC protection of file
+metadata. The use of a trusted key provides strong guarantees
+that the EVM key has not been compromised by a user level problem,
+and when sealed to specific boot PCR values, protects against
+boot and offline attacks. Other uses for trusted and encrypted
+keys, such as for disk and file encryption are anticipated.
+
+Mimi Zohar
+Dave Safford
+
+Mimi Zohar (4):
+  lib: hex2bin converts ascii hexadecimal string to binary
+  key: add tpm_send command
+  keys: add new trusted key-type
+  keys: add new key-type encrypted
+
+ drivers/char/tpm/tpm.c            |   17 +
+ include/keys/encrypted-type.h     |   30 ++
+ include/keys/trusted-type.h       |   33 ++
+ include/linux/kernel.h            |    1 +
+ include/linux/tpm.h               |    3 +
+ lib/hexdump.c                     |   16 +
+ security/Kconfig                  |   31 ++
+ security/keys/Makefile            |    2 +
+ security/keys/encrypted_defined.c |  782 +++++++++++++++++++++++++++++
+ security/keys/encrypted_defined.h |   52 ++
+ security/keys/trusted_defined.c   |  997 +++++++++++++++++++++++++++++++++++++
+ security/keys/trusted_defined.h   |  125 +++++
+ 12 files changed, 2089 insertions(+), 0 deletions(-)
+ create mode 100644 include/keys/encrypted-type.h
+ create mode 100644 include/keys/trusted-type.h
+ create mode 100644 security/keys/encrypted_defined.c
+ create mode 100644 security/keys/encrypted_defined.h
+ create mode 100644 security/keys/trusted_defined.c
+ create mode 100644 security/keys/trusted_defined.h
 
 -- 
-Tim Pepper  <lnxninja@linux.vnet.ibm.com>
-IBM Linux Technology Center
+1.7.2.2
 
+Mimi Zohar (4):
+  lib: hex2bin converts ascii hexadecimal string to binary
+  key: add tpm_send command
+  keys: add new trusted key-type
+  keys: add new key-type encrypted
 
+ drivers/char/tpm/tpm.c            |   17 +
+ include/keys/encrypted-type.h     |   30 ++
+ include/keys/trusted-type.h       |   33 ++
+ include/linux/kernel.h            |    1 +
+ include/linux/tpm.h               |    3 +
+ lib/hexdump.c                     |   16 +
+ security/Kconfig                  |   31 ++
+ security/keys/Makefile            |    2 +
+ security/keys/encrypted_defined.c |  804 +++++++++++++++++++++++++++++
+ security/keys/encrypted_defined.h |   52 ++
+ security/keys/trusted_defined.c   |  999 +++++++++++++++++++++++++++++++++++++
+ security/keys/trusted_defined.h   |  125 +++++
+ 12 files changed, 2113 insertions(+), 0 deletions(-)
+ create mode 100644 include/keys/encrypted-type.h
+ create mode 100644 include/keys/trusted-type.h
+ create mode 100644 security/keys/encrypted_defined.c
+ create mode 100644 security/keys/encrypted_defined.h
+ create mode 100644 security/keys/trusted_defined.c
+ create mode 100644 security/keys/trusted_defined.h
 
-Not-Signed-off-by: Tim Pepper <lnxninja@us.ibm.com>
+-- 
+1.7.2.2
 
-diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
-index 6811f4b..8c225b2 100644
---- a/include/linux/jiffies.h
-+++ b/include/linux/jiffies.h
-@@ -15,7 +15,9 @@
-  * OSF/1 kernel. The SHIFT_HZ define expresses the same value as the
-  * nearest power of two in order to avoid hardware multiply operations.
-  */
--#if HZ >= 12 && HZ < 24
-+#if HZ < 12
-+# define SHIFT_HZ	3
-+#elif HZ >= 12 && HZ < 24
- # define SHIFT_HZ	4
- #elif HZ >= 24 && HZ < 48
- # define SHIFT_HZ	5
-diff --git a/include/net/inet_timewait_sock.h b/include/net/inet_timewait_sock.h
-index a066fdd..1aba305 100644
---- a/include/net/inet_timewait_sock.h
-+++ b/include/net/inet_timewait_sock.h
-@@ -39,8 +39,9 @@ struct inet_hashinfo;
-  * If time > 4sec, it is "slow" path, no recycling is required,
-  * so that we select tick to get range about 4 seconds.
-  */
--#if HZ <= 16 || HZ > 4096
--# error Unsupported: HZ <= 16 or HZ > 4096
-+/* HACK HACK */
-+#if HZ > 4096
-+# error Unsupported: HZ > 4096
- #elif HZ <= 32
- # define INET_TWDR_RECYCLE_TICK (5 + 2 - INET_TWDR_RECYCLE_SLOTS_LOG)
- #elif HZ <= 64
-diff --git a/kernel/Kconfig.hz b/kernel/Kconfig.hz
-index 94fabd5..37302bf 100644
---- a/kernel/Kconfig.hz
-+++ b/kernel/Kconfig.hz
-@@ -15,6 +15,22 @@ choice
- 	 environment leading to NR_CPUS * HZ number of timer interrupts
- 	 per second.
- 
-+	config HZ_10
-+		bool "10 HZ"
-+	help
-+	  10 Hz is extremely aggressive and may break things.
-+
-+	config HZ_12
-+		bool "12 HZ"
-+	help
-+	  12 Hz because it's less aggressive than 10?
-+
-+	config HZ_25
-+		bool "25 HZ"
-+	help
-+	  25 Hz is useful for reducing HPC application jitter caused by
-+	  timer interrupts happening during a "fixed time quantum of work
-+	  then barrier" style workload.
- 
- 	config HZ_100
- 		bool "100 HZ"
-@@ -49,6 +65,9 @@ endchoice
- 
- config HZ
- 	int
-+	default 10 if HZ_10
-+	default 12 if HZ_12
-+	default 25 if HZ_25
- 	default 100 if HZ_100
- 	default 250 if HZ_250
- 	default 300 if HZ_300
