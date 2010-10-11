@@ -1,128 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754344Ab0JKMbB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 08:31:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43039 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754091Ab0JKMbA (ORCPT
+	id S1754404Ab0JKMb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 08:31:59 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:48841 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754037Ab0JKMb6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 08:31:00 -0400
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
-        Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-In-Reply-To: <AANLkTinHZ-w6=0RvVp39MnvpRC7RW1CYNSbzi2f1OvaQ@mail.gmail.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	 <20101007192245.GC26435@n2100.arm.linux.org.uk>
-	 <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
-	 <20101008175308.GA10975@n2100.arm.linux.org.uk>
-	 <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
-	 <20101008230451.GB10975@n2100.arm.linux.org.uk>
-	 <20101008232539.GA28697@kroah.com>
-	 <20101008234448.GD10975@n2100.arm.linux.org.uk>
-	 <20101009000046.GA30616@kroah.com>
-	 <20101009002546.GB14675@n2100.arm.linux.org.uk>
-	 <alpine.LFD.2.00.1010082210150.3107@xanadu.home>
-	 <1286791544.19739.31.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTinMuKDpbL9ka61QhUFJfze_HWWHxjUbAqbz2_vi@mail.gmail.com>
-	 <1286796187.19739.52.camel@e102109-lin.cambridge.arm.com>
-	 <AANLkTinHZ-w6=0RvVp39MnvpRC7RW1CYNSbzi2f1OvaQ@mail.gmail.com>
+	Mon, 11 Oct 2010 08:31:58 -0400
+Subject: Re: [PATCH/RFC] timer: fix deadlock on cpu hotplug
+From: Peter Zijlstra <peterz@infradead.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Tejun Heo <tj@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <20100923133103.GA3832@osiris.boeblingen.de.ibm.com>
+References: <20100921142017.GA2291@osiris.boeblingen.de.ibm.com>
+	 <4C98D0EB.30002@kernel.org> <1285083618.2275.884.camel@laptop>
+	 <20100922083706.GA2177@osiris.boeblingen.de.ibm.com>
+	 <1285147362.2275.896.camel@laptop> <1285165776.2275.1022.camel@laptop>
+	 <20100923133103.GA3832@osiris.boeblingen.de.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Mon, 11 Oct 2010 13:30:32 +0100
-Message-ID: <1286800232.19739.96.camel@e102109-lin.cambridge.arm.com>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 11 Oct 2010 14:31:03 +0200
+Message-ID: <1286800263.2336.390.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Oct 2010 12:30:32.0941 (UTC) FILETIME=[190EB9D0:01CB6940]
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-11 at 13:03 +0100, Felipe Contreras wrote:
-> On Mon, Oct 11, 2010 at 2:23 PM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Mon, 2010-10-11 at 11:39 +0100, Felipe Contreras wrote:
-> >> I will try that, but from what I can see this might still break some
-> >> drivers, right?
-> >
-> > Probably, it depends on how drivers use the memory returned by ioremap
-> > and the assumptions they make about the memory type (strict ordering,
-> > write buffers, speculation). I think such memory should be used via the
-> > I/O accessors and not directly, so you get the benefit of explicit
-> > memory barriers. If not, you have to cope with the loss of attributes
-> > because of the WC mapping.
-> >
-> > But as it has been said (and it's my opinion as well), the drivers are
-> > broken and are misusing the ioremap API.
+On Thu, 2010-09-23 at 15:31 +0200, Heiko Carstens wrote:
+> On Wed, Sep 22, 2010 at 04:29:36PM +0200, Peter Zijlstra wrote:
+> > On Wed, 2010-09-22 at 11:22 +0200, Peter Zijlstra wrote:
+> > 
+> > > The idea was to move it to a class of its own above SCHED_FIFO.
+> > > 
+> > > I'll try and get something done, but I'm heading out to LinuxCon.JP
+> > > soon.
+> > 
+> > Something like the below, it seems to boot, build a kernel and hotplug.
 > 
-> Indeed, that is understood by everyone.
+> Thanks for the fast patch. Yes, it works. Sort of:
 > 
-> But what I think should happen on .36 is that the warning is on, and
-> the behavior doesn't change compared to .35. Your patch is changing
-> the behavior as you say in hacky way, which might have unintended
-> consequences in the affected drivers, I don't think that's ideal,
-> although it's better than breaking them completely.
-
-Well, even if you allow Device memory via ioremap in Linux and the
-hardware behaviour is not "unpredictable", it is not guaranteed to act
-as a Device memory. You get speculative accesses via the Normal alias
-and you may also get dirty cache lines evicted at random from the Normal
-mapping (unless you invalidated the cache before). The dirty eviction is
-valid even for pre-ARMv6 processors.
-
-> >> Anyway, I'm reading the TRM and I can't find any mention of this.
-> >> Catalin, can you point out where is this mentioned, and also, can you
-> >> confirm if this would affect only the memory that has the double
-> >> mapping, or it can corrupt other memory as well?
-> >
-> > That's in the ARM ARM (Architecture Reference Manual), not a TRM.
-> >
-> > You never know what "unpredictable" means and this is specific to the
-> > processor implementation, not the ARM ARM. You should not mix different
-> > memory types for the same page.
+> ------------[ cut here ]------------
+> WARNING: at kernel/kthread.c:182
+> Modules linked in:
+> Modules linked in:
+> CPU: 0 Not tainted 2.6.36-rc5-00034-g8b15575-dirty #21
+> Process cpukill2.sh (pid: 2630, task: 000000003ac05238, ksp: 000000003d8bf8d8)
+> Krnl PSW : 0704000180000000 000000000016adb6 (kthread_bind+0x8a/0x98)
+>            R:0 T:1 IO:1 EX:1 Key:0 M:1 W:0 P:0 AS:0 CC:0 PM:0 EA:3
+> Krnl GPRS: 0000000000000000 00000000026afd00 0000000000000000 0000000000000002
+>            000000000016ad60 000000000050e980 0000000000000000 00000000026b9150
+>            0000000000000002 0000000000000002 0000000000000002 000000003fbc0138
+>            0000000000000002 000000000050eb08 000000000016ad60 000000003d8bfbb0
+> Krnl Code: 000000000016ada6: f0b80004ebbf       srp     4(12,%r0),3007(%r14),8
+>            000000000016adac: f0a0000407f4       srp     4(11,%r0),2036,0
+>            000000000016adb2: a7f40001           brc     15,16adb4
+>           >000000000016adb6: e340f0b80004       lg      %r4,184(%r15)
+>            000000000016adbc: ebbff0a00004       lmg     %r11,%r15,160(%r15)
+>            000000000016adc2: 07f4               bcr     15,%r4
+>            000000000016adc4: eb5ff0400024       stmg    %r5,%r15,64(%r15)
+>            000000000016adca: c0d0001d1ea3       larl    %r13,50eb10
+> Call Trace:
+> ([<000000000016ad60>] kthread_bind+0x34/0x98)
+>  [<00000000004f5270>] cpu_stop_cpu_callback+0xf0/0x1e4
+>  [<00000000004ff806>] notifier_call_chain+0x8e/0xdc
+>  [<00000000001721f2>] __raw_notifier_call_chain+0x22/0x30
+>  [<0000000000148c68>] __cpu_notify+0x44/0x80
+>  [<00000000004f3be0>] _cpu_up+0x110/0x150
+>  [<00000000004f3cea>] cpu_up+0xca/0xec
+>  [<00000000004f0416>] store_online+0x92/0xcc
+>  [<000000000026880a>] sysfs_write_file+0xf6/0x1a8
+>  [<00000000001f8c6c>] vfs_write+0xb0/0x158
+>  [<00000000001f8f6c>] SyS_write+0x58/0xa8
+>  [<0000000000117cf6>] sysc_noemu+0x10/0x16
+>  [<0000020000158fcc>] 0x20000158fcc
+> 4 locks held by cpukill2.sh/2630:
+>  #0:  (&buffer->mutex){+.+.+.}, at: [<000000000026875e>] sysfs_write_file+0x4a/0x1a8
+>  #1:  (s_active#66){.+.+.+}, at: [<00000000002687e6>] sysfs_write_file+0xd2/0x1a80
+>  #2:  (cpu_add_remove_lock){+.+.+.}, at: [<00000000004f3cce>] cpu_up+0xae/0xec
+>  #3:  (cpu_hotplug.lock){+.+.+.}, at: [<0000000000148d42>] cpu_hotplug_begin+0x3e/0x74
+> Last Breaking-Event-Address:
+>  [<000000000016adb2>] kthread_bind+0x86/0x98
 > 
-> Certainly, but saying corruption _will_ happen elsewhere is not
-> correct, there is no empirical evidence for that, although
-> theoretically it might happen.
-
-It may be just theoretical but architecture licensees implement the
-hardware according to the ARM ARM. If it says "unpredictable", they
-don't need to care much about this scenario as it is not allowed in
-software and the hardware can be further optimised (well, I think
-"unpredictable" doesn't allow hardware deadlocking or security
-implications, so the memory corruption cannot be that random, possibly
-just restricted to that memory range). It is probably ok on current
-hardware but I cannot guarantee, you would have to check on a
-case-by-case basis (CPU implementation).
-
-> > Back in 2006 there was a discussion for a set of palliative measures in
-> > hardware (initially until the OSes are fixed) and these allow the same
-> > memory type but with different cacheability attributes (e.g. Normal
-> > Non-cacheable vs Normal Cacheable) given that care is taken in software
-> > wrt stale cache lines and speculation (but at least you don't get random
-> > corruption somewhere else). They would need to have the same
-> > shareability attributes though.
-> >
-> > With the hack above, MT_DEVICE_WC is actually Normal Non-cacheable
-> > memory. It needs cache flushing but it's not worse than the original
-> > ioremap allowing this. The driver may not work as expected though.
+> ..and crashes afterwards ;)
 > 
-> I see, but are you saying that if the shareability is not the same,
-> then corruption elsewhere might actually happen? Or it would happen
-> most likely on the affected region? If it's the former, then I agree
-> that your patch should be used instead.
+> Btw. I also tried to boot 2.6.35.5 with your patch and it hangs just at
+> the beginning. I also had to apply 5e3d20a68f63fc5a310687d81956c3b96e488b84
+> "init: Remove the BKL from startup code" to make the machine boot again,
+> which was a bit surprising.
 
-Pretty much same answer as above. But why do you need different
-shareability attributes?
 
--- 
-Catalin
+Does something like the below (on top of the previous patch) work?
+
+Can I have your hotplug script (cpukill2.sh?) to test, a simply while(1)
+loop offlining and onlining cpu1 doesn't seem to impress my machine
+(with the below folded in)..
+
+---
+Index: linux-2.6/kernel/stop_machine.c
+===================================================================
+--- linux-2.6.orig/kernel/stop_machine.c
++++ linux-2.6/kernel/stop_machine.c
+@@ -306,12 +306,12 @@ static int __cpuinit cpu_stop_cpu_callba
+ 		if (IS_ERR(p))
+ 			return NOTIFY_BAD;
+ 		get_task_struct(p);
++		kthread_bind(p, cpu);
+ 		sched_set_stop_task(cpu, p);
+ 		stopper->thread = p;
+ 		break;
+ 
+ 	case CPU_ONLINE:
+-		kthread_bind(stopper->thread, cpu);
+ 		/* strictly unnecessary, as first user will wake it */
+ 		wake_up_process(stopper->thread);
+ 		/* mark enabled */
 
