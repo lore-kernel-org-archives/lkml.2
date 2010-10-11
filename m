@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab0JKTde (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 15:33:34 -0400
-Received: from smtp.srv.ualberta.ca ([129.128.5.19]:58385 "EHLO
-	mail2.srv.ualberta.ca" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755408Ab0JKTdd (ORCPT
+	id S1756015Ab0JKTfF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 15:35:05 -0400
+Received: from relay02.digicable.hu ([92.249.128.188]:40888 "EHLO
+	relay02.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753573Ab0JKTfE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 15:33:33 -0400
-Date: Mon, 11 Oct 2010 13:33:15 -0600 (Mountain Daylight Time)
-From: Marc Aurele La France <tsi@ualberta.ca>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #20002] x86_64 2.6.35.* kernels and Intel Xeon X5550
-In-Reply-To: <yeAD7A8RDxC.A.dVH.UvgsMB@chimera>
-Message-ID: <alpine.WNT.1.10.1010111327090.1620@tsi>
-References: <pyPtebg28EI.A.ZPH.NvgsMB@chimera> <yeAD7A8RDxC.A.dVH.UvgsMB@chimera>
-User-Agent: Alpine 1.10 (WNT 962 2008-03-14)
+	Mon, 11 Oct 2010 15:35:04 -0400
+Message-ID: <4CB366E3.9070903@freemail.hu>
+Date: Mon, 11 Oct 2010 21:34:59 +0200
+From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Kees Cook <kees.cook@canonical.com>
+CC: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Oliver Neukum <oliver@neukum.org>, Joe Perches <joe@perches.com>,
+        linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usb: don't trust report_size for buffer size
+References: <20101011182816.GA15451@outflux.net> <4CB35D4C.9000406@freemail.hu> <20101011191119.GN4991@outflux.net>
+In-Reply-To: <20101011191119.GN4991@outflux.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Original: 77.234.64.233
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Oct 2010, Rafael J. Wysocki wrote:
+Kees Cook wrote:
+> Hi Németh,
+> 
+> On Mon, Oct 11, 2010 at 08:54:04PM +0200, Németh Márton wrote:
+>> There might be similar problem also in the case USB_DEVICE_ID_CODEMERCS_IOW56. There
+>> is buf is allocated with usb_alloc_coherent() to the size dev->report_size. However,
+>> some lines later the copy_from_user() function tries to copy "count" number of
+>> bytes to the dev->report_size allocated buffer. Unfortunately I don't have such
+>> devices to try the driver so these are just coming from "static analysis".
+> 
+> I don't think the USB_DEVICE_ID_CODEMERCS_IOW56 path is a problem:
+> 
+>         if (count != dev->report_size) {
+>                 retval = -EINVAL;
+>                 goto exit;
+>         }
 
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.34 and 2.6.35.
+You are right, I missed this condition.
 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.34 and 2.6.35.  Please verify if it still should
-> be listed and let the tracking team know (either way).
+>         switch (dev->product_id) {
+> ...
+>         case USB_DEVICE_ID_CODEMERCS_IOW56:
+> ...
+>                 buf = usb_alloc_coherent(dev->udev, dev->report_size,
+>                                          GFP_KERNEL, &int_out_urb->transfer_dma);
+> ...
+>                 if (copy_from_user(buf, user_buffer, count)) {
+> 
+> i.e. count must == dev->report_size, and the buf is allocated with size
+> dev->report_size even though copy_from_user uses "count".
+> 
+> -Kees
+> 
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=20002
-> Subject	: x86_64 2.6.35.* kernels and Intel Xeon X5550
-> Submitter	: Marc Aurele La France <tsi@ualberta.ca>
-> Date		: 2010-10-07 17:17 (4 days old)
-> Message-ID	: <alpine.WNT.2.00.1010071055420.1672@cluij.ucs.ualberta.ca>
-> References	: http://marc.info/?l=linux-kernel&m=128647187628706&w=2
-
-Yes, this is still an issue.  I'm still trying to track it down.  I've 
-generated a series of 2.6.35-rc[1-6] kernels, which I will try tomorrow 
-(after today's statuatory holiday).
-
-Thanks.
-
-Marc.
-
-+----------------------------------+----------------------------------+
-|  Marc Aurele La France           |  work:   1-780-492-9310          |
-|  Academic Information and        |  fax:    1-780-492-1729          |
-|    Communications Technologies   |  email:  tsi@ualberta.ca         |
-|  352 General Services Building   +----------------------------------+
-|  University of Alberta           |                                  |
-|  Edmonton, Alberta               |    Standard disclaimers apply    |
-|  T6G 2H1                         |                                  |
-|  CANADA                          |                                  |
-+----------------------------------+----------------------------------+
