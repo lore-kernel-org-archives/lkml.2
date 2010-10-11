@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab0JKRko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 13:40:44 -0400
-Received: from kroah.org ([198.145.64.141]:52348 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755659Ab0JKRj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 13:39:56 -0400
-Date: Mon, 11 Oct 2010 10:31:41 -0700
-From: Greg KH <greg@kroah.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Dave Airlie <airlied@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: stable cc's in linux -next was Re: [BUG] x86: bootmem broken
-	on SGI UV
-Message-ID: <20101011173141.GB7116@kroah.com>
-References: <AANLkTinyA=bSeSe7eavUb7fuSgM8m=QQFGqCrNtCGqKa@mail.gmail.com> <AANLkTikCHzaovYy+g8GBE7zwBOa-=pXk=WwQ_5ts1u5m@mail.gmail.com> <20101009235141.GB15564@kroah.com> <AANLkTikBGsO9wy3z-z6_pTKq0vrYme0fEhE8KcXj_Si3@mail.gmail.com>
+	id S1755848Ab0JKRlN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 13:41:13 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24339 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755657Ab0JKRlL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 13:41:11 -0400
+Message-ID: <4CB34C09.2060100@kernel.org>
+Date: Mon, 11 Oct 2010 10:40:25 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikBGsO9wy3z-z6_pTKq0vrYme0fEhE8KcXj_Si3@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        =?ISO-8859-1?Q?Andr=E9_Goddard_Rosa?= <andre.goddard@gmail.com>,
+        linux-kernel@vger.kernel.org, Becky Bruce <beckyb@kernel.crashing.org>
+Subject: [PATCH] swiotlb: Use page alignment for early buffer allocation
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 10:18:34AM -0700, Linus Torvalds wrote:
-> And I suspect that from a social standpoint, if we delay the stable
-> queue auto-patch-sending, it will just lead to people trying to bypass
-> that delay by sending things directly to stable rather than depending
-> on the "stable@kernel.org" tag on the commit itself. Or if the delay
-> is implemented on the stable email address itself, then people would
-> try to just send it directly to you instead.
 
-I agree, that would just get messier.
+We could call free_bootmem_late() if swiotlb is not used, and
+it will shrink to page alignment.
 
-> It doesn't help that the number of patches in a stable release is much
-> bigger than at least I personally envisioned. Yes, many of them are
-> things like adding device ID's etc, but I do suspect that it just then
-> makes it much harder to try to delay things by a week or something.
-> Plus some problems probably wouldn't even be noticed in a week in the
-> development kernel, and they'd _still_ be found only once it hits
-> stable just because lots of people will obviously never test the
-> development kernel.
+So alloc them with page alignment at first, to avoid lose two pages
 
-The "largeness" of recent stable kernel releases (i.e. for the past
-year) seem more to be a factor of the subsystem maintainers finally
-realizing that they should be sending their bugfixes to me (thanks a
-large part to Andrew's constant badgering about this), combined with the
-distros sending me their bugfixes that they have found that are already
-included upstream.
+before patch:
+[    0.000000]     memblock_x86_reserve_range: [00d3600000, 00d7600000]   swiotlb buffer
+[    0.000000]     memblock_x86_reserve_range: [00d7e7ef40, 00d7e9ef40]     swiotlb list
+[    0.000000]     memblock_x86_reserve_range: [00d7e3ef40, 00d7e7ef40]  swiotlb orig_ad
+[    0.000000]     memblock_x86_reserve_range: [000008a000, 0000092000]  swiotlb overflo
 
-> So I have no solution to it. I just don't think stable has been quite
-> as stable as people would wish for.
+after patch will get
+[    0.000000]     memblock_x86_reserve_range: [00d3600000, 00d7600000]   swiotlb buffer
+[    0.000000]     memblock_x86_reserve_range: [00d7e7e000, 00d7e9e000]     swiotlb list
+[    0.000000]     memblock_x86_reserve_range: [00d7e3e000, 00d7e7e000]  swiotlb orig_ad
+[    0.000000]     memblock_x86_reserve_range: [000008a000, 0000092000]  swiotlb overflo
 
-It hasn't?  I haven't heard people saying anything about this before, in
-fact, people seem to get upset at me when I reject the stuff they are
-sending me for inclusion which don't meet the stable criteria.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Becky Bruce <beckyb@kernel.crashing.org>
 
-Not that I'm trying to say, "it could be worse", just that, "what could
-be done better?"
+---
+ lib/swiotlb.c |   16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
 
-thanks,
-
-greg k-h
+Index: linux-2.6/lib/swiotlb.c
+===================================================================
+--- linux-2.6.orig/lib/swiotlb.c
++++ linux-2.6/lib/swiotlb.c
+@@ -147,16 +147,16 @@ void __init swiotlb_init_with_tbl(char *
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+ 	 * between io_tlb_start and io_tlb_end.
+ 	 */
+-	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
++	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 	for (i = 0; i < io_tlb_nslabs; i++)
+  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
+ 	io_tlb_index = 0;
+-	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
++	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+ 
+ 	/*
+ 	 * Get the overflow emergency buffer
+ 	 */
+-	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
++	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+ 	if (!io_tlb_overflow_buffer)
+ 		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+ 	if (verbose)
+@@ -182,7 +182,7 @@ swiotlb_init_with_default_size(size_t de
+ 	/*
+ 	 * Get IO TLB memory from the low pages
+ 	 */
+-	io_tlb_start = alloc_bootmem_low_pages(bytes);
++	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+ 	if (!io_tlb_start)
+ 		panic("Cannot allocate SWIOTLB buffer");
+ 
+@@ -308,13 +308,13 @@ void __init swiotlb_free(void)
+ 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	} else {
+ 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+-				  io_tlb_overflow);
++				  PAGE_ALIGN(io_tlb_overflow));
+ 		free_bootmem_late(__pa(io_tlb_orig_addr),
+-				  io_tlb_nslabs * sizeof(phys_addr_t));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+ 		free_bootmem_late(__pa(io_tlb_list),
+-				  io_tlb_nslabs * sizeof(int));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 		free_bootmem_late(__pa(io_tlb_start),
+-				  io_tlb_nslabs << IO_TLB_SHIFT);
++				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	}
+ }
+ 
