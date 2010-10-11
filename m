@@ -1,97 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756694Ab0JKWFx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 18:05:53 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13447 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756368Ab0JKWFv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 18:05:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=J1nj3DMSwlLWJNc/KQaqUuqnQ3hSLHg5CP55+hyLhpyzD4aMQCPjLM69klzbq8ttkX
-         RUffEqetEyCn7d37ogWg==
-Date: Mon, 11 Oct 2010 15:05:43 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, rja@sgi.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-cc: linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/urgent] x86, numa: For each node, register the memory
- blocks actually used
-In-Reply-To: <tip-e9aeb8fdb6b197b9b1e1c49717de892593bb811e@git.kernel.org>
-Message-ID: <alpine.DEB.2.00.1010111504450.5358@chino.kir.corp.google.com>
-References: <4CB27BDF.5000800@kernel.org> <tip-e9aeb8fdb6b197b9b1e1c49717de892593bb811e@git.kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756692Ab0JKWJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 18:09:04 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36329 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756513Ab0JKWJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 18:09:02 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nishanth Menon <nm@ti.com>
+Subject: Re: [PATCH v7] power: introduce library for device-specific OPPs
+Date: Tue, 12 Oct 2010 00:08:16 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+        "linux-pm" <linux-pm@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "l-o" <linux-omap@vger.kernel.org>,
+        "l-a" <linux-arm-kernel@lists.infradead.org>,
+        Paul <paulmck@linux.vnet.ibm.com>
+References: <[PATCH] power: introduce library for device-specific OPPs> <201010100059.20964.rjw@sisk.pl> <4CB32675.1090205@ti.com>
+In-Reply-To: <4CB32675.1090205@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010120008.16388.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Oct 2010, tip-bot for Yinghai Lu wrote:
+On Monday, October 11, 2010, Nishanth Menon wrote:
+> Rafael J. Wysocki had written, on 10/09/2010 05:59 PM, the following:
+> [...]
+> >>
+> >> Signed-off-by: Nishanth Menon <nm@ti.com>
+> > 
+> > OK
+> > 
+> > Your error messages are a bit inconsistent (e.g. some of them print the
+> > error code while others don't), but I guess I can fix that up.
+> Thanks a bunch.
+> > 
+> > Still, to apply the patch I need a copyright notice for the doc too.
+> oops..
+> (C) 2009-2010 Nishanth Menon <nm@ti.com>, Texas Instruments Incorporated
+> Does this help?
 
-> Commit-ID:  e9aeb8fdb6b197b9b1e1c49717de892593bb811e
-> Gitweb:     http://git.kernel.org/tip/e9aeb8fdb6b197b9b1e1c49717de892593bb811e
-> Author:     Yinghai Lu <yinghai@kernel.org>
-> AuthorDate: Sun, 10 Oct 2010 19:52:15 -0700
-> Committer:  H. Peter Anvin <hpa@linux.intel.com>
-> CommitDate: Mon, 11 Oct 2010 13:46:34 -0700
-> 
-> x86, numa: For each node, register the memory blocks actually used
-> 
-> Russ reported SGI UV is broken recently. He said:
-> 
-> | The SRAT table shows that memory range is spread over two nodes.
-> |
-> | SRAT: Node 0 PXM 0 100000000-800000000
-> | SRAT: Node 1 PXM 1 800000000-1000000000
-> | SRAT: Node 0 PXM 0 1000000000-1080000000
-> |
-> |Previously, the kernel early_node_map[] would show three entries
-> |with the proper node.
-> |
-> |[    0.000000]     0: 0x00100000 -> 0x00800000
-> |[    0.000000]     1: 0x00800000 -> 0x01000000
-> |[    0.000000]     0: 0x01000000 -> 0x01080000
-> |
-> |The problem is recent community kernel early_node_map[] shows
-> |only two entries with the node 0 entry overlapping the node 1
-> |entry.
-> |
-> |    0: 0x00100000 -> 0x01080000
-> |    1: 0x00800000 -> 0x01000000
-> 
-> After looking at the changelog, Found out that it has been broken for a while by
-> following commit
-> 
-> |commit 8716273caef7f55f39fe4fc6c69c5f9f197f41f1
-> |Author: David Rientjes <rientjes@google.com>
-> |Date:   Fri Sep 25 15:20:04 2009 -0700
-> |
-> |    x86: Export srat physical topology
-> 
-> Before that commit, register_active_regions() is called for every SRAT memory
-> entry right away.
-> 
-> Use nodememblk_range[] instead of nodes[] in order to make sure we
-> capture the actual memory blocks registered with each node.  nodes[]
-> contains an extended range which spans all memory regions associated
-> with a node, but that does not mean that all the memory in between are
-> included.
-> 
-> Reported-by: Russ Anderson <rja@sgi.com>
-> Tested-by: Russ Anderson <rja@sgi.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> LKML-Reference: <4CB27BDF.5000800@kernel.org>
-> Cc: David Rientjes <rientjes@google.com>
-> Cc: <stable@kernel.org> 2.6.33 .34 .35 .36
-> Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Yes, it does.
 
-Acked-by: David Rientjes <rientjes@google.com>
+> or would you like me to post a v8 as well?
 
-Sorry I hadn't seen this thread earlier, I wasn't cc'd on it.
+That shouldn't be necessary.
+
+Thanks,
+Rafael
