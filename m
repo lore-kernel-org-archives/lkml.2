@@ -1,70 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755751Ab0JKRfI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 13:35:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49075 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755640Ab0JKRfH convert rfc822-to-8bit (ORCPT
+	id S1755853Ab0JKRfU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 13:35:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63252 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755796Ab0JKRfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 13:35:07 -0400
-Subject: Re: [PATCH] dma: get_user_pages -> get_user_pages_fast
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101011165310.GA5122@redhat.com>
-References: <20101011165310.GA5122@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 11 Oct 2010 19:34:56 +0200
-Message-ID: <1286818496.1998.43.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 11 Oct 2010 13:35:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=DKBfSZfXRx4AQPYFn5F6O0HRlieczsGXfUTE0lT726RIsTe1c1qJetjvvG7Nq/6Nzn
+         pLCFfe2UQyEkkS6OIszmeU4AjH3m3BwI03U8wuIYJN3CwpfW7J4P14V25dG4b9SCrjZL
+         9yya6JpZN9O3Wcj3canjFVXW3zyR/eo/BAgPY=
+Message-ID: <4CB34A1A.3030003@gmail.com>
+Date: Mon, 11 Oct 2010 19:32:10 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 14(16] pramfs: memory protection
+References: <4CB1EBA2.8090409@gmail.com> <87aamm3si1.fsf@basil.nowhere.org>
+In-Reply-To: <87aamm3si1.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-11 at 18:53 +0200, Michael S. Tsirkin wrote:
-> There doesn't seem to be any advantage to using
-> get_user_pages, so switch iovlock to get_user_pages_fast
-> instead.
+Il 10/10/2010 18:46, Andi Kleen ha scritto:
+> This won't work at all on x86 because you don't handle large 
+> pages.
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
+> And it doesn't work on x86-64 because the first 2GB are double
+> mapped (direct and kernel text mapping)
 > 
-> Lightly tested.  This patch is on top of the bugfix patch I posted
-> previously.
+> Thirdly I expect it won't either on architectures that map
+> the direct mapping with special registers (like IA64 or MIPS)
+
+Andi, what do you think to use the already implemented follow_pte
+instead? 
+
+int writeable_kernel_pte_range(unsigned long address, unsigned long size,
+							      unsigned int rw)
+{
+
+	unsigned long addr = address & PAGE_MASK;
+	unsigned long end = address + size;
+	unsigned long start = addr;
+	int ret = -EINVAL;
+	pte_t *ptep, pte;
+	spinlock_t *lock = &init_mm.page_table_lock;
+
+	do {
+		ret = follow_pte(&init_mm, addr, &ptep, &lock);
+		if (ret)
+			goto out;
+		pte = *ptep;
+		if (pte_present(pte)) {
+			  pte = rw ? pte_mkwrite(pte) : pte_wrprotect(pte);
+			  *ptep = pte;
+		}
+		pte_unmap_unlock(ptep, lock);
+		addr += PAGE_SIZE;
+	} while (addr && (addr < end));
+
+	ret = 0;
+
+out:
+	flush_tlb_kernel_range(start, end);
+	return ret;
+}
+
+
 > 
->  drivers/dma/iovlock.c |   10 ++--------
->  1 files changed, 2 insertions(+), 8 deletions(-)
+> I'm not sure this is very useful anyways. It doesn't protect
+> against stray DMA and it doesn't protect against writes through
+> broken user PTEs.
 > 
-> diff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
-> index 21ed8f3..c6917e8 100644
-> --- a/drivers/dma/iovlock.c
-> +++ b/drivers/dma/iovlock.c
-> @@ -95,17 +95,11 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
->  		pages += page_list->nr_pages;
->  
->  		/* pin pages down */
-> -		down_read(&current->mm->mmap_sem);
-> -		ret = get_user_pages(
-> -			current,
-> -			current->mm,
-> +		ret = get_user_pages_fast(
->  			(unsigned long) iov[i].iov_base,
->  			page_list->nr_pages,
+> -Andi
+> 
 
-What's the actual nr_pages here? Is it limited to some small number or
-can it be arbitrarily large?
+It's a way to have more protection against kernel bug, for a 
+in-memory fs can be important. However this option can be 
+enabled/disabled at fs level.
 
->  			1,	/* write */
-> -			0,	/* force */
-> -			page_list->pages,
-> -			NULL);
-> -		up_read(&current->mm->mmap_sem);
-> +			page_list->pages);
->  
->  		if (unlikely(ret < 0))
->  			goto unpin;
-
-
+Marco
