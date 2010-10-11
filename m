@@ -1,279 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab0JKLHv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 07:07:51 -0400
-Received: from mgw-sa02.ext.nokia.com ([147.243.1.48]:16415 "EHLO
-	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753973Ab0JKLHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 07:07:01 -0400
-From: Samu Onkalo <samu.p.onkalo@nokia.com>
-To: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org, jic23@cam.ac.uk,
-        alan@lxorguk.ukuu.org.uk
-Subject: [PATCHv3 5/5] Documentation: Short descriptions for bh1770glc and apds990x drivers
-Date: Mon, 11 Oct 2010 14:06:49 +0300
-Message-Id: <1286795209-12487-6-git-send-email-samu.p.onkalo@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1286795209-12487-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1286795209-12487-1-git-send-email-samu.p.onkalo@nokia.com>
-X-Nokia-AV: Clean
+	id S1754185Ab0JKLID (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 07:08:03 -0400
+Received: from cox.rootnode.net ([89.248.165.14]:57791 "EHLO cox.rootnode.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754036Ab0JKLHu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 07:07:50 -0400
+X-Greylist: delayed 359 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Oct 2010 07:07:50 EDT
+MIME-Version: 1.0
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Date: Mon, 11 Oct 2010 12:01:50 +0100
+From: Pawel Moll <mail@pawelmoll.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>, Arnd Hannemann <arnd@arndnet.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Hemant Pedanekar <hemantp@ti.com>, Greg KH <greg@kroah.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Uwe_Kleine-K=C3=B6nig?= <u.kleine-koenig@pengutronix.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+In-Reply-To: <1286791544.19739.31.camel@e102109-lin.cambridge.arm.com>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+ <20101007192245.GC26435@n2100.arm.linux.org.uk>
+ <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
+ <20101008175308.GA10975@n2100.arm.linux.org.uk>
+ <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
+ <20101008230451.GB10975@n2100.arm.linux.org.uk>
+ <20101008232539.GA28697@kroah.com>
+ <20101008234448.GD10975@n2100.arm.linux.org.uk>
+ <20101009000046.GA30616@kroah.com>
+ <20101009002546.GB14675@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.00.1010082210150.3107@xanadu.home>
+ <1286791544.19739.31.camel@e102109-lin.cambridge.arm.com>
+Message-ID: <b7d9a97c0eda73281b49c9a7744f5569@cox.rootnode.net>
+User-Agent: Roundcube Webmail/0.4
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.3.7 (cox.rootnode.net [0.0.0.0]); Mon, 11 Oct 2010 13:01:50 +0200 (CEST)
+X-DSPAM-Result: Whitelisted
+X-DSPAM-Processed: Mon Oct 11 13:01:50 2010
+X-DSPAM-Confidence: 0.9901
+X-DSPAM-Probability: 0.0000
+X-DSPAM-Signature: 4cb2ee9e262111804284693
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add short documentation for two ALS / proximity chip drivers.
+Hello,
 
-Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
----
- Documentation/misc-devices/apds990x.txt  |  113 ++++++++++++++++++++++++++++
- Documentation/misc-devices/bh1770glc.txt |  118 ++++++++++++++++++++++++++++++
- 2 files changed, 231 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/misc-devices/apds990x.txt
- create mode 100644 Documentation/misc-devices/bh1770glc.txt
+> +		    (mtype != MT_DEVICE_CACHED || mtype != MT_DEVICE_WC))
 
-diff --git a/Documentation/misc-devices/apds990x.txt b/Documentation/misc-devices/apds990x.txt
-new file mode 100644
-index 0000000..36b9e40
---- /dev/null
-+++ b/Documentation/misc-devices/apds990x.txt
-@@ -0,0 +1,113 @@
-+Kernel driver apds990x
-+======================
-+
-+Supported chips:
-+Avago APDS990X
-+
-+Data sheet:
-+Not freely available
-+
-+Author:
-+Samu Onkalo <samu.p.onkalo@nokia.com>
-+
-+Description
-+-----------
-+
-+APDS990x is a combined ambient light and proximity sensor. ALS and proximity
-+functionality are highly connected. ALS measurement path must be running
-+while the proximity functionality is enabled.
-+
-+ALS produces raw measurement values for two channels: Clear channel
-+(infrared + visible light) and IR only. However, threshold comparisons happen
-+using clear channel only. LUX value and the threshold level on the HW
-+might vary quite much depending the spectrum of the light source.
-+
-+Driver makes necessary conversions to both directions so that user handles
-+only LUX values. LUX value is calculated using information from the both
-+channels. HW threshold level is calculated from the given LUX value to match
-+with current type of the lightning. Sometimes inaccuracy of the estimations
-+lead to false interrupt, but that doesn't harm.
-+
-+ALS contains 4 different gain steps. Driver automatically
-+selects suitable gain step. After each measurement, reliability of the results
-+is estimated and new measurement is trigged if necessary.
-+
-+Platform data can provide tuned values to the conversion formulas if
-+values are known. Otherwise plain sensor default values are used.
-+
-+Proximity side is little bit simpler. There is no need for complex conversions.
-+It produces directly usable values.
-+
-+Driver controls chip operational state using pm_runtime framework.
-+Voltage regulators are controlled based on chip operational state.
-+
-+SYSFS
-+-----
-+
-+
-+chip_id
-+	RO - shows detected chip type and version
-+
-+power_state
-+	RW - enable / disable chip. Uses counting logic
-+	     1 enables the chip
-+	     0 disables the chip
-+lux0_input
-+	RO - measured LUX value
-+	     sysfs_notify called when threshold interrupt occurs
-+
-+lux0_sensor_range
-+	RO - lux0_input max value. Actually never reaches since sensor tends
-+	     to saturate much before that. Real max value varies depending
-+	     on the light spectrum etc.
-+
-+
-+lux0_rate
-+	RW - measurement rate in Hz
-+
-+lux0_rate_avail
-+	RO - supported measurement rates
-+
-+lux0_calibscale
-+	RW - calibration value. Set to neutral value by default.
-+	     Output results are multiplied with calibscale / calibscale_default
-+	     value.
-+
-+lux0_calibscale_default
-+	RO - neutral calibration value
-+
-+lux0_thresh_above_value
-+	RW - HI level threshold value. All results above the value
-+	     trigs an interrupt. 65535 (i.e. sensor_range) disables the above
-+	     interrupt.
-+
-+lux0_thresh_below_value
-+	RW - LO level threshold value. All results below the value
-+	     trigs an interrupt. 0 disables the below interrupt.
-+
-+prox0_raw
-+	RO - measured proximity value
-+	     sysfs_notify called when threshold interrupt occurs
-+
-+prox0_sensor_range
-+	RO - prox0_raw max value (1023)
-+
-+prox0_raw_en
-+	RW - enable / disable proximity - uses counting logic
-+	     1 enables the proximity
-+	     0 disables the proximity
-+
-+prox0_reporting_mode
-+	RW - trigger / periodic. In "trigger" mode the driver tells two possible
-+	     values: 0 or prox0_sensor_range value. 0 means no proximity,
-+	     1023 means proximity. This causes minimal number of interrupts.
-+	     In "periodic" mode the driver reports all values above
-+	     prox0_thresh_above. This causes more interrupts, but it can give
-+	     _rough_ estimate about the distance.
-+
-+prox0_reporting_mode_avail
-+	RO - accepted values to prox0_reporting_mode (trigger, periodic)
-+
-+prox0_thresh_above_value
-+	RW - threshold level which trigs proximity events.
-+
-diff --git a/Documentation/misc-devices/bh1770glc.txt b/Documentation/misc-devices/bh1770glc.txt
-new file mode 100644
-index 0000000..e98e756
---- /dev/null
-+++ b/Documentation/misc-devices/bh1770glc.txt
-@@ -0,0 +1,118 @@
-+Kernel driver bh1770glc
-+=======================
-+
-+Supported chips:
-+ROHM BH1770GLC
-+OSRAM SFH7770
-+
-+Data sheet:
-+Not freely available
-+
-+Author:
-+Samu Onkalo <samu.p.onkalo@nokia.com>
-+
-+Description
-+-----------
-+BH1770GLC and SFH7770 are combined ambient light and proximity sensors.
-+ALS and proximity parts operates on their own, but they shares common I2C
-+interface and interrupt logic. In principle they can run on their own,
-+but ALS side results are used to estimate reliability of the proximity sensor.
-+
-+ALS produces 16 bit LUX values. The chip contains interrupt logic to produce
-+low and high threshold interrupts.
-+
-+Proximity part contains IR-led driver up to 3 IR leds. The chip measures
-+amount of reflected IR light and produces proximity result. Resolution is
-+8 bit. Driver supports only one channel. Driver uses ALS results to estimate
-+reliability of the proximity results. Thus ALS is always running while
-+proximity detection is needed.
-+
-+Driver uses threshold interrupts to avoid need for polling the values.
-+Proximity low interrupt doesn't exists in the chip. This is simulated
-+by using a delayed work. As long as there is proximity threshold above
-+interrupts the delayed work is pushed forward. So, when proximity level goes
-+below the threshold value, there is no interrupt and the delayed work will
-+finally run. This is handled as no proximity indication.
-+
-+Chip state is controlled via runtime pm framework when enabled in config.
-+
-+Calibscale factor is used to hide differences between the chips. By default
-+value set to neutral state meaning factor of 1.00. To get proper values,
-+calibrated source of light is needed as a reference. Calibscale factor is set
-+so that measurement produces about the expected lux value.
-+
-+SYSFS
-+-----
-+
-+chip_id
-+	RO - shows detected chip type and version
-+
-+power_state
-+	RW - enable / disable chip. Uses counting logic
-+	     1 enables the chip
-+	     0 disables the chip
-+
-+lux0_input
-+	RO - measured LUX value
-+	     sysfs_notify called when threshold interrupt occurs
-+
-+lux0_sensor_range
-+	RO - lux0_input max value
-+
-+lux0_rate
-+	RW - measurement rate in Hz
-+
-+lux0_rate_avail
-+	RO - supported measurement rates
-+
-+lux0_thresh_above_value
-+	RW - HI level threshold value. All results above the value
-+	     trigs an interrupt. 65535 (i.e. sensor_range) disables the above
-+	     interrupt.
-+
-+lux0_thresh_below_value
-+	RW - LO level threshold value. All results below the value
-+	     trigs an interrupt. 0 disables the below interrupt.
-+
-+lux0_calibscale
-+	RW - calibration value. Set to neutral value by default.
-+	     Output results are multiplied with calibscale / calibscale_default
-+	     value.
-+
-+lux0_calibscale_default
-+	RO - neutral calibration value
-+
-+prox0_raw
-+	RO - measured proximity value
-+	     sysfs_notify called when threshold interrupt occurs
-+
-+prox0_sensor_range
-+	RO - prox0_raw max value
-+
-+prox0_raw_en
-+	RW - enable / disable proximity - uses counting logic
-+	     1 enables the proximity
-+	     0 disables the proximity
-+
-+prox0_thresh_above_count
-+	RW - number of proximity interrupts needed before triggering the event
-+
-+prox0_rate_above
-+	RW - Measurement rate (in Hz) when the level is above threshold
-+	     i.e. when proximity on has been reported.
-+
-+prox0_rate_below
-+	RW - Measurement rate (in Hz) when the level is below threshold
-+	     i.e. when proximity off has been reported.
-+
-+prox0_rate_avail
-+	RO - Supported proximity measurement rates in Hz
-+
-+
-+prox0_thresh_above0_value
-+	RW - threshold level which trigs proximity events.
-+	     Filtered by persistence filter (prox0_thresh_above_count)
-+
-+prox0_thresh_above1_value
-+	RW - threshold level which trigs event immediately
-+
--- 
-1.6.0.4
+Em, am I wrong or this expression _always_ evaluates as 1? ;-)
+
+Cheers!
+
+Paweł
 
