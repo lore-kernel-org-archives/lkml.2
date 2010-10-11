@@ -1,203 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab0JKPdv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 11:33:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:43047 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755108Ab0JKPdu convert rfc822-to-8bit (ORCPT
+	id S1755214Ab0JKPho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 11:37:44 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:36293 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754843Ab0JKPhn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 11:33:50 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "david.cohen@nokia.com" <david.cohen@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+	Mon, 11 Oct 2010 11:37:43 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: Tomas Henzl <thenzl@redhat.com>
+CC: James Bottomley <James.Bottomley@suse.de>, bo yang <boyang1288@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Mon, 11 Oct 2010 10:33:42 -0500
-Subject: RE: [PATCHv2 2/3] iovmm: add superpages support to fixed da address
-Thread-Topic: [PATCHv2 2/3] iovmm: add superpages support to fixed da address
-Thread-Index: Actojuq55zyNunMPQP2e6mw0NIkBuwAyIBaw
-Message-ID: <496565EC904933469F292DDA3F1663E602F47B2BF1@dlee06.ent.ti.com>
-References: <1286226137-1233-1-git-send-email-x0095840@ti.com>
-	<1286226137-1233-2-git-send-email-x0095840@ti.com>
-	<1286226137-1233-3-git-send-email-x0095840@ti.com>
- <AANLkTimF5HqA0pbp7NXOXxOcuMMJWp9yuJPsw8-iPKjh@mail.gmail.com>
-In-Reply-To: <AANLkTimF5HqA0pbp7NXOXxOcuMMJWp9yuJPsw8-iPKjh@mail.gmail.com>
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Date: Mon, 11 Oct 2010 09:37:27 -0600
+Subject: RE: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS drive
+Thread-Topic: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS drive
+Thread-Index: ActpRyhmyFvFO3q/SPOH3+6Kt7i8ggAEOADA
+Message-ID: <4B6A08C587958942AA3002690DD4F8C30100FF9C58@cosmail02.lsi.com>
+References: <AANLkTin53S+C_+QzF-drs5BUAx=k7YeiHrTaQGTFSc_a@mail.gmail.com>
+	 <4CAF3E04.1050304@redhat.com> <1286555954.2985.110.camel@mulgrave.site>
+ <4CAF70CD.6020307@redhat.com> <4CB0D2AF.7080609@redhat.com>
+ <4B6A08C587958942AA3002690DD4F8C30100F5506B@cosmail02.lsi.com>
+ <4CB30F27.9090009@redhat.com>
+In-Reply-To: <4CB30F27.9090009@redhat.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
 acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9BFbvXc015918
 
+Tomas,
+
+The reason the driver does flush_scheduled_work() is driver did cancel_delayed_work().  I am not sure driver need to call flush_scheduled_work() if the scheduled work already done, but I will test this changes and submit another patch as soon as it works fine.  
+
+This change should not be the part of this patch, we would have the new patch submit after the verification. 
+
+Regards,
+
+Bo Yang   
  
+-----Original Message-----
+From: Tomas Henzl [mailto:thenzl@redhat.com] 
+Sent: Monday, October 11, 2010 9:21 AM
+To: Yang, Bo
+Cc: James Bottomley; bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS drive
+
+On 10/11/2010 02:55 PM, Yang, Bo wrote:
+> Tomas,
+>
+>   
+>> Another correction - flush_scheduled_work is already present in megass_detach_one
+>> it only should be moved away from the if statement.
+>>     
+> The flush_scheduled_work is for schedule_delayed_work().  We need to flush it and remove.
+>   
+I'm not saying it should be removed, I think a move outside from the 'if' block
+makes it work for ev->hotplug_work and for the newly added instance->work_init
+
+
+diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
+index 55951f4..7773707 100644
+--- a/drivers/scsi/megaraid/megaraid_sas.c
++++ b/drivers/scsi/megaraid/megaraid_sas.c
+@@ -4088,9 +4088,9 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
+ 		struct megasas_aen_event *ev = instance->ev;
+ 		cancel_delayed_work(
+ 			(struct delayed_work *)&ev->hotplug_work);
+-		flush_scheduled_work();
+-		instance->ev = NULL;
+ 	}
++	flush_scheduled_work();
++	instance->ev = NULL;
+ 
+ 	tasklet_kill(&instance->isr_tasklet);
+ 
+--
 
 > -----Original Message-----
-> From: Felipe Contreras [mailto:felipe.contreras@gmail.com] 
-> Sent: Sunday, October 10, 2010 10:22 AM
-> To: Guzman Lugo, Fernando
-> Cc: Hiroshi.DOYU@nokia.com; david.cohen@nokia.com; 
-> felipe.contreras@nokia.com; ameya.palande@nokia.com; 
-> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
-> linux-omap@vger.kernel.org
-> Subject: Re: [PATCHv2 2/3] iovmm: add superpages support to 
-> fixed da address
-> 
-> On Tue, Oct 5, 2010 at 12:02 AM, Fernando Guzman Lugo 
-> <x0095840@ti.com> wrote:
-> > This patch adds superpages support to fixed ad address inside 
-> > iommu_kmap function.
-> >
-> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> > ---
-> >  arch/arm/plat-omap/iovmm.c |   61 
-> > ++++++++++++++++++++++++++-----------------
-> >  1 files changed, 37 insertions(+), 24 deletions(-)
-> >
-> > diff --git a/arch/arm/plat-omap/iovmm.c 
-> b/arch/arm/plat-omap/iovmm.c 
-> > index 34f0012..8006a19 100644
-> > --- a/arch/arm/plat-omap/iovmm.c
-> > +++ b/arch/arm/plat-omap/iovmm.c
-> > @@ -87,27 +87,37 @@ static size_t sgtable_len(const struct sg_table 
-> > *sgt)
-> >  }
-> >  #define sgtable_ok(x)  (!!sgtable_len(x))
-> >
-> > +
-> > +static unsigned max_alignment(u32 addr) {
-> > +       int i;
-> > +       unsigned pagesize[] = { SZ_16M, SZ_1M, SZ_64K, SZ_4K, };
-> > +       for (i = 0; i < ARRAY_SIZE(pagesize) && addr & 
-> (pagesize[i] - 
-> > +1); i++)
-> > +               ;
-> > +       return (i < ARRAY_SIZE(pagesize)) ? pagesize[i] : 0; }
-> > +
-> > +
-> 
-> I don't think those extra spaces make sense.
+> From: Tomas Henzl [mailto:thenzl@redhat.com] 
+> Sent: Saturday, October 09, 2010 4:38 PM
+> To: James Bottomley
+> Cc: bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Yang, Bo
+> Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS drive
+>
+> On 10/08/2010 09:28 PM, Tomas Henzl wrote:
+>   
+>> On 10/08/2010 06:39 PM, James Bottomley wrote:
+>>   
+>>     
+>>> On Fri, 2010-10-08 at 17:51 +0200, Tomas Henzl wrote:
+>>>   
+>>>     
+>>>       
+>>>> On 09/23/2010 04:36 AM, bo yang wrote:
+>>>>     
+>>>>       
+>>>>         
+>>>>> This patch is too big.  I am using attachment to submit.  Please
+>>>>> use attached file to apply.  Also let me know if it can't be accepted.
+>>>>>
+>>>>> To add the Online controller reset support, driver need to do:
+>>>>> a). reset the controller chips -- Xscale and Gen2 which will change
+>>>>> the function calls and add the reset function related to this two
+>>>>> chips.
+>>>>> b). during the reset, driver will store the pending cmds which not
+>>>>> returned by FW to driver's pending queue.  Driver will re-issue those
+>>>>> pending cmds again to FW after the OCR finished.
+>>>>> c). In driver's timeout routine, driver will report to OS as reset.
+>>>>> Also driver's queue routine will block the cmds until the OCR
+>>>>> finished.
+>>>>> d). in Driver's ISR routine, if driver get the FW state as state
+>>>>> change, FW in Failure status and FW support online controller
+>>>>> reset (OCR), driver will start to do the controller reset.
+>>>>> e). In driver's IOCTL routine, the application cmds will wait for the
+>>>>> OCR to finish, then issue the cmds to FW.
+>>>>>
+>>>>> Signed-off-by Bo Yang<bo.yang@lsi.com>
+>>>>>
+>>>>> ---
+>>>>>  drivers/scsi/megaraid/megaraid_sas.c |  756 ++++++++++++++++++++++++++++++++---
+>>>>>  drivers/scsi/megaraid/megaraid_sas.h |   88 +++-
+>>>>>  2 files changed, 787 insertions(+), 57 deletions(-)
+>>>>>       
+>>>>>         
+>>>>>           
+>>>> Hi Bo,
+>>>> in the workqueue function you sleep for 30s,
+>>>> it's scheduled here - schedule_work(&instance->work_init);
+>>>>
+>>>> +process_fw_state_change_wq(struct work_struct *work)
+>>>> +{
+>>>> ...
+>>>> +		/*waitting for about 20 second before start the second init*/
+>>>> +		for (wait = 0; wait < 30; wait++) {
+>>>> +			msleep(1000);
+>>>> +		}
+>>>>     
+>>>>       
+>>>>         
+>>> this lot should be ssleep(20) if you want a 20 sec sleep.
+>>>   
+>>>     
+>>>       
+>> please do that on every place where you use the 
+>> "for (wait = 0; wait < n; wait++) msleep(1000);" construction
+>>
+>>   
+>>     
+>>>> - this is not a good practice to sleep for a so long time I think
+>>>>     
+>>>>       
+>>>>         
+>> this long sleep might might be ok, if the workqueue is used only rarely
+>> is it so?
+>>
+>>   
+>>     
+>>>> - you should use in your exit function some synchronization 
+>>>>   for example 'cancel_work_sync', without that if someone rmmods your 
+>>>>   module, it could then lead to a memory corruption
+>>>>     
+>>>>       
+>>>>         
+>>> Actually flush_scheduled_work() should be fine ... it will force the
+>>> module removal to wait for completion ... cancellation can be error
+>>> prone, so just forcing the wait sounds easier.
+>>>   
+>>>     
+>>>       
+> Another correction - flush_scheduled_work is already present in megass_detach_one
+> it only should be moved away from the if statement.
+>
+>
+>   
+>> someone told that cancel_work_sync is safer then flush_scheduled_work
+>> but I'm not an expert, so ok 
+>>
+>> Tomas
+>>
+>>   
+>>     
+>>> James
+>>>
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>   
+>>>     
+>>>       
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>   
+>>     
+> Nï¿½ï¿½ï¿½ï¿½ï¿½rï¿½ï¿½yï¿½ï¿½ï¿½bï¿½Xï¿½ï¿½Ç§vï¿½^ï¿½)Şº{.nï¿½+ï¿½ï¿½ï¿½ï¿½{ï¿½ï¿½ï¿½"ï¿½{ayï¿½Ê‡Ú™ï¿½,jï¿½ï¿½fï¿½ï¿½ï¿½hï¿½ï¿½ï¿½zï¿½ï¿½wï¿½ï¿½ï¿½
+ï¿½ï¿½ï¿½j:+vï¿½ï¿½ï¿½wï¿½jï¿½mï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½zZ+ï¿½ï¿½İ¢j"ï¿½ï¿½!tml=
 
-Ok, it will be fixed.
-
-> 
-> >  /*
-> >  * calculate the optimal number sg elements from total 
-> bytes based on
-> >  * iommu superpages
-> >  */
-> > -static unsigned int sgtable_nents(size_t bytes)
-> > +static unsigned int sgtable_nents(size_t bytes, u32 da, u32 pa)
-> >  {
-> > -       int i;
-> > -       unsigned int nr_entries;
-> > -       const unsigned long pagesize[] = { SZ_16M, SZ_1M, SZ_64K, 
-> > SZ_4K, };
-> > +       unsigned int nr_entries = 0, ent_sz;
-> 
-> How about s/unsigned int/unsigned/?
-
-It is exactly the same, but not problem for me.
-
-> 
-> >
-> >        if (!IS_ALIGNED(bytes, PAGE_SIZE)) {
-> >                pr_err("%s: wrong size %08x\n", __func__, bytes);
-> >                return 0;
-> >        }
-> >
-> > -       nr_entries = 0;
-> > -       for (i = 0; i < ARRAY_SIZE(pagesize); i++) {
-> > -               if (bytes >= pagesize[i]) {
-> > -                       nr_entries += (bytes / pagesize[i]);
-> > -                       bytes %= pagesize[i];
-> > -               }
-> > +       while (bytes) {
-> > +               ent_sz = max_alignment(da | pa);
-> > +               ent_sz = min(ent_sz, (unsigned)iopgsz_max(bytes));
-> > +               nr_entries++;
-> > +               da += ent_sz;
-> > +               pa += ent_sz;
-> > +               bytes -= ent_sz;
-> >        }
-> >        BUG_ON(bytes);
-> >
-> > @@ -115,7 +125,8 @@ static unsigned int sgtable_nents(size_t bytes)
-> >  }
-> >
-> >  /* allocate and initialize sg_table header(a kind of 
-> 'superblock') */ 
-> > -static struct sg_table *sgtable_alloc(const size_t bytes, 
-> u32 flags)
-> > +static struct sg_table *sgtable_alloc(const size_t bytes, 
-> u32 flags,
-> > +                                                       u32 da, u32 
-> > +pa)
-> >  {
-> >        unsigned int nr_entries;
-> >        int err;
-> > @@ -127,9 +138,8 @@ static struct sg_table 
-> *sgtable_alloc(const size_t 
-> > bytes, u32 flags)
-> >        if (!IS_ALIGNED(bytes, PAGE_SIZE))
-> >                return ERR_PTR(-EINVAL);
-> >
-> > -       /* FIXME: IOVMF_DA_FIXED should support 'superpages' */
-> > -       if ((flags & IOVMF_LINEAR) && (flags & IOVMF_DA_ANON)) {
-> > -               nr_entries = sgtable_nents(bytes);
-> > +       if (flags & IOVMF_LINEAR) {
-> > +               nr_entries = sgtable_nents(bytes, da, pa);
-> >                if (!nr_entries)
-> >                        return ERR_PTR(-EINVAL);
-> >        } else
-> > @@ -409,7 +419,8 @@ static inline void sgtable_drain_vmalloc(struct 
-> > sg_table *sgt)
-> >        BUG_ON(!sgt);
-> >  }
-> >
-> > -static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 
-> pa, size_t 
-> > len)
-> > +static void sgtable_fill_kmalloc(struct sg_table *sgt, u32 pa, u32 
-> > +da,
-> > +                                                           
->     size_t 
-> > +len)
-> >  {
-> >        unsigned int i;
-> >        struct scatterlist *sg;
-> > @@ -420,7 +431,8 @@ static void sgtable_fill_kmalloc(struct 
-> sg_table 
-> > *sgt, u32 pa, size_t len)
-> >        for_each_sg(sgt->sgl, sg, sgt->nents, i) {
-> >                size_t bytes;
-> >
-> > -               bytes = iopgsz_max(len);
-> > +               bytes = max_alignment(da | pa);
-> > +               bytes = min(bytes, (size_t)iopgsz_max(len));
-> 
-> Why the size_t casting?
-
-To void this warning:
-arch/arm/plat-omap/iovmm.c:440: warning: comparison of distinct pointer types lacks a cast
-
-I will update with minor changes and resend.
-
-Thanks and regards,
-Fernando.
-
-> 
-> Otherwise:
-> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
-> 
-> --
-> Felipe Contreras
-> 
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
