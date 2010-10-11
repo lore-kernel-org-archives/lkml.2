@@ -1,50 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab0JKKPl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 06:15:41 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43448 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab0JKKPk (ORCPT
+	id S1754041Ab0JKKZu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 06:25:50 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:36267 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753973Ab0JKKZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 06:15:40 -0400
-Date: Mon, 11 Oct 2010 11:15:04 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        Hemant Pedanekar <hemantp@ti.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Message-ID: <20101011101504.GC27153@n2100.arm.linux.org.uk>
-References: <20101008230451.GB10975@n2100.arm.linux.org.uk> <20101008232539.GA28697@kroah.com> <20101008234448.GD10975@n2100.arm.linux.org.uk> <AANLkTinhwORqdWU43yr1AXJGZm2zPKGG+Q9twruNs2aH@mail.gmail.com> <20101009092127.GB20975@n2100.arm.linux.org.uk> <AANLkTimQJLmDZPHtVJLCv9ZQgx_Yjh9=MOwOxMSAz4QX@mail.gmail.com> <20101011083508.GW29673@pengutronix.de> <20101011090212.GA27153@n2100.arm.linux.org.uk> <20101011092424.GX29673@pengutronix.de> <AANLkTikYRfK-KHYxPL5y4z7kbb0YVn2y0CiYiMvWDsB-@mail.gmail.com>
+	Mon, 11 Oct 2010 06:25:49 -0400
+Date: Mon, 11 Oct 2010 11:25:48 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: linux-kernel@vger.kernel.org
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] perf: Detach group events when removing event from ctx
+Message-ID: <20101011102548.GA12335@console-pimps.org>
+References: <8e7ce03ad7d5f94290a4e865c1fe5f7f7279e27f.1286134285.git.matt@console-pimps.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTikYRfK-KHYxPL5y4z7kbb0YVn2y0CiYiMvWDsB-@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <8e7ce03ad7d5f94290a4e865c1fe5f7f7279e27f.1286134285.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 01:08:29PM +0300, Felipe Contreras wrote:
-> So, coming back to the arguments. I think Russell should have tried
-> this and provided an example of what to do, and how. I think it should
-> be clear by now that there's not much known affected drivers can do
-> right now.
+On Sun, Oct 03, 2010 at 08:35:50PM +0100, Matt Fleming wrote:
+> When removing an event from a task's list of events we need to make sure
+> that we also detach all group events. If we don't, then when we later
+> call perf_group_attach() we'll hit the WARN_ON_ONCE() like so,
+> 
+> [ 1200.449161] ------------[ cut here ]------------
+> [ 1200.449171] WARNING: at kernel/perf_event.c:313 add_event_to_ctx+0xe1/0x159()
+> [ 1200.449174] Hardware name: MacBook2,1
+> [ 1200.449176] Modules linked in: dm_mod sg sd_mod
+> [ 1200.449183] Pid: 7619, comm: perf Not tainted 2.6.36-rc6-tip+ #2
+> [ 1200.449186] Call Trace:
+> [ 1200.449193]  [<ffffffff8103b71e>] warn_slowpath_common+0x85/0x9d
+> [ 1200.449197]  [<ffffffff8103b750>] warn_slowpath_null+0x1a/0x1c
+> [ 1200.449201]  [<ffffffff810a16fb>] add_event_to_ctx+0xe1/0x159
+> [ 1200.449206]  [<ffffffff810a2f01>] perf_install_in_context+0x85/0x99
+> [ 1200.449210]  [<ffffffff810a7811>] sys_perf_event_open+0x4da/0x633
+> [ 1200.449216]  [<ffffffff81002b1b>] system_call_fastpath+0x16/0x1b
+> [ 1200.449218] ---[ end trace 9df38c30c6cacb50 ]---
+> 
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> ---
+>  kernel/perf_event.c |    5 ++++-
+>  1 files changed, 4 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index c16158c..c13d869 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -550,8 +550,11 @@ retry:
+>  	 * can remove the event safely, if the call above did not
+>  	 * succeed.
+>  	 */
+> -	if (!list_empty(&event->group_entry))
+> +	if (!list_empty(&event->group_entry)) {
+> +		perf_group_detach(event);
+>  		list_del_event(event, ctx);
+> +	}
+> +
+>  	raw_spin_unlock_irq(&ctx->lock);
+>  }
+>  
+> -- 
+> 1.7.1
 
-Those people who have stupid platforms that require major chunks of
-memory should have been paying attention and evaluated the patch six
-months ago.
-
-They partly did that, and asked some questions about how to solve it.
-They got answers, and then nothing happened.  And it's somehow my
-problem that they did nothing?
-
-*They* should have done more to help instead of ignoring the issue,
-then we'd know where things were _before_ the patch was originally
-merged.
-
-Not my problem.
+Ping?
