@@ -1,89 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab0JKVcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 17:32:09 -0400
-Received: from kroah.org ([198.145.64.141]:57457 "EHLO coco.kroah.org"
+	id S1756587Ab0JKVrG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 17:47:06 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60678 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756301Ab0JKVcH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 17:32:07 -0400
-Date: Mon, 11 Oct 2010 14:32:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Vladislav Bolkhovitin <vst@vlnb.net>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        scst-devel <scst-devel@lists.sourceforge.net>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
-        Bart Van Assche <bart.vanassche@gmail.com>,
-        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
-        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Hannes Reinecke <hare@suse.de>,
-        Richard Sharpe <realrichardsharpe@gmail.com>,
-        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
-Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
-Message-ID: <20101011213235.GA11489@kroah.com>
-References: <4CA653F0.1010008@vlnb.net> <4CA656AD.8020408@vlnb.net> <20101009212047.GB27180@kroah.com> <4CB36592.6060909@vlnb.net>
+	id S1756431Ab0JKVrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 17:47:04 -0400
+Message-ID: <4CB385C8.7010109@suse.cz>
+Date: Mon, 11 Oct 2010 23:46:48 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB36592.6060909@vlnb.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kbuild@vger.kernel.org, sfr@canb.auug.org.au,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        lacombar@gmail.com, xiyou.wangcong@gmail.com
+Subject: Re: [PATCH] kconfig: Temporarily disable dependency warnings
+References: <20101008150343.GF4088@hack>	 <1286660701-31557-1-git-send-email-mmarek@suse.cz> <1286810580.19739.108.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1286810580.19739.108.camel@e102109-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 11:29:22PM +0400, Vladislav Bolkhovitin wrote:
-> Greg KH, on 10/10/2010 01:20 AM wrote:
-> > On Sat, Oct 02, 2010 at 01:46:21AM +0400, Vladislav Bolkhovitin wrote:
-> >> +static void scst_tgtt_release(struct kobject *kobj)
-> >> +{
-> >> +	struct scst_tgt_template *tgtt;
-> >> +
-> >> +	tgtt = container_of(kobj, struct scst_tgt_template, tgtt_kobj);
-> >> +	complete_all(&tgtt->tgtt_kobj_release_cmpl);
-> >> +	return;
-> > 
-> > Don't you also need to free the memory of your kobject here?
-> > 
-> >> +static void scst_tgt_release(struct kobject *kobj)
-> >> +{
-> >> +	struct scst_tgt *tgt;
-> >> +
-> >> +	tgt = container_of(kobj, struct scst_tgt, tgt_kobj);
-> >> +	complete_all(&tgt->tgt_kobj_release_cmpl);
-> >> +	return;
-> > 
-> > Same here, no kfree?
-> > 
-> >> +static void scst_acg_release(struct kobject *kobj)
-> >> +{
-> >> +	struct scst_acg *acg;
-> >> +
-> >> +	acg = container_of(kobj, struct scst_acg, acg_kobj);
-> >> +	complete_all(&acg->acg_kobj_release_cmpl);
-> > 
-> > And here.
+On 11.10.2010 17:23, Catalin Marinas wrote:
+> On Sat, 2010-10-09 at 22:45 +0100, Michal Marek wrote:
+>> After fixing a use-after-free bug in kconfig, a 'make defconfig' or
+>> 'make allmodconfig' fills the screen with warnings that were not
+>> detected before. Given that we are close to the release now, disable the
+>> warnings temporarily and deal with them after 2.6.36.
+>>
+>> Signed-off-by: Michal Marek <mmarek@suse.cz>
 > 
-> Thanks for the review. In all those functions kobjects for simplicity
-> are embedded into the outer objects, so they will be freed as part of
-> the outer objects free. Hence, kfree() for the kobjects in the release
-> functions are not needed.
+> Acked-by: Catalin Marinas <catalin.marinas@arm.com>
 
-Sweet, you now have opened yourself up to public ridicule as per the
-documentation in the kernel for how to use kobjects!
+Thanks, but I already pushed it on Saturday. The good news is that Linus
+did pull from me, so 2.6.36 will have this.
 
-Nice job :)
-
-Seriously, you CAN NOT DO THIS!  If you embed a kobject in a different
-structure, then you have to rely on the kobject to handle the reference
-counting for that larger structure.  To do ANYTHING else is a bug and
-wrong.
-
-Please read the kobject documentation and fix this code up before
-submitting it again.
-
-thanks,
-
-greg k-h
+Michal
