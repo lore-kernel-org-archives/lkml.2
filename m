@@ -1,81 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0JKUDK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 16:03:10 -0400
-Received: from nm15.bullet.mail.ne1.yahoo.com ([98.138.90.78]:31777 "HELO
-	nm15.bullet.mail.ne1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755956Ab0JKUDI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 16:03:08 -0400
-X-Yahoo-Newman-Id: 123567.76624.bm@omp1020.mail.ne1.yahoo.com
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: inblgc8VM1lh1_n0uQ6R69iy6tGq6ftXX8U1SeYUYo3zr1P
- lgiKDX8uavuwaes1qxOV0RdlUTARYhHKCkNd_rZp9ZZh.DtefNzC_4lgX9hV
- lKhd4Cf3ClRj20R2_beAHi3A2trw2ouNCVrz325EVuZkw1ny7CWbjq2VastP
- _9KjSNOxFqXWqyl5Yh7u93ZjGVwoZcnpWXtAfgnxCrYFYGoBGuQkfdjeCm5u
- OZlFrod6i0QSPOrkIAurZ_L7eSfAsTyoimP3wvQen6S10TE9BLsmIWK3Y7U_
- g.af7RDlTSpGKHLJocy9p.hg-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 0/4] tcm: Unify virtual subsystem plugin emulation code
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Boaz Harrosh <bharrosh@panasas.com>
-In-Reply-To: <20101010073202.GA16772@lst.de>
-References: <1286682498-4821-1-git-send-email-nab@linux-iscsi.org>
-	 <20101010073202.GA16772@lst.de>
-Content-Type: text/plain
-Date: Mon, 11 Oct 2010 12:56:51 -0700
-Message-Id: <1286827011.20358.35.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1756092Ab0JKUKO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 16:10:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17400 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755940Ab0JKUKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 16:10:12 -0400
+Date: Mon, 11 Oct 2010 16:10:07 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: selinux@gmail.com
+Subject: 2.6.36-rc7: inconsistent lock state: inconsistent {IN-RECLAIM_FS-R}
+ -> {RECLAIM_FS-ON-W} usage.
+Message-ID: <20101011201007.GA29707@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, selinux@gmail.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-10 at 09:32 +0200, Christoph Hellwig wrote:
-> What you did in this patch is a good step toward getting rid of the
-> scsi logic in the backend, but it's quite enough yet.  For one thing
-> the backends really shouldn't know anything about scsi commands, so
-> the call to transport_emulate_control_cdb should happen before even
-> calling into the backend.
+We got this report from a Fedora user (cc'd) today..
 
-Hmmm, good point.  I was trying to avoid doing this initially because it
-adds more complexity when calling ->do_task() in target_core_transport.c
-__transport_execute_tasks(), but I would agree the tradeoff here to make
-IBLOCK, FILEIO and RAMDISK subsystem backend code SCSI control CDB
-emulation independent is worth it.
+	Dave
 
-> Second your ->emulate_foo callbacks still
-> are far too SCSI-specific, e.g. WRITE SAME witht unmap bit and UNMAP
-> emulation really should just go into a single ->discard callback
-> for the backend.  And instead of calling into the backend again for
-> readcap emulation just set block_size and size attributs on a per-
-> device object and let common code handle it.  Similarly for inquity
-> just set the device type and other variables and handle it in common
-> code.
-
-Ok, I think this makes sense and should be easy enough for the cases
-that have been listed here.  However, there are still cases (namely DIF)
-that containing SCSI specific bits and would still be going into IBLOCK
-and FILEIO.
-
-> That avoid the special se_subsystem_api_cdb vector and simplifies
-> the code a lot conceptually a lot.  Together with calling
-> transport_emulate_control_cdb directly from core code before going
-> into ->do_task that does all the required work to make the backends
-> independent of the scsi protocol, so we could also use it e.g.
-> for ATA or virtio targets.
-
-Makes sense, I will drop struct se_subsystem_api_cdb, et al and post a
-followup patch series this afternoon.
-
-Thanks!
-
---nab
-
+ > Noticed this when I tried to 'unmount/safely remove' a LUKS encrypted USB hard drive
+ > 
+ > =================================
+ > [ 4960.442217] [ INFO: inconsistent lock state ]
+ > [ 4960.442238] 2.6.36-0.35.rc7.git0.fc15.x86_64 #1
+ > [ 4960.442258] ---------------------------------
+ > [ 4960.442278] inconsistent {IN-RECLAIM_FS-R} -> {RECLAIM_FS-ON-W} usage.
+ > [ 4960.442323] umount/8522 [HC0[0]:SC0[0]:HE1:SE1] takes:
+ > [ 4960.442350]  (iprune_sem){+++++-}, at: [<ffffffff8113ee55>] invalidate_inodes+0x3e/0x12c
+ > [ 4960.442402] {IN-RECLAIM_FS-R} state was registered at:
+ > [ 4960.442427]   [<ffffffff8107f089>] __lock_acquire+0x3f2/0xd79
+ > [ 4960.442464]   [<ffffffff8107feeb>] lock_acquire+0xd2/0xfd
+ > [ 4960.442499]   [<ffffffff8149cfce>] down_read+0x51/0x84
+ > [ 4960.442533]   [<ffffffff8113f197>] shrink_icache_memory+0x4e/0x1ee
+ > [ 4960.442571]   [<ffffffff810ef69d>] shrink_slab+0xe0/0x166
+ > [ 4960.442606]   [<ffffffff810f1b5b>] balance_pgdat+0x257/0x3fe
+ > [ 4960.442641]   [<ffffffff810f1f38>] kswapd+0x236/0x24c
+ > [ 4960.442671]   [<ffffffff8106c61c>] kthread+0x9d/0xa5
+ > [ 4960.442699]   [<ffffffff8100ab64>] kernel_thread_helper+0x4/0x10
+ > [ 4960.442733] irq event stamp: 5383
+ > [ 4960.442747] hardirqs last  enabled at (5383): [<ffffffff8149e5d8>] _raw_spin_unlock_irq+0x30/0x3a
+ > [ 4960.442801] hardirqs last disabled at (5382): [<ffffffff8149ddaa>] _raw_spin_lock_irq+0x21/0x75
+ > [ 4960.442855] softirqs last  enabled at (5358): [<ffffffff81148edd>] bdi_queue_work+0xc1/0xca
+ > [ 4960.442907] softirqs last disabled at (5354): [<ffffffff8149df8d>] _raw_spin_lock_bh+0x1c/0x6e
+ > [ 4960.442959] 
+ > [ 4960.442959] other info that might help us debug this:
+ > [ 4960.442991] 3 locks held by umount/8522:
+ > [ 4960.443011]  #0:  (&type->s_umount_key#34){+++++.}, at: [<ffffffff8112dae5>] deactivate_super+0x32/0x3e
+ > [ 4960.443063]  #1:  (iprune_sem){+++++-}, at: [<ffffffff8113ee55>] invalidate_inodes+0x3e/0x12c
+ > [ 4960.443063]  #2:  (&fsnotify_mark_srcu){.+.+.+}, at: [<ffffffff8115896d>] fsnotify+0x7e/0x3d7
+ > [ 4960.443063] 
+ > [ 4960.443063] stack backtrace:
+ > [ 4960.443063] Pid: 8522, comm: umount Not tainted 2.6.36-0.35.rc7.git0.fc15.x86_64 #1
+ > [ 4960.443063] Call Trace:
+ > [ 4960.443063]  [<ffffffff8107eaad>] valid_state+0x17c/0x18e
+ > [ 4960.443063]  [<ffffffff8107e3f9>] ? check_usage_backwards+0x0/0x81
+ > [ 4960.443063]  [<ffffffff8107ebdc>] mark_lock+0x11d/0x1d8
+ > [ 4960.443063]  [<ffffffff810801dc>] mark_held_locks+0x50/0x72
+ > [ 4960.443063]  [<ffffffff8108079e>] lockdep_trace_alloc+0xa2/0xc5
+ > [ 4960.443063]  [<ffffffff8111cbe7>] kmem_cache_alloc+0x36/0x159
+ > [ 4960.443063]  [<ffffffff8115968f>] ? fsnotify_create_event+0x3f/0x1bc
+ > [ 4960.444138]  [<ffffffff8115968f>] fsnotify_create_event+0x3f/0x1bc
+ > [ 4960.444138]  [<ffffffff81158817>] send_to_group+0x159/0x1fc
+ > [ 4960.444138]  [<ffffffff8107ff07>] ? lock_acquire+0xee/0xfd
+ > [ 4960.444138]  [<ffffffff8115896d>] ? fsnotify+0x7e/0x3d7
+ > [ 4960.444138]  [<ffffffff81158b68>] fsnotify+0x279/0x3d7
+ > [ 4960.449291]  [<ffffffff81159e81>] fsnotify_unmount_inodes+0xbb/0xfe
+ > [ 4960.449291]  [<ffffffff8113ee69>] invalidate_inodes+0x52/0x12c
+ > [ 4960.449291]  [<ffffffff81154992>] ? __sync_blockdev+0x32/0x34
+ > [ 4960.449291]  [<ffffffff8112cc66>] generic_shutdown_super+0x4c/0xe1
+ > [ 4960.449291]  [<ffffffff8112cd22>] kill_block_super+0x27/0x3f
+ > [ 4960.449291]  [<ffffffff8112cf9d>] deactivate_locked_super+0x26/0x46
+ > [ 4960.449291]  [<ffffffff8112daed>] deactivate_super+0x3a/0x3e
+ > [ 4960.449291]  [<ffffffff81142724>] mntput_no_expire+0xa7/0xd3
+ > [ 4960.449291]  [<ffffffff81143265>] sys_umount+0x2cf/0x301
+ > [ 4960.449291]  [<ffffffff81080309>] ? trace_hardirqs_on_caller+0x10b/0x12f
+ > [ 4960.459556]  [<ffffffff81009cf2>]> system_call_fastpath+0x16/0x1b
+ 
