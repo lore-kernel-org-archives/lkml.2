@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756406Ab0JKVIw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 17:08:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59387 "EHLO mx1.redhat.com"
+	id S1756442Ab0JKVLs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 17:11:48 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:41529 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756325Ab0JKVIv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 17:08:51 -0400
-Date: Mon, 11 Oct 2010 17:08:29 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Huang Ying <ying.huang@intel.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH -v3 5/6] x86, NMI, treat unknown NMI as hardware error
-Message-ID: <20101011210829.GA28823@redhat.com>
-References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
- <1286606987-19879-5-git-send-email-ying.huang@intel.com>
- <20101010150713.3cd3eed2@lxorguk.ukuu.org.uk>
- <20101010141311.GB26728@basil.fritz.box>
+	id S1756330Ab0JKVLr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 17:11:47 -0400
+From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
+Date: Mon, 11 Oct 2010 14:11:40 -0700
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Marcio Saito <marcio@cyclades.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Avantika Mathur <mathur@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC] [PATCH] allow low HZ values?
+Message-ID: <20101011211140.GC953@tpepper-t61p.dolavim.us>
+References: <20101011201121.GA953@tpepper-t61p.dolavim.us>
+ <alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101010141311.GB26728@basil.fritz.box>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 04:13:11PM +0200, Andi Kleen wrote:
-> > > These systems are identified via the presentation of APEI HEST or
-> > > some PCI ID of the host bridge. The PCI ID of host bridge instead of
-> > > DMI ID is used, so that the checking can be done based on the platform
-> > > type instead of motherboard. This should be simpler and sufficient.
-> > > 
-> > > The method to identify the platforms is designed by Andi Kleen.
-> > 
-> > Why not make the new flag also a boot option so you can force it on for
-> > platforms where we don't auto whitelist it.
+On Mon 11 Oct at 22:32:06 +0200 tglx@linutronix.de said:
+> On Mon, 11 Oct 2010, Tim Pepper wrote:
 > 
-> You can already set it at run time using sysctl.
+> > I'm not necessarily wanting to open up the age old question of "what is
+> > a good HZ", but we were doing some testing on timer tick overheads for
+> > HPC applications and this came up...
 > 
-> echo 1 > /proc/sys/kernel/panic_on_unrecovered_nmi
-> echo 1 > /proc/sys/kernel/panic_on_io_nmi
+> Yeah. This comes always up when the timer tick overhead on HPC is
+> tested. And this patch is again the fundamentally wrong answer.
 
-I get the impression Alan was talking about the option
+Yep.  Long term no hz is definitely the goal.  I'm not sufficiently
+connected to the -rt space I guess to have followed that there's somebody
+again looking in that direction.  The rfc patch was mostly just a minimal
+is there anything simple we can do in the meantime exercise.
 
-unknown_nmi_as_hwerr
+> We have told HPC folks for years that we need a kind of "NOHZ" mode
+> for HPC where we can transparently switch off the tick when only one
+> user space bound thread is active and switch back to normal once this
+> thing terminates or goes into the kernel via a syscall.
 
-which isn't hooked into a sysctl but will cause machines to panic.
+I'd not heard of this in between NOHZ-y idea...sounds promising.
+We'd talked about different non-idle no hz approaches in the past year
+or so, some of which were on the veeery complicated side of the spectrum.
 
-Cheers,
-Don
+> Sigh, nothing
+> happened ever except for repeating the same crap patches over and
+> over.
+
+I'll check out what Frederic is doing.  Thanks for the pointer and
+apologies for the noise.
+
+-- 
+Tim Pepper  <lnxninja@linux.vnet.ibm.com>
+IBM Linux Technology Center
