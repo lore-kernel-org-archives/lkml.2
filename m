@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752090Ab0JKFLo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 01:11:44 -0400
-Received: from mga11.intel.com ([192.55.52.93]:43532 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab0JKFLn convert rfc822-to-8bit (ORCPT
+	id S1752316Ab0JKFYr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 01:24:47 -0400
+Received: from cynthia.allandria.com ([76.245.85.235]:40967 "EHLO
+	cynthia.pants.nu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751340Ab0JKFYq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 01:11:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,311,1283756400"; 
-   d="scan'208";a="845791696"
-From: "Koul, Vinod" <vinod.koul@intel.com>
-To: "Williams, Dan J" <dan.j.williams@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alan@linux.intel.com" <alan@linux.intel.com>,
-        "K V, Ramesh B" <ramesh.b.k.v@intel.com>,
-        "yong.y.wang@linux.intel.com" <yong.y.wang@linux.intel.com>
-Date: Mon, 11 Oct 2010 10:41:25 +0530
-Subject: RE: [PATCH 6/6] intel_mid_dma: change the slave interface
-Thread-Topic: [PATCH 6/6] intel_mid_dma: change the slave interface
-Thread-Index: ActnDibybvlSV25pQqGMnzDg5GR4swB6mLmw
-Message-ID: <438BB0150E931F4B9CE701519A44630104BE486B2A@bgsmsx502.gar.corp.intel.com>
-References: <1286188723-6341-1-git-send-email-vinod.koul@intel.com>
- <AANLkTi=8dV1EaAsT-Gkjkb-UY9R10r8LFQxMK3xQOwDw@mail.gmail.com>
-In-Reply-To: <AANLkTi=8dV1EaAsT-Gkjkb-UY9R10r8LFQxMK3xQOwDw@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Oct 2010 01:24:46 -0400
+X-Greylist: delayed 2871 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Oct 2010 01:24:45 EDT
+Date: Sun, 10 Oct 2010 21:36:32 -0700
+From: Brad Boyer <flar@allandria.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent kernels
+Message-ID: <20101011043632.GA2566@cynthia.pants.nu>
+References: <20101007174948.GT19804@ZenIV.linux.org.uk> <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com> <20101010144952.GF19804@ZenIV.linux.org.uk> <AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com> <20101010235256.GG19804@ZenIV.linux.org.uk> <20101011024103.GH19804@ZenIV.linux.org.uk>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101011024103.GH19804@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Fri, Oct 8, 2010 at 10:58 PM, dan.j.williams@gmail.com wrote:
-> On Mon, Oct 4, 2010 at 3:38 AM, Vinod Koul <vinod.koul@intel.com> wrote:
-> > In 2.6.36 kernel, dma slave control command was introduced,
-> > this patch changes the intel-mid-dma driver to this
-> > new kernel slave interface
-> >
-> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
-> > ---
-> [..]
-> > +static int dma_slave_control(struct dma_chan *chan, unsigned long arg)
-> > +{
-> > +       struct intel_mid_dma_chan       *midc = to_intel_mid_dma_chan(chan);
-> > +       struct dma_slave_config  *slave = (struct dma_slave_config *)arg;
-> > +       struct intel_mid_dma_slave *mid_slave;
-> > +
-> > +       BUG_ON(!midc);
-> > +       BUG_ON(!slave);
-> > +       pr_debug("MDMA: slave control called\n");
-> > +
-> > +       mid_slave = to_intel_mid_dma_slave(slave);
+On Mon, Oct 11, 2010 at 03:41:03AM +0100, Al Viro wrote:
+> Argh...  OK, going through aranym with debugger has exhonorated it.  My
+> apologies ;-/  It *is* gcc in sid.  Testcase:
 > 
-> I know this was the initial recommendation to support custom
-> extensions to dma_slave_config, but this isn't safe.  How does this
-> routine know that that 'slave' is embedded in an intel_mid_dma_slave
-> structure.  I applied it as is, but I think we need a better approach.
+> extern int foo(int);
+> void *bar(int n)
+> {
+>         return (void *)foo(n);
+> }
 > 
-> Maybe a per device alloc_dma_slave_config() such that ->dma_control()
-> can assume the driver allocated the dma_slave_config.  As it stands
-> nothing in the calling convention guarantees type safety.
+> and gcc -S -O2 turns that into
+> bar:
+>         link.w %fp,#0
+>         unlk %fp
+>         jra foo
+> 
 
+I presume the bug is that foo put the return value in %d0 while bar
+should have its return value in %a0. This function isn't eligible
+for the optimization being used due to this need to move the result
+into a different register.
 
-Dan,
-Thanks for applying the patches.
+> Spot the obvious bug...  BTW, why on the Earth does debian-ports m68k tree
+> use gcc-4.3 with Cthulhu-scaring 700Kb gzipped patch and does *not* have
+> gcc-4.4?
 
-I had thought thru this earlier, yes I agree that it is not fully safe to 
-*assume* that intel_mid_dma_slave embeds the dma_slave_config structure.
+I believe that gcc-4.4 for m68k is being held up by the TLS support patches.
+While I haven't been personally involved to any great degree, I got the
+impression that the work is pretty much done other than getting it included.
 
-But we can also argue that since this is DMA_SLAVE device and device needs to 
-always pass controller specific arguments and hence knows about this controller,
-so will have such a thing in place.
-Yes but this can be easily abused.
-
-Another alternative is to maintain the channel->private pointer for these sort 
-of details as we were doing previously...
-
-Thoughts...?
-
-~Vinod
-
-
+	Brad Boyer
+	flar@allandria.com
 
