@@ -1,382 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab0JKN6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 09:58:49 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:32768 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754602Ab0JKN6s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 09:58:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=oTRdGs6lw4aWUJkclhFGyYk9YdBjCNF00xkuDmOfqg91fTxhR241Vpz1lnOtiDV00W
-         XfhKliDK2SGmloQgsxQtkVwfNB2PdCrGoUhiFPXkENOrCoVCxJuClYrcpl3inJV7BXkb
-         Ng/ab3NGFz2L2C9WSGnuvxmETrijrIx1qvg9o=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Nohee Ko <noheek@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: [PATCH] staging: brcm80211: remove useless bcm_ether_ntoa()
-Date: Mon, 11 Oct 2010 16:58:33 +0300
-Message-Id: <1286805513-27097-1-git-send-email-andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.2.3
+	id S1754813Ab0JKOAN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 10:00:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60742 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754561Ab0JKOAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 10:00:12 -0400
+Subject: Re: [PATCH wq#for-next] workqueue: add and use WQ_MEM_RECLAIM flag
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Florian Mickler <florian@mickler.org>
+In-Reply-To: <4CB31743.4030705@kernel.org>
+References: <4CB30F9A.9030809@kernel.org> <1286805544.2753.102.camel@dolmen>
+	 <4CB31743.4030705@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Mon, 11 Oct 2010 15:06:05 +0100
+Message-ID: <1286805965.2753.103.camel@dolmen>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we have '%pM' modifier in the kernel's *printf() we don't need to
-convert address to the string beforehand.
+Hi,
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Nohee Ko <noheek@broadcom.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-wireless@vger.kernel.org
-Cc: devel@driverdev.osuosl.org
----
- drivers/staging/brcm80211/brcmfmac/dhd_common.c  |   15 ++---------
- drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c |   27 +++++----------------
- drivers/staging/brcm80211/brcmfmac/wl_iw.c       |   21 ++++++----------
- drivers/staging/brcm80211/brcmfmac/wl_iw.h       |    3 --
- drivers/staging/brcm80211/include/bcmutils.h     |    2 -
- drivers/staging/brcm80211/sys/wl_mac80211.c      |    7 +----
- drivers/staging/brcm80211/sys/wlc_mac80211.c     |    7 ++---
- drivers/staging/brcm80211/util/bcmsrom.c         |   16 ++++---------
- drivers/staging/brcm80211/util/bcmutils.c        |    6 -----
- 9 files changed, 28 insertions(+), 76 deletions(-)
+On Mon, 2010-10-11 at 15:55 +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 10/11/2010 03:59 PM, Steven Whitehouse wrote:
+> > Looks good to me, but we'll need to bear in mind that this patch is
+> > already queued for the next merge window:
+> > http://git.kernel.org/?p=linux/kernel/git/steve/gfs2-2.6-nmw.git;a=commitdiff;h=9fa0ea9f26f64fbfc3dfd51d1dc2c230b65ffb19
+> > 
+> > so we'll have to figure out how best to merge when the time comes,
+> 
+> It shouldn't be a problem.  As WQ_RESCUER is not removed, it will
+> continue to work.  We only have to remember to convert it after the
+> merge.
+> 
+> Thanks.
+> 
 
-diff --git a/drivers/staging/brcm80211/brcmfmac/dhd_common.c b/drivers/staging/brcm80211/brcmfmac/dhd_common.c
-index 481c35d..79ded63 100644
---- a/drivers/staging/brcm80211/brcmfmac/dhd_common.c
-+++ b/drivers/staging/brcm80211/brcmfmac/dhd_common.c
-@@ -143,8 +143,6 @@ void dhd_common_init(void)
- 
- static int dhd_dump(dhd_pub_t *dhdp, char *buf, int buflen)
- {
--	char eabuf[ETHER_ADDR_STR_LEN];
--
- 	struct bcmstrbuf b;
- 	struct bcmstrbuf *strbuf = &b;
- 
-@@ -157,9 +155,8 @@ static int dhd_dump(dhd_pub_t *dhdp, char *buf, int buflen)
- 		    dhdp->up, dhdp->txoff, dhdp->busstate);
- 	bcm_bprintf(strbuf, "pub.hdrlen %d pub.maxctl %d pub.rxsz %d\n",
- 		    dhdp->hdrlen, dhdp->maxctl, dhdp->rxsz);
--	bcm_bprintf(strbuf, "pub.iswl %d pub.drv_version %ld pub.mac %s\n",
--		    dhdp->iswl, dhdp->drv_version, bcm_ether_ntoa(&dhdp->mac,
--								  eabuf));
-+	bcm_bprintf(strbuf, "pub.iswl %d pub.drv_version %ld pub.mac %pM\n",
-+		    dhdp->iswl, dhdp->drv_version, &dhdp->mac);
- 	bcm_bprintf(strbuf, "pub.bcmerror %d tickcnt %d\n", dhdp->bcmerror,
- 		    dhdp->tickcnt);
- 
-@@ -600,13 +597,7 @@ static void wl_show_host_event(wl_event_msg_t *event, void *event_data)
- 	auth_type = ntoh32(event->auth_type);
- 	datalen = ntoh32(event->datalen);
- 	/* debug dump of event messages */
--	sprintf(eabuf, "%02x:%02x:%02x:%02x:%02x:%02x",
--		(unsigned char) event->addr.octet[0] & 0xff,
--		(unsigned char) event->addr.octet[1] & 0xff,
--		(unsigned char) event->addr.octet[2] & 0xff,
--		(unsigned char) event->addr.octet[3] & 0xff,
--		(unsigned char) event->addr.octet[4] & 0xff,
--		(unsigned char) event->addr.octet[5] & 0xff);
-+	sprintf(eabuf, "%pM", event->addr.octet);
- 
- 	event_name = "UNKNOWN";
- 	for (i = 0; i < ARRAY_SIZE(event_names); i++) {
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-index e9920e5..139c20e 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c
-@@ -2006,16 +2006,12 @@ static __used s32
- wl_update_pmklist(struct net_device *dev, struct wl_pmk_list *pmk_list,
- 		  s32 err)
- {
--	s8 eabuf[ETHER_ADDR_STR_LEN];
- 	int i, j;
- 
--	memset(eabuf, 0, ETHER_ADDR_STR_LEN);
--
- 	WL_DBG(("No of elements %d\n", pmk_list->pmkids.npmkid));
- 	for (i = 0; i < pmk_list->pmkids.npmkid; i++) {
--		WL_DBG(("PMKID[%d]: %s =\n", i,
--			bcm_ether_ntoa(&pmk_list->pmkids.pmkid[i].BSSID,
--				       eabuf)));
-+		WL_DBG(("PMKID[%d]: %pM =\n", i,
-+			&pmk_list->pmkids.pmkid[i].BSSID));
- 		for (j = 0; j < WPA2_PMKID_LEN; j++) {
- 			WL_DBG(("%02x\n", pmk_list->pmkids.pmkid[i].PMKID[j]));
- 		}
-@@ -2033,12 +2029,10 @@ wl_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *dev,
- 		      struct cfg80211_pmksa *pmksa)
- {
- 	struct wl_priv *wl = wiphy_to_wl(wiphy);
--	s8 eabuf[ETHER_ADDR_STR_LEN];
- 	s32 err = 0;
- 	int i;
- 
- 	CHECK_SYS_UP();
--	memset(eabuf, 0, ETHER_ADDR_STR_LEN);
- 	for (i = 0; i < wl->pmk_list->pmkids.npmkid; i++)
- 		if (!memcmp(pmksa->bssid, &wl->pmk_list->pmkids.pmkid[i].BSSID,
- 			    ETHER_ADDR_LEN))
-@@ -2053,10 +2047,8 @@ wl_cfg80211_set_pmksa(struct wiphy *wiphy, struct net_device *dev,
- 	} else {
- 		err = -EINVAL;
- 	}
--	WL_DBG(("set_pmksa,IW_PMKSA_ADD - PMKID: %s =\n",
--		bcm_ether_ntoa(&wl->pmk_list->pmkids.
--			       pmkid[wl->pmk_list->pmkids.npmkid].BSSID,
--			       eabuf)));
-+	WL_DBG(("set_pmksa,IW_PMKSA_ADD - PMKID: %pM =\n",
-+		&wl->pmk_list->pmkids.pmkid[wl->pmk_list->pmkids.npmkid].BSSID));
- 	for (i = 0; i < WPA2_PMKID_LEN; i++) {
- 		WL_DBG(("%02x\n",
- 			wl->pmk_list->pmkids.pmkid[wl->pmk_list->pmkids.npmkid].
-@@ -2073,18 +2065,16 @@ wl_cfg80211_del_pmksa(struct wiphy *wiphy, struct net_device *dev,
- 		      struct cfg80211_pmksa *pmksa)
- {
- 	struct wl_priv *wl = wiphy_to_wl(wiphy);
--	s8 eabuf[ETHER_ADDR_STR_LEN];
- 	struct _pmkid_list pmkid;
- 	s32 err = 0;
- 	int i;
- 
- 	CHECK_SYS_UP();
--	memset(eabuf, 0, ETHER_ADDR_STR_LEN);
- 	memcpy(&pmkid.pmkid[0].BSSID, pmksa->bssid, ETHER_ADDR_LEN);
- 	memcpy(&pmkid.pmkid[0].PMKID, pmksa->pmkid, WPA2_PMKID_LEN);
- 
--	WL_DBG(("del_pmksa,IW_PMKSA_REMOVE - PMKID: %s =\n",
--		bcm_ether_ntoa(&pmkid.pmkid[0].BSSID, eabuf)));
-+	WL_DBG(("del_pmksa,IW_PMKSA_REMOVE - PMKID: %pM =\n",
-+		&pmkid.pmkid[0].BSSID));
- 	for (i = 0; i < WPA2_PMKID_LEN; i++) {
- 		WL_DBG(("%02x\n", pmkid.pmkid[0].PMKID[i]));
- 	}
-@@ -2585,10 +2575,7 @@ static s32 wl_update_bss_info(struct wl_priv *wl)
- 		if (unlikely(err))
- 			goto update_bss_info_out;
- 	} else {
--		WL_DBG(("Found the AP in the list - "
--			"BSSID %02x:%02x:%02x:%02x:%02x:%02x\n",
--			bss->bssid[0], bss->bssid[1], bss->bssid[2],
--			bss->bssid[3], bss->bssid[4], bss->bssid[5]));
-+		WL_DBG(("Found the AP in the list - BSSID %pM\n", bss->bssid));
- 		cfg80211_put_bss(bss);
- 	}
- 
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_iw.c b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-index 8343f7e..632c29e 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_iw.c
-@@ -800,9 +800,8 @@ wl_iw_set_wap(struct net_device *dev,
- 	}
- 
- 	if (g_ssid.SSID_len) {
--		WL_TRACE(("%s: join SSID=%s BSSID=" MACSTR " ch=%d\n",
--			  __func__, g_ssid.SSID,
--			  MAC2STR((u8 *) awrq->sa_data),
-+		WL_TRACE(("%s: join SSID=%s BSSID=%pM ch=%d\n",
-+			  __func__, g_ssid.SSID, awrq->sa_data,
- 			  g_wl_iw_params.target_channel));
- 	}
- 
-@@ -2638,14 +2637,12 @@ wl_iw_set_pmksa(struct net_device *dev,
- 	struct iw_pmksa *iwpmksa;
- 	uint i;
- 	int ret = 0;
--	char eabuf[ETHER_ADDR_STR_LEN];
- 
- 	WL_WSEC(("%s: SIOCSIWPMKSA\n", dev->name));
- 
- 	CHECK_EXTRA_FOR_NULL(extra);
- 
- 	iwpmksa = (struct iw_pmksa *)extra;
--	bzero((char *)eabuf, ETHER_ADDR_STR_LEN);
- 
- 	if (iwpmksa->cmd == IW_PMKSA_FLUSH) {
- 		WL_WSEC(("wl_iw_set_pmksa - IW_PMKSA_FLUSH\n"));
-@@ -2663,8 +2660,8 @@ wl_iw_set_pmksa(struct net_device *dev,
- 			bcopy(&iwpmksa->pmkid[0], &pmkidptr->pmkid[0].PMKID,
- 			      WPA2_PMKID_LEN);
- 
--			WL_WSEC(("wl_iw_set_pmksa:IW_PMKSA_REMOVE:PMKID: %s = ",
--			bcm_ether_ntoa(&pmkidptr->pmkid[0].BSSID, eabuf)));
-+			WL_WSEC(("wl_iw_set_pmksa:IW_PMKSA_REMOVE:PMKID: "
-+				"%pM = ", &pmkidptr->pmkid[0].BSSID));
- 			for (j = 0; j < WPA2_PMKID_LEN; j++)
- 				WL_WSEC(("%02x ", pmkidptr->pmkid[0].PMKID[j]));
- 			WL_WSEC(("\n"));
-@@ -2713,9 +2710,8 @@ wl_iw_set_pmksa(struct net_device *dev,
- 			uint j;
- 			uint k;
- 			k = pmkid_list.pmkids.npmkid;
--			WL_WSEC(("wl_iw_set_pmksa,IW_PMKSA_ADD - PMKID: %s = ",
--				 bcm_ether_ntoa(&pmkid_list.pmkids.pmkid[k].
--						BSSID, eabuf)));
-+			WL_WSEC(("wl_iw_set_pmksa,IW_PMKSA_ADD - PMKID: %pM = ",
-+				&pmkid_list.pmkids.pmkid[k].BSSID));
- 			for (j = 0; j < WPA2_PMKID_LEN; j++)
- 				WL_WSEC(("%02x ",
- 					 pmkid_list.pmkids.pmkid[k].PMKID[j]));
-@@ -2726,9 +2722,8 @@ wl_iw_set_pmksa(struct net_device *dev,
- 		 pmkid_list.pmkids.npmkid));
- 	for (i = 0; i < pmkid_list.pmkids.npmkid; i++) {
- 		uint j;
--		WL_WSEC(("PMKID[%d]: %s = ", i,
--			 bcm_ether_ntoa(&pmkid_list.pmkids.pmkid[i].BSSID,
--					eabuf)));
-+		WL_WSEC(("PMKID[%d]: %pM = ", i,
-+			&pmkid_list.pmkids.pmkid[i].BSSID));
- 		for (j = 0; j < WPA2_PMKID_LEN; j++)
- 			WL_WSEC(("%02x ", pmkid_list.pmkids.pmkid[i].PMKID[j]));
- 		WL_WSEC(("\n"));
-diff --git a/drivers/staging/brcm80211/brcmfmac/wl_iw.h b/drivers/staging/brcm80211/brcmfmac/wl_iw.h
-index d15abc0..e8e9144 100644
---- a/drivers/staging/brcm80211/brcmfmac/wl_iw.h
-+++ b/drivers/staging/brcm80211/brcmfmac/wl_iw.h
-@@ -42,9 +42,6 @@
- #define PNOENABLE_SET_CMD			"PNOFORCE"
- #define PNODEBUG_SET_CMD			"PNODEBUG"
- 
--#define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
--#define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
--
- typedef struct wl_iw_extra_params {
- 	int target_channel;
- } wl_iw_extra_params_t;
-diff --git a/drivers/staging/brcm80211/include/bcmutils.h b/drivers/staging/brcm80211/include/bcmutils.h
-index 504ff65..5844d36 100644
---- a/drivers/staging/brcm80211/include/bcmutils.h
-+++ b/drivers/staging/brcm80211/include/bcmutils.h
-@@ -163,7 +163,6 @@
- #define	PKTPRIO_DSCP	0x800	/* DSCP prio found */
- 
- /* ethernet address */
--	extern char *bcm_ether_ntoa(const struct ether_addr *ea, char *buf);
- 	extern int bcm_ether_atoe(char *p, struct ether_addr *ea);
- 
- /* ip address */
-@@ -427,7 +426,6 @@
- /* Check that bcm_tlv_t fits into the given buflen */
- #define bcm_valid_tlv(elt, buflen) ((buflen) >= 2 && (int)(buflen) >= (int)(2 + (elt)->len))
- 
--/* buffer length for ethernet address from bcm_ether_ntoa() */
- #define ETHER_ADDR_STR_LEN	18	/* 18-bytes of Ethernet address buffer length */
- 
- /* crypto utility function */
-diff --git a/drivers/staging/brcm80211/sys/wl_mac80211.c b/drivers/staging/brcm80211/sys/wl_mac80211.c
-index 0e32209..8aec7f1 100644
---- a/drivers/staging/brcm80211/sys/wl_mac80211.c
-+++ b/drivers/staging/brcm80211/sys/wl_mac80211.c
-@@ -484,11 +484,8 @@ wl_ops_bss_info_changed(struct ieee80211_hw *hw,
- 		/* Beacon interval changed */
- 	}
- 	if (changed & BSS_CHANGED_BSSID) {
--		/* char eabuf[ETHER_ADDR_STR_LEN]; */
--		WL_NONE(("new BSSID:\taid %d  bss:%s\n",
--			 info->aid,
--			 bcm_ether_ntoa((struct ether_addr *)info->bssid,
--					eabuf)));
-+		WL_NONE(("new BSSID:\taid %d  bss:%pM\n", info->aid,
-+			info->bssid));
- 		/* BSSID changed, for whatever reason (IBSS and managed mode) */
- 		/* FIXME: need to store bssid in bsscfg */
- 		wlc_set_addrmatch(wl->wlc, RCM_BSSID_OFFSET,
-diff --git a/drivers/staging/brcm80211/sys/wlc_mac80211.c b/drivers/staging/brcm80211/sys/wlc_mac80211.c
-index badc33d..d3c76df 100644
---- a/drivers/staging/brcm80211/sys/wlc_mac80211.c
-+++ b/drivers/staging/brcm80211/sys/wlc_mac80211.c
-@@ -7215,9 +7215,6 @@ void BCMFASTPATH wlc_recv(wlc_info_t *wlc, void *p)
- 	u16 fc;
- 	uint len;
- 	bool is_amsdu;
--#ifdef BCMDBG
--	char eabuf[ETHER_ADDR_STR_LEN];
--#endif
- 
- 	WL_TRACE(("wl%d: wlc_recv\n", wlc->pub->unit));
- 
-@@ -7271,7 +7268,9 @@ void BCMFASTPATH wlc_recv(wlc_info_t *wlc, void *p)
- 		/* CTS and ACK CTL frames are w/o a2 */
- 		if (FC_TYPE(fc) == FC_TYPE_DATA || FC_TYPE(fc) == FC_TYPE_MNG) {
- 			if ((ETHER_ISNULLADDR(&h->a2) || ETHER_ISMULTI(&h->a2))) {
--				WL_ERROR(("wl%d: %s: dropping a frame with invalid" " src mac address, a2: %s\n", wlc->pub->unit, __func__, bcm_ether_ntoa(&h->a2, eabuf)));
-+				WL_ERROR(("wl%d: %s: dropping a frame with "
-+					"invalid src mac address, a2: %pM\n",
-+					wlc->pub->unit, __func__, &h->a2));
- 				WLCNTINCR(wlc->pub->_cnt->rxbadsrcmac);
- 				goto toss;
- 			}
-diff --git a/drivers/staging/brcm80211/util/bcmsrom.c b/drivers/staging/brcm80211/util/bcmsrom.c
-index 1c02c92..f5212a0 100644
---- a/drivers/staging/brcm80211/util/bcmsrom.c
-+++ b/drivers/staging/brcm80211/util/bcmsrom.c
-@@ -504,10 +504,8 @@ int srom_parsecis(osl_t *osh, u8 *pcis[], uint ciscnt, char **vars, uint *count)
- 					    && !(ETHER_ISMULTI(&cis[i + 2]))) {
- 						ASSERT(cis[i + 1] ==
- 						       ETHER_ADDR_LEN);
--						bcm_ether_ntoa(
--							(struct ether_addr *)
--							       &cis[i + 2],
--							       eabuf);
-+						snprintf(eabuf, sizeof(eabuf),
-+							"%pM", &cis[i + 2]);
- 
- 						/* set boardnum if HNBU_BOARDNUM not seen yet */
- 						if (boardnum == -1)
-@@ -976,10 +974,8 @@ int srom_parsecis(osl_t *osh, u8 *pcis[], uint ciscnt, char **vars, uint *count)
- 				case HNBU_MACADDR:
- 					if (!(ETHER_ISNULLADDR(&cis[i + 1])) &&
- 					    !(ETHER_ISMULTI(&cis[i + 1]))) {
--						bcm_ether_ntoa(
--							(struct ether_addr *)
--							       &cis[i + 1],
--							       eabuf);
-+						snprintf(eabuf, sizeof(eabuf),
-+							"%pM", &cis[i + 1]);
- 
- 						/* set boardnum if HNBU_BOARDNUM not seen yet */
- 						if (boardnum == -1)
-@@ -1728,7 +1724,6 @@ static void _initvars_srom_pci(u8 sromrev, u16 *srom, uint off, varbuf_t *b)
- 			continue;
- 
- 		if (flags & SRFL_ETHADDR) {
--			char eabuf[ETHER_ADDR_STR_LEN];
- 			struct ether_addr ea;
- 
- 			ea.octet[0] = (srom[srv->off - off] >> 8) & 0xff;
-@@ -1737,9 +1732,8 @@ static void _initvars_srom_pci(u8 sromrev, u16 *srom, uint off, varbuf_t *b)
- 			ea.octet[3] = srom[srv->off + 1 - off] & 0xff;
- 			ea.octet[4] = (srom[srv->off + 2 - off] >> 8) & 0xff;
- 			ea.octet[5] = srom[srv->off + 2 - off] & 0xff;
--			bcm_ether_ntoa(&ea, eabuf);
- 
--			varbuf_append(b, "%s=%s", name, eabuf);
-+			varbuf_append(b, "%s=%pM", name, ea.octet);
- 		} else {
- 			ASSERT(mask_valid(srv->mask));
- 			ASSERT(mask_width(srv->mask));
-diff --git a/drivers/staging/brcm80211/util/bcmutils.c b/drivers/staging/brcm80211/util/bcmutils.c
-index 02d76d6..c4c0136 100644
---- a/drivers/staging/brcm80211/util/bcmutils.c
-+++ b/drivers/staging/brcm80211/util/bcmutils.c
-@@ -358,12 +358,6 @@ int bcm_ether_atoe(char *p, struct ether_addr *ea)
- 	return i == 6;
- }
- 
--char *bcm_ether_ntoa(const struct ether_addr *ea, char *buf)
--{
--	snprintf(buf, 18, "%pM", ea->octet);
--	return buf;
--}
--
- /*
-  * Search the name=value vars for a specific one and return its value.
-  * Returns NULL if not found.
--- 
-1.7.2.3
+Ok. I'll make a note to do that. Thanks,
+
+Steve.
+
 
