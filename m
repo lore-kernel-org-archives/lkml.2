@@ -1,47 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752110Ab0JKELA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 00:11:00 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39677
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750791Ab0JKEK6 (ORCPT
+	id S1752372Ab0JKELI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 00:11:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34482 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752231Ab0JKELF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 00:10:58 -0400
-Date: Sun, 10 Oct 2010 21:11:20 -0700 (PDT)
-Message-Id: <20101010.211120.189701946.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: dilinger@queued.net, devicetree-discuss@lists.ozlabs.org,
+	Mon, 11 Oct 2010 00:11:05 -0400
+Date: Sun, 10 Oct 2010 22:11:02 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Andres Salomon <dilinger@queued.net>
+Cc: devicetree-discuss@lists.ozlabs.org, David Miller <davem@davemloft.net>,
         sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/7] sparc: make drivers/of/pdt.c no longer sparc-only
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101011041010.GB23588@angua.secretlab.ca>
-References: <20101010014358.30cb74b5@debxo>
-	<20101011041010.GB23588@angua.secretlab.ca>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Subject: Re: [PATCH 4/5] of: add package-to-path support to pdt
+Message-ID: <20101011041102.GE23588@angua.secretlab.ca>
+References: <20101010020609.3adde588@debxo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101010020609.3adde588@debxo>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 10 Oct 2010 22:10:10 -0600
-
-> On Sun, Oct 10, 2010 at 01:43:58AM -0700, Andres Salomon wrote:
->> 
->> Clean up pdt.c:
->>  - make build dependent upon config OF_PROMTREE
->>  - #ifdef out the sparc-specific stuff
->>  - create pdt-specific header
->> 
->> Signed-off-by: Andres Salomon <dilinger@queued.net>
+On Sun, Oct 10, 2010 at 02:06:09AM -0700, Andres Salomon wrote:
 > 
-> Applied, thanks.  Since the difference between this version and the
-> last is trivial, I've carried over davem's acked-by lines on the first
-> 3 patches.
+> package-to-path is a PROM function which tells us the real (full) name of the
+> node.  This provides a hook for that in the prom ops struct, and makes use
+> of it in the pdt code when attempting to determine a node's name.  If the
+> hook is available, try using it (falling back to looking at the "name"
+> property if it fails).
 > 
-> Dave, let me know if you've got any issues with this and I'll drop
-> them from my tree.
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
 
-No problems.
+Applied, thanks.
+
+g.
+
