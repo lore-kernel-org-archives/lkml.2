@@ -1,43 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753691Ab0JKJRl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 05:17:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50134 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752223Ab0JKJRk convert rfc822-to-8bit (ORCPT
+	id S1753809Ab0JKJSo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 05:18:44 -0400
+Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:26640
+	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753427Ab0JKJSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 05:17:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mLpOPfprup5h+W44zqAdP6HrX90sBSzWLiSBeIWFbjyaHUcsjI9DQJGMJ1lGpCK5Vc
-         aJTeG9jH5Umr5C5KbR5CpMBfp18yj0oX71U/+haRII51u/hVTdYxMzSxoyHwwYUU5wlO
-         ZfojPfPzx5wxHC0dz017yUD/jnPaYr2MDgM+g=
+	Mon, 11 Oct 2010 05:18:42 -0400
+X-SpamScore: -10
+X-BigFish: VPS-10(zzbb2cK1432N98dN4015L78fbpzz1202hzz8275dhz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-SS: 0,
+X-WSS-ID: 0LA4CI9-01-C3D-02
+X-M-MSG: 
+Date: Mon, 11 Oct 2010 11:18:10 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
+Message-ID: <20101011091809.GQ13563@erda.amd.com>
+References: <cover.1286584677.git.matt@console-pimps.org>
+ <a72a7968f5e3f64a26875457a7451b34f896f5ae.1286584677.git.matt@console-pimps.org>
 MIME-Version: 1.0
-In-Reply-To: <20101010124159.GA21776@kroah.com>
-References: <86dfcd5dfdee8ce5ca558634d4606922f05e96e1.1286705921.git.andy.shevchenko@gmail.com>
-	<20101010124159.GA21776@kroah.com>
-Date: Mon, 11 Oct 2010 12:17:38 +0300
-Message-ID: <AANLkTimLeeZ5QpFE9my5fyPpg63t+VKcOTHtS7S5FdQU@mail.gmail.com>
-Subject: Re: [PATCH 1/3] staging: brcm80211: clean up custom ctype library again
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-wireless@vger.kernel.org, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Nohee Ko <noheek@broadcom.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <a72a7968f5e3f64a26875457a7451b34f896f5ae.1286584677.git.matt@console-pimps.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 3:41 PM, Greg KH <greg@kroah.com> wrote:
-> This file is now gone from the tree, as of yesterday.  Care to resync on
-> the next linux-next tree on Monday and verify if any of these patches
-> are even needed anymore?
-Done! Still some clean ups are needed. Already sent new patch series.
+On 08.10.10 20:46:17, Matt Fleming wrote:
+> Introduce perf_pmu_name() helper function that returns the name of the
+> pmu. This gives us a generic way to get the name of a pmu regardless of
+> how an architecture identifies it internally.
+> 
+> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+
+Peter, I need your ack here.
+
+Thanks,
+
+-Robert
+
+> ---
+>  arch/sh/kernel/perf_event.c |    9 +++++++++
+>  include/linux/perf_event.h  |    1 +
+>  kernel/perf_event.c         |    5 +++++
+>  3 files changed, 15 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+> index 2cb9ad5..55fe89b 100644
+> --- a/arch/sh/kernel/perf_event.c
+> +++ b/arch/sh/kernel/perf_event.c
+> @@ -59,6 +59,15 @@ static inline int sh_pmu_initialized(void)
+>  	return !!sh_pmu;
+>  }
+>  
+> +const char *perf_pmu_name(void)
+> +{
+> +	if (!sh_pmu)
+> +		return NULL;
+> +
+> +	return sh_pmu->name;
+> +}
+> +EXPORT_SYMBOL_GPL(perf_pmu_name);
+> +
+>  int perf_num_counters(void)
+>  {
+>  	if (!sh_pmu)
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index 1a02192..33f08da 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -850,6 +850,7 @@ extern int perf_max_events;
+>  extern const struct pmu *hw_perf_event_init(struct perf_event *event);
+>  
+>  extern int perf_num_counters(void);
+> +extern const char *perf_pmu_name(void);
+>  extern void perf_event_task_sched_in(struct task_struct *task);
+>  extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
+>  extern void perf_event_task_tick(struct task_struct *task);
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index db5b560..fc51268 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -85,6 +85,11 @@ void __weak hw_perf_enable(void)		{ barrier(); }
+>  
+>  void __weak perf_event_print_debug(void)	{ }
+>  
+> +extern __weak const char *perf_pmu_name(void)
+> +{
+> +	return "pmu";
+> +}
+> +
+>  static DEFINE_PER_CPU(int, perf_disable_count);
+>  
+>  void perf_disable(void)
+> -- 
+> 1.7.1
+> 
+> 
 
 -- 
-With Best Regards,
-Andy Shevchenko
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
