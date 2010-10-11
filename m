@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755343Ab0JKPmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 11:42:23 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63696 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab0JKPmW (ORCPT
+	id S1755230Ab0JKPqo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 11:46:44 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:43372 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754741Ab0JKPqn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 11:42:22 -0400
+	Mon, 11 Oct 2010 11:46:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=aQvZaChy88diL9yFXn37YghxmpiMBu0yxZKmTGSsYFr6EbsAcKREYZR54e+ZYfx4t+
-         HM2dmpV71itzRLMyCVjdDyzmwsTNcm+NB49X1Vs27X0F/HC9WEyJEYuLWr94UNcb8lBI
-         ByxsSbRoUlw98pOKZCQ4Ffh5q8yET0aa65MC8=
-Subject: Re: [PATCH v12 06/17] Use callback to deal with skb_release_data()
- specially.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
-        herbert@gondor.hengli.com.au, jdike@linux.intel.com
-In-Reply-To: <20101011.082728.193709462.davem@davemloft.net>
-References: <f2bf65a8a7676bbd3e8a749ae93d99e88671d35d.1285853725.git.xiaohui.xin@intel.com>
-	 <20101001.001439.85411154.davem@davemloft.net>
-	 <F2E9EB7348B8264F86B6AB8151CE2D793064B2A9D8@shsmsx502.ccr.corp.intel.com>
-	 <20101011.082728.193709462.davem@davemloft.net>
+        b=PZeU2fKBgh+WtWme7qGb1W8RHP8/I2Ot8uIpIvmOShwK7ORABwKwFfWYhP1GVTScF7
+         J9yXx15p6u6elxsBIiOZcgtQlMoh+hfgf5x3xNA+J0LdRIVUyKFPp7THGoxSeC4aylat
+         Br4bxV+Gesl3NxLVpwxZNq5gZYrCvqoaIGkHE=
+Subject: Re: Horrible btrfs performance on cold cache
+From: Calvin Walton <calvin.walton@gmail.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+In-Reply-To: <AANLkTin8mAaHz_PypS9j4vQ35WozgD==U493e3OW_sy2@mail.gmail.com>
+References: <AANLkTin8mAaHz_PypS9j4vQ35WozgD==U493e3OW_sy2@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Oct 2010 17:42:11 +0200
-Message-ID: <1286811731.2737.28.camel@edumazet-laptop>
+Date: Mon, 11 Oct 2010 11:46:19 -0400
+Message-ID: <1286811979.9645.5.camel@ayu>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.31.91 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 11 octobre 2010 à 08:27 -0700, David Miller a écrit :
-> From: "Xin, Xiaohui" <xiaohui.xin@intel.com>
-> Date: Mon, 11 Oct 2010 15:06:05 +0800
+On Mon, 2010-10-11 at 03:30 +0300, Felipe Contreras wrote:
+> Hi,
 > 
-> > That's to avoid the new cache miss caused by using destructor_arg in data path
-> > like skb_release_data().
-> > That's based on the comment from Eric Dumazet on v7 patches.
+> I use btrfs on most of my volumes on my laptop, and I've always felt
+> booting was very slow, but definitely sure is slow, is starting up
+> Google Chrome:
 > 
-> Thanks for the explanation.
+> encrypted ext4: ~20s
+> btrfs: ~2:11s
+> 
+> I have tried different things to find out exactly what is the issue,
+> but haven't quite found it yet.
 
-Anyway, frags[] must be the last field of "struct skb_shared_info"
-since commit fed66381 (net: pskb_expand_head() optimization)
+If you've been using this volume for a while, it could just have become
+badly fragmented. You could try btrfs's fancy online defragmentation
+abilities to see if that'll give you an improvement:
 
-It seems Xin worked on a quite old tree.
+# btrfs filesystem defragment /mountpoint/of/volume
 
+Let us know if that helps, of course :)
 
+-- 
+Calvin Walton <calvin.walton@gmail.com>
 
