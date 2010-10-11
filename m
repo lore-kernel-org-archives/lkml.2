@@ -1,75 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab0JKJ1Z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 05:27:25 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:10928 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753483Ab0JKJ1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 05:27:23 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19634.55413.877788.492484@pilspetsen.it.uu.se>
-Date: Mon, 11 Oct 2010 11:27:17 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
- kernels
-In-Reply-To: <20101011024103.GH19804@ZenIV.linux.org.uk>
-References: <20101007174948.GT19804@ZenIV.linux.org.uk>
-	<AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
-	<20101010144952.GF19804@ZenIV.linux.org.uk>
-	<AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
-	<20101010235256.GG19804@ZenIV.linux.org.uk>
-	<20101011024103.GH19804@ZenIV.linux.org.uk>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+	id S1753985Ab0JKJ1V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 05:27:21 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:54184 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab0JKJ1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 05:27:07 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Subject: [PATCH 1/3] NET: pch, fix use after free
+Date: Mon, 11 Oct 2010 11:26:56 +0200
+Message-Id: <1286789218-13976-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Al Viro writes:
- > On Mon, Oct 11, 2010 at 12:52:56AM +0100, Al Viro wrote:
- > > On Sun, Oct 10, 2010 at 10:18:03PM +0200, Geert Uytterhoeven wrote:
- > > > >> This is on aranym-0.9.9-1 from Ubuntu/amd64.
- > > > >
- > > > > stat -L /proc/2/exec, otherwise you'll hit lstat() instead of stat().
- > > > > And FWIW 0.9.10-1 squeeze/amd64 also triggers here...
- > > > 
- > > > Still, just "stat: cannot stat `proc/2/exe': No such file or directory" here...
- > > 
- > > Interesting...  Which gcc version is used?
- > 
- > Argh...  OK, going through aranym with debugger has exhonorated it.  My
- > apologies ;-/  It *is* gcc in sid.  Testcase:
- > 
- > extern int foo(int);
- > void *bar(int n)
- > {
- >         return (void *)foo(n);
- > }
- > 
- > and gcc -S -O2 turns that into
- > bar:
- >         link.w %fp,#0
- >         unlk %fp
- >         jra foo
- > 
- > Spot the obvious bug...  BTW, why on the Earth does debian-ports m68k tree
- > use gcc-4.3 with Cthulhu-scaring 700Kb gzipped patch and does *not* have
- > gcc-4.4?
+Stanse found that pch_gbe_xmit_frame uses skb after it is freed. Fix
+that.
 
-I can confirm that the bug exists in gcc-4.3.4 and gcc-4.4.5,
-but it has been fixed in gcc-4.5.1 which generates:
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+---
+ drivers/net/pch_gbe/pch_gbe_main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-bar:
-        link.w %fp,#0
-        move.l 8(%fp),-(%sp)
-        jsr foo
-        move.l %d0,%a0
-        unlk %fp
-        rts
+diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
+index 53c56cf..e44644f 100644
+--- a/drivers/net/pch_gbe/pch_gbe_main.c
++++ b/drivers/net/pch_gbe/pch_gbe_main.c
+@@ -1847,9 +1847,9 @@ static int pch_gbe_xmit_frame(struct sk_buff *skb, struct net_device *netdev)
+ 	unsigned long flags;
+ 
+ 	if (unlikely(skb->len > (adapter->hw.mac.max_frame_size - 4))) {
+-		dev_kfree_skb_any(skb);
+ 		pr_err("Transfer length Error: skb len: %d > max: %d\n",
+ 		       skb->len, adapter->hw.mac.max_frame_size);
++		dev_kfree_skb_any(skb);
+ 		adapter->stats.tx_length_errors++;
+ 		return NETDEV_TX_OK;
+ 	}
+-- 
+1.7.3.1
 
-I don't yet know the gcc PR number or svn commit # for the fix
-(in case people want a backport).
+
