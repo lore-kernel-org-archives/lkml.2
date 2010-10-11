@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab0JKRac (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 13:30:32 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:52781 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755775Ab0JKRaa (ORCPT
+	id S1755751Ab0JKRfI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 13:35:08 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49075 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755640Ab0JKRfH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 13:30:30 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+3GhACyodY8ltAiwoKIe97
-Date: Mon, 11 Oct 2010 10:30:23 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Tim Nordell <tim.nordell@logicpd.com>
-Cc: Stephan Linz <linz@li-pro.net>, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v4 0/4] LogicPD minimal board support for LV_SOM and
- Torpedo
-Message-ID: <20101011173023.GB25462@atomide.com>
-References: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com>
- <20100928171908.GE3117@atomide.com>
- <201010090155.25932.linz@li-pro.net>
- <4CAFB747.5020606@logicpd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CAFB747.5020606@logicpd.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 11 Oct 2010 13:35:07 -0400
+Subject: Re: [PATCH] dma: get_user_pages -> get_user_pages_fast
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101011165310.GA5122@redhat.com>
+References: <20101011165310.GA5122@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 11 Oct 2010 19:34:56 +0200
+Message-ID: <1286818496.1998.43.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Tim Nordell <tim.nordell@logicpd.com> [101008 17:20]:
-> Hi Stephan,
+On Mon, 2010-10-11 at 18:53 +0200, Michael S. Tsirkin wrote:
+> There doesn't seem to be any advantage to using
+> get_user_pages, so switch iovlock to get_user_pages_fast
+> instead.
 > 
-> I do indeed work for LogicPD.  I was asked to take over the patch
-> submission process from Jacob Tanenbaum from early August (I don't know
-> if you saw those patches), and hence I was the last one to submit
-> patches off to the community.
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
 > 
-> On 10/08/10 18:55, Stephan Linz wrote:
-> > 
-> > nice to see my patches here on the Linux mailinglists. I have not been working 
-> > on it for a long time.
+> Lightly tested.  This patch is on top of the bugfix patch I posted
+> previously.
+> 
+>  drivers/dma/iovlock.c |   10 ++--------
+>  1 files changed, 2 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
+> index 21ed8f3..c6917e8 100644
+> --- a/drivers/dma/iovlock.c
+> +++ b/drivers/dma/iovlock.c
+> @@ -95,17 +95,11 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
+>  		pages += page_list->nr_pages;
+>  
+>  		/* pin pages down */
+> -		down_read(&current->mm->mmap_sem);
+> -		ret = get_user_pages(
+> -			current,
+> -			current->mm,
+> +		ret = get_user_pages_fast(
+>  			(unsigned long) iov[i].iov_base,
+>  			page_list->nr_pages,
 
-Uhh, so whose patches are these originally?
+What's the actual nr_pages here? Is it limited to some small number or
+can it be arbitrarily large?
 
-We have them now queued with Tim Nordell as the author. Please let me know
-ASAP if you want me to change that.
+>  			1,	/* write */
+> -			0,	/* force */
+> -			page_list->pages,
+> -			NULL);
+> -		up_read(&current->mm->mmap_sem);
+> +			page_list->pages);
+>  
+>  		if (unlikely(ret < 0))
+>  			goto unpin;
 
-Regards,
 
-Tony
