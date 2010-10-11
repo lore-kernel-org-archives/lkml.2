@@ -1,86 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752508Ab0JKW7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 18:59:18 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:45785 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751316Ab0JKW7R (ORCPT
+	id S1752751Ab0JKXS5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 19:18:57 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:23679 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab0JKXS4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 18:59:17 -0400
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Oct 2010 18:59:17 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: ApsEAMMws0w7p+/x/2dsb2JhbACifcNqhUgEjUQ
-Message-ID: <4CB39590.3070404@call-direct.com.au>
-Date: Tue, 12 Oct 2010 08:54:08 +1000
-From: Iwo Mergler <iwo@call-direct.com.au>
-User-Agent: Thunderbird 2.0.0.12 (X11/20080302)
+	Mon, 11 Oct 2010 19:18:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Fsoc+E1yPP1Xp1wzWN9Ycl/JekOQ55OuxdIsNln+5jAh9XAg/2wTlupQtb9K7RQerT
+         3mbP0ib1qIofvtsPXf7A==
 MIME-Version: 1.0
-To: Mark Mason <mason@postdiluvian.org>
-CC: linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: Scheduler latency problems when using NAND
-References: <20100929221401.GA32583@postdiluvian.org>	<4CA3D92E.9060109@call-direct.com.au> <20101009174246.GA19591@postdiluvian.org>
-In-Reply-To: <20101009174246.GA19591@postdiluvian.org>
-X-Enigmail-Version: 0.96.0
+In-Reply-To: <20101011154348.d3b24fa4.akpm@linux-foundation.org>
+References: <20101008023356.6280.9969.stgit@dungbeetle.mtv.corp.google.com>
+	<20101011154348.d3b24fa4.akpm@linux-foundation.org>
+Date: Mon, 11 Oct 2010 16:18:52 -0700
+Message-ID: <AANLkTi=Q=09b8UPcNm0sXGebYQKP3cfxroy+kLWP8EQ_@mail.gmail.com>
+Subject: Re: [PATCH] Fix a complex race in hrtimer code.
+From: Salman Qazi <sqazi@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Mason wrote:
-> The flash driver (fsl_elbc_nand.c) goes to sleep right after it issues
-> a page program, and a context switch to another high priority thread
-> takes place promptly.  This thread is often one that reads from
-> another (video) chip on the same bus as the flash (the MPC8315 LBC).
-> The flash asserts its BUSY line while the page program is in
-> operation.  When the other thread comes along to read from video chip,
-> it's held off for the 200us duration of the page program (the LBC
-> controller for the video chip is running in UPM mode, so the BUSY line
-> is a BUSY line and not a TA line, in case any 83xx junkies are reading
-> this).
-> 
-> What I see on a logic analyzer is the BUSY line held by the flash for
-> 200us, a single 32 bit read of the video chip (broken up into two 16
-> bit reads for the 16 bit bus), then another 200us BUSY from the flash,
-> two more 16 bit reads, etc, all the way to the end of the logic
-> analyzer screen.
+On Mon, Oct 11, 2010 at 3:43 PM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Thu, 07 Oct 2010 19:33:56 -0700
+> Salman Qazi <sqazi@google.com> wrote:
+>
+>> The race is described as follows:
+>>
+>> CPU X                                 CPU Y
+>> remove_hrtimer
+>> // state & QUEUED == 0
+>> timer->state = CALLBACK
+>> unlock timer base
+>> timer->f(n) //very long
+>>                                   hrtimer_start
+>>                                     lock timer base
+>>                                     remove_hrtimer // no effect
+>>                                     hrtimer_enqueue
+>>                                     timer->state = CALLBACK |
+>>                                                    QUEUED
+>>                                     unlock timer base
+>>                                   hrtimer_start
+>>                                     lock timer base
+>>                                     remove_hrtimer
+>>                                         mode = INACTIVE
+>>                                         // CALLBACK bit lost!
+>>                                     switch_hrtimer_base
+>>                                             CALLBACK bit not set:
+>>                                                     timer->base
+>>                                                     changes to a
+>>                                                     different CPU.
+>> lock this CPU's timer base
+>>
+>> Bug reproducible and fix testable using a kernel module that hrtimer_start()s
+>> a timer with a very long running callback from multiple CPUs:
+>>
+>> MODULE_LICENSE("GPL");
+>>
+>> static long timer_func_time = 1000;
+>> module_param(timer_func_time, long, 0600);
+>> static long timer_starts = 2500;
+>> module_param(timer_starts, long, 0600);
+>> static long timer_expire = 1000;
+>> module_param(timer_expire, long, 0600);
+>>
+>> DEFINE_PER_CPU(struct task_struct *, hrtimer_thread);
+>>
+>> /* There are other issues, like deadlocks between multiple hrtimer_start observed
+>>  * calls, at least in 2.6.34 that this lock works around.  Will look into
+>>  * those later.
+>>  */
+>> static DEFINE_SPINLOCK(blah_lock);
+>>
+>> static ktime_t mytime;
+>> static struct hrtimer timer;
+>>
+>> static enum hrtimer_restart timer_restart(struct hrtimer *timer)
+>> {
+>>         unsigned long i;
+>>         /* We have to make the callback longer to improve the
+>>          * probability of having a race.
+>>          */
+>>         for (i = 0; i < timer_func_time / 100; i++) {
+>>                 touch_nmi_watchdog();
+>>                 touch_softlockup_watchdog();
+>>                 udelay(100);
+>>         }
+>>
+>>         return HRTIMER_NORESTART;
+>> }
+>>
+>> static int restart_hrtimer_repeatedly(void *input)
+>> {
+>>         int i;
+>>         unsigned long range;
+>>         while (!kthread_should_stop()) {
+>>                 for (i = 0; i < timer_starts; i++) {
+>>                         /* Avoid deadlocks for now */
+>>                         spin_lock(&blah_lock);
+>>                         hrtimer_start(&timer, mytime, HRTIMER_MODE_REL);
+>>                         spin_unlock(&blah_lock);
+>>                         touch_nmi_watchdog();
+>>                         touch_softlockup_watchdog();
+>>                 }
+>>                 cond_resched();
+>>         }
+>>         hrtimer_cancel(&timer);
+>>         return 0;
+>> }
+>>
+>> static int hrtimer_unit_test_init(void)
+>> {
+>>         int cpu;
+>>         mytime = ktime_set(0, 0);
+>>         mytime = ktime_add_ns(mytime, timer_expire);
+>>         hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+>>         timer.function = timer_restart;
+>>         for_each_online_cpu(cpu) {
+>>                 per_cpu(hrtimer_thread, cpu) = kthread_create(
+>>                         restart_hrtimer_repeatedly, NULL, "hrtimer_test/%d",
+>>                         cpu);
+>>                 if (IS_ERR(per_cpu(hrtimer_thread, cpu))) {
+>>                        printk(KERN_ERR
+>>                                 "Failed to create hrtimer test thread\n");
+>>                         BUG();
+>>                 }
+>>                 kthread_bind(per_cpu(hrtimer_thread, cpu), cpu);
+>>                 wake_up_process(per_cpu(hrtimer_thread, cpu));
+>>         }
+>>         return 0;
+>> }
+>>
+>> static void hrtimer_unit_test_exit(void)
+>> {
+>>         int cpu;
+>>         for_each_online_cpu(cpu) {
+>>                 (void)kthread_stop(per_cpu(hrtimer_thread, cpu));
+>>         }
+>> }
+>>
+>> module_init(hrtimer_unit_test_init);
+>> module_exit(hrtimer_unit_test_exit);
+>> ---
+>>  kernel/hrtimer.c |    7 +++++--
+>>  1 files changed, 5 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+>> index 1decafb..4769c51 100644
+>> --- a/kernel/hrtimer.c
+>> +++ b/kernel/hrtimer.c
+>> @@ -944,8 +944,8 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
+>>               debug_deactivate(timer);
+>>               timer_stats_hrtimer_clear_start_info(timer);
+>>               reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
+>> -             __remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
+>> -                              reprogram);
+>> +             __remove_hrtimer(timer, base,
+>> +                              (timer->state & HRTIMER_STATE_CALLBACK), reprogram);
+>>               return 1;
+>>       }
+>>       return 0;
+>> @@ -1231,6 +1231,9 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+>>               BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+>>               enqueue_hrtimer(timer, base);
+>>       }
+>> +
+>> +     BUG_ON(!(timer->state & HRTIMER_STATE_CALLBACK));
+>> +
+>>       timer->state &= ~HRTIMER_STATE_CALLBACK;
+>>  }
+>
+> I worry about the BUG_ON(), especially if we're going to put this into
+> 2.6.36 and -stable (as we probably should).  If it triggers
+> unexpectedly, we just made a big mess.
+>
+> It's generally better to use a non-fatal assertion, often a
+> triggers-once one (WARN_ON_ONCE()).  That way our mistake doesn't result in
+> killing people's machines or flooding their logs.
+>
+> The one case where BUG_ON() _is_ justified is when we expect that the
+> kernel is utterly hosed, perhaps to the point of corrupting user data
+> or application results.
+>
+> Another downside of using BUG_ON() is that it makes the problem harder
+> to solve: often the user's box is now dead, sometimes to the point that
+> the trace didn't even get into the log files.  The user cannot get
+> control of the machine to have a look in /proc files or anything else.
+> We really did shoot our foot off.
+>
+>
+> Poeple are using BUG waaaaay too often.
+>
 
-I don't know your controller, but I'm surprised that the FLASH write
-can stall the bus like that. It seems a high price to pay for not
-having to implement some FLASH write interrupt or wait. Are you sure
-that this is the recommended way to connect a FLASH?
+If people are attentive about WARN_ON_ONCE, then I suppose that is a
+better alternative.
 
-As you said, it looks like it may be worthwhile to abandon the NAND
-controller and implement a software driver via an SRAM bus mode.
+One of the reasons why I personally like BUG_ON is that it catches
+problems early and makes people look (i.e. one can't ignore it, just
+because one didn't notice, understand or care) before it compounds any
+further.  It is very hard to debug a corrupted radix tree.  It is much
+easier to understand and fix the fact that our assumptions regarding
+the hrtimer state and locking are incorrect.
 
-Maybe even to the extent of reading the video controller *while*
-polling the BUSY line. You could wake up the FLASH thread from the
-video driver when the write is done.
-
-> 
-> What I think is happening is that the flash background thread is
-> running very efficiently - it comes in, issues a page program, and
-> relinquishes the CPU.  The thread reading the video chip then runs,
-> stalls for 200us waiting for a single read, gets its read, then is
-> preempted for the flash BGT.
-> 
-> My guess is that the scheduler sees the flash background thread as
-> running almost not at all, and the video thread as running a lot more,
-> although it's stalled for most of the first 200us of its time slice on
-> a single bus transaction, so it can't really do anything with its time
-> slice.  I further suspect that the scheduler is dynamically adjusting
-> the priorities to boost the flash BGT, since it's using much less CPU
-> time than the video thread, even though the video thread can't use
-> most of its time slice.  Can someone tell me if this makes sense?
-
-I'm not sure about this, but I thought the scheduler only does priority
-escalation when running userspace threads. For kernel thread scheduling,
-you get extra priority levels where the higher priority thread always
-wins if its ready to run.
-
-
-Best regards,
-
-Iwo
-
-
+I'd rather have a BUG_ON firing 100 times, close to the root cause,
+instead of one case of unexplained data corruption far from the root
+cause.  Just my $0.02.
