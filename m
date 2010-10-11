@@ -1,42 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab0JKTQN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 15:16:13 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59352 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab0JKTQL (ORCPT
+	id S1755940Ab0JKTYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 15:24:12 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45932
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755233Ab0JKTYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 15:16:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=eXLJHT+DV4DgiuJP/w4Ep6HHEUROm7Y45ZtbxSn8JKvpnbrtfToSgog5xj3CT8iALn
-         FUSZb0a9C/njtrRPn5Llw9M7R6LmyexowTwz7t9BU4a7oTkxkJJJEyFFy9diAZWK285b
-         8utSLMOgM6Csa7xh/fnP6JvLrdoUR8/zJSUFY=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinQQ0Y4TcRQdRhLgeBJTcvbRyiaxxHuSeh2F0Pp@mail.gmail.com>
-References: <AANLkTin8mAaHz_PypS9j4vQ35WozgD==U493e3OW_sy2@mail.gmail.com>
-	<1286811979.9645.5.camel@ayu>
-	<AANLkTinQQ0Y4TcRQdRhLgeBJTcvbRyiaxxHuSeh2F0Pp@mail.gmail.com>
-Date: Mon, 11 Oct 2010 22:16:10 +0300
-Message-ID: <AANLkTikz0KMmE+H=1zwyrOXPzXzYFMj2S36JX3WkO3AH@mail.gmail.com>
-Subject: Re: Horrible btrfs performance on cold cache
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Chester <somethingsome2000@gmail.com>
-Cc: Calvin Walton <calvin.walton@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 11 Oct 2010 15:24:11 -0400
+Date: Mon, 11 Oct 2010 12:24:33 -0700 (PDT)
+Message-Id: <20101011.122433.28818013.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: kees.cook@canonical.com, linux-kernel@vger.kernel.org, jgarzik@redhat.com,
+        jeffrey.t.kirsher@intel.com, peter.p.waskiewicz.jr@intel.com,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH] net: clear heap allocations for privileged ethtool
+ actions
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1286487284.2271.37.camel@achroite.uk.solarflarecom.com>
+References: <20101007211004.GA20267@outflux.net>
+	<1286487284.2271.37.camel@achroite.uk.solarflarecom.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 7:23 PM, Chester <somethingsome2000@gmail.com> wrote:
-> I think I read/heard somewhere that snapshots can cause pretty bad
-> fragmentation
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Thu, 07 Oct 2010 22:34:44 +0100
 
-But I'm not using snapshots.
+> On Thu, 2010-10-07 at 14:10 -0700, Kees Cook wrote:
+>> Several other ethtool functions leave heap uncleared (potentially) by
+>> drivers. Some interfaces appear safe (eeprom, etc), in that the sizes
+>> are well controlled. In some situations (e.g. unchecked error conditions),
+>> the heap will remain unchanged in areas before copying back to userspace.
+>> Note that these are less of an issue since these all require CAP_NET_ADMIN.
+>> 
+>> Cc: stable@kernel.org
+>> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+ ...
+> Acked-by: Ben Hutchings <bhutchings@solarflare.com>
 
--- 
-Felipe Contreras
+So I've applied Kees's patch to net-2.6, and I'll merge net-2.6
+into net-next-2.6 so I can resolve the vmalloc/kzalloc merge
+conflict before Stephen Rothwell and others have to deal with it
+in -next.
+
+Thanks!
