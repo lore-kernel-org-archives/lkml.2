@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab0JKSNF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 14:13:05 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:47198
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756053Ab0JKSNB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 14:13:01 -0400
-Date: Mon, 11 Oct 2010 11:13:23 -0700 (PDT)
-Message-Id: <20101011.111323.115931626.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: jslaby@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, masa-korg@dsn.okisemi.com
-Subject: Re: [PATCH 1/3] NET: pch, fix use after free
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1286789918.2737.8.camel@edumazet-laptop>
-References: <1286789218-13976-1-git-send-email-jslaby@suse.cz>
-	<1286789918.2737.8.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755963Ab0JKSRF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 14:17:05 -0400
+Received: from fieldses.org ([174.143.236.118]:35763 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755355Ab0JKSRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 14:17:04 -0400
+Date: Mon, 11 Oct 2010 14:16:47 -0400
+To: Phil Endecott <phil_bnaqb_endecott@chezphil.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
+        netdev@vger.kernel.org
+Subject: Re: NFS & atl1c : "RPC: multiple fragments per record not
+ supported"
+Message-ID: <20101011181647.GA3166@fieldses.org>
+References: <1286722097803@dmwebmail.dmwebmail.chezphil.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286722097803@dmwebmail.dmwebmail.chezphil.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Mon, 11 Oct 2010 11:38:38 +0200
-
-> Le lundi 11 octobre 2010 à 11:26 +0200, Jiri Slaby a écrit :
->> Stanse found that pch_gbe_xmit_frame uses skb after it is freed. Fix
->> that.
->> 
->> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
->> Cc: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
->> ---
->>  drivers/net/pch_gbe/pch_gbe_main.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
+On Sun, Oct 10, 2010 at 03:48:17PM +0100, Phil Endecott wrote:
+> Dear Experts,
 > 
-> Applicable to net-next-2.6 only, this driver is not yet in Linus tree
+> I am seeing the error "RPC: multiple fragments per record not
+> supported" on my NFS server when an NFS client with an atl1c network
+> driver talks to it.
 > 
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+> The server is a QNAP TS119 ARM box running Debian's 2.6.33.2 kernel.
+> It works reliably with other clients.
+> 
+> The client is a new x86 system with an "Atheros Communications
+> AR8131 Gigabit Ethernet (rev c0)" (1969:1063).  The kernel is
+> Debian's 2.6.32-5-686 and the driver seems to be atl1c.
 
-I'll apply this to net-next-2.6, thanks.
+To my knowledge the Linux client has never sent packets that would
+trigger the prink above, so off hand it does sound like some sort of
+corruption at the network level.
+
+(Independently of that: we should fix the server to support multiple
+fragments per record at some point.  But if you hadn't hit that printk,
+I'm guessing you would have had a failure soon enough anyway.)
+
+> Typically NFS works for a few seconds and then stops, with that
+> message repeated on the server.  Other network activity seems
+> reliable (e.g. HTTP, ssh, etc.)
+> 
+> If I use a USB-ethernet adaptor instead of the built-in gigabit it
+> works reliably.  (The USB device is not gigabit, but I do still see
+> the problems if I limit the port to 100 Mbit on the switch.)
+> 
+> I see the problem with NFS v3 and v4.  However, I only see it with
+> proto=tcp.  By changing the NFS protocol to UDP, the problem seems
+> to go away [well, it has been working for about 20 minutes now
+> without any issues].
+> 
+> Google finds a previous report here:
+> http://lkml.org/lkml/2010/1/20/198 ; the suggestion is to turn off
+> tcp segmentation offload, but it seems that this is not possible
+> with my system:
+> 
+> # ethtool -K eth0 tso off
+> Cannot set device tcp segmentation offload settings: Operation not supported
+> 
+> I have looked at the changes to atl1c since 2.6.32 (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=history;f=drivers/net/atl1c;h=53cd10d07d040b7bec957acb1c69bc7b44897e69;hb=HEAD)
+> and they seem harmless.
+> 
+> I wiresharked the network activity while this error was being shown,
+> and it did include some packets with the high-contrast colour
+> schemes that wireshark uses for "bad" packets.  Unfortunately my
+> laptop ran out of battery before I could decipher these packets
+> further.
+> 
+> So, is this a known issue?  Do people agree that the atl1c driver is
+> most likely the culprit?  Can I offer any further debugging?
+
+I haven't seen that before.  Adding netdev to the cc:, as you seem to
+have reasonable evidence that the problem is the network driver.
+
+--b.
