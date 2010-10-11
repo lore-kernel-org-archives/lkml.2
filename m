@@ -1,74 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755425Ab0JKQYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 12:24:20 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41749 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755408Ab0JKQYS convert rfc822-to-8bit (ORCPT
+	id S1755418Ab0JKQ0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 12:26:34 -0400
+Received: from smtprelay-h21.telenor.se ([195.54.99.196]:37526 "EHLO
+	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755029Ab0JKQ0d convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 12:24:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=bFz0qahr/SFcm4h8VOvrMtf1jZvSCcJDlJIoR/LMEW+wrSQF8Ou9raU+wBTzzQzWVJ
-         UAYfGyn61cHDx/q6N8cd/IJr1cG7PxG1AidF3uYZ8uT4wen9b5i56h3Ez1MvSHF2sXVN
-         UuaDvaYRqwVhT37WN6ffk4pJ4L6Cl9fCSxoq0=
-MIME-Version: 1.0
-In-Reply-To: <1286811979.9645.5.camel@ayu>
-References: <AANLkTin8mAaHz_PypS9j4vQ35WozgD==U493e3OW_sy2@mail.gmail.com>
-	<1286811979.9645.5.camel@ayu>
-Date: Mon, 11 Oct 2010 11:24:16 -0500
-Message-ID: <AANLkTinYz59U1hZd=C=zaTkJOvU93Vnb31bS1GkAHByA@mail.gmail.com>
-Subject: Re: Horrible btrfs performance on cold cache
-From: Chester <somethingsome2000@gmail.com>
-To: Calvin Walton <calvin.walton@gmail.com>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-btrfs@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 11 Oct 2010 12:26:33 -0400
+X-SENDER-IP: [85.229.127.233]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AqorAA7QskxV5X/pPGdsb2JhbACEG490AQGNewwBAQEBEw0IBwbCT4VIBIV7g35I
+X-IronPort-AV: E=Sophos;i="4.57,314,1283724000"; 
+   d="scan'208";a="139957497"
+Message-Id: <VxI2NFXF2qs6W5kxd8cSOwu7SJHShS5RXJXUsGv4JmUB@dabber.tv>
+Mime-Version: 1.0
+From: "The Dabber Player" <dd@dabber.tv>
+To: "" <linux-kernel@vger.kernel.org>
+Subject: Today we launch The Dabber video player for free
+Date: Mon, 11 Oct 2010 17:56:12 +0200
+X-Bounce-Tracking-Info: <CQkJbGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZwlUb2RheSB3ZSBsYXVuY2ggVGhlIERhYmJlciB2aWRlbyBwbGF5ZXIgZm9yIGZyZWUJNjkJCTExNzg4Mglib3VuY2UJbm8Jbm8=>
+Content-type: text/plain; charset=iso-8859-1; format=flowed
+Content-transfer-encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think I read/heard somewhere that snapshots can cause pretty bad
-fragmentation, because it causes your system to write changes to files
-to random locations on the disk, leaving the original inodes intact..
-For that reason, I have replaced the directories ~/.config/chromium ,
-/var , /usr/portage with subvolumes, so they will not be included in
-snapshots.
+Ladies and gentlemen, mina damer och her
 
-It seems like chromium opens much quicker now, but it's still a long
-way from what it was on ext4
+We are proud to launch a free version of our popular Dabber player at
+http://www.dabber-player.com
 
-On Mon, Oct 11, 2010 at 10:46 AM, Calvin Walton <calvin.walton@gmail.com> wrote:
->
-> On Mon, 2010-10-11 at 03:30 +0300, Felipe Contreras wrote:
-> > Hi,
-> >
-> > I use btrfs on most of my volumes on my laptop, and I've always felt
-> > booting was very slow, but definitely sure is slow, is starting up
-> > Google Chrome:
-> >
-> > encrypted ext4: ~20s
-> > btrfs: ~2:11s
-> >
-> > I have tried different things to find out exactly what is the issue,
-> > but haven't quite found it yet.
->
-> If you've been using this volume for a while, it could just have become
-> badly fragmented. You could try btrfs's fancy online defragmentation
-> abilities to see if that'll give you an improvement:
->
-> # btrfs filesystem defragment /mountpoint/of/volume
->
-> Let us know if that helps, of course :)
->
-> --
-> Calvin Walton <calvin.walton@gmail.com>
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-btrfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The Dabber player is one of the most beautiful 3D-interface
+videoplayers for embedding on any webpage. Now you can host your own
+online tv-channel, display your best content and best of all you can change the
+look and feel and adapt the player to your webpage. No more black, boring,
+standard embedded and sad videoplayers. Let´s make Internet more
+beautiful!
+
+You can use our entire range of improved, evolved and very beautiful Dabber video players
+for only $75 and Free for non commercial use.
+And for only $95 per month you can have encoding, storage, trafik, contentmanagement and all players!
+Practically anythin to start your own online channel.
+
+Order yours today and use them, love them, and improve all websites out
+there. You can find them at http://www.dabber-player.com
+
+A huge thanks goes to all you brave ones who have ordered and
+implemented our early Dabber players so far. Your orders, thoughts, feedback
+and love have taken us to this day. You know who you are!
+
+New players and plugins are in the pipeline, both for YouTube, Vimeo,
+JW, Flow, Html5 and other. We can already provide a CMS as a Wordpress plugin
+
+We look forward to your order and feedback!
+For future newsletters and info please subscribe at http://www.dabber.tv/#news
+
+Daniel Daboczy
+CEO & co-founder
+
+
+
+
+DABBER
+website: http://www.dabber-player.com
+mobile: +46 (0)736 26 99 85
+e-mail:
+daniel@dabber.tv
+SKYPE: mrdaboczy
+adress: Frejgatan 8, SE-114 20
+Stockholm, Sweden
+
+Nominated for "Best Streaming Innovation of 2009" at the prestigious
+Streaming Media awards in London.
+
+
+
+This message was sent to linux-kernel@vger.kernel.org from Dabber Stockholm.
+To stop receiveing info or newsletters from us please reply with the word unsub.
+
+
