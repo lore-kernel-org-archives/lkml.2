@@ -1,61 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755596Ab0JKQ7k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 12:59:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:64049 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755486Ab0JKQ7h (ORCPT
+	id S1755590Ab0JKRFa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 13:05:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:22384 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755541Ab0JKRF3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 12:59:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=ZU+fZB6hUnrUQHM3XM0oIpEXuASjzQfF/YBaxIqJRbyxI1mKcps7mfDdxmOEjt8Ug3
-         +0rwKUXzlZSr5XFrQQBC7oRl2K4yN56qkcNlGdqce0HYuFSzSL+pS9lA0ERW2FwEcAu6
-         yfLna1XtxfO8i7TNfMD9lfUxKD+hxi0ky/a9M=
-Message-ID: <4CB34063.70803@gmail.com>
-Date: Mon, 11 Oct 2010 18:50:43 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Mon, 11 Oct 2010 13:05:29 -0400
+Message-ID: <4CB343BD.9030605@oracle.com>
+Date: Mon, 11 Oct 2010 10:05:01 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: Kieran Bingham <kieranbingham@gmail.com>
-CC: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>
-Subject: Re: [PATCH 11/16] pramfs: ACL management
-References: <4CB1EAD8.2030206@gmail.com> <4CB30266.1010706@gmail.com>
-In-Reply-To: <4CB30266.1010706@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+To: Fenghua Yu <fenghua.yu@intel.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for October 1 (hwmon/pkgtemp)
+References: <20101001153756.47b52566.sfr@canb.auug.org.au> <20101001154314.9db0062c.randy.dunlap@oracle.com> <20101004184445.GA31377@linux-os.sc.intel.com>
+In-Reply-To: <20101004184445.GA31377@linux-os.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 11/10/2010 14:26, Kieran Bingham ha scritto:
->  On 10/10/2010 17:33, Marco Stornelli wrote:
->> From: Marco Stornelli<marco.stornelli@gmail.com>
+On 10/04/10 11:44, Fenghua Yu wrote:
+> On Fri, Oct 01, 2010 at 03:43:14PM -0700, Randy Dunlap wrote:
+>> On Fri, 1 Oct 2010 15:37:56 +1000 Stephen Rothwell wrote:
 >>
->> ACL operations.
+>>> Hi all,
+>>>
+>>> Changes since 20100930:
 >>
->> Signed-off-by: Marco Stornelli<marco.stornelli@gmail.com>
->> ---
->> diff -Nurp linux-2.6.36-orig/fs/pramfs/acl.c linux-2.6.36/fs/pramfs/acl.c
->> --- linux-2.6.36-orig/fs/pramfs/acl.c    1970-01-01 01:00:00.000000000
->> +0100
->> +++ linux-2.6.36/fs/pramfs/acl.c    2010-09-14 18:49:52.000000000 +0200
->> @@ -0,0 +1,418 @@
->> +/*
->> + * FILE NAME fs/pramfs/acl.h
-> Found another one :)
-> FILE NAME != acl.h ...
-> -- 
-> KB
+>>
+>> drivers/hwmon/pkgtemp.c:356: error: implicit declaration of function 'cpu_core_mask'
+>>
+>> CONFIG_SMP is not set.
+>>
+>> config is attached.
+>>
 > 
+> From: Fenghua Yu <fenghua.yu@intel.com>
+> Date: Mon, 4 Oct 2010 11:00:36 -0700
+> Subject: [PATCH] hwmon (pkgtemp): Fix build failure for UP
+> 
+> This fix is only a workaround. Another fix is to add #ifdef CONFIG_SMP around
+> cpu_core_mask. But the code will not be cleaner than this fix.  This fix is
+> similar to coretemp in commit fff2017354a3a9906862aabbf2a1cae5b4330e40.
+> 
+> For a real fix, cpu_core_mask() should be defined in UP include code, eg in
+> linux/smp.h, and asm/smp.h should not be included directly. This fix is
+> currently not possible because asm/smp.h define cpu_core_mask() unconditionally
+> and is included directly from many source files.
+> 
+> In the long run, both cpu_sibling_mask and cpu_core_mask will be defined in UP
+> and this workaround and the workaround in coretemp can be removed.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Guenter Roeck <guenter.roeck@ericsson.com>
 
-Oops, damn copy&paste ;) I'll fix it asap.
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
 Thanks.
 
-Marco
+> ---
+>  drivers/hwmon/pkgtemp.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/hwmon/pkgtemp.c b/drivers/hwmon/pkgtemp.c
+> index c9f652d..36d96c7 100644
+> --- a/drivers/hwmon/pkgtemp.c
+> +++ b/drivers/hwmon/pkgtemp.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/list.h>
+>  #include <linux/platform_device.h>
+>  #include <linux/cpu.h>
+> +#include <asm/smp.h>
+>  #include <asm/msr.h>
+>  #include <asm/processor.h>
+>  
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
