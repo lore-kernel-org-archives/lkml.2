@@ -1,76 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753100Ab0JKDLr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 23:11:47 -0400
-Received: from smtp-out-100.synserver.de ([212.40.180.100]:1031 "HELO
-	smtp-out-100.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753013Ab0JKDLq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 23:11:46 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 6836
-Date: Mon, 11 Oct 2010 05:11:39 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: airlied@linux.ie, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: REGRESSION 2.6.36: radeon KMS console switch broken
-Message-ID: <20101011031139.GA1546@arch.trippelsdorf.de>
-References: <20101010123000.GD8256@basil.fritz.box>
- <20101010134429.GA1581@arch.trippelsdorf.de>
- <20101010140908.GA26728@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101010140908.GA26728@basil.fritz.box>
+	id S1753136Ab0JKDSq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 23:18:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57502 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752787Ab0JKDSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 10 Oct 2010 23:18:45 -0400
+Date: Mon, 11 Oct 2010 14:18:38 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Lukas Czerner <lczerner@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Christoph Hellwig <hch@lst.de>
+Subject: linux-next: build failure after merge of the block tree
+Message-Id: <20101011141838.fc59ee7c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 04:09:08PM +0200, Andi Kleen wrote:
-> On Sun, Oct 10, 2010 at 03:44:29PM +0200, Markus Trippelsdorf wrote:
-> > On Sun, Oct 10, 2010 at 02:30:00PM +0200, Andi Kleen wrote:
-> > > 
-> > > Hi,
-> > > 
-> > > I see a radeon regression here with 2.6.36-rc7.
-> > > 
-> > > I updated a system from 2.6.35 to 2.6.36-rc7. Now I cannot 
-> > > switch to the text console from the X server anymore; the screen just 
-> > > keeps displaying the X desktop. Eventually when I switch back
-> > > to X things work again. 
-> > > 
-> > > The console switching worked in 2.6.35 
-> > > (I had occasional GPU hangs in .35, but console switch always worked)
-> > > I didn't change the Xserver userland.
-> > > 
-> > > The system has a ATI Technologies Inc RV710/730 running Dual Head.
-> > 
-> > You're using the radeonhd driver, which is not supported and outdated.
-> > Try to remove  /usr/lib64/xorg/modules/drivers/radeonhd_drv.so and start
-> > X again...
-> 
-> No you misread the Xorg.0.log: 
-> 
-> [    50.161] (II) Module radeonhd: vendor="AMD GPG"
-> ...
-> [    51.636] (EE) FATAL: RadeonHD presently does not work with kernel modesetting (KMS).
-> ...
-> [    50.167] (II) LoadModule: "radeon"
-> ....
-> [    52.214] (II) UnloadModule: "radeonhd"
-> ...
-> 
-> It's using radeon.
-> 
-> Besides if radeonhd stopped working that would be a regression too, but that's
-> not what we have here.
+Hi Jens,
 
-Another thing you may try is: modprobe fbcon
-Also please post your (framebuffer related) kernel config.
+After merging the block tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+In file included from init/do_mounts.h:2,
+                 from init/do_mounts_md.c:5:
+include/linux/blkdev.h: In function 'sb_issue_zeroout':
+include/linux/blkdev.h:900: error: too many arguments to function 'blkdev_issue_zeroout'
+
+Caused by commit dd3932eddf428571762596e17b65f5dc92ca361b ("block: remove
+BLKDEV_IFL_WAIT") interacting with commit
+3be0ead7b05f0caaeb2f56b9902985b8120ef0cf ("Add helper function for
+blkdev_issue_zeroout (sb_issue_discard)") from the ext4 tree.
+
+I applied the following merge fixup patch which I can carry as necessary
+(unless there is a better solution).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 11 Oct 2010 13:50:22 +1100
+Subject: [PATCH] ext4: merge fix for blkdev_issue_zeroout API change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ fs/ext4/extents.c      |    3 +--
+ fs/ext4/ialloc.c       |    5 +----
+ fs/ext4/resize.c       |    5 ++---
+ include/linux/blkdev.h |    4 ++--
+ 4 files changed, 6 insertions(+), 11 deletions(-)
+
+diff --git a/fs/ext4/extents.c b/fs/ext4/extents.c
+index a0e6230..a130f02 100644
+--- a/fs/ext4/extents.c
++++ b/fs/ext4/extents.c
+@@ -2545,8 +2545,7 @@ static int ext4_ext_zeroout(struct inode *inode, struct ext4_extent *ex)
+ 	ee_len    = ext4_ext_get_actual_len(ex);
+ 	ee_pblock = ext_pblock(ex);
+ 
+-	ret = sb_issue_zeroout(inode->i_sb, ee_pblock, ee_len,
+-			       GFP_NOFS, BLKDEV_IFL_WAIT);
++	ret = sb_issue_zeroout(inode->i_sb, ee_pblock, ee_len, GFP_NOFS);
+ 	if (ret > 0)
+ 		ret = 0;
+ 
+diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
+index 87d228a..f7e25aa 100644
+--- a/fs/ext4/ialloc.c
++++ b/fs/ext4/ialloc.c
+@@ -1238,7 +1238,6 @@ extern int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
+ 	handle_t *handle;
+ 	ext4_fsblk_t blk;
+ 	int num, ret = 0, used_blks = 0;
+-	unsigned long flags = BLKDEV_IFL_WAIT;
+ 
+ 	/* This should not happen, but just to be sure check this */
+ 	if (sb->s_flags & MS_RDONLY) {
+@@ -1303,9 +1302,7 @@ extern int ext4_init_inode_table(struct super_block *sb, ext4_group_t group,
+ 
+ 	ext4_debug("going to zero out inode table in group %d\n",
+ 		   group);
+-	if (barrier)
+-		flags |= BLKDEV_IFL_BARRIER;
+-	ret = sb_issue_zeroout(sb, blk, num, GFP_NOFS, flags);
++	ret = sb_issue_zeroout(sb, blk, num, GFP_NOFS);
+ 	if (ret < 0)
+ 		goto err_out;
+ 
+diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
+index 2f5e347..998a462 100644
+--- a/fs/ext4/resize.c
++++ b/fs/ext4/resize.c
+@@ -229,7 +229,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 	ext4_debug("clear inode table blocks %#04llx -> %#04llx\n",
+ 			block, sbi->s_itb_per_group);
+ 	err = sb_issue_zeroout(sb, gdblocks + start + 1, reserved_gdb,
+-			       GFP_NOFS, BLKDEV_IFL_WAIT);
++			       GFP_NOFS);
+ 	if (err)
+ 		goto exit_bh;
+ 
+@@ -244,8 +244,7 @@ static int setup_new_group_blocks(struct super_block *sb,
+ 	block = input->inode_table;
+ 	ext4_debug("clear inode table blocks %#04llx -> %#04llx\n",
+ 			block, sbi->s_itb_per_group);
+-	err = sb_issue_zeroout(sb, block, sbi->s_itb_per_group,
+-			       GFP_NOFS, BLKDEV_IFL_WAIT);
++	err = sb_issue_zeroout(sb, block, sbi->s_itb_per_group, GFP_NOFS);
+ 	if (err)
+ 		goto exit_bh;
+ 
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index a1dec60..1095272 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -892,12 +892,12 @@ static inline int sb_issue_discard(struct super_block *sb, sector_t block,
+ 				    gfp_mask, flags);
+ }
+ static inline int sb_issue_zeroout(struct super_block *sb, sector_t block,
+-		sector_t nr_blocks, gfp_t gfp_mask, unsigned long flags)
++		sector_t nr_blocks, gfp_t gfp_mask)
+ {
+ 	return blkdev_issue_zeroout(sb->s_bdev,
+ 				    block << (sb->s_blocksize_bits - 9),
+ 				    nr_blocks << (sb->s_blocksize_bits - 9),
+-				    gfp_mask, flags);
++				    gfp_mask);
+ }
+ 
+ extern int blk_verify_command(unsigned char *cmd, fmode_t has_write_perm);
+-- 
+1.7.1
 
 -- 
-»A man who doesn't know he is in prison can never escape.«
-William S. Burroughs
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
