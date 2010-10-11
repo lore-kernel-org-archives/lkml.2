@@ -1,111 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754023Ab0JKJ1W (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 05:27:22 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:54182 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1753483Ab0JKJ1H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 05:27:07 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: davem@davemloft.net
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>,
-        linux-wimax@intel.com
-Subject: [PATCH 3/3] NET: wimax, fix use after free
-Date: Mon, 11 Oct 2010 11:26:58 +0200
-Message-Id: <1286789218-13976-3-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1286789218-13976-1-git-send-email-jslaby@suse.cz>
-References: <1286789218-13976-1-git-send-email-jslaby@suse.cz>
+	id S1754091Ab0JKJ1Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 05:27:25 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:10928 "EHLO fanny.its.uu.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753483Ab0JKJ1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 05:27:23 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19634.55413.877788.492484@pilspetsen.it.uu.se>
+Date: Mon, 11 Oct 2010 11:27:17 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, linux-m68k@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
+ kernels
+In-Reply-To: <20101011024103.GH19804@ZenIV.linux.org.uk>
+References: <20101007174948.GT19804@ZenIV.linux.org.uk>
+	<AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
+	<20101010144952.GF19804@ZenIV.linux.org.uk>
+	<AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
+	<20101010235256.GG19804@ZenIV.linux.org.uk>
+	<20101011024103.GH19804@ZenIV.linux.org.uk>
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stanse found that i2400m_rx frees skb, but still uses skb->len even
-though it has skb_len defined. So use skb_len properly in the code.
+Al Viro writes:
+ > On Mon, Oct 11, 2010 at 12:52:56AM +0100, Al Viro wrote:
+ > > On Sun, Oct 10, 2010 at 10:18:03PM +0200, Geert Uytterhoeven wrote:
+ > > > >> This is on aranym-0.9.9-1 from Ubuntu/amd64.
+ > > > >
+ > > > > stat -L /proc/2/exec, otherwise you'll hit lstat() instead of stat().
+ > > > > And FWIW 0.9.10-1 squeeze/amd64 also triggers here...
+ > > > 
+ > > > Still, just "stat: cannot stat `proc/2/exe': No such file or directory" here...
+ > > 
+ > > Interesting...  Which gcc version is used?
+ > 
+ > Argh...  OK, going through aranym with debugger has exhonorated it.  My
+ > apologies ;-/  It *is* gcc in sid.  Testcase:
+ > 
+ > extern int foo(int);
+ > void *bar(int n)
+ > {
+ >         return (void *)foo(n);
+ > }
+ > 
+ > and gcc -S -O2 turns that into
+ > bar:
+ >         link.w %fp,#0
+ >         unlk %fp
+ >         jra foo
+ > 
+ > Spot the obvious bug...  BTW, why on the Earth does debian-ports m68k tree
+ > use gcc-4.3 with Cthulhu-scaring 700Kb gzipped patch and does *not* have
+ > gcc-4.4?
 
-And also define it unsinged int rather than size_t to solve
-compilation warnings.
+I can confirm that the bug exists in gcc-4.3.4 and gcc-4.4.5,
+but it has been fixed in gcc-4.5.1 which generates:
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Inaky Perez-Gonzalez <inaky.perez-gonzalez@intel.com>
-Cc: linux-wimax@intel.com
----
- drivers/net/wimax/i2400m/rx.c |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
+bar:
+        link.w %fp,#0
+        move.l 8(%fp),-(%sp)
+        jsr foo
+        move.l %d0,%a0
+        unlk %fp
+        rts
 
-diff --git a/drivers/net/wimax/i2400m/rx.c b/drivers/net/wimax/i2400m/rx.c
-index c4876d0..844133b 100644
---- a/drivers/net/wimax/i2400m/rx.c
-+++ b/drivers/net/wimax/i2400m/rx.c
-@@ -1244,16 +1244,16 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
- 	int i, result;
- 	struct device *dev = i2400m_dev(i2400m);
- 	const struct i2400m_msg_hdr *msg_hdr;
--	size_t pl_itr, pl_size, skb_len;
-+	size_t pl_itr, pl_size;
- 	unsigned long flags;
--	unsigned num_pls, single_last;
-+	unsigned num_pls, single_last, skb_len;
- 
- 	skb_len = skb->len;
--	d_fnstart(4, dev, "(i2400m %p skb %p [size %zu])\n",
-+	d_fnstart(4, dev, "(i2400m %p skb %p [size %u])\n",
- 		  i2400m, skb, skb_len);
- 	result = -EIO;
- 	msg_hdr = (void *) skb->data;
--	result = i2400m_rx_msg_hdr_check(i2400m, msg_hdr, skb->len);
-+	result = i2400m_rx_msg_hdr_check(i2400m, msg_hdr, skb_len);
- 	if (result < 0)
- 		goto error_msg_hdr_check;
- 	result = -EIO;
-@@ -1261,10 +1261,10 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
- 	pl_itr = sizeof(*msg_hdr) +	/* Check payload descriptor(s) */
- 		num_pls * sizeof(msg_hdr->pld[0]);
- 	pl_itr = ALIGN(pl_itr, I2400M_PL_ALIGN);
--	if (pl_itr > skb->len) {	/* got all the payload descriptors? */
-+	if (pl_itr > skb_len) {	/* got all the payload descriptors? */
- 		dev_err(dev, "RX: HW BUG? message too short (%u bytes) for "
- 			"%u payload descriptors (%zu each, total %zu)\n",
--			skb->len, num_pls, sizeof(msg_hdr->pld[0]), pl_itr);
-+			skb_len, num_pls, sizeof(msg_hdr->pld[0]), pl_itr);
- 		goto error_pl_descr_short;
- 	}
- 	/* Walk each payload payload--check we really got it */
-@@ -1272,7 +1272,7 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
- 		/* work around old gcc warnings */
- 		pl_size = i2400m_pld_size(&msg_hdr->pld[i]);
- 		result = i2400m_rx_pl_descr_check(i2400m, &msg_hdr->pld[i],
--						  pl_itr, skb->len);
-+						  pl_itr, skb_len);
- 		if (result < 0)
- 			goto error_pl_descr_check;
- 		single_last = num_pls == 1 || i == num_pls - 1;
-@@ -1290,16 +1290,16 @@ int i2400m_rx(struct i2400m *i2400m, struct sk_buff *skb)
- 	if (i < i2400m->rx_pl_min)
- 		i2400m->rx_pl_min = i;
- 	i2400m->rx_num++;
--	i2400m->rx_size_acc += skb->len;
--	if (skb->len < i2400m->rx_size_min)
--		i2400m->rx_size_min = skb->len;
--	if (skb->len > i2400m->rx_size_max)
--		i2400m->rx_size_max = skb->len;
-+	i2400m->rx_size_acc += skb_len;
-+	if (skb_len < i2400m->rx_size_min)
-+		i2400m->rx_size_min = skb_len;
-+	if (skb_len > i2400m->rx_size_max)
-+		i2400m->rx_size_max = skb_len;
- 	spin_unlock_irqrestore(&i2400m->rx_lock, flags);
- error_pl_descr_check:
- error_pl_descr_short:
- error_msg_hdr_check:
--	d_fnend(4, dev, "(i2400m %p skb %p [size %zu]) = %d\n",
-+	d_fnend(4, dev, "(i2400m %p skb %p [size %u]) = %d\n",
- 		i2400m, skb, skb_len, result);
- 	return result;
- }
--- 
-1.7.3.1
-
-
+I don't yet know the gcc PR number or svn commit # for the fix
+(in case people want a backport).
