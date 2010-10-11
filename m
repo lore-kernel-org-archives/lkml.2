@@ -1,87 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756092Ab0JKUKO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 16:10:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17400 "EHLO mx1.redhat.com"
+	id S1756139Ab0JKULc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 16:11:32 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:34796 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755940Ab0JKUKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 16:10:12 -0400
-Date: Mon, 11 Oct 2010 16:10:07 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: selinux@gmail.com
-Subject: 2.6.36-rc7: inconsistent lock state: inconsistent {IN-RECLAIM_FS-R}
- -> {RECLAIM_FS-ON-W} usage.
-Message-ID: <20101011201007.GA29707@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, selinux@gmail.com
+	id S1755940Ab0JKULb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 16:11:31 -0400
+From: "Tim Pepper" <lnxninja@linux.vnet.ibm.com>
+Date: Mon, 11 Oct 2010 13:11:21 -0700
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Marcio Saito <marcio@cyclades.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Avantika Mathur <mathur@linux.vnet.ibm.com>
+Subject: [RFC] [PATCH] allow low HZ values?
+Message-ID: <20101011201121.GA953@tpepper-t61p.dolavim.us>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We got this report from a Fedora user (cc'd) today..
+I'm not necessarily wanting to open up the age old question of "what is
+a good HZ", but we were doing some testing on timer tick overheads for
+HPC applications and this came up...
 
-	Dave
+Below is a minimal hack at enabling lower HZ values.  The kernel builds
+and boots for me on x86_64 (simple laptop and kvm configs) and ppc64
+(misc. IBM System p) with each of the added HZ options.
 
- > Noticed this when I tried to 'unmount/safely remove' a LUKS encrypted USB hard drive
- > 
- > =================================
- > [ 4960.442217] [ INFO: inconsistent lock state ]
- > [ 4960.442238] 2.6.36-0.35.rc7.git0.fc15.x86_64 #1
- > [ 4960.442258] ---------------------------------
- > [ 4960.442278] inconsistent {IN-RECLAIM_FS-R} -> {RECLAIM_FS-ON-W} usage.
- > [ 4960.442323] umount/8522 [HC0[0]:SC0[0]:HE1:SE1] takes:
- > [ 4960.442350]  (iprune_sem){+++++-}, at: [<ffffffff8113ee55>] invalidate_inodes+0x3e/0x12c
- > [ 4960.442402] {IN-RECLAIM_FS-R} state was registered at:
- > [ 4960.442427]   [<ffffffff8107f089>] __lock_acquire+0x3f2/0xd79
- > [ 4960.442464]   [<ffffffff8107feeb>] lock_acquire+0xd2/0xfd
- > [ 4960.442499]   [<ffffffff8149cfce>] down_read+0x51/0x84
- > [ 4960.442533]   [<ffffffff8113f197>] shrink_icache_memory+0x4e/0x1ee
- > [ 4960.442571]   [<ffffffff810ef69d>] shrink_slab+0xe0/0x166
- > [ 4960.442606]   [<ffffffff810f1b5b>] balance_pgdat+0x257/0x3fe
- > [ 4960.442641]   [<ffffffff810f1f38>] kswapd+0x236/0x24c
- > [ 4960.442671]   [<ffffffff8106c61c>] kthread+0x9d/0xa5
- > [ 4960.442699]   [<ffffffff8100ab64>] kernel_thread_helper+0x4/0x10
- > [ 4960.442733] irq event stamp: 5383
- > [ 4960.442747] hardirqs last  enabled at (5383): [<ffffffff8149e5d8>] _raw_spin_unlock_irq+0x30/0x3a
- > [ 4960.442801] hardirqs last disabled at (5382): [<ffffffff8149ddaa>] _raw_spin_lock_irq+0x21/0x75
- > [ 4960.442855] softirqs last  enabled at (5358): [<ffffffff81148edd>] bdi_queue_work+0xc1/0xca
- > [ 4960.442907] softirqs last disabled at (5354): [<ffffffff8149df8d>] _raw_spin_lock_bh+0x1c/0x6e
- > [ 4960.442959] 
- > [ 4960.442959] other info that might help us debug this:
- > [ 4960.442991] 3 locks held by umount/8522:
- > [ 4960.443011]  #0:  (&type->s_umount_key#34){+++++.}, at: [<ffffffff8112dae5>] deactivate_super+0x32/0x3e
- > [ 4960.443063]  #1:  (iprune_sem){+++++-}, at: [<ffffffff8113ee55>] invalidate_inodes+0x3e/0x12c
- > [ 4960.443063]  #2:  (&fsnotify_mark_srcu){.+.+.+}, at: [<ffffffff8115896d>] fsnotify+0x7e/0x3d7
- > [ 4960.443063] 
- > [ 4960.443063] stack backtrace:
- > [ 4960.443063] Pid: 8522, comm: umount Not tainted 2.6.36-0.35.rc7.git0.fc15.x86_64 #1
- > [ 4960.443063] Call Trace:
- > [ 4960.443063]  [<ffffffff8107eaad>] valid_state+0x17c/0x18e
- > [ 4960.443063]  [<ffffffff8107e3f9>] ? check_usage_backwards+0x0/0x81
- > [ 4960.443063]  [<ffffffff8107ebdc>] mark_lock+0x11d/0x1d8
- > [ 4960.443063]  [<ffffffff810801dc>] mark_held_locks+0x50/0x72
- > [ 4960.443063]  [<ffffffff8108079e>] lockdep_trace_alloc+0xa2/0xc5
- > [ 4960.443063]  [<ffffffff8111cbe7>] kmem_cache_alloc+0x36/0x159
- > [ 4960.443063]  [<ffffffff8115968f>] ? fsnotify_create_event+0x3f/0x1bc
- > [ 4960.444138]  [<ffffffff8115968f>] fsnotify_create_event+0x3f/0x1bc
- > [ 4960.444138]  [<ffffffff81158817>] send_to_group+0x159/0x1fc
- > [ 4960.444138]  [<ffffffff8107ff07>] ? lock_acquire+0xee/0xfd
- > [ 4960.444138]  [<ffffffff8115896d>] ? fsnotify+0x7e/0x3d7
- > [ 4960.444138]  [<ffffffff81158b68>] fsnotify+0x279/0x3d7
- > [ 4960.449291]  [<ffffffff81159e81>] fsnotify_unmount_inodes+0xbb/0xfe
- > [ 4960.449291]  [<ffffffff8113ee69>] invalidate_inodes+0x52/0x12c
- > [ 4960.449291]  [<ffffffff81154992>] ? __sync_blockdev+0x32/0x34
- > [ 4960.449291]  [<ffffffff8112cc66>] generic_shutdown_super+0x4c/0xe1
- > [ 4960.449291]  [<ffffffff8112cd22>] kill_block_super+0x27/0x3f
- > [ 4960.449291]  [<ffffffff8112cf9d>] deactivate_locked_super+0x26/0x46
- > [ 4960.449291]  [<ffffffff8112daed>] deactivate_super+0x3a/0x3e
- > [ 4960.449291]  [<ffffffff81142724>] mntput_no_expire+0xa7/0xd3
- > [ 4960.449291]  [<ffffffff81143265>] sys_umount+0x2cf/0x301
- > [ 4960.449291]  [<ffffffff81080309>] ? trace_hardirqs_on_caller+0x10b/0x12f
- > [ 4960.459556]  [<ffffffff81009cf2>]> system_call_fastpath+0x16/0x1b
+There's explicit code checking HZ down to 12, but HZ<100 wasn't a config
+option.  We collected some data at 10, 12 and 25.  There'd been some
+question of whether 10 would even work or not but it looks fine in the
+relatively minimal testing we did.  We tried 12 since the code seemed
+to allow for it.  And 25 as a "safe" lower value.  The only difference
+observed under load (ie: no no idle HZ in play) was the expected timer
+tick happening less often.  There was definitely surprise that nothing
+else seemed to break anywhere, especially at 10.
+
+Do people feel it is reasonable to have Kconfig bits to allow some lower
+HZ values?
+
+If so, then there's the question of what breaks.  It's reasonable to
+think there are other going to be subtleties buried in code around
+assumptions on the likely range of HZ:
+
+- I'm not sure that what I did in inet_timewait_sock.h and jiffies.h is
+  reasonable.
+- arch/x86/kernel/i8253.c throws a warning at line 43 (v2.6.36-rc7):
+      warning: large integer implicitly truncated to unsigned type
+- drivers/char/cyclades.c's cy_ioctl() warns:
+      drivers/char/cyclades.c:2761: warning: division by zero
+- drivers, drivers, drivers across all the arch's could use sanity checking
+
+-- 
+Tim Pepper  <lnxninja@linux.vnet.ibm.com>
+IBM Linux Technology Center
+
+
+
+Not-Signed-off-by: Tim Pepper <lnxninja@us.ibm.com>
+
+diff --git a/include/linux/jiffies.h b/include/linux/jiffies.h
+index 6811f4b..8c225b2 100644
+--- a/include/linux/jiffies.h
++++ b/include/linux/jiffies.h
+@@ -15,7 +15,9 @@
+  * OSF/1 kernel. The SHIFT_HZ define expresses the same value as the
+  * nearest power of two in order to avoid hardware multiply operations.
+  */
+-#if HZ >= 12 && HZ < 24
++#if HZ < 12
++# define SHIFT_HZ	3
++#elif HZ >= 12 && HZ < 24
+ # define SHIFT_HZ	4
+ #elif HZ >= 24 && HZ < 48
+ # define SHIFT_HZ	5
+diff --git a/include/net/inet_timewait_sock.h b/include/net/inet_timewait_sock.h
+index a066fdd..1aba305 100644
+--- a/include/net/inet_timewait_sock.h
++++ b/include/net/inet_timewait_sock.h
+@@ -39,8 +39,9 @@ struct inet_hashinfo;
+  * If time > 4sec, it is "slow" path, no recycling is required,
+  * so that we select tick to get range about 4 seconds.
+  */
+-#if HZ <= 16 || HZ > 4096
+-# error Unsupported: HZ <= 16 or HZ > 4096
++/* HACK HACK */
++#if HZ > 4096
++# error Unsupported: HZ > 4096
+ #elif HZ <= 32
+ # define INET_TWDR_RECYCLE_TICK (5 + 2 - INET_TWDR_RECYCLE_SLOTS_LOG)
+ #elif HZ <= 64
+diff --git a/kernel/Kconfig.hz b/kernel/Kconfig.hz
+index 94fabd5..37302bf 100644
+--- a/kernel/Kconfig.hz
++++ b/kernel/Kconfig.hz
+@@ -15,6 +15,22 @@ choice
+ 	 environment leading to NR_CPUS * HZ number of timer interrupts
+ 	 per second.
  
++	config HZ_10
++		bool "10 HZ"
++	help
++	  10 Hz is extremely aggressive and may break things.
++
++	config HZ_12
++		bool "12 HZ"
++	help
++	  12 Hz because it's less aggressive than 10?
++
++	config HZ_25
++		bool "25 HZ"
++	help
++	  25 Hz is useful for reducing HPC application jitter caused by
++	  timer interrupts happening during a "fixed time quantum of work
++	  then barrier" style workload.
+ 
+ 	config HZ_100
+ 		bool "100 HZ"
+@@ -49,6 +65,9 @@ endchoice
+ 
+ config HZ
+ 	int
++	default 10 if HZ_10
++	default 12 if HZ_12
++	default 25 if HZ_25
+ 	default 100 if HZ_100
+ 	default 250 if HZ_250
+ 	default 300 if HZ_300
