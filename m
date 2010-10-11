@@ -1,59 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab0JKClI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 10 Oct 2010 22:41:08 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38773 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab0JKClE (ORCPT
+	id S1753006Ab0JKCyG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 10 Oct 2010 22:54:06 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34939 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752872Ab0JKCyD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 10 Oct 2010 22:41:04 -0400
-Date: Mon, 11 Oct 2010 03:41:03 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: aranym bug, manifests as "ida_remove called for id=13" on recent
- kernels
-Message-ID: <20101011024103.GH19804@ZenIV.linux.org.uk>
-References: <20101007174948.GT19804@ZenIV.linux.org.uk>
- <AANLkTin4886D+-yo=zrf2Yj2R5NM9qdRkc3M9cG2rN_F@mail.gmail.com>
- <20101010144952.GF19804@ZenIV.linux.org.uk>
- <AANLkTinuA3AzMoJ82pvCuhmo59DZxL2F1j3xhXUkjj7z@mail.gmail.com>
- <20101010235256.GG19804@ZenIV.linux.org.uk>
+	Sun, 10 Oct 2010 22:54:03 -0400
+Message-ID: <4CB27BDF.5000800@kernel.org>
+Date: Sun, 10 Oct 2010 19:52:15 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101010235256.GG19804@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <h.peter.anvin@intel.com>
+CC: Robin Holt <holt@sgi.com>, Russ Anderson <rja@sgi.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>, tglx@linutronix.de,
+        Jack Steiner <steiner@sgi.com>
+Subject: [PATCH -v3] x86, numa: Fix cross nodes memory configuration
+References: <20101008213429.GB7223@sgi.com> <4CAFA1DB.6010802@kernel.org> <20101009125944.GA18248@sgi.com> <20101009163908.GX14068@sgi.com> <20101010104129.GB30271@elte.hu> <20101010104319.GA9862@elte.hu> <20101010114459.GY14068@sgi.com> <20101010115605.GC14064@sgi.com> <20101010140554.GB20400@elte.hu> <20101010225134.GD14064@sgi.com>
+In-Reply-To: <20101010225134.GD14064@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 12:52:56AM +0100, Al Viro wrote:
-> On Sun, Oct 10, 2010 at 10:18:03PM +0200, Geert Uytterhoeven wrote:
-> > >> This is on aranym-0.9.9-1 from Ubuntu/amd64.
-> > >
-> > > stat -L /proc/2/exec, otherwise you'll hit lstat() instead of stat().
-> > > And FWIW 0.9.10-1 squeeze/amd64 also triggers here...
-> > 
-> > Still, just "stat: cannot stat `proc/2/exe': No such file or directory" here...
-> 
-> Interesting...  Which gcc version is used?
 
-Argh...  OK, going through aranym with debugger has exhonorated it.  My
-apologies ;-/  It *is* gcc in sid.  Testcase:
+Russ reported SGI UV is broken recently. He said:
 
-extern int foo(int);
-void *bar(int n)
-{
-        return (void *)foo(n);
-}
+| The SRAT table shows that memory range is spread over two nodes.
+|
+| SRAT: Node 0 PXM 0 100000000-800000000
+| SRAT: Node 1 PXM 1 800000000-1000000000
+| SRAT: Node 0 PXM 0 1000000000-1080000000
+|
+|Previously, the kernel early_node_map[] would show three entries
+|with the proper node.
+|
+|[    0.000000]     0: 0x00100000 -> 0x00800000
+|[    0.000000]     1: 0x00800000 -> 0x01000000
+|[    0.000000]     0: 0x01000000 -> 0x01080000
+|
+|The problem is recent community kernel early_node_map[] shows
+|only two entries with the node 0 entry overlapping the node 1
+|entry.
+|
+|    0: 0x00100000 -> 0x01080000
+|    1: 0x00800000 -> 0x01000000
 
-and gcc -S -O2 turns that into
-bar:
-        link.w %fp,#0
-        unlk %fp
-        jra foo
+After looking at the changelog, Found out that it has been broken for a while by
+following commit
 
-Spot the obvious bug...  BTW, why on the Earth does debian-ports m68k tree
-use gcc-4.3 with Cthulhu-scaring 700Kb gzipped patch and does *not* have
-gcc-4.4?
+|commit 8716273caef7f55f39fe4fc6c69c5f9f197f41f1
+|Author: David Rientjes <rientjes@google.com>
+|Date:   Fri Sep 25 15:20:04 2009 -0700
+|
+|    x86: Export srat physical topology
+
+Before that commit, register_active_regions() is called for every SRAT memory
+entry right away.
+
+Try to use nodememblk_range[] instead of nodes[].
+
+For stable tree: from 2.6.33 to 2.3.36 need this patch
+
+-v3: update to linus's tree.
+
+Reported-by: Russ Anderson <rja@sgi.com>
+Tested-by: Russ Anderson <rja@sgi.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
+
+---
+ arch/x86/mm/srat_64.c |    8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+Index: linux-2.6/arch/x86/mm/srat_64.c
+===================================================================
+--- linux-2.6.orig/arch/x86/mm/srat_64.c
++++ linux-2.6/arch/x86/mm/srat_64.c
+@@ -420,9 +420,11 @@ int __init acpi_scan_nodes(unsigned long
+ 		return -1;
+ 	}
+ 
+-	for_each_node_mask(i, nodes_parsed)
+-		e820_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
+-						nodes[i].end >> PAGE_SHIFT);
++	for (i = 0; i < num_node_memblks; i++)
++		e820_register_active_regions(memblk_nodeid[i],
++				node_memblk_range[i].start >> PAGE_SHIFT,
++				node_memblk_range[i].end >> PAGE_SHIFT);
++
+ 	/* for out of order entries in SRAT */
+ 	sort_node_map();
+ 	if (!nodes_cover_memory(nodes)) {
