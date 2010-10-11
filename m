@@ -1,75 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754715Ab0JKNlr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 09:41:47 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:54781 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754596Ab0JKNlp convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 09:41:45 -0400
+	id S1754687Ab0JKNn6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 09:43:58 -0400
+Received: from hera.kernel.org ([140.211.167.34]:32876 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754482Ab0JKNn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 09:43:57 -0400
+Message-ID: <4CB3148C.5040902@kernel.org>
+Date: Mon, 11 Oct 2010 15:43:40 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <4CB2C154.5060303@euromail.se>
-References: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>
-	<s5hfwwg4p4t.wl%tiwai@suse.de>
-	<1286558135.22715.162.camel@mini>
-	<201010081104.01527.dmitry.torokhov@gmail.com>
-	<s5h62xc4h2l.wl%tiwai@suse.de>
-	<20101010210434.GC18455@core.coreip.homeip.net>
-	<s5hy6a52ndd.wl%tiwai@suse.de>
-	<4CB2C154.5060303@euromail.se>
-Date: Mon, 11 Oct 2010 08:41:44 -0500
-Message-ID: <AANLkTi=VTq+3-t4taR_22E1Wkos+yeHdMDkHd-Zc9Cbs@mail.gmail.com>
-Subject: Re: [PATCH 0/3] Input: synaptics - multitouch and multifinger support
-From: Chris Bagwell <chris@cnpbagwell.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Takashi Iwai <tiwai@suse.de>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, xorg-devel@lists.x.org,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Duncan McGreggor <duncan.mcgreggor@canonical.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: sbp2: parallelize login/inquiry, reconnect,
+ and shutdown
+References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de> <tkrat.1433473bc081daa9@s5r6.in-berlin.de>
+In-Reply-To: <tkrat.1433473bc081daa9@s5r6.in-berlin.de>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 11 Oct 2010 13:43:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 2:48 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> On 10/11/2010 09:35 AM, Takashi Iwai wrote:
-> [...]
->
->> In anyway, feel free to add my sign-off there since I already posted
->> my own one as a reference.
->>
->> But, I have an open issue with Chase's patch.  Maybe it's rather a
->> question to Henrik:
->>
->> Shouldn't all points be reported as ABS_MT_* events?  So far, only the
->> second touch-point is reported via ABS_MT_* while the first  point is
->> still reported as ABX_[X|Y].
->>
->> I corrected this in my patch I posted, but I wasn't sure, too.
->
->
-> I have issues with all submitted patches, but did not give explicit reasons
-> since there were overlapping submissions. Perhaps Chase and yourself can work
-> out how you want to submit the new patches? And yes, all points should be
-> reported as ABS_MT events.
->
-> Thanks,
-> Henrik
->
+Hello,
 
-And is it also safe to say that we need to continue to report
-ABS_X/ABS_Y *and* those values need to always track 1st finger touch
-for backwards compatibility?
+On 10/10/2010 04:57 PM, Stefan Richter wrote:
+...
+> Simply swap out the driver workqueue by system_nrt_wq.  It provides all
+> the parallelism we will ever need, accepts long-running work, and
+> provides the here necessary guarantee of non-reentrance across all CPUs.
+               ^^^^
+               this probably should go away?
 
-It was brought up in thread but not stated as strong requirement.
+> (The work items are scheduled from firewire-core's fw_device work items
+> which themselves may change CPUs.)
+> 
+> This simple approach requires though that targets with multiple logical
+> units accept multiple outstanding management requests.  The SBP-2 spec
+> implicitly requires this capability, but who knows how real firmwares
+> react.
+> 
+> I only have access to two dual-LU targets:  A OXUF924DSB based one from
+> MacPower and a INIC-2430 based one from IOI.  They both work fine with
+> this change, as do several single-LU targets of course.
+> 
+> Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> ---
+>  drivers/firewire/sbp2.c |    9 +--------
+>  1 file changed, 1 insertion(+), 8 deletions(-)
+> 
+> Index: b/drivers/firewire/sbp2.c
+> ===================================================================
+> --- a/drivers/firewire/sbp2.c
+> +++ b/drivers/firewire/sbp2.c
+> @@ -835,8 +835,6 @@ static void sbp2_target_put(struct sbp2_
+>  	kref_put(&tgt->kref, sbp2_release_target);
+>  }
+>  
+> -static struct workqueue_struct *sbp2_wq;
+> -
+>  /*
+>   * Always get the target's kref when scheduling work on one its units.
+>   * Each workqueue job is responsible to call sbp2_target_put() upon return.
+> @@ -844,7 +842,7 @@ static struct workqueue_struct *sbp2_wq;
+>  static void sbp2_queue_work(struct sbp2_logical_unit *lu, unsigned long delay)
+>  {
+>  	sbp2_target_get(lu->tgt);
+> -	if (!queue_delayed_work(sbp2_wq, &lu->work, delay))
+> +	if (!queue_delayed_work(system_nrt_wq, &lu->work, delay))
+>  		sbp2_target_put(lu->tgt);
+>  }
+>  
+> @@ -1656,17 +1654,12 @@ MODULE_ALIAS("sbp2");
+>  
+>  static int __init sbp2_init(void)
+>  {
+> -	sbp2_wq = create_singlethread_workqueue(KBUILD_MODNAME);
+> -	if (!sbp2_wq)
+> -		return -ENOMEM;
+> -
+>  	return driver_register(&sbp2_driver.driver);
+>  }
+>  
+>  static void __exit sbp2_cleanup(void)
+>  {
+>  	driver_unregister(&sbp2_driver.driver);
+> -	destroy_workqueue(sbp2_wq);
 
-BTW, there are patches in last couple months to x86-input-synaptics
-that will allow it to ignore jumps in values of ABS_X/ABS_Y when
-transition of multi-touch occur (both adding or removing fingers via
-BTN_TOOL_*TAP).  So one new-ish option is for ABS_X/ABS_Y to not track
-1st finger but become average of 2 fingers.
+Hmmm... from glancing the code, there doesn't seem to anything which
+can guarantee sbp2_release_target/reconnect() are finished before
+sbp2_cleanup() returns, so the code section might go away with code
+still running.  It seems like the right thing to do here would be
+using alloc_workqueue(KBUILD_MODNAME, WQ_NON_REENTRANT, 0).  Am I
+missing something?
 
-Chris
+Thanks.
+
+-- 
+tejun
