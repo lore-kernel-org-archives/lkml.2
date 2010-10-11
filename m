@@ -1,86 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755963Ab0JKSRF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 14:17:05 -0400
-Received: from fieldses.org ([174.143.236.118]:35763 "EHLO fieldses.org"
+	id S1755976Ab0JKSTl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 14:19:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58958 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755355Ab0JKSRE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 14:17:04 -0400
-Date: Mon, 11 Oct 2010 14:16:47 -0400
-To: Phil Endecott <phil_bnaqb_endecott@chezphil.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux NFS Mailing List <linux-nfs@vger.kernel.org>,
-        netdev@vger.kernel.org
-Subject: Re: NFS & atl1c : "RPC: multiple fragments per record not
- supported"
-Message-ID: <20101011181647.GA3166@fieldses.org>
-References: <1286722097803@dmwebmail.dmwebmail.chezphil.org>
+	id S1755758Ab0JKSTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 14:19:40 -0400
+Message-ID: <4CB3552C.5050808@zytor.com>
+Date: Mon, 11 Oct 2010 11:19:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286722097803@dmwebmail.dmwebmail.chezphil.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86, setup: Check early serial console per string instead
+ of one char
+References: <4CB34E82.8030802@kernel.org>
+In-Reply-To: <4CB34E82.8030802@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Oct 10, 2010 at 03:48:17PM +0100, Phil Endecott wrote:
-> Dear Experts,
+On 10/11/2010 10:50 AM, Yinghai Lu wrote:
 > 
-> I am seeing the error "RPC: multiple fragments per record not
-> supported" on my NFS server when an NFS client with an atl1c network
-> driver talks to it.
+> Move out serial_putchar() calling out of putchar
+> Let puts() to call serial_putchar() directly.
 > 
-> The server is a QNAP TS119 ARM box running Debian's 2.6.33.2 kernel.
-> It works reliably with other clients.
+> So only need to check early_serial_base per string.
 > 
-> The client is a new x86 system with an "Atheros Communications
-> AR8131 Gigabit Ethernet (rev c0)" (1969:1063).  The kernel is
-> Debian's 2.6.32-5-686 and the driver seems to be atl1c.
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
 
-To my knowledge the Linux client has never sent packets that would
-trigger the prink above, so off hand it does sound like some sort of
-corruption at the network level.
+This seems to add a bunch of code for zero benefit.  Testing a global
+variable is zero cost compared to either a BIOS call or poking a serial
+port.
 
-(Independently of that: we should fix the server to support multiple
-fragments per record at some point.  But if you hadn't hit that printk,
-I'm guessing you would have had a failure soon enough anyway.)
-
-> Typically NFS works for a few seconds and then stops, with that
-> message repeated on the server.  Other network activity seems
-> reliable (e.g. HTTP, ssh, etc.)
-> 
-> If I use a USB-ethernet adaptor instead of the built-in gigabit it
-> works reliably.  (The USB device is not gigabit, but I do still see
-> the problems if I limit the port to 100 Mbit on the switch.)
-> 
-> I see the problem with NFS v3 and v4.  However, I only see it with
-> proto=tcp.  By changing the NFS protocol to UDP, the problem seems
-> to go away [well, it has been working for about 20 minutes now
-> without any issues].
-> 
-> Google finds a previous report here:
-> http://lkml.org/lkml/2010/1/20/198 ; the suggestion is to turn off
-> tcp segmentation offload, but it seems that this is not possible
-> with my system:
-> 
-> # ethtool -K eth0 tso off
-> Cannot set device tcp segmentation offload settings: Operation not supported
-> 
-> I have looked at the changes to atl1c since 2.6.32 (http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=history;f=drivers/net/atl1c;h=53cd10d07d040b7bec957acb1c69bc7b44897e69;hb=HEAD)
-> and they seem harmless.
-> 
-> I wiresharked the network activity while this error was being shown,
-> and it did include some packets with the high-contrast colour
-> schemes that wireshark uses for "bad" packets.  Unfortunately my
-> laptop ran out of battery before I could decipher these packets
-> further.
-> 
-> So, is this a known issue?  Do people agree that the atl1c driver is
-> most likely the culprit?  Can I offer any further debugging?
-
-I haven't seen that before.  Adding netdev to the cc:, as you seem to
-have reasonable evidence that the problem is the network driver.
-
---b.
+	-hpa
