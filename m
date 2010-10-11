@@ -1,49 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab0JKITk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 04:19:40 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56252 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753149Ab0JKITi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 04:19:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=pyF6UHQJ+MdhBh8lXwqsZjTt493GN/YyTA6Q5kT2BMz90fx/uVlWMBQrFDzvVzluqe
-         ybMaisr26gRtCb1yrLFS4qP+pRYUEOLW8/fIcXbuJdS7aZ9iv0lerAGASvPd/ZLZ1U8b
-         bdQ2OT0kKhUxP8Ll6Ax/9Gd4Zb62fkc/Y3m2U=
-Subject: Re: [PATCH 1/1] ATM: solos-pci, remove use after free
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: davem@davemloft.net, netdev@vger.kernel.org,
-        linux-atm-general@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Chas Williams <chas@cmf.nrl.navy.mil>
-In-Reply-To: <1286783444-7719-1-git-send-email-jslaby@suse.cz>
-References: <1286783444-7719-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 11 Oct 2010 10:19:29 +0200
-Message-ID: <1286785169.2737.3.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	id S1753496Ab0JKIb0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 04:31:26 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:40388 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751148Ab0JKIbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 04:31:24 -0400
+Date: Mon, 11 Oct 2010 14:01:17 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Cc: Shailabh Nagar <nagar1234@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Venkatesh Pallipadi <venki@google.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        John stultz <johnstul@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>,
+        Ingo Molnar <mingo@elte.hu>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 03/10] taskstats: Split fill_pid function
+Message-ID: <20101011083117.GB17223@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <1285249681.1837.28.camel@holzheu-laptop>
+ <1285250467.1837.80.camel@holzheu-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1285250467.1837.80.camel@holzheu-laptop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 11 octobre 2010 à 09:50 +0200, Jiri Slaby a écrit :
-> Stanse found we do in console_show:
->   kfree_skb(skb);
->   return skb->len;
-> which is not good. Fix that by remembering the len and use it in the
-> function instead.
+* Michael Holzheu <holzheu@linux.vnet.ibm.com> [2010-09-23 16:01:07]:
+
+> Subject: [PATCH] taskstats: Split fill_pid function
 > 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-> Cc: Chas Williams <chas@cmf.nrl.navy.mil>
-> ---
+> From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+> 
+> Separate the finding of a task_struct by pid or tgid from filling the taskstats
+> data. This makes the code more readable.
+> 
+> Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+ 
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+ 
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-
-
-
+-- 
+	Three Cheers,
+	Balbir
