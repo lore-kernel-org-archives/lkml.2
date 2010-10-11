@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab0JKOd1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 10:33:27 -0400
-Received: from thunk.org ([69.25.196.29]:58018 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754622Ab0JKOdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 10:33:25 -0400
-Date: Mon, 11 Oct 2010 10:33:17 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: "Darrick J. Wong" <djwong@us.ibm.com>
-Cc: Andreas Dilger <adilger.kernel@dilger.ca>, Mingming Cao <cmm@us.ibm.com>,
-        Ric Wheeler <rwheeler@redhat.com>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, hch@lst.de
-Subject: Re: Performance testing of various barrier reduction patches [was:
- Re: [RFC v4] ext4: Coordinate fsync requests]
-Message-ID: <20101011143317.GA3860@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	"Darrick J. Wong" <djwong@us.ibm.com>,
-	Andreas Dilger <adilger.kernel@dilger.ca>,
-	Mingming Cao <cmm@us.ibm.com>, Ric Wheeler <rwheeler@redhat.com>,
-	linux-ext4 <linux-ext4@vger.kernel.org>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-	Tejun Heo <tj@kernel.org>, hch@lst.de
-References: <20100806070424.GD2109@tux1.beaverton.ibm.com>
- <20100809195324.GG2109@tux1.beaverton.ibm.com>
- <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca>
- <20100809233805.GH2109@tux1.beaverton.ibm.com>
- <20100819021441.GM2109@tux1.beaverton.ibm.com>
- <20100823183119.GA28105@tux1.beaverton.ibm.com>
- <20100923232527.GB25624@tux1.beaverton.ibm.com>
- <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca>
- <20100927230111.GV25555@tux1.beaverton.ibm.com>
- <20101008212606.GE25624@tux1.beaverton.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101008212606.GE25624@tux1.beaverton.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1755010Ab0JKOho (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 10:37:44 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:34661 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754918Ab0JKOhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 10:37:43 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        Lennart Poettering <lennart@poettering.net>, stable@kernel.org
+Subject: [PATCH] sched: drop all load weight manipulation for RT tasks
+Date: Mon, 11 Oct 2010 16:36:51 +0200
+Message-Id: <1286807811-10568-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 02:26:06PM -0700, Darrick J. Wong wrote:
-> Given the nearness of the merge window, perhaps we ought to discuss
-> this on Monday's ext4 call?  In the meantime I'll clean up the fsync
-> coordination patch so that it doesn't have so many debugging knobs
-> and whistles.
+Load weights are for the CFS, they do not belong in the RT
+task. This makes all RT scheduling classes leave the
+CFS weights alone.
 
-Yes, we should definitely talk about this on today's call.
+This fixes a real bug as well: I noticed the following
+phonomena: a process elevated to SCHED_RR forks with
+SCHED_RESET_ON_FORK set, and the child is indeed SCHED_OTHER,
+and the niceval is indeed reset to 0. However the
+weight inserted by set_load_weight() remains at 0. giving the
+task insignificat priority.
 
-One of the things that concern me is that if I'm reading the
-spreadsheet correctly, there are some colums (for example,
-elm3c44_sas, comparing I3, which is what will be in 2.6.36 --- jan's
-patch, but not yours, and the currently existing behaviour --- with
-I10 which is as I understand it, what you are recommending, I see an
-FFSB regression from 1,916.54 to 1,690.33).  
+With this fix, the weight is reset to what the task had before
+being elevated to SCHED_RR/SCHED_FIFO.
 
-That's something like a 15% regression.  I know that for other
-hardware, there are improvements, but the fact that at least for some
-hardware we're seeing such a big regression makes me worried that
-we're missing something --- or maybe it's just me who is missing
-something about your spreadsheet?
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: stable@kernel.org
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+Note: in 2.6.34 and earlier kernels, the phenomenon is the
+inverse: the tasks return from SCHED_RR/SCHED_FIFO with huge
+weights. For the stable series the earlier patch inserting
+recalculation of load weights at SCHED_RESET_ON_FORK is likely
+more desirable.
+---
+ kernel/sched.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
-						- Ted
+diff --git a/kernel/sched.c b/kernel/sched.c
+index a04b8e6..07f39b5 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1855,12 +1855,6 @@ static void dec_nr_running(struct rq *rq)
+ 
+ static void set_load_weight(struct task_struct *p)
+ {
+-	if (task_has_rt_policy(p)) {
+-		p->se.load.weight = 0;
+-		p->se.load.inv_weight = WMULT_CONST;
+-		return;
+-	}
+-
+ 	/*
+ 	 * SCHED_IDLE tasks get minimal weight:
+ 	 */
+-- 
+1.7.2.3
+
