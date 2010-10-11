@@ -1,91 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab0JKWpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 18:45:15 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:33905 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754590Ab0JKWpN convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 18:45:13 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=L92fsrCraooDdKu7FL8/AjOokohHfDAiUwto4TtQfxM7O4QGyrzJhGLufBPIwriTL7eH4MbdOeRJbeBs8x6QpWueVtuDXR50jrBtA/uQVej6yAJHQg4lpzqMiknB/0Yf;
-Date: Mon, 11 Oct 2010 15:48:26 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Keith Packard <keithp@keithp.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: "do_IRQ: 0.89 No irq handler for vector (irq -1)"
-Message-ID: <20101011154826.440b4990@jbarnes-desktop>
-In-Reply-To: <AANLkTim=kmzwV+S-aP3+B1CNkS_XrvHuEewpmYZZtcA9@mail.gmail.com>
-References: <AANLkTikZj21CtFwC2ttvc0wJPx2qyedn7b1xXaxH659E@mail.gmail.com>
-	<alpine.LFD.2.00.1010072227420.2484@localhost6.localdomain6>
-	<alpine.LFD.2.00.1010072329220.3354@localhost6.localdomain6>
-	<alpine.LFD.2.00.1010080941160.7653@localhost6.localdomain6>
-	<AANLkTim=kmzwV+S-aP3+B1CNkS_XrvHuEewpmYZZtcA9@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
+	id S1756889Ab0JKWrt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 18:47:49 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57502 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab0JKWrs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 18:47:48 -0400
+Message-ID: <4CB393EB.3060405@zytor.com>
+Date: Mon, 11 Oct 2010 15:47:07 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Tim Pepper <lnxninja@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@redhat.com>, x86@kernel.org,
+        Marcio Saito <marcio@cyclades.com>, Jiri Slaby <jirislaby@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        John Stultz <johnstul@us.ibm.com>,
+        Avantika Mathur <mathur@linux.vnet.ibm.com>
+Subject: Re: [RFC] [PATCH] allow low HZ values?
+References: <20101011201121.GA953@tpepper-t61p.dolavim.us> <1286836212.5220.19.camel@pasglop> <alpine.LFD.2.00.1010120032060.2909@localhost6.localdomain6>
+In-Reply-To: <alpine.LFD.2.00.1010120032060.2909@localhost6.localdomain6>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 8 Oct 2010 21:46:50 +1000
-Dave Airlie <airlied@gmail.com> wrote:
-
-> On Fri, Oct 8, 2010 at 5:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Thu, 7 Oct 2010, Thomas Gleixner wrote:
-> >  Oct  7 23:21:24 ionos kernel: Console: switching to colour VGA+ 80x25
-> >> Oct  7 23:21:31 ionos kernel: drm: unregistered panic notifier
-> >> Oct  7 23:21:31 ionos kernel: vga_switcheroo: disabled
-> >> Oct  7 23:21:31 ionos kernel: [drm:drm_mm_takedown] *ERROR* Memory manager not clean. Delaying takedown
-> >>
-> >> That one scares me :)
-> >>
-> >> Oct  7 23:21:32 ionos kernel: BUG: unable to handle kernel paging request at 00000037362e313a
-> >>
-> >> We are again dereferencing a user space address.
-> >
-> > Further debugging shows that the interrupt is torn down and the
-> > vectors are cleared. On modprobe the irq is set up again and a
-> > different vector is assigned.
-> >
-> > The interrupt which comes in is going to the old vector. So something
-> > is stale in the card.
+On 10/11/2010 03:33 PM, Thomas Gleixner wrote:
+> On Tue, 12 Oct 2010, Benjamin Herrenschmidt wrote:
 > 
-> Okay I've traced it with the hints Thomas gave me,
+>> On Mon, 2010-10-11 at 13:11 -0700, Tim Pepper wrote:
+>>> I'm not necessarily wanting to open up the age old question of "what is
+>>> a good HZ", but we were doing some testing on timer tick overheads for
+>>> HPC applications and this came up...
+>>
+>> Note that this is also very useful when working on CPU prototypes
+>> implemented in FPGAs and running at something like 12Mhz :-)
 > 
-> What happens is we have never called pci_disable_device on video
-> devices for various reasons, like shutting down VGA devices could be
-> hostile,
-> 
-> however on rmmod of the driver the PCI layer sets the device power
-> state to PCI_UNKNOWN, when we next load the driver we call
-> pci_enable_device
-> which sees the enable cnt is 1, so never calls
-> pci_set_power_state(PCI_D0), the MSI code won't actually write MSI
-> msgs unless it knows we are in D0.
-> 
-> Not sure how best to fix, I can workaround by calling
-> pci_set_power_state(PCI_D0) in the drm drivers, but I sorta thing the
-> PCI layer should take care of this.
+> /me hands benh 0.5$ for a FPGA upgrade
 
-So I think we *should* be able to call pci_disable_device at remove
-time.  But as you say, some platforms may not correctly re-route VGA
-space to an existing device or disable it properly when we do that.
-AFAICT x86 will be ok here though (seems to work ok locally too).
+That's often not possible if the CPU cannot be mapped onto a single FPGA
+(either because the core is too large, multiple cores are tested, or
+because there is debugging logic is included.)  The interconnects slows
+things down tremendously.
 
-That said, it seems like we should update the current device state at
-load time as well, once we've matched the driver it seems like there
-should be no harm.
+	-hpa
 
-Rafael, what do you think?  Would having the correct power state at
-load time cause any trouble with other PM code?  I know we've had
-issues with setting it explicitly in the past...
-
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
