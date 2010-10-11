@@ -1,104 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755848Ab0JKRlN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 13:41:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24339 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755657Ab0JKRlL (ORCPT
+	id S1755847Ab0JKRpx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 13:45:53 -0400
+Received: from 174-46-170-154.static.twtelecom.net ([174.46.170.154]:40466
+	"EHLO edprlnx06.logicpd.com" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755683Ab0JKRpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 13:41:11 -0400
-Message-ID: <4CB34C09.2060100@kernel.org>
-Date: Mon, 11 Oct 2010 10:40:25 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100714 SUSE/3.0.6 Thunderbird/3.0.6
+	Mon, 11 Oct 2010 13:45:52 -0400
+Message-ID: <4CB34D55.6060007@logicpd.com>
+Date: Mon, 11 Oct 2010 12:45:57 -0500
+From: Tim Nordell <tim.nordell@logicpd.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100908 Lightning/1.0b2pre Thunderbird/3.1.1
 MIME-Version: 1.0
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Andrew Morton <akpm@linux-foundation.org>
-CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        =?ISO-8859-1?Q?Andr=E9_Goddard_Rosa?= <andre.goddard@gmail.com>,
-        linux-kernel@vger.kernel.org, Becky Bruce <beckyb@kernel.crashing.org>
-Subject: [PATCH] swiotlb: Use page alignment for early buffer allocation
+To: Tony Lindgren <tony@atomide.com>
+CC: Stephan Linz <linz@li-pro.net>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/4] LogicPD minimal board support for LV_SOM and Torpedo
+References: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com> <20100928171908.GE3117@atomide.com> <201010090155.25932.linz@li-pro.net> <4CAFB747.5020606@logicpd.com> <20101011173023.GB25462@atomide.com>
+In-Reply-To: <20101011173023.GB25462@atomide.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ On 10/11/10 12:30, Tony Lindgren wrote:
+> * Tim Nordell <tim.nordell@logicpd.com> [101008 17:20]:
+>> Hi Stephan,
+>>
+>> I do indeed work for LogicPD.  I was asked to take over the patch
+>> submission process from Jacob Tanenbaum from early August (I don't know
+>> if you saw those patches), and hence I was the last one to submit
+>> patches off to the community.
+>>
+>> On 10/08/10 18:55, Stephan Linz wrote:
+>>> nice to see my patches here on the Linux mailinglists. I have not been working 
+>>> on it for a long time.
+> Uhh, so whose patches are these originally?
+>
+> We have them now queued with Tim Nordell as the author. Please let me know
+> ASAP if you want me to change that.
+>
+> Regards,
+>
+> Tony
 
-We could call free_bootmem_late() if swiotlb is not used, and
-it will shrink to page alignment.
+The history for those patches, for me, originated with Jacob Tanenbaum's
+patchset.  I was taking over for him as he was going back to school.  I
+did some misc. changes for further submission, but I was not the
+original author.  I don't know Stephan's involvement - however, in the
+source files he's attributed credit in the header, as well as one of my
+coworkers so presumably there was some involvement on both ends.  I
+recognize some of the code as coming from our kernel release, so likely
+it was a hybrid originally between Stephan, Peter, and Jacob.
 
-So alloc them with page alignment at first, to avoid lose two pages
+That's about the extent that I know.
 
-before patch:
-[    0.000000]     memblock_x86_reserve_range: [00d3600000, 00d7600000]   swiotlb buffer
-[    0.000000]     memblock_x86_reserve_range: [00d7e7ef40, 00d7e9ef40]     swiotlb list
-[    0.000000]     memblock_x86_reserve_range: [00d7e3ef40, 00d7e7ef40]  swiotlb orig_ad
-[    0.000000]     memblock_x86_reserve_range: [000008a000, 0000092000]  swiotlb overflo
+- Tim
 
-after patch will get
-[    0.000000]     memblock_x86_reserve_range: [00d3600000, 00d7600000]   swiotlb buffer
-[    0.000000]     memblock_x86_reserve_range: [00d7e7e000, 00d7e9e000]     swiotlb list
-[    0.000000]     memblock_x86_reserve_range: [00d7e3e000, 00d7e7e000]  swiotlb orig_ad
-[    0.000000]     memblock_x86_reserve_range: [000008a000, 0000092000]  swiotlb overflo
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: Becky Bruce <beckyb@kernel.crashing.org>
-
----
- lib/swiotlb.c |   16 ++++++++--------
- 1 file changed, 8 insertions(+), 8 deletions(-)
-
-Index: linux-2.6/lib/swiotlb.c
-===================================================================
---- linux-2.6.orig/lib/swiotlb.c
-+++ linux-2.6/lib/swiotlb.c
-@@ -147,16 +147,16 @@ void __init swiotlb_init_with_tbl(char *
- 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
- 	 * between io_tlb_start and io_tlb_end.
- 	 */
--	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
-+	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
- 	for (i = 0; i < io_tlb_nslabs; i++)
-  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
- 	io_tlb_index = 0;
--	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
-+	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
- 
- 	/*
- 	 * Get the overflow emergency buffer
- 	 */
--	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
-+	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
- 	if (!io_tlb_overflow_buffer)
- 		panic("Cannot allocate SWIOTLB overflow buffer!\n");
- 	if (verbose)
-@@ -182,7 +182,7 @@ swiotlb_init_with_default_size(size_t de
- 	/*
- 	 * Get IO TLB memory from the low pages
- 	 */
--	io_tlb_start = alloc_bootmem_low_pages(bytes);
-+	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
- 	if (!io_tlb_start)
- 		panic("Cannot allocate SWIOTLB buffer");
- 
-@@ -308,13 +308,13 @@ void __init swiotlb_free(void)
- 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
- 	} else {
- 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
--				  io_tlb_overflow);
-+				  PAGE_ALIGN(io_tlb_overflow));
- 		free_bootmem_late(__pa(io_tlb_orig_addr),
--				  io_tlb_nslabs * sizeof(phys_addr_t));
-+				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
- 		free_bootmem_late(__pa(io_tlb_list),
--				  io_tlb_nslabs * sizeof(int));
-+				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
- 		free_bootmem_late(__pa(io_tlb_start),
--				  io_tlb_nslabs << IO_TLB_SHIFT);
-+				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
- 	}
- }
- 
