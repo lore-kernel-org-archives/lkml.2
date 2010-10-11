@@ -1,57 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753460Ab0JKHsz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 03:48:55 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:59997 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753325Ab0JKHsx (ORCPT
+	id S1753354Ab0JKHu4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 03:50:56 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:36612 "EHLO
+	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab0JKHuz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 03:48:53 -0400
-Message-ID: <4CB2C154.5060303@euromail.se>
-Date: Mon, 11 Oct 2010 09:48:36 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100922 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Chase Douglas <chase.douglas@canonical.com>,
-        linux-input@vger.kernel.org, xorg-devel@lists.x.org,
-        Chris Bagwell <chris@cnpbagwell.com>,
-        Andy Whitcroft <apw@canonical.com>, linux-kernel@vger.kernel.org,
-        Peter Hutterer <peter.hutterer@who-t.net>,
-        Duncan McGreggor <duncan.mcgreggor@canonical.com>
-Subject: Re: [PATCH 0/3] Input: synaptics - multitouch and multifinger support
-References: <1286549880-32580-1-git-send-email-chase.douglas@canonical.com>	<s5hfwwg4p4t.wl%tiwai@suse.de>	<1286558135.22715.162.camel@mini>	<201010081104.01527.dmitry.torokhov@gmail.com>	<s5h62xc4h2l.wl%tiwai@suse.de>	<20101010210434.GC18455@core.coreip.homeip.net> <s5hy6a52ndd.wl%tiwai@suse.de>
-In-Reply-To: <s5hy6a52ndd.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1P5D7f-0005vA-5H.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1P5D7f-0005vA-5H 72288632a982052ba8939a319a81a34c
+	Mon, 11 Oct 2010 03:50:55 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: davem@davemloft.net
+Cc: netdev@vger.kernel.org, linux-atm-general@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, jirislaby@gmail.com,
+        Chas Williams <chas@cmf.nrl.navy.mil>
+Subject: [PATCH 1/1] ATM: solos-pci, remove use after free
+Date: Mon, 11 Oct 2010 09:50:44 +0200
+Message-Id: <1286783444-7719-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2010 09:35 AM, Takashi Iwai wrote:
-[...]
+Stanse found we do in console_show:
+  kfree_skb(skb);
+  return skb->len;
+which is not good. Fix that by remembering the len and use it in the
+function instead.
 
-> In anyway, feel free to add my sign-off there since I already posted
-> my own one as a reference.
-> 
-> But, I have an open issue with Chase's patch.  Maybe it's rather a
-> question to Henrik:
-> 
-> Shouldn't all points be reported as ABS_MT_* events?  So far, only the
-> second touch-point is reported via ABS_MT_* while the first  point is
-> still reported as ABX_[X|Y].
-> 
-> I corrected this in my patch I posted, but I wasn't sure, too.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>
+---
+ drivers/atm/solos-pci.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/atm/solos-pci.c b/drivers/atm/solos-pci.c
+index f916ddf..f46138a 100644
+--- a/drivers/atm/solos-pci.c
++++ b/drivers/atm/solos-pci.c
+@@ -444,6 +444,7 @@ static ssize_t console_show(struct device *dev, struct device_attribute *attr,
+ 	struct atm_dev *atmdev = container_of(dev, struct atm_dev, class_dev);
+ 	struct solos_card *card = atmdev->dev_data;
+ 	struct sk_buff *skb;
++	unsigned int len;
+ 
+ 	spin_lock(&card->cli_queue_lock);
+ 	skb = skb_dequeue(&card->cli_queue[SOLOS_CHAN(atmdev)]);
+@@ -451,11 +452,12 @@ static ssize_t console_show(struct device *dev, struct device_attribute *attr,
+ 	if(skb == NULL)
+ 		return sprintf(buf, "No data.\n");
+ 
+-	memcpy(buf, skb->data, skb->len);
+-	dev_dbg(&card->dev->dev, "len: %d\n", skb->len);
++	len = skb->len;
++	memcpy(buf, skb->data, len);
++	dev_dbg(&card->dev->dev, "len: %d\n", len);
+ 
+ 	kfree_skb(skb);
+-	return skb->len;
++	return len;
+ }
+ 
+ static int send_command(struct solos_card *card, int dev, const char *buf, size_t size)
+-- 
+1.7.3.1
 
 
-I have issues with all submitted patches, but did not give explicit reasons
-since there were overlapping submissions. Perhaps Chase and yourself can work
-out how you want to submit the new patches? And yes, all points should be
-reported as ABS_MT events.
-
-Thanks,
-Henrik
