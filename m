@@ -1,46 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab0JKLJh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 07:09:37 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:36011 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752487Ab0JKLJf (ORCPT
+	id S1754021Ab0JKLPn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 07:15:43 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:56758 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751114Ab0JKLPl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 07:09:35 -0400
-Date: Mon, 11 Oct 2010 20:09:25 +0900
-From: Paul Mundt <lethal@linux-sh.org>
+	Mon, 11 Oct 2010 07:15:41 -0400
+X-Greylist: delayed 6185 seconds by postgrey-1.27 at vger.kernel.org; Mon, 11 Oct 2010 07:15:41 EDT
+Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
+From: Peter Zijlstra <peterz@infradead.org>
 To: Robert Richter <robert.richter@amd.com>
 Cc: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
+        Paul Mundt <lethal@linux-sh.org>,
         Russell King <linux@arm.linux.org.uk>,
         "linux-arm-kernel@lists.infradead.org" 
 	<linux-arm-kernel@lists.infradead.org>,
         "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
         Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 7/7] sh: oprofile: Use perf-events oprofile backend
-Message-ID: <20101011110925.GB1155@linux-sh.org>
-References: <cover.1286584677.git.matt@console-pimps.org> <a0c83396f5fb8a29baff3daf43d29b2e601511ff.1286584677.git.matt@console-pimps.org> <20101011110654.GR13563@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101011110654.GR13563@erda.amd.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20101011091809.GQ13563@erda.amd.com>
+References: <cover.1286584677.git.matt@console-pimps.org>
+	 <a72a7968f5e3f64a26875457a7451b34f896f5ae.1286584677.git.matt@console-pimps.org>
+	 <20101011091809.GQ13563@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 11 Oct 2010 11:31:39 +0200
+Message-ID: <1286789499.2336.206.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 01:06:54PM +0200, Robert Richter wrote:
-> Matt and Paul,
+On Mon, 2010-10-11 at 11:18 +0200, Robert Richter wrote:
+> On 08.10.10 20:46:17, Matt Fleming wrote:
+> > Introduce perf_pmu_name() helper function that returns the name of the
+> > pmu. This gives us a generic way to get the name of a pmu regardless of
+> > how an architecture identifies it internally.
+> > 
+> > Signed-off-by: Matt Fleming <matt@console-pimps.org>
 > 
-> are those (upper case) cpu_type strings already supported by the
-> oprofile userland?
-> 
-I've only ever used out-of-tree patches with it due to the generally
-volatile nature of support. Now that we have a more consistent interface
-to go through, it probably makes sense to get those bits merged, too.
-We're certainly not tied down to any ABI at this point.
+> Peter, I need your ack here.
+
+Sure,
+
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
+
