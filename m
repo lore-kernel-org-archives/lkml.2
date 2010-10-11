@@ -1,121 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab0JKJSo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 05:18:44 -0400
-Received: from db3ehsobe003.messaging.microsoft.com ([213.199.154.141]:26640
-	"EHLO DB3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753427Ab0JKJSm (ORCPT
+	id S1753565Ab0JKJY2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 05:24:28 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:39935 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752494Ab0JKJY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 05:18:42 -0400
-X-SpamScore: -10
-X-BigFish: VPS-10(zzbb2cK1432N98dN4015L78fbpzz1202hzz8275dhz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-SS: 0,
-X-WSS-ID: 0LA4CI9-01-C3D-02
-X-M-MSG: 
-Date: Mon, 11 Oct 2010 11:18:10 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Matt Fleming <matt@console-pimps.org>, Will Deacon <will.deacon@arm.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH 2/7] perf: New helper function for pmu name
-Message-ID: <20101011091809.GQ13563@erda.amd.com>
-References: <cover.1286584677.git.matt@console-pimps.org>
- <a72a7968f5e3f64a26875457a7451b34f896f5ae.1286584677.git.matt@console-pimps.org>
+	Mon, 11 Oct 2010 05:24:27 -0400
+Date: Mon, 11 Oct 2010 11:24:24 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Felipe Contreras <felipe.contreras@gmail.com>, Greg KH <greg@kroah.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Arnd Hannemann <arnd@arndnet.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        Hemant Pedanekar <hemantp@ti.com>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+Message-ID: <20101011092424.GX29673@pengutronix.de>
+References: <20101008175308.GA10975@n2100.arm.linux.org.uk> <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com> <20101008230451.GB10975@n2100.arm.linux.org.uk> <20101008232539.GA28697@kroah.com> <20101008234448.GD10975@n2100.arm.linux.org.uk> <AANLkTinhwORqdWU43yr1AXJGZm2zPKGG+Q9twruNs2aH@mail.gmail.com> <20101009092127.GB20975@n2100.arm.linux.org.uk> <AANLkTimQJLmDZPHtVJLCv9ZQgx_Yjh9=MOwOxMSAz4QX@mail.gmail.com> <20101011083508.GW29673@pengutronix.de> <20101011090212.GA27153@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <a72a7968f5e3f64a26875457a7451b34f896f5ae.1286584677.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101011090212.GA27153@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08.10.10 20:46:17, Matt Fleming wrote:
-> Introduce perf_pmu_name() helper function that returns the name of the
-> pmu. This gives us a generic way to get the name of a pmu regardless of
-> how an architecture identifies it internally.
+On Mon, Oct 11, 2010 at 10:02:12AM +0100, Russell King - ARM Linux wrote:
+> On Mon, Oct 11, 2010 at 10:35:08AM +0200, Uwe Kleine-König wrote:
+> > Alternatively when calling fixup only after parse_tags in setup_arch()
+> > it worked.  But I guess this change is not for discussion.
+> > OTOH I wonder why fixup gets passed meminfo.  It's not very useful if
+> > it's not yet filled.
 > 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
-
-Peter, I need your ack here.
-
-Thanks,
-
--Robert
-
-> ---
->  arch/sh/kernel/perf_event.c |    9 +++++++++
->  include/linux/perf_event.h  |    1 +
->  kernel/perf_event.c         |    5 +++++
->  3 files changed, 15 insertions(+), 0 deletions(-)
+> Because, rather than pass in ATAGs or set the memory on the command line,
+> they instead wanted to hard-code it in C - something which still happens
+> today:
 > 
-> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
-> index 2cb9ad5..55fe89b 100644
-> --- a/arch/sh/kernel/perf_event.c
-> +++ b/arch/sh/kernel/perf_event.c
-> @@ -59,6 +59,15 @@ static inline int sh_pmu_initialized(void)
->  	return !!sh_pmu;
->  }
->  
-> +const char *perf_pmu_name(void)
-> +{
-> +	if (!sh_pmu)
-> +		return NULL;
-> +
-> +	return sh_pmu->name;
-> +}
-> +EXPORT_SYMBOL_GPL(perf_pmu_name);
-> +
->  int perf_num_counters(void)
->  {
->  	if (!sh_pmu)
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index 1a02192..33f08da 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -850,6 +850,7 @@ extern int perf_max_events;
->  extern const struct pmu *hw_perf_event_init(struct perf_event *event);
->  
->  extern int perf_num_counters(void);
-> +extern const char *perf_pmu_name(void);
->  extern void perf_event_task_sched_in(struct task_struct *task);
->  extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
->  extern void perf_event_task_tick(struct task_struct *task);
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index db5b560..fc51268 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -85,6 +85,11 @@ void __weak hw_perf_enable(void)		{ barrier(); }
->  
->  void __weak perf_event_print_debug(void)	{ }
->  
-> +extern __weak const char *perf_pmu_name(void)
-> +{
-> +	return "pmu";
-> +}
-> +
->  static DEFINE_PER_CPU(int, perf_disable_count);
->  
->  void perf_disable(void)
-> -- 
-> 1.7.1
+> arch/arm/mach-msm/board-halibut.c
+> arch/arm/mach-msm/board-mahimahi.c
+> arch/arm/mach-msm/board-sapphire.c
+> arch/arm/mach-msm/board-trout.c
+> arch/arm/mach-pxa/eseries.c
+> arch/arm/mach-pxa/spitz.c
+> arch/arm/mach-s3c2412/mach-smdk2413.c
+> arch/arm/mach-s3c2412/mach-vstms.c
+> arch/arm/mach-tegra/board-harmony.c
 > 
-> 
+> This is part of the on-going pain of poor quality boot loaders.
+Yep, so (at least regarding the memory layout) the name "fixup" is
+wrong, it's more "initializ"ish.
+
+So what now?  Do the memory reservation in mdesc->reserve as Felipe
+suggested?
+
+Best regards
+Uwe
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
