@@ -1,81 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753410Ab0JKILA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 04:11:00 -0400
-Received: from vwp2514.webpack.hosteurope.de ([87.230.42.24]:57359 "EHLO
-	vwp2514.webpack.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752648Ab0JKIK6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 04:10:58 -0400
-Subject: Re: 2.6.35.6 fails to suspend (pxa2xx-mci.0)
-From: Sven Neumann <s.neumann@raumfeld.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Daniel Mack <daniel@caiaq.de>, Colin Cross <ccross@android.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <201010082208.25767.rjw@sisk.pl>
-References: <1286177435.2140.5.camel@sven> <201010072323.05218.rjw@sisk.pl>
-	 <1286526197.4493.19.camel@sven>  <201010082208.25767.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Organization: RAUMFELD GmbH
-Date: Mon, 11 Oct 2010 10:10:54 +0200
-Message-ID: <1286784654.3101.6.camel@sven>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-bounce-key: webpack.hosteurope.de;s.neumann@raumfeld.com;1286784658;65843827;
+	id S1753429Ab0JKIQo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 04:16:44 -0400
+Received: from www.tglx.de ([62.245.132.106]:37672 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750731Ab0JKIQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 04:16:42 -0400
+Date: Mon, 11 Oct 2010 10:16:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Yinghai Lu <yinghai@kernel.org>
+cc: Grant Likely <grant.likely@secretlab.ca>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        LKML <linux-kernel@vger.kernel.org>, linux-arch@vger.kernel.org,
+        Linus Torvalds <torvalds@osdl.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        Peter Zijlstra <peterz@infradead.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mundt <lethal@linux-sh.org>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [patch 00/47] Sparse irq rework
+In-Reply-To: <4CB28988.4090207@kernel.org>
+Message-ID: <alpine.LFD.2.00.1010110953420.2909@localhost6.localdomain6>
+References: <20100930221351.682772535@linutronix.de> <20101003112312.GB9844@angua.secretlab.ca> <20101003112920.GB32736@n2100.arm.linux.org.uk> <AANLkTingVuhgdaLZ8U3bM+F2vZJ_kScwKqNtHW=g6DcH@mail.gmail.com> <alpine.LFD.2.00.1010031544340.14550@localhost6.localdomain6>
+ <alpine.LFD.2.00.1010051219580.2556@localhost6.localdomain6> <4CACFC23.4080504@kernel.org> <alpine.LFD.2.00.1010070050410.17015@localhost6.localdomain6> <4CAD082B.40908@kernel.org> <4CAD1154.3080403@kernel.org> <alpine.LFD.2.00.1010070559480.17015@localhost6.localdomain6>
+ <4CAD4EC3.5060809@kernel.org> <alpine.LFD.2.00.1010082346310.13094@localhost6.localdomain6> <alpine.LFD.2.00.1010082351450.13094@localhost6.localdomain6> <4CAFEEFA.1070000@kernel.org> <4CB00122.3030301@kernel.org> <alpine.LFD.2.00.1010090829150.13094@localhost6.localdomain6>
+ <4CB014F5.5080209@kernel.org> <alpine.LFD.2.00.1010101130160.2413@localhost6.localdomain6> <4CB28988.4090207@kernel.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 22:08 +0200, Rafael J. Wysocki wrote:
-> On Friday, October 08, 2010, Sven Neumann wrote:
-> > On Thu, 2010-10-07 at 23:23 +0200, Rafael J. Wysocki wrote:
+On Sun, 10 Oct 2010, Yinghai Lu wrote:
+
+> On 10/10/2010 02:32 AM, Thomas Gleixner wrote:
+> > On Sat, 9 Oct 2010, Yinghai Lu wrote:
+> >> On 10/08/2010 11:34 PM, Thomas Gleixner wrote:
+> >>> On Fri, 8 Oct 2010, Yinghai Lu wrote:
+> >>>> +	/* only handle fall out from setup_IO_APIC_irqs() */
+> >>>
+> >>> What's the fallout ? And why are we coming here in the first place
+> >>> when the irq is < 16 ?
+> >>
+> >> setup_IO_APIC_irqs only handle apic_id == 0 or apic_id > 0 but irq < 16 via acpi override.
+> >>
+> >> it seems IBM's system have apic_id == 1, and sci irq is using 30.
+> >>
+> >> so at that time add that setup_IO_APIC_irq_extra() to workaround it.
+> >> but it seems we set that two time when irq < 16.
+> >>
+> >>>
+> >>>> +	if (!((apic_id > 0) && (irq > 16)))
+> >>>> +		return;
 > > 
-> > > > > I wonder what happens if you echo 0 to /sys/power/pm_async ?
-> > > > 
-> > > > Nothing happens. The problem persists (tested with 2.6.36-rc7). What
-> > > > would you expect to happen?
-> > > 
-> > > Exactly that. :-)
-> > > 
-> > > Commit 152e1d5920 should not affect the non-async case (I'd be surprised if
-> > > it did really) and things should work with /sys/power/pm_async = 0 anyway.
-> > > 
-> > > Please try check if you can reproduce with commt 152e1d5920 reverted and
-> > > /sys/power/pm_async = 0.  If you can, that's a driver bug.
+> > I added this into the queue, but simplified it to 
 > > 
-> > Ok, for the record, here's what I tried. I have rebooted between tests
-> > to make sure there's no state pulled in from the previous test:
+> >   if (apic_id == 0 || irq < NR_IRQS_LEGACY)
 > > 
-> >  2.6.36-rc7, no changes,      pm_async 1 :  suspend fails
-> >  2.6.36-rc7, no changes,      pm_async 0 :  suspend fails
-> > 
-> >  2.6.36-rc7, 152e1d reverted, pm_async 1 :  suspend works
-> >  2.6.36-rc7, 152e1d reverted, pm_async 0 :  suspend fails
-> > 
-> >  2.6.34.7, no changes,        pm_async 1 :  suspend works
-> >  2.6.34.7, no changes,        pm_async 0 :  suspend works
-> > 
-> > I am not sure how this should be interpreted.
+> > Folded in the other fix and pushed out an updated tree.
 > 
-> There is a problem with the pxa2xx-mci.0 suspend that has been introduced
-> some time after 2.6.34, but it is not related to commit 152e1d5920.  The
-> problem was not visible with pm_async=1 because of the very bug fixed by
-> commit 152e1d5920.
-> 
-> Please see if the problem is there in 2.6.35 (please test with pm_async=0).
+> still have the irq_2_iommu_alloc warning from pnpacpi
 
-Works fine with v2.6.35:
+Hmm, that's probably a problem for all legacy interrupts which are
+never torn down once they are set up. And we set them all up during
+early boot.
 
- 2.6.35, no changes,        pm_async 1 :  suspend works
- 2.6.35, no changes,        pm_async 0 :  suspend works
+So either we special case the legacy area or remove the warning
+alltogether.
 
-So it looks like the problem has been introduced after 2.6.35 and was
-backported...
+Another option I discussed with Suresh recently is to remove the
+allocator in intr_remapping.c and just embedd irq_2_iommu into
+irq_cfg.
 
+Thanks,
 
-Greetings,
-Sven
+	tglx
 
 
