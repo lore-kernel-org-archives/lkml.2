@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755534Ab0JKQxI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 12:53:08 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:8997 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755388Ab0JKQxG (ORCPT
+	id S1755564Ab0JKQxY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 12:53:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49378 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab0JKQxX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 12:53:06 -0400
-Message-ID: <4CB340F1.8020000@caviumnetworks.com>
-Date: Mon, 11 Oct 2010 09:53:05 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	Mon, 11 Oct 2010 12:53:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kc3YhOhaVx86Tho+vOn53NdDJMmRbFncLcfydgDdnd60VfxH7yfTcKu796wxVqCpsk
+         VH2m9pBuVULjJnHn3/etxHLWaixCyI67hAw5/mURCkeX3SkJr3F0k2OtC4sMPEWkf7iC
+         AVqBbX6e4j2bjJgR8KiIB07W28+gG90d6URTk=
 MIME-Version: 1.0
-To: Bernhard Walle <walle@corscience.de>
-CC: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: octeon: Add Lanai board USB clock type
-References: <1286791747-3151-1-git-send-email-walle@corscience.de>
-In-Reply-To: <1286791747-3151-1-git-send-email-walle@corscience.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 11 Oct 2010 16:53:17.0753 (UTC) FILETIME=[CD9E2290:01CB6964]
+In-Reply-To: <987664A83D2D224EAE907B061CE93D530163EA9C09@orsmsx505.amr.corp.intel.com>
+References: <1286560501-26843-1-git-send-email-andi@firstfloor.org>
+	<987664A83D2D224EAE907B061CE93D530163EA9C09@orsmsx505.amr.corp.intel.com>
+Date: Mon, 11 Oct 2010 09:53:22 -0700
+Message-ID: <AANLkTin7_3_iwn2xf=wy9ho9GfCHw+eSTjv12z1ESWr5@mail.gmail.com>
+Subject: Re: [PATCH] Define _addr_lsb in siginfo_t for mips and ia64
+From: Tony Luck <tony.luck@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <ak@linux.intel.com>,
+        "ralf@linux-mips.org" <ralf@linux-mips.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/2010 03:09 AM, Bernhard Walle wrote:
-> Add the LANAI2 board to __cvmx_helper_board_usb_get_clock_type(). It
-> also uses the USB_CLOCK_TYPE_CRYSTAL_12 clock.
->
-> Signed-off-by: Bernhard Walle<walle@corscience.de>
-> ---
->   drivers/staging/octeon/cvmx-helper-board.c |    1 +
->   1 files changed, 1 insertions(+), 0 deletions(-)
+On Fri, Oct 8, 2010 at 11:13 AM, Luck, Tony <tony.luck@intel.com> wrote:
+> ia64 has HAVE_ARCH_COPY_SIGINFO_TO_USER - so it doesn't see
+> this build problem because the version of copy_siginfo_to_user()
+> in kernel/signal.c isn't the one we use. So I don't think that
+> we need this (unless someone has some plan to unify the
+> ARCH specific version).
 
-NAK.
+I take this back ... in next-20101011 the disease has spread:
 
-We don't currently support USB, so churning up this file doesn't help 
-anything.
+fs/signalfd.c: In function ‘signalfd_copyinfo’:
+fs/signalfd.c:109: error: ‘const struct <anonymous>’ has no member
+named ‘_addr_lsb’
+fs/signalfd.c:109: warning: type defaults to ‘int’ in declaration of ‘__pu_x’
+fs/signalfd.c:109: error: ‘const struct <anonymous>’ has no member
+named ‘_addr_lsb’
 
-If you are using an out-of-tree driver, you can keep this kind of tweak 
-out-of-tree as well.
+So today I have build problems :-(
 
-David Daney
+A question about the naming/type of this new field. "lsb" sounds like
+it might mean
+"least significant byte (or perhaps bit)" ... why is the type "short"?
 
->
-> diff --git a/drivers/staging/octeon/cvmx-helper-board.c b/drivers/staging/octeon/cvmx-helper-board.c
-> index 5793318..f8ae6b4 100644
-> --- a/drivers/staging/octeon/cvmx-helper-board.c
-> +++ b/drivers/staging/octeon/cvmx-helper-board.c
-> @@ -752,6 +752,7 @@ cvmx_helper_board_usb_clock_types_t __cvmx_helper_board_usb_get_clock_type(void)
->   {
->   	switch (cvmx_sysinfo_get()->board_type) {
->   	case CVMX_BOARD_TYPE_BBGW_REF:
-> +	case CVMX_BOARD_TYPE_LANAI2_G:
->   		return USB_CLOCK_TYPE_CRYSTAL_12;
->   	}
->   	return USB_CLOCK_TYPE_REF_48;
-
+-Tony
