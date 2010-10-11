@@ -1,53 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab0JKJC3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 05:02:29 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53538 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753427Ab0JKJC2 (ORCPT
+	id S1753558Ab0JKJFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 05:05:18 -0400
+Received: from mgw-sa02.ext.nokia.com ([147.243.1.48]:40746 "EHLO
+	mgw-sa02.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753236Ab0JKJFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 05:02:28 -0400
-Date: Mon, 11 Oct 2010 10:02:12 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Felipe Contreras <felipe.contreras@gmail.com>, Greg KH <greg@kroah.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Arnd Hannemann <arnd@arndnet.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        Hemant Pedanekar <hemantp@ti.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-Message-ID: <20101011090212.GA27153@n2100.arm.linux.org.uk>
-References: <AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com> <20101008175308.GA10975@n2100.arm.linux.org.uk> <AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com> <20101008230451.GB10975@n2100.arm.linux.org.uk> <20101008232539.GA28697@kroah.com> <20101008234448.GD10975@n2100.arm.linux.org.uk> <AANLkTinhwORqdWU43yr1AXJGZm2zPKGG+Q9twruNs2aH@mail.gmail.com> <20101009092127.GB20975@n2100.arm.linux.org.uk> <AANLkTimQJLmDZPHtVJLCv9ZQgx_Yjh9=MOwOxMSAz4QX@mail.gmail.com> <20101011083508.GW29673@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101011083508.GW29673@pengutronix.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 11 Oct 2010 05:05:16 -0400
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-omap@vger.kernel.org
+Subject: [RFC PATCHv3 0/7] HSI framework and drivers
+Date: Mon, 11 Oct 2010 12:06:21 +0300
+Message-Id: <1286787988-29013-1-git-send-email-carlos.chinea@nokia.com>
+X-Mailer: git-send-email 1.5.6.5
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 10:35:08AM +0200, Uwe Kleine-König wrote:
-> Alternatively when calling fixup only after parse_tags in setup_arch()
-> it worked.  But I guess this change is not for discussion.
-> OTOH I wonder why fixup gets passed meminfo.  It's not very useful if
-> it's not yet filled.
+Hi !
 
-Because, rather than pass in ATAGs or set the memory on the command line,
-they instead wanted to hard-code it in C - something which still happens
-today:
+Here you have the third round of the HSI framework patches.
 
-arch/arm/mach-msm/board-halibut.c
-arch/arm/mach-msm/board-mahimahi.c
-arch/arm/mach-msm/board-sapphire.c
-arch/arm/mach-msm/board-trout.c
-arch/arm/mach-pxa/eseries.c
-arch/arm/mach-pxa/spitz.c
-arch/arm/mach-s3c2412/mach-smdk2413.c
-arch/arm/mach-s3c2412/mach-vstms.c
-arch/arm/mach-tegra/board-harmony.c
+The patch series introduces the HSI framework, an SSI driver
+for OMAP and a generic character device for HSI/SSI devices.
 
-This is part of the on-going pain of poor quality boot loaders.
+SSI, which is a legacy version of HSI, is used to connect the application
+engine with the cellular modem on the Nokia N900.
+
+In this round we have fixed:
+- Locking issues in the HSI framework.
+- Fixes on removal of controller's modules.
+- Error path handling in the omap_ssi driver.
+- Increase the robustness of hsi_char.
+- Typos and cosmetics.
+- Some unused parameters warnings. 
+
+I would very glad to continue getting feedback about this proposal.
+
+This patch series is based on 2.6.36-rc6.
+
+Version 2 of the patch set: http://lkml.org/lkml/2010/5/7/233
+
+Br,
+Carlos Chinea
+
+Andras Domokos (3):
+  HSI CHAR: Add HSI char device driver
+  HSI CHAR: Add HSI char device kernel configuration
+  HSI CHAR: Update ioctl-number.txt
+
+Carlos Chinea (4):
+  HSI: Introducing HSI framework
+  OMAP SSI: Introducing OMAP SSI driver
+  OMAP SSI: Add OMAP SSI to the kernel configuration
+  HSI: Add HSI API documentation
+
+ Documentation/DocBook/device-drivers.tmpl |   17 +
+ Documentation/ioctl/ioctl-number.txt      |    1 +
+ arch/arm/mach-omap2/Makefile              |    3 +
+ arch/arm/mach-omap2/ssi.c                 |  139 +++
+ arch/arm/plat-omap/include/plat/ssi.h     |  204 ++++
+ drivers/Kconfig                           |    2 +
+ drivers/Makefile                          |    1 +
+ drivers/hsi/Kconfig                       |   16 +
+ drivers/hsi/Makefile                      |    5 +
+ drivers/hsi/clients/Kconfig               |   13 +
+ drivers/hsi/clients/Makefile              |    5 +
+ drivers/hsi/clients/hsi_char.c            | 1090 +++++++++++++++++
+ drivers/hsi/controllers/Kconfig           |   21 +
+ drivers/hsi/controllers/Makefile          |    5 +
+ drivers/hsi/controllers/omap_ssi.c        | 1836 +++++++++++++++++++++++++++++
+ drivers/hsi/hsi.c                         |  516 ++++++++
+ include/linux/Kbuild                      |    1 +
+ include/linux/hsi/Kbuild                  |    1 +
+ include/linux/hsi/hsi.h                   |  376 ++++++
+ include/linux/hsi/hsi_char.h              |   66 +
+ 20 files changed, 4318 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/mach-omap2/ssi.c
+ create mode 100644 arch/arm/plat-omap/include/plat/ssi.h
+ create mode 100644 drivers/hsi/Kconfig
+ create mode 100644 drivers/hsi/Makefile
+ create mode 100644 drivers/hsi/clients/Kconfig
+ create mode 100644 drivers/hsi/clients/Makefile
+ create mode 100644 drivers/hsi/clients/hsi_char.c
+ create mode 100644 drivers/hsi/controllers/Kconfig
+ create mode 100644 drivers/hsi/controllers/Makefile
+ create mode 100644 drivers/hsi/controllers/omap_ssi.c
+ create mode 100644 drivers/hsi/hsi.c
+ create mode 100644 include/linux/hsi/Kbuild
+ create mode 100644 include/linux/hsi/hsi.h
+ create mode 100644 include/linux/hsi/hsi_char.h
+
