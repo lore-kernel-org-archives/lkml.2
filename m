@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751876Ab0JKFEo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 01:04:44 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38236 "EHLO smtps.tip.net.au"
+	id S1752090Ab0JKFLo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 01:11:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:43532 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751108Ab0JKFEn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 01:04:43 -0400
-Date: Mon, 11 Oct 2010 16:04:29 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: linux-next: build warning after merge of the final tree (tip tree
- related)
-Message-Id: <20101011160429.81483d01.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__11_Oct_2010_16_04_29_+1100_rMBA4OkWerpIvzGB"
+	id S1751773Ab0JKFLn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 01:11:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,311,1283756400"; 
+   d="scan'208";a="845791696"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: "Williams, Dan J" <dan.j.williams@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alan@linux.intel.com" <alan@linux.intel.com>,
+        "K V, Ramesh B" <ramesh.b.k.v@intel.com>,
+        "yong.y.wang@linux.intel.com" <yong.y.wang@linux.intel.com>
+Date: Mon, 11 Oct 2010 10:41:25 +0530
+Subject: RE: [PATCH 6/6] intel_mid_dma: change the slave interface
+Thread-Topic: [PATCH 6/6] intel_mid_dma: change the slave interface
+Thread-Index: ActnDibybvlSV25pQqGMnzDg5GR4swB6mLmw
+Message-ID: <438BB0150E931F4B9CE701519A44630104BE486B2A@bgsmsx502.gar.corp.intel.com>
+References: <1286188723-6341-1-git-send-email-vinod.koul@intel.com>
+ <AANLkTi=8dV1EaAsT-Gkjkb-UY9R10r8LFQxMK3xQOwDw@mail.gmail.com>
+In-Reply-To: <AANLkTi=8dV1EaAsT-Gkjkb-UY9R10r8LFQxMK3xQOwDw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__11_Oct_2010_16_04_29_+1100_rMBA4OkWerpIvzGB
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi all,
+On Fri, Oct 8, 2010 at 10:58 PM, dan.j.williams@gmail.com wrote:
+> On Mon, Oct 4, 2010 at 3:38 AM, Vinod Koul <vinod.koul@intel.com> wrote:
+> > In 2.6.36 kernel, dma slave control command was introduced,
+> > this patch changes the intel-mid-dma driver to this
+> > new kernel slave interface
+> >
+> > Signed-off-by: Vinod Koul <vinod.koul@intel.com>
+> > ---
+> [..]
+> > +static int dma_slave_control(struct dma_chan *chan, unsigned long arg)
+> > +{
+> > +       struct intel_mid_dma_chan       *midc = to_intel_mid_dma_chan(chan);
+> > +       struct dma_slave_config  *slave = (struct dma_slave_config *)arg;
+> > +       struct intel_mid_dma_slave *mid_slave;
+> > +
+> > +       BUG_ON(!midc);
+> > +       BUG_ON(!slave);
+> > +       pr_debug("MDMA: slave control called\n");
+> > +
+> > +       mid_slave = to_intel_mid_dma_slave(slave);
+> 
+> I know this was the initial recommendation to support custom
+> extensions to dma_slave_config, but this isn't safe.  How does this
+> routine know that that 'slave' is embedded in an intel_mid_dma_slave
+> structure.  I applied it as is, but I think we need a better approach.
+> 
+> Maybe a per device alloc_dma_slave_config() such that ->dma_control()
+> can assume the driver allocated the dma_slave_config.  As it stands
+> nothing in the calling convention guarantees type safety.
 
-After merging the final tree, today's linux-next build (powerpc
-allnoconfig) produced this warning:
 
-WARNING: mm/built-in.o(.text+0x25ab8): Section mismatch in reference from t=
-he function memblock_find_base() to the function .init.text:memblock_find_r=
-egion()
-The function memblock_find_base() references
-the function __init memblock_find_region().
-This is often because memblock_find_base lacks a __init=20
-annotation or the annotation of memblock_find_region is wrong.
+Dan,
+Thanks for applying the patches.
 
-Introduced by commit 3661ca66a42e306aaf53246fb75aec1ea01be0f0 ("memblock:
-Fix section mismatch warnings").
+I had thought thru this earlier, yes I agree that it is not fully safe to 
+*assume* that intel_mid_dma_slave embeds the dma_slave_config structure.
 
-Sorry, I seem to have missed this before.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+But we can also argue that since this is DMA_SLAVE device and device needs to 
+always pass controller specific arguments and hence knows about this controller,
+so will have such a thing in place.
+Yes but this can be easily abused.
 
---Signature=_Mon__11_Oct_2010_16_04_29_+1100_rMBA4OkWerpIvzGB
-Content-Type: application/pgp-signature
+Another alternative is to maintain the channel->private pointer for these sort 
+of details as we were doing previously...
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Thoughts...?
 
-iQEcBAEBAgAGBQJMsprdAAoJEDMEi1NhKgbs3F4H/3ABEr2j31jdcwt+JVXYErLD
-30xbEhTbt/XqGczDd8dRv7wnRSKQD6vBfdGZ1rJgWCA5+/l+8tgWWZMYCf9pc7OX
-CHXZlbFG32BSJwgKyXu9RVxtPEuMiHMMnLVFykmraKqa60GXQxughLoiKQfTNEv6
-1QH1beowOb67M8e8gl3StC9aiBW+KWBVlM8zH1Fn02HbcuWLmy1LoQ9LXSiRMyRJ
-+9zeMDtkBkf5fVXX7p9lgrPdPuzc/htESz8LlZQiK8HUS/GKO7PgsIDNRlHhx7iI
-1cbTv6armvg1NxJoTjhEN/DnFM/MSo43hv83bFE8aGwQMrO85+o1dcKgpSLYy8k=
-=pS7A
------END PGP SIGNATURE-----
+~Vinod
 
---Signature=_Mon__11_Oct_2010_16_04_29_+1100_rMBA4OkWerpIvzGB--
+
+
