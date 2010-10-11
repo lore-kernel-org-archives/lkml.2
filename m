@@ -1,294 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab0JKNoz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 09:44:55 -0400
-Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:50601 "EHLO
-	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754211Ab0JKNoy (ORCPT
+	id S1754731Ab0JKNsU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 09:48:20 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:45300 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754485Ab0JKNsS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 09:44:54 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4CB31629.6010006@cam.ac.uk>
-Date: Mon, 11 Oct 2010 14:50:33 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100928 Lightning/1.0b3pre Thunderbird/3.1.4
+	Mon, 11 Oct 2010 09:48:18 -0400
+Message-ID: <4CB31592.2080508@us.ibm.com>
+Date: Mon, 11 Oct 2010 08:48:02 -0500
+From: Maynard Johnson <maynardj@us.ibm.com>
+Reply-To: maynardj@us.ibm.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Samu Onkalo <samu.p.onkalo@nokia.com>
-CC: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
-        alan@lxorguk.ukuu.org.uk
-Subject: Re: [PATCHv3 5/5] Documentation: Short descriptions for bh1770glc
- and apds990x drivers
-References: <1286795209-12487-1-git-send-email-samu.p.onkalo@nokia.com> <1286795209-12487-6-git-send-email-samu.p.onkalo@nokia.com>
-In-Reply-To: <1286795209-12487-6-git-send-email-samu.p.onkalo@nokia.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+To: Robert Richter <robert.richter@amd.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        oprofile-list <oprofile-list@lists.sourceforge.net>,
+        William Cohen <wcohen@redhat.com>,
+        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
+Subject: Re: [PATCH] oprofile: disable write access to oprofilefs while profiler
+ is running
+References: <1286275017-32497-1-git-send-email-robert.richter@amd.com> <20101005163338.GI13563@erda.amd.com>
+In-Reply-To: <20101005163338.GI13563@erda.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/11/10 12:06, Samu Onkalo wrote:
-> Add short documentation for two ALS / proximity chip drivers.
+On 10/05/2010 11:33 AM, Robert Richter wrote:
+> On 05.10.10 06:36:57, Robert Richter wrote:
+>> Oprofile counters are setup when profiling is disabled. Thus, writing
+>> to oprofilefs has no immediate effect. Changes are updated only after
+>> oprofile is reenabled.
+Robert, I don't have any issue with this patch except I'm not sure what problem 
+it's fixing.  From my read of oprofile userland code, I don't see where 
+profiling parameters are ever written to oprofilefs when profiling is active. 
+Is your patch intended to guard against potential non-intentional cases 
+occurring in userland code?  Or is there some case existing right now?
 
-Couple of nitpicks.  All in category of things to fix if you are
-respinning the patch for some other reason.
-> 
-> Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+-Maynard
+>>
+>> To keep userland and kernel states synchronized, we now allow
+>> configuration of oprofile only if profiling is disabled.  In this case
+>> it checks if the profiler is running and then disables write access to
+>> oprofilefs by returning -EBUSY. The change should be backward
+>> compatible with current oprofile userland daemon.
+>>
+>> Cc: Maynard Johnson<maynardj@us.ibm.com>
+>> Cc: William Cohen<wcohen@redhat.com>
+>> Cc: Suravee Suthikulpanit<suravee.suthikulpanit@amd.com>
+>> Signed-off-by: Robert Richter<robert.richter@amd.com>
+>> ---
+>>   drivers/oprofile/oprof.c          |   19 +++++--------------
+>>   drivers/oprofile/oprof.h          |    2 +-
+>>   drivers/oprofile/oprofile_files.c |    7 +++++--
+>>   drivers/oprofile/oprofilefs.c     |    8 ++++++--
+>>   4 files changed, 17 insertions(+), 19 deletions(-)
+>>
+>> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+>> index b4a6857..a7ab09e 100644
+>> --- a/drivers/oprofile/oprof.c
+>> +++ b/drivers/oprofile/oprof.c
+>> @@ -225,26 +225,17 @@ post_sync:
+>>   	mutex_unlock(&start_mutex);
+>>   }
+>>
+>> -int oprofile_set_backtrace(unsigned long val)
+>> +int oprofile_set_ulong(unsigned long *addr, unsigned long val)
+>>   {
+>> -	int err = 0;
+>> +	int err = -EBUSY;
+>>
+>>   	mutex_lock(&start_mutex);
+>> -
+>>   	if (oprofile_started) {
+>
+> I did a late change which I never should do. It should be:
+>
+> 	if (!oprofile_started) ...
+>
+> The concept remains the same.
+>
+> Updated patch below.
+>
+> Sorry,
+>
+> -Robert
+>
+>> -		err = -EBUSY;
+>> -		goto out;
+>> -	}
+>> -
+>> -	if (!oprofile_ops.backtrace) {
+>> -		err = -EINVAL;
+>> -		goto out;
+>> +		*addr = val;
+>> +		err = 0;
+>>   	}
+>> -
+>> -	oprofile_backtrace_depth = val;
+>> -
+>> -out:
+>>   	mutex_unlock(&start_mutex);
+>> +
+>>   	return err;
+>>   }
+>
+> --
+>
+>  From 2d5710a2850eec24c54a1338ae5986963928cf8a Mon Sep 17 00:00:00 2001
+> From: Robert Richter<robert.richter@amd.com>
+> Date: Mon, 4 Oct 2010 21:09:36 +0200
+> Subject: [PATCH] oprofile: disable write access to oprofilefs while profiler is running
+>
+> Oprofile counters are setup when profiling is disabled. Thus, writing
+> to oprofilefs has no immediate effect. Changes are updated only after
+> oprofile is reenabled.
+>
+> To keep userland and kernel states synchronized, we now allow
+> configuration of oprofile only if profiling is disabled.  In this case
+> it checks if the profiler is running and then disables write access to
+> oprofilefs by returning -EBUSY. The change should be backward
+> compatible with current oprofile userland daemon.
+>
+> Cc: Maynard Johnson<maynardj@us.ibm.com>
+> Cc: William Cohen<wcohen@redhat.com>
+> Cc: Suravee Suthikulpanit<suravee.suthikulpanit@amd.com>
+> Signed-off-by: Robert Richter<robert.richter@amd.com>
 > ---
->  Documentation/misc-devices/apds990x.txt  |  113 ++++++++++++++++++++++++++++
->  Documentation/misc-devices/bh1770glc.txt |  118 ++++++++++++++++++++++++++++++
->  2 files changed, 231 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/misc-devices/apds990x.txt
->  create mode 100644 Documentation/misc-devices/bh1770glc.txt
-> 
-> diff --git a/Documentation/misc-devices/apds990x.txt b/Documentation/misc-devices/apds990x.txt
-> new file mode 100644
-> index 0000000..36b9e40
-> --- /dev/null
-> +++ b/Documentation/misc-devices/apds990x.txt
-> @@ -0,0 +1,113 @@
-> +Kernel driver apds990x
-> +======================
+>   drivers/oprofile/oprof.c          |   21 ++++++---------------
+>   drivers/oprofile/oprof.h          |    2 +-
+>   drivers/oprofile/oprofile_files.c |    7 +++++--
+>   drivers/oprofile/oprofilefs.c     |    8 ++++++--
+>   4 files changed, 18 insertions(+), 20 deletions(-)
+>
+> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+> index b4a6857..f9bda64 100644
+> --- a/drivers/oprofile/oprof.c
+> +++ b/drivers/oprofile/oprof.c
+> @@ -225,26 +225,17 @@ post_sync:
+>   	mutex_unlock(&start_mutex);
+>   }
+>
+> -int oprofile_set_backtrace(unsigned long val)
+> +int oprofile_set_ulong(unsigned long *addr, unsigned long val)
+>   {
+> -	int err = 0;
+> +	int err = -EBUSY;
+>
+>   	mutex_lock(&start_mutex);
+> -
+> -	if (oprofile_started) {
+> -		err = -EBUSY;
+> -		goto out;
+> +	if (!oprofile_started) {
+> +		*addr = val;
+> +		err = 0;
+>   	}
+> -
+> -	if (!oprofile_ops.backtrace) {
+> -		err = -EINVAL;
+> -		goto out;
+> -	}
+> -
+> -	oprofile_backtrace_depth = val;
+> -
+> -out:
+>   	mutex_unlock(&start_mutex);
 > +
-> +Supported chips:
-> +Avago APDS990X
+>   	return err;
+>   }
+>
+> diff --git a/drivers/oprofile/oprof.h b/drivers/oprofile/oprof.h
+> index 47e12cb..177b73d 100644
+> --- a/drivers/oprofile/oprof.h
+> +++ b/drivers/oprofile/oprof.h
+> @@ -37,7 +37,7 @@ void oprofile_create_files(struct super_block *sb, struct dentry *root);
+>   int oprofile_timer_init(struct oprofile_operations *ops);
+>   void oprofile_timer_exit(void);
+>
+> -int oprofile_set_backtrace(unsigned long depth);
+> +int oprofile_set_ulong(unsigned long *addr, unsigned long val);
+>   int oprofile_set_timeout(unsigned long time);
+>
+>   #endif /* OPROF_H */
+> diff --git a/drivers/oprofile/oprofile_files.c b/drivers/oprofile/oprofile_files.c
+> index bbd7516..ccf099e 100644
+> --- a/drivers/oprofile/oprofile_files.c
+> +++ b/drivers/oprofile/oprofile_files.c
+> @@ -79,14 +79,17 @@ static ssize_t depth_write(struct file *file, char const __user *buf, size_t cou
+>   	if (*offset)
+>   		return -EINVAL;
+>
+> +	if (!oprofile_ops.backtrace)
+> +		return -EINVAL;
 > +
-> +Data sheet:
-> +Not freely available
+>   	retval = oprofilefs_ulong_from_user(&val, buf, count);
+>   	if (retval)
+>   		return retval;
+>
+> -	retval = oprofile_set_backtrace(val);
+> -
+> +	retval = oprofile_set_ulong(&oprofile_backtrace_depth, val);
+>   	if (retval)
+>   		return retval;
 > +
-> +Author:
-> +Samu Onkalo <samu.p.onkalo@nokia.com>
+>   	return count;
+>   }
+>
+> diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
+> index 789a1a8..1944621 100644
+> --- a/drivers/oprofile/oprofilefs.c
+> +++ b/drivers/oprofile/oprofilefs.c
+> @@ -91,16 +91,20 @@ static ssize_t ulong_read_file(struct file *file, char __user *buf, size_t count
+>
+>   static ssize_t ulong_write_file(struct file *file, char const __user *buf, size_t count, loff_t *offset)
+>   {
+> -	unsigned long *value = file->private_data;
+> +	unsigned long value;
+>   	int retval;
+>
+>   	if (*offset)
+>   		return -EINVAL;
+>
+> -	retval = oprofilefs_ulong_from_user(value, buf, count);
+> +	retval = oprofilefs_ulong_from_user(&value, buf, count);
+> +	if (retval)
+> +		return retval;
+>
+> +	retval = oprofile_set_ulong(file->private_data, value);
+>   	if (retval)
+>   		return retval;
 > +
-> +Description
-> +-----------
-> +
-> +APDS990x is a combined ambient light and proximity sensor. ALS and proximity
-> +functionality are highly connected. ALS measurement path must be running
-> +while the proximity functionality is enabled.
-> +
-> +ALS produces raw measurement values for two channels: Clear channel
-> +(infrared + visible light) and IR only. However, threshold comparisons happen
-> +using clear channel only. LUX value and the threshold level on the HW
-> +might vary quite much depending the spectrum of the light source.
-> +
-> +Driver makes necessary conversions to both directions so that user handles
-> +only LUX values. LUX value is calculated using information from the both
-> +channels. HW threshold level is calculated from the given LUX value to match
-> +with current type of the lightning. Sometimes inaccuracy of the estimations
-> +lead to false interrupt, but that doesn't harm.
-> +
-> +ALS contains 4 different gain steps. Driver automatically
-> +selects suitable gain step. After each measurement, reliability of the results
-> +is estimated and new measurement is trigged if necessary.
-> +
-> +Platform data can provide tuned values to the conversion formulas if
-> +values are known. Otherwise plain sensor default values are used.
-> +
-> +Proximity side is little bit simpler. There is no need for complex conversions.
-> +It produces directly usable values.
-> +
-> +Driver controls chip operational state using pm_runtime framework.
-> +Voltage regulators are controlled based on chip operational state.
-> +
-> +SYSFS
-> +-----
-> +
-> +
-> +chip_id
-> +	RO - shows detected chip type and version
-> +
-> +power_state
-> +	RW - enable / disable chip. Uses counting logic
-> +	     1 enables the chip
-> +	     0 disables the chip
-> +lux0_input
-> +	RO - measured LUX value
-> +	     sysfs_notify called when threshold interrupt occurs
-> +
-> +lux0_sensor_range
-> +	RO - lux0_input max value. Actually never reaches since sensor tends
-> +	     to saturate much before that. Real max value varies depending
-> +	     on the light spectrum etc.
-> +
-bonus blank line?
-> +
-> +lux0_rate
-> +	RW - measurement rate in Hz
-> +
-> +lux0_rate_avail
-> +	RO - supported measurement rates
-> +
-> +lux0_calibscale
-> +	RW - calibration value. Set to neutral value by default.
-> +	     Output results are multiplied with calibscale / calibscale_default
-> +	     value.
-> +
-> +lux0_calibscale_default
-> +	RO - neutral calibration value
-> +
-> +lux0_thresh_above_value
-> +	RW - HI level threshold value. All results above the value
-> +	     trigs an interrupt. 65535 (i.e. sensor_range) disables the above
-> +	     interrupt.
-> +
-> +lux0_thresh_below_value
-> +	RW - LO level threshold value. All results below the value
-> +	     trigs an interrupt. 0 disables the below interrupt.
-> +
-> +prox0_raw
-> +	RO - measured proximity value
-> +	     sysfs_notify called when threshold interrupt occurs
-> +
-> +prox0_sensor_range
-> +	RO - prox0_raw max value (1023)
-> +
-> +prox0_raw_en
-> +	RW - enable / disable proximity - uses counting logic
-> +	     1 enables the proximity
-> +	     0 disables the proximity
-> +
-> +prox0_reporting_mode
-> +	RW - trigger / periodic. In "trigger" mode the driver tells two possible
-> +	     values: 0 or prox0_sensor_range value. 0 means no proximity,
-> +	     1023 means proximity. This causes minimal number of interrupts.
-> +	     In "periodic" mode the driver reports all values above
-> +	     prox0_thresh_above. This causes more interrupts, but it can give
-> +	     _rough_ estimate about the distance.
-> +
-> +prox0_reporting_mode_avail
-> +	RO - accepted values to prox0_reporting_mode (trigger, periodic)
-> +
-> +prox0_thresh_above_value
-> +	RW - threshold level which trigs proximity events.
-> +
-> diff --git a/Documentation/misc-devices/bh1770glc.txt b/Documentation/misc-devices/bh1770glc.txt
-> new file mode 100644
-> index 0000000..e98e756
-> --- /dev/null
-> +++ b/Documentation/misc-devices/bh1770glc.txt
-> @@ -0,0 +1,118 @@
-> +Kernel driver bh1770glc
-> +=======================
-> +
-> +Supported chips:
-> +ROHM BH1770GLC
-> +OSRAM SFH7770
-> +
-> +Data sheet:
-> +Not freely available
-> +
-> +Author:
-> +Samu Onkalo <samu.p.onkalo@nokia.com>
-> +
-> +Description
-> +-----------
-> +BH1770GLC and SFH7770 are combined ambient light and proximity sensors.
-> +ALS and proximity parts operates on their own, but they shares common I2C
-> +interface and interrupt logic. In principle they can run on their own,
-> +but ALS side results are used to estimate reliability of the proximity sensor.
-> +
-> +ALS produces 16 bit LUX values. The chip contains interrupt logic to produce
-> +low and high threshold interrupts.
-> +
-> +Proximity part contains IR-led driver up to 3 IR leds. The chip measures
-> +amount of reflected IR light and produces proximity result. Resolution is
-> +8 bit. Driver supports only one channel. Driver uses ALS results to estimate
-> +reliability of the proximity results. Thus ALS is always running while
-> +proximity detection is needed.
-> +
-> +Driver uses threshold interrupts to avoid need for polling the values.
-> +Proximity low interrupt doesn't exists in the chip. This is simulated
-> +by using a delayed work. As long as there is proximity threshold above
-> +interrupts the delayed work is pushed forward. So, when proximity level goes
-> +below the threshold value, there is no interrupt and the delayed work will
-> +finally run. This is handled as no proximity indication.
-> +
-> +Chip state is controlled via runtime pm framework when enabled in config.
-> +
-> +Calibscale factor is used to hide differences between the chips. By default
-> +value set to neutral state meaning factor of 1.00. To get proper values,
-> +calibrated source of light is needed as a reference. Calibscale factor is set
-> +so that measurement produces about the expected lux value.
-I'm not sure why LUX is in capitals everywhere else, but if there is a reason
-then I think this one should be as well?
-> +
-> +SYSFS
-> +-----
-> +
-> +chip_id
-> +	RO - shows detected chip type and version
-> +
-> +power_state
-> +	RW - enable / disable chip. Uses counting logic
-> +	     1 enables the chip
-> +	     0 disables the chip
-> +
-> +lux0_input
-> +	RO - measured LUX value
-> +	     sysfs_notify called when threshold interrupt occurs
-> +
-> +lux0_sensor_range
-> +	RO - lux0_input max value
-> +
-> +lux0_rate
-> +	RW - measurement rate in Hz
-> +
-> +lux0_rate_avail
-> +	RO - supported measurement rates
-> +
-> +lux0_thresh_above_value
-> +	RW - HI level threshold value. All results above the value
-> +	     trigs an interrupt. 65535 (i.e. sensor_range) disables the above
-> +	     interrupt.
-> +
-> +lux0_thresh_below_value
-> +	RW - LO level threshold value. All results below the value
-> +	     trigs an interrupt. 0 disables the below interrupt.
-> +
-> +lux0_calibscale
-> +	RW - calibration value. Set to neutral value by default.
-> +	     Output results are multiplied with calibscale / calibscale_default
-> +	     value.
-> +
-> +lux0_calibscale_default
-> +	RO - neutral calibration value
-> +
-> +prox0_raw
-> +	RO - measured proximity value
-> +	     sysfs_notify called when threshold interrupt occurs
-> +
-> +prox0_sensor_range
-> +	RO - prox0_raw max value
-> +
-> +prox0_raw_en
-> +	RW - enable / disable proximity - uses counting logic
-> +	     1 enables the proximity
-> +	     0 disables the proximity
-> +
-> +prox0_thresh_above_count
-> +	RW - number of proximity interrupts needed before triggering the event
-> +
-> +prox0_rate_above
-> +	RW - Measurement rate (in Hz) when the level is above threshold
-> +	     i.e. when proximity on has been reported.
-> +
-> +prox0_rate_below
-> +	RW - Measurement rate (in Hz) when the level is below threshold
-> +	     i.e. when proximity off has been reported.
-> +
-> +prox0_rate_avail
-> +	RO - Supported proximity measurement rates in Hz
-Nitpick, bonus white line?
-> +
-> +
-> +prox0_thresh_above0_value
-> +	RW - threshold level which trigs proximity events.
-> +	     Filtered by persistence filter (prox0_thresh_above_count)
-> +
-> +prox0_thresh_above1_value
-> +	RW - threshold level which trigs event immediately
-> +
+>   	return count;
+>   }
+>
 
