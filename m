@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab0JKQ0e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 12:26:34 -0400
-Received: from smtprelay-h21.telenor.se ([195.54.99.196]:37526 "EHLO
-	smtprelay-h21.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab0JKQ0d convert rfc822-to-8bit (ORCPT
+	id S1755441Ab0JKQaj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 12:30:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60609 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755366Ab0JKQah (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 12:26:33 -0400
-X-SENDER-IP: [85.229.127.233]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AqorAA7QskxV5X/pPGdsb2JhbACEG490AQGNewwBAQEBEw0IBwbCT4VIBIV7g35I
-X-IronPort-AV: E=Sophos;i="4.57,314,1283724000"; 
-   d="scan'208";a="139957497"
-Message-Id: <VxI2NFXF2qs6W5kxd8cSOwu7SJHShS5RXJXUsGv4JmUB@dabber.tv>
+	Mon, 11 Oct 2010 12:30:37 -0400
+Date: Mon, 11 Oct 2010 09:29:15 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, dri-devel@lists.freedesktop.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>
+Subject: Re: linux-next: Tree for October 11 (nouveau)
+Message-Id: <20101011092915.66afd35b.randy.dunlap@oracle.com>
+In-Reply-To: <20101011162959.86e40961.sfr@canb.auug.org.au>
+References: <20101011162959.86e40961.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-From: "The Dabber Player" <dd@dabber.tv>
-To: "" <linux-kernel@vger.kernel.org>
-Subject: Today we launch The Dabber video player for free
-Date: Mon, 11 Oct 2010 17:56:12 +0200
-X-Bounce-Tracking-Info: <CQkJbGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZwlUb2RheSB3ZSBsYXVuY2ggVGhlIERhYmJlciB2aWRlbyBwbGF5ZXIgZm9yIGZyZWUJNjkJCTExNzg4Mglib3VuY2UJbm8Jbm8=>
-Content-type: text/plain; charset=iso-8859-1; format=flowed
-Content-transfer-encoding: 8BIT
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ladies and gentlemen, mina damer och her
+On Mon, 11 Oct 2010 16:29:59 +1100 Stephen Rothwell wrote:
 
-We are proud to launch a free version of our popular Dabber player at
-http://www.dabber-player.com
-
-The Dabber player is one of the most beautiful 3D-interface
-videoplayers for embedding on any webpage. Now you can host your own
-online tv-channel, display your best content and best of all you can change the
-look and feel and adapt the player to your webpage. No more black, boring,
-standard embedded and sad videoplayers. Let´s make Internet more
-beautiful!
-
-You can use our entire range of improved, evolved and very beautiful Dabber video players
-for only $75 and Free for non commercial use.
-And for only $95 per month you can have encoding, storage, trafik, contentmanagement and all players!
-Practically anythin to start your own online channel.
-
-Order yours today and use them, love them, and improve all websites out
-there. You can find them at http://www.dabber-player.com
-
-A huge thanks goes to all you brave ones who have ordered and
-implemented our early Dabber players so far. Your orders, thoughts, feedback
-and love have taken us to this day. You know who you are!
-
-New players and plugins are in the pipeline, both for YouTube, Vimeo,
-JW, Flow, Html5 and other. We can already provide a CMS as a Wordpress plugin
-
-We look forward to your order and feedback!
-For future newsletters and info please subscribe at http://www.dabber.tv/#news
-
-Daniel Daboczy
-CEO & co-founder
+> Hi all,
+> 
+> Changes since 20101008:
 
 
+When CONFIG_HWMON is not enabled:
+
+drivers/built-in.o: In function `nouveau_pm_fini':
+(.text+0x1c680f): undefined reference to `hwmon_device_unregister'
+drivers/built-in.o: In function `nouveau_hwmon_init':
+nouveau_pm.c:(.text+0x1c6f93): undefined reference to `hwmon_device_register'
+nouveau_pm.c:(.text+0x1c7094): undefined reference to `hwmon_device_unregister'
 
 
-DABBER
-website: http://www.dabber-player.com
-mobile: +46 (0)736 26 99 85
-e-mail:
-daniel@dabber.tv
-SKYPE: mrdaboczy
-adress: Frejgatan 8, SE-114 20
-Stockholm, Sweden
-
-Nominated for "Best Streaming Innovation of 2009" at the prestigious
-Streaming Media awards in London.
-
-
-
-This message was sent to linux-kernel@vger.kernel.org from Dabber Stockholm.
-To stop receiveing info or newsletters from us please reply with the word unsub.
-
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
