@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab0JLI2v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 04:28:51 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43621 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab0JLI2u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 04:28:50 -0400
-Date: Tue, 12 Oct 2010 09:28:14 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
-Subject: Re: linux-next: manual merge of the arm tree with the arm-current
-	tree
-Message-ID: <20101012082814.GC12845@flint.arm.linux.org.uk>
-References: <20101012103314.41b00cbe.sfr@canb.auug.org.au> <20101012080354.GC29673@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101012080354.GC29673@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S932109Ab0JLIbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 04:31:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756621Ab0JLIbp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 04:31:45 -0400
+From: jcm@jonmasters.org
+To: linux-wireless@vger.kernel.org
+Cc: Brett Rudley <brudley@broadcom.com>, Henry Ptasinski <henryp@broadcom.com>,
+        Nohee Ko <noheek@broadcom.com>, Jon Masters <jcm@jonmasters.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] [staging] brcm80211: fix radio disabled on attempt to bring up interface
+Date: Tue, 12 Oct 2010 04:29:58 -0400
+Message-Id: <1286872198-10664-1-git-send-email-jcm@jonmasters.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 10:03:54AM +0200, Uwe Kleine-König wrote:
-> On Tue, Oct 12, 2010 at 10:33:14AM +1100, Stephen Rothwell wrote:
-> > Hi Russell,
-> > 
-> > Today's linux-next merge of the arm tree got a conflict in
-> > arch/arm/mach-imx/mach-cpuimx27.c between commit
-> > 4793ca4028e4dcdbf2740db50995c9378ded3cf8 ("cpuimx27: fix i2c bus
-> > selection") from the arm-current tree and commit
-> > 77a406da5a5b76445a816d5f043fc9aef4026ff1 ("ARM: imx: fix name of macros
-> > to add imx-i2c devices") from the arm tree.
-> > 
-> > I fixed it up (see below) can can carry the fix for a while.
-> > -- 
-> > Cheers,
-> > Stephen Rothwell                    sfr@canb.auug.org.au
-> > 
-> > diff --cc arch/arm/mach-imx/mach-cpuimx27.c
-> > index 6830afd,28f73a1..0000000
-> > --- a/arch/arm/mach-imx/mach-cpuimx27.c
-> > +++ b/arch/arm/mach-imx/mach-cpuimx27.c
-> > @@@ -259,8 -258,9 +258,9 @@@ static void __init eukrea_cpuimx27_init
-> >   	i2c_register_board_info(0, eukrea_cpuimx27_i2c_devices,
-> >   				ARRAY_SIZE(eukrea_cpuimx27_i2c_devices));
-> >   
-> > - 	imx27_add_i2c_imx0(&cpuimx27_i2c1_data);
-> >  -	imx27_add_imx_i2c(1, &cpuimx27_i2c1_data);
-> > ++	imx27_add_imx_i2c(0, &cpuimx27_i2c1_data);
-> >   
-> > + 	imx27_add_fec(NULL);
-> >   	platform_add_devices(platform_devices, ARRAY_SIZE(platform_devices));
-> >   
-> >   #if defined(CONFIG_MACH_EUKREA_CPUIMX27_USESDHC2)
-> > 
-> This is resolved correctly.
+The brcm80211 driver does not correctly handle the case that the wireless
+radio hardware is physically disabled during interface initialization. An
+attempt is made to check whether the radio is disabled, and in the case
+that it is, a background worker is setup to monitor for the radio coming
+online, but the interface queues are incorrectly brought up anyway. The
+value BCME_RADIOOFF should be returned in wlc_up in such error case.
 
-A more concerning question is - these recent conflicts have been happening
-as a result of merging people's GIT trees, which tend to be sent close
-to the merge window.
+Signed-off-by: Jon Masters <jcm@jonmasters.org>
 
-If the first time their changes become visible to linux-next is when
-they're merged into my tree, something is wrong...
-
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+diff -urNp brcm80211_orig/sys/wlc_mac80211.c brcm80211/sys/wlc_mac80211.c
+--- brcm80211_orig/sys/wlc_mac80211.c	2010-10-12 04:18:07.940125220 -0400
++++ brcm80211/sys/wlc_mac80211.c	2010-10-12 04:19:19.814961117 -0400
+@@ -2783,7 +2783,7 @@ int BCMINITFN(wlc_up) (wlc_info_t *wlc)
+ 
+ 	if (wlc->pub->radio_disabled) {
+ 		wlc_radio_monitor_start(wlc);
+-		return 0;
++		return BCME_RADIOOFF;
+ 	}
+ 
+ 	/* wlc_bmac_up_prep has done wlc_corereset(). so clk is on, set it */
