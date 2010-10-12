@@ -1,139 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab0JLVxu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:53:50 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:62566 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751013Ab0JLVxt (ORCPT
+	id S1751634Ab0JLV5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:57:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64774 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab0JLV5p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:53:49 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/qy0kVR0aF2jQiveQ+xxhQ
-Date: Tue, 12 Oct 2010 13:49:27 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Carlos Chinea <carlos.chinea@nokia.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [RFC PATCHv3 2/7] OMAP SSI: Introducing OMAP SSI driver
-Message-ID: <20101012204927.GY25462@atomide.com>
-References: <1286787988-29013-1-git-send-email-carlos.chinea@nokia.com>
- <1286787988-29013-3-git-send-email-carlos.chinea@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286787988-29013-3-git-send-email-carlos.chinea@nokia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 12 Oct 2010 17:57:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:content-type:date:message-id
+         :mime-version:x-mailer:content-transfer-encoding;
+        b=Beje9QnycgTe2oU5u7MthWxDYPsvkUu1bDIEoPdRQItHQbjFdcmDK49y++PQMxGQIf
+         5DdJi9+9HBQErRMmxFkgZuXN/RTx4HVoBEn+QIt/6FAZ5sq8E30fgwxd5MeBzC6H0IMz
+         gkOtgyu+v5G3/cCt3Wl59rQ00wLZLnoiiZnZE=
+Subject: [PATCH] staging/cxt1e1: fix mtu_max name pollution
+From: Bob Beers <bob.beers@gmail.com>
+Reply-To: bob.beers@gmail.com
+To: gregkh@suse.de
+Cc: napohybelskurwysynom2010@gmail.com, akpm@linux-foundation.org,
+        mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain
+Date: Tue, 12 Oct 2010 17:57:41 -0400
+Message-Id: <1286920661.8951.4.camel@tjeff3.edgeaccess.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Carlos Chinea <carlos.chinea@nokia.com> [101011 01:58]:
-> Introduces the OMAP SSI driver in the kernel.
-> 
-> The Synchronous Serial Interface (SSI) is a legacy version
-> of HSI. As in the case of HSI, it is mainly used to connect
-> Application engines (APE) with cellular modem engines (CMT)
-> in cellular handsets.
-> 
-> It provides a multichannel, full-duplex, multi-core communication
-> with no reference clock. The OMAP SSI block is capable of reaching
-> speeds of 110 Mbit/s.
-> 
-> Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
+Rename 'max_mtu' to 'cxt1e1_max_mtu' to avoid multiple definition of `max_mtu'.
 
-> --- /dev/null
-> +++ b/arch/arm/mach-omap2/ssi.c
+Signed-off-by: Bob Beers <bbeers@gmail.com>
+---
 
-> +static struct resource ssi_resources[] = {
-> +	/* SSI controller */
-> +	[0] = {
-> +		.start	= 0x48058000,
-> +		.end	= 0x48058fff,
-> +		.name	= "omap_ssi_sys",
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	/* GDD */
-> +	[1] = {
-> +		.start	= 0x48059000,
-> +		.end	= 0x48059fff,
-> +		.name	= "omap_ssi_gdd",
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	[2] = {
-> +		.start	= 71,
-> +		.end	= 71,
-> +		.name	= "ssi_gdd",
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	/* SSI port 1 */
-> +	[3] = {
-> +		.start	= 0x4805a000,
-> +		.end	= 0x4805a7ff,
-> +		.name	= "omap_ssi_sst1",
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	[4] = {
-> +		.start	= 0x4805a800,
-> +		.end	= 0x4805afff,
-> +		.name	= "omap_ssi_ssr1",
-> +		.flags	= IORESOURCE_MEM,
-> +	},
-> +	[5] = {
-> +		.start	= 67,
-> +		.end	= 67,
-> +		.name	= "ssi_p1_mpu_irq0",
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	[6] = {
-> +		.start	= 69,
-> +		.end	= 69,
-> +		.name	= "ssi_p1_mpu_irq1",
-> +		.flags	= IORESOURCE_IRQ,
-> +	},
-> +	[7] = {
-> +		.start	= 0,
-> +		.end	= 0,
-> +		.name	= "ssi_p1_cawake",
-> +		.flags	= IORESOURCE_IRQ | IORESOURCE_UNSET,
-> +	},
-> +};
 
-Are these resources the same for omap2, 3 & 4?
+diff -pubr -X /home/bbeers/dontdiff linux-2.6-a/drivers/staging/cxt1e1/linux.c linux-2.6/drivers/staging/cxt1e1/linux.c
+--- linux-2.6-a/drivers/staging/cxt1e1/linux.c  2010-03-02 17:41:47.000000000 -0500
++++ linux-2.6/drivers/staging/cxt1e1/linux.c    2010-10-11 11:07:18.000000000 -0400
+@@ -114,9 +114,9 @@ int         max_mru = MUSYCC_MRU;
+ int         max_mru_default = MUSYCC_MRU;
+ module_param(max_mru, int, 0444);
 
-> +static void ssi_pdev_release(struct device *dev)
-> +{
-> +}
+-int         max_mtu = MUSYCC_MTU;
++int         cxt1e1_max_mtu = MUSYCC_MTU;
+ int         max_mtu_default = MUSYCC_MTU;
+-module_param(max_mtu, int, 0444);
++module_param(cxt1e1_max_mtu, int, 0444);
 
-Not needed.
+ int         max_txdesc_used = MUSYCC_TXDESC_MIN;
+ int         max_txdesc_default = MUSYCC_TXDESC_MIN;
+@@ -1274,9 +1274,9 @@ c4_mod_init (void)
+     if (max_mru != max_mru_default)
+         printk (KERN_INFO "%s NOTE: driver parameter <max_mru> changed from default %d to %d.\n",
+                 THIS_MODULE->name, max_mru_default, max_mru);
+-    if (max_mtu != max_mtu_default)
+-        printk (KERN_INFO "%s NOTE: driver parameter <max_mtu> changed from default %d to %d.\n",
+-                THIS_MODULE->name, max_mtu_default, max_mtu);
++       if (cxt1e1_max_mtu != max_mtu_default)
++               printk(KERN_INFO "%s NOTE: driver parameter <cxt1e1_max_mtu> changed from default %d to %d.\n",
++                          THIS_MODULE->name, max_mtu_default, cxt1e1_max_mtu);
+     if (max_rxdesc_used != max_rxdesc_default)
+     {
+         if (max_rxdesc_used > 2000)
+diff -pubr -X /home/bbeers/dontdiff linux-2.6-a/drivers/staging/cxt1e1/musycc.c linux-2.6/drivers/staging/cxt1e1/musycc.c
+--- linux-2.6-a/drivers/staging/cxt1e1/musycc.c 2010-03-02 17:41:47.000000000 -0500
++++ linux-2.6/drivers/staging/cxt1e1/musycc.c   2010-10-11 11:11:55.000000000 -0400
+@@ -99,7 +99,7 @@ extern int  drvr_state;
+ extern int  log_level;
 
-> +static struct platform_device ssi_pdev = {
-> +	.name		= "omap_ssi",
-> +	.id		= 0,
-> +	.num_resources	= ARRAY_SIZE(ssi_resources),
-> +	.resource	= ssi_resources,
-> +	.dev		= {
-> +				.release	= ssi_pdev_release,
-> +				.platform_data	= &ssi_pdata,
-> +	},
-> +};
+ extern int  max_mru;
+-extern int  max_mtu;
++extern int  cxt1e1_max_mtu;
+ extern int  max_rxdesc_used;
+ extern int  max_txdesc_used;
+ extern ci_t *CI;                /* dummy pointr to board ZEROE's data - DEBUG
+@@ -963,11 +963,11 @@ musycc_init (ci_t * ci)
+                 THIS_MODULE->name, max_mru, 0xffe);
+         max_mru = 0xffe;
+     }
+-    if (max_mtu > 0xffe)
++       if (cxt1e1_max_mtu > 0xffe)
+     {
+         printk (KERN_WARNING "%s: Maximum allowed MTU exceeded, resetting %d to %d.\n",
+-                THIS_MODULE->name, max_mtu, 0xffe);
+-        max_mtu = 0xffe;
++                               THIS_MODULE->name, cxt1e1_max_mtu, 0xffe);
++               cxt1e1_max_mtu = 0xffe;
+     }
+ #ifdef SBE_WAN256T3_ENABLE
+     for (i = 0; i < MUSYCC_NPORTS; i++)
+diff -pubr -X /home/bbeers/dontdiff linux-2.6-a/drivers/staging/cxt1e1/pmcc4_drv.c linux-2.6/drivers/staging/cxt1e1/pmcc4_drv.c
+--- linux-2.6-a/drivers/staging/cxt1e1/pmcc4_drv.c      2010-03-02 17:41:47.000000000 -0500
++++ linux-2.6/drivers/staging/cxt1e1/pmcc4_drv.c        2010-10-11 10:25:44.000000000 -0400
+@@ -138,7 +138,7 @@ void        musycc_update_timeslots (mpi
+ extern void musycc_update_tx_thp (mch_t *);
+ extern int  log_level;
+ extern int  max_mru;
+-extern int  max_mtu;
++extern int  cxt1e1_max_mtu;
+ extern int  max_rxdesc_used, max_rxdesc_default;
+ extern int  max_txdesc_used, max_txdesc_default;
 
-Dummy release not needed here either.
+diff -pubr -X /home/bbeers/dontdiff linux-2.6-a/drivers/staging/cxt1e1/sbeproc.c linux-2.6/drivers/staging/cxt1e1/sbeproc.c
+--- linux-2.6-a/drivers/staging/cxt1e1/sbeproc.c        2010-03-02 17:41:47.000000000 -0500
++++ linux-2.6/drivers/staging/cxt1e1/sbeproc.c  2010-10-11 10:27:16.000000000 -0400
+@@ -171,17 +171,9 @@ sbecom_proc_get_sbe_info (char *buffer,
+ #ifdef SBE_PMCC4_ENABLE
+     {
+         extern int max_mru;
+-#if 0
+-        extern int max_chans_used;
+-        extern int max_mtu;
+-#endif
+         extern int max_rxdesc_used, max_txdesc_used;
 
-> +static int __init ssi_init(void)
-> +{
-> +	return platform_device_register(&ssi_pdev);
-> +}
-> +subsys_initcall(ssi_init);
+         len += sprintf (buffer + len, "\nmax_mru:         %d\n", max_mru);
+-#if 0
+-        len += sprintf (buffer + len, "\nmax_chans_used:  %d\n", max_chans_used);
+-        len += sprintf (buffer + len, "max_mtu:         %d\n", max_mtu);
+-#endif
+         len += sprintf (buffer + len, "max_rxdesc_used: %d\n", max_rxdesc_used);
+         len += sprintf (buffer + len, "max_txdesc_used: %d\n", max_txdesc_used);
+     }
 
-This will probably cause trouble on omap2 and 4?
 
-To me it seems that you should at least return early on the unsupported
-platforms.
 
-You might want to consider updating this for omap hwmod as it will
-automate the platform_device and PM related issues to some extent.
 
-Regards,
-
-Tony
