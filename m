@@ -1,62 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab0JLJjZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 05:39:25 -0400
-Received: from ifrit.dereferenced.org ([66.212.21.15]:38920 "EHLO
-	ifrit.dereferenced.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757140Ab0JLJjY (ORCPT
+	id S932123Ab0JLJmL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 05:42:11 -0400
+Received: from petrie.dereferenced.org ([67.202.104.35]:36808 "EHLO
+	petrie.dereferenced.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756964Ab0JLJmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 05:39:24 -0400
-Date: Tue, 12 Oct 2010 13:39:19 +0400 (MSD)
+	Tue, 12 Oct 2010 05:42:10 -0400
+X-Greylist: delayed 1069 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 05:42:08 EDT
+Message-Id: <201010120922.o9C9MopV019334@petrie.dereferenced.org>
 From: William Pitcock <nenolod@dereferenced.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, efault@gmx.de,
-        kernel@kolivas.org
-Message-ID: <8358526.1721286876359420.JavaMail.root@ifrit.dereferenced.org>
-In-Reply-To: <20101012093044.GD20366@elte.hu>
-Subject: Re: [PATCH try 5] CFS: Add hierarchical tree-based penalty.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [67.202.104.35]
-X-Mailer: Zimbra 6.0.0_BETA2_1547.UBUNTU8 (ZimbraWebClient - FF3.0 (Linux)/6.0.0_BETA2_1547.UBUNTU8)
+Date: Tue, 12 Oct 2010 00:32:02 -0500
+Subject: [PATCH try 5] CFS: Add hierarchical tree-based penalty.
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, efault@gmx.de, kernel@kolivas.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Inspired by the recent change to BFS by Con Kolivas, this patch causes
+vruntime to be penalized based on parent depth from their root task
+group.
 
------ "Ingo Molnar" <mingo@elte.hu> wrote:
+I have, for the moment, decided to make it a default feature since the
+design of CFS ensures that broken applications depending on task enqueue
+behaviour behaving traditionally will continue to work.
 
-> * William Pitcock <nenolod@dereferenced.org> wrote:
-> 
-> > Inspired by the recent change to BFS by Con Kolivas, this patch
-> causes 
-> > vruntime to be penalized based on parent depth from their root task
-> 
-> > group.
-> > 
-> > I have, for the moment, decided to make it a default feature since
-> the 
-> > design of CFS ensures that broken applications depending on task 
-> > enqueue behaviour behaving traditionally will continue to work.
-> 
-> Just curious, is this v5 submission a reply to Peter's earlier review
-> of 
-> your v3 patch? If yes then please explicitly outline the changes you
-> did 
-> so that Peter and others do not have to guess about the direction your
-> 
-> work is taking.
+Signed-off-by: William Pitcock <nenolod@dereferenced.org>
+---
+ include/linux/sched.h   |    2 ++
+ kernel/sched.c          |    4 ++++
+ kernel/sched_fair.c     |    8 ++++++++
+ kernel/sched_features.h |   12 ++++++++++++
+ 4 files changed, 26 insertions(+), 0 deletions(-)
 
-I just did that in the email I just sent.  Simply put, I was talking with
-Con a few weeks ago about the concept of having a maximum amount of service
-for all threads belonging to a process.  This did not work out so well, so
-Con proposed penalizing based on fork depth, which still allows us to maintain
-interactivity with make -j64 running in the background.
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..3f0cff8 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1494,6 +1494,8 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++
++	int fork_depth;
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc85ceb..3fc3ebc 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
+ #endif
+ 
+ 	rq = task_rq_lock(p, &flags);
++
++	if (!(clone_flags & CLONE_THREAD))
++		p->fork_depth++;
++
+ 	activate_task(rq, p, 0);
+ 	trace_sched_wakeup_new(p, 1);
+ 	check_preempt_curr(rq, p, WF_FORK);
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index db3f674..a81acc5 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -737,6 +737,14 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
+ 	if (initial && sched_feat(START_DEBIT))
+ 		vruntime += sched_vslice(cfs_rq, se);
+ 
++	if (sched_feat(HIERARCHICAL_PENALTY) &&
++	    likely(entity_is_task(se))) {
++		struct task_struct *tsk = task_of(se);
++
++		if (tsk->fork_depth > 1)
++			vruntime *= tsk->fork_depth;
++	}
++
+ 	/* sleeps up to a single latency don't count. */
+ 	if (!initial) {
+ 		unsigned long thresh = sysctl_sched_latency;
+diff --git a/kernel/sched_features.h b/kernel/sched_features.h
+index 83c66e8..cf17f97 100644
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -45,6 +45,18 @@ SCHED_FEAT(LAST_BUDDY, 1)
+ SCHED_FEAT(CACHE_HOT_BUDDY, 1)
+ 
+ /*
++ * Hierarchical tree-based penalty: penalize service deficit by
++ * an order of magnitude for each parent process in the process
++ * tree.  This has the natural effect of forcing preference towards
++ * processes that are not fork()-hungry, like make(1), which helps
++ * to preserve good latency.
++ *
++ * This also has the side effect of providing in a limited way,
++ * per-user CPU entitlement partitioning.
++ */
++SCHED_FEAT(HIERARCHICAL_PENALTY, 1)
++
++/*
+  * Use arch dependent cpu power functions
+  */
+ SCHED_FEAT(ARCH_POWER, 0)
+-- 
+1.7.2.1
 
-Actually, I lie: it works great for server scenarios where you have some
-sysadmin also running azureus.  Azureus gets penalized instead, but other
-apps like audacious get penalized too.
-
-William
