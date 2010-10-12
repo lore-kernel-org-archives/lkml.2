@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab0JLGZx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 02:25:53 -0400
-Received: from nenolod.net ([67.202.104.180]:47519 "EHLO
-	carpathia.dereferenced.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753700Ab0JLGZw (ORCPT
+	id S1754518Ab0JLG0W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 02:26:22 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:55227 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab0JLG0V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 02:25:52 -0400
-From: William Pitcock <nenolod@dereferenced.org>
-To: linux-kernel@vger.kernel.org
-Date: Tue, 12 Oct 2010 00:32:02 -0500
-Subject: [PATCH] CFS: Add hierarchical tree-based penalty.
-Message-Id: <20101012062552.4D7F2CE142@carpathia.dereferenced.org>
+	Tue, 12 Oct 2010 02:26:21 -0400
+Date: Tue, 12 Oct 2010 15:23:42 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH v4] memcg: reduce lock time at move charge
+Message-Id: <20101012152342.c5b489e4.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20101012144801.51d15a02.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
+	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
+	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
+	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
+	<20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007161454.84570cf9.akpm@linux-foundation.org>
+	<20101008133712.2a836331.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101007215556.21412ae6.akpm@linux-foundation.org>
+	<20101008141201.c1e3a4e2.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101008194131.20b44a9d.kamezawa.hiroyu@jp.fujitsu.com>
+	<20101012125613.1accc1bd.nishimura@mxp.nes.nec.co.jp>
+	<20101012144801.51d15a02.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inspired by the recent change to BFS by Con Kolivas, this patch causes
-vruntime to be penalized based on parent depth from their root task
-group.
+On Tue, 12 Oct 2010 14:48:01 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-I have, for the moment, decided to make it a default feature since the
-design of CFS ensures that broken applications depending on task enqueue
-behaviour behaving traditionally will continue to work.
+> On Tue, 12 Oct 2010 12:56:13 +0900
+> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+> 
+> > > +err_out:
+> > > +	for (; mt < info + num; mt++)
+> > > +		if (mt->type == MC_TARGET_PAGE) {
+> > > +			putback_lru_page(mt->val.page);
+> > Is this putback_lru_page() necessary ?
+> > is_target_pte_for_mc() doesn't isolate the page.
+> > 
+> Ok, v4 here. tested failure path and success path.
+> 
+Looks good to me.
 
-My method for applying the penalty is different than that of BFS, it
-divides the vruntime by the number of parents the process has.
+	Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
 
-Signed-off-by: William Pitcock <nenolod@dereferenced.org>
----
- include/linux/sched.h   |    2 ++
- kernel/sched.c          |    4 ++++
- kernel/sched_fair.c     |    7 +++++++
- kernel/sched_features.h |   12 ++++++++++++
- 4 files changed, 25 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..49fca7c 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1494,6 +1494,8 @@ struct task_struct {
- 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
- 	} memcg_batch;
- #endif
-+
-+	int parent_count;
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..0e55350 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
- #endif
- 
- 	rq = task_rq_lock(p, &flags);
-+
-+	if (!(clone_flags & CLONE_THREAD))
-+		p->parent_count++;
-+
- 	activate_task(rq, p, 0);
- 	trace_sched_wakeup_new(p, 1);
- 	check_preempt_curr(rq, p, WF_FORK);
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index db3f674..3059fe0 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -737,6 +737,13 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
- 	if (initial && sched_feat(START_DEBIT))
- 		vruntime += sched_vslice(cfs_rq, se);
- 
-+	if (sched_feat(HIERARCHICAL_PENALTY)) {
-+		struct task_struct *tsk = task_of(se);
-+
-+		if (tsk->parent_count > 1)
-+			vruntime /= tsk->parent_count;
-+	}
-+
- 	/* sleeps up to a single latency don't count. */
- 	if (!initial) {
- 		unsigned long thresh = sysctl_sched_latency;
-diff --git a/kernel/sched_features.h b/kernel/sched_features.h
-index 83c66e8..cf17f97 100644
---- a/kernel/sched_features.h
-+++ b/kernel/sched_features.h
-@@ -45,6 +45,18 @@ SCHED_FEAT(LAST_BUDDY, 1)
- SCHED_FEAT(CACHE_HOT_BUDDY, 1)
- 
- /*
-+ * Hierarchical tree-based penalty: penalize service deficit by
-+ * an order of magnitude for each parent process in the process
-+ * tree.  This has the natural effect of forcing preference towards
-+ * processes that are not fork()-hungry, like make(1), which helps
-+ * to preserve good latency.
-+ *
-+ * This also has the side effect of providing in a limited way,
-+ * per-user CPU entitlement partitioning.
-+ */
-+SCHED_FEAT(HIERARCHICAL_PENALTY, 1)
-+
-+/*
-  * Use arch dependent cpu power functions
-  */
- SCHED_FEAT(ARCH_POWER, 0)
--- 
-1.7.2.1
-
+Thanks,
+Daisuke Nishimura.
