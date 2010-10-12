@@ -1,347 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab0JLAZh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 20:25:37 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:29712 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754132Ab0JLAZf (ORCPT
+	id S1755470Ab0JLAmd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 20:42:33 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:60458 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755301Ab0JLAmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 20:25:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=oLpNTeSe63P7rFKUY12AsLnBAOpfiZbMpt7M1exHbGPSKjFGkpwIZSrGqbO9apwPM
-	c/pi9nTC2rNq5DaHqs1TQ==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Righi <arighi@develer.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 07/10] memcg: add dirty limits to mem_cgroup
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-8-git-send-email-gthelen@google.com>
-	<20101005094302.GA4314@linux.develer.com>
-	<xr93eic4wjlq.fsf@ninji.mtv.corp.google.com>
-	<20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
-	<20101007094845.9e6a1b0f.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 11 Oct 2010 17:24:21 -0700
-In-Reply-To: <20101007094845.9e6a1b0f.kamezawa.hiroyu@jp.fujitsu.com>
-	(KAMEZAWA Hiroyuki's message of "Thu, 7 Oct 2010 09:48:45 +0900")
-Message-ID: <xr93bp70febu.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 11 Oct 2010 20:42:32 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Harald Welte <HaraldWelte@viatech.com>, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-ykmt4FwlLRh/JlTgEQEc"
+Date: Tue, 12 Oct 2010 01:42:18 +0100
+Message-ID: <1286844138.2955.320.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: [GIT PULL linux-firmware.git] VT6656 firmware
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-> On Wed, 06 Oct 2010 17:27:13 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
->> 
->> > On Tue, 05 Oct 2010 12:00:17 -0700
->> > Greg Thelen <gthelen@google.com> wrote:
->> >
->> >> Andrea Righi <arighi@develer.com> writes:
->> >> 
->> >> > On Sun, Oct 03, 2010 at 11:58:02PM -0700, Greg Thelen wrote:
->> >> >> Extend mem_cgroup to contain dirty page limits.  Also add routines
->> >> >> allowing the kernel to query the dirty usage of a memcg.
->> >> >> 
->> >> >> These interfaces not used by the kernel yet.  A subsequent commit
->> >> >> will add kernel calls to utilize these new routines.
->> >> >
->> >> > A small note below.
->> >> >
->> >> >> 
->> >> >> Signed-off-by: Greg Thelen <gthelen@google.com>
->> >> >> Signed-off-by: Andrea Righi <arighi@develer.com>
->> >> >> ---
->> >> >>  include/linux/memcontrol.h |   44 +++++++++++
->> >> >>  mm/memcontrol.c            |  180 +++++++++++++++++++++++++++++++++++++++++++-
->> >> >>  2 files changed, 223 insertions(+), 1 deletions(-)
->> >> >> 
->> >> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
->> >> >> index 6303da1..dc8952d 100644
->> >> >> --- a/include/linux/memcontrol.h
->> >> >> +++ b/include/linux/memcontrol.h
->> >> >> @@ -19,6 +19,7 @@
->> >> >>  
->> >> >>  #ifndef _LINUX_MEMCONTROL_H
->> >> >>  #define _LINUX_MEMCONTROL_H
->> >> >> +#include <linux/writeback.h>
->> >> >>  #include <linux/cgroup.h>
->> >> >>  struct mem_cgroup;
->> >> >>  struct page_cgroup;
->> >> >> @@ -33,6 +34,30 @@ enum mem_cgroup_write_page_stat_item {
->> >> >>  	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
->> >> >>  };
->> >> >>  
->> >> >> +/* Cgroup memory statistics items exported to the kernel */
->> >> >> +enum mem_cgroup_read_page_stat_item {
->> >> >> +	MEMCG_NR_DIRTYABLE_PAGES,
->> >> >> +	MEMCG_NR_RECLAIM_PAGES,
->> >> >> +	MEMCG_NR_WRITEBACK,
->> >> >> +	MEMCG_NR_DIRTY_WRITEBACK_PAGES,
->> >> >> +};
->> >> >> +
->> >> >> +/* Dirty memory parameters */
->> >> >> +struct vm_dirty_param {
->> >> >> +	int dirty_ratio;
->> >> >> +	int dirty_background_ratio;
->> >> >> +	unsigned long dirty_bytes;
->> >> >> +	unsigned long dirty_background_bytes;
->> >> >> +};
->> >> >> +
->> >> >> +static inline void get_global_vm_dirty_param(struct vm_dirty_param *param)
->> >> >> +{
->> >> >> +	param->dirty_ratio = vm_dirty_ratio;
->> >> >> +	param->dirty_bytes = vm_dirty_bytes;
->> >> >> +	param->dirty_background_ratio = dirty_background_ratio;
->> >> >> +	param->dirty_background_bytes = dirty_background_bytes;
->> >> >> +}
->> >> >> +
->> >> >>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->> >> >>  					struct list_head *dst,
->> >> >>  					unsigned long *scanned, int order,
->> >> >> @@ -145,6 +170,10 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
->> >> >>  	mem_cgroup_update_page_stat(page, idx, -1);
->> >> >>  }
->> >> >>  
->> >> >> +bool mem_cgroup_has_dirty_limit(void);
->> >> >> +void get_vm_dirty_param(struct vm_dirty_param *param);
->> >> >> +s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item);
->> >> >> +
->> >> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->> >> >>  						gfp_t gfp_mask);
->> >> >>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
->> >> >> @@ -326,6 +355,21 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
->> >> >>  {
->> >> >>  }
->> >> >>  
->> >> >> +static inline bool mem_cgroup_has_dirty_limit(void)
->> >> >> +{
->> >> >> +	return false;
->> >> >> +}
->> >> >> +
->> >> >> +static inline void get_vm_dirty_param(struct vm_dirty_param *param)
->> >> >> +{
->> >> >> +	get_global_vm_dirty_param(param);
->> >> >> +}
->> >> >> +
->> >> >> +static inline s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
->> >> >> +{
->> >> >> +	return -ENOSYS;
->> >> >> +}
->> >> >> +
->> >> >>  static inline
->> >> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->> >> >>  					    gfp_t gfp_mask)
->> >> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
->> >> >> index f40839f..6ec2625 100644
->> >> >> --- a/mm/memcontrol.c
->> >> >> +++ b/mm/memcontrol.c
->> >> >> @@ -233,6 +233,10 @@ struct mem_cgroup {
->> >> >>  	atomic_t	refcnt;
->> >> >>  
->> >> >>  	unsigned int	swappiness;
->> >> >> +
->> >> >> +	/* control memory cgroup dirty pages */
->> >> >> +	struct vm_dirty_param dirty_param;
->> >> >> +
->> >> >>  	/* OOM-Killer disable */
->> >> >>  	int		oom_kill_disable;
->> >> >>  
->> >> >> @@ -1132,6 +1136,172 @@ static unsigned int get_swappiness(struct mem_cgroup *memcg)
->> >> >>  	return swappiness;
->> >> >>  }
->> >> >>  
->> >> >> +/*
->> >> >> + * Returns a snapshot of the current dirty limits which is not synchronized with
->> >> >> + * the routines that change the dirty limits.  If this routine races with an
->> >> >> + * update to the dirty bytes/ratio value, then the caller must handle the case
->> >> >> + * where both dirty_[background_]_ratio and _bytes are set.
->> >> >> + */
->> >> >> +static void __mem_cgroup_get_dirty_param(struct vm_dirty_param *param,
->> >> >> +					 struct mem_cgroup *mem)
->> >> >> +{
->> >> >> +	if (mem && !mem_cgroup_is_root(mem)) {
->> >> >> +		param->dirty_ratio = mem->dirty_param.dirty_ratio;
->> >> >> +		param->dirty_bytes = mem->dirty_param.dirty_bytes;
->> >> >> +		param->dirty_background_ratio =
->> >> >> +			mem->dirty_param.dirty_background_ratio;
->> >> >> +		param->dirty_background_bytes =
->> >> >> +			mem->dirty_param.dirty_background_bytes;
->> >> >> +	} else {
->> >> >> +		get_global_vm_dirty_param(param);
->> >> >> +	}
->> >> >> +}
->> >> >> +
->> >> >> +/*
->> >> >> + * Get dirty memory parameters of the current memcg or global values (if memory
->> >> >> + * cgroups are disabled or querying the root cgroup).
->> >> >> + */
->> >> >> +void get_vm_dirty_param(struct vm_dirty_param *param)
->> >> >> +{
->> >> >> +	struct mem_cgroup *memcg;
->> >> >> +
->> >> >> +	if (mem_cgroup_disabled()) {
->> >> >> +		get_global_vm_dirty_param(param);
->> >> >> +		return;
->> >> >> +	}
->> >> >> +
->> >> >> +	/*
->> >> >> +	 * It's possible that "current" may be moved to other cgroup while we
->> >> >> +	 * access cgroup. But precise check is meaningless because the task can
->> >> >> +	 * be moved after our access and writeback tends to take long time.  At
->> >> >> +	 * least, "memcg" will not be freed under rcu_read_lock().
->> >> >> +	 */
->> >> >> +	rcu_read_lock();
->> >> >> +	memcg = mem_cgroup_from_task(current);
->> >> >> +	__mem_cgroup_get_dirty_param(param, memcg);
->> >> >> +	rcu_read_unlock();
->> >> >> +}
->> >> >> +
->> >> >> +/*
->> >> >> + * Check if current memcg has local dirty limits.  Return true if the current
->> >> >> + * memory cgroup has local dirty memory settings.
->> >> >> + */
->> >> >> +bool mem_cgroup_has_dirty_limit(void)
->> >> >> +{
->> >> >> +	struct mem_cgroup *mem;
->> >> >> +
->> >> >> +	if (mem_cgroup_disabled())
->> >> >> +		return false;
->> >> >> +
->> >> >> +	mem = mem_cgroup_from_task(current);
->> >> >> +	return mem && !mem_cgroup_is_root(mem);
->> >> >> +}
->> >> >
->> >> > We only check the pointer without dereferencing it, so this is probably
->> >> > ok, but maybe this is safer:
->> >> >
->> >> > bool mem_cgroup_has_dirty_limit(void)
->> >> > {
->> >> > 	struct mem_cgroup *mem;
->> >> > 	bool ret;
->> >> >
->> >> > 	if (mem_cgroup_disabled())
->> >> > 		return false;
->> >> >
->> >> > 	rcu_read_lock();
->> >> > 	mem = mem_cgroup_from_task(current);
->> >> > 	ret = mem && !mem_cgroup_is_root(mem);
->> >> > 	rcu_read_unlock();
->> >> >
->> >> > 	return ret;
->> >> > }
->> >> >
->> >> > rcu_read_lock() should be held in mem_cgroup_from_task(), otherwise
->> >> > lockdep could detect this as an error.
->> >> >
->> >> > Thanks,
->> >> > -Andrea
->> >> 
->> >> Good suggestion.  I agree that lockdep might catch this.  There are some
->> >> unrelated debug_locks failures (even without my patches) that I worked
->> >> around to get lockdep to complain about this one.  I applied your
->> >> suggested fix and lockdep was happy.  I will incorporate this fix into
->> >> the next revision of the patch series.
->> >> 
->> >
->> > Hmm, considering other parts, shouldn't we define mem_cgroup_from_task
->> > as macro ?
->> >
->> > Thanks,
->> > -Kame
->> 
->> Is your motivation to increase performance with the same functionality?
->> If so, then would a 'static inline' be performance equivalent to a
->> preprocessor macro yet be safer to use?
->> 
-> Ah, if lockdep finds this as bug, I think other parts will hit this,
-> too.  like this.
->> static struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
->> {
->>         struct mem_cgroup *mem = NULL;
->> 
->>         if (!mm)
->>                 return NULL;
->>         /*
->>          * Because we have no locks, mm->owner's may be being moved to other
->>          * cgroup. We use css_tryget() here even if this looks
->>          * pessimistic (rather than adding locks here).
->>          */
->>         rcu_read_lock();
->>         do {
->>                 mem = mem_cgroup_from_task(rcu_dereference(mm->owner));
->>                 if (unlikely(!mem))
->>                         break;
->>         } while (!css_tryget(&mem->css));
->>         rcu_read_unlock();
->>         return mem;
->> }
+--=-ykmt4FwlLRh/JlTgEQEc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-mem_cgroup_from_task() calls task_subsys_state() calls
-task_subsys_state_check().  task_subsys_state_check() will be happy if
-rcu_read_lock is held.
+The following changes since commit e9f9e3a9b7d780e93ae869c1b8502c843bfd93a4=
+:
 
-I don't think that this will fail lockdep, because rcu_read_lock_held()
-is true when calling mem_cgroup_from_task() within
-try_get_mem_cgroup_from_mm()..
+  wimax: update WiMAX firmwares for 2.6.35 (2010-09-29 12:02:34 +0900)
 
-> mem_cgroup_from_task() is designed to be used as this.
-> If dqefined as macro, I think it will not be catched.
+are available in the git repository at:
+  http://git.decadent.org.uk/git/linux-firmware.git master
 
-I do not understand how making mem_cgroup_from_task() a macro will
-change its behavior wrt. to lockdep assertion checking.  I assume that
-as a macro mem_cgroup_from_task() would still call task_subsys_state(),
-which requires either:
-a) rcu read lock held
-b) task->alloc_lock held
-c) cgroup lock held
+Ben Hutchings (1):
+      Add firmware for VIA VT6656
 
+ LICENCE.via_vt6656 |   25 +++++++++++++++++++++++++
+ WHENCE             |    8 ++++++++
+ vntwusb.fw         |  Bin 0 -> 11341 bytes
+ 3 files changed, 33 insertions(+), 0 deletions(-)
+ create mode 100644 LICENCE.via_vt6656
+ create mode 100644 vntwusb.fw
 
->> Maybe it makes more sense to find a way to perform this check in
->> mem_cgroup_has_dirty_limit() without needing to grab the rcu lock.  I
->> think this lock grab is unneeded.  I am still collecting performance
->> data, but suspect that this may be making the code slower than it needs
->> to be.
->> 
->
-> Hmm. css_set[] itself is freed by RCU..what idea to remove rcu_read_lock() do
-> you have ? Adding some flags ?
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
 
-It seems like a shame to need a lock to determine if current is in the
-root cgroup.  Especially given that as soon as
-mem_cgroup_has_dirty_limit() returns, the task could be moved
-in-to/out-of the root cgroup thereby invaliding the answer.  So the
-answer is just a sample that may be wrong.  But I think you are correct.
-We will need the rcu read lock in mem_cgroup_has_dirty_limit().
+--=-ykmt4FwlLRh/JlTgEQEc
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-> Ah...I noticed that you should do
->
->  mem = mem_cgroup_from_task(current->mm->owner);
->
-> to check has_dirty_limit...
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-What are the cases where current->mm->owner->cgroups !=
-current->cgroups?
+iQIVAwUATLOu5Oe/yOyVhhEJAQILlQ//TihL3TsIBD1HJbB9nIbo75BG+MLZMklb
+5PHNHrkRKYv9jX6fUW7Xe8/VujRGi0efQroTSzGH4zwAAek6xcS468pMpN//26ji
+LKlszZJyf0m+ozs+P1WUiL98XA8UaJMHw0R99+4hi8E3/Ur50+A1TXrtwGefptXE
+ZHSKAi+KhTRHQMGSV9SmtSedylB2/y5Ob6aHX8FvqpIVWaBfyVyWsDtZ4u4Qj/IB
+FJds4Jh8v1/hFJXU7UepEbqSXzBQKyUAobvLSnbwcUWznC5KGrYaib6igBxYUKU3
+RpE4w/CE+qpLKZaj/kNh90Fg2fWAhDhgZ2EArj+YF5k1hIcgoQY5fPV9EZWm5MZd
+PObELs6gEaJEtO/uE+j/9zrZJR41PuavKGJs/vYz65W0YDKpBufQ5CYu5LNVfiMG
+x322Hl4YLcrlgcfL40tnQW6WILG7yxTu5YB4hwbf5fLpsVmoZJBtr+vhEZbr77Fj
+mes5q4v33ZaDrsoQQOek6so5SqUlaGWRApo6edGEmjFInmYIrpGC1mCpAHYZL03W
+nXJ/C6ginxda5uZPlchiHO73tJJU+8n3rt5DFvl3c81C/9SG+BEuPBYJhe5AkCDk
+lDat1Tsq6v2xNlmK7zBD6Xb6q75aAfNo/IXbozVkB6Mwi6kIQCJ/xNLiqCcYW6Tg
+TiiMcElQCaQ=
+=XhGu
+-----END PGP SIGNATURE-----
 
-I was hoping to avoid having add even more logic into
-mem_cgroup_has_dirty_limit() to handle the case where current->mm is
-NULL.
-
-Presumably the newly proposed vm_dirty_param(),
-mem_cgroup_has_dirty_limit(), and mem_cgroup_page_stat() routines all
-need to use the same logic.  I assume they should all be consistently
-using current->mm->owner or current.
-
---
-Greg
+--=-ykmt4FwlLRh/JlTgEQEc--
