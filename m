@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757831Ab0JLRM1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:12:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43178 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753070Ab0JLRMZ convert rfc822-to-8bit (ORCPT
+	id S1757899Ab0JLRPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:15:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47313 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757451Ab0JLRPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:12:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=NAQNbJljp9NQBS/tbLJMhGWyaXmKNt3/M1fHAgpzPqI8v+niDxBu7WzKjc6mCDIj37
-         6qM2ltvJKxRhrN4ZHkWDKp88xwCQCLadzzyAWP5Rjbhhha/gXI//+MI892u1p4Vh/7mw
-         SjCB5voP7CET3Z3J340ZcuPo5+gTWKmZTbG5I=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Chris Vine <chris@cvine.freeserve.co.uk>
-Subject: Re: Lenovo S12 2.6.36-rc7 lockup
-Date: Tue, 12 Oct 2010 19:12:19 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7; KDE/4.4.5; i686; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <20101010135912.76eb61b7@boulder.homenet>
-In-Reply-To: <20101010135912.76eb61b7@boulder.homenet>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201010121912.19724.maciej.rutecki@gmail.com>
+	Tue, 12 Oct 2010 13:15:35 -0400
+Date: Tue, 12 Oct 2010 10:14:14 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Jing Huang <huangj@brocade.com>
+Subject: Re: linux-next: Tree for October 12 (scsi/bfa)
+Message-Id: <20101012101414.045f62d5.randy.dunlap@oracle.com>
+In-Reply-To: <20101012163552.7306165b.sfr@canb.auug.org.au>
+References: <20101012163552.7306165b.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On niedziela, 10 października 2010 o 14:59:12 Chris Vine wrote:
-> Hi,
+On Tue, 12 Oct 2010 16:35:52 +1100 Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> kernel 2.6.36-rc7 completely locks up my Lenovo S12 notebook on boot-up.
-> It happens early enough in boot-up that nothing appears in any of the
-> system log files.  The last message printed to the console is "Using
-> IPI - No Shortcut mode".
-> 
-> The lock up does not occur with kernel 2.6.35.6.  I do not know in what
-> version of 2.6.36-rc this first arose.
-> 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=20172
-for your bug report, please add your address to the CC list in there, thanks!
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+> Changes since 20101011:
+
+
+bfa has one function that probably uses too much stack space and a few
+others that might be a problem.
+
+With CONFIG_FRAME_WARN=1024:
+
+drivers/scsi/bfa/bfad_im.c:939: warning: the frame size of 1604 bytes is larger than 1024 bytes
+
+and with CONFIG_FRAME_WARN=512:
+
+
+drivers/scsi/bfa/bfad.c: In function 'bfad_fcs_port_cfg':
+drivers/scsi/bfa/bfad.c:900: warning: the frame size of 676 bytes is larger than 512 bytes
+drivers/scsi/bfa/bfad_im.c: In function 'bfad_im_supported_speeds':
+drivers/scsi/bfa/bfad_im.c:939: warning: the frame size of 1604 bytes is larger than 512 bytes
+drivers/scsi/bfa/bfad_im.c: In function 'bfad_os_fc_host_init':
+drivers/scsi/bfa/bfad_im.c:976: warning: the frame size of 736 bytes is larger than 512 bytes
+drivers/scsi/bfa/bfa_fcs_lport.c: In function 'bfa_fcs_lport_fdmi_build_portattr_block':
+drivers/scsi/bfa/bfa_fcs_lport.c:2010: warning: the frame size of 572 bytes is larger than 512 bytes
+drivers/scsi/bfa/bfa_fcs_lport.c: In function 'bfa_fcs_lport_fdmi_build_rhba_pyld':
+drivers/scsi/bfa/bfa_fcs_lport.c:1803: warning: the frame size of 784 bytes is larger than 512 bytes
+
+
+Also, there are many comment blocks that begin with "/**", which means "beginning
+of kernel-doc comment block" for Linux kernel code.  :(
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
