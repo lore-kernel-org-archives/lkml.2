@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab0JLNGO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:06:14 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:56118 "EHLO e3.ny.us.ibm.com"
+	id S1757254Ab0JLNJJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:09:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:46663 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932278Ab0JLNGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:06:12 -0400
-Subject: Re: [PATCH] security: move LSM xattrnames to xattr.h
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Ozan =?UTF-8?Q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
-Cc: Steve Grubb <sgrubb@redhat.com>, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org,
-        Casey Schaufler <casey@schaufler-ca.com>,
-        David Safford <safford@watson.ibm.com>,
-        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <201010121414.14486.ozan@pardus.org.tr>
-References: <1278011263-7951-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <alpine.LRH.2.00.1007021015490.2400@tundra.namei.org>
-	 <201010121414.14486.ozan@pardus.org.tr>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Oct 2010 09:06:09 -0400
-Message-ID: <1286888769.2670.5.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 8bit
+	id S1753860Ab0JLNJH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:09:07 -0400
+Date: Tue, 12 Oct 2010 13:08:33 GMT
+From: tip-bot for John Blackwood <john.blackwood@ccur.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, joe.korty@ccur.com, tglx@linutronix.de,
+        john.blackwood@ccur.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        a.p.zijlstra@chello.nl, tglx@linutronix.de, joe.korty@ccur.com,
+        john.blackwood@ccur.com, mingo@elte.hu
+In-Reply-To: <20100928220311.GA18145@tsunami.ccur.com>
+References: <20100928220311.GA18145@tsunami.ccur.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Fix incorrect copy_from_user() usage
+Message-ID: <tip-ad0cf3478de8677f720ee06393b3147819568d6a@git.kernel.org>
+Git-Commit-ID: ad0cf3478de8677f720ee06393b3147819568d6a
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 12 Oct 2010 13:08:34 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-12 at 14:14 +0300, Ozan Çağlayan wrote:
-> Cuma 02 Temmuz 2010 günü (saat 03:16:01) James Morris şunları yazmıştı:
-> > On Thu, 1 Jul 2010, Mimi Zohar wrote:
-> > > Make the security extended attributes names global. Updated to move
-> > > the remaining Smack xattrs.
-> > > 
-> > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > > Acked-by: Serge Hallyn <serue@us.ibm.com>
-> > 
-> 
-> This drops 
-> 
-> #define XATTR_CAPS_SUFFIX "capability"
-> #define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
-> 
-> definitions from capability.h and puts them in xattr.h's #ifdef __KERNEL__ 
-> section making them invisible to userspace like libcap-ng causing build 
-> failures.
-> 
-> Am I wrong?
+Commit-ID:  ad0cf3478de8677f720ee06393b3147819568d6a
+Gitweb:     http://git.kernel.org/tip/ad0cf3478de8677f720ee06393b3147819568d6a
+Author:     John Blackwood <john.blackwood@ccur.com>
+AuthorDate: Tue, 28 Sep 2010 18:03:11 -0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 12 Oct 2010 11:45:01 +0200
 
-You're correct.  It's the same reason that cap-ng.c has to define
-'security'.
+perf: Fix incorrect copy_from_user() usage
 
-#ifdef VFS_CAP_U32
- #include <attr/xattr.h>
- #define XATTR_SECURITY_PREFIX "security."
+perf events: repair incorrect use of copy_from_user
 
-Am cc'ing Steve.
+This makes the perf_event_period() return 0 instead of
+-EFAULT on success.
 
-Mimi
+Signed-off-by: John Blackwood<john.blackwood@ccur.com>
+Signed-off-by: Joe Korty <joe.korty@ccur.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100928220311.GA18145@tsunami.ccur.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index db5b560..b98bed3 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2202,15 +2202,13 @@ static void perf_event_for_each(struct perf_event *event,
+ static int perf_event_period(struct perf_event *event, u64 __user *arg)
+ {
+ 	struct perf_event_context *ctx = event->ctx;
+-	unsigned long size;
+ 	int ret = 0;
+ 	u64 value;
+ 
+ 	if (!event->attr.sample_period)
+ 		return -EINVAL;
+ 
+-	size = copy_from_user(&value, arg, sizeof(value));
+-	if (size != sizeof(value))
++	if (copy_from_user(&value, arg, sizeof(value)))
+ 		return -EFAULT;
+ 
+ 	if (!value)
