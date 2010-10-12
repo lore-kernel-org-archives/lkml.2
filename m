@@ -1,124 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932369Ab0JLNWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:22:17 -0400
-Received: from na3sys009aog102.obsmtp.com ([74.125.149.69]:34550 "EHLO
-	na3sys009aog102.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932287Ab0JLNWP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:22:15 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: bo yang <boyang1288@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>
-Date: Tue, 12 Oct 2010 07:21:59 -0600
-Subject: [PATCH 5/5] scsi: megaraid_sas - Version and documentation update
-Thread-Topic: [PATCH 5/5] scsi: megaraid_sas - Version and documentation
- update
-Thread-Index: ActazRK7LvyirE4SRzakFA0hPxKZqAPQ0PGw
-Message-ID: <4B6A08C587958942AA3002690DD4F8C30100FF9FBB@cosmail02.lsi.com>
-References: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>
-In-Reply-To: <AANLkTi=praySm1B3dhU+LxhWK2yUccZkzWpd6-6UERYa@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_4B6A08C587958942AA3002690DD4F8C30100FF9FBBcosmail02lsic_"
+	id S932477Ab0JLNWy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:22:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33266 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932287Ab0JLNWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:22:53 -0400
+Date: Tue, 12 Oct 2010 06:22:08 -0700
+From: Greg KH <gregkh@suse.de>
+To: Daniel Suchy <danny@danysek.cz>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: PATCH: ftdi_sio new VID/PIDs for various Papouch devices
+Message-ID: <20101012132208.GB10556@suse.de>
+References: <4CB45E2A.9020407@danysek.cz>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB45E2A.9020407@danysek.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_4B6A08C587958942AA3002690DD4F8C30100FF9FBBcosmail02lsic_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Tue, Oct 12, 2010 at 03:10:02PM +0200, Daniel Suchy wrote:
+> -----BEGIN PGP SIGNED MESSAGE-----
+> Hash: SHA1
+> 
+> Hello,
+> in attached file, there's patch for FTDI USB serial converter adding new
+> VID/PIDs used on various devices manufactured by Papouch
+> (http://www.papouch.com). These devices have their own VID/PID, although
+> they're using standard FTDI chip. In ftdi_sio.c, I also made small
+> cleanup to have declarations for all Papouch devices in single section.
+> 
+> My patch was tested against 2.6.35.x stable kernel releases at this time.
+> 
+> With regards,
+> Daniel Suchy
+> -----BEGIN PGP SIGNATURE-----
+> Version: GnuPG v1.4.10 (GNU/Linux)
+> 
+> iEYEARECAAYFAky0XioACgkQ0m6yQqKjWoLPJACeMuWvkNTXWTOc4s8hW5Fy3U3k
+> 1+YAoNwbc3pYlSB734l3aSRO+Y+w12I5
+> =y+9A
+> -----END PGP SIGNATURE-----
 
-Re-Submit:
+> --- drivers/usb/serial/ftdi_sio_ids.h.orig	2010-09-08 08:57:36.000000000 +0200
+> +++ drivers/usb/serial/ftdi_sio_ids.h	2010-10-12 14:32:34.208586002 +0200
+> @@ -1007,12 +1007,38 @@
+>  /*
+>   * Papouch products (http://www.papouch.com/)
+>   * Submitted by Folkert van Heusden
+> + * extended by Daniel Suchy (12.10.2010)
 
-Update the version and documentation.
+This is not needed, you get this information from the changelog
+information.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
+Care to take this line out, and add a "Signed-off-by:" line as per the
+Documentation/SubmittingPatches file?  That's required for me to be able
+to accept the patch.
 
----
- Documentation/scsi/ChangeLog.megaraid_sas |   47 +++++++++++++++++++++++++=
-+++++
- drivers/scsi/megaraid/megaraid_sas.c      |    2 -
- drivers/scsi/megaraid/megaraid_sas.h      |    6 +--
- 3 files changed, 51 insertions(+), 4 deletions(-)
+thanks,
 
---_002_4B6A08C587958942AA3002690DD4F8C30100FF9FBBcosmail02lsic_
-Content-Type: application/octet-stream; name="megasas-version.patch"
-Content-Description: megasas-version.patch
-Content-Disposition: attachment; filename="megasas-version.patch"; size=3518;
-	creation-date="Sun, 19 Sep 2010 14:09:34 GMT";
-	modification-date="Sat, 18 Sep 2010 06:27:53 GMT"
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtcnVwTiBvbGQvRG9jdW1lbnRhdGlvbi9zY3NpL0NoYW5nZUxvZy5tZWdhcmFpZF9zYXMg
-bmV3L0RvY3VtZW50YXRpb24vc2NzaS9DaGFuZ2VMb2cubWVnYXJhaWRfc2FzCi0tLSBvbGQvRG9j
-dW1lbnRhdGlvbi9zY3NpL0NoYW5nZUxvZy5tZWdhcmFpZF9zYXMJMjAxMC0wOS0xNyAwMjoxOTo0
-Ni4wMDAwMDAwMDAgLTA0MDAKKysrIG5ldy9Eb2N1bWVudGF0aW9uL3Njc2kvQ2hhbmdlTG9nLm1l
-Z2FyYWlkX3NhcwkyMDEwLTA5LTE3IDAyOjE5OjQ2LjAwMDAwMDAwMCAtMDQwMApAQCAtMSwzICsx
-LDUwIEBACisxIFJlbGVhc2UgRGF0ZSAgICA6IFRodXIuICBNYXkgMDMsIDIwMTAgMDk6MTI6NDUg
-UFNUIDIwMDkgLQorCQkJKGVtYWlsZC1pZDptZWdhcmFpZGxpbnV4QGxzaS5jb20pCisJCQlCbyBZ
-YW5nCisKKzIgQ3VycmVudCBWZXJzaW9uIDogMDAuMDAuMDQuMzEtcmMxCiszIE9sZGVyIFZlcnNp
-b24gICA6IDAwLjAwLjA0LjE3LjEtcmMxCisKKzEuCUFkZCB0aGUgT25saW5lIENvbnRyb2xsZXIg
-UmVzZXQgKE9DUikgdG8gdGhlIERyaXZlci4KKwlPQ1IgaXMgdGhlIG5ldyBmZWF0dXJlIGZvciBt
-ZWdhcmFpZF9zYXMgZHJpdmVyIHdoaWNoCisJd2lsbCBhbGxvdyB0aGUgZncgdG8gZG8gdGhlIGNo
-aXAgcmVzZXQgd2hpY2ggd2lsbCBub3QKKwlhZmZhY3QgdGhlIE9TIGJlaGF2aW91cy4KKworCVRv
-IGFkZCB0aGUgT0NSIHN1cHBvcnQsIGRyaXZlciBuZWVkIHRvIGRvOiAKKwkJYSkuIHJlc2V0IHRo
-ZSBjb250cm9sbGVyIGNoaXBzIC0tIFhzY2FsZSBhbmQgR2VuMiB3aGljaAorCQl3aWxsIGNoYW5n
-ZSB0aGUgZnVuY3Rpb24gY2FsbHMgYW5kIGFkZCB0aGUgcmVzZXQgZnVuY3Rpb24KKwkJcmVsYXRl
-ZCB0byB0aGlzIHR3byBjaGlwcy4KKwkJCisJCWIpLiBkdXJpbmcgdGhlIHJlc2V0LCBkcml2ZXIg
-d2lsbCBzdG9yZSB0aGUgcGVuZGluZyBjbWRzCisJCXdoaWNoIG5vdCByZXR1cm5lZCBieSBGVyB0
-byBkcml2ZXIncyBwZW5kaW5nIHF1ZXVlLiAgRHJpdmVyCisJCXdpbGwgcmUtaXNzdWUgdGhvc2Ug
-cGVuZGluZyBjbWRzIGFnYWluIHRvIEZXIGFmdGVyIHRoZSBPQ1IKKwkJZmluaXNoZWQuCisJCQor
-CQljKS4gSW4gZHJpdmVyJ3MgdGltZW91dCByb3V0aW5lLCBkcml2ZXIgd2lsbCByZXBvcnQgdG8K
-KwkJT1MgYXMgcmVzZXQuIEFsc28gZHJpdmVyJ3MgcXVldWUgcm91dGluZSB3aWxsIGJsb2NrIHRo
-ZQorCQljbWRzIHVudGlsIHRoZSBPQ1IgZmluaXNoZWQuCisJCQorCQlkKS4gaW4gRHJpdmVyJ3Mg
-SVNSIHJvdXRpbmUsIGlmIGRyaXZlciBnZXQgdGhlIEZXIHN0YXRlIGFzCisJCXN0YXRlIGNoYW5n
-ZSwgRlcgaW4gRmFpbHVyZSBzdGF0dXMgYW5kIEZXIHN1cHBvcnQgb25saW5lIGNvbnRyb2xsZXIK
-KwkJcmVzZXQgKE9DUiksIGRyaXZlciB3aWxsIHN0YXJ0IHRvIGRvIHRoZSBjb250cm9sbGVyIHJl
-c2V0LgorCQkKKwkJZSkuIEluIGRyaXZlcidzIElPQ1RMIHJvdXRpbmUsIHRoZSBhcHBsaWNhdGlv
-biBjbWRzIHdpbGwgd2FpdCBmb3IgdGhlCisJCU9DUiB0byBmaW5pc2gsIHRoZW4gaXNzdWUgdGhl
-IGNtZHMgdG8gRlcuCisJCSAKKwkJZikuIEJlZm9yZSBkcml2ZXIga2lsbCBhZGFwdGVyLCBkcml2
-ZXIgd2lsbCBkbyBsYXN0IGNoYW5jZSBvZgorCQlPQ1IgdG8gc2VlIGlmIGRyaXZlciBjYW4gYnJp
-bmcgYmFjayB0aGUgRlcuICAgICAgCisKKzIuCUFkZCB0aGUgc3VwcG9ydCB1cGRhdGUgZmxhZyB0
-byB0aGUgZHJpdmVyIHRvIHRlbGwgTFNJIG1lZ2FyYWlkX3NhcworCWFwcGxpY2F0aW9uIHdoaWNo
-IGRyaXZlciB3aWxsIHN1cHBvcnQgdGhlIGRldmljZSB1cGRhdGUuICBTbyBhcHBsaWNhdGlvbgor
-CXdpbGwgbm90IG5lZWQgdG8gZG8gdGhlIGRldmljZSB1cGRhdGUgYWZ0ZXIgYXBwbGljYXRpb24g
-YWRkL2RlbCB0aGUgZGV2aWNlCisJZnJvbSB0aGUgc3lzdGVtLgorMy4JSW4gZHJpdmVyJ3MgdGlt
-ZW91dCByb3V0aW5lLCBkcml2ZXIgd2lsbCBkbyB0aHJlZSB0aW1lIHJlc2V0IGlmIGZ3IGlzIGlu
-IAorCWZhaWxlZCBzdGF0ZS4gIERyaXZlciB3aWxsIGtpbGwgYWRhcHRlciBpZiBjYW4ndCBicmlu
-ZyBiYWNrIEZXIGFmdGVyIHRoZQorCXRoaXMgdGhyZWUgdGltZXMgcmVzZXQuCis0LglBZGQgdGhl
-IGlucHV0IHBhcmFtZXRlciBtYXhfc2VjdG9ycyB0byAxTUIgc3VwcG9ydCB0byBvdXIgR0VOMiBj
-b250cm9sbGVyLgorCWN1c3RvbWVyIGNhbiB1c2UgdGhlIGlucHV0IHBhcmFtZW50ZXIgbWF4X3Nl
-Y3RvcnMgdG8gYWRkIDFNQiBzdXBwb3J0IHRvIEdFTjIKKwljb250cm9sbGVyLgorCiAxIFJlbGVh
-c2UgRGF0ZSAgICA6IFRodXIuICBPY3QgMjksIDIwMDkgMDk6MTI6NDUgUFNUIDIwMDkgLQogCQkJ
-KGVtYWlsZC1pZDptZWdhcmFpZGxpbnV4QGxzaS5jb20pCiAJCQlCbyBZYW5nCmRpZmYgLXJ1cE4g
-b2xkL2RyaXZlcnMvc2NzaS9tZWdhcmFpZC9tZWdhcmFpZF9zYXMuYyBuZXcvZHJpdmVycy9zY3Np
-L21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jCi0tLSBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21l
-Z2FyYWlkX3Nhcy5jCTIwMTAtMDktMTcgMDM6Mjk6MjkuMDAwMDAwMDAwIC0wNDAwCisrKyBuZXcv
-ZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jCTIwMTAtMDktMTggMDg6Mjc6MDIu
-MDAwMDAwMDAwIC0wNDAwCkBAIC0xMCw3ICsxMCw3IEBACiAgKgkgICAyIG9mIHRoZSBMaWNlbnNl
-LCBvciAoYXQgeW91ciBvcHRpb24pIGFueSBsYXRlciB2ZXJzaW9uLgogICoKICAqIEZJTEUJCTog
-bWVnYXJhaWRfc2FzLmMKLSAqIFZlcnNpb24gICAgIDogdjAwLjAwLjA0LjE3LjEtcmMxCisgKiBW
-ZXJzaW9uICAgICA6IHYwMC4wMC4wNC4zMS1yYzEKICAqCiAgKiBBdXRob3JzOgogICoJKGVtYWls
-LWlkIDogbWVnYXJhaWRsaW51eEBsc2kuY29tKQpkaWZmIC1ydXBOIG9sZC9kcml2ZXJzL3Njc2kv
-bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmggbmV3L2RyaXZlcnMvc2NzaS9tZWdhcmFpZC9tZWdhcmFp
-ZF9zYXMuaAotLS0gb2xkL2RyaXZlcnMvc2NzaS9tZWdhcmFpZC9tZWdhcmFpZF9zYXMuaAkyMDEw
-LTA5LTE3IDAyOjE5OjQ2LjAwMDAwMDAwMCAtMDQwMAorKysgbmV3L2RyaXZlcnMvc2NzaS9tZWdh
-cmFpZC9tZWdhcmFpZF9zYXMuaAkyMDEwLTA5LTE3IDAyOjE5OjQ2LjAwMDAwMDAwMCAtMDQwMApA
-QCAtMTgsOSArMTgsOSBAQAogLyoKICAqIE1lZ2FSQUlEIFNBUyBEcml2ZXIgbWV0YSBkYXRhCiAg
-Ki8KLSNkZWZpbmUgTUVHQVNBU19WRVJTSU9OCQkJIjAwLjAwLjA0LjE3LjEtcmMxIgotI2RlZmlu
-ZSBNRUdBU0FTX1JFTERBVEUJCQkiT2N0LiAyOSwgMjAwOSIKLSNkZWZpbmUgTUVHQVNBU19FWFRf
-VkVSU0lPTgkJIlRodS4gT2N0LiAyOSwgMTE6NDE6NTEgUFNUIDIwMDkiCisjZGVmaW5lIE1FR0FT
-QVNfVkVSU0lPTgkJCSIwMC4wMC4wNC4zMS1yYzEiCisjZGVmaW5lIE1FR0FTQVNfUkVMREFURQkJ
-CSJNYXkgMywgMjAxMCIKKyNkZWZpbmUgTUVHQVNBU19FWFRfVkVSU0lPTgkJIk1vbi4gTWF5IDMs
-IDExOjQxOjUxIFBTVCAyMDEwIgogCiAvKgogICogRGV2aWNlIElEcwo=
-
---_002_4B6A08C587958942AA3002690DD4F8C30100FF9FBBcosmail02lsic_--
+greg k-h
