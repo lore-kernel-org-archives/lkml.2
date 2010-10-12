@@ -1,37 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab0JLVuc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:50:32 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:47609 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab0JLVub (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:50:31 -0400
-Message-ID: <4CB4D809.5050500@zytor.com>
-Date: Tue, 12 Oct 2010 14:50:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	id S1751524Ab0JLVxu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:53:50 -0400
+Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:62566 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0JLVxt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 17:53:49 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/qy0kVR0aF2jQiveQ+xxhQ
+Date: Tue, 12 Oct 2010 13:49:27 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Carlos Chinea <carlos.chinea@nokia.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [RFC PATCHv3 2/7] OMAP SSI: Introducing OMAP SSI driver
+Message-ID: <20101012204927.GY25462@atomide.com>
+References: <1286787988-29013-1-git-send-email-carlos.chinea@nokia.com>
+ <1286787988-29013-3-git-send-email-carlos.chinea@nokia.com>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/4] memblock related fixes for -tip
-References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4D62C.5090705@goop.org>
-In-Reply-To: <4CB4D62C.5090705@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286787988-29013-3-git-send-email-carlos.chinea@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/2010 02:42 PM, Jeremy Fitzhardinge wrote:
->>
->> two xen related patch are folded into first converting commit.
+* Carlos Chinea <carlos.chinea@nokia.com> [101011 01:58]:
+> Introduces the OMAP SSI driver in the kernel.
 > 
+> The Synchronous Serial Interface (SSI) is a legacy version
+> of HSI. As in the case of HSI, it is mainly used to connect
+> Application engines (APE) with cellular modem engines (CMT)
+> in cellular handsets.
+> 
+> It provides a multichannel, full-duplex, multi-core communication
+> with no reference clock. The OMAP SSI block is capable of reaching
+> speeds of 110 Mbit/s.
+> 
+> Signed-off-by: Carlos Chinea <carlos.chinea@nokia.com>
 
-Yinghai, is this the same bug as the ARM bug (which is assumed fixed by
-the patch you sent me), or is this a different bug?
+> --- /dev/null
+> +++ b/arch/arm/mach-omap2/ssi.c
 
-	-hpa
+> +static struct resource ssi_resources[] = {
+> +	/* SSI controller */
+> +	[0] = {
+> +		.start	= 0x48058000,
+> +		.end	= 0x48058fff,
+> +		.name	= "omap_ssi_sys",
+> +		.flags	= IORESOURCE_MEM,
+> +	},
+> +	/* GDD */
+> +	[1] = {
+> +		.start	= 0x48059000,
+> +		.end	= 0x48059fff,
+> +		.name	= "omap_ssi_gdd",
+> +		.flags	= IORESOURCE_MEM,
+> +	},
+> +	[2] = {
+> +		.start	= 71,
+> +		.end	= 71,
+> +		.name	= "ssi_gdd",
+> +		.flags	= IORESOURCE_IRQ,
+> +	},
+> +	/* SSI port 1 */
+> +	[3] = {
+> +		.start	= 0x4805a000,
+> +		.end	= 0x4805a7ff,
+> +		.name	= "omap_ssi_sst1",
+> +		.flags	= IORESOURCE_MEM,
+> +	},
+> +	[4] = {
+> +		.start	= 0x4805a800,
+> +		.end	= 0x4805afff,
+> +		.name	= "omap_ssi_ssr1",
+> +		.flags	= IORESOURCE_MEM,
+> +	},
+> +	[5] = {
+> +		.start	= 67,
+> +		.end	= 67,
+> +		.name	= "ssi_p1_mpu_irq0",
+> +		.flags	= IORESOURCE_IRQ,
+> +	},
+> +	[6] = {
+> +		.start	= 69,
+> +		.end	= 69,
+> +		.name	= "ssi_p1_mpu_irq1",
+> +		.flags	= IORESOURCE_IRQ,
+> +	},
+> +	[7] = {
+> +		.start	= 0,
+> +		.end	= 0,
+> +		.name	= "ssi_p1_cawake",
+> +		.flags	= IORESOURCE_IRQ | IORESOURCE_UNSET,
+> +	},
+> +};
+
+Are these resources the same for omap2, 3 & 4?
+
+> +static void ssi_pdev_release(struct device *dev)
+> +{
+> +}
+
+Not needed.
+
+> +static struct platform_device ssi_pdev = {
+> +	.name		= "omap_ssi",
+> +	.id		= 0,
+> +	.num_resources	= ARRAY_SIZE(ssi_resources),
+> +	.resource	= ssi_resources,
+> +	.dev		= {
+> +				.release	= ssi_pdev_release,
+> +				.platform_data	= &ssi_pdata,
+> +	},
+> +};
+
+Dummy release not needed here either.
+
+> +static int __init ssi_init(void)
+> +{
+> +	return platform_device_register(&ssi_pdev);
+> +}
+> +subsys_initcall(ssi_init);
+
+This will probably cause trouble on omap2 and 4?
+
+To me it seems that you should at least return early on the unsupported
+platforms.
+
+You might want to consider updating this for omap hwmod as it will
+automate the platform_device and PM related issues to some extent.
+
+Regards,
+
+Tony
