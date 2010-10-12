@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751661Ab0JLXGJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 19:06:09 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:36304 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751354Ab0JLXGH (ORCPT
+	id S1751768Ab0JLXJi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 19:09:38 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:46386 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751611Ab0JLXJh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 19:06:07 -0400
-Subject: Re: [PATCH 2/5] secmark: make secmark object handling generic
-From: Paul Moore <paul.moore@hp.com>
-To: Eric Paris <eparis@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, jmorris@namei.org, selinux@tycho.nsa.gov,
-        sds@tycho.nsa.gov, jengelh@medozas.de,
-        linux-security-module@vger.kernel.org, mr.dash.four@googlemail.com,
-        pablo@netfilter.org
-In-Reply-To: <1286924512.2614.1.camel@localhost.localdomain>
-References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
-	 <20101012154015.26943.18385.stgit@paris.rdu.redhat.com>
-	 <1286924143.5133.86.camel@sifl>
-	 <1286924512.2614.1.camel@localhost.localdomain>
-Content-Type: text/plain; charset="us-ascii"
-Organization: Hewlett Packard
-Date: Tue, 12 Oct 2010 19:06:02 -0400
-Message-ID: <1286924762.5133.91.camel@sifl>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 12 Oct 2010 19:09:37 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4CB4EAA5.5010605@s5r6.in-berlin.de>
+Date: Wed, 13 Oct 2010 01:09:25 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+MIME-Version: 1.0
+To: linux1394-devel@lists.sourceforge.net
+CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH unfinished update] firewire: sbp2: parallelize login/inquiry,
+ reconnect, and shutdown
+References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de> <tkrat.1433473bc081daa9@s5r6.in-berlin.de> <tkrat.6dd361dadace9a41@s5r6.in-berlin.de> <tkrat.b190ad8b687a549a@s5r6.in-berlin.de>
+In-Reply-To: <tkrat.b190ad8b687a549a@s5r6.in-berlin.de>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-12 at 19:01 -0400, Eric Paris wrote:
-> On Tue, 2010-10-12 at 18:55 -0400, Paul Moore wrote:
-> > On Tue, 2010-10-12 at 11:40 -0400, Eric Paris wrote:
-> > > Right now secmark has lots of direct selinux calls.  Use all LSM calls and
-> > > remove all SELinux specific knowledge.  The only SELinux specific knowledge
-> > > we leave is the mode.  The only point is to make sure that other LSMs at
-> > > least test this generic code before they assume it works.  (They may also
-> > > have to make changes if they do not represent labels as strings)
-> > 
-> > I'm sure you have, but I just want to make sure - you've tested this
-> > change (and the others for that matter) against the existing iptables
-> > userspace to make sure everything still works, right?
+Stefan Richter wrote:
+>> Maybe I need ordered per-target workqueues.
 > 
-> I did.  The only patch which needs userspace changes is the exporting of
-> secctx over netlink.  It appears the current userspace tools just
-> ignores unknown field types.  I have a patch to userspace to tell it
-> about the new field and will send it after the kernel patch goes in.
+> No, I actually need per-node ordering.  This device, like my other one
+> and apparently most ones on the market actually keep their SCSI logical
+> units in separate FireWire units.  Currently firewire-sbp2 is not aware
+> that fw_unit instances reside on the same node.
+> 
+> This is going to be tougher than I hoped.  Maybe I need a driver-global
+> Inquiry mutex.  Or move the __scsi_add_device() out of sbp2_login() into
+> another work which is scheduled to a "single-threaded" workqueue.
 
-Okay, that's good.  Is the existing, i.e. unmodified, userspace still
-able set a Secmark with your patches applied?  That is the part I'm most
-concerned about right now ...
-
+More extensive change but probably with simpler end result:  Let sbp2_probe
+and sbp2_update perform login/scsi_add_device/reconnect directly.  sbp2_probe
+and sbp2_update are serialized per node, but (since 2.6.36 with cmwq)
+parallelized across nodes.
 -- 
-paul moore
-linux @ hp
-
-
+Stefan Richter
+-=====-==-=- =-=- -==-=
+http://arcgraph.de/sr/
