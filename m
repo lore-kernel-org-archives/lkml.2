@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752188Ab0JLXvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 19:51:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58891 "EHLO mx1.redhat.com"
+	id S1752131Ab0JLX5U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 19:57:20 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:59786 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109Ab0JLXvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 19:51:50 -0400
-Subject: Re: [PATCH 1/5] secmark: do not return early if there was no error
-From: Eric Paris <eparis@redhat.com>
-To: James Morris <jmorris@namei.org>
-Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, paul.moore@hp.com, selinux@tycho.nsa.gov,
-        sds@tycho.nsa.gov, jengelh@medozas.de,
-        linux-security-module@vger.kernel.org, mr.dash.four@googlemail.com,
-        pablo@netfilter.org
-In-Reply-To: <alpine.LRH.2.00.1010131038160.2949@tundra.namei.org>
-References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
-	 <alpine.LRH.2.00.1010131038160.2949@tundra.namei.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Oct 2010 19:50:24 -0400
-Message-ID: <1286927424.2614.15.camel@localhost.localdomain>
-Mime-Version: 1.0
+	id S1751551Ab0JLX5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 19:57:19 -0400
+Message-ID: <4CB4F5D1.6060300@ti.com>
+Date: Tue, 12 Oct 2010 18:57:05 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-pm <linux-pm@lists.linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, l-o <linux-omap@vger.kernel.org>,
+        l-a <linux-arm-kernel@lists.infradead.org>,
+        Paul <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v7] power: introduce library for device-specific OPPs
+References: <[PATCH] power: introduce library for device-specific OPPs> <4CB32675.1090205@ti.com> <201010120008.16388.rjw@sisk.pl> <201010130125.14604.rjw@sisk.pl>
+In-Reply-To: <201010130125.14604.rjw@sisk.pl>
+Content-Type: text/plain; charset="ISO-8859-2"; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 10:38 +1100, James Morris wrote:
-> On Tue, 12 Oct 2010, Eric Paris wrote:
+Rafael J. Wysocki had written, on 10/12/2010 06:25 PM, the following:
+> On Tuesday, October 12, 2010, Rafael J. Wysocki wrote:
+>> On Monday, October 11, 2010, Nishanth Menon wrote:
+>>> Rafael J. Wysocki had written, on 10/09/2010 05:59 PM, the following:
+>>> [...]
+>>>>> Signed-off-by: Nishanth Menon <nm@ti.com>
+>>>> OK
+>>>>
+>>>> Your error messages are a bit inconsistent (e.g. some of them print the
+>>>> error code while others don't), but I guess I can fix that up.
+>>> Thanks a bunch.
+>>>> Still, to apply the patch I need a copyright notice for the doc too.
+>>> oops..
+>>> (C) 2009-2010 Nishanth Menon <nm@ti.com>, Texas Instruments Incorporated
+>>> Does this help?
+>> Yes, it does.
+>>
+>>> or would you like me to post a v8 as well?
+>> That shouldn't be necessary.
 > 
-> > Commit 4a5a5c73 attempted to pass decent error messages back to userspace for
-> > netfilter errors.  In xt_SECMARK.c however the patch screwed up and returned
-> > on 0 (aka no error) early and didn't finish setting up secmark.  This results
-> > in a kernel BUG if you use SECMARK.
-> > 
+> The patch has been applied to suspend-2.6/linux-next at:
 > 
-> Does this need to go into current Linus?
-
-It's been broken since v2.6.35-rc1 so it's not exactly new, but yes,
-it's broken and will bug like this in current Linus.
-
--Eric
-
+> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=commit;h=56149b574181d98aedf97f1f2d91d05ab261db41
+> 
+> with minor changes around the error messages.  Please double check if everything
+> is correct.
+Thanks Rafael. I confirm changes are correct.
+-- 
+Regards,
+Nishanth Menon
