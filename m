@@ -1,54 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab0JLNUP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:20:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33193 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055Ab0JLNUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:20:12 -0400
-From: Michal Marek <mmarek@suse.cz>
-To: randy.dunlap@oracle.com
-Cc: catalin.marinas@arm.com, linux-kbuild@vger.kernel.org,
-        sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, lacombar@gmail.com,
-        xiyou.wangcong@gmail.com
-Subject: [PATCH] Revert "kconfig: Temporarily disable dependency warnings"
-Date: Tue, 12 Oct 2010 15:19:46 +0200
-Message-Id: <1286889586-13483-1-git-send-email-mmarek@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20101011145930.11fe570c.randy.dunlap@oracle.com>
-References: <20101011145930.11fe570c.randy.dunlap@oracle.com>
+	id S932319Ab0JLNUn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:20:43 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:39021 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757285Ab0JLNUm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:20:42 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: bo yang <boyang1288@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James.Bottomley@suse.de" <James.Bottomley@suse.de>
+Date: Tue, 12 Oct 2010 07:20:27 -0600
+Subject: [PATCH 4/5] scsi: megaraid_sas - Add three times Online controller
+ reset
+Thread-Topic: [PATCH 4/5] scsi: megaraid_sas - Add three times Online
+ controller reset
+Thread-Index: ActazI2dVlKgOYOBSTqP3ayuYl2XHgPQ3pmQ
+Message-ID: <4B6A08C587958942AA3002690DD4F8C30100FF9FB7@cosmail02.lsi.com>
+References: <AANLkTi=YBxP2QGgtPdnnnW3xRJ=ESv3EqvV6rYO7s1Wh@mail.gmail.com>
+In-Reply-To: <AANLkTi=YBxP2QGgtPdnnnW3xRJ=ESv3EqvV6rYO7s1Wh@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: multipart/mixed;
+	boundary="_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB7cosmail02lsic_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This reverts commit 71ebc01, which was a 2.6.36-only stopgap solution.
+--_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB7cosmail02lsic_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+RE-SUBMIT: I am re-attaching the patch:
+
+If fw didn't raise the interrupt with the fw state change to driver
+and fw goes to failure state, driver Will check the FW state in
+driver's timeout routine and issue the reset if need.  Driver will do
+the OCR upto three times until kill adapter.  Also driver will issue
+OCR before driver kill adapter even if fw in operational state.
+
+Signed-off-by Bo Yang<bo.yang@lsi.com>
+
 ---
- scripts/kconfig/symbol.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ drivers/scsi/megaraid/megaraid_sas.c |   70 ++++++++++++++++++++++++++++++=
+++++-
+ 1 file changed, 69 insertions(+), 1 deletion(-)
 
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index cb00568..c0efe10 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -350,7 +350,6 @@ void sym_calc_value(struct symbol *sym)
- 				}
- 			}
- 		calc_newval:
--#if 0
- 			if (sym->dir_dep.tri == no && sym->rev_dep.tri != no) {
- 				fprintf(stderr, "warning: (");
- 				expr_fprint(sym->rev_dep.expr, stderr);
-@@ -359,7 +358,6 @@ void sym_calc_value(struct symbol *sym)
- 				expr_fprint(sym->dir_dep.expr, stderr);
- 				fprintf(stderr, ")\n");
- 			}
--#endif
- 			newval.tri = EXPR_OR(newval.tri, sym->rev_dep.tri);
- 		}
- 		if (newval.tri == mod && sym_get_type(sym) == S_BOOLEAN)
--- 
-1.7.1
 
+--_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB7cosmail02lsic_
+Content-Type: application/octet-stream; name="megasas-p4-timeout.patch"
+Content-Description: megasas-p4-timeout.patch
+Content-Disposition: attachment; filename="megasas-p4-timeout.patch";
+	size=3378; creation-date="Sun, 19 Sep 2010 14:09:34 GMT";
+	modification-date="Fri, 17 Sep 2010 01:45:08 GMT"
+Content-Transfer-Encoding: base64
+
+ZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jIG5ldy9k
+cml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMKLS0tIG9sZC9kcml2ZXJzL3Njc2kv
+bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0wOS0xNyAwMzoyNTozNS4wMDAwMDAwMDAgLTA0
+MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0wOS0x
+NyAwMzoyNTowNi4wMDAwMDAwMDAgLTA0MDAKQEAgLTcyOSw2ICs3MjksMTAgQEAgc3RhdGljIGlu
+dAogbWVnYXNhc19jaGVja19yZXNldF9nZW4yKHN0cnVjdCBtZWdhc2FzX2luc3RhbmNlICppbnN0
+YW5jZSwKIAkJc3RydWN0IG1lZ2FzYXNfcmVnaXN0ZXJfc2V0IF9faW9tZW0gKnJlZ3MpCiB7CisJ
+aWYgKGluc3RhbmNlLT5hZHByZWNvdmVyeSAhPSBNRUdBU0FTX0hCQV9PUEVSQVRJT05BTCkgewor
+CQlyZXR1cm4gMTsKKwl9CisKIAlyZXR1cm4gMDsKIH0KIApAQCAtOTQxLDYgKzk0NSw3IEBAIG1l
+Z2FzYXNfbWFrZV9zZ2xfc2tpbm55KHN0cnVjdCBtZWdhc2FzX2kKIAkJCW1maV9zZ2wtPnNnZV9z
+a2lubnlbaV0ubGVuZ3RoID0gc2dfZG1hX2xlbihvc19zZ2wpOwogCQkJbWZpX3NnbC0+c2dlX3Nr
+aW5ueVtpXS5waHlzX2FkZHIgPQogCQkJCQkJc2dfZG1hX2FkZHJlc3Mob3Nfc2dsKTsKKwkJCW1m
+aV9zZ2wtPnNnZV9za2lubnlbaV0uZmxhZyA9IDA7CiAJCX0KIAl9CiAJcmV0dXJuIHNnZV9jb3Vu
+dDsKQEAgLTE1NjgsNiArMTU3MywyOCBAQCBzdGF0aWMgdm9pZCBtZWdhc2FzX2NvbXBsZXRlX2Nt
+ZF9kcGModW5zCiAJfQogfQogCitzdGF0aWMgdm9pZAorbWVnYXNhc19pbnRlcm5hbF9yZXNldF9k
+ZWZlcl9jbWRzKHN0cnVjdCBtZWdhc2FzX2luc3RhbmNlICppbnN0YW5jZSk7CisKK3N0YXRpYyB2
+b2lkCitwcm9jZXNzX2Z3X3N0YXRlX2NoYW5nZV93cShzdHJ1Y3Qgd29ya19zdHJ1Y3QgKndvcmsp
+OworCit2b2lkIG1lZ2FzYXNfZG9fb2NyKHN0cnVjdCBtZWdhc2FzX2luc3RhbmNlICppbnN0YW5j
+ZSkKK3sKKwlpZiAoKGluc3RhbmNlLT5wZGV2LT5kZXZpY2UgPT0gUENJX0RFVklDRV9JRF9MU0lf
+U0FTMTA2NFIpIHx8CisJKGluc3RhbmNlLT5wZGV2LT5kZXZpY2UgPT0gUENJX0RFVklDRV9JRF9E
+RUxMX1BFUkM1KSB8fAorCShpbnN0YW5jZS0+cGRldi0+ZGV2aWNlID09IFBDSV9ERVZJQ0VfSURf
+TFNJX1ZFUkRFX1pDUikpIHsKKwkJKmluc3RhbmNlLT5jb25zdW1lciAgICAgPSBNRUdBU0FTX0FE
+UFJFU0VUX0lOUFJPR19TSUdOOworCX0KKwlpbnN0YW5jZS0+aW5zdGFuY2V0LT5kaXNhYmxlX2lu
+dHIoaW5zdGFuY2UtPnJlZ19zZXQpOworCWluc3RhbmNlLT5hZHByZWNvdmVyeSAgID0gTUVHQVNB
+U19BRFBSRVNFVF9TTV9JTkZBVUxUOworCWluc3RhbmNlLT5pc3N1ZXBlbmRfZG9uZSA9IDA7CisK
+KwlhdG9taWNfc2V0KCZpbnN0YW5jZS0+Zndfb3V0c3RhbmRpbmcsIDApOworCW1lZ2FzYXNfaW50
+ZXJuYWxfcmVzZXRfZGVmZXJfY21kcyhpbnN0YW5jZSk7CisJcHJvY2Vzc19md19zdGF0ZV9jaGFu
+Z2Vfd3EoJmluc3RhbmNlLT53b3JrX2luaXQpOworfQorCiAvKioKICAqIG1lZ2FzYXNfd2FpdF9m
+b3Jfb3V0c3RhbmRpbmcgLQlXYWl0IGZvciBhbGwgb3V0c3RhbmRpbmcgY21kcwogICogQGluc3Rh
+bmNlOgkJCQlBZGFwdGVyIHNvZnQgc3RhdGUKQEAgLTE1ODUsNiArMTYxMiw4IEBAIHN0YXRpYyBp
+bnQgbWVnYXNhc193YWl0X2Zvcl9vdXRzdGFuZGluZygKIAl1bnNpZ25lZCBsb25nIGZsYWdzOwog
+CXN0cnVjdCBsaXN0X2hlYWQgY2xpc3RfbG9jYWw7CiAJc3RydWN0IG1lZ2FzYXNfY21kICpyZXNl
+dF9jbWQ7CisJdTMyIGZ3X3N0YXRlOworCXU4IGtpbGxfYWRhcHRlcl9mbGFnOwogCiAJc3Bpbl9s
+b2NrX2lycXNhdmUoJmluc3RhbmNlLT5oYmFfbG9jaywgZmxhZ3MpOwogCWFkcHJlY292ZXJ5ID0g
+aW5zdGFuY2UtPmFkcHJlY292ZXJ5OwpAQCAtMTY3MCw3ICsxNjk5LDQ1IEBAIHN0YXRpYyBpbnQg
+bWVnYXNhc193YWl0X2Zvcl9vdXRzdGFuZGluZygKIAkJbXNsZWVwKDEwMDApOwogCX0KIAotCWlm
+IChhdG9taWNfcmVhZCgmaW5zdGFuY2UtPmZ3X291dHN0YW5kaW5nKSkgeworCWkgPSAwOworCWtp
+bGxfYWRhcHRlcl9mbGFnID0gMDsKKwlkbyB7CisJCWZ3X3N0YXRlID0gaW5zdGFuY2UtPmluc3Rh
+bmNldC0+cmVhZF9md19zdGF0dXNfcmVnKAorCQkJCQlpbnN0YW5jZS0+cmVnX3NldCkgJiBNRklf
+U1RBVEVfTUFTSzsKKwkJaWYgKChmd19zdGF0ZSA9PSBNRklfU1RBVEVfRkFVTFQpICYmCisJCQko
+aW5zdGFuY2UtPmRpc2FibGVPbmxpbmVDdHJsUmVzZXQgPT0gMCkpIHsKKwkJCWlmIChpID09IDMp
+IHsKKwkJCQlraWxsX2FkYXB0ZXJfZmxhZyA9IDI7CisJCQkJYnJlYWs7CisJCQl9CisJCQltZWdh
+c2FzX2RvX29jcihpbnN0YW5jZSk7CisJCQlraWxsX2FkYXB0ZXJfZmxhZyA9IDE7CisKKwkJCS8q
+IHdhaXQgZm9yIDEgc2VjcyB0byBsZXQgRlcgZmluaXNoIHRoZSBwZW5kaW5nIGNtZHMgKi8KKwkJ
+CW1zbGVlcCgxMDAwKTsKKwkJfQorCQlpKys7CisJfSB3aGlsZSAoaSA8PSAzKTsKKworCWlmIChh
+dG9taWNfcmVhZCgmaW5zdGFuY2UtPmZ3X291dHN0YW5kaW5nKSAmJgorCQkJCQkha2lsbF9hZGFw
+dGVyX2ZsYWcpIHsKKwkJaWYgKGluc3RhbmNlLT5kaXNhYmxlT25saW5lQ3RybFJlc2V0ID09IDAp
+IHsKKworCQkJbWVnYXNhc19kb19vY3IoaW5zdGFuY2UpOworCisJCQkvKiB3YWl0IGZvciA1IHNl
+Y3MgdG8gbGV0IEZXIGZpbmlzaCB0aGUgcGVuZGluZyBjbWRzICovCisJCQlmb3IgKGkgPSAwOyBp
+IDwgd2FpdF90aW1lOyBpKyspIHsKKwkJCQlpbnQgb3V0c3RhbmRpbmcgPQorCQkJCQlhdG9taWNf
+cmVhZCgmaW5zdGFuY2UtPmZ3X291dHN0YW5kaW5nKTsKKwkJCQlpZiAoIW91dHN0YW5kaW5nKQor
+CQkJCQlyZXR1cm4gU1VDQ0VTUzsKKwkJCQltc2xlZXAoMTAwMCk7CisJCQl9CisJCX0KKwl9CisK
+KwlpZiAoYXRvbWljX3JlYWQoJmluc3RhbmNlLT5md19vdXRzdGFuZGluZykgfHwKKwkJCQkJKGtp
+bGxfYWRhcHRlcl9mbGFnID09IDIpKSB7CiAJCXByaW50ayhLRVJOX05PVElDRSAibWVnYXJhaWRf
+c2FzOiBwZW5kaW5nIGNtZHMgYWZ0ZXIgcmVzZXRcbiIpOwogCQkvKgogCQkqIFNlbmQgc2lnbmFs
+IHRvIEZXIHRvIHN0b3AgcHJvY2Vzc2luZyBhbnkgcGVuZGluZyBjbWRzLgpAQCAtMjY4MCw2ICsy
+NzQ3LDcgQEAgc3RhdGljIGludCBtZWdhc2FzX2NyZWF0ZV9mcmFtZV9wb29sKHN0cgogCQkJcmV0
+dXJuIC1FTk9NRU07CiAJCX0KIAorCQltZW1zZXQoY21kLT5mcmFtZSwgMCwgdG90YWxfc3opOwog
+CQljbWQtPmZyYW1lLT5pby5jb250ZXh0ID0gY21kLT5pbmRleDsKIAkJY21kLT5mcmFtZS0+aW8u
+cGFkXzAgPSAwOwogCX0K
+
+--_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB7cosmail02lsic_--
