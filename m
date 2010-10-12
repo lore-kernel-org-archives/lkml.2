@@ -1,71 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932532Ab0JLNXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:23:23 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:44214 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932340Ab0JLNXL (ORCPT
+	id S932484Ab0JLNZS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:25:18 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:50095 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932287Ab0JLNZQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:23:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=KMamOoV5SU2jwkOjSQy1x71UX9fMym8OdU2XYBpKE6XphuaWNv4A1MlolnObc0XYm5
-         D6g02JsY6h+A+mvcbSf65/7cq6IURWxl2f+Yanh1Am4pDz8/6vZiac0u3C4rsSh4uZpN
-         7k4knI2aTMXzK4nHXl8/z+cU+FHUaU2ukoqeQ=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Subject: [PATCH 2/2] staging: wlags49_h2: remove custom macros min() and max()
-Date: Tue, 12 Oct 2010 16:22:49 +0300
-Message-Id: <6a47ed73fed16a1b398ec4e171fbedad9700a335.1286889640.git.ext-andriy.shevchenko@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <58ee6c5338ae1c6dc18633e48fad1b753c0f7ec7.1286889640.git.ext-andriy.shevchenko@nokia.com>
-References: <58ee6c5338ae1c6dc18633e48fad1b753c0f7ec7.1286889640.git.ext-andriy.shevchenko@nokia.com>
-In-Reply-To: <58ee6c5338ae1c6dc18633e48fad1b753c0f7ec7.1286889640.git.ext-andriy.shevchenko@nokia.com>
-References: <58ee6c5338ae1c6dc18633e48fad1b753c0f7ec7.1286889640.git.ext-andriy.shevchenko@nokia.com>
+	Tue, 12 Oct 2010 09:25:16 -0400
+X-Sasl-enc: NKQwCDBHHACwR6VcvgeLPr8vrRbtWSq83v1XgioJFj1B 1286889915
+Date: Tue, 12 Oct 2010 10:25:11 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: Milan Broz <mbroz@redhat.com>, Alasdair G Kergon <agk@redhat.com>
+Subject: dm-crypt: plain64 IV support for -stable?
+Message-ID: <20101012132511.GA24455@khazad-dum.debian.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
----
- drivers/staging/wlags49_h2/hcf.c    |    1 +
- drivers/staging/wlags49_h2/hcfdef.h |    8 --------
- 2 files changed, 1 insertions(+), 8 deletions(-)
+Would it be possible to add commit 61afef614b013ee1b767cdd10325acae1db1f4d2
+"dm crypt: add plain64 iv" to -stable?
 
-diff --git a/drivers/staging/wlags49_h2/hcf.c b/drivers/staging/wlags49_h2/hcf.c
-index c4fe0ec..d4bdd3e 100644
---- a/drivers/staging/wlags49_h2/hcf.c
-+++ b/drivers/staging/wlags49_h2/hcf.c
-@@ -92,6 +92,7 @@
- #include "hcf.h"				// HCF and MSF common include file
- #include "hcfdef.h"				// HCF specific include file
- #include "mmd.h"				// MoreModularDriver common include file
-+#include <linux/kernel.h>
- 
- #if ! defined offsetof
- #define offsetof(s,m)   ((unsigned int)&(((s *)0)->m))
-diff --git a/drivers/staging/wlags49_h2/hcfdef.h b/drivers/staging/wlags49_h2/hcfdef.h
-index f7e74bf..4e20171 100644
---- a/drivers/staging/wlags49_h2/hcfdef.h
-+++ b/drivers/staging/wlags49_h2/hcfdef.h
-@@ -593,14 +593,6 @@ err: ;
- /**************************************  MACROS  ************************************************/
- /************************************************************************************************/
- 
--/* min and max macros */
--#if ! defined max
--#define max(a,b)  		(((a) > (b)) ? (a) : (b))
--#endif
--#if ! defined min
--#define min(a,b)  		(((a) < (b)) ? (a) : (b))
--#endif
--
- #ifdef HCF_SLEEP
- #if defined MSF_WAIT
- err: MSF should no longer supply this macro;
+Without it, users of LTS kernels like 2.6.32 are missing important
+functionality (as in: might not be able to mount some LUKS volumes
+created on newer kernels).
+
 -- 
-1.6.3.3
-
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
