@@ -1,372 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0JLFx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 01:53:29 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:37205 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752518Ab0JLFx1 (ORCPT
+	id S1753367Ab0JLFz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 01:55:29 -0400
+Received: from nenolod.net ([67.202.104.180]:39273 "EHLO
+	carpathia.dereferenced.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752518Ab0JLFz2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 01:53:27 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 12 Oct 2010 14:48:01 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: [PATCH v4] memcg: reduce lock time at move charge
-Message-Id: <20101012144801.51d15a02.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101012125613.1accc1bd.nishimura@mxp.nes.nec.co.jp>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<20101005160332.GB9515@barrios-desktop>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
-	<20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007161454.84570cf9.akpm@linux-foundation.org>
-	<20101008133712.2a836331.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007215556.21412ae6.akpm@linux-foundation.org>
-	<20101008141201.c1e3a4e2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101008194131.20b44a9d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101012125613.1accc1bd.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Oct 2010 01:55:28 -0400
+X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 01:55:28 EDT
+From: William Pitcock <nenolod@dereferenced.org>
+To: linux-kernel@vger.kernel.org
+Date: Tue, 12 Oct 2010 00:32:02 -0500
+Subject: [PATCH] CFS: Add hierarchical tree-based penalty.
+Message-Id: <20101012054852.1DC5DCE142@carpathia.dereferenced.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Oct 2010 12:56:13 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+Inspired by the recent change to BFS by Con Kolivas, this patch causes
+vruntime to be penalized based on parent depth from their root task
+group.
 
-> > +err_out:
-> > +	for (; mt < info + num; mt++)
-> > +		if (mt->type == MC_TARGET_PAGE) {
-> > +			putback_lru_page(mt->val.page);
-> Is this putback_lru_page() necessary ?
-> is_target_pte_for_mc() doesn't isolate the page.
-> 
-Ok, v4 here. tested failure path and success path.
+I have, for the moment, decided to make it a default feature since the
+design of CFS ensures that broken applications depending on task enqueue
+behaviour behaving traditionally will continue to work.
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+My method for applying the penalty is different than that of BFS, it
+divides the vruntime by the number of parents the process has.
 
-Presently, at task migration among cgroups, memory cgroup scans page tables and
-moves accounting if flags are properly set.
-
-
-The core code, mem_cgroup_move_charge_pte_range() does
-
- 	pte_offset_map_lock();
-	for all ptes in a page table:
-		1. look into page table, find_and_get a page
-		2. remove it from LRU.
-		3. move charge.
-		4. putback to LRU. put_page()
-	pte_offset_map_unlock();
-
-for pte entries on a 3rd level? page table.
-
-As a planned updates, we'll support dirty-page accounting. Because move_charge()
-is highly race, we need to add more check in move_charge.
-For example, lock_page();-> wait_on_page_writeback();-> unlock_page();
-is an candidate for new check.
-
-
-This patch modifies a rountine as
-
-	for 32 pages: pte_offset_map_lock()
-		      find_and_get a page
-		      record it
-		      pte_offset_map_unlock()
-	for all recorded pages
-		      isolate it from LRU.
-		      move charge
-		      putback to LRU
-		      put_page()
-Code size change is:
-(Before)
-[kamezawa@bluextal mmotm-1008]$ size mm/memcontrol.o
-   text    data     bss     dec     hex filename
-  28247    7685    4100   40032    9c60 mm/memcontrol.o
-(After)
-[kamezawa@bluextal mmotm-1008]$ size mm/memcontrol.o
-   text    data     bss     dec     hex filename
-  28591    7685    4100   40376    9db8 mm/memcontrol.o
-
-Easy Bencmark score.
-
-Moving 2Gbytes anonymous memory task between cgroup/A and cgroup/B.
- <===== shows a function under pte_lock.
-Before Patch.
-
-real    0m42.346s
-user    0m0.002s
-sys     0m39.668s
-
-    13.88%  swap_task.sh  [kernel.kallsyms]  [k] put_page	     <=====
-    10.37%  swap_task.sh  [kernel.kallsyms]  [k] isolate_lru_page    <===== 
-    10.25%  swap_task.sh  [kernel.kallsyms]  [k] is_target_pte_for_mc  <=====
-     7.85%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_move_account <=====
-     7.63%  swap_task.sh  [kernel.kallsyms]  [k] lookup_page_cgroup      <=====
-     6.96%  swap_task.sh  [kernel.kallsyms]  [k] ____pagevec_lru_add
-     6.43%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_del_lru_list
-     6.31%  swap_task.sh  [kernel.kallsyms]  [k] putback_lru_page
-     5.28%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_add_lru_list
-     3.58%  swap_task.sh  [kernel.kallsyms]  [k] __lru_cache_add
-     3.57%  swap_task.sh  [kernel.kallsyms]  [k] _raw_spin_lock_irq
-     3.06%  swap_task.sh  [kernel.kallsyms]  [k] release_pages
-     2.35%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_get_reclaim_stat_from_page
-     2.31%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_move_charge_pte_range
-     1.80%  swap_task.sh  [kernel.kallsyms]  [k] memcg_check_events
-     1.59%  swap_task.sh  [kernel.kallsyms]  [k] page_evictable
-     1.55%  swap_task.sh  [kernel.kallsyms]  [k] vm_normal_page
-     1.53%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_charge_statistics
-
-After patch:
-
-real    0m43.440s
-user    0m0.000s
-sys     0m40.704s
-    13.68%  swap_task.sh  [kernel.kallsyms]  [k] is_target_pte_for_mc <====
-    13.29%  swap_task.sh  [kernel.kallsyms]  [k] put_page
-    10.34%  swap_task.sh  [kernel.kallsyms]  [k] isolate_lru_page
-     7.48%  swap_task.sh  [kernel.kallsyms]  [k] lookup_page_cgroup
-     7.42%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_move_account
-     6.98%  swap_task.sh  [kernel.kallsyms]  [k] ____pagevec_lru_add
-     6.15%  swap_task.sh  [kernel.kallsyms]  [k] putback_lru_page
-     5.46%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_add_lru_list
-     5.00%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_del_lru_list
-     3.38%  swap_task.sh  [kernel.kallsyms]  [k] _raw_spin_lock_irq
-     3.31%  swap_task.sh  [kernel.kallsyms]  [k] __lru_cache_add
-     3.02%  swap_task.sh  [kernel.kallsyms]  [k] release_pages
-     2.24%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_get_reclaim_stat_from_page
-     2.04%  swap_task.sh  [kernel.kallsyms]  [k] mem_cgroup_move_charge_pte_range
-     1.84%  swap_task.sh  [kernel.kallsyms]  [k] memcg_check_events
-
-I think this is not very bad. 
-
-Changelog: v3->v4
- - fixed bug in error path (at resource shortage, putback is not necessary)
-
-Changelog: v2->v3
- - rebased onto mmotm 1008
- - redecued the number of loops.
- - clean ups. reduced unnecessary switch, break, continue, goto.
- - added kzalloc again.
-
-Changelog: v1->v2
- - removed kzalloc() of mc_target. preallocate it on "mc"
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Signed-off-by: William Pitcock <nenolod@dereferenced.org>
 ---
- mm/memcontrol.c |  127 ++++++++++++++++++++++++++++++++------------------------
- 1 file changed, 74 insertions(+), 53 deletions(-)
+ include/linux/sched.h   |    2 ++
+ kernel/sched.c          |    4 ++++
+ kernel/sched_fair.c     |    7 +++++++
+ kernel/sched_features.h |   12 ++++++++++++
+ 4 files changed, 25 insertions(+), 0 deletions(-)
 
-Index: mmotm-1008/mm/memcontrol.c
-===================================================================
---- mmotm-1008.orig/mm/memcontrol.c
-+++ mmotm-1008/mm/memcontrol.c
-@@ -276,6 +276,21 @@ enum move_type {
- 	NR_MOVE_TYPE,
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..49fca7c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1494,6 +1494,8 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++
++	int parent_depth;
  };
  
-+enum mc_target_type {
-+	MC_TARGET_NONE, /* used as failure code(0) */
-+	MC_TARGET_PAGE,
-+	MC_TARGET_SWAP,
-+};
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc85ceb..0e55350 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
+ #endif
+ 
+ 	rq = task_rq_lock(p, &flags);
 +
-+struct mc_target {
-+	enum mc_target_type type;
-+	union {
-+		struct page *page;
-+		swp_entry_t ent;
-+	} val;
-+};
-+#define MC_MOVE_ONCE	(16)
++	if (!(clone_flags & CLONE_THREAD))
++		p->parent_depth++;
 +
- /* "mc" and its members are protected by cgroup_mutex */
- static struct move_charge_struct {
- 	spinlock_t	  lock; /* for from, to, moving_task */
-@@ -4479,16 +4494,7 @@ one_by_one:
-  *
-  * Called with pte lock held.
+ 	activate_task(rq, p, 0);
+ 	trace_sched_wakeup_new(p, 1);
+ 	check_preempt_curr(rq, p, WF_FORK);
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index db3f674..3059fe0 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -737,6 +737,13 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
+ 	if (initial && sched_feat(START_DEBIT))
+ 		vruntime += sched_vslice(cfs_rq, se);
+ 
++	if (sched_feat(HIERARCHICAL_PENALTY)) {
++		struct task_struct *tsk = task_of(se);
++
++		if (tsk->parent_count > 1)
++			vruntime /= tsk->parent_count;
++	}
++
+ 	/* sleeps up to a single latency don't count. */
+ 	if (!initial) {
+ 		unsigned long thresh = sysctl_sched_latency;
+diff --git a/kernel/sched_features.h b/kernel/sched_features.h
+index 83c66e8..cf17f97 100644
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -45,6 +45,18 @@ SCHED_FEAT(LAST_BUDDY, 1)
+ SCHED_FEAT(CACHE_HOT_BUDDY, 1)
+ 
+ /*
++ * Hierarchical tree-based penalty: penalize service deficit by
++ * an order of magnitude for each parent process in the process
++ * tree.  This has the natural effect of forcing preference towards
++ * processes that are not fork()-hungry, like make(1), which helps
++ * to preserve good latency.
++ *
++ * This also has the side effect of providing in a limited way,
++ * per-user CPU entitlement partitioning.
++ */
++SCHED_FEAT(HIERARCHICAL_PENALTY, 1)
++
++/*
+  * Use arch dependent cpu power functions
   */
--union mc_target {
--	struct page	*page;
--	swp_entry_t	ent;
--};
- 
--enum mc_target_type {
--	MC_TARGET_NONE,	/* not used */
--	MC_TARGET_PAGE,
--	MC_TARGET_SWAP,
--};
- 
- static struct page *mc_handle_present_pte(struct vm_area_struct *vma,
- 						unsigned long addr, pte_t ptent)
-@@ -4565,7 +4571,7 @@ static struct page *mc_handle_file_pte(s
- }
- 
- static int is_target_pte_for_mc(struct vm_area_struct *vma,
--		unsigned long addr, pte_t ptent, union mc_target *target)
-+		unsigned long addr, pte_t ptent, struct mc_target *target)
- {
- 	struct page *page = NULL;
- 	struct page_cgroup *pc;
-@@ -4590,8 +4596,10 @@ static int is_target_pte_for_mc(struct v
- 		 */
- 		if (PageCgroupUsed(pc) && pc->mem_cgroup == mc.from) {
- 			ret = MC_TARGET_PAGE;
--			if (target)
--				target->page = page;
-+			if (target) {
-+				target->val.page = page;
-+				target->type = ret;
-+			}
- 		}
- 		if (!ret || !target)
- 			put_page(page);
-@@ -4600,8 +4608,10 @@ static int is_target_pte_for_mc(struct v
- 	if (ent.val && !ret &&
- 			css_id(&mc.from->css) == lookup_swap_cgroup(ent)) {
- 		ret = MC_TARGET_SWAP;
--		if (target)
--			target->ent = ent;
-+		if (target) {
-+			target->val.ent = ent;
-+			target->type = ret;
-+		}
- 	}
- 	return ret;
- }
-@@ -4761,68 +4771,79 @@ static int mem_cgroup_move_charge_pte_ra
- {
- 	int ret = 0;
- 	struct vm_area_struct *vma = walk->private;
-+	struct mc_target *info, *mt;
-+	struct page_cgroup *pc;
- 	pte_t *pte;
- 	spinlock_t *ptl;
-+	int num;
-+
-+	info = kzalloc(sizeof(struct mc_target) *MC_MOVE_ONCE, GFP_KERNEL);
-+	if (!info)
-+		return -ENOMEM;
- 
- retry:
-+	/*
-+	 * We want to move account without taking pte_offset_map_lock() because
-+	 * "move" may need to wait for some event completion.(in future)
-+	 * At 1st half, scan page table and grab pages.  At 2nd half, remove it
-+	 * from LRU and overwrite page_cgroup's information.
-+	 */
- 	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; addr += PAGE_SIZE) {
-+	for (num = 0; num < MC_MOVE_ONCE && addr != end; addr += PAGE_SIZE) {
- 		pte_t ptent = *(pte++);
--		union mc_target target;
--		int type;
--		struct page *page;
--		struct page_cgroup *pc;
--		swp_entry_t ent;
-+		ret = is_target_pte_for_mc(vma, addr, ptent, info + num);
-+		if (!ret)
-+			continue;
-+		num++;
-+	}
-+	pte_unmap_unlock(pte - 1, ptl);
-+	cond_resched();
- 
--		if (!mc.precharge)
--			break;
-+	mt = info;
- 
--		type = is_target_pte_for_mc(vma, addr, ptent, &target);
--		switch (type) {
-+	while (mc.precharge < num) {
-+		ret = mem_cgroup_do_precharge(1);
-+		if (ret)
-+			goto err_out;
-+	}
-+
-+	for (ret = 0; mt < info + num; mt++) {
-+		switch (mt->type) {
- 		case MC_TARGET_PAGE:
--			page = target.page;
--			if (isolate_lru_page(page))
--				goto put;
--			pc = lookup_page_cgroup(page);
--			if (!mem_cgroup_move_account(pc,
-+			if (!isolate_lru_page(mt->val.page)) {
-+				pc = lookup_page_cgroup(mt->val.page);
-+				if (!mem_cgroup_move_account(pc,
- 						mc.from, mc.to, false)) {
--				mc.precharge--;
--				/* we uncharge from mc.from later. */
--				mc.moved_charge++;
-+					mc.precharge--;
-+					/* we uncharge from mc.from later. */
-+					mc.moved_charge++;
-+				}
-+				putback_lru_page(mt->val.page);
- 			}
--			putback_lru_page(page);
--put:			/* is_target_pte_for_mc() gets the page */
--			put_page(page);
-+			put_page(mt->val.page);
- 			break;
- 		case MC_TARGET_SWAP:
--			ent = target.ent;
--			if (!mem_cgroup_move_swap_account(ent,
-+			if (!mem_cgroup_move_swap_account(mt->val.ent,
- 						mc.from, mc.to, false)) {
--				mc.precharge--;
- 				/* we fixup refcnts and charges later. */
-+				mc.precharge--;
- 				mc.moved_swap++;
- 			}
--			break;
- 		default:
- 			break;
- 		}
- 	}
--	pte_unmap_unlock(pte - 1, ptl);
--	cond_resched();
--
--	if (addr != end) {
--		/*
--		 * We have consumed all precharges we got in can_attach().
--		 * We try charge one by one, but don't do any additional
--		 * charges to mc.to if we have failed in charge once in attach()
--		 * phase.
--		 */
--		ret = mem_cgroup_do_precharge(1);
--		if (!ret)
--			goto retry;
--	}
- 
-+	if (addr != end)
-+		goto retry;
-+out:
-+	kfree(info);
- 	return ret;
-+err_out:
-+	for (; mt < info + num; mt++)
-+		if (mt->type == MC_TARGET_PAGE)
-+			put_page(mt->val.page);
-+	goto out;
- }
- 
- static void mem_cgroup_move_charge(struct mm_struct *mm)
+ SCHED_FEAT(ARCH_POWER, 0)
+-- 
+1.7.2.1
 
