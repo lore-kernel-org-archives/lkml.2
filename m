@@ -1,110 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756833Ab0JLH3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:29:00 -0400
-Received: from nenolod.net ([67.202.104.180]:37717 "EHLO
-	carpathia.dereferenced.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754413Ab0JLH27 (ORCPT
+	id S1756617Ab0JLHdK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:33:10 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:2359 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754413Ab0JLHdJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:28:59 -0400
-From: William Pitcock <nenolod@dereferenced.org>
-To: linux-kernel@vger.kernel.org
-Date: Tue, 12 Oct 2010 00:32:02 -0500
-Subject: [PATCH try 3] CFS: Add hierarchical tree-based penalty.
-Message-Id: <20101012072859.4A14DCE142@carpathia.dereferenced.org>
+	Tue, 12 Oct 2010 03:33:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=aNdQTVb9kweCpwMTWF1/8rWWcz5x4XVbCKarebCUEJgrhuw0/EVv9QY5QAk4P14bf
+	sAwhc3/VSQDDaVmRzuiaw==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Righi <arighi@develer.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 07/10] memcg: add dirty limits to mem_cgroup
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-8-git-send-email-gthelen@google.com>
+	<20101005094302.GA4314@linux.develer.com>
+	<xr93eic4wjlq.fsf@ninji.mtv.corp.google.com>
+	<20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
+	<20101007094845.9e6a1b0f.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr93bp70febu.fsf@ninji.mtv.corp.google.com>
+	<20101012095546.f23bb950.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Tue, 12 Oct 2010 00:32:33 -0700
+In-Reply-To: <20101012095546.f23bb950.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Tue, 12 Oct 2010 09:55:46 +0900")
+Message-ID: <xr931v7vdfxq.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inspired by the recent change to BFS by Con Kolivas, this patch causes
-vruntime to be penalized based on parent depth from their root task
-group.
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-I have, for the moment, decided to make it a default feature since the
-design of CFS ensures that broken applications depending on task enqueue
-behaviour behaving traditionally will continue to work.
+> On Mon, 11 Oct 2010 17:24:21 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> >> Is your motivation to increase performance with the same functionality?
+>> >> If so, then would a 'static inline' be performance equivalent to a
+>> >> preprocessor macro yet be safer to use?
+>> >> 
+>> > Ah, if lockdep finds this as bug, I think other parts will hit this,
+>> > too.  like this.
+>> >> static struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+>> >> {
+>> >>         struct mem_cgroup *mem = NULL;
+>> >> 
+>> >>         if (!mm)
+>> >>                 return NULL;
+>> >>         /*
+>> >>          * Because we have no locks, mm->owner's may be being moved to other
+>> >>          * cgroup. We use css_tryget() here even if this looks
+>> >>          * pessimistic (rather than adding locks here).
+>> >>          */
+>> >>         rcu_read_lock();
+>> >>         do {
+>> >>                 mem = mem_cgroup_from_task(rcu_dereference(mm->owner));
+>> >>                 if (unlikely(!mem))
+>> >>                         break;
+>> >>         } while (!css_tryget(&mem->css));
+>> >>         rcu_read_unlock();
+>> >>         return mem;
+>> >> }
+>> 
+>> mem_cgroup_from_task() calls task_subsys_state() calls
+>> task_subsys_state_check().  task_subsys_state_check() will be happy if
+>> rcu_read_lock is held.
+>> 
+> yes.
+>
+>> I don't think that this will fail lockdep, because rcu_read_lock_held()
+>> is true when calling mem_cgroup_from_task() within
+>> try_get_mem_cgroup_from_mm()..
+>> 
+> agreed.
+>
+>> > mem_cgroup_from_task() is designed to be used as this.
+>> > If dqefined as macro, I think it will not be catched.
+>> 
+>> I do not understand how making mem_cgroup_from_task() a macro will
+>> change its behavior wrt. to lockdep assertion checking.  I assume that
+>> as a macro mem_cgroup_from_task() would still call task_subsys_state(),
+>> which requires either:
+>> a) rcu read lock held
+>> b) task->alloc_lock held
+>> c) cgroup lock held
+>> 
+>
+> Hmm. Maybe I was wrong.
+>
+>> 
+>> >> Maybe it makes more sense to find a way to perform this check in
+>> >> mem_cgroup_has_dirty_limit() without needing to grab the rcu lock.  I
+>> >> think this lock grab is unneeded.  I am still collecting performance
+>> >> data, but suspect that this may be making the code slower than it needs
+>> >> to be.
+>> >> 
+>> >
+>> > Hmm. css_set[] itself is freed by RCU..what idea to remove rcu_read_lock() do
+>> > you have ? Adding some flags ?
+>> 
+>> It seems like a shame to need a lock to determine if current is in the
+>> root cgroup.  Especially given that as soon as
+>> mem_cgroup_has_dirty_limit() returns, the task could be moved
+>> in-to/out-of the root cgroup thereby invaliding the answer.  So the
+>> answer is just a sample that may be wrong. 
+>
+> Yes. But it's not a bug but a specification.
+>
+>> But I think you are correct.
+>> We will need the rcu read lock in mem_cgroup_has_dirty_limit().
+>> 
+>
+> yes.
+>
+>
+>> > Ah...I noticed that you should do
+>> >
+>> >  mem = mem_cgroup_from_task(current->mm->owner);
+>> >
+>> > to check has_dirty_limit...
+>> 
+>> What are the cases where current->mm->owner->cgroups !=
+>> current->cgroups?
+>> 
+> In that case, assume group A and B.
+>
+>    thread(1) -> belongs to cgroup A  (thread(1) is mm->owner)
+>    thread(2) -> belongs to cgroup B
+> and
+>    a page    -> charnged to cgroup A
+>
+> Then, thread(2) make the page dirty which is under cgroup A.
+>
+> In this case, if page's dirty_pages accounting is added to cgroup B,
+> cgroup B' statistics may show "dirty_pages > all_lru_pages". This is
+> bug.
 
-My method for applying the penalty is different than that of BFS, it
-divides the vruntime by the number of parents the process has.
+I agree that in this case the dirty_pages accounting should be added to
+cgroup A because that is where the page was charged.  This will happen
+because pc->mem_cgroup was set to A when the page was charged.  The
+mark-page-dirty code will check pc->mem_cgroup to determine which cgroup
+to add the dirty page to.
 
-Signed-off-by: William Pitcock <nenolod@dereferenced.org>
----
- include/linux/sched.h   |    2 ++
- kernel/sched.c          |    4 ++++
- kernel/sched_fair.c     |    8 ++++++++
- kernel/sched_features.h |   12 ++++++++++++
- 4 files changed, 26 insertions(+), 0 deletions(-)
+I think that the current vs current->mm->owner decision is in areas of
+the code that is used to query the dirty limits.  These routines do not
+use this data to determine which cgroup to charge for dirty pages.  The
+usage of either mem_cgroup_from_task(current->mm->owner) or
+mem_cgroup_from_task(current) in mem_cgroup_has_dirty_limit() does not
+determine which cgroup is added for dirty_pages.
+mem_cgroup_has_dirty_limit() is only used to determine if the process
+has a dirty limit.  As discussed, this is a momentary answer that may be
+wrong by the time decisions are made because the task may be migrated
+in-to/out-of root cgroup while mem_cgroup_has_dirty_limit() runs.  If
+the process has a dirty limit, then the process's memcg is used to
+compute dirty limits.  Using your example, I assume that thread(1) and
+thread(2) will git dirty limits from cgroup(A) and cgroup(B)
+respectively.
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..7b44f98 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1494,6 +1494,8 @@ struct task_struct {
- 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
- 	} memcg_batch;
- #endif
-+
-+	int parent_count;
- };
- 
- /* Future-safe accessor for struct task_struct's cpus_allowed. */
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..16ad939 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
- #endif
- 
- 	rq = task_rq_lock(p, &flags);
-+
-+	if (!(clone_flags & CLONE_THREAD))
-+		p->parent_count++;
-+
- 	activate_task(rq, p, 0);
- 	trace_sched_wakeup_new(p, 1);
- 	check_preempt_curr(rq, p, WF_FORK);
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index db3f674..3f17ec1 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -737,6 +737,14 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
- 	if (initial && sched_feat(START_DEBIT))
- 		vruntime += sched_vslice(cfs_rq, se);
- 
-+	if (sched_feat(HIERARCHICAL_PENALTY)) {
-+		struct task_struct *tsk = task_of(se);
-+
-+		if (tsk->parent_count > 1)
-+			vruntime = max_vruntime(vruntime,
-+						vruntime / tsk->parent_count);
-+	}
-+
- 	/* sleeps up to a single latency don't count. */
- 	if (!initial) {
- 		unsigned long thresh = sysctl_sched_latency;
-diff --git a/kernel/sched_features.h b/kernel/sched_features.h
-index 83c66e8..cf17f97 100644
---- a/kernel/sched_features.h
-+++ b/kernel/sched_features.h
-@@ -45,6 +45,18 @@ SCHED_FEAT(LAST_BUDDY, 1)
- SCHED_FEAT(CACHE_HOT_BUDDY, 1)
- 
- /*
-+ * Hierarchical tree-based penalty: penalize service deficit by
-+ * an order of magnitude for each parent process in the process
-+ * tree.  This has the natural effect of forcing preference towards
-+ * processes that are not fork()-hungry, like make(1), which helps
-+ * to preserve good latency.
-+ *
-+ * This also has the side effect of providing in a limited way,
-+ * per-user CPU entitlement partitioning.
-+ */
-+SCHED_FEAT(HIERARCHICAL_PENALTY, 1)
-+
-+/*
-  * Use arch dependent cpu power functions
-  */
- SCHED_FEAT(ARCH_POWER, 0)
--- 
-1.7.2.1
+Are you thinking that when accounting for a dirty page (by incrementing
+pc->mem_cgroup->stat->count[MEM_CGROUP_STAT_FILE_DIRTY]) that we should
+check the pc->mem_cgroup dirty limit?
 
+>> I was hoping to avoid having add even more logic into
+>> mem_cgroup_has_dirty_limit() to handle the case where current->mm is
+>> NULL.
+>> 
+>
+> Blease check current->mm. We can't limit works of kernel-thread by this, let's
+> consider it later if necessary.
+>
+>> Presumably the newly proposed vm_dirty_param(),
+>> mem_cgroup_has_dirty_limit(), and mem_cgroup_page_stat() routines all
+>> need to use the same logic.  I assume they should all be consistently
+>> using current->mm->owner or current.
+>> 
+>
+> please.
+>
+> Thanks,
+> -Kame
