@@ -1,107 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab0JLHJL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:09:11 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:22909 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756610Ab0JLHJK (ORCPT
+	id S1756714Ab0JLHRu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:17:50 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:56207 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755251Ab0JLHRs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:09:10 -0400
-Message-ID: <000c01cb69dc$5d2aaab0$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Wolfgang Grandegger" <wg@grandegger.com>,
-        "David Miller" <davem@davemloft.net>
-Cc: <andrew.chih.howe.khor@intel.com>, <sameo@linux.intel.com>,
-        <margie.foster@intel.com>, <netdev@vger.kernel.org>,
-        <yong.y.wang@intel.com>, <linux-kernel@vger.kernel.org>,
-        <socketcan-core@lists.berlios.de>, <mkl@pengutronix.de>,
-        <chripell@fsfe.org>, <morinaga526@dsn.okisemi.com>,
-        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>, <qi.wang@intel.com>
-References: <002e01cb6486$2ed72cc0$66f8800a@maildom.okisemi.com>	<20101005.114506.184852374.davem@davemloft.net>	<000b01cb6503$962bc7f0$66f8800a@maildom.okisemi.com> <20101005.200904.71120150.davem@davemloft.net> <4CAC3D94.9010408@grandegger.com>
-Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
-Date: Tue, 12 Oct 2010 16:09:04 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 5.5
+	Tue, 12 Oct 2010 03:17:48 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@citi.umich.edu>
+Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
+        sandeen@redhat.com, tytso@mit.edu, jlayton@redhat.com,
+        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V4 00/11]  New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <20101012002409.GH16442@fieldses.org>
+References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20101012002409.GH16442@fieldses.org>
+User-Agent: Notmuch/0.3.1-90-g8071c5c (http://notmuchmail.org) Emacs/23.1.1 (i486-pc-linux-gnu)
+Date: Tue, 12 Oct 2010 12:47:38 +0530
+Message-ID: <m3bp6zswvh.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang,
+On Mon, 11 Oct 2010 20:24:09 -0400, "J. Bruce Fields" <bfields@citi.umich.edu> wrote:
+> On Fri, Sep 24, 2010 at 06:18:03PM +0530, Aneesh Kumar K.V wrote:
+> > 
+> > Hi,
+> > 
+> > The following set of patches implements VFS changes needed to implement
+> > a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> > extended by file masks to fit into the standard POSIX file permission model.
+> > They are designed to work seamlessly locally as well as across the NFSv4 and
+> > CIFS/SMB2 network file system protocols.
+> > 
+> > The patch set consists of four parts:
+> > 
+> > The first set of patches, posted as a follow up, contains VFS changes needed
+> > to implement the Rich ACL model. The second set [1] contains the Rich ACL model
+> > and Ext4 implementation. The third set [2] contains mapping of Rich ACL to
+> > NFSv4 ACL (how to apply file mask to access mask) and implementation of
+> > Richacl ACL for NFS server and client.
+> 
+> That's the part I'd like to review carefully and haven't yet.
+> 
+> > The fourth set [3] contains POSIX ACL
+> > to Rich ACL mapping and its ext4 usage.
+> 
+> The one thing I remember not liking before was a flag that told the user
+> whether a given ACL was originally mapped from POSIX or not.  Is that
+> still there?
 
-We have implemented our CAN driver with FIFO mode, and
-We are testing our CAN driver with FIFO mode.
-However, we have found Our CAN hardware spec is different from our anticipated.
-Our CAN HW FIFO is not common FIFO.
-Using  FIFO mode, there is possibility received packets are out-of-order.
+We still have that. But we can resolve that once we decide on how to
+migrate an existing file system containing posix acl to richacl. Most of
+those patches will need to be updated based on the feedback from
+different local file system maintainers. That is why those patches are
+pushed towards the end and is  part of last set.
 
-e.g.
-Recv packet-A from NW and set to FIFO.
-  |A|
+What we need in the first step is to get VFS changes reviewed.Once we
+agree on the VFS changes done, then we can start looking at the changes
+upto NFS richacl nfs support. When get that merged then we can start
+having discussion on how local file system maintainers want to migrate
+the existing file system with posixacl to richacl.
 
-Recv packet-B from NW and set to FIFO.
-  |A|B|
-
-Recv packet-C is about to set to FIFO
-  |A|B|(C)|
-
-Userspace Copies A from Driver
-Userspace Copies B from Driver
-  |   |   |(C)|
-
-packet-C set to FIFO (C is not head.)
-Recv packet-D from NW(Next packet is set to head)
-  |D|   |C|
-
-Userspace Copies D from Driver
-Userspace Copies C from Driver
-Userspace raceived packet order is like below
-A-B-D-C
-
-So, I think normal-mode is better than FIFO-mode.
-
-I will revert like the following spec.
-  Rx 1 Message Object
-  Tx 1 Message Object
-
-Could you agree the above ?
-
-Thanks, Ohtake(OKISemi)
------ Original Message ----- 
-From: "Wolfgang Grandegger" <wg@grandegger.com>
-To: "David Miller" <davem@davemloft.net>
-Cc: <masa-korg@dsn.okisemi.com>; <andrew.chih.howe.khor@intel.com>; <sameo@linux.intel.com>; <margie.foster@intel.com>;
-<netdev@vger.kernel.org>; <yong.y.wang@intel.com>; <linux-kernel@vger.kernel.org>; <socketcan-core@lists.berlios.de>;
-<mkl@pengutronix.de>; <chripell@fsfe.org>; <morinaga526@dsn.okisemi.com>; <meego-dev@meego.com>;
-<kok.howg.ewe@intel.com>; <joel.clark@intel.com>; <qi.wang@intel.com>
-Sent: Wednesday, October 06, 2010 6:12 PM
-Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
+> 
+> Overall I'm for doing this: I don't like NFSv4/Windows ACLs more than
+> anyone else, but they're too useful to ignore, and the mapping that
+> Samba and the NFSv4 server try to do is painful for users.
+> 
 
 
-> On 10/06/2010 05:09 AM, David Miller wrote:
-> > From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-> > Date: Wed, 6 Oct 2010 12:07:15 +0900
-> >
-> >> Does your mail mean, for accepting upstream, NAPI is essential for
-> >> CAN driver ?
-> >
-> > It is up to the CAN maintainers :-)
->
-> Well, our SJA1000 reference driver does still not use NAPI. But NAPI is
-> for CAN especially useful to avoid the infamous *bus error irq
-> flooding*, which may hang low end systems if the interrupts are handled
-> in the IRQ context. Ohtake, if your system can handle well such CAN bus
-> error irq storms at 1MB/s, then NAPI is *not* a must to have. Anyway, as
-> you are at it, I also suggest to use NAPI right from the beginning.
->
-> Wolfgang.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
-
+-aneesh
