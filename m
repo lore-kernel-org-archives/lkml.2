@@ -1,83 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754928Ab0JLACI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 20:02:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50198 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753754Ab0JLACG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 20:02:06 -0400
-Date: Tue, 12 Oct 2010 00:01:41 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, sfr@canb.auug.org.au, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, tglx@linutronix.de, sfr@canb.auug.org.au,
-        hpa@linux.intel.com
-In-Reply-To: <4CB366B1.40405@kernel.org>
-References: <4CB366B1.40405@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/memblock] memblock: Annotate memblock functions with __init_memblock
-Message-ID: <tip-cd79481d27b9f90aad80c9b972292c42c25bbf8e@git.kernel.org>
-Git-Commit-ID: cd79481d27b9f90aad80c9b972292c42c25bbf8e
-X-Mailer: tip-git-log-daemon
+	id S1754937Ab0JLACq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 20:02:46 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:44469 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753711Ab0JLACp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 20:02:45 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:in-reply-to:to:from:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=GD9QKMryn/C7JM3bh5YKcNyUqaCqnPkafncDnn2ykU60+H+jJRNkTXnGxLJD+ES8D
+	nmPcUDPDeiSspXVkoKFPA==
+Subject: [PATCH] Fix a complex race in hrtimer code.
+In-Reply-To: <AANLkTimUfWxB_7Y+bpKJKfBemJdy3LDa4f2AT0z2C4kw@mail.gmail.com>
+To: akpm@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+From: Salman Qazi <sqazi@google.com>
+Date: Mon, 11 Oct 2010 17:02:36 -0700
+Message-ID: <20101012000159.7091.84336.stgit@dungbeetle.mtv.corp.google.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 12 Oct 2010 00:01:41 +0000 (UTC)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cd79481d27b9f90aad80c9b972292c42c25bbf8e
-Gitweb:     http://git.kernel.org/tip/cd79481d27b9f90aad80c9b972292c42c25bbf8e
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Mon, 11 Oct 2010 12:34:09 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 11 Oct 2010 16:00:52 -0700
+The race is described as follows:
 
-memblock: Annotate memblock functions with __init_memblock
+CPU X                                 CPU Y
+remove_hrtimer
+// state & QUEUED == 0
+timer->state = CALLBACK
+unlock timer base
+timer->f(n) //very long
+                                  hrtimer_start
+                                    lock timer base
+                                    remove_hrtimer // no effect
+                                    hrtimer_enqueue
+                                    timer->state = CALLBACK |
+                                                   QUEUED
+                                    unlock timer base
+                                  hrtimer_start
+                                    lock timer base
+                                    remove_hrtimer
+                                        mode = INACTIVE
+                                        // CALLBACK bit lost!
+                                    switch_hrtimer_base
+                                            CALLBACK bit not set:
+                                                    timer->base
+                                                    changes to a
+                                                    different CPU.
+lock this CPU's timer base
 
-Stephen found
+Bug reproducible and fix testable using a kernel module that hrtimer_start()s
+a timer with a very long running callback from multiple CPUs:
 
-WARNING: mm/built-in.o(.text+0x25ab8): Section mismatch in reference from the function memblock_find_base() to the function .init.text:memblock_find_region()
-The function memblock_find_base() references
-the function __init memblock_find_region().
-This is often because memblock_find_base lacks a __init
-annotation or the annotation of memblock_find_region is wrong.
+MODULE_LICENSE("GPL");
 
-So let memblock_find_region() to use __init_memblock instead of __init
-directly.
+static long timer_func_time = 1000;
+module_param(timer_func_time, long, 0600);
+static long timer_starts = 2500;
+module_param(timer_starts, long, 0600);
+static long timer_expire = 1000;
+module_param(timer_expire, long, 0600);
 
-Also fix one function that did not have __init* to be __init_memblock.
+DEFINE_PER_CPU(struct task_struct *, hrtimer_thread);
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4CB366B1.40405@kernel.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+/* There are other issues, like deadlocks between multiple hrtimer_start observed
+ * calls, at least in 2.6.34 that this lock works around.  Will look into
+ * those later.
+ */
+static DEFINE_SPINLOCK(blah_lock);
+
+static ktime_t mytime;
+static struct hrtimer timer;
+
+static enum hrtimer_restart timer_restart(struct hrtimer *timer)
+{
+        unsigned long i;
+        /* We have to make the callback longer to improve the
+         * probability of having a race.
+         */
+        for (i = 0; i < timer_func_time / 100; i++) {
+                touch_nmi_watchdog();
+                touch_softlockup_watchdog();
+                udelay(100);
+        }
+
+        return HRTIMER_NORESTART;
+}
+
+static int restart_hrtimer_repeatedly(void *input)
+{
+        int i;
+        unsigned long range;
+        while (!kthread_should_stop()) {
+                for (i = 0; i < timer_starts; i++) {
+                        /* Avoid deadlocks for now */
+                        spin_lock(&blah_lock);
+                        hrtimer_start(&timer, mytime, HRTIMER_MODE_REL);
+                        spin_unlock(&blah_lock);
+                        touch_nmi_watchdog();
+                        touch_softlockup_watchdog();
+                }
+                cond_resched();
+        }
+        hrtimer_cancel(&timer);
+        return 0;
+}
+
+static int hrtimer_unit_test_init(void)
+{
+        int cpu;
+        mytime = ktime_set(0, 0);
+        mytime = ktime_add_ns(mytime, timer_expire);
+        hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+        timer.function = timer_restart;
+        for_each_online_cpu(cpu) {
+                per_cpu(hrtimer_thread, cpu) = kthread_create(
+                        restart_hrtimer_repeatedly, NULL, "hrtimer_test/%d",
+                        cpu);
+                if (IS_ERR(per_cpu(hrtimer_thread, cpu))) {
+                       printk(KERN_ERR
+                                "Failed to create hrtimer test thread\n");
+                        BUG();
+                }
+                kthread_bind(per_cpu(hrtimer_thread, cpu), cpu);
+                wake_up_process(per_cpu(hrtimer_thread, cpu));
+        }
+        return 0;
+}
+
+static void hrtimer_unit_test_exit(void)
+{
+        int cpu;
+        for_each_online_cpu(cpu) {
+                (void)kthread_stop(per_cpu(hrtimer_thread, cpu));
+        }
+}
+
+module_init(hrtimer_unit_test_init);
+module_exit(hrtimer_unit_test_exit);
 ---
- mm/memblock.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/hrtimer.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index ae8b06c..400dc62 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -99,7 +99,7 @@ long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_a
-  * are top-down.
-  */
- 
--static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
-+static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_addr_t end,
- 					  phys_addr_t size, phys_addr_t align)
- {
- 	phys_addr_t base, res_base;
-@@ -653,7 +653,7 @@ void __init memblock_enforce_memory_limit(phys_addr_t memory_limit)
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 1decafb..57846d5 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -944,8 +944,8 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
+ 		debug_deactivate(timer);
+ 		timer_stats_hrtimer_clear_start_info(timer);
+ 		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
+-		__remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
+-				 reprogram);
++		__remove_hrtimer(timer, base,
++				 (timer->state & HRTIMER_STATE_CALLBACK), reprogram);
+ 		return 1;
  	}
+ 	return 0;
+@@ -1231,6 +1231,9 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+ 		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+ 		enqueue_hrtimer(timer, base);
+ 	}
++
++	WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
++
+ 	timer->state &= ~HRTIMER_STATE_CALLBACK;
  }
  
--static int memblock_search(struct memblock_type *type, phys_addr_t addr)
-+static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
- {
- 	unsigned int left = 0, right = type->cnt;
- 
+
