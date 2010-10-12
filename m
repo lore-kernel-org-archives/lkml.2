@@ -1,32 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757396Ab0JLObX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 10:31:23 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45038 "EHLO
+	id S1757459Ab0JLOdU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 10:33:20 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45052 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab0JLObW (ORCPT
+	with ESMTP id S1757305Ab0JLOdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 10:31:22 -0400
+	Tue, 12 Oct 2010 10:33:19 -0400
 From: Andi Kleen <andi@firstfloor.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>,
-        Marcio Saito <marcio@cyclades.com>, John Stultz <johnstul@us.ibm.com>,
-        Jiri Slaby <jirislaby@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Avantika Mathur <mathur@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org, jblunck@infradead.org
-Subject: Re: [RFC] [PATCH] allow low HZ values?
-References: <20101011201121.GA953@tpepper-t61p.dolavim.us>
-	<alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
-Date: Tue, 12 Oct 2010 16:31:20 +0200
-In-Reply-To: <alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
-	(Thomas Gleixner's message of "Mon, 11 Oct 2010 22:32:06 +0200
-	(CEST)")
-Message-ID: <871v7v32kn.fsf@basil.nowhere.org>
+To: Cyrus Massoumi <cyrusm@gmx.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel Scalability to 48 cores
+References: <4CB381DB.1040206@gmx.net>
+Date: Tue, 12 Oct 2010 16:33:17 +0200
+In-Reply-To: <4CB381DB.1040206@gmx.net> (Cyrus Massoumi's message of "Mon, 11
+	Oct 2010 23:30:03 +0200")
+Message-ID: <87wrpn1nwy.fsf@basil.nowhere.org>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -34,30 +23,23 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thomas Gleixner <tglx@linutronix.de> writes:
+Cyrus Massoumi <cyrusm@gmx.net> writes:
 
-> On Mon, 11 Oct 2010, Tim Pepper wrote:
->
->> I'm not necessarily wanting to open up the age old question of "what is
->> a good HZ", but we were doing some testing on timer tick overheads for
->> HPC applications and this came up...
->
-> Yeah. This comes always up when the timer tick overhead on HPC is
-> tested. And this patch is again the fundamentally wrong answer.
+> A friend just sent me the following PDF about Linux Scalability to many cores and I thought it might be interesting to the list for further discussion.
+> It's about scalability problems of the Linux kernel and applications
+> with 48 and more cores.
 
-That's a unfair description of the proposal.
+Note that 48 cores is a small system these days.
 
-> We have told HPC folks for years that we need a kind of "NOHZ" mode
-> for HPC where we can transparently switch off the tick when only one
-> user space bound thread is active and switch back to normal once this
-> thing terminates or goes into the kernel via a syscall. Sigh, nothing
-> happened ever except for repeating the same crap patches over and
-> over.
+> http://pdos.csail.mit.edu/papers/linux:osdi10.pdf
 
-Jan Blunck posted a patch for this exactly few months ago.
-Unfortunately it didn't get the accounting right, but other than
-that it seemed like a reasonable starting point.
+The paper is known, but it seems to be in the usual unproductive 
+"publish a paper, but don't care about fixing anything" acedemic mode.
+
+A lot of the issues described there are already being addressed
+I believe.
 
 -Andi
+
 -- 
 ak@linux.intel.com -- Speaking for myself only.
