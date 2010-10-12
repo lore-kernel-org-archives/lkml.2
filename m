@@ -1,59 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932720Ab0JLP4b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 11:56:31 -0400
-Received: from kroah.org ([198.145.64.141]:52626 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753662Ab0JLP43 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 11:56:29 -0400
-Date: Tue, 12 Oct 2010 08:54:26 -0700
-From: Greg KH <greg@kroah.com>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: Bernhard Walle <walle@corscience.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: octeon: Add Lanai board USB clock type
-Message-ID: <20101012155426.GA15238@kroah.com>
-References: <1286791747-3151-1-git-send-email-walle@corscience.de> <4CB340F1.8020000@caviumnetworks.com> <4CB343DC.3050506@corscience.de> <4CB345C1.80709@caviumnetworks.com>
-MIME-Version: 1.0
+	id S1757589Ab0JLQAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 12:00:33 -0400
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:54124 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752837Ab0JLQAc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 12:00:32 -0400
+X-AuditID: 1209190e-b7b3bae000000a71-64-4cb48627fdc2
+Subject: Re: Kernel Scalability to 48 cores
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB345C1.80709@caviumnetworks.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <87wrpn1nwy.fsf@basil.nowhere.org>
+Date: Tue, 12 Oct 2010 12:00:27 -0400
+Cc: Cyrus Massoumi <cyrusm@gmx.net>, LKML <linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <585FC89B-C279-485E-9AE4-6ABA0F5EE4CE@mit.edu>
+References: <4CB381DB.1040206@gmx.net> <87wrpn1nwy.fsf@basil.nowhere.org>
+To: Andi Kleen <andi@firstfloor.org>
+X-Mailer: Apple Mail (2.1081)
+X-Brightmail-Tracker: AAAAARZDab4=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 10:13:37AM -0700, David Daney wrote:
-> On 10/11/2010 10:05 AM, Bernhard Walle wrote:
->> Am 11.10.2010 18:53, schrieb David Daney:
->>> On 10/11/2010 03:09 AM, Bernhard Walle wrote:
->>>> Add the LANAI2 board to __cvmx_helper_board_usb_get_clock_type(). It
->>>> also uses the USB_CLOCK_TYPE_CRYSTAL_12 clock.
->>>>
->>>> Signed-off-by: Bernhard Walle<walle@corscience.de>
->>>> ---
->>>>    drivers/staging/octeon/cvmx-helper-board.c |    1 +
->>>>    1 files changed, 1 insertions(+), 0 deletions(-)
->>>
->>> NAK.
->>>
->>> We don't currently support USB, so churning up this file doesn't help
->>> anything.
->>
->> Well, agreed, but why not removing that code entirely then?
->>
->
-> That is the eventual plan.
 
-Why not do that now?
+On Oct 12, 2010, at 10:33 AM, Andi Kleen wrote:
 
-Or add USB support to the driver, but don't leave it in the in-kernel
-driver and expect users to know that this is something they shouldn't be
-doing.
+> The paper is known, but it seems to be in the usual unproductive 
+> "publish a paper, but don't care about fixing anything" acedemic mode.
 
-Also, why aren't you going to support the USB devices?  What's wrong
-with that?
+The thing I found most disappointing about the paper is that it describe techniques that have been in use in industry to provide better scalability to commerical OS's, and which were first applied to Linux something like a decade ago.
 
-thanks,
+Sure, at the time we were going to 4-16 way scalability, but the techniques used were known back then, and in fact the paper is actually pretty naive compared to what people at companies like Sequent had been doing for a very long time.
 
-greg k-h
+It's just that a lot of scalability work took a bit of a hiatus, oh, five years ago because at the time, Linux was good enough, and adding more scalability has costs (which is why not all of the changes SGI made for 512 and 1024-way scalability have not necessarily found their way into mainline).   The fact that we've needed to worry about scalability now that 6+ cores/socket are available now, and many more are coming soon, is something we've known for at least the last year or two. 
+
+But since a lot of that work wasn't published in the appropriate hoidy-toidy "tenure-track" approved publication venues, to the academics, it didn't exist.
+
+Oh, well....
+
+-- Ted
+
