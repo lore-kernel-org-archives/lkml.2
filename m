@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753779Ab0JLGZQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 02:25:16 -0400
-Received: from nenolod.net ([67.202.104.180]:35708 "EHLO
+	id S1754306Ab0JLGZx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 02:25:53 -0400
+Received: from nenolod.net ([67.202.104.180]:47519 "EHLO
 	carpathia.dereferenced.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751457Ab0JLGZP (ORCPT
+	by vger.kernel.org with ESMTP id S1753700Ab0JLGZw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 02:25:15 -0400
+	Tue, 12 Oct 2010 02:25:52 -0400
 From: William Pitcock <nenolod@dereferenced.org>
 To: linux-kernel@vger.kernel.org
 Date: Tue, 12 Oct 2010 00:32:02 -0500
 Subject: [PATCH] CFS: Add hierarchical tree-based penalty.
-Message-Id: <20101012062514.53794CE142@carpathia.dereferenced.org>
+Message-Id: <20101012062552.4D7F2CE142@carpathia.dereferenced.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -58,7 +58,7 @@ index dc85ceb..0e55350 100644
  	rq = task_rq_lock(p, &flags);
 +
 +	if (!(clone_flags & CLONE_THREAD))
-+		p->parent_depth++;
++		p->parent_count++;
 +
  	activate_task(rq, p, 0);
  	trace_sched_wakeup_new(p, 1);
