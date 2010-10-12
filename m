@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753808Ab0JLGDa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 02:03:30 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:44083 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752993Ab0JLGD3 (ORCPT
+	id S1754001Ab0JLGEP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 02:04:15 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38598 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752993Ab0JLGEO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 02:03:29 -0400
-Date: Tue, 12 Oct 2010 07:03:27 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Robert Richter <robert.richter@amd.com>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: linux-next: manual merge of the oprofile tree with the tip tree
-Message-ID: <20101012060327.GA13409@console-pimps.org>
-References: <20101012131828.5fedf1bf.sfr@canb.auug.org.au>
+	Tue, 12 Oct 2010 02:04:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:from:date:message-id:subject:to:content-type;
+        b=CT+hrp9GsC+jlvd95Sybc3Jo3IvWc5COyxlC8wzdZiM4SC6oOVIcw4H8DB1qzrTcfw
+         isx+LFl28srxb5nYdkKlSCgQLVWuHX/puGDHfsSyzG+bEQdAeWEqVy43DuHmDF7Va84P
+         GKTROMM+waZ9cXh7w8F+me/HmQ/4yzzpP19co=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101012131828.5fedf1bf.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: mtk.manpages@gmail.com
+From: Michael Kerrisk <mtk.manpages@gmail.com>
+Date: Tue, 12 Oct 2010 08:03:53 +0200
+Message-ID: <AANLkTin=ArHbVNUHXwe0HLOcW9iDXujJuwA2Ku-Scu-D@mail.gmail.com>
+Subject: man-pages-3.28 is released
+To: lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 01:18:28PM +1100, Stephen Rothwell wrote:
-> Hi Robert,
-> 
-> Today's linux-next merge of the oprofile tree got a conflict in
-> arch/arm/oprofile/common.c between commit
-> 38a81da2205f94e8a2a834b51a6b99c91fc7c2e8 ("perf events: Clean up pid
-> passing") from the tip tree and commit
-> 3d90a00763b51e1db344a7430c966be723b67a29 ("oprofile: Abstract the
-> perf-events backend") from the oprofile tree.
-> 
-> The latter moved the code modified by the former, so I used the version
-> of this file from the oprofile tree.  I also applied the effect of the
-> tip tree patch to the new file drivers/oprofile/oprofile_perf.c:
-> 
-> diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
-> index b17235a..afbc43b 100644
-> --- a/drivers/oprofile/oprofile_perf.c
-> +++ b/drivers/oprofile/oprofile_perf.c
-> @@ -77,7 +77,7 @@ static int op_create_counter(int cpu, int event)
->  		return 0;
->  
->  	pevent = perf_event_create_kernel_counter(&counter_config[event].attr,
-> -						  cpu, -1,
-> +						  cpu, NULL1,
->  						  op_overflow_handler);
+Gidday,
 
-Is that a typo? Shouldn't that be NULL, and not NULL1?
+I've released man-pages-3.28.tar.gz - man pages for Linux
+
+This release is now available for download at:
+
+http://www.kernel.org/pub/linux/docs/man-pages
+or ftp://ftp.kernel.org/pub/linux/docs/man-pages
+
+The man-pages git repository is here:
+
+git://git.kernel.org/pub/scm/docs/man-pages/man-pages.git
+
+The online changelog is available at
+http://www.kernel.org/doc/man-pages/changelog.html (blogged at
+http://linux-man-pages.blogspot.com/2010/10/man-pages-328-is-released.html
+) and the current version of the pages is browsable at
+http://www.kernel.org/doc/man-pages/
+
+A few changes in this release that may be of interest to readers of this
+list are listed below.
+
+Cheers,
+
+Michael
+
+==================== Changes in man-pages-3.28 ====================
+
+New and rewritten pages
+-----------------------
+
+getaddrinfo_a.3
+    Petr Baudis
+        New page documenting getaddrinfo_a()
+            The page also documents gai_suspend(), gai_cancel(),
+            and gai_error().
+
+aio.7
+    Michael Kerrisk
+        New page providing an overview of POSIX asynchronous I/O
+
+
+Newly documented interfaces in existing pages
+---------------------------------------------
+
+exec.3
+    Michael Kerrisk
+        Document execpe()
+            This function was added to glibc in version 2.11.
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface"; http://man7.org/tlpi/
