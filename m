@@ -1,42 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab0JLK5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 06:57:53 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:51724 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S932158Ab0JLK5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 06:57:52 -0400
-X-Authenticated: #54578410
-X-Provags-ID: V01U2FsdGVkX19Qnjt5ZZtQGprC/3SIMLrFwUbaHpRYiY0awrjnyy
-	zv3BrtWMZhTSue
-Message-ID: <4CB43F2C.4010406@gmx.de>
-Date: Tue, 12 Oct 2010 12:57:48 +0200
-From: Michael Lawnick <ml.lawnick@gmx.de>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Mnenhy/0.8.3 Thunderbird/3.1.4
+	id S1757222Ab0JLLJC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 07:09:02 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:47921 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754263Ab0JLLJA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 07:09:00 -0400
+Message-ID: <4CB441CB.2000708@cs.helsinki.fi>
+Date: Tue, 12 Oct 2010 14:08:59 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: select on sysFs-entry does not pend anymore
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>,
+        netdev <netdev@vger.kernel.org>, Michael Chan <mchan@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>, Christoph Hellwig <hch@lst.de>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        David Rientjes <rientjes@google.com>,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH net-next] net:  allocate skbs on local node
+References: <1286838210.30423.128.camel@edumazet-laptop>	<1286839363.30423.130.camel@edumazet-laptop>	<1286859925.30423.184.camel@edumazet-laptop>	<20101011230322.f0f6dd47.akpm@linux-foundation.org>	<1286866699.30423.234.camel@edumazet-laptop>	<20101012002435.f51f2c0e.akpm@linux-foundation.org>	<1286869793.2732.24.camel@edumazet-laptop> <20101012005856.994bea6d.akpm@linux-foundation.org>
+In-Reply-To: <20101012005856.994bea6d.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi *,
+On 10/12/10 10:58 AM, Andrew Morton wrote:
+> On Tue, 12 Oct 2010 09:49:53 +0200 Eric Dumazet<eric.dumazet@gmail.com>  wrote:
+>
+>> Le mardi 12 octobre 2010 à 00:24 -0700, Andrew Morton a écrit :
+>>
+>>> I'd love to forget it, but it's faster for some things (I forget
+>>> which).  Which is why it's still around.
+>>
+>> Yes, two years ago it was true on pathological/obscure cases.
+>> Every time I did the comparison, SLUB won.
+>> You asked me, I did yet another test this morning, and 40% is pretty
+>> serious, I believe.
+>>
+>>> And the ghastly thing about this is that you're forced to care about it
+>>> too because some people are, apparently, still using it.
+>>
+>> Yes, some people (in my company) still use linux 2.6.9 32bit on HP G6/G7
+>> machines, I know...
+>>
+>> I am not saying we should not care, but for any serious network workload
+>> on NUMA arches, SLUB is the best, and seeing Christoph recent work, it
+>> might even get better.
+>>
+>> BTW, I believe all modern distros ship SLUB, dont they ?
+>
+> Dunno.
+>
+> Pekka, why haven't we deleted slab yet??
 
-on porting a driver from 2.6.29 to 2.6.32 I had to notice that select()
-on a sysFs-entry seems not to pend anymore (no more wait for kernel-side
-sysfs_notify()). I checked on different architectures (MIPS, PPC, x86),
-all the same result :-(
-Was this support dropped intentionally or by accident?
-The code of sysfs_notify() is still in kernel, but I see no sense in it
-if select is not possible.
-Any workaround known that is as easy as the original?
+To make a long story short, we still have relevant performance 
+regressions that need to be taken care of. The most interesting one is a 
+regression in netperf TCP_RR that's been reported by David Rientjes a 
+while back. There's bunch of SLUB cleanups queued for 2.6.37 that pave 
+the way for Christoph's SLUB queueing work that should hopefully fix 
+that particular issue for 2.6.38.
 
-Please don't forget to CC me on answers to list, as I haven't subscribed
-to this group.
+There's little point in discussing the removal of SLAB as long as there 
+are performance regressions for real workloads from people who are 
+willing to share results and test patches. I'm optimistic that we'll be 
+able to try removing SLAB some time next year unless something 
+interesting pops up...
 
--- 
-KR and TIA
-Michael
+			Pekka
