@@ -1,66 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932612Ab0JLOXW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 10:23:22 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:8600 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752806Ab0JLOXV convert rfc822-to-8bit (ORCPT
+	id S1757382Ab0JLOXb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 10:23:31 -0400
+Received: from smtprelay-h32.telenor.se ([213.150.131.5]:58192 "EHLO
+	smtprelay-h32.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757287Ab0JLOXa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 10:23:21 -0400
-X-SpamScore: -6
-X-BigFish: VPS-6(zz1432Nzz1202hzzz2fh2a8h)
-From: =?iso-8859-1?Q?Penttil=E4_Mika?= <mika.penttila@ixonos.com>
-To: Andi Kleen <andi@firstfloor.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] HWPOISON: Implement hwpoison-on-free for soft offlining
-Thread-Topic: [PATCH] HWPOISON: Implement hwpoison-on-free for soft offlining
-Thread-Index: AQHLahbKqxTcjRLBlUSEihs9tRH1LZM9XW3g
-Date: Tue, 12 Oct 2010 14:23:15 +0000
-Message-ID: <1A61D8EA6755AF458F06EA669A4EC81815FDA736@JKLMAIL02.ixonos.local>
-References: <1A61D8EA6755AF458F06EA669A4EC81815FDA6FE@JKLMAIL02.ixonos.local>
- <8762x733qn.fsf@basil.nowhere.org>
-In-Reply-To: <8762x733qn.fsf@basil.nowhere.org>
-Accept-Language: en-US, fi-FI
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.31]
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-MIME-Version: 1.0
-X-Reverse-DNS: po02.ixonos.com
+	Tue, 12 Oct 2010 10:23:30 -0400
+X-Greylist: delayed 1508 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 10:23:29 EDT
+X-SENDER-IP: [85.229.127.233]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AipEAIIGtExV5X/pPGdsb2JhbACEGo84AQGNfAwBAQEBEw0IBwa+EYVIBIV7g35I
+X-IronPort-AV: E=Sophos;i="4.57,320,1283724000"; 
+   d="scan'208";a="140184185"
+Message-Id: <Teeck6oe3dETrlvL0trLifCtgkbzxJoJjOlYyXu3BQzt@dabber.tv>
+Mime-Version: 1.0
+From: "The Dabber Player" <dd@dabber.tv>
+To: "" <linux-kernel@vger.kernel.org>
+Subject: Today we launch The Dabber video player for free
+Date: Tue, 12 Oct 2010 15:58:22 +0200
+X-Bounce-Tracking-Info: <CQkJbGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZwlUb2RheSB3ZSBsYXVuY2ggVGhlIERhYmJlciB2aWRlbyBwbGF5ZXIgZm9yIGZyZWUJNjkJCTExNzg4Mglib3VuY2UJbm8Jbm8=>
+Content-type: text/plain; charset=iso-8859-1; format=flowed
+Content-transfer-encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> >> --- a/mm/page_alloc.c
-> >> +++ b/mm/page_alloc.c
-> >> @@ -564,6 +564,8 @@ static inline int free_pages_check(struct page
-> *page)
-> >>  		(page->mapping != NULL)  |
-> >>  		(atomic_read(&page->_count) != 0) |
-> >>  		(page->flags & PAGE_FLAGS_CHECK_AT_FREE))) {
-> >> +		if (PageHWPoisonOnFree(page))
-> >> +			hwpoison_page_on_free(page);
-> >
-> > hwpoison_page_on_free() seems to be undefined when
-> > CONFIG_HWPOISON_ON_FREE is not defined.
-> 
-> The optimizer takes care of that.
-> 
-> >
-> >>  		bad_page(page);
-> >>  		return 1;
-> >>  	}
-> >
-> > And of course PAGE_FLAGS_CHECK_AT_FREE should include
-> > pahehwpoisononfree this to be effective
-> 
-> It is of course (__PG_HWPOISON_ON_FREE)
-> 
-Yes but it's not included in PAGE_FLAGS_CHECK_AT_FREE, if  I'm not missing something
+Ladies and gentlemen, mina damer och her
 
---Mika
+We are proud to launch a free version of our popular Dabber player at
+http://www.dabber-player.com
+
+The Dabber player is one of the most beautiful 3D-interface
+videoplayers for embedding on any webpage. Now you can host your own
+online tv-channel, display your best content and best of all you can change the
+look and feel and adapt the player to your webpage. No more black, boring,
+standard embedded and sad videoplayers. Let´s make Internet more
+beautiful!
+
+You can use our entire range of improved, evolved and very beautiful Dabber video players
+for only $75 and Free for non commercial use.
+And for only $95 per month you can have encoding, storage, trafik, contentmanagement and all players!
+Practically anythin to start your own online channel.
+
+Order yours today and use them, love them, and improve all websites out
+there. You can find them at http://www.dabber-player.com
+
+A huge thanks goes to all you brave ones who have ordered and
+implemented our early Dabber players so far. Your orders, thoughts, feedback
+and love have taken us to this day. You know who you are!
+
+New players and plugins are in the pipeline, both for YouTube, Vimeo,
+JW, Flow, Html5 and other. We can already provide a CMS as a Wordpress plugin
+
+We look forward to your order and feedback!
+For future newsletters and info please subscribe at http://www.dabber.tv/#news
+
+Daniel Daboczy
+CEO & co-founder
+
+
+
+
+DABBER
+website: http://www.dabber-player.com
+mobile: +46 (0)736 26 99 85
+e-mail:
+daniel@dabber.tv
+SKYPE: mrdaboczy
+adress: Frejgatan 8, SE-114 20
+Stockholm, Sweden
+
+Nominated for "Best Streaming Innovation of 2009" at the prestigious
+Streaming Media awards in London.
+
+
+
+This message was sent to linux-kernel@vger.kernel.org from Dabber Stockholm.
+To stop receiveing info or newsletters from us please reply with the word unsub.
 
 
