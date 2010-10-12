@@ -1,45 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757589Ab0JLQAd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 12:00:33 -0400
-Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:54124 "EHLO
-	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752837Ab0JLQAc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 12:00:32 -0400
-X-AuditID: 1209190e-b7b3bae000000a71-64-4cb48627fdc2
-Subject: Re: Kernel Scalability to 48 cores
-Mime-Version: 1.0 (Apple Message framework v1081)
+	id S1757641Ab0JLQEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 12:04:08 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:42288 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757258Ab0JLQEG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 12:04:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TU6af6Vz82SGpApV52ugykQaLTlYqdi70BQhjgQGeq7HQ3MrDLgF05kDuePsmkPgoQ
+         S+76Hu+DanhrAv931qlXI0d0x5BLtxOwbFuj4S6M3F/i03txcyJ/WAG6/SVwhWG3bgG2
+         aaxBP2xT+PfdHewkrLNgUBlq64jxEcTuCsZ4c=
+Date: Tue, 12 Oct 2010 09:03:53 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+        Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        h.mitake@gmail.com, Vojtech Pavlik <vojtech@ucw.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/2] lockdep: check the depth of subclass
+Message-ID: <20101012160352.GB30513@core.coreip.homeip.net>
+References: <1286269311-28336-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+ <1286879221.29097.39.camel@twins>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <87wrpn1nwy.fsf@basil.nowhere.org>
-Date: Tue, 12 Oct 2010 12:00:27 -0400
-Cc: Cyrus Massoumi <cyrusm@gmx.net>, LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <585FC89B-C279-485E-9AE4-6ABA0F5EE4CE@mit.edu>
-References: <4CB381DB.1040206@gmx.net> <87wrpn1nwy.fsf@basil.nowhere.org>
-To: Andi Kleen <andi@firstfloor.org>
-X-Mailer: Apple Mail (2.1081)
-X-Brightmail-Tracker: AAAAARZDab4=
+Content-Disposition: inline
+In-Reply-To: <1286879221.29097.39.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Oct 12, 2010 at 12:27:01PM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-10-05 at 18:01 +0900, Hitoshi Mitake wrote:
+> > ---
+> >  drivers/input/mousedev.c |    2 +-
+> >  kernel/lockdep.c         |   15 +++++++++++++++
+> >  2 files changed, 16 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+> > index d528a2d..9897334 100644
+> > --- a/drivers/input/mousedev.c
+> > +++ b/drivers/input/mousedev.c
+> > @@ -866,7 +866,7 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
+> >  	spin_lock_init(&mousedev->client_lock);
+> >  	mutex_init(&mousedev->mutex);
+> >  	lockdep_set_subclass(&mousedev->mutex,
+> > -			     minor == MOUSEDEV_MIX ? MOUSEDEV_MIX : 0);
+> > +			     minor == MOUSEDEV_MIX ? SINGLE_DEPTH_NESTING : 0);
+> 
+> Ah good find.
+> 
 
-On Oct 12, 2010, at 10:33 AM, Andi Kleen wrote:
+I'll pick up mousedev change for .37.
 
-> The paper is known, but it seems to be in the usual unproductive 
-> "publish a paper, but don't care about fixing anything" acedemic mode.
+Thanks.
 
-The thing I found most disappointing about the paper is that it describe techniques that have been in use in industry to provide better scalability to commerical OS's, and which were first applied to Linux something like a decade ago.
-
-Sure, at the time we were going to 4-16 way scalability, but the techniques used were known back then, and in fact the paper is actually pretty naive compared to what people at companies like Sequent had been doing for a very long time.
-
-It's just that a lot of scalability work took a bit of a hiatus, oh, five years ago because at the time, Linux was good enough, and adding more scalability has costs (which is why not all of the changes SGI made for 512 and 1024-way scalability have not necessarily found their way into mainline).   The fact that we've needed to worry about scalability now that 6+ cores/socket are available now, and many more are coming soon, is something we've known for at least the last year or two. 
-
-But since a lot of that work wasn't published in the appropriate hoidy-toidy "tenure-track" approved publication venues, to the academics, it didn't exist.
-
-Oh, well....
-
--- Ted
-
+-- 
+Dmitry
