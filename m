@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932539Ab0JLNvR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:51:17 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60597 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932319Ab0JLNvP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:51:15 -0400
-Date: Tue, 12 Oct 2010 15:51:12 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Huang Ying <ying.huang@intel.com>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [PATCH -v3 3/6] x86, NMI, Rewrite NMI handler
-Message-ID: <20101012135112.GE20436@basil.fritz.box>
-References: <1286606987-19879-3-git-send-email-ying.huang@intel.com>
- <1286813635.2336.617.camel@twins>
- <1286844650.7768.137.camel@yhuang-dev>
- <1286863479.2336.1451.camel@twins>
- <1286864080.7768.179.camel@yhuang-dev>
- <1286865071.2336.1478.camel@twins>
- <1286865447.7768.184.camel@yhuang-dev>
- <1286865629.2336.1490.camel@twins>
- <1286865923.7768.188.camel@yhuang-dev>
- <1286866193.2336.1503.camel@twins>
+	id S932523Ab0JLNz3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:55:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56970 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932468Ab0JLNz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:55:28 -0400
+Message-ID: <4CB468C1.8000004@kernel.org>
+Date: Tue, 12 Oct 2010 15:55:13 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286866193.2336.1503.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: sbp2: parallelize login/inquiry, reconnect,
+ and shutdown
+References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de> <tkrat.1433473bc081daa9@s5r6.in-berlin.de> <4CB3148C.5040902@kernel.org> <tkrat.1386de42b88d7218@s5r6.in-berlin.de> <tkrat.dd9197843f6a0a54@s5r6.in-berlin.de>
+In-Reply-To: <tkrat.dd9197843f6a0a54@s5r6.in-berlin.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 12 Oct 2010 13:55:15 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No, its not making sense, there's only one event source - the NMI, it
-> doesn't make any sense what so ever to then artificially split it in
-> two.
+Hello,
 
-I can see that "unknown NMI" is a different kind of event than
-"NMI event triggered"
+On 10/11/2010 11:39 PM, Stefan Richter wrote:
+> Stefan Richter wrote:
+>> There are indeed situations where the last module reference was already
+>> put down before the work is run for the last time.  Thanks for the hint.
+>>
+>> What is preferable, an own workqueue instance whose destroy_workqueue()
+>> lets sbp2_cleanup wait for unfinished work, or module ref-counting like
+>> below?
+> 
+> Anoher thing:  Somebody might have swap space on a FireWire disk.
 
-e.g. the debugger would only hook into "unknown NMI"
+It doesn't have to be swap.  Having a rw filesystem mounted is enough
+to be in the memory reclaim path.
 
--Andi
+> Yet the system workqueues that firewire-core and (perhaps)
+> firewire-sbp2 are using are created without WQ_RESCUER.
+> 
+> Does this --- fringe use case as it might be --- call for private
+> workqueues in firewire-core (for fw_device.work) and firewire-sbp2 (for
+> sbp2_logical_unit.work)?
+> 
+> Besides the less interesting cases of device discovery and shutdown,
+> both of these works are also involved in SBP reconnect which needs to be
+> performed at each FireWire bus reset (which can happen anytime for a
+> variety of reasons).
+
+Yes, it would definitely be better to put them in a workqueue with
+WQ_RESCUER (or the new WQ_MEM_RECLAIM).
+
+Thanks.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+tejun
