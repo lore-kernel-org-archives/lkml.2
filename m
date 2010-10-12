@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab0JLKsM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 06:48:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39679 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757139Ab0JLKsK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 06:48:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=LS8tEO1U3DuBtmzglf91OrLgRvt2gi1hzmIWd6QoZXdh07+l7phQ5tdJVQGY+ljNjw
-         f8lrYW4XSGHNpgnWp73Q5W/vJGGiW5bi2WNLePBfd4B6SFs5fpPxU0mCFU4CHS8UvFQN
-         oeVyHIlm11zEGGB6wtYruMPPos8iwbpXs2DQE=
+	id S932190Ab0JLK5x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 06:57:53 -0400
+Received: from mailout-de.gmx.net ([213.165.64.22]:51724 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S932158Ab0JLK5w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 06:57:52 -0400
+X-Authenticated: #54578410
+X-Provags-ID: V01U2FsdGVkX19Qnjt5ZZtQGprC/3SIMLrFwUbaHpRYiY0awrjnyy
+	zv3BrtWMZhTSue
+Message-ID: <4CB43F2C.4010406@gmx.de>
+Date: Tue, 12 Oct 2010 12:57:48 +0200
+From: Michael Lawnick <ml.lawnick@gmx.de>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Mnenhy/0.8.3 Thunderbird/3.1.4
 MIME-Version: 1.0
-In-Reply-To: <20101012074522.GA20436@basil.fritz.box>
-References: <4CB1EBA2.8090409@gmail.com>
-	<87aamm3si1.fsf@basil.nowhere.org>
-	<4CB34A1A.3030003@gmail.com>
-	<20101012074522.GA20436@basil.fritz.box>
-Date: Tue, 12 Oct 2010 12:47:39 +0200
-Message-ID: <AANLkTinpoL+AMU62PMvXs78Y6v0efDm3eq++NiVk8XUB@mail.gmail.com>
-Subject: Re: [PATCH 14(16] pramfs: memory protection
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: select on sysFs-entry does not pend anymore
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/10/12 Andi Kleen <andi@firstfloor.org>:
-> On Mon, Oct 11, 2010 at 07:32:10PM +0200, Marco Stornelli wrote:
->> Il 10/10/2010 18:46, Andi Kleen ha scritto:
->> > This won't work at all on x86 because you don't handle large
->> > pages.
->> >
->> > And it doesn't work on x86-64 because the first 2GB are double
->> > mapped (direct and kernel text mapping)
->> >
->> > Thirdly I expect it won't either on architectures that map
->> > the direct mapping with special registers (like IA64 or MIPS)
->>
->> Andi, what do you think to use the already implemented follow_pte
->> instead?
->
-> Has all the same problems. Really you need an per architecture
-> function. Perhaps some architectures could use a common helper,
-> but certainly not all.
->
+Hi *,
 
-per-arch?! Wow. Mmm...maybe I have to change something at fs level to
-avoid that. An alternative could be to use the follow_pte solution but
-avoid the protection via Kconfig if the fs is used on some archs (ia64
-or MIPS), with large pages and so on. An help of the kernel community
-to know all these particular cases is welcome.
+on porting a driver from 2.6.29 to 2.6.32 I had to notice that select()
+on a sysFs-entry seems not to pend anymore (no more wait for kernel-side
+sysfs_notify()). I checked on different architectures (MIPS, PPC, x86),
+all the same result :-(
+Was this support dropped intentionally or by accident?
+The code of sysfs_notify() is still in kernel, but I see no sense in it
+if select is not possible.
+Any workaround known that is as easy as the original?
 
-Regards,
+Please don't forget to CC me on answers to list, as I haven't subscribed
+to this group.
 
-Marco
+-- 
+KR and TIA
+Michael
