@@ -1,107 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757209Ab0JLK1W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 06:27:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44089 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756888Ab0JLK1U convert rfc822-to-8bit (ORCPT
+	id S932170Ab0JLKfN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 06:35:13 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42830 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757024Ab0JLKfL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 06:27:20 -0400
-Subject: Re: [PATCH 1/2] lockdep: check the depth of subclass
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        h.mitake@gmail.com, Dmitry Torokhov <dtor@mail.ru>,
-        Vojtech Pavlik <vojtech@ucw.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1286269311-28336-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-References: <1286269311-28336-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 12 Oct 2010 12:27:01 +0200
-Message-ID: <1286879221.29097.39.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 12 Oct 2010 06:35:11 -0400
+Date: Tue, 12 Oct 2010 12:35:05 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-15?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Eric =?iso-8859-15?Q?B=E9nard?= <eric@eukrea.com>
+Subject: Re: linux-next: manual merge of the arm tree with the arm-current
+	tree
+Message-ID: <20101012103505.GD28242@pengutronix.de>
+References: <20101012103314.41b00cbe.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101012103314.41b00cbe.sfr@canb.auug.org.au>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 12:26:17 up 101 days,  1:37, 35 users,  load average: 0.74, 0.80,
+	0.82
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-05 at 18:01 +0900, Hitoshi Mitake wrote:
-> Current look_up_lock_class() doesn't check the parameter "subclass".
-> This rarely rises problems because the main caller of this function,
-> register_lock_class(), checks it.
-> But register_lock_class() is not the only function which calls
-> look_up_lock_class(). lock_set_class() and its callees also call it.
-> And lock_set_class() doesn't check this parameter.
+On Tue, Oct 12, 2010 at 10:33:14AM +1100, Stephen Rothwell wrote:
+> Hi Russell,
 > 
-> This will rise problems when the the value of subclass is larger
-> MAX_LOCKDEP_SUBCLASSES. Because the address (used as the key of class)
-> caliculated with too large subclass has a possibility to point
-> another key in different lock_class_key.
-> Of course this problem depends on the memory layout and
-> occurs with really low possibility.
+> Today's linux-next merge of the arm tree got a conflict in
+> arch/arm/mach-imx/mach-cpuimx27.c between commit
+> 4793ca4028e4dcdbf2740db50995c9378ded3cf8 ("cpuimx27: fix i2c bus
+> selection") from the arm-current tree and commit
+> 77a406da5a5b76445a816d5f043fc9aef4026ff1 ("ARM: imx: fix name of macros
+> to add imx-i2c devices") from the arm tree.
 > 
-> And mousedev_create() calles lockdep_set_subclass() and
-> sets class of mousedev->mutex as MOUSEDEV_MIX(== 31).
-> And if my understanding is correct,
-> this subclass doesn't have to be MOUSEDEV_MIX,
-> so I modified this value to SINGLE_DEPTH_NESTING.
-> 
-> Signed-off-by: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-> Cc: Dmitry Torokhov <dtor@mail.ru>
-> Cc: Vojtech Pavlik <vojtech@ucw.cz>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> ---
->  drivers/input/mousedev.c |    2 +-
->  kernel/lockdep.c         |   15 +++++++++++++++
->  2 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
-> index d528a2d..9897334 100644
-> --- a/drivers/input/mousedev.c
-> +++ b/drivers/input/mousedev.c
-> @@ -866,7 +866,7 @@ static struct mousedev *mousedev_create(struct input_dev *dev,
->  	spin_lock_init(&mousedev->client_lock);
->  	mutex_init(&mousedev->mutex);
->  	lockdep_set_subclass(&mousedev->mutex,
-> -			     minor == MOUSEDEV_MIX ? MOUSEDEV_MIX : 0);
-> +			     minor == MOUSEDEV_MIX ? SINGLE_DEPTH_NESTING : 0);
+> I fixed it up (see below) can can carry the fix for a while.
 
-Ah good find.
+This is because the imx-for-next branch still contained a patch which
+I was hoping to get into 2.6.36. This patch conflicts with another patch
+in the 2.6.37 branch (I resolved this manually in my next branch).
+As all patches for next are now in Russells branch I just scrubbed
+my for-next branch and this merge conflict should be gone now.
 
->  	init_waitqueue_head(&mousedev->wait);
->  
->  	if (minor == MOUSEDEV_MIX)
-> diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-> index 84baa71..c4c13ae 100644
-> --- a/kernel/lockdep.c
-> +++ b/kernel/lockdep.c
-> @@ -639,6 +639,21 @@ look_up_lock_class(struct lockdep_map *lock, unsigned int subclass)
->  	}
->  #endif
->  
-> +	if (unlikely(subclass >= MAX_LOCKDEP_SUBCLASSES)) {
-> +		/*
-> +		 * This check should be done not only in __lock_acquire()
-> +		 * but also here. Because register_lock_class() is also called
-> +		 * by lock_set_class(). Callers of lock_set_class() can
-> +		 * pass invalid value as subclass.
-> +		 */
-> +
-> +		debug_locks_off();
-> +		printk(KERN_ERR "BUG: looking up invalid subclass: %u\n", subclass);
-> +		printk(KERN_ERR "turning off the locking correctness validator.\n");
-> +		dump_stack();
-> +		return NULL;
-> +	}
-
-Would we catch all cases if we moved this check from __lock_acquire()
-into register_lock_class()? It would result in only a single instance of
-this logic.
+Sascha
 
 
->  	/*
->  	 * Static locks do not have their class-keys yet - for them the key
->  	 * is the lock object itself:
-
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
