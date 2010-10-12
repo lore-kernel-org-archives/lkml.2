@@ -1,72 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab0JLH0V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:26:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58595 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755130Ab0JLH0U (ORCPT
+	id S1756806Ab0JLH0y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:26:54 -0400
+Received: from nenolod.net ([67.202.104.180]:35851 "EHLO
+	carpathia.dereferenced.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754044Ab0JLH0x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:26:20 -0400
-Date: Tue, 12 Oct 2010 00:27:15 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: James Hogan <james@albanarts.com>
-Cc: Gary Zambrano <zambrano@broadcom.com>, Jiri Pirko <jpirko@redhat.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] b44: fix resume, request_irq after hw reset
-Message-Id: <20101012002715.fd0e3371.akpm@linux-foundation.org>
-In-Reply-To: <201010120808.05713.james@albanarts.com>
-References: <201010120022.13171.james@albanarts.com>
-	<20101011163440.072e0227.akpm@linux-foundation.org>
-	<201010120808.05713.james@albanarts.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Oct 2010 03:26:53 -0400
+From: William Pitcock <nenolod@dereferenced.org>
+To: linux-kernel@vger.kernel.org
+Date: Tue, 12 Oct 2010 00:32:02 -0500
+Subject: [PATCH try 2] CFS: Add hierarchical tree-based penalty.
+Message-Id: <20101012072652.80926CE142@carpathia.dereferenced.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Oct 2010 08:08:05 +0100 James Hogan <james@albanarts.com> wrote:
+Inspired by the recent change to BFS by Con Kolivas, this patch causes
+vruntime to be penalized based on parent depth from their root task
+group.
 
-> > > @@ -2309,6 +2303,12 @@ static int b44_resume(struct ssb_device *sdev)
-> > > 
-> > >  	netif_device_attach(bp->dev);
-> > >  	spin_unlock_irq(&bp->lock);
-> > > 
-> > > +	rc = request_irq(dev->irq, b44_interrupt, IRQF_SHARED, dev->name, 
-> dev);
-> > > +	if (rc) {
-> > > +		netdev_err(dev, "request_irq failed\n");
-> > > +		return rc;
-> > > +	}
-> > > +
-> > > 
-> > >  	b44_enable_ints(bp);
-> > >  	netif_wake_queue(dev);
-> > 
-> > OK, running the interrupt handler before b44_init_hw() is presumably
-> > the problem here.
-> > 
-> > The hardware surely won't be generating interrupts until we've run
-> > b44_init_hw() and b44_enable_ints(), so this patch really is only to
-> > keep CONFIG_DEBUG_SHIRQ happy.
-> 
-> For me it's mainly to keep CONFIG_DEBUG_SHIRQ happy (Fedora has this switched 
-> on), but since it's a shared IRQ, there is still a chance it could be 
-> called before enabling it's own interrupts by a different device on the same 
-> IRQ.
+I have, for the moment, decided to make it a default feature since the
+design of CFS ensures that broken applications depending on task enqueue
+behaviour behaving traditionally will continue to work.
 
-ooh, yes, you're right, I forgot about that.  It's indeed a bug.
+My method for applying the penalty is different than that of BFS, it
+divides the vruntime by the number of parents the process has.
 
-> It makes sense to me why it's disabling the IRQ now, in case another device 
-> triggers it when it cannot handle it safely.
+Signed-off-by: William Pitcock <nenolod@dereferenced.org>
+---
+ include/linux/sched.h   |    2 ++
+ kernel/sched.c          |    4 ++++
+ kernel/sched_fair.c     |    7 +++++++
+ kernel/sched_features.h |   12 ++++++++++++
+ 4 files changed, 25 insertions(+), 0 deletions(-)
 
-What code are you referring to here?  There's no disable_irq() in that area?
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..49fca7c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1494,6 +1494,8 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++
++	int parent_count;
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc85ceb..0e55350 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
+ #endif
+ 
+ 	rq = task_rq_lock(p, &flags);
++
++	if (!(clone_flags & CLONE_THREAD))
++		p->parent_count++;
++
+ 	activate_task(rq, p, 0);
+ 	trace_sched_wakeup_new(p, 1);
+ 	check_preempt_curr(rq, p, WF_FORK);
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index db3f674..3059fe0 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -737,6 +737,13 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
+ 	if (initial && sched_feat(START_DEBIT))
+ 		vruntime += sched_vslice(cfs_rq, se);
+ 
++	if (sched_feat(HIERARCHICAL_PENALTY)) {
++		struct task_struct *tsk = task_of(se);
++
++		if (tsk->parent_count > 1)
++			vruntime /= tsk->parent_count;
++	}
++
+ 	/* sleeps up to a single latency don't count. */
+ 	if (!initial) {
+ 		unsigned long thresh = sysctl_sched_latency;
+diff --git a/kernel/sched_features.h b/kernel/sched_features.h
+index 83c66e8..cf17f97 100644
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -45,6 +45,18 @@ SCHED_FEAT(LAST_BUDDY, 1)
+ SCHED_FEAT(CACHE_HOT_BUDDY, 1)
+ 
+ /*
++ * Hierarchical tree-based penalty: penalize service deficit by
++ * an order of magnitude for each parent process in the process
++ * tree.  This has the natural effect of forcing preference towards
++ * processes that are not fork()-hungry, like make(1), which helps
++ * to preserve good latency.
++ *
++ * This also has the side effect of providing in a limited way,
++ * per-user CPU entitlement partitioning.
++ */
++SCHED_FEAT(HIERARCHICAL_PENALTY, 1)
++
++/*
+  * Use arch dependent cpu power functions
+  */
+ SCHED_FEAT(ARCH_POWER, 0)
+-- 
+1.7.2.1
 
-> I also tried calling the 
-> interrupt directly before the free_irq in the suspend function to check that 
-> it wasn't being done too late, and it didn't fail, so possibly it is the core 
-> suspension that makes it start failing until it is brought back up properly.
