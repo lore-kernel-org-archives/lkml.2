@@ -1,93 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754659Ab0JLABr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 20:01:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50183 "EHLO hera.kernel.org"
+	id S1754928Ab0JLACI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 20:02:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50198 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753449Ab0JLABp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 20:01:45 -0400
-Date: Tue, 12 Oct 2010 00:01:16 GMT
-From: tip-bot for Jeremy Fitzhardinge <jeremy@goop.org>
+	id S1753754Ab0JLACG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 20:02:06 -0400
+Date: Tue, 12 Oct 2010 00:01:41 GMT
+From: tip-bot for Yinghai Lu <yinghai@kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, jeremy.fitzhardinge@citrix.com, jeremy@goop.org,
-        benh@kernel.crashing.org, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: jeremy@goop.org, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
-        yinghai@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        jeremy.fitzhardinge@citrix.com
-In-Reply-To: <4CACFDAD.3090900@goop.org>
-References: <4CACFDAD.3090900@goop.org>
+        yinghai@kernel.org, sfr@canb.auug.org.au, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, tglx@linutronix.de, sfr@canb.auug.org.au,
+        hpa@linux.intel.com
+In-Reply-To: <4CB366B1.40405@kernel.org>
+References: <4CB366B1.40405@kernel.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/memblock] memblock: Allow memblock_init to be called early
-Message-ID: <tip-236260b90dd94516982ad67aa6f5449c4c37db7b@git.kernel.org>
-Git-Commit-ID: 236260b90dd94516982ad67aa6f5449c4c37db7b
+Subject: [tip:core/memblock] memblock: Annotate memblock functions with __init_memblock
+Message-ID: <tip-cd79481d27b9f90aad80c9b972292c42c25bbf8e@git.kernel.org>
+Git-Commit-ID: cd79481d27b9f90aad80c9b972292c42c25bbf8e
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 12 Oct 2010 00:01:18 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 12 Oct 2010 00:01:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  236260b90dd94516982ad67aa6f5449c4c37db7b
-Gitweb:     http://git.kernel.org/tip/236260b90dd94516982ad67aa6f5449c4c37db7b
-Author:     Jeremy Fitzhardinge <jeremy@goop.org>
-AuthorDate: Wed, 6 Oct 2010 15:52:29 -0700
+Commit-ID:  cd79481d27b9f90aad80c9b972292c42c25bbf8e
+Gitweb:     http://git.kernel.org/tip/cd79481d27b9f90aad80c9b972292c42c25bbf8e
+Author:     Yinghai Lu <yinghai@kernel.org>
+AuthorDate: Mon, 11 Oct 2010 12:34:09 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 11 Oct 2010 15:59:01 -0700
+CommitDate: Mon, 11 Oct 2010 16:00:52 -0700
 
-memblock: Allow memblock_init to be called early
+memblock: Annotate memblock functions with __init_memblock
 
-The Xen setup code needs to call memblock_x86_reserve_range() very early,
-so allow it to initialize the memblock subsystem before doing so.  The
-second memblock_init() is ignored.
+Stephen found
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-LKML-Reference: <4CACFDAD.3090900@goop.org>
+WARNING: mm/built-in.o(.text+0x25ab8): Section mismatch in reference from the function memblock_find_base() to the function .init.text:memblock_find_region()
+The function memblock_find_base() references
+the function __init memblock_find_region().
+This is often because memblock_find_base lacks a __init
+annotation or the annotation of memblock_find_region is wrong.
+
+So let memblock_find_region() to use __init_memblock instead of __init
+directly.
+
+Also fix one function that did not have __init* to be __init_memblock.
+
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+LKML-Reference: <4CB366B1.40405@kernel.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/xen/enlighten.c |    3 +++
- mm/memblock.c            |    6 ++++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
+ mm/memblock.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 7d46c84..63b83ce 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -30,6 +30,7 @@
- #include <linux/console.h>
- #include <linux/pci.h>
- #include <linux/gfp.h>
-+#include <linux/memblock.h>
- 
- #include <xen/xen.h>
- #include <xen/interface/xen.h>
-@@ -1183,6 +1184,8 @@ asmlinkage void __init xen_start_kernel(void)
- 	local_irq_disable();
- 	early_boot_irqs_off();
- 
-+	memblock_init();
-+
- 	xen_raw_console_write("mapping kernel into physical memory\n");
- 	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
- 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 9ad3969..ae8b06c 100644
+index ae8b06c..400dc62 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -752,6 +752,12 @@ void __init memblock_analyze(void)
+@@ -99,7 +99,7 @@ long __init_memblock memblock_overlaps_region(struct memblock_type *type, phys_a
+  * are top-down.
+  */
  
- void __init memblock_init(void)
+-static phys_addr_t __init memblock_find_region(phys_addr_t start, phys_addr_t end,
++static phys_addr_t __init_memblock memblock_find_region(phys_addr_t start, phys_addr_t end,
+ 					  phys_addr_t size, phys_addr_t align)
  {
-+	static int init_done __initdata = 0;
-+
-+	if (init_done)
-+		return;
-+	init_done = 1;
-+
- 	/* Hookup the initial arrays */
- 	memblock.memory.regions	= memblock_memory_init_regions;
- 	memblock.memory.max		= INIT_MEMBLOCK_REGIONS;
+ 	phys_addr_t base, res_base;
+@@ -653,7 +653,7 @@ void __init memblock_enforce_memory_limit(phys_addr_t memory_limit)
+ 	}
+ }
+ 
+-static int memblock_search(struct memblock_type *type, phys_addr_t addr)
++static int __init_memblock memblock_search(struct memblock_type *type, phys_addr_t addr)
+ {
+ 	unsigned int left = 0, right = type->cnt;
+ 
