@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932571Ab0JLPfP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 11:35:15 -0400
-Received: from fieldses.org ([174.143.236.118]:56326 "EHLO fieldses.org"
+	id S1757514Ab0JLPhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 11:37:43 -0400
+Received: from kroah.org ([198.145.64.141]:48656 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751935Ab0JLPfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 11:35:13 -0400
-Date: Tue, 12 Oct 2010 11:35:07 -0400
-From: "J. Bruce Fields" <bfields@citi.umich.edu>
-To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
-        sandeen@redhat.com, tytso@mit.edu, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V4 00/11]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20101012153507.GC12752@fieldses.org>
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <20101012002409.GH16442@fieldses.org>
- <m3bp6zswvh.fsf@linux.vnet.ibm.com>
+	id S1751935Ab0JLPhn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 11:37:43 -0400
+Date: Tue, 12 Oct 2010 08:28:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Alasdair G Kergon <agk@redhat.com>,
+        Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Milan Broz <mbroz@redhat.com>
+Subject: Re: [stable] dm-crypt: plain64 IV support for -stable?
+Message-ID: <20101012152818.GB13584@kroah.com>
+References: <20101012132511.GA24455@khazad-dum.debian.net> <20101012133226.GB30719@agk-dp.fab.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m3bp6zswvh.fsf@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101012133226.GB30719@agk-dp.fab.redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 12:47:38PM +0530, Aneesh Kumar K. V wrote:
-> On Mon, 11 Oct 2010 20:24:09 -0400, "J. Bruce Fields" <bfields@citi.umich.edu> wrote:
-> > The one thing I remember not liking before was a flag that told the user
-> > whether a given ACL was originally mapped from POSIX or not.  Is that
-> > still there?
-> 
-> We still have that. But we can resolve that once we decide on how to
-> migrate an existing file system containing posix acl to richacl. Most of
-> those patches will need to be updated based on the feedback from
-> different local file system maintainers. That is why those patches are
-> pushed towards the end and is  part of last set.
-> 
-> What we need in the first step is to get VFS changes reviewed.Once we
-> agree on the VFS changes done, then we can start looking at the changes
-> upto NFS richacl nfs support. When get that merged then we can start
-> having discussion on how local file system maintainers want to migrate
-> the existing file system with posixacl to richacl.
+On Tue, Oct 12, 2010 at 02:32:26PM +0100, Alasdair G Kergon wrote:
+> On Tue, Oct 12, 2010 at 10:25:11AM -0300, Henrique de Moraes Holschuh wrote:
+> > Would it be possible to add commit 61afef614b013ee1b767cdd10325acae1db1f4d2
+> > "dm crypt: add plain64 iv" to -stable?
+>  
+> I've no objections - it's a simple and safe patch - but technically it's
+> an enhancement: it's up to the stable maintainers to decide.
 
-OK.  So, personally: I'm resigned to the idea that we want support for
-this ACL model.  The vfs changes look OK to me (and wouldn't be changed
-by any comments I'd have on the more richacl-specific patches to
-follow).  So that's an ACK from me on the first set of these patches,
-assuming it's OK with people to merge these things one step at a time.
+Yeah, I don't think it falls under the -stable rules, so sorry, I will
+not take it.
 
---b.
+thanks,
+
+greg k-h
