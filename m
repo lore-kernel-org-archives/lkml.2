@@ -1,74 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab0JLGOn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 02:14:43 -0400
-Received: from mga01.intel.com ([192.55.52.88]:7237 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab0JLGOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 02:14:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,319,1283756400"; 
-   d="scan'208";a="615806464"
-Subject: Re: [PATCH -v3 3/6] x86, NMI, Rewrite NMI handler
-From: Huang Ying <ying.huang@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>,
-        Robert Richter <robert.richter@amd.com>
-In-Reply-To: <1286863479.2336.1451.camel@twins>
-References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
-	 <1286606987-19879-3-git-send-email-ying.huang@intel.com>
-	 <1286813635.2336.617.camel@twins>  <1286844650.7768.137.camel@yhuang-dev>
-	 <1286863479.2336.1451.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Oct 2010 14:14:40 +0800
-Message-ID: <1286864080.7768.179.camel@yhuang-dev>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1753779Ab0JLGZQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 02:25:16 -0400
+Received: from nenolod.net ([67.202.104.180]:35708 "EHLO
+	carpathia.dereferenced.org" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751457Ab0JLGZP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 02:25:15 -0400
+From: William Pitcock <nenolod@dereferenced.org>
+To: linux-kernel@vger.kernel.org
+Date: Tue, 12 Oct 2010 00:32:02 -0500
+Subject: [PATCH] CFS: Add hierarchical tree-based penalty.
+Message-Id: <20101012062514.53794CE142@carpathia.dereferenced.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-12 at 14:04 +0800, Peter Zijlstra wrote:
-> On Tue, 2010-10-12 at 08:50 +0800, Huang Ying wrote:
-> > On Tue, 2010-10-12 at 00:13 +0800, Peter Zijlstra wrote:
-> > > On Sat, 2010-10-09 at 14:49 +0800, Huang Ying wrote:
-> > > > notify_die(DIE_NMI_IPI);
-> > > > notify_die(DIE_NMI);
-> > > > /* process io port 0x61 */
-> > > > nmi_watchdog_touch();
-> > > > unknown_nmi(); 
-> > > 
-> > > Why keep NMI_IPI? What the heck is it for?
-> > 
-> > DIE_NMI_IPI is used for CPU-specific or CPU-local NMIs, such as perf
-> > NMI. While DIE_NMI is used for non-CPU-specific or global NMIs, such as
-> > NMI notification from source bridge.
-> > 
-> > The order between these two is important. So we use two die value to
-> > enforce the order.
-> 
-> But you can't know about that, there is no reason field to distinguish
-> between these cases, so you might as well fold it into a single notifier
-> chain and be done with it.
+Inspired by the recent change to BFS by Con Kolivas, this patch causes
+vruntime to be penalized based on parent depth from their root task
+group.
 
-NMI users know that. Such as perf uses CPU-specific NMI, while APEI GHES
-uses non-CPU-specific NMI. Different users expect different die values,
-such as perf expects DIE_NMI_IPI, while APEI GHES expects DIE_NMI, so
-that perf can be checked before APEI GHES.
+I have, for the moment, decided to make it a default feature since the
+design of CFS ensures that broken applications depending on task enqueue
+behaviour behaving traditionally will continue to work.
 
-> There is no good reason to call two chains when one is enough.
-> 
-> Also, the IPI name is terrible, its not IPI related at all. Please kill
-> the thing.
+My method for applying the penalty is different than that of BFS, it
+divides the vruntime by the number of parents the process has.
 
-I agree with you that IPI is not a good name. Can you suggest a better
-name?
+Signed-off-by: William Pitcock <nenolod@dereferenced.org>
+---
+ include/linux/sched.h   |    2 ++
+ kernel/sched.c          |    4 ++++
+ kernel/sched_fair.c     |    7 +++++++
+ kernel/sched_features.h |   12 ++++++++++++
+ 4 files changed, 25 insertions(+), 0 deletions(-)
 
-Best Regards,
-Huang Ying
-
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1e2a6db..49fca7c 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1494,6 +1494,8 @@ struct task_struct {
+ 		unsigned long memsw_bytes; /* uncharged mem+swap usage */
+ 	} memcg_batch;
+ #endif
++
++	int parent_count;
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+diff --git a/kernel/sched.c b/kernel/sched.c
+index dc85ceb..0e55350 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
+ #endif
+ 
+ 	rq = task_rq_lock(p, &flags);
++
++	if (!(clone_flags & CLONE_THREAD))
++		p->parent_depth++;
++
+ 	activate_task(rq, p, 0);
+ 	trace_sched_wakeup_new(p, 1);
+ 	check_preempt_curr(rq, p, WF_FORK);
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index db3f674..3059fe0 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -737,6 +737,13 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
+ 	if (initial && sched_feat(START_DEBIT))
+ 		vruntime += sched_vslice(cfs_rq, se);
+ 
++	if (sched_feat(HIERARCHICAL_PENALTY)) {
++		struct task_struct *tsk = task_of(se);
++
++		if (tsk->parent_count > 1)
++			vruntime /= tsk->parent_count;
++	}
++
+ 	/* sleeps up to a single latency don't count. */
+ 	if (!initial) {
+ 		unsigned long thresh = sysctl_sched_latency;
+diff --git a/kernel/sched_features.h b/kernel/sched_features.h
+index 83c66e8..cf17f97 100644
+--- a/kernel/sched_features.h
++++ b/kernel/sched_features.h
+@@ -45,6 +45,18 @@ SCHED_FEAT(LAST_BUDDY, 1)
+ SCHED_FEAT(CACHE_HOT_BUDDY, 1)
+ 
+ /*
++ * Hierarchical tree-based penalty: penalize service deficit by
++ * an order of magnitude for each parent process in the process
++ * tree.  This has the natural effect of forcing preference towards
++ * processes that are not fork()-hungry, like make(1), which helps
++ * to preserve good latency.
++ *
++ * This also has the side effect of providing in a limited way,
++ * per-user CPU entitlement partitioning.
++ */
++SCHED_FEAT(HIERARCHICAL_PENALTY, 1)
++
++/*
+  * Use arch dependent cpu power functions
+  */
+ SCHED_FEAT(ARCH_POWER, 0)
+-- 
+1.7.2.1
 
