@@ -1,130 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757331Ab0JLO2p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 10:28:45 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:40057 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753500Ab0JLO2o convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 10:28:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YA1/rzraz0g1cr2xOpG/zoyH2nhg4Dg2Nh7ZgFhfRJssIj+VLQ6DNU/4rsD3Tq5+68
-         CLCrBwM2Ejm8yLj8gc1Q==
+	id S1757414Ab0JLO3e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 10:29:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753317Ab0JLO3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 10:29:32 -0400
+Message-ID: <4CB4709D.7020407@redhat.com>
+Date: Tue, 12 Oct 2010 16:28:45 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1010121046060.2909@localhost6.localdomain6>
-References: <20101012000159.7091.84336.stgit@dungbeetle.mtv.corp.google.com>
-	<alpine.LFD.2.00.1010121046060.2909@localhost6.localdomain6>
-Date: Tue, 12 Oct 2010 07:28:40 -0700
-Message-ID: <AANLkTikgvZuT5+sgPyD-1j1gG+-pC0+4hpXQj7Z_ZuYE@mail.gmail.com>
-Subject: Re: [PATCH] Fix a complex race in hrtimer code.
-From: Salman Qazi <sqazi@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: "Yang, Bo" <Bo.Yang@lsi.com>
+CC: James Bottomley <James.Bottomley@suse.de>, bo yang <boyang1288@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to
+ MegaRAID SAS drive
+References: <AANLkTin53S+C_+QzF-drs5BUAx=k7YeiHrTaQGTFSc_a@mail.gmail.com>	 <4CAF3E04.1050304@redhat.com> <1286555954.2985.110.camel@mulgrave.site> <4CAF70CD.6020307@redhat.com> <4CB0D2AF.7080609@redhat.com> <4B6A08C587958942AA3002690DD4F8C30100F5506B@cosmail02.lsi.com> <4CB30F27.9090009@redhat.com> <4B6A08C587958942AA3002690DD4F8C30100FF9C58@cosmail02.lsi.com>
+In-Reply-To: <4B6A08C587958942AA3002690DD4F8C30100FF9C58@cosmail02.lsi.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 1:49 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Mon, 11 Oct 2010, Salman Qazi wrote:
+On 10/11/2010 05:37 PM, Yang, Bo wrote:
+> Tomas,
 >
->> The race is described as follows:
->>
->> CPU X                                 CPU Y
->> remove_hrtimer
->> // state & QUEUED == 0
->> timer->state = CALLBACK
->> unlock timer base
->> timer->f(n) //very long
->>                                   hrtimer_start
->>                                     lock timer base
->>                                     remove_hrtimer // no effect
->>                                     hrtimer_enqueue
->>                                     timer->state = CALLBACK |
->>                                                    QUEUED
->>                                     unlock timer base
->>                                   hrtimer_start
->>                                     lock timer base
->>                                     remove_hrtimer
->>                                         mode = INACTIVE
->>                                         // CALLBACK bit lost!
->>                                     switch_hrtimer_base
->>                                             CALLBACK bit not set:
->>                                                     timer->base
->>                                                     changes to a
->>                                                     different CPU.
->> lock this CPU's timer base
->
-> Good catch.
->
->> Bug reproducible and fix testable using a kernel module that hrtimer_start()s
->> a timer with a very long running callback from multiple CPUs:
->>
->> MODULE_LICENSE("GPL");
->>
->> static long timer_func_time = 1000;
->> module_param(timer_func_time, long, 0600);
->> static long timer_starts = 2500;
->> module_param(timer_starts, long, 0600);
->> static long timer_expire = 1000;
->> module_param(timer_expire, long, 0600);
->>
->> DEFINE_PER_CPU(struct task_struct *, hrtimer_thread);
->>
->> /* There are other issues, like deadlocks between multiple hrtimer_start observed
->>  * calls, at least in 2.6.34 that this lock works around.  Will look into
->>  * those later.
->
-> Well, we don't have to work around callsites not serializing themself
-> in the core code, right ?
+> The reason the driver does flush_scheduled_work() is driver did cancel_delayed_work().  I am not sure driver need to call flush_scheduled_work() if the scheduled work already done, but I will test this changes and submit another patch as soon as it works fine.  
+>   
+Driver needs to call flush_scheduled_work() because you are adding in this patch a new workqueue:
+INIT_WORK(&instance->work_init, process_fw_state_change_wq); so calling the flush_scheduled_work()
+only if a certain condition is met is the problem. If the condition comes true for both workqueues
+then it would be fine, but I think that it isn't so.
+With this patch we could have a started workqueue (with a long 30 sec sleep) and when the module
+is removed then probably a memory corruption etc. 
 
-I assumed that the semantics were that hrtimer_starts are serialized
-with respect to each other and with respect to cancels.   You seem to
-disagree.
 
-In any case, I have to rerun that test without this lock with the
-patch present.  It's possible that it was a symptom of the same bug
-that we just didn't observe in production.
+> This change should not be the part of this patch, we would have the new patch submit after the verification. 
+>   
+I would prefer to have it in one patch, but if it is for you easier, then do it as you wish.
 
+Tomas
+
+
+> Regards,
 >
->> ---
->>  kernel/hrtimer.c |    7 +++++--
->>  1 files changed, 5 insertions(+), 2 deletions(-)
+> Bo Yang   
+>  
+> -----Original Message-----
+> From: Tomas Henzl [mailto:thenzl@redhat.com] 
+> Sent: Monday, October 11, 2010 9:21 AM
+> To: Yang, Bo
+> Cc: James Bottomley; bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org
+> Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS drive
+>
+> On 10/11/2010 02:55 PM, Yang, Bo wrote:
+>   
+>> Tomas,
 >>
->> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
->> index 1decafb..57846d5 100644
->> --- a/kernel/hrtimer.c
->> +++ b/kernel/hrtimer.c
->> @@ -944,8 +944,8 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
->>               debug_deactivate(timer);
->>               timer_stats_hrtimer_clear_start_info(timer);
->>               reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
->> -             __remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
->> -                              reprogram);
->> +             __remove_hrtimer(timer, base,
->> +                              (timer->state & HRTIMER_STATE_CALLBACK), reprogram);
->>               return 1;
->>       }
->>       return 0;
->> @@ -1231,6 +1231,9 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
->>               BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
->>               enqueue_hrtimer(timer, base);
->>       }
->> +
->> +     WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
->> +
->>       timer->state &= ~HRTIMER_STATE_CALLBACK;
->>  }
->
-> Can I please get your Signed-off-by so this can be queued ?
->
-> Thanks,
->
->        tglx
+>>   
+>>     
+>>> Another correction - flush_scheduled_work is already present in megass_detach_one
+>>> it only should be moved away from the if statement.
+>>>     
+>>>       
+>> The flush_scheduled_work is for schedule_delayed_work().  We need to flush it and remove.
+>>   
+>>     
+> I'm not saying it should be removed, I think a move outside from the 'if' block
+> makes it work for ev->hotplug_work and for the newly added instance->work_init
 >
 >
+> diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
+> index 55951f4..7773707 100644
+> --- a/drivers/scsi/megaraid/megaraid_sas.c
+> +++ b/drivers/scsi/megaraid/megaraid_sas.c
+> @@ -4088,9 +4088,9 @@ static void __devexit megasas_detach_one(struct pci_dev *pdev)
+>  		struct megasas_aen_event *ev = instance->ev;
+>  		cancel_delayed_work(
+>  			(struct delayed_work *)&ev->hotplug_work);
+> -		flush_scheduled_work();
+> -		instance->ev = NULL;
+>  	}
+> +	flush_scheduled_work();
+> +	instance->ev = NULL;
+>  
+>  	tasklet_kill(&instance->isr_tasklet);
+>  
+> --
+>
+>   
+>> -----Original Message-----
+>> From: Tomas Henzl [mailto:thenzl@redhat.com] 
+>> Sent: Saturday, October 09, 2010 4:38 PM
+>> To: James Bottomley
+>> Cc: bo yang; linux-scsi@vger.kernel.org; akpm@osdl.org; linux-kernel@vger.kernel.org; Yang, Bo
+>> Subject: Re: PATCH 1/5] scsi: megaraid_sas - Add Online Controller Reset to MegaRAID SAS drive
+>>
+>> On 10/08/2010 09:28 PM, Tomas Henzl wrote:
+>>   
+>>     
+>>> On 10/08/2010 06:39 PM, James Bottomley wrote:
+>>>   
+>>>     
+>>>       
+>>>> On Fri, 2010-10-08 at 17:51 +0200, Tomas Henzl wrote:
+>>>>   
+>>>>     
+>>>>       
+>>>>         
+>>>>> On 09/23/2010 04:36 AM, bo yang wrote:
+>>>>>     
+>>>>>       
+>>>>>         
+>>>>>           
+>>>>>> This patch is too big.  I am using attachment to submit.  Please
+>>>>>> use attached file to apply.  Also let me know if it can't be accepted.
+>>>>>>
+>>>>>> To add the Online controller reset support, driver need to do:
+>>>>>> a). reset the controller chips -- Xscale and Gen2 which will change
+>>>>>> the function calls and add the reset function related to this two
+>>>>>> chips.
+>>>>>> b). during the reset, driver will store the pending cmds which not
+>>>>>> returned by FW to driver's pending queue.  Driver will re-issue those
+>>>>>> pending cmds again to FW after the OCR finished.
+>>>>>> c). In driver's timeout routine, driver will report to OS as reset.
+>>>>>> Also driver's queue routine will block the cmds until the OCR
+>>>>>> finished.
+>>>>>> d). in Driver's ISR routine, if driver get the FW state as state
+>>>>>> change, FW in Failure status and FW support online controller
+>>>>>> reset (OCR), driver will start to do the controller reset.
+>>>>>> e). In driver's IOCTL routine, the application cmds will wait for the
+>>>>>> OCR to finish, then issue the cmds to FW.
+>>>>>>
+>>>>>> Signed-off-by Bo Yang<bo.yang@lsi.com>
+>>>>>>
+>>>>>> ---
+>>>>>>  drivers/scsi/megaraid/megaraid_sas.c |  756 ++++++++++++++++++++++++++++++++---
+>>>>>>  drivers/scsi/megaraid/megaraid_sas.h |   88 +++-
+>>>>>>  2 files changed, 787 insertions(+), 57 deletions(-)
+>>>>>>       
+>>>>>>         
+>>>>>>           
+>>>>>>             
+>>>>> Hi Bo,
+>>>>> in the workqueue function you sleep for 30s,
+>>>>> it's scheduled here - schedule_work(&instance->work_init);
+>>>>>
+>>>>> +process_fw_state_change_wq(struct work_struct *work)
+>>>>> +{
+>>>>> ...
+>>>>> +		/*waitting for about 20 second before start the second init*/
+>>>>> +		for (wait = 0; wait < 30; wait++) {
+>>>>> +			msleep(1000);
+>>>>> +		}
+>>>>>     
+>>>>>       
+>>>>>         
+>>>>>           
+>>>> this lot should be ssleep(20) if you want a 20 sec sleep.
+>>>>   
+>>>>     
+>>>>       
+>>>>         
+>>> please do that on every place where you use the 
+>>> "for (wait = 0; wait < n; wait++) msleep(1000);" construction
+>>>
+>>>   
+>>>     
+>>>       
+>>>>> - this is not a good practice to sleep for a so long time I think
+>>>>>     
+>>>>>       
+>>>>>         
+>>>>>           
+>>> this long sleep might might be ok, if the workqueue is used only rarely
+>>> is it so?
+>>>
+>>>   
+>>>     
+>>>       
+>>>>> - you should use in your exit function some synchronization 
+>>>>>   for example 'cancel_work_sync', without that if someone rmmods your 
+>>>>>   module, it could then lead to a memory corruption
+>>>>>     
+>>>>>       
+>>>>>         
+>>>>>           
+>>>> Actually flush_scheduled_work() should be fine ... it will force the
+>>>> module removal to wait for completion ... cancellation can be error
+>>>> prone, so just forcing the wait sounds easier.
+>>>>   
+>>>>     
+>>>>       
+>>>>         
+>> Another correction - flush_scheduled_work is already present in megass_detach_one
+>> it only should be moved away from the if statement.
+>>
+>>
+>>   
+>>     
+>>> someone told that cancel_work_sync is safer then flush_scheduled_work
+>>> but I'm not an expert, so ok 
+>>>
+>>> Tomas
+>>>
+>>>   
+>>>     
+>>>       
+>>>> James
+>>>>
+>>>>
+>>>>         
+
