@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751904Ab0JLWZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 18:25:29 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:46174 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751401Ab0JLWZ2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 18:25:28 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Wed, 13 Oct 2010 00:25:13 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: [PATCH unfinished update] firewire: sbp2: parallelize
- login/inquiry, reconnect, and shutdown
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-In-Reply-To: <tkrat.6dd361dadace9a41@s5r6.in-berlin.de>
-Message-ID: <tkrat.b190ad8b687a549a@s5r6.in-berlin.de>
-References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de>
- <tkrat.1433473bc081daa9@s5r6.in-berlin.de>
- <tkrat.6dd361dadace9a41@s5r6.in-berlin.de>
+	id S1751936Ab0JLW0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 18:26:32 -0400
+Received: from www.tglx.de ([62.245.132.106]:55013 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751773Ab0JLW0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 18:26:31 -0400
+Date: Wed, 13 Oct 2010 00:26:08 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] x86: Sanitize apb timer interrupt handling
+In-Reply-To: <20101012151230.00000402@unknown>
+Message-ID: <alpine.LFD.2.00.1010130020250.2909@localhost6.localdomain6>
+References: <tip-a5ef2e70405c8a9ee380b5ff33a008c75454791f@git.kernel.org> <20101012142000.00001358@unknown> <alpine.LFD.2.00.1010122327260.2909@localhost6.localdomain6> <20101012151230.00000402@unknown>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> So I changed the patch to the simple one below, but suddenly my
-> INIC-2430 device has trouble with inquiry in parallel to its two LUNs:
+On Tue, 12 Oct 2010, Jacob Pan wrote:
 
-The following modification fixes this mostly, i.e. always when the first
-Inquiry attempt to one LUN fails but succeeds on the other.  But I had
-one occasion just now at which both failed; then that reschedule does
-simply lead into the same situation until retry limit.
+> Thomas Gleixner Tue, 12 Oct 2010 23:28:19 +0200 (CEST)
+> >On Tue, 12 Oct 2010, Jacob Pan wrote:
+> >
+> >> 
+> >> >x86: Sanitize apb timer interrupt handling
+> >> >
+> >> >Disable the interrupt in CPU_DEAD where it belongs.
+> >> My main concern is the performance cost. The power management code for
+> >> Moorestown system make use of the cpu hotplug code (disable_nonboot_cpus)
+> >> but much more frequently. The system low power states are call S0 idle
+> >> state (s0ix).
+> >> 
+> >> Leaving the irq enabled at the chip and desc level between S0ix states
+> >> might give some performance benefit. That was my original thought.
+> >> Will it cause problems?
+> >
+> >Errm. I merily moved it to the place where it should be. You do the
+> >disable/enable dance already today.
+> >
+> I think I only do disable/enable at the timer HW level today during cpu hp
+> notification, not calling disable_irq(). Am i missing something?
 
-> Maybe I need ordered per-target workqueues.
-
-No, I actually need per-node ordering.  This device, like my other one
-and apparently most ones on the market actually keep their SCSI logical
-units in separate FireWire units.  Currently firewire-sbp2 is not aware
-that fw_unit instances reside on the same node.
-
-This is going to be tougher than I hoped.  Maybe I need a driver-global
-Inquiry mutex.  Or move the __scsi_add_device() out of sbp2_login() into
-another work which is scheduled to a "single-threaded" workqueue.
-
---- a/drivers/firewire/sbp2.c
-+++ b/drivers/firewire/sbp2.c
-@@ -982,6 +982,8 @@ static void sbp2_login(struct work_struc
- 	 * lu->work already.  Reset the work from reconnect to login.
- 	 */
- 	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
-+	if (lu->retries++ < 5)
-+		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
-  out:
- 	sbp2_target_put(tgt);
- }
-@@ -1656,7 +1658,8 @@ MODULE_ALIAS("sbp2");
+apbt_setup_irq()
+{
+ ...
  
- static int __init sbp2_init(void)
- {
--	sbp2_wq = create_singlethread_workqueue(KBUILD_MODNAME);
-+	sbp2_wq = alloc_workqueue(KBUILD_MODNAME,
-+				  WQ_NON_REENTRANT | WQ_RESCUER, 0);
- 	if (!sbp2_wq)
- 		return -ENOMEM;
- 
--- 
-Stefan Richter
--=====-==-=- =-=- -==-=
-http://arcgraph.de/sr/
+--->	disable_irq(adev->irq);
+	desc->status |= IRQ_MOVE_PCNTXT;
+	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+	/* APB timer irqs are set up as mp_irqs, timer is edge triggerred */
+	set_irq_chip_and_handler_name(adev->irq, chip, handle_edge_irq, "edge");
+--->	enable_irq(adev->irq);
+	if (system_state == SYSTEM_BOOTING)
+ ...
+}
 
+So that's a disable/enable pair on every cpu hotplug, right ?
+
+Now I moved the disable to CPU_DEAD where it belongs and the enable
+stayed at the same place.
+
+Thanks,
+
+	tglx
