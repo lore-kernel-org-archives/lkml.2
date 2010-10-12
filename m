@@ -1,105 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757139Ab0JLKCn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 06:02:43 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49277 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754321Ab0JLKCm (ORCPT
+	id S932158Ab0JLKDE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 06:03:04 -0400
+Received: from ifrit.dereferenced.org ([66.212.21.15]:55171 "EHLO
+	ifrit.dereferenced.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757175Ab0JLKDC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 06:02:42 -0400
-Date: Tue, 12 Oct 2010 12:02:35 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
-Subject: Re: linux-next: manual merge of the arm tree with the arm-current
-	tree
-Message-ID: <20101012100235.GH29673@pengutronix.de>
-References: <20101012103314.41b00cbe.sfr@canb.auug.org.au> <20101012080354.GC29673@pengutronix.de> <20101012082814.GC12845@flint.arm.linux.org.uk> <20101012092357.GE29673@pengutronix.de> <20101012094208.GD12845@flint.arm.linux.org.uk>
+	Tue, 12 Oct 2010 06:03:02 -0400
+Date: Tue, 12 Oct 2010 14:02:56 +0400 (MSD)
+From: William Pitcock <nenolod@dereferenced.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Message-ID: <87939.1771286877776896.JavaMail.root@ifrit.dereferenced.org>
+In-Reply-To: <31330936.1751286877737150.JavaMail.root@ifrit.dereferenced.org>
+Subject: Re: [PATCH try 3] CFS: Add hierarchical tree-based penalty.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101012094208.GD12845@flint.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [67.202.104.35]
+X-Mailer: Zimbra 6.0.0_BETA2_1547.UBUNTU8 (ZimbraWebClient - FF3.0 (Linux)/6.0.0_BETA2_1547.UBUNTU8)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Hi,
 
-On Tue, Oct 12, 2010 at 10:42:08AM +0100, Russell King wrote:
-> On Tue, Oct 12, 2010 at 11:23:57AM +0200, Uwe Kleine-König wrote:
-> > Hi Russell,
+----- "Peter Zijlstra" <peterz@infradead.org> wrote:
+
+> On Tue, 2010-10-12 at 13:34 +0400, William Pitcock wrote:
+> > Yes, this should be a multiplication I believe, not a divide.  My
+> original
+> > code had this as a multiplication, not a division, as does the new
+> patch.
 > > 
-> > On Tue, Oct 12, 2010 at 09:28:14AM +0100, Russell King wrote:
-> > > On Tue, Oct 12, 2010 at 10:03:54AM +0200, Uwe Kleine-König wrote:
-> > > > On Tue, Oct 12, 2010 at 10:33:14AM +1100, Stephen Rothwell wrote:
-> > > > > Hi Russell,
-> > > > > 
-> > > > > Today's linux-next merge of the arm tree got a conflict in
-> > > > > arch/arm/mach-imx/mach-cpuimx27.c between commit
-> > > > > 4793ca4028e4dcdbf2740db50995c9378ded3cf8 ("cpuimx27: fix i2c bus
-> > > > > selection") from the arm-current tree and commit
-> > > > > 77a406da5a5b76445a816d5f043fc9aef4026ff1 ("ARM: imx: fix name of macros
-> > > > > to add imx-i2c devices") from the arm tree.
-> > > A more concerning question is - these recent conflicts have been happening
-> > > as a result of merging people's GIT trees, which tend to be sent close
-> > > to the merge window.
-> > > 
-> > > If the first time their changes become visible to linux-next is when
-> > > they're merged into my tree, something is wrong...
-> > I tried to reconstruct that.  I guess I cannot see yet that Russell took
-> > 4793ca4028e4dcdbf2740db50995c9378ded3cf8 because I have no access to
-> > Russell's kernel.org repo and his ftp.arm.linux.org.uk repo currently
-> > barfs for me and Stephen didn't push out a tree newer than 20101011 yet.
+> > However, I think:
+> > 
+> >     vruntime >>= tsk->fork_depth;
+> > 
+> > would do the job just as well and be faster. 
 > 
-> What's up with it?  What URL are you using?
+> That's still somewhat iffy as explained, vruntime is the absolute
+> service level, multiplying that by 2 (or even more) will utterly
+> upset
+> things.
+> 
 
-	http://ftp.arm.linux.org.uk/pub/linux/arm/kernel/git-cur/linux-2.6-arm.git/
+Yes, this is why I thought that doing a division would be better.
 
-and it fails for me with
+> Imagine two runnable tasks of weight 1, say both have a vruntime of 3
+> million, seconds (there being two, vruntime will advance at 1/2
+> wall-time).
+> 
+> Now, suppose you wake a third, it too had a vruntime of around 3
+> million
+> seconds (it only slept for a little while), if you then multiply that
+> with 2 and place it at 6 mil, it will have to wait for 6 mil seconds
+> before it gets serviced (twice the time of the 3 mil difference in
+> service time between this new and the old tasks).
+> 
+> So, theory says the fair thing to do is place new tasks at the
+> weighted
+> average of the existing tasks, but computing that is expensive, so
+> what
+> we do is place it somewhere near the leftmost task in the tree.
+> 
+> Now, you don't want to push it out too far to the right, otherwise we
+> get starvation issues and people get upset.
+> 
+> So you have to somehow determine a window in which you want to place
+> this task and then vary in that depending on your fork_depth.
+> 
+> Simply manipulating the absolute service levels like you propose
+> isn't
+> going to work.
 
-	ukl@octopus:~/gsrc/linux-2.6$ git fetch rmk
-	error: Unable to find 81490fcdf406f42fff9d9f57d541788f90242885 under
-	http://ftp.arm.linux.org.uk/pub/linux/arm/kernel/git-cur/linux-2.6-arm.git
-	Cannot obtain needed commit 81490fcdf406f42fff9d9f57d541788f90242885
-	while processing commit d7840ed08bf6f74677a6b2b21b96269180be9eb6.
-	error: Fetch failed.
+I think I have a solution to this.  Presently waiting on a kernel rebuild
+on my laptop so I can test.
 
-I'm trying to reproduce with 
-
-	git clone --reference ~/gsrc/linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git t
-	cd t
-	git remote add -f rmk http://ftp.arm.linux.org.uk/pub/linux/arm/kernel/git-cur/linux-2.6-arm.git/
-
-... sometime later ...
-
-works, so something in my repo seems to be the problem.  I assume a pack
-file is corrupt?!  Hmm, I'll try to remove all packs I got from your
-repo ...
-
-... wget ... sed $magic ... rm $(cat filelist)
-
-	ukl@octopus:~/gsrc/linux-2.6$ git fetch rmk
-	 + 86c4743...74a4333 devel      -> rmk/devel  (forced update)
-	   aa30900..c9ee46a  devel-stable -> rmk/devel-stable
-	   d907387..a581da1  master     -> rmk/master
-	   151b6a5..85a3318  origin     -> rmk/origin
-
-\o/
-
-I guess the problem is that I "Ctrl-C"d an earlier git fetch.
-
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+William
