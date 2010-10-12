@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751363Ab0JLVYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:24:48 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:1053 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab0JLVYq convert rfc822-to-8bit (ORCPT
+	id S1751204Ab0JLV0R (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:26:17 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63677 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750806Ab0JLV0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:24:46 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp04.nvidia.com on Tue, 12 Oct 2010 14:24:40 -0700
-From: Andrew Chew <AChew@nvidia.com>
-To: "mike@compulab.co.il" <mike@compulab.co.il>,
-        "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        Gary King <GKing@nvidia.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Chew <AChew@nvidia.com>, "'Greg KH'" <greg@kroah.com>
-Date: Tue, 12 Oct 2010 14:24:34 -0700
-Subject: [PATCH 1/1] mfd: Add TPS658621C device ID
-Thread-Topic: [PATCH 1/1] mfd: Add TPS658621C device ID
-Thread-Index: Actk3UDgBd5pV4gwRBKGh9ma2fPxYQFdlBpg
-Message-ID: <643E69AA4436674C8F39DCC2C05F763816BB82897A@HQMAIL03.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 12 Oct 2010 17:26:16 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 67.188.36.105
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/ff0FgS+KPAJGinJGJ2K1Z
+Date: Tue, 12 Oct 2010 14:08:39 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-omap@vger.kernel.org
+Subject: [GIT PULL] one omap fix for 2.6.36
+Message-ID: <20101012210839.GB25462@atomide.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sending again.  Can someone review for commit?
+Hi Linus,
 
-This is a really simple change that adds a new valid device ID for the existing tps6586x PMU driver.
+Please pull a one-liner from:
 
-The interface for this device should be identical to that of the
-TPS658521A.
+git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
 
-Signed-off-by: Andrew Chew <achew@nvidia.com>
----
- drivers/mfd/tps6586x.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Regards,
 
-diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-index 117eb7c..b4931ab 100644
---- a/drivers/mfd/tps6586x.c
-+++ b/drivers/mfd/tps6586x.c
-@@ -47,6 +47,7 @@
- /* device id */
- #define TPS6586X_VERSIONCRC	0xcd
- #define TPS658621A_VERSIONCRC	0x15
-+#define TPS658621C_VERSIONCRC	0x2c
- 
- struct tps6586x_irq_data {
- 	u8	mask_reg;
-@@ -497,7 +498,8 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
- 		return -EIO;
- 	}
- 
--	if (ret != TPS658621A_VERSIONCRC) {
-+	if ((ret != TPS658621A_VERSIONCRC) &&
-+	    (ret != TPS658621C_VERSIONCRC)) {
- 		dev_err(&client->dev, "Unsupported chip ID: %x\n", ret);
- 		return -ENODEV;
- 	}
--- 
-1.7.0.4
+Tony
 
+
+The following changes since commit cb655d0f3d57c23db51b981648e452988c0223f9:
+
+  Linux 2.6.36-rc7 (2010-10-06 13:39:52 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+
+Hari Kanigeri (1):
+      omap: iommu-load cam register before flushing the entry
+
+ arch/arm/plat-omap/iommu.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
