@@ -1,108 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab0JLHIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:08:15 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54040 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756504Ab0JLHIN (ORCPT
+	id S1756823Ab0JLHJM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:09:12 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:52905 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756504Ab0JLHJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:08:13 -0400
-From: James Hogan <james@albanarts.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] b44: fix resume, request_irq after hw reset
-Date: Tue, 12 Oct 2010 08:08:05 +0100
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-custom+; KDE/4.4.5; x86_64; ; )
-Cc: Gary Zambrano <zambrano@broadcom.com>, Jiri Pirko <jpirko@redhat.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Hauke Mehrtens <hauke@hauke-m.de>,
-        Larry Finger <Larry.Finger@lwfinger.net>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-References: <201010120022.13171.james@albanarts.com> <20101011163440.072e0227.akpm@linux-foundation.org>
-In-Reply-To: <20101011163440.072e0227.akpm@linux-foundation.org>
+	Tue, 12 Oct 2010 03:09:10 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:subject:cc:date:message-id:user-agent:
+	mime-version:content-type;
+	b=a9Ulm4iX+yHR2c276fapRGizCsCj6Z8qU/Tp4SnW6cQ5oeZI+LqC4P2jPTcJEKOck
+	KPkruZr1gKDGBMCsmBe7Q==
+From: Greg Thelen <gthelen@google.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        "Oleg Nesterov" <oleg@tv-sign.ru>
+Subject: INFO: suspicious rcu_dereference_check() usage - kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Date: Tue, 12 Oct 2010 00:08:46 -0700
+Message-ID: <xr93fwwbdh1d.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-X-Length: 3860
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010120808.05713.james@albanarts.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 12 October 2010 00:34:40 Andrew Morton wrote:
-> On Tue, 12 Oct 2010 00:22:12 +0100
-> 
-> James Hogan <james@albanarts.com> wrote:
-> > This driver was hanging on resume because it was requesting a shared irq
-> > that it wasn't ready to immediately handle, which was tested in
-> > request_irq because of the CONFIG_DEBUG_SHIRQ config option. The
-> > interrupt handler tried to read the interrupt status register but for
-> > some reason it hung the system.
-> > 
-> > The request_irq is now moved a bit later after resetting the hardware
-> > which seems to fix it.
-> > 
-> > Signed-off-by: James Hogan <james@albanarts.com>
-> > ---
-> > 
-> >  drivers/net/b44.c |   12 ++++++------
-> >  1 files changed, 6 insertions(+), 6 deletions(-)
-> > 
-> > diff --git a/drivers/net/b44.c b/drivers/net/b44.c
-> > index 1e620e2..dbba981 100644
-> > --- a/drivers/net/b44.c
-> > +++ b/drivers/net/b44.c
-> > @@ -2296,12 +2296,6 @@ static int b44_resume(struct ssb_device *sdev)
-> > 
-> >  	if (!netif_running(dev))
-> >  	
-> >  		return 0;
-> > 
-> > -	rc = request_irq(dev->irq, b44_interrupt, IRQF_SHARED, dev->name, 
-dev);
-> > -	if (rc) {
-> > -		netdev_err(dev, "request_irq failed\n");
-> > -		return rc;
-> > -	}
-> > -
-> > 
-> >  	spin_lock_irq(&bp->lock);
-> >  	
-> >  	b44_init_rings(bp);
-> > 
-> > @@ -2309,6 +2303,12 @@ static int b44_resume(struct ssb_device *sdev)
-> > 
-> >  	netif_device_attach(bp->dev);
-> >  	spin_unlock_irq(&bp->lock);
-> > 
-> > +	rc = request_irq(dev->irq, b44_interrupt, IRQF_SHARED, dev->name, 
-dev);
-> > +	if (rc) {
-> > +		netdev_err(dev, "request_irq failed\n");
-> > +		return rc;
-> > +	}
-> > +
-> > 
-> >  	b44_enable_ints(bp);
-> >  	netif_wake_queue(dev);
-> 
-> OK, running the interrupt handler before b44_init_hw() is presumably
-> the problem here.
-> 
-> The hardware surely won't be generating interrupts until we've run
-> b44_init_hw() and b44_enable_ints(), so this patch really is only to
-> keep CONFIG_DEBUG_SHIRQ happy.
+I observe a failing rcu_dereference_check() in linux-next (found in
+mmotm-2010-10-07-14-08).  An extra rcu assertion in
+find_task_by_pid_ns() was added by:
+  commit 4221a9918e38b7494cee341dda7b7b4bb8c04bde
+  Author: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+  Date:   Sat Jun 26 01:08:19 2010 +0900
+  
+      Add RCU check for find_task_by_vpid().
 
-For me it's mainly to keep CONFIG_DEBUG_SHIRQ happy (Fedora has this switched 
-on), but since it's a shared IRQ, there is still a chance it could be 
-called before enabling it's own interrupts by a different device on the same 
-IRQ.
+This extra assertion causes a rcu_dereference_check() failure during
+boot in 512 MIB VM.  I would be happy to get out proposed patches to
+this issue.  My config includes:
+  CONFIG_PREEMPT=y
+  CONFIG_LOCKDEP=y
+  CONFIG_PROVE_LOCKING=y
+  CONFIG_PROVE_RCU=y
 
-It makes sense to me why it's disabling the IRQ now, in case another device 
-triggers it when it cannot handle it safely. I also tried calling the 
-interrupt directly before the free_irq in the suspend function to check that 
-it wasn't being done too late, and it didn't fail, so possibly it is the core 
-suspension that makes it start failing until it is brought back up properly.
+The console error:
 
-Cheers
-James
+Begin: Running /scripts/local-bottom ...
+Done.
+Done.
+Begin: Running /scripts/init-bottom ...
+Done.
+[    3.394348]
+[    3.394349] ===================================================
+[    3.395162] [ INFO: suspicious rcu_dereference_check() usage. ]
+[    3.395786] ---------------------------------------------------
+[    3.396452] kernel/pid.c:419 invoked rcu_dereference_check() without protection!
+[    3.397483]
+[    3.397484] other info that might help us debug this:
+[    3.397485]
+[    3.398363]
+[    3.398364] rcu_scheduler_active = 1, debug_locks = 0
+[    3.399073] 1 lock held by ureadahead/1438:
+[    3.399515]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff811c1d1a>] sys_ioprio_set+0x8a/0x3f0
+[    3.400500]
+[    3.400501] stack backtrace:
+[    3.401036] Pid: 1438, comm: ureadahead Not tainted 2.6.36-dbg-DEV #10
+[    3.401717] Call Trace:
+[    3.401996]  [<ffffffff810c720b>] lockdep_rcu_dereference+0xbb/0xc0
+[    3.402742]  [<ffffffff810aebb1>] find_task_by_pid_ns+0x81/0x90
+[    3.403445]  [<ffffffff810aebe2>] find_task_by_vpid+0x22/0x30
+[    3.404146]  [<ffffffff811c2074>] sys_ioprio_set+0x3e4/0x3f0
+[    3.404756]  [<ffffffff815c5919>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+[    3.405455]  [<ffffffff8104331b>] system_call_fastpath+0x16/0x1b
+
+
+ioprio_set() contains a comment warning against of usage of
+rcu_read_lock() to avoid this warning:
+	/*
+	 * We want IOPRIO_WHO_PGRP/IOPRIO_WHO_USER to be "atomic",
+	 * so we can't use rcu_read_lock(). See re-copy of ->ioprio
+	 * in copy_process().
+	 */
+
+So I'm not sure what the best fix is.
+
+Also I see that sys_ioprio_get() has a similar problem that might be
+addressed with:
+
+diff --git a/fs/ioprio.c b/fs/ioprio.c
+index 748cfb9..02eed30 100644
+--- a/fs/ioprio.c
++++ b/fs/ioprio.c
+@@ -197,6 +197,7 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+ 	int ret = -ESRCH;
+ 	int tmpio;
+ 
++	rcu_read_lock();
+ 	read_lock(&tasklist_lock);
+ 	switch (which) {
+ 		case IOPRIO_WHO_PROCESS:
+@@ -251,5 +252,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
+ 	}
+ 
+ 	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
+ 	return ret;
+ }
+
+sys_ioprio_get() didn't have an explicit warning against usage of
+rcu_read_lock(), but that doesn't mean this is a good patch.
+
+--
+Greg
