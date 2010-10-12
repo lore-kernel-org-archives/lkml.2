@@ -1,109 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932468Ab0JLMu4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 08:50:56 -0400
-Received: from mail.windriver.com ([147.11.1.11]:45043 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389Ab0JLMun (ORCPT
+	id S932510Ab0JLMv3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 08:51:29 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:58420 "EHLO
+	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932373Ab0JLMv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 08:50:43 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: airlied@linux.ie
-Cc: jbarnes@virtuousgeek.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 4/5] kdb,kms: Save and restore the LUT on atomic KMS enter/exit
-Date: Tue, 12 Oct 2010 07:50:00 -0500
-Message-Id: <1286887801-8179-5-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1286887801-8179-1-git-send-email-jason.wessel@windriver.com>
-References: <1286887801-8179-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 12 Oct 2010 12:50:32.0844 (UTC) FILETIME=[0EAB24C0:01CB6A0C]
+	Tue, 12 Oct 2010 08:51:26 -0400
+Date: Tue, 12 Oct 2010 13:51:26 +0100
+From: Matt Fleming <matt@console-pimps.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Robert Richter <robert.richter@amd.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Matt Helsley <matthltc@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: linux-next: manual merge of the oprofile tree with the tip tree
+Message-ID: <20101012125126.GE12335@console-pimps.org>
+References: <20101012131828.5fedf1bf.sfr@canb.auug.org.au> <20101012060327.GA13409@console-pimps.org> <20101012232349.938f83c0.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101012232349.938f83c0.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When changing VTs non-atomically the kernel works in conjunction with
-the Xserver in user space and receives the LUT information from the
-Xserver via a system call.  When changing modes atomically for kdb,
-this information must be saved and restored without disturbing user
-space as if nothing ever happened.
+On Tue, Oct 12, 2010 at 11:23:49PM +1100, Stephen Rothwell wrote:
+> Hi Matt,
+> 
+> On Tue, 12 Oct 2010 07:03:27 +0100 Matt Fleming <matt@console-pimps.org> wrote:
+> >
+> > >  		return 0;
+> > >  
+> > >  	pevent = perf_event_create_kernel_counter(&counter_config[event].attr,
+> > > -						  cpu, -1,
+> > > +						  cpu, NULL1,
+> > >  						  op_overflow_handler);
+> > 
+> > Is that a typo? Shouldn't that be NULL, and not NULL1?
+> 
+> Yes, its a typo in my patch :-( .  I will fix it for tomorrow. Sorry about that.
 
-There is a short cut used by this patch where gamma_store is used as
-the save space.  If this turns out to be a problem in the future a
-pre-allocated chunk of memory will be required for each crtc to save
-and restore the LUT information.
-
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: David Airlie <airlied@linux.ie>
-CC: dri-devel@lists.freedesktop.org
----
- drivers/gpu/drm/drm_fb_helper.c |   32 +++++++++++++++++++++++++++++++-
- 1 files changed, 31 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index 625a2d5..bec6b8c 100644
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -242,6 +242,34 @@ static int drm_fb_helper_parse_command_line(struct drm_fb_helper *fb_helper)
- 	return 0;
- }
- 
-+static void drm_fb_helper_save_lut_atomic(struct drm_crtc *crtc, struct drm_fb_helper *helper)
-+{
-+	int size;
-+	uint16_t *r_base, *g_base, *b_base;
-+	int i;
-+
-+	size = crtc->gamma_size * (sizeof(uint16_t));
-+	r_base = crtc->gamma_store;
-+	g_base = r_base + size;
-+	b_base = g_base + size;
-+
-+	for (i = 0; i < size; i++)
-+		helper->funcs->gamma_get(crtc, &r_base[i], &g_base[i], &b_base[i], i);
-+}
-+
-+static void drm_fb_helper_restore_lut_atomic(struct drm_crtc *crtc)
-+{
-+	int size;
-+	uint16_t *r_base, *g_base, *b_base;
-+
-+	size = crtc->gamma_size * (sizeof(uint16_t));
-+	r_base = crtc->gamma_store;
-+	g_base = r_base + size;
-+	b_base = g_base + size;
-+
-+	crtc->funcs->gamma_set(crtc, r_base, g_base, b_base, 0, size);
-+}
-+
- int drm_fb_helper_debug_enter(struct fb_info *info)
- {
- 	struct drm_fb_helper *helper = info->par;
-@@ -260,12 +288,13 @@ int drm_fb_helper_debug_enter(struct fb_info *info)
- 				continue;
- 
- 			funcs =	mode_set->crtc->helper_private;
-+
-+			drm_fb_helper_save_lut_atomic(mode_set->crtc, helper);
- 			funcs->mode_set_base_atomic(mode_set->crtc,
- 						    mode_set->fb,
- 						    mode_set->x,
- 						    mode_set->y,
- 						    1);
--
- 		}
- 	}
- 
-@@ -309,6 +338,7 @@ int drm_fb_helper_debug_leave(struct fb_info *info)
- 			continue;
- 		}
- 
-+		drm_fb_helper_restore_lut_atomic(mode_set->crtc);
- 		funcs->mode_set_base_atomic(mode_set->crtc, fb, crtc->x,
- 					    crtc->y, 0);
- 	}
--- 
-1.6.3.3
-
+Not a problem! Thanks
