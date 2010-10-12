@@ -1,70 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758104Ab0JLTAc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 15:00:32 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:48748 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757474Ab0JLTAb convert rfc822-to-8bit (ORCPT
+	id S1758150Ab0JLTBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 15:01:33 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:56472 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758030Ab0JLTBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 15:00:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XH7WAL/VqsrKiSh++bgd6lG2dcbVWi49HfvTEz2KE7ei1Yjc6UfbSZEIeT6//JpjxA
-         EqkD7Gc8WPUERp5HrvIQ==
+	Tue, 12 Oct 2010 15:01:32 -0400
+Message-ID: <4CB4B06A.5090809@vlnb.net>
+Date: Tue, 12 Oct 2010 23:00:58 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <1286237003-12406-1-git-send-email-venki@google.com>
-References: <1286237003-12406-1-git-send-email-venki@google.com>
-Date: Tue, 12 Oct 2010 12:00:23 -0700
-Message-ID: <AANLkTikPXWBbLnfUkKFRpG3bGnUi9XCEiGs55hundLff@mail.gmail.com>
-Subject: Re: Proper kernel irq time accounting -v4
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Christoph Hellwig <hch@lst.de>
+CC: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Boaz Harrosh <bharrosh@panasas.com>
+Subject: Re: [PATCH 0/4] tcm: Unify virtual subsystem plugin emulation code
+References: <1286682498-4821-1-git-send-email-nab@linux-iscsi.org> <20101010073202.GA16772@lst.de>
+In-Reply-To: <20101010073202.GA16772@lst.de>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:Ch5oREMSMDL9qZRRi8JftB163FXrbR10Tx6kG5GsigW
+ KOORkXVIH//NrEQlDGGmyiYXgqTAhpRqngqrObEcRdsoxspS5g
+ xm98Hk1S69FBc7EZ72lHfUG5Yf2tz+k2f9oVd11BgBFu2GfXzj
+ lLu3rWYNE0VypwuPp0VtM+c3rJamD+OPPChJy3Waixko6jPY8D
+ nsg7f1dNX45rQCneBuUsg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 4, 2010 at 5:03 PM, Venkatesh Pallipadi <venki@google.com> wrote:
-> Previous versions:
-> -v0: http://lkml.indiana.edu/hypermail//linux/kernel/1005.3/00411.html
->     lkml subject - "Finer granularity and task/cgroup irq time accounting"
->
-> -v1: http://lkml.indiana.edu/hypermail//linux/kernel/1007.2/00987.html
->     lkml subject - "Finer granularity and task/cgroup irq time accounting"
->
-> -v2: http://lkml.indiana.edu/hypermail//linux/kernel/1009.2/00488.html
->     lkml subject - "Proper kernel irq time accounting"
->
-> -v3: http://lkml.indiana.edu/hypermail//linux/kernel/1009.3/02482.html
->     lkml subject - "Proper kernel irq time accounting -v3"
->
->
-> Change from -v3:
-> - Switch to using sched_clock_cpu instead of sched_clock in
->  account_system_vtime. This needed tick_check_idle to be called early in
->  irq_enter.
-> - Do not account softirq time in ksoftirqd context. We want ksoftirqd to
->  continue having sched exec_runtime.
-> - Add a boot option to disable tsc based irq accounting in x86.
-> - Remove the patch that exported irq times in /proc/interrupts and
->  /proc/softirqs. I am relooking at other options to export that and
->  will have a replacement patch soon.
->
->
+Christoph Hellwig, on 10/10/2010 11:32 AM wrote:
+> What you did in this patch is a good step toward getting rid of the
+> scsi logic in the backend, but it's quite enough yet.  For one thing
+> the backends really shouldn't know anything about scsi commands, so
+> the call to transport_emulate_control_cdb should happen before even
+> calling into the backend.  Second your ->emulate_foo callbacks still
+> are far too SCSI-specific, e.g. WRITE SAME witht unmap bit and UNMAP
+> emulation really should just go into a single ->discard callback
+> for the backend.  And instead of calling into the backend again for
+> readcap emulation just set block_size and size attributs on a per-
+> device object and let common code handle it.  Similarly for inquity
+> just set the device type and other variables and handle it in common
+> code.  That avoid the special se_subsystem_api_cdb vector and simplifies
+> the code a lot conceptually a lot. Together with calling
+> transport_emulate_control_cdb directly from core code before going
+> into ->do_task that does all the required work to make the backends
+> independent of the scsi protocol, so we could also use it e.g.
+> for ATA or virtio targets.
 
-Peter,
+I strongly disagree with this approach to allow non-SCSI transports to
+use facilities provided by a generic (SCSI) target subsystem. This
+approach is bad, because you enforce the SCSI target subsystem to
+implement in its interface "the least common denominator" of all
+services non-SCSI transports can requests, which leads to:
 
-If the patchset looks sane can you push this along to tip please.
+1. The SCSI target subsystem code overcomplication, so making it much
+harder to audit and more buggy.
 
-Thanks,
-Venki
+2. You creates hidden inter-transport dependencies inside of the target
+subsystem, so by fixing services for one transport you can break another.
+
+3. By introducing additional processing to hide SCSI internals you hurt
+performance, especially for the mainline SCSI case.
+
+Moreover, my experience tells me that fully hiding SCSI internals of the
+target subsystem is hardly feasible at all.
+
+There is another, much better approach to allow non-SCSI transports to
+use facilities provided by the SCSI target subsystem: leave the generic
+target subsystem fully SCSI-centric and create for each non-SCSI
+transport a helper library which would allow to translate its requests
+to the corresponding SCSI requests and SCSI sense to their error codes.
+
+All non-SCSI transports I know, including ATA, are, basically, subsets
+of SCSI facilities, so translation of their requests to the
+corresponding SCSI commands would be a straightforward task. For
+instance, discard would be translated to SCSI UNMAP.
+
+This approach would bring:
+
+1. Clear, easy auditable target subsystem's code.
+
+2. Clear separation of SCSI and non-SCSI processing among different SCSI
+and non-SCSI target drivers.
+
+3. The best performance in all cases.
+
+Vlad
+
+
+
