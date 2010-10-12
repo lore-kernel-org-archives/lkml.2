@@ -1,65 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab0JLNWy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:22:54 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33266 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932287Ab0JLNWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:22:53 -0400
-Date: Tue, 12 Oct 2010 06:22:08 -0700
-From: Greg KH <gregkh@suse.de>
-To: Daniel Suchy <danny@danysek.cz>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: Re: PATCH: ftdi_sio new VID/PIDs for various Papouch devices
-Message-ID: <20101012132208.GB10556@suse.de>
-References: <4CB45E2A.9020407@danysek.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB45E2A.9020407@danysek.cz>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S932504Ab0JLNXM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:23:12 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:44214 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932232Ab0JLNXK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:23:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=grCiQ8VP2Tlu0WfQ1KS3C39OCa3S7dS+1TFi+GU6W9W0GiGt/jMW2cu7COLShoCsSD
+         sbwQ7DS0Yh+w7EIINhTw8DB3EmwCkdUSI5lc5fmsNGJYarcCf6R8duLStUn2IsYbjAxx
+         JMPQNPa7c11ZmbR82Lfk8DF04pAMHceymC4u0=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: [PATCH 1/2] staging: rt2860: remove custom min() and max()
+Date: Tue, 12 Oct 2010 16:22:48 +0300
+Message-Id: <58ee6c5338ae1c6dc18633e48fad1b753c0f7ec7.1286889640.git.ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 03:10:02PM +0200, Daniel Suchy wrote:
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA1
-> 
-> Hello,
-> in attached file, there's patch for FTDI USB serial converter adding new
-> VID/PIDs used on various devices manufactured by Papouch
-> (http://www.papouch.com). These devices have their own VID/PID, although
-> they're using standard FTDI chip. In ftdi_sio.c, I also made small
-> cleanup to have declarations for all Papouch devices in single section.
-> 
-> My patch was tested against 2.6.35.x stable kernel releases at this time.
-> 
-> With regards,
-> Daniel Suchy
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.10 (GNU/Linux)
-> 
-> iEYEARECAAYFAky0XioACgkQ0m6yQqKjWoLPJACeMuWvkNTXWTOc4s8hW5Fy3U3k
-> 1+YAoNwbc3pYlSB734l3aSRO+Y+w12I5
-> =y+9A
-> -----END PGP SIGNATURE-----
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+---
+ drivers/staging/rt2860/common/ba_action.c |    1 +
+ drivers/staging/rt2860/common/mlme.c      |    1 +
+ drivers/staging/rt2860/rtmp.h             |    8 --------
+ drivers/staging/rt2860/sta/rtmp_data.c    |    1 +
+ 4 files changed, 3 insertions(+), 8 deletions(-)
 
-> --- drivers/usb/serial/ftdi_sio_ids.h.orig	2010-09-08 08:57:36.000000000 +0200
-> +++ drivers/usb/serial/ftdi_sio_ids.h	2010-10-12 14:32:34.208586002 +0200
-> @@ -1007,12 +1007,38 @@
->  /*
->   * Papouch products (http://www.papouch.com/)
->   * Submitted by Folkert van Heusden
-> + * extended by Daniel Suchy (12.10.2010)
+diff --git a/drivers/staging/rt2860/common/ba_action.c b/drivers/staging/rt2860/common/ba_action.c
+index 1befe99..8eef82d 100644
+--- a/drivers/staging/rt2860/common/ba_action.c
++++ b/drivers/staging/rt2860/common/ba_action.c
+@@ -26,6 +26,7 @@
+  */
+ 
+ #include "../rt_config.h"
++#include <linux/kernel.h>
+ 
+ #define BA_ORI_INIT_SEQ		(pEntry->TxSeq[TID])	/*1                        // inital sequence number of BA session */
+ 
+diff --git a/drivers/staging/rt2860/common/mlme.c b/drivers/staging/rt2860/common/mlme.c
+index 3558f65..7300c6e 100644
+--- a/drivers/staging/rt2860/common/mlme.c
++++ b/drivers/staging/rt2860/common/mlme.c
+@@ -38,6 +38,7 @@
+ 
+ #include "../rt_config.h"
+ #include <stdarg.h>
++#include <linux/kernel.h>
+ 
+ u8 CISCO_OUI[] = { 0x00, 0x40, 0x96 };
+ 
+diff --git a/drivers/staging/rt2860/rtmp.h b/drivers/staging/rt2860/rtmp.h
+index f133c8c..ca54e53 100644
+--- a/drivers/staging/rt2860/rtmp.h
++++ b/drivers/staging/rt2860/rtmp.h
+@@ -324,14 +324,6 @@ struct rt_rtmp_sg_list {
+ /* */
+ /*  Some utility macros */
+ /* */
+-#ifndef min
+-#define min(_a, _b)     (((_a) < (_b)) ? (_a) : (_b))
+-#endif
+-
+-#ifndef max
+-#define max(_a, _b)     (((_a) > (_b)) ? (_a) : (_b))
+-#endif
+-
+ #define GET_LNA_GAIN(_pAd)	((_pAd->LatchRfRegs.Channel <= 14) ? (_pAd->BLNAGain) : ((_pAd->LatchRfRegs.Channel <= 64) ? (_pAd->ALNAGain0) : ((_pAd->LatchRfRegs.Channel <= 128) ? (_pAd->ALNAGain1) : (_pAd->ALNAGain2))))
+ 
+ #define INC_COUNTER64(Val)          (Val.QuadPart++)
+diff --git a/drivers/staging/rt2860/sta/rtmp_data.c b/drivers/staging/rt2860/sta/rtmp_data.c
+index fbe903c..23879b7 100644
+--- a/drivers/staging/rt2860/sta/rtmp_data.c
++++ b/drivers/staging/rt2860/sta/rtmp_data.c
+@@ -35,6 +35,7 @@
+ 	--------	----------		----------------------------------------------
+ */
+ #include "../rt_config.h"
++#include <linux/kernel.h>
+ 
+ void STARxEAPOLFrameIndicate(struct rt_rtmp_adapter *pAd,
+ 			     struct rt_mac_table_entry *pEntry,
+-- 
+1.6.3.3
 
-This is not needed, you get this information from the changelog
-information.
-
-Care to take this line out, and add a "Signed-off-by:" line as per the
-Documentation/SubmittingPatches file?  That's required for me to be able
-to accept the patch.
-
-thanks,
-
-greg k-h
