@@ -1,113 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932887Ab0JLQnK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 12:43:10 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:49377 "EHLO
+	id S932839Ab0JLQnD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 12:43:03 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:32802 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932861Ab0JLQnH (ORCPT
+	with ESMTP id S932707Ab0JLQnA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 12:43:07 -0400
+	Tue, 12 Oct 2010 12:43:00 -0400
 X-IronPort-AV: E=Sophos;i="4.57,320,1283745600"; 
-   d="scan'208";a="117745999"
+   d="scan'208";a="117745975"
 From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy.Fitzhardinge@citrix.com,
-        konrad.wilk@oracle.com, Juan Quintela <quintela@redhat.com>,
+        konrad.wilk@oracle.com, Qing He <qing.he@intel.com>,
+        Yunhong Jiang <yunhong.jiang@intel.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v3 07/10] xen: add the direct mapping area for ISA bus access
-Date: Tue, 12 Oct 2010 17:42:47 +0100
-Message-Id: <1286901770-8612-7-git-send-email-Stefano.Stabellini@eu.citrix.com>
+Subject: [PATCH v3 03/10] xen: remap MSIs into pirqs when running as initial domain
+Date: Tue, 12 Oct 2010 17:42:43 +0100
+Message-Id: <1286901770-8612-3-git-send-email-Stefano.Stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1010121043030.2422@kaball-desktop>
 References: <alpine.DEB.2.00.1010121043030.2422@kaball-desktop>
-X-OriginalArrivalTime: 12 Oct 2010 16:43:06.0630 (UTC) FILETIME=[8BC5EA60:01CB6A2C]
+X-OriginalArrivalTime: 12 Oct 2010 16:43:00.0302 (UTC) FILETIME=[880056E0:01CB6A2C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Juan Quintela <quintela@redhat.com>
+From: Qing He <qing.he@intel.com>
 
-add the direct mapping area for ISA bus access when running as initial
-domain
+Implement xen_create_msi_irq to create an msi and remap it as pirq.
+Use xen_create_msi_irq to implement an initial domain specific version
+of setup_msi_irqs.
 
-Signed-off-by: Juan Quintela <quintela@redhat.com>
+Signed-off-by: Qing He <qing.he@intel.com>
+Signed-off-by: Yunhong Jiang <yunhong.jiang@intel.com>
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/xen/enlighten.c |    1 +
- arch/x86/xen/mmu.c       |   24 ++++++++++++++++++++++++
- arch/x86/xen/setup.c     |    3 +++
- 3 files changed, 28 insertions(+), 0 deletions(-)
+ arch/x86/pci/xen.c   |   55 ++++++++++++++++++++++++++++++---------------
+ drivers/xen/events.c |   60 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ include/xen/events.h |    4 +++
+ 3 files changed, 101 insertions(+), 18 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 1ccfa1b..9efb004 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -1186,6 +1186,7 @@ asmlinkage void __init xen_start_kernel(void)
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index 5d87774..6253668 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -135,14 +135,12 @@ static int xen_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
+ 	if (!v)
+ 		return -ENOMEM;
  
- 	xen_raw_console_write("mapping kernel into physical memory\n");
- 	pgd = xen_setup_kernel_pagetable(pgd, xen_start_info->nr_pages);
-+	xen_ident_map_ISA();
+-	if (!xen_initial_domain()) {
+-		if (type == PCI_CAP_ID_MSIX)
+-			ret = xen_pci_frontend_enable_msix(dev, &v, nvec);
+-		else
+-			ret = xen_pci_frontend_enable_msi(dev, &v);
+-		if (ret)
+-			goto error;
+-	}
++	if (type == PCI_CAP_ID_MSIX)
++		ret = xen_pci_frontend_enable_msix(dev, &v, nvec);
++	else
++		ret = xen_pci_frontend_enable_msi(dev, &v);
++	if (ret)
++		goto error;
+ 	i = 0;
+ 	list_for_each_entry(msidesc, &dev->msi_list, list) {
+ 		irq = xen_allocate_pirq(v[i], 0, /* not sharable */
+@@ -172,23 +170,40 @@ error:
  
- 	init_mm.pgd = pgd;
- 
-diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
-index ffc5e24..eed9c7c 100644
---- a/arch/x86/xen/mmu.c
-+++ b/arch/x86/xen/mmu.c
-@@ -1682,6 +1682,7 @@ static void *m2v(phys_addr_t maddr)
- 	return __ka(m2p(maddr));
- }
- 
-+/* Set the page permissions on an identity-mapped pages */
- static void set_page_prot(void *addr, pgprot_t prot)
+ static void xen_teardown_msi_irqs(struct pci_dev *dev)
  {
- 	unsigned long pfn = __pa(addr) >> PAGE_SHIFT;
-@@ -1929,6 +1930,29 @@ static void xen_set_fixmap(unsigned idx, phys_addr_t phys, pgprot_t prot)
- #endif
+-	/* Only do this when were are in non-privileged mode.*/
+-	if (!xen_initial_domain()) {
+-		struct msi_desc *msidesc;
+-
+-		msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
+-		if (msidesc->msi_attrib.is_msix)
+-			xen_pci_frontend_disable_msix(dev);
+-		else
+-			xen_pci_frontend_disable_msi(dev);
+-	}
++	struct msi_desc *msidesc;
+ 
++	msidesc = list_entry(dev->msi_list.next, struct msi_desc, list);
++	if (msidesc->msi_attrib.is_msix)
++		xen_pci_frontend_disable_msix(dev);
++	else
++		xen_pci_frontend_disable_msi(dev);
  }
  
-+__init void xen_ident_map_ISA(void)
+ static void xen_teardown_msi_irq(unsigned int irq)
+ {
+ 	xen_destroy_irq(irq);
+ }
++
++static int xen_initdom_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
 +{
-+	unsigned long pa;
++	int irq, ret;
++	struct msi_desc *msidesc;
 +
-+	/*
-+	 * If we're dom0, then linear map the ISA machine addresses into
-+	 * the kernel's address space.
-+	 */
-+	if (!xen_initial_domain())
-+		return;
++	list_for_each_entry(msidesc, &dev->msi_list, list) {
++		irq = xen_create_msi_irq(dev, msidesc, type);
++		if (irq < 0)
++			return -1;
 +
-+	xen_raw_printk("Xen: setup ISA identity maps\n");
++		ret = set_irq_msi(irq, msidesc);
++		if (ret)
++			goto error;
++	}
++	return 0;
 +
-+	for (pa = ISA_START_ADDRESS; pa < ISA_END_ADDRESS; pa += PAGE_SIZE) {
-+		pte_t pte = mfn_pte(PFN_DOWN(pa), PAGE_KERNEL_IO);
++error:
++	xen_destroy_irq(irq);
++	return ret;
++}
+ #endif
+ 
+ static int xen_pcifront_enable_irq(struct pci_dev *dev)
+@@ -364,6 +379,10 @@ static int acpi_register_gsi_xen(struct device *dev, u32 gsi,
+ 
+ static int __init pci_xen_initial_domain(void)
+ {
++#ifdef CONFIG_PCI_MSI
++	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
++	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
++#endif
+ 	xen_setup_acpi_sci();
+ 	__acpi_register_gsi = acpi_register_gsi_xen;
+ 
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 4138def..9cdc5df 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -29,6 +29,7 @@
+ #include <linux/bootmem.h>
+ #include <linux/slab.h>
+ #include <linux/irqnr.h>
++#include <linux/pci.h>
+ 
+ #include <asm/desc.h>
+ #include <asm/ptrace.h>
+@@ -658,6 +659,10 @@ out:
+ 	return irq;
+ }
+ 
++#ifdef CONFIG_PCI_MSI
++#include <linux/msi.h>
++#include "../pci/msi.h"
 +
-+		if (HYPERVISOR_update_va_mapping(PAGE_OFFSET + pa, pte, 0))
-+			BUG();
+ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
+ {
+ 	spin_lock(&irq_mapping_update_lock);
+@@ -680,6 +685,61 @@ out:
+ 	spin_unlock(&irq_mapping_update_lock);
+ }
+ 
++int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type)
++{
++	int irq = 0;
++	struct physdev_map_pirq map_irq;
++	int rc;
++	int pos;
++	u32 table_offset, bir;
++
++	memset(&map_irq, 0, sizeof(map_irq));
++	map_irq.domid = DOMID_SELF;
++	map_irq.type = MAP_PIRQ_TYPE_MSI;
++	map_irq.index = -1;
++	map_irq.pirq = -1;
++	map_irq.bus = dev->bus->number;
++	map_irq.devfn = dev->devfn;
++
++	if (type == PCI_CAP_ID_MSIX) {
++		pos = pci_find_capability(dev, PCI_CAP_ID_MSIX);
++
++		pci_read_config_dword(dev, msix_table_offset_reg(pos),
++					&table_offset);
++		bir = (u8)(table_offset & PCI_MSIX_FLAGS_BIRMASK);
++
++		map_irq.table_base = pci_resource_start(dev, bir);
++		map_irq.entry_nr = msidesc->msi_attrib.entry_nr;
 +	}
 +
-+	xen_flush_tlb();
-+}
++	spin_lock(&irq_mapping_update_lock);
 +
- static __init void xen_post_allocator_init(void)
++	irq = find_unbound_irq();
++
++	if (irq == -1)
++		goto out;
++
++	rc = HYPERVISOR_physdev_op(PHYSDEVOP_map_pirq, &map_irq);
++	if (rc) {
++		printk(KERN_WARNING "xen map irq failed %d\n", rc);
++
++		dynamic_irq_cleanup(irq);
++
++		irq = -1;
++		goto out;
++	}
++	irq_info[irq] = mk_pirq_info(0, map_irq.pirq, 0, map_irq.index);
++
++	set_irq_chip_and_handler_name(irq, &xen_pirq_chip,
++			handle_level_irq,
++			(type == PCI_CAP_ID_MSIX) ? "msi-x":"msi");
++
++out:
++	spin_unlock(&irq_mapping_update_lock);
++	return irq;
++}
++#endif
++
+ int xen_destroy_irq(int irq)
  {
- 	pv_mmu_ops.set_pte = xen_set_pte;
-diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
-index c413132..62ceb78 100644
---- a/arch/x86/xen/setup.c
-+++ b/arch/x86/xen/setup.c
-@@ -119,6 +119,9 @@ char * __init xen_memory_setup(void)
- 	 * Even though this is normal, usable memory under Xen, reserve
- 	 * ISA memory anyway because too many things think they can poke
- 	 * about in there.
-+	 *
-+	 * In a dom0 kernel, this region is identity mapped with the
-+	 * hardware ISA area, so it really is out of bounds.
- 	 */
- 	e820_add_region(ISA_START_ADDRESS, ISA_END_ADDRESS - ISA_START_ADDRESS,
- 			E820_RESERVED);
+ 	struct irq_desc *desc;
+diff --git a/include/xen/events.h b/include/xen/events.h
+index 0c58db6..8fa27dc 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -72,8 +72,12 @@ void xen_hvm_evtchn_do_upcall(void);
+  * usual. */
+ int xen_allocate_pirq(unsigned gsi, int shareable, char *name);
+ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name);
++
++#ifdef CONFIG_PCI_MSI
+ /* Allocate an irq and a pirq to be used with MSIs. */
+ void xen_allocate_pirq_msi(char *name, int *irq, int *pirq);
++int xen_create_msi_irq(struct pci_dev *dev, struct msi_desc *msidesc, int type);
++#endif
+ 
+ /* De-allocates the above mentioned physical interrupt. */
+ int xen_destroy_irq(int irq);
 -- 
 1.5.6.5
 
