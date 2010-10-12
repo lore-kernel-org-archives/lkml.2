@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756970Ab0JLJRy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 05:17:54 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:53047 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab0JLJRw (ORCPT
+	id S932073Ab0JLJUI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 05:20:08 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46631 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755155Ab0JLJUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 05:17:52 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6133"; a="57570888"
-Message-ID: <ebd4fd160630977be43d374147f5a7bf.squirrel@www.codeaurora.org>
-In-Reply-To: <1286766418.2008.230.camel@helium>
-References: <1286092937-29191-1-git-send-email-tlinder@codeaurora.org>
-    <20101004072602.GB2256@xanatos>
-    <0daac081a669f0cc8e024644f223c0c2.squirrel@www.codeaurora.org>
-    <20101005181126.GB7383@xanatos>
-    <207c0a821ef60e21a605f0b45c2d3777.squirrel@www.codeaurora.org>
-    <1286766418.2008.230.camel@helium>
-Date: Tue, 12 Oct 2010 02:17:44 -0700 (PDT)
-Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the  
-     Gadget Framework
-From: "Brokhman Tatyana" <tlinder@codeaurora.org>
-To: "David Brownell" <david-b@pacbell.net>
-Cc: tlinder@codeaurora.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
-        linux-usb@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-        "Michal Nazarewicz" <m.nazarewicz@samsung.com>,
-        "Randy Dunlap" <randy.dunlap@oracle.com>,
-        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
-        "Kyungmin Park" <kyungmin.park@samsung.com>,
-        "Robert Lukassen" <robert.lukassen@tomtom.com>,
-        "Matthew Wilcox" <willy@linux.intel.com>,
-        "Fabien Chouteau" <fabien.chouteau@barco.com>,
-        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
-Reply-To: tlinder@codeaurora.org
-User-Agent: SquirrelMail/1.4.17
+	Tue, 12 Oct 2010 05:20:07 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andi Kleen <andi@firstfloor.org>
+Subject: Re: RFC: Implement hwpoison on free for soft offlining
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com,
+        akpm@linux-foundation.org
+In-Reply-To: <87aamj3k6f.fsf@basil.nowhere.org>
+References: <1286402951-1881-1-git-send-email-andi@firstfloor.org> <87aamj3k6f.fsf@basil.nowhere.org>
+Message-Id: <20101012181439.ADA9.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 12 Oct 2010 18:20:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Andi Kleen <andi@firstfloor.org> writes:
+> 
+> > Here's a somewhat experimental patch to improve soft offlining
+> > in hwpoison, but allowing hwpoison on free for not directly
+> > freeable page types. It should work for nearly all
+> > left over page types that get eventually freed, so this makes
+> > soft offlining nearly universal. The only non handleable page
+> > types are now pages that never get freed.
+> >
+> > Drawback: It needs an additional page flag. Cannot set hwpoison
+> > directly because that would not be "soft" and cause errors.
+> 
+> Ping? Any comments on this patch?
+> 
+> Except for the page flag use I think it's nearly a no brainer. 
+> A lot of new soft hwpoison capability for very little additional code.
+> 
+> Has anyone a problem using up a 64bit page flag for that?
 
->
->> > Ok.  I suppose whatever gadget application is being used can reset
->> these
->> > values later?  So that if you had a gadget webcam, it could set the
->> > wMaxPacketSize to the frame size or whatever it needed?
->
-> Yes ... in fact, every altsetting or configuration may need to set up
-> each endpoint differently ... that's why ep_enable() passes full
-> endpoint configs (as descriptors), so they can more easily be changed.
->
-> If the notion is that there are values that may need to get passed from
-> silicon to driver, I'd like to see that done explicitly, with drivers
-> updating descriptors, instead of doing anything by back-door routes
-> that make UDC drivers making hidden updates.
->
-> - Dave
+To me, it's no problem if this keep 64bit only. IOW, I only dislike to
+add 32bit page flags.
 
-This implementation creates default SuperSpeed descriptors with default
-values. It is used to spare drivers that don't want to fully exploit
-SuperSpeed functionality from handling SupperSpeed descriptors and still
-be able to operate in a SupperSpeed mode.
-Please note that the gadget driver can still provide SuperSpeed
-descriptors with correct (and not default values) if it wishes to.
-I hope I understood your comment correctly. Please let me know if this is
-not the case.
-
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Yeah, memory corruption is very crap and i think your effort has a lot
+of worth :)
 
 
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+offtopic, I don't think CONFIG_MEMORY_FAILURE and CONFIG_HWPOISON_ON_FREE
+are symmetric nor easy understandable. can you please consider naming change?
+(example, CONFIG_HWPOISON/CONFIG_HWPOISON_ON_FREE, 
+CONFIG_MEMORY_FAILURE/CONFIG_MEMORY_FAILURE_SOFT_OFFLINE)
+
 
 
