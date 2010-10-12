@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab0JLSjm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 14:39:42 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:43375 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754403Ab0JLSjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 14:39:41 -0400
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Vasiliy Kulikov <segooon@gmail.com>, Tony Lindgren <tony@atomide.com>
-Cc: kernel-janitors@vger.kernel.org, "Govindraj.R" <govindraj.raja@ti.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
-        linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-Subject: Re: [PATCH] serial: omap-serial: fix signess error
-Organization: Deep Root Systems, LLC
-References: <1286731715-17908-1-git-send-email-segooon@gmail.com>
-Date: Tue, 12 Oct 2010 11:39:36 -0700
-In-Reply-To: <1286731715-17908-1-git-send-email-segooon@gmail.com> (Vasiliy
-	Kulikov's message of "Sun, 10 Oct 2010 21:28:35 +0400")
-Message-ID: <8739sb1cif.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	id S1758089Ab0JLSll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 14:41:41 -0400
+Received: from claw.goop.org ([74.207.240.146]:49855 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754403Ab0JLSlk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 14:41:40 -0400
+Message-ID: <4CB4ABE2.3010300@goop.org>
+Date: Tue, 12 Oct 2010 11:41:38 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org>
+In-Reply-To: <4CAA4DC1.6000104@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[adding linux-omap list]
-
-Vasiliy Kulikov <segooon@gmail.com> writes:
-
-> "ret" is unsigned, so check for (ret < 0) made no sense.
-> Made it signed.
+ On 10/04/2010 02:57 PM, Yinghai Lu wrote:
+> Please check memblock related patches
 >
-> Signed-off-by: Vasiliy Kulikov <segooon@gmail.com>
-> ---
->  I cannot compile this driver, so it is not tested.
-
-Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
-
-Since the original driver is being queued via the omap tree, we can
-queue this one as well.
-
-Tony, can you add this one to the 2.6.37 queue?
-
-Thanks,
-
-Kevin
-
->  drivers/serial/omap-serial.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> [PATCH 1/4] memblock: Fix big size with find_region()
+> [PATCH -v5 2/4] x86, memblock: Fix crashkernel allocation
+> [PATCH 3/4] x86, memblock: Remove __memblock_x86_find_in_range_size()
+> [PATCH 4/4] x86, mm, memblock, 32bit: Make add_highpages honor early reserved ranges
 >
-> diff --git a/drivers/serial/omap-serial.c b/drivers/serial/omap-serial.c
-> index 2ee1d32..14365f7 100644
-> --- a/drivers/serial/omap-serial.c
-> +++ b/drivers/serial/omap-serial.c
-> @@ -1055,7 +1055,7 @@ static void serial_omap_rx_timeout(unsigned long uart_no)
->  {
->  	struct uart_omap_port *up = ui[uart_no];
->  	unsigned int curr_dma_pos, curr_transmitted_size;
-> -	unsigned int ret = 0;
-> +	int ret = 0;
->  
->  	curr_dma_pos = omap_get_dma_dst_pos(up->uart_dma.rx_dma_channel);
->  	if ((curr_dma_pos == up->uart_dma.prev_rx_dma_pos) ||
+> first one should get into core/memblock branch, and others should be in x86/mm/memeblock branch
+
+
+BTW, the memblock changes prevent the kernel from booting under Xen; it
+crashes while setting up the linear maps.  I haven't worked out what's
+failing yet, aside from bisecting it down to one of a9ce6bc151000 or
+72d7c3b33c9808 (they don't compile in isolation so I had to skip them,
+but both are likely looking, but unfortunately large, complex and hard
+to further subdivide).
+
+I'll look further into this, but just a heads-up for the upcoming merge
+window.
+
+    J
