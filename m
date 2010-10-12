@@ -1,41 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757309Ab0JLNc7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:32:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58156 "EHLO mx1.redhat.com"
+	id S1757338Ab0JLNds (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:33:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48372 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757220Ab0JLNc6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:32:58 -0400
-Date: Tue, 12 Oct 2010 14:32:26 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Milan Broz <mbroz@redhat.com>
-Subject: Re: dm-crypt: plain64 IV support for -stable?
-Message-ID: <20101012133226.GB30719@agk-dp.fab.redhat.com>
-Mail-Followup-To: Alasdair G Kergon <agk@redhat.com>,
-	Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-	linux-kernel@vger.kernel.org, stable@kernel.org,
-	Milan Broz <mbroz@redhat.com>
-References: <20101012132511.GA24455@khazad-dum.debian.net>
+	id S1757220Ab0JLNdr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:33:47 -0400
+Message-ID: <4CB463A0.7050601@redhat.com>
+Date: Tue, 12 Oct 2010 15:33:20 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: dm-crypt: plain64 IV support for -stable?
+References: <20101012132511.GA24455@khazad-dum.debian.net>
 In-Reply-To: <20101012132511.GA24455@khazad-dum.debian.net>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 10:25:11AM -0300, Henrique de Moraes Holschuh wrote:
+On 10/12/2010 03:25 PM, Henrique de Moraes Holschuh wrote:
 > Would it be possible to add commit 61afef614b013ee1b767cdd10325acae1db1f4d2
 > "dm crypt: add plain64 iv" to -stable?
+> 
+> Without it, users of LTS kernels like 2.6.32 are missing important
+> functionality (as in: might not be able to mount some LUKS volumes
+> created on newer kernels).
  
-I've no objections - it's a simple and safe patch - but technically it's
-an enhancement: it's up to the stable maintainers to decide.
+Yes, that should not cause any problems, it should be plain cherry-pick...
 
-Alasdair
+(plain64 is just 64bit version of "plain" IV generator, so for <2TB devices are these equivalents)
 
+Milan
