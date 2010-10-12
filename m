@@ -1,74 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab0JLIEF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 04:04:05 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43463 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757080Ab0JLIEE (ORCPT
+	id S1757128Ab0JLIFT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 04:05:19 -0400
+Received: from dallas.jonmasters.org ([72.29.103.172]:47744 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757080Ab0JLIFQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 04:04:04 -0400
-Date: Tue, 12 Oct 2010 10:03:54 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
-        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
-Subject: Re: linux-next: manual merge of the arm tree with the arm-current
-	tree
-Message-ID: <20101012080354.GC29673@pengutronix.de>
-References: <20101012103314.41b00cbe.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101012103314.41b00cbe.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Tue, 12 Oct 2010 04:05:16 -0400
+Subject: Re: PROBLEM: brcm80211 hangs on 2.6.36-0.34.rc6.git3.fc15.x86_64
+From: Jon Masters <jonathan@jonmasters.org>
+To: linux-wireless@vger.kernel.org
+Cc: Brett Rudley <brudley@broadcom.com>, Henry Ptasinski <henryp@broadcom.com>,
+        Nohee Ko <noheek@broadcom.com>, Jon Masters <jcm@jonmasters.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1286869659.8574.10.camel@constitution.bos.jonmasters.org>
+References: <20101008065810.GA1680@constitution.bos.jonmasters.org>
+	 <1286538243.21485.298.camel@constitution.bos.jonmasters.org>
+	 <1286869659.8574.10.camel@constitution.bos.jonmasters.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Tue, 12 Oct 2010 04:03:43 -0400
+Message-ID: <1286870623.9228.2.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 10:33:14AM +1100, Stephen Rothwell wrote:
-> Hi Russell,
+On Tue, 2010-10-12 at 03:47 -0400, Jon Masters wrote:
+> On Fri, 2010-10-08 at 07:44 -0400, Jon Masters wrote:
+> > On Fri, 2010-10-08 at 02:58 -0400, Jon Masters wrote:
+> > 
+> > > I tried building the new brcm80211 driver from staging-next on Fedora rawhide
+> > > kernel 2.6.36-0.34.rc6.git3.fc15.x86_64. Now, of course, it's not the
+> > > staging-next kernel (I'll try that now this doesn't work) but perhaps this
+> > > report will still be of use to the Broadcom/other wireless folks.
+> > 
+> > I pulled the latest staging-next onto Linus' latest git tree and still
+> > experience problems with the driver. It seems that the first attempt to
+> > actually transmit results in the system locking hard. Once again, I am
+> > attaching the output from running a netconsole (due to the box I'm on,
+> > it's an attachment this time, sorry about that - don't trust evolution)
+> > where the trace is basically the same as the original trace I posted.
+> > 
+> > NOTE: in both cases, the driver is loaded with "msglevel=2
+> > phymsglevel=2" which (although not documented) suggests to enable
+> > tracing, and does certainly yield more debugging output.
 > 
-> Today's linux-next merge of the arm tree got a conflict in
-> arch/arm/mach-imx/mach-cpuimx27.c between commit
-> 4793ca4028e4dcdbf2740db50995c9378ded3cf8 ("cpuimx27: fix i2c bus
-> selection") from the arm-current tree and commit
-> 77a406da5a5b76445a816d5f043fc9aef4026ff1 ("ARM: imx: fix name of macros
-> to add imx-i2c devices") from the arm tree.
-> 
-> I fixed it up (see below) can can carry the fix for a while.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc arch/arm/mach-imx/mach-cpuimx27.c
-> index 6830afd,28f73a1..0000000
-> --- a/arch/arm/mach-imx/mach-cpuimx27.c
-> +++ b/arch/arm/mach-imx/mach-cpuimx27.c
-> @@@ -259,8 -258,9 +258,9 @@@ static void __init eukrea_cpuimx27_init
->   	i2c_register_board_info(0, eukrea_cpuimx27_i2c_devices,
->   				ARRAY_SIZE(eukrea_cpuimx27_i2c_devices));
->   
-> - 	imx27_add_i2c_imx0(&cpuimx27_i2c1_data);
->  -	imx27_add_imx_i2c(1, &cpuimx27_i2c1_data);
-> ++	imx27_add_imx_i2c(0, &cpuimx27_i2c1_data);
->   
-> + 	imx27_add_fec(NULL);
->   	platform_add_devices(platform_devices, ARRAY_SIZE(platform_devices));
->   
->   #if defined(CONFIG_MACH_EUKREA_CPUIMX27_USESDHC2)
-> 
-This is resolved correctly.
+> The problem may be that the driver doesn't correctly handle its logic in
+> wl_up in the case that the call to wlc_up doesn't result in the value of
+> wl->pub->up being TRUE. This can happen, for example if radio_disabled
+> is true, but I'm sure there are other problems, too. This result is not
+> properly checked in wl_up, so we can get a situation where we will later
+> try to call the ops->tx function with wl down. You also don't check
+> wl_up return codes in general, for example in wlc_radio_enable.
 
-Thanks
-Uwe
+You need to change the following lines in wlc_up:
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+        if (wlc->pub->radio_disabled) {
+                wlc_radio_monitor_start(wlc);
+                return 0;
+        }
+
+This should be returning BCME_RADIOOFF. That's a start. Now the driver
+doesn't explode and does what you intended with the background worker
+looking to see if the radio gets turned on. At least no hard hang.
+
+> This might all be related to the rfkill and other soft switch stuff I'm
+> not really super up to date on. This laptop doesn't have a hardware
+> switch that I'm aware of, but I assume the state is somehow recorded in
+> software (by the BIOS?) and perhaps this is how rfkill is supposed to
+> work (I'll go look this up). Anyway, if I can figure out how to get the
+> radio to work and hack up the driver to start with the device down,
+> perhaps it'll not try to transmit and not fall over :)
+
+Looks like you don't do rfkill. I'm not sure what I'm supposed to do to
+turn the radio on on the ASUS EeePC 1015PEM but I will poke at a few
+things. If you have advice, it would be welcome.
+
+Let me know if you need a patch for the above, and I'll send it along
+with anything else I think of - perhaps some more error handling :)
+
+Jon.
+
+
