@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab0JLCRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 22:17:10 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:58589 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756450Ab0JLCRJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 22:17:09 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-Subject: Re: [resend][PATCH] mm: increase RECLAIM_DISTANCE to 30
-Cc: kosaki.motohiro@jp.fujitsu.com, Christoph Lameter <cl@linux.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Mel Gorman <mel@csn.ul.ie>,
-        Rob Mueller <robm@fastmail.fm>, linux-kernel@vger.kernel.org,
-        Bron Gondwana <brong@fastmail.fm>, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <alpine.DEB.2.00.1010111907190.27825@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1010081255010.32749@router.home> <alpine.DEB.2.00.1010111907190.27825@chino.kir.corp.google.com>
-Message-Id: <20101012111451.AD2E.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S1756921Ab0JLCSb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 22:18:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49933 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756504Ab0JLCSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 22:18:30 -0400
+Date: Tue, 12 Oct 2010 13:18:28 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Robert Richter <robert.richter@amd.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Matt Helsley <matthltc@us.ibm.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Matt Fleming <matt@console-pimps.org>
+Subject: linux-next: manual merge of the oprofile tree with the tip tree
+Message-Id: <20101012131828.5fedf1bf.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 12 Oct 2010 11:17:04 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, 8 Oct 2010, Christoph Lameter wrote:
-> 
-> > It implies that zone reclaim is going to be automatically enabled if the
-> > maximum latency to the memory farthest away is 3 times or more that of a
-> > local memory access.
-> > 
-> 
-> It doesn't determine what the maximum latency to that memory is, it relies 
-> on whatever was defined in the SLIT; the only semantics of that distance 
-> comes from the ACPI spec that states those distances are relative to the 
-> local distance of 10.
+Hi Robert,
 
-Right. but do we need to consider fake SLIT case? I know actually such bogus
-slit are there. but I haven't seen such fake SLIT made serious trouble.
+Today's linux-next merge of the oprofile tree got a conflict in
+arch/arm/oprofile/common.c between commit
+38a81da2205f94e8a2a834b51a6b99c91fc7c2e8 ("perf events: Clean up pid
+passing") from the tip tree and commit
+3d90a00763b51e1db344a7430c966be723b67a29 ("oprofile: Abstract the
+perf-events backend") from the oprofile tree.
 
+The latter moved the code modified by the former, so I used the version
+of this file from the oprofile tree.  I also applied the effect of the
+tip tree patch to the new file drivers/oprofile/oprofile_perf.c:
 
+diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
+index b17235a..afbc43b 100644
+--- a/drivers/oprofile/oprofile_perf.c
++++ b/drivers/oprofile/oprofile_perf.c
+@@ -77,7 +77,7 @@ static int op_create_counter(int cpu, int event)
+ 		return 0;
+ 
+ 	pevent = perf_event_create_kernel_counter(&counter_config[event].attr,
+-						  cpu, -1,
++						  cpu, NULL1,
+ 						  op_overflow_handler);
+ 
+ 	if (IS_ERR(pevent))
+-- 
+1.7.1
 
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
