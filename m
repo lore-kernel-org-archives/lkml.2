@@ -1,44 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932238Ab0JLLbe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 07:31:34 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:36414 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932144Ab0JLLbd (ORCPT
+	id S932226Ab0JLLvu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 07:51:50 -0400
+Received: from esra.chem.sc.edu ([129.252.244.5]:47685 "EHLO esra.chem.sc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757212Ab0JLLvt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 07:31:33 -0400
-Date: Tue, 12 Oct 2010 07:31:30 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 19/18] fs: split __inode_add_to_list
-Message-ID: <20101012113130.GA24650@infradead.org>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <20101009080854.GA15943@infradead.org>
- <20101012104727.GC32255@dastard>
+	Tue, 12 Oct 2010 07:51:49 -0400
+X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 07:51:49 EDT
+From: "Darch, Maxwell" <Darch@mail.chem.sc.edu>
+To: "info@systemadmin.edu" <info@systemadmin.edu>
+Date: Tue, 12 Oct 2010 07:44:03 -0400
+Subject: Your mailbox has exceeded the storage limit 
+Thread-Topic: Your mailbox has exceeded the storage limit 
+Thread-Index: AQHLagLEExyV6lVOEUGuMtQfPuq5vw==
+Message-ID: <D7EFED7B22AEC944BD98C638FFB8A5336B60B7C196@mail07>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101012104727.GC32255@dastard>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Mlf-Version: 7.2.1.2841
+X-Mlf-UniqueId: o201010121144040108527
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 09:47:27PM +1100, Dave Chinner wrote:
-> The only reason XFS hashed the inodes was to avoid problems in the
-> generic code that checked for unhashed inodes during clear_inode(). The
-> evict() changeover moved that unhashed check into
-> generic_drop_inode(), which the filesystem can override. Hence if
-> you add a ->drop_inode() method for XFS that just checks the link
-> count, we can avoid ha??hing the inodes altogether for XFS.
-> 
-> I can add another patch on top of this one to do that if you want...
-
-It's unfortunately not that simple.  Take a look at the unhashed check
-in __mark_inode_dirty.  The drop_inode check could be avoided for
-quite a long time now.  What we could do however is the same hack as
-JFS does in diReadSpecial().
+Your mailbox has exceeded the storage limit set by your administrator,you may not be able to send or receive new mail until you re-validate your mailbox.To re-validate your mailbox please CLICK HERE:<http://w3t.org/sXF> System Administrator.
