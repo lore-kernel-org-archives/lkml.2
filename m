@@ -1,319 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab0JLVkU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:40:20 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55465
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751126Ab0JLVkS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:40:18 -0400
-Date: Tue, 12 Oct 2010 14:40:39 -0700 (PDT)
-Message-Id: <20101012.144039.245407019.davem@davemloft.net>
-To: mikpe@it.uu.se
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.36-rc regression] occasional complete system hangs on
- sparc64 SMP
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <19624.63312.156073.410319@pilspetsen.it.uu.se>
-References: <19611.34846.813757.309183@pilspetsen.it.uu.se>
-	<19624.63312.156073.410319@pilspetsen.it.uu.se>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1751490Ab0JLVmK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:42:10 -0400
+Received: from claw.goop.org ([74.207.240.146]:45088 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751013Ab0JLVmI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 17:42:08 -0400
+Message-ID: <4CB4D62C.5090705@goop.org>
+Date: Tue, 12 Oct 2010 14:42:04 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Yinghai Lu <yinghai@kernel.org>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org>
+In-Reply-To: <4CB4CF4D.5020706@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ On 10/12/2010 02:12 PM, Yinghai Lu wrote:
+> On 10/12/2010 11:41 AM, Jeremy Fitzhardinge wrote:
+>>  On 10/04/2010 02:57 PM, Yinghai Lu wrote:
+>>> Please check memblock related patches
+>>>
+>>> [PATCH 1/4] memblock: Fix big size with find_region()
+>>> [PATCH -v5 2/4] x86, memblock: Fix crashkernel allocation
+>>> [PATCH 3/4] x86, memblock: Remove __memblock_x86_find_in_range_size()
+>>> [PATCH 4/4] x86, mm, memblock, 32bit: Make add_highpages honor early reserved ranges
+>>>
+>>> first one should get into core/memblock branch, and others should be in x86/mm/memeblock branch
+>>
+>> BTW, the memblock changes prevent the kernel from booting under Xen; it
+>> crashes while setting up the linear maps.  I haven't worked out what's
+>> failing yet, aside from bisecting it down to one of a9ce6bc151000 or
+>> 72d7c3b33c9808 (they don't compile in isolation so I had to skip them,
+>> but both are likely looking, but unfortunately large, complex and hard
+>> to further subdivide).
+>>
+>> I'll look further into this, but just a heads-up for the upcoming merge
+>> window.
+>>
+> please use 
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git memblock
+>
+> to find which commit cause xen broken.
+>
+> two xen related patch are folded into first converting commit.
 
-BTW, and this is a long shot, but in another thread someone
-reported that the following patch causes sporadic problems
-for them.
+Thanks, will do.
 
-Can you try reverting it from the current tree and seeing if
-that makes the hangs go away?
+    J
 
-Thanks!
+> Thanks
+>
+>
+> 1e5f012: x86: Remove old bootmem code
+> f2c0394: x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
+> 291e26f: x86: Remove not used early_res code
+> 75cd1e9: x86, memblock: Replace e820_/_early string with memblock_
+> ce883cf: x86: Use memblock to replace early_res
+> c9d219e: x86, memblock: Add __get_free_all_memory_range()
+> b2d0276: x86, memblock: Use memblock_debug to control debug message print out
+> 945eabb: x86, memblock: Add memblock_x86_memory_in_range()
+> 9c6c086: x86, memblock: Add memblock_x86_free_memory_in_range()
+> 2310711: x86, memblock: Add memblock_x86_find_in_range_node()
+> 6b4ffee: memblock: Add find_memory_core_early()
+> 1d168bf: x86, memblock: Add memblock_x86_register_active_regions() and memblock_x86_hole_size()
+> 8d39571: x86, memblock: Add get_free_all_memory_range()
+> 46d5782: x86, memblock: Add memblock_x86_reserve_range/memblock_x86_free_range
+> c6ade77: x86, memblock: Add memblock_x86_to_bootmem()
+> 4a268b8: bootmem, x86: Add weak version of reserve_bootmem_generic
+> 36d3afc: x86, memblock: Remove __memblock_x86_find_in_range_size()
+> b352f42: x86, memblock: Add memblock_x86_find_in_range_size()
+> a4c00b4: memblock: Allow memblock_init to be called early
+> c795896: memblock: Fix wraparound in find_region()
+> 3ecfe12: memblock: Add memblock_free/reserve_reserved_regions()
+> 17462d5: memblock: Add memblock_find_in_range()
+> 1e833c5: memblock: Option for the architecture to put memblock into the .init section
+> f8266e2: memblock: Protect memblock.h with CONFIG_HAVE_MEMBLOCK
+> 5b31325: memblock: Make MEMBLOCK_ERROR be 0
+> df92f4d: memblock: Export MEMBLOCK_ERROR
+> ddf01ef: memblock: Improve debug output when resizing the reserve array
+> 3647f0b: memblock: Expose some memblock bits for use by x86
+> 0526300: memblock: Add debugfs files to dump the arrays content
+> 6fd15ab: memblock: Make memblock_alloc_try_nid() fallback to MEMBLOCK_ALLOC_ANYWHERE
+> ab3744c: memblock: Separate memblock_alloc_nid() and memblock_alloc_try_nid()
+> 79263d1: memblock: NUMA allocate can now use early_pfn_map
+> fa21133: memblock: Add "start" argument to memblock_find_base()
+> d1d5099: memblock: Add arch function to control coalescing of memblock memory regions
+> 2979e28: memblock: Add array resizing support
+> de17e60: memblock: Move functions around into a more sensible order
+> ac239c8: memblock: split memblock_find_base() out of __memblock_alloc_base()
+> 763d5f3: memblock: Move memblock_init() to the bottom of the file
+> 674f2ff: memblock: Define MEMBLOCK_ERROR internally instead of using ~(phys_addr_t)0
+> cf273c9: memblock: Make memblock_find_region() out of memblock_alloc_region()
+> 5c2eb99: memblock: Add debug markers at the end of the array
+> 68e694c: memblock: Move memblock arrays to static storage in memblock.c and make their size a variable
+> cbfff22: memblock: Remove memblock_type.size and add memblock.memory_size instead
+> 9ae0df1: memblock: Remove unused memblock.debug struct member
+> 564bb2b: memblock: Change u64 to phys_addr_t
+> e3c49f3: memblock: Remove rmo_size, burry it in arch/powerpc where it belongs
+> 5f8a4aa: memblock: Introduce default allocation limit and use it to replace explicit ones
+> 3608b50: memblock: Expose MEMBLOCK_ALLOC_ANYWHERE
+> 676caa9: memblock: Factor the lowest level alloc function
+> 19ad550: memblock: Remove nid_range argument, arch provides memblock_nid_range() instead
+> 3dd4d87: memblock: Remove memblock_find()
+> 01f4bff: memblock: Remove obsolete accessors
+> b01b184: memblock/arm: Use new accessors
+> 6283930: memblock/powerpc: Use new accessors
+> 51e6c6e: memblock/sparc: Use new accessors
+> 7c1720c: memblock/sh: Use new accessors
+> 4967561: memblock/microblaze: Use new accessors
+> cb3f592: memblock: Introduce for_each_memblock() and new accessors
+> 8ccbd40: memblock/arm: Use memblock_region_is_memory() for omap fb
+> 6617ae1: memblock/arm: pfn_valid uses memblock_is_memory()
+> b25a6d2: memblock: Implement memblock_is_memory and memblock_is_region_memory
+> 2b77abd: memblock: No reason to include asm/memblock.h late
+> 62c5c92: memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
+>
 
-commit 6dda9d55bf545013597724bf0cd79d01bd2bd944
-Author: Corrado Zoccolo <czoccolo@gmail.com>
-Date:   Mon May 24 14:31:54 2010 -0700
-
-    page allocator: reduce fragmentation in buddy allocator by adding buddies that are merging to the tail of the free lists
-    
-    In order to reduce fragmentation, this patch classifies freed pages in two
-    groups according to their probability of being part of a high order merge.
-     Pages belonging to a compound whose next-highest buddy is free are more
-    likely to be part of a high order merge in the near future, so they will
-    be added at the tail of the freelist.  The remaining pages are put at the
-    front of the freelist.
-    
-    In this way, the pages that are more likely to cause a big merge are kept
-    free longer.  Consequently there is a tendency to aggregate the
-    long-living allocations on a subset of the compounds, reducing the
-    fragmentation.
-    
-    This heuristic was tested on three machines, x86, x86-64 and ppc64 with
-    3GB of RAM in each machine.  The tests were kernbench, netperf, sysbench
-    and STREAM for performance and a high-order stress test for huge page
-    allocations.
-    
-    KernBench X86
-    Elapsed mean     374.77 ( 0.00%)   375.10 (-0.09%)
-    User    mean     649.53 ( 0.00%)   650.44 (-0.14%)
-    System  mean      54.75 ( 0.00%)    54.18 ( 1.05%)
-    CPU     mean     187.75 ( 0.00%)   187.25 ( 0.27%)
-    
-    KernBench X86-64
-    Elapsed mean      94.45 ( 0.00%)    94.01 ( 0.47%)
-    User    mean     323.27 ( 0.00%)   322.66 ( 0.19%)
-    System  mean      36.71 ( 0.00%)    36.50 ( 0.57%)
-    CPU     mean     380.75 ( 0.00%)   381.75 (-0.26%)
-    
-    KernBench PPC64
-    Elapsed mean     173.45 ( 0.00%)   173.74 (-0.17%)
-    User    mean     587.99 ( 0.00%)   587.95 ( 0.01%)
-    System  mean      60.60 ( 0.00%)    60.57 ( 0.05%)
-    CPU     mean     373.50 ( 0.00%)   372.75 ( 0.20%)
-    
-    Nothing notable for kernbench.
-    
-    NetPerf UDP X86
-          64    42.68 ( 0.00%)     42.77 ( 0.21%)
-         128    85.62 ( 0.00%)     85.32 (-0.35%)
-         256   170.01 ( 0.00%)    168.76 (-0.74%)
-        1024   655.68 ( 0.00%)    652.33 (-0.51%)
-        2048  1262.39 ( 0.00%)   1248.61 (-1.10%)
-        3312  1958.41 ( 0.00%)   1944.61 (-0.71%)
-        4096  2345.63 ( 0.00%)   2318.83 (-1.16%)
-        8192  4132.90 ( 0.00%)   4089.50 (-1.06%)
-       16384  6770.88 ( 0.00%)   6642.05 (-1.94%)*
-    
-    NetPerf UDP X86-64
-          64   148.82 ( 0.00%)    154.92 ( 3.94%)
-         128   298.96 ( 0.00%)    312.95 ( 4.47%)
-         256   583.67 ( 0.00%)    626.39 ( 6.82%)
-        1024  2293.18 ( 0.00%)   2371.10 ( 3.29%)
-        2048  4274.16 ( 0.00%)   4396.83 ( 2.79%)
-        3312  6356.94 ( 0.00%)   6571.35 ( 3.26%)
-        4096  7422.68 ( 0.00%)   7635.42 ( 2.79%)*
-        8192 12114.81 ( 0.00%)* 12346.88 ( 1.88%)
-       16384 17022.28 ( 0.00%)* 17033.19 ( 0.06%)*
-                 1.64%             2.73%
-    
-    NetPerf UDP PPC64
-          64    49.98 ( 0.00%)     50.25 ( 0.54%)
-         128    98.66 ( 0.00%)    100.95 ( 2.27%)
-         256   197.33 ( 0.00%)    191.03 (-3.30%)
-        1024   761.98 ( 0.00%)    785.07 ( 2.94%)
-        2048  1493.50 ( 0.00%)   1510.85 ( 1.15%)
-        3312  2303.95 ( 0.00%)   2271.72 (-1.42%)
-        4096  2774.56 ( 0.00%)   2773.06 (-0.05%)
-        8192  4918.31 ( 0.00%)   4793.59 (-2.60%)
-       16384  7497.98 ( 0.00%)   7749.52 ( 3.25%)
-    
-    The tests are run to have confidence limits within 1%.  Results marked
-    with a * were not confident although in this case, it's only outside by
-    small amounts.  Even with some results that were not confident, the
-    netperf UDP results were generally positive.
-    
-    NetPerf TCP X86
-          64   652.25 ( 0.00%)*   648.12 (-0.64%)*
-                23.80%            22.82%
-         128  1229.98 ( 0.00%)*  1220.56 (-0.77%)*
-                21.03%            18.90%
-         256  2105.88 ( 0.00%)   1872.03 (-12.49%)*
-                 1.00%            16.46%
-        1024  3476.46 ( 0.00%)*  3548.28 ( 2.02%)*
-                13.37%            11.39%
-        2048  4023.44 ( 0.00%)*  4231.45 ( 4.92%)*
-                 9.76%            12.48%
-        3312  4348.88 ( 0.00%)*  4396.96 ( 1.09%)*
-                 6.49%             8.75%
-        4096  4726.56 ( 0.00%)*  4877.71 ( 3.10%)*
-                 9.85%             8.50%
-        8192  4732.28 ( 0.00%)*  5777.77 (18.10%)*
-                 9.13%            13.04%
-       16384  5543.05 ( 0.00%)*  5906.24 ( 6.15%)*
-                 7.73%             8.68%
-    
-    NETPERF TCP X86-64
-                netperf-tcp-vanilla-netperf       netperf-tcp
-                       tcp-vanilla     pgalloc-delay
-          64  1895.87 ( 0.00%)*  1775.07 (-6.81%)*
-                 5.79%             4.78%
-         128  3571.03 ( 0.00%)*  3342.20 (-6.85%)*
-                 3.68%             6.06%
-         256  5097.21 ( 0.00%)*  4859.43 (-4.89%)*
-                 3.02%             2.10%
-        1024  8919.10 ( 0.00%)*  8892.49 (-0.30%)*
-                 5.89%             6.55%
-        2048 10255.46 ( 0.00%)* 10449.39 ( 1.86%)*
-                 7.08%             7.44%
-        3312 10839.90 ( 0.00%)* 10740.15 (-0.93%)*
-                 6.87%             7.33%
-        4096 10814.84 ( 0.00%)* 10766.97 (-0.44%)*
-                 6.86%             8.18%
-        8192 11606.89 ( 0.00%)* 11189.28 (-3.73%)*
-                 7.49%             5.55%
-       16384 12554.88 ( 0.00%)* 12361.22 (-1.57%)*
-                 7.36%             6.49%
-    
-    NETPERF TCP PPC64
-                netperf-tcp-vanilla-netperf       netperf-tcp
-                       tcp-vanilla     pgalloc-delay
-          64   594.17 ( 0.00%)    596.04 ( 0.31%)*
-                 1.00%             2.29%
-         128  1064.87 ( 0.00%)*  1074.77 ( 0.92%)*
-                 1.30%             1.40%
-         256  1852.46 ( 0.00%)*  1856.95 ( 0.24%)
-                 1.25%             1.00%
-        1024  3839.46 ( 0.00%)*  3813.05 (-0.69%)
-                 1.02%             1.00%
-        2048  4885.04 ( 0.00%)*  4881.97 (-0.06%)*
-                 1.15%             1.04%
-        3312  5506.90 ( 0.00%)   5459.72 (-0.86%)
-        4096  6449.19 ( 0.00%)   6345.46 (-1.63%)
-        8192  7501.17 ( 0.00%)   7508.79 ( 0.10%)
-       16384  9618.65 ( 0.00%)   9490.10 (-1.35%)
-    
-    There was a distinct lack of confidence in the X86* figures so I included
-    what the devation was where the results were not confident.  Many of the
-    results, whether gains or losses were within the standard deviation so no
-    solid conclusion can be reached on performance impact.  Looking at the
-    figures, only the X86-64 ones look suspicious with a few losses that were
-    outside the noise.  However, the results were so unstable that without
-    knowing why they vary so much, a solid conclusion cannot be reached.
-    
-    SYSBENCH X86
-                  sysbench-vanilla     pgalloc-delay
-               1  7722.85 ( 0.00%)  7756.79 ( 0.44%)
-               2 14901.11 ( 0.00%) 13683.44 (-8.90%)
-               3 15171.71 ( 0.00%) 14888.25 (-1.90%)
-               4 14966.98 ( 0.00%) 15029.67 ( 0.42%)
-               5 14370.47 ( 0.00%) 14865.00 ( 3.33%)
-               6 14870.33 ( 0.00%) 14845.57 (-0.17%)
-               7 14429.45 ( 0.00%) 14520.85 ( 0.63%)
-               8 14354.35 ( 0.00%) 14362.31 ( 0.06%)
-    
-    SYSBENCH X86-64
-               1 17448.70 ( 0.00%) 17484.41 ( 0.20%)
-               2 34276.39 ( 0.00%) 34251.00 (-0.07%)
-               3 50805.25 ( 0.00%) 50854.80 ( 0.10%)
-               4 66667.10 ( 0.00%) 66174.69 (-0.74%)
-               5 66003.91 ( 0.00%) 65685.25 (-0.49%)
-               6 64981.90 ( 0.00%) 65125.60 ( 0.22%)
-               7 64933.16 ( 0.00%) 64379.23 (-0.86%)
-               8 63353.30 ( 0.00%) 63281.22 (-0.11%)
-               9 63511.84 ( 0.00%) 63570.37 ( 0.09%)
-              10 62708.27 ( 0.00%) 63166.25 ( 0.73%)
-              11 62092.81 ( 0.00%) 61787.75 (-0.49%)
-              12 61330.11 ( 0.00%) 61036.34 (-0.48%)
-              13 61438.37 ( 0.00%) 61994.47 ( 0.90%)
-              14 62304.48 ( 0.00%) 62064.90 (-0.39%)
-              15 63296.48 ( 0.00%) 62875.16 (-0.67%)
-              16 63951.76 ( 0.00%) 63769.09 (-0.29%)
-    
-    SYSBENCH PPC64
-                                 -sysbench-pgalloc-delay-sysbench
-                  sysbench-vanilla     pgalloc-delay
-               1  7645.08 ( 0.00%)  7467.43 (-2.38%)
-               2 14856.67 ( 0.00%) 14558.73 (-2.05%)
-               3 21952.31 ( 0.00%) 21683.64 (-1.24%)
-               4 27946.09 ( 0.00%) 28623.29 ( 2.37%)
-               5 28045.11 ( 0.00%) 28143.69 ( 0.35%)
-               6 27477.10 ( 0.00%) 27337.45 (-0.51%)
-               7 26489.17 ( 0.00%) 26590.06 ( 0.38%)
-               8 26642.91 ( 0.00%) 25274.33 (-5.41%)
-               9 25137.27 ( 0.00%) 24810.06 (-1.32%)
-              10 24451.99 ( 0.00%) 24275.85 (-0.73%)
-              11 23262.20 ( 0.00%) 23674.88 ( 1.74%)
-              12 24234.81 ( 0.00%) 23640.89 (-2.51%)
-              13 24577.75 ( 0.00%) 24433.50 (-0.59%)
-              14 25640.19 ( 0.00%) 25116.52 (-2.08%)
-              15 26188.84 ( 0.00%) 26181.36 (-0.03%)
-              16 26782.37 ( 0.00%) 26255.99 (-2.00%)
-    
-    Again, there is little to conclude here.  While there are a few losses,
-    the results vary by +/- 8% in some cases.  They are the results of most
-    concern as there are some large losses but it's also within the variance
-    typically seen between kernel releases.
-    
-    The STREAM results varied so little and are so verbose that I didn't
-    include them here.
-    
-    The final test stressed how many huge pages can be allocated.  The
-    absolute number of huge pages allocated are the same with or without the
-    page.  However, the "unusability free space index" which is a measure of
-    external fragmentation was slightly lower (lower is better) throughout the
-    lifetime of the system.  I also measured the latency of how long it took
-    to successfully allocate a huge page.  The latency was slightly lower and
-    on X86 and PPC64, more huge pages were allocated almost immediately from
-    the free lists.  The improvement is slight but there.
-    
-    [mel@csn.ul.ie: Tested, reworked for less branches]
-    [czoccolo@gmail.com: fix oops by checking pfn_valid_within()]
-    Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-    Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-    Cc: Christoph Lameter <cl@linux-foundation.org>
-    Acked-by: Rik van Riel <riel@redhat.com>
-    Reviewed-by: Pekka Enberg <penberg@cs.helsinki.fi>
-    Cc: Corrado Zoccolo <czoccolo@gmail.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index a6326c7..596180f 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -475,6 +475,8 @@ static inline void __free_one_page(struct page *page,
- 		int migratetype)
- {
- 	unsigned long page_idx;
-+	unsigned long combined_idx;
-+	struct page *buddy;
- 
- 	if (unlikely(PageCompound(page)))
- 		if (unlikely(destroy_compound_page(page, order)))
-@@ -488,9 +490,6 @@ static inline void __free_one_page(struct page *page,
- 	VM_BUG_ON(bad_range(zone, page));
- 
- 	while (order < MAX_ORDER-1) {
--		unsigned long combined_idx;
--		struct page *buddy;
--
- 		buddy = __page_find_buddy(page, page_idx, order);
- 		if (!page_is_buddy(page, buddy, order))
- 			break;
-@@ -505,8 +504,29 @@ static inline void __free_one_page(struct page *page,
- 		order++;
- 	}
- 	set_page_order(page, order);
--	list_add(&page->lru,
--		&zone->free_area[order].free_list[migratetype]);
-+
-+	/*
-+	 * If this is not the largest possible page, check if the buddy
-+	 * of the next-highest order is free. If it is, it's possible
-+	 * that pages are being freed that will coalesce soon. In case,
-+	 * that is happening, add the free page to the tail of the list
-+	 * so it's less likely to be used soon and more likely to be merged
-+	 * as a higher order page
-+	 */
-+	if ((order < MAX_ORDER-1) && pfn_valid_within(page_to_pfn(buddy))) {
-+		struct page *higher_page, *higher_buddy;
-+		combined_idx = __find_combined_index(page_idx, order);
-+		higher_page = page + combined_idx - page_idx;
-+		higher_buddy = __page_find_buddy(higher_page, combined_idx, order + 1);
-+		if (page_is_buddy(higher_page, higher_buddy, order + 1)) {
-+			list_add_tail(&page->lru,
-+				&zone->free_area[order].free_list[migratetype]);
-+			goto out;
-+		}
-+	}
-+
-+	list_add(&page->lru, &zone->free_area[order].free_list[migratetype]);
-+out:
- 	zone->free_area[order].nr_free++;
- }
- 
