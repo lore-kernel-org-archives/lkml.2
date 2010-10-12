@@ -1,65 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932809Ab0JLPvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 11:51:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40309 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757305Ab0JLPvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 11:51:50 -0400
-Date: Tue, 12 Oct 2010 15:51:35 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        peterz@infradead.org, tglx@linutronix.de, davem@davemloft.net,
-        hch@infradead.org
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        peterz@infradead.org, tglx@linutronix.de, hch@infradead.org,
-        davem@davemloft.net
-In-Reply-To: <20100907125055.557578360@linutronix.de>
-References: <20100907125055.557578360@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:core/locking] net: Wan/cosa.c: Convert "mutex" to semaphore
-Message-ID: <tip-d1985508320ad40a68375bdbafa8a5d6c56d2114@git.kernel.org>
-Git-Commit-ID: d1985508320ad40a68375bdbafa8a5d6c56d2114
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 12 Oct 2010 15:51:36 +0000 (UTC)
+	id S932835Ab0JLPwD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 11:52:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31898 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932688Ab0JLPv7 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 12 Oct 2010 11:51:59 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 10/23] xen: Provide a variant of xen_poll_irq with timeout.
+Date: Tue, 12 Oct 2010 11:44:18 -0400
+Message-Id: <1286898271-32018-11-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
+References: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d1985508320ad40a68375bdbafa8a5d6c56d2114
-Gitweb:     http://git.kernel.org/tip/d1985508320ad40a68375bdbafa8a5d6c56d2114
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Tue, 7 Sep 2010 14:32:25 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Tue, 12 Oct 2010 17:36:09 +0200
+The 'xen_poll_irq_timeout' provides a method to pass in
+the poll timeout for IRQs if requested. We also export
+those two poll functions as Xen PCI fronted uses them.
 
-net: Wan/cosa.c: Convert "mutex" to semaphore
-
-Get rid of init_MUTEX[_LOCKED]() and use sema_init() instead.
-
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>
-Acked-by: "David S. Miller" <davem@davemloft.net>
-LKML-Reference: <20100907125055.557578360@linutronix.de>
-
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- drivers/net/wan/cosa.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/xen/events.c |   17 ++++++++++++-----
+ include/xen/events.h |    4 ++++
+ 2 files changed, 16 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/wan/cosa.c b/drivers/net/wan/cosa.c
-index 04c6cd4..10bafd5 100644
---- a/drivers/net/wan/cosa.c
-+++ b/drivers/net/wan/cosa.c
-@@ -575,7 +575,7 @@ static int cosa_probe(int base, int irq, int dma)
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 8ae696f..427f2d8 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -1140,7 +1140,7 @@ void xen_clear_irq_pending(int irq)
+ 	if (VALID_EVTCHN(evtchn))
+ 		clear_evtchn(evtchn);
+ }
+-
++EXPORT_SYMBOL(xen_clear_irq_pending);
+ void xen_set_irq_pending(int irq)
+ {
+ 	int evtchn = evtchn_from_irq(irq);
+@@ -1160,9 +1160,9 @@ bool xen_test_irq_pending(int irq)
+ 	return ret;
+ }
  
- 		/* Initialize the chardev data structures */
- 		mutex_init(&chan->rlock);
--		init_MUTEX(&chan->wsem);
-+		sema_init(&chan->wsem, 1);
+-/* Poll waiting for an irq to become pending.  In the usual case, the
+-   irq will be disabled so it won't deliver an interrupt. */
+-void xen_poll_irq(int irq)
++/* Poll waiting for an irq to become pending with timeout.  In the usual case,
++ * the irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq_timeout(int irq, u64 timeout)
+ {
+ 	evtchn_port_t evtchn = evtchn_from_irq(irq);
  
- 		/* Register the network interface */
- 		if (!(chan->netdev = alloc_hdlcdev(chan))) {
+@@ -1170,13 +1170,20 @@ void xen_poll_irq(int irq)
+ 		struct sched_poll poll;
+ 
+ 		poll.nr_ports = 1;
+-		poll.timeout = 0;
++		poll.timeout = timeout;
+ 		set_xen_guest_handle(poll.ports, &evtchn);
+ 
+ 		if (HYPERVISOR_sched_op(SCHEDOP_poll, &poll) != 0)
+ 			BUG();
+ 	}
+ }
++EXPORT_SYMBOL(xen_poll_irq_timeout);
++/* Poll waiting for an irq to become pending.  In the usual case, the
++ * irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq(int irq)
++{
++	xen_poll_irq_timeout(irq, 0 /* no timeout */);
++}
+ 
+ void xen_irq_resume(void)
+ {
+diff --git a/include/xen/events.h b/include/xen/events.h
+index 8227da8..2532f8b 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -53,6 +53,10 @@ bool xen_test_irq_pending(int irq);
+    irq will be disabled so it won't deliver an interrupt. */
+ void xen_poll_irq(int irq);
+ 
++/* Poll waiting for an irq to become pending with a timeout.  In the usual case,
++ * the irq will be disabled so it won't deliver an interrupt. */
++void xen_poll_irq_timeout(int irq, u64 timeout);
++
+ /* Determine the IRQ which is bound to an event channel */
+ unsigned irq_from_evtchn(unsigned int evtchn);
+ 
+-- 
+1.7.0.4
+
