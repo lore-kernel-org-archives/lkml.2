@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751768Ab0JLXJi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 19:09:38 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:46386 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab0JLXJh (ORCPT
+	id S1751896Ab0JLXOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 19:14:51 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:28411 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab0JLXOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 19:09:37 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4CB4EAA5.5010605@s5r6.in-berlin.de>
-Date: Wed, 13 Oct 2010 01:09:25 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: linux1394-devel@lists.sourceforge.net
-CC: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH unfinished update] firewire: sbp2: parallelize login/inquiry,
- reconnect, and shutdown
-References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de> <tkrat.1433473bc081daa9@s5r6.in-berlin.de> <tkrat.6dd361dadace9a41@s5r6.in-berlin.de> <tkrat.b190ad8b687a549a@s5r6.in-berlin.de>
-In-Reply-To: <tkrat.b190ad8b687a549a@s5r6.in-berlin.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Oct 2010 19:14:50 -0400
+Subject: Re: [PATCH 4/5] conntrack: export lsm context rather than internal
+ secid via netlink
+From: Paul Moore <paul.moore@hp.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, jmorris@namei.org, selinux@tycho.nsa.gov,
+        sds@tycho.nsa.gov, jengelh@medozas.de,
+        linux-security-module@vger.kernel.org, mr.dash.four@googlemail.com,
+        pablo@netfilter.org
+In-Reply-To: <20101012154028.26943.6918.stgit@paris.rdu.redhat.com>
+References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
+	 <20101012154028.26943.6918.stgit@paris.rdu.redhat.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: Hewlett Packard
+Date: Tue, 12 Oct 2010 19:14:44 -0400
+Message-ID: <1286925284.5133.98.camel@sifl>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Richter wrote:
->> Maybe I need ordered per-target workqueues.
-> 
-> No, I actually need per-node ordering.  This device, like my other one
-> and apparently most ones on the market actually keep their SCSI logical
-> units in separate FireWire units.  Currently firewire-sbp2 is not aware
-> that fw_unit instances reside on the same node.
-> 
-> This is going to be tougher than I hoped.  Maybe I need a driver-global
-> Inquiry mutex.  Or move the __scsi_add_device() out of sbp2_login() into
-> another work which is scheduled to a "single-threaded" workqueue.
+On Tue, 2010-10-12 at 11:40 -0400, Eric Paris wrote:
+> The conntrack code can export the internal secid to userspace.  These are
+> dynamic, can change on lsm changes, and have no meaning in userspace.  We
+> should instead be sending lsm contexts to userspace instead.  This patch sends
+> the secctx (rather than secid) to userspace over the netlink socket.  We use a
+> new field CTA_SECCTX and stop using the the old CTA_SECMARK field since it did
+> not send particularly useful information.
 
-More extensive change but probably with simpler end result:  Let sbp2_probe
-and sbp2_update perform login/scsi_add_device/reconnect directly.  sbp2_probe
-and sbp2_update are serialized per node, but (since 2.6.36 with cmwq)
-parallelized across nodes.
+Looks fine to me in principal, just a nit-picky comment below ...
+
+> -ctnetlink_dump_secmark(struct sk_buff *skb, const struct nf_conn *ct)
+> +ctnetlink_dump_secctx(struct sk_buff *skb, const struct nf_conn *ct)
+>  {
+> -	NLA_PUT_BE32(skb, CTA_SECMARK, htonl(ct->secmark));
+> -	return 0;
+> +	struct nlattr *nest_secctx;
+> +	int len, ret;
+> +	char *secctx;
+> +
+> +	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
+> +	if (ret)
+> +		return ret;
+> +
+> +	ret = -1;
+> +	nest_secctx = nla_nest_start(skb, CTA_SECCTX | NLA_F_NESTED);
+> +	if (!nest_secctx)
+> +		goto nla_put_failure;
+>  
+> +	NLA_PUT_STRING(skb, CTA_SECCTX_NAME, secctx);
+> +	nla_nest_end(skb, nest_secctx);
+> +
+> +	ret = 0;
+>  nla_put_failure:
+> -	return -1;
+> +	security_release_secctx(secctx, len);
+> +	return ret;
+>  }
+
+All the ret assignments bother me, I also don't think "nla_put_failure"
+is a good choice since we run this code both on success and failure -
+how about this:
+
+ctnetlink_dump_secctx(struct sk_buff *skb, const struct nf_conn *ct)
+{
+	struct nlattr *nest_secctx;
+	int len, ret;
+	char *secctx;
+
+	ret = security_secid_to_secctx(ct->secmark, &secctx, &len);
+	if (ret)
+		return ret;
+
+	nest_secctx = nla_nest_start(skb, CTA_SECCTX | NLA_F_NESTED);
+	if (!nest_secctx) {
+		ret = -1;
+		goto dump_secctx_out;
+	}
+
+	NLA_PUT_STRING(skb, CTA_SECCTX_NAME, secctx);
+	nla_nest_end(skb, nest_secctx);
+
+dump_secctx_out:
+	security_release_secctx(secctx, len);
+	return ret;
+}
+
 -- 
-Stefan Richter
--=====-==-=- =-=- -==-=
-http://arcgraph.de/sr/
+paul moore
+linux @ hp
+
+
