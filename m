@@ -1,32 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932226Ab0JLLvu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 07:51:50 -0400
-Received: from esra.chem.sc.edu ([129.252.244.5]:47685 "EHLO esra.chem.sc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757212Ab0JLLvt convert rfc822-to-8bit (ORCPT
+	id S932265Ab0JLL4s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 07:56:48 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:42180 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932068Ab0JLL4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 07:51:49 -0400
-X-Greylist: delayed 431 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 07:51:49 EDT
-From: "Darch, Maxwell" <Darch@mail.chem.sc.edu>
-To: "info@systemadmin.edu" <info@systemadmin.edu>
-Date: Tue, 12 Oct 2010 07:44:03 -0400
-Subject: Your mailbox has exceeded the storage limit 
-Thread-Topic: Your mailbox has exceeded the storage limit 
-Thread-Index: AQHLagLEExyV6lVOEUGuMtQfPuq5vw==
-Message-ID: <D7EFED7B22AEC944BD98C638FFB8A5336B60B7C196@mail07>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+	Tue, 12 Oct 2010 07:56:46 -0400
+Date: Tue, 12 Oct 2010 13:56:39 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        Linux Embedded <linux-embedded@vger.kernel.org>,
+        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
+        Tim Bird <tim.bird@am.sony.com>, linux-mm@kvack.org
+Subject: Re: [PATCH 14(16] pramfs: memory protection
+Message-ID: <20101012115639.GB20436@basil.fritz.box>
+References: <4CB1EBA2.8090409@gmail.com>
+ <87aamm3si1.fsf@basil.nowhere.org>
+ <4CB34A1A.3030003@gmail.com>
+ <20101012074522.GA20436@basil.fritz.box>
+ <AANLkTinpoL+AMU62PMvXs78Y6v0efDm3eq++NiVk8XUB@mail.gmail.com>
 MIME-Version: 1.0
-X-Mlf-Version: 7.2.1.2841
-X-Mlf-UniqueId: o201010121144040108527
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinpoL+AMU62PMvXs78Y6v0efDm3eq++NiVk8XUB@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your mailbox has exceeded the storage limit set by your administrator,you may not be able to send or receive new mail until you re-validate your mailbox.To re-validate your mailbox please CLICK HERE:<http://w3t.org/sXF> System Administrator.
+> per-arch?! Wow. Mmm...maybe I have to change something at fs level to
+> avoid that. An alternative could be to use the follow_pte solution but
+> avoid the protection via Kconfig if the fs is used on some archs (ia64
+> or MIPS), with large pages and so on. An help of the kernel community
+> to know all these particular cases is welcome.
+
+It depends if the protection is a fundamental part of your design
+(but if it is I would argue that's broken because it's really not very good
+protection): If it's just an optional nice to have you can stub
+it out on architectures that don't support it.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
