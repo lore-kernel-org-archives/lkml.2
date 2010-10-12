@@ -1,134 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932803Ab0JLQfR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 12:35:17 -0400
+	id S932776Ab0JLQfQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 12:35:16 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:30077 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932522Ab0JLQfM (ORCPT
+	with ESMTP id S932740Ab0JLQfO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 12:35:12 -0400
+	Tue, 12 Oct 2010 12:35:14 -0400
 X-IronPort-AV: E=Sophos;i="4.57,320,1283745600"; 
-   d="scan'208";a="117744612"
+   d="scan'208";a="117744617"
 From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, jeremy@goop.org, konrad.wilk@oracle.com,
         Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH v4 6/7] xen: support GSI -> pirq remapping in PV on HVM guests
-Date: Tue, 12 Oct 2010 17:34:48 +0100
-Message-Id: <1286901289-8156-6-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH v4 7/7] xen: map MSIs into pirqs
+Date: Tue, 12 Oct 2010 17:34:49 +0100
+Message-Id: <1286901289-8156-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <alpine.DEB.2.00.1010121121160.2423@kaball-desktop>
 References: <alpine.DEB.2.00.1010121121160.2423@kaball-desktop>
-X-OriginalArrivalTime: 12 Oct 2010 16:35:11.0998 (UTC) FILETIME=[70DED1E0:01CB6A2B]
+X-OriginalArrivalTime: 12 Oct 2010 16:35:13.0764 (UTC) FILETIME=[71EC4A40:01CB6A2B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Disable pcifront when running on HVM: it is meant to be used with pv
-guests that don't have PCI bus.
-
-Use acpi_register_gsi_xen_hvm to remap GSIs into pirqs.
+Map MSIs into pirqs, writing 0 in the MSI vector data field and the pirq
+number in the MSI destination id field.
 
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- arch/x86/include/asm/xen/pci.h   |    5 +++++
- arch/x86/pci/xen.c               |   16 ++++++++++++++++
- drivers/xen/events.c             |    6 +++++-
- include/xen/interface/features.h |    3 +++
- 4 files changed, 29 insertions(+), 1 deletions(-)
+ arch/x86/pci/xen.c   |   57 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ drivers/xen/events.c |   22 +++++++++++++++++++
+ include/xen/events.h |    2 +
+ 3 files changed, 81 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/pci.h b/arch/x86/include/asm/xen/pci.h
-index 449c82f..f89a42a 100644
---- a/arch/x86/include/asm/xen/pci.h
-+++ b/arch/x86/include/asm/xen/pci.h
-@@ -3,10 +3,15 @@
- 
- #if defined(CONFIG_PCI_XEN)
- extern int __init pci_xen_init(void);
-+extern int __init pci_xen_hvm_init(void);
- #define pci_xen 1
- #else
- #define pci_xen 0
- #define pci_xen_init (0)
-+static inline int pci_xen_hvm_init(void)
-+{
-+	return -1;
-+}
- #endif
- 
- #if defined(CONFIG_PCI_MSI)
 diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index ef9b8b2..90a8f83 100644
+index 90a8f83..fb20d05 100644
 --- a/arch/x86/pci/xen.c
 +++ b/arch/x86/pci/xen.c
-@@ -14,6 +14,7 @@
+@@ -64,10 +64,62 @@ static int acpi_register_gsi_xen_hvm(struct device *dev, u32 gsi,
  
- #include <asm/xen/hypervisor.h>
+ #if defined(CONFIG_PCI_MSI)
+ #include <linux/msi.h>
++#include <asm/msidef.h>
  
-+#include <xen/features.h>
- #include <xen/events.h>
- #include <asm/xen/pci.h>
+ struct xen_pci_frontend_ops *xen_pci_frontend;
+ EXPORT_SYMBOL_GPL(xen_pci_frontend);
  
-@@ -189,3 +190,18 @@ int __init pci_xen_init(void)
++static void xen_msi_compose_msg(struct pci_dev *pdev, unsigned int pirq,
++		struct msi_msg *msg)
++{
++	/* We set vector == 0 to tell the hypervisor we don't care about it,
++	 * but we want a pirq setup instead.
++	 * We use the dest_id field to pass the pirq that we want. */
++	msg->address_hi = MSI_ADDR_BASE_HI | MSI_ADDR_EXT_DEST_ID(pirq);
++	msg->address_lo =
++		MSI_ADDR_BASE_LO |
++		MSI_ADDR_DEST_MODE_PHYSICAL |
++		MSI_ADDR_REDIRECTION_CPU |
++		MSI_ADDR_DEST_ID(pirq);
++
++	msg->data =
++		MSI_DATA_TRIGGER_EDGE |
++		MSI_DATA_LEVEL_ASSERT |
++		/* delivery mode reserved */
++		(3 << 8) |
++		MSI_DATA_VECTOR(0);
++}
++
++static int xen_hvm_setup_msi_irqs(struct pci_dev *dev, int nvec, int type)
++{
++	int irq, pirq, ret = 0;
++	struct msi_desc *msidesc;
++	struct msi_msg msg;
++
++	list_for_each_entry(msidesc, &dev->msi_list, list) {
++		xen_allocate_pirq_msi((type == PCI_CAP_ID_MSIX) ?
++				"msi-x" : "msi", &irq, &pirq);
++		if (irq < 0 || pirq < 0)
++			goto error;
++		printk(KERN_DEBUG "xen: msi --> irq=%d, pirq=%d\n", irq, pirq);
++		xen_msi_compose_msg(dev, pirq, &msg);
++		ret = set_irq_msi(irq, msidesc);
++		if (ret < 0)
++			goto error_while;
++		write_msi_msg(irq, &msg);
++	}
++	return 0;
++
++error_while:
++	unbind_from_irqhandler(irq, NULL);
++error:
++	if (ret == -ENODEV)
++		dev_err(&dev->dev, "Xen PCI frontend has not registered" \
++				" MSI/MSI-X support!\n");
++
++	return ret;
++}
++
+ /*
+  * For MSI interrupts we have to use drivers/xen/event.s functions to
+  * allocate an irq_desc and setup the right */
+@@ -203,5 +255,10 @@ int __init pci_xen_hvm_init(void)
+ 	 */
+ 	__acpi_register_gsi = acpi_register_gsi_xen_hvm;
  #endif
++
++#ifdef CONFIG_PCI_MSI
++	x86_msi.setup_msi_irqs = xen_hvm_setup_msi_irqs;
++	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
++#endif
  	return 0;
  }
-+
-+int __init pci_xen_hvm_init(void)
-+{
-+	if (!xen_feature(XENFEAT_hvm_pirqs))
-+		return 0;
-+
-+#ifdef CONFIG_ACPI
-+	/*
-+	 * We don't want to change the actual ACPI delivery model,
-+	 * just how GSIs get registered.
-+	 */
-+	__acpi_register_gsi = acpi_register_gsi_xen_hvm;
-+#endif
-+	return 0;
-+}
 diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index 4fed942..5e4fe09 100644
+index 5e4fe09..2edbf7c 100644
 --- a/drivers/xen/events.c
 +++ b/drivers/xen/events.c
-@@ -624,7 +624,8 @@ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name)
+@@ -658,6 +658,28 @@ out:
+ 	return irq;
+ }
  
- 	/* If we are a PV guest, we don't have GSIs (no ACPI passed). Therefore
- 	 * we are using the !xen_initial_domain() to drop in the function.*/
--	if (identity_mapped_irq(gsi) || !xen_initial_domain()) {
-+	if (identity_mapped_irq(gsi) || (!xen_initial_domain() &&
-+				xen_pv_domain())) {
- 		irq = gsi;
- 		irq_to_desc_alloc_node(irq, 0);
- 		dynamic_irq_init(irq);
-@@ -1399,6 +1400,9 @@ void __init xen_init_IRQ(void)
- 	if (xen_hvm_domain()) {
- 		xen_callback_vector();
- 		native_init_IRQ();
-+		/* pci_xen_hvm_init must be called after native_init_IRQ so that
-+		 * __acpi_register_gsi can point at the right function */
-+		pci_xen_hvm_init();
- 	} else {
- 		irq_ctx_init(smp_processor_id());
- 	}
-diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-index 70d2563..b6ca39a 100644
---- a/include/xen/interface/features.h
-+++ b/include/xen/interface/features.h
-@@ -47,6 +47,9 @@
- /* x86: pvclock algorithm is safe to use on HVM */
- #define XENFEAT_hvm_safe_pvclock           9
- 
-+/* x86: pirq can be used by HVM guests */
-+#define XENFEAT_hvm_pirqs           10
++void xen_allocate_pirq_msi(char *name, int *irq, int *pirq)
++{
++	spin_lock(&irq_mapping_update_lock);
 +
- #define XENFEAT_NR_SUBMAPS 1
++	*irq = find_unbound_irq();
++	if (*irq == -1)
++		goto out;
++
++	*pirq = find_unbound_pirq();
++	if (*pirq == -1)
++		goto out;
++
++	set_irq_chip_and_handler_name(*irq, &xen_pirq_chip,
++				      handle_level_irq, name);
++
++	irq_info[*irq] = mk_pirq_info(0, *pirq, 0, 0);
++	pirq_to_irq[*pirq] = *irq;
++
++out:
++	spin_unlock(&irq_mapping_update_lock);
++}
++
+ int xen_destroy_irq(int irq)
+ {
+ 	struct irq_desc *desc;
+diff --git a/include/xen/events.h b/include/xen/events.h
+index deec8fa..0c58db6 100644
+--- a/include/xen/events.h
++++ b/include/xen/events.h
+@@ -72,6 +72,8 @@ void xen_hvm_evtchn_do_upcall(void);
+  * usual. */
+ int xen_allocate_pirq(unsigned gsi, int shareable, char *name);
+ int xen_map_pirq_gsi(unsigned pirq, unsigned gsi, int shareable, char *name);
++/* Allocate an irq and a pirq to be used with MSIs. */
++void xen_allocate_pirq_msi(char *name, int *irq, int *pirq);
  
- #endif /* __XEN_PUBLIC_FEATURES_H__ */
+ /* De-allocates the above mentioned physical interrupt. */
+ int xen_destroy_irq(int irq);
 -- 
 1.5.6.5
 
