@@ -1,51 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751204Ab0JLV0R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:26:17 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63677 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750806Ab0JLV0Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:26:16 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/ff0FgS+KPAJGinJGJ2K1Z
-Date: Tue, 12 Oct 2010 14:08:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-omap@vger.kernel.org
-Subject: [GIT PULL] one omap fix for 2.6.36
-Message-ID: <20101012210839.GB25462@atomide.com>
+	id S1751258Ab0JLV23 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:28:29 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:52226 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751070Ab0JLV22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 17:28:28 -0400
+Date: Tue, 12 Oct 2010 21:51:19 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Subject: [git pull] drm fixes
+Message-ID: <alpine.DEB.2.00.1010122147180.27797@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-Please pull a one-liner from:
+I was going to leave these for stable, but really they should go in now.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
+The unmappable VRAM fixes a problem on evergreen cards in 2.6.36, we end 
+up giving out memory past what the CPU can see and we get SIGBUS in 
+userspace, this is because we don't have support for GPU to move memory 
+around on evergreen until patches queued for 2.6.37. This patch just 
+limits the VRAM when we don't have any in-kernel gpu copy code.
 
-Regards,
+There are two other minor evergreen fixes, and two not so useful output 
+removed patches.
 
-Tony
+Dave.
 
 
-The following changes since commit cb655d0f3d57c23db51b981648e452988c0223f9:
+The following changes since commit 85a331881dd52a93e7d4c57bcaf5486cc8718465:
 
-  Linux 2.6.36-rc7 (2010-10-06 13:39:52 -0700)
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2010-10-09 12:06:26 -0700)
 
 are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-fixes-for-linus
 
-Hari Kanigeri (1):
-      omap: iommu-load cam register before flushing the entry
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
- arch/arm/plat-omap/iommu.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Alex Deucher (3):
+      drm/radeon/kms: leave certain CP int bits enabled
+      drm/radeon/kms: make TV/DFP table info less verbose
+      drm/radeon/kms: fix bad cast/shift in evergreen.c
+
+Jean Delvare (1):
+      drm/radeon/kms: Silent spurious error message
+
+Jerome Glisse (1):
+      drm/radeon/kms: avoid corner case issue with unmappable vram V2
+
+ drivers/gpu/drm/radeon/evergreen.c       |    5 +++--
+ drivers/gpu/drm/radeon/r100.c            |    3 +++
+ drivers/gpu/drm/radeon/r600.c            |    4 +++-
+ drivers/gpu/drm/radeon/r600_blit_kms.c   |    2 ++
+ drivers/gpu/drm/radeon/radeon.h          |    1 +
+ drivers/gpu/drm/radeon/radeon_atombios.c |   18 +++++++++---------
+ drivers/gpu/drm/radeon/radeon_combios.c  |   26 +++++++++++++-------------
+ drivers/gpu/drm/radeon/radeon_object.c   |    2 +-
+ drivers/gpu/drm/radeon/radeon_object.h   |    5 +----
+ drivers/gpu/drm/radeon/rs600.c           |    1 +
+ drivers/gpu/drm/radeon/rs690.c           |    1 +
+ drivers/gpu/drm/radeon/rv770.c           |    2 ++
+ 12 files changed, 40 insertions(+), 30 deletions(-)
