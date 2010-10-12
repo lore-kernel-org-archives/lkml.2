@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab0JLCSb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 22:18:31 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49933 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756504Ab0JLCSa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 22:18:30 -0400
-Date: Tue, 12 Oct 2010 13:18:28 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Robert Richter <robert.richter@amd.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Matt Helsley <matthltc@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Matt Fleming <matt@console-pimps.org>
-Subject: linux-next: manual merge of the oprofile tree with the tip tree
-Message-Id: <20101012131828.5fedf1bf.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1754384Ab0JLCXn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 22:23:43 -0400
+Received: from dallas.jonmasters.org ([72.29.103.172]:38926 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab0JLCXm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 22:23:42 -0400
+Subject: RE: PROBLEM: brcm80211 hangs on 2.6.36-0.34.rc6.git3.fc15.x86_64
+From: Jon Masters <jonathan@jonmasters.org>
+To: Brett Rudley <brudley@broadcom.com>
+Cc: "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        Henry Ptasinski <henryp@broadcom.com>, Nohee Ko <noheek@broadcom.com>,
+        Jon Masters <jcm@jonmasters.org>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <7A94256FD72B884D9E7C55586C3CBCEE1382807E23@SJEXCHCCR01.corp.ad.broadcom.com>
+References: <20101008065810.GA1680@constitution.bos.jonmasters.org>
+	 <1286538243.21485.298.camel@constitution.bos.jonmasters.org>
+	 <7A94256FD72B884D9E7C55586C3CBCEE1381EE4B69@SJEXCHCCR01.corp.ad.broadcom.com>
+	 <1286827927.24745.7.camel@constitution.bos.jonmasters.org>
+	 <7A94256FD72B884D9E7C55586C3CBCEE1382807E23@SJEXCHCCR01.corp.ad.broadcom.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Mon, 11 Oct 2010 22:22:10 -0400
+Message-ID: <1286850130.30797.2.camel@constitution.bos.jonmasters.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Robert,
+On Mon, 2010-10-11 at 14:01 -0700, Brett Rudley wrote:
 
-Today's linux-next merge of the oprofile tree got a conflict in
-arch/arm/oprofile/common.c between commit
-38a81da2205f94e8a2a834b51a6b99c91fc7c2e8 ("perf events: Clean up pid
-passing") from the tip tree and commit
-3d90a00763b51e1db344a7430c966be723b67a29 ("oprofile: Abstract the
-perf-events backend") from the oprofile tree.
+> > Yea. What about the high order bits in the phy msglevel, what are they
+> > intended to be doing? 
+> 
+> Nothing special, wl_msg_level is a standard bitmap, each bit enables printfs
+> for a particular feature. There is no special meaning attached to the
+> location an individual bit within the word.
 
-The latter moved the code modified by the former, so I used the version
-of this file from the oprofile tree.  I also applied the effect of the
-tip tree patch to the new file drivers/oprofile/oprofile_perf.c:
+Good to know, I had interpreted it as having a different meaning.
 
-diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
-index b17235a..afbc43b 100644
---- a/drivers/oprofile/oprofile_perf.c
-+++ b/drivers/oprofile/oprofile_perf.c
-@@ -77,7 +77,7 @@ static int op_create_counter(int cpu, int event)
- 		return 0;
- 
- 	pevent = perf_event_create_kernel_counter(&counter_config[event].attr,
--						  cpu, -1,
-+						  cpu, NULL1,
- 						  op_overflow_handler);
- 
- 	if (IS_ERR(pevent))
--- 
-1.7.1
+> Yeah, it would be less confusing if they were redefined to be more compact,
+> I'll fix that up.
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+No biggie. Thanks.
+
+Jon.
+
+
