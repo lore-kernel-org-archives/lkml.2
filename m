@@ -1,103 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab0JLSQT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 14:16:19 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59713 "EHLO
+	id S1758052Ab0JLSQU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 14:16:20 -0400
+Received: from mail.windriver.com ([147.11.1.11]:59717 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754095Ab0JLSQS (ORCPT
+	with ESMTP id S1757967Ab0JLSQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Oct 2010 14:16:18 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: airlied@linux.ie
 Cc: jbarnes@virtuousgeek.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH 4/5] kdb,kms: Save and restore the LUT on atomic KMS enter/exit
-Date: Tue, 12 Oct 2010 13:15:47 -0500
-Message-Id: <1286907348-25817-5-git-send-email-jason.wessel@windriver.com>
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 0/5] V3 - atomic kernel mode setting for radeon, nouveau, plus fixes
+Date: Tue, 12 Oct 2010 13:15:43 -0500
+Message-Id: <1286907348-25817-1-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-In-Reply-To: <1286907348-25817-1-git-send-email-jason.wessel@windriver.com>
-References: <1286907348-25817-1-git-send-email-jason.wessel@windriver.com>
-X-OriginalArrivalTime: 12 Oct 2010 18:16:12.0829 (UTC) FILETIME=[8D683CD0:01CB6A39]
+X-OriginalArrivalTime: 12 Oct 2010 18:16:08.0939 (UTC) FILETIME=[8B16ABB0:01CB6A39]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When changing VTs non-atomically the kernel works in conjunction with
-the Xserver in user space and receives the LUT information from the
-Xserver via a system call.  When changing modes atomically for kdb,
-this information must be saved and restored without disturbing user
-space as if nothing ever happened.
+What is new in patch set v3
 
-There is a short cut used by this patch where gamma_store is used as
-the save space.  If this turns out to be a problem in the future a
-pre-allocated chunk of memory will be required for each crtc to save
-and restore the LUT information.
+  * Patch 3 - Per comment from Jesse Barnes change enter arg for
+    mode_set_base_atomic() to be an enum
+  * Patch 4 - Fixed a defect in the LUT save/restore where it should
+    have used ctrc->gamma_size instead of the local size variable
+  * Patch 5 - Context changes from the prior versions
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: David Airlie <airlied@linux.ie>
-CC: dri-devel@lists.freedesktop.org
 ---
- drivers/gpu/drm/drm_fb_helper.c |   31 +++++++++++++++++++++++++++++++
- 1 files changed, 31 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
-index 74bac82..5c8fbfa 100644
---- a/drivers/gpu/drm/drm_fb_helper.c
-+++ b/drivers/gpu/drm/drm_fb_helper.c
-@@ -242,6 +242,34 @@ static int drm_fb_helper_parse_command_line(struct drm_fb_helper *fb_helper)
- 	return 0;
- }
- 
-+static void drm_fb_helper_save_lut_atomic(struct drm_crtc *crtc, struct drm_fb_helper *helper)
-+{
-+	int size;
-+	uint16_t *r_base, *g_base, *b_base;
-+	int i;
-+
-+	size = crtc->gamma_size * (sizeof(uint16_t));
-+	r_base = crtc->gamma_store;
-+	g_base = r_base + size;
-+	b_base = g_base + size;
-+
-+	for (i = 0; i < crtc->gamma_size; i++)
-+		helper->funcs->gamma_get(crtc, &r_base[i], &g_base[i], &b_base[i], i);
-+}
-+
-+static void drm_fb_helper_restore_lut_atomic(struct drm_crtc *crtc)
-+{
-+	int size;
-+	uint16_t *r_base, *g_base, *b_base;
-+
-+	size = crtc->gamma_size * (sizeof(uint16_t));
-+	r_base = crtc->gamma_store;
-+	g_base = r_base + size;
-+	b_base = g_base + size;
-+
-+	crtc->funcs->gamma_set(crtc, r_base, g_base, b_base, 0, size);
-+}
-+
- int drm_fb_helper_debug_enter(struct fb_info *info)
- {
- 	struct drm_fb_helper *helper = info->par;
-@@ -260,6 +288,8 @@ int drm_fb_helper_debug_enter(struct fb_info *info)
- 				continue;
- 
- 			funcs =	mode_set->crtc->helper_private;
-+
-+			drm_fb_helper_save_lut_atomic(mode_set->crtc, helper);
- 			funcs->mode_set_base_atomic(mode_set->crtc,
- 						    mode_set->fb,
- 						    mode_set->x,
-@@ -309,6 +339,7 @@ int drm_fb_helper_debug_leave(struct fb_info *info)
- 			continue;
- 		}
- 
-+		drm_fb_helper_restore_lut_atomic(mode_set->crtc);
- 		funcs->mode_set_base_atomic(mode_set->crtc, fb, crtc->x,
- 					    crtc->y, LEAVE_ATOMIC_MODE_SET);
- 	}
--- 
-1.6.3.3
+What is new in patch set v2
 
+  * patch 4 which was previously radeon specific was replaced with a
+    generic patch to save and restore the LUT data for all drivers
+  * minor white space cleanup vs checkpatch.pl in patches
+
+---
+
+The goal of this patch set is to add atomic kernel mode setting hooks
+for the radeon and nouveau cards for the purpose of using kdb (the
+kernel debug shell).
+
+David Airlie had asked for more research into the gamma data
+corruption after initially reviewing the patch that attempts to solve
+the visible palette corruption after an atomic mode set operation.
+The final conclusion was that other types of pallet corruption are
+possible with the gamma data when using atomic mode setting so the
+problem should be solved generically.
+
+The mode_set_base_atomic() now receives and additional parameter to
+note of the atomic mode set operation is an enter or exit such that a
+driver can appropriately enable or disable hardware that will not work
+in the polling context.
+
+These patches have now passed the kgdb/kdb regression tests and are
+deemed stable and ready for further integration and comment with the
+hope of integrating the patches upstream.
+
+Many thanks to Chris Ball for the contribution of the radeon and
+nouveau hooks, as well as the time he spent helping debug the initial
+LUT save and restore.
+
+Thanks,
+Jason.
+
+---
+The following changes since commit 29979aa8bd69becd94cbad59093807a417ce2a9e:
+  Linus Torvalds (1):
+        Merge branch 'rc-fixes' of git://git.kernel.org/.../mmarek/kbuild-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_dri
+
+Chris Ball (3):
+      drm/radeon/kms: Implement KDB debug hooks for radeon KMS.
+      drm/nouveau/kms: Implement KDB debug hooks for nouveau KMS.
+      drm/nouveau/kms: Avoid a hang entering KDB with VT accel on.
+
+Jason Wessel (2):
+      drm,kdb,kms: Add an enter argument to mode_set_base_atomic() API
+      kdb,kms: Save and restore the LUT on atomic KMS enter/exit
+
+ drivers/gpu/drm/drm_fb_helper.c             |   36 ++++++++-
+ drivers/gpu/drm/i915/intel_display.c        |    5 +-
+ drivers/gpu/drm/nouveau/nouveau_fbcon.c     |    6 ++
+ drivers/gpu/drm/nouveau/nv04_crtc.c         |   54 +++++++++++--
+ drivers/gpu/drm/nouveau/nv50_crtc.c         |   48 ++++++++---
+ drivers/gpu/drm/radeon/atombios_crtc.c      |  117 +++++++++++++++++++--------
+ drivers/gpu/drm/radeon/radeon_fb.c          |    2 +
+ drivers/gpu/drm/radeon/radeon_legacy_crtc.c |   44 ++++++++---
+ drivers/gpu/drm/radeon/radeon_mode.h        |   13 +++-
+ include/drm/drm_crtc_helper.h               |    8 ++-
+ 10 files changed, 260 insertions(+), 73 deletions(-)
