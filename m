@@ -1,176 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab0JLTDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 15:03:08 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:26405 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758055Ab0JLTDF (ORCPT
+	id S1758172Ab0JLTEn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 15:04:43 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:42667 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751979Ab0JLTEm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 15:03:05 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [RFC v2 PATCH 1/1] PCI: override BIOS/firmware resource allocation
-Date: Tue, 12 Oct 2010 13:01:54 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        clemens@ladisch.de, Yinghai Lu <yinghai@kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <20101006225834.GE2945@ram-laptop> <201010081416.57454.bjorn.helgaas@hp.com> <20101012070515.GA549@ram-laptop>
-In-Reply-To: <20101012070515.GA549@ram-laptop>
+	Tue, 12 Oct 2010 15:04:42 -0400
+X-Sasl-enc: d9Xz50lzVNdHqUPAEaf/8NXBAUVsiIWQhuCbVGi8CpRF 1286910281
+Date: Tue, 12 Oct 2010 16:04:38 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
+        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>
+Subject: Re: [stable] dm-crypt: plain64 IV support for -stable?
+Message-ID: <20101012190438.GB16717@khazad-dum.debian.net>
+References: <20101012132511.GA24455@khazad-dum.debian.net>
+ <20101012141143.GA12143@kroah.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010121301.54402.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101012141143.GA12143@kroah.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 12, 2010 01:05:15 am Ram Pai wrote:
-> On Fri, Oct 08, 2010 at 02:16:57PM -0600, Bjorn Helgaas wrote:
-> > On Friday, October 08, 2010 11:32:24 am Ram Pai wrote:
-> > > On Thu, Oct 07, 2010 at 03:41:04PM -0600, Bjorn Helgaas wrote:
-> > > > On Thursday, October 07, 2010 02:42:13 pm Ram Pai wrote:
-> > > > > On Wed, Oct 06, 2010 at 10:13:02PM -0600, Bjorn Helgaas wrote:
-> > > > > > On Wed, Oct 06, 2010 at 05:30:41PM -0700, Ram Pai wrote:
-> > > > > > > On Wed, Oct 06, 2010 at 05:39:53PM -0600, Bjorn Helgaas wrote:
-> > > > > > > > On Wed, Oct 06, 2010 at 03:58:34PM -0700, Ram Pai wrote:
-> > > > > > > > >         PCI: override BIOS/firmware memory resource allocation
-> > > > > > > > > 		through command line parameters
-> > > > > > > > > 
-> > > > > > > > > 	Platforms that are unaware of  SRIOV  BARs  fail to allocate MMIO
-> > > > > > > > > 	resources  to SRIOV PCIe  devices. Hence  on  such  platforms the
-> > > > > > > > > 	OS fails to  enable  SRIOV.
-> > > > > > > > > 	Some  platforms  where  BIOS/uEFI resource   allocations  conflict
-> > > > > > > > > 	the conflicting devices are disabled.
-> > > > > > > > > 
-> > > > > > > > > 	Ideally we  would  want  the  OS  to detect and fix automatically
-> > > > > > > > > 	such problems and conflicts.  However previous  attempts to do so
-> > > > > > > > > 	have led to regression on legacy platforms.
-> > > > > > > > 
-> > > > > > > > I'm sorry to be a nay-sayer, but I think we just haven't tried hard
-> > > > > > > > enough.  Our ACPI/PCI/e820 resource management is not well integrated,
-> > > > > > > > and I suspect if we straightened that out, we could avoid some of the
-> > > > > > > > regressions we saw with previous attempts.
-> > > > > > > 
-> > > > > > > Can you be more specific as to what can be done to fix it automatically?
-> > > > > > > 
-> > > > > > > Neither accepting this approach nor telling what needs to be straightened out
-> > > > > > > to automatically fix all the systems out there, is just a deadend.
-> > > > > > 
-> > > > > > Yeah, I guess that wasn't really fair, sorry.  And keep in mind that I'm
-> > > > > > not the PCI maintainer, so these are just my opinions, nothing like an
-> > > > > > official "nack."
-> > > > > > 
-> > > > > > I did look at this dmesg log from the thread you referenced:
-> > > > > >     http://marc.info/?l=linux-kernel&m=127178918128740&w=2
-> > > > > > but it looks to me like we just completely botched it.  I don't see an
-> > > > > > SRIOV device or anything else that didn't have resources, so as far as I
-> > > > > > can tell, we started with working resource assignments from the BIOS,
-> > > > > > threw them away, and started over from scratch.  We failed because we
-> > > > > > tried to assign I/O port space to bridges with nothing behind them, and
-> > > > > > there was nothing left by the time we got to the 0000:09:04.0 device
-> > > > > > that actually *did* need the space.
-> > > > > 
-> > > > > hmm.. is that possible? Yinghai's patch sized the resource requirement of each
-> > > > > of the bridges, before actually allocating them. Which means a bridge with
-> > > > > no device behind it would not get any i/o space.
-> > > > 
-> > > > Here's what I see in the dmesg log referenced above:
-> > > > 
-> > > >     ACPI: PCI Root Bridge [PCI0] (0000:00)
-> > > >     pci_root PNP0A08:00: host bridge window [io 0x0000-0x0cf7]
-> > > >     pci_root PNP0A08:00: host bridge window [io 0x0d00-0xffff]
-> > > >     pci 0000:00:1c.0: PCI bridge to [bus 04-09]
-> > > >     pci 0000:00:1c.0:   bridge window [io 0xd000-0xdfff]
-> > > >     pci 0000:04:00.0: PCI bridge to [bus 05-09]
-> > > >     pci 0000:04:00.0:   bridge window [io 0xd000-0xdfff]
-> > > >     pci 0000:05:01.0: PCI bridge to [bus 08-09]
-> > > >     pci 0000:05:01.0:   bridge window [io 0xd000-0xdfff]
-> > > >     pci 0000:08:00.0: PCI bridge to [bus 09-09]
-> > > >     pci 0000:08:00.0:   bridge window [io 0xd000-0xdfff]
-> > > >     pci 0000:09:04.0: found [13f6:8788] class 000401 header type 00
-> > > >     pci 0000:09:04.0: reg 10: [io  0xd800-0xd8ff]
-> > > >     pci 0000:05:02.0: PCI bridge to [bus 07-07]
-> > > >     pci 0000:05:02.0:   bridge window [io 0xf000-0x0000] (disabled)
-> > > >     pci 0000:05:03.0: PCI bridge to [bus 06-06]
-> > > >     pci 0000:05:03.0:   bridge window [io 0xf000-0x0000] (disabled)
-> > > >     
-> > > > The above is the state as we got it from BIOS.  Despite all the bridges,
-> > > > 09:04.0 is the only device below the 00:1c.0 bridge, and it requires only
-> > > > 0x100 I/O ports.
-> > > > 
-> > > > There are no devices on buses 06 (below 05:03.0) or 07 (below 05:02.0).
-> > > > 
-> > > > I didn't look at Yinghai's patch to figure out *why*, but it sure looks like
-> > > > we released the 09:04.0 space, then tried to assign 0x2000 ports to 05:01.0 
-> > > > (which needs 0x100 and had 0x1000 originally), 0x1000 to 05:02.0 (which needs
-> > > > none), and 0x1000 to 05:03.0 (which also needs none):
-> > > > 
-> > > >     PCI: No. 3 try to assign unassigned res
-> > > >     release child resource [io  0xd800-0xd8ff]
-> > > >     pci 0000:08:00.0: resource 7 [io 0xd000-0xdfff] released
-> > > >     pci 0000:04:00.0: BAR 7: can't assign io (size 0x4000)
-> > > >     pci 0000:05:01.0: BAR 7: can't assign io (size 0x2000)
-> > > >     pci 0000:05:02.0: BAR 7: can't assign io (size 0x1000)
-> > > >     pci 0000:05:03.0: BAR 7: can't assign io (size 0x1000)
-> > > >     pci 0000:08:00.0: BAR 7: can't assign io (size 0x1000)
-> > > 
-> > > Actually the message preceeding to them  are even more surprising:
-> > > 
-> > > Apr 20 20:31:42 [kernel] pci 0000:04:00.0: BAR 8: can't assign mem (size
-> > > 0xc00000)
-> > > Apr 20 20:31:42 [kernel] pci 0000:05:01.0: BAR 8: can't assign mem (size
-> > > 0x200000)
-> > > Apr 20 20:31:42 [kernel] pci 0000:05:01.0: BAR 9: can't assign mem pref
-> > > (size 0x200000)
-> > > Apr 20 20:31:42 [kernel] pci 0000:05:02.0: BAR 8: can't assign mem (size
-> > > 0x400000)
-> > > Apr 20 20:31:42 [kernel] pci 0000:05:03.0: BAR 7: can't assign io (size
-> > > 0x1000)
-> > > 
-> > > Do these bridges have IOV BARs and those BARs are demanding i/o resources?
-> > > Something is really funny with this machine. Or I am reading this wrong?
-> > 
-> > I don't see anything strange about the machine, but I don't understand
-> > what Yinghai's patch was doing.  The lspci output is here:
-> >     http://marc.info/?l=linux-pci&m=127184080929189&w=2
-> > 
-> > I don't see any SRIOV devices, and this kernel wasn't built with IOV
-> > support anyway.  The messages above are attempts to assign resources
-> > for bridge windows.
-> > 
-> > But the only real device in the whole hierarchy behind 00:1c.0
-> > is 09:04.0, which doesn't require memory space, so I have no idea
-> > why we're trying to open memory windows.
+On Tue, 12 Oct 2010, Greg KH wrote:
+> Which -stable tree?  .27, .32, .35, or any/all of them?  Please be more
+> specific when asking for this in the future.
+
+Just 2.6.32.  It is already in 2.6.35, and 2.6.27 is too old for it to
+matter.
+
+> > Without it, users of LTS kernels like 2.6.32 are missing important
+> > functionality (as in: might not be able to mount some LUKS volumes
+> > created on newer kernels).
 > 
-> I dont understand the code much. But there is some alignment 
-> constraints on the memory and io space dictated by the PCI code in 
-> pbus_size_io() and pbus_size_mem(), a constraint that ends up 
-> associating a minimum of 4096 bytes io window and 
-> nearly about 2MB mem window to a bridge irrespective of the 
-> requirements of the devices behind the bridge. That sounds like a
-> bug to me. But I don't know if those are valid constraints either.
-> Any idea?
+> Also note that this patch really looks like a "new feature", not a
+> bugfix or anything that matches up with what
+> Documentation/stable_kernel_rules.txt defines.  So I don't think that it
+> really is something to add to a stable kernel.
 
-I think memory windows comes in 1MB chunks and I/O in 4096 port chunks.
-There are some bridges that support smaller I/O windows (search for
-"en1k" in drivers/pci/quirks.c), but it looks like we don't take that
-into account when allocating space.
+Using "plain" for IVs on block devices with more than 2^32 blocks will cause
+the same IV to be used twice due to roll-over.  This is not a good thing,
+although it might be not bad enough to matter much (or it could be a
+terrible problem.  Someone who groks crypto for real would have to answer
+that).
 
-And of course, there's no requirement to enable the window at all if
-we don't have any downstream devices.
+One cannot fix "plain", or data after the roll-over point becomes unreadable
+on any already-existing devices.  Thus, a new IV was added with the fix,
+"plain64".
 
-> > This is what I meant about "we haven't tried hard enough yet."  I'd
-> > rather spend time fixing the problems like this, than just putting the
-> > buggy code in and adding a kernel parameter to enable it.  That
-> > guarantees that we'll never get enough testing to really shake it
-> > out.
-> 
-> Ok. I am no fan of kernel parameters either. However I am afraid 
-> we will attract furious looks as and when someone regresses. 
+Distros will probably need to backport this, as userspace and docs are
+already starting to tell users to use aes-xts-plain64 and not aes-xts-plain.
+They will use them in their portable HDs, and then will not be able to read
+them back in various stable distros.   Might as well do it upstream where it
+will benefit everybody...
 
-Yep, I'm used to that :-)
-
-Bjorn
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
