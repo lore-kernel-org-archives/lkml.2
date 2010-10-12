@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757701Ab0JLQOq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 12:14:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58553 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab0JLQOp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 12:14:45 -0400
-Message-ID: <4CB4893A.6020203@redhat.com>
-Date: Tue, 12 Oct 2010 18:13:46 +0200
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1757750Ab0JLQQR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 12:16:17 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:44340 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757662Ab0JLQQQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 12:16:16 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4CB489B7.2080808@s5r6.in-berlin.de>
+Date: Tue, 12 Oct 2010 18:15:51 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: [GIT PULL] KVM fixes for 2.3.36-rc7
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Tejun Heo <tj@kernel.org>
+CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: sbp2: parallelize login/inquiry, reconnect,
+ and shutdown
+References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de> <tkrat.1433473bc081daa9@s5r6.in-berlin.de> <4CB3148C.5040902@kernel.org> <tkrat.1386de42b88d7218@s5r6.in-berlin.de> <tkrat.dd9197843f6a0a54@s5r6.in-berlin.de> <4CB468C1.8000004@kernel.org>
+In-Reply-To: <4CB468C1.8000004@kernel.org>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Linus, please pull a critical fix (in two commits) for the tsc on AMD 
-hosts, from
+Tejun Hejo wrote:
+> It doesn't have to be swap.  Having a rw filesystem mounted is enough
+> to be in the memory reclaim path.
 
-   git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.36
+Oh, alright.
 
-Thanks.  Changelog/diffstat:
+...
+> Yes, it would definitely be better to put them in a workqueue with
+> WQ_RESCUER (or the new WQ_MEM_RECLAIM).
 
-Zachary Amsden (2):
-       KVM: x86: Fix SVM VMCB reset
-       KVM: x86: Move TSC reset out of vmcb_init
-
-  arch/x86/kvm/svm.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
-
+A pro pos WQ_MEM_RECLAIM, is wq.git#for-next stable history which I can pull
+into a topic branch at linux1394-2.6.git?  (Or I wait with this stuff until
+after .37-rc1.)
 -- 
-error compiling committee.c: too many arguments to function
-
+Stefan Richter
+-=====-==-=- =-=- -==--
+http://arcgraph.de/sr/
