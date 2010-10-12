@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab0JLOLM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 10:11:12 -0400
-Received: from kroah.org ([198.145.64.141]:54120 "EHLO coco.kroah.org"
+	id S932594Ab0JLOP2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 10:15:28 -0400
+Received: from verein.lst.de ([213.95.11.210]:48499 "EHLO verein.lst.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932579Ab0JLOLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 10:11:11 -0400
-Date: Tue, 12 Oct 2010 07:11:43 -0700
-From: Greg KH <greg@kroah.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>
-Subject: Re: [stable] dm-crypt: plain64 IV support for -stable?
-Message-ID: <20101012141143.GA12143@kroah.com>
-References: <20101012132511.GA24455@khazad-dum.debian.net>
-MIME-Version: 1.0
+	id S932516Ab0JLOP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 10:15:26 -0400
+Date: Tue, 12 Oct 2010 16:14:55 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: "Darrick J. Wong" <djwong@us.ibm.com>
+Cc: Ric Wheeler <rwheeler@redhat.com>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, "Ted Ts'o" <tytso@mit.edu>,
+        Mingming Cao <cmm@us.ibm.com>, linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
+        Tejun Heo <tj@kernel.org>, hch@lst.de, Josef Bacik <josef@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>
+Subject: Re: Performance testing of various barrier reduction patches [was: Re: [RFC v4] ext4: Coordinate fsync requests]
+Message-ID: <20101012141455.GA27572@lst.de>
+References: <4D5AEB7F-32E2-481A-A6C8-7E7E0BD3CE98@dilger.ca> <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com> <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca> <20100927230111.GV25555@tux1.beaverton.ibm.com> <20101008212606.GE25624@tux1.beaverton.ibm.com> <4CAF937C.4020500@redhat.com> <20101011202020.GF25624@tux1.beaverton.ibm.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101012132511.GA24455@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101011202020.GF25624@tux1.beaverton.ibm.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 10:25:11AM -0300, Henrique de Moraes Holschuh wrote:
-> Would it be possible to add commit 61afef614b013ee1b767cdd10325acae1db1f4d2
-> "dm crypt: add plain64 iv" to -stable?
+I still think adding code to every filesystem to optimize for a rather
+stupid use case is not a good idea.  I dropped out a bit from the
+thread in the middle, but what was the real use case for lots of
+concurrent fsyncs on the same inode again?
 
-Which -stable tree?  .27, .32, .35, or any/all of them?  Please be more
-specific when asking for this in the future.
+And what is the amount of performance you need?  If we go back to the
+direct submission of REQ_FLUSH request from the earlier flush+fua
+setups that were faster or high end storage, would that be enough for
+you?
 
-> Without it, users of LTS kernels like 2.6.32 are missing important
-> functionality (as in: might not be able to mount some LUKS volumes
-> created on newer kernels).
+Below is a patch brining the optimization back.
 
-Also note that this patch really looks like a "new feature", not a
-bugfix or anything that matches up with what
-Documentation/stable_kernel_rules.txt defines.  So I don't think that it
-really is something to add to a stable kernel.
+	WARNING: completely untested!
 
-thanks,
 
-greg k-h
+Index: linux-2.6/block/blk-flush.c
+===================================================================
+--- linux-2.6.orig/block/blk-flush.c	2010-10-12 10:08:43.777004514 -0400
++++ linux-2.6/block/blk-flush.c	2010-10-12 10:10:37.547016093 -0400
+@@ -143,6 +143,17 @@ struct request *blk_do_flush(struct requ
+ 	unsigned skip = 0;
+ 
+ 	/*
++	 * Just issue pure flushes directly.
++	 */
++	if (!blk_rq_sectors(rq)) {
++		if (!do_preflush) {
++			__blk_end_request_all(rq, 0);
++			return NULL;
++		}
++		return rq;
++	}
++
++	/*
+ 	 * Special case.  If there's data but flush is not necessary,
+ 	 * the request can be issued directly.
+ 	 *
