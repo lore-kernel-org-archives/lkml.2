@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757184Ab0JLJfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 05:35:13 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:43080 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932097Ab0JLJfK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932118Ab0JLJfK (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 12 Oct 2010 05:35:10 -0400
-Date: Tue, 12 Oct 2010 10:35:07 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Dan Carpenter <error27@gmail.com>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Jaroslav Kysela <perex@perex.cz>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        Jassi Brar <jassi.brar@samsung.com>, alsa-devel@alsa-project.org,
-        kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch] ASoC: soc: snprintf() doesn't return negative
-Message-ID: <20101012093506.GB30933@rakim.wolfsonmicro.main>
-References: <20101011035416.GD5851@bicker>
- <20101011104009.GB9231@rakim.wolfsonmicro.main>
- <20101011164038.GE5851@bicker>
- <20101011185148.GB22355@opensource.wolfsonmicro.com>
- <20101011194502.GK5851@bicker>
- <s5hpqvg1m7v.wl%tiwai@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hpqvg1m7v.wl%tiwai@suse.de>
-X-Cookie: Words must be weighed, not counted.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Received: from casper.infradead.org ([85.118.1.10]:37366 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757105Ab0JLJfI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 05:35:08 -0400
+Subject: Re: [PATCH try 5] CFS: Add hierarchical tree-based penalty.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: William Pitcock <nenolod@dereferenced.org>, linux-kernel@vger.kernel.org,
+        efault@gmx.de, kernel@kolivas.org
+In-Reply-To: <20101012093044.GD20366@elte.hu>
+References: <20101012092524.F0BF4CE142@carpathia.dereferenced.org>
+	 <20101012093044.GD20366@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 12 Oct 2010 11:35:01 +0200
+Message-ID: <1286876101.29097.26.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 10:57:40PM +0200, Takashi Iwai wrote:
-> Dan Carpenter wrote:
-
-> Well, actually we should fix either:
-
-> - check the return of snprintf() at each time properly,
+On Tue, 2010-10-12 at 11:30 +0200, Ingo Molnar wrote:
+> * William Pitcock <nenolod@dereferenced.org> wrote:
 > 
-> 	list_for_each_entry(dai, &dai_list, list) {
-> 		int len = snprintf(buf + ret, PAGE_SIZE - ret, "%s\n", dai->name);
-> 		if (len < 0)
-> 			return len;
-> 		ret += len;
-> 	}
+> > Inspired by the recent change to BFS by Con Kolivas, this patch causes 
+> > vruntime to be penalized based on parent depth from their root task 
+> > group.
+> > 
+> > I have, for the moment, decided to make it a default feature since the 
+> > design of CFS ensures that broken applications depending on task 
+> > enqueue behaviour behaving traditionally will continue to work.
+> 
+> Just curious, is this v5 submission a reply to Peter's earlier review of 
+> your v3 patch? If yes then please explicitly outline the changes you did 
+> so that Peter and others do not have to guess about the direction your 
+> work is taking.
 
-In this case we're deliberately eating the error since all these files
-are about getting diagnostics out - the code is intentionally soldiering
-on and trying to get as much data out as possible rather than giving up
-on error.
+Going by the date field in the headers he send them all in relatively
+quick succession, they just took their merry time arriving (either that
+or his machine's time is funkeh).
 
-> In either case, a negative check after for loop is superfluous.
 
-In those ones, yes - it's pretty much there for paranoia since the copy
-to userspace is more likely to explode than random memory corruption.
-
-> And, when no negative return value is assured (or filtered out like
-> above), there can't be overflow, too.  snprintf() fills the string
-> at most the size including NUL-char.  OTOH, it returns the size that
-> doesn't include NUL-char.
-
-Dan was saying that it would return sizes larger than the string it
-wrote (which is a behaviour of some implementations) which would be
-an issue since it would cause us to pass bad buffer pointers into
-subsequent snprintf() calls.
-
-I've not had time to look at this properly but Dan's analysis seems off.
