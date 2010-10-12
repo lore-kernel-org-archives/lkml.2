@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab0JLDvp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 23:51:45 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53917 "EHLO smtps.tip.net.au"
+	id S1756564Ab0JLDyr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 23:54:47 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:49497 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755091Ab0JLDvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 23:51:44 -0400
-Date: Tue, 12 Oct 2010 14:51:35 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        <linux1394-devel@lists.sourceforge.net>,
-        Ben Hutchings <bhutchings@solarflare.com>
-Subject: Re: linux-next: manual merge of the net tree with the  tree
-Message-Id: <20101012145135.9697fe21.sfr@canb.auug.org.au>
-In-Reply-To: <20101012111716.0c54b093.sfr@canb.auug.org.au>
-References: <20101012111716.0c54b093.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__12_Oct_2010_14_51_35_+1100_7QyErKK=1Hkmr6+8"
+	id S1755739Ab0JLDyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 23:54:46 -0400
+Date: Tue, 12 Oct 2010 09:24:41 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Righi <arighi@develer.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Greg@smtp1.linux-foundation.org, containers@lists.osdl.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH v2] memcg: reduce lock time at move charge (Was Re:
+ [PATCH 04/10] memcg: disable local interrupts in lock_page_cgroup()
+Message-ID: <20101012035441.GB25875@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
+ <20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007161454.84570cf9.akpm@linux-foundation.org>
+ <20101008133712.2a836331.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007215556.21412ae6.akpm@linux-foundation.org>
+ <20101008141201.c1e3a4e2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101008194131.20b44a9d.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101012033915.GA25875@balbir.in.ibm.com>
+ <20101012124253.3ccf13fb.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101012124253.3ccf13fb.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__12_Oct_2010_14_51_35_+1100_7QyErKK=1Hkmr6+8
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-12 12:42:53]:
 
-Hi all,
-
-On Tue, 12 Oct 2010 11:17:16 +1100 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
+> On Tue, 12 Oct 2010 09:09:15 +0530
+> Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> 
+> > * KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-08 19:41:31]:
+> > 
+> > > On Fri, 8 Oct 2010 14:12:01 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > > > Sure.  It walks the same data three times, potentially causing
+> > > > > thrashing in the L1 cache.
+> > > > 
+> > > > Hmm, make this 2 times, at least.
+> > > > 
+> > > How about this ?
+> > > ==
+> > > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > > 
+> > > Presently, at task migration among cgroups, memory cgroup scans page tables and
+> > > moves accounting if flags are properly set.
+> > > 
+> > > 
+> > > The core code, mem_cgroup_move_charge_pte_range() does
+> > > 
+> > >  	pte_offset_map_lock();
+> > > 	for all ptes in a page table:
+> > > 		1. look into page table, find_and_get a page
+> > > 		2. remove it from LRU.
+> > > 		3. move charge.
+> > > 		4. putback to LRU. put_page()
+> > > 	pte_offset_map_unlock();
+> > > 
+> > > for pte entries on a 3rd level? page table.
+> > > 
+> > > As a planned updates, we'll support dirty-page accounting. Because move_charge()
+> > > is highly race, we need to add more check in move_charge.
+> > > For example, lock_page();-> wait_on_page_writeback();-> unlock_page();
+> > > is an candidate for new check.
+> > >
+> > 
+> > 
+> > Is this a change to help dirty limits or is it a generic bug fix.
+> >  
+> Not a bug fix. This for adding lock_page() to moge_charge(). It helps us
+> to remove "irq disable" in update_stat().
 >
-> Today's linux-next merge of the net tree got a conflict in
-> drivers/ieee1394/eth1394.c between commit
-> 66fa12c571d35e3cd62574c65f1785a460105397 ("ieee1394: remove the old IEEE
-> 1394 driver stack") from the  tree and commit
-                               ^
-I meant to say "the ieee1394 tree".
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Excellent! Thanks 
 
---Signature=_Tue__12_Oct_2010_14_51_35_+1100_7QyErKK=1Hkmr6+8
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMs9tHAAoJEDMEi1NhKgbsopsIAJnOTsi3Emd4EQAE8cox++70
-XOVPE+BVeTSbUrKVwAVJFqAJIfGZ1hrnKlZJQmTKJovhI/DlUb1asUhgeUhfry20
-7+3V0pLWFwQbnyfwdxmsLZ0GOwEQ8tOJBWx7eXaHe+1FVpZ3JlxgRekCeoQ8x43t
-tZDBH+6XyH5rZh6zf5yGv1PIKQGdI54lmycv5C4pF+ZspmzHIxPRLhWK4gpGaAWZ
-8z9oIaMosPO31P04aRqtDx2c7OvSuuaB10b3v/nFoTg7Il2IhEubjemUsIpL1GKH
-2pnTYccVjCBqW9uKRaZ5ug5qAyI56iyMivXnZ7NVtwM47gZRotJuLE6DtPgyhJY=
-=tWBJ
------END PGP SIGNATURE-----
-
---Signature=_Tue__12_Oct_2010_14_51_35_+1100_7QyErKK=1Hkmr6+8--
+-- 
+	Three Cheers,
+	Balbir
