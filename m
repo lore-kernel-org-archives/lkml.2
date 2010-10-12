@@ -1,149 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752256Ab0JLXhP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 19:37:15 -0400
-Received: from claw.goop.org ([74.207.240.146]:47643 "EHLO claw.goop.org"
+	id S1752149Ab0JLXi6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 19:38:58 -0400
+Received: from tundra.namei.org ([65.99.196.166]:45680 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751247Ab0JLXhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 19:37:13 -0400
-Message-ID: <4CB4F11F.4090104@goop.org>
-Date: Tue, 12 Oct 2010 16:37:03 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+	id S1751253Ab0JLXi4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 19:38:56 -0400
+Date: Wed, 13 Oct 2010 10:38:28 +1100 (EST)
+From: James Morris <jmorris@namei.org>
+To: Eric Paris <eparis@redhat.com>
+cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, paul.moore@hp.com, selinux@tycho.nsa.gov,
+        sds@tycho.nsa.gov, jengelh@medozas.de,
+        linux-security-module@vger.kernel.org, mr.dash.four@googlemail.com,
+        pablo@netfilter.org
+Subject: Re: [PATCH 1/5] secmark: do not return early if there was no error
+In-Reply-To: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
+Message-ID: <alpine.LRH.2.00.1010131038160.2949@tundra.namei.org>
+References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/4] memblock related fixes for -tip
-References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org>
-In-Reply-To: <4CB4CF4D.5020706@kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/12/2010 02:12 PM, Yinghai Lu wrote:
-> On 10/12/2010 11:41 AM, Jeremy Fitzhardinge wrote:
->>  On 10/04/2010 02:57 PM, Yinghai Lu wrote:
->>> Please check memblock related patches
->>>
->>> [PATCH 1/4] memblock: Fix big size with find_region()
->>> [PATCH -v5 2/4] x86, memblock: Fix crashkernel allocation
->>> [PATCH 3/4] x86, memblock: Remove __memblock_x86_find_in_range_size()
->>> [PATCH 4/4] x86, mm, memblock, 32bit: Make add_highpages honor early reserved ranges
->>>
->>> first one should get into core/memblock branch, and others should be in x86/mm/memeblock branch
->>
->> BTW, the memblock changes prevent the kernel from booting under Xen; it
->> crashes while setting up the linear maps.  I haven't worked out what's
->> failing yet, aside from bisecting it down to one of a9ce6bc151000 or
->> 72d7c3b33c9808 (they don't compile in isolation so I had to skip them,
->> but both are likely looking, but unfortunately large, complex and hard
->> to further subdivide).
->>
->> I'll look further into this, but just a heads-up for the upcoming merge
->> window.
->>
-> please use 
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git memblock
->
-> to find which commit cause xen broken.
->
-> two xen related patch are folded into first converting commit.
+On Tue, 12 Oct 2010, Eric Paris wrote:
 
-Note that ce883cfc65c51e24 doesn't compile:
+> Commit 4a5a5c73 attempted to pass decent error messages back to userspace for
+> netfilter errors.  In xt_SECMARK.c however the patch screwed up and returned
+> on 0 (aka no error) early and didn't finish setting up secmark.  This results
+> in a kernel BUG if you use SECMARK.
+> 
 
-/home/jeremy/git/upstream/arch/x86/kernel/e820.c: In function
-‘find_e820_area_size’:
-/home/jeremy/git/upstream/arch/x86/kernel/e820.c:764: error: expected
-‘;’ before ‘return’
+Does this need to go into current Linus?
 
-However, I can fix it with the obvious fix, and the Xen boot failure
-bisects to this change.
+> ------------[ cut here ]------------
+> kernel BUG at net/netfilter/xt_SECMARK.c:38!
+> invalid opcode: 0000 [#1] SMP
+> last sysfs file: /sys/devices/system/cpu/cpu2/cache/index2/shared_cpu_map
+> CPU 0
+> Modules linked in: xt_SECMARK iptable_mangle nfs lockd fscache nfs_acl
+> auth_rpcgss sunrpc ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+> uinput virtio_net virtio_balloon i2c_piix4 i2c_core joydev microcode ipv6
+> virtio_blk virtio_pci virtio_ring virtio [last unloaded: speedstep_lib]
+> 
+> Pid: 0, comm: swapper Not tainted 2.6.36-0.8.rc2.git0.fc15.x86_64 #1 /KVM
+> RIP: 0010:[<ffffffffa022117d>]  [<ffffffffa022117d>] secmark_tg+0x17/0x2e [xt_SECMARK]
+> RSP: 0018:ffff880003e03a40  EFLAGS: 00010202
+> RAX: ffff88001f3074b0 RBX: ffff88001f3073f0 RCX: ffff88001f307490
+> RDX: ffff88001f307401 RSI: ffff880003e03b30 RDI: ffff88001f18e500
+> RBP: ffff880003e03a40 R08: 0000000000000002 R09: ffff880003e03a10
+> R10: ffff880003fd2ad8 R11: ffffffff00000001 R12: ffff88001a85d498
+> R13: ffffe8ffff808240 R14: ffff88001ac133ae R15: ffff88001f18e500
+> FS:  0000000000000000(0000) GS:ffff880003e00000(0000)
+> knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 000000000073b130 CR3: 000000000fdc0000 CR4: 00000000000006f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process swapper (pid: 0, threadinfo ffffffff81a00000, task
+> ffffffff81a4b020)
+> Stack:
+> ffff880003e03b90 ffffffff814599ff 0000000000003a18 0000000000000000
+> ffff880003e03b70 ffffffffffffffb8 0000000000000000 ffffffff82a39d60
+> ffff880003e03a90 ffffffff8140db60 ffff880003e03ae0 ffffffff8140f2c0
+> Call Trace:
+>  <IRQ>
+> [<ffffffff814599ff>] ipt_do_table+0x58a/0x6e2
+> [<ffffffff8140db60>] ? rcu_read_unlock+0x21/0x23
+> [<ffffffff8140f2c0>] ? nf_conntrack_find_get+0xb4/0xc7
+> [<ffffffffa021b182>] iptable_mangle_hook+0x10a/0x120 [iptable_mangle]
+> [<ffffffff8140c226>] nf_iterate+0x46/0x89
+> [<ffffffff8141d2e8>] ? ip_rcv_finish+0x0/0x3c6
+> [<ffffffff8140c2e1>] nf_hook_slow+0x78/0xe3
+> [<ffffffff8141d2e8>] ? ip_rcv_finish+0x0/0x3c6
+> [<ffffffff81472f06>] ? run_filter+0x0/0xc0
+> [<ffffffff813e6802>] ? dev_seq_stop+0x8/0x10
+> [<ffffffff8141d2e8>] ? ip_rcv_finish+0x0/0x3c6
+> [<ffffffff8141d9a9>] NF_HOOK.clone.6+0x46/0x58
+> [<ffffffff8141dd93>] ip_rcv+0x21f/0x24c
+> [<ffffffff813e7d43>] __netif_receive_skb+0x3e0/0x40a
+> [<ffffffff813e8834>] netif_receive_skb+0x6c/0x73
+> [<ffffffffa00c954e>] virtnet_poll+0x55b/0x6cb [virtio_net]
+> [<ffffffff8107fb92>] ? lock_release+0x19a/0x1a6
+> [<ffffffff813e9bc4>] net_rx_action+0xb1/0x1e3
+> [<ffffffff8107d64b>] ? print_lock_contention_bug+0x1b/0xd5
+> [<ffffffff8100ac1c>] ? call_softirq+0x1c/0x30
+> [<ffffffff8105752a>] __do_softirq+0xfa/0x1cf
+> [<ffffffff8107fb92>] ? lock_release+0x19a/0x1a6
+> [<ffffffff8100ac1c>] call_softirq+0x1c/0x30
+> [<ffffffff8100c3d9>] do_softirq+0x4b/0xa2
+> [<ffffffff810576d0>] irq_exit+0x4a/0x8c
+> [<ffffffff814a198d>] do_IRQ+0x9d/0xb4
+> [<ffffffff8149b813>] ret_from_intr+0x0/0x16
+>  <EOI>
+> [<ffffffff81010faf>] ? default_idle+0x3c/0x61
+> [<ffffffff8102c7b1>] ? native_safe_halt+0xb/0xd
+> [<ffffffff810800c0>] ? trace_hardirqs_on+0xd/0xf
+> [<ffffffff81010fb4>] default_idle+0x41/0x61
+> [<ffffffff8100830b>] cpu_idle+0xb3/0x10f
+> [<ffffffff814824c3>] rest_init+0xb7/0xbe
+> [<ffffffff8148240c>] ? rest_init+0x0/0xbe
+> [<ffffffff81d76c50>] start_kernel+0x412/0x41d
+> [<ffffffff81d762c6>] x86_64_start_reservations+0xb1/0xb5
+> [<ffffffff81d763c2>] x86_64_start_kernel+0xf8/0x107
+> Code: 41 8a 04 24 88 05 1c 05 00 00 5a 89 d8 5b 41 5c 41 5d c9 c3 55 48 89 e5
+> 0f 1f 44 00 00 48 8b 46 08 8a 10 3a 15 fd 04 00 00 74 02 <0f> 0b fe ca 75 0e
+> 8b 40 04 89 87 b4 00 00 00 83 c8 ff c9 c3 0f
+> RIP  [<ffffffffa022117d>] secmark_tg+0x17/0x2e [xt_SECMARK]
+> RSP <ffff880003e03a40>
+> ---[ end trace 9aa5d06a71143e74 ]---
+> 
+> Signed-off-by: Eric Paris <eparis@redhat.com>
+> ---
+> 
+>  net/netfilter/xt_SECMARK.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/netfilter/xt_SECMARK.c b/net/netfilter/xt_SECMARK.c
+> index 23b2d6c..364ad16 100644
+> --- a/net/netfilter/xt_SECMARK.c
+> +++ b/net/netfilter/xt_SECMARK.c
+> @@ -101,7 +101,7 @@ static int secmark_tg_check(const struct xt_tgchk_param *par)
+>  	switch (info->mode) {
+>  	case SECMARK_MODE_SEL:
+>  		err = checkentry_selinux(info);
+> -		if (err <= 0)
+> +		if (err)
+>  			return err;
+>  		break;
+>  
+> 
 
-The specific crash is when constructing the initial pagetable, when Xen
-tries to remap a newly allocated pagetable page read-only, and finds the
-allocated page isn't mapped within the linear map. Since it is in the
-middle of creating the linear map, I guess its quite possible that the
-allocation order has changed, and it starts allocating pages which are
-not yet mapped, whereas before it was allocating already-mapped ones.
-
-I'll see if I can confirm this hypothesis and see if I can work around
-it (is poses some problems, because it means that when the pages later
-become mapped, I need to make sure they get mapped RO).
-
-J
-
-> Thanks
->
->
-> 1e5f012: x86: Remove old bootmem code
-> f2c0394: x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
-> 291e26f: x86: Remove not used early_res code
-> 75cd1e9: x86, memblock: Replace e820_/_early string with memblock_
-> ce883cf: x86: Use memblock to replace early_res
-> c9d219e: x86, memblock: Add __get_free_all_memory_range()
-> b2d0276: x86, memblock: Use memblock_debug to control debug message print out
-> 945eabb: x86, memblock: Add memblock_x86_memory_in_range()
-> 9c6c086: x86, memblock: Add memblock_x86_free_memory_in_range()
-> 2310711: x86, memblock: Add memblock_x86_find_in_range_node()
-> 6b4ffee: memblock: Add find_memory_core_early()
-> 1d168bf: x86, memblock: Add memblock_x86_register_active_regions() and memblock_x86_hole_size()
-> 8d39571: x86, memblock: Add get_free_all_memory_range()
-> 46d5782: x86, memblock: Add memblock_x86_reserve_range/memblock_x86_free_range
-> c6ade77: x86, memblock: Add memblock_x86_to_bootmem()
-> 4a268b8: bootmem, x86: Add weak version of reserve_bootmem_generic
-> 36d3afc: x86, memblock: Remove __memblock_x86_find_in_range_size()
-> b352f42: x86, memblock: Add memblock_x86_find_in_range_size()
-> a4c00b4: memblock: Allow memblock_init to be called early
-> c795896: memblock: Fix wraparound in find_region()
-> 3ecfe12: memblock: Add memblock_free/reserve_reserved_regions()
-> 17462d5: memblock: Add memblock_find_in_range()
-> 1e833c5: memblock: Option for the architecture to put memblock into the .init section
-> f8266e2: memblock: Protect memblock.h with CONFIG_HAVE_MEMBLOCK
-> 5b31325: memblock: Make MEMBLOCK_ERROR be 0
-> df92f4d: memblock: Export MEMBLOCK_ERROR
-> ddf01ef: memblock: Improve debug output when resizing the reserve array
-> 3647f0b: memblock: Expose some memblock bits for use by x86
-> 0526300: memblock: Add debugfs files to dump the arrays content
-> 6fd15ab: memblock: Make memblock_alloc_try_nid() fallback to MEMBLOCK_ALLOC_ANYWHERE
-> ab3744c: memblock: Separate memblock_alloc_nid() and memblock_alloc_try_nid()
-> 79263d1: memblock: NUMA allocate can now use early_pfn_map
-> fa21133: memblock: Add "start" argument to memblock_find_base()
-> d1d5099: memblock: Add arch function to control coalescing of memblock memory regions
-> 2979e28: memblock: Add array resizing support
-> de17e60: memblock: Move functions around into a more sensible order
-> ac239c8: memblock: split memblock_find_base() out of __memblock_alloc_base()
-> 763d5f3: memblock: Move memblock_init() to the bottom of the file
-> 674f2ff: memblock: Define MEMBLOCK_ERROR internally instead of using ~(phys_addr_t)0
-> cf273c9: memblock: Make memblock_find_region() out of memblock_alloc_region()
-> 5c2eb99: memblock: Add debug markers at the end of the array
-> 68e694c: memblock: Move memblock arrays to static storage in memblock.c and make their size a variable
-> cbfff22: memblock: Remove memblock_type.size and add memblock.memory_size instead
-> 9ae0df1: memblock: Remove unused memblock.debug struct member
-> 564bb2b: memblock: Change u64 to phys_addr_t
-> e3c49f3: memblock: Remove rmo_size, burry it in arch/powerpc where it belongs
-> 5f8a4aa: memblock: Introduce default allocation limit and use it to replace explicit ones
-> 3608b50: memblock: Expose MEMBLOCK_ALLOC_ANYWHERE
-> 676caa9: memblock: Factor the lowest level alloc function
-> 19ad550: memblock: Remove nid_range argument, arch provides memblock_nid_range() instead
-> 3dd4d87: memblock: Remove memblock_find()
-> 01f4bff: memblock: Remove obsolete accessors
-> b01b184: memblock/arm: Use new accessors
-> 6283930: memblock/powerpc: Use new accessors
-> 51e6c6e: memblock/sparc: Use new accessors
-> 7c1720c: memblock/sh: Use new accessors
-> 4967561: memblock/microblaze: Use new accessors
-> cb3f592: memblock: Introduce for_each_memblock() and new accessors
-> 8ccbd40: memblock/arm: Use memblock_region_is_memory() for omap fb
-> 6617ae1: memblock/arm: pfn_valid uses memblock_is_memory()
-> b25a6d2: memblock: Implement memblock_is_memory and memblock_is_region_memory
-> 2b77abd: memblock: No reason to include asm/memblock.h late
-> 62c5c92: memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
->
-
+-- 
+James Morris
+<jmorris@namei.org>
