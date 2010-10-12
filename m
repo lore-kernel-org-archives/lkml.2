@@ -1,56 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab0JLRlL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:41:11 -0400
-Received: from p3plsmtpa01-09.prod.phx3.secureserver.net ([72.167.82.89]:59431
-	"HELO p3plsmtpa01-09.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757306Ab0JLRlK (ORCPT
+	id S1757967Ab0JLRmR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:42:17 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42202
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757306Ab0JLRmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:41:10 -0400
-Message-ID: <4CB49EB3.6090000@sailtheuniverse.com>
-Date: Tue, 12 Oct 2010 10:45:23 -0700
-From: Hank Janssen <hjanssen@sailtheuniverse.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: hjanssen@microsoft.com, Haiyang Zhang <haiyangz@microsoft.com>,
-        gregkh@suse.de, virtualization@lists.osdl.org,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/1] staging: hv: Doubled ringbuffer size for Hyper-v network
- driver
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 12 Oct 2010 13:42:16 -0400
+Date: Tue, 12 Oct 2010 10:42:38 -0700 (PDT)
+Message-Id: <20101012.104238.104051243.davem@davemloft.net>
+To: mikpe@it.uu.se
+Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [2.6.36-rc regression] occasional complete system hangs on
+ sparc64 SMP
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <19624.63312.156073.410319@pilspetsen.it.uu.se>
+References: <19611.34846.813757.309183@pilspetsen.it.uu.se>
+	<19624.63312.156073.410319@pilspetsen.it.uu.se>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Mikael Pettersson <mikpe@it.uu.se>
+Date: Sun, 3 Oct 2010 23:36:16 +0200
 
-From: Hank Janssen <hjanssen@microsoft.com>
+> I've been testing older kernels and can now say that 2.6.35-git5
+> and newer kernels are definitely affected, but 2.6.35-git4 seems
+> solid.  I'll dig deeper into the .35-git4->git5 changes towards
+> the end of next week.
+> 
+> I never got any data out of sysrq-y or any other sysrq when a hang
+> occurs; usually they'd just print the name of the command but no data,
+> sometimes they'd oops and crash the kernel even harder.
 
-Double the default network ringsize buffer for Hyper-V network driver.
-In very heavily loaded systems the there is a chance you run out of
-ringbuffer space and error out.
+So I haven't been ignoring this report, but I cannot reproduce
+it on the SB2500 I have access to right now.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+I've been doing gcc builds and testsuite runs in a loop for
+several days.
 
----
- drivers/staging/hv/netvsc_drv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Occaisionally I get a dying 'as' which I have seen before and
+plan to investigate, but no hard hangs and no crashes.
 
-diff --git a/drivers/staging/hv/netvsc_drv.c b/drivers/staging/hv/netvsc_drv.c
-index 56e1157..45e082a 100644
---- a/drivers/staging/hv/netvsc_drv.c
-+++ b/drivers/staging/hv/netvsc_drv.c
-@@ -59,7 +59,7 @@ struct netvsc_driver_context {
- /* Need this many pages to handle worst case fragmented packet */
- #define PACKET_PAGES_HIWATER  (MAX_SKB_FRAGS + 2)
- 
--static int ring_size = roundup_pow_of_two(2*MAX_SKB_FRAGS+1);
-+static int ring_size = 128;
- module_param(ring_size, int, S_IRUGO);
- MODULE_PARM_DESC(ring_size, "Ring buffer size (# of pages)");
- 
--- 
-1.6.0.2
-
-
+I'll keep prodding, but if you can narrow it down further
+please let us know.
