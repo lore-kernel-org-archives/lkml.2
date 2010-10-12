@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab0JLHp2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:45:28 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:46368 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756713Ab0JLHp1 (ORCPT
+	id S1756966Ab0JLHtM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:49:12 -0400
+Received: from dallas.jonmasters.org ([72.29.103.172]:60387 "EHLO
+	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755379Ab0JLHtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:45:27 -0400
-Date: Tue, 12 Oct 2010 09:45:22 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        Linux Embedded <linux-embedded@vger.kernel.org>,
-        Linux FS Devel <linux-fsdevel@vger.kernel.org>,
-        Tim Bird <tim.bird@am.sony.com>, linux-mm@kvack.org
-Subject: Re: [PATCH 14(16] pramfs: memory protection
-Message-ID: <20101012074522.GA20436@basil.fritz.box>
-References: <4CB1EBA2.8090409@gmail.com>
- <87aamm3si1.fsf@basil.nowhere.org>
- <4CB34A1A.3030003@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB34A1A.3030003@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 12 Oct 2010 03:49:11 -0400
+Subject: Re: PROBLEM: brcm80211 hangs on 2.6.36-0.34.rc6.git3.fc15.x86_64
+From: Jon Masters <jonathan@jonmasters.org>
+To: linux-wireless@vger.kernel.org
+Cc: Brett Rudley <brudley@broadcom.com>, Henry Ptasinski <henryp@broadcom.com>,
+        Nohee Ko <noheek@broadcom.com>, Jon Masters <jcm@jonmasters.org>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1286538243.21485.298.camel@constitution.bos.jonmasters.org>
+References: <20101008065810.GA1680@constitution.bos.jonmasters.org>
+	 <1286538243.21485.298.camel@constitution.bos.jonmasters.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: World Organi[sz]ation of Broken Dreams
+Date: Tue, 12 Oct 2010 03:47:39 -0400
+Message-ID: <1286869659.8574.10.camel@constitution.bos.jonmasters.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 74.92.29.237
+X-SA-Exim-Mail-From: jonathan@jonmasters.org
+X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 07:32:10PM +0200, Marco Stornelli wrote:
-> Il 10/10/2010 18:46, Andi Kleen ha scritto:
-> > This won't work at all on x86 because you don't handle large 
-> > pages.
-> > 
-> > And it doesn't work on x86-64 because the first 2GB are double
-> > mapped (direct and kernel text mapping)
-> > 
-> > Thirdly I expect it won't either on architectures that map
-> > the direct mapping with special registers (like IA64 or MIPS)
+On Fri, 2010-10-08 at 07:44 -0400, Jon Masters wrote:
+> On Fri, 2010-10-08 at 02:58 -0400, Jon Masters wrote:
 > 
-> Andi, what do you think to use the already implemented follow_pte
-> instead? 
+> > I tried building the new brcm80211 driver from staging-next on Fedora rawhide
+> > kernel 2.6.36-0.34.rc6.git3.fc15.x86_64. Now, of course, it's not the
+> > staging-next kernel (I'll try that now this doesn't work) but perhaps this
+> > report will still be of use to the Broadcom/other wireless folks.
+> 
+> I pulled the latest staging-next onto Linus' latest git tree and still
+> experience problems with the driver. It seems that the first attempt to
+> actually transmit results in the system locking hard. Once again, I am
+> attaching the output from running a netconsole (due to the box I'm on,
+> it's an attachment this time, sorry about that - don't trust evolution)
+> where the trace is basically the same as the original trace I posted.
+> 
+> NOTE: in both cases, the driver is loaded with "msglevel=2
+> phymsglevel=2" which (although not documented) suggests to enable
+> tracing, and does certainly yield more debugging output.
 
-Has all the same problems. Really you need an per architecture
-function. Perhaps some architectures could use a common helper,
-but certainly not all.
+The problem may be that the driver doesn't correctly handle its logic in
+wl_up in the case that the call to wlc_up doesn't result in the value of
+wl->pub->up being TRUE. This can happen, for example if radio_disabled
+is true, but I'm sure there are other problems, too. This result is not
+properly checked in wl_up, so we can get a situation where we will later
+try to call the ops->tx function with wl down. You also don't check
+wl_up return codes in general, for example in wlc_radio_enable.
 
-x86 already has some infrastructure for this, but it currently
-has serious problems too (like not merging mappings on unmap) 
-and is generally overdesigned ugly code.
+This might all be related to the rfkill and other soft switch stuff I'm
+not really super up to date on. This laptop doesn't have a hardware
+switch that I'm aware of, but I assume the state is somehow recorded in
+software (by the BIOS?) and perhaps this is how rfkill is supposed to
+work (I'll go look this up). Anyway, if I can figure out how to get the
+radio to work and hack up the driver to start with the device down,
+perhaps it'll not try to transmit and not fall over :)
 
--Andi
+Keep you posted.
+
+Jon.
+
+
