@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751258Ab0JLV23 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:28:29 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:52226 "EHLO gir.skynet.ie"
+	id S1751348Ab0JLV2t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:28:49 -0400
+Received: from www.tglx.de ([62.245.132.106]:46479 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751070Ab0JLV22 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:28:28 -0400
-Date: Tue, 12 Oct 2010 21:51:19 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: linux-kernel@vger.kernel.org,
-        DRI mailing list <dri-devel@lists.freedesktop.org>
-Subject: [git pull] drm fixes
-Message-ID: <alpine.DEB.2.00.1010122147180.27797@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1750930Ab0JLV2s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 17:28:48 -0400
+Date: Tue, 12 Oct 2010 23:28:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] x86: Sanitize apb timer interrupt handling
+In-Reply-To: <20101012142000.00001358@unknown>
+Message-ID: <alpine.LFD.2.00.1010122327260.2909@localhost6.localdomain6>
+References: <tip-a5ef2e70405c8a9ee380b5ff33a008c75454791f@git.kernel.org> <20101012142000.00001358@unknown>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 12 Oct 2010, Jacob Pan wrote:
 
-I was going to leave these for stable, but really they should go in now.
+> 
+> >x86: Sanitize apb timer interrupt handling
+> >
+> >Disable the interrupt in CPU_DEAD where it belongs.
+> My main concern is the performance cost. The power management code for
+> Moorestown system make use of the cpu hotplug code (disable_nonboot_cpus)
+> but much more frequently. The system low power states are call S0 idle
+> state (s0ix).
+> 
+> Leaving the irq enabled at the chip and desc level between S0ix states
+> might give some performance benefit. That was my original thought.
+> Will it cause problems?
 
-The unmappable VRAM fixes a problem on evergreen cards in 2.6.36, we end 
-up giving out memory past what the CPU can see and we get SIGBUS in 
-userspace, this is because we don't have support for GPU to move memory 
-around on evergreen until patches queued for 2.6.37. This patch just 
-limits the VRAM when we don't have any in-kernel gpu copy code.
+Errm. I merily moved it to the place where it should be. You do the
+disable/enable dance already today.
 
-There are two other minor evergreen fixes, and two not so useful output 
-removed patches.
+Thanks,
 
-Dave.
-
-
-The following changes since commit 85a331881dd52a93e7d4c57bcaf5486cc8718465:
-
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-2.6 (2010-10-09 12:06:26 -0700)
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
-
-Alex Deucher (3):
-      drm/radeon/kms: leave certain CP int bits enabled
-      drm/radeon/kms: make TV/DFP table info less verbose
-      drm/radeon/kms: fix bad cast/shift in evergreen.c
-
-Jean Delvare (1):
-      drm/radeon/kms: Silent spurious error message
-
-Jerome Glisse (1):
-      drm/radeon/kms: avoid corner case issue with unmappable vram V2
-
- drivers/gpu/drm/radeon/evergreen.c       |    5 +++--
- drivers/gpu/drm/radeon/r100.c            |    3 +++
- drivers/gpu/drm/radeon/r600.c            |    4 +++-
- drivers/gpu/drm/radeon/r600_blit_kms.c   |    2 ++
- drivers/gpu/drm/radeon/radeon.h          |    1 +
- drivers/gpu/drm/radeon/radeon_atombios.c |   18 +++++++++---------
- drivers/gpu/drm/radeon/radeon_combios.c  |   26 +++++++++++++-------------
- drivers/gpu/drm/radeon/radeon_object.c   |    2 +-
- drivers/gpu/drm/radeon/radeon_object.h   |    5 +----
- drivers/gpu/drm/radeon/rs600.c           |    1 +
- drivers/gpu/drm/radeon/rs690.c           |    1 +
- drivers/gpu/drm/radeon/rv770.c           |    2 ++
- 12 files changed, 40 insertions(+), 30 deletions(-)
+	tglx
