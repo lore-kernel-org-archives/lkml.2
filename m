@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752167Ab0JLW4m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 18:56:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:43130 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750782Ab0JLW4l convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 18:56:41 -0400
-MIME-Version: 1.0
-Message-ID: <dac0cbc8-0509-46eb-812f-3ef8ec9e037e@default>
-Date: Tue, 12 Oct 2010 15:55:49 -0700 (PDT)
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: <huangj@Brocade.COM>
-Cc: <sfr@canb.auug.org.au>, <linux-scsi@vger.kernel.org>,
-        <kgudipat@Brocade.COM>, <linux-kernel@vger.kernel.org>,
-        <xmzhang@Brocade.COM>, <linux-next@vger.kernel.org>
-Subject: Re: linux-next: Tree for October 12 (scsi/bfa)
-X-Mailer: Zimbra on Oracle Beehive
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1751429Ab0JLXDN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 19:03:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57365 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751172Ab0JLXDL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 19:03:11 -0400
+Subject: Re: [PATCH 2/5] secmark: make secmark object handling generic
+From: Eric Paris <eparis@redhat.com>
+To: Paul Moore <paul.moore@hp.com>
+Cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, jmorris@namei.org, selinux@tycho.nsa.gov,
+        sds@tycho.nsa.gov, jengelh@medozas.de,
+        linux-security-module@vger.kernel.org, mr.dash.four@googlemail.com,
+        pablo@netfilter.org
+In-Reply-To: <1286924143.5133.86.camel@sifl>
+References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
+	 <20101012154015.26943.18385.stgit@paris.rdu.redhat.com>
+	 <1286924143.5133.86.camel@sifl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Oct 2010 19:01:52 -0400
+Message-ID: <1286924512.2614.1.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2010-10-12 at 18:55 -0400, Paul Moore wrote:
+> On Tue, 2010-10-12 at 11:40 -0400, Eric Paris wrote:
+> > Right now secmark has lots of direct selinux calls.  Use all LSM calls and
+> > remove all SELinux specific knowledge.  The only SELinux specific knowledge
+> > we leave is the mode.  The only point is to make sure that other LSMs at
+> > least test this generic code before they assume it works.  (They may also
+> > have to make changes if they do not represent labels as strings)
+> 
+> I'm sure you have, but I just want to make sure - you've tested this
+> change (and the others for that matter) against the existing iptables
+> userspace to make sure everything still works, right?
 
+I did.  The only patch which needs userspace changes is the exporting of
+secctx over netlink.  It appears the current userspace tools just
+ignores unknown field types.  I have a patch to userspace to tell it
+about the new field and will send it after the kernel patch goes in.
 
->bfa has one function that probably uses too much stack space and a few
->others that might be a problem.
->
->With CONFIG_FRAME_WARN=1024:
->
->drivers/scsi/bfa/bfad_im.c:939: warning: the frame size of 1604 bytes is larger than
->1024 bytes
->
->and with CONFIG_FRAME_WARN=512:
->
->
->drivers/scsi/bfa/bfad.c: In function 'bfad_fcs_port_cfg':
->drivers/scsi/bfa/bfad.c:900: warning: the frame size of 676 bytes is larger than 512
->bytes
->drivers/scsi/bfa/bfad_im.c: In function 'bfad_im_supported_speeds':
->drivers/scsi/bfa/bfad_im.c:939: warning: the frame size of 1604 bytes is larger than
->512 bytes
->drivers/scsi/bfa/bfad_im.c: In function 'bfad_os_fc_host_init':
->drivers/scsi/bfa/bfad_im.c:976: warning: the frame size of 736 bytes is larger than
->512 bytes
->drivers/scsi/bfa/bfa_fcs_lport.c: In function
->'bfa_fcs_lport_fdmi_build_portattr_block':
->drivers/scsi/bfa/bfa_fcs_lport.c:2010: warning: the frame size of 572 bytes is larger
->than 512 bytes
->drivers/scsi/bfa/bfa_fcs_lport.c: In function 'bfa_fcs_lport_fdmi_build_rhba_pyld':
->drivers/scsi/bfa/bfa_fcs_lport.c:1803: warning: the frame size of 784 bytes is larger
->than 512 bytes
->
+-Eric
 
-| For these specific cases, we declare some big data structures in the stack, which is not good
-| and I will fix them. But is general, is passing 512 stack size check a requirement? This seems
-| too strict for me since the default stack size is 8k.
-
-Fixing the warnings for frame size exceeding 1024 is OK IMO.
-The 512 test was just for more info.
-
-Ah, I see, 8 KB stack is default on X86_32.
-
-
->Also, there are many comment blocks that begin with "/**", which means "beginning
->of kernel-doc comment block" for Linux kernel code.  :(
->
-
-| Not aware of this convention. I will fix them. Thanks.
-
-Thanks.
