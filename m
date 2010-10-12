@@ -1,120 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751283Ab0JLVd3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:33:29 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55486 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab0JLVd1 (ORCPT
+	id S1751376Ab0JLVj1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:39:27 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:46022 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0JLVj0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:33:27 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 67.188.36.105
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1/xBotvFMlRt0fW9GOb/GLt
-Date: Tue, 12 Oct 2010 14:01:50 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Stephan Linz <linz@li-pro.net>
-Cc: Ashwin Bihari <abihari@gmail.com>, Tim Nordell <tim.nordell@logicpd.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/4] LogicPD minimal board support for LV_SOM and
- Torpedo
-Message-ID: <20101012210150.GA25462@atomide.com>
-References: <1285603550-6382-1-git-send-email-tim.nordell@logicpd.com>
- <4CB34D55.6060007@logicpd.com>
- <AANLkTikK6QAwj_T67NQAhVDT2T+D3tbBbOt9vDyme6N=@mail.gmail.com>
- <201010122120.26977.linz@li-pro.net>
+	Tue, 12 Oct 2010 17:39:26 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Tue, 12 Oct 2010 23:39:13 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH unfinished update] firewire: sbp2: parallelize login/inquiry,
+ reconnect, and shutdown
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+In-Reply-To: <tkrat.1433473bc081daa9@s5r6.in-berlin.de>
+Message-ID: <tkrat.6dd361dadace9a41@s5r6.in-berlin.de>
+References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de>
+ <tkrat.1433473bc081daa9@s5r6.in-berlin.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201010122120.26977.linz@li-pro.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Stephan Linz <linz@li-pro.net> [101012 12:11]:
-> Am Montag, 11. Oktober 2010, um 20:40:51 schrieb Ashwin Bihari:
-> > On Mon, Oct 11, 2010 at 1:45 PM, Tim Nordell <tim.nordell@logicpd.com> 
-> wrote:
-> > >  On 10/11/10 12:30, Tony Lindgren wrote:
-> > >> Uhh, so whose patches are these originally?
-> > >>
-> > >> We have them now queued with Tim Nordell as the author. Please let me
-> > >> know ASAP if you want me to change that.
-> 
-> Hi Tony,
-> 
-> No, I don't want to change anything. Only the LogicPD employees should be 
-> named inside the pathes as far as the patches are not a direct pull from my 
-> own devel tree on Gitorious. Ashwin has done a good explanation of the 
-> situation.
+So I changed the patch to the simple one below, but suddenly my
+INIC-2430 device has trouble with inquiry in parallel to its two LUNs:
 
-OK, thanks everybody, keeping the commits as they are.
+Oct 12 23:23:50 stein kernel: scsi22 : SBP-2 IEEE-1394
+Oct 12 23:23:50 stein kernel: firewire_sbp2: Workarounds for fw7.0: 0x2 (firmware_revision 0x000241, model_id 0x000000)
+Oct 12 23:23:50 stein kernel: scsi23 : SBP-2 IEEE-1394
+Oct 12 23:23:50 stein kernel: firewire_sbp2: Workarounds for fw7.1: 0x2 (firmware_revision 0x000241, model_id 0x000000)
+Oct 12 23:23:50 stein kernel: firewire_core: created device fw7: GUID 00027a0e440020c2, S800
+Oct 12 23:23:50 stein kernel: firewire_sbp2: fw7.0: logged in to LUN 0000 (0 retries)
+Oct 12 23:23:50 stein kernel: firewire_sbp2: fw7.1: logged in to LUN 0001 (0 retries)
+Oct 12 23:23:52 stein kernel: scsi 23:0:0:1: CD-ROM            TEAC     DV-516GC         XT11 PQ: 0 ANSI: 0
+Oct 12 23:23:52 stein kernel: sr1: scsi3-mmc drive: 48x/48x cd/rw xa/form2 cdda tray
+Oct 12 23:23:52 stein kernel: sr 23:0:0:1: Attached scsi CD-ROM sr1
+Oct 12 23:23:52 stein kernel: sr 23:0:0:1: Attached scsi generic sg6 type 5
+Oct 12 23:23:52 stein kernel: firewire_sbp2: fw7.0: orb reply timed out, rcode=0x11
 
-Regards,
+When I then force a bus reset by hardware or software, the device comes
+to its senses:
 
-Tony
+Oct 12 23:24:38 stein kernel: firewire_sbp2: fw7.0: logged in to LUN 0000 (0 retries)
+Oct 12 23:24:38 stein kernel: firewire_sbp2: fw7.1: reconnected to LUN 0001 (0 retries)
+Oct 12 23:24:38 stein kernel: scsi 22:0:0:0: CD-ROM            TEAC     DV-516GC         XT11 PQ: 0 ANSI: 0
+Oct 12 23:24:38 stein kernel: sr2: scsi3-mmc drive: 48x/48x cd/rw xa/form2 cdda tray
+Oct 12 23:24:38 stein kernel: sr 22:0:0:0: Attached scsi CD-ROM sr2
+Oct 12 23:24:38 stein kernel: sr 22:0:0:0: Attached scsi generic sg7 type 5
 
-> 
-> 
-> - Stephan
-> 
-> 
-> > >>
-> > >> Regards,
-> > >>
-> > >> Tony
-> > >
-> > > The history for those patches, for me, originated with Jacob Tanenbaum's
-> > > patchset.  I was taking over for him as he was going back to school.  I
-> > > did some misc. changes for further submission, but I was not the
-> > > original author.  I don't know Stephan's involvement - however, in the
-> > > source files he's attributed credit in the header, as well as one of my
-> > > coworkers so presumably there was some involvement on both ends.  I
-> > > recognize some of the code as coming from our kernel release, so likely
-> > > it was a hybrid originally between Stephan, Peter, and Jacob.
-> > >
-> > > That's about the extent that I know.
-> > >
-> > > - Tim
-> >
-> > Tony,
-> >
-> > LogicPD engineers did the initial porting and then Stephan Linz
-> > re-started the work on the, then recent, 2.6.32 Kernel using our BSP
-> > as a starting point. He was kind enough to send those LogicPD and we
-> > began putting it together against the latest Linux Kernel for
-> > inclusion and that was done by Jacob over the summer and finished off
-> > by Tim.
-> >
-> > Stephan Linz is credited in the patch and Peter Barada (another
-> > LogicPD employee) is listed as the maintainer though his part (along
-> > with me) in getting these specific patches out have been more behind
-> > the scenes. So having the names listed as they are now is OK.
-> >
-> > In the upcoming months we will be pushing out additional support for
-> > the LogicPD's boards and it will most likely come up a variety of
-> > LogicPD engineers depending on our workload..
-> >
-> > Thanks
-> > -- Ashwin
-> 
-> 
-> -- 
-> Viele Grüße,
-> Stephan Linz
-> ______________________________________________________________________________
-> OpenDCC: http://www.li-pro.net/opendcc.phtml
-> PC/M: http://www.li-pro.net/pcm.phtml
-> CDK4AVR: http://cdk4avr.sourceforge.net/
-> CDK4NIOS: http://cdk4nios.sourceforge.net/
-> CDK4MSP: http://cdk4msp.sourceforge.net/
-> CPM4L: http://download.opensuse.org/repositories/home:/rexut:/CPM4L
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+The initial Inquiry(?) timeout happens not always but quite often.  It
+did not happen when I tested the earlier version of the patch in which I
+used system_nrt_wq.
+
+Maybe I need ordered per-target workqueues.  Not Signed-off-by me yet.
+
+Tejun, can a workqueue job call destroy_workqueue on its own queue?
+---
+ drivers/firewire/sbp2.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+Index: b/drivers/firewire/sbp2.c
+===================================================================
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -1656,7 +1656,8 @@ MODULE_ALIAS("sbp2");
+ 
+ static int __init sbp2_init(void)
+ {
+-	sbp2_wq = create_singlethread_workqueue(KBUILD_MODNAME);
++	sbp2_wq = alloc_workqueue(KBUILD_MODNAME,
++				  WQ_NON_REENTRANT | WQ_RESCUER, 0);
+ 	if (!sbp2_wq)
+ 		return -ENOMEM;
+ 
+
+-- 
+Stefan Richter
+-=====-==-=- =-=- -==--
+http://arcgraph.de/sr/
+
