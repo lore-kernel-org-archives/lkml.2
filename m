@@ -1,160 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab0JLDCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 23:02:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56840 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755738Ab0JLDCR convert rfc822-to-8bit (ORCPT
+	id S1756195Ab0JLDIB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 23:08:01 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41286 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754320Ab0JLDIA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 23:02:17 -0400
+	Mon, 11 Oct 2010 23:08:00 -0400
+Message-ID: <4CB3D097.6000604@kernel.org>
+Date: Mon, 11 Oct 2010 20:05:59 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
 MIME-Version: 1.0
-In-Reply-To: <AANLkTi=dU4oYfqrBGYmSCmYf2cRsBX-Pf6A9X9N0YaZA@mail.gmail.com>
-References: <1d3f23371002091921m7f47a1fbt1cf7fd2ef0a927fa@mail.gmail.com>
-	<AANLkTi=dU4oYfqrBGYmSCmYf2cRsBX-Pf6A9X9N0YaZA@mail.gmail.com>
-Date: Tue, 12 Oct 2010 13:02:16 +1000
-Message-ID: <AANLkTimAKXb=iRGOZKDOcELBdNhrDs8pd_yLMt1MD10Y@mail.gmail.com>
-Subject: Re: PPC: Possible bug in prom_parse.c:of_irq_map_raw?
-From: John Williams <john.williams@petalogix.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
-        Michal Simek <michal.simek@petalogix.com>,
-        devicetree-discuss <devicetree-discuss@lists.ozlabs.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Andrew Morton <akpm@linux-foundation.org>, Jack Steiner <steiner@sgi.com>,
+        mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] fix slowness of /proc/stat per-cpu IRQ sum calculation
+ on large system by a new counter
+References: <20100929122206.GA30317@sgi.com>	<20100930140901.037f9dc7.kamezawa.hiroyu@jp.fujitsu.com>	<20101004143414.GA4261@sgi.com>	<20101005103650.7ebe64f0.kamezawa.hiroyu@jp.fujitsu.com>	<20101005171907.23c75102.kamezawa.hiroyu@jp.fujitsu.com>	<20101008163557.GA13859@sgi.com>	<20101012090907.5dd1cf57.kamezawa.hiroyu@jp.fujitsu.com>	<20101011172226.6162476c.akpm@linux-foundation.org> <20101012113736.f34d1426.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20101012113736.f34d1426.kamezawa.hiroyu@jp.fujitsu.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
+On 10/11/2010 07:37 PM, KAMEZAWA Hiroyuki wrote:
+> Jack Steiner reported slowness of /proc/stat on a large system.
+> This patch set tries to improve it.
+> 
+>> The combination of the 2 patches solves the problem.
+>> The timings are (4096p, 256 nodes, 4592 irqs):
+>>
+>> 	# time cat /proc/stat > /dev/null
+>>
+>> 	Baseline:		12.627 sec
+>> 	Patch1  :		 2.459 sec
+>> 	Patch 1 + Patch 2:	  .561 sec
+> 
+> please review.
+> 
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Problem: 'cat /proc/stat' is too slow on verrry bis system.
+> 
+> /proc/stat shows the total number of all interrupts to each cpu. But when
+> the number of IRQs are very large, it takes very long time and 'cat /proc/stat'
+> takes more than 10 secs. This is because sum of all irq events are counted
+> when /proc/stat is read. This patch adds "sum of all irq" counter percpu
+> and update it at events.
+> 
+> The cost of reading /proc/stat is important because it's used by major
+> applications as 'top', 'ps', 'w', etc....
+> 
+> A test on a host (4096cpu, 256 nodes, 4592 irqs) shows
+> 
+>  %time cat /proc/stat > /dev/null
+>  Before Patch:  12.627 sec
+>  After  Patch:  2.459 sec
+> 
+> Tested-by: Jack Steiner <steiner@sgi.com>
+> Acked-by: Jack Steiner <steiner@sgi.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  fs/proc/stat.c              |    4 +---
+>  include/linux/kernel_stat.h |   14 ++++++++++++--
+>  2 files changed, 13 insertions(+), 5 deletions(-)
+> 
+> Index: linux-2.6.36-rc7/fs/proc/stat.c
+> ===================================================================
+> --- linux-2.6.36-rc7.orig/fs/proc/stat.c
+> +++ linux-2.6.36-rc7/fs/proc/stat.c
+> @@ -52,9 +52,7 @@ static int show_stat(struct seq_file *p,
+>  		guest = cputime64_add(guest, kstat_cpu(i).cpustat.guest);
+>  		guest_nice = cputime64_add(guest_nice,
+>  			kstat_cpu(i).cpustat.guest_nice);
+> -		for_each_irq_nr(j) {
+> -			sum += kstat_irqs_cpu(j, i);
+> -		}
+> +		sum = kstat_cpu_irqs_sum(i);
 
-On Fri, Oct 8, 2010 at 4:34 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Reaching way back into the past....
+should be 
++		sum += kstat_cpu_irqs_sum(i);
 
-Indeed
+>  		sum += arch_irq_stat_cpu(i);
+>  
+>  		for (j = 0; j < NR_SOFTIRQS; j++) {
+> Index: linux-2.6.36-rc7/include/linux/kernel_stat.h
+> ===================================================================
+> --- linux-2.6.36-rc7.orig/include/linux/kernel_stat.h
+> +++ linux-2.6.36-rc7/include/linux/kernel_stat.h
+> @@ -33,6 +33,7 @@ struct kernel_stat {
+>  #ifndef CONFIG_GENERIC_HARDIRQS
+>         unsigned int irqs[NR_IRQS];
+>  #endif
+> +	unsigned long irqs_sum;
+>  	unsigned int softirqs[NR_SOFTIRQS];
+>  };
+>  
+> @@ -54,6 +55,7 @@ static inline void kstat_incr_irqs_this_
+>  					    struct irq_desc *desc)
+>  {
+>  	kstat_this_cpu.irqs[irq]++;
+> +	kstat_this_cpu.irqs_sum++;
+>  }
+>  
+>  static inline unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
+> @@ -65,8 +67,9 @@ static inline unsigned int kstat_irqs_cp
+>  extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
+>  #define kstat_irqs_this_cpu(DESC) \
+>  	((DESC)->kstat_irqs[smp_processor_id()])
+> -#define kstat_incr_irqs_this_cpu(irqno, DESC) \
+> -	((DESC)->kstat_irqs[smp_processor_id()]++)
+> +#define kstat_incr_irqs_this_cpu(irqno, DESC) do {\
+> +	((DESC)->kstat_irqs[smp_processor_id()]++);\
+> +	kstat_this_cpu.irqs_sum++; } while (0)
+>  
+>  #endif
+>  
+> @@ -94,6 +97,13 @@ static inline unsigned int kstat_irqs(un
+>  	return sum;
+>  }
+>  
+> +/*
+> + * Number of interrupts per cpu, since bootup
+> + */
+> +static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
+> +{
+> +	return kstat_cpu(cpu).irqs_sum;
+> +}
+>  
+>  /*
+>   * Lock/unlock the current runqueue - to extract task statistics:
 
-> John, did you ever solve your issue here?  Comments below.
-
-The fix in our case was to explicitly add child nodes to the PCI
-controller, with interrupt-parent and interrupts properties. The
-product in question had a fixed set of devices on the PCI bus, so this
-was not a problem.
-
-So, it's not really resolved so much as avoided.
-
-Other comments below:
-
->> Perhaps this is my misunderstanding, but I'm looking at the bit of
->> code in of_irq_map_raw() that iterates the interrupt-map DTS node,
->> which I am seeing to behave strangely when handling the interrupt-map
->> property on a PCI bridge node.
->>
->> Early in the function, we get the #address-cells value from the node -
->> in this case the PCI bridge, and store it in local var addrsize:
->>
->>        /* Look for this #address-cells. We have to implement the old linux
->>         * trick of looking for the parent here as some device-trees rely on it
->>         */
->>        old = of_node_get(ipar);
->>        do {
->>                tmp = of_get_property(old, "#address-cells", NULL);
->>                tnode = of_get_parent(old);
->>                of_node_put(old);
->>                old = tnode;
->>        } while(old && tmp == NULL);
->>        of_node_put(old);
->>        old = NULL;
->>        addrsize = (tmp == NULL) ? 2 : *tmp;
->>
->>        DBG(" -> addrsize=%d\n", addrsize);
->>
->>
->> Later, once we've found the interrupt-map and are iterating over it
->> attempting to match on PCI device addresses, there is this little
->> fragment:
->>
->>                        /* Get the interrupt parent */
->>                        if (of_irq_workarounds & OF_IMAP_NO_PHANDLE)
->>                                newpar = of_node_get(of_irq_dflt_pic);
->>                        else
->>                                newpar =
->> of_find_node_by_phandle((phandle)*imap);
->>                        imap++;
->>                        --imaplen;
->>
->>                        /* Check if not found */
->>                        if (newpar == NULL) {
->>                                DBG(" -> imap parent not found !\n");
->>                                goto fail;
->>                        }
->>
->>                        /* Get #interrupt-cells and #address-cells of new
->>                         * parent
->>                         */
->>                        tmp = of_get_property(newpar, "#interrupt-cells", NULL);
->>                        if (tmp == NULL) {
->>                                DBG(" -> parent lacks #interrupt-cells !\n");
->>                                goto fail;
->>                        }
->>                        newintsize = *tmp;
->>                        tmp = of_get_property(newpar, "#address-cells", NULL);
->>                        newaddrsize = (tmp == NULL) ? 0 : *tmp;
->>
->> Finally, later in the loop we update addrsize=newaddrsize
->>
->> As I read this code, and the behaviour I'm seeing, is that if the
->> interrupt controller parent device doesn't have an #address-cells
->> entry, then this get_property will return fail, therefore setting
->> newaddrsize  to zero.  This then means that subsequent match attempts
->> when iterating the interrupt-map always fail, because the match length
->> (addrsize) is 0.
->
-> Correct.  The interrupt-map property contains the following fields:
->
-> child-unit-address child-irq irq-controller irq-parent-unit-address parent-irq
->
-> In the *vast majority* of cases, the irq-parent-unit-address is a
-> zero-length field because #address-cells isn't present on the
-> interrupt controller parent.  So effectively interrupt-map becomes:
->
-> child-unit-address child-irq irq-controller parent-irq
->
-> See epapr 1.0 for a full discussion
->
->>
->> Maybe I'm missing something here, but shouldn't this last bit of code
->> instead be:
->>
->>                        tmp = of_get_property(newpar, "#address-cells", NULL);
->>                        newaddrsize = (tmp == NULL) ? addrsize : *tmp;
->>
->>  ^^^^^^^^^
->> ?
->>
->> In other words, if the parent node has an #address-cells value, then
->> use it, otherwise stick to the #address-cells value we picked up for
->> the actual node in question (ie the PCI bridge).
->
-> No, because at this point we absolutely do want to know how big the
-> parent #address-cells is, and if it is missing, we need to use 0.  If
-> the child's addrsize continued to be used, then the interrupt-map
-> parsing would get unaligned.
->
-> The inner loop is over the entries in interrupt-map.  addrsize and
-> intsize are only updated in the case where a match is found in the
-> table.  If a match isn't found, then it should bail out to the 'fail'
-> label.
->
->> The way this is manifesting itself in the system I'm looking at is
->> that only the PCI device matching the first entry in the PCI bridge
->> interrupt-map property is correctly matching. For PCI devices that
->> require more than one pass through the interrupt-map loop, addrsize
->> goes to zero and no further match is possible.
->
-> Something sounds fishy.  If you're still having problems, can you
-> enable #define DEBUG in drivers/of/irq.c and post the output?
-
-OK, this may take me a lilttle while as the test system is in storage!
-
-Thanks,
-
-John
