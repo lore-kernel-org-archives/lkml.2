@@ -1,58 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932671Ab0JLPn1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 11:43:27 -0400
-Received: from mail.perches.com ([173.55.12.10]:2770 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308Ab0JLPn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 11:43:26 -0400
-Subject: Re: [PATCH] ath5k: fix build break from "ath5k: Print out opmode
- in debugfs"
-From: Joe Perches <joe@perches.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1286895206-3030-1-git-send-email-linville@tuxdriver.com>
-References: <20101012163519.a88f2040.sfr@canb.auug.org.au>
-	 <1286895206-3030-1-git-send-email-linville@tuxdriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Oct 2010 08:43:24 -0700
-Message-ID: <1286898204.1117.47.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S932609Ab0JLPq3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 11:46:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27770 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757505Ab0JLPq1 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 12 Oct 2010 11:46:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jan Beulich <JBeulich@novell.com>, xen-devel@lists.xensource.com,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Konrad Rzeszutek Wilk <konrad@kernel.org>,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Subject: [PATCH 05/23] xen: identity map gsi->irqs
+Date: Tue, 12 Oct 2010 11:44:13 -0400
+Message-Id: <1286898271-32018-6-git-send-email-konrad.wilk@oracle.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
+References: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-12 at 10:53 -0400, John W. Linville wrote:
-> Without this and with CONFIG_ATH_DEBUG not set...
-> ERROR: ".ath_opmode_to_string" [drivers/net/wireless/ath/ath5k/ath5k.ko] undefined!
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Perhaps this instead?
+Impact: preserve compat with native
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Reserve the lower irq range for use for hardware interrupts so we
+can identity-map them.
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 ---
- drivers/net/wireless/ath/debug.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/xen/events.c |   23 +++++++++++++++++------
+ 1 files changed, 17 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/wireless/ath/debug.h b/drivers/net/wireless/ath/debug.h
-index a3a5a62..5013045 100644
---- a/drivers/net/wireless/ath/debug.h
-+++ b/drivers/net/wireless/ath/debug.h
-@@ -78,6 +78,13 @@ ath_print(struct ath_common *common, int dbg_mask, const char *fmt, ...)
- #endif /* CONFIG_ATH_DEBUG */
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index b8f030a..8eeb808 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -33,6 +33,7 @@
+ #include <asm/ptrace.h>
+ #include <asm/irq.h>
+ #include <asm/idle.h>
++#include <asm/io_apic.h>
+ #include <asm/sync_bitops.h>
+ #include <asm/xen/hypercall.h>
+ #include <asm/xen/hypervisor.h>
+@@ -46,9 +47,6 @@
+ #include <xen/interface/hvm/hvm_op.h>
+ #include <xen/interface/hvm/params.h>
  
- /** Returns string describing opmode, or NULL if unknown mode. */
-+#ifdef CONFIG_ATH_DEBUG
- const char *ath_opmode_to_string(enum nl80211_iftype opmode);
-+#else
-+static inline const char *ath_opmode_to_string(enum nl80211_iftype opmode)
+-/* Leave low irqs free for identity mapping */
+-#define LEGACY_IRQS	16
+-
+ /*
+  * This lock protects updates to the following mapping and reference-count
+  * arrays. The lock does not need to be acquired to read the mapping tables.
+@@ -351,12 +349,24 @@ static void unmask_evtchn(int port)
+ 	put_cpu();
+ }
+ 
++static int get_nr_hw_irqs(void)
 +{
-+	return NULL;
-+}
++	int ret = 1;
++
++#ifdef CONFIG_X86_IO_APIC
++	ret = get_nr_irqs_gsi();
 +#endif
++
++	return ret;
++}
++
+ static int find_unbound_irq(void)
+ {
+ 	int irq;
+ 	struct irq_desc *desc;
++	int start = get_nr_hw_irqs();
  
- #endif /* ATH_DEBUG_H */
-
+-	for (irq = 0; irq < nr_irqs; irq++) {
++	for (irq = start; irq < nr_irqs; irq++) {
+ 		desc = irq_to_desc(irq);
+ 		/* only 0->15 have init'd desc; handle irq > 16 */
+ 		if (desc == NULL)
+@@ -383,8 +393,8 @@ static int find_unbound_irq(void)
+ 
+ static bool identity_mapped_irq(unsigned irq)
+ {
+-	/* only identity map legacy irqs */
+-	return irq < LEGACY_IRQS;
++	/* identity map all the hardware irqs */
++	return irq < get_nr_hw_irqs();
+ }
+ 
+ static void pirq_unmask_notify(int irq)
+@@ -553,6 +563,7 @@ int xen_allocate_pirq(unsigned gsi)
+ 
+ 	if (identity_mapped_irq(gsi)) {
+ 		irq = gsi;
++		irq_to_desc_alloc_node(irq, 0);
+ 		dynamic_irq_init(irq);
+ 	} else
+ 		irq = find_unbound_irq();
+-- 
+1.7.0.4
 
