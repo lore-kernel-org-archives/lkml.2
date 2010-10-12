@@ -1,155 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932288Ab0JLL7Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 07:59:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40237 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932231Ab0JLL7Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 07:59:25 -0400
-Date: Tue, 12 Oct 2010 13:52:57 +0200
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Dan Williams <dan.j.williams@intel.com>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dma: get_user_pages -> get_user_pages_fast
-Message-ID: <20101012115257.GA24389@redhat.com>
-References: <20101011165310.GA5122@redhat.com>
- <1286818496.1998.43.camel@laptop>
+	id S932304Ab0JLMFn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 08:05:43 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:46991 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932259Ab0JLMFm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 08:05:42 -0400
+Date: Tue, 12 Oct 2010 23:05:37 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 19/18] fs: split __inode_add_to_list
+Message-ID: <20101012120537.GD32255@dastard>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <20101009080854.GA15943@infradead.org>
+ <20101012104727.GC32255@dastard>
+ <20101012113130.GA24650@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286818496.1998.43.camel@laptop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20101012113130.GA24650@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 07:34:56PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-10-11 at 18:53 +0200, Michael S. Tsirkin wrote:
-> > There doesn't seem to be any advantage to using
-> > get_user_pages, so switch iovlock to get_user_pages_fast
-> > instead.
+On Tue, Oct 12, 2010 at 07:31:30AM -0400, Christoph Hellwig wrote:
+> On Tue, Oct 12, 2010 at 09:47:27PM +1100, Dave Chinner wrote:
+> > The only reason XFS hashed the inodes was to avoid problems in the
+> > generic code that checked for unhashed inodes during clear_inode(). The
+> > evict() changeover moved that unhashed check into
+> > generic_drop_inode(), which the filesystem can override. Hence if
+> > you add a ->drop_inode() method for XFS that just checks the link
+> > count, we can avoid ha??hing the inodes altogether for XFS.
 > > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> > ---
-> > 
-> > Lightly tested.  This patch is on top of the bugfix patch I posted
-> > previously.
-> > 
-> >  drivers/dma/iovlock.c |   10 ++--------
-> >  1 files changed, 2 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
-> > index 21ed8f3..c6917e8 100644
-> > --- a/drivers/dma/iovlock.c
-> > +++ b/drivers/dma/iovlock.c
-> > @@ -95,17 +95,11 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
-> >  		pages += page_list->nr_pages;
-> >  
-> >  		/* pin pages down */
-> > -		down_read(&current->mm->mmap_sem);
-> > -		ret = get_user_pages(
-> > -			current,
-> > -			current->mm,
-> > +		ret = get_user_pages_fast(
-> >  			(unsigned long) iov[i].iov_base,
-> >  			page_list->nr_pages,
+> > I can add another patch on top of this one to do that if you want...
 > 
-> What's the actual nr_pages here? Is it limited to some small number or
-> can it be arbitrarily large?
-> >  			1,	/* write */
-> > -			0,	/* force */
-> > -			page_list->pages,
-> > -			NULL);
-> > -		up_read(&current->mm->mmap_sem);
-> > +			page_list->pages);
-> >  
-> >  		if (unlikely(ret < 0))
-> >  			goto unpin;
-> 
+> It's unfortunately not that simple.  Take a look at the unhashed check
+> in __mark_inode_dirty.
 
+Damn - I forgot about that one. Does anyone know why that check is
+there?
 
-I think it can get arbitrarily large: just above this is this code:
+> The drop_inode check could be avoided for
+> quite a long time now.  What we could do however is the same hack as
+> JFS does in diReadSpecial().
 
-                len -= iov[i].iov_len;
+Nasty, but effective. Worth considering, I think.
 
-                if (!access_ok(VERIFY_WRITE, iov[i].iov_base, iov[i].iov_len))
-                        goto unpin;
-        
-                page_list->nr_pages = num_pages_spanned(&iov[i]);
+Cheers,
 
-part of this is a bug: we should be locking at most len bytes.
-This could be solved by an untested patch below.
-Comments?
-We probably should set a limit on the number of pages, too:
-currently there could be a large # of very small chunks in the iovec.
-
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
----
-
-diff --git a/drivers/dma/iovlock.c b/drivers/dma/iovlock.c
-index 121d7fd..1032f7b 100644
---- a/drivers/dma/iovlock.c
-+++ b/drivers/dma/iovlock.c
-@@ -32,11 +32,11 @@
- #include <asm/io.h>
- #include <asm/uaccess.h>
- 
--static int num_pages_spanned(struct iovec *iov)
-+static int num_pages_spanned(void __user *iov_base, size_t iov_len)
- {
- 	return
--	((PAGE_ALIGN((unsigned long)iov->iov_base + iov->iov_len) -
--	((unsigned long)iov->iov_base & PAGE_MASK)) >> PAGE_SHIFT);
-+		((PAGE_ALIGN((unsigned long)iov_base + iov_len) -
-+		  ((unsigned long)iov_base & PAGE_MASK)) >> PAGE_SHIFT);
- }
- 
- /*
-@@ -54,19 +54,21 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
- 	int i;
- 	int ret;
- 	int nr_iovecs = 0;
--	int iovec_len_used = 0;
- 	int iovec_pages_used = 0;
-+	size_t l = len;
- 
- 	/* don't pin down non-user-based iovecs */
- 	if (segment_eq(get_fs(), KERNEL_DS))
- 		return NULL;
- 
- 	/* determine how many iovecs/pages there are, up front */
--	do {
--		iovec_len_used += iov[nr_iovecs].iov_len;
--		iovec_pages_used += num_pages_spanned(&iov[nr_iovecs]);
-+	while (l) {
-+		size_t s = min(l, iov[nr_iovecs].iov_len);
-+		l -= s;
-+		iovec_pages_used += num_pages_spanned(iov[nr_iovecs].iov_base,
-+						      s);
- 		nr_iovecs++;
--	} while (iovec_len_used < len);
-+	}
- 
- 	/* single kmalloc for pinned list, page_list[], and the page arrays */
- 	local_list = kmalloc(sizeof(*local_list)
-@@ -82,13 +84,14 @@ struct dma_pinned_list *dma_pin_iovec_pages(struct iovec *iov, size_t len)
- 
- 	for (i = 0; i < nr_iovecs; i++) {
- 		struct dma_page_list *page_list = &local_list->page_list[i];
-+		size_t s = min(len, iov[nr_iovecs].iov_len);
- 
--		len -= iov[i].iov_len;
-+		len -= s;
- 
--		if (!access_ok(VERIFY_WRITE, iov[i].iov_base, iov[i].iov_len))
-+		if (!access_ok(VERIFY_WRITE, iov[i].iov_base, s))
- 			goto unpin;
- 
--		page_list->nr_pages = num_pages_spanned(&iov[i]);
-+		page_list->nr_pages = num_pages_spanned(iov[i].iov_base, s);
- 		page_list->base_address = iov[i].iov_base;
- 
- 		page_list->pages = pages;
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
