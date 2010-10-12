@@ -1,82 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758205Ab0JLToE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 15:44:04 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:18101 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752970Ab0JLToC (ORCPT
+	id S1758230Ab0JLTqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 15:46:04 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:39576 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757821Ab0JLTqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 15:44:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=kPrTkZyfU/3C828oGZQkMX2+orkvReybwXd+CC77pnybTVjjPRE2HBfLroeJ32RT+a
-         rV9WwyyPPWXySo1bDR3g==
-Date: Tue, 12 Oct 2010 12:43:54 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Christoph Lameter <cl@linux.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
-        Michael Chan <mchan@broadcom.com>,
-        Eilon Greenstein <eilong@broadcom.com>, Christoph Hellwig <hch@lst.de>,
-        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
-Subject: Re: [PATCH net-next] net:  allocate skbs on local node
-In-Reply-To: <alpine.DEB.2.00.1010120745360.31832@router.home>
-Message-ID: <alpine.DEB.2.00.1010121234380.10165@chino.kir.corp.google.com>
-References: <1286838210.30423.128.camel@edumazet-laptop> <1286839363.30423.130.camel@edumazet-laptop> <1286859925.30423.184.camel@edumazet-laptop> <20101011230322.f0f6dd47.akpm@linux-foundation.org> <1286866699.30423.234.camel@edumazet-laptop>
- <20101012002435.f51f2c0e.akpm@linux-foundation.org> <1286869793.2732.24.camel@edumazet-laptop> <20101012005856.994bea6d.akpm@linux-foundation.org> <4CB441CB.2000708@cs.helsinki.fi> <alpine.DEB.2.00.1010120745360.31832@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+	Tue, 12 Oct 2010 15:46:02 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=I57dkazTSvtVZCDhrDHI6LbsrsKa7cZz+6qDTd9J+Edz7L7/TUn/I61P8yXPpw1GwFn3SSIofsWczHsexZ74swlA9l0YiAQrze+0vTOKaAMzj8STi9ptvKUAOlnifvOR;
+Date: Tue, 12 Oct 2010 12:49:38 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Dave Airlie <airlied@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Keith Packard <keithp@keithp.com>
+Subject: Re: "do_IRQ: 0.89 No irq handler for vector (irq -1)"
+Message-ID: <20101012124938.47170457@jbarnes-desktop>
+In-Reply-To: <201010122101.17812.rjw@sisk.pl>
+References: <AANLkTikZj21CtFwC2ttvc0wJPx2qyedn7b1xXaxH659E@mail.gmail.com>
+	<20101011154826.440b4990@jbarnes-desktop>
+	<20101011164014.5a11ee48@jbarnes-desktop>
+	<201010122101.17812.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Oct 2010, Christoph Lameter wrote:
+On Tue, 12 Oct 2010 21:01:17 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> Hmmm. Given these effects I think we should be more cautious regarding the
-> unification work. May be the "unified allocator" should replace SLAB
-> instead and SLUB can stay unchanged?
-
-Linus has said that he refuses to merge another allocator until one is 
-removed or replaced, so that would force the unificiation patches to go 
-into slab instead if you want to leave slub untouched.
-
-> The unification patches go back to
-> the one lock per node SLAB thing because the queue maintenance overhead is
-> otherwise causing large regressions in hackbench because of lots of atomic
-> ops. The per node lock seem to be causing problems here in the network
-> stack,.
-
-The TCP_RR regression on slub is because of what I described a couple 
-years ago as "slab thrashing" where cpu slabs would be filled with 
-allocations, then frees would occur to move those slabs from the full to 
-partial list with only a few free objects, those partial slabs would 
-quickly become full, etc.  Performance gets better if you change the 
-per-node lock to a trylock when iterating the partial list and preallocate 
-and have a substantially longer partial list than normal (and it still 
-didn't rival slab's performance), so I don't think it's only a per-node 
-lock that's the issue , it's all the slowpath overhead of swapping the cpu 
-slab out for another slab.  The TCP_RR load would show slub stats that 
-indicate certain caches, kmalloc-256 and kmalloc-2048, would have ~98% of 
-allocations coming from the slowpath.
-
-This gets better if you allocate higher order slabs (and kmalloc-2048 is 
-already order-3 by default) but then allocating new slabs gets really slow 
-if not impossible on smaller machines.  The overhead of even compaction 
-will kill us.
-
-> Take the unified as a SLAB cleanup instead? Then at least we have
-> a large common code base and just differentiate through the locking
-> mechanism?
+> On Tuesday, October 12, 2010, Jesse Barnes wrote:
+> > On Mon, 11 Oct 2010 15:48:26 -0700
+> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > 
+> > > On Fri, 8 Oct 2010 21:46:50 +1000
+> > > Dave Airlie <airlied@gmail.com> wrote:
+> > > > Not sure how best to fix, I can workaround by calling
+> > > > pci_set_power_state(PCI_D0) in the drm drivers, but I sorta thing the
+> > > > PCI layer should take care of this.
+> > > 
+> > > So I think we *should* be able to call pci_disable_device at remove
+> > > time.  But as you say, some platforms may not correctly re-route VGA
+> > > space to an existing device or disable it properly when we do that.
+> > > AFAICT x86 will be ok here though (seems to work ok locally too).
+> > 
+> > Just tested this some more, and I think it's the right thing to do in
+> > the KMS case at least.  When we load a KMS driver it takes over the gfx
+> > device and nothing can assume anything about VGA state unless using the
+> > VGA arbiter.  So calling pci_disable_device() in the shutdown path of a
+> > KMS driver shouldn't make things any worse, and will work around this
+> > issue.
+> > 
+> > Doing so in the non-KMS case violates some PC assumptions though, in
+> > that things like vgacon and the BIOS will assume VGA memory is still
+> > around, which on some platforms pci_disable_device() may affect (I only
+> > checked the x86 implementation).
+> > 
+> > > That said, it seems like we should update the current device state at
+> > > load time as well, once we've matched the driver it seems like there
+> > > should be no harm.
+> > > 
+> > > Rafael, what do you think?  Would having the correct power state at
+> > > load time cause any trouble with other PM code?  I know we've had
+> > > issues with setting it explicitly in the past...
+> > 
+> > So we should probably make pci_enable_device pick up the current state
+> > as well, instead of assuming it's unknown just because the enable count
+> > was non-zero (which as Dave points out, can be affected by sysfs writes
+> > too).
+> > 
+> > The only downside I can think of there is that if the device is already
+> > enabled, we generally have to assume another driver owns it, and who
+> > knows if the device is actually alive enough to read the current state
+> > from.  But I think we handle those errors ok too, so pulling it out
+> > should be safe.
 > 
+> I remember trying to do something like this and it didn't play well with the
+> initialization.  Still, I didn't do that in pci_enable_device(), so I can't say
+> for sure at the moment.  I _think_ it will be fine, though.
 
-Will you be adding the extensive slub debugging to slab then?  It would be 
-a shame to lose it because one allocator is chosen over another for 
-performance reasons and then we need to recompile to debug issues as they 
-arise.
+Seems to work ok for the buggy i915 reload case.  But looking at it
+again, I really don't like two things:
+  1) doing just the set_power_state seems wrong, what about the rest of
+  enable?
+  2) allowing nested enables at all
+
+I know sysfs currently allows us to bump the enable count to arbitrary
+levels, but that's easy to fix; we can just check pci_is_enabled()
+before calling enable_device in the sysfs store routine.
+
+If we did that, we could warn when pci_enable_device is called in a
+nested way, which is generally a bug (two drivers trying to take over a
+device?).
+
+I don't think I buy that VGA is special anyway, at least not for KMS
+enabled kernels, where vgacon and the BIOS can't assume anything about
+graphics state anymore.  More generally, I don't think BIOSes have been
+able to assume anything about the current graphics state since Windows
+3.1, when most platforms stopped using BIOS calls and/or VGA regs for
+mode setting.
+
+Thoughts?
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
+
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -963,9 +963,6 @@ static int do_pci_enable_device(struct pci_dev *dev, int bar
+ {
+        int err;
+ 
+-       err = pci_set_power_state(dev, PCI_D0);
+-       if (err < 0 && err != -EIO)
+-               return err;
+        err = pcibios_enable_device(dev, bars);
+        if (err < 0)
+                return err;
+@@ -994,6 +991,10 @@ static int __pci_enable_device_flags(struct pci_dev *dev,
+        int err;
+        int i, bars = 0;
+ 
++       err = pci_set_power_state(dev, PCI_D0);
++       if (err < 0 && err != -EIO)
++               return err;
++
+        if (atomic_add_return(1, &dev->enable_cnt) > 1)
+                return 0;               /* already enabled */
+ 
