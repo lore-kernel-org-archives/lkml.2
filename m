@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959Ab0JLRrE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:47:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15748 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751044Ab0JLRrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:47:01 -0400
-Subject: Re: [PATCH 2/5] secmark: make secmark object handling generic
-From: Eric Paris <eparis@redhat.com>
-To: Pablo Neira Ayuso <pablo@netfilter.org>
-Cc: Jan Engelhardt <jengelh@medozas.de>, linux-kernel@vger.kernel.org,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        paul.moore@hp.com, jmorris@namei.org, selinux@tycho.nsa.gov,
-        sds@tycho.nsa.gov, linux-security-module@vger.kernel.org,
-        mr.dash.four@googlemail.com
-In-Reply-To: <4CB499E3.5030305@netfilter.org>
-References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
-	 <20101012154015.26943.18385.stgit@paris.rdu.redhat.com>
-	 <alpine.LNX.2.01.1010121824540.15529@obet.zrqbmnf.qr>
-	 <4CB499E3.5030305@netfilter.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Oct 2010 13:45:33 -0400
-Message-ID: <1286905533.2608.21.camel@dhcp235-107.rdu.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1757548Ab0JLRxY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:53:24 -0400
+Received: from communigate.iinet.net.au ([203.59.1.19]:52218 "EHLO
+	octa4.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752274Ab0JLRxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 13:53:23 -0400
+X-Greylist: delayed 3598 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 13:53:22 EDT
+From: Webmail Administrator <account_domain@accountant.com>
+Subject: Dear Account User
+X-Mailer: CommuniGate Pro WebUser Interface v.4.1.1
+Date: Wed, 13 Oct 2010 00:53:15 +0800
+Message-ID: <web-247221970@octa4.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	format=flowed
+Content-Transfer-Encoding: 7BIT
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-10-12 at 19:24 +0200, Pablo Neira Ayuso wrote:
-> On 12/10/10 18:26, Jan Engelhardt wrote:
-> > On Tuesday 2010-10-12 17:40, Eric Paris wrote:
 
-> >> static struct xt_target secmark_tg_reg __read_mostly = {
-> >> -	.name       = "SECMARK",
-> >> -	.revision   = 0,
-> >> -	.family     = NFPROTO_UNSPEC,
-> >> -	.checkentry = secmark_tg_check,
-> >> -	.destroy    = secmark_tg_destroy,
-> >> -	.target     = secmark_tg,
-> >> -	.targetsize = sizeof(struct xt_secmark_target_info),
-> >> -	.me         = THIS_MODULE,
-> >> +	.name		= "SECMARK",
-> >> +	.revision	= 0,
-> >> +	.family		= NFPROTO_UNSPEC,
-> >> +	.checkentry	= secmark_tg_check,
-> >> +	.destroy	= secmark_tg_destroy,
-> >> +	.target		= secmark_tg,
-> >> +	.targetsize	= sizeof(struct xt_secmark_target_info),
-> >> +	.me		= THIS_MODULE,
-> >> };
-> 
-> I think that we don't need that extra tab above.
+Dear Account Owner: 
 
-Are you saying that you prefer lots of spaces to get alignment rather
-than the single tab?  I see examples of both in other struct xt_target
-definitions.  I didn't make any syntax changes to this struct, so my
-guess is that I made this change when I discovered eight spaces in a row
-as I was checking the file for tab->space screw-ups before submission.
-Since this is a whitespace change in the middle of a real patch I guess
-I can drop the hunk entirely if that's what you are asking for....
+It has come to our notice that your email has not passed 
+the 
+verification/Update process that we are presently working 
+on. 
+We are currently upgrading our data base and 
+e-mail account center .We are deleting all Old 
+Web mail email account to create more space for new 
+accounts. To prevent your account from closing 
+you will have to update it so that we will know that 
+it's a present used account. To complete your account 
+re-confirmation, you must reply to this email immediately 
+and enter your account details as requested below. 
 
--Eric
+*********************************************** 
+Email User-name : ......... ..... 
+EMAIL Password : ............... 
+Date of Birth : ................ 
+Country or Territory : ......... 
+************************************************ 
+****IMPORTANT : 
 
+This updating is compulsory as a result of our recent 
+server changes. If 
+you fail to update your email address you will soon be 
+unable to 
+receive/send mails.Also your email will not be equipped 
+with the latest 
+anti-virus system in our new servers. 
 
+This will make your email and PC vulnerable to virus 
+attacks from the 
+internet. 
+****HOW TO UPDATE: 
+
+To update simply reply the above to upgrading admin as 
+appropriate.Failure 
+to do so immediately will lead to SUSPENSION OF YOUR 
+ACCOUNT. 
+Thanks for your co-operation, 
+Web-mail Administrator 
+WEB MAIL BETA. 
