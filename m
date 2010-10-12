@@ -1,53 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932498Ab0JLNus (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:50:48 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35132 "EHLO hera.kernel.org"
+	id S932571Ab0JLNva (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:51:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34032 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932403Ab0JLNun (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:50:43 -0400
-Message-ID: <4CB467A3.4010200@kernel.org>
-Date: Tue, 12 Oct 2010 15:50:27 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S932546Ab0JLNv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:51:28 -0400
+Date: Tue, 12 Oct 2010 06:51:16 -0700
+From: Greg KH <gregkh@suse.de>
+To: Daniel Suchy <danny@danysek.cz>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: Re: PATCH: ftdi_sio new VID/PIDs for various Papouch devices
+Message-ID: <20101012135116.GA11657@suse.de>
+References: <4CB45E2A.9020407@danysek.cz> <20101012132208.GB10556@suse.de> <4CB463D1.4020204@danysek.cz> <20101012133753.GA11216@suse.de> <4CB46638.7060203@danysek.cz>
 MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] firewire: sbp2: parallelize login/inquiry, reconnect,
- and shutdown
-References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de> <tkrat.1433473bc081daa9@s5r6.in-berlin.de> <4CB3148C.5040902@kernel.org> <tkrat.1386de42b88d7218@s5r6.in-berlin.de>
-In-Reply-To: <tkrat.1386de42b88d7218@s5r6.in-berlin.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 12 Oct 2010 13:50:29 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB46638.7060203@danysek.cz>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 10/11/2010 11:27 PM, Stefan Richter wrote:
->> Hmmm... from glancing the code, there doesn't seem to anything which
->> can guarantee sbp2_release_target/reconnect() are finished before
->> sbp2_cleanup() returns, so the code section might go away with code
->> still running.  It seems like the right thing to do here would be
->> using alloc_workqueue(KBUILD_MODNAME, WQ_NON_REENTRANT, 0).  Am I
->> missing something?
+On Tue, Oct 12, 2010 at 03:44:24PM +0200, Daniel Suchy wrote:
+> This patch for FTDI USB serial driver ads new VID/PIDs used on various
+> devices manufactured by Papouch (http://www.papouch.com). These devices
+> have their own VID/PID, although they're using standard FTDI chip. In
+> ftdi_sio.c, I also made small cleanup to have declarations for all
+> Papouch devices together.
 > 
-> There are indeed situations where the last module reference was already
-> put down before the work is run for the last time.  Thanks for the hint.
-> 
-> What is preferable, an own workqueue instance whose destroy_workqueue()
-> lets sbp2_cleanup wait for unfinished work, or module ref-counting like
-> below?
+> Signed-off-by: Daniel Suchy <danny@danysek.cz>
 
-The best would be flushing the specific works but that isn't possible
-when works are used to do the final put.  I would go for using a
-separate workqueue.  With cmwq, each workqueue is much cheaper than
-before anyway.
+Yeah!
 
-Thanks.
+Nice job, I'll queue this up in a few days for the next release.
 
--- 
-tejun
+greg k-h
