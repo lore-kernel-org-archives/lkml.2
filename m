@@ -1,68 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab0JLG0W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 02:26:22 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:55227 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751457Ab0JLG0V (ORCPT
+	id S1754044Ab0JLGbg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 02:31:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43754 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab0JLGbg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 02:26:21 -0400
-Date: Tue, 12 Oct 2010 15:23:42 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH v4] memcg: reduce lock time at move charge
-Message-Id: <20101012152342.c5b489e4.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20101012144801.51d15a02.kamezawa.hiroyu@jp.fujitsu.com>
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<xr93wrpwkypv.fsf@ninji.mtv.corp.google.com>
-	<AANLkTikKXNx-Cj2UY+tJj8ifC+Je5WDbS=eR6xsKM1uU@mail.gmail.com>
-	<20101007093545.429fe04a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007105456.d86d8092.nishimura@mxp.nes.nec.co.jp>
-	<20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
-	<20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007161454.84570cf9.akpm@linux-foundation.org>
-	<20101008133712.2a836331.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101007215556.21412ae6.akpm@linux-foundation.org>
-	<20101008141201.c1e3a4e2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101008194131.20b44a9d.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101012125613.1accc1bd.nishimura@mxp.nes.nec.co.jp>
-	<20101012144801.51d15a02.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Tue, 12 Oct 2010 02:31:36 -0400
+Subject: Re: [PATCH -v3 3/6] x86, NMI, Rewrite NMI handler
+From: Peter Zijlstra <peterz@infradead.org>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Robert Richter <robert.richter@amd.com>
+In-Reply-To: <1286864080.7768.179.camel@yhuang-dev>
+References: <1286606987-19879-1-git-send-email-ying.huang@intel.com>
+	 <1286606987-19879-3-git-send-email-ying.huang@intel.com>
+	 <1286813635.2336.617.camel@twins>  <1286844650.7768.137.camel@yhuang-dev>
+	 <1286863479.2336.1451.camel@twins>  <1286864080.7768.179.camel@yhuang-dev>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 12 Oct 2010 08:31:11 +0200
+Message-ID: <1286865071.2336.1478.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Oct 2010 14:48:01 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> On Tue, 12 Oct 2010 12:56:13 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> 
-> > > +err_out:
-> > > +	for (; mt < info + num; mt++)
-> > > +		if (mt->type == MC_TARGET_PAGE) {
-> > > +			putback_lru_page(mt->val.page);
-> > Is this putback_lru_page() necessary ?
-> > is_target_pte_for_mc() doesn't isolate the page.
+On Tue, 2010-10-12 at 14:14 +0800, Huang Ying wrote:
+> On Tue, 2010-10-12 at 14:04 +0800, Peter Zijlstra wrote:
+> > On Tue, 2010-10-12 at 08:50 +0800, Huang Ying wrote:
+> > > On Tue, 2010-10-12 at 00:13 +0800, Peter Zijlstra wrote:
+> > > > On Sat, 2010-10-09 at 14:49 +0800, Huang Ying wrote:
+> > > > > notify_die(DIE_NMI_IPI);
+> > > > > notify_die(DIE_NMI);
+> > > > > /* process io port 0x61 */
+> > > > > nmi_watchdog_touch();
+> > > > > unknown_nmi(); 
+> > > > 
+> > > > Why keep NMI_IPI? What the heck is it for?
+> > > 
+> > > DIE_NMI_IPI is used for CPU-specific or CPU-local NMIs, such as perf
+> > > NMI. While DIE_NMI is used for non-CPU-specific or global NMIs, such as
+> > > NMI notification from source bridge.
+> > > 
+> > > The order between these two is important. So we use two die value to
+> > > enforce the order.
 > > 
-> Ok, v4 here. tested failure path and success path.
+> > But you can't know about that, there is no reason field to distinguish
+> > between these cases, so you might as well fold it into a single notifier
+> > chain and be done with it.
 > 
-Looks good to me.
+> NMI users know that. Such as perf uses CPU-specific NMI, while APEI GHES
+> uses non-CPU-specific NMI. Different users expect different die values,
+> such as perf expects DIE_NMI_IPI, while APEI GHES expects DIE_NMI, so
+> that perf can be checked before APEI GHES.
 
-	Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-
-Thanks,
-Daisuke Nishimura.
+GAAHHH, so why can't they live on a single notifier list? Its got
+priorities to deal with that?
