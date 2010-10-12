@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755414Ab0JLAVV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 20:21:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47188 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755074Ab0JLAVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 20:21:20 -0400
-Date: Mon, 11 Oct 2010 17:22:26 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Jack Steiner <steiner@sgi.com>, yinghai@kernel.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: Problem: scaling of /proc/stat on large systems
-Message-Id: <20101011172226.6162476c.akpm@linux-foundation.org>
-In-Reply-To: <20101012090907.5dd1cf57.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100929122206.GA30317@sgi.com>
-	<20100930140901.037f9dc7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101004143414.GA4261@sgi.com>
-	<20101005103650.7ebe64f0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101005171907.23c75102.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101008163557.GA13859@sgi.com>
-	<20101012090907.5dd1cf57.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755064Ab0JLAYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 20:24:20 -0400
+Received: from fieldses.org ([174.143.236.118]:33734 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754036Ab0JLAYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 20:24:19 -0400
+Date: Mon, 11 Oct 2010 20:24:09 -0400
+From: "J. Bruce Fields" <bfields@citi.umich.edu>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
+        sandeen@redhat.com, tytso@mit.edu, jlayton@redhat.com,
+        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V4 00/11]  New ACL format for better NFSv4 acl
+ interoperability
+Message-ID: <20101012002409.GH16442@fieldses.org>
+References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Oct 2010 09:09:07 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-
-> > > 
-> > > How about this ? This is an add-on patch.
-> > 
-> > Nice!!
-> > 
-> > The combination of the 2 patches solves the problem.
-> > The timings are (4096p, 256 nodes, 4592 irqs):
-> > 
-> > 	# time cat /proc/stat > /dev/null
-> > 
-> > 	Baseline:		12.627 sec
-> > 	Patch1  :		 2.459 sec
-> > 	Patch 1 + Patch 2:	  .561 sec
-> > 
-> > 
-> > Acked-by: Jack Steiner <steiner@sgi.com>
-> > 
+On Fri, Sep 24, 2010 at 06:18:03PM +0530, Aneesh Kumar K.V wrote:
 > 
-> Thank you for testing. I'll post again if necessary.
+> Hi,
+> 
+> The following set of patches implements VFS changes needed to implement
+> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
+> extended by file masks to fit into the standard POSIX file permission model.
+> They are designed to work seamlessly locally as well as across the NFSv4 and
+> CIFS/SMB2 network file system protocols.
+> 
+> The patch set consists of four parts:
+> 
+> The first set of patches, posted as a follow up, contains VFS changes needed
+> to implement the Rich ACL model. The second set [1] contains the Rich ACL model
+> and Ext4 implementation. The third set [2] contains mapping of Rich ACL to
+> NFSv4 ACL (how to apply file mask to access mask) and implementation of
+> Richacl ACL for NFS server and client.
 
-Yes please.  This has been going on for two weeks so memories need
-refreshing.  Also we have no patch title and no changelog which
-includes the testing results.
+That's the part I'd like to review carefully and haven't yet.
 
-I could stitch all that together of course, but it's best that it all
-be done afresh, I think.
+> The fourth set [3] contains POSIX ACL
+> to Rich ACL mapping and its ext4 usage.
 
+The one thing I remember not liking before was a flag that told the user
+whether a given ACL was originally mapped from POSIX or not.  Is that
+still there?
+
+Overall I'm for doing this: I don't like NFSv4/Windows ACLs more than
+anyone else, but they're too useful to ignore, and the mapping that
+Samba and the NFSv4 server try to do is painful for users.
+
+--b.
+
+> 
+> [1] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-minimal
+> [2] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-upstream
+> [3] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-fullset
+> 
+> A user-space utility for displaying and changing richacls is available at [4]
+> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
+> 
+> [4] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/richacl.git master
+> 
+> To test richacl on ext4 use -o richacl mount option. This mount option may later be
+> dropped in favour of a feature flag.
+> 
+> More details regarding richacl can be found at 
+> http://acl.bestbits.at/richacl/
+> 
+> Changes from V3:
+> a) Droped may_delete and may_create inode operations callback and reworked
+>    the patch series to use additional check flags. 
+> b) Rebased to the latest kernel
+> c) The patch series now contain only the minimal VFS changes.
+> 
+> Changes from V2:
+> 1) Git repo include check-acl branch that drop newly added inode_operations
+>    callback in favour for additional access check flags (MAY_CREATE_FILE,
+>    MAY_CREATE_DIR, MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_TAKE_OWNERSHIP,
+>    MAY_CHMOD, and MAY_SET_TIMES)
+> 2) richacl is now cached in the vfs inode instead of file system inode.
+>    (currently kept as a separate patch. We may want to fold that later)
+> 3) Added a new acl flag ACL4_MASKED. richacl_apply_masks() can skip transforming acls
+>    without this flag, which speeds things up and avoids modifying those acls unnecessarily.
+> 4) Owner always allowed permissions are now explicitly included when synthesizing an acl
+>    from file mode.
+> 
+> Changes from V1:
+> 1) Split the patches into smaller patches
+> 2) Added extensive documentation to the patches.
+> 
+> -aneesh
+> 
+> 
