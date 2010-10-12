@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756806Ab0JLH0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:26:54 -0400
-Received: from nenolod.net ([67.202.104.180]:35851 "EHLO
+	id S1756833Ab0JLH3A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:29:00 -0400
+Received: from nenolod.net ([67.202.104.180]:37717 "EHLO
 	carpathia.dereferenced.org" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754044Ab0JLH0x (ORCPT
+	by vger.kernel.org with ESMTP id S1754413Ab0JLH27 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:26:53 -0400
+	Tue, 12 Oct 2010 03:28:59 -0400
 From: William Pitcock <nenolod@dereferenced.org>
 To: linux-kernel@vger.kernel.org
 Date: Tue, 12 Oct 2010 00:32:02 -0500
-Subject: [PATCH try 2] CFS: Add hierarchical tree-based penalty.
-Message-Id: <20101012072652.80926CE142@carpathia.dereferenced.org>
+Subject: [PATCH try 3] CFS: Add hierarchical tree-based penalty.
+Message-Id: <20101012072859.4A14DCE142@carpathia.dereferenced.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -31,12 +31,12 @@ Signed-off-by: William Pitcock <nenolod@dereferenced.org>
 ---
  include/linux/sched.h   |    2 ++
  kernel/sched.c          |    4 ++++
- kernel/sched_fair.c     |    7 +++++++
+ kernel/sched_fair.c     |    8 ++++++++
  kernel/sched_features.h |   12 ++++++++++++
- 4 files changed, 25 insertions(+), 0 deletions(-)
+ 4 files changed, 26 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 1e2a6db..49fca7c 100644
+index 1e2a6db..7b44f98 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
 @@ -1494,6 +1494,8 @@ struct task_struct {
@@ -49,7 +49,7 @@ index 1e2a6db..49fca7c 100644
  
  /* Future-safe accessor for struct task_struct's cpus_allowed. */
 diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..0e55350 100644
+index dc85ceb..16ad939 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
 @@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
@@ -64,10 +64,10 @@ index dc85ceb..0e55350 100644
  	trace_sched_wakeup_new(p, 1);
  	check_preempt_curr(rq, p, WF_FORK);
 diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index db3f674..3059fe0 100644
+index db3f674..3f17ec1 100644
 --- a/kernel/sched_fair.c
 +++ b/kernel/sched_fair.c
-@@ -737,6 +737,13 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
+@@ -737,6 +737,14 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
  	if (initial && sched_feat(START_DEBIT))
  		vruntime += sched_vslice(cfs_rq, se);
  
@@ -75,7 +75,8 @@ index db3f674..3059fe0 100644
 +		struct task_struct *tsk = task_of(se);
 +
 +		if (tsk->parent_count > 1)
-+			vruntime /= tsk->parent_count;
++			vruntime = max_vruntime(vruntime,
++						vruntime / tsk->parent_count);
 +	}
 +
  	/* sleeps up to a single latency don't count. */
