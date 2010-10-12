@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756632Ab0JLHHA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:07:00 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:44242 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab0JLHG6 (ORCPT
+	id S1756678Ab0JLHIP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:08:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54040 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756504Ab0JLHIN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:06:58 -0400
-Subject: Re: [PATCHv3 0/5] [PATCHv3 0/6] BH1770GLC, SFH7770 and APDS990x
- als / proximity sensor drivers
-From: Onkalo Samu <samu.p.onkalo@nokia.com>
-Reply-To: samu.p.onkalo@nokia.com
-To: "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jean Delvare <khali@linux-fr.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1286795209-12487-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1286795209-12487-1-git-send-email-samu.p.onkalo@nokia.com>
-Content-Type: text/plain
-Organization: Nokia Oyj
-Date: Tue, 12 Oct 2010 10:05:31 +0300
-Message-Id: <1286867131.24536.13.camel@4fid08082>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
+	Tue, 12 Oct 2010 03:08:13 -0400
+From: James Hogan <james@albanarts.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] b44: fix resume, request_irq after hw reset
+Date: Tue, 12 Oct 2010 08:08:05 +0100
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-custom+; KDE/4.4.5; x86_64; ; )
+Cc: Gary Zambrano <zambrano@broadcom.com>, Jiri Pirko <jpirko@redhat.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Hauke Mehrtens <hauke@hauke-m.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+References: <201010120022.13171.james@albanarts.com> <20101011163440.072e0227.akpm@linux-foundation.org>
+In-Reply-To: <20101011163440.072e0227.akpm@linux-foundation.org>
+MIME-Version: 1.0
+X-Length: 3860
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Oct 2010 07:05:36.0746 (UTC) FILETIME=[DED534A0:01CB69DB]
-X-Nokia-AV: Unscannable
+Message-Id: <201010120808.05713.james@albanarts.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-10-11 at 13:06 +0200, ext Samu Onkalo wrote:
-> Patch set contains two drivers. One for BH1770GLC / SFH7770 chips and
-> one for APDS990X chip.
+On Tuesday 12 October 2010 00:34:40 Andrew Morton wrote:
+> On Tue, 12 Oct 2010 00:22:12 +0100
 > 
+> James Hogan <james@albanarts.com> wrote:
+> > This driver was hanging on resume because it was requesting a shared irq
+> > that it wasn't ready to immediately handle, which was tested in
+> > request_irq because of the CONFIG_DEBUG_SHIRQ config option. The
+> > interrupt handler tried to read the interrupt status register but for
+> > some reason it hung the system.
+> > 
+> > The request_irq is now moved a bit later after resetting the hardware
+> > which seems to fix it.
+> > 
+> > Signed-off-by: James Hogan <james@albanarts.com>
+> > ---
+> > 
+> >  drivers/net/b44.c |   12 ++++++------
+> >  1 files changed, 6 insertions(+), 6 deletions(-)
+> > 
+> > diff --git a/drivers/net/b44.c b/drivers/net/b44.c
+> > index 1e620e2..dbba981 100644
+> > --- a/drivers/net/b44.c
+> > +++ b/drivers/net/b44.c
+> > @@ -2296,12 +2296,6 @@ static int b44_resume(struct ssb_device *sdev)
+> > 
+> >  	if (!netif_running(dev))
+> >  	
+> >  		return 0;
+> > 
+> > -	rc = request_irq(dev->irq, b44_interrupt, IRQF_SHARED, dev->name, 
+dev);
+> > -	if (rc) {
+> > -		netdev_err(dev, "request_irq failed\n");
+> > -		return rc;
+> > -	}
+> > -
+> > 
+> >  	spin_lock_irq(&bp->lock);
+> >  	
+> >  	b44_init_rings(bp);
+> > 
+> > @@ -2309,6 +2303,12 @@ static int b44_resume(struct ssb_device *sdev)
+> > 
+> >  	netif_device_attach(bp->dev);
+> >  	spin_unlock_irq(&bp->lock);
+> > 
+> > +	rc = request_irq(dev->irq, b44_interrupt, IRQF_SHARED, dev->name, 
+dev);
+> > +	if (rc) {
+> > +		netdev_err(dev, "request_irq failed\n");
+> > +		return rc;
+> > +	}
+> > +
+> > 
+> >  	b44_enable_ints(bp);
+> >  	netif_wake_queue(dev);
+> 
+> OK, running the interrupt handler before b44_init_hw() is presumably
+> the problem here.
+> 
+> The hardware surely won't be generating interrupts until we've run
+> b44_init_hw() and b44_enable_ints(), so this patch really is only to
+> keep CONFIG_DEBUG_SHIRQ happy.
 
-Hi
+For me it's mainly to keep CONFIG_DEBUG_SHIRQ happy (Fedora has this switched 
+on), but since it's a shared IRQ, there is still a chance it could be 
+called before enabling it's own interrupts by a different device on the same 
+IRQ.
 
-First of all, thanks for reviewing my patches.
+It makes sense to me why it's disabling the IRQ now, in case another device 
+triggers it when it cannot handle it safely. I also tried calling the 
+interrupt directly before the free_irq in the suspend function to check that 
+it wasn't being done too late, and it didn't fail, so possibly it is the core 
+suspension that makes it start failing until it is brought back up properly.
 
-patchesV3 1, 3 and 5 are Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-Changes requested to the patches 2 an 4 (Makefile and Kconfig changes)
-are also done in version 3 patch set. I quess that they can also be
-acked.
-
-Who will take care of the patches now - Andrew or Jean?
-
--Samu
-
-
+Cheers
+James
