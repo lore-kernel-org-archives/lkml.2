@@ -1,148 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757880Ab0JLR2T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:28:19 -0400
-Received: from mail.agmk.net ([91.192.224.71]:41660 "EHLO mail.agmk.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752268Ab0JLR2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:28:18 -0400
-From: =?utf-8?q?Pawe=C5=82_Sikora?= <pluto@agmk.net>
-To: linux-kernel@vger.kernel.org
-Subject: [2.6.35/drm/radeon] screen blinking during compositing (kde4/effects).
-Date: Tue, 12 Oct 2010 19:28:10 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34; KDE/4.5.2; x86_64; ; )
+	id S1757918Ab0JLR37 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:29:59 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45338 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752923Ab0JLR36 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 13:29:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=LU2CCTUO10vaqb+AvUYowsq4vx65BhgYXN84zcV0qBG8sECHbeoDbEjY+OrDJqOv9z
+         H3NfClBYYjRTaZRj7hhQ==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010121928.10353.pluto@agmk.net>
+Date: Tue, 12 Oct 2010 10:29:54 -0700
+Message-ID: <AANLkTinQAwEMGADYXX=2Rt3RUoMozDReNdpo9NtV1OO7@mail.gmail.com>
+Subject: [ANNOUNCE] Linsched for 2.6.35 released
+From: Ranjit Manomohan <ranjitm@google.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Galbraith <efault@gmx.de>, Nikhil Rao <ncrao@google.com>,
+        Salman Qazi <sqazi@google.com>, Dhaval Giani <dhaval.giani@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Venkatesh Pallipadi <venki@google.com>, Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
+  I would like to announce the availability of the Linux Scheduler Simulator
+(Linsched) for 2.6.35.
 
-with the new 2.6.35 kernel release i have new problems with aiglx/kde4/effects
-on my old radeon card (lspci) ATI Technologies Inc RV370 secondary [Sapphire X550 Silent].
+Originally developed at the University of North Carolina, LinSched is a
+user-space program that hosts the Linux scheduling subsystem.
+Its purpose is to provide a tool for observing and modifying the behavior
+of the Linux scheduler. This makes it a valuable tool in prototyping new
+Linux scheduling policies in a way that may be easier (or otherwise
+less painful or time-consuming) to many developers when compared
+to working with real hardware.
 
-at the first place, kwin manager decides to disable compositing
-at all and logs on the console something like this:
+Since Linsched allows arbitrary hardware topologies to be modeled,
+it enables testing of scheduler changes on hardware that may not be
+easily accessible to the developer. For example, most developers don't
+have access to a quad-core quad-socket box, but they can use LinSched
+to see how their changes affect the scheduler on such boxes.
 
-(...)
-kwin(3129) KWin::CompositingPrefs::detectDriverAndVersion: GL vendor is "DRI R300 Project"
-kwin(3129) KWin::CompositingPrefs::detectDriverAndVersion: GL renderer is "Mesa DRI R300 (RV380 5B63) 20090101  TCL DRI2"
-kwin(3129) KWin::CompositingPrefs::detectDriverAndVersion: GL version is "1.5 Mesa 7.8.2"
-kwin(3129) KWin::CompositingPrefs::detectDriverAndVersion: Detected driver "radeon" , version "20090101"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_login"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_translucency"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_boxswitch"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_fadedesktop"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_desktopgrid"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_slidingpopups"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_fade"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_dialogparent"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_taskbarthumbnail"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_presentwindows"
-kwin(3129) KWin::EffectsHandlerImpl::unloadEffect: EffectsHandler::unloadEffect : Unloading Effect :  "kwin4_effect_logout"
-kwin(3129) KWin::Extensions::init: Extensions: shape: 0x "11"  composite: 0x "4"  render: 0x "b"  fixes: 0x "40"
-kwin(3129) KWin::Workspace::setupCompositing: Initializing OpenGL compositing
-kwin(3129) KWin::Workspace::setupCompositing: KWin has detected that your OpenGL library is unsafe to use, falling back to XRender.
-kwin(3129): Failed to initialize compositing, compositing disabled
-(...)
+When compared to alternatives such as using UML which may offer
+similar benefits to developers, Linsched has fewer dependencies and
+relies on a very small subset of files of the kernel. It also offers stable
+and repeatable results that are not affected by the environment or
+hardware that is used to run the simulation.
 
-so, quick googling and following entry in ~/.kde/share/config/kwinrc forces compositing again.
+LinSched may be especially useful to those who are new to Linux
+scheduler development since it brings all the benefits of user space
+analysis and debugging tools (e.g. gdb) to understanding the
+kernel scheduler code.
 
-[Compositing]
-AnimationSpeed=3
-Backend=OpenGL
-CheckIsSafe=false              <===
-DisableChecks=true             <===
-Enabled=true
-GLDirect=true
-GLMode=TFP
-GLTextureFilter=0
-GLVSync=false
-HiddenPreviews=5
-OpenGLIsUnsafe=false           <===
-XRenderSmoothScale=false
+The code is available at:
 
-at this point compositing seems to work, it's still smooth but i'm observing an ugly screen blinking.
-modprobing drm module with debug=1 gives on 2.6.35 additional logs about vblank events during compositing:
+http://google3-2.osuosl.org/?p=linsched/2.6.35.git;a=summary
 
-(...)
-[  211.675593] [drm:drm_ioctl], pid=2842, cmd=0xc0206466, nr=0x66, dev 0xe200, auth=1
-[  211.675663] [drm:drm_ioctl], pid=2842, cmd=0xc0086464, nr=0x64, dev 0xe200, auth=1
-[  211.675674] [drm:drm_ioctl], pid=2842, cmd=0xc008646a, nr=0x6a, dev 0xe200, auth=1
-[  211.675678] [drm:drm_ioctl], ret = fffffff0
-[  211.675680] [drm:drm_ioctl], pid=2842, cmd=0xc0206466, nr=0x66, dev 0xe200, auth=1
-[  211.675724] [drm:drm_ioctl], pid=2766, cmd=0xc018643a, nr=0x3a, dev 0xe200, auth=1
-[  211.675728] [drm:drm_wait_vblank], waiting on vblank count 212705, crtc 0
-[  211.675731] [drm:drm_wait_vblank], returning 212705 to client
-[  211.675734] [drm:drm_ioctl], pid=2766, cmd=0xc018643a, nr=0x3a, dev 0xe200, auth=1
-[  211.675737] [drm:drm_wait_vblank], waiting on vblank count 212705, crtc 0
-[  211.675739] [drm:drm_wait_vblank], returning 212705 to client
-[  211.675741] [drm:drm_ioctl], pid=2766, cmd=0xc018643a, nr=0x3a, dev 0xe200, auth=1
-[  211.675744] [drm:drm_queue_vblank_event], event on vblank count 212706, current 212705, crtc 0
-[  211.689126] [drm:drm_handle_vblank_events], vblank event on 212706, current 212706
-[  211.689162] [drm:drm_ioctl], pid=2766, cmd=0xc008646a, nr=0x6a, dev 0xe200, auth=1
-[  211.689172] [drm:drm_ioctl], pid=2766, cmd=0xc0086464, nr=0x64, dev 0xe200, auth=1
-[  211.691457] [drm:drm_ioctl], pid=2766, cmd=0xc0206466, nr=0x66, dev 0xe200, auth=1
-[  212.214162] [drm:drm_ioctl], pid=2766, cmd=0xc008646a, nr=0x6a, dev 0xe200, auth=1
-(...)
+You can clone the repository using:
 
-is it a kernel bug or a feature?
+git clone git://google3-2.osuosl.org/linsched/2.6.35.git
 
-BR,
-Pawel.
+New features/functionality in this release are:
+-- Based on the 2.6.35 kernel
+-- support for group scheduling
+-- Ability to specify arbitrary sleep/wakeup patterns for tasks
+-- High resolution timers
+-- Tickless scheduler (no hz)
+-- sched domain support for all levels
 
-ps).
-i'm using following xorg/mesa packages from my distro:
+At Google we have used Linsched as a testing tool to validate the
+behavior of the kernel scheduler. Please see some of the basic tests
+we have added at linsched/basic_tests.c. We could  cut down our
+validation time from several days to a couple of hours due to the ability
+to run multiple tests on several different types of hardware models.
 
-Mesa-dri-driver-ati-radeon-R300-7.8.2-2.x86_64
-Mesa-libGL-7.8.2-2.x86_64
-Mesa-libGLU-7.8.2-2.x86_64
-Mesa-utils-7.8.2-2.x86_64
-(...)
-xorg-driver-input-evdev-2.5.0-1.x86_64
-xorg-driver-video-ati-6.13.2-1.x86_64
-(...)
-xorg-lib-libdmx-1.1.0-2.x86_64
-xorg-lib-libfontenc-1.0.5-1.x86_64
-xorg-lib-libICE-1.0.6-1.x86_64
-xorg-lib-libpciaccess-0.12.0-1.x86_64
-xorg-lib-libSM-1.1.1-1.x86_64
-xorg-lib-libX11-1.3.6-1.x86_64
-xorg-lib-libXau-1.0.6-1.x86_64
-xorg-lib-libXaw-1.0.7-3.x86_64
-xorg-lib-libXcomposite-0.4.2-1.x86_64
-xorg-lib-libXcursor-1.1.10-2.x86_64
-xorg-lib-libXdamage-1.1.3-1.x86_64
-xorg-lib-libXdmcp-1.0.3-1.x86_64
-xorg-lib-libXext-1.1.2-1.x86_64
-xorg-lib-libXfixes-4.0.5-1.x86_64
-xorg-lib-libXfont-1.4.2-1.x86_64
-xorg-lib-libXfontcache-1.0.5-2.x86_64
-xorg-lib-libXft-2.1.14-2.x86_64
-xorg-lib-libXi-1.3.2-1.x86_64
-xorg-lib-libXinerama-1.1-2.x86_64
-xorg-lib-libxkbfile-1.0.6-2.x86_64
-xorg-lib-libXmu-1.0.5-2.x86_64
-xorg-lib-libXp-1.0.0-5.x86_64
-xorg-lib-libXpm-3.5.8-2.x86_64
-xorg-lib-libXrandr-1.3.0-3.x86_64
-xorg-lib-libXrender-0.9.6-1.x86_64
-xorg-lib-libXres-1.0.4-2.x86_64
-xorg-lib-libXScrnSaver-1.2.0-2.x86_64
-xorg-lib-libXt-1.0.8-1.x86_64
-xorg-lib-libXtst-1.1.0-2.x86_64
-xorg-lib-libXv-1.0.5-2.x86_64
-xorg-lib-libXvMC-1.0.6-1.x86_64
-xorg-lib-libXxf86dga-1.1.1-2.x86_64
-xorg-lib-libXxf86misc-1.0.2-2.x86_64
-xorg-lib-libXxf86vm-1.1.0-2.i686
-xorg-lib-libXxf86vm-1.1.0-2.x86_64
-xorg-proto-kbproto-devel-1.0.5-1.x86_64
-xorg-proto-xproto-devel-7.0.18-1.x86_64
-xorg-xserver-libdri-1.9.0-1.x86_64
-xorg-xserver-libglx-1.9.0-1.x86_64
-xorg-xserver-server-1.9.0-1.x86_64
+Recently we have proposed a set of enhancements to the CFS scheduler
+including:
+ -- CFS bandwidth control
+   (http://thread.gmane.org/gmane.linux.kernel/979066)
+ -- Improved load balancing for low weight tasks
+   (http://thread.gmane.org/gmane.linux.kernel/1041721)
+These features have been extensively validated using this new infrastructure
+which has helped weed out some bugs that would have been difficult to catch
+otherwise. See http://thread.gmane.org/gmane.linux.kernel/1037521 for an
+example of a load balancing bug uncovered during testing.
+
+We are working on a port of Linsched to 2.6.36 and I would encourage folks
+experimenting with the kernel scheduler to give it a try. Please see the
+instructions specified in the linsched/README file to build and run tests.
+
+-Please contact me if you run into any difficulties or have any questions
+
+-Thanks,
+-Ranjit Manomohan
