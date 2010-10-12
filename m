@@ -1,191 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756617Ab0JLHdK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:33:10 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:2359 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754413Ab0JLHdJ (ORCPT
+	id S1756823Ab0JLHlz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:41:55 -0400
+Received: from mail-out.m-online.net ([212.18.0.9]:56464 "EHLO
+	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab0JLHly (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:33:09 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:references:date:in-reply-to:message-id:
-	user-agent:mime-version:content-type;
-	b=aNdQTVb9kweCpwMTWF1/8rWWcz5x4XVbCKarebCUEJgrhuw0/EVv9QY5QAk4P14bf
-	sAwhc3/VSQDDaVmRzuiaw==
-From: Greg Thelen <gthelen@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrea Righi <arighi@develer.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 07/10] memcg: add dirty limits to mem_cgroup
-References: <1286175485-30643-1-git-send-email-gthelen@google.com>
-	<1286175485-30643-8-git-send-email-gthelen@google.com>
-	<20101005094302.GA4314@linux.develer.com>
-	<xr93eic4wjlq.fsf@ninji.mtv.corp.google.com>
-	<20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
-	<20101007094845.9e6a1b0f.kamezawa.hiroyu@jp.fujitsu.com>
-	<xr93bp70febu.fsf@ninji.mtv.corp.google.com>
-	<20101012095546.f23bb950.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Tue, 12 Oct 2010 00:32:33 -0700
-In-Reply-To: <20101012095546.f23bb950.kamezawa.hiroyu@jp.fujitsu.com>
-	(KAMEZAWA Hiroyuki's message of "Tue, 12 Oct 2010 09:55:46 +0900")
-Message-ID: <xr931v7vdfxq.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 12 Oct 2010 03:41:54 -0400
+X-Auth-Info: 1nUIGYP2yq63wcYiYK/q8fFuPgjWhgVN4rehvuK72fw=
+Message-ID: <4CB4117C.4070207@grandegger.com>
+Date: Tue, 12 Oct 2010 09:42:52 +0200
+From: Wolfgang Grandegger <wg@grandegger.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+CC: David Miller <davem@davemloft.net>, andrew.chih.howe.khor@intel.com,
+        sameo@linux.intel.com, margie.foster@intel.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, yong.y.wang@intel.com,
+        socketcan-core@lists.berlios.de, mkl@pengutronix.de,
+        joel.clark@intel.com, morinaga526@dsn.okisemi.com,
+        kok.howg.ewe@intel.com, chripell@fsfe.org, qi.wang@intel.com
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
+References: <002e01cb6486$2ed72cc0$66f8800a@maildom.okisemi.com>	<20101005.114506.184852374.davem@davemloft.net>	<000b01cb6503$962bc7f0$66f8800a@maildom.okisemi.com>	<20101005.200904.71120150.davem@davemloft.net>	<4CAC3D94.9010408@grandegger.com> <000c01cb69dc$5d2aaab0$66f8800a@maildom.okisemi.com>
+In-Reply-To: <000c01cb69dc$5d2aaab0$66f8800a@maildom.okisemi.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+Hi Ohtake,
 
-> On Mon, 11 Oct 2010 17:24:21 -0700
-> Greg Thelen <gthelen@google.com> wrote:
->
->> >> Is your motivation to increase performance with the same functionality?
->> >> If so, then would a 'static inline' be performance equivalent to a
->> >> preprocessor macro yet be safer to use?
->> >> 
->> > Ah, if lockdep finds this as bug, I think other parts will hit this,
->> > too.  like this.
->> >> static struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
->> >> {
->> >>         struct mem_cgroup *mem = NULL;
->> >> 
->> >>         if (!mm)
->> >>                 return NULL;
->> >>         /*
->> >>          * Because we have no locks, mm->owner's may be being moved to other
->> >>          * cgroup. We use css_tryget() here even if this looks
->> >>          * pessimistic (rather than adding locks here).
->> >>          */
->> >>         rcu_read_lock();
->> >>         do {
->> >>                 mem = mem_cgroup_from_task(rcu_dereference(mm->owner));
->> >>                 if (unlikely(!mem))
->> >>                         break;
->> >>         } while (!css_tryget(&mem->css));
->> >>         rcu_read_unlock();
->> >>         return mem;
->> >> }
->> 
->> mem_cgroup_from_task() calls task_subsys_state() calls
->> task_subsys_state_check().  task_subsys_state_check() will be happy if
->> rcu_read_lock is held.
->> 
-> yes.
->
->> I don't think that this will fail lockdep, because rcu_read_lock_held()
->> is true when calling mem_cgroup_from_task() within
->> try_get_mem_cgroup_from_mm()..
->> 
-> agreed.
->
->> > mem_cgroup_from_task() is designed to be used as this.
->> > If dqefined as macro, I think it will not be catched.
->> 
->> I do not understand how making mem_cgroup_from_task() a macro will
->> change its behavior wrt. to lockdep assertion checking.  I assume that
->> as a macro mem_cgroup_from_task() would still call task_subsys_state(),
->> which requires either:
->> a) rcu read lock held
->> b) task->alloc_lock held
->> c) cgroup lock held
->> 
->
-> Hmm. Maybe I was wrong.
->
->> 
->> >> Maybe it makes more sense to find a way to perform this check in
->> >> mem_cgroup_has_dirty_limit() without needing to grab the rcu lock.  I
->> >> think this lock grab is unneeded.  I am still collecting performance
->> >> data, but suspect that this may be making the code slower than it needs
->> >> to be.
->> >> 
->> >
->> > Hmm. css_set[] itself is freed by RCU..what idea to remove rcu_read_lock() do
->> > you have ? Adding some flags ?
->> 
->> It seems like a shame to need a lock to determine if current is in the
->> root cgroup.  Especially given that as soon as
->> mem_cgroup_has_dirty_limit() returns, the task could be moved
->> in-to/out-of the root cgroup thereby invaliding the answer.  So the
->> answer is just a sample that may be wrong. 
->
-> Yes. But it's not a bug but a specification.
->
->> But I think you are correct.
->> We will need the rcu read lock in mem_cgroup_has_dirty_limit().
->> 
->
-> yes.
->
->
->> > Ah...I noticed that you should do
->> >
->> >  mem = mem_cgroup_from_task(current->mm->owner);
->> >
->> > to check has_dirty_limit...
->> 
->> What are the cases where current->mm->owner->cgroups !=
->> current->cgroups?
->> 
-> In that case, assume group A and B.
->
->    thread(1) -> belongs to cgroup A  (thread(1) is mm->owner)
->    thread(2) -> belongs to cgroup B
-> and
->    a page    -> charnged to cgroup A
->
-> Then, thread(2) make the page dirty which is under cgroup A.
->
-> In this case, if page's dirty_pages accounting is added to cgroup B,
-> cgroup B' statistics may show "dirty_pages > all_lru_pages". This is
-> bug.
+On 10/12/2010 09:09 AM, Masayuki Ohtake wrote:
+> Hi Wolfgang,
+> 
+> We have implemented our CAN driver with FIFO mode, and
+> We are testing our CAN driver with FIFO mode.
+> However, we have found Our CAN hardware spec is different from our anticipated.
+> Our CAN HW FIFO is not common FIFO.
+> Using  FIFO mode, there is possibility received packets are out-of-order.
+> 
+> e.g.
+> Recv packet-A from NW and set to FIFO.
+>   |A|
+> 
+> Recv packet-B from NW and set to FIFO.
+>   |A|B|
+> 
+> Recv packet-C is about to set to FIFO
+>   |A|B|(C)|
+> 
+> Userspace Copies A from Driver
 
-I agree that in this case the dirty_pages accounting should be added to
-cgroup A because that is where the page was charged.  This will happen
-because pc->mem_cgroup was set to A when the page was charged.  The
-mark-page-dirty code will check pc->mem_cgroup to determine which cgroup
-to add the dirty page to.
+OK, let's say the CPU or software starts processing the message FIFO.
 
-I think that the current vs current->mm->owner decision is in areas of
-the code that is used to query the dirty limits.  These routines do not
-use this data to determine which cgroup to charge for dirty pages.  The
-usage of either mem_cgroup_from_task(current->mm->owner) or
-mem_cgroup_from_task(current) in mem_cgroup_has_dirty_limit() does not
-determine which cgroup is added for dirty_pages.
-mem_cgroup_has_dirty_limit() is only used to determine if the process
-has a dirty limit.  As discussed, this is a momentary answer that may be
-wrong by the time decisions are made because the task may be migrated
-in-to/out-of root cgroup while mem_cgroup_has_dirty_limit() runs.  If
-the process has a dirty limit, then the process's memcg is used to
-compute dirty limits.  Using your example, I assume that thread(1) and
-thread(2) will git dirty limits from cgroup(A) and cgroup(B)
-respectively.
+> Userspace Copies B from Driver
+>   |   |   |(C)|
+> 
+> packet-C set to FIFO (C is not head.)
+> Recv packet-D from NW(Next packet is set to head)
+>   |D|   |C|
+> 
+> Userspace Copies D from Driver
 
-Are you thinking that when accounting for a dirty page (by incrementing
-pc->mem_cgroup->stat->count[MEM_CGROUP_STAT_FILE_DIRTY]) that we should
-check the pc->mem_cgroup dirty limit?
+The software could continues searching the FIFO for valid messages. Then
+it would find C first.
 
->> I was hoping to avoid having add even more logic into
->> mem_cgroup_has_dirty_limit() to handle the case where current->mm is
->> NULL.
->> 
->
-> Blease check current->mm. We can't limit works of kernel-thread by this, let's
-> consider it later if necessary.
->
->> Presumably the newly proposed vm_dirty_param(),
->> mem_cgroup_has_dirty_limit(), and mem_cgroup_page_stat() routines all
->> need to use the same logic.  I assume they should all be consistently
->> using current->mm->owner or current.
->> 
->
-> please.
->
-> Thanks,
-> -Kame
+> Userspace Copies C from Driver
+> Userspace raceived packet order is like below
+> A-B-D-C
+
+I'm still optimistic that it could be handled properly by software, it
+might be tricky though.
+
+> So, I think normal-mode is better than FIFO-mode.
+
+To be clear. Out-of-order reception is not allowed!
+
+> I will revert like the following spec.
+>   Rx 1 Message Object
+>   Tx 1 Message Object
+> 
+> Could you agree the above ?
+
+See above. I agree if the software cannot assure in-order reception. But
+it's not yet obvious to me that it cannot be achieved. I will have a
+closer look to the manual. Just one RX message object without any
+further buffering is really bad as message losses are likely to happen.
+
+Wolfgang.
