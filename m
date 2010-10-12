@@ -1,103 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757338Ab0JLNTH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:19:07 -0400
-Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:34862 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757326Ab0JLNTD (ORCPT
+	id S1757357Ab0JLNTo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:19:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19472 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754055Ab0JLNTm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:19:03 -0400
-From: "Yang, Bo" <Bo.Yang@lsi.com>
-To: bo yang <boyang1288@gmail.com>,
-        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
-        "akpm@osdl.org" <akpm@osdl.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "James.Bottomley@suse.de" <James.Bottomley@suse.de>
-Date: Tue, 12 Oct 2010 07:18:50 -0600
-Subject: [PATCH 3/5] scsi: megaraid_sas - Add input parameter for max_sectors
-Thread-Topic: [PATCH 3/5] scsi: megaraid_sas - Add input parameter for
- max_sectors
-Thread-Index: ActayyPx+p2cIXq3QC+8LM1oUIE9NAPRFqwA
-Message-ID: <4B6A08C587958942AA3002690DD4F8C30100FF9FB4@cosmail02.lsi.com>
-References: <AANLkTimpuAfRw85ECVQ+FJxFpNaPC=zHCL1i0Y6AjiAf@mail.gmail.com>
-In-Reply-To: <AANLkTimpuAfRw85ECVQ+FJxFpNaPC=zHCL1i0Y6AjiAf@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: multipart/mixed;
-	boundary="_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_"
+	Tue, 12 Oct 2010 09:19:42 -0400
+From: Steve Grubb <sgrubb@redhat.com>
+Organization: Red Hat
+To: Mimi Zohar <zohar@linux.vnet.ibm.com>
+Subject: Re: [PATCH] security: move LSM xattrnames to xattr.h
+Date: Tue, 12 Oct 2010 09:19:11 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.33.8-149.fc13.x86_64; KDE/4.4.5; x86_64; ; )
+Cc: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>,
+        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        David Safford <safford@watson.ibm.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+References: <1278011263-7951-1-git-send-email-zohar@linux.vnet.ibm.com> <201010121414.14486.ozan@pardus.org.tr> <1286888769.2670.5.camel@localhost.localdomain>
+In-Reply-To: <1286888769.2670.5.camel@localhost.localdomain>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010120919.11819.sgrubb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Tuesday, October 12, 2010 09:06:09 am Mimi Zohar wrote:
+> On Tue, 2010-10-12 at 14:14 +0300, Ozan Çağlayan wrote:
+> > Cuma 02 Temmuz 2010 günü (saat 03:16:01) James Morris şunları yazmıştı:
+> > > On Thu, 1 Jul 2010, Mimi Zohar wrote:
+> > > > Make the security extended attributes names global. Updated to move
+> > > > the remaining Smack xattrs.
+> > > > 
+> > > > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> > > > Acked-by: Serge Hallyn <serue@us.ibm.com>
+> > 
+> > This drops
+> > 
+> > #define XATTR_CAPS_SUFFIX "capability"
+> > #define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
+> > 
+> > definitions from capability.h and puts them in xattr.h's #ifdef
+> > __KERNEL__ section making them invisible to userspace like libcap-ng
+> > causing build failures.
+> > 
+> > Am I wrong?
+> 
+> You're correct.  It's the same reason that cap-ng.c has to define
+> 'security'.
+> 
+> #ifdef VFS_CAP_U32
+>  #include <attr/xattr.h>
+>  #define XATTR_SECURITY_PREFIX "security."
+> 
+> Am cc'ing Steve.
 
-Re-submit: I am re-attaching the patch (3/5)=20
+So does this mean I need to provide more definitions for libcap-ng to work with 
+future kernels or are you asking my opinion? My opinion is that if user space 
+needs it to work correctly, please let it be available so I don't have to make 
+my own define which may be inaccurate one day.
 
-Driver add the input parameters support for max_sectors for megaraid
-sas gen2 chip.  Customer can set the max_sectors support to 1MB for
-gen2 chip during the driver load.
-
-Signed-off-by Bo Yang<bo.yang@lsi.com>
-
----
- drivers/scsi/megaraid/megaraid_sas.c |   30 ++++++++++++++++++++++++++++++
- drivers/scsi/megaraid/megaraid_sas.h |    1 +
- 2 files changed, 31 insertions(+)
-
-
---_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_
-Content-Type: application/octet-stream; name="megasas-max_sector.patch"
-Content-Description: megasas-max_sector.patch
-Content-Disposition: attachment; filename="megasas-max_sector.patch";
-	size=2252; creation-date="Sun, 19 Sep 2010 14:09:34 GMT";
-	modification-date="Fri, 17 Sep 2010 01:21:38 GMT"
-Content-Transfer-Encoding: base64
-
-ZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jIG5ldy9k
-cml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMKLS0tIG9sZC9kcml2ZXJzL3Njc2kv
-bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0wOS0xNyAwMzoxOTozMS4wMDAwMDAwMDAgLTA0
-MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0wOS0x
-NyAwMzoyMDo0OS4wMDAwMDAwMDAgLTA0MDAKQEAgLTU3LDYgKzU3LDE1IEBAIG1vZHVsZV9wYXJh
-bV9uYW1lZChwb2xsX21vZGVfaW8sIHBvbGxfbW8KIE1PRFVMRV9QQVJNX0RFU0MocG9sbF9tb2Rl
-X2lvLAogCSJDb21wbGV0ZSBjbWRzIGZyb20gSU8gcGF0aCwgKGRlZmF1bHQ9MCkiKTsKIAorLyoK
-KyAqIE51bWJlciBvZiBzZWN0b3JzIHBlciBJTyBjb21tYW5kCisgKiBXaWxsIGJlIHNldCBpbiBt
-ZWdhc2FzX2luaXRfbWZpIGlmIHVzZXIgZG9lcyBub3QgcHJvdmlkZQorICovCitzdGF0aWMgdW5z
-aWduZWQgaW50IG1heF9zZWN0b3JzOworbW9kdWxlX3BhcmFtX25hbWVkKG1heF9zZWN0b3JzLCBt
-YXhfc2VjdG9ycywgaW50LCAwKTsKK01PRFVMRV9QQVJNX0RFU0MobWF4X3NlY3RvcnMsCisJIk1h
-eGltdW0gbnVtYmVyIG9mIHNlY3RvcnMgcGVyIElPIGNvbW1hbmQiKTsKKwogTU9EVUxFX0xJQ0VO
-U0UoIkdQTCIpOwogTU9EVUxFX1ZFUlNJT04oTUVHQVNBU19WRVJTSU9OKTsKIE1PRFVMRV9BVVRI
-T1IoIm1lZ2FyYWlkbGludXhAbHNpLmNvbSIpOwpAQCAtMzU4Nyw2ICszNTk2LDI3IEBAIHN0YXRp
-YyBpbnQgbWVnYXNhc19pb19hdHRhY2goc3RydWN0IG1lZ2EKIAkJCWluc3RhbmNlLT5tYXhfZndf
-Y21kcyAtIE1FR0FTQVNfSU5UX0NNRFM7CiAJaG9zdC0+dGhpc19pZCA9IGluc3RhbmNlLT5pbml0
-X2lkOwogCWhvc3QtPnNnX3RhYmxlc2l6ZSA9IGluc3RhbmNlLT5tYXhfbnVtX3NnZTsKKwkvKgor
-CSAqIENoZWNrIGlmIHRoZSBtb2R1bGUgcGFyYW1ldGVyIHZhbHVlIGZvciBtYXhfc2VjdG9ycyBj
-YW4gYmUgdXNlZAorCSAqLworCWlmIChtYXhfc2VjdG9ycyAmJiBtYXhfc2VjdG9ycyA8IGluc3Rh
-bmNlLT5tYXhfc2VjdG9yc19wZXJfcmVxKQorCQlpbnN0YW5jZS0+bWF4X3NlY3RvcnNfcGVyX3Jl
-cSA9IG1heF9zZWN0b3JzOworCWVsc2UgeworCQlpZiAobWF4X3NlY3RvcnMpIHsKKwkJCWlmICgo
-KGluc3RhbmNlLT5wZGV2LT5kZXZpY2UgPT0KKwkJCQlQQ0lfREVWSUNFX0lEX0xTSV9TQVMxMDc4
-R0VOMikgfHwKKwkJCQkoaW5zdGFuY2UtPnBkZXYtPmRldmljZSA9PQorCQkJCVBDSV9ERVZJQ0Vf
-SURfTFNJX1NBUzAwNzlHRU4yKSkgJiYKKwkJCQkobWF4X3NlY3RvcnMgPD0gTUVHQVNBU19NQVhf
-U0VDVE9SUykpIHsKKwkJCQlpbnN0YW5jZS0+bWF4X3NlY3RvcnNfcGVyX3JlcSA9IG1heF9zZWN0
-b3JzOworCQkJfSBlbHNlIHsKKwkJCXByaW50ayhLRVJOX0lORk8gIm1lZ2FzYXM6IG1heF9zZWN0
-b3JzIHNob3VsZCBiZSA+IDAiCisJCQkJImFuZCA8PSAlZCAob3IgPCAxTUIgZm9yIEdFTjIgY29u
-dHJvbGxlcilcbiIsCisJCQkJaW5zdGFuY2UtPm1heF9zZWN0b3JzX3Blcl9yZXEpOworCQkJfQor
-CQl9CisJfQorCiAJaG9zdC0+bWF4X3NlY3RvcnMgPSBpbnN0YW5jZS0+bWF4X3NlY3RvcnNfcGVy
-X3JlcTsKIAlob3N0LT5jbWRfcGVyX2x1biA9IDEyODsKIAlob3N0LT5tYXhfY2hhbm5lbCA9IE1F
-R0FTQVNfTUFYX0NIQU5ORUxTIC0gMTsKZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2Fy
-YWlkL21lZ2FyYWlkX3Nhcy5oIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2Fz
-LmgKLS0tIG9sZC9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmgJMjAxMC0wOS0x
-NyAwMjoxOTo0Ni4wMDAwMDAwMDAgLTA0MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQv
-bWVnYXJhaWRfc2FzLmgJMjAxMC0wOS0xNyAwMjoxOTo0Ni4wMDAwMDAwMDAgLTA0MDAKQEAgLTcw
-Niw2ICs3MDYsNyBAQCBzdHJ1Y3QgbWVnYXNhc19jdHJsX2luZm8gewogI2RlZmluZSBNRUdBU0FT
-X01BWF9MRF9JRFMJCQkoTUVHQVNBU19NQVhfTERfQ0hBTk5FTFMgKiBcCiAJCQkJCQlNRUdBU0FT
-X01BWF9ERVZfUEVSX0NIQU5ORUwpCiAKKyNkZWZpbmUgTUVHQVNBU19NQVhfU0VDVE9SUyAgICAg
-ICAgICAgICAgICAgICAgKDIqMTAyNCkKICNkZWZpbmUgTUVHQVNBU19EQkdfTFZMCQkJCTEKIAog
-I2RlZmluZSBNRUdBU0FTX0ZXX0JVU1kJCQkJMQo=
-
---_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_--
+Thanks,
+-Steve
