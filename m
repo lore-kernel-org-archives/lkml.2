@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab0JLWkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 18:40:17 -0400
-Received: from clarity.mcc.ac.uk ([130.88.200.144]:56458 "EHLO
-	clarity.mcc.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab0JLWkQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 18:40:16 -0400
-X-Greylist: delayed 1065 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 18:40:16 EDT
-Subject: Re: Lenovo S12 2.6.36-rc7 lockup
-From: sam <sam.tygier@hep.manchester.ac.uk>
-To: Chris Vine <chris@cvine.freeserve.co.uk>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <20101010164818.6617102c@boulder.homenet>
-References: <20101010135912.76eb61b7@boulder.homenet>
-	 <20101010164818.6617102c@boulder.homenet>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 12 Oct 2010 23:22:26 +0100
-Message-ID: <1286922146.4040.2.camel@oberon>
+	id S1751984Ab0JLWoT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 18:44:19 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59487 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751253Ab0JLWoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 18:44:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,322,1283756400"; 
+   d="scan'208";a="666806907"
+Date: Tue, 12 Oct 2010 15:44:16 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] x86: Sanitize apb timer interrupt handling
+Message-ID: <20101012154416.000035ad@unknown>
+In-Reply-To: <alpine.LFD.2.00.1010130020250.2909@localhost6.localdomain6>
+References: <tip-a5ef2e70405c8a9ee380b5ff33a008c75454791f@git.kernel.org>
+	<20101012142000.00001358@unknown>
+	<alpine.LFD.2.00.1010122327260.2909@localhost6.localdomain6>
+	<20101012151230.00000402@unknown>
+	<alpine.LFD.2.00.1010130020250.2909@localhost6.localdomain6>
+Organization: Intel OTC
+X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: Samuel Tygier from ([192.168.1.149]) [87.127.117.246]:40706
-X-Authenticated-From: samuel.tygier@postgrad.manchester.ac.uk
-X-Spam-Score: -5.0(?)
-X-Spam-Flag: NO
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-10-10 at 16:48 +0100, Chris Vine wrote:
-> On Sun, 10 Oct 2010 13:59:12 +0100
-> Chris Vine <chris@cvine.freeserve.co.uk> wrote:
-> > Hi,
-> > 
-> > kernel 2.6.36-rc7 completely locks up my Lenovo S12 notebook on
-> > boot-up. It happens early enough in boot-up that nothing appears in
-> > any of the system log files.  The last message printed to the console
-> > is "Using IPI - No Shortcut mode".
-> > 
-> > The lock up does not occur with kernel 2.6.35.6.  I do not know in
-> > what version of 2.6.36-rc this first arose.
-> > 
-> > The kernel configuration is set out below.
-> > 
-> > Chris
-> [snip]
+Thomas Gleixner Wed, 13 Oct 2010 00:26:08 +0200 (CEST)
+>On Tue, 12 Oct 2010, Jacob Pan wrote:
+>
+>> Thomas Gleixner Tue, 12 Oct 2010 23:28:19 +0200 (CEST)
+>> >On Tue, 12 Oct 2010, Jacob Pan wrote:
+>> >
+>> >> 
+>> >> >x86: Sanitize apb timer interrupt handling
+>> >> >
+>> >> >Disable the interrupt in CPU_DEAD where it belongs.
+>> >> My main concern is the performance cost. The power management code for
+>> >> Moorestown system make use of the cpu hotplug code (disable_nonboot_cpus)
+>> >> but much more frequently. The system low power states are call S0 idle
+>> >> state (s0ix).
+>> >> 
+>> >> Leaving the irq enabled at the chip and desc level between S0ix states
+>> >> might give some performance benefit. That was my original thought.
+>> >> Will it cause problems?
+>> >
+>> >Errm. I merily moved it to the place where it should be. You do the
+>> >disable/enable dance already today.
+>> >
+>> I think I only do disable/enable at the timer HW level today during cpu hp
+>> notification, not calling disable_irq(). Am i missing something?
+>
+>apbt_setup_irq()
+>{
+> ...
 > 
-> On testing now with the earlier 2.6.36-rc6, I see that it is not a
-> lock-up but a hang, in that it partly responds to the keyboard.  With
-> rc6 boot-up can proceed further than with rc7 (but very slowly) if
-> keyboard keys are more or less randomly pressed.  Boot up is never
-> completed though with rc6, even though it proceeds further.
-> 
-> Chris
-
-i have seen similar issue while running with older kernels (2.6.32) on a
-S12 (intel GPU version). there is an ubuntu bug
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/643822
-
-the "nolapic_timer" boot flag fixes it for me.
-
-sam
+>--->	disable_irq(adev->irq);
+>	desc->status |= IRQ_MOVE_PCNTXT;
+>	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+>	/* APB timer irqs are set up as mp_irqs, timer is edge triggerred */
+>	set_irq_chip_and_handler_name(adev->irq, chip, handle_edge_irq, "edge");
+>--->	enable_irq(adev->irq);
+>	if (system_state == SYSTEM_BOOTING)
+> ...
+>}
+>
+>So that's a disable/enable pair on every cpu hotplug, right ?
+>
+>Now I moved the disable to CPU_DEAD where it belongs and the enable
+>stayed at the same place.
+apbt_setup_irq() does not get called in cpu hotplug code,
+but CPU_DEAD notification will happen every time disable_nonboot_cpus()
+are called. Since Moorestown OSPM code uses disable_nonboot_cpus often,
+that is why i am concerned about the overhead of disable_irq().
 
