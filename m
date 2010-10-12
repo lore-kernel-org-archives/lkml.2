@@ -1,234 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab0JLPLY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 11:11:24 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:35135 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753886Ab0JLPLX (ORCPT
+	id S1757436Ab0JLPRs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 11:17:48 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:46690 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab0JLPRr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 11:11:23 -0400
-Message-ID: <4CB47AA6.8090500@us.ibm.com>
-Date: Tue, 12 Oct 2010 10:11:34 -0500
-From: Maynard Johnson <maynardj@us.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        oprofile-list <oprofile-list@lists.sourceforge.net>,
-        William Cohen <wcohen@redhat.com>,
-        "Suthikulpanit, Suravee" <Suravee.Suthikulpanit@amd.com>
-Subject: Re: [PATCH] oprofile: disable write access to oprofilefs while profiler
- is running
-References: <1286275017-32497-1-git-send-email-robert.richter@amd.com> <20101005163338.GI13563@erda.amd.com>
-In-Reply-To: <20101005163338.GI13563@erda.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Oct 2010 11:17:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=dcXpKhPMY0Ohr5oeypI/wP6jjoHdvmNWl3B3kqbiO83c7X/UPNpeqCnIRHAqFF1jOK
+         y+X87c67zKvlQDE5A6rP4/SuSGch39SFGkvjUPxJkdZV1o3UypxUJRxOF0NYPNdA3ovM
+         GsVUaN5cWjYtE5Fmkm1YcF8laY9GtJoGmIKfs=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: [PATCH] mmc: append a file to change host clock at run time
+Date: Tue, 12 Oct 2010 18:17:22 +0300
+Message-Id: <1286896642-27772-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Richter wrote:
-> On 05.10.10 06:36:57, Robert Richter wrote:
->> Oprofile counters are setup when profiling is disabled. Thus, writing
->> to oprofilefs has no immediate effect. Changes are updated only after
->> oprofile is reenabled.
->>
->> To keep userland and kernel states synchronized, we now allow
->> configuration of oprofile only if profiling is disabled.  In this case
->> it checks if the profiler is running and then disables write access to
->> oprofilefs by returning -EBUSY. The change should be backward
->> compatible with current oprofile userland daemon.
->>
->> Cc: Maynard Johnson <maynardj@us.ibm.com>
-Ack.  This patch looks fine, and tests OK on ppc64.  A little paranoia in the kernel can't hurt.
+For debugging power managment features there is quite convenient to have a
+possibility to change MMC host controller clock at run time. This patch adds
+'clock' file under MMC host root of debugfs.
 
--Maynard
->> Cc: William Cohen <wcohen@redhat.com>
->> Cc: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
->> Signed-off-by: Robert Richter <robert.richter@amd.com>
->> ---
->>  drivers/oprofile/oprof.c          |   19 +++++--------------
->>  drivers/oprofile/oprof.h          |    2 +-
->>  drivers/oprofile/oprofile_files.c |    7 +++++--
->>  drivers/oprofile/oprofilefs.c     |    8 ++++++--
->>  4 files changed, 17 insertions(+), 19 deletions(-)
->>
->> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
->> index b4a6857..a7ab09e 100644
->> --- a/drivers/oprofile/oprof.c
->> +++ b/drivers/oprofile/oprof.c
->> @@ -225,26 +225,17 @@ post_sync:
->>  	mutex_unlock(&start_mutex);
->>  }
->>  
->> -int oprofile_set_backtrace(unsigned long val)
->> +int oprofile_set_ulong(unsigned long *addr, unsigned long val)
->>  {
->> -	int err = 0;
->> +	int err = -EBUSY;
->>  
->>  	mutex_lock(&start_mutex);
->> -
->>  	if (oprofile_started) {
-> 
-> I did a late change which I never should do. It should be:
-> 
-> 	if (!oprofile_started) ...
-> 
-> The concept remains the same.
-> 
-> Updated patch below.
-> 
-> Sorry,
-> 
-> -Robert
-> 
->> -		err = -EBUSY;
->> -		goto out;
->> -	}
->> -
->> -	if (!oprofile_ops.backtrace) {
->> -		err = -EINVAL;
->> -		goto out;
->> +		*addr = val;
->> +		err = 0;
->>  	}
->> -
->> -	oprofile_backtrace_depth = val;
->> -
->> -out:
->>  	mutex_unlock(&start_mutex);
->> +
->>  	return err;
->>  }
-> 
-> --
-> 
-> From 2d5710a2850eec24c54a1338ae5986963928cf8a Mon Sep 17 00:00:00 2001
-> From: Robert Richter <robert.richter@amd.com>
-> Date: Mon, 4 Oct 2010 21:09:36 +0200
-> Subject: [PATCH] oprofile: disable write access to oprofilefs while profiler is running
-> 
-> Oprofile counters are setup when profiling is disabled. Thus, writing
-> to oprofilefs has no immediate effect. Changes are updated only after
-> oprofile is reenabled.
-> 
-> To keep userland and kernel states synchronized, we now allow
-> configuration of oprofile only if profiling is disabled.  In this case
-> it checks if the profiler is running and then disables write access to
-> oprofilefs by returning -EBUSY. The change should be backward
-> compatible with current oprofile userland daemon.
-> 
-> Cc: Maynard Johnson <maynardj@us.ibm.com>
-> Cc: William Cohen <wcohen@redhat.com>
-> Cc: Suravee Suthikulpanit <suravee.suthikulpanit@amd.com>
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  drivers/oprofile/oprof.c          |   21 ++++++---------------
->  drivers/oprofile/oprof.h          |    2 +-
->  drivers/oprofile/oprofile_files.c |    7 +++++--
->  drivers/oprofile/oprofilefs.c     |    8 ++++++--
->  4 files changed, 18 insertions(+), 20 deletions(-)
-> 
-> diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
-> index b4a6857..f9bda64 100644
-> --- a/drivers/oprofile/oprof.c
-> +++ b/drivers/oprofile/oprof.c
-> @@ -225,26 +225,17 @@ post_sync:
->  	mutex_unlock(&start_mutex);
->  }
-> 
-> -int oprofile_set_backtrace(unsigned long val)
-> +int oprofile_set_ulong(unsigned long *addr, unsigned long val)
->  {
-> -	int err = 0;
-> +	int err = -EBUSY;
-> 
->  	mutex_lock(&start_mutex);
-> -
-> -	if (oprofile_started) {
-> -		err = -EBUSY;
-> -		goto out;
-> +	if (!oprofile_started) {
-> +		*addr = val;
-> +		err = 0;
->  	}
-> -
-> -	if (!oprofile_ops.backtrace) {
-> -		err = -EINVAL;
-> -		goto out;
-> -	}
-> -
-> -	oprofile_backtrace_depth = val;
-> -
-> -out:
->  	mutex_unlock(&start_mutex);
-> +
->  	return err;
->  }
-> 
-> diff --git a/drivers/oprofile/oprof.h b/drivers/oprofile/oprof.h
-> index 47e12cb..177b73d 100644
-> --- a/drivers/oprofile/oprof.h
-> +++ b/drivers/oprofile/oprof.h
-> @@ -37,7 +37,7 @@ void oprofile_create_files(struct super_block *sb, struct dentry *root);
->  int oprofile_timer_init(struct oprofile_operations *ops);
->  void oprofile_timer_exit(void);
-> 
-> -int oprofile_set_backtrace(unsigned long depth);
-> +int oprofile_set_ulong(unsigned long *addr, unsigned long val);
->  int oprofile_set_timeout(unsigned long time);
-> 
->  #endif /* OPROF_H */
-> diff --git a/drivers/oprofile/oprofile_files.c b/drivers/oprofile/oprofile_files.c
-> index bbd7516..ccf099e 100644
-> --- a/drivers/oprofile/oprofile_files.c
-> +++ b/drivers/oprofile/oprofile_files.c
-> @@ -79,14 +79,17 @@ static ssize_t depth_write(struct file *file, char const __user *buf, size_t cou
->  	if (*offset)
->  		return -EINVAL;
-> 
-> +	if (!oprofile_ops.backtrace)
-> +		return -EINVAL;
-> +
->  	retval = oprofilefs_ulong_from_user(&val, buf, count);
->  	if (retval)
->  		return retval;
-> 
-> -	retval = oprofile_set_backtrace(val);
-> -
-> +	retval = oprofile_set_ulong(&oprofile_backtrace_depth, val);
->  	if (retval)
->  		return retval;
-> +
->  	return count;
->  }
-> 
-> diff --git a/drivers/oprofile/oprofilefs.c b/drivers/oprofile/oprofilefs.c
-> index 789a1a8..1944621 100644
-> --- a/drivers/oprofile/oprofilefs.c
-> +++ b/drivers/oprofile/oprofilefs.c
-> @@ -91,16 +91,20 @@ static ssize_t ulong_read_file(struct file *file, char __user *buf, size_t count
-> 
->  static ssize_t ulong_write_file(struct file *file, char const __user *buf, size_t count, loff_t *offset)
->  {
-> -	unsigned long *value = file->private_data;
-> +	unsigned long value;
->  	int retval;
-> 
->  	if (*offset)
->  		return -EINVAL;
-> 
-> -	retval = oprofilefs_ulong_from_user(value, buf, count);
-> +	retval = oprofilefs_ulong_from_user(&value, buf, count);
-> +	if (retval)
-> +		return retval;
-> 
-> +	retval = oprofile_set_ulong(file->private_data, value);
->  	if (retval)
->  		return retval;
-> +
->  	return count;
->  }
-> 
+Usage as follows:
+
+	# cat /sys/kernel/debug/mmc0/clock
+	24000000
+
+	# echo "1000000000" > /sys/kernel/debug/mmc0/clock
+	# cat /sys/kernel/debug/mmc0/clock
+	52000000
+
+	# echo "48000000" > /sys/kernel/debug/mmc0/clock
+	# cat /sys/kernel/debug/mmc0/clock
+	48000000
+
+The second piece of example shows limits which are applied accordingly to used
+host driver.
+
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+---
+ drivers/mmc/core/debugfs.c |   33 +++++++++++++++++++++++++++++++--
+ 1 files changed, 31 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+index 96d10f4..4ff109f 100644
+--- a/drivers/mmc/core/debugfs.c
++++ b/drivers/mmc/core/debugfs.c
+@@ -133,6 +133,31 @@ static const struct file_operations mmc_ios_fops = {
+ 	.release	= single_release,
+ };
+ 
++static int mmc_clock_opt_get(void *data, u64 *val)
++{
++	struct mmc_host *host = data;
++
++	*val = host->ios.clock;
++
++	return 0;
++}
++
++static int mmc_clock_opt_set(void *data, u64 val)
++{
++	struct mmc_host *host = data;
++
++	/* We need this check due to input value is u64 */
++	if (val > host->f_max)
++		return -EINVAL;
++
++	mmc_set_clock(host, (unsigned int) val);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
++	"%llu\n");
++
+ void mmc_add_host_debugfs(struct mmc_host *host)
+ {
+ 	struct dentry *root;
+@@ -149,11 +174,15 @@ void mmc_add_host_debugfs(struct mmc_host *host)
+ 	host->debugfs_root = root;
+ 
+ 	if (!debugfs_create_file("ios", S_IRUSR, root, host, &mmc_ios_fops))
+-		goto err_ios;
++		goto err_node;
++
++	if (!debugfs_create_file("clock", S_IRUSR | S_IWUSR, root, host,
++			&mmc_clock_fops))
++		goto err_node;
+ 
+ 	return;
+ 
+-err_ios:
++err_node:
+ 	debugfs_remove_recursive(root);
+ 	host->debugfs_root = NULL;
+ err_root:
+-- 
+1.6.3.3
 
