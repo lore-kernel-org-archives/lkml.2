@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab0JLMu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 08:50:59 -0400
-Received: from mail.windriver.com ([147.11.1.11]:45042 "EHLO
+	id S932428Ab0JLMuy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 08:50:54 -0400
+Received: from mail.windriver.com ([147.11.1.11]:45045 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932385Ab0JLMun (ORCPT
+	with ESMTP id S932391Ab0JLMun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Oct 2010 08:50:43 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: airlied@linux.ie
 Cc: jbarnes@virtuousgeek.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] V2 - atomic kernel mode setting for radeon, nouveau, plus fixes
-Date: Tue, 12 Oct 2010 07:49:56 -0500
-Message-Id: <1286887801-8179-1-git-send-email-jason.wessel@windriver.com>
+        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 5/5] drm/nouveau/kms: Avoid a hang entering KDB with VT accel on.
+Date: Tue, 12 Oct 2010 07:50:01 -0500
+Message-Id: <1286887801-8179-6-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 12 Oct 2010 12:50:29.0297 (UTC) FILETIME=[0C8DEA10:01CB6A0C]
+In-Reply-To: <1286887801-8179-1-git-send-email-jason.wessel@windriver.com>
+References: <1286887801-8179-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 12 Oct 2010 12:50:33.0906 (UTC) FILETIME=[0F4D3120:01CB6A0C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is new in patch set v2
+From: Chris Ball <cjb@laptop.org>
 
-  * patch 4 which was previously radeon specific was replaced with a
-    generic patch to save and restore the LUT data for all drivers
-  * minor white space cleanup vs checkpatch.pl in patches
+Francisco Jerez advises that pre-nv20 cards would hang if we entered
+kdb with accel on and IRQs disabled, so we now disable accel before
+entering kdb and re-enable it on the way back out.
 
+Reported-by: Francisco Jerez <currojerez@riseup.net>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
 ---
+ drivers/gpu/drm/nouveau/nv04_crtc.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-The goal of this patch set is to add atomic kernel mode setting hooks
-for the radeon and nouveau cards for the purpose of using kdb (the
-kernel debug shell).
+diff --git a/drivers/gpu/drm/nouveau/nv04_crtc.c b/drivers/gpu/drm/nouveau/nv04_crtc.c
+index c5dfbdc..02426d8 100644
+--- a/drivers/gpu/drm/nouveau/nv04_crtc.c
++++ b/drivers/gpu/drm/nouveau/nv04_crtc.c
+@@ -33,6 +33,7 @@
+ #include "nouveau_fb.h"
+ #include "nouveau_hw.h"
+ #include "nvreg.h"
++#include "nouveau_fbcon.h"
+ 
+ static int
+ nv04_crtc_mode_set_base(struct drm_crtc *crtc, int x, int y,
+@@ -859,6 +860,14 @@ nv04_crtc_mode_set_base_atomic(struct drm_crtc *crtc,
+ 			       struct drm_framebuffer *fb,
+ 			       int x, int y, int enter)
+ {
++	struct drm_nouveau_private *dev_priv = crtc->dev->dev_private;
++	struct drm_device *dev = dev_priv->dev;
++
++	if (enter)
++		nouveau_fbcon_save_disable_accel(dev);
++	else
++		nouveau_fbcon_restore_accel(dev);
++
+ 	return nv04_crtc_do_mode_set_base(crtc, fb, x, y, true);
+ }
+ 
+-- 
+1.6.3.3
 
-David Airlie had asked for more research into the gamma data
-corruption after initially reviewing the patch that attempts to solve
-the visible palette corruption after an atomic mode set operation.
-The final conclusion was that other types of pallet corruption are
-possible with the gamma data when using atomic mode setting so the
-problem should be solved generically.
-
-The mode_set_base_atomic() now receives and additional parameter to
-note of the atomic mode set operation is an enter or exit such that a
-driver can appropriately enable or disable hardware that will not work
-in the polling context.
-
-These patches have now passed the kgdb/kdb regression tests and are
-deemed stable and ready for further integration and comment with the
-hope of integrating the patches upstream.
-
-Many thanks to Chris Ball for the contribution of the radeon and
-nouveau hooks, as well as the time he spent helping debug the initial
-LUT save and restore.
-
-Thanks,
-Jason.
-
----
-The following changes since commit 29979aa8bd69becd94cbad59093807a417ce2a9e:
-  Linus Torvalds (1):
-        Merge branch 'rc-fixes' of git://git.kernel.org/.../mmarek/kbuild-2.6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_dri
-
-Chris Ball (3):
-      drm/radeon/kms: Implement KDB debug hooks for radeon KMS.
-      drm/nouveau/kms: Implement KDB debug hooks for nouveau KMS.
-      drm/nouveau/kms: Avoid a hang entering KDB with VT accel on.
-
-Jason Wessel (2):
-      drm,kdb,kms: Add an enter argument to mode_set_base_atomic() API
-      kdb,kms: Save and restore the LUT on atomic KMS enter/exit
-
- drivers/gpu/drm/drm_fb_helper.c             |   37 ++++++++-
- drivers/gpu/drm/i915/intel_display.c        |    4 +-
- drivers/gpu/drm/nouveau/nouveau_fbcon.c     |    6 ++
- drivers/gpu/drm/nouveau/nv04_crtc.c         |   54 +++++++++++--
- drivers/gpu/drm/nouveau/nv50_crtc.c         |   48 ++++++++---
- drivers/gpu/drm/radeon/atombios_crtc.c      |  117 +++++++++++++++++++--------
- drivers/gpu/drm/radeon/radeon_fb.c          |    2 +
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |   44 ++++++++---
- drivers/gpu/drm/radeon/radeon_mode.h        |   10 ++-
- include/drm/drm_crtc_helper.h               |    3 +-
- 10 files changed, 251 insertions(+), 74 deletions(-)
