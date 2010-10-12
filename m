@@ -1,159 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757105Ab0JLIpW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 04:45:22 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:52845 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757063Ab0JLIpU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 04:45:20 -0400
-Subject: Re: [PATCH try 3] CFS: Add hierarchical tree-based penalty.
-From: Peter Zijlstra <peterz@infradead.org>
-To: William Pitcock <nenolod@dereferenced.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-In-Reply-To: <20101012072859.4A14DCE142@carpathia.dereferenced.org>
-References: <20101012072859.4A14DCE142@carpathia.dereferenced.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 12 Oct 2010 10:45:04 +0200
-Message-ID: <1286873104.29097.17.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757069Ab0JLIuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 04:50:16 -0400
+Received: from www.tglx.de ([62.245.132.106]:57664 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756888Ab0JLIuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 04:50:15 -0400
+Date: Tue, 12 Oct 2010 10:49:59 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Salman Qazi <sqazi@google.com>
+cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix a complex race in hrtimer code.
+In-Reply-To: <20101012000159.7091.84336.stgit@dungbeetle.mtv.corp.google.com>
+Message-ID: <alpine.LFD.2.00.1010121046060.2909@localhost6.localdomain6>
+References: <20101012000159.7091.84336.stgit@dungbeetle.mtv.corp.google.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's customary to CC people who work on the code you patch...
+On Mon, 11 Oct 2010, Salman Qazi wrote:
 
-On Tue, 2010-10-12 at 00:32 -0500, William Pitcock wrote:
-> Inspired by the recent change to BFS by Con Kolivas, this patch causes
-> vruntime to be penalized based on parent depth from their root task
-> group.
+> The race is described as follows:
 > 
-> I have, for the moment, decided to make it a default feature since the
-> design of CFS ensures that broken applications depending on task enqueue
-> behaviour behaving traditionally will continue to work.
+> CPU X                                 CPU Y
+> remove_hrtimer
+> // state & QUEUED == 0
+> timer->state = CALLBACK
+> unlock timer base
+> timer->f(n) //very long
+>                                   hrtimer_start
+>                                     lock timer base
+>                                     remove_hrtimer // no effect
+>                                     hrtimer_enqueue
+>                                     timer->state = CALLBACK |
+>                                                    QUEUED
+>                                     unlock timer base
+>                                   hrtimer_start
+>                                     lock timer base
+>                                     remove_hrtimer
+>                                         mode = INACTIVE
+>                                         // CALLBACK bit lost!
+>                                     switch_hrtimer_base
+>                                             CALLBACK bit not set:
+>                                                     timer->base
+>                                                     changes to a
+>                                                     different CPU.
+> lock this CPU's timer base
+
+Good catch.
+ 
+> Bug reproducible and fix testable using a kernel module that hrtimer_start()s
+> a timer with a very long running callback from multiple CPUs:
 > 
-> My method for applying the penalty is different than that of BFS, it
-> divides the vruntime by the number of parents the process has.
+> MODULE_LICENSE("GPL");
+> 
+> static long timer_func_time = 1000;
+> module_param(timer_func_time, long, 0600);
+> static long timer_starts = 2500;
+> module_param(timer_starts, long, 0600);
+> static long timer_expire = 1000;
+> module_param(timer_expire, long, 0600);
+> 
+> DEFINE_PER_CPU(struct task_struct *, hrtimer_thread);
+> 
+> /* There are other issues, like deadlocks between multiple hrtimer_start observed
+>  * calls, at least in 2.6.34 that this lock works around.  Will look into
+>  * those later.
 
-Aside from the funny semantic error in your sentence there (every
-process can, by definition, only have one parent), the patch doesn't
-look quite right either.
+Well, we don't have to work around callsites not serializing themself
+in the core code, right ?
 
-
-> Signed-off-by: William Pitcock <nenolod@dereferenced.org>
 > ---
->  include/linux/sched.h   |    2 ++
->  kernel/sched.c          |    4 ++++
->  kernel/sched_fair.c     |    8 ++++++++
->  kernel/sched_features.h |   12 ++++++++++++
->  4 files changed, 26 insertions(+), 0 deletions(-)
+>  kernel/hrtimer.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
 > 
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 1e2a6db..7b44f98 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1494,6 +1494,8 @@ struct task_struct {
->  		unsigned long memsw_bytes; /* uncharged mem+swap usage */
->  	} memcg_batch;
->  #endif
+> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+> index 1decafb..57846d5 100644
+> --- a/kernel/hrtimer.c
+> +++ b/kernel/hrtimer.c
+> @@ -944,8 +944,8 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
+>  		debug_deactivate(timer);
+>  		timer_stats_hrtimer_clear_start_info(timer);
+>  		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
+> -		__remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
+> -				 reprogram);
+> +		__remove_hrtimer(timer, base,
+> +				 (timer->state & HRTIMER_STATE_CALLBACK), reprogram);
+>  		return 1;
+>  	}
+>  	return 0;
+> @@ -1231,6 +1231,9 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+>  		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+>  		enqueue_hrtimer(timer, base);
+>  	}
 > +
-> +	int parent_count;
->  };
-
-so copy_process() will make a child inherit the parent_count from the
-parent.
-
->  /* Future-safe accessor for struct task_struct's cpus_allowed. */
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index dc85ceb..16ad939 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2621,6 +2621,10 @@ void wake_up_new_task(struct task_struct *p, unsigned long clone_flags)
->  #endif
->  
->  	rq = task_rq_lock(p, &flags);
+> +	WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
 > +
-> +	if (!(clone_flags & CLONE_THREAD))
-> +		p->parent_count++;
-> +
+>  	timer->state &= ~HRTIMER_STATE_CALLBACK;
+>  }
 
-And we increment it for every new !THREAD child, so its basically a task
-depth counter, except it doesn't take re-parenting into account.
+Can I please get your Signed-off-by so this can be queued ?
 
->  	activate_task(rq, p, 0);
->  	trace_sched_wakeup_new(p, 1);
->  	check_preempt_curr(rq, p, WF_FORK);
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index db3f674..3f17ec1 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -737,6 +737,14 @@ place_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int initial)
->  	if (initial && sched_feat(START_DEBIT))
->  		vruntime += sched_vslice(cfs_rq, se);
->  
-> +	if (sched_feat(HIERARCHICAL_PENALTY)) {
-> +		struct task_struct *tsk = task_of(se);
-> +
+Thanks,
 
-And here you have a bug,.. there is no guarantee se is actually a task.
-Which means you're dereferencing random memory here:
-
-> +		if (tsk->parent_count > 1)
-> +			vruntime = max_vruntime(vruntime,
-> +						vruntime / tsk->parent_count);
-
-Aside from the wrap issue, that is a NOP statement.
-
-x / y < x : y > 1, therefore, max(x, x/y) == x and you wrote, x = x;
-
-Furthermore, vruntime here is an absolute measure of service, dividing
-that by anything reduces the total amount of service the task received
-during its history, doing so for y > 1 means at least halving it, which
-again means that you basically end up with:
-
-  se->vruntime = se->vruntime;
-
-Due to the final few statements in place_entity():
-
-  se->vruntime = max_vruntime(se->vruntime, vruntime);
-
-What I think you meant to do was proportionally decrease the relative
-placement of the new task by the task-depth, or something like that.
-
-> +	}
-> +
->  	/* sleeps up to a single latency don't count. */
->  	if (!initial) {
->  		unsigned long thresh = sysctl_sched_latency;
-> diff --git a/kernel/sched_features.h b/kernel/sched_features.h
-> index 83c66e8..cf17f97 100644
-> --- a/kernel/sched_features.h
-> +++ b/kernel/sched_features.h
-> @@ -45,6 +45,18 @@ SCHED_FEAT(LAST_BUDDY, 1)
->  SCHED_FEAT(CACHE_HOT_BUDDY, 1)
->  
->  /*
-> + * Hierarchical tree-based penalty: penalize service deficit by
-> + * an order of magnitude for each parent process in the process
-> + * tree.  This has the natural effect of forcing preference towards
-> + * processes that are not fork()-hungry, like make(1), which helps
-> + * to preserve good latency.
-> + *
-> + * This also has the side effect of providing in a limited way,
-> + * per-user CPU entitlement partitioning.
-> + */
-
-But that doesn't quite match your description here, because decreasing
-the relative placement for deep tasks will actually give those a benefit
-over the shallow tasks...
-
-> +SCHED_FEAT(HIERARCHICAL_PENALTY, 1)
-> +
-> +/*
->   * Use arch dependent cpu power functions
->   */
->  SCHED_FEAT(ARCH_POWER, 0)
-
+	tglx
+ 
