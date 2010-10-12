@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757991Ab0JLRmd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:42:33 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:65214 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757974Ab0JLRmb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:42:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Ww2VQfQgaje6BehAOu2AVEaLZup9iiHztsB6XiMb+N3IrxDzJZnxe++ILG9XqBgaUj
-         kKGQYJ5uwZwawJh7I5KbIWutwW8N0l1J0Foybx37zpYtHBM7LaY4sy7eqRQbpC2eFjSV
-         Pd9ACyRJcbLh6DF0p9KjiMeWNbRkQXeycOQa8=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikjp=dpOOfjnvg=ivkb40_dE+oRLSEkzrycwirV@mail.gmail.com>
-References: <20101012163519.a88f2040.sfr@canb.auug.org.au>
-	<1286895206-3030-1-git-send-email-linville@tuxdriver.com>
-	<AANLkTikjp=dpOOfjnvg=ivkb40_dE+oRLSEkzrycwirV@mail.gmail.com>
-Date: Tue, 12 Oct 2010 13:42:30 -0400
-X-Google-Sender-Auth: Q6Qd-8bMYqzyTVYHgyiw3HPasEc
-Message-ID: <AANLkTim0ryZ29w0ud9=sSbV6LdZhjW410ptpf3XJDYkm@mail.gmail.com>
-Subject: Re: [PATCH] ath5k: fix build break from "ath5k: Print out opmode in debugfs"
-From: Bob Copeland <me@bobcopeland.com>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757959Ab0JLRrE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:47:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15748 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751044Ab0JLRrB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 13:47:01 -0400
+Subject: Re: [PATCH 2/5] secmark: make secmark object handling generic
+From: Eric Paris <eparis@redhat.com>
+To: Pablo Neira Ayuso <pablo@netfilter.org>
+Cc: Jan Engelhardt <jengelh@medozas.de>, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        paul.moore@hp.com, jmorris@namei.org, selinux@tycho.nsa.gov,
+        sds@tycho.nsa.gov, linux-security-module@vger.kernel.org,
+        mr.dash.four@googlemail.com
+In-Reply-To: <4CB499E3.5030305@netfilter.org>
+References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>
+	 <20101012154015.26943.18385.stgit@paris.rdu.redhat.com>
+	 <alpine.LNX.2.01.1010121824540.15529@obet.zrqbmnf.qr>
+	 <4CB499E3.5030305@netfilter.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 12 Oct 2010 13:45:33 -0400
+Message-ID: <1286905533.2608.21.camel@dhcp235-107.rdu.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 12:54 PM, Bob Copeland <me@bobcopeland.com> wrote:
->> +#ifdef CONFIG_ATH_DEBUG
->>        ATH5K_DBG(sc, ATH5K_DEBUG_MODE, "mode setup opmode %d (%s)\n",
->>                  sc->opmode,
->>                  ath_opmode_to_string(sc->opmode) ?
->>                  ath_opmode_to_string(sc->opmode) : "UKNOWN");
+On Tue, 2010-10-12 at 19:24 +0200, Pablo Neira Ayuso wrote:
+> On 12/10/10 18:26, Jan Engelhardt wrote:
+> > On Tuesday 2010-10-12 17:40, Eric Paris wrote:
 
-Just one other bikeshed color:
+> >> static struct xt_target secmark_tg_reg __read_mostly = {
+> >> -	.name       = "SECMARK",
+> >> -	.revision   = 0,
+> >> -	.family     = NFPROTO_UNSPEC,
+> >> -	.checkentry = secmark_tg_check,
+> >> -	.destroy    = secmark_tg_destroy,
+> >> -	.target     = secmark_tg,
+> >> -	.targetsize = sizeof(struct xt_secmark_target_info),
+> >> -	.me         = THIS_MODULE,
+> >> +	.name		= "SECMARK",
+> >> +	.revision	= 0,
+> >> +	.family		= NFPROTO_UNSPEC,
+> >> +	.checkentry	= secmark_tg_check,
+> >> +	.destroy	= secmark_tg_destroy,
+> >> +	.target		= secmark_tg,
+> >> +	.targetsize	= sizeof(struct xt_secmark_target_info),
+> >> +	.me		= THIS_MODULE,
+> >> };
+> 
+> I think that we don't need that extra tab above.
 
-if ath_opmode_to_string() returned "UNKNOWN" in the failure case,
-we wouldn't need the double-call above.  Yes, it's used by ath9k
-too, but IMHO a debugging function that only converts some of the
-possible values to strings is pretty developer unfriendly.
+Are you saying that you prefer lots of spaces to get alignment rather
+than the single tab?  I see examples of both in other struct xt_target
+definitions.  I didn't make any syntax changes to this struct, so my
+guess is that I made this change when I discovered eight spaces in a row
+as I was checking the file for tab->space screw-ups before submission.
+Since this is a whitespace change in the middle of a real patch I guess
+I can drop the hunk entirely if that's what you are asking for....
 
-That said, I still think tracepoints are a nicer way to do this
-kind of thing (you can even do symbolic names for enums).
+-Eric
 
--- 
-Bob Copeland %% www.bobcopeland.com
+
