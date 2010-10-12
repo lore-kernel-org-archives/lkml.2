@@ -1,61 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab0JLJUI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 05:20:08 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46631 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755155Ab0JLJUH (ORCPT
+	id S1756996Ab0JLJYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 05:24:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37754 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756621Ab0JLJYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 05:20:07 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: RFC: Implement hwpoison on free for soft offlining
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com,
-        akpm@linux-foundation.org
-In-Reply-To: <87aamj3k6f.fsf@basil.nowhere.org>
-References: <1286402951-1881-1-git-send-email-andi@firstfloor.org> <87aamj3k6f.fsf@basil.nowhere.org>
-Message-Id: <20101012181439.ADA9.A69D9226@jp.fujitsu.com>
+	Tue, 12 Oct 2010 05:24:03 -0400
+Date: Tue, 12 Oct 2010 11:23:57 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Sascha Hauer <s.hauer@pengutronix.de>,
+        Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
+Subject: Re: linux-next: manual merge of the arm tree with the arm-current
+	tree
+Message-ID: <20101012092357.GE29673@pengutronix.de>
+References: <20101012103314.41b00cbe.sfr@canb.auug.org.au> <20101012080354.GC29673@pengutronix.de> <20101012082814.GC12845@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 12 Oct 2010 18:20:04 +0900 (JST)
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101012082814.GC12845@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Andi Kleen <andi@firstfloor.org> writes:
+Hi Russell,
+
+On Tue, Oct 12, 2010 at 09:28:14AM +0100, Russell King wrote:
+> On Tue, Oct 12, 2010 at 10:03:54AM +0200, Uwe Kleine-König wrote:
+> > On Tue, Oct 12, 2010 at 10:33:14AM +1100, Stephen Rothwell wrote:
+> > > Hi Russell,
+> > > 
+> > > Today's linux-next merge of the arm tree got a conflict in
+> > > arch/arm/mach-imx/mach-cpuimx27.c between commit
+> > > 4793ca4028e4dcdbf2740db50995c9378ded3cf8 ("cpuimx27: fix i2c bus
+> > > selection") from the arm-current tree and commit
+> > > 77a406da5a5b76445a816d5f043fc9aef4026ff1 ("ARM: imx: fix name of macros
+> > > to add imx-i2c devices") from the arm tree.
+> A more concerning question is - these recent conflicts have been happening
+> as a result of merging people's GIT trees, which tend to be sent close
+> to the merge window.
 > 
-> > Here's a somewhat experimental patch to improve soft offlining
-> > in hwpoison, but allowing hwpoison on free for not directly
-> > freeable page types. It should work for nearly all
-> > left over page types that get eventually freed, so this makes
-> > soft offlining nearly universal. The only non handleable page
-> > types are now pages that never get freed.
-> >
-> > Drawback: It needs an additional page flag. Cannot set hwpoison
-> > directly because that would not be "soft" and cause errors.
-> 
-> Ping? Any comments on this patch?
-> 
-> Except for the page flag use I think it's nearly a no brainer. 
-> A lot of new soft hwpoison capability for very little additional code.
-> 
-> Has anyone a problem using up a 64bit page flag for that?
+> If the first time their changes become visible to linux-next is when
+> they're merged into my tree, something is wrong...
+I tried to reconstruct that.  I guess I cannot see yet that Russell took
+4793ca4028e4dcdbf2740db50995c9378ded3cf8 because I have no access to
+Russell's kernel.org repo and his ftp.arm.linux.org.uk repo currently
+barfs for me and Stephen didn't push out a tree newer than 20101011 yet.
 
-To me, it's no problem if this keep 64bit only. IOW, I only dislike to
-add 32bit page flags.
+4793ca4028e4dc is a regression fix that should go into .36, so this is
+OK, isn't it.  77a406da5a5b76445a816d5f043fc9aef4026ff1 is already some
+time in Sascha's tree, and so in next.  But 4793ca4028e4dc is new and
+only these two together conflict.
 
-Yeah, memory corruption is very crap and i think your effort has a lot
-of worth :)
+Stephen, note that Sascha fixed the same conflict already in his tree.
 
+Best regards
+Uwe
 
-offtopic, I don't think CONFIG_MEMORY_FAILURE and CONFIG_HWPOISON_ON_FREE
-are symmetric nor easy understandable. can you please consider naming change?
-(example, CONFIG_HWPOISON/CONFIG_HWPOISON_ON_FREE, 
-CONFIG_MEMORY_FAILURE/CONFIG_MEMORY_FAILURE_SOFT_OFFLINE)
-
-
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
