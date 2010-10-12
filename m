@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932142Ab0JLIb5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 04:31:57 -0400
-Received: from mga02.intel.com ([134.134.136.20]:19610 "EHLO mga02.intel.com"
+	id S932167Ab0JLIcM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 04:32:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36630 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932119Ab0JLIbw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 04:31:52 -0400
+	id S932118Ab0JLIcJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 04:32:09 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.57,319,1283756400"; 
-   d="scan'208";a="666547386"
-Date: Tue, 12 Oct 2010 09:31:41 +0100
+   d="scan'208,223";a="615835368"
+Date: Tue, 12 Oct 2010 09:32:05 +0100
 From: tadeusz.struk@intel.com
 To: herbert@gondor.hengli.com.au
 Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
         aidan.o.mahony@intel.com, gabriele.paoloni@intel.com,
         adrian.hoban@intel.com, tadeusz.struk@intel.com
-Subject: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
-Message-ID: <4CB41CED.mailDED1NSGGA@intel.com>
+Subject: [PATCH 3/3] Extending the RC4106 AES-GCM test vectors
+Message-ID: <4CB41D05.mailDTS117QJ1@intel.com>
 User-Agent: nail 10.6 11/15/03
 MIME-Version: 1.0
 Content-Type: text/plain; charset="us-ascii"
@@ -25,1755 +25,482 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Herbert,
-Resubmitting the two other patches as requested.
-Thanks,
-Tadeusz
-
->From 06444d8a95458d807ae14699e557739281d0b026 Mon Sep 17 00:00:00 2001
+>From 587c5f011d8608bef97e7711fe87900225ce8722 Mon Sep 17 00:00:00 2001
 From: Adrian Hoban <ahoban@allen.ir.intel.com>
-Date: Fri, 10 Sep 2010 18:08:45 +0100
-Subject: [PATCH 2/3] RFC4106 AES-GCM Driver Using Intel New Instructions
+Date: Fri, 10 Sep 2010 18:12:57 +0100
+Subject: [PATCH 3/3] Extending the RC4106 AES-GCM test vectors
 
-This patch adds an optimized RFC4106 AES-GCM implementation for 64-bit
-kernels. It supports 128-bit AES key size. This leverages the crypto
-AEAD interface type to facilitate a combined AES & GCM operation to
-be implemented in assembly code. The assembly code leverages Intel(R)
-AES New Instructions and the PCLMULQDQ instruction.
+Updated RFC4106 AES-GCM testing. Some test vectors were taken from
+http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/
+gcm/gcm-test-vectors.tar.gz
 
 Signed-off-by: Adrian Hoban <adrian.hoban@intel.com>
 Signed-off-by: Tadeusz Struk <tadeusz.struk@intel.com>
 Signed-off-by: Gabriele Paoloni <gabriele.paoloni@intel.com>
 Signed-off-by: Aidan O'Mahony <aidan.o.mahony@intel.com>
-Signed-off-by: Erdinc Ozturk <erdinc.ozturk@intel.com>
-Signed-off-by: James Guilford <james.guilford@intel.com>
-Signed-off-by: Wajdi Feghali <wajdi.k.feghali@intel.com>
 ---
- arch/x86/crypto/aesni-intel_asm.S  | 1112 +++++++++++++++++++++++++++++++++++-
- arch/x86/crypto/aesni-intel_glue.c |  518 +++++++++++++++++-
- 2 files changed, 1627 insertions(+), 3 deletions(-)
+ crypto/tcrypt.c  |   11 ++
+ crypto/testmgr.c |   24 ++++
+ crypto/testmgr.h |  361 ++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 396 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/crypto/aesni-intel_asm.S b/arch/x86/crypto/aesni-intel_asm.S
-index ff16756..3950769 100644
---- a/arch/x86/crypto/aesni-intel_asm.S
-+++ b/arch/x86/crypto/aesni-intel_asm.S
-@@ -8,6 +8,17 @@
-  *    Author: Huang Ying <ying.huang@intel.com>
-  *            Vinodh Gopal <vinodh.gopal@intel.com>
-  *            Kahraman Akdemir
-+ *
-+ * Added RFC4106 AES-GCM support for 128-bit keys under the AEAD
-+ * interface for 64-bit kernels.
-+ *    Authors: Erdinc Ozturk (erdinc.ozturk@intel.com)
-+ *             Aidan O'Mahony (aidan.o.mahony@intel.com)
+diff --git a/crypto/tcrypt.c b/crypto/tcrypt.c
+index 3ca68f9..9aac5e5 100644
+--- a/crypto/tcrypt.c
++++ b/crypto/tcrypt.c
+@@ -8,6 +8,13 @@
+  * Copyright (c) 2002 Jean-Francois Dive <jef@linuxbe.org>
+  * Copyright (c) 2007 Nokia Siemens Networks
+  *
++ * Updated RFC4106 AES-GCM testing.
++ *    Authors: Aidan O'Mahony (aidan.o.mahony@intel.com)
 + *             Adrian Hoban <adrian.hoban@intel.com>
-+ *             James Guilford (james.guilford@intel.com)
 + *             Gabriele Paoloni <gabriele.paoloni@intel.com>
 + *             Tadeusz Struk (tadeusz.struk@intel.com)
-+ *             Wajdi Feghali (wajdi.k.feghali@intel.com)
-+ *    Copyright (c) 2010, Intel Corporation.
++ *             Copyright (c) 2010, Intel Corporation.
++ *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+  * Software Foundation; either version 2 of the License, or (at your option)
+@@ -980,6 +987,10 @@ static int do_test(int m)
+ 		ret += tcrypt_test("ansi_cprng");
+ 		break;
+ 
++	case 151:
++		ret += tcrypt_test("rfc4106(gcm(aes))");
++		break;
++
+ 	case 200:
+ 		test_cipher_speed("ecb(aes)", ENCRYPT, sec, NULL, 0,
+ 				speed_template_16_24_32);
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index fa8c8f7..27ea9fe 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -6,6 +6,13 @@
+  * Copyright (c) 2007 Nokia Siemens Networks
+  * Copyright (c) 2008 Herbert Xu <herbert@gondor.apana.org.au>
   *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -16,9 +27,50 @@
-  */
- 
- #include <linux/linkage.h>
--#include <asm/inst.h>
-+
-+
-+.data
-+POLY:   .octa 0xC2000000000000000000000000000001
-+TWOONE: .octa 0x00000001000000000000000000000001
-+
-+# order of these constants should not change.
-+# more specifically, ALL_F should follow SHIFT_MASK, and ZERO should follow ALL_F
-+
-+SHUF_MASK:  .octa 0x000102030405060708090A0B0C0D0E0F
-+MASK1:      .octa 0x0000000000000000ffffffffffffffff
-+MASK2:      .octa 0xffffffffffffffff0000000000000000
-+SHIFT_MASK: .octa 0x0f0e0d0c0b0a09080706050403020100
-+ALL_F:      .octa 0xffffffffffffffffffffffffffffffff
-+ZERO:       .octa 0x00000000000000000000000000000000
-+ONE:        .octa 0x00000000000000000000000000000001
-+F_MIN_MASK: .octa 0xf1f2f3f4f5f6f7f8f9fafbfcfdfeff0
-+dec:        .octa 0x1
-+enc:        .octa 0x2
-+
- 
- .text
-+#define	STACK_OFFSET    8*3
-+#define	HashKey		16*0	// store HashKey <<1 mod poly here
-+#define	HashKey_2	16*1	// store HashKey^2 <<1 mod poly here
-+#define	HashKey_3	16*2	// store HashKey^3 <<1 mod poly here
-+#define	HashKey_4	16*3	// store HashKey^4 <<1 mod poly here
-+#define	HashKey_k	16*4	// store XOR of High 64 bits and Low 64 bits of  HashKey <<1 mod poly here (for Karatsuba purposes)
-+#define	HashKey_2_k	16*5	// store XOR of High 64 bits and Low 64 bits of  HashKey^2 <<1 mod poly here (for Karatsuba purposes)
-+#define	HashKey_3_k	16*6	// store XOR of High 64 bits and Low 64 bits of  HashKey^3 <<1 mod poly here (for Karatsuba purposes)
-+#define	HashKey_4_k	16*7	// store XOR of High 64 bits and Low 64 bits of  HashKey^4 <<1 mod poly here (for Karatsuba purposes)
-+#define	VARIABLE_OFFSET	16*8
-+
-+#define arg1 rdi
-+#define arg2 rsi
-+#define arg3 rdx
-+#define arg4 rcx
-+#define arg5 r8
-+#define arg6 r9
-+#define arg7 STACK_OFFSET+8(%r14)
-+#define arg8 STACK_OFFSET+16(%r14)
-+#define arg9 STACK_OFFSET+24(%r14)
-+#define arg10 STACK_OFFSET+32(%r14)
-+
- 
- #define STATE1	%xmm0
- #define STATE2	%xmm4
-@@ -47,6 +99,1064 @@
- #define T2	%r11
- #define TCTR_LOW T2
- 
-+
-+/* GHASH_MUL MACRO to implement: Data*HashKey mod (128,127,126,121,0)
-+*
-+*
-+* Input: A and B (128-bits each, bit-reflected)
-+* Output: C = A*B*x mod poly, (i.e. >>1 )
-+* To compute GH = GH*HashKey mod poly, give HK = HashKey<<1 mod poly as input
-+* GH = GH * HK * x mod poly which is equivalent to GH*HashKey mod poly.
-+*
-+*/
-+.macro	GHASH_MUL GH HK TMP1 TMP2 TMP3 TMP4 TMP5
-+	movdqa	  \GH, \TMP1
-+	pshufd	  $78, \GH, \TMP2
-+	pshufd	  $78, \HK, \TMP3
-+	pxor	  \GH, \TMP2            # TMP2 = a1+a0
-+	pxor	  \HK, \TMP3            # TMP3 = b1+b0
-+	pclmulqdq $0x11, \HK, \TMP1     # TMP1 = a1*b1
-+	pclmulqdq $0x00, \HK, \GH       # GH = a0*b0
-+	pclmulqdq $0x00, \TMP3, \TMP2   # TMP2 = (a0+a1)*(b1+b0)
-+	pxor	  \GH, \TMP2
-+	pxor	  \TMP1, \TMP2          # TMP2 = (a0*b0)+(a1*b0)
-+	movdqa	  \TMP2, \TMP3
-+	pslldq	  $8, \TMP3             # left shift TMP3 2 DWs
-+	psrldq	  $8, \TMP2             # right shift TMP2 2 DWs
-+	pxor	  \TMP3, \GH
-+	pxor	  \TMP2, \TMP1          # TMP2:GH holds the result of GH*HK
-+
-+        # first phase of the reduction
-+
-+	movdqa    \GH, \TMP2
-+	movdqa    \GH, \TMP3
-+	movdqa    \GH, \TMP4            # copy GH into TMP2,TMP3 and TMP4 in in order to perform independent shifts
-+	pslld     $31, \TMP2            # packed right shift <<31
-+	pslld     $30, \TMP3            # packed right shift <<30
-+	pslld     $25, \TMP4            # packed right shift <<25
-+	pxor      \TMP3, \TMP2          # xor the shifted versions
-+	pxor      \TMP4, \TMP2
-+	movdqa    \TMP2, \TMP5
-+	psrldq    $4, \TMP5             # right shift TMP5 1 DW
-+	pslldq    $12, \TMP2            # left shift TMP2 3 DWs
-+	pxor      \TMP2, \GH
-+
-+        # second phase of the reduction
-+
-+	movdqa    \GH,\TMP2             # copy GH into TMP2,TMP3 and TMP4 in in order to perform independent shifts
-+	movdqa    \GH,\TMP3
-+	movdqa    \GH,\TMP4
-+	psrld     $1,\TMP2              # packed left shift >>1
-+	psrld     $2,\TMP3              # packed left shift >>2
-+	psrld     $7,\TMP4              # packed left shift >>7
-+	pxor      \TMP3,\TMP2		# xor the shifted versions
-+	pxor      \TMP4,\TMP2
-+	pxor      \TMP5, \TMP2
-+	pxor      \TMP2, \GH
-+	pxor      \TMP1, \GH            # result is in TMP1
-+.endm
-+
-+/*
-+* if a = number of total plaintext bytes
-+* b = floor(a/16)
-+* num_initial_blocks = b mod 4
-+* encrypt the initial num_initial_blocks blocks and apply ghash on the ciphertext
-+* %r10, %r11, %r12, %rax, %xmm5, %xmm6, %xmm7, %xmm8, %xmm9 registers are clobbered
-+* arg1, %arg2, %arg3, %r14 are used as a pointer only, not modified
-+*/
-+
-+.macro INITIAL_BLOCKS num_initial_blocks TMP1 TMP2 TMP3 TMP4 TMP5 XMM0 XMM1 XMM2 XMM3 XMM4 XMMDst TMP6 TMP7 i i_seq operation
-+
-+	mov	   arg7, %r10           # %r10 = AAD
-+	mov	   arg8, %r12           # %r12 = aadLen
-+	mov	   %r12, %r11
-+	pxor	   %xmm\i, %xmm\i
-+_get_AAD_loop\num_initial_blocks\operation:
-+	movd	   (%r10), \TMP1
-+	pslldq	   $12, \TMP1
-+	psrldq	   $4, %xmm\i
-+	pxor	   \TMP1, %xmm\i
-+	add	   $4, %r10
-+	sub	   $4, %r12
-+	jne	   _get_AAD_loop\num_initial_blocks\operation
-+	cmp	   $16, %r11
-+	je	   _get_AAD_loop2_done\num_initial_blocks\operation
-+	mov	   $16, %r12
-+_get_AAD_loop2\num_initial_blocks\operation:
-+	psrldq	   $4, %xmm\i
-+	sub	   $4, %r12
-+	cmp	   %r11, %r12
-+	jne	   _get_AAD_loop2\num_initial_blocks\operation
-+_get_AAD_loop2_done\num_initial_blocks\operation:
-+	pshufb	   SHUF_MASK(%rip), %xmm\i          # byte-reflect the AAD data
-+	xor	   %r11, %r11                       # initialise the data pointer offset as zero
-+
-+
-+        # start AES for num_initial_blocks blocks
-+
-+	mov	   %arg5, %rax                      # %rax = *Y0
-+	movdqu	   (%rax), \XMM0                    # XMM0 = Y0
-+	pshufb	   SHUF_MASK(%rip), \XMM0
-+.if \i_seq != 0
-+.irpc index, \i_seq
-+	paddd	   ONE(%rip), \XMM0                 # INCR Y0
-+	movdqa	   \XMM0, %xmm\index
-+	pshufb	   SHUF_MASK(%rip), %xmm\index      # perform a 16 byte swap
-+.endr
-+.irpc index, \i_seq
-+	pxor	   16*0(%arg1), %xmm\index
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*1(%rdi), %xmm\index          # Round 1
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*2(%arg1), %xmm\index          # Round 2
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*3(%arg1), %xmm\index          # Round 3
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*4(%arg1), %xmm\index          # Round 4
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*5(%arg1), %xmm\index          # Round 5
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*6(%arg1), %xmm\index          # Round 6
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*7(%arg1), %xmm\index          # Round 7
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*8(%arg1), %xmm\index          # Round 8
-+.endr
-+.irpc index, \i_seq
-+	aesenc     16*9(%arg1), %xmm\index          # Round 9
-+.endr
-+.irpc index, \i_seq
-+	aesenclast 16*10(%arg1), %xmm\index         # Round 10
-+.endr
-+.irpc index, \i_seq
-+	movdqu	   (%arg3 , %r11, 1), \TMP1
-+	pxor	   \TMP1, %xmm\index
-+	movdqu	   %xmm\index, (%arg2 , %r11, 1)    # write back plaintext/ciphertext for num_initial_blocks
-+	add	   $16, %r11
-+.if \operation == dec
-+	movdqa     \TMP1, %xmm\index
-+.endif
-+	pshufb	   SHUF_MASK(%rip), %xmm\index      # prepare plaintext/ciphertext for GHASH computation
-+.endr
-+.endif
-+	GHASH_MUL  %xmm\i, \TMP3, \TMP1, \TMP2, \TMP4, \TMP5, \XMM1
-+
-+        # apply GHASH on num_initial_blocks blocks
-+
-+.if \i == 5
-+        pxor       %xmm5, %xmm6
-+	GHASH_MUL  %xmm6, \TMP3, \TMP1, \TMP2, \TMP4, \TMP5, \XMM1
-+        pxor       %xmm6, %xmm7
-+	GHASH_MUL  %xmm7, \TMP3, \TMP1, \TMP2, \TMP4, \TMP5, \XMM1
-+        pxor       %xmm7, %xmm8
-+	GHASH_MUL  %xmm8, \TMP3, \TMP1, \TMP2, \TMP4, \TMP5, \XMM1
-+.elseif \i == 6
-+        pxor       %xmm6, %xmm7
-+	GHASH_MUL  %xmm7, \TMP3, \TMP1, \TMP2, \TMP4, \TMP5, \XMM1
-+        pxor       %xmm7, %xmm8
-+	GHASH_MUL  %xmm8, \TMP3, \TMP1, \TMP2, \TMP4, \TMP5, \XMM1
-+.elseif \i == 7
-+        pxor       %xmm7, %xmm8
-+	GHASH_MUL  %xmm8, \TMP3, \TMP1, \TMP2, \TMP4, \TMP5, \XMM1
-+.endif
-+	cmp	   $64, %r13
-+	jl	_initial_blocks_done\num_initial_blocks\operation   # no need for precomputed values
-+/*
-+*
-+* Precomputations for HashKey parallel with encryption of first 4 blocks.
-+* Haskey_i_k holds XORed values of the low and high parts of the Haskey_i
-+*/
-+	paddd	   ONE(%rip), \XMM0              # INCR Y0
-+	movdqa	   \XMM0, \XMM1
-+	pshufb	   SHUF_MASK(%rip), \XMM1        # perform a 16 byte swap
-+	paddd	   ONE(%rip), \XMM0              # INCR Y0
-+	movdqa	   \XMM0, \XMM2
-+	pshufb	   SHUF_MASK(%rip), \XMM2        # perform a 16 byte swap
-+	paddd	   ONE(%rip), \XMM0              # INCR Y0
-+	movdqa	   \XMM0, \XMM3
-+	pshufb	   SHUF_MASK(%rip), \XMM3        # perform a 16 byte swap
-+	paddd	   ONE(%rip), \XMM0              # INCR Y0
-+	movdqa	   \XMM0, \XMM4
-+	pshufb	   SHUF_MASK(%rip), \XMM4        # perform a 16 byte swap
-+	pxor	   16*0(%arg1), \XMM1
-+	pxor	   16*0(%arg1), \XMM2
-+	pxor	   16*0(%arg1), \XMM3
-+	pxor	   16*0(%arg1), \XMM4
-+	movdqa	   \TMP3, \TMP5
-+	pshufd	   $78, \TMP3, \TMP1
-+	pxor	   \TMP3, \TMP1
-+	movdqa	   \TMP1, HashKey_k(%rsp)
-+	GHASH_MUL  \TMP5, \TMP3, \TMP1, \TMP2, \TMP4, \TMP6, \TMP7  # TMP5 = HashKey^2<<1 (mod poly)
-+	movdqa	   \TMP5, HashKey_2(%rsp)                           # HashKey_2 = HashKey^2<<1 (mod poly)
-+	pshufd	   $78, \TMP5, \TMP1
-+	pxor	   \TMP5, \TMP1
-+	movdqa	   \TMP1, HashKey_2_k(%rsp)
-+.irpc index, 1234 # do 4 rounds
-+	aesenc	   16*\index(%arg1), \XMM1
-+	aesenc	   16*\index(%arg1), \XMM2
-+	aesenc	   16*\index(%arg1), \XMM3
-+	aesenc	   16*\index(%arg1), \XMM4
-+.endr
-+	GHASH_MUL  \TMP5, \TMP3, \TMP1, \TMP2, \TMP4, \TMP6, \TMP7  # TMP5 = HashKey^3<<1 (mod poly)
-+	movdqa	   \TMP5, HashKey_3(%rsp)
-+	pshufd	   $78, \TMP5, \TMP1
-+	pxor	   \TMP5, \TMP1
-+	movdqa	   \TMP1, HashKey_3_k(%rsp)
-+.irpc index, 56789 # do next 5 rounds
-+	aesenc	   16*\index(%arg1), \XMM1
-+	aesenc	   16*\index(%arg1), \XMM2
-+	aesenc	   16*\index(%arg1), \XMM3
-+	aesenc	   16*\index(%arg1), \XMM4
-+.endr
-+	GHASH_MUL  \TMP5, \TMP3, \TMP1, \TMP2, \TMP4, \TMP6, \TMP7  # TMP5 = HashKey^3<<1 (mod poly)
-+	movdqa	   \TMP5, HashKey_4(%rsp)
-+	pshufd	   $78, \TMP5, \TMP1
-+	pxor	   \TMP5, \TMP1
-+	movdqa	   \TMP1, HashKey_4_k(%rsp)
-+	aesenclast 160(%arg1), \XMM1
-+	aesenclast 160(%arg1), \XMM2
-+	aesenclast 160(%arg1), \XMM3
-+	aesenclast 160(%arg1), \XMM4
-+	movdqu	   16*0(%arg3 , %r11 , 1), \TMP1
-+	pxor	   \TMP1, \XMM1
-+.if \operation == dec
-+	movdqu	   \XMM1, 16*0(%arg2 , %r11 , 1)
-+	movdqa     \TMP1, \XMM1
-+.endif
-+	movdqu	   16*1(%arg3 , %r11 , 1), \TMP1
-+	pxor	   \TMP1, \XMM2
-+.if \operation == dec
-+	movdqu	   \XMM2, 16*1(%arg2 , %r11 , 1)
-+	movdqa     \TMP1, \XMM2
-+.endif
-+	movdqu	   16*2(%arg3 , %r11 , 1), \TMP1
-+	pxor	   \TMP1, \XMM3
-+.if \operation == dec
-+	movdqu	   \XMM3, 16*2(%arg2 , %r11 , 1)
-+	movdqa     \TMP1, \XMM3
-+.endif
-+	movdqu	   16*3(%arg3 , %r11 , 1), \TMP1
-+	pxor	   \TMP1, \XMM4
-+.if \operation == dec
-+	movdqu	   \XMM4, 16*3(%arg2 , %r11 , 1)
-+	movdqa     \TMP1, \XMM4
-+.else
-+	movdqu     \XMM1, 16*0(%arg2 , %r11 , 1)
-+	movdqu     \XMM2, 16*1(%arg2 , %r11 , 1)
-+	movdqu     \XMM3, 16*2(%arg2 , %r11 , 1)
-+	movdqu     \XMM4, 16*3(%arg2 , %r11 , 1)
-+.endif
-+	add	   $64, %r11
-+	pshufb	   SHUF_MASK(%rip), \XMM1 # perform a 16 byte swap
-+	pxor	   \XMMDst, \XMM1         # combine GHASHed value with the corresponding ciphertext
-+	pshufb	   SHUF_MASK(%rip), \XMM2 # perform a 16 byte swap
-+	pshufb	   SHUF_MASK(%rip), \XMM3 # perform a 16 byte swap
-+	pshufb	   SHUF_MASK(%rip), \XMM4 # perform a 16 byte swap
-+_initial_blocks_done\num_initial_blocks\operation:
-+.endm
-+
-+/*
-+* encrypt 4 blocks at a time
-+* ghash the 4 previously encrypted ciphertext blocks
-+* arg1, %arg2, %arg3 are used as pointers only, not modified
-+* %r11 is the data offset value
-+*/
-+.macro GHASH_4_ENCRYPT_4_PARALLEL TMP1 TMP2 TMP3 TMP4 TMP5 TMP6 XMM0 XMM1 XMM2 XMM3 XMM4 XMM5 XMM6 XMM7 XMM8 operation
-+
-+	movdqa	  \XMM1, \XMM5
-+	movdqa	  \XMM2, \XMM6
-+	movdqa	  \XMM3, \XMM7
-+	movdqa	  \XMM4, \XMM8
-+
-+        # multiply TMP5 * HashKey using karatsuba
-+
-+	movdqa	  \XMM5, \TMP4
-+	pshufd	  $78, \XMM5, \TMP6
-+	pxor	  \XMM5, \TMP6
-+	paddd     ONE(%rip), \XMM0		# INCR CNT
-+	movdqa	  HashKey_4(%rsp), \TMP5
-+	pclmulqdq $0x11, \TMP5, \TMP4           # TMP4 = a1*b1
-+	movdqa    \XMM0, \XMM1
-+	paddd     ONE(%rip), \XMM0		# INCR CNT
-+	movdqa    \XMM0, \XMM2
-+	paddd     ONE(%rip), \XMM0		# INCR CNT
-+	movdqa    \XMM0, \XMM3
-+	paddd     ONE(%rip), \XMM0		# INCR CNT
-+	movdqa    \XMM0, \XMM4
-+	pshufb	  SHUF_MASK(%rip), \XMM1	# perform a 16 byte swap
-+	pclmulqdq $0x00, \TMP5, \XMM5           # XMM5 = a0*b0
-+	pshufb	  SHUF_MASK(%rip), \XMM2	# perform a 16 byte swap
-+	pshufb	  SHUF_MASK(%rip), \XMM3	# perform a 16 byte swap
-+	pshufb	  SHUF_MASK(%rip), \XMM4	# perform a 16 byte swap
-+	pxor	  (%arg1), \XMM1
-+	pxor	  (%arg1), \XMM2
-+	pxor	  (%arg1), \XMM3
-+	pxor	  (%arg1), \XMM4
-+	movdqa	  HashKey_4_k(%rsp), \TMP5
-+	pclmulqdq $0x00, \TMP5, \TMP6           # TMP6 = (a1+a0)*(b1+b0)
-+	aesenc	  16(%arg1), \XMM1              # Round 1
-+	aesenc	  16(%arg1), \XMM2
-+	aesenc	  16(%arg1), \XMM3
-+	aesenc	  16(%arg1), \XMM4
-+	aesenc	  32(%arg1), \XMM1              # Round 2
-+	aesenc	  32(%arg1), \XMM2
-+	aesenc	  32(%arg1), \XMM3
-+	aesenc	  32(%arg1), \XMM4
-+	movdqa	  \XMM6, \TMP1
-+	pshufd	  $78, \XMM6, \TMP2
-+	pxor	  \XMM6, \TMP2
-+	movdqa	  HashKey_3(%rsp), \TMP5
-+	pclmulqdq $0x11, \TMP5, \TMP1           # TMP1 = a1 * b1
-+	aesenc    48(%arg1), \XMM1              # Round 3
-+	aesenc    48(%arg1), \XMM2
-+	aesenc    48(%arg1), \XMM3
-+	aesenc    48(%arg1), \XMM4
-+	pclmulqdq $0x00, \TMP5, \XMM6           # XMM6 = a0*b0
-+	aesenc	  64(%arg1), \XMM1              # Round 4
-+	aesenc	  64(%arg1), \XMM2
-+	aesenc	  64(%arg1), \XMM3
-+	aesenc	  64(%arg1), \XMM4
-+	movdqa	  HashKey_3_k(%rsp), \TMP5
-+	pclmulqdq $0x00, \TMP5, \TMP2           # TMP2 = (a1+a0)*(b1+b0)
-+	aesenc	  80(%arg1), \XMM1              # Round 5
-+	aesenc	  80(%arg1), \XMM2
-+	aesenc	  80(%arg1), \XMM3
-+	aesenc	  80(%arg1), \XMM4
-+	pxor	  \TMP1, \TMP4			# accumulate the results in TMP4:XMM5, TMP6 holds the middle part
-+	pxor	  \XMM6, \XMM5
-+	pxor	  \TMP2, \TMP6
-+	movdqa	  \XMM7, \TMP1
-+	pshufd	  $78, \XMM7, \TMP2
-+	pxor	  \XMM7, \TMP2
-+	movdqa	  HashKey_2(%rsp ), \TMP5
-+
-+        # Multiply TMP5 * HashKey using karatsuba
-+
-+	pclmulqdq $0x11, \TMP5, \TMP1           # TMP1 = a1*b1
-+	aesenc	  96(%arg1), \XMM1              # Round 6
-+	aesenc	  96(%arg1), \XMM2
-+	aesenc	  96(%arg1), \XMM3
-+	aesenc	  96(%arg1), \XMM4
-+	pclmulqdq $0x00, \TMP5, \XMM7           # XMM7 = a0*b0
-+	aesenc	  112(%arg1), \XMM1             # Round 7
-+	aesenc	  112(%arg1), \XMM2
-+	aesenc	  112(%arg1), \XMM3
-+	aesenc	  112(%arg1), \XMM4
-+	movdqa	  HashKey_2_k(%rsp), \TMP5
-+	pclmulqdq $0x00, \TMP5, \TMP2           # TMP2 = (a1+a0)*(b1+b0)
-+	aesenc	  128(%arg1), \XMM1             # Round 8
-+	aesenc	  128(%arg1), \XMM2
-+	aesenc	  128(%arg1), \XMM3
-+	aesenc	  128(%arg1), \XMM4
-+	pxor	  \TMP1, \TMP4			# accumulate the results in TMP4:XMM5, TMP6 holds the middle part
-+	pxor	  \XMM7, \XMM5
-+	pxor	  \TMP2, \TMP6
-+
-+        # Multiply XMM8 * HashKey
-+        # XMM8 and TMP5 hold the values for the two operands
-+
-+	movdqa	  \XMM8, \TMP1
-+	pshufd	  $78, \XMM8, \TMP2
-+	pxor	  \XMM8, \TMP2
-+	movdqa	  HashKey(%rsp), \TMP5
-+	pclmulqdq $0x11, \TMP5, \TMP1          # TMP1 = a1*b1
-+	aesenc	  144(%arg1), \XMM1            # Round 9
-+	aesenc	  144(%arg1), \XMM2
-+	aesenc	  144(%arg1), \XMM3
-+	aesenc	  144(%arg1), \XMM4
-+	pclmulqdq $0x00, \TMP5, \XMM8          # XMM8 = a0*b0
-+	aesenclast 160(%arg1), \XMM1           # Round 10
-+	aesenclast 160(%arg1), \XMM2
-+	aesenclast 160(%arg1), \XMM3
-+	aesenclast 160(%arg1), \XMM4
-+	movdqa    HashKey_k(%rsp), \TMP5
-+	pclmulqdq $0x00, \TMP5, \TMP2          # TMP2 = (a1+a0)*(b1+b0)
-+	movdqu	  (%arg3,%r11,1), \TMP3
-+	pxor	  \TMP3, \XMM1                 # Ciphertext/Plaintext XOR EK
-+.if \operation == dec
-+	movdqu	  \XMM1, (%arg2,%r11,1)        # Write to plaintext buffer
-+	movdqa    \TMP3, \XMM1
-+.endif
-+	movdqu	  16(%arg3,%r11,1), \TMP3
-+	pxor	  \TMP3, \XMM2                 # Ciphertext/Plaintext XOR EK
-+.if \operation == dec
-+	movdqu	  \XMM2, 16(%arg2,%r11,1)      # Write to plaintext buffer
-+	movdqa    \TMP3, \XMM2
-+.endif
-+	movdqu	  32(%arg3,%r11,1), \TMP3
-+	pxor	  \TMP3, \XMM3                 # Ciphertext/Plaintext XOR EK
-+.if \operation == dec
-+	movdqu	  \XMM3, 32(%arg2,%r11,1)      # Write to plaintext buffer
-+	movdqa    \TMP3, \XMM3
-+.endif
-+	movdqu	  48(%arg3,%r11,1), \TMP3
-+	pxor	  \TMP3, \XMM4                 # Ciphertext/Plaintext XOR EK
-+.if \operation == dec
-+	movdqu	  \XMM4, 48(%arg2,%r11,1)      # Write to plaintext buffer
-+	movdqa    \TMP3, \XMM4
-+.else
-+        movdqu    \XMM1, (%arg2,%r11,1)        # Write to the ciphertext buffer
-+        movdqu    \XMM2, 16(%arg2,%r11,1)      # Write to the ciphertext buffer
-+        movdqu    \XMM3, 32(%arg2,%r11,1)      # Write to the ciphertext buffer
-+        movdqu    \XMM4, 48(%arg2,%r11,1)      # Write to the ciphertext buffer
-+.endif
-+	pshufb	  SHUF_MASK(%rip), \XMM1       # perform a 16 byte swap
-+	pshufb	  SHUF_MASK(%rip), \XMM2       # perform a 16 byte swap
-+	pshufb	  SHUF_MASK(%rip), \XMM3       # perform a 16 byte swap
-+	pshufb	  SHUF_MASK(%rip), \XMM4       # perform a 16 byte sway
-+
-+	pxor	  \TMP4, \TMP1
-+	pxor	  \XMM8, \XMM5
-+	pxor	  \TMP6, \TMP2
-+	pxor	  \TMP1, \TMP2
-+	pxor	  \XMM5, \TMP2
-+	movdqa	  \TMP2, \TMP3
-+	pslldq	  $8, \TMP3                    # left shift TMP3 2 DWs
-+	psrldq	  $8, \TMP2                    # right shift TMP2 2 DWs
-+	pxor	  \TMP3, \XMM5
-+	pxor	  \TMP2, \TMP1		       # accumulate the results in TMP1:XMM5
-+
-+        # first phase of reduction
-+
-+	movdqa    \XMM5, \TMP2
-+	movdqa    \XMM5, \TMP3
-+	movdqa    \XMM5, \TMP4		       # move XMM5 into TMP2, TMP3, TMP4 in order to perform shifts independently
-+	pslld     $31, \TMP2                   # packed right shift << 31
-+	pslld     $30, \TMP3                   # packed right shift << 30
-+	pslld     $25, \TMP4                   # packed right shift << 25
-+	pxor      \TMP3, \TMP2	               # xor the shifted versions
-+	pxor      \TMP4, \TMP2
-+	movdqa    \TMP2, \TMP5
-+	psrldq    $4, \TMP5                    # right shift T5 1 DW
-+	pslldq    $12, \TMP2                   # left shift T2 3 DWs
-+	pxor      \TMP2, \XMM5
-+
-+        # second phase of reduction
-+
-+	movdqa    \XMM5,\TMP2		       # make 3 copies of XMM5 into TMP2, TMP3, TMP4
-+	movdqa    \XMM5,\TMP3
-+	movdqa    \XMM5,\TMP4
-+	psrld     $1, \TMP2                    # packed left shift >>1
-+	psrld     $2, \TMP3                    # packed left shift >>2
-+	psrld     $7, \TMP4                    # packed left shift >>7
-+	pxor      \TMP3,\TMP2		       # xor the shifted versions
-+	pxor      \TMP4,\TMP2
-+	pxor      \TMP5, \TMP2
-+	pxor      \TMP2, \XMM5
-+	pxor      \TMP1, \XMM5                 # result is in TMP1
-+
-+	pxor	  \XMM5, \XMM1
-+.endm
-+
-+/* GHASH the last 4 ciphertext blocks. */
-+.macro	GHASH_LAST_4 TMP1 TMP2 TMP3 TMP4 TMP5 TMP6 TMP7 XMM1 XMM2 XMM3 XMM4 XMMDst
-+
-+        # Multiply TMP6 * HashKey (using Karatsuba)
-+
-+	movdqa	  \XMM1, \TMP6
-+	pshufd	  $78, \XMM1, \TMP2
-+	pxor	  \XMM1, \TMP2
-+	movdqa	  HashKey_4(%rsp), \TMP5
-+	pclmulqdq $0x11, \TMP5, \TMP6       # TMP6 = a1*b1
-+	pclmulqdq $0x00, \TMP5, \XMM1       # XMM1 = a0*b0
-+	movdqa	  HashKey_4_k(%rsp), \TMP4
-+	pclmulqdq $0x00, \TMP4, \TMP2       # TMP2 = (a1+a0)*(b1+b0)
-+	movdqa	  \XMM1, \XMMDst
-+	movdqa	  \TMP2, \XMM1              # result in TMP6, XMMDst, XMM1
-+
-+        # Multiply TMP1 * HashKey (using Karatsuba)
-+
-+	movdqa	  \XMM2, \TMP1
-+	pshufd	  $78, \XMM2, \TMP2
-+	pxor	  \XMM2, \TMP2
-+	movdqa	  HashKey_3(%rsp), \TMP5
-+	pclmulqdq $0x11, \TMP5, \TMP1       # TMP1 = a1*b1
-+	pclmulqdq $0x00, \TMP5, \XMM2       # XMM2 = a0*b0
-+	movdqa	  HashKey_3_k(%rsp), \TMP4
-+	pclmulqdq $0x00, \TMP4, \TMP2       # TMP2 = (a1+a0)*(b1+b0)
-+	pxor	  \TMP1, \TMP6
-+	pxor	  \XMM2, \XMMDst
-+	pxor	  \TMP2, \XMM1              # results accumulated in TMP6, XMMDst, XMM1
-+
-+        # Multiply TMP1 * HashKey (using Karatsuba)
-+
-+	movdqa	  \XMM3, \TMP1
-+	pshufd	  $78, \XMM3, \TMP2
-+	pxor	  \XMM3, \TMP2
-+	movdqa	  HashKey_2(%rsp), \TMP5
-+	pclmulqdq $0x11, \TMP5, \TMP1       # TMP1 = a1*b1
-+	pclmulqdq $0x00, \TMP5, \XMM3       # XMM3 = a0*b0
-+	movdqa	  HashKey_2_k(%rsp), \TMP4
-+	pclmulqdq $0x00, \TMP4, \TMP2       # TMP2 = (a1+a0)*(b1+b0)
-+	pxor	  \TMP1, \TMP6
-+	pxor	  \XMM3, \XMMDst
-+	pxor	  \TMP2, \XMM1              # results accumulated in TMP6, XMMDst, XMM1
-+
-+        # Multiply TMP1 * HashKey (using Karatsuba)
-+
-+	movdqa	  \XMM4, \TMP1
-+	pshufd	  $78, \XMM4, \TMP2
-+	pxor	  \XMM4, \TMP2
-+	movdqa	  HashKey(%rsp), \TMP5
-+	pclmulqdq $0x11, \TMP5, \TMP1	    # TMP1 = a1*b1
-+	pclmulqdq $0x00, \TMP5, \XMM4       # XMM4 = a0*b0
-+	movdqa	  HashKey_k(%rsp), \TMP4
-+	pclmulqdq $0x00, \TMP4, \TMP2       # TMP2 = (a1+a0)*(b1+b0)
-+	pxor	  \TMP1, \TMP6
-+	pxor	  \XMM4, \XMMDst
-+	pxor	  \XMM1, \TMP2
-+	pxor	  \TMP6, \TMP2
-+	pxor	  \XMMDst, \TMP2            # middle section of the temp results combined as in karatsuba algorithm
-+	movdqa	  \TMP2, \TMP4
-+	pslldq	  $8, \TMP4                 # left shift TMP4 2 DWs
-+	psrldq	  $8, \TMP2                 # right shift TMP2 2 DWs
-+	pxor	  \TMP4, \XMMDst
-+	pxor	  \TMP2, \TMP6              # TMP6:XMMDst holds the result of the accumulated carry-less multiplications
-+
-+        # first phase of the reduction
-+
-+	movdqa    \XMMDst, \TMP2
-+	movdqa    \XMMDst, \TMP3
-+	movdqa    \XMMDst, \TMP4            # move XMMDst into TMP2, TMP3, TMP4 in order to perform 3 shifts independently
-+	pslld     $31, \TMP2                # packed right shifting << 31
-+	pslld     $30, \TMP3                # packed right shifting << 30
-+	pslld     $25, \TMP4                # packed right shifting << 25
-+	pxor      \TMP3, \TMP2              # xor the shifted versions
-+	pxor      \TMP4, \TMP2
-+	movdqa    \TMP2, \TMP7
-+	psrldq    $4, \TMP7                 # right shift TMP7 1 DW
-+	pslldq    $12, \TMP2                # left shift TMP2 3 DWs
-+	pxor      \TMP2, \XMMDst
-+
-+        # second phase of the reduction
-+
-+	movdqa    \XMMDst, \TMP2            # make 3 copies of XMMDst for doing 3 shift operations
-+	movdqa    \XMMDst, \TMP3
-+	movdqa    \XMMDst, \TMP4
-+	psrld     $1, \TMP2                 # packed left shift >> 1
-+	psrld     $2, \TMP3                 # packed left shift >> 2
-+	psrld     $7, \TMP4                 # packed left shift >> 7
-+	pxor      \TMP3, \TMP2              # xor the shifted versions
-+	pxor      \TMP4, \TMP2
-+	pxor      \TMP7, \TMP2
-+	pxor      \TMP2, \XMMDst
-+	pxor      \TMP6, \XMMDst            # reduced result is in XMMDst
-+.endm
-+
-+/* Encryption of a single block done*/
-+.macro ENCRYPT_SINGLE_BLOCK XMM0
-+
-+	pxor	(%arg1), \XMM0
-+	aesenc	16(%arg1), \XMM0
-+	aesenc	32(%arg1), \XMM0
-+	aesenc	48(%arg1), \XMM0
-+	aesenc	64(%arg1), \XMM0
-+	aesenc	80(%arg1), \XMM0
-+	aesenc	96(%arg1), \XMM0
-+	aesenc	112(%arg1), \XMM0
-+	aesenc	128(%arg1), \XMM0
-+	aesenc	144(%arg1), \XMM0
-+	aesenclast 160(%arg1), \XMM0
-+.endm
-+
-+
-+/**********************************************************************************************
-+*void aesni_gcm_dec(void *aes_ctx,               // AES Key schedule. Starts on a 16 byte boundary.
-+*                   u8 *out,                     // Plaintext output. Encrypt in-place is allowed.
-+*                   const u8 *in,                // Ciphertext input
-+*                   u64 plaintext_len,           // Length of data in bytes for decryption.
-+*                   u8 *iv,                      // Pre-counter block j0: 4 byte salt (from Security Association)
-+*                                                // concatenated with 8 byte Initialisation Vector (from IPSec ESP Payload)
-+*                                                // concatenated with 0x00000001. 16-byte aligned pointer.
-+*                   u8 *hash_subkey,             // H, the Hash sub key input. Data starts on a 16-byte boundary.
-+*                   const u8 *aad,               // Additional Authentication Data (AAD)
-+*                   u64 aad_len,                 // Length of AAD in bytes. With RFC4106 this is going to be 8 or 12 bytes
-+*                   u8  *auth_tag,               // Authenticated Tag output. The driver will compare this to the
-+*                                                // given authentication tag and only return the plaintext if they match.
-+*                   u64 auth_tag_len);           // Authenticated Tag Length in bytes. Valid values are 16 (most likely), 12 or 8.
-+*
-+*
-+*
-+* Assumptions:
-+*
-+* keys:
-+*       keys are pre-expanded and aligned to 16 bytes. we are using the first set of 11 keys in the data structure void *aes_ctx
-+*
-+*
-+* iv:
-+*       0                   1                   2                   3
-+*       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                             Salt  (From the SA)               |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                     Initialization Vector                     |
-+*       |         (This is the sequence number from IPSec header)       |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                              0x1                              |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*
-+*
-+*
-+* AAD:
-+*       AAD padded to 128 bits with 0
-+*       for example, assume AAD is a u32 vector
-+*
-+*       if AAD is 8 bytes:
-+*       AAD[3] = {A0, A1};
-+*       padded AAD in xmm register = {A1 A0 0 0}
-+*
-+*       0                   1                   2                   3
-+*       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                               SPI (A1)                        |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                     32-bit Sequence Number (A0)               |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                              0x0                              |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*
-+*                                       AAD Format with 32-bit Sequence Number
-+*
-+*       if AAD is 12 bytes:
-+*       AAD[3] = {A0, A1, A2};
-+*       padded AAD in xmm register = {A2 A1 A0 0}
-+*
-+*       0                   1                   2                   3
-+*       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                               SPI (A2)                        |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                 64-bit Extended Sequence Number {A1,A0}       |
-+*       |                                                               |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                              0x0                              |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*
-+*                                       AAD Format with 64-bit Extended Sequence Number
-+*
-+*
-+* aadLen:
-+*       from the definition of the spec, aadLen can only be 8 or 12 bytes. The code supports 16 too but for other sizes, the code will fail.
-+*
-+* TLen:
-+*       from the definition of the spec, TLen can only be 8, 12 or 16 bytes. For other sizes, the code will fail.
-+*
-+* poly = x^128 + x^127 + x^126 + x^121 + 1
-+*
-+*******************************************************************************************/
-+
-+ENTRY(aesni_gcm_dec)
-+	push	%r12
-+	push	%r13
-+	push	%r14
-+	mov	%rsp, %r14
-+/*
-+* states of %xmm registers %xmm6:%xmm15 not saved
-+* all %xmm registers are clobbered
-+*/
-+	sub	$VARIABLE_OFFSET, %rsp
-+	and	$~63, %rsp                        # align rsp to 64 bytes
-+	mov	%arg6, %r12
-+	movdqu	(%r12), %xmm13			  # %xmm13 = HashKey
-+	pshufb	SHUF_MASK(%rip), %xmm13
-+
-+        # Precompute HashKey<<1 (mod poly) from the hash key (this is required for GHASH)
-+
-+	movdqa	%xmm13, %xmm2
-+	psllq	$1, %xmm13
-+	psrlq	$63, %xmm2
-+	movdqa	%xmm2, %xmm1
-+	pslldq	$8, %xmm2
-+	psrldq	$8, %xmm1
-+	por	%xmm2, %xmm13
-+
-+        # Reduction
-+
-+	pshufd	$0x24, %xmm1, %xmm2
-+	pcmpeqd TWOONE(%rip), %xmm2
-+	pand	POLY(%rip), %xmm2
-+	pxor	%xmm2, %xmm13			# %xmm13 holds the HashKey<<1 (mod poly)
-+
-+
-+        # Decrypt first few blocks
-+
-+	movdqa	%xmm13, HashKey(%rsp)           # store HashKey<<1 (mod poly)
-+	mov	%arg4, %r13                     # save the number of bytes of plaintext/ciphertext
-+	and	$-16, %r13                      # %r13 = %r13 - (%r13 mod 16)
-+	mov	%r13, %r12
-+	and	$(3<<4), %r12
-+	jz	_initial_num_blocks_is_0_decrypt
-+	cmp	$(2<<4), %r12
-+	jb	_initial_num_blocks_is_1_decrypt
-+	je	_initial_num_blocks_is_2_decrypt
-+_initial_num_blocks_is_3_decrypt:
-+	INITIAL_BLOCKS	3, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 5, 678, dec
-+	sub	$48, %r13
-+	jmp	_initial_blocks_decrypted
-+_initial_num_blocks_is_2_decrypt:
-+	INITIAL_BLOCKS	2, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 6, 78, dec
-+	sub	$32, %r13
-+	jmp	_initial_blocks_decrypted
-+_initial_num_blocks_is_1_decrypt:
-+	INITIAL_BLOCKS	1, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 7, 8, dec
-+	sub	$16, %r13
-+	jmp	_initial_blocks_decrypted
-+_initial_num_blocks_is_0_decrypt:
-+	INITIAL_BLOCKS	0, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 8, 0, dec
-+_initial_blocks_decrypted:
-+	cmp	$0, %r13
-+	je	_zero_cipher_left_decrypt
-+	sub	$64, %r13
-+	je	_four_cipher_left_decrypt
-+_decrypt_by_4:
-+	GHASH_4_ENCRYPT_4_PARALLEL	%xmm9, %xmm10, %xmm11, %xmm12, %xmm13, %xmm14, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm5, %xmm6, %xmm7, %xmm8, dec
-+	add	$64, %r11
-+	sub	$64, %r13
-+	jne	_decrypt_by_4
-+_four_cipher_left_decrypt:
-+	GHASH_LAST_4	%xmm9, %xmm10, %xmm11, %xmm12, %xmm13, %xmm14, %xmm15, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8
-+_zero_cipher_left_decrypt:
-+	mov	%arg4, %r13
-+	and	$15, %r13				# %r13 = arg4 (mod 16)
-+	je	_multiple_of_16_bytes_decrypt
-+
-+        # Handle the last <16 byte block seperately
-+
-+	paddd	ONE(%rip), %xmm0                        # increment CNT to get Yn
-+	pshufb	SHUF_MASK(%rip), %xmm0
-+	ENCRYPT_SINGLE_BLOCK 	%xmm0			# E(K, Yn)
-+	sub	$16, %r11
-+	add	%r13, %r11
-+	movdqu	(%arg3,%r11,1), %xmm1			# recieve the last <16 byte block
-+	lea	SHIFT_MASK+16(%rip), %r12
-+	sub	%r13, %r12				# adjust the shuffle mask pointer to be able to shift 16-%r13 bytes
-+							# (%r13 is the number of bytes in plaintext mod 16)
-+	movdqu	(%r12), %xmm2				# get the appropriate shuffle mask
-+	pshufb	%xmm2, %xmm1				# right shift 16-%r13 butes
-+	movdqa  %xmm1, %xmm2
-+	pxor	%xmm1, %xmm0				# Ciphertext XOR E(K, Yn)
-+	movdqu	ALL_F-SHIFT_MASK(%r12), %xmm1           # get the appropriate mask to mask out top 16-%r13 bytes of %xmm0
-+	pand	%xmm1, %xmm0				# mask out top 16-%r13 bytes of %xmm0
-+	pand    %xmm1, %xmm2
-+	pshufb	SHUF_MASK(%rip),%xmm2
-+	pxor	%xmm2, %xmm8
-+	GHASH_MUL	%xmm8, %xmm13, %xmm9, %xmm10, %xmm11, %xmm5, %xmm6	# GHASH computation for the last <16 byte block
-+	sub	%r13, %r11
-+	add	$16, %r11
-+
-+        # output %r13 bytes
-+
-+	movq	%xmm0, %rax
-+	cmp	$8, %r13
-+	jle	_less_than_8_bytes_left_decrypt
-+	mov	%rax, (%arg2 , %r11, 1)
-+	add	$8, %r11
-+	psrldq	$8, %xmm0
-+	movq	%xmm0, %rax
-+	sub	$8, %r13
-+_less_than_8_bytes_left_decrypt:
-+	mov	%al,  (%arg2, %r11, 1)
-+	add	$1, %r11
-+	shr	$8, %rax
-+	sub	$1, %r13
-+	jne	_less_than_8_bytes_left_decrypt
-+_multiple_of_16_bytes_decrypt:
-+	mov	arg8, %r12		  # %r13 = aadLen (number of bytes)
-+	shl	$3, %r12		  # convert into number of bits
-+	movd	%r12d, %xmm15		  # len(A) in %xmm15
-+	shl	$3, %arg4		  # len(C) in bits (*128)
-+	movq	%arg4, %xmm1
-+	pslldq	$8, %xmm15		  # %xmm15 = len(A)||0x0000000000000000
-+	pxor	%xmm1, %xmm15		  # %xmm15 = len(A)||len(C)
-+	pxor	%xmm15, %xmm8
-+	GHASH_MUL	%xmm8, %xmm13, %xmm9, %xmm10, %xmm11, %xmm5, %xmm6	# final GHASH computation
-+	pshufb	SHUF_MASK(%rip), %xmm8
-+	mov	%arg5, %rax		  # %rax = *Y0
-+	movdqu	(%rax), %xmm0		  # %xmm0 = Y0
-+	ENCRYPT_SINGLE_BLOCK	%xmm0 	  # E(K, Y0)
-+	pxor	%xmm8, %xmm0
-+_return_T_decrypt:
-+	mov	arg9, %r10                # %r10 = authTag
-+	mov	arg10, %r11               # %r11 = auth_tag_len
-+	cmp	$16, %r11
-+	je	_T_16_decrypt
-+	cmp	$12, %r11
-+	je	_T_12_decrypt
-+_T_8_decrypt:
-+	movq	%xmm0, %rax
-+	mov	%rax, (%r10)
-+	jmp	_return_T_done_decrypt
-+_T_12_decrypt:
-+	movq	%xmm0, %rax
-+	mov	%rax, (%r10)
-+	psrldq	$8, %xmm0
-+	movd	%xmm0, %eax
-+	mov	%eax, 8(%r10)
-+	jmp	_return_T_done_decrypt
-+_T_16_decrypt:
-+	movdqu	%xmm0, (%r10)
-+_return_T_done_decrypt:
-+	mov	%r14, %rsp
-+	pop	%r14
-+	pop	%r13
-+	pop	%r12
-+	ret
-+
-+
-+/***************************************************************************************************
-+* void aesni_gcm_enc(void *aes_ctx,               // AES Key schedule. Starts on a 16 byte boundary.
-+*                    u8 *out,                    // Ciphertext output. Encrypt in-place is allowed.
-+*                    const u8 *in,               // Plaintext input
-+*                    u64 plaintext_len,          // Length of data in bytes for encryption.
-+*                    u8 *iv,                     // Pre-counter block j0: 4 byte salt (from Security Association)
-+*                                                // concatenated with 8 byte Initialisation Vector (from IPSec ESP Payload)
-+*                                                // concatenated with 0x00000001. 16-byte aligned pointer.
-+*                    u8 *hash_subkey,            // H, the Hash sub key input. Data starts on a 16-byte boundary.
-+*                    const u8 *aad,              // Additional Authentication Data (AAD)
-+*                    u64 aad_len,                // Length of AAD in bytes. With RFC4106 this is going to be 8 or 12 bytes
-+*                    u8 *auth_tag,               // Authenticated Tag output.
-+*                    u64 auth_tag_len);          // Authenticated Tag Length in bytes. Valid values are 16 (most likely), 12 or 8.
-+*
-+*
-+*
-+* Assumptions:
-+*
-+* keys:
-+*       keys are pre-expanded and aligned to 16 bytes. we are using the first set of 11 keys in the data structure void *aes_ctx
-+*
-+*
-+* iv:
-+*       0                   1                   2                   3
-+*       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                             Salt  (From the SA)               |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                     Initialization Vector                     |
-+*       |         (This is the sequence number from IPSec header)       |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                              0x1                              |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*
-+*
-+*
-+* AAD:
-+*       AAD padded to 128 bits with 0
-+*       for example, assume AAD is a u32 vector
-+*
-+*       if AAD is 8 bytes:
-+*       AAD[3] = {A0, A1};
-+*       padded AAD in xmm register = {A1 A0 0 0}
-+*
-+*       0                   1                   2                   3
-+*       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                               SPI (A1)                        |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                     32-bit Sequence Number (A0)               |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                              0x0                              |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*
-+*                                       AAD Format with 32-bit Sequence Number
-+*
-+*       if AAD is 12 bytes:
-+*       AAD[3] = {A0, A1, A2};
-+*       padded AAD in xmm register = {A2 A1 A0 0}
-+*
-+*       0                   1                   2                   3
-+*       0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                               SPI (A2)                        |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                 64-bit Extended Sequence Number {A1,A0}       |
-+*       |                                                               |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*       |                              0x0                              |
-+*       +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-+*
-+*                                       AAD Format with 64-bit Extended Sequence Number
-+*
-+*
-+* aadLen:
-+*       from the definition of the spec, aadLen can only be 8 or 12 bytes. The code supports 16 too but for other sizes, the code will fail.
-+*
-+* TLen:
-+*       from the definition of the spec, TLen can only be 8, 12 or 16 bytes. For other sizes, the code will fail.
-+*
-+* poly = x^128 + x^127 + x^126 + x^121 + 1
-+**************************************************************************************************************************/
-+ENTRY(aesni_gcm_enc)
-+	push	%r12
-+	push	%r13
-+	push	%r14
-+	mov	%rsp, %r14
-+#
-+# states of %xmm registers %xmm6:%xmm15 not saved
-+# all %xmm registers are clobbered
-+#
-+	sub	$VARIABLE_OFFSET, %rsp
-+	and	$~63, %rsp
-+	mov	%arg6, %r12
-+	movdqu	(%r12), %xmm13
-+	pshufb	SHUF_MASK(%rip), %xmm13
-+
-+        # precompute HashKey<<1 mod poly from the HashKey (required for GHASH)
-+
-+	movdqa	%xmm13, %xmm2
-+	psllq	$1, %xmm13
-+	psrlq	$63, %xmm2
-+	movdqa	%xmm2, %xmm1
-+	pslldq	$8, %xmm2
-+	psrldq	$8, %xmm1
-+	por	%xmm2, %xmm13
-+
-+        # reduce HashKey<<1
-+
-+	pshufd	$0x24, %xmm1, %xmm2
-+	pcmpeqd TWOONE(%rip), %xmm2
-+	pand	POLY(%rip), %xmm2
-+	pxor	%xmm2, %xmm13
-+	movdqa	%xmm13, HashKey(%rsp)
-+	mov	%arg4, %r13               # %xmm13 holds HashKey<<1 (mod poly)
-+	and	$-16, %r13
-+	mov	%r13, %r12
-+
-+        # Encrypt first few blocks
-+
-+	and	$(3<<4), %r12
-+	jz	_initial_num_blocks_is_0_encrypt
-+	cmp	$(2<<4), %r12
-+	jb	_initial_num_blocks_is_1_encrypt
-+	je	_initial_num_blocks_is_2_encrypt
-+_initial_num_blocks_is_3_encrypt:
-+	INITIAL_BLOCKS	3, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 5, 678, enc
-+	sub	$48, %r13
-+	jmp	_initial_blocks_encrypted
-+_initial_num_blocks_is_2_encrypt:
-+	INITIAL_BLOCKS	2, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 6, 78, enc
-+	sub	$32, %r13
-+	jmp	_initial_blocks_encrypted
-+_initial_num_blocks_is_1_encrypt:
-+	INITIAL_BLOCKS	1, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 7, 8, enc
-+	sub	$16, %r13
-+	jmp	_initial_blocks_encrypted
-+_initial_num_blocks_is_0_encrypt:
-+	INITIAL_BLOCKS	0, %xmm9, %xmm10, %xmm13, %xmm11, %xmm12, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8, %xmm5, %xmm6, 8, 0, enc
-+_initial_blocks_encrypted:
-+
-+        # Main loop - Encrypt remaining blocks
-+
-+	cmp	$0, %r13
-+	je	_zero_cipher_left_encrypt
-+	sub	$64, %r13
-+	je	_four_cipher_left_encrypt
-+_encrypt_by_4_encrypt:
-+	GHASH_4_ENCRYPT_4_PARALLEL	%xmm9, %xmm10, %xmm11, %xmm12, %xmm13, %xmm14, %xmm0, %xmm1, %xmm2, %xmm3, %xmm4, %xmm5, %xmm6, %xmm7, %xmm8, enc
-+	add	$64, %r11
-+	sub	$64, %r13
-+	jne	_encrypt_by_4_encrypt
-+_four_cipher_left_encrypt:
-+	GHASH_LAST_4	%xmm9, %xmm10, %xmm11, %xmm12, %xmm13, %xmm14, %xmm15, %xmm1, %xmm2, %xmm3, %xmm4, %xmm8
-+_zero_cipher_left_encrypt:
-+	mov	%arg4, %r13
-+	and	$15, %r13			# %r13 = arg4 (mod 16)
-+	je	_multiple_of_16_bytes_encrypt
-+
-+         # Handle the last <16 Byte block seperately
-+
-+	paddd	ONE(%rip), %xmm0                # INCR CNT to get Yn
-+	pshufb	SHUF_MASK(%rip), %xmm0
-+	ENCRYPT_SINGLE_BLOCK	%xmm0 		# Encrypt(K, Yn)
-+	sub	$16, %r11
-+	add	%r13, %r11
-+	movdqu	(%arg3,%r11,1), %xmm1		# recieve the last <16 byte blocks
-+	lea	SHIFT_MASK+16(%rip), %r12
-+	sub	%r13, %r12			# adjust the shuffle mask pointer to be able to shift 16-r13 bytes
-+                                                # (%r13 is the number of bytes in plaintext mod 16)
-+	movdqu	(%r12), %xmm2			# get the appropriate shuffle mask
-+	pshufb	%xmm2, %xmm1			# shift right 16-r13 byte
-+	pxor	%xmm1, %xmm0			# Plaintext XOR Encrypt(K, Yn)
-+	movdqu	ALL_F-SHIFT_MASK(%r12), %xmm1   # get the appropriate mask to mask out top 16-r13 bytes of xmm0
-+	pand	%xmm1, %xmm0			# mask out top 16-r13 bytes of xmm0
-+
-+	pshufb	SHUF_MASK(%rip),%xmm0
-+	pxor	%xmm0, %xmm8
-+	GHASH_MUL %xmm8, %xmm13, %xmm9, %xmm10, %xmm11, %xmm5, %xmm6	# GHASH computation for the last <16 byte block
-+	sub	%r13, %r11
-+	add	$16, %r11
-+	pshufb	SHUF_MASK(%rip), %xmm0          # shuffle xmm0 back to output as ciphertext
-+
-+        # Output %r13 bytes
-+
-+	movq	%xmm0, %rax
-+	cmp	$8, %r13
-+	jle	_less_than_8_bytes_left_encrypt
-+	mov	%rax, (%arg2 , %r11, 1)
-+	add	$8, %r11
-+	psrldq	$8, %xmm0
-+	movq	%xmm0, %rax
-+	sub	$8, %r13
-+_less_than_8_bytes_left_encrypt:
-+	mov	%al,  (%arg2, %r11, 1)
-+	add	$1, %r11
-+	shr	$8, %rax
-+	sub	$1, %r13
-+	jne	_less_than_8_bytes_left_encrypt
-+_multiple_of_16_bytes_encrypt:
-+	mov	arg8, %r12	               # %r12 = addLen (number of bytes)
-+	shl	$3, %r12
-+	movd	%r12d, %xmm15	               # len(A) in %xmm15
-+	shl	$3, %arg4	               # len(C) in bits (*128)
-+	movq	%arg4, %xmm1
-+	pslldq	$8, %xmm15	               # %xmm15 = len(A)||0x0000000000000000
-+	pxor	%xmm1, %xmm15	               # %xmm15 = len(A)||len(C)
-+	pxor	%xmm15, %xmm8
-+	GHASH_MUL	%xmm8, %xmm13, %xmm9, %xmm10, %xmm11, %xmm5, %xmm6	# final GHASH computation
-+
-+	pshufb	SHUF_MASK(%rip), %xmm8         # perform a 16 byte swap
-+	mov	%arg5, %rax		       # %rax  = *Y0
-+	movdqu	(%rax), %xmm0		       # %xmm0 = Y0
-+	ENCRYPT_SINGLE_BLOCK	%xmm0          # Encrypt(K, Y0)
-+	pxor	%xmm8, %xmm0
-+_return_T_encrypt:
-+	mov	arg9, %r10                     # %r10 = authTag
-+	mov	arg10, %r11                    # %r11 = auth_tag_len
-+	cmp	$16, %r11
-+	je	_T_16_encrypt
-+	cmp	$12, %r11
-+	je	_T_12_encrypt
-+_T_8_encrypt:
-+	movq	%xmm0, %rax
-+	mov	%rax, (%r10)
-+	jmp	_return_T_done_encrypt
-+_T_12_encrypt:
-+	movq	%xmm0, %rax
-+	mov	%rax, (%r10)
-+	psrldq	$8, %xmm0
-+	movd	%xmm0, %eax
-+	mov	%eax, 8(%r10)
-+	jmp	_return_T_done_encrypt
-+_T_16_encrypt:
-+	movdqu	%xmm0, (%r10)
-+_return_T_done_encrypt:
-+	mov	%r14, %rsp
-+	pop	%r14
-+	pop	%r13
-+	pop	%r12
-+	ret
-+
-+#include <asm/inst.h>
-+
- _key_expansion_128:
- _key_expansion_256a:
- 	pshufd $0b11111111, %xmm1, %xmm1
-diff --git a/arch/x86/crypto/aesni-intel_glue.c b/arch/x86/crypto/aesni-intel_glue.c
-index 2cb3dcc..f0b0a6f 100644
---- a/arch/x86/crypto/aesni-intel_glue.c
-+++ b/arch/x86/crypto/aesni-intel_glue.c
-@@ -5,6 +5,14 @@
-  * Copyright (C) 2008, Intel Corp.
-  *    Author: Huang Ying <ying.huang@intel.com>
-  *
-+ * Added RFC4106 AES-GCM support for 128-bit keys under the AEAD
-+ * interface for 64-bit kernels.
-+ *    Authors: Adrian Hoban <adrian.hoban@intel.com>
++ * Updated RFC4106 AES-GCM testing.
++ *    Authors: Aidan O'Mahony (aidan.o.mahony@intel.com)
++ *             Adrian Hoban <adrian.hoban@intel.com>
 + *             Gabriele Paoloni <gabriele.paoloni@intel.com>
 + *             Tadeusz Struk (tadeusz.struk@intel.com)
-+ *             Aidan O'Mahony (aidan.o.mahony@intel.com)
 + *    Copyright (c) 2010, Intel Corporation.
 + *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-  * the Free Software Foundation; either version 2 of the License, or
-@@ -21,6 +29,10 @@
- #include <crypto/ctr.h>
- #include <asm/i387.h>
- #include <asm/aes.h>
-+#include <crypto/scatterwalk.h>
-+#include <crypto/internal/aead.h>
-+#include <linux/workqueue.h>
-+#include <linux/spinlock.h>
- 
- #if defined(CONFIG_CRYPTO_CTR) || defined(CONFIG_CRYPTO_CTR_MODULE)
- #define HAS_CTR
-@@ -42,8 +54,31 @@ struct async_aes_ctx {
- 	struct cryptd_ablkcipher *cryptd_tfm;
- };
- 
--#define AESNI_ALIGN	16
-+/* This data is stored at the end of the crypto_tfm struct.
-+ * It's a type of per "session" data storage location.
-+ * This needs to be 16 byte aligned.
-+ */
-+struct aesni_rfc4106_gcm_ctx {
-+	u8 hash_subkey[16];
-+	struct crypto_aes_ctx aes_key_expanded;
-+	u8 nonce[4];
-+	struct cryptd_aead *cryptd_tfm;
-+};
-+
-+struct aesni_gcm_set_hash_subkey_result {
-+	int err;
-+	struct completion completion;
-+};
-+
-+struct aesni_hash_subkey_req_data {
-+	u8 iv[16];
-+	struct aesni_gcm_set_hash_subkey_result result;
-+	struct scatterlist sg;
-+};
-+
-+#define AESNI_ALIGN	(16)
- #define AES_BLOCK_MASK	(~(AES_BLOCK_SIZE-1))
-+#define RFC4106_HASH_SUBKEY_SIZE 16
- 
- asmlinkage int aesni_set_key(struct crypto_aes_ctx *ctx, const u8 *in_key,
- 			     unsigned int key_len);
-@@ -62,6 +97,57 @@ asmlinkage void aesni_cbc_dec(struct crypto_aes_ctx *ctx, u8 *out,
- asmlinkage void aesni_ctr_enc(struct crypto_aes_ctx *ctx, u8 *out,
- 			      const u8 *in, unsigned int len, u8 *iv);
- 
-+/* asmlinkage void aesni_gcm_enc()
-+ * void *ctx,  AES Key schedule. Starts on a 16 byte boundary.
-+ * u8 *out, Ciphertext output. Encrypt in-place is allowed.
-+ * const u8 *in, Plaintext input
-+ * unsigned long plaintext_len, Length of data in bytes for encryption.
-+ * u8 *iv, Pre-counter block j0: 4 byte salt (from Security Association)
-+ *         concatenated with 8 byte Initialisation Vector (from IPSec ESP
-+ *         Payload) concatenated with 0x00000001. 16-byte aligned pointer.
-+ * u8 *hash_subkey, the Hash sub key input. Data starts on a 16-byte boundary.
-+ * const u8 *aad, Additional Authentication Data (AAD)
-+ * unsigned long aad_len, Length of AAD in bytes. With RFC4106 this
-+ *          is going to be 8 or 12 bytes
-+ * u8 *auth_tag, Authenticated Tag output.
-+ * unsigned long auth_tag_len), Authenticated Tag Length in bytes.
-+ *          Valid values are 16 (most likely), 12 or 8.
-+ */
-+asmlinkage void aesni_gcm_enc(void *ctx, u8 *out,
-+			const u8 *in, unsigned long plaintext_len, u8 *iv,
-+			u8 *hash_subkey, const u8 *aad, unsigned long aad_len,
-+			u8 *auth_tag, unsigned long auth_tag_len);
-+
-+/* asmlinkage void aesni_gcm_dec()
-+ * void *ctx, AES Key schedule. Starts on a 16 byte boundary.
-+ * u8 *out, Plaintext output. Decrypt in-place is allowed.
-+ * const u8 *in, Ciphertext input
-+ * unsigned long ciphertext_len, Length of data in bytes for decryption.
-+ * u8 *iv, Pre-counter block j0: 4 byte salt (from Security Association)
-+ *         concatenated with 8 byte Initialisation Vector (from IPSec ESP
-+ *         Payload) concatenated with 0x00000001. 16-byte aligned pointer.
-+ * u8 *hash_subkey, the Hash sub key input. Data starts on a 16-byte boundary.
-+ * const u8 *aad, Additional Authentication Data (AAD)
-+ * unsigned long aad_len, Length of AAD in bytes. With RFC4106 this is going
-+ * to be 8 or 12 bytes
-+ * u8 *auth_tag, Authenticated Tag output.
-+ * unsigned long auth_tag_len) Authenticated Tag Length in bytes.
-+ * Valid values are 16 (most likely), 12 or 8.
-+ */
-+asmlinkage void aesni_gcm_dec(void *ctx, u8 *out,
-+			const u8 *in, unsigned long ciphertext_len, u8 *iv,
-+			u8 *hash_subkey, const u8 *aad, unsigned long aad_len,
-+			u8 *auth_tag, unsigned long auth_tag_len);
-+
-+static inline struct
-+aesni_rfc4106_gcm_ctx *aesni_rfc4106_gcm_ctx_get(struct crypto_aead *tfm)
-+{
-+	return
-+		(struct aesni_rfc4106_gcm_ctx *)
-+		PTR_ALIGN((u8 *)
-+		crypto_tfm_ctx(crypto_aead_tfm(tfm)), AESNI_ALIGN);
-+}
-+
- static inline struct crypto_aes_ctx *aes_ctx(void *raw_ctx)
- {
- 	unsigned long addr = (unsigned long)raw_ctx;
-@@ -730,6 +816,422 @@ static struct crypto_alg ablk_xts_alg = {
- };
- #endif
- 
-+static int rfc4106_init(struct crypto_tfm *tfm)
-+{
-+	struct cryptd_aead *cryptd_tfm;
-+	struct aesni_rfc4106_gcm_ctx *ctx = (struct aesni_rfc4106_gcm_ctx *)
-+		PTR_ALIGN((u8 *)crypto_tfm_ctx(tfm), AESNI_ALIGN);
-+	cryptd_tfm = cryptd_alloc_aead("__driver-gcm-aes-aesni", 0, 0);
-+	if (IS_ERR(cryptd_tfm))
-+		return PTR_ERR(cryptd_tfm);
-+	ctx->cryptd_tfm = cryptd_tfm;
-+	tfm->crt_aead.reqsize = sizeof(struct aead_request)
-+		+ crypto_aead_reqsize(&cryptd_tfm->base);
-+	return 0;
-+}
-+
-+static void rfc4106_exit(struct crypto_tfm *tfm)
-+{
-+	struct aesni_rfc4106_gcm_ctx *ctx =
-+		(struct aesni_rfc4106_gcm_ctx *)
-+		PTR_ALIGN((u8 *)crypto_tfm_ctx(tfm), AESNI_ALIGN);
-+	if (!IS_ERR(ctx->cryptd_tfm))
-+		cryptd_free_aead(ctx->cryptd_tfm);
-+	return;
-+}
-+
-+static void
-+rfc4106_set_hash_subkey_done(struct crypto_async_request *req, int err)
-+{
-+	struct aesni_gcm_set_hash_subkey_result *result = req->data;
-+
-+	if (err == -EINPROGRESS)
-+		return;
-+	result->err = err;
-+	complete(&result->completion);
-+}
-+
-+static int
-+rfc4106_set_hash_subkey(u8 *hash_subkey, const u8 *key, unsigned int key_len)
-+{
-+	struct crypto_ablkcipher *ctr_tfm;
-+	struct ablkcipher_request *req;
-+	int ret = -EINVAL;
-+	struct aesni_hash_subkey_req_data *req_data;
-+
-+	ctr_tfm = crypto_alloc_ablkcipher("ctr(aes)", 0, 0);
-+	if (IS_ERR(ctr_tfm))
-+		return PTR_ERR(ctr_tfm);
-+
-+	crypto_ablkcipher_clear_flags(ctr_tfm, ~0);
-+
-+	ret = crypto_ablkcipher_setkey(ctr_tfm, key, key_len);
-+	if (ret) {
-+		crypto_free_ablkcipher(ctr_tfm);
-+		return ret;
-+	}
-+
-+	req = ablkcipher_request_alloc(ctr_tfm, GFP_KERNEL);
-+	if (!req) {
-+		crypto_free_ablkcipher(ctr_tfm);
-+		return -EINVAL;
-+	}
-+
-+	req_data = kmalloc(sizeof(*req_data), GFP_KERNEL);
-+	if (!req_data) {
-+		crypto_free_ablkcipher(ctr_tfm);
-+		return -ENOMEM;
-+	}
-+	memset(req_data->iv, 0, sizeof(req_data->iv));
-+
-+	/* Clear the data in the hash sub key container to zero.*/
-+	/* We want to cipher all zeros to create the hash sub key. */
-+	memset(hash_subkey, 0, RFC4106_HASH_SUBKEY_SIZE);
-+
-+	init_completion(&req_data->result.completion);
-+	sg_init_one(&req_data->sg, hash_subkey, RFC4106_HASH_SUBKEY_SIZE);
-+	ablkcipher_request_set_tfm(req, ctr_tfm);
-+	ablkcipher_request_set_callback(req, CRYPTO_TFM_REQ_MAY_SLEEP |
-+					CRYPTO_TFM_REQ_MAY_BACKLOG,
-+					rfc4106_set_hash_subkey_done,
-+					&req_data->result);
-+
-+	ablkcipher_request_set_crypt(req, &req_data->sg,
-+		&req_data->sg, RFC4106_HASH_SUBKEY_SIZE, req_data->iv);
-+
-+	ret = crypto_ablkcipher_encrypt(req);
-+	if (ret == -EINPROGRESS || ret == -EBUSY) {
-+		ret = wait_for_completion_interruptible
-+			(&req_data->result.completion);
-+		if (!ret)
-+			ret = req_data->result.err;
-+	}
-+	ablkcipher_request_free(req);
-+	kfree(req_data);
-+	crypto_free_ablkcipher(ctr_tfm);
-+	return ret;
-+}
-+
-+static int rfc4106_set_key(struct crypto_aead *parent, const u8 *key,
-+						   unsigned int key_len)
-+{
-+	int ret = 0;
-+	struct crypto_tfm *tfm = crypto_aead_tfm(parent);
-+	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(parent);
-+	u8 *new_key_mem = NULL;
-+
-+	if (key_len < 4) {
-+		crypto_tfm_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
-+		return -EINVAL;
-+	}
-+	/*Account for 4 byte nonce at the end.*/
-+	key_len -= 4;
-+	if (key_len != AES_KEYSIZE_128) {
-+		crypto_tfm_set_flags(tfm, CRYPTO_TFM_RES_BAD_KEY_LEN);
-+		return -EINVAL;
-+	}
-+
-+	memcpy(ctx->nonce, key + key_len, sizeof(ctx->nonce));
-+	/*This must be on a 16 byte boundary!*/
-+	if ((unsigned long)(&(ctx->aes_key_expanded.key_enc[0])) % AESNI_ALIGN)
-+		return -EINVAL;
-+
-+	if ((unsigned long)key % AESNI_ALIGN) {
-+		/*key is not aligned: use an auxuliar aligned pointer*/
-+		new_key_mem = kmalloc(key_len+AESNI_ALIGN, GFP_KERNEL);
-+		if (!new_key_mem)
-+			return -ENOMEM;
-+
-+		new_key_mem = PTR_ALIGN(new_key_mem, AESNI_ALIGN);
-+		memcpy(new_key_mem, key, key_len);
-+		key = new_key_mem;
-+	}
-+
-+	if (!irq_fpu_usable())
-+		ret = crypto_aes_expand_key(&(ctx->aes_key_expanded),
-+		key, key_len);
-+	else {
-+		kernel_fpu_begin();
-+		ret = aesni_set_key(&(ctx->aes_key_expanded), key, key_len);
-+		kernel_fpu_end();
-+	}
-+	/*This must be on a 16 byte boundary!*/
-+	if ((unsigned long)(&(ctx->hash_subkey[0])) % AESNI_ALIGN) {
-+		ret = -EINVAL;
-+		goto exit;
-+	}
-+	ret = rfc4106_set_hash_subkey(ctx->hash_subkey, key, key_len);
-+exit:
-+	kfree(new_key_mem);
-+	return ret;
-+}
-+
-+/* This is the Integrity Check Value (aka the authentication tag length and can
-+ * be 8, 12 or 16 bytes long. */
-+static int rfc4106_set_authsize(struct crypto_aead *parent,
-+				unsigned int authsize)
-+{
-+	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(parent);
-+	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
-+
-+	switch (authsize) {
-+	case 8:
-+	case 12:
-+	case 16:
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+	crypto_aead_crt(parent)->authsize = authsize;
-+	crypto_aead_crt(cryptd_child)->authsize = authsize;
-+	return 0;
-+}
-+
-+static int rfc4106_encrypt(struct aead_request *req)
-+{
-+	int ret;
-+	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
-+	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
-+	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
-+
-+	if (!irq_fpu_usable()) {
-+		struct aead_request *cryptd_req =
-+			(struct aead_request *) aead_request_ctx(req);
-+		memcpy(cryptd_req, req, sizeof(*req));
-+		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
-+		return crypto_aead_encrypt(cryptd_req);
-+	} else {
-+		kernel_fpu_begin();
-+		ret = cryptd_child->base.crt_aead.encrypt(req);
-+		kernel_fpu_end();
-+		return ret;
-+	}
-+}
-+
-+static int rfc4106_decrypt(struct aead_request *req)
-+{
-+	int ret;
-+	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
-+	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
-+	struct crypto_aead *cryptd_child = cryptd_aead_child(ctx->cryptd_tfm);
-+
-+	if (!irq_fpu_usable()) {
-+		struct aead_request *cryptd_req =
-+			(struct aead_request *) aead_request_ctx(req);
-+		memcpy(cryptd_req, req, sizeof(*req));
-+		aead_request_set_tfm(cryptd_req, &ctx->cryptd_tfm->base);
-+		return crypto_aead_decrypt(cryptd_req);
-+	} else {
-+		kernel_fpu_begin();
-+		ret = cryptd_child->base.crt_aead.decrypt(req);
-+		kernel_fpu_end();
-+		return ret;
-+	}
-+}
-+
-+static struct crypto_alg rfc4106_alg = {
-+	.cra_name = "rfc4106(gcm(aes))",
-+	.cra_driver_name = "rfc4106-gcm-aesni",
-+	.cra_priority = 400,
-+	.cra_flags = CRYPTO_ALG_TYPE_AEAD | CRYPTO_ALG_ASYNC,
-+	.cra_blocksize = 1,
-+	.cra_ctxsize = sizeof(struct aesni_rfc4106_gcm_ctx) + AESNI_ALIGN,
-+	.cra_alignmask = 0,
-+	.cra_type = &crypto_nivaead_type,
-+	.cra_module = THIS_MODULE,
-+	.cra_list = LIST_HEAD_INIT(rfc4106_alg.cra_list),
-+	.cra_init = rfc4106_init,
-+	.cra_exit = rfc4106_exit,
-+	.cra_u = {
-+		.aead = {
-+			.setkey = rfc4106_set_key,
-+			.setauthsize = rfc4106_set_authsize,
-+			.encrypt = rfc4106_encrypt,
-+			.decrypt = rfc4106_decrypt,
-+			.geniv = "seqiv",
-+			.ivsize = 8,
-+			.maxauthsize = 16,
-+		},
-+	},
-+};
-+
-+static int __driver_rfc4106_encrypt(struct aead_request *req)
-+{
-+	u8 one_entry_in_sg = 0;
-+	u8 *src, *dst, *assoc;
-+	__be32 counter = cpu_to_be32(1);
-+	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
-+	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
-+	void *aes_ctx = &(ctx->aes_key_expanded);
-+	unsigned long auth_tag_len = crypto_aead_authsize(tfm);
-+	u8 iv_tab[16+AESNI_ALIGN];
-+	u8* iv = (u8 *) PTR_ALIGN((u8 *)iv_tab, AESNI_ALIGN);
-+	struct scatter_walk src_sg_walk;
-+	struct scatter_walk assoc_sg_walk;
-+	struct scatter_walk dst_sg_walk;
-+	unsigned int i;
-+
-+	/* Assuming we are supporting rfc4106 64-bit extended */
-+	/* sequence numbers We need to have the AAD length equal */
-+	/* to 8 or 12 bytes */
-+	if (unlikely(req->assoclen != 8 && req->assoclen != 12))
-+		return -EINVAL;
-+	/* IV below built */
-+	for (i = 0; i < 4; i++)
-+		*(iv+i) = ctx->nonce[i];
-+	for (i = 0; i < 8; i++)
-+		*(iv+4+i) = req->iv[i];
-+	*((__be32 *)(iv+12)) = counter;
-+
-+	if ((sg_is_last(req->src)) && (sg_is_last(req->assoc))) {
-+		one_entry_in_sg = 1;
-+		scatterwalk_start(&src_sg_walk, req->src);
-+		scatterwalk_start(&assoc_sg_walk, req->assoc);
-+		src = scatterwalk_map(&src_sg_walk, 0);
-+		assoc = scatterwalk_map(&assoc_sg_walk, 0);
-+		dst = src;
-+		if (unlikely(req->src != req->dst)) {
-+			scatterwalk_start(&dst_sg_walk, req->dst);
-+			dst = scatterwalk_map(&dst_sg_walk, 0);
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+  * Software Foundation; either version 2 of the License, or (at your option)
+@@ -2242,6 +2249,23 @@ static const struct alg_test_desc alg_test_descs[] = {
+ 			}
+ 		}
+ 	}, {
++		.alg = "rfc4106(gcm(aes))",
++		.test = alg_test_aead,
++		.suite = {
++			.aead = {
++				.enc = {
++					.vecs = aes_gcm_rfc4106_enc_tv_template,
++					.count = AES_GCM_4106_ENC_TEST_VECTORS
++				},
++				.dec = {
++					.vecs = aes_gcm_rfc4106_dec_tv_template,
++					.count = AES_GCM_4106_DEC_TEST_VECTORS
++				}
++			}
 +		}
++	}, {
 +
-+	} else {
-+		/* Allocate memory for src, dst, assoc */
-+		src = kmalloc(req->cryptlen + auth_tag_len + req->assoclen,
-+			GFP_ATOMIC);
-+		if (unlikely(!src))
-+			return -ENOMEM;
-+		assoc = (src + req->cryptlen + auth_tag_len);
-+		scatterwalk_map_and_copy(src, req->src, 0, req->cryptlen, 0);
-+		scatterwalk_map_and_copy(assoc, req->assoc, 0,
-+					req->assoclen, 0);
-+		dst = src;
-+	}
 +
-+	aesni_gcm_enc(aes_ctx, dst, src, (unsigned long)req->cryptlen, iv,
-+		ctx->hash_subkey, assoc, (unsigned long)req->assoclen, dst
-+		+ ((unsigned long)req->cryptlen), auth_tag_len);
-+
-+	/* The authTag (aka the Integrity Check Value) needs to be written
-+	 * back to the packet. */
-+	if (one_entry_in_sg) {
-+		if (unlikely(req->src != req->dst)) {
-+			scatterwalk_unmap(dst, 0);
-+			scatterwalk_done(&dst_sg_walk, 0, 0);
-+		}
-+		scatterwalk_unmap(src, 0);
-+		scatterwalk_unmap(assoc, 0);
-+		scatterwalk_done(&src_sg_walk, 0, 0);
-+		scatterwalk_done(&assoc_sg_walk, 0, 0);
-+	} else {
-+		scatterwalk_map_and_copy(dst, req->dst, 0,
-+			req->cryptlen + auth_tag_len, 1);
-+		kfree(src);
-+	}
-+	return 0;
-+}
-+
-+static int __driver_rfc4106_decrypt(struct aead_request *req)
-+{
-+	u8 one_entry_in_sg = 0;
-+	u8 *src, *dst, *assoc;
-+	unsigned long tempCipherLen = 0;
-+	__be32 counter = cpu_to_be32(1);
-+	int retval = 0;
-+	struct crypto_aead *tfm = crypto_aead_reqtfm(req);
-+	struct aesni_rfc4106_gcm_ctx *ctx = aesni_rfc4106_gcm_ctx_get(tfm);
-+	void *aes_ctx = &(ctx->aes_key_expanded);
-+	unsigned long auth_tag_len = crypto_aead_authsize(tfm);
-+	u8 iv_and_authTag[32+AESNI_ALIGN];
-+	u8 *iv = (u8 *) PTR_ALIGN((u8 *)iv_and_authTag, AESNI_ALIGN);
-+	u8 *authTag = iv + 16;
-+	struct scatter_walk src_sg_walk;
-+	struct scatter_walk assoc_sg_walk;
-+	struct scatter_walk dst_sg_walk;
-+	unsigned int i;
-+
-+	if (unlikely((req->cryptlen < auth_tag_len) ||
-+		(req->assoclen != 8 && req->assoclen != 12)))
-+		return -EINVAL;
-+	/* Assuming we are supporting rfc4106 64-bit extended */
-+	/* sequence numbers We need to have the AAD length */
-+	/* equal to 8 or 12 bytes */
-+
-+	tempCipherLen = (unsigned long)(req->cryptlen - auth_tag_len);
-+	/* IV below built */
-+	for (i = 0; i < 4; i++)
-+		*(iv+i) = ctx->nonce[i];
-+	for (i = 0; i < 8; i++)
-+		*(iv+4+i) = req->iv[i];
-+	*((__be32 *)(iv+12)) = counter;
-+
-+	if ((sg_is_last(req->src)) && (sg_is_last(req->assoc))) {
-+		one_entry_in_sg = 1;
-+		scatterwalk_start(&src_sg_walk, req->src);
-+		scatterwalk_start(&assoc_sg_walk, req->assoc);
-+		src = scatterwalk_map(&src_sg_walk, 0);
-+		assoc = scatterwalk_map(&assoc_sg_walk, 0);
-+		dst = src;
-+		if (unlikely(req->src != req->dst)) {
-+			scatterwalk_start(&dst_sg_walk, req->dst);
-+			dst = scatterwalk_map(&dst_sg_walk, 0);
-+		}
-+
-+	} else {
-+		/* Allocate memory for src, dst, assoc */
-+		src = kmalloc(req->cryptlen + req->assoclen, GFP_ATOMIC);
-+		if (!src)
-+			return -ENOMEM;
-+		assoc = (src + req->cryptlen + auth_tag_len);
-+		scatterwalk_map_and_copy(src, req->src, 0, req->cryptlen, 0);
-+		scatterwalk_map_and_copy(assoc, req->assoc, 0,
-+			req->assoclen, 0);
-+		dst = src;
-+	}
-+
-+	aesni_gcm_dec(aes_ctx, dst, src, tempCipherLen, iv,
-+		ctx->hash_subkey, assoc, (unsigned long)req->assoclen,
-+		authTag, auth_tag_len);
-+
-+	/* Compare generated tag with passed in tag. */
-+	retval = memcmp(src + tempCipherLen, authTag, auth_tag_len) ?
-+		-EBADMSG : 0;
-+
-+	if (one_entry_in_sg) {
-+		if (unlikely(req->src != req->dst)) {
-+			scatterwalk_unmap(dst, 0);
-+			scatterwalk_done(&dst_sg_walk, 0, 0);
-+		}
-+		scatterwalk_unmap(src, 0);
-+		scatterwalk_unmap(assoc, 0);
-+		scatterwalk_done(&src_sg_walk, 0, 0);
-+		scatterwalk_done(&assoc_sg_walk, 0, 0);
-+	} else {
-+		scatterwalk_map_and_copy(dst, req->dst, 0, req->cryptlen, 1);
-+		kfree(src);
-+	}
-+	return retval;
-+}
-+
-+static struct crypto_alg __rfc4106_alg = {
-+	.cra_name		= "__gcm-aes-aesni",
-+	.cra_driver_name	= "__driver-gcm-aes-aesni",
-+	.cra_priority		= 0,
-+	.cra_flags		= CRYPTO_ALG_TYPE_AEAD,
-+	.cra_blocksize		= 1,
-+	.cra_ctxsize		= sizeof(struct aesni_rfc4106_gcm_ctx) + AESNI_ALIGN,
-+	.cra_alignmask		= 0,
-+	.cra_type		= &crypto_aead_type,
-+	.cra_module		= THIS_MODULE,
-+	.cra_list		= LIST_HEAD_INIT(__rfc4106_alg.cra_list),
-+	.cra_u = {
-+		.aead = {
-+			.encrypt	= __driver_rfc4106_encrypt,
-+			.decrypt	= __driver_rfc4106_decrypt,
-+		},
-+	},
-+};
-+
- static int __init aesni_init(void)
- {
- 	int err;
-@@ -738,6 +1240,7 @@ static int __init aesni_init(void)
- 		printk(KERN_INFO "Intel AES-NI instructions are not detected.\n");
- 		return -ENODEV;
+ 		.alg = "rfc4309(ccm(aes))",
+ 		.test = alg_test_aead,
+ 		.fips_allowed = 1,
+diff --git a/crypto/testmgr.h b/crypto/testmgr.h
+index 74e3537..834af7f 100644
+--- a/crypto/testmgr.h
++++ b/crypto/testmgr.h
+@@ -6,6 +6,15 @@
+  * Copyright (c) 2007 Nokia Siemens Networks
+  * Copyright (c) 2008 Herbert Xu <herbert@gondor.apana.org.au>
+  *
++ * Updated RFC4106 AES-GCM testing. Some test vectors were taken from
++ * http://csrc.nist.gov/groups/ST/toolkit/BCM/documents/proposedmodes/
++ * gcm/gcm-test-vectors.tar.gz
++ *     Authors: Aidan O'Mahony (aidan.o.mahony@intel.com)
++ *              Adrian Hoban <adrian.hoban@intel.com>
++ *              Gabriele Paoloni <gabriele.paoloni@intel.com>
++ *              Tadeusz Struk (tadeusz.struk@intel.com)
++ *     Copyright (c) 2010, Intel Corporation.
++ *
+  * This program is free software; you can redistribute it and/or modify it
+  * under the terms of the GNU General Public License as published by the Free
+  * Software Foundation; either version 2 of the License, or (at your option)
+@@ -2947,6 +2956,8 @@ static struct cipher_testvec cast6_dec_tv_template[] = {
+ #define AES_CTR_3686_DEC_TEST_VECTORS 6
+ #define AES_GCM_ENC_TEST_VECTORS 9
+ #define AES_GCM_DEC_TEST_VECTORS 8
++#define AES_GCM_4106_ENC_TEST_VECTORS 7
++#define AES_GCM_4106_DEC_TEST_VECTORS 7
+ #define AES_CCM_ENC_TEST_VECTORS 7
+ #define AES_CCM_DEC_TEST_VECTORS 7
+ #define AES_CCM_4309_ENC_TEST_VECTORS 7
+@@ -5829,6 +5840,356 @@ static struct aead_testvec aes_gcm_dec_tv_template[] = {
  	}
+ };
+ 
++static struct aead_testvec aes_gcm_rfc4106_enc_tv_template[] = {
++        { /* Generated using Crypto++ */
++		.key    = zeroed_string,
++		.klen	= 20,
++                .iv     = zeroed_string,
++                .input  = zeroed_string,
++                .ilen   = 16,
++                .assoc  = zeroed_string,
++                .alen   = 8,
++		.result	= "\x03\x88\xDA\xCE\x60\xB6\xA3\x92"
++                          "\xF3\x28\xC2\xB9\x71\xB2\xFE\x78"
++                          "\x97\xFE\x4C\x23\x37\x42\x01\xE0"
++                          "\x81\x9F\x8D\xC5\xD7\x41\xA0\x1B",
++		.rlen	= 32,
++        },{
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x00\x00\x00\x00\x00\x01"
++                          "\x00\x00\x00\x00",
++                .input  = zeroed_string,
++                .ilen   = 16,
++                .assoc  = zeroed_string,
++                .alen   = 8,
++		.result	= "\xC0\x0D\x8B\x42\x0F\x8F\x34\x18"
++                          "\x88\xB1\xC5\xBC\xC5\xB6\xD6\x28"
++                          "\x6A\x9D\xDF\x11\x5E\xFE\x5E\x9D"
++                          "\x2F\x70\x44\x92\xF7\xF2\xE3\xEF",
++		.rlen	= 32,
 +
- 	if ((err = crypto_register_alg(&aesni_alg)))
- 		goto aes_err;
- 	if ((err = crypto_register_alg(&__aesni_alg)))
-@@ -770,10 +1273,19 @@ static int __init aesni_init(void)
- 	if ((err = crypto_register_alg(&ablk_xts_alg)))
- 		goto ablk_xts_err;
- #endif
--
-+	err = crypto_register_alg(&__rfc4106_alg);
-+	if (err)
-+		goto __aead_gcm_err;
-+	err = crypto_register_alg(&rfc4106_alg);
-+	if (err)
-+		goto aead_gcm_err;
- 	return err;
- 
-+aead_gcm_err:
-+	crypto_unregister_alg(&__rfc4106_alg);
-+__aead_gcm_err:
- #ifdef HAS_XTS
-+	crypto_unregister_alg(&ablk_xts_alg);
- ablk_xts_err:
- #endif
- #ifdef HAS_PCBC
-@@ -809,6 +1321,8 @@ aes_err:
- 
- static void __exit aesni_exit(void)
- {
-+	crypto_unregister_alg(&__rfc4106_alg);
-+	crypto_unregister_alg(&rfc4106_alg);
- #ifdef HAS_XTS
- 	crypto_unregister_alg(&ablk_xts_alg);
- #endif
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = zeroed_string,
++                .input  = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .ilen   = 16,
++                .assoc  = zeroed_string,
++                .alen   = 8,
++		.result	= "\x4B\xB1\xB5\xE3\x25\x71\x70\xDE"
++                          "\x7F\xC9\x9C\xA5\x14\x19\xF2\xAC"
++                          "\x0B\x8F\x88\x69\x17\xE6\xB4\x3C"
++                          "\xB1\x68\xFD\x14\x52\x64\x61\xB2",
++		.rlen	= 32,
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = zeroed_string,
++                .input  = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .ilen   = 16,
++                .assoc  = "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .alen   = 8,
++		.result	= "\x4B\xB1\xB5\xE3\x25\x71\x70\xDE"
++                          "\x7F\xC9\x9C\xA5\x14\x19\xF2\xAC"
++                          "\x90\x92\xB7\xE3\x5F\xA3\x9A\x63"
++                          "\x7E\xD7\x1F\xD8\xD3\x7C\x4B\xF5",
++		.rlen	= 32,
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x00\x00\x00\x00\x00\x01"
++                          "\x00\x00\x00\x00",
++                .input  = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .ilen   = 16,
++                .assoc  = "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .alen   = 8,
++		.result	= "\xC1\x0C\x8A\x43\x0E\x8E\x35\x19"
++                          "\x89\xB0\xC4\xBD\xC4\xB7\xD7\x29"
++                          "\x64\x50\xF9\x32\x13\xFB\x74\x61"
++                          "\xF4\xED\x52\xD3\xC5\x10\x55\x3C",
++		.rlen	= 32,
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x00\x00\x00\x00\x00\x01"
++                          "\x00\x00\x00\x00",
++                .input  = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .ilen   = 64,
++                .assoc  = "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .alen   = 8,
++		.result	= "\xC1\x0C\x8A\x43\x0E\x8E\x35\x19"
++                          "\x89\xB0\xC4\xBD\xC4\xB7\xD7\x29"
++                          "\x98\x14\xA1\x42\x37\x80\xFD\x90"
++                          "\x68\x12\x01\xA8\x91\x89\xB9\x83"
++                          "\x5B\x11\x77\x12\x9B\xFF\x24\x89"
++                          "\x94\x5F\x18\x12\xBA\x27\x09\x39"
++                          "\x99\x96\x76\x42\x15\x1C\xCD\xCB"
++                          "\xDC\xD3\xDA\x65\x73\xAF\x80\xCD"
++                          "\xD2\xB6\xC2\x4A\x76\xC2\x92\x85"
++                          "\xBD\xCF\x62\x98\x58\x14\xE5\xBD",
++		.rlen	= 80,
++        }, {
++		.key    = "\x00\x01\x02\x03\x04\x05\x06\x07"
++			  "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x45\x67\x89\xab\xcd\xef"
++                          "\x00\x00\x00\x00",
++                .input  = "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff",
++                .ilen   = 192,
++                .assoc  = "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa"
++                          "\xaa\xaa\xaa\xaa",
++                .alen   = 12,
++		.result	= "\xC1\x76\x33\x85\xE2\x9B\x5F\xDE"
++			  "\xDE\x89\x3D\x42\xE7\xC9\x69\x8A"
++			  "\x44\x6D\xC3\x88\x46\x2E\xC2\x01"
++			  "\x5E\xF6\x0C\x39\xF0\xC4\xA5\x82"
++			  "\xCD\xE8\x31\xCC\x0A\x4C\xE4\x44"
++			  "\x41\xA9\x82\x6F\x22\xA1\x23\x1A"
++			  "\xA8\xE3\x16\xFD\x31\x5C\x27\x31"
++			  "\xF1\x7F\x01\x63\xA3\xAF\x70\xA1"
++			  "\xCF\x07\x57\x41\x67\xD0\xC4\x42"
++			  "\xDB\x18\xC6\x4C\x4C\xE0\x3D\x9F"
++			  "\x05\x07\xFB\x13\x7D\x4A\xCA\x5B"
++			  "\xF0\xBF\x64\x7E\x05\xB1\x72\xEE"
++			  "\x7C\x3B\xD4\xCD\x14\x03\xB2\x2C"
++			  "\xD3\xA9\xEE\xFA\x17\xFC\x9C\xDF"
++			  "\xC7\x75\x40\xFF\xAE\xAD\x1E\x59"
++			  "\x2F\x30\x24\xFB\xAD\x6B\x10\xFA"
++			  "\x6C\x9F\x5B\xE7\x25\xD5\xD0\x25"
++			  "\xAC\x4A\x4B\xDA\xFC\x7A\x85\x1B"
++			  "\x7E\x13\x06\x82\x08\x17\xA4\x35"
++			  "\xEC\xC5\x8D\x63\x96\x81\x0A\x8F"
++			  "\xA3\x05\x38\x95\x20\x1A\x47\x04"
++			  "\x6F\x6D\xDA\x8F\xEF\xC1\x76\x35"
++			  "\x6B\xC7\x4D\x0F\x94\x12\xCA\x3E"
++			  "\x2E\xD5\x03\x2E\x86\x7E\xAA\x3B"
++			  "\x37\x08\x1C\xCF\xBA\x5D\x71\x46"
++			  "\x80\x72\xB0\x4C\x82\x0D\x60\x3C",
++		.rlen	= 208,
++	}
++};
++
++static struct aead_testvec aes_gcm_rfc4106_dec_tv_template[] = {
++        { /* Generated using Crypto++ */
++		.key    = zeroed_string,
++		.klen	= 20,
++                .iv     = zeroed_string,
++		.input	= "\x03\x88\xDA\xCE\x60\xB6\xA3\x92"
++                          "\xF3\x28\xC2\xB9\x71\xB2\xFE\x78"
++                          "\x97\xFE\x4C\x23\x37\x42\x01\xE0"
++                          "\x81\x9F\x8D\xC5\xD7\x41\xA0\x1B",
++		.ilen	= 32,
++                .assoc  = zeroed_string,
++                .alen   = 8,
++                .result = zeroed_string,
++                .rlen   = 16,
++
++        },{
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x00\x00\x00\x00\x00\x01"
++                          "\x00\x00\x00\x00",
++		.input	= "\xC0\x0D\x8B\x42\x0F\x8F\x34\x18"
++                          "\x88\xB1\xC5\xBC\xC5\xB6\xD6\x28"
++                          "\x6A\x9D\xDF\x11\x5E\xFE\x5E\x9D"
++                          "\x2F\x70\x44\x92\xF7\xF2\xE3\xEF",
++		.ilen	= 32,
++                .assoc  = zeroed_string,
++                .alen   = 8,
++                .result = zeroed_string,
++                .rlen   = 16,
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = zeroed_string,
++		.input	= "\x4B\xB1\xB5\xE3\x25\x71\x70\xDE"
++                          "\x7F\xC9\x9C\xA5\x14\x19\xF2\xAC"
++                          "\x0B\x8F\x88\x69\x17\xE6\xB4\x3C"
++                          "\xB1\x68\xFD\x14\x52\x64\x61\xB2",
++		.ilen	= 32,
++                .assoc  = zeroed_string,
++                .alen   = 8,
++                .result = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .rlen   = 16,
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = zeroed_string,
++		.input	= "\x4B\xB1\xB5\xE3\x25\x71\x70\xDE"
++                          "\x7F\xC9\x9C\xA5\x14\x19\xF2\xAC"
++                          "\x90\x92\xB7\xE3\x5F\xA3\x9A\x63"
++                          "\x7E\xD7\x1F\xD8\xD3\x7C\x4B\xF5",
++		.ilen	= 32,
++                .assoc  = "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .alen   = 8,
++                .result = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .rlen   = 16,
++
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x00\x00\x00\x00\x00\x01"
++                          "\x00\x00\x00\x00",
++		.input	= "\xC1\x0C\x8A\x43\x0E\x8E\x35\x19"
++                          "\x89\xB0\xC4\xBD\xC4\xB7\xD7\x29"
++                          "\x64\x50\xF9\x32\x13\xFB\x74\x61"
++                          "\xF4\xED\x52\xD3\xC5\x10\x55\x3C",
++		.ilen	= 32,
++                .assoc  = "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .alen   = 8,
++                .result = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .rlen   = 16,
++        }, {
++		.key    = "\xfe\xff\xe9\x92\x86\x65\x73\x1c"
++			  "\x6d\x6a\x8f\x94\x67\x30\x83\x08"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x00\x00\x00\x00\x00\x01"
++                          "\x00\x00\x00\x00",
++		.input	= "\xC1\x0C\x8A\x43\x0E\x8E\x35\x19"
++                          "\x89\xB0\xC4\xBD\xC4\xB7\xD7\x29"
++                          "\x98\x14\xA1\x42\x37\x80\xFD\x90"
++                          "\x68\x12\x01\xA8\x91\x89\xB9\x83"
++                          "\x5B\x11\x77\x12\x9B\xFF\x24\x89"
++                          "\x94\x5F\x18\x12\xBA\x27\x09\x39"
++                          "\x99\x96\x76\x42\x15\x1C\xCD\xCB"
++                          "\xDC\xD3\xDA\x65\x73\xAF\x80\xCD"
++                          "\xD2\xB6\xC2\x4A\x76\xC2\x92\x85"
++                          "\xBD\xCF\x62\x98\x58\x14\xE5\xBD",
++		.ilen	= 80,
++                .assoc  = "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .alen   = 8,
++                .result = "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01"
++                          "\x01\x01\x01\x01\x01\x01\x01\x01",
++                .rlen   = 64,
++        }, {
++		.key    = "\x00\x01\x02\x03\x04\x05\x06\x07"
++			  "\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f"
++                          "\x00\x00\x00\x00",
++		.klen	= 20,
++                .iv     = "\x00\x00\x45\x67\x89\xab\xcd\xef"
++                          "\x00\x00\x00\x00",
++		.input	= "\xC1\x76\x33\x85\xE2\x9B\x5F\xDE"
++			  "\xDE\x89\x3D\x42\xE7\xC9\x69\x8A"
++			  "\x44\x6D\xC3\x88\x46\x2E\xC2\x01"
++			  "\x5E\xF6\x0C\x39\xF0\xC4\xA5\x82"
++			  "\xCD\xE8\x31\xCC\x0A\x4C\xE4\x44"
++			  "\x41\xA9\x82\x6F\x22\xA1\x23\x1A"
++			  "\xA8\xE3\x16\xFD\x31\x5C\x27\x31"
++			  "\xF1\x7F\x01\x63\xA3\xAF\x70\xA1"
++			  "\xCF\x07\x57\x41\x67\xD0\xC4\x42"
++			  "\xDB\x18\xC6\x4C\x4C\xE0\x3D\x9F"
++			  "\x05\x07\xFB\x13\x7D\x4A\xCA\x5B"
++			  "\xF0\xBF\x64\x7E\x05\xB1\x72\xEE"
++			  "\x7C\x3B\xD4\xCD\x14\x03\xB2\x2C"
++			  "\xD3\xA9\xEE\xFA\x17\xFC\x9C\xDF"
++			  "\xC7\x75\x40\xFF\xAE\xAD\x1E\x59"
++			  "\x2F\x30\x24\xFB\xAD\x6B\x10\xFA"
++			  "\x6C\x9F\x5B\xE7\x25\xD5\xD0\x25"
++			  "\xAC\x4A\x4B\xDA\xFC\x7A\x85\x1B"
++			  "\x7E\x13\x06\x82\x08\x17\xA4\x35"
++			  "\xEC\xC5\x8D\x63\x96\x81\x0A\x8F"
++			  "\xA3\x05\x38\x95\x20\x1A\x47\x04"
++			  "\x6F\x6D\xDA\x8F\xEF\xC1\x76\x35"
++			  "\x6B\xC7\x4D\x0F\x94\x12\xCA\x3E"
++			  "\x2E\xD5\x03\x2E\x86\x7E\xAA\x3B"
++			  "\x37\x08\x1C\xCF\xBA\x5D\x71\x46"
++			  "\x80\x72\xB0\x4C\x82\x0D\x60\x3C",
++		.ilen	= 208,
++                .assoc  = "\xaa\xaa\xaa\xaa\xaa\xaa\xaa\xaa"
++                          "\xaa\xaa\xaa\xaa",
++                .alen   = 12,
++                .result = "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff"
++                          "\xff\xff\xff\xff\xff\xff\xff\xff",
++                .rlen   = 192,
++
++	}
++};
++
+ static struct aead_testvec aes_ccm_enc_tv_template[] = {
+ 	{ /* From RFC 3610 */
+ 		.key	= "\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7"
 -- 
 1.5.3.rc5
 
