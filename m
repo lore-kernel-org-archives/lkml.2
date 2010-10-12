@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757444Ab0JLOa2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 10:30:28 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45024 "EHLO
+	id S1757396Ab0JLObX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 10:31:23 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:45038 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753317Ab0JLOa1 (ORCPT
+	with ESMTP id S1753317Ab0JLObW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 10:30:27 -0400
-Date: Tue, 12 Oct 2010 16:30:22 +0200
+	Tue, 12 Oct 2010 10:31:22 -0400
 From: Andi Kleen <andi@firstfloor.org>
-To: =?iso-8859-1?Q?Penttil=E4?= Mika <mika.penttila@ixonos.com>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] HWPOISON: Implement hwpoison-on-free for soft offlining
-Message-ID: <20101012143022.GF20436@basil.fritz.box>
-References: <1A61D8EA6755AF458F06EA669A4EC81815FDA6FE@JKLMAIL02.ixonos.local>
- <8762x733qn.fsf@basil.nowhere.org>
- <1A61D8EA6755AF458F06EA669A4EC81815FDA736@JKLMAIL02.ixonos.local>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tim Pepper <lnxninja@linux.vnet.ibm.com>,
+        Marcio Saito <marcio@cyclades.com>, John Stultz <johnstul@us.ibm.com>,
+        Jiri Slaby <jirislaby@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>, x86@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Avantika Mathur <mathur@linux.vnet.ibm.com>,
+        linuxppc-dev@lists.ozlabs.org, jblunck@infradead.org
+Subject: Re: [RFC] [PATCH] allow low HZ values?
+References: <20101011201121.GA953@tpepper-t61p.dolavim.us>
+	<alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
+Date: Tue, 12 Oct 2010 16:31:20 +0200
+In-Reply-To: <alpine.LFD.2.00.1010112227190.2909@localhost6.localdomain6>
+	(Thomas Gleixner's message of "Mon, 11 Oct 2010 22:32:06 +0200
+	(CEST)")
+Message-ID: <871v7v32kn.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1A61D8EA6755AF458F06EA669A4EC81815FDA736@JKLMAIL02.ixonos.local>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 02:23:15PM +0000, Penttilä Mika wrote:
-> > >>  		bad_page(page);
-> > >>  		return 1;
-> > >>  	}
-> > >
-> > > And of course PAGE_FLAGS_CHECK_AT_FREE should include
-> > > pahehwpoisononfree this to be effective
-> > 
-> > It is of course (__PG_HWPOISON_ON_FREE)
-> > 
-> Yes but it's not included in PAGE_FLAGS_CHECK_AT_FREE, if  I'm not missing something
+Thomas Gleixner <tglx@linutronix.de> writes:
 
-#ifdef CONFIG_HWPOISON_ON_FREE
-PAGEFLAG(HWPoisonOnFree, hwpoison_on_free)
-TESTSCFLAG(HWPoisonOnFree, hwpoison_on_free)
-#define __PG_HWPOISON_ON_FREE (1UL << PG_hwpoison_on_free)
-#else
-PAGEFLAG_FALSE(HWPoisonOnFree)
-SETPAGEFLAG_NOOP(HWPoisonOnFree)
-#define __PG_HWPOISON_ON_FREE 0
-#endif
+> On Mon, 11 Oct 2010, Tim Pepper wrote:
+>
+>> I'm not necessarily wanting to open up the age old question of "what is
+>> a good HZ", but we were doing some testing on timer tick overheads for
+>> HPC applications and this came up...
+>
+> Yeah. This comes always up when the timer tick overhead on HPC is
+> tested. And this patch is again the fundamentally wrong answer.
 
-...
+That's a unfair description of the proposal.
 
-#define PAGE_FLAGS_CHECK_AT_FREE \
-        (1 << PG_lru     | 1 << PG_locked    | \
-         1 << PG_private | 1 << PG_private_2 | \
-         1 << PG_buddy   | 1 << PG_writeback | 1 << PG_reserved | \
-         1 << PG_slab    | 1 << PG_swapcache | 1 << PG_active | \
-         1 << PG_unevictable | __PG_MLOCKED | __PG_HWPOISON | \
-         __PG_HWPOISON_ON_FREE)
+> We have told HPC folks for years that we need a kind of "NOHZ" mode
+> for HPC where we can transparently switch off the tick when only one
+> user space bound thread is active and switch back to normal once this
+> thing terminates or goes into the kernel via a syscall. Sigh, nothing
+> happened ever except for repeating the same crap patches over and
+> over.
 
+Jan Blunck posted a patch for this exactly few months ago.
+Unfortunately it didn't get the accounting right, but other than
+that it seemed like a reasonable starting point.
 
 -Andi
 -- 
