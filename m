@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932587Ab0JLOGL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 10:06:11 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:42553 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932477Ab0JLOGK (ORCPT
+	id S932598Ab0JLOKX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 10:10:23 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:44236 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932579Ab0JLOKV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 10:06:10 -0400
-From: Andi Kleen <andi@firstfloor.org>
-To: =?iso-8859-1?Q?Penttil=E4?= Mika <mika.penttila@ixonos.com>
-Cc: "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] HWPOISON: Implement hwpoison-on-free for soft offlining
-References: <1A61D8EA6755AF458F06EA669A4EC81815FDA6FE@JKLMAIL02.ixonos.local>
-Date: Tue, 12 Oct 2010 16:06:08 +0200
-In-Reply-To: <1A61D8EA6755AF458F06EA669A4EC81815FDA6FE@JKLMAIL02.ixonos.local>
-	(Penttil's message of "Tue, 12 Oct 2010 12:38:10 +0000")
-Message-ID: <8762x733qn.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Tue, 12 Oct 2010 10:10:21 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "david.cohen@nokia.com" <david.cohen@nokia.com>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Tue, 12 Oct 2010 09:10:15 -0500
+Subject: RE: [PATCHv2 2/3] iovmm: add superpages support to fixed da address
+Thread-Topic: [PATCHv2 2/3] iovmm: add superpages support to fixed da address
+Thread-Index: Actp/eb8+w8+xTufTvGJqW9vlhILhgAGONWg
+Message-ID: <496565EC904933469F292DDA3F1663E602F47B2FDA@dlee06.ent.ti.com>
+References: <1286226137-1233-1-git-send-email-x0095840@ti.com>
+	<1286226137-1233-2-git-send-email-x0095840@ti.com>
+	<1286226137-1233-3-git-send-email-x0095840@ti.com>
+	<AANLkTimF5HqA0pbp7NXOXxOcuMMJWp9yuJPsw8-iPKjh@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F47B2BF1@dlee06.ent.ti.com>
+ <AANLkTinVzO_B0L09bOG0aWTsQjaXgLeggB+YUgEhL2Sa@mail.gmail.com>
+In-Reply-To: <AANLkTinVzO_B0L09bOG0aWTsQjaXgLeggB+YUgEhL2Sa@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Penttilä Mika <mika.penttila@ixonos.com> writes:
+ 
 
-Please always cc people when answering list emails.
-Missed this earlier.
+> -----Original Message-----
+> From: Felipe Contreras [mailto:felipe.contreras@gmail.com] 
+> Sent: Tuesday, October 12, 2010 6:09 AM
+> To: Guzman Lugo, Fernando
+> Cc: Hiroshi.DOYU@nokia.com; david.cohen@nokia.com; 
+> felipe.contreras@nokia.com; ameya.palande@nokia.com; 
+> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
+> linux-omap@vger.kernel.org
+> Subject: Re: [PATCHv2 2/3] iovmm: add superpages support to 
+> fixed da address
+> 
+> On Mon, Oct 11, 2010 at 6:33 PM, Guzman Lugo, Fernando 
+> <fernando.lugo@ti.com> wrote:
+> >> > @@ -420,7 +431,8 @@ static void sgtable_fill_kmalloc(struct
+> >> sg_table
+> >> > *sgt, u32 pa, size_t len)
+> >> >        for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+> >> >                size_t bytes;
+> >> >
+> >> > -               bytes = iopgsz_max(len);
+> >> > +               bytes = max_alignment(da | pa);
+> >> > +               bytes = min(bytes, (size_t)iopgsz_max(len));
+> >>
+> >> Why the size_t casting?
+> >
+> > To void this warning:
+> > arch/arm/plat-omap/iovmm.c:440: warning: comparison of distinct 
+> > pointer types lacks a cast
+> 
+> But how is that possible? iopgsz_max is returning constants, 
+> like SZ_1M, so they should not need casts, if anything, the 
+> cast should be done in iopgsz_max itself.
 
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -564,6 +564,8 @@ static inline int free_pages_check(struct page *page)
->>  		(page->mapping != NULL)  |
->>  		(atomic_read(&page->_count) != 0) |
->>  		(page->flags & PAGE_FLAGS_CHECK_AT_FREE))) {
->> +		if (PageHWPoisonOnFree(page))
->> +			hwpoison_page_on_free(page);
->
-> hwpoison_page_on_free() seems to be undefined when
-> CONFIG_HWPOISON_ON_FREE is not defined.
+The min macro make a "typeof" of the parameter, so the typeof of a 
+Constants should be int I think and that's the reason of the warning.
 
-The optimizer takes care of that.
+I can use min_t instead to avoid the warning, something like this:
 
->
->>  		bad_page(page);
->>  		return 1;
->>  	}
->
-> And of course PAGE_FLAGS_CHECK_AT_FREE should include
-> pahehwpoisononfree this to be effective
+			bytes = min_t(size_t, bytes, iopgsz_max(len));
 
-It is of course (__PG_HWPOISON_ON_FREE)
+What do you think?
 
-Thanks for the review.
+Regards,
+Fernando.
 
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+> 
+> --
+> Felipe Contreras
+> 
