@@ -1,143 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab0JLDQu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 23:16:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60379 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab0JLDQt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 23:16:49 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 12 Oct 2010 12:11:24 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jack Steiner <steiner@sgi.com>,
-        mingo@elte.hu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fix slowness of /proc/stat per-cpu IRQ sum
- calculation on large system by a new counter
-Message-Id: <20101012121124.99f7964b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4CB3D097.6000604@kernel.org>
-References: <20100929122206.GA30317@sgi.com>
-	<20100930140901.037f9dc7.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101004143414.GA4261@sgi.com>
-	<20101005103650.7ebe64f0.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101005171907.23c75102.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101008163557.GA13859@sgi.com>
-	<20101012090907.5dd1cf57.kamezawa.hiroyu@jp.fujitsu.com>
-	<20101011172226.6162476c.akpm@linux-foundation.org>
-	<20101012113736.f34d1426.kamezawa.hiroyu@jp.fujitsu.com>
-	<4CB3D097.6000604@kernel.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755806Ab0JLDjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 23:39:23 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:33707 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754337Ab0JLDjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 23:39:22 -0400
+Date: Tue, 12 Oct 2010 09:09:15 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>, Greg Thelen <gthelen@google.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>
+Subject: Re: [PATCH v2] memcg: reduce lock time at move charge (Was Re:
+ [PATCH 04/10] memcg: disable local interrupts in lock_page_cgroup()
+Message-ID: <20101012033915.GA25875@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20101007111743.322c3993.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007152111.df687a62.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007162811.c3a35be9.nishimura@mxp.nes.nec.co.jp>
+ <20101007164204.83b207c6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007170405.27ed964c.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007161454.84570cf9.akpm@linux-foundation.org>
+ <20101008133712.2a836331.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101007215556.21412ae6.akpm@linux-foundation.org>
+ <20101008141201.c1e3a4e2.kamezawa.hiroyu@jp.fujitsu.com>
+ <20101008194131.20b44a9d.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20101008194131.20b44a9d.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Oct 2010 20:05:59 -0700
-Yinghai Lu <yinghai@kernel.org> wrote:
-			kstat_cpu(i).cpustat.guest_nice);
-> > -		for_each_irq_nr(j) {
-> > -			sum += kstat_irqs_cpu(j, i);
-> > -		}
-> > +		sum = kstat_cpu_irqs_sum(i);
+* KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> [2010-10-08 19:41:31]:
+
+> On Fri, 8 Oct 2010 14:12:01 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > Sure.  It walks the same data three times, potentially causing
+> > > thrashing in the L1 cache.
+> > 
+> > Hmm, make this 2 times, at least.
+> > 
+> How about this ?
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> should be 
-> +		sum += kstat_cpu_irqs_sum(i);
+> Presently, at task migration among cgroups, memory cgroup scans page tables and
+> moves accounting if flags are properly set.
 > 
-Ouch...thanks.
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> The core code, mem_cgroup_move_charge_pte_range() does
+> 
+>  	pte_offset_map_lock();
+> 	for all ptes in a page table:
+> 		1. look into page table, find_and_get a page
+> 		2. remove it from LRU.
+> 		3. move charge.
+> 		4. putback to LRU. put_page()
+> 	pte_offset_map_unlock();
+> 
+> for pte entries on a 3rd level? page table.
+> 
+> As a planned updates, we'll support dirty-page accounting. Because move_charge()
+> is highly race, we need to add more check in move_charge.
+> For example, lock_page();-> wait_on_page_writeback();-> unlock_page();
+> is an candidate for new check.
+>
 
-Problem: 'cat /proc/stat' is too slow on verrry bis system.
 
-/proc/stat shows the total number of all interrupts to each cpu. But when
-the number of IRQs are very large, it takes very long time and 'cat /proc/stat'
-takes more than 10 secs. This is because sum of all irq events are counted
-when /proc/stat is read. This patch adds "sum of all irq" counter percpu
-and update it at events.
-
-The cost of reading /proc/stat is important because it's used by major
-applications as 'top', 'ps', 'w', etc....
-
-A test on a host (4096cpu, 256 nodes, 4592 irqs) shows
-
- %time cat /proc/stat > /dev/null
- Before Patch:  12.627 sec
- After  Patch:  2.459 sec
-
-Changelog v1->v2:
- - fixed wrong update of a value "sum".
-
-Tested-by: Jack Steiner <steiner@sgi.com>
-Acked-by: Jack Steiner <steiner@sgi.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- fs/proc/stat.c              |    4 +---
- include/linux/kernel_stat.h |   14 ++++++++++++--
- 2 files changed, 13 insertions(+), 5 deletions(-)
-
-Index: linux-2.6.36-rc7/fs/proc/stat.c
-===================================================================
---- linux-2.6.36-rc7.orig/fs/proc/stat.c
-+++ linux-2.6.36-rc7/fs/proc/stat.c
-@@ -52,9 +52,7 @@ static int show_stat(struct seq_file *p,
- 		guest = cputime64_add(guest, kstat_cpu(i).cpustat.guest);
- 		guest_nice = cputime64_add(guest_nice,
- 			kstat_cpu(i).cpustat.guest_nice);
--		for_each_irq_nr(j) {
--			sum += kstat_irqs_cpu(j, i);
--		}
-+		sum += kstat_cpu_irqs_sum(i);
- 		sum += arch_irq_stat_cpu(i);
+Is this a change to help dirty limits or is it a generic bug fix.
  
- 		for (j = 0; j < NR_SOFTIRQS; j++) {
-Index: linux-2.6.36-rc7/include/linux/kernel_stat.h
-===================================================================
---- linux-2.6.36-rc7.orig/include/linux/kernel_stat.h
-+++ linux-2.6.36-rc7/include/linux/kernel_stat.h
-@@ -33,6 +33,7 @@ struct kernel_stat {
- #ifndef CONFIG_GENERIC_HARDIRQS
-        unsigned int irqs[NR_IRQS];
- #endif
-+	unsigned long irqs_sum;
- 	unsigned int softirqs[NR_SOFTIRQS];
- };
- 
-@@ -54,6 +55,7 @@ static inline void kstat_incr_irqs_this_
- 					    struct irq_desc *desc)
- {
- 	kstat_this_cpu.irqs[irq]++;
-+	kstat_this_cpu.irqs_sum++;
- }
- 
- static inline unsigned int kstat_irqs_cpu(unsigned int irq, int cpu)
-@@ -65,8 +67,9 @@ static inline unsigned int kstat_irqs_cp
- extern unsigned int kstat_irqs_cpu(unsigned int irq, int cpu);
- #define kstat_irqs_this_cpu(DESC) \
- 	((DESC)->kstat_irqs[smp_processor_id()])
--#define kstat_incr_irqs_this_cpu(irqno, DESC) \
--	((DESC)->kstat_irqs[smp_processor_id()]++)
-+#define kstat_incr_irqs_this_cpu(irqno, DESC) do {\
-+	((DESC)->kstat_irqs[smp_processor_id()]++);\
-+	kstat_this_cpu.irqs_sum++; } while (0)
- 
- #endif
- 
-@@ -94,6 +97,13 @@ static inline unsigned int kstat_irqs(un
- 	return sum;
- }
- 
-+/*
-+ * Number of interrupts per cpu, since bootup
-+ */
-+static inline unsigned int kstat_cpu_irqs_sum(unsigned int cpu)
-+{
-+	return kstat_cpu(cpu).irqs_sum;
-+}
- 
- /*
-  * Lock/unlock the current runqueue - to extract task statistics:
-
+-- 
+	Three Cheers,
+	Balbir
