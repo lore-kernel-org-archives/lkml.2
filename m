@@ -1,114 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab0JLHJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:09:12 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:52905 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756504Ab0JLHJK (ORCPT
+	id S1756733Ab0JLHJL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:09:11 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:22909 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756610Ab0JLHJK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 12 Oct 2010 03:09:10 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:subject:cc:date:message-id:user-agent:
-	mime-version:content-type;
-	b=a9Ulm4iX+yHR2c276fapRGizCsCj6Z8qU/Tp4SnW6cQ5oeZI+LqC4P2jPTcJEKOck
-	KPkruZr1gKDGBMCsmBe7Q==
-From: Greg Thelen <gthelen@google.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "Oleg Nesterov" <oleg@tv-sign.ru>
-Subject: INFO: suspicious rcu_dereference_check() usage - kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Date: Tue, 12 Oct 2010 00:08:46 -0700
-Message-ID: <xr93fwwbdh1d.fsf@ninji.mtv.corp.google.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Message-ID: <000c01cb69dc$5d2aaab0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Wolfgang Grandegger" <wg@grandegger.com>,
+        "David Miller" <davem@davemloft.net>
+Cc: <andrew.chih.howe.khor@intel.com>, <sameo@linux.intel.com>,
+        <margie.foster@intel.com>, <netdev@vger.kernel.org>,
+        <yong.y.wang@intel.com>, <linux-kernel@vger.kernel.org>,
+        <socketcan-core@lists.berlios.de>, <mkl@pengutronix.de>,
+        <chripell@fsfe.org>, <morinaga526@dsn.okisemi.com>,
+        <kok.howg.ewe@intel.com>, <joel.clark@intel.com>, <qi.wang@intel.com>
+References: <002e01cb6486$2ed72cc0$66f8800a@maildom.okisemi.com>	<20101005.114506.184852374.davem@davemloft.net>	<000b01cb6503$962bc7f0$66f8800a@maildom.okisemi.com> <20101005.200904.71120150.davem@davemloft.net> <4CAC3D94.9010408@grandegger.com>
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
+Date: Tue, 12 Oct 2010 16:09:04 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 5.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I observe a failing rcu_dereference_check() in linux-next (found in
-mmotm-2010-10-07-14-08).  An extra rcu assertion in
-find_task_by_pid_ns() was added by:
-  commit 4221a9918e38b7494cee341dda7b7b4bb8c04bde
-  Author: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-  Date:   Sat Jun 26 01:08:19 2010 +0900
-  
-      Add RCU check for find_task_by_vpid().
+Hi Wolfgang,
 
-This extra assertion causes a rcu_dereference_check() failure during
-boot in 512 MIB VM.  I would be happy to get out proposed patches to
-this issue.  My config includes:
-  CONFIG_PREEMPT=y
-  CONFIG_LOCKDEP=y
-  CONFIG_PROVE_LOCKING=y
-  CONFIG_PROVE_RCU=y
+We have implemented our CAN driver with FIFO mode, and
+We are testing our CAN driver with FIFO mode.
+However, we have found Our CAN hardware spec is different from our anticipated.
+Our CAN HW FIFO is not common FIFO.
+Using  FIFO mode, there is possibility received packets are out-of-order.
 
-The console error:
+e.g.
+Recv packet-A from NW and set to FIFO.
+  |A|
 
-Begin: Running /scripts/local-bottom ...
-Done.
-Done.
-Begin: Running /scripts/init-bottom ...
-Done.
-[    3.394348]
-[    3.394349] ===================================================
-[    3.395162] [ INFO: suspicious rcu_dereference_check() usage. ]
-[    3.395786] ---------------------------------------------------
-[    3.396452] kernel/pid.c:419 invoked rcu_dereference_check() without protection!
-[    3.397483]
-[    3.397484] other info that might help us debug this:
-[    3.397485]
-[    3.398363]
-[    3.398364] rcu_scheduler_active = 1, debug_locks = 0
-[    3.399073] 1 lock held by ureadahead/1438:
-[    3.399515]  #0:  (tasklist_lock){.+.+..}, at: [<ffffffff811c1d1a>] sys_ioprio_set+0x8a/0x3f0
-[    3.400500]
-[    3.400501] stack backtrace:
-[    3.401036] Pid: 1438, comm: ureadahead Not tainted 2.6.36-dbg-DEV #10
-[    3.401717] Call Trace:
-[    3.401996]  [<ffffffff810c720b>] lockdep_rcu_dereference+0xbb/0xc0
-[    3.402742]  [<ffffffff810aebb1>] find_task_by_pid_ns+0x81/0x90
-[    3.403445]  [<ffffffff810aebe2>] find_task_by_vpid+0x22/0x30
-[    3.404146]  [<ffffffff811c2074>] sys_ioprio_set+0x3e4/0x3f0
-[    3.404756]  [<ffffffff815c5919>] ? trace_hardirqs_on_thunk+0x3a/0x3f
-[    3.405455]  [<ffffffff8104331b>] system_call_fastpath+0x16/0x1b
+Recv packet-B from NW and set to FIFO.
+  |A|B|
+
+Recv packet-C is about to set to FIFO
+  |A|B|(C)|
+
+Userspace Copies A from Driver
+Userspace Copies B from Driver
+  |   |   |(C)|
+
+packet-C set to FIFO (C is not head.)
+Recv packet-D from NW(Next packet is set to head)
+  |D|   |C|
+
+Userspace Copies D from Driver
+Userspace Copies C from Driver
+Userspace raceived packet order is like below
+A-B-D-C
+
+So, I think normal-mode is better than FIFO-mode.
+
+I will revert like the following spec.
+  Rx 1 Message Object
+  Tx 1 Message Object
+
+Could you agree the above ?
+
+Thanks, Ohtake(OKISemi)
+----- Original Message ----- 
+From: "Wolfgang Grandegger" <wg@grandegger.com>
+To: "David Miller" <davem@davemloft.net>
+Cc: <masa-korg@dsn.okisemi.com>; <andrew.chih.howe.khor@intel.com>; <sameo@linux.intel.com>; <margie.foster@intel.com>;
+<netdev@vger.kernel.org>; <yong.y.wang@intel.com>; <linux-kernel@vger.kernel.org>; <socketcan-core@lists.berlios.de>;
+<mkl@pengutronix.de>; <chripell@fsfe.org>; <morinaga526@dsn.okisemi.com>; <meego-dev@meego.com>;
+<kok.howg.ewe@intel.com>; <joel.clark@intel.com>; <qi.wang@intel.com>
+Sent: Wednesday, October 06, 2010 6:12 PM
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
 
 
-ioprio_set() contains a comment warning against of usage of
-rcu_read_lock() to avoid this warning:
-	/*
-	 * We want IOPRIO_WHO_PGRP/IOPRIO_WHO_USER to be "atomic",
-	 * so we can't use rcu_read_lock(). See re-copy of ->ioprio
-	 * in copy_process().
-	 */
+> On 10/06/2010 05:09 AM, David Miller wrote:
+> > From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+> > Date: Wed, 6 Oct 2010 12:07:15 +0900
+> >
+> >> Does your mail mean, for accepting upstream, NAPI is essential for
+> >> CAN driver ?
+> >
+> > It is up to the CAN maintainers :-)
+>
+> Well, our SJA1000 reference driver does still not use NAPI. But NAPI is
+> for CAN especially useful to avoid the infamous *bus error irq
+> flooding*, which may hang low end systems if the interrupts are handled
+> in the IRQ context. Ohtake, if your system can handle well such CAN bus
+> error irq storms at 1MB/s, then NAPI is *not* a must to have. Anyway, as
+> you are at it, I also suggest to use NAPI right from the beginning.
+>
+> Wolfgang.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-So I'm not sure what the best fix is.
 
-Also I see that sys_ioprio_get() has a similar problem that might be
-addressed with:
-
-diff --git a/fs/ioprio.c b/fs/ioprio.c
-index 748cfb9..02eed30 100644
---- a/fs/ioprio.c
-+++ b/fs/ioprio.c
-@@ -197,6 +197,7 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
- 	int ret = -ESRCH;
- 	int tmpio;
- 
-+	rcu_read_lock();
- 	read_lock(&tasklist_lock);
- 	switch (which) {
- 		case IOPRIO_WHO_PROCESS:
-@@ -251,5 +252,6 @@ SYSCALL_DEFINE2(ioprio_get, int, which, int, who)
- 	}
- 
- 	read_unlock(&tasklist_lock);
-+	rcu_read_unlock();
- 	return ret;
- }
-
-sys_ioprio_get() didn't have an explicit warning against usage of
-rcu_read_lock(), but that doesn't mean this is a good patch.
-
---
-Greg
