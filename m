@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757660Ab0JLRCT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:02:19 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:40640 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751075Ab0JLRCS (ORCPT
+	id S1757831Ab0JLRM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:12:27 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43178 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753070Ab0JLRMZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:02:18 -0400
-Date: Tue, 12 Oct 2010 19:02:10 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Andi Kleen <andi@firstfloor.org>, Cyrus Massoumi <cyrusm@gmx.net>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: Kernel Scalability to 48 cores
-Message-ID: <20101012170210.GI20436@basil.fritz.box>
-References: <4CB381DB.1040206@gmx.net>
- <87wrpn1nwy.fsf@basil.nowhere.org>
- <585FC89B-C279-485E-9AE4-6ABA0F5EE4CE@mit.edu>
+	Tue, 12 Oct 2010 13:12:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=NAQNbJljp9NQBS/tbLJMhGWyaXmKNt3/M1fHAgpzPqI8v+niDxBu7WzKjc6mCDIj37
+         6qM2ltvJKxRhrN4ZHkWDKp88xwCQCLadzzyAWP5Rjbhhha/gXI//+MI892u1p4Vh/7mw
+         SjCB5voP7CET3Z3J340ZcuPo5+gTWKmZTbG5I=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Chris Vine <chris@cvine.freeserve.co.uk>
+Subject: Re: Lenovo S12 2.6.36-rc7 lockup
+Date: Tue, 12 Oct 2010 19:12:19 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7; KDE/4.4.5; i686; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <20101010135912.76eb61b7@boulder.homenet>
+In-Reply-To: <20101010135912.76eb61b7@boulder.homenet>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <585FC89B-C279-485E-9AE4-6ABA0F5EE4CE@mit.edu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201010121912.19724.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 12:00:27PM -0400, Theodore Tso wrote:
+On niedziela, 10 października 2010 o 14:59:12 Chris Vine wrote:
+> Hi,
 > 
-> On Oct 12, 2010, at 10:33 AM, Andi Kleen wrote:
+> kernel 2.6.36-rc7 completely locks up my Lenovo S12 notebook on boot-up.
+> It happens early enough in boot-up that nothing appears in any of the
+> system log files.  The last message printed to the console is "Using
+> IPI - No Shortcut mode".
 > 
-> > The paper is known, but it seems to be in the usual unproductive 
-> > "publish a paper, but don't care about fixing anything" acedemic mode.
+> The lock up does not occur with kernel 2.6.35.6.  I do not know in what
+> version of 2.6.36-rc this first arose.
 > 
-> The thing I found most disappointing about the paper is that it describe techniques that have been in use in industry to provide better scalability to commerical OS's, and which were first applied to Linux something like a decade ago.
-
-
-I haven't gone fully through it yet, maybe there are still some useful
-nuggets in there. I would help if they published their patches though.
-
-They used a few new workloads which were useful I guess.
-
-> It's just that a lot of scalability work took a bit of a hiatus, oh, five years ago because at the time, Linux was good enough, and adding more scalability has costs (which is why not all of the changes SGI made for 512 and 1024-way scalability have not necessarily found their way into mainline).   The fact that we've needed to worry about scalability now that 6+ cores/socket are available now, and many more are coming soon, is something we've known for at least the last year or two. 
-
-Already at 8*2 and 12 cores/socket
-
-Fully agreed, but the other aspect is that we also need to worry
-now about TBs and more of memory on a single (non extreme) system
-
-More cores come with more memory and now even with 4K pages.
-
-As a simple exercise I configured a 1TB system for less than 50kEUR
-at Dell.com some time ago: that's not cheap, but definitely not
-an exotic super computer either and prices will go down.
-
-I believe a lot of new challenges also come from that, although
-there has been a lot less work on that so far than on core scalability.
-
--Andi
-
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=20172
+for your bug report, please add your address to the CC list in there, thanks!
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+Maciej Rutecki
+http://www.maciek.unixy.pl
