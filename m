@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757896Ab0JLQzI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 12:55:08 -0400
-Received: from www.tglx.de ([62.245.132.106]:44869 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753065Ab0JLQzH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 12:55:07 -0400
-Date: Tue, 12 Oct 2010 18:54:20 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Salman Qazi <sqazi@google.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] Fix a complex race in hrtimer code.
-In-Reply-To: <AANLkTikgvZuT5+sgPyD-1j1gG+-pC0+4hpXQj7Z_ZuYE@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1010121848061.2909@localhost6.localdomain6>
-References: <20101012000159.7091.84336.stgit@dungbeetle.mtv.corp.google.com> <alpine.LFD.2.00.1010121046060.2909@localhost6.localdomain6> <AANLkTikgvZuT5+sgPyD-1j1gG+-pC0+4hpXQj7Z_ZuYE@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757872Ab0JLQ4k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 12:56:40 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:3284 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753065Ab0JLQ4i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 12:56:38 -0400
+Message-ID: <4CB49346.50906@caviumnetworks.com>
+Date: Tue, 12 Oct 2010 09:56:38 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-204775361-1286902461=:2909"
+To: Greg KH <greg@kroah.com>
+CC: Bernhard Walle <walle@corscience.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: octeon: Add Lanai board USB clock type
+References: <1286791747-3151-1-git-send-email-walle@corscience.de> <4CB340F1.8020000@caviumnetworks.com> <4CB343DC.3050506@corscience.de> <4CB345C1.80709@caviumnetworks.com> <20101012155426.GA15238@kroah.com>
+In-Reply-To: <20101012155426.GA15238@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Oct 2010 16:56:51.0537 (UTC) FILETIME=[7774BC10:01CB6A2E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On 10/12/2010 08:54 AM, Greg KH wrote:
+> On Mon, Oct 11, 2010 at 10:13:37AM -0700, David Daney wrote:
+>> On 10/11/2010 10:05 AM, Bernhard Walle wrote:
+>>> Am 11.10.2010 18:53, schrieb David Daney:
+>>>> On 10/11/2010 03:09 AM, Bernhard Walle wrote:
+>>>>> Add the LANAI2 board to __cvmx_helper_board_usb_get_clock_type(). It
+>>>>> also uses the USB_CLOCK_TYPE_CRYSTAL_12 clock.
+>>>>>
+>>>>> Signed-off-by: Bernhard Walle<walle@corscience.de>
+>>>>> ---
+>>>>>     drivers/staging/octeon/cvmx-helper-board.c |    1 +
+>>>>>     1 files changed, 1 insertions(+), 0 deletions(-)
+>>>>
+>>>> NAK.
+>>>>
+>>>> We don't currently support USB, so churning up this file doesn't help
+>>>> anything.
+>>>
+>>> Well, agreed, but why not removing that code entirely then?
+>>>
+>>
+>> That is the eventual plan.
+>
+> Why not do that now?
+>
 
----1463795968-204775361-1286902461=:2909
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+If others want do submit patches that do that, I would not object.  It 
+is not currently my highest priority, so it may be a little while before 
+I would get to it.
 
-On Tue, 12 Oct 2010, Salman Qazi wrote:
-> On Tue, Oct 12, 2010 at 1:49 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > On Mon, 11 Oct 2010, Salman Qazi wrote:
-> >> /* There are other issues, like deadlocks between multiple hrtimer_start observed
-> >>  * calls, at least in 2.6.34 that this lock works around.  Will look into
-> >>  * those later.
-> >
-> > Well, we don't have to work around callsites not serializing themself
-> > in the core code, right ?
-> 
-> I assumed that the semantics were that hrtimer_starts are serialized
-> with respect to each other and with respect to cancels.   You seem to
-> disagree.
+> Or add USB support to the driver, but don't leave it in the in-kernel
+> driver and expect users to know that this is something they shouldn't be
+> doing.
+>
+> Also, why aren't you going to support the USB devices?
 
-Yes, I disagree. The code makes sure that cancel/start does not
-conflict with a running callback, but it's not responsible for random
-code fiddling with the same timer, really.
+I'm not sure where you got that idea.  What I said was "We don't 
+currently support USB...", this doesn't mean that we wouldn't like to 
+eventually have support for it merged.
 
-The outcome of random start/cancel operations on two cpus of the same
-timer is just unpredictible, so where is the point of caring about
-that in the core code ?
+> What's wrong with that?
 
-> In any case, I have to rerun that test without this lock with the
-> patch present.  It's possible that it was a symptom of the same bug
-> that we just didn't observe in production.
+Nothing.  You may recall that people are working on getting the driver 
+merged:
 
-Which bug did you observe in production and what's the code which is
-triggering this?
+http://marc.info/?l=linux-usb&m=128648942928513
 
-Thanks,
+The path of least resistance is to let that patch get merged first, and 
+then submit the necessary glue to hook it up to OCTEON parts that 
+support it.
 
-	tglx
----1463795968-204775361-1286902461=:2909--
+David Daney
