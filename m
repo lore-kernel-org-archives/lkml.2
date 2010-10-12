@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756966Ab0JLHtM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 03:49:12 -0400
-Received: from dallas.jonmasters.org ([72.29.103.172]:60387 "EHLO
-	dallas.jonmasters.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755379Ab0JLHtL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 03:49:11 -0400
-Subject: Re: PROBLEM: brcm80211 hangs on 2.6.36-0.34.rc6.git3.fc15.x86_64
-From: Jon Masters <jonathan@jonmasters.org>
-To: linux-wireless@vger.kernel.org
-Cc: Brett Rudley <brudley@broadcom.com>, Henry Ptasinski <henryp@broadcom.com>,
-        Nohee Ko <noheek@broadcom.com>, Jon Masters <jcm@jonmasters.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1286538243.21485.298.camel@constitution.bos.jonmasters.org>
-References: <20101008065810.GA1680@constitution.bos.jonmasters.org>
-	 <1286538243.21485.298.camel@constitution.bos.jonmasters.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: World Organi[sz]ation of Broken Dreams
-Date: Tue, 12 Oct 2010 03:47:39 -0400
-Message-ID: <1286869659.8574.10.camel@constitution.bos.jonmasters.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 74.92.29.237
-X-SA-Exim-Mail-From: jonathan@jonmasters.org
-X-SA-Exim-Scanned: No (on dallas.jonmasters.org); SAEximRunCond expanded to false
+	id S932083Ab0JLHt1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 03:49:27 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:33003 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756989Ab0JLHt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 03:49:26 -0400
+Date: Tue, 12 Oct 2010 13:19:10 +0530
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
+        Nikhil Rao <ncrao@google.com>
+Subject: [PATCH v3 0/7] CFS Bandwidth Control
+Message-ID: <20101012074910.GA9893@in.ibm.com>
+Reply-To: bharata@linux.vnet.ibm.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-08 at 07:44 -0400, Jon Masters wrote:
-> On Fri, 2010-10-08 at 02:58 -0400, Jon Masters wrote:
-> 
-> > I tried building the new brcm80211 driver from staging-next on Fedora rawhide
-> > kernel 2.6.36-0.34.rc6.git3.fc15.x86_64. Now, of course, it's not the
-> > staging-next kernel (I'll try that now this doesn't work) but perhaps this
-> > report will still be of use to the Broadcom/other wireless folks.
-> 
-> I pulled the latest staging-next onto Linus' latest git tree and still
-> experience problems with the driver. It seems that the first attempt to
-> actually transmit results in the system locking hard. Once again, I am
-> attaching the output from running a netconsole (due to the box I'm on,
-> it's an attachment this time, sorry about that - don't trust evolution)
-> where the trace is basically the same as the original trace I posted.
-> 
-> NOTE: in both cases, the driver is loaded with "msglevel=2
-> phymsglevel=2" which (although not documented) suggests to enable
-> tracing, and does certainly yield more debugging output.
+Hi,
 
-The problem may be that the driver doesn't correctly handle its logic in
-wl_up in the case that the call to wlc_up doesn't result in the value of
-wl->pub->up being TRUE. This can happen, for example if radio_disabled
-is true, but I'm sure there are other problems, too. This result is not
-properly checked in wl_up, so we can get a situation where we will later
-try to call the ops->tx function with wl down. You also don't check
-wl_up return codes in general, for example in wlc_radio_enable.
+Its been a while since we posted CPS hard limits (aka CFS bandwidth control
+now) patches, hence a quick recap first:
 
-This might all be related to the rfkill and other soft switch stuff I'm
-not really super up to date on. This laptop doesn't have a hardware
-switch that I'm aware of, but I assume the state is somehow recorded in
-software (by the BIOS?) and perhaps this is how rfkill is supposed to
-work (I'll go look this up). Anyway, if I can figure out how to get the
-radio to work and hack up the driver to start with the device down,
-perhaps it'll not try to transmit and not fall over :)
+- I have been working on CFS hard limits since last year and have posted
+  a few versions of the same (last post: http://lkml.org/lkml/2010/1/5/44)
+- Paul Turner and Nikhil Rao meanwhile started working on CFS bandwidth
+  control and have posted a couple of versions.
+  (last post v2: http://lwn.net/Articles/385055/)
 
-Keep you posted.
+Paul's approach mainly changed the way the CPU hard limit was represented. After
+his post, I decided to work with them and discontinue my patch series since
+their global bandwidth specification for group appears more flexible than
+the RT-type per-cpu bandwidth specification I had in my series.
 
-Jon.
+Since Paul seems to be busy, I am taking the freedom of posting the next
+version of his patches with a few enhancements to the slack time handling.
+(more on this later)
 
+Main changes in this post:
 
+- Return the unused and remaining local quota at each CPU to the global
+  runtime pool.
+- A few fixes:
+	- Explicitly wake up the idle cpu during unthrottle.
+	- Optimally handle throttling of current task within enqueue_task.
+	- Fix compilation break with CONFIG_PREEMPT on.
+	- Fix a compilation break at intermediate patch level.
+- Applies on 2.6.36-rc7.
+
+More about slack time issue
+---------------------------
+Bandwidth available to a group is specified by two parameters: cpu.cfs_quota_us
+and cpu.cfs_period_us. cpu.cfs_quota_us is the max CPU time a group can
+consume within the time period of cpu.cfs_period_us. The quota available
+to a group within a period is maintained in a per-group global pool. In each
+CPU, the consumption happens by obtaining a slice of this global pool.
+
+If the local quota (obtained as slices of global pool) isn't fully consumed
+within a given period, a group can potentially get more CPU time than
+its allowed for in the next interval. This is due to the slack time that may
+be left over from the previous interval. More details about how this is fixed
+is present in the description part of patch 7/7. Here I will only show the
+benefit of handling the slack time correctly through this experiment:
+
+On a 16 CPU system, two different kinds of tasks were run as part of a group
+which had quota/bandwidth as 500000/500000 [=> 500ms/500ms], which means that
+the group was capped at 1CPU worth of time every period.
+
+Type A task: Complete CPU hog.
+Type B task: Sleeps for 500ms and runs as CPU hog for next 500ms. And this cycle
+		repeats.
+
+1 task of type A and 15 tasks of type B were run for 20s, each bound to a
+different CPU. At the end of 20s, the CPU time obtained by each of them
+looked like this:
+
+-----------------------------------------------------------------------
+			Without returning	Returning slack time
+			slack time to global	to global pool
+			pool			(with patch 7/7)
+-----------------------------------------------------------------------
+1 type A task		7.96s			10.71s
+15 type B tasks		12.36s			9.79s
+-----------------------------------------------------------------------
+
+This shows the effects of slack time and the benefit of handling it correctly.
+
+I request the scheduler maintainers and others for comments on these patches.
+
+Regards,
+Bharata.
