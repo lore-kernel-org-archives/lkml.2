@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751274Ab0JLVYb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 17:24:31 -0400
-Received: from mms1.broadcom.com ([216.31.210.17]:4103 "EHLO mms1.broadcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750808Ab0JLVY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 17:24:29 -0400
-X-Server-Uuid: 02CED230-5797-4B57-9875-D5D2FEE4708A
-Date: Tue, 12 Oct 2010 14:17:26 -0700
-From: "Henry Ptasinski" <henryp@broadcom.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-cc: "Suraj Sumangala" <Suraj.Sumangala@atheros.com>,
-        "Luis Rodriguez" <Luis.Rodriguez@atheros.com>,
-        "David Woodhouse" <dwmw2@infradead.org>,
-        "Marcel Holtmann" <marcel@holtmann.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>,
-        "Henry Ptasinski" <henryp@broadcom.com>
-Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or
- replace ath3k-1.fw ?
-Message-ID: <20101012211726.GE2678@broadcom.com>
-References: <20101008170258.GJ10149@tux> <4CAF5488.3030706@Atheros.com>
- <20101008181508.GM10149@tux>
+	id S1751363Ab0JLVYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 17:24:48 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:1053 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751313Ab0JLVYq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 17:24:46 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp04.nvidia.com on Tue, 12 Oct 2010 14:24:40 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: "mike@compulab.co.il" <mike@compulab.co.il>,
+        "axel.lin@gmail.com" <axel.lin@gmail.com>,
+        Gary King <GKing@nvidia.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrew Chew <AChew@nvidia.com>, "'Greg KH'" <greg@kroah.com>
+Date: Tue, 12 Oct 2010 14:24:34 -0700
+Subject: [PATCH 1/1] mfd: Add TPS658621C device ID
+Thread-Topic: [PATCH 1/1] mfd: Add TPS658621C device ID
+Thread-Index: Actk3UDgBd5pV4gwRBKGh9ma2fPxYQFdlBpg
+Message-ID: <643E69AA4436674C8F39DCC2C05F763816BB82897A@HQMAIL03.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20101008181508.GM10149@tux>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-WSS-ID: 60AA0FED47822993520-01-01
-Content-Type: text/plain;
- charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 08, 2010 at 11:15:08AM -0700, Luis R. Rodriguez wrote:
-> On Fri, Oct 08, 2010 at 10:27:36AM -0700, Suraj Sumangala wrote:
-> > Marcel had answered me before. It makes sense to have same file name.
-> > Other ways we end up changing the driver whenever there is a firmware 
-> > change.
-> 
-> > > I last tried to document a thread we had over this here:
-> > >
-> > > http://wireless.kernel.org/en/developers/Documentation/firmware-versioning
-> > >
-> 
-> Thanks, I've updated that link above to document bug fixing does not require
-> a filename change.
+Sending again.  Can someone review for commit?
 
-I don't really understand why you would not want to change the code revision
-part of the filename.  
+This is a really simple change that adds a new valid device ID for the existing tps6586x PMU driver.
 
-I totally agree that you don't want to change the driver every time the
-firmware gets a bug fix, but wasn't that the whole point of splitting the name
-into API and code revisions portions, and symlinking the file to one that just
-has the API version?
+The interface for this device should be identical to that of the
+TPS658521A.
 
-What's the issue with using the process as originally documented?
+Signed-off-by: Andrew Chew <achew@nvidia.com>
+---
+ drivers/mfd/tps6586x.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-- Henry
-
+diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
+index 117eb7c..b4931ab 100644
+--- a/drivers/mfd/tps6586x.c
++++ b/drivers/mfd/tps6586x.c
+@@ -47,6 +47,7 @@
+ /* device id */
+ #define TPS6586X_VERSIONCRC	0xcd
+ #define TPS658621A_VERSIONCRC	0x15
++#define TPS658621C_VERSIONCRC	0x2c
+ 
+ struct tps6586x_irq_data {
+ 	u8	mask_reg;
+@@ -497,7 +498,8 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
+ 		return -EIO;
+ 	}
+ 
+-	if (ret != TPS658621A_VERSIONCRC) {
++	if ((ret != TPS658621A_VERSIONCRC) &&
++	    (ret != TPS658621C_VERSIONCRC)) {
+ 		dev_err(&client->dev, "Unsupported chip ID: %x\n", ret);
+ 		return -ENODEV;
+ 	}
+-- 
+1.7.0.4
 
