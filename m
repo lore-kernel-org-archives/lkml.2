@@ -1,75 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751859Ab0JLWR1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 18:17:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20800 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751773Ab0JLWRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 18:17:24 -0400
-Date: Tue, 12 Oct 2010 18:17:17 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Alok Kataria <akataria@vmware.com>,
-        "kexec@lists.infradead.org" <kexec@lists.infradead.org>,
-        Haren Myneni <hbabu@us.ibm.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Daniel Hecht <dhecht@vmware.com>,
-        jeremy@xensource.com
-Subject: Re: [RFC PATCH] Bug during kexec...not all cpus are stopped
-Message-ID: <20101012221717.GA27478@redhat.com>
-References: <1286570087.8769.27.camel@ank32.eng.vmware.com>
- <1286816964.1372.2.camel@ank32.eng.vmware.com>
- <m1lj64ppri.fsf@fess.ebiederm.org>
- <1286826083.1372.15.camel@ank32.eng.vmware.com>
- <20101011213901.GR12743@redhat.com>
- <m1hbgs5qkc.fsf@fess.ebiederm.org>
+	id S1751904Ab0JLWZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 18:25:29 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:46174 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751401Ab0JLWZ2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 18:25:28 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Wed, 13 Oct 2010 00:25:13 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [PATCH unfinished update] firewire: sbp2: parallelize
+ login/inquiry, reconnect, and shutdown
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>
+In-Reply-To: <tkrat.6dd361dadace9a41@s5r6.in-berlin.de>
+Message-ID: <tkrat.b190ad8b687a549a@s5r6.in-berlin.de>
+References: <tkrat.06dc43b96f9ab9bf@s5r6.in-berlin.de>
+ <tkrat.1433473bc081daa9@s5r6.in-berlin.de>
+ <tkrat.6dd361dadace9a41@s5r6.in-berlin.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hbgs5qkc.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 03:10:11PM -0700, Eric W. Biederman wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > On Mon, Oct 11, 2010 at 12:41:23PM -0700, Alok Kataria wrote:
-> 
-> > I don't think that kdump path uses smp_send_stop().
-> 
-> It doesn't.
-> 
-> > IIUC, on x86, we directly send NMI to other cpus.
-> >
-> > native_machine_crash_shutdown()
-> >   kdump_nmi_shootdown_cpus()
-> >         nmi_shootdown_cpus()
-> >            smp_send_nmi_allbutself
-> >                 apic->send_IPI_allbutself(NMI_VECTOR);
-> >
-> > So above description should be limited to only panic() path.
-> 
-> Is it actually confusing?  With respect to documenting the line
-> of thinking it seems reasonable.
-> 
+> So I changed the patch to the simple one below, but suddenly my
+> INIC-2430 device has trouble with inquiry in parallel to its two LUNs:
 
-No, just wanted to point out that let us modify the changelog to remove
-keyword "kdump" from it. 
+The following modification fixes this mostly, i.e. always when the first
+Inquiry attempt to one LUN fails but succeeds on the other.  But I had
+one occasion just now at which both failed; then that reschedule does
+simply lead into the same situation until retry limit.
 
-> > On a side note, I am wondering why panic() and kdump path can't share the
-> > shutdown routine.
-> 
-> Hysterical raisins.  Andi's change to smp_send_stop says that NMIs not
-> working on some boxes.  When someone wants to weed through all of the
-> insanity it would probably be good to get the panic and the kdump paths
-> sharing code.  For now simply separating panic and reboot should be
-> enough, and it lets the code evolve where it needs to.
-> 
+> Maybe I need ordered per-target workqueues.
 
-Ok. Agreed that atleast conceptually kdump and panic() path should share
-the code. But that's a different problem altogether and this patch can go in.
+No, I actually need per-node ordering.  This device, like my other one
+and apparently most ones on the market actually keep their SCSI logical
+units in separate FireWire units.  Currently firewire-sbp2 is not aware
+that fw_unit instances reside on the same node.
 
-Thanks
-Vivek
+This is going to be tougher than I hoped.  Maybe I need a driver-global
+Inquiry mutex.  Or move the __scsi_add_device() out of sbp2_login() into
+another work which is scheduled to a "single-threaded" workqueue.
+
+--- a/drivers/firewire/sbp2.c
++++ b/drivers/firewire/sbp2.c
+@@ -982,6 +982,8 @@ static void sbp2_login(struct work_struc
+ 	 * lu->work already.  Reset the work from reconnect to login.
+ 	 */
+ 	PREPARE_DELAYED_WORK(&lu->work, sbp2_login);
++	if (lu->retries++ < 5)
++		sbp2_queue_work(lu, DIV_ROUND_UP(HZ, 5));
+  out:
+ 	sbp2_target_put(tgt);
+ }
+@@ -1656,7 +1658,8 @@ MODULE_ALIAS("sbp2");
+ 
+ static int __init sbp2_init(void)
+ {
+-	sbp2_wq = create_singlethread_workqueue(KBUILD_MODNAME);
++	sbp2_wq = alloc_workqueue(KBUILD_MODNAME,
++				  WQ_NON_REENTRANT | WQ_RESCUER, 0);
+ 	if (!sbp2_wq)
+ 		return -ENOMEM;
+ 
+-- 
+Stefan Richter
+-=====-==-=- =-=- -==-=
+http://arcgraph.de/sr/
+
