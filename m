@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab0JLLJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 07:09:17 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37077 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757243Ab0JLLJN convert rfc822-to-8bit (ORCPT
+	id S932236Ab0JLLTK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 07:19:10 -0400
+Received: from lider.pardus.org.tr ([193.140.100.216]:40761 "EHLO
+	lider.pardus.org.tr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932215Ab0JLLTI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 07:09:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=lw+pQzmwAbFxjBM4saJVJ9f5ei48tds7n8E6rbX4eAZ39drTyk0+O/yP08Jr32mymA
-         6KKihpgiwxdt4nCtdanmpddMIGJELblVtg5tF14UrcNycAA0i4mwqfm3vwXE7IcCqIs0
-         vnaG5P3NwH7ydESL/L68bHFmZoeEAVBG1UUkA=
+	Tue, 12 Oct 2010 07:19:08 -0400
+X-Greylist: delayed 442 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 07:19:08 EDT
+From: Ozan =?utf-8?q?=C3=87a=C4=9Flayan?= <ozan@pardus.org.tr>
+Organization: TUBITAK/UEKAE
+To: James Morris <jmorris@namei.org>
+Subject: Re: [PATCH] security: move LSM xattrnames to xattr.h
+Date: Tue, 12 Oct 2010 14:14:14 +0300
+User-Agent: KMail/1.13.5 (Linux/2.6.31.13-131-pae; KDE/4.4.5; i686; ; )
+Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Casey Schaufler <casey@schaufler-ca.com>,
+        David Safford <safford@watson.ibm.com>,
+        Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+References: <1278011263-7951-1-git-send-email-zohar@linux.vnet.ibm.com> <alpine.LRH.2.00.1007021015490.2400@tundra.namei.org>
+In-Reply-To: <alpine.LRH.2.00.1007021015490.2400@tundra.namei.org>
 MIME-Version: 1.0
-In-Reply-To: <496565EC904933469F292DDA3F1663E602F47B2BF1@dlee06.ent.ti.com>
-References: <1286226137-1233-1-git-send-email-x0095840@ti.com>
-	<1286226137-1233-2-git-send-email-x0095840@ti.com>
-	<1286226137-1233-3-git-send-email-x0095840@ti.com>
-	<AANLkTimF5HqA0pbp7NXOXxOcuMMJWp9yuJPsw8-iPKjh@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F47B2BF1@dlee06.ent.ti.com>
-Date: Tue, 12 Oct 2010 14:09:10 +0300
-Message-ID: <AANLkTinVzO_B0L09bOG0aWTsQjaXgLeggB+YUgEhL2Sa@mail.gmail.com>
-Subject: Re: [PATCHv2 2/3] iovmm: add superpages support to fixed da address
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Cc: "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "david.cohen@nokia.com" <david.cohen@nokia.com>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201010121414.14486.ozan@pardus.org.tr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 6:33 PM, Guzman Lugo, Fernando
-<fernando.lugo@ti.com> wrote:
->> > @@ -420,7 +431,8 @@ static void sgtable_fill_kmalloc(struct
->> sg_table
->> > *sgt, u32 pa, size_t len)
->> >        for_each_sg(sgt->sgl, sg, sgt->nents, i) {
->> >                size_t bytes;
->> >
->> > -               bytes = iopgsz_max(len);
->> > +               bytes = max_alignment(da | pa);
->> > +               bytes = min(bytes, (size_t)iopgsz_max(len));
->>
->> Why the size_t casting?
->
-> To void this warning:
-> arch/arm/plat-omap/iovmm.c:440: warning: comparison of distinct pointer types lacks a cast
+Cuma 02 Temmuz 2010 günü (saat 03:16:01) James Morris şunları yazmıştı:
+> On Thu, 1 Jul 2010, Mimi Zohar wrote:
+> > Make the security extended attributes names global. Updated to move
+> > the remaining Smack xattrs.
+> > 
+> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+> > Acked-by: Serge Hallyn <serue@us.ibm.com>
+> 
 
-But how is that possible? iopgsz_max is returning constants, like
-SZ_1M, so they should not need casts, if anything, the cast should be
-done in iopgsz_max itself.
+This drops 
 
--- 
-Felipe Contreras
+#define XATTR_CAPS_SUFFIX "capability"
+#define XATTR_NAME_CAPS XATTR_SECURITY_PREFIX XATTR_CAPS_SUFFIX
+
+definitions from capability.h and puts them in xattr.h's #ifdef __KERNEL__ 
+section making them invisible to userspace like libcap-ng causing build 
+failures.
+
+Am I wrong?
+
+
+---
+Ozan Çağlayan
+TUBITAK/UEKAE - Pardus Linux
+http://www.pardus.org.tr/eng
