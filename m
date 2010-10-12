@@ -1,110 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757069Ab0JLIuQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 04:50:16 -0400
-Received: from www.tglx.de ([62.245.132.106]:57664 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab0JLIuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 04:50:15 -0400
-Date: Tue, 12 Oct 2010 10:49:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Salman Qazi <sqazi@google.com>
-cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix a complex race in hrtimer code.
-In-Reply-To: <20101012000159.7091.84336.stgit@dungbeetle.mtv.corp.google.com>
-Message-ID: <alpine.LFD.2.00.1010121046060.2909@localhost6.localdomain6>
-References: <20101012000159.7091.84336.stgit@dungbeetle.mtv.corp.google.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756970Ab0JLJRy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 05:17:54 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:53047 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756621Ab0JLJRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 05:17:52 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6133"; a="57570888"
+Message-ID: <ebd4fd160630977be43d374147f5a7bf.squirrel@www.codeaurora.org>
+In-Reply-To: <1286766418.2008.230.camel@helium>
+References: <1286092937-29191-1-git-send-email-tlinder@codeaurora.org>
+    <20101004072602.GB2256@xanatos>
+    <0daac081a669f0cc8e024644f223c0c2.squirrel@www.codeaurora.org>
+    <20101005181126.GB7383@xanatos>
+    <207c0a821ef60e21a605f0b45c2d3777.squirrel@www.codeaurora.org>
+    <1286766418.2008.230.camel@helium>
+Date: Tue, 12 Oct 2010 02:17:44 -0700 (PDT)
+Subject: Re: [RFC/PATCH 2/2] usb:gadget: Add SuperSpeed support to the  
+     Gadget Framework
+From: "Brokhman Tatyana" <tlinder@codeaurora.org>
+To: "David Brownell" <david-b@pacbell.net>
+Cc: tlinder@codeaurora.org, "Sarah Sharp" <sarah.a.sharp@linux.intel.com>,
+        linux-usb@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        "Michal Nazarewicz" <m.nazarewicz@samsung.com>,
+        "Randy Dunlap" <randy.dunlap@oracle.com>,
+        "Laurent Pinchart" <laurent.pinchart@ideasonboard.com>,
+        "Kyungmin Park" <kyungmin.park@samsung.com>,
+        "Robert Lukassen" <robert.lukassen@tomtom.com>,
+        "Matthew Wilcox" <willy@linux.intel.com>,
+        "Fabien Chouteau" <fabien.chouteau@barco.com>,
+        "Tejun Heo" <tj@kernel.org>, linux-kernel@vger.kernel.org
+Reply-To: tlinder@codeaurora.org
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 11 Oct 2010, Salman Qazi wrote:
 
-> The race is described as follows:
-> 
-> CPU X                                 CPU Y
-> remove_hrtimer
-> // state & QUEUED == 0
-> timer->state = CALLBACK
-> unlock timer base
-> timer->f(n) //very long
->                                   hrtimer_start
->                                     lock timer base
->                                     remove_hrtimer // no effect
->                                     hrtimer_enqueue
->                                     timer->state = CALLBACK |
->                                                    QUEUED
->                                     unlock timer base
->                                   hrtimer_start
->                                     lock timer base
->                                     remove_hrtimer
->                                         mode = INACTIVE
->                                         // CALLBACK bit lost!
->                                     switch_hrtimer_base
->                                             CALLBACK bit not set:
->                                                     timer->base
->                                                     changes to a
->                                                     different CPU.
-> lock this CPU's timer base
+>
+>> > Ok.  I suppose whatever gadget application is being used can reset
+>> these
+>> > values later?  So that if you had a gadget webcam, it could set the
+>> > wMaxPacketSize to the frame size or whatever it needed?
+>
+> Yes ... in fact, every altsetting or configuration may need to set up
+> each endpoint differently ... that's why ep_enable() passes full
+> endpoint configs (as descriptors), so they can more easily be changed.
+>
+> If the notion is that there are values that may need to get passed from
+> silicon to driver, I'd like to see that done explicitly, with drivers
+> updating descriptors, instead of doing anything by back-door routes
+> that make UDC drivers making hidden updates.
+>
+> - Dave
 
-Good catch.
- 
-> Bug reproducible and fix testable using a kernel module that hrtimer_start()s
-> a timer with a very long running callback from multiple CPUs:
-> 
-> MODULE_LICENSE("GPL");
-> 
-> static long timer_func_time = 1000;
-> module_param(timer_func_time, long, 0600);
-> static long timer_starts = 2500;
-> module_param(timer_starts, long, 0600);
-> static long timer_expire = 1000;
-> module_param(timer_expire, long, 0600);
-> 
-> DEFINE_PER_CPU(struct task_struct *, hrtimer_thread);
-> 
-> /* There are other issues, like deadlocks between multiple hrtimer_start observed
->  * calls, at least in 2.6.34 that this lock works around.  Will look into
->  * those later.
+This implementation creates default SuperSpeed descriptors with default
+values. It is used to spare drivers that don't want to fully exploit
+SuperSpeed functionality from handling SupperSpeed descriptors and still
+be able to operate in a SupperSpeed mode.
+Please note that the gadget driver can still provide SuperSpeed
+descriptors with correct (and not default values) if it wishes to.
+I hope I understood your comment correctly. Please let me know if this is
+not the case.
 
-Well, we don't have to work around callsites not serializing themself
-in the core code, right ?
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-usb" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-> ---
->  kernel/hrtimer.c |    7 +++++--
->  1 files changed, 5 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-> index 1decafb..57846d5 100644
-> --- a/kernel/hrtimer.c
-> +++ b/kernel/hrtimer.c
-> @@ -944,8 +944,8 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
->  		debug_deactivate(timer);
->  		timer_stats_hrtimer_clear_start_info(timer);
->  		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
-> -		__remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
-> -				 reprogram);
-> +		__remove_hrtimer(timer, base,
-> +				 (timer->state & HRTIMER_STATE_CALLBACK), reprogram);
->  		return 1;
->  	}
->  	return 0;
-> @@ -1231,6 +1231,9 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
->  		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
->  		enqueue_hrtimer(timer, base);
->  	}
-> +
-> +	WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
-> +
->  	timer->state &= ~HRTIMER_STATE_CALLBACK;
->  }
 
-Can I please get your Signed-off-by so this can be queued ?
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-Thanks,
 
-	tglx
- 
