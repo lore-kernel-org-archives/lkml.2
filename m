@@ -1,102 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755064Ab0JLAYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 11 Oct 2010 20:24:20 -0400
-Received: from fieldses.org ([174.143.236.118]:33734 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754036Ab0JLAYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 11 Oct 2010 20:24:19 -0400
-Date: Mon, 11 Oct 2010 20:24:09 -0400
-From: "J. Bruce Fields" <bfields@citi.umich.edu>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, agruen@suse.de, adilger@sun.com,
-        sandeen@redhat.com, tytso@mit.edu, jlayton@redhat.com,
-        linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V4 00/11]  New ACL format for better NFSv4 acl
- interoperability
-Message-ID: <20101012002409.GH16442@fieldses.org>
-References: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	id S1755342Ab0JLAZh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 11 Oct 2010 20:25:37 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:29712 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754132Ab0JLAZf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 11 Oct 2010 20:25:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:references:date:in-reply-to:message-id:
+	user-agent:mime-version:content-type;
+	b=oLpNTeSe63P7rFKUY12AsLnBAOpfiZbMpt7M1exHbGPSKjFGkpwIZSrGqbO9apwPM
+	c/pi9nTC2rNq5DaHqs1TQ==
+From: Greg Thelen <gthelen@google.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrea Righi <arighi@develer.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 07/10] memcg: add dirty limits to mem_cgroup
+References: <1286175485-30643-1-git-send-email-gthelen@google.com>
+	<1286175485-30643-8-git-send-email-gthelen@google.com>
+	<20101005094302.GA4314@linux.develer.com>
+	<xr93eic4wjlq.fsf@ninji.mtv.corp.google.com>
+	<20101007091343.82ca9f7d.kamezawa.hiroyu@jp.fujitsu.com>
+	<xr937hhuj19a.fsf@ninji.mtv.corp.google.com>
+	<20101007094845.9e6a1b0f.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 11 Oct 2010 17:24:21 -0700
+In-Reply-To: <20101007094845.9e6a1b0f.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Thu, 7 Oct 2010 09:48:45 +0900")
+Message-ID: <xr93bp70febu.fsf@ninji.mtv.corp.google.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1285332494-12756-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Sep 24, 2010 at 06:18:03PM +0530, Aneesh Kumar K.V wrote:
-> 
-> Hi,
-> 
-> The following set of patches implements VFS changes needed to implement
-> a new acl model for linux. Rich ACLs are an implementation of NFSv4 ACLs,
-> extended by file masks to fit into the standard POSIX file permission model.
-> They are designed to work seamlessly locally as well as across the NFSv4 and
-> CIFS/SMB2 network file system protocols.
-> 
-> The patch set consists of four parts:
-> 
-> The first set of patches, posted as a follow up, contains VFS changes needed
-> to implement the Rich ACL model. The second set [1] contains the Rich ACL model
-> and Ext4 implementation. The third set [2] contains mapping of Rich ACL to
-> NFSv4 ACL (how to apply file mask to access mask) and implementation of
-> Richacl ACL for NFS server and client.
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-That's the part I'd like to review carefully and haven't yet.
+> On Wed, 06 Oct 2010 17:27:13 -0700
+> Greg Thelen <gthelen@google.com> wrote:
+>
+>> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
+>> 
+>> > On Tue, 05 Oct 2010 12:00:17 -0700
+>> > Greg Thelen <gthelen@google.com> wrote:
+>> >
+>> >> Andrea Righi <arighi@develer.com> writes:
+>> >> 
+>> >> > On Sun, Oct 03, 2010 at 11:58:02PM -0700, Greg Thelen wrote:
+>> >> >> Extend mem_cgroup to contain dirty page limits.  Also add routines
+>> >> >> allowing the kernel to query the dirty usage of a memcg.
+>> >> >> 
+>> >> >> These interfaces not used by the kernel yet.  A subsequent commit
+>> >> >> will add kernel calls to utilize these new routines.
+>> >> >
+>> >> > A small note below.
+>> >> >
+>> >> >> 
+>> >> >> Signed-off-by: Greg Thelen <gthelen@google.com>
+>> >> >> Signed-off-by: Andrea Righi <arighi@develer.com>
+>> >> >> ---
+>> >> >>  include/linux/memcontrol.h |   44 +++++++++++
+>> >> >>  mm/memcontrol.c            |  180 +++++++++++++++++++++++++++++++++++++++++++-
+>> >> >>  2 files changed, 223 insertions(+), 1 deletions(-)
+>> >> >> 
+>> >> >> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+>> >> >> index 6303da1..dc8952d 100644
+>> >> >> --- a/include/linux/memcontrol.h
+>> >> >> +++ b/include/linux/memcontrol.h
+>> >> >> @@ -19,6 +19,7 @@
+>> >> >>  
+>> >> >>  #ifndef _LINUX_MEMCONTROL_H
+>> >> >>  #define _LINUX_MEMCONTROL_H
+>> >> >> +#include <linux/writeback.h>
+>> >> >>  #include <linux/cgroup.h>
+>> >> >>  struct mem_cgroup;
+>> >> >>  struct page_cgroup;
+>> >> >> @@ -33,6 +34,30 @@ enum mem_cgroup_write_page_stat_item {
+>> >> >>  	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
+>> >> >>  };
+>> >> >>  
+>> >> >> +/* Cgroup memory statistics items exported to the kernel */
+>> >> >> +enum mem_cgroup_read_page_stat_item {
+>> >> >> +	MEMCG_NR_DIRTYABLE_PAGES,
+>> >> >> +	MEMCG_NR_RECLAIM_PAGES,
+>> >> >> +	MEMCG_NR_WRITEBACK,
+>> >> >> +	MEMCG_NR_DIRTY_WRITEBACK_PAGES,
+>> >> >> +};
+>> >> >> +
+>> >> >> +/* Dirty memory parameters */
+>> >> >> +struct vm_dirty_param {
+>> >> >> +	int dirty_ratio;
+>> >> >> +	int dirty_background_ratio;
+>> >> >> +	unsigned long dirty_bytes;
+>> >> >> +	unsigned long dirty_background_bytes;
+>> >> >> +};
+>> >> >> +
+>> >> >> +static inline void get_global_vm_dirty_param(struct vm_dirty_param *param)
+>> >> >> +{
+>> >> >> +	param->dirty_ratio = vm_dirty_ratio;
+>> >> >> +	param->dirty_bytes = vm_dirty_bytes;
+>> >> >> +	param->dirty_background_ratio = dirty_background_ratio;
+>> >> >> +	param->dirty_background_bytes = dirty_background_bytes;
+>> >> >> +}
+>> >> >> +
+>> >> >>  extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>> >> >>  					struct list_head *dst,
+>> >> >>  					unsigned long *scanned, int order,
+>> >> >> @@ -145,6 +170,10 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+>> >> >>  	mem_cgroup_update_page_stat(page, idx, -1);
+>> >> >>  }
+>> >> >>  
+>> >> >> +bool mem_cgroup_has_dirty_limit(void);
+>> >> >> +void get_vm_dirty_param(struct vm_dirty_param *param);
+>> >> >> +s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item);
+>> >> >> +
+>> >> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>> >> >>  						gfp_t gfp_mask);
+>> >> >>  u64 mem_cgroup_get_limit(struct mem_cgroup *mem);
+>> >> >> @@ -326,6 +355,21 @@ static inline void mem_cgroup_dec_page_stat(struct page *page,
+>> >> >>  {
+>> >> >>  }
+>> >> >>  
+>> >> >> +static inline bool mem_cgroup_has_dirty_limit(void)
+>> >> >> +{
+>> >> >> +	return false;
+>> >> >> +}
+>> >> >> +
+>> >> >> +static inline void get_vm_dirty_param(struct vm_dirty_param *param)
+>> >> >> +{
+>> >> >> +	get_global_vm_dirty_param(param);
+>> >> >> +}
+>> >> >> +
+>> >> >> +static inline s64 mem_cgroup_page_stat(enum mem_cgroup_read_page_stat_item item)
+>> >> >> +{
+>> >> >> +	return -ENOSYS;
+>> >> >> +}
+>> >> >> +
+>> >> >>  static inline
+>> >> >>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>> >> >>  					    gfp_t gfp_mask)
+>> >> >> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+>> >> >> index f40839f..6ec2625 100644
+>> >> >> --- a/mm/memcontrol.c
+>> >> >> +++ b/mm/memcontrol.c
+>> >> >> @@ -233,6 +233,10 @@ struct mem_cgroup {
+>> >> >>  	atomic_t	refcnt;
+>> >> >>  
+>> >> >>  	unsigned int	swappiness;
+>> >> >> +
+>> >> >> +	/* control memory cgroup dirty pages */
+>> >> >> +	struct vm_dirty_param dirty_param;
+>> >> >> +
+>> >> >>  	/* OOM-Killer disable */
+>> >> >>  	int		oom_kill_disable;
+>> >> >>  
+>> >> >> @@ -1132,6 +1136,172 @@ static unsigned int get_swappiness(struct mem_cgroup *memcg)
+>> >> >>  	return swappiness;
+>> >> >>  }
+>> >> >>  
+>> >> >> +/*
+>> >> >> + * Returns a snapshot of the current dirty limits which is not synchronized with
+>> >> >> + * the routines that change the dirty limits.  If this routine races with an
+>> >> >> + * update to the dirty bytes/ratio value, then the caller must handle the case
+>> >> >> + * where both dirty_[background_]_ratio and _bytes are set.
+>> >> >> + */
+>> >> >> +static void __mem_cgroup_get_dirty_param(struct vm_dirty_param *param,
+>> >> >> +					 struct mem_cgroup *mem)
+>> >> >> +{
+>> >> >> +	if (mem && !mem_cgroup_is_root(mem)) {
+>> >> >> +		param->dirty_ratio = mem->dirty_param.dirty_ratio;
+>> >> >> +		param->dirty_bytes = mem->dirty_param.dirty_bytes;
+>> >> >> +		param->dirty_background_ratio =
+>> >> >> +			mem->dirty_param.dirty_background_ratio;
+>> >> >> +		param->dirty_background_bytes =
+>> >> >> +			mem->dirty_param.dirty_background_bytes;
+>> >> >> +	} else {
+>> >> >> +		get_global_vm_dirty_param(param);
+>> >> >> +	}
+>> >> >> +}
+>> >> >> +
+>> >> >> +/*
+>> >> >> + * Get dirty memory parameters of the current memcg or global values (if memory
+>> >> >> + * cgroups are disabled or querying the root cgroup).
+>> >> >> + */
+>> >> >> +void get_vm_dirty_param(struct vm_dirty_param *param)
+>> >> >> +{
+>> >> >> +	struct mem_cgroup *memcg;
+>> >> >> +
+>> >> >> +	if (mem_cgroup_disabled()) {
+>> >> >> +		get_global_vm_dirty_param(param);
+>> >> >> +		return;
+>> >> >> +	}
+>> >> >> +
+>> >> >> +	/*
+>> >> >> +	 * It's possible that "current" may be moved to other cgroup while we
+>> >> >> +	 * access cgroup. But precise check is meaningless because the task can
+>> >> >> +	 * be moved after our access and writeback tends to take long time.  At
+>> >> >> +	 * least, "memcg" will not be freed under rcu_read_lock().
+>> >> >> +	 */
+>> >> >> +	rcu_read_lock();
+>> >> >> +	memcg = mem_cgroup_from_task(current);
+>> >> >> +	__mem_cgroup_get_dirty_param(param, memcg);
+>> >> >> +	rcu_read_unlock();
+>> >> >> +}
+>> >> >> +
+>> >> >> +/*
+>> >> >> + * Check if current memcg has local dirty limits.  Return true if the current
+>> >> >> + * memory cgroup has local dirty memory settings.
+>> >> >> + */
+>> >> >> +bool mem_cgroup_has_dirty_limit(void)
+>> >> >> +{
+>> >> >> +	struct mem_cgroup *mem;
+>> >> >> +
+>> >> >> +	if (mem_cgroup_disabled())
+>> >> >> +		return false;
+>> >> >> +
+>> >> >> +	mem = mem_cgroup_from_task(current);
+>> >> >> +	return mem && !mem_cgroup_is_root(mem);
+>> >> >> +}
+>> >> >
+>> >> > We only check the pointer without dereferencing it, so this is probably
+>> >> > ok, but maybe this is safer:
+>> >> >
+>> >> > bool mem_cgroup_has_dirty_limit(void)
+>> >> > {
+>> >> > 	struct mem_cgroup *mem;
+>> >> > 	bool ret;
+>> >> >
+>> >> > 	if (mem_cgroup_disabled())
+>> >> > 		return false;
+>> >> >
+>> >> > 	rcu_read_lock();
+>> >> > 	mem = mem_cgroup_from_task(current);
+>> >> > 	ret = mem && !mem_cgroup_is_root(mem);
+>> >> > 	rcu_read_unlock();
+>> >> >
+>> >> > 	return ret;
+>> >> > }
+>> >> >
+>> >> > rcu_read_lock() should be held in mem_cgroup_from_task(), otherwise
+>> >> > lockdep could detect this as an error.
+>> >> >
+>> >> > Thanks,
+>> >> > -Andrea
+>> >> 
+>> >> Good suggestion.  I agree that lockdep might catch this.  There are some
+>> >> unrelated debug_locks failures (even without my patches) that I worked
+>> >> around to get lockdep to complain about this one.  I applied your
+>> >> suggested fix and lockdep was happy.  I will incorporate this fix into
+>> >> the next revision of the patch series.
+>> >> 
+>> >
+>> > Hmm, considering other parts, shouldn't we define mem_cgroup_from_task
+>> > as macro ?
+>> >
+>> > Thanks,
+>> > -Kame
+>> 
+>> Is your motivation to increase performance with the same functionality?
+>> If so, then would a 'static inline' be performance equivalent to a
+>> preprocessor macro yet be safer to use?
+>> 
+> Ah, if lockdep finds this as bug, I think other parts will hit this,
+> too.  like this.
+>> static struct mem_cgroup *try_get_mem_cgroup_from_mm(struct mm_struct *mm)
+>> {
+>>         struct mem_cgroup *mem = NULL;
+>> 
+>>         if (!mm)
+>>                 return NULL;
+>>         /*
+>>          * Because we have no locks, mm->owner's may be being moved to other
+>>          * cgroup. We use css_tryget() here even if this looks
+>>          * pessimistic (rather than adding locks here).
+>>          */
+>>         rcu_read_lock();
+>>         do {
+>>                 mem = mem_cgroup_from_task(rcu_dereference(mm->owner));
+>>                 if (unlikely(!mem))
+>>                         break;
+>>         } while (!css_tryget(&mem->css));
+>>         rcu_read_unlock();
+>>         return mem;
+>> }
 
-> The fourth set [3] contains POSIX ACL
-> to Rich ACL mapping and its ext4 usage.
+mem_cgroup_from_task() calls task_subsys_state() calls
+task_subsys_state_check().  task_subsys_state_check() will be happy if
+rcu_read_lock is held.
 
-The one thing I remember not liking before was a flag that told the user
-whether a given ACL was originally mapped from POSIX or not.  Is that
-still there?
+I don't think that this will fail lockdep, because rcu_read_lock_held()
+is true when calling mem_cgroup_from_task() within
+try_get_mem_cgroup_from_mm()..
 
-Overall I'm for doing this: I don't like NFSv4/Windows ACLs more than
-anyone else, but they're too useful to ignore, and the mapping that
-Samba and the NFSv4 server try to do is painful for users.
+> mem_cgroup_from_task() is designed to be used as this.
+> If dqefined as macro, I think it will not be catched.
 
---b.
+I do not understand how making mem_cgroup_from_task() a macro will
+change its behavior wrt. to lockdep assertion checking.  I assume that
+as a macro mem_cgroup_from_task() would still call task_subsys_state(),
+which requires either:
+a) rcu read lock held
+b) task->alloc_lock held
+c) cgroup lock held
 
-> 
-> [1] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-minimal
-> [2] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-upstream
-> [3] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/linux-2.6-richacl.git richacl-fullset
-> 
-> A user-space utility for displaying and changing richacls is available at [4]
-> (a number of examples can be found at http://acl.bestbits.at/richacl/examples.html).
-> 
-> [4] git://git.kernel.org/pub/scm/linux/kernel/git/agruen/richacl.git master
-> 
-> To test richacl on ext4 use -o richacl mount option. This mount option may later be
-> dropped in favour of a feature flag.
-> 
-> More details regarding richacl can be found at 
-> http://acl.bestbits.at/richacl/
-> 
-> Changes from V3:
-> a) Droped may_delete and may_create inode operations callback and reworked
->    the patch series to use additional check flags. 
-> b) Rebased to the latest kernel
-> c) The patch series now contain only the minimal VFS changes.
-> 
-> Changes from V2:
-> 1) Git repo include check-acl branch that drop newly added inode_operations
->    callback in favour for additional access check flags (MAY_CREATE_FILE,
->    MAY_CREATE_DIR, MAY_DELETE_CHILD, MAY_DELETE_SELF, MAY_TAKE_OWNERSHIP,
->    MAY_CHMOD, and MAY_SET_TIMES)
-> 2) richacl is now cached in the vfs inode instead of file system inode.
->    (currently kept as a separate patch. We may want to fold that later)
-> 3) Added a new acl flag ACL4_MASKED. richacl_apply_masks() can skip transforming acls
->    without this flag, which speeds things up and avoids modifying those acls unnecessarily.
-> 4) Owner always allowed permissions are now explicitly included when synthesizing an acl
->    from file mode.
-> 
-> Changes from V1:
-> 1) Split the patches into smaller patches
-> 2) Added extensive documentation to the patches.
-> 
-> -aneesh
-> 
-> 
+
+>> Maybe it makes more sense to find a way to perform this check in
+>> mem_cgroup_has_dirty_limit() without needing to grab the rcu lock.  I
+>> think this lock grab is unneeded.  I am still collecting performance
+>> data, but suspect that this may be making the code slower than it needs
+>> to be.
+>> 
+>
+> Hmm. css_set[] itself is freed by RCU..what idea to remove rcu_read_lock() do
+> you have ? Adding some flags ?
+
+It seems like a shame to need a lock to determine if current is in the
+root cgroup.  Especially given that as soon as
+mem_cgroup_has_dirty_limit() returns, the task could be moved
+in-to/out-of the root cgroup thereby invaliding the answer.  So the
+answer is just a sample that may be wrong.  But I think you are correct.
+We will need the rcu read lock in mem_cgroup_has_dirty_limit().
+
+> Ah...I noticed that you should do
+>
+>  mem = mem_cgroup_from_task(current->mm->owner);
+>
+> to check has_dirty_limit...
+
+What are the cases where current->mm->owner->cgroups !=
+current->cgroups?
+
+I was hoping to avoid having add even more logic into
+mem_cgroup_has_dirty_limit() to handle the case where current->mm is
+NULL.
+
+Presumably the newly proposed vm_dirty_param(),
+mem_cgroup_has_dirty_limit(), and mem_cgroup_page_stat() routines all
+need to use the same logic.  I assume they should all be consistently
+using current->mm->owner or current.
+
+--
+Greg
