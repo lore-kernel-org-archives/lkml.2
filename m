@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757928Ab0JLRQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:16:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48886 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757353Ab0JLRQ3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:16:29 -0400
-Message-ID: <4CB497A0.6080307@oracle.com>
-Date: Tue, 12 Oct 2010 10:15:12 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1757364Ab0JLRY6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:24:58 -0400
+Received: from mail.us.es ([193.147.175.20]:41984 "EHLO mail.us.es"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752323Ab0JLRY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 13:24:56 -0400
+Message-ID: <4CB499E3.5030305@netfilter.org>
+Date: Tue, 12 Oct 2010 19:24:51 +0200
+From: Pablo Neira Ayuso <pablo@netfilter.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100619 Icedove/3.0.5
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>, scsi <linux-scsi@vger.kernel.org>
-CC: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Jing Huang <huangj@brocade.com>
-Subject: Re: linux-next: Tree for October 12 (scsi/bfa)
-References: <20101012163552.7306165b.sfr@canb.auug.org.au> <20101012101414.045f62d5.randy.dunlap@oracle.com>
-In-Reply-To: <20101012101414.045f62d5.randy.dunlap@oracle.com>
+To: Jan Engelhardt <jengelh@medozas.de>
+CC: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        paul.moore@hp.com, jmorris@namei.org, selinux@tycho.nsa.gov,
+        sds@tycho.nsa.gov, linux-security-module@vger.kernel.org,
+        mr.dash.four@googlemail.com
+Subject: Re: [PATCH 2/5] secmark: make secmark object handling generic
+References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com> <20101012154015.26943.18385.stgit@paris.rdu.redhat.com> <alpine.LNX.2.01.1010121824540.15529@obet.zrqbmnf.qr>
+In-Reply-To: <alpine.LNX.2.01.1010121824540.15529@obet.zrqbmnf.qr>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/10 10:14, Randy Dunlap wrote:
-> On Tue, 12 Oct 2010 16:35:52 +1100 Stephen Rothwell wrote:
-> 
->> Hi all,
+On 12/10/10 18:26, Jan Engelhardt wrote:
+> On Tuesday 2010-10-12 17:40, Eric Paris wrote:
+>> diff --git a/include/linux/netfilter/xt_SECMARK.h b/include/linux/netfilter/xt_SECMARK.h
+>> index 6fcd344..989092b 100644
+>> --- a/include/linux/netfilter/xt_SECMARK.h
+>> +++ b/include/linux/netfilter/xt_SECMARK.h
+>> @@ -11,18 +11,12 @@
+>>  * packets are being marked for.
+>>  */
+>> #define SECMARK_MODE_SEL	0x01		/* SELinux */
+>> -#define SECMARK_SELCTX_MAX	256
+>> -
+>> -struct xt_secmark_target_selinux_info {
+>> -	__u32 selsid;
+>> -	char selctx[SECMARK_SELCTX_MAX];
+>> -};
+>> +#define SECMARK_SECCTX_MAX	256
 >>
->> Changes since 20101011:
+>> struct xt_secmark_target_info {
+>> 	__u8 mode;
+>> -	union {
+>> -		struct xt_secmark_target_selinux_info sel;
+>> -	} u;
+>> +	__u32 secid;
+>> +	char secctx[SECMARK_SECCTX_MAX];
+>> };
 > 
-> 
-> bfa has one function that probably uses too much stack space and a few
-> others that might be a problem.
-> 
-> With CONFIG_FRAME_WARN=1024:
-> 
-> drivers/scsi/bfa/bfad_im.c:939: warning: the frame size of 1604 bytes is larger than 1024 bytes
+> If you make changes here, bump the .revision please, in here:
 
-BTW, these are on i386 builds.
+The binary layout of this structure has not changed, it doesn't require
+to bump the revision.
 
+>> static struct xt_target secmark_tg_reg __read_mostly = {
+>> -	.name       = "SECMARK",
+>> -	.revision   = 0,
+>> -	.family     = NFPROTO_UNSPEC,
+>> -	.checkentry = secmark_tg_check,
+>> -	.destroy    = secmark_tg_destroy,
+>> -	.target     = secmark_tg,
+>> -	.targetsize = sizeof(struct xt_secmark_target_info),
+>> -	.me         = THIS_MODULE,
+>> +	.name		= "SECMARK",
+>> +	.revision	= 0,
+>> +	.family		= NFPROTO_UNSPEC,
+>> +	.checkentry	= secmark_tg_check,
+>> +	.destroy	= secmark_tg_destroy,
+>> +	.target		= secmark_tg,
+>> +	.targetsize	= sizeof(struct xt_secmark_target_info),
+>> +	.me		= THIS_MODULE,
+>> };
 
-> and with CONFIG_FRAME_WARN=512:
-> 
-> 
-> drivers/scsi/bfa/bfad.c: In function 'bfad_fcs_port_cfg':
-> drivers/scsi/bfa/bfad.c:900: warning: the frame size of 676 bytes is larger than 512 bytes
-> drivers/scsi/bfa/bfad_im.c: In function 'bfad_im_supported_speeds':
-> drivers/scsi/bfa/bfad_im.c:939: warning: the frame size of 1604 bytes is larger than 512 bytes
-> drivers/scsi/bfa/bfad_im.c: In function 'bfad_os_fc_host_init':
-> drivers/scsi/bfa/bfad_im.c:976: warning: the frame size of 736 bytes is larger than 512 bytes
-> drivers/scsi/bfa/bfa_fcs_lport.c: In function 'bfa_fcs_lport_fdmi_build_portattr_block':
-> drivers/scsi/bfa/bfa_fcs_lport.c:2010: warning: the frame size of 572 bytes is larger than 512 bytes
-> drivers/scsi/bfa/bfa_fcs_lport.c: In function 'bfa_fcs_lport_fdmi_build_rhba_pyld':
-> drivers/scsi/bfa/bfa_fcs_lport.c:1803: warning: the frame size of 784 bytes is larger than 512 bytes
-> 
-> 
-> Also, there are many comment blocks that begin with "/**", which means "beginning
-> of kernel-doc comment block" for Linux kernel code.  :(
-> 
-> ---
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I think that we don't need that extra tab above.
