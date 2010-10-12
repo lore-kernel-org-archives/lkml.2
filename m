@@ -1,58 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757293Ab0JLNOW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:14:22 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55758 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753860Ab0JLNOV (ORCPT
+	id S1757306Ab0JLNRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:17:31 -0400
+Received: from mail-qw0-f66.google.com ([209.85.216.66]:32853 "EHLO
+	mail-qw0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757257Ab0JLNRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:14:21 -0400
-Date: Tue, 12 Oct 2010 15:14:14 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com,
-        akpm@linux-foundation.org
-Subject: Re: RFC: Implement hwpoison on free for soft offlining
-Message-ID: <20101012131414.GC20436@basil.fritz.box>
-References: <1286402951-1881-1-git-send-email-andi@firstfloor.org>
- <87aamj3k6f.fsf@basil.nowhere.org>
- <20101012181439.ADA9.A69D9226@jp.fujitsu.com>
+	Tue, 12 Oct 2010 09:17:30 -0400
+X-Greylist: delayed 694 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 09:17:30 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Ccrp06+4zmXVqtAtRwzomLq2u/hYHe/r4Qm9bVARskipGzdDvOMXzRhIxLtEjiJJzb
+         vRpjehjTrHiPn2KWJsLcVFHq4c+YTRzx019rvlByeRpfAl4MkDuLCbdwwLh3QNURapRf
+         HTWmBCaOePD0mTTASOZO30dkc0DrX/Oxbd0os=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101012181439.ADA9.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Tue, 12 Oct 2010 15:05:56 +0200
+Message-ID: <AANLkTindPN5Qv5yFodDn6+emu4dJAQX9ZYMG7+vei8q1@mail.gmail.com>
+Subject: Hi,,,,P..!
+From: Helge Pomorin <dotkomm@gmail.com>
+To: Kristina.Schmedding@gmx.de, kundenbetreuung@s-bahn-berlin.de,
+        larsgruender@gmx.de, leichtwein@hotmail.com, torvalds@osdl.org,
+        linux-kernel@vger.kernel.org, M.Schoen@wip.de, macterror@arcor.de,
+        Madeleine.Stallknecht@berlin.ihk.de, mail@idealo.de,
+        mail@marcell-dietl.de, mail@thomasflierl.de, majordomo@vger.kernel.org,
+        Marcel.Dey@quest.com, marcin@pyratbiran.org, marcin@piratbyran.org,
+        marde782@student.liu.se, meier@berlin030.de, Martin.Langhof@gmx.net
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> To me, it's no problem if this keep 64bit only. IOW, I only dislike to
-> add 32bit page flags.
-> 
-> Yeah, memory corruption is very crap and i think your effort has a lot
-> of worth :)
-
-Thanks.
-
-> 
-> 
-> offtopic, I don't think CONFIG_MEMORY_FAILURE and CONFIG_HWPOISON_ON_FREE
-> are symmetric nor easy understandable. can you please consider naming change?
-> (example, CONFIG_HWPOISON/CONFIG_HWPOISON_ON_FREE, 
-> CONFIG_MEMORY_FAILURE/CONFIG_MEMORY_FAILURE_SOFT_OFFLINE)
-
-memory-failure was the old name before hwpoison as a term was invented
-by Andrew.
-
-In theory it would make sense to rename everything to "hwpoison" now.
-But I decided so far the disadvantages from breaking user configurations
-and the impact from renaming files far outweight the small benefits
-in clarity.
-
-So right now I prefer to keep the status quo, but name everything
-new hwpoison.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Dear friend,
+Hey, how are you recently?
+Tell you a good news, the laptop, that I buy from a Chinese site,
+reach me this morning. I find it high qulity with a low price. You can
+search on their site to have a look, I am sure you will get many
+surprise and benefits. Their company's name is T0SHPD(the site is :
+www.toshpd3.com). I get my laptop in one week. There are many kinds of
+product on their site, like mobile phones, TV, games, and so on. The
+products are original and brand new.
+Best regards.
