@@ -1,82 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757382Ab0JLOXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 10:23:31 -0400
-Received: from smtprelay-h32.telenor.se ([213.150.131.5]:58192 "EHLO
-	smtprelay-h32.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757287Ab0JLOXa convert rfc822-to-8bit (ORCPT
+	id S932558Ab0JLO0F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 10:26:05 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:44579 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752806Ab0JLO0D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 10:23:30 -0400
-X-Greylist: delayed 1508 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 10:23:29 EDT
-X-SENDER-IP: [85.229.127.233]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AipEAIIGtExV5X/pPGdsb2JhbACEGo84AQGNfAwBAQEBEw0IBwa+EYVIBIV7g35I
-X-IronPort-AV: E=Sophos;i="4.57,320,1283724000"; 
-   d="scan'208";a="140184185"
-Message-Id: <Teeck6oe3dETrlvL0trLifCtgkbzxJoJjOlYyXu3BQzt@dabber.tv>
-Mime-Version: 1.0
-From: "The Dabber Player" <dd@dabber.tv>
-To: "" <linux-kernel@vger.kernel.org>
-Subject: Today we launch The Dabber video player for free
-Date: Tue, 12 Oct 2010 15:58:22 +0200
-X-Bounce-Tracking-Info: <CQkJbGludXgta2VybmVsQHZnZXIua2VybmVsLm9yZwlUb2RheSB3ZSBsYXVuY2ggVGhlIERhYmJlciB2aWRlbyBwbGF5ZXIgZm9yIGZyZWUJNjkJCTExNzg4Mglib3VuY2UJbm8Jbm8=>
-Content-type: text/plain; charset=iso-8859-1; format=flowed
-Content-transfer-encoding: 8BIT
+	Tue, 12 Oct 2010 10:26:03 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:in-reply-to:to:from:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding:x-system-of-record;
+	b=eWe/G456/WyRpm4AlktsaaT944Zh1I4fkkbt4Q6YT8kdS2aSaf+pZLh1MQq5SI5RM
+	9gypuUmbQgOPthbnsqkrQ==
+Subject: [PATCH] Fix a complex race in hrtimer code.
+In-Reply-To: <alpine.LFD.2.00.1010121046060.2909@localhost6.localdomain6>
+To: akpm@linux-foundation.org, tglx@linutronix.de,
+        linux-kernel@vger.kernel.org
+From: Salman Qazi <sqazi@google.com>
+Date: Tue, 12 Oct 2010 07:25:19 -0700
+Message-ID: <20101012142351.8485.21823.stgit@dungbeetle.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ladies and gentlemen, mina damer och her
+The race is described as follows:
 
-We are proud to launch a free version of our popular Dabber player at
-http://www.dabber-player.com
+CPU X                                 CPU Y
+remove_hrtimer
+// state & QUEUED == 0
+timer->state = CALLBACK
+unlock timer base
+timer->f(n) //very long
+                                  hrtimer_start
+                                    lock timer base
+                                    remove_hrtimer // no effect
+                                    hrtimer_enqueue
+                                    timer->state = CALLBACK |
+                                                   QUEUED
+                                    unlock timer base
+                                  hrtimer_start
+                                    lock timer base
+                                    remove_hrtimer
+                                        mode = INACTIVE
+                                        // CALLBACK bit lost!
+                                    switch_hrtimer_base
+                                            CALLBACK bit not set:
+                                                    timer->base
+                                                    changes to a
+                                                    different CPU.
+lock this CPU's timer base
 
-The Dabber player is one of the most beautiful 3D-interface
-videoplayers for embedding on any webpage. Now you can host your own
-online tv-channel, display your best content and best of all you can change the
-look and feel and adapt the player to your webpage. No more black, boring,
-standard embedded and sad videoplayers. Let´s make Internet more
-beautiful!
+Bug reproducible and fix testable using a kernel module that hrtimer_start()s
+a timer with a very long running callback from multiple CPUs:
 
-You can use our entire range of improved, evolved and very beautiful Dabber video players
-for only $75 and Free for non commercial use.
-And for only $95 per month you can have encoding, storage, trafik, contentmanagement and all players!
-Practically anythin to start your own online channel.
+MODULE_LICENSE("GPL");
 
-Order yours today and use them, love them, and improve all websites out
-there. You can find them at http://www.dabber-player.com
+static long timer_func_time = 1000;
+module_param(timer_func_time, long, 0600);
+static long timer_starts = 2500;
+module_param(timer_starts, long, 0600);
+static long timer_expire = 1000;
+module_param(timer_expire, long, 0600);
 
-A huge thanks goes to all you brave ones who have ordered and
-implemented our early Dabber players so far. Your orders, thoughts, feedback
-and love have taken us to this day. You know who you are!
+DEFINE_PER_CPU(struct task_struct *, hrtimer_thread);
 
-New players and plugins are in the pipeline, both for YouTube, Vimeo,
-JW, Flow, Html5 and other. We can already provide a CMS as a Wordpress plugin
+/* There are other issues, like deadlocks between multiple hrtimer_start observed
+ * calls, at least in 2.6.34 that this lock works around.  Will look into
+ * those later.
+ */
+static DEFINE_SPINLOCK(blah_lock);
 
-We look forward to your order and feedback!
-For future newsletters and info please subscribe at http://www.dabber.tv/#news
+static ktime_t mytime;
+static struct hrtimer timer;
 
-Daniel Daboczy
-CEO & co-founder
+static enum hrtimer_restart timer_restart(struct hrtimer *timer)
+{
+        unsigned long i;
+        /* We have to make the callback longer to improve the
+         * probability of having a race.
+         */
+        for (i = 0; i < timer_func_time / 100; i++) {
+                touch_nmi_watchdog();
+                touch_softlockup_watchdog();
+                udelay(100);
+        }
 
+        return HRTIMER_NORESTART;
+}
 
+static int restart_hrtimer_repeatedly(void *input)
+{
+        int i;
+        unsigned long range;
+        while (!kthread_should_stop()) {
+                for (i = 0; i < timer_starts; i++) {
+                        /* Avoid deadlocks for now */
+                        spin_lock(&blah_lock);
+                        hrtimer_start(&timer, mytime, HRTIMER_MODE_REL);
+                        spin_unlock(&blah_lock);
+                        touch_nmi_watchdog();
+                        touch_softlockup_watchdog();
+                }
+                cond_resched();
+        }
+        hrtimer_cancel(&timer);
+        return 0;
+}
 
+static int hrtimer_unit_test_init(void)
+{
+        int cpu;
+        mytime = ktime_set(0, 0);
+        mytime = ktime_add_ns(mytime, timer_expire);
+        hrtimer_init(&timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+        timer.function = timer_restart;
+        for_each_online_cpu(cpu) {
+                per_cpu(hrtimer_thread, cpu) = kthread_create(
+                        restart_hrtimer_repeatedly, NULL, "hrtimer_test/%d",
+                        cpu);
+                if (IS_ERR(per_cpu(hrtimer_thread, cpu))) {
+                       printk(KERN_ERR
+                                "Failed to create hrtimer test thread\n");
+                        BUG();
+                }
+                kthread_bind(per_cpu(hrtimer_thread, cpu), cpu);
+                wake_up_process(per_cpu(hrtimer_thread, cpu));
+        }
+        return 0;
+}
 
-DABBER
-website: http://www.dabber-player.com
-mobile: +46 (0)736 26 99 85
-e-mail:
-daniel@dabber.tv
-SKYPE: mrdaboczy
-adress: Frejgatan 8, SE-114 20
-Stockholm, Sweden
+static void hrtimer_unit_test_exit(void)
+{
+        int cpu;
+        for_each_online_cpu(cpu) {
+                (void)kthread_stop(per_cpu(hrtimer_thread, cpu));
+        }
+}
 
-Nominated for "Best Streaming Innovation of 2009" at the prestigious
-Streaming Media awards in London.
+module_init(hrtimer_unit_test_init);
+module_exit(hrtimer_unit_test_exit);
 
+Signed-off-by: Salman Qazi <sqazi@google.com>
+---
+ kernel/hrtimer.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-
-This message was sent to linux-kernel@vger.kernel.org from Dabber Stockholm.
-To stop receiveing info or newsletters from us please reply with the word unsub.
-
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 1decafb..57846d5 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -944,8 +944,8 @@ remove_hrtimer(struct hrtimer *timer, struct hrtimer_clock_base *base)
+ 		debug_deactivate(timer);
+ 		timer_stats_hrtimer_clear_start_info(timer);
+ 		reprogram = base->cpu_base == &__get_cpu_var(hrtimer_bases);
+-		__remove_hrtimer(timer, base, HRTIMER_STATE_INACTIVE,
+-				 reprogram);
++		__remove_hrtimer(timer, base,
++				 (timer->state & HRTIMER_STATE_CALLBACK), reprogram);
+ 		return 1;
+ 	}
+ 	return 0;
+@@ -1231,6 +1231,9 @@ static void __run_hrtimer(struct hrtimer *timer, ktime_t *now)
+ 		BUG_ON(timer->state != HRTIMER_STATE_CALLBACK);
+ 		enqueue_hrtimer(timer, base);
+ 	}
++
++	WARN_ON_ONCE(!(timer->state & HRTIMER_STATE_CALLBACK));
++
+ 	timer->state &= ~HRTIMER_STATE_CALLBACK;
+ }
+ 
 
