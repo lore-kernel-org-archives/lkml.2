@@ -1,96 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab0JLSQU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 14:16:20 -0400
-Received: from mail.windriver.com ([147.11.1.11]:59717 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757967Ab0JLSQS (ORCPT
+	id S1758026Ab0JLSXe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 14:23:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:40033 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754383Ab0JLSXc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 14:16:18 -0400
-From: Jason Wessel <jason.wessel@windriver.com>
-To: airlied@linux.ie
-Cc: jbarnes@virtuousgeek.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] V3 - atomic kernel mode setting for radeon, nouveau, plus fixes
-Date: Tue, 12 Oct 2010 13:15:43 -0500
-Message-Id: <1286907348-25817-1-git-send-email-jason.wessel@windriver.com>
-X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 12 Oct 2010 18:16:08.0939 (UTC) FILETIME=[8B16ABB0:01CB6A39]
+	Tue, 12 Oct 2010 14:23:32 -0400
+Date: Tue, 12 Oct 2010 14:23:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+cc: linux-usb@vger.kernel.org, <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.36-rc7: NULL pointer dereference in ehci_clear_tt_buffer_complete
+In-Reply-To: <tkrat.9f585ea47331a2a2@s5r6.in-berlin.de>
+Message-ID: <Pine.LNX.4.44L0.1010121207360.1705-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-What is new in patch set v3
+On Mon, 11 Oct 2010, Stefan Richter wrote:
 
-  * Patch 3 - Per comment from Jesse Barnes change enter arg for
-    mode_set_base_atomic() to be an enum
-  * Patch 4 - Fixed a defect in the LUT save/restore where it should
-    have used ctrc->gamma_size instead of the local size variable
-  * Patch 5 - Context changes from the prior versions
+> Hi,
+> 
+> I have got a monitor with built-in hub to which a keyboard, mouse, and
+> card reader are connected.  At one occasion when I switched the monitor
+> off, the following oops happened.
+> 
+> I have updated from 2.6.36-rc4 to 2.6.36-rc7 on Saturday evening.  I.e.
+> it may be a regression after 2.6.36-rc4, but isn't necessarily so.
 
----
+I don't think it's a regression.
 
-What is new in patch set v2
+> Oct 11 22:29:21 stein kernel: usb 1-1.2: USB disconnect, address 14
+> Oct 11 22:29:21 stein kernel: drivers/hid/usbhid/hid-core.c: can't reset device, 0000:00:12.2-1.3/input0, status -71
+> Oct 11 22:29:21 stein kernel: usb 1-1: clear tt 3 (00f0) error -71
+> Oct 11 22:29:21 stein kernel: drivers/hid/usbhid/hid-core.c: can't reset device, 0000:00:12.2-1.3/input1, status -71
+> Oct 11 22:29:21 stein kernel: hub 1-1:1.0: hub_port_status failed (err = -71)
+> Oct 11 22:29:21 stein kernel: hub 1-1:1.0: connect-debounce failed, port 2 disabled
+> Oct 11 22:29:21 stein kernel: usb 1-1: USB disconnect, address 12
+> Oct 11 22:29:21 stein kernel: usb 1-1.1: USB disconnect, address 13
+> Oct 11 22:29:21 stein kernel: usb 1-1.1.1: USB disconnect, address 16
+> Oct 11 22:29:21 stein kernel: usb 1-1: clear tt 3 (00f0) error -71
+> Oct 11 22:29:21 stein kernel: usb 1-1.3: USB disconnect, address 15
+> Oct 11 22:29:21 stein kernel: ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00) state 5
+> Oct 11 22:29:21 stein kernel: drivers/hid/usbhid/hid-core.c: can't reset device, 0000:00:12.2-1.3/input0, status -108
+> Oct 11 22:29:21 stein kernel: usb 1-1: clear tt 3 (00f0) error -19
+> Oct 11 22:29:21 stein kernel: BUG: unable to handle kernel NULL pointer dereference at 0000000000000060
+> Oct 11 22:29:21 stein kernel: IP: [<ffffffff8129dbd8>] ehci_clear_tt_buffer_complete+0x31/0x72
 
-  * patch 4 which was previously radeon specific was replaced with a
-    generic patch to save and restore the LUT data for all drivers
-  * minor white space cleanup vs checkpatch.pl in patches
+Is this reproducible?  I'd guess that it happens only a fraction of the
+times you turn off the monitor.  Maybe it will be more likely to happen 
+if you are moving the mouse while you turn off the monitor.
 
----
+At any rate, I'm baffled.  This log entry:
 
-The goal of this patch set is to add atomic kernel mode setting hooks
-for the radeon and nouveau cards for the purpose of using kdb (the
-kernel debug shell).
+	ehci_hcd 0000:00:12.2: qh ffff880208f07af0 (#00) state 5
 
-David Airlie had asked for more research into the gamma data
-corruption after initially reviewing the patch that attempts to solve
-the visible palette corruption after an atomic mode set operation.
-The final conclusion was that other types of pallet corruption are
-possible with the gamma data when using atomic mode setting so the
-problem should be solved generically.
+indicates that the ehci-hcd data structures were seriously messed up.  
+It means the qh was not on the async list at a time when it should have
+been (an URB for that qh was completing).
 
-The mode_set_base_atomic() now receives and additional parameter to
-note of the atomic mode set operation is an enter or exit such that a
-driver can appropriately enable or disable hardware that will not work
-in the polling context.
+That led to ehci_clear_tt_buffer_complete crashing with qh == NULL,
+which is what that IP address means, right?  You could add a test for
+NULL, but that would merely cover up the symptom: qh should never be
+NULL at that point.
 
-These patches have now passed the kgdb/kdb regression tests and are
-deemed stable and ready for further integration and comment with the
-hope of integrating the patches upstream.
+Alan Stern
 
-Many thanks to Chris Ball for the contribution of the radeon and
-nouveau hooks, as well as the time he spent helping debug the initial
-LUT save and restore.
-
-Thanks,
-Jason.
-
----
-The following changes since commit 29979aa8bd69becd94cbad59093807a417ce2a9e:
-  Linus Torvalds (1):
-        Merge branch 'rc-fixes' of git://git.kernel.org/.../mmarek/kbuild-2.6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git for_dri
-
-Chris Ball (3):
-      drm/radeon/kms: Implement KDB debug hooks for radeon KMS.
-      drm/nouveau/kms: Implement KDB debug hooks for nouveau KMS.
-      drm/nouveau/kms: Avoid a hang entering KDB with VT accel on.
-
-Jason Wessel (2):
-      drm,kdb,kms: Add an enter argument to mode_set_base_atomic() API
-      kdb,kms: Save and restore the LUT on atomic KMS enter/exit
-
- drivers/gpu/drm/drm_fb_helper.c             |   36 ++++++++-
- drivers/gpu/drm/i915/intel_display.c        |    5 +-
- drivers/gpu/drm/nouveau/nouveau_fbcon.c     |    6 ++
- drivers/gpu/drm/nouveau/nv04_crtc.c         |   54 +++++++++++--
- drivers/gpu/drm/nouveau/nv50_crtc.c         |   48 ++++++++---
- drivers/gpu/drm/radeon/atombios_crtc.c      |  117 +++++++++++++++++++--------
- drivers/gpu/drm/radeon/radeon_fb.c          |    2 +
- drivers/gpu/drm/radeon/radeon_legacy_crtc.c |   44 ++++++++---
- drivers/gpu/drm/radeon/radeon_mode.h        |   13 +++-
- include/drm/drm_crtc_helper.h               |    8 ++-
- 10 files changed, 260 insertions(+), 73 deletions(-)
