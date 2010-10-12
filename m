@@ -1,50 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757967Ab0JLRmR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 13:42:17 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42202
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757306Ab0JLRmQ (ORCPT
+	id S1757991Ab0JLRmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 13:42:33 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:65214 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757974Ab0JLRmb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 13:42:16 -0400
-Date: Tue, 12 Oct 2010 10:42:38 -0700 (PDT)
-Message-Id: <20101012.104238.104051243.davem@davemloft.net>
-To: mikpe@it.uu.se
-Cc: sparclinux@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [2.6.36-rc regression] occasional complete system hangs on
- sparc64 SMP
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <19624.63312.156073.410319@pilspetsen.it.uu.se>
-References: <19611.34846.813757.309183@pilspetsen.it.uu.se>
-	<19624.63312.156073.410319@pilspetsen.it.uu.se>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 12 Oct 2010 13:42:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Ww2VQfQgaje6BehAOu2AVEaLZup9iiHztsB6XiMb+N3IrxDzJZnxe++ILG9XqBgaUj
+         kKGQYJ5uwZwawJh7I5KbIWutwW8N0l1J0Foybx37zpYtHBM7LaY4sy7eqRQbpC2eFjSV
+         Pd9ACyRJcbLh6DF0p9KjiMeWNbRkQXeycOQa8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikjp=dpOOfjnvg=ivkb40_dE+oRLSEkzrycwirV@mail.gmail.com>
+References: <20101012163519.a88f2040.sfr@canb.auug.org.au>
+	<1286895206-3030-1-git-send-email-linville@tuxdriver.com>
+	<AANLkTikjp=dpOOfjnvg=ivkb40_dE+oRLSEkzrycwirV@mail.gmail.com>
+Date: Tue, 12 Oct 2010 13:42:30 -0400
+X-Google-Sender-Auth: Q6Qd-8bMYqzyTVYHgyiw3HPasEc
+Message-ID: <AANLkTim0ryZ29w0ud9=sSbV6LdZhjW410ptpf3XJDYkm@mail.gmail.com>
+Subject: Re: [PATCH] ath5k: fix build break from "ath5k: Print out opmode in debugfs"
+From: Bob Copeland <me@bobcopeland.com>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-wireless@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Ben Greear <greearb@candelatech.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikael Pettersson <mikpe@it.uu.se>
-Date: Sun, 3 Oct 2010 23:36:16 +0200
+On Tue, Oct 12, 2010 at 12:54 PM, Bob Copeland <me@bobcopeland.com> wrote:
+>> +#ifdef CONFIG_ATH_DEBUG
+>>        ATH5K_DBG(sc, ATH5K_DEBUG_MODE, "mode setup opmode %d (%s)\n",
+>>                  sc->opmode,
+>>                  ath_opmode_to_string(sc->opmode) ?
+>>                  ath_opmode_to_string(sc->opmode) : "UKNOWN");
 
-> I've been testing older kernels and can now say that 2.6.35-git5
-> and newer kernels are definitely affected, but 2.6.35-git4 seems
-> solid.  I'll dig deeper into the .35-git4->git5 changes towards
-> the end of next week.
-> 
-> I never got any data out of sysrq-y or any other sysrq when a hang
-> occurs; usually they'd just print the name of the command but no data,
-> sometimes they'd oops and crash the kernel even harder.
+Just one other bikeshed color:
 
-So I haven't been ignoring this report, but I cannot reproduce
-it on the SB2500 I have access to right now.
+if ath_opmode_to_string() returned "UNKNOWN" in the failure case,
+we wouldn't need the double-call above.  Yes, it's used by ath9k
+too, but IMHO a debugging function that only converts some of the
+possible values to strings is pretty developer unfriendly.
 
-I've been doing gcc builds and testsuite runs in a loop for
-several days.
+That said, I still think tracepoints are a nicer way to do this
+kind of thing (you can even do symbolic names for enums).
 
-Occaisionally I get a dying 'as' which I have seen before and
-plan to investigate, but no hard hangs and no crashes.
-
-I'll keep prodding, but if you can narrow it down further
-please let us know.
+-- 
+Bob Copeland %% www.bobcopeland.com
