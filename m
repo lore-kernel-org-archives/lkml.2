@@ -1,159 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757315Ab0JLNSz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 09:18:55 -0400
-Received: from mail.danysek.cz ([91.103.163.139]:44269 "EHLO mail.danysek.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754055Ab0JLNSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 09:18:53 -0400
-X-Greylist: delayed 528 seconds by postgrey-1.27 at vger.kernel.org; Tue, 12 Oct 2010 09:18:53 EDT
-Message-ID: <4CB45E2A.9020407@danysek.cz>
-Date: Tue, 12 Oct 2010 15:10:02 +0200
-From: Daniel Suchy <danny@danysek.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.9) Gecko/20100918 Lightning/1.0b2 Mnenhy/0.8.3 Icedove/3.1.4
-MIME-Version: 1.0
-To: gregkh@suse.de
-CC: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: PATCH: ftdi_sio new VID/PIDs for various Papouch devices
-X-Enigmail-Version: 1.1.2
+	id S1757338Ab0JLNTH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 09:19:07 -0400
+Received: from na3sys009aog106.obsmtp.com ([74.125.149.77]:34862 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757326Ab0JLNTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 09:19:03 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: bo yang <boyang1288@gmail.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "akpm@osdl.org" <akpm@osdl.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "James.Bottomley@suse.de" <James.Bottomley@suse.de>
+Date: Tue, 12 Oct 2010 07:18:50 -0600
+Subject: [PATCH 3/5] scsi: megaraid_sas - Add input parameter for max_sectors
+Thread-Topic: [PATCH 3/5] scsi: megaraid_sas - Add input parameter for
+ max_sectors
+Thread-Index: ActayyPx+p2cIXq3QC+8LM1oUIE9NAPRFqwA
+Message-ID: <4B6A08C587958942AA3002690DD4F8C30100FF9FB4@cosmail02.lsi.com>
+References: <AANLkTimpuAfRw85ECVQ+FJxFpNaPC=zHCL1i0Y6AjiAf@mail.gmail.com>
+In-Reply-To: <AANLkTimpuAfRw85ECVQ+FJxFpNaPC=zHCL1i0Y6AjiAf@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 Content-Type: multipart/mixed;
- boundary="------------040705010202070806050101"
+	boundary="_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------040705010202070806050101
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+--_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
------BEGIN PGP SIGNED MESSAGE-----
-Hash: SHA1
+Re-submit: I am re-attaching the patch (3/5)=20
 
-Hello,
-in attached file, there's patch for FTDI USB serial converter adding new
-VID/PIDs used on various devices manufactured by Papouch
-(http://www.papouch.com). These devices have their own VID/PID, although
-they're using standard FTDI chip. In ftdi_sio.c, I also made small
-cleanup to have declarations for all Papouch devices in single section.
+Driver add the input parameters support for max_sectors for megaraid
+sas gen2 chip.  Customer can set the max_sectors support to 1MB for
+gen2 chip during the driver load.
 
-My patch was tested against 2.6.35.x stable kernel releases at this time.
+Signed-off-by Bo Yang<bo.yang@lsi.com>
 
-With regards,
-Daniel Suchy
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+---
+ drivers/scsi/megaraid/megaraid_sas.c |   30 ++++++++++++++++++++++++++++++
+ drivers/scsi/megaraid/megaraid_sas.h |    1 +
+ 2 files changed, 31 insertions(+)
 
-iEYEARECAAYFAky0XioACgkQ0m6yQqKjWoLPJACeMuWvkNTXWTOc4s8hW5Fy3U3k
-1+YAoNwbc3pYlSB734l3aSRO+Y+w12I5
-=y+9A
------END PGP SIGNATURE-----
 
---------------040705010202070806050101
-Content-Type: text/x-diff;
- name="ftdi_sio-papouch.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="ftdi_sio-papouch.patch"
-
---- drivers/usb/serial/ftdi_sio_ids.h.orig	2010-09-08 08:57:36.000000000 +0200
-+++ drivers/usb/serial/ftdi_sio_ids.h	2010-10-12 14:32:34.208586002 +0200
-@@ -1007,12 +1007,38 @@
- /*
-  * Papouch products (http://www.papouch.com/)
-  * Submitted by Folkert van Heusden
-+ * extended by Daniel Suchy (12.10.2010)
-  */
- 
- #define PAPOUCH_VID			0x5050	/* Vendor ID */
-+#define PAPOUCH_SB485_PID		0x0100	/* Papouch SB485 USB-485/422 Converter */
-+#define PAPOUCH_AP485_PID		0x0101	/* AP485 USB-RS485 Converter */
-+#define PAPOUCH_SB422_PID		0x0102	/* Papouch SB422 USB-RS422 Converter  */
-+#define PAPOUCH_SB485_2_PID		0x0103	/* Papouch SB485 USB-485/422 Converter */
-+#define PAPOUCH_AP485_2_PID		0x0104	/* AP485 USB-RS485 Converter */
-+#define PAPOUCH_SB422_2_PID		0x0105	/* Papouch SB422 USB-RS422 Converter  */
-+#define PAPOUCH_SB485S_PID		0x0106	/* Papouch SB485S USB-485/422 Converter */
-+#define PAPOUCH_SB485C_PID		0x0107	/* Papouch SB485C USB-485/422 Converter */
-+#define PAPOUCH_LEC_PID			0x0300	/* LEC USB Converter */
-+#define PAPOUCH_SB232_PID		0x0301	/* Papouch SB232 USB-RS232 Converter */
- #define PAPOUCH_TMU_PID			0x0400	/* TMU USB Thermometer */
--#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Quido 4/4 Module */
-+#define PAPOUCH_IRAMP_PID		0x0500	/* Papouch IRAmp Duplex */
-+#define PAPOUCH_DRAK5_PID		0x0700	/* Papouch DRAK5 */
-+#define PAPOUCH_QUIDO8x8_PID		0x0800	/* Papouch Quido 8/8 Module */
-+#define PAPOUCH_QUIDO4x4_PID		0x0900	/* Papouch Quido 4/4 Module */
-+#define PAPOUCH_QUIDO2x2_PID		0x0a00	/* Papouch Quido 2/2 Module */
-+#define PAPOUCH_QUIDO10x1_PID		0x0b00	/* Papouch Quido 10/1 Module */
-+#define PAPOUCH_QUIDO30x3_PID		0x0c00	/* Papouch Quido 30/3 Module */
-+#define PAPOUCH_QUIDO60x3_PID		0x0d00	/* Papouch Quido 60(100)/3 Module */
-+#define PAPOUCH_QUIDO2x16_PID		0x0e00	/* Papouch Quido 2/16 Module */
-+#define PAPOUCH_QUIDO3x32_PID		0x0f00	/* Papouch Quido 3/32 Module */
-+#define PAPOUCH_DRAK6_PID		0x1000	/* Papouch DRAK6 */
-+#define PAPOUCH_UPSUSB_PID		0x8000	/* Papouch UPS-USB adapter */
-+#define PAPOUCH_MU_PID			0x8001	/* MU controller */
-+#define PAPOUCH_SIMUKEY_PID		0x8002	/* Papouch SimuKey */
- #define PAPOUCH_AD4USB_PID		0x8003	/* AD4USB Measurement Module */
-+#define PAPOUCH_GMUX_PID		0x8004	/* Papouch GOLIATH MUX */
-+#define PAPOUCH_GMSR_PID		0x8005	/* Papouch GOLIATH MSR */
- 
- /*
-  * Marvell SheevaPlug
---- drivers/usb/serial/ftdi_sio.c.orig	2010-09-08 08:57:36.000000000 +0200
-+++ drivers/usb/serial/ftdi_sio.c	2010-10-12 14:29:57.992586000 +0200
-@@ -674,7 +674,6 @@ static struct usb_device_id id_table_com
- 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
- 	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
--	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
-@@ -715,8 +714,37 @@ static struct usb_device_id id_table_com
- 		.driver_info = (kernel_ulong_t)&ftdi_jtag_quirk },
- 	{ USB_DEVICE(RATOC_VENDOR_ID, RATOC_PRODUCT_ID_USB60F) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_REU_TINY_PID) },
-+
-+	/* Papouch devices based on FTDI chip */
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AP485_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB422_2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485S_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB485C_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_LEC_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SB232_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_TMU_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_IRAMP_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK5_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO8x8_PID) },
- 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO4x4_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x2_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO10x1_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO30x3_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO60x3_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO2x16_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_QUIDO3x32_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_DRAK6_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_UPSUSB_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_MU_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_SIMUKEY_PID) },
- 	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_AD4USB_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMUX_PID) },
-+	{ USB_DEVICE(PAPOUCH_VID, PAPOUCH_GMSR_PID) },
-+
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DGQG_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_DOMINTELL_DUSB_PID) },
- 	{ USB_DEVICE(ALTI2_VID, ALTI2_N3_PID) },
-
---------------040705010202070806050101
-Content-Type: application/octet-stream;
- name="ftdi_sio-papouch.patch.sig"
+--_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_
+Content-Type: application/octet-stream; name="megasas-max_sector.patch"
+Content-Description: megasas-max_sector.patch
+Content-Disposition: attachment; filename="megasas-max_sector.patch";
+	size=2252; creation-date="Sun, 19 Sep 2010 14:09:34 GMT";
+	modification-date="Fri, 17 Sep 2010 01:21:38 GMT"
 Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="ftdi_sio-papouch.patch.sig"
 
-iEYEABECAAYFAky0XioACgkQ0m6yQqKjWoJ0JwCfXZFFzEUkU1DH+bjqpB/s4je5OZcAniJg
-hiMC9vvBohVlv8XXpWNDdoct
---------------040705010202070806050101--
+ZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2FyYWlkL21lZ2FyYWlkX3Nhcy5jIG5ldy9k
+cml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMKLS0tIG9sZC9kcml2ZXJzL3Njc2kv
+bWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0wOS0xNyAwMzoxOTozMS4wMDAwMDAwMDAgLTA0
+MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmMJMjAxMC0wOS0x
+NyAwMzoyMDo0OS4wMDAwMDAwMDAgLTA0MDAKQEAgLTU3LDYgKzU3LDE1IEBAIG1vZHVsZV9wYXJh
+bV9uYW1lZChwb2xsX21vZGVfaW8sIHBvbGxfbW8KIE1PRFVMRV9QQVJNX0RFU0MocG9sbF9tb2Rl
+X2lvLAogCSJDb21wbGV0ZSBjbWRzIGZyb20gSU8gcGF0aCwgKGRlZmF1bHQ9MCkiKTsKIAorLyoK
+KyAqIE51bWJlciBvZiBzZWN0b3JzIHBlciBJTyBjb21tYW5kCisgKiBXaWxsIGJlIHNldCBpbiBt
+ZWdhc2FzX2luaXRfbWZpIGlmIHVzZXIgZG9lcyBub3QgcHJvdmlkZQorICovCitzdGF0aWMgdW5z
+aWduZWQgaW50IG1heF9zZWN0b3JzOworbW9kdWxlX3BhcmFtX25hbWVkKG1heF9zZWN0b3JzLCBt
+YXhfc2VjdG9ycywgaW50LCAwKTsKK01PRFVMRV9QQVJNX0RFU0MobWF4X3NlY3RvcnMsCisJIk1h
+eGltdW0gbnVtYmVyIG9mIHNlY3RvcnMgcGVyIElPIGNvbW1hbmQiKTsKKwogTU9EVUxFX0xJQ0VO
+U0UoIkdQTCIpOwogTU9EVUxFX1ZFUlNJT04oTUVHQVNBU19WRVJTSU9OKTsKIE1PRFVMRV9BVVRI
+T1IoIm1lZ2FyYWlkbGludXhAbHNpLmNvbSIpOwpAQCAtMzU4Nyw2ICszNTk2LDI3IEBAIHN0YXRp
+YyBpbnQgbWVnYXNhc19pb19hdHRhY2goc3RydWN0IG1lZ2EKIAkJCWluc3RhbmNlLT5tYXhfZndf
+Y21kcyAtIE1FR0FTQVNfSU5UX0NNRFM7CiAJaG9zdC0+dGhpc19pZCA9IGluc3RhbmNlLT5pbml0
+X2lkOwogCWhvc3QtPnNnX3RhYmxlc2l6ZSA9IGluc3RhbmNlLT5tYXhfbnVtX3NnZTsKKwkvKgor
+CSAqIENoZWNrIGlmIHRoZSBtb2R1bGUgcGFyYW1ldGVyIHZhbHVlIGZvciBtYXhfc2VjdG9ycyBj
+YW4gYmUgdXNlZAorCSAqLworCWlmIChtYXhfc2VjdG9ycyAmJiBtYXhfc2VjdG9ycyA8IGluc3Rh
+bmNlLT5tYXhfc2VjdG9yc19wZXJfcmVxKQorCQlpbnN0YW5jZS0+bWF4X3NlY3RvcnNfcGVyX3Jl
+cSA9IG1heF9zZWN0b3JzOworCWVsc2UgeworCQlpZiAobWF4X3NlY3RvcnMpIHsKKwkJCWlmICgo
+KGluc3RhbmNlLT5wZGV2LT5kZXZpY2UgPT0KKwkJCQlQQ0lfREVWSUNFX0lEX0xTSV9TQVMxMDc4
+R0VOMikgfHwKKwkJCQkoaW5zdGFuY2UtPnBkZXYtPmRldmljZSA9PQorCQkJCVBDSV9ERVZJQ0Vf
+SURfTFNJX1NBUzAwNzlHRU4yKSkgJiYKKwkJCQkobWF4X3NlY3RvcnMgPD0gTUVHQVNBU19NQVhf
+U0VDVE9SUykpIHsKKwkJCQlpbnN0YW5jZS0+bWF4X3NlY3RvcnNfcGVyX3JlcSA9IG1heF9zZWN0
+b3JzOworCQkJfSBlbHNlIHsKKwkJCXByaW50ayhLRVJOX0lORk8gIm1lZ2FzYXM6IG1heF9zZWN0
+b3JzIHNob3VsZCBiZSA+IDAiCisJCQkJImFuZCA8PSAlZCAob3IgPCAxTUIgZm9yIEdFTjIgY29u
+dHJvbGxlcilcbiIsCisJCQkJaW5zdGFuY2UtPm1heF9zZWN0b3JzX3Blcl9yZXEpOworCQkJfQor
+CQl9CisJfQorCiAJaG9zdC0+bWF4X3NlY3RvcnMgPSBpbnN0YW5jZS0+bWF4X3NlY3RvcnNfcGVy
+X3JlcTsKIAlob3N0LT5jbWRfcGVyX2x1biA9IDEyODsKIAlob3N0LT5tYXhfY2hhbm5lbCA9IE1F
+R0FTQVNfTUFYX0NIQU5ORUxTIC0gMTsKZGlmZiAtcnVwTiBvbGQvZHJpdmVycy9zY3NpL21lZ2Fy
+YWlkL21lZ2FyYWlkX3Nhcy5oIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2Fz
+LmgKLS0tIG9sZC9kcml2ZXJzL3Njc2kvbWVnYXJhaWQvbWVnYXJhaWRfc2FzLmgJMjAxMC0wOS0x
+NyAwMjoxOTo0Ni4wMDAwMDAwMDAgLTA0MDAKKysrIG5ldy9kcml2ZXJzL3Njc2kvbWVnYXJhaWQv
+bWVnYXJhaWRfc2FzLmgJMjAxMC0wOS0xNyAwMjoxOTo0Ni4wMDAwMDAwMDAgLTA0MDAKQEAgLTcw
+Niw2ICs3MDYsNyBAQCBzdHJ1Y3QgbWVnYXNhc19jdHJsX2luZm8gewogI2RlZmluZSBNRUdBU0FT
+X01BWF9MRF9JRFMJCQkoTUVHQVNBU19NQVhfTERfQ0hBTk5FTFMgKiBcCiAJCQkJCQlNRUdBU0FT
+X01BWF9ERVZfUEVSX0NIQU5ORUwpCiAKKyNkZWZpbmUgTUVHQVNBU19NQVhfU0VDVE9SUyAgICAg
+ICAgICAgICAgICAgICAgKDIqMTAyNCkKICNkZWZpbmUgTUVHQVNBU19EQkdfTFZMCQkJCTEKIAog
+I2RlZmluZSBNRUdBU0FTX0ZXX0JVU1kJCQkJMQo=
+
+--_002_4B6A08C587958942AA3002690DD4F8C30100FF9FB4cosmail02lsic_--
