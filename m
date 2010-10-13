@@ -1,54 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab0JMOIk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 10:08:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1348 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab0JMOIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 10:08:39 -0400
-Date: Wed, 13 Oct 2010 11:07:46 -0300
-From: Glauber Costa <glommer@redhat.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] use a stable clock reference in vdso vgetns
-Message-ID: <20101013140746.GM5590@mothafucka.localdomain>
-References: <1285938596-2186-1-git-send-email-glommer@redhat.com>
- <AANLkTimdukAnwtPooFJYTxtzoT+Scy9JwWoxkkj3g0zO@mail.gmail.com>
+	id S1753390Ab0JMOJl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 10:09:41 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:44085 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab0JMOJk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 10:09:40 -0400
+X-Greylist: delayed 874 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Oct 2010 10:09:40 EDT
+From: Konrad Rzeszutek Wilk <konrad@darnok.org>
+Reply-To: konrad.wilk@oracle.com
+Organization: Oracle
+To: "Jan Beulich" <JBeulich@novell.com>
+Subject: Re: [PATCH 20/23] xen-pcifront: Xen PCI frontend driver.
+Date: Wed, 13 Oct 2010 09:53:44 -0400
+User-Agent: KMail/1.9.10
+Cc: "Ryan Wilson" <hap9@darnok.org>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
+        xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+References: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com> <1286898271-32018-21-git-send-email-konrad.wilk@oracle.com> <4CB599DB020000780001CC60@vpn.id2.novell.com>
+In-Reply-To: <4CB599DB020000780001CC60@vpn.id2.novell.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimdukAnwtPooFJYTxtzoT+Scy9JwWoxkkj3g0zO@mail.gmail.com>
-X-ChuckNorris: True
-User-Agent: Jack Bauer
+Message-Id: <201010130953.45283.konrad@darnok.org>
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 01, 2010 at 10:49:53AM -0700, john stultz wrote:
-> On Fri, Oct 1, 2010 at 6:09 AM, Glauber Costa <glommer@redhat.com> wrote:
-> > When using vdso services for clock_gettime, we test for the ability
-> > of a fine-grained measurement through the existance of a vread() function.
+Hey Jan,
+
+Thank you for taking your time to look at this patch. Will fix up, test it, 
+and if there are no issues, have it ready tomorrow.
+
+On Wednesday 13 October 2010 05:36:59 Jan Beulich wrote:
+> >>> On 12.10.10 at 17:44, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> >>> wrote:
 > >
-> > However, from the time we test it, to the time we use it, vread() reference
-> > may not be valid anymore. It happens, for example, when we change the current
-> > clocksource from one that provides vread (say tsc) to one that lacks it
-> > (say acpi_pm), in the middle of clock_gettime routine.
+> > --- a/drivers/pci/Kconfig
+> > +++ b/drivers/pci/Kconfig
+> > @@ -40,6 +40,21 @@ config PCI_STUB
 > >
-> > seqlock does not really protect us, since readers here won't stop the writers
-> > to change references. The proposed solution is to grab a copy of the clock
-> > structure early, and use it as a stable reference onwards.
-> 
-> Ah. Good find! The fix looks reasonable to me. However, its likely the
-> similar code in arch/x86/kernel/vsyscall_64.c will need a similar fix.
-> 
-> Awhile back there was some motivation to merge the two vdso/vsyscall
-> implementations to avoid the duplication, but my memory is failing on
-> why that didn't happen. I feel like it had to do with complication
-> with the way the two implementations are mapped out to userland. Even
-> so, it seems a shared forced inline method would resolve the issue, so
-> maybe it just fell off the todo list?
-News here?
+> >  	  When in doubt, say N.
+> >
+> > +config XEN_PCIDEV_FRONTEND
+> > +        tristate "Xen PCI Frontend"
+> > +        depends on PCI && X86 && XEN
+> > +        select HOTPLUG
+> > +        select PCI_XEN
+> > +        default y
+> > +        help
+> > +          The PCI device frontend driver allows the kernel to import
+> > arbitrary
+> > +          PCI devices from a PCI backend to support PCI driver domains.
+> > +
+> > +config XEN_PCIDEV_FE_DEBUG
+> > +        bool
+> > +        depends on PCI_DEBUG
+> > +        default n
+>
+> A bool without prompt, (pointlessly) defaulting to 'n', and without
+> getting selected anywhere has no way to get set to 'y'...
+>
+> > +
+> >  config HT_IRQ
+> >  	bool "Interrupts on hypertransport devices"
+> >  	default y
+> > --- /dev/null
+> > +++ b/drivers/pci/xen-pcifront.c
+> > @@ -0,0 +1,1157 @@
+> > +/*
+> > + * Xen PCI Frontend.
+> > + *
+> > + *   Author: Ryan Wilson <hap9@epoch.ncsc.mil>
+> > + */
+> > +#include <linux/module.h>
+> > +#include <linux/init.h>
+> > +#include <linux/mm.h>
+> > +#include <xen/xenbus.h>
+> > +#include <xen/events.h>
+> > +#include <xen/grant_table.h>
+> > +#include <xen/page.h>
+> > +#include <linux/spinlock.h>
+> > +#include <linux/pci.h>
+> > +#include <linux/msi.h>
+> > +#include <xen/xenbus.h>
+> > +#include <xen/interface/io/pciif.h>
+> > +#include <asm/xen/pci.h>
+> > +#include <linux/interrupt.h>
+> > +#include <asm/atomic.h>
+> > +#include <linux/workqueue.h>
+> > +#include <linux/bitops.h>
+> > +#include <linux/time.h>
+> > +
+> > +
+> > +#ifndef __init_refok
+> > +#define __init_refok
+> > +#endif
+>
+> ???
+>
+> > +
+> > +#define INVALID_GRANT_REF (0)
+> > +#define INVALID_EVTCHN    (-1)
+> > +
+> > +
+> > +struct pci_bus_entry {
+> > +	struct list_head list;
+> > +	struct pci_bus *bus;
+> > +};
+> > +
+> > +#define _PDEVB_op_active		(0)
+> > +#define PDEVB_op_active			(1 << (_PDEVB_op_active))
+> > +
+> > +struct pcifront_device {
+> > +	struct xenbus_device *xdev;
+> > +	struct list_head root_buses;
+> > +
+> > +	int evtchn;
+> > +	int gnt_ref;
+> > +
+> > +	int irq;
+> > +
+> > +	/* Lock this when doing any operations in sh_info */
+> > +	spinlock_t sh_info_lock;
+> > +	struct xen_pci_sharedinfo *sh_info;
+> > +	struct work_struct op_work;
+> > +	unsigned long flags;
+> > +
+> > +};
+> > +
+> > +struct pcifront_sd {
+> > +	int domain;
+> > +	struct pcifront_device *pdev;
+> > +};
+> > +
+> > +static inline struct pcifront_device *
+> > +pcifront_get_pdev(struct pcifront_sd *sd)
+> > +{
+> > +	return sd->pdev;
+> > +}
+> > +
+> > +static inline void pcifront_init_sd(struct pcifront_sd *sd,
+> > +				    unsigned int domain, unsigned int bus,
+> > +				    struct pcifront_device *pdev)
+> > +{
+> > +	sd->domain = domain;
+> > +	sd->pdev = pdev;
+> > +}
+> > +
+> > +static inline void pcifront_setup_root_resources(struct pci_bus *bus,
+> > +						 struct pcifront_sd *sd)
+> > +{
+> > +}
+>
+> ???
+>
+> > +
+> > +
+> > +DEFINE_SPINLOCK(pcifront_dev_lock);
+>
+> static?
+>
+> >...
+> > +void pcifront_do_aer(struct work_struct *data)
+>
+> static?
+>
+> >...
+> > +irqreturn_t pcifront_handler_aer(int irq, void *dev)
+>
+> static?
+>
+> >...
+> > +int pcifront_connect(struct pcifront_device *pdev)
+>
+> static?
+>
+> >...
+> > +void pcifront_disconnect(struct pcifront_device *pdev)
+>
+> static?
+>
+> >...
+> > +static void free_pdev(struct pcifront_device *pdev)
+> > +{
+> > +	dev_dbg(&pdev->xdev->dev, "freeing pdev @ 0x%p\n", pdev);
+> > +
+> > +	pcifront_free_roots(pdev);
+> > +
+> > +	/*For PCIE_AER error handling job*/
+> > +	flush_scheduled_work();
+>
+> 	if (pdev->irq > 0)
+>
+> > +	unbind_from_irqhandler(pdev->irq, pdev);
+> > +
+> > +	if (pdev->evtchn != INVALID_EVTCHN)
+> > +		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
+> > +
+> > +	if (pdev->gnt_ref != INVALID_GRANT_REF)
+> > +		gnttab_end_foreign_access(pdev->gnt_ref, 0 /* r/w page */,
+> > +					  (unsigned long)pdev->sh_info);
+>
+> 	else
+> 		free_page((unsigned long)pdev->sh_info);
+>
+> > +
+> > +	dev_set_drvdata(&pdev->xdev->dev, NULL);
+> > +
+> > +	kfree(pdev);
+> > +}
+> > +
+> > +static int pcifront_publish_info(struct pcifront_device *pdev)
+> > +{
+> > +	int err = 0;
+> > +	struct xenbus_transaction trans;
+> > +
+> > +	err = xenbus_grant_ring(pdev->xdev, virt_to_mfn(pdev->sh_info));
+> > +	if (err < 0)
+> > +		goto out;
+> > +
+> > +	pdev->gnt_ref = err;
+> > +
+> > +	err = xenbus_alloc_evtchn(pdev->xdev, &pdev->evtchn);
+> > +	if (err)
+> > +		goto out;
+> > +
+> > +	err = bind_evtchn_to_irqhandler(pdev->evtchn, pcifront_handler_aer,
+> > +		0, "pcifront", pdev);
+> > +	if (err < 0) {
+> > +		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
+>
+> You're leaking the grant ref here. I think it's better to not do any
+> cleanup here, and instead call free_pdev() on error in
+> pcifront_xenbus_probe() (see below).
+
+Excellent. Will do!
+>
+> > +		xenbus_dev_fatal(pdev->xdev, err, "Failed to bind evtchn to "
+> > +				 "irqhandler.\n");
+> > +		return err;
+> > +	}
+> > +	pdev->irq = err;
+> >...
+> > +static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
+> > +{
+> > +	int err = -EFAULT;
+> > +	int i, num_roots, len;
+> > +	char str[64];
+> > +	unsigned int domain, bus;
+> > +
+>
+> The original code had a per-device lock here and in subsequent
+> functions. Is this being dropped due to implicit serialization through
+> only running in the context of the single xenbus thread?
+
+Yes!
+
+>
+> >...
+> > +static int pcifront_xenbus_probe(struct xenbus_device *xdev,
+> > +				 const struct xenbus_device_id *id)
+> > +{
+> > +	int err = 0;
+> > +	struct pcifront_device *pdev = alloc_pdev(xdev);
+> > +
+> > +	if (pdev == NULL) {
+> > +		err = -ENOMEM;
+> > +		xenbus_dev_fatal(xdev, err,
+> > +				 "Error allocating pcifront_device struct");
+> > +		goto out;
+> > +	}
+> > +
+> > +	err = pcifront_publish_info(pdev);
+>
+> 	if (err)
+> 		free_pdev(pdev);
+>
+> > +
+> > +out:
+> > +	return err;
+> > +}
+> >...
+>
+> Jan
+
 
