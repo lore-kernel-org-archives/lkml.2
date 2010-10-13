@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab0JMFHO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 01:07:14 -0400
+	id S1752156Ab0JMFHJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 01:07:09 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:35732 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751052Ab0JMFHL (ORCPT
+	with ESMTP id S1751052Ab0JMFHH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 01:07:11 -0400
+	Wed, 13 Oct 2010 01:07:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=GXGJ2sWh5urL4141Seo6+VxHFqI+BZK4NLUSR7SZJrWjQdhKY7fuH63qiJd0GfW59e
-         vyWGOZq7LZwdjsH9uNxI70P1563xeVHXd5e05BI8rMbqJzsiOXUUGZ0tKRmqdkorMK5+
-         4mFRB591HCSOcX30tiNSVFUMXMf1ANINVtHEI=
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=Nd/56qdsi+VkgsIWmtqdrQDkrqttZbMSxMFpvd8aQH4eiW/XfNCdJPaDgeFXVZBjKO
+         rMcXtFTh9TMN+r8/qv7jOfzU+4fkdQ12pDXxPgAZMyfz+tzCqAa0Y9fGM0Uaqk/sDbWN
+         0iCCS+GdDjqCTAlSkuKBZJFYEV6jpQBJ+JeiM=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Paul Mackerras <paulus@samba.org>,
@@ -27,131 +26,83 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Masami Hiramatsu <mhiramat@redhat.com>,
         Steven Rostedt <rostedt@goodmis.org>,
         Robert Richter <robert.richter@amd.com>
-Subject: [RFC PATCH 2/9] perf: Add ability to dump user regs
-Date: Wed, 13 Oct 2010 07:06:54 +0200
-Message-Id: <1286946421-32202-3-git-send-regression-fweisbec@gmail.com>
+Subject: [RFC] perf: Dwarf cfi based user callchains
+Date: Wed, 13 Oct 2010 07:06:52 +0200
+Message-Id: <1286946421-32202-1-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1286946421-32202-1-git-send-regression-fweisbec@gmail.com>
-References: <1286946421-32202-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add new PERF_SAMPLE_UREGS to perf sample type. This will dump the
-user space context as it was before the user entered the kernel for
-whatever reason.
+Hi,
 
-This is going to be useful to bring Dwarf CFI based stack unwinding
-on top of samples.
+This brings dwarf cfi based callchain for userspace apps that don't have
+frame pointers.
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Cyrill Gorcunov <gorcunov@openvz.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>
+To test it, you can try:
+
+perf record -g dwarf,24000 -e cycles:u ./hackbench 2
+perf report
+
+It seems to work but there are of course many things to improve:
+
+- do only userspace profiling with that mode for now (the :u flag as above).
+  The reason is that if you profile also the kernel, the user callchains
+  will often start from vdso if the user made a syscall, and vdso doesn't
+  have cfi informations, so we get stuck there. I need to find a solution for
+  that, like doing a single frame pointer deref on the first entry (vdso)
+  and continue with dwarves, but I need to know if we came from a syscall for
+  that. Not sure yet how I'll handle that.
+
+- it only works with .eh_frame, I think there is an elf section that is made
+  almost the same but with few differences. I don't remember the name at that
+  time but that needs a look.
+
+- it's slow. A first improvement to make it faster is to support binary
+  search from .eh_frame_hdr. This will probably be one of the next things
+  I'll focus in. And the whole needs perhaps more caching and so on.
+
+- only support for x86-32. I need to split some arch specific code from
+  generic and add at least x86-64 support.
+
+- there are still some callchains that are not unwind. I need to investigate.
+
+This can be found in:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/unwind-v1
+
+Thanks,
+	Frederic
 ---
- include/linux/perf_event.h |    4 +++-
- kernel/perf_event.c        |   42 ++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 61b1e2d..71b108b 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -125,8 +125,9 @@ enum perf_event_sample_format {
- 	PERF_SAMPLE_PERIOD			= 1U << 8,
- 	PERF_SAMPLE_STREAM_ID			= 1U << 9,
- 	PERF_SAMPLE_RAW				= 1U << 10,
-+	PERF_SAMPLE_UREGS			= 1U << 11,
- 
--	PERF_SAMPLE_MAX = 1U << 11,		/* non-ABI */
-+	PERF_SAMPLE_MAX = 1U << 12,		/* non-ABI */
- };
- 
- /*
-@@ -932,6 +933,7 @@ struct perf_sample_data {
- 	u64				period;
- 	struct perf_callchain_entry	*callchain;
- 	struct perf_raw_record		*raw;
-+	struct pt_regs			*uregs;
- };
- 
- static inline
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 64507ea..f1c0d72 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1993,6 +1993,19 @@ exit_put:
- 	return entry;
- }
- 
-+static struct pt_regs *perf_sample_uregs(struct pt_regs *regs)
-+{
-+	if (!user_mode(regs)) {
-+		if (current->mm)
-+			regs = task_pt_regs(current);
-+		else
-+			regs = NULL;
-+	}
-+
-+	return regs;
-+}
-+
-+
- /*
-  * Initialize the perf_event context in a task_struct:
-  */
-@@ -3607,6 +3620,25 @@ void perf_output_sample(struct perf_output_handle *handle,
- 			perf_output_put(handle, raw);
- 		}
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_UREGS) {
-+		u64 size;
-+
-+		if (data->uregs) {
-+			size = round_up(sizeof(*data->uregs), sizeof(u64));
-+			perf_output_put(handle, size);
-+			perf_output_copy(handle, data->uregs, sizeof(*data->uregs));
-+
-+			if (sizeof(*data->uregs) < size) {
-+				u64 pad = 0;
-+				int pad_size = size - sizeof(*data->uregs);
-+				perf_output_copy(handle, &pad, pad_size);
-+			}
-+		} else {
-+			size = 0;
-+			perf_output_put(handle, size);
-+		}
-+	}
- }
- 
- void perf_prepare_sample(struct perf_event_header *header,
-@@ -3694,6 +3726,16 @@ void perf_prepare_sample(struct perf_event_header *header,
- 		WARN_ON_ONCE(size & (sizeof(u64)-1));
- 		header->size += size;
- 	}
-+
-+	if (sample_type & PERF_SAMPLE_UREGS) {
-+		int size = sizeof(u64);
-+
-+		data->uregs = perf_sample_uregs(regs);
-+		if (data->uregs)
-+			size += round_up(sizeof(*data->uregs), sizeof(u64));
-+
-+		header->size += size;
-+	}
- }
- 
- static void perf_event_output(struct perf_event *event, int nmi,
--- 
-1.6.2.3
+Frederic Weisbecker (9):
+      uaccess: Make copy_from_user_nmi() globally available
+      perf: Add ability to dump user regs
+      perf: Add ability to dump part of the user stack
+      perf: Don't record frame pointer based user stacktraces if we dump stack and regs
+      perf: Support for dwarf mode callchain on perf record
+      perf: Build with dwarf cfi
+      perf: Support for error passed over pointers
+      perf: Add libunwind dependency for dwarf cfi unwinding
+      perf: Support for dwarf cfi unwinding on post processing
 
+
+ arch/x86/include/asm/uaccess.h      |    5 +
+ arch/x86/kernel/cpu/perf_event.c    |    4 +-
+ include/asm-generic/uaccess.h       |    4 +
+ include/linux/perf_event.h          |   15 +-
+ kernel/perf_event.c                 |  182 +++++-
+ tools/perf/Makefile                 |   23 +-
+ tools/perf/builtin-record.c         |   76 +++-
+ tools/perf/builtin-report.c         |    9 +-
+ tools/perf/feature-tests.mak        |   14 +
+ tools/perf/perf.h                   |    5 +
+ tools/perf/util/callchain.c         |   35 +-
+ tools/perf/util/callchain.h         |   19 +-
+ tools/perf/util/event.c             |   29 +
+ tools/perf/util/event.h             |    7 +
+ tools/perf/util/include/linux/err.h |   24 +
+ tools/perf/util/unwind.c            | 1077 +++++++++++++++++++++++++++++++++++
+ 16 files changed, 1485 insertions(+), 43 deletions(-)
