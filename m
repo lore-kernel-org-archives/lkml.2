@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab0JMOtw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 10:49:52 -0400
-Received: from exprod5og106.obsmtp.com ([64.18.0.182]:58457 "HELO
-	exprod5og106.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752146Ab0JMOtv (ORCPT
+	id S1753802Ab0JMOvG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 10:51:06 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:57424 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753406Ab0JMOvE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 10:49:51 -0400
-Message-ID: <4CB5C70A.2010401@panasas.com>
-Date: Wed, 13 Oct 2010 10:49:46 -0400
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+	Wed, 13 Oct 2010 10:51:04 -0400
+Date: Wed, 13 Oct 2010 10:51:02 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: fs: Inode cache scalability V3
+Message-ID: <20101013145102.GA12155@infradead.org>
+References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 06/18] exofs: use iput() for inode reference count decrements
-References: <1286928961-15157-1-git-send-email-david@fromorbit.com> <1286928961-15157-7-git-send-email-david@fromorbit.com> <20101013113402.GC19456@infradead.org>
-In-Reply-To: <20101013113402.GC19456@infradead.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Oct 2010 14:49:47.0247 (UTC) FILETIME=[E17027F0:01CB6AE5]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1286928961-15157-1-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2010 07:34 AM, Christoph Hellwig wrote:
-> Btw, this looks like a nasty enough bug that it might be worth queing
-> up for 2.6.36.
-> 
-> On Wed, Oct 13, 2010 at 11:15:49AM +1100, Dave Chinner wrote:
->> From: Dave Chinner <dchinner@redhat.com>
->>
->> Direct modification of the inode reference count is a no-no. Convert
->> the exofs decrements to call iput() instead of acting directly on
->> i_count.
->>
->> Signed-off-by: Dave Chinner <dchinner@redhat.com>
->> Reviewed-by: Christoph Hellwig <hch@lst.de>
->> ---
->>  fs/exofs/inode.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/fs/exofs/inode.c b/fs/exofs/inode.c
->> index b631ff3..0fb4d4c 100644
->> --- a/fs/exofs/inode.c
->> +++ b/fs/exofs/inode.c
->> @@ -1101,7 +1101,7 @@ static void create_done(struct exofs_io_state *ios, void *p)
->>  
->>  	set_obj_created(oi);
->>  
->> -	atomic_dec(&inode->i_count);
->> +	iput(inode);
->>  	wake_up(&oi->i_wq);
->>  }
->>  
->> @@ -1161,7 +1161,7 @@ struct inode *exofs_new_inode(struct inode *dir, int mode)
->>  	ios->cred = oi->i_cred;
->>  	ret = exofs_sbi_create(ios);
->>  	if (ret) {
->> -		atomic_dec(&inode->i_count);
->> +		iput(inode);
->>  		exofs_put_io_state(ios);
->>  		return ERR_PTR(ret);
->>  	}
->> -- 
+I've got an interesting oops running xfsqa 030 on this series.  Not
+sure it's a new one, though:
 
-I suspect it's not a bug but a useless inc/dec because in all my testing
-I have not seen an inode leak. Let me investigate if it can be removed.
-
-So I do not think we need it for 2.6.36.
-
-I'll take this patch into my 2.6.37-rcX merge window. It should appear
-in linux-next by tomorrow. Hopefully followed by a removal patch later.
-
-Thanks for the catch
-Boaz
+Entering kdb (current=0xf6ff7270, pid 2274) on processor 0 Oops: (null)
+due to oops @ 0xc022de60
+<d>Modules linked in:
+<c>
+<d>Pid: 2274, comm: flush-252:16 Not tainted 2.6.36-rc7+ #399 /Bochs
+<d>EIP: 0060:[<c022de60>] EFLAGS: 00010246 CPU: 0 EIP is at redirty_tail+0x90/0xa0
+<d>EAX: c0d6cda0 EBX: f54b67fc ECX: 00000000 EDX: 00000000
+<d>ESI: f7808c88 EDI: f685a308 EBP: f4109e78 ESP: f4109e70
+<d> DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0068
+<0>Process flush-252:16 (pid: 2274, ti=f4108000 task=f6ff7270 task.ti=f4108000)
+<0>Stack: f685a2a4 f54b67fc f4109ea4 c022e7df f4109e90 f685a310 f685a318 f4109ed8
+<0> 014b6804 f5d29260 f5d29260 f685a2a4 00000000 f4109f18 c022ef78 00000001
+<0> f4109ed8 00000000 00000000 c018bb4d f6ff7270 f685a310 f6ff7714 f685a308
+<0>Call Trace:
+<0> [<c022e7df>] ? writeback_sb_inodes+0x6f/0x1a0
+<0> [<c022ef78>] ? wb_writeback+0x118/0x320
+<0> [<c018bb4d>] ? local_clock+0x6d/0x70
+<0> [<c016f0bc>] ? local_bh_enable_ip+0x6c/0xd0
+<0> [<c022f1f5>] ? wb_do_writeback+0x75/0x190
+<0> [<c0175d44>] ? del_timer+0x74/0xc0
