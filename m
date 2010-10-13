@@ -1,113 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753354Ab0JMUrL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 16:47:11 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:46063 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab0JMUrK (ORCPT
+	id S1753289Ab0JMUtB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 16:49:01 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:7100 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab0JMUs7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 16:47:10 -0400
+	Wed, 13 Oct 2010 16:48:59 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=ptthxIf6TUvjBTvRphkaZvXiy8CRgix2F5rrUmK/xUmmwj2bGiqS+P0XqyVcFDCW2d
-         reYvSDwMQmRM54UTDlUuEtEtnqOhTLZ2izLlW2Xl2BdQzAzn7Mj/mDLyEpXDFGRAwXJ1
-         YsAjNAAfUBXFnSyPhJz1ju9pPnKOvToKYbeX8=
-From: Edward Shishkin <edward.shishkin@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, linux-fsdevel@vger.kernel.org
-Subject: [patch 2/2] vfs: relax count check in rw_verify_area
-Date: Wed, 13 Oct 2010 22:46:21 +0200
-User-Agent: KMail/1.12.3 (Linux/2.6.27.41-170.2.117.fc10.i686; KDE/4.3.3; i686; ; )
-Cc: Eric Sandeen <sandeen@redhat.com>, lmcilroy@redhat.com,
-        LKML <linux-kernel@vger.kernel.org>
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=DuqMXjMSk3Wbk2w5kUv/YvUjm0v3fkcD/DZsuguNO5SId9Q+SgzECKC7O86Cg66lOo
+         /2N0NmHgNE6hDFUnEurA==
+Date: Wed, 13 Oct 2010 13:48:50 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Christoph Lameter <cl@linux.com>
+cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Michael Chan <mchan@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH net-next] net:  allocate skbs on local node
+In-Reply-To: <alpine.DEB.2.00.1010131056180.29099@router.home>
+Message-ID: <alpine.DEB.2.00.1010131342310.15185@chino.kir.corp.google.com>
+References: <1286838210.30423.128.camel@edumazet-laptop> <1286839363.30423.130.camel@edumazet-laptop> <1286859925.30423.184.camel@edumazet-laptop> <20101011230322.f0f6dd47.akpm@linux-foundation.org> <1286866699.30423.234.camel@edumazet-laptop>
+ <20101012002435.f51f2c0e.akpm@linux-foundation.org> <1286869793.2732.24.camel@edumazet-laptop> <20101012005856.994bea6d.akpm@linux-foundation.org> <4CB441CB.2000708@cs.helsinki.fi> <alpine.DEB.2.00.1010120745360.31832@router.home>
+ <alpine.DEB.2.00.1010121234380.10165@chino.kir.corp.google.com> <alpine.DEB.2.00.1010131056180.29099@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010132246.21744.edward.shishkin@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Increase count limit in rw_verify_area().
+On Wed, 13 Oct 2010, Christoph Lameter wrote:
 
-Signed-off-by: Edward Shishkin <edward@redhat.com>
----
- fs/read_write.c    |   17 +++++++----------
- fs/splice.c        |    4 ++--
- include/linux/fs.h |    2 +-
- 3 files changed, 10 insertions(+), 13 deletions(-)
+> > Will you be adding the extensive slub debugging to slab then?  It would be
+> > a shame to lose it because one allocator is chosen over another for
+> > performance reasons and then we need to recompile to debug issues as they
+> > arise.
+> 
+> Well basically we would copy SLUB to SLAB apply unification patches to
+> SLAB instead of SLUBB. We first have to make sure that the unified patches
+> have the same performance as SLAB.
+> 
 
---- linux-2.6.36-rc7.orig/fs/read_write.c
-+++ linux-2.6.36-rc7/fs/read_write.c
-@@ -223,21 +223,20 @@ bad:
- #endif
- 
- /*
-- * rw_verify_area doesn't like huge counts. We limit
-- * them to something that fits in "int" so that others
-- * won't have to do range checks all the time.
-+ * We limit huge counts to something that fits in "ssize_t"
-  */
--#define MAX_RW_COUNT (INT_MAX & PAGE_CACHE_MASK)
-+#define MAX_RW_COUNT ((~(size_t)0) >> 1 & PAGE_CACHE_MASK)
- 
--int rw_verify_area(int read_write, struct file *file, loff_t *ppos, size_t count)
-+ssize_t rw_verify_area(int read_write, struct file *file, loff_t *ppos,
-+		       size_t count)
- {
- 	struct inode *inode;
- 	loff_t pos;
- 	int retval = -EINVAL;
- 
- 	inode = file->f_path.dentry->d_inode;
--	if (unlikely((ssize_t) count < 0))
--		return retval;
-+	if (unlikely(count > MAX_RW_COUNT))
-+		count = MAX_RW_COUNT;
- 	pos = *ppos;
- 	if (unlikely((pos < 0) || (loff_t) (pos + count) < 0))
- 		return retval;
-@@ -251,9 +250,7 @@ int rw_verify_area(int read_write, struc
- 	}
- 	retval = security_file_permission(file,
- 				read_write == READ ? MAY_READ : MAY_WRITE);
--	if (retval)
--		return retval;
--	return count > MAX_RW_COUNT ? MAX_RW_COUNT : count;
-+	return retval ? retval : count;
- }
- 
- static void wait_on_retry_sync_kiocb(struct kiocb *iocb)
---- linux-2.6.36-rc7.orig/fs/splice.c
-+++ linux-2.6.36-rc7/fs/splice.c
-@@ -1097,7 +1097,7 @@ static long do_splice_from(struct pipe_i
- {
- 	ssize_t (*splice_write)(struct pipe_inode_info *, struct file *,
- 				loff_t *, size_t, unsigned int);
--	int ret;
-+	ssize_t ret;
- 
- 	if (unlikely(!(out->f_mode & FMODE_WRITE)))
- 		return -EBADF;
-@@ -1126,7 +1126,7 @@ static long do_splice_to(struct file *in
- {
- 	ssize_t (*splice_read)(struct file *, loff_t *,
- 			       struct pipe_inode_info *, size_t, unsigned int);
--	int ret;
-+	ssize_t ret;
- 
- 	if (unlikely(!(in->f_mode & FMODE_READ)))
- 		return -EBADF;
---- linux-2.6.36-rc7.orig/include/linux/fs.h
-+++ linux-2.6.36-rc7/include/linux/fs.h
-@@ -1824,7 +1824,7 @@ extern int current_umask(void);
- /* /sys/fs */
- extern struct kobject *fs_kobj;
- 
--extern int rw_verify_area(int, struct file *, loff_t *, size_t);
-+extern ssize_t rw_verify_area(int, struct file *, loff_t *, size_t);
- 
- #define FLOCK_VERIFY_READ  1
- #define FLOCK_VERIFY_WRITE 2
+I see, so all of the development will be done in Pekka's tree on mm/slub.c 
+and then when we can see no performance regression compared to the slab 
+baseline, merge it into Linus' tree as mm/slab.c.  I'm not exactly sure 
+how that set of diffs being sent to Linus would look.
+
+Are the changes to slub in the unification patchset so intrusive that it 
+wouldn't be possible to isolate many of the features under #ifdef or 
+boot-time options in a single, truly unified, allocator?  It seems like a 
+shame that we'll have two allocators where the base is the same and much 
+of the debugging code is the same.
+
+> It maybe much better to isolate the debug features and general bootstrap
+> from the particulars of the allocation strategy of either SLUB or SLAB.
+> That way a common code base exists and it would be easier to add different
+> allocation strategies.
+> 
+> Basically have slab.c with the basic functions and then slab_queueing.c
+> and slab_noqueue.c for SLAB/SLUB with the particulars of the allocation
+> strategy?
+> 
+
+I was going to mention that as an idea, but I thought storing the metadata 
+for certain debugging features might differ from the two allocators so 
+substantially that it would be even more convoluted and difficult to 
+maintain?
