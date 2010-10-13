@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab0JMW6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 18:58:41 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:41442 "EHLO mail.vyatta.com"
+	id S1753773Ab0JMXAi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 19:00:38 -0400
+Received: from mga11.intel.com ([192.55.52.93]:14513 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753496Ab0JMW6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 18:58:40 -0400
-Date: Wed, 13 Oct 2010 15:58:30 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Amerigo Wang <amwang@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] namespace: add source file location exceptions
-Message-ID: <20101013155830.169ca022@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753542Ab0JMXAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 19:00:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,327,1283756400"; 
+   d="scan'208";a="846893250"
+Subject: [GIT PATCH] ioat2: fix performance regression
+To: akpm@linux-foundation.org, torvalds@linux-foundation.org
+From: Dan Williams <dan.j.williams@intel.com>
+Cc: Dave Jiang <dave.jiang@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>, netdev@vger.kernel.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        Jesse Brandeburg <jesse.brandeburg@intel.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        Richard Scobie <richard@sauce.co.nz>
+Date: Wed, 13 Oct 2010 16:03:44 -0700
+Message-ID: <20101013230248.32594.35857.stgit@localhost6.localdomain6>
+User-Agent: StGit/0.15-6-g0854
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Teach namespace checker about some special case files where the
-source is in unusual location.  This fixes many of the source file
-not found errors (more can be added), and also prevents false positives
-for functions not being used.
+Commit 0793448 "DMAENGINE: generic channel status v2" changed the interface for
+how dma channel progress is retrieved.  It inadvertently exported an internal
+helper function ioat_tx_status() instead of ioat_dma_tx_status().  The latter
+polls the hardware to get the latest completion state, while the helper just
+evaluates the current state without touching hardware.  The effect is that we
+end up waiting for completion timeouts or descriptor allocation errors before
+the completion state is updated.
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+iperf (before fix):
+[SUM]  0.0-41.3 sec   364 MBytes  73.9 Mbits/sec
+
+iperf (after fix):
+[SUM]  0.0- 4.5 sec   499 MBytes   940 Mbits/sec
+
+This is a regression starting with 2.6.35.
+
+Cc: <stable@kernel.org>
+Cc: Dave Jiang <dave.jiang@intel.com>
+Cc: Jesse Brandeburg <jesse.brandeburg@intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+Cc: Maciej Sosnowski <maciej.sosnowski@intel.com>
+Reported-by: Richard Scobie <richard@sauce.co.nz>
+Signed-off-by: Dan Williams <dan.j.williams@intel.com>
 ---
-Applies after previous patches by Amerigo Wang
+Late breaking fix that can hopefully get into 2.6.36.  I will queue a
+cleanup to clarify this confusing naming convention for 2.6.37.
 
---- a/scripts/namespace.pl	2010-10-13 15:01:56.695801914 -0700
-+++ b/scripts/namespace.pl	2010-10-13 15:29:15.454600976 -0700
-@@ -141,6 +141,26 @@ my %nameexception = (
-     'VDSO32_sigreturn'	=> 1,
- );
+Also available via git:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx.git fixes
+
+Dan Williams (1):
+      ioat2: fix performance regression
+
+ drivers/dma/ioat/dma_v2.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
+index 216f9d3..effd140 100644
+--- a/drivers/dma/ioat/dma_v2.c
++++ b/drivers/dma/ioat/dma_v2.c
+@@ -879,7 +879,7 @@ int __devinit ioat2_dma_probe(struct ioatdma_device *device, int dca)
+ 	dma->device_issue_pending = ioat2_issue_pending;
+ 	dma->device_alloc_chan_resources = ioat2_alloc_chan_resources;
+ 	dma->device_free_chan_resources = ioat2_free_chan_resources;
+-	dma->device_tx_status = ioat_tx_status;
++	dma->device_tx_status = ioat_dma_tx_status;
  
-+# Files with exceptions to source file location
-+my %sourceloc = (
-+    'net/dccp/dccp_probe.o'	=> 'probe',
-+    'net/dccp/dccp_ipv4.o'	=> 'ipv4',
-+    'net/dccp/dccp_ipv6.o'	=> 'ipv6',
-+    'net/dccp/dccp_diag.o'	=> 'diag',
-+    'drivers/char/hw_random/rng-core.o'	=> 'core',
-+    'fs/fat/msdos.o'		=> 'namei_msdos',
-+    'fs/fat/vfat.o'		=> 'namei_vfat',
-+    'fs/nfs_common/nfs_acl.o'	=> 'nfsacl',
-+    'sound/soundcore.o'		=> 'sound_core',
-+    'drivers/md/dm-mirror.o'	=> 'dm-raid1',
-+    'drivers/message/i2o/i2o_bus.o' => 'bus-osm',
-+    'arch/x86/kvm/kvm-amd.o'	=> 'svm',
-+    'arch/x86/kvm/kvm-intel.o'	=> 'vmx',
-+    'arch/x86/crypto/twofish-x86_64.o' => 'twofish-x86_64-asm_64',
-+    'arch/x86/crypto/aes-x86_64.o' => 'aes-x86_64-asm_64',
-+    'arch/x86/crypto/aesni-intel.o' => 'aesni-intel_asm',
-+    'arch/x86/crypto/salsa20-x86_64.o' => 'salsa20-x86_64-asm_64',
-+);
- 
- &find(\&linux_objects, '.');	# find the objects and do_nm on them
- &list_multiply_defined();
-@@ -228,11 +248,15 @@ sub do_nm
- 		return;
- 	}
- 	($source = $basename) =~ s/\.o$//;
-+
-+	$source = $sourceloc{$fullname} if ($sourceloc{$fullname});
-+
- 	if (-e "$source.c" || -e "$source.S") {
- 		$source = "$objtree$File::Find::dir/$source";
- 	} else {
- 		$source = "$srctree$File::Find::dir/$source";
- 	}
-+
- 	if (! -e "$source.c" && ! -e "$source.S") {
- 		# No obvious source, exclude the object if it is conglomerate
- 	        open(my $objdumpdata, "$objdump $basename|")
+ 	err = ioat_probe(device);
+ 	if (err)
+
