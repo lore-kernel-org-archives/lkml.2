@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0JMIjj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 04:39:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:60211 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753372Ab0JMIji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 04:39:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,324,1283756400"; 
-   d="scan'208";a="616227998"
-Subject: Re: [patch]x86: spread tlb flush vector between nodes
-From: Shaohua Li <shaohua.li@intel.com>
+	id S1753431Ab0JMIpQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 04:45:16 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59047 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753369Ab0JMIpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 04:45:14 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 13 Oct 2010 17:39:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: Andi Kleen <andi@firstfloor.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        "hpa@zytor.com" <hpa@zytor.com>, "Chen, Tim C" <tim.c.chen@intel.com>
-In-Reply-To: <20101013081629.GA1621@basil.fritz.box>
-References: <1286955698.13317.5.camel@sli10-conroe.sh.intel.com>
-	 <20101013081629.GA1621@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 16:39:36 +0800
-Message-ID: <1286959176.24888.6.camel@sli10-conroe.sh.intel.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim\@gmail.com" <minchan.kim@gmail.com>,
+        fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [RFC][PATCH 1/3] contigous big page allocator
+Message-Id: <20101013173950.0521c849.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <87ocay1obe.fsf@basil.nowhere.org>
+References: <20101013121527.8ec6a769.kamezawa.hiroyu@jp.fujitsu.com>
+	<87sk0a1sq0.fsf@basil.nowhere.org>
+	<20101013161206.c29df8ea.kamezawa.hiroyu@jp.fujitsu.com>
+	<87ocay1obe.fsf@basil.nowhere.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 16:16 +0800, Andi Kleen wrote:
-> On Wed, Oct 13, 2010 at 03:41:38PM +0800, Shaohua Li wrote:
-> 
-> Hi Shaohua,
-> 
-> > Currently flush tlb vector allocation is based on below equation:
-> > 	sender = smp_processor_id() % 8
-> > This isn't optimal, CPUs from different node can have the same vector, this
-> > causes a lot of lock contention. Instead, we can assign the same vectors to
-> > CPUs from the same node, while different node has different vectors. This has
-> > below advantages:
-> > a. if there is lock contention, the lock contention is between CPUs from one
-> > node. This should be much cheaper than the contention between nodes.
-> > b. completely avoid lock contention between nodes. This especially benefits
-> > kswapd, which is the biggest user of tlb flush, since kswapd sets its affinity
-> > to specific node.
-> 
-> The original scheme with 8 vectors was designed when Linux didn't have
-> per CPU interrupt numbers yet, and interrupts vectors were a scarce resource.
-> 
-> Now that we have per CPU interrupts and there is no immediate danger 
-> of running out I think it's better to use more than 8 vectors for the TLB 
-> flushes.
-> 
-> Perhaps could use 32 vectors or so and give each node on a 8S 
-> system 4 slots and on a 4 node system 8 slots?
-Haven't too much idea. Before we have per CPU interrupts, muti vector
-msi-x isn't widely deployed. Thought we need data if this is really
-required.
+On Wed, 13 Oct 2010 10:36:53 +0200
+Andi Kleen <andi@firstfloor.org> wrote:
 
-> > +
-> > +static int tlb_cpuhp_notify(struct notifier_block *n,
-> > +		unsigned long action, void *hcpu)
-> > +{
-> > +	switch (action & 0xf) {
-> > +	case CPU_ONLINE:
-> > +	case CPU_DEAD:
-> > +		calculate_tlb_offset();
-> > +	}
-> > +	return NOTIFY_OK;
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 > 
-> I don't think we really need the complexity of a notifier here.
-> In most x86 setups possible is very similar to online.
+> >> >   My intention is not for allocating HUGEPAGE(> MAX_ORDER).
+> >> 
+> >> I still believe using this for 1GB pages would be one of the more
+> >> interesting use cases.
+> >> 
+> >
+> > I'm successfully allocating 1GB of continous pages at test. But I'm not sure
+> > requirements and users. How quick this allocation should be ?
 > 
-> So I would suggest simply to compute a static mapping at boot
-> and simplify the code.
+> This will always be slow. Huge pages are always pre allocated
+> even today through a sysctl. The use case would be have
 > 
-> In theory there is a slight danger of node<->CPU numbers
-> changing with consecutive hot plug actions, but right now
-> this should not happen anyways and it would be unlikely
-> later.
-yes, it's unlikely. could we get the node info for a CPU before it's
-hotplugged? Anyway, this doesn't take overhead.
+> echo XXX > /proc/sys/vm/nr_hugepages 
+> 
+> at runtime working for 1GB too, instead of requiring a reboot
+> for this. 
+> 
+> I think it's ok if that is somewhat slow, as long as it is not
+> incredible slow. Ideally it shouldn't cause a swap storm either 
+> 
+> (maybe we need some way to indicate how hard the freeing code should
+> try?)
+> 
+yes. I think this patch should be update to do a precice control of memory
+pressure. It will improve memory hotplug's memory allocation, too.
+
+
+> I guess it would only really work well if you predefine
+> movable zones at boot time.
+> 
+
+I think so, too. But maybe enough for embeded guys and very special systems
+which need to use 1G page.
 
 Thanks,
-Shaohua
+-Kame
 
