@@ -1,44 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753078Ab0JMVCE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 17:02:04 -0400
-Received: from kroah.org ([198.145.64.141]:36320 "EHLO coco.kroah.org"
+	id S1753158Ab0JMVDx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 17:03:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41064 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751968Ab0JMVCD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 17:02:03 -0400
-Date: Wed, 13 Oct 2010 14:02:20 -0700
-From: Greg KH <greg@kroah.com>
-To: Bernhard Walle <walle@corscience.de>
-Cc: David Daney <ddaney@caviumnetworks.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: octeon: Add Lanai board USB clock type
-Message-ID: <20101013210220.GA2898@kroah.com>
-References: <1286791747-3151-1-git-send-email-walle@corscience.de> <4CB340F1.8020000@caviumnetworks.com> <4CB343DC.3050506@corscience.de> <4CB345C1.80709@caviumnetworks.com> <20101012155426.GA15238@kroah.com> <4CB49346.50906@caviumnetworks.com> <4CB5E0D6.8000004@corscience.de>
+	id S1751524Ab0JMVDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 17:03:52 -0400
+Message-ID: <4CB61E95.90702@zytor.com>
+Date: Wed, 13 Oct 2010 14:03:17 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB5E0D6.8000004@corscience.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4F11F.4090104@goop.org> <4CB54640.4000003@kernel.org> <4CB5DEE8.2020400@goop.org> <4CB5F86C.9030900@zytor.com> <4CB6107F.4080908@goop.org>
+In-Reply-To: <4CB6107F.4080908@goop.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 06:39:50PM +0200, Bernhard Walle wrote:
-> Am 12.10.2010 18:56, schrieb David Daney:
-> > On 10/12/2010 08:54 AM, Greg KH wrote:
-> >> On Mon, Oct 11, 2010 at 10:13:37AM -0700, David Daney wrote:
-> >>>
-> >>> That is the eventual plan.
-> >>
-> >> Why not do that now?
-> >>
-> > 
-> > If others want do submit patches that do that, I would not object.  It 
-> > is not currently my highest priority, so it may be a little while before 
-> > I would get to it.
+On 10/13/2010 01:03 PM, Jeremy Fitzhardinge wrote:
 > 
-> I sent a patch now that does this.
+> I'm looking at ways of avoiding the dependency on bottom-up allocation
+> at the moment.  It looks like it's OK if I can assume that the pagetable
+> is being allocated out of pages in the range
+> e820_table_start-e820_table_end (though one hopes those will get renamed
+> to something a bit more meaningful).
+> 
+> I should know how its going to turn out later today.
+> 
 
-Great, I'll queue it up, thanks.
+Thanks, I appreciate it.
 
-greg k-h
+	-hpa
