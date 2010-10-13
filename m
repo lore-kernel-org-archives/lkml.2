@@ -1,78 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751788Ab0JMQIb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 12:08:31 -0400
-Received: from 92.236.191.90.dyn.estpak.ee ([90.191.236.92]:50975 "EHLO x41"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750963Ab0JMQIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 12:08:30 -0400
-X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Oct 2010 12:08:29 EDT
-Subject: BUG: USB3.0 =?ISO-8859-1?Q?=B5PD720200?= complains about
- over-current
-From: =?ISO-8859-1?Q?T=F5nu?= Samuel <tonu@jes.ee>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: tonu@jes.ee
+	id S1751784Ab0JMQJm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 12:09:42 -0400
+Received: from lon1-post-3.mail.demon.net ([195.173.77.150]:47827 "EHLO
+	lon1-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751298Ab0JMQJl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 12:09:41 -0400
+Subject: [PATCH] [RFC] slub tracing: move trace calls out of always inlined
+ functions to reduce kernel code size
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Pekka Enberg <penberg@kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 19:01:09 +0300
-Message-ID: <1286985669.4853.14.camel@x41.itrotid.ee>
+Date: Wed, 13 Oct 2010 17:09:38 +0100
+Message-ID: <1286986178.1901.60.camel@castor.rsk>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Having the trace calls defined in the always inlined kmalloc functions
+in include/linux/slub_def.h causes a lot of code duplication as the
+trace functions get instantiated for each kamalloc call site. This can
+simply be removed by pushing the trace calls down into the functions in
+slub.c.
 
-I know, this is place where only Gods speak and others not. But I am
-sure there is something odd I found and someone here can take care of
-it.
+On my x86_64 built this patch shrinks the code size of the kernel by
+approx 29K and also shrinks the code size of many modules -- too many to
+list here ;)
 
-In situation when nothing is connected to any USB ports Ubuntu 10.04.1
-stock kernel complains:
-spider@spider:~$ zcat /var/log/kern.log.2.gz | grep -i current | head
-Sep 29 23:30:12 spider kernel: [    9.048388] hub 8-0:1.0: over-current
-change on port 1
-Sep 29 23:30:12 spider kernel: [    9.152036] hub 8-0:1.0: over-current
-change on port 2
-Sep 29 23:30:12 spider kernel: [    9.256038] hub 8-0:1.0: over-current
-change on port 3
-Sep 29 23:30:12 spider kernel: [    9.360037] hub 8-0:1.0: over-current
-change on port 1
-Sep 29 23:30:12 spider kernel: [    9.464036] hub 8-0:1.0: over-current
-change on port 2
-Sep 29 23:30:12 spider kernel: [    9.570621] hub 8-0:1.0: over-current
-change on port 3
-Sep 29 23:30:12 spider kernel: [    9.672037] hub 8-0:1.0: over-current
-change on port 1
-Sep 29 23:30:12 spider kernel: [    9.776038] hub 8-0:1.0: over-current
-change on port 2
-Sep 29 23:30:12 spider kernel: [    9.880049] hub 8-0:1.0: over-current
-change on port 3
-Sep 29 23:30:13 spider kernel: [    9.984041] hub 8-0:1.0: over-current
-change on port 1
-spider@spider:~$ 
+size vmlinux.o reports
+       text	   data	    bss	    dec	    hex	filename
+    4777011	 602052	 763072	6142135	 5db8b7	vmlinux.o
+    4747120	 602388	 763072	6112580	 5d4544	vmlinux.o.patch
 
-This runs forever and makes computer busy forever just running those
-messages. I verified same behavior exists with vanilla 2.6.35.7.
-Disabling USB3.0 in BIOS turns off problem and all USB2 ports remain to
-work. So probably this is xHCI driver who complains. I looked bit around
-in source and see it is copied from USB2 code and possibly USB3 has
-something different. I've read USB3 can supply more power, so possibly
-something here has changed.
+The resulting kernel has had some testing & kmalloc trace still seems to
+work.
 
-My hardware:
+This patch
+- moves trace_kmalloc out of the inlined kmalloc() and pushes it down
+into kmem_cache_alloc_trace() so this it only get instantiated once.
 
-Motherboard ASUS M4A88T-I Deluxe
-http://www.asus.com/product.aspx?P_ID=jGAoIFEziW5sPYy7
+- rename kmem_cache_alloc_notrace()  to kmem_cache_alloc_trace() to
+indicate that now is does have tracing. (maybe this would better being
+called something like kmalloc_kmem_cache ?)
 
-it has USB3 chip "NEC D720200F1" on it:
-http://digi.physic.ut.ee/mw/images/d/de/20100926_digi_007.png
+- adds a new function kmalloc_order() to handle allocation and tracing
+of large allocations of page order.
 
-NEC is joined Renesas, so this is his link for datasheet etc:
-http://www2.renesas.com/usb/en/product/upd720200.html
+- removes tracing from the inlined kmalloc_large() replacing them with a
+call to kmalloc_order();
 
-If you propose patch, I can give him test run.
+- move tracing out of inlined kmalloc_node() and pushing it down into
+kmem_cache_alloc_node_trace
 
-   Tõnu
+- rename kmem_cache_alloc_node_notrace() to
+kmem_cache_alloc_node_trace()
+
+- removes the include of trace/events/kmem.h from slub_def.h.
+
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+-----
+patch against v2.6.36-rc7
+compiled & tested on x86_64.
+
+Overall this lowers the overhead of having trace enabled & AFAICT seems
+to still work ;)
+
+Do you think this is the correct approach or can you suggest any better
+way to do this?
+
+
+regards
+Richard
+
+diffstat
+ include/linux/slub_def.h |   40 ++++++++++------------------------------
+ mm/slub.c                |   34 +++++++++++++++++++++++++++-------
+ 2 files changed, 37 insertions(+), 37 deletions(-)
+
+
+
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 9f63538..314272a 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -10,9 +10,6 @@
+ #include <linux/gfp.h>
+ #include <linux/workqueue.h>
+ #include <linux/kobject.h>
+-#include <linux/kmemleak.h>
+-
+-#include <trace/events/kmem.h>
+ 
+ enum stat_item {
+ 	ALLOC_FASTPATH,		/* Allocation from cpu slab */
+@@ -221,12 +218,13 @@ static __always_inline struct kmem_cache *kmalloc_slab(size_t size)
+ 
+ void *kmem_cache_alloc(struct kmem_cache *, gfp_t);
+ void *__kmalloc(size_t size, gfp_t flags);
++void *kmalloc_order(size_t size, gfp_t flags, unsigned int order);
+ 
+ #ifdef CONFIG_TRACING
+-extern void *kmem_cache_alloc_notrace(struct kmem_cache *s, gfp_t gfpflags);
++extern void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size);
+ #else
+ static __always_inline void *
+-kmem_cache_alloc_notrace(struct kmem_cache *s, gfp_t gfpflags)
++kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
+ {
+ 	return kmem_cache_alloc(s, gfpflags);
+ }
+@@ -235,18 +233,11 @@ kmem_cache_alloc_notrace(struct kmem_cache *s, gfp_t gfpflags)
+ static __always_inline void *kmalloc_large(size_t size, gfp_t flags)
+ {
+ 	unsigned int order = get_order(size);
+-	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
+-
+-	kmemleak_alloc(ret, size, 1, flags);
+-	trace_kmalloc(_THIS_IP_, ret, size, PAGE_SIZE << order, flags);
+-
+-	return ret;
++	return kmalloc_order(size, flags, order);
+ }
+ 
+ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+ {
+-	void *ret;
+-
+ 	if (__builtin_constant_p(size)) {
+ 		if (size > SLUB_MAX_SIZE)
+ 			return kmalloc_large(size, flags);
+@@ -257,11 +248,7 @@ static __always_inline void *kmalloc(size_t size, gfp_t flags)
+ 			if (!s)
+ 				return ZERO_SIZE_PTR;
+ 
+-			ret = kmem_cache_alloc_notrace(s, flags);
+-
+-			trace_kmalloc(_THIS_IP_, ret, size, s->size, flags);
+-
+-			return ret;
++			return kmem_cache_alloc_trace(s, flags, size);
+ 		}
+ 	}
+ 	return __kmalloc(size, flags);
+@@ -272,14 +259,14 @@ void *__kmalloc_node(size_t size, gfp_t flags, int node);
+ void *kmem_cache_alloc_node(struct kmem_cache *, gfp_t flags, int node);
+ 
+ #ifdef CONFIG_TRACING
+-extern void *kmem_cache_alloc_node_notrace(struct kmem_cache *s,
++extern void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
+ 					   gfp_t gfpflags,
+-					   int node);
++					   int node, size_t size);
+ #else
+ static __always_inline void *
+-kmem_cache_alloc_node_notrace(struct kmem_cache *s,
++kmem_cache_alloc_node_trace(struct kmem_cache *s,
+ 			      gfp_t gfpflags,
+-			      int node)
++			      int node, size_t size)
+ {
+ 	return kmem_cache_alloc_node(s, gfpflags, node);
+ }
+@@ -287,8 +274,6 @@ kmem_cache_alloc_node_notrace(struct kmem_cache *s,
+ 
+ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+ {
+-	void *ret;
+-
+ 	if (__builtin_constant_p(size) &&
+ 		size <= SLUB_MAX_SIZE && !(flags & SLUB_DMA)) {
+ 			struct kmem_cache *s = kmalloc_slab(size);
+@@ -296,12 +281,7 @@ static __always_inline void *kmalloc_node(size_t size, gfp_t flags, int node)
+ 		if (!s)
+ 			return ZERO_SIZE_PTR;
+ 
+-		ret = kmem_cache_alloc_node_notrace(s, flags, node);
+-
+-		trace_kmalloc_node(_THIS_IP_, ret,
+-				   size, s->size, flags, node);
+-
+-		return ret;
++		return kmem_cache_alloc_node_trace(s, flags, node, size);
+ 	}
+ 	return __kmalloc_node(size, flags, node);
+ }
+diff --git a/mm/slub.c b/mm/slub.c
+index 13fffe1..32b89ee 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -28,6 +28,9 @@
+ #include <linux/math64.h>
+ #include <linux/fault-inject.h>
+ 
++#include <linux/kmemleak.h>
++#include <trace/events/kmem.h>
++
+ /*
+  * Lock order:
+  *   1. slab_lock(page)
+@@ -1736,13 +1739,26 @@ void *kmem_cache_alloc(struct kmem_cache *s, gfp_t gfpflags)
+ EXPORT_SYMBOL(kmem_cache_alloc);
+ 
+ #ifdef CONFIG_TRACING
+-void *kmem_cache_alloc_notrace(struct kmem_cache *s, gfp_t gfpflags)
++void *kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size)
+ {
+-	return slab_alloc(s, gfpflags, NUMA_NO_NODE, _RET_IP_);
++	void *ret = slab_alloc(s, gfpflags, NUMA_NO_NODE, _RET_IP_);
++	trace_kmalloc(_RET_IP_, ret, size, s->size, gfpflags);
++	return ret;
+ }
+-EXPORT_SYMBOL(kmem_cache_alloc_notrace);
++EXPORT_SYMBOL(kmem_cache_alloc_trace);
+ #endif
+ 
++void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
++{
++	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
++
++	kmemleak_alloc(ret, size, 1, flags);
++	trace_kmalloc(_RET_IP_, ret, size, PAGE_SIZE << order, flags);
++
++	return ret;
++}
++EXPORT_SYMBOL(kmalloc_order);
++
+ #ifdef CONFIG_NUMA
+ void *kmem_cache_alloc_node(struct kmem_cache *s, gfp_t gfpflags, int node)
+ {
+@@ -1757,13 +1773,17 @@ EXPORT_SYMBOL(kmem_cache_alloc_node);
+ #endif
+ 
+ #ifdef CONFIG_TRACING
+-void *kmem_cache_alloc_node_notrace(struct kmem_cache *s,
++void *kmem_cache_alloc_node_trace(struct kmem_cache *s,
+ 				    gfp_t gfpflags,
+-				    int node)
++				    int node, size_t size)
+ {
+-	return slab_alloc(s, gfpflags, node, _RET_IP_);
++	void *ret = slab_alloc(s, gfpflags, node, _RET_IP_);
++
++	trace_kmalloc_node(_RET_IP_, ret,
++			   size, s->size, gfpflags, node);
++	return ret;
+ }
+-EXPORT_SYMBOL(kmem_cache_alloc_node_notrace);
++EXPORT_SYMBOL(kmem_cache_alloc_node_trace);
+ #endif
+ 
+ /*
+
 
