@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752131Ab0JLX5U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 19:57:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:59786 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751551Ab0JLX5T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 19:57:19 -0400
-Message-ID: <4CB4F5D1.6060300@ti.com>
-Date: Tue, 12 Oct 2010 18:57:05 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1751936Ab0JMAPr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 20:15:47 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:35177 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab0JMAPq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 20:15:46 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andi Kleen <andi@firstfloor.org>
+Subject: Re: RFC: Implement hwpoison on free for soft offlining
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com,
+        akpm@linux-foundation.org
+In-Reply-To: <20101012131414.GC20436@basil.fritz.box>
+References: <20101012181439.ADA9.A69D9226@jp.fujitsu.com> <20101012131414.GC20436@basil.fritz.box>
+Message-Id: <20101013091553.ADB1.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-pm <linux-pm@lists.linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, l-o <linux-omap@vger.kernel.org>,
-        l-a <linux-arm-kernel@lists.infradead.org>,
-        Paul <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v7] power: introduce library for device-specific OPPs
-References: <[PATCH] power: introduce library for device-specific OPPs> <4CB32675.1090205@ti.com> <201010120008.16388.rjw@sisk.pl> <201010130125.14604.rjw@sisk.pl>
-In-Reply-To: <201010130125.14604.rjw@sisk.pl>
-Content-Type: text/plain; charset="ISO-8859-2"; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 13 Oct 2010 09:15:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafael J. Wysocki had written, on 10/12/2010 06:25 PM, the following:
-> On Tuesday, October 12, 2010, Rafael J. Wysocki wrote:
->> On Monday, October 11, 2010, Nishanth Menon wrote:
->>> Rafael J. Wysocki had written, on 10/09/2010 05:59 PM, the following:
->>> [...]
->>>>> Signed-off-by: Nishanth Menon <nm@ti.com>
->>>> OK
->>>>
->>>> Your error messages are a bit inconsistent (e.g. some of them print the
->>>> error code while others don't), but I guess I can fix that up.
->>> Thanks a bunch.
->>>> Still, to apply the patch I need a copyright notice for the doc too.
->>> oops..
->>> (C) 2009-2010 Nishanth Menon <nm@ti.com>, Texas Instruments Incorporated
->>> Does this help?
->> Yes, it does.
->>
->>> or would you like me to post a v8 as well?
->> That shouldn't be necessary.
+> > To me, it's no problem if this keep 64bit only. IOW, I only dislike to
+> > add 32bit page flags.
+> > 
+> > Yeah, memory corruption is very crap and i think your effort has a lot
+> > of worth :)
 > 
-> The patch has been applied to suspend-2.6/linux-next at:
+> Thanks.
 > 
-> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=commit;h=56149b574181d98aedf97f1f2d91d05ab261db41
+> > 
+> > 
+> > offtopic, I don't think CONFIG_MEMORY_FAILURE and CONFIG_HWPOISON_ON_FREE
+> > are symmetric nor easy understandable. can you please consider naming change?
+> > (example, CONFIG_HWPOISON/CONFIG_HWPOISON_ON_FREE, 
+> > CONFIG_MEMORY_FAILURE/CONFIG_MEMORY_FAILURE_SOFT_OFFLINE)
 > 
-> with minor changes around the error messages.  Please double check if everything
-> is correct.
-Thanks Rafael. I confirm changes are correct.
--- 
-Regards,
-Nishanth Menon
+> memory-failure was the old name before hwpoison as a term was invented
+> by Andrew.
+> 
+> In theory it would make sense to rename everything to "hwpoison" now.
+> But I decided so far the disadvantages from breaking user configurations
+> and the impact from renaming files far outweight the small benefits
+> in clarity.
+> 
+> So right now I prefer to keep the status quo, but name everything
+> new hwpoison.
+
+ok. I've got it. thanks :)
+
+
