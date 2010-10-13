@@ -1,104 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab0JMXTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 19:19:36 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:17465 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753561Ab0JMXTe convert rfc822-to-8bit (ORCPT
+	id S1753871Ab0JMXX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 19:23:29 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:42907 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753717Ab0JMXX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 19:19:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=EdYh01vu621K8sudUU8kT6NHKpJCRvQjOMXlRC1EqOZVHN6B2uYkqwEryZz2RNjPEE
-         /LrbXH38+jPIga64ajgQ==
+	Wed, 13 Oct 2010 19:23:28 -0400
+Date: Thu, 14 Oct 2010 10:23:19 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101013232319.GZ4681@dastard>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-18-git-send-email-david@fromorbit.com>
+ <20101013072058.GA3121@amd>
+ <20101013112552.GB16422@infradead.org>
+ <20101013123008.GA6067@amd>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com>
-References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com> <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com>
-From: David Sharp <dhsharp@google.com>
-Date: Wed, 13 Oct 2010 16:19:10 -0700
-Message-ID: <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com>
-Subject: Benchmarks of kernel tracing options (ftrace and ktrace)
-To: linux-kernel@vger.kernel.org, Steven Rostedt <rostedt@goodmis.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101013123008.GA6067@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Google uses kernel tracing aggressively in the its data centers. We
-wrote our own kernel tracer, ktrace. However ftrace, perf and LTTng
-all have a better feature set than ktrace, so we are abandoning that
+On Wed, Oct 13, 2010 at 11:30:08PM +1100, Nick Piggin wrote:
+> On Wed, Oct 13, 2010 at 07:25:52AM -0400, Christoph Hellwig wrote:
+> > On Wed, Oct 13, 2010 at 06:20:58PM +1100, Nick Piggin wrote:
+> > > Unfortunate timing that everybody is suddenly interested in the
+> > > scalability work :)
+> > 
+> > People have been interested for a long time.  It's just that we finally
+> > made forward progress to get parts of it shape for merging, which should
+> > have been done long time ago.
+> 
+> It has been pretty close, IMO, it just needed some more reviewers, which
+> it only just got really.
+
+Going back a couple of weeks, it seemed as far away from inclusion
+as when you first posted the series - there had been no substanital
+review and nobody wanting to review it in it's current form. Then
+I'd heard you were travelling indefinitely.....
+
+There is stuff in the vfs-scale tree that is somewhat controversial
+and had not been discussed satisfactorily - the lock ordering
+(resulting in trylocks everywhere), the shrinker API change, the
+writeback LRU changes, the zone reclaim changes, etc - and some of
+them even have alternative proposals for fixing the algorithmic
+deficiencies.  Nobody was going to review or accept that as one big
+lump.
+
+There's been review now because I went and did what the potential
+reviewers were asking for - break the series into smaller, more
+easily reviewable and verifiable chunks. As a result, I think we're
+close to the end of the review cycle for the inode_lock breakup now.
+I think the code is now much cleaner and more maintainable than what I
+originally pulled from the vfs-scale tree, and it still provides the
+same gains and ability to be converted to RCU algorithms in the
+future.
+
+Hence, IMO, the current vfs-scale tree needs to be treated as a
+prototype, not as a finished product. It demonstrates the the path
+we need to follow to move forward, as well as the gains we will get
+as we move in that direction, but the code in that tree is not
+guaranteed a free pass into the mainline tree.
+
+> etc. I had to really learn most of the code from scratch to get this far
+> and got quite little constructive review really until recently.
+
+Which seems to be another good reason for treating the tree as prototype
 code.
 
-We see several implementations of tracing aimed at the mainline kernel
-and wanted a fair comparison of each of them to make sure they will
-not significantly impact performance. A tracing toolkit that is too
-expensive is not usable in our environment.
+Cheers,
 
-So we are sending out some benchmark results to compare the three
-tracing subsystems we know of. In addition we included numbers for
-ktrace, and a git tree for the source.
-
-Some background on Ktrace: Ktrace uses the same ringbuffer as ftrace,
-but has much fewer frontend features (filtering, formatted output
-file). Trace events are always packed. ktrace has an mmap interface to
-the per-cpu ring buffers instead of splice()  (the merits of these two
-options have yet to be evaluated).
-
-In order to test ktrace fairly, I forward ported it v2.6.36.r7. I also
-made some minor changes to ftrace that don't significantly affect the
-benchmark.
-
-The tree with ktrace and the changes mentioned above is available here:
-
-       git://google3-2.osuosl.org/kernel/tracing/ktrace.git  ktrace-forwardport
-
-The benchmark used is rather synthetic, and aims to measure the
-overhead of entering the kernel with a tracepoint enabled. It measures
-the time to call getuid() 100,000 times, and returns the average time
-per call. To infer the overhead of tracing, the benchmark is run with
-tracing off, and with tracing on. The tracer is given a
-generously-sized ring buffer so that overflows do not occur (no reader
-is present). The "off" run essentially measures the cost of a ring
-switch, as sys_getuid() is practically a nop syscall. Subtracting the
-"off" result from the "on" result indicates the average amount of time
-it takes to add a small item to the tracing ring buffer.
-
-I wrote the benchmark as an Autotest test, so you can see the actual
-code for yourself:
-http://autotest.kernel.org/browser/trunk/client/tests/tracing_microbenchmark
-
-
-This first set of benchmark results compares ftrace to ktrace. The
-numbers below are the "on" result minus the "off" result for each
-configuration.
-
-ktrace: 200ns  (tracepoint: kernel_getuid)
-ftrace: 224ns   (tracepoint: timer:sys_getuid)
-ftrace: 587ns   (tracepoint: syscalls:sys_enter_getuid)
-
-The "off" result for all configurations was about 231ns. I believe
-that to be a meaningless number wrt this benchmark, however.
-
-The "kernel_getuid" (ktrace) and "timer:sys_getuid" (ftrace)
-tracepoints are normal tracepoints added to the body of sys_getuid.
-syscalls:sys_enter_getuid is the existing syscall tracing event.
-
-The first two results show that ftrace is about 12% slower than ktrace
-at adding events to the ring buffer.
-
-The last result shows that the syscall tracing is about twice as
-expensive as a normal tracepoint, which is interesting.
-
-
-Similar benchmarks for lttng and perf_events are coming. Expect at
-least one of those by next week.
-
-Thanks,
-David Sharp
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
