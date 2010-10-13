@@ -1,113 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab0JMSKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 14:10:16 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57147 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab0JMSKN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 14:10:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Y8zDyRGZY35wl5BVuWS2IVazSJXEtbMa8kuxczBBL4ozW6hnwQczAGdJlENFGuhP9j
-         QHRd2eBYXNbCp31O4hRPHpW1EAbsyUCf47SEoCT5cKbHJGxkeuZPmu9bkmOtQBkeJN3W
-         LDyiaSPjZqnNqoxQ7P7AJNxNaG66dp9w2wo9s=
-MIME-Version: 1.0
-In-Reply-To: <B7132A25476D334D9130FE7532F2A56314B5929629@SC1EXMB-MBCL.global.atheros.com>
-References: <20101008170258.GJ10149@tux> <4CAF5488.3030706@Atheros.com>
- <20101008181508.GM10149@tux> <20101012211726.GE2678@broadcom.com>
- <1286964370.3316.6.camel@aeonflux> <AANLkTimAeoS2Vi7GhKSTrghqaOQ=XKSzjcou15dn+YDR@mail.gmail.com>
- <B7132A25476D334D9130FE7532F2A56314B5929629@SC1EXMB-MBCL.global.atheros.com>
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Wed, 13 Oct 2010 11:09:51 -0700
-Message-ID: <AANLkTik9oYwspVG4KFbMMq63SpBp++iZe=vxOSQhxRki@mail.gmail.com>
-Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or replace
- ath3k-1.fw ?
-To: Kevin Hayes <kevin@atheros.com>
-Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Henry Ptasinski <henryp@broadcom.com>,
-        Suraj Sumangala <Suraj.Sumangala@atheros.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752685Ab0JMSK3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 14:10:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37103 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752514Ab0JMSKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 14:10:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,326,1283756400"; 
+   d="scan'208";a="667131394"
+Date: Wed, 13 Oct 2010 11:10:24 -0700
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
+        mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:irq/core] x86: Sanitize apb timer interrupt handling
+Message-ID: <20101013111024.0000645d@unknown>
+In-Reply-To: <alpine.LFD.2.00.1010130020250.2909@localhost6.localdomain6>
+References: <tip-a5ef2e70405c8a9ee380b5ff33a008c75454791f@git.kernel.org>
+	<20101012142000.00001358@unknown>
+	<alpine.LFD.2.00.1010122327260.2909@localhost6.localdomain6>
+	<20101012151230.00000402@unknown>
+	<alpine.LFD.2.00.1010130020250.2909@localhost6.localdomain6>
+Organization: Intel OTC
+X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 10:54 AM, Kevin Hayes <kevin@atheros.com> wrote:
-> Hi Luis,
->
->
->> -----Original Message-----
->> From: linux-bluetooth-owner@vger.kernel.org [mailto:linux-bluetooth-
->> owner@vger.kernel.org] On Behalf Of Luis R. Rodriguez
->> Sent: Wednesday, October 13, 2010 10:43 AM
->> To: Marcel Holtmann
->> Cc: Henry Ptasinski; Suraj Sumangala; Luis Rodriguez; David Woodhouse;
->> linux-bluetooth; linux-kernel@vger.kernel.org; linux-wireless
->> Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or
->> replace ath3k-1.fw ?
->>
->> On Wed, Oct 13, 2010 at 3:06 AM, Marcel Holtmann <marcel@holtmann.org>
->> wrote:
->> > Hi Henry,
->> >
->> >> > > Marcel had answered me before. It makes sense to have same file
->> name.
->> >> > > Other ways we end up changing the driver whenever there is a
->> firmware
->> >> > > change.
->> >> >
->> >> > > > I last tried to document a thread we had over this here:
->> >> > > >
->> >> > > >
->> http://wireless.kernel.org/en/developers/Documentation/firmware-
->> versioning
->> >> > > >
->> >> >
->> >> > Thanks, I've updated that link above to document bug fixing does
->> not require
->> >> > a filename change.
->> >>
->> >> I don't really understand why you would not want to change the code
->> revision
->> >> part of the filename.
->> >>
->> >> I totally agree that you don't want to change the driver every time
->> the
->> >> firmware gets a bug fix, but wasn't that the whole point of
->> splitting the name
->> >> into API and code revisions portions, and symlinking the file to one
->> that just
->> >> has the API version?
->> >>
->> >> What's the issue with using the process as originally documented?
->> >
->> > as I stated before, for Bluetooth this makes no sense. You don't need
->> > API version numbers since the API is a STANDARD. It is called HCI. So
->> > please don't use API version numbers in the firmware files.
->> >
->> > I will reject firmware file versions for upstream drivers.
->>
->> Does the HCI standard ever get improved upon? If so, how do devices
->> never get firmware updates that would allow them to use some newer HCI
->> APIs?
->>
->> I've updated the documentation above for 802.11 and Bluetooth with the
->> above, please feel free to further extend it as you see fit.
->>
->>   Luis
->
-> HCI is always backward compatible.  Newer commands are properly discoverable by both sides of the HCI link.
-> As long as the procedure to download firmware does not depend on new HCI commands (it does not), then the firmware itself can teach an old controller to learn new tricks.
 
-Does HCI support uploading firmware? Can't we resolve this blacklist
-crap issue if devices just used HCI to upload firmware?
+Hi tglx,
 
-  Luis
+You are right, i am already doing the enable/disable dance. 
+
+Thanks for pointing it out, patiently.
+
+Jacob
+
+Thomas Gleixner Wed, 13 Oct 2010 00:26:08 +0200 (CEST)
+>On Tue, 12 Oct 2010, Jacob Pan wrote:
+>
+>> Thomas Gleixner Tue, 12 Oct 2010 23:28:19 +0200 (CEST)
+>> >On Tue, 12 Oct 2010, Jacob Pan wrote:
+>> >
+>> >> 
+>> >> >x86: Sanitize apb timer interrupt handling
+>> >> >
+>> >> >Disable the interrupt in CPU_DEAD where it belongs.
+>> >> My main concern is the performance cost. The power management code for
+>> >> Moorestown system make use of the cpu hotplug code (disable_nonboot_cpus)
+>> >> but much more frequently. The system low power states are call S0 idle
+>> >> state (s0ix).
+>> >> 
+>> >> Leaving the irq enabled at the chip and desc level between S0ix states
+>> >> might give some performance benefit. That was my original thought.
+>> >> Will it cause problems?
+>> >
+>> >Errm. I merily moved it to the place where it should be. You do the
+>> >disable/enable dance already today.
+>> >
+>> I think I only do disable/enable at the timer HW level today during cpu hp
+>> notification, not calling disable_irq(). Am i missing something?
+>
+>apbt_setup_irq()
+>{
+> ...
+> 
+>--->	disable_irq(adev->irq);
+>	desc->status |= IRQ_MOVE_PCNTXT;
+>	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
+>	/* APB timer irqs are set up as mp_irqs, timer is edge triggerred */
+>	set_irq_chip_and_handler_name(adev->irq, chip, handle_edge_irq, "edge");
+>--->	enable_irq(adev->irq);
+>	if (system_state == SYSTEM_BOOTING)
+> ...
+>}
+>
+>So that's a disable/enable pair on every cpu hotplug, right ?
+>
+>Now I moved the disable to CPU_DEAD where it belongs and the enable
+>stayed at the same place.
+>
+>Thanks,
+>
+>	tglx
+yo
