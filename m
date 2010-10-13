@@ -1,131 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab0JMIgm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 04:36:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:58107 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133Ab0JMIgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 04:36:41 -0400
-Message-ID: <4CB56F7A.8030702@cn.fujitsu.com>
-Date: Wed, 13 Oct 2010 16:36:10 +0800
-From: Shan Wei <shanwei@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1753422Ab0JMIg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 04:36:56 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:50252 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753309Ab0JMIgz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 04:36:55 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm\@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "minchan.kim\@gmail.com" <minchan.kim@gmail.com>,
+        fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [RFC][PATCH 1/3] contigous big page allocator
+References: <20101013121527.8ec6a769.kamezawa.hiroyu@jp.fujitsu.com>
+	<87sk0a1sq0.fsf@basil.nowhere.org>
+	<20101013161206.c29df8ea.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 13 Oct 2010 10:36:53 +0200
+In-Reply-To: <20101013161206.c29df8ea.kamezawa.hiroyu@jp.fujitsu.com>
+	(KAMEZAWA Hiroyuki's message of "Wed, 13 Oct 2010 16:12:06 +0900")
+Message-ID: <87ocay1obe.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Yaogong Wang <ywang15@ncsu.edu>
-CC: linux-sctp@vger.kernel.org, Vlad Yasevich <vladislav.yasevich@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 4/5] sctp: a sample module of strict priority queue
-References: <AANLkTi=8ArxUh2-8PJvD8paDGVBHdDjKk=xQDKo6i2==@mail.gmail.com>
-In-Reply-To: <AANLkTi=8ArxUh2-8PJvD8paDGVBHdDjKk=xQDKo6i2==@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yaogong Wang wrote, at 09/12/2010 09:13 AM:
-> Provide a sample kernel module that uses the pluggable multistream
-> scheduling framework. This module implements strict priority queue.
-> 
-> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
-> ---
->  net/sctp/Kconfig     |   12 ++++++
->  net/sctp/Makefile    |    1 +
->  net/sctp/sctp_prio.c |  103 ++++++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 116 insertions(+), 0 deletions(-)
->  create mode 100644 net/sctp/sctp_prio.c
-> 
-> diff --git a/net/sctp/Kconfig b/net/sctp/Kconfig
-> index 126b014..85c8ded 100644
-> --- a/net/sctp/Kconfig
-> +++ b/net/sctp/Kconfig
-> @@ -37,6 +37,18 @@ menuconfig IP_SCTP
-> 
->  if IP_SCTP
-> 
-> +config SCTP_SCHED_PRIO
-> +	tristate "SCTP Multistream Scheduling: Priority Queue"
-> +	default m
-> +	help
-> +	  This module provides the ability to use priority queue
-> +	  to schedule multiple streams within an association.
-> +
-> +	  To compile this code as a module, choose M here: the
-> +	  module will be called sctp_prio.
-> +
-> +	  If in doubt, say N.
-> +
->  config NET_SCTPPROBE
->  	tristate "SCTP: Association probing"
->          depends on PROC_FS && KPROBES
-> diff --git a/net/sctp/Makefile b/net/sctp/Makefile
-> index 4e8b65d..89be03a 100644
-> --- a/net/sctp/Makefile
-> +++ b/net/sctp/Makefile
-> @@ -4,6 +4,7 @@
-> 
->  obj-$(CONFIG_IP_SCTP) += sctp.o
->  obj-$(CONFIG_NET_SCTPPROBE) += sctp_probe.o
-> +obj-$(CONFIG_SCTP_SCHED_PRIO) += sctp_prio.o
-> 
->  sctp-y := sm_statetable.o sm_statefuns.o sm_sideeffect.o \
->  	  protocol.o endpointola.o associola.o \
-> diff --git a/net/sctp/sctp_prio.c b/net/sctp/sctp_prio.c
-> new file mode 100644
-> index 0000000..11e7e11
-> --- /dev/null
-> +++ b/net/sctp/sctp_prio.c
-> @@ -0,0 +1,103 @@
-> +/*
-> + * SCTP multistream scheduling: priority queue
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/list.h>
-> +#include <net/sctp/sctp.h>
-> +
-> +static int prio_init(struct sctp_outq *q, gfp_t gfp)
-> +{
-> +	__u16 i;
-> +	q->out_chunk_list = kmalloc(q->asoc->c.sinit_num_ostreams
-> +				 * sizeof(struct list_head), gfp);
-> +	if (!q->out_chunk_list)
-> +		return -ENOMEM;
-> +	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
-> +		INIT_LIST_HEAD(&q->out_chunk_list[i]);
-> +
-> +	return 0;
-> +}
-> +
-> +static void prio_release(struct sctp_outq *q)
-> +{
-> +	kfree(q->out_chunk_list);
-> +	return;
-> +}
-> +
-> +static void prio_enqueue_head_data(struct sctp_outq *q,
-> +					struct sctp_chunk *ch)
-> +{
-> +	list_add(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
 
-User can using SCTP_SNDRCV option to specific stream number.
-So, It is necessary to check stream number with q->asoc->c.sinit_num_ostreams.
+>> >   My intention is not for allocating HUGEPAGE(> MAX_ORDER).
+>> 
+>> I still believe using this for 1GB pages would be one of the more
+>> interesting use cases.
+>> 
+>
+> I'm successfully allocating 1GB of continous pages at test. But I'm not sure
+> requirements and users. How quick this allocation should be ?
 
-> +	q->out_qlen += ch->skb->len;
-> +	return;
-> +}
-> +
-> +static void prio_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
-> +{
-> +	list_add_tail(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
+This will always be slow. Huge pages are always pre allocated
+even today through a sysctl. The use case would be have
 
-need to check too.
- 
+echo XXX > /proc/sys/vm/nr_hugepages 
 
+at runtime working for 1GB too, instead of requiring a reboot
+for this. 
+
+I think it's ok if that is somewhat slow, as long as it is not
+incredible slow. Ideally it shouldn't cause a swap storm either 
+
+(maybe we need some way to indicate how hard the freeing code should
+try?)
+
+I guess it would only really work well if you predefine
+movable zones at boot time.
+
+-Andi
 
 -- 
-Best Regards
------
-Shan Wei
-
+ak@linux.intel.com -- Speaking for myself only.
