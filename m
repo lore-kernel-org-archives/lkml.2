@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753943Ab0JMXul (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 19:50:41 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60078 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753854Ab0JMXuk (ORCPT
+	id S1753869Ab0JMX4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 19:56:08 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:51536 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753575Ab0JMX4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 19:50:40 -0400
-X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=T9ZRXmIXaAQA:10 a=IkcTkHD0fZMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=oVmpcOy8t3OHlJR9xPQA:9 a=JDjlX5MVVa8Gvyi4TdN-gsfs3dQA:4 a=QEXdDO2ut3YA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Sharp <dhsharp@google.com>
-Cc: linux-kernel@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com>
-References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com>
-	 <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com>
-	 <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 19:50:30 -0400
-Message-ID: <1287013830.3673.224.camel@frodo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Oct 2010 19:56:07 -0400
+Date: Thu, 14 Oct 2010 10:55:52 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        axboe@kernel.dk
+Subject: Re: fs: Inode cache scalability V3
+Message-ID: <20101013235552.GA4681@dastard>
+References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
+ <20101013145102.GA12155@infradead.org>
+ <20101013155845.GB22447@infradead.org>
+ <20101013214609.GA24695@infradead.org>
+ <20101013233647.GA18691@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20101013233647.GA18691@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 16:19 -0700, David Sharp wrote:
-> Google uses kernel tracing aggressively in the its data centers. We
-
-Thanks!
-
-> wrote our own kernel tracer, ktrace. However ftrace, perf and LTTng
-> all have a better feature set than ktrace, so we are abandoning that
-> code.
-
-Cool!
-
+On Wed, Oct 13, 2010 at 07:36:48PM -0400, Christoph Hellwig wrote:
+> On Wed, Oct 13, 2010 at 05:46:09PM -0400, Christoph Hellwig wrote:
+> > On Wed, Oct 13, 2010 at 11:58:45AM -0400, Christoph Hellwig wrote:
+> > > 
+> > > It's 100% reproducible on my kvm VM.  The bug is the assert_spin_locked
+> > > in redirty_tail.  I really can't find a way how we reach it without
+> > > d_lock so this really confuses me.
+> > 
+> > We are for some reason getting a block device inode that is on the
+> > dirty list of a bdi that it doesn't point to.  Still trying to figure
+> > out how exactly that happens.
 > 
-> We see several implementations of tracing aimed at the mainline kernel
-> and wanted a fair comparison of each of them to make sure they will
-> not significantly impact performance. A tracing toolkit that is too
-> expensive is not usable in our environment.
+> It's because __blkdev_put reset the bdi on the mapping, and bdev inodes
+> are still special cased to not use s_bdi unlike everybody else.  So
+> we keep switch between different bdis that get locked.
 > 
+> I wonder what's a good workaround for that.  Just flushing out all
+> dirty state of a block device inode on last close would fix, but we'd
+> still have all the dragons hidden underneath until we finally sort
+> out the bdi reference mess.
 
-[ snip for now (I'm traveling) ]
+Perhaps for the moment make __blkdev_put() move the inode onto the
+dirty lists for the default bdi when it switches themin the
+mapping? e.g. add a "inode_switch_bdi" helper that is only called in
+this case?
 
-> This first set of benchmark results compares ftrace to ktrace. The
-> numbers below are the "on" result minus the "off" result for each
-> configuration.
-> 
-> ktrace: 200ns  (tracepoint: kernel_getuid)
-> ftrace: 224ns   (tracepoint: timer:sys_getuid)
-> ftrace: 587ns   (tracepoint: syscalls:sys_enter_getuid)
+Cheers,
 
-
-> The last result shows that the syscall tracing is about twice as
-> expensive as a normal tracepoint, which is interesting.
-
-Argh, the syscall tracing has a lot of overhead. There is only one
-tracepoint that is hooked into the ptrace code, and will save all
-registers before calling the functions. It enables tracing on all
-syscalls and there's a table that decides whether or not to trace the
-syscall.
-
-So I'm not surprised with the result that the syscall trace point is so
-slow (note, perf uses the same infrastructure).
-
--- Steve
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
