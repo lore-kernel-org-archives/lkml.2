@@ -1,154 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752753Ab0JMTzt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 15:55:49 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:34248 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751119Ab0JMTzs (ORCPT
+	id S1752808Ab0JMT6F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 15:58:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55404 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752156Ab0JMT6E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 15:55:48 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: fabio tirapelle <ftirapelle@yahoo.it>
-Subject: Re: Hauppauge WinTV-HVR-1120 on Unbuntu 10.04
-Date: Wed, 13 Oct 2010 13:54:31 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Michael Krufky <mkrufky@kernellabs.com>
-References: <142752.33963.qm@web25408.mail.ukl.yahoo.com>
-In-Reply-To: <142752.33963.qm@web25408.mail.ukl.yahoo.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Wed, 13 Oct 2010 15:58:04 -0400
+Date: Wed, 13 Oct 2010 12:57:38 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, dri-devel@lists.freedesktop.org,
+        akpm <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        David Airlie <airlied@linux.ie>
+Subject: [PATCH -next] gpu/drm: fix build errors and kconfig dependency
+ warnings
+Message-Id: <20101013125738.24a0bd95.randy.dunlap@oracle.com>
+In-Reply-To: <20101013154522.7b087a20.sfr@canb.auug.org.au>
+References: <20101013154522.7b087a20.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010131354.31647.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 13, 2010 01:02:11 pm fabio tirapelle wrote:
-> After upgrading from Ubuntu 9.10 to Ubuntu 10.04 my Hauppauge WinTV-HVR-1120 
-> (sometimes) doesn't work correctly.
-> I get random the following errors:
-> 
-> tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer returned: -5
-> tda18271_init: error -5 on line 826
-> tda18271_tune: error -5 on line 904
-> tda18271_set_params: error -5 on line 985
+On Wed, 13 Oct 2010 15:45:22 +1100 Stephen Rothwell wrote:
 
-I cc'd Michael since he made several recent tda18271 changes.
+> Hi all,
+> 
+> Changes since 20101012:
+> 
+> The drm tree gained a conflict against the kgdb tree.
 
-This page: http://cvs.linuxtv.org/wiki/index.php/Zolid_Hybrid_TV_Tuner
-suggests that the card might work, despite the error messages.  Does
-yours work?
 
-I see that tda18271_write_regs() uses i2c_transfer(), which uses the
-adap->algo->master_xfer function pointer, but I don't know enough to
-figure out which master_xfer implementation might be used on your
-system.  A complete dmesg log and lspci output might have a hint.
+ERROR: "hwmon_device_unregister" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
+ERROR: "hwmon_device_register" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
+ERROR: "video_output_unregister" [drivers/acpi/video.ko] undefined!
+ERROR: "video_output_register" [drivers/acpi/video.ko] undefined!
 
-Can you reproduce this on an upstream kernel?  It would be good to
-make sure that it's not something introduced by an Ubuntu patch or
-fixed since the Ubuntu kernel snapshot.
+The latter 2 are simple to fix:
+in drivers/gpu/drm/nouveau/Kconfig, for config DRM_NOUVEAU:
 
-Bjorn
+@@ -11,6 +11,7 @@ config DRM_NOUVEAU
+ 	select FRAMEBUFFER_CONSOLE if !EMBEDDED
+ 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
+ 	select ACPI_VIDEO if ACPI
++	select VIDEO_OUTPUT_CONTROL if ACPI
+ 	help
+ 	  Choose this option for open-source nVidia support.
 
-> Part of dmesg of 11-OCT-2010
-> 
-> [   53.216153] DVB: registering new adapter (saa7133[0])
-> [   53.216156] DVB: registering adapter 2 frontend 0 (NXP TDA10048HN DVB-T)...
-> [   53.840013] tda10048_firmware_upload: waiting for firmware upload 
-> (dvb-fe-tda10048-1.0.fw)...
-> [   53.840019] saa7134 0000:01:06.0: firmware: requesting dvb-fe-tda10048-1.0.fw
-> [   53.880505] tda10048_firmware_upload: firmware read 24878 bytes.
-> [   53.880509] tda10048_firmware_upload: firmware uploading
-> [   58.280136] tda10048_firmware_upload: firmware uploaded
-> [   59.024537] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [   59.024541] tda18271c2_rf_tracking_filters_correction: error -5 on line 264
-> [   59.420153] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [   59.420157] tda18271_toggle_output: error -5 on line 47
-> [   91.004019] Clocksource tsc unstable (delta = -295012684 ns)
-> [  256.293639] eth0: link up.
-> [  256.294750] ADDRCONF(NETDEV_CHANGE): eth0: link becomes ready
-> [  263.523498] eth0: link down.
-> [  265.258740] eth0: link up.
-> [  266.460026] eth0: no IPv6 routers present
-> [ 9869.636167] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [ 9869.636178] tda18271_init: error -5 on line 826
-> [ 9872.636220] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [ 9872.636232] tda18271_toggle_output: error -5 on line 47
-> [ 9998.240167] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [ 9998.240178] tda18271_init: error -5 on line 826
-> [10001.240179] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [10001.240190] tda18271_toggle_output: error -5 on line 47
-> 
-> And this is the dmesg of today: even the same errors.
-> 
-> [  741.252183] tda18271_init: error -5 on line 826
-> [  741.252188] tda18271_tune: error -5 on line 904
-> [  741.252193] tda18271_set_params: error -5 on line 985
-> [  742.268174] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  742.268184] tda18271_init: error -5 on line 826
-> [  742.268189] tda18271_tune: error -5 on line 904
-> [  742.268194] tda18271_set_params: error -5 on line 985
-> [  743.284174] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  743.284184] tda18271_init: error -5 on line 826
-> [  743.284190] tda18271_tune: error -5 on line 904
-> [  743.284194] tda18271_set_params: error -5 on line 985
-> [  744.300169] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  744.300180] tda18271_init: error -5 on line 826
-> [  744.300185] tda18271_tune: error -5 on line 904
-> [  744.300190] tda18271_set_params: error -5 on line 985
-> [  745.320172] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  745.320183] tda18271_init: error -5 on line 826
-> [  745.320188] tda18271_tune: error -5 on line 904
-> [  745.320193] tda18271_set_params: error -5 on line 985
-> [  746.336174] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  746.336185] tda18271_init: error -5 on line 826
-> [  746.336190] tda18271_tune: error -5 on line 904
-> [  746.336195] tda18271_set_params: error -5 on line 985
-> [  747.352170] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  747.352181] tda18271_init: error -5 on line 826
-> [  747.352187] tda18271_tune: error -5 on line 904
-> [  747.352192] tda18271_set_params: error -5 on line 985
-> [  748.368172] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  748.368183] tda18271_init: error -5 on line 826
-> [  748.368188] tda18271_tune: error -5 on line 904
-> [  748.368193] tda18271_set_params: error -5 on line 985
-> [  749.384179] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  749.384191] tda18271_init: error -5 on line 826
-> [  749.384196] tda18271_tune: error -5 on line 904
-> [  749.384202] tda18271_set_params: error -5 on line 985
-> [  750.400172] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  750.400182] tda18271_init: error -5 on line 826
-> [  750.400188] tda18271_tune: error -5 on line 904
-> [  750.400194] tda18271_set_params: error -5 on line 985
-> [  751.424170] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
-> [  751.424181] tda18271_init: error -5 on line 826
-> [  751.424186] tda18271_tune: error -5 on line 904
-> [  751.424192] tda18271_set_params: error -5 on line 985
-> [  752.440172] tda18271_write_regs: ERROR: idx = 0x5, len = 1, i2c_transfer 
-> returned: -5
->                                                                                                                                        
->  
-> 
-> Any ideas?
-> Thanks
-> 
-> 
->       
-> 
+
+The first 2 are a problem.  I'd like to add "depends on HWMON" to DRM_NOUVEAU,
+but doing so gives:
+
+drivers/video/Kconfig:30:error: recursive dependency detected!
+drivers/video/Kconfig:30:	symbol FB is selected by DRM_KMS_HELPER
+drivers/gpu/drm/Kconfig:22:	symbol DRM_KMS_HELPER is selected by DRM_NOUVEAU
+drivers/gpu/drm/nouveau/Kconfig:1:	symbol DRM_NOUVEAU depends on HWMON
+drivers/hwmon/Kconfig:5:	symbol HWMON is selected by THINKPAD_ACPI
+drivers/platform/x86/Kconfig:232:	symbol THINKPAD_ACPI depends on INPUT
+drivers/input/Kconfig:8:	symbol INPUT is selected by VT
+drivers/char/Kconfig:7:	symbol VT is selected by FB_STI
+drivers/video/Kconfig:636:	symbol FB_STI depends on FB
+
+so that must not be the right thing to do.  Aha, that change along with
+changing all "select FB" (in drivers/gpu/drm/*) to "depends on FB"
+fixes the kconfig warnings.  But feel free to fix it some other way.
+
+My working patch is below.
+
+---
+From: Randy Dunlap <randy.dunlap@oracle.com>
+
+Fix drm and drm/nouveau kconfigs so that build succeeds and
+kconfig warnings are eliminated.
+
+Fixes these build errors:
+ERROR: "hwmon_device_unregister" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
+ERROR: "hwmon_device_register" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
+ERROR: "video_output_unregister" [drivers/acpi/video.ko] undefined!
+ERROR: "video_output_register" [drivers/acpi/video.ko] undefined!
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/gpu/drm/Kconfig         |    2 +-
+ drivers/gpu/drm/nouveau/Kconfig |    5 +++--
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+--- linux-next-20101013.orig/drivers/gpu/drm/nouveau/Kconfig
++++ linux-next-20101013/drivers/gpu/drm/nouveau/Kconfig
+@@ -1,16 +1,17 @@
+ config DRM_NOUVEAU
+ 	tristate "Nouveau (nVidia) cards"
+-	depends on DRM && PCI
++	depends on DRM && PCI && HWMON
++	depends on FB
+         select FW_LOADER
+ 	select DRM_KMS_HELPER
+ 	select DRM_TTM
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
+ 	select FB_CFB_IMAGEBLIT
+-	select FB
+ 	select FRAMEBUFFER_CONSOLE if !EMBEDDED
+ 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
+ 	select ACPI_VIDEO if ACPI
++	select VIDEO_OUTPUT_CONTROL if ACPI
+ 	help
+ 	  Choose this option for open-source nVidia support.
+ 
+--- linux-next-20101013.orig/drivers/gpu/drm/Kconfig
++++ linux-next-20101013/drivers/gpu/drm/Kconfig
+@@ -22,7 +22,7 @@ menuconfig DRM
+ config DRM_KMS_HELPER
+ 	tristate
+ 	depends on DRM
+-	select FB
++	depends on FB
+ 	select FRAMEBUFFER_CONSOLE if !EMBEDDED
+ 	help
+ 	  FB and CRTC helpers for KMS drivers.
