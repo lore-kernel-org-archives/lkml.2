@@ -1,79 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751422Ab0JMJfa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 05:35:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35855 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730Ab0JMJf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 05:35:29 -0400
-Message-ID: <4CB57D5F.8070404@suse.cz>
-Date: Wed, 13 Oct 2010 11:35:27 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100714 SUSE/3.1.1 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts/get_maintainer.pl: Make --rolestats the default
-References: <74352a858e9e82ca186505aabdcc8ea2e8a7c0c8.1286921484.git.joe@perches.com>
-In-Reply-To: <74352a858e9e82ca186505aabdcc8ea2e8a7c0c8.1286921484.git.joe@perches.com>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+	id S1750944Ab0JMJhF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 05:37:05 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:44520 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750730Ab0JMJhD convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:7:1>);
+	Wed, 13 Oct 2010 05:37:03 -0400
+Message-Id: <4CB599DB020000780001CC60@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Wed, 13 Oct 2010 10:36:59 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Ryan Wilson" <hap9@darnok.org>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 20/23] xen-pcifront: Xen PCI frontend driver.
+References: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
+ <1286898271-32018-21-git-send-email-konrad.wilk@oracle.com>
+In-Reply-To: <1286898271-32018-21-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.10.2010 00:14, Joe Perches wrote:
-> This script now requires a user to add --norolestats
-> to the command line so it's harder to feed the output
-> of this script to programs that send mass emails.
-
-Good idea, hopefully this will make people spend some time looking at
-the CC list and removing the innocent :-).
-
-
-> Update --help to correct command line defaults.
-> 
-> Change version to 0.26.
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-
-Acked-by: Michal Marek <mmarek@suse.cz>
-
-
-> ---
->  scripts/get_maintainer.pl |    7 ++++---
->  1 files changed, 4 insertions(+), 3 deletions(-)
-> 
-> diff --git a/scripts/get_maintainer.pl b/scripts/get_maintainer.pl
-> index d21ec3a..43bace2 100755
-> --- a/scripts/get_maintainer.pl
-> +++ b/scripts/get_maintainer.pl
-> @@ -13,7 +13,7 @@
->  use strict;
+>>> On 12.10.10 at 17:44, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> --- a/drivers/pci/Kconfig
+> +++ b/drivers/pci/Kconfig
+> @@ -40,6 +40,21 @@ config PCI_STUB
 >  
->  my $P = $0;
-> -my $V = '0.26-beta6';
-> +my $V = '0.26';
+>  	  When in doubt, say N.
 >  
->  use Getopt::Long qw(:config no_auto_abbrev);
->  
-> @@ -40,7 +40,7 @@ my $email_use_mailmap = 1;
->  my $output_multiline = 1;
->  my $output_separator = ", ";
->  my $output_roles = 0;
-> -my $output_rolestats = 0;
-> +my $output_rolestats = 1;
->  my $scm = 0;
->  my $web = 0;
->  my $subsystem = 0;
-> @@ -720,7 +720,8 @@ Other options:
->    --help => show this help information
->  
->  Default options:
-> -  [--email --git --m --n --l --multiline --pattern-depth=0 --remove-duplicates]
-> +  [--email --nogit --git-fallback --m --n --l --multiline -pattern-depth=0
-> +   --remove-duplicates --rolestats]
->  
->  Notes:
->    Using "-f directory" may give unexpected results:
+> +config XEN_PCIDEV_FRONTEND
+> +        tristate "Xen PCI Frontend"
+> +        depends on PCI && X86 && XEN
+> +        select HOTPLUG
+> +        select PCI_XEN
+> +        default y
+> +        help
+> +          The PCI device frontend driver allows the kernel to import 
+> arbitrary
+> +          PCI devices from a PCI backend to support PCI driver domains.
+> +
+> +config XEN_PCIDEV_FE_DEBUG
+> +        bool
+> +        depends on PCI_DEBUG
+> +        default n
 
+A bool without prompt, (pointlessly) defaulting to 'n', and without
+getting selected anywhere has no way to get set to 'y'...
+
+> +
+>  config HT_IRQ
+>  	bool "Interrupts on hypertransport devices"
+>  	default y
+> --- /dev/null
+> +++ b/drivers/pci/xen-pcifront.c
+> @@ -0,0 +1,1157 @@
+> +/*
+> + * Xen PCI Frontend.
+> + *
+> + *   Author: Ryan Wilson <hap9@epoch.ncsc.mil>
+> + */
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/mm.h>
+> +#include <xen/xenbus.h>
+> +#include <xen/events.h>
+> +#include <xen/grant_table.h>
+> +#include <xen/page.h>
+> +#include <linux/spinlock.h>
+> +#include <linux/pci.h>
+> +#include <linux/msi.h>
+> +#include <xen/xenbus.h>
+> +#include <xen/interface/io/pciif.h>
+> +#include <asm/xen/pci.h>
+> +#include <linux/interrupt.h>
+> +#include <asm/atomic.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/bitops.h>
+> +#include <linux/time.h>
+> +
+> +
+> +#ifndef __init_refok
+> +#define __init_refok
+> +#endif
+
+???
+
+> +
+> +#define INVALID_GRANT_REF (0)
+> +#define INVALID_EVTCHN    (-1)
+> +
+> +
+> +struct pci_bus_entry {
+> +	struct list_head list;
+> +	struct pci_bus *bus;
+> +};
+> +
+> +#define _PDEVB_op_active		(0)
+> +#define PDEVB_op_active			(1 << (_PDEVB_op_active))
+> +
+> +struct pcifront_device {
+> +	struct xenbus_device *xdev;
+> +	struct list_head root_buses;
+> +
+> +	int evtchn;
+> +	int gnt_ref;
+> +
+> +	int irq;
+> +
+> +	/* Lock this when doing any operations in sh_info */
+> +	spinlock_t sh_info_lock;
+> +	struct xen_pci_sharedinfo *sh_info;
+> +	struct work_struct op_work;
+> +	unsigned long flags;
+> +
+> +};
+> +
+> +struct pcifront_sd {
+> +	int domain;
+> +	struct pcifront_device *pdev;
+> +};
+> +
+> +static inline struct pcifront_device *
+> +pcifront_get_pdev(struct pcifront_sd *sd)
+> +{
+> +	return sd->pdev;
+> +}
+> +
+> +static inline void pcifront_init_sd(struct pcifront_sd *sd,
+> +				    unsigned int domain, unsigned int bus,
+> +				    struct pcifront_device *pdev)
+> +{
+> +	sd->domain = domain;
+> +	sd->pdev = pdev;
+> +}
+> +
+> +static inline void pcifront_setup_root_resources(struct pci_bus *bus,
+> +						 struct pcifront_sd *sd)
+> +{
+> +}
+
+???
+
+> +
+> +
+> +DEFINE_SPINLOCK(pcifront_dev_lock);
+
+static?
+
+>...
+> +void pcifront_do_aer(struct work_struct *data)
+
+static?
+
+>...
+> +irqreturn_t pcifront_handler_aer(int irq, void *dev)
+
+static?
+
+>...
+> +int pcifront_connect(struct pcifront_device *pdev)
+
+static?
+
+>...
+> +void pcifront_disconnect(struct pcifront_device *pdev)
+
+static?
+
+>...
+> +static void free_pdev(struct pcifront_device *pdev)
+> +{
+> +	dev_dbg(&pdev->xdev->dev, "freeing pdev @ 0x%p\n", pdev);
+> +
+> +	pcifront_free_roots(pdev);
+> +
+> +	/*For PCIE_AER error handling job*/
+> +	flush_scheduled_work();
+
+	if (pdev->irq > 0)
+
+> +	unbind_from_irqhandler(pdev->irq, pdev);
+> +
+> +	if (pdev->evtchn != INVALID_EVTCHN)
+> +		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
+> +
+> +	if (pdev->gnt_ref != INVALID_GRANT_REF)
+> +		gnttab_end_foreign_access(pdev->gnt_ref, 0 /* r/w page */,
+> +					  (unsigned long)pdev->sh_info);
+
+	else
+		free_page((unsigned long)pdev->sh_info);
+
+> +
+> +	dev_set_drvdata(&pdev->xdev->dev, NULL);
+> +
+> +	kfree(pdev);
+> +}
+> +
+> +static int pcifront_publish_info(struct pcifront_device *pdev)
+> +{
+> +	int err = 0;
+> +	struct xenbus_transaction trans;
+> +
+> +	err = xenbus_grant_ring(pdev->xdev, virt_to_mfn(pdev->sh_info));
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	pdev->gnt_ref = err;
+> +
+> +	err = xenbus_alloc_evtchn(pdev->xdev, &pdev->evtchn);
+> +	if (err)
+> +		goto out;
+> +
+> +	err = bind_evtchn_to_irqhandler(pdev->evtchn, pcifront_handler_aer,
+> +		0, "pcifront", pdev);
+> +	if (err < 0) {
+> +		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
+
+You're leaking the grant ref here. I think it's better to not do any
+cleanup here, and instead call free_pdev() on error in
+pcifront_xenbus_probe() (see below).
+
+> +		xenbus_dev_fatal(pdev->xdev, err, "Failed to bind evtchn to "
+> +				 "irqhandler.\n");
+> +		return err;
+> +	}
+> +	pdev->irq = err;
+>...
+> +static int __devinit pcifront_try_connect(struct pcifront_device *pdev)
+> +{
+> +	int err = -EFAULT;
+> +	int i, num_roots, len;
+> +	char str[64];
+> +	unsigned int domain, bus;
+> +
+
+The original code had a per-device lock here and in subsequent
+functions. Is this being dropped due to implicit serialization through
+only running in the context of the single xenbus thread?
+
+>...
+> +static int pcifront_xenbus_probe(struct xenbus_device *xdev,
+> +				 const struct xenbus_device_id *id)
+> +{
+> +	int err = 0;
+> +	struct pcifront_device *pdev = alloc_pdev(xdev);
+> +
+> +	if (pdev == NULL) {
+> +		err = -ENOMEM;
+> +		xenbus_dev_fatal(xdev, err,
+> +				 "Error allocating pcifront_device struct");
+> +		goto out;
+> +	}
+> +
+> +	err = pcifront_publish_info(pdev);
+
+	if (err)
+		free_pdev(pdev);
+
+> +
+> +out:
+> +	return err;
+> +}
+>...
+
+Jan
