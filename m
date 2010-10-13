@@ -1,81 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755350Ab0JONSy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 09:18:54 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:33880 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754651Ab0JONSx (ORCPT
+	id S1755389Ab0JON22 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 09:28:28 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48626 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754384Ab0JON21 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 09:18:53 -0400
-Date: Fri, 15 Oct 2010 15:18:48 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: kernel-janitors@vger.kernel.org, Vasiliy Kulikov <segooon@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mfd/mc13xxx: don't open code kasprintf
-Message-ID: <20101015131848.GA16893@pengutronix.de>
-References: <1286731711-17865-1-git-send-email-segooon@gmail.com> <1286739586-32745-1-git-send-email-u.kleine-koenig@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1286739586-32745-1-git-send-email-u.kleine-koenig@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 15 Oct 2010 09:28:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=cZnJBb+pDRh+Q0fm2N+BRVgmNQ8/H5Z+eVJbt7sqrXcANhl5sT7QM/IAgJQbt2VApn
+         vdwv/kHC4n4Ea6XcgLiQbUIc0OpoIeyASzpE5yumjLJ5r5XVVG3AHoX2B+UFjbG7btQr
+         EPVRGbl1kHFeaabjQram2uCvQDHbZ9I8l0vbM=
+From: zhangyd <zhangyd6@gmail.com>
+To: dwmw2@infradead.org
+Cc: w.sang@pengutronix.de, Artem.Bityutskiy@nokia.com, ladis@linux-mips.org,
+        jkosina@suse.cz, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, zhangyd <zhangyd6@gmail.com>
+Subject: [PATCH] [MTD] [CHIPS]  Add JEDEC probe support for the SST38VF6401 flash chip
+Date: Wed, 13 Oct 2010 13:54:42 -0400
+Message-Id: <1286992482-6009-1-git-send-email-zhangyd6@gmail.com>
+X-Mailer: git-send-email 1.7.2.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+Add SST38VF6401(64Mbit) chip to jedec_probe. Sorry for the wrong description of the flash size in last patch. 
 
-would you mind to take this patch (or squash it into
-0c9b33e5a23e2053165c9e30ffff3b3a3cf1b2b8)?
+Signed-off-by: yidong zhang<zhangyd6@gmail.com>
+---
+ drivers/mtd/chips/jedec_probe.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
 
-Thanks
-Uwe
-
-On Sun, Oct 10, 2010 at 09:39:46PM +0200, Uwe Kleine-König wrote:
-> This fixes an off by one error noticed by Vasiliy Kulikov en passant.
-> 
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/mfd/mc13xxx-core.c |    7 +------
->  1 files changed, 1 insertions(+), 6 deletions(-)
-> 
-> diff --git a/drivers/mfd/mc13xxx-core.c b/drivers/mfd/mc13xxx-core.c
-> index 93258ad..b763b8c 100644
-> --- a/drivers/mfd/mc13xxx-core.c
-> +++ b/drivers/mfd/mc13xxx-core.c
-> @@ -687,7 +687,6 @@ EXPORT_SYMBOL_GPL(mc13783_adc_do_conversion);
->  static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
->  		const char *format, void *pdata, size_t pdata_size)
->  {
-> -	char buf[30];
->  	const char *name = mc13xxx_get_chipname(mc13xxx);
->  
->  	struct mfd_cell cell = {
-> @@ -695,11 +694,7 @@ static int mc13xxx_add_subdevice_pdata(struct mc13xxx *mc13xxx,
->  		.data_size = pdata_size,
->  	};
->  
-> -	/* there is no asnprintf in the kernel :-( */
-> -	if (snprintf(buf, sizeof(buf), format, name) > sizeof(buf))
-> -		return -E2BIG;
-> -
-> -	cell.name = kmemdup(buf, strlen(buf) + 1, GFP_KERNEL);
-> +	cell.name = kasprintf(GFP_KERNEL, format, name);
->  	if (!cell.name)
->  		return -ENOMEM;
->  
-> -- 
-> 1.7.2.3
-> 
-> 
-
+diff --git a/drivers/mtd/chips/jedec_probe.c b/drivers/mtd/chips/jedec_probe.c
+index d72a5fb..b7a1016 100644
+--- a/drivers/mtd/chips/jedec_probe.c
++++ b/drivers/mtd/chips/jedec_probe.c
+@@ -163,6 +163,7 @@
+ #define SST49LF030A	0x001C
+ #define SST49LF040A	0x0051
+ #define SST49LF080A	0x005B
++#define SST38VF6401	0x536B
+ #define SST36VF3203	0x7354
+ 
+ /* Toshiba */
+@@ -1569,6 +1570,18 @@ static const struct amd_flash_info jedec_table[] = {
+ 		}
+ 	}, {
+ 		.mfr_id		= CFI_MFR_ST,
++		.dev_id		= SST38VF6401,
++		.name		= "SST 38VF6401",
++		.devtypes	= CFI_DEVICETYPE_X16,
++		.uaddr		= MTD_UADDR_0X0AAA_0x555,
++		.dev_size	= SIZE_8MiB,
++		.cmd_set	= P_ID_AMD_STD,
++		.nr_regions	= 1,
++		.regions	= {
++			ERASEINFO(0x10000,128),
++		}
++	}, {
++		.mfr_id		= CFI_MFR_ST,
+ 		.dev_id		= M29F800AB,
+ 		.name		= "ST M29F800AB",
+ 		.devtypes	= CFI_DEVICETYPE_X16|CFI_DEVICETYPE_X8,
 -- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+1.7.2.3
+
