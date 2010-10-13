@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab0JMSK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 14:10:29 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37103 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752514Ab0JMSKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 14:10:25 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,326,1283756400"; 
-   d="scan'208";a="667131394"
-Date: Wed, 13 Oct 2010 11:10:24 -0700
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, mingo@redhat.com, hpa@zytor.com,
-        mingo@elte.hu, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:irq/core] x86: Sanitize apb timer interrupt handling
-Message-ID: <20101013111024.0000645d@unknown>
-In-Reply-To: <alpine.LFD.2.00.1010130020250.2909@localhost6.localdomain6>
-References: <tip-a5ef2e70405c8a9ee380b5ff33a008c75454791f@git.kernel.org>
-	<20101012142000.00001358@unknown>
-	<alpine.LFD.2.00.1010122327260.2909@localhost6.localdomain6>
-	<20101012151230.00000402@unknown>
-	<alpine.LFD.2.00.1010130020250.2909@localhost6.localdomain6>
-Organization: Intel OTC
-X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752730Ab0JMSKr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 14:10:47 -0400
+Received: from mtaout01-winn.ispmail.ntl.com ([81.103.221.47]:31474 "EHLO
+	mtaout01-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751843Ab0JMSKq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 14:10:46 -0400
+From: Daniel Drake <dsd@laptop.org>
+To: tglx@linutronix.de
+To: mingo@redhat.com
+To: x86@kernel.org
+To: hpa@zytor.com
+Cc: dilinger@queued.net
+Cc: mjg@redhat.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] OLPC: register XO-1 platform devices
+Message-Id: <20101013181042.90C8F9D401B@zog.reactivated.net>
+Date: Wed, 13 Oct 2010 19:10:42 +0100 (BST)
+X-Cloudmark-Analysis: v=1.1 cv=DhNl2YeytwJssBBGe49HJX82LNDFEEVkpVB34RXKaPo= c=1 sm=0 a=8ehnox9J--sA:10 a=Op-mwl0xAAAA:8 a=u87za_w-RV7SNqKzJE8A:9 a=QKosQRD-9YGyfCyNoxLGe_j8UQgA:4 a=d4CUUju0HPYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The upcoming XO-1 rfkill driver (for drivers/platform/x86) will register
+itself with the name "xo1-rfkill", and the already-merged XO-1 poweroff
+code uses name "olpc-xo1"
 
-Hi tglx,
+Add the necessary mechanics so that these devices are properly
+initialized on XO-1 laptops.
 
-You are right, i am already doing the enable/disable dance. 
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+---
+ arch/x86/kernel/olpc.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-Thanks for pointing it out, patiently.
+Needed for the just-merged XO-1 poweroff support to be useful.
+Replaces earlier patch titled "OLPC: register XO-1 RF kill device"
+The rfkill driver got an ack from the drivers/platform/x86 maintainer,
+I presume he's just waiting for the merge of this one before applying it.
 
-Jacob
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 37c49934..cb34ecf 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -17,6 +17,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/io.h>
+ #include <linux/string.h>
++#include <linux/platform_device.h>
+ 
+ #include <asm/geode.h>
+ #include <asm/setup.h>
+@@ -220,8 +221,25 @@ static bool __init platform_detect(void)
+ 	return true;
+ }
+ 
++static int __init add_xo1_platform_devices(void)
++{
++	struct platform_device *pdev;
++
++	pdev = platform_device_register_simple("xo1-rfkill", -1, NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	pdev = platform_device_register_simple("olpc-xo1", -1, NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	return 0;
++}
++
+ static int __init olpc_init(void)
+ {
++	int r = 0;
++
+ 	if (!olpc_ofw_present() || !platform_detect())
+ 		return 0;
+ 
+@@ -248,6 +266,12 @@ static int __init olpc_init(void)
+ 			olpc_platform_info.boardrev >> 4,
+ 			olpc_platform_info.ecver);
+ 
++	if (olpc_platform_info.boardrev < olpc_board_pre(0xd0)) { /* XO-1 */
++		r = add_xo1_platform_devices();
++		if (r)
++			return r;
++	}
++
+ 	return 0;
+ }
+ 
+-- 
+1.7.2.3
 
-Thomas Gleixner Wed, 13 Oct 2010 00:26:08 +0200 (CEST)
->On Tue, 12 Oct 2010, Jacob Pan wrote:
->
->> Thomas Gleixner Tue, 12 Oct 2010 23:28:19 +0200 (CEST)
->> >On Tue, 12 Oct 2010, Jacob Pan wrote:
->> >
->> >> 
->> >> >x86: Sanitize apb timer interrupt handling
->> >> >
->> >> >Disable the interrupt in CPU_DEAD where it belongs.
->> >> My main concern is the performance cost. The power management code for
->> >> Moorestown system make use of the cpu hotplug code (disable_nonboot_cpus)
->> >> but much more frequently. The system low power states are call S0 idle
->> >> state (s0ix).
->> >> 
->> >> Leaving the irq enabled at the chip and desc level between S0ix states
->> >> might give some performance benefit. That was my original thought.
->> >> Will it cause problems?
->> >
->> >Errm. I merily moved it to the place where it should be. You do the
->> >disable/enable dance already today.
->> >
->> I think I only do disable/enable at the timer HW level today during cpu hp
->> notification, not calling disable_irq(). Am i missing something?
->
->apbt_setup_irq()
->{
-> ...
-> 
->--->	disable_irq(adev->irq);
->	desc->status |= IRQ_MOVE_PCNTXT;
->	irq_set_affinity(adev->irq, cpumask_of(adev->cpu));
->	/* APB timer irqs are set up as mp_irqs, timer is edge triggerred */
->	set_irq_chip_and_handler_name(adev->irq, chip, handle_edge_irq, "edge");
->--->	enable_irq(adev->irq);
->	if (system_state == SYSTEM_BOOTING)
-> ...
->}
->
->So that's a disable/enable pair on every cpu hotplug, right ?
->
->Now I moved the disable to CPU_DEAD where it belongs and the enable
->stayed at the same place.
->
->Thanks,
->
->	tglx
-yo
