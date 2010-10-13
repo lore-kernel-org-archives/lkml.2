@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752191Ab0JMQne (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 12:43:34 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:54217 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750791Ab0JMQnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 12:43:33 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [RFC][PATCH] add dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Date: Wed, 13 Oct 2010 19:42:56 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.36-rc7; KDE/4.4.3; x86_64; ; )
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        g.liakhovetski@gmx.de
-References: <201008201113.46036.mitov@issp.bas.bg> <20101010230323B.fujita.tomonori@lab.ntt.co.jp> <20101013170457.c5c5d2e1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101013170457.c5c5d2e1.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010131942.57639.mitov@issp.bas.bg>
+	id S1752362Ab0JMQoD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 12:44:03 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:31501 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab0JMQoB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 12:44:01 -0400
+From: Felipe Contreras <felipe.contreras@nokia.com>
+Subject: RE: [PATCHv2 2/3] iovmm: add superpages support to fixed da address
+To: fernando.lugo@ti.com, felipe.contreras@gmail.com
+Cc: hiroshi.doyu@nokia.com, david.cohen@nokia.com, ameya.palande@nokia.com,
+        linux-kernel@vger.kernel.org, andy.shevchenko@gmail.com,
+        linux-omap@vger.kernel.org
+In-Reply-To: <496565EC904933469F292DDA3F1663E602F47B2FDA@dlee06.ent.ti.com>
+References: <1286226137-1233-1-git-send-email-x0095840@ti.com> <1286226137-1233-2-git-send-email-x0095840@ti.com> <1286226137-1233-3-git-send-email-x0095840@ti.com> <AANLkTimF5HqA0pbp7NXOXxOcuMMJWp9yuJPsw8-iPKjh@mail.gmail.com> <496565EC904933469F292DDA3F1663E602F47B2BF1@dlee06.ent.ti.com> <AANLkTinVzO_B0L09bOG0aWTsQjaXgLeggB+YUgEhL2Sa@mail.gmail.com> <496565EC904933469F292DDA3F1663E602F47B2FDA@dlee06.ent.ti.com>
+User-Agent: notmuch 0.3.1-85-ge35d5aa
+Message-ID: <1286988203-notmuch-felipe.contreras@nokia.com>
+Date: Wed, 13 Oct 2010 19:43:50 +0300
+X-OriginalArrivalTime: 13 Oct 2010 16:43:56.0159 (UTC) FILETIME=[D3B530F0:01CB6AF5]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, October 13, 2010 11:04:57 am KAMEZAWA Hiroyuki wrote:
-> On Sun, 10 Oct 2010 23:08:22 +0900
-> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> 
-> > On Fri, 20 Aug 2010 14:50:12 +0300
-> > Marin Mitov <mitov@issp.bas.bg> wrote:
+fernando.lugo@ti.com wrote:
+> > On Mon, Oct 11, 2010 at 6:33 PM, Guzman Lugo, Fernando 
+> > <fernando.lugo@ti.com> wrote:
+> > >> > @@ -420,7 +431,8 @@ static void sgtable_fill_kmalloc(struct
+> > >> sg_table
+> > >> > *sgt, u32 pa, size_t len)
+> > >> >        for_each_sg(sgt->sgl, sg, sgt->nents, i) {
+> > >> >                size_t bytes;
+> > >> >
+> > >> > -               bytes = iopgsz_max(len);
+> > >> > +               bytes = max_alignment(da | pa);
+> > >> > +               bytes = min(bytes, (size_t)iopgsz_max(len));
+> > >>
+> > >> Why the size_t casting?
+> > >
+> > > To void this warning:
+> > > arch/arm/plat-omap/iovmm.c:440: warning: comparison of distinct 
+> > > pointer types lacks a cast
 > > 
-> > > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> > > > On Fri, 20 Aug 2010 11:13:45 +0300
-> > > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > > 
-> > > > > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > > > > 
-> > > > > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > > > > Helps for videobuf-dma-contig framework.
-> > > > > > 
-> > > > > > What you guys exactly want to do? If you just want to pre-allocate
-> > > > > > coherent memory for latter usage,
-> > > > > 
-> > > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > > > > We use coherent memory because it turns out to be contiguous.
-> > > > 
-> > > > Hmm, you don't care about coherency? You just need contiguous memory?
-> > > 
-> > > Yes. We just need contiguous memory. Coherency is important as far as when dma
-> > > transfer finishes user land is able to see the new data. Could be done by something like
-> > > dma_{,un}map_single()
-> > 
-> > Anyone is working on this?
-> > 
-> > KAMEZAWA posted a patch to improve the generic page allocator to
-> > allocate physically contiguous memory. He said that he can push it
-> > into mainline.
-> > 
-> I said I do make an effort ;)
-> New one here.
+> > But how is that possible? iopgsz_max is returning constants, 
+> > like SZ_1M, so they should not need casts, if anything, the 
+> > cast should be done in iopgsz_max itself.
 > 
-> http://lkml.org/lkml/2010/10/12/421
-
-I like the patch. The possibility to allocate a contiguous chunk of memory
-(or few of them) is what I need. The next step will be to get a dma handle 
-(for dma transfers to/from) and then mmap them to user space.
-
-Thanks.
-
-Marin Mitov
-
+> The min macro make a "typeof" of the parameter, so the typeof of a 
+> Constants should be int I think and that's the reason of the warning.
 > 
-> Thanks,
-> -Kame
+> I can use min_t instead to avoid the warning, something like this:
 > 
+> 			bytes = min_t(size_t, bytes, iopgsz_max(len));
+> 
+> What do you think?
+
+Right, I forgot about that one... much better.
+
+-- 
+Felipe Contreras
