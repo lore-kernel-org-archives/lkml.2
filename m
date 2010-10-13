@@ -1,14 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab0JMQPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 12:15:34 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:45360 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab0JMQPc (ORCPT
+	id S1752195Ab0JMQP2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 12:15:28 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:28201 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab0JMQPX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 12:15:32 -0400
-Subject: [PATCH v3 5/6] x86: update iomem_resource end based on CPU physical
-	address capabilities
+	Wed, 13 Oct 2010 12:15:23 -0400
+Subject: [PATCH v3 3/6] PCI: allocate bus resources from the top down
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
@@ -20,8 +19,8 @@ Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>
-Date: Wed, 13 Oct 2010 10:15:31 -0600
-Message-ID: <20101013161531.28476.20577.stgit@bob.kio>
+Date: Wed, 13 Oct 2010 10:15:21 -0600
+Message-ID: <20101013161520.28476.33810.stgit@bob.kio>
 In-Reply-To: <20101013161359.28476.6050.stgit@bob.kio>
 References: <20101013161359.28476.6050.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -33,31 +32,126 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The iomem_resource map reflects the available physical address space.
-We statically initialize the end to -1, i.e., 0xffffffff_ffffffff, but
-of course we can only use as much as the CPU can address.
+Allocate space from the highest-address PCI bus resource first, then work
+downward.
 
-This patch updates the end based on the CPU capabilities, so we don't
-mistakenly allocate space that isn't usable, as we're likely to do when
-allocating from the top-down.
+Previously, we looked for space in PCI host bridge windows in the order
+we discovered the windows.  For example, given the following windows
+(discovered via an ACPI _CRS method):
 
+    pci_root PNP0A03:00: host bridge window [mem 0x000a0000-0x000bffff]
+    pci_root PNP0A03:00: host bridge window [mem 0x000c0000-0x000effff]
+    pci_root PNP0A03:00: host bridge window [mem 0x000f0000-0x000fffff]
+    pci_root PNP0A03:00: host bridge window [mem 0xbff00000-0xf7ffffff]
+    pci_root PNP0A03:00: host bridge window [mem 0xff980000-0xff980fff]
+    pci_root PNP0A03:00: host bridge window [mem 0xff97c000-0xff97ffff]
+    pci_root PNP0A03:00: host bridge window [mem 0xfed20000-0xfed9ffff]
+
+we attempted to allocate from [mem 0x000a0000-0x000bffff] first, then
+[mem 0x000c0000-0x000effff], and so on.
+
+With this patch, we allocate from [mem 0xff980000-0xff980fff] first, then
+[mem 0xff97c000-0xff97ffff], [mem 0xfed20000-0xfed9ffff], etc.
+
+Allocating top-down follows Windows practice, so we're less likely to
+trip over BIOS defects in the _CRS description.
+
+On the machine above (a Dell T3500), the [mem 0xbff00000-0xbfffffff] region
+doesn't actually work and is likely a BIOS defect.  The symptom is that we
+move the AHCI controller to 0xbff00000, which leads to "Boot has failed,
+sleeping forever," a BUG in ahci_stop_engine(), or some other boot failure.
+
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c43
+Reference: https://bugzilla.redhat.com/show_bug.cgi?id=620313
+Reference: https://bugzilla.redhat.com/show_bug.cgi?id=629933
+Reported-by: Brian Bloniarz <phunge0@hotmail.com>
+Reported-and-tested-by: Stefan Becker <chemobejk@gmail.com>
+Reported-by: Denys Vlasenko <dvlasenk@redhat.com>
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
- arch/x86/kernel/setup.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/pci/bus.c |   53 ++++++++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 48 insertions(+), 5 deletions(-)
 
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c3a4fbb..922b5a1 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -788,6 +788,7 @@ void __init setup_arch(char **cmdline_p)
+diff --git a/drivers/pci/bus.c b/drivers/pci/bus.c
+index 7f0af0e..172bf26 100644
+--- a/drivers/pci/bus.c
++++ b/drivers/pci/bus.c
+@@ -64,6 +64,49 @@ void pci_bus_remove_resources(struct pci_bus *bus)
+ 	}
+ }
  
- 	x86_init.oem.arch_setup();
++/*
++ * Find the highest-address bus resource below the cursor "res".  If the
++ * cursor is NULL, return the highest resource.
++ */
++static struct resource *pci_bus_find_resource_prev(struct pci_bus *bus,
++						   unsigned int type,
++						   struct resource *res)
++{
++	struct resource *r, *prev = NULL;
++	int i;
++
++	pci_bus_for_each_resource(bus, r, i) {
++		if (!r)
++			continue;
++
++		if ((r->flags & IORESOURCE_TYPE_BITS) != type)
++			continue;
++
++		/* If this resource is at or past the cursor, skip it */
++		if (res) {
++			if (r == res)
++				continue;
++			if (r->end > res->end)
++				continue;
++			if (r->end == res->end && r->start > res->start)
++				continue;
++		}
++
++		if (!prev)
++			prev = r;
++
++		/*
++		 * A small resource is higher than a large one that ends at
++		 * the same address.
++		 */
++		if (r->end > prev->end ||
++		    (r->end == prev->end && r->start > prev->start))
++			prev = r;
++	}
++
++	return prev;
++}
++
+ /**
+  * pci_bus_alloc_resource - allocate a resource from a parent bus
+  * @bus: PCI bus
+@@ -89,9 +132,10 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ 					  resource_size_t),
+ 		void *alignf_data)
+ {
+-	int i, ret = -ENOMEM;
++	int ret = -ENOMEM;
+ 	struct resource *r;
+ 	resource_size_t max = -1;
++	unsigned int type = res->flags & IORESOURCE_TYPE_BITS;
  
-+	iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
- 	setup_memory_map();
- 	parse_setup_data();
- 	/* update the e820_saved too */
+ 	type_mask |= IORESOURCE_IO | IORESOURCE_MEM;
+ 
+@@ -99,10 +143,9 @@ pci_bus_alloc_resource(struct pci_bus *bus, struct resource *res,
+ 	if (!(res->flags & IORESOURCE_MEM_64))
+ 		max = PCIBIOS_MAX_MEM_32;
+ 
+-	pci_bus_for_each_resource(bus, r, i) {
+-		if (!r)
+-			continue;
+-
++	/* Look for space at highest addresses first */
++	r = pci_bus_find_resource_prev(bus, type, NULL);
++	for ( ; r; r = pci_bus_find_resource_prev(bus, type, r)) {
+ 		/* type_mask must match */
+ 		if ((res->flags ^ r->flags) & type_mask)
+ 			continue;
 
