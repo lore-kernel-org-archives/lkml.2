@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753323Ab0JMHyb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 03:54:31 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62264 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753298Ab0JMHya convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 03:54:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UWUuwVlVCEgNtKO03q6epBAV2cF95pZWb9yDkTpw4pNtgYrSeciWYvn/K76Ox48+7D
-         jC8jS3atRvAr+3ic29SBikRBNGafZLFtUMp5Cb5YiZO/GZm6EURKcPiuT64bmJ+4z7kj
-         mLDyjf3EMEoyQvJPdH4qOPfQ41xbWJnuHy0pU=
+	id S1753294Ab0JMHyW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 03:54:22 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:56778 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753275Ab0JMHyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 03:54:21 -0400
+Date: Wed, 13 Oct 2010 08:53:47 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: dediao@cisco.com, ddaney@caviumnetworks.com, dvomlehn@cisco.com,
+        sshtylyov@mvista.com, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] MIPS: HIGHMEM DMA on noncoherent MIPS32 processors
+Message-ID: <20101013075346.GA24052@linux-mips.org>
+References: <f3f140ca90dc9dac2f645748bc3a0150@localhost>
 MIME-Version: 1.0
-In-Reply-To: <1286955116-22793-1-git-send-email-ohad@wizery.com>
-References: <1286788315.3101.11.camel@sven>
-	<1286955116-22793-1-git-send-email-ohad@wizery.com>
-Date: Wed, 13 Oct 2010 09:54:29 +0200
-Message-ID: <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
-Subject: Re: [PATCH] sdio: fix suspend/resume regression
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-mmc@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        libertas-dev@lists.infradead.org, Nicolas Pitre <nico@fluxnic.net>,
-        Sven Neumann <s.neumann@raumfeld.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
-        Colin Cross <ccross@android.com>, Chris Ball <cjb@laptop.org>,
-        stable@kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <f3f140ca90dc9dac2f645748bc3a0150@localhost>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ohad,
+On Sat, Oct 09, 2010 at 06:53:42PM -0700, Kevin Cernekee wrote:
 
-On Wed, Oct 13, 2010 at 9:31 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> [v3: Patch has been rebased against linux-queue.git, which uses the new
+> dma-mapping-common.h API.]
+> 
+> The MIPS DMA coherency functions do not work properly (i.e. kernel oops)
+> when HIGHMEM pages are passed in as arguments.  This patch uses the PPC
+> approach of calling kmap_atomic() with IRQs disabled to temporarily map
+> high pages, in order to flush them out to memory.
 
-> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> index c94565d..515ff39 100644
-> --- a/drivers/mmc/core/core.c
-> +++ b/drivers/mmc/core/core.c
-> @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
->        if (host->bus_ops && !host->bus_dead) {
->                if (host->bus_ops->suspend)
->                        err = host->bus_ops->suspend(host);
-> +               if (err == -ENOSYS || !host->bus_ops->resume) {
-> +                       /*
-> +                        * We simply "remove" the card in this case.
-> +                        * It will be redetected on resume.
-> +                        */
-> +                       if (host->bus_ops->remove)
-> +                               host->bus_ops->remove(host);
-> +                       mmc_claim_host(host);
-> +                       mmc_detach_bus(host);
-> +                       mmc_release_host(host);
-> +                       host->pm_flags = 0;
-> +                       err = 0;
-> +               }
->        }
->        mmc_bus_put(host);
->
+It's this disabling of interrupts which I don't like.  It's easy to get
+around it by having one kmap type for each of process, softirq and
+interrupt context.
 
-what about moving this logic to sdio bus_ops as this seems to be
-completely specific to sdio right now?
+The good news is that Peter Zijlstra has rewritten kmap to make the need
+for manually allocated kmap types go away and his patches are queued to
+be merged for 2.6.37.  So I'd like to put this patch on hold until after
+his patches are merged.
 
-Thanks,
-   Vitaly
+Does your system have both highmem and cache aliases?
+
+  Ralf
