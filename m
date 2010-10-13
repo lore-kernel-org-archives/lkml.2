@@ -1,104 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab0JMDXr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 23:23:47 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33446 "EHLO mga09.intel.com"
+	id S1752653Ab0JMD0H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 23:26:07 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53762 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752511Ab0JMDXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 23:23:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,323,1283756400"; 
-   d="scan'208";a="563390008"
-Date: Wed, 13 Oct 2010 11:23:42 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
+	id S1752511Ab0JMD0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 12 Oct 2010 23:26:05 -0400
+Date: Wed, 13 Oct 2010 14:25:58 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 00/17] [RFC] soft and dynamic dirty throttling limits
-Message-ID: <20101013032342.GA10020@localhost>
-References: <20100912154945.758129106@intel.com>
- <20101012141716.GA26702@infradead.org>
- <20101013030733.GV4681@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101013030733.GV4681@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: linux-next: build failure after merge of the usb tree with the scsi
+ tree
+Message-Id: <20101013142558.c46a6311.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 11:07:33AM +0800, Dave Chinner wrote:
-> On Tue, Oct 12, 2010 at 10:17:16AM -0400, Christoph Hellwig wrote:
-> > Wu, what's the state of this series?  It looks like we'll need it
-> > rather sooner than later - try to get at least the preparations in
-> > ASAP would be really helpful.
-> 
-> Not ready in it's current form. This load (creating millions of 1
-> byte files in parallel):
-> 
-> $ /usr/bin/time ./fs_mark -D 10000 -S0 -n 100000 -s 1 -L 63 \
-> > -d /mnt/scratch/0 -d /mnt/scratch/1 \
-> > -d /mnt/scratch/2 -d /mnt/scratch/3 \
-> > -d /mnt/scratch/4 -d /mnt/scratch/5 \
-> > -d /mnt/scratch/6 -d /mnt/scratch/7
-> 
-> Locks up all the fs_mark processes spinning in traces like the
-> following and no further progress is made when the inode cache
-> fills memory.
+Hi Greg,
+
+After merging the usb tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+drivers/scsi/sd.c: In function 'read_capacity_10':
+drivers/scsi/sd.c:1637: error: 'struct scsi_disk' has no member named 'hw_sector_size'
+
+Caused by commit a488ec87ee2e79911d10425cb0c0264290905b38 ("scsi/sd: add
+a no_read_capacity_16 scsi_device flag") interacting with commit
+526f7c7950bbf1271e59177d70d74438c2ef96de ("[SCSI] sd: Fix overflow with
+big physical blocks") from the scsi tree.
+
+I have applied the following patch for today and will carry it as a merge
+fix as necessary.
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 13 Oct 2010 14:15:15 +1100
+Subject: [PATCH] scsi/sd: update for hw_sector_size rename
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/scsi/sd.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 8ca43e5..57d1e3e 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -1634,7 +1634,7 @@ static int read_capacity_10(struct scsi_disk *sdkp, struct scsi_device *sdp,
+ 		   0xffffffff when the want to report a size of 0 (with
+ 		   which they really mean no media is present) */
+ 		sdkp->capacity = 0;
+-		sdkp->hw_sector_size = sector_size;
++		sdkp->physical_block_size = sector_size;
+ 		return sector_size;
+ 	}
  
-Dave, thanks for the testing! I'll try to reproduce it and check
-what's going on.
+-- 
+1.7.1
 
-Thanks,
-Fengguang
-
-> [ 2601.452017] fs_mark       R  running task        0  2303   2235 0x00000008
-> [ 2601.452017]  ffff8801188f7878 ffffffff8103e2c9 ffff8801188f78a8 0000000000000000
-> [ 2601.452017]  0000000000000002 ffff8801129e21c0 ffff880002fd44c0 0000000000000000
-> [ 2601.452017]  ffff8801188f78b8 ffffffff810a9a08 ffff8801188f78e8 ffffffff810a98e5
-> [ 2601.452017] Call Trace:
-> [ 2601.452017]  [<ffffffff81060edc>] ? kvm_clock_read+0x1c/0x20
-> [ 2601.452017]  [<ffffffff8103e2c9>] ? sched_clock+0x9/0x10
-> [ 2601.452017]  [<ffffffff810a98e5>] ? sched_clock_local+0x25/0x90
-> [ 2601.452017]  [<ffffffff810b9e00>] ? __lock_acquire+0x330/0x14d0
-> [ 2601.452017]  [<ffffffff810a9a94>] ? local_clock+0x34/0x80
-> [ 2601.452017]  [<ffffffff81061cc8>] ? pvclock_clocksource_read+0x58/0xd0
-> [ 2601.452017]  [<ffffffff81061cc8>] ? pvclock_clocksource_read+0x58/0xd0
-> [ 2601.452017]  [<ffffffff81060edc>] ? kvm_clock_read+0x1c/0x20
-> [ 2601.452017]  [<ffffffff8103e2c9>] ? sched_clock+0x9/0x10
-> [ 2601.452017]  [<ffffffff810bb054>] ? lock_acquire+0xb4/0x140
-> [ 2601.452017]  [<ffffffff8103e2c9>] ? sched_clock+0x9/0x10
-> [ 2601.452017]  [<ffffffff810a98e5>] ? sched_clock_local+0x25/0x90
-> [ 2601.452017]  [<ffffffff81698ea2>] ? prop_get_global+0x32/0x50
-> [ 2601.452017]  [<ffffffff81699230>] ? prop_fraction_percpu+0x30/0xa0
-> [ 2601.452017]  [<ffffffff8111af3b>] ? bdi_dirty_limit+0x9b/0xe0
-> [ 2601.452017]  [<ffffffff8111bbd8>] ? balance_dirty_pages_ratelimited_nr+0x178/0x580
-> [ 2601.452017]  [<ffffffff81ad440b>] ? _raw_spin_unlock+0x2b/0x40
-> [ 2601.452017]  [<ffffffff8117ccd5>] ? __mark_inode_dirty+0xc5/0x230
-> [ 2601.452017]  [<ffffffff811114d5>] ? iov_iter_copy_from_user_atomic+0x95/0x170
-> [ 2601.452017]  [<ffffffff811118fc>] ? generic_file_buffered_write+0x1cc/0x270
-> [ 2601.452017]  [<ffffffff81492f2f>] ? xfs_file_aio_write+0x79f/0xaf0
-> [ 2601.452017]  [<ffffffff81060edc>] ? kvm_clock_read+0x1c/0x20
-> [ 2601.452017]  [<ffffffff81060edc>] ? kvm_clock_read+0x1c/0x20
-> [ 2601.452017]  [<ffffffff8103e2c9>] ? sched_clock+0x9/0x10
-> [ 2601.452017]  [<ffffffff810a98e5>] ? sched_clock_local+0x25/0x90
-> [ 2601.452017]  [<ffffffff81157cca>] ? do_sync_write+0xda/0x120
-> [ 2601.452017]  [<ffffffff8112e20c>] ? might_fault+0x5c/0xb0
-> [ 2601.452017]  [<ffffffff81669f7f>] ? security_file_permission+0x1f/0x80
-> [ 2601.452017]  [<ffffffff81157fb8>] ? vfs_write+0xc8/0x180
-> [ 2601.452017]  [<ffffffff81158904>] ? sys_write+0x54/0x90
-> [ 2601.452017]  [<ffffffff81037072>] ? system_call_fastpath+0x16/0x1b
-> 
-> This is on an 8p/4GB RAM VM.
-> 
-> FWIW, this one test now has a proven record of exposing writeback,
-> VM and filesystem regressions, so I'd suggest that anyone doing any
-> sort of work that affects writeback adds it to their test matrix....
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
