@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab0JMR3B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 13:29:01 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:60635 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751585Ab0JMR3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 13:29:00 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: dkms dead in water
-Date: Wed, 13 Oct 2010 13:28:48 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35.7; KDE/4.5.2; i686; ; )
-Cc: gheskett@wdtv.com
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1752132Ab0JMRfX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 13:35:23 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:44204 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab0JMRfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 13:35:22 -0400
+Subject: Re: [PATCH 6/6] hid: egalax: Convert to MT slots
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1286978302-30034-7-git-send-email-rydberg@euromail.se>
+References: <1286978302-30034-1-git-send-email-rydberg@euromail.se>
+	 <1286978302-30034-7-git-send-email-rydberg@euromail.se>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Oct 2010 13:35:08 -0400
+Message-ID: <1286991308.31864.192.camel@mini>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010131328.48973.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I see that I have lost the ability to use dkms.  All module build scripts 
-are returning an error 5.  So I am stuck using the vesa graphics driver.
+On Wed, 2010-10-13 at 15:58 +0200, Henrik Rydberg wrote:
+> The joojoo reports touches sequentially, one per report, which
+> confuses the current driver. Convert to the MT slots protocol and use
+> the stored slot information to emulate pointer movement in a stable
+> manner.
+> 
+> Tested-by: Philipp Merkel <mail@philmerk.de>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 
-Comments anyone?
+[...]
 
-Thanks.
+> @@ -122,64 +133,61 @@ static int egalax_input_mapped(struct hid_device *hdev, struct hid_input *hi,
+>  	return -1;
+>  }
+>  
+> +static void emulate_pointer(struct egalax_data *td, struct input_dev *input)
+> +{
+> +	struct egalax_contact *s = &td->single;
+> +	struct egalax_contact *best = 0;
+> +	int dbest, i;
+> +
+> +	for (i = 0; i < MAX_SLOTS; i++) {
+> +		struct egalax_contact *f = &td->contact[i];
+> +		if (f->touch) {
+> +			int d = abs(f->x - s->x) + abs(f->y - s->y);
+> +			if (!best || d < dbest) {
+> +				best = f;
+> +				dbest = d;
+> +			}
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-critic, n.:
-	A person who boasts himself hard to please because nobody tries
-	to please him.
-		-- Ambrose Bierce, "The Devil's Dictionary"
+Wouldn't it be better to do a real distance comparison:
+
+int d = (f->x - s->x) * (f->x - s->x) + (f->y - s->y) * (f->y - s->y)
+
+That should be the square of the actual distance between two contacts.
+
+The rest looks ok to me.
+
+-- Chase
+
