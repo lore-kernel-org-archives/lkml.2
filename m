@@ -1,78 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab0JMMdH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 08:33:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44701 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754028Ab0JMMdF (ORCPT
+	id S1754185Ab0JMMfi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 08:35:38 -0400
+Received: from am1ehsobe005.messaging.microsoft.com ([213.199.154.208]:41565
+	"EHLO AM1EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754100Ab0JMMfg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 08:33:05 -0400
-Date: Wed, 13 Oct 2010 13:33:01 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Hsiang <Peter.Hsiang@maxim-ic.com>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesse Marroquin <Jesse.Marroquin@maxim-ic.com>
-Subject: Re: [PATCH] sound/soc: rename vol to volatile_register as
- appropriate
-Message-ID: <20101013123301.GL6424@rakim.wolfsonmicro.main>
-References: <B2150E1E4418E1438554A300EA5040E40D469C124D@ITSVLEX06.it.maxim-ic.internal>
- <B2150E1E4418E1438554A300EA5040E40D469C124F@ITSVLEX06.it.maxim-ic.internal>
- <1286934472.1117.129.camel@Joe-Laptop>
- <20101013082414.GD6424@rakim.wolfsonmicro.main>
- <1286971846.1117.191.camel@Joe-Laptop>
+	Wed, 13 Oct 2010 08:35:36 -0400
+X-SpamScore: 5
+X-BigFish: VS5(z5edIzc8kzz1202hzz8275bh92fbjz32i87h2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0LA8AYZ-02-SBQ-02
+X-M-MSG: 
+From: Joerg Roedel <joerg.roedel@amd.com>
+To: Ingo Molnar <mingo@redhat.com>, <x86@kernel.org>
+CC: <linux-kernel@vger.kernel.org>, Joerg Roedel <joerg.roedel@amd.com>
+Subject: [PATCH 2/2] x86/amd-iommu: Update copyright headers
+Date: Wed, 13 Oct 2010 14:36:04 +0200
+Message-ID: <1286973364-17077-3-git-send-email-joerg.roedel@amd.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1286973364-17077-1-git-send-email-joerg.roedel@amd.com>
+References: <1286973364-17077-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286971846.1117.191.camel@Joe-Laptop>
-X-Cookie: 667:
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 05:10:45AM -0700, Joe Perches wrote:
-> Rename the declaration and uses of variables
-> named vol to volatile_register to avoid name
-> clash with the much more common use of vol
-> for volume.
+This patch updates the copyright headers in all source files
+of the AMD IOMMU driver.
 
-Are any of the contexts actually ambiguous?  I have to say I don't find
-this useful.  If the register I/O code knows anything about volumes I'd
-say we've probably messed up somewhere.
+Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
+---
+ arch/x86/include/asm/amd_iommu.h       |    2 +-
+ arch/x86/include/asm/amd_iommu_proto.h |    2 +-
+ arch/x86/include/asm/amd_iommu_types.h |    2 +-
+ arch/x86/kernel/amd_iommu.c            |    2 +-
+ arch/x86/kernel/amd_iommu_init.c       |    2 +-
+ 5 files changed, 5 insertions(+), 5 deletions(-)
 
-> > > static struct {
-> > > 	bool readable;
-> > > 	bool writable,
-> > > 	bool vol;
-> > > } etc...
+diff --git a/arch/x86/include/asm/amd_iommu.h b/arch/x86/include/asm/amd_iommu.h
+index 5af2982..f16a2ca 100644
+--- a/arch/x86/include/asm/amd_iommu.h
++++ b/arch/x86/include/asm/amd_iommu.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2007-2009 Advanced Micro Devices, Inc.
++ * Copyright (C) 2007-2010 Advanced Micro Devices, Inc.
+  * Author: Joerg Roedel <joerg.roedel@amd.com>
+  *         Leo Duran <leo.duran@amd.com>
+  *
+diff --git a/arch/x86/include/asm/amd_iommu_proto.h b/arch/x86/include/asm/amd_iommu_proto.h
+index cb03037..916bc81 100644
+--- a/arch/x86/include/asm/amd_iommu_proto.h
++++ b/arch/x86/include/asm/amd_iommu_proto.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2009 Advanced Micro Devices, Inc.
++ * Copyright (C) 2009-2010 Advanced Micro Devices, Inc.
+  * Author: Joerg Roedel <joerg.roedel@amd.com>
+  *
+  * This program is free software; you can redistribute it and/or modify it
+diff --git a/arch/x86/include/asm/amd_iommu_types.h b/arch/x86/include/asm/amd_iommu_types.h
+index bdd20c8..e3509fc 100644
+--- a/arch/x86/include/asm/amd_iommu_types.h
++++ b/arch/x86/include/asm/amd_iommu_types.h
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2007-2009 Advanced Micro Devices, Inc.
++ * Copyright (C) 2007-2010 Advanced Micro Devices, Inc.
+  * Author: Joerg Roedel <joerg.roedel@amd.com>
+  *         Leo Duran <leo.duran@amd.com>
+  *
+diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
+index 679b645..d2fdb08 100644
+--- a/arch/x86/kernel/amd_iommu.c
++++ b/arch/x86/kernel/amd_iommu.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2007-2009 Advanced Micro Devices, Inc.
++ * Copyright (C) 2007-2010 Advanced Micro Devices, Inc.
+  * Author: Joerg Roedel <joerg.roedel@amd.com>
+  *         Leo Duran <leo.duran@amd.com>
+  *
+diff --git a/arch/x86/kernel/amd_iommu_init.c b/arch/x86/kernel/amd_iommu_init.c
+index 44710d8..3cb482e 100644
+--- a/arch/x86/kernel/amd_iommu_init.c
++++ b/arch/x86/kernel/amd_iommu_init.c
+@@ -1,5 +1,5 @@
+ /*
+- * Copyright (C) 2007-2009 Advanced Micro Devices, Inc.
++ * Copyright (C) 2007-2010 Advanced Micro Devices, Inc.
+  * Author: Joerg Roedel <joerg.roedel@amd.com>
+  *         Leo Duran <leo.duran@amd.com>
+  *
+-- 
+1.7.0.4
 
-> > The readable and writable fields are being used as bitmasks:
 
-> No, they are being declared as bitmasks.
-> writable is used once as bool, readable isn't used at all.
-
-They're being used in the table initialisation.
-
-> > | +       { 0x1F, 0x1F, 1 }, /* 03 battery voltage */
-
-> > so this discards data which we may wish to use in future.
-
-> It's not used as bitmask now, what use would there
-> be in the future for it as a bitmask?
-
-Examples would include validating I/O operations done by drivers, or
-supporting fancy cache handling that pays attention to things per bit.
-
-> > vol is traditionally used for this throughout the subsystem.  It's
-> > unfortuante that volatile is a keyword.
-
-> As far as I see, your description of vol being
-> used throughout the subsystem is not true.
-
-I'm sorry?  It's used as the field name for volatility in all the
-drivers I can remember that use a table to look volatility up in
-register properties.
