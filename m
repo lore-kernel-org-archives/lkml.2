@@ -1,58 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab0JMC25 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 22:28:57 -0400
-Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:56390 "EHLO
-	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752362Ab0JMC24 (ORCPT
+	id S1752543Ab0JMCnc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 22:43:32 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43496 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab0JMCnb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 22:28:56 -0400
-Message-ID: <4CB51922.2080405@dcl.info.waseda.ac.jp>
-Date: Wed, 13 Oct 2010 11:27:46 +0900
-From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-        Vojtech Pavlik <vojtech@ucw.cz>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 1/2] lockdep: check the depth of subclass
-References: <1286269311-28336-1-git-send-email-mitake@dcl.info.waseda.ac.jp> <1286879221.29097.39.camel@twins> <20101012160352.GB30513@core.coreip.homeip.net>
-In-Reply-To: <20101012160352.GB30513@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 12 Oct 2010 22:43:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=gEjBHEDWbWX1c2nw7HpRmJKK+23rjfs1Mfr00nF6FG4TrSstTBtx/9TdQzJxUHCktj
+         JW7sA4AkhRlwvf+6WSk9w/uf9CXS9OG8HslbUJKA/qprO09cPSTnkZRLqrJNRhS2EVGo
+         VSgE/BeXjbEvZwhMurcV8y+rZZmCZzx4AOpFM=
+Subject: [PATCH] mfd: tps6507x - fix off-by-one value range checking
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Todd Fischer <todd.fischer@ridgerun.com>
+Content-Type: text/plain
+Date: Wed, 13 Oct 2010 10:44:39 +0800
+Message-Id: <1286937879.453.1.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/10 01:03, Dmitry Torokhov wrote:
- > On Tue, Oct 12, 2010 at 12:27:01PM +0200, Peter Zijlstra wrote:
- >> On Tue, 2010-10-05 at 18:01 +0900, Hitoshi Mitake wrote:
- >>> ---
- >>>   drivers/input/mousedev.c |    2 +-
- >>>   kernel/lockdep.c         |   15 +++++++++++++++
- >>>   2 files changed, 16 insertions(+), 1 deletions(-)
- >>>
- >>> diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
- >>> index d528a2d..9897334 100644
- >>> --- a/drivers/input/mousedev.c
- >>> +++ b/drivers/input/mousedev.c
- >>> @@ -866,7 +866,7 @@ static struct mousedev *mousedev_create(struct 
-input_dev *dev,
- >>>   	spin_lock_init(&mousedev->client_lock);
- >>>   	mutex_init(&mousedev->mutex);
- >>>   	lockdep_set_subclass(&mousedev->mutex,
- >>> -			     minor == MOUSEDEV_MIX ? MOUSEDEV_MIX : 0);
- >>> +			     minor == MOUSEDEV_MIX ? SINGLE_DEPTH_NESTING : 0);
- >>
- >> Ah good find.
- >>
- >
- > I'll pick up mousedev change for .37.
+We use msg[0] for device register.
+If bytes == (TPS6507X_MAX_REGISTER + 1),
+we got a buffer overflow when doing memcpy(&msg[1], src, bytes);
+Thus we must ensure bytes not greater than TPS6507X_MAX_REGISTER.
 
-Thanks a lot, Dmitry.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/tps6507x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Should I divide this patch into two for
-drivers/input/mousedev.c and kernel/lockdep.c?
-If you need, I'll resend second version.
+diff --git a/drivers/mfd/tps6507x.c b/drivers/mfd/tps6507x.c
+index fc01976..33ba772 100644
+--- a/drivers/mfd/tps6507x.c
++++ b/drivers/mfd/tps6507x.c
+@@ -68,7 +68,7 @@ static int tps6507x_i2c_write_device(struct tps6507x_dev *tps6507x, char reg,
+ 	u8 msg[TPS6507X_MAX_REGISTER + 1];
+ 	int ret;
+ 
+-	if (bytes > (TPS6507X_MAX_REGISTER + 1))
++	if (bytes > TPS6507X_MAX_REGISTER)
+ 		return -EINVAL;
+ 
+ 	msg[0] = reg;
+-- 
+1.7.2
+
+
+
