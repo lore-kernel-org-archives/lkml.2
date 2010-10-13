@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab0JMIcd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 04:32:33 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50133 "EHLO song.cn.fujitsu.com"
+	id S1753385Ab0JMIgm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 04:36:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58107 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753309Ab0JMIcb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 04:32:31 -0400
-Message-ID: <4CB56E7F.3030908@cn.fujitsu.com>
-Date: Wed, 13 Oct 2010 16:31:59 +0800
+	id S1753133Ab0JMIgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 04:36:41 -0400
+Message-ID: <4CB56F7A.8030702@cn.fujitsu.com>
+Date: Wed, 13 Oct 2010 16:36:10 +0800
 From: Shan Wei <shanwei@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
 To: Yaogong Wang <ywang15@ncsu.edu>
 CC: linux-sctp@vger.kernel.org, Vlad Yasevich <vladislav.yasevich@hp.com>,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 3/5] sctp: extend socket API for sched configuration
-References: <AANLkTimEQkDpWorCF4HUq6N-xAnFz4xE89osAtcJY_Mn@mail.gmail.com>
-In-Reply-To: <AANLkTimEQkDpWorCF4HUq6N-xAnFz4xE89osAtcJY_Mn@mail.gmail.com>
+Subject: Re: [PATCHv2 4/5] sctp: a sample module of strict priority queue
+References: <AANLkTi=8ArxUh2-8PJvD8paDGVBHdDjKk=xQDKo6i2==@mail.gmail.com>
+In-Reply-To: <AANLkTi=8ArxUh2-8PJvD8paDGVBHdDjKk=xQDKo6i2==@mail.gmail.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -24,46 +24,108 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Yaogong Wang wrote, at 09/12/2010 09:13 AM:
-> Augment SCTP socket API with a new socket option SCTP_SCHED
-> to choose and configure multistream scheduling algorithm.
+> Provide a sample kernel module that uses the pluggable multistream
+> scheduling framework. This module implements strict priority queue.
 > 
 > Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
 > ---
->  include/net/sctp/structs.h |    4 ++
->  include/net/sctp/user.h    |   19 ++++++++++
->  net/sctp/outqueue.c        |    4 ++
->  net/sctp/sm_sideeffect.c   |   45 +++++++++++++++++++++++--
->  net/sctp/socket.c          |   80 ++++++++++++++++++++++++++++++++++++++++++++
->  5 files changed, 149 insertions(+), 3 deletions(-)
+>  net/sctp/Kconfig     |   12 ++++++
+>  net/sctp/Makefile    |    1 +
+>  net/sctp/sctp_prio.c |  103 ++++++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 116 insertions(+), 0 deletions(-)
+>  create mode 100644 net/sctp/sctp_prio.c
 > 
-> diff --git a/include/net/sctp/structs.h b/include/net/sctp/structs.h
-> index 52af764..1a76417 100644
-> --- a/include/net/sctp/structs.h
-> +++ b/include/net/sctp/structs.h
-> @@ -333,6 +333,8 @@ struct sctp_sock {
+> diff --git a/net/sctp/Kconfig b/net/sctp/Kconfig
+> index 126b014..85c8ded 100644
+> --- a/net/sctp/Kconfig
+> +++ b/net/sctp/Kconfig
+> @@ -37,6 +37,18 @@ menuconfig IP_SCTP
 > 
->  	/* Multistream scheduling */
->  	const struct sctp_sched_ops *sched_ops;
-> +	__u16 sched_config_len;
-> +	void *sched_config;
+>  if IP_SCTP
 > 
->  	struct sctp_initmsg initmsg;
->  	struct sctp_rtoinfo rtoinfo;
-> @@ -1173,6 +1175,8 @@ struct sctp_outq {
+> +config SCTP_SCHED_PRIO
+> +	tristate "SCTP Multistream Scheduling: Priority Queue"
+> +	default m
+> +	help
+> +	  This module provides the ability to use priority queue
+> +	  to schedule multiple streams within an association.
+> +
+> +	  To compile this code as a module, choose M here: the
+> +	  module will be called sctp_prio.
+> +
+> +	  If in doubt, say N.
+> +
+>  config NET_SCTPPROBE
+>  	tristate "SCTP: Association probing"
+>          depends on PROC_FS && KPROBES
+> diff --git a/net/sctp/Makefile b/net/sctp/Makefile
+> index 4e8b65d..89be03a 100644
+> --- a/net/sctp/Makefile
+> +++ b/net/sctp/Makefile
+> @@ -4,6 +4,7 @@
 > 
->  	/* Multistream scheduling */
->  	const struct sctp_sched_ops *sched_ops;
-> +	__u16 sched_config_len;
-> +	void *sched_config;
+>  obj-$(CONFIG_IP_SCTP) += sctp.o
+>  obj-$(CONFIG_NET_SCTPPROBE) += sctp_probe.o
+> +obj-$(CONFIG_SCTP_SCHED_PRIO) += sctp_prio.o
+> 
+>  sctp-y := sm_statetable.o sm_statefuns.o sm_sideeffect.o \
+>  	  protocol.o endpointola.o associola.o \
+> diff --git a/net/sctp/sctp_prio.c b/net/sctp/sctp_prio.c
+> new file mode 100644
+> index 0000000..11e7e11
+> --- /dev/null
+> +++ b/net/sctp/sctp_prio.c
+> @@ -0,0 +1,103 @@
+> +/*
+> + * SCTP multistream scheduling: priority queue
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/types.h>
+> +#include <linux/list.h>
+> +#include <net/sctp/sctp.h>
+> +
+> +static int prio_init(struct sctp_outq *q, gfp_t gfp)
+> +{
+> +	__u16 i;
+> +	q->out_chunk_list = kmalloc(q->asoc->c.sinit_num_ostreams
+> +				 * sizeof(struct list_head), gfp);
+> +	if (!q->out_chunk_list)
+> +		return -ENOMEM;
+> +	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
+> +		INIT_LIST_HEAD(&q->out_chunk_list[i]);
+> +
+> +	return 0;
+> +}
+> +
+> +static void prio_release(struct sctp_outq *q)
+> +{
+> +	kfree(q->out_chunk_list);
+> +	return;
+> +}
+> +
+> +static void prio_enqueue_head_data(struct sctp_outq *q,
+> +					struct sctp_chunk *ch)
+> +{
+> +	list_add(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
 
-Why did you take these two fields into sctp_sock and sctp_outq?
-These two fields between sctp_sock and sctp_outq has same role,
-we can only defined in one place.
-How about using sctp_sk(sctp_outq->asoc->base.sk) to access these two
-fields?
+User can using SCTP_SNDRCV option to specific stream number.
+So, It is necessary to check stream number with q->asoc->c.sinit_num_ostreams.
+
+> +	q->out_qlen += ch->skb->len;
+> +	return;
+> +}
+> +
+> +static void prio_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
+> +{
+> +	list_add_tail(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
+
+need to check too.
+ 
 
 
 -- 
 Best Regards
 -----
 Shan Wei
+
