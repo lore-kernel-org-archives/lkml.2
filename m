@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752064Ab0JMAQc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 20:16:32 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:55071 "EHLO
+	id S1752290Ab0JMAQg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 20:16:36 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:42419 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750818Ab0JMAQa (ORCPT
+	with ESMTP id S1751379Ab0JMAQb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 20:16:30 -0400
+	Tue, 12 Oct 2010 20:16:31 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/18] fs: Implement lazy LRU updates for inodes.
-Date: Wed, 13 Oct 2010 11:15:46 +1100
-Message-Id: <1286928961-15157-4-git-send-email-david@fromorbit.com>
+Subject: [PATCH 09/18] fs: Introduce per-bucket inode hash locks
+Date: Wed, 13 Oct 2010 11:15:52 +1100
+Message-Id: <1286928961-15157-10-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286928961-15157-1-git-send-email-david@fromorbit.com>
 References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
@@ -20,297 +20,782 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nick Piggin <npiggin@suse.de>
+Protect the inode hash with a single lock is not scalable.  Convert
+the inode hash to use the new bit-locked hash list implementation
+that allows per-bucket locks to be used. This allows us to replace
+the global inode_lock with finer grained locking without increasing
+the size of the hash table.
 
-Convert the inode LRU to use lazy updates to reduce lock and
-cacheline traffic.  We avoid moving inodes around in the LRU list
-during iget/iput operations so these frequent operations don't need
-to access the LRUs. Instead, we defer the refcount checks to
-reclaim-time and use a per-inode state flag, I_REFERENCED, to tell
-reclaim that iget has touched the inode in the past. This means that
-only reclaim should be touching the LRU with any frequency, hence
-significantly reducing lock acquisitions and the amount contention
-on LRU updates.
+Based on a patch originally from Nick Piggin.
 
-This also removes the inode_in_use list, which means we now only
-have one list for tracking the inode LRU status. This makes it much
-simpler to split out the LRU list operations under it's own lock.
-
-Signed-off-by: Nick Piggin <npiggin@suse.de>
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c         |   12 +----
- fs/inode.c                |   92 +++++++++++++++++++++++++++++++--------------
- fs/internal.h             |    6 +++
- include/linux/fs.h        |   13 +++---
- include/linux/writeback.h |    1 -
- 5 files changed, 80 insertions(+), 44 deletions(-)
+ fs/btrfs/inode.c        |    2 +-
+ fs/fs-writeback.c       |    2 +-
+ fs/hfs/hfs_fs.h         |    2 +-
+ fs/hfs/inode.c          |    2 +-
+ fs/hfsplus/hfsplus_fs.h |    2 +-
+ fs/hfsplus/inode.c      |    2 +-
+ fs/inode.c              |  149 ++++++++++++++++++++++++++++------------------
+ fs/nilfs2/gcinode.c     |   22 ++++---
+ fs/nilfs2/segment.c     |    2 +-
+ fs/nilfs2/the_nilfs.h   |    2 +-
+ fs/reiserfs/xattr.c     |    2 +-
+ include/linux/fs.h      |    8 ++-
+ include/linux/list_bl.h |   18 ++++++
+ mm/shmem.c              |    4 +-
+ 14 files changed, 139 insertions(+), 80 deletions(-)
 
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index 7947bf0..c7a2bef 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -3855,7 +3855,7 @@ again:
+ 	p = &root->inode_tree.rb_node;
+ 	parent = NULL;
+ 
+-	if (hlist_unhashed(&inode->i_hash))
++	if (inode_unhashed(inode))
+ 		return;
+ 
+ 	spin_lock(&root->inode_lock);
 diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 58a95b7..61c11d5 100644
+index be40b8d..31d7f35 100644
 --- a/fs/fs-writeback.c
 +++ b/fs/fs-writeback.c
-@@ -408,16 +408,10 @@ writeback_single_inode(struct inode *inode, struct writeback_control *wbc)
- 			 * completion.
- 			 */
- 			redirty_tail(inode);
--		} else if (atomic_read(&inode->i_count)) {
--			/*
--			 * The inode is clean, inuse
--			 */
--			list_move(&inode->i_list, &inode_in_use);
- 		} else {
--			/*
--			 * The inode is clean, unused
--			 */
--			list_move(&inode->i_list, &inode_unused);
-+			/* The inode is clean */
-+			list_del_init(&inode->i_list);
-+			inode_lru_list_add(inode);
+@@ -958,7 +958,7 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 		 * dirty list.  Add blockdev inodes as well.
+ 		 */
+ 		if (!S_ISBLK(inode->i_mode)) {
+-			if (hlist_unhashed(&inode->i_hash))
++			if (inode_unhashed(inode))
+ 				goto out;
  		}
- 	}
- 	inode_sync_complete(inode);
+ 		if (inode->i_state & I_FREEING)
+diff --git a/fs/hfs/hfs_fs.h b/fs/hfs/hfs_fs.h
+index 4f55651..24591be 100644
+--- a/fs/hfs/hfs_fs.h
++++ b/fs/hfs/hfs_fs.h
+@@ -148,7 +148,7 @@ struct hfs_sb_info {
+ 
+ 	int fs_div;
+ 
+-	struct hlist_head rsrc_inodes;
++	struct hlist_bl_head rsrc_inodes;
+ };
+ 
+ #define HFS_FLG_BITMAP_DIRTY	0
+diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
+index 397b7ad..7778298 100644
+--- a/fs/hfs/inode.c
++++ b/fs/hfs/inode.c
+@@ -524,7 +524,7 @@ static struct dentry *hfs_file_lookup(struct inode *dir, struct dentry *dentry,
+ 	HFS_I(inode)->rsrc_inode = dir;
+ 	HFS_I(dir)->rsrc_inode = inode;
+ 	igrab(dir);
+-	hlist_add_head(&inode->i_hash, &HFS_SB(dir->i_sb)->rsrc_inodes);
++	hlist_bl_add_head(&inode->i_hash, &HFS_SB(dir->i_sb)->rsrc_inodes);
+ 	mark_inode_dirty(inode);
+ out:
+ 	d_add(dentry, inode);
+diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
+index dc856be..499f5a5 100644
+--- a/fs/hfsplus/hfsplus_fs.h
++++ b/fs/hfsplus/hfsplus_fs.h
+@@ -144,7 +144,7 @@ struct hfsplus_sb_info {
+ 
+ 	unsigned long flags;
+ 
+-	struct hlist_head rsrc_inodes;
++	struct hlist_bl_head rsrc_inodes;
+ };
+ 
+ #define HFSPLUS_SB_WRITEBACKUP	0x0001
+diff --git a/fs/hfsplus/inode.c b/fs/hfsplus/inode.c
+index c5a979d..b755cf0 100644
+--- a/fs/hfsplus/inode.c
++++ b/fs/hfsplus/inode.c
+@@ -202,7 +202,7 @@ static struct dentry *hfsplus_file_lookup(struct inode *dir, struct dentry *dent
+ 	HFSPLUS_I(inode).rsrc_inode = dir;
+ 	HFSPLUS_I(dir).rsrc_inode = inode;
+ 	igrab(dir);
+-	hlist_add_head(&inode->i_hash, &HFSPLUS_SB(sb).rsrc_inodes);
++	hlist_bl_add_head(&inode->i_hash, &HFSPLUS_SB(sb).rsrc_inodes);
+ 	mark_inode_dirty(inode);
+ out:
+ 	d_add(dentry, inode);
 diff --git a/fs/inode.c b/fs/inode.c
-index b3b6a4b..5dd74b4 100644
+index f595542..dd3270a 100644
 --- a/fs/inode.c
 +++ b/fs/inode.c
-@@ -72,7 +72,6 @@ static unsigned int i_hash_shift __read_mostly;
+@@ -24,12 +24,20 @@
+ #include <linux/mount.h>
+ #include <linux/async.h>
+ #include <linux/posix_acl.h>
++#include <linux/bit_spinlock.h>
+ 
+ /*
+  * Locking rules.
+  *
+  * inode->i_lock protects:
+  *   i_ref
++ * inode hash lock protects:
++ *   inode hash table, i_hash
++ *
++ * Lock orders
++ * inode_lock
++ *   inode hash bucket lock
++ *     inode->i_lock
+  */
+ 
+ /*
+@@ -66,6 +74,7 @@
+ 
+ static unsigned int i_hash_mask __read_mostly;
+ static unsigned int i_hash_shift __read_mostly;
++static struct hlist_bl_head *inode_hashtable __read_mostly;
+ 
+ /*
+  * Each inode can be on two separate lists. One is
+@@ -78,9 +87,7 @@ static unsigned int i_hash_shift __read_mostly;
+  * A "dirty" list is maintained for each super block,
   * allowing for low-overhead inode sync() operations.
   */
+-
+ static LIST_HEAD(inode_lru);
+-static struct hlist_head *inode_hashtable __read_mostly;
  
--LIST_HEAD(inode_in_use);
- LIST_HEAD(inode_unused);
- static struct hlist_head *inode_hashtable __read_mostly;
- 
-@@ -291,6 +290,7 @@ void inode_init_once(struct inode *inode)
- 	INIT_HLIST_NODE(&inode->i_hash);
+ /*
+  * A simple spinlock to protect the list manipulations.
+@@ -295,7 +302,7 @@ void destroy_inode(struct inode *inode)
+ void inode_init_once(struct inode *inode)
+ {
+ 	memset(inode, 0, sizeof(*inode));
+-	INIT_HLIST_NODE(&inode->i_hash);
++	init_hlist_bl_node(&inode->i_hash);
  	INIT_LIST_HEAD(&inode->i_dentry);
  	INIT_LIST_HEAD(&inode->i_devices);
-+	INIT_LIST_HEAD(&inode->i_list);
- 	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
- 	spin_lock_init(&inode->i_data.tree_lock);
- 	spin_lock_init(&inode->i_data.i_mmap_lock);
-@@ -317,12 +317,21 @@ static void init_once(void *foo)
+ 	INIT_LIST_HEAD(&inode->i_wb_list);
+@@ -377,9 +384,13 @@ static unsigned long hash(struct super_block *sb, unsigned long hashval)
   */
- void __iget(struct inode *inode)
+ void __insert_inode_hash(struct inode *inode, unsigned long hashval)
  {
--	if (atomic_inc_return(&inode->i_count) != 1)
--		return;
-+	atomic_inc(&inode->i_count);
-+}
- 
--	if (!(inode->i_state & (I_DIRTY|I_SYNC)))
--		list_move(&inode->i_list, &inode_in_use);
--	percpu_counter_dec(&nr_inodes_unused);
-+void inode_lru_list_add(struct inode *inode)
-+{
-+	list_add(&inode->i_list, &inode_unused);
-+	percpu_counter_inc(&nr_inodes_unused);
-+}
+-	struct hlist_head *head = inode_hashtable + hash(inode->i_sb, hashval);
++	struct hlist_bl_head *b;
 +
-+void inode_lru_list_del(struct inode *inode)
-+{
-+	if (!list_empty(&inode->i_list)) {
-+		list_del_init(&inode->i_list);
-+		percpu_counter_dec(&nr_inodes_unused);
++	b = inode_hashtable + hash(inode->i_sb, hashval);
+ 	spin_lock(&inode_lock);
+-	hlist_add_head(&inode->i_hash, head);
++	hlist_bl_lock(b);
++	hlist_bl_add_head(&inode->i_hash, b);
++	hlist_bl_unlock(b);
+ 	spin_unlock(&inode_lock);
+ }
+ EXPORT_SYMBOL(__insert_inode_hash);
+@@ -393,7 +404,12 @@ EXPORT_SYMBOL(__insert_inode_hash);
+  */
+ static void __remove_inode_hash(struct inode *inode)
+ {
+-	hlist_del_init(&inode->i_hash);
++	struct hlist_bl_head *b;
++
++	b = inode_hashtable + hash(inode->i_sb, inode->i_ino);
++	hlist_bl_lock(b);
++	hlist_bl_del_init(&inode->i_hash);
++	hlist_bl_unlock(b);
+ }
+ 
+ /**
+@@ -405,7 +421,7 @@ static void __remove_inode_hash(struct inode *inode)
+ void remove_inode_hash(struct inode *inode)
+ {
+ 	spin_lock(&inode_lock);
+-	hlist_del_init(&inode->i_hash);
++	__remove_inode_hash(inode);
+ 	spin_unlock(&inode_lock);
+ }
+ EXPORT_SYMBOL(remove_inode_hash);
+@@ -673,25 +689,28 @@ static void __wait_on_freeing_inode(struct inode *inode);
+  * add any additional branch in the common code.
+  */
+ static struct inode *find_inode(struct super_block *sb,
+-				struct hlist_head *head,
++				struct hlist_bl_head *b,
+ 				int (*test)(struct inode *, void *),
+ 				void *data)
+ {
+-	struct hlist_node *node;
++	struct hlist_bl_node *node;
+ 	struct inode *inode = NULL;
+ 
+ repeat:
+-	hlist_for_each_entry(inode, node, head, i_hash) {
++	hlist_bl_lock(b);
++	hlist_bl_for_each_entry(inode, node, b, i_hash) {
+ 		if (inode->i_sb != sb)
+ 			continue;
+ 		if (!test(inode, data))
+ 			continue;
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
++			hlist_bl_unlock(b);
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+ 		}
+ 		break;
+ 	}
++	hlist_bl_unlock(b);
+ 	return node ? inode : NULL;
+ }
+ 
+@@ -700,33 +719,40 @@ repeat:
+  * iget_locked for details.
+  */
+ static struct inode *find_inode_fast(struct super_block *sb,
+-				struct hlist_head *head, unsigned long ino)
++				struct hlist_bl_head *b,
++				unsigned long ino)
+ {
+-	struct hlist_node *node;
++	struct hlist_bl_node *node;
+ 	struct inode *inode = NULL;
+ 
+ repeat:
+-	hlist_for_each_entry(inode, node, head, i_hash) {
++	hlist_bl_lock(b);
++	hlist_bl_for_each_entry(inode, node, b, i_hash) {
+ 		if (inode->i_ino != ino)
+ 			continue;
+ 		if (inode->i_sb != sb)
+ 			continue;
+ 		if (inode->i_state & (I_FREEING|I_WILL_FREE)) {
++			hlist_bl_unlock(b);
+ 			__wait_on_freeing_inode(inode);
+ 			goto repeat;
+ 		}
+ 		break;
+ 	}
++	hlist_bl_unlock(b);
+ 	return node ? inode : NULL;
+ }
+ 
+ static inline void
+-__inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
++__inode_add_to_lists(struct super_block *sb, struct hlist_bl_head *b,
+ 			struct inode *inode)
+ {
+ 	list_add(&inode->i_sb_list, &sb->s_inodes);
+-	if (head)
+-		hlist_add_head(&inode->i_hash, head);
++	if (b) {
++		hlist_bl_lock(b);
++		hlist_bl_add_head(&inode->i_hash, b);
++		hlist_bl_unlock(b);
 +	}
  }
  
- void end_writeback(struct inode *inode)
-@@ -367,7 +376,7 @@ static void dispose_list(struct list_head *head)
- 		struct inode *inode;
- 
- 		inode = list_first_entry(head, struct inode, i_list);
--		list_del(&inode->i_list);
-+		list_del_init(&inode->i_list);
- 
- 		evict(inode);
- 
-@@ -410,9 +419,9 @@ static int invalidate_list(struct list_head *head, struct list_head *dispose)
- 			continue;
- 		invalidate_inode_buffers(inode);
- 		if (!atomic_read(&inode->i_count)) {
--			list_move(&inode->i_list, dispose);
- 			WARN_ON(inode->i_state & I_NEW);
- 			inode->i_state |= I_FREEING;
-+			list_move(&inode->i_list, dispose);
- 			percpu_counter_dec(&nr_inodes_unused);
- 			continue;
- 		}
-@@ -461,17 +470,20 @@ static int can_unuse(struct inode *inode)
- }
- 
- /*
-- * Scan `goal' inodes on the unused list for freeable ones. They are moved to
-- * a temporary list and then are freed outside inode_lock by dispose_list().
-+ * Scan `goal' inodes on the unused list for freeable ones. They are moved to a
-+ * temporary list and then are freed outside inode_lock by dispose_list().
-  *
-  * Any inodes which are pinned purely because of attached pagecache have their
-- * pagecache removed.  We expect the final iput() on that inode to add it to
-- * the front of the inode_unused list.  So look for it there and if the
-- * inode is still freeable, proceed.  The right inode is found 99.9% of the
-- * time in testing on a 4-way.
-+ * pagecache removed.  If the inode has metadata buffers attached to
-+ * mapping->private_list then try to remove them.
-  *
-- * If the inode has metadata buffers attached to mapping->private_list then
-- * try to remove them.
-+ * If the inode has the I_REFERENCED flag set, it means that it has been used
-+ * recently - the flag is set in iput_final(). When we encounter such an inode,
-+ * clear the flag and move it to the back of the LRU so it gets another pass
-+ * through the LRU before it gets reclaimed. This is necessary because of the
-+ * fact we are doing lazy LRU updates to minimise lock contention so the LRU
-+ * does not have strict ordering. Hence we don't want to reclaim inodes with
-+ * this flag set because they are the inodes that are out of order...
+ /**
+@@ -743,10 +769,10 @@ __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
   */
- static void prune_icache(int nr_to_scan)
+ void inode_add_to_lists(struct super_block *sb, struct inode *inode)
  {
-@@ -489,8 +501,21 @@ static void prune_icache(int nr_to_scan)
+-	struct hlist_head *head = inode_hashtable + hash(sb, inode->i_ino);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, inode->i_ino);
  
- 		inode = list_entry(inode_unused.prev, struct inode, i_list);
+ 	spin_lock(&inode_lock);
+-	__inode_add_to_lists(sb, head, inode);
++	__inode_add_to_lists(sb, b, inode);
+ 	spin_unlock(&inode_lock);
+ }
+ EXPORT_SYMBOL_GPL(inode_add_to_lists);
+@@ -829,7 +855,7 @@ EXPORT_SYMBOL(unlock_new_inode);
+  *	-- rmk@arm.uk.linux.org
+  */
+ static struct inode *get_new_inode(struct super_block *sb,
+-				struct hlist_head *head,
++				struct hlist_bl_head *b,
+ 				int (*test)(struct inode *, void *),
+ 				int (*set)(struct inode *, void *),
+ 				void *data)
+@@ -842,12 +868,12 @@ static struct inode *get_new_inode(struct super_block *sb,
  
--		if (inode->i_state || atomic_read(&inode->i_count)) {
-+		/*
-+		 * Referenced or dirty inodes are still in use. Give them
-+		 * another pass through the LRU as we canot reclaim them now.
-+		 */
-+		if (atomic_read(&inode->i_count) ||
-+		    (inode->i_state & ~I_REFERENCED)) {
-+			list_del_init(&inode->i_list);
-+			percpu_counter_dec(&nr_inodes_unused);
-+			continue;
-+		}
-+
-+		/* recently referenced inodes get one more pass */
-+		if (inode->i_state & I_REFERENCED) {
- 			list_move(&inode->i_list, &inode_unused);
-+			inode->i_state &= ~I_REFERENCED;
- 			continue;
- 		}
- 		if (inode_has_buffers(inode) || inode->i_data.nrpages) {
-@@ -502,11 +527,15 @@ static void prune_icache(int nr_to_scan)
- 			iput(inode);
- 			spin_lock(&inode_lock);
+ 		spin_lock(&inode_lock);
+ 		/* We released the lock, so.. */
+-		old = find_inode(sb, head, test, data);
++		old = find_inode(sb, b, test, data);
+ 		if (!old) {
+ 			if (set(inode, data))
+ 				goto set_failed;
  
--			if (inode != list_entry(inode_unused.next,
--						struct inode, i_list))
--				continue;	/* wrong inode or list_empty */
--			if (!can_unuse(inode))
-+			/*
-+			 * if we can't reclaim this inode immediately, give it
-+			 * another pass through the free list so we don't spin
-+			 * on it.
-+			 */
-+			if (!can_unuse(inode)) {
-+				list_move(&inode->i_list, &inode_unused);
- 				continue;
-+			}
- 		}
- 		list_move(&inode->i_list, &freeable);
- 		WARN_ON(inode->i_state & I_NEW);
-@@ -621,7 +650,6 @@ static inline void
- __inode_add_to_lists(struct super_block *sb, struct hlist_head *head,
- 			struct inode *inode)
- {
--	list_add(&inode->i_list, &inode_in_use);
- 	list_add(&inode->i_sb_list, &sb->s_inodes);
- 	if (head)
- 		hlist_add_head(&inode->i_hash, head);
-@@ -1238,10 +1266,12 @@ static void iput_final(struct inode *inode)
- 		drop = generic_drop_inode(inode);
- 
- 	if (!drop) {
--		if (!(inode->i_state & (I_DIRTY|I_SYNC)))
--			list_move(&inode->i_list, &inode_unused);
--		percpu_counter_inc(&nr_inodes_unused);
- 		if (sb->s_flags & MS_ACTIVE) {
-+			inode->i_state |= I_REFERENCED;
-+			if (!(inode->i_state & (I_DIRTY|I_SYNC))) {
-+				list_del_init(&inode->i_list);
-+				inode_lru_list_add(inode);
-+			}
+-			__inode_add_to_lists(sb, head, inode);
++			__inode_add_to_lists(sb, b, inode);
+ 			inode->i_state = I_NEW;
  			spin_unlock(&inode_lock);
- 			return;
+ 
+@@ -883,7 +909,7 @@ set_failed:
+  * comment at iget_locked for details.
+  */
+ static struct inode *get_new_inode_fast(struct super_block *sb,
+-				struct hlist_head *head, unsigned long ino)
++				struct hlist_bl_head *b, unsigned long ino)
+ {
+ 	struct inode *inode;
+ 
+@@ -893,10 +919,10 @@ static struct inode *get_new_inode_fast(struct super_block *sb,
+ 
+ 		spin_lock(&inode_lock);
+ 		/* We released the lock, so.. */
+-		old = find_inode_fast(sb, head, ino);
++		old = find_inode_fast(sb, b, ino);
+ 		if (!old) {
+ 			inode->i_ino = ino;
+-			__inode_add_to_lists(sb, head, inode);
++			__inode_add_to_lists(sb, b, inode);
+ 			inode->i_state = I_NEW;
+ 			spin_unlock(&inode_lock);
+ 
+@@ -945,7 +971,7 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
+ 	 */
+ 	static unsigned int counter;
+ 	struct inode *inode;
+-	struct hlist_head *head;
++	struct hlist_bl_head *b;
+ 	ino_t res;
+ 
+ 	spin_lock(&inode_lock);
+@@ -953,8 +979,8 @@ ino_t iunique(struct super_block *sb, ino_t max_reserved)
+ 		if (counter <= max_reserved)
+ 			counter = max_reserved + 1;
+ 		res = counter++;
+-		head = inode_hashtable + hash(sb, res);
+-		inode = find_inode_fast(sb, head, res);
++		b = inode_hashtable + hash(sb, res);
++		inode = find_inode_fast(sb, b, res);
+ 	} while (inode != NULL);
+ 	spin_unlock(&inode_lock);
+ 
+@@ -1003,13 +1029,14 @@ EXPORT_SYMBOL(igrab);
+  * Note, @test is called with the inode_lock held, so can't sleep.
+  */
+ static struct inode *ifind(struct super_block *sb,
+-		struct hlist_head *head, int (*test)(struct inode *, void *),
++		struct hlist_bl_head *b,
++		int (*test)(struct inode *, void *),
+ 		void *data, const int wait)
+ {
+ 	struct inode *inode;
+ 
+ 	spin_lock(&inode_lock);
+-	inode = find_inode(sb, head, test, data);
++	inode = find_inode(sb, b, test, data);
+ 	if (inode) {
+ 		spin_lock(&inode->i_lock);
+ 		inode->i_ref++;
+@@ -1039,12 +1066,13 @@ static struct inode *ifind(struct super_block *sb,
+  * Otherwise NULL is returned.
+  */
+ static struct inode *ifind_fast(struct super_block *sb,
+-		struct hlist_head *head, unsigned long ino)
++		struct hlist_bl_head *b,
++		unsigned long ino)
+ {
+ 	struct inode *inode;
+ 
+ 	spin_lock(&inode_lock);
+-	inode = find_inode_fast(sb, head, ino);
++	inode = find_inode_fast(sb, b, ino);
+ 	if (inode) {
+ 		spin_lock(&inode->i_lock);
+ 		inode->i_ref++;
+@@ -1081,9 +1109,9 @@ static struct inode *ifind_fast(struct super_block *sb,
+ struct inode *ilookup5_nowait(struct super_block *sb, unsigned long hashval,
+ 		int (*test)(struct inode *, void *), void *data)
+ {
+-	struct hlist_head *head = inode_hashtable + hash(sb, hashval);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, hashval);
+ 
+-	return ifind(sb, head, test, data, 0);
++	return ifind(sb, b, test, data, 0);
+ }
+ EXPORT_SYMBOL(ilookup5_nowait);
+ 
+@@ -1109,9 +1137,9 @@ EXPORT_SYMBOL(ilookup5_nowait);
+ struct inode *ilookup5(struct super_block *sb, unsigned long hashval,
+ 		int (*test)(struct inode *, void *), void *data)
+ {
+-	struct hlist_head *head = inode_hashtable + hash(sb, hashval);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, hashval);
+ 
+-	return ifind(sb, head, test, data, 1);
++	return ifind(sb, b, test, data, 1);
+ }
+ EXPORT_SYMBOL(ilookup5);
+ 
+@@ -1131,9 +1159,9 @@ EXPORT_SYMBOL(ilookup5);
+  */
+ struct inode *ilookup(struct super_block *sb, unsigned long ino)
+ {
+-	struct hlist_head *head = inode_hashtable + hash(sb, ino);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, ino);
+ 
+-	return ifind_fast(sb, head, ino);
++	return ifind_fast(sb, b, ino);
+ }
+ EXPORT_SYMBOL(ilookup);
+ 
+@@ -1161,17 +1189,17 @@ struct inode *iget5_locked(struct super_block *sb, unsigned long hashval,
+ 		int (*test)(struct inode *, void *),
+ 		int (*set)(struct inode *, void *), void *data)
+ {
+-	struct hlist_head *head = inode_hashtable + hash(sb, hashval);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, hashval);
+ 	struct inode *inode;
+ 
+-	inode = ifind(sb, head, test, data, 1);
++	inode = ifind(sb, b, test, data, 1);
+ 	if (inode)
+ 		return inode;
+ 	/*
+ 	 * get_new_inode() will do the right thing, re-trying the search
+ 	 * in case it had to block at any point.
+ 	 */
+-	return get_new_inode(sb, head, test, set, data);
++	return get_new_inode(sb, b, test, set, data);
+ }
+ EXPORT_SYMBOL(iget5_locked);
+ 
+@@ -1192,17 +1220,17 @@ EXPORT_SYMBOL(iget5_locked);
+  */
+ struct inode *iget_locked(struct super_block *sb, unsigned long ino)
+ {
+-	struct hlist_head *head = inode_hashtable + hash(sb, ino);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, ino);
+ 	struct inode *inode;
+ 
+-	inode = ifind_fast(sb, head, ino);
++	inode = ifind_fast(sb, b, ino);
+ 	if (inode)
+ 		return inode;
+ 	/*
+ 	 * get_new_inode_fast() will do the right thing, re-trying the search
+ 	 * in case it had to block at any point.
+ 	 */
+-	return get_new_inode_fast(sb, head, ino);
++	return get_new_inode_fast(sb, b, ino);
+ }
+ EXPORT_SYMBOL(iget_locked);
+ 
+@@ -1210,14 +1238,15 @@ int insert_inode_locked(struct inode *inode)
+ {
+ 	struct super_block *sb = inode->i_sb;
+ 	ino_t ino = inode->i_ino;
+-	struct hlist_head *head = inode_hashtable + hash(sb, ino);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, ino);
+ 
+ 	inode->i_state |= I_NEW;
+ 	while (1) {
+-		struct hlist_node *node;
++		struct hlist_bl_node *node;
+ 		struct inode *old = NULL;
+ 		spin_lock(&inode_lock);
+-		hlist_for_each_entry(old, node, head, i_hash) {
++		hlist_bl_lock(b);
++		hlist_bl_for_each_entry(old, node, b, i_hash) {
+ 			if (old->i_ino != ino)
+ 				continue;
+ 			if (old->i_sb != sb)
+@@ -1227,16 +1256,18 @@ int insert_inode_locked(struct inode *inode)
+ 			break;
  		}
-@@ -1252,13 +1282,19 @@ static void iput_final(struct inode *inode)
+ 		if (likely(!node)) {
+-			hlist_add_head(&inode->i_hash, head);
++			hlist_bl_add_head(&inode->i_hash, b);
++			hlist_bl_unlock(b);
+ 			spin_unlock(&inode_lock);
+ 			return 0;
+ 		}
+ 		spin_lock(&old->i_lock);
+ 		old->i_ref++;
+ 		spin_unlock(&old->i_lock);
++		hlist_bl_unlock(b);
+ 		spin_unlock(&inode_lock);
+ 		wait_on_inode(old);
+-		if (unlikely(!hlist_unhashed(&old->i_hash))) {
++		if (unlikely(!inode_unhashed(old))) {
+ 			iput(old);
+ 			return -EBUSY;
+ 		}
+@@ -1249,16 +1280,17 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 		int (*test)(struct inode *, void *), void *data)
+ {
+ 	struct super_block *sb = inode->i_sb;
+-	struct hlist_head *head = inode_hashtable + hash(sb, hashval);
++	struct hlist_bl_head *b = inode_hashtable + hash(sb, hashval);
+ 
+ 	inode->i_state |= I_NEW;
+ 
+ 	while (1) {
+-		struct hlist_node *node;
++		struct hlist_bl_node *node;
+ 		struct inode *old = NULL;
+ 
+ 		spin_lock(&inode_lock);
+-		hlist_for_each_entry(old, node, head, i_hash) {
++		hlist_bl_lock(b);
++		hlist_bl_for_each_entry(old, node, b, i_hash) {
+ 			if (old->i_sb != sb)
+ 				continue;
+ 			if (!test(old, data))
+@@ -1268,16 +1300,18 @@ int insert_inode_locked4(struct inode *inode, unsigned long hashval,
+ 			break;
+ 		}
+ 		if (likely(!node)) {
+-			hlist_add_head(&inode->i_hash, head);
++			hlist_bl_add_head(&inode->i_hash, b);
++			hlist_bl_unlock(b);
+ 			spin_unlock(&inode_lock);
+ 			return 0;
+ 		}
+ 		spin_lock(&old->i_lock);
+ 		old->i_ref++;
+ 		spin_unlock(&old->i_lock);
++		hlist_bl_unlock(b);
+ 		spin_unlock(&inode_lock);
+ 		wait_on_inode(old);
+-		if (unlikely(!hlist_unhashed(&old->i_hash))) {
++		if (unlikely(!inode_unhashed(old))) {
+ 			iput(old);
+ 			return -EBUSY;
+ 		}
+@@ -1300,7 +1334,7 @@ EXPORT_SYMBOL(generic_delete_inode);
+  */
+ int generic_drop_inode(struct inode *inode)
+ {
+-	return !inode->i_nlink || hlist_unhashed(&inode->i_hash);
++	return !inode->i_nlink || inode_unhashed(inode);
+ }
+ EXPORT_SYMBOL_GPL(generic_drop_inode);
+ 
+@@ -1340,7 +1374,6 @@ static void iput_final(struct inode *inode)
  		spin_lock(&inode_lock);
  		WARN_ON(inode->i_state & I_NEW);
  		inode->i_state &= ~I_WILL_FREE;
--		percpu_counter_dec(&nr_inodes_unused);
- 		hlist_del_init(&inode->i_hash);
+-		hlist_del_init(&inode->i_hash);
+ 		__remove_inode_hash(inode);
  	}
--	list_del_init(&inode->i_list);
--	list_del_init(&inode->i_sb_list);
- 	WARN_ON(inode->i_state & I_NEW);
- 	inode->i_state |= I_FREEING;
-+
-+	/*
-+	 * After we delete the inode from the LRU here, we avoid moving dirty
-+	 * inodes back onto the LRU now because I_FREEING is set and hence
-+	 * writeback_single_inode() won't move the inode around.
-+	 */
-+	inode_lru_list_del(inode);
-+
-+	list_del_init(&inode->i_sb_list);
- 	spin_unlock(&inode_lock);
- 	evict(inode);
- 	spin_lock(&inode_lock);
-diff --git a/fs/internal.h b/fs/internal.h
-index a6910e9..ece3565 100644
---- a/fs/internal.h
-+++ b/fs/internal.h
-@@ -101,3 +101,9 @@ extern void put_super(struct super_block *sb);
- struct nameidata;
- extern struct file *nameidata_to_filp(struct nameidata *);
- extern void release_open_intent(struct nameidata *);
-+
-+/*
-+ * inode.c
-+ */
-+extern void inode_lru_list_add(struct inode *inode);
-+extern void inode_lru_list_del(struct inode *inode);
+ 	list_del_init(&inode->i_wb_list);
+@@ -1604,7 +1637,7 @@ void __init inode_init_early(void)
+ 
+ 	inode_hashtable =
+ 		alloc_large_system_hash("Inode-cache",
+-					sizeof(struct hlist_head),
++					sizeof(struct hlist_bl_head),
+ 					ihash_entries,
+ 					14,
+ 					HASH_EARLY,
+@@ -1637,7 +1670,7 @@ void __init inode_init(void)
+ 
+ 	inode_hashtable =
+ 		alloc_large_system_hash("Inode-cache",
+-					sizeof(struct hlist_head),
++					sizeof(struct hlist_bl_head),
+ 					ihash_entries,
+ 					14,
+ 					0,
+@@ -1646,7 +1679,7 @@ void __init inode_init(void)
+ 					0);
+ 
+ 	for (loop = 0; loop < (1 << i_hash_shift); loop++)
+-		INIT_HLIST_HEAD(&inode_hashtable[loop]);
++		INIT_HLIST_BL_HEAD(&inode_hashtable[loop]);
+ }
+ 
+ void init_special_inode(struct inode *inode, umode_t mode, dev_t rdev)
+diff --git a/fs/nilfs2/gcinode.c b/fs/nilfs2/gcinode.c
+index bed3a78..ce7344e 100644
+--- a/fs/nilfs2/gcinode.c
++++ b/fs/nilfs2/gcinode.c
+@@ -196,13 +196,13 @@ int nilfs_init_gccache(struct the_nilfs *nilfs)
+ 	INIT_LIST_HEAD(&nilfs->ns_gc_inodes);
+ 
+ 	nilfs->ns_gc_inodes_h =
+-		kmalloc(sizeof(struct hlist_head) * NILFS_GCINODE_HASH_SIZE,
++		kmalloc(sizeof(struct hlist_bl_head) * NILFS_GCINODE_HASH_SIZE,
+ 			GFP_NOFS);
+ 	if (nilfs->ns_gc_inodes_h == NULL)
+ 		return -ENOMEM;
+ 
+ 	for (loop = 0; loop < NILFS_GCINODE_HASH_SIZE; loop++)
+-		INIT_HLIST_HEAD(&nilfs->ns_gc_inodes_h[loop]);
++		INIT_HLIST_BL_HEAD(&nilfs->ns_gc_inodes_h[loop]);
+ 	return 0;
+ }
+ 
+@@ -254,18 +254,18 @@ static unsigned long ihash(ino_t ino, __u64 cno)
+  */
+ struct inode *nilfs_gc_iget(struct the_nilfs *nilfs, ino_t ino, __u64 cno)
+ {
+-	struct hlist_head *head = nilfs->ns_gc_inodes_h + ihash(ino, cno);
+-	struct hlist_node *node;
++	struct hlist_bl_head *head = nilfs->ns_gc_inodes_h + ihash(ino, cno);
++	struct hlist_bl_node *node;
+ 	struct inode *inode;
+ 
+-	hlist_for_each_entry(inode, node, head, i_hash) {
++	hlist_bl_for_each_entry(inode, node, head, i_hash) {
+ 		if (inode->i_ino == ino && NILFS_I(inode)->i_cno == cno)
+ 			return inode;
+ 	}
+ 
+ 	inode = alloc_gcinode(nilfs, ino, cno);
+ 	if (likely(inode)) {
+-		hlist_add_head(&inode->i_hash, head);
++		hlist_bl_add_head(&inode->i_hash, head);
+ 		list_add(&NILFS_I(inode)->i_dirty, &nilfs->ns_gc_inodes);
+ 	}
+ 	return inode;
+@@ -284,16 +284,18 @@ void nilfs_clear_gcinode(struct inode *inode)
+  */
+ void nilfs_remove_all_gcinode(struct the_nilfs *nilfs)
+ {
+-	struct hlist_head *head = nilfs->ns_gc_inodes_h;
+-	struct hlist_node *node, *n;
++	struct hlist_bl_head *head = nilfs->ns_gc_inodes_h;
++	struct hlist_bl_node *node;
+ 	struct inode *inode;
+ 	int loop;
+ 
+ 	for (loop = 0; loop < NILFS_GCINODE_HASH_SIZE; loop++, head++) {
+-		hlist_for_each_entry_safe(inode, node, n, head, i_hash) {
+-			hlist_del_init(&inode->i_hash);
++restart:
++		hlist_bl_for_each_entry(inode, node, head, i_hash) {
++			hlist_bl_del_init(&inode->i_hash);
+ 			list_del_init(&NILFS_I(inode)->i_dirty);
+ 			nilfs_clear_gcinode(inode); /* might sleep */
++			goto restart;
+ 		}
+ 	}
+ }
+diff --git a/fs/nilfs2/segment.c b/fs/nilfs2/segment.c
+index 9fd051a..038251c 100644
+--- a/fs/nilfs2/segment.c
++++ b/fs/nilfs2/segment.c
+@@ -2452,7 +2452,7 @@ nilfs_remove_written_gcinodes(struct the_nilfs *nilfs, struct list_head *head)
+ 	list_for_each_entry_safe(ii, n, head, i_dirty) {
+ 		if (!test_bit(NILFS_I_UPDATED, &ii->i_state))
+ 			continue;
+-		hlist_del_init(&ii->vfs_inode.i_hash);
++		hlist_bl_del_init(&ii->vfs_inode.i_hash);
+ 		list_del_init(&ii->i_dirty);
+ 		nilfs_clear_gcinode(&ii->vfs_inode);
+ 	}
+diff --git a/fs/nilfs2/the_nilfs.h b/fs/nilfs2/the_nilfs.h
+index f785a7b..1ab441a 100644
+--- a/fs/nilfs2/the_nilfs.h
++++ b/fs/nilfs2/the_nilfs.h
+@@ -167,7 +167,7 @@ struct the_nilfs {
+ 
+ 	/* GC inode list and hash table head */
+ 	struct list_head	ns_gc_inodes;
+-	struct hlist_head      *ns_gc_inodes_h;
++	struct hlist_bl_head      *ns_gc_inodes_h;
+ 
+ 	/* Disk layout information (static) */
+ 	unsigned int		ns_blocksize_bits;
+diff --git a/fs/reiserfs/xattr.c b/fs/reiserfs/xattr.c
+index 8c4cf27..b246e3c 100644
+--- a/fs/reiserfs/xattr.c
++++ b/fs/reiserfs/xattr.c
+@@ -424,7 +424,7 @@ int reiserfs_prepare_write(struct file *f, struct page *page,
+ static void update_ctime(struct inode *inode)
+ {
+ 	struct timespec now = current_fs_time(inode->i_sb);
+-	if (hlist_unhashed(&inode->i_hash) || !inode->i_nlink ||
++	if (inode_unhashed(inode) || !inode->i_nlink ||
+ 	    timespec_equal(&inode->i_ctime, &now))
+ 		return;
+ 
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1fb92f9..af1d516 100644
+index 0b6ee34..67dd926 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -1632,16 +1632,17 @@ struct super_operations {
-  *
-  * Q: What is the difference between I_WILL_FREE and I_FREEING?
-  */
--#define I_DIRTY_SYNC		1
--#define I_DIRTY_DATASYNC	2
--#define I_DIRTY_PAGES		4
-+#define I_DIRTY_SYNC		0x01
-+#define I_DIRTY_DATASYNC	0x02
-+#define I_DIRTY_PAGES		0x04
- #define __I_NEW			3
- #define I_NEW			(1 << __I_NEW)
--#define I_WILL_FREE		16
--#define I_FREEING		32
--#define I_CLEAR			64
-+#define I_WILL_FREE		0x10
-+#define I_FREEING		0x20
-+#define I_CLEAR			0x40
- #define __I_SYNC		7
- #define I_SYNC			(1 << __I_SYNC)
-+#define I_REFERENCED		0x100
+@@ -383,6 +383,7 @@ struct inodes_stat_t {
+ #include <linux/capability.h>
+ #include <linux/semaphore.h>
+ #include <linux/fiemap.h>
++#include <linux/list_bl.h>
  
- #define I_DIRTY (I_DIRTY_SYNC | I_DIRTY_DATASYNC | I_DIRTY_PAGES)
+ #include <asm/atomic.h>
+ #include <asm/byteorder.h>
+@@ -724,7 +725,7 @@ struct posix_acl;
+ #define ACL_NOT_CACHED ((void *)(-1))
  
-diff --git a/include/linux/writeback.h b/include/linux/writeback.h
-index 72a5d64..f956b66 100644
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -10,7 +10,6 @@
- struct backing_dev_info;
+ struct inode {
+-	struct hlist_node	i_hash;
++	struct hlist_bl_node	i_hash;
+ 	struct list_head	i_wb_list;	/* backing dev IO list */
+ 	struct list_head	i_lru;		/* inode LRU list */
+ 	struct list_head	i_sb_list;
+@@ -789,6 +790,11 @@ struct inode {
+ 	void			*i_private; /* fs or device private pointer */
+ };
  
- extern spinlock_t inode_lock;
--extern struct list_head inode_in_use;
- extern struct list_head inode_unused;
- 
++static inline int inode_unhashed(struct inode *inode)
++{
++	return hlist_bl_unhashed(&inode->i_hash);
++}
++
  /*
+  * inode->i_mutex nesting subclasses for the lock validator:
+  *
+diff --git a/include/linux/list_bl.h b/include/linux/list_bl.h
+index 961bc89..0d791ff 100644
+--- a/include/linux/list_bl.h
++++ b/include/linux/list_bl.h
+@@ -125,3 +125,21 @@ static inline void hlist_bl_del_init(struct hlist_bl_node *n)
+ 	     pos = pos->next)
+ 
+ #endif
++
++/**
++ * hlist_bl_lock	- lock a hash list
++ * @h:	hash list head to lock
++ */
++static inline void hlist_bl_lock(struct hlist_bl_head *h)
++{
++	bit_spin_lock(0, (unsigned long *)h);
++}
++
++/**
++ * hlist_bl_unlock	- unlock a hash list
++ * @h:	hash list head to unlock
++ */
++static inline void hlist_bl_unlock(struct hlist_bl_head *h)
++{
++	__bit_spin_unlock(0, (unsigned long *)h);
++}
+diff --git a/mm/shmem.c b/mm/shmem.c
+index 7d0bc16..419de2c 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2146,7 +2146,7 @@ static int shmem_encode_fh(struct dentry *dentry, __u32 *fh, int *len,
+ 	if (*len < 3)
+ 		return 255;
+ 
+-	if (hlist_unhashed(&inode->i_hash)) {
++	if (inode_unhashed(inode)) {
+ 		/* Unfortunately insert_inode_hash is not idempotent,
+ 		 * so as we hash inodes here rather than at creation
+ 		 * time, we need a lock to ensure we only try
+@@ -2154,7 +2154,7 @@ static int shmem_encode_fh(struct dentry *dentry, __u32 *fh, int *len,
+ 		 */
+ 		static DEFINE_SPINLOCK(lock);
+ 		spin_lock(&lock);
+-		if (hlist_unhashed(&inode->i_hash))
++		if (inode_unhashed(inode))
+ 			__insert_inode_hash(inode,
+ 					    inode->i_ino + inode->i_generation);
+ 		spin_unlock(&lock);
 -- 
 1.7.1
 
