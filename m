@@ -1,118 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752641Ab0JMSND (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 14:13:03 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53990 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab0JMSNB (ORCPT
+	id S1752714Ab0JMSSx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 14:18:53 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56208 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752124Ab0JMSSw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 14:13:01 -0400
-Message-ID: <4CB5F688.5090205@kernel.org>
-Date: Wed, 13 Oct 2010 11:12:24 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
+	Wed, 13 Oct 2010 14:18:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=VOXLkTIKWNzeMQJAOPg2ceuYfsB0JIvWjLYuXsnz45rq5WqIm1zszg6R3GubQChNB1
+         X2C07lIfKbILxvE6TJW5u5Ba6k2ylxa/KKSvpO2s1wOX+4p29kCYS1/xD5P5hyK9VRDJ
+         NbQY2g3pi6kfcKS4pb8+IaDLVIlPcq3GuTSlQ=
+Date: Wed, 13 Oct 2010 11:18:44 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, h.mitake@gmail.com,
+        Vojtech Pavlik <vojtech@ucw.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/2] lockdep: check the depth of subclass
+Message-ID: <20101013181844.GA13094@core.coreip.homeip.net>
+References: <1286269311-28336-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
+ <1286879221.29097.39.camel@twins>
+ <20101012160352.GB30513@core.coreip.homeip.net>
+ <4CB51922.2080405@dcl.info.waseda.ac.jp>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/4] memblock related fixes for -tip
-References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4F11F.4090104@goop.org> <4CB54640.4000003@kernel.org> <4CB5DEE8.2020400@goop.org>
-In-Reply-To: <4CB5DEE8.2020400@goop.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB51922.2080405@dcl.info.waseda.ac.jp>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2010 09:31 AM, Jeremy Fitzhardinge wrote:
->  On 10/12/2010 10:40 PM, Yinghai Lu wrote:
->> On 10/12/2010 04:37 PM, Jeremy Fitzhardinge wrote:
->>>  On 10/12/2010 02:12 PM, Yinghai Lu wrote:
->>>> On 10/12/2010 11:41 AM, Jeremy Fitzhardinge wrote:
->>>>>  On 10/04/2010 02:57 PM, Yinghai Lu wrote:
->>>>>> Please check memblock related patches
->>>>>>
->>>>>> [PATCH 1/4] memblock: Fix big size with find_region()
->>>>>> [PATCH -v5 2/4] x86, memblock: Fix crashkernel allocation
->>>>>> [PATCH 3/4] x86, memblock: Remove __memblock_x86_find_in_range_size()
->>>>>> [PATCH 4/4] x86, mm, memblock, 32bit: Make add_highpages honor early reserved ranges
->>>>>>
->>>>>> first one should get into core/memblock branch, and others should be in x86/mm/memeblock branch
->>>>> BTW, the memblock changes prevent the kernel from booting under Xen; it
->>>>> crashes while setting up the linear maps.  I haven't worked out what's
->>>>> failing yet, aside from bisecting it down to one of a9ce6bc151000 or
->>>>> 72d7c3b33c9808 (they don't compile in isolation so I had to skip them,
->>>>> but both are likely looking, but unfortunately large, complex and hard
->>>>> to further subdivide).
->>>>>
->>>>> I'll look further into this, but just a heads-up for the upcoming merge
->>>>> window.
->>>>>
->>>> please use 
->>>>
->>>> git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git memblock
->>>>
->>>> to find which commit cause xen broken.
->>>>
->>>> two xen related patch are folded into first converting commit.
->>> Note that ce883cfc65c51e24 doesn't compile:
->>>
->>> /home/jeremy/git/upstream/arch/x86/kernel/e820.c: In function
->>> ‘find_e820_area_size’:
->>> /home/jeremy/git/upstream/arch/x86/kernel/e820.c:764: error: expected
->>> ‘;’ before ‘return’
->>>
->>> However, I can fix it with the obvious fix, and the Xen boot failure
->>> bisects to this change.
->>>
->>> The specific crash is when constructing the initial pagetable, when Xen
->>> tries to remap a newly allocated pagetable page read-only, and finds the
->>> allocated page isn't mapped within the linear map. Since it is in the
->>> middle of creating the linear map, I guess its quite possible that the
->>> allocation order has changed, and it starts allocating pages which are
->>> not yet mapped, whereas before it was allocating already-mapped ones.
->> you can limit the allocation of pagetable page further ...
->>
->> xen doesn't honor max_pfn_mapped?
+On Wed, Oct 13, 2010 at 11:27:46AM +0900, Hitoshi Mitake wrote:
+> On 10/13/10 01:03, Dmitry Torokhov wrote:
+> > On Tue, Oct 12, 2010 at 12:27:01PM +0200, Peter Zijlstra wrote:
+> >> On Tue, 2010-10-05 at 18:01 +0900, Hitoshi Mitake wrote:
+> >>> ---
+> >>>   drivers/input/mousedev.c |    2 +-
+> >>>   kernel/lockdep.c         |   15 +++++++++++++++
+> >>>   2 files changed, 16 insertions(+), 1 deletions(-)
+> >>>
+> >>> diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+> >>> index d528a2d..9897334 100644
+> >>> --- a/drivers/input/mousedev.c
+> >>> +++ b/drivers/input/mousedev.c
+> >>> @@ -866,7 +866,7 @@ static struct mousedev
+> *mousedev_create(struct input_dev *dev,
+> >>>   	spin_lock_init(&mousedev->client_lock);
+> >>>   	mutex_init(&mousedev->mutex);
+> >>>   	lockdep_set_subclass(&mousedev->mutex,
+> >>> -			     minor == MOUSEDEV_MIX ? MOUSEDEV_MIX : 0);
+> >>> +			     minor == MOUSEDEV_MIX ? SINGLE_DEPTH_NESTING : 0);
+> >>
+> >> Ah good find.
+> >>
+> >
+> > I'll pick up mousedev change for .37.
 > 
-> What do you mean?  Xen sets max_pfn_mapped when it does the early
-> mapping of the kernel space, but I don't see how it relates to this
-> stage of mapping?
-
-We are using max_pfn_mapped to upper limit to find range that can be used as early stage.
-
-so maybe you have max_pfn_mapped set too early and too big?
-
+> Thanks a lot, Dmitry.
 > 
->>> I'll see if I can confirm this hypothesis and see if I can work around
->>> it (is poses some problems, because it means that when the pages later
->>> become mapped, I need to make sure they get mapped RO).
->> please check following debug patch, it will try find area bottom up...
->>
->> Subject: [PATCH] x86, memblock: Add x86 version of memblock_find_in_range()
->>
->> Generic version is going from high to low, and it seems it can not find
->> right area compact enough.
->>
->> the x86 version will go from goal to limit and just like the way We used
->> for early_res
->>
->> use ARCH_FIND_MEMBLOCK_AREA to select from them.
-> 
-> Thanks, that fixes the problem.  I would ideally like to make the the
-> Xen code independent of the page allocation ordering, but it looks like
-> it will be very tricky since we effectively make use of the pagetable as
-> a way of storing one bit of information about each page before there's a
-> struct page in place.
-> 
-> So this patch looks good to me (but there's no need to make it a
-> separate config option).
+> Should I divide this patch into two for
+> drivers/input/mousedev.c and kernel/lockdep.c?
+> If you need, I'll resend second version.
 
-that is for debug purpose only. We really want to do top-down than bottom-up.
+No, thanks, I'll extract it on my end.
 
-Thanks
-
-Yinghai
+-- 
+Dmitry
