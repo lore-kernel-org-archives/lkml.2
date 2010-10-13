@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753593Ab0JMIst (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 04:48:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45546 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567Ab0JMIsq convert rfc822-to-8bit (ORCPT
+	id S1753454Ab0JMI4D (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 04:56:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58024 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753050Ab0JMI4B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 04:48:46 -0400
-Subject: Re: [PATCH v2] lockdep: check the depth of subclass
-From: Peter Zijlstra <peterz@infradead.org>
-To: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
-Cc: linux-kernel@vger.kernel.org, h.mitake@gmail.com,
-        Dmitry Torokhov <dtor@mail.ru>, Vojtech Pavlik <vojtech@ucw.cz>,
-        Ingo Molnar <mingo@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1286958626-986-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-References: <4CB56A43.9040706@dcl.info.waseda.ac.jp>
-	 <1286958626-986-1-git-send-email-mitake@dcl.info.waseda.ac.jp>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 13 Oct 2010 10:48:29 +0200
-Message-ID: <1286959709.29097.124.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 13 Oct 2010 04:56:01 -0400
+MIME-Version: 1.0
+X-Originating-IP: [109.186.69.160]
+In-Reply-To: <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
+References: <1286788315.3101.11.camel@sven> <1286955116-22793-1-git-send-email-ohad@wizery.com>
+ <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 13 Oct 2010 10:55:39 +0200
+Message-ID: <AANLkTimTSPU3pzDscG3TSaqs45Q=eGEaqiDmk9AYyuY_@mail.gmail.com>
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+To: Vitaly Wool <vitalywool@gmail.com>
+Cc: linux-mmc@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        libertas-dev@lists.infradead.org, Nicolas Pitre <nico@fluxnic.net>,
+        Sven Neumann <s.neumann@raumfeld.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
+        Colin Cross <ccross@android.com>, Chris Ball <cjb@laptop.org>,
+        stable@kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 17:30 +0900, Hitoshi Mitake wrote:
-> Current look_up_lock_class() doesn't check the parameter "subclass".
-> This rarely rises problems because the main caller of this function,
-> register_lock_class(), checks it.
-> But register_lock_class() is not the only function which calls
-> look_up_lock_class(). lock_set_class() and its callees also call it.
-> And lock_set_class() doesn't check this parameter.
-> 
-> This will rise problems when the the value of subclass is larger than
-> MAX_LOCKDEP_SUBCLASSES. Because the address (used as the key of class)
-> caliculated with too large subclass has a possibility to point
-> another key in different lock_class_key.
-> Of course this problem depends on the memory layout and
-> occurs with really low possibility.
-> 
-> And mousedev_create() calles lockdep_set_subclass() and
-> sets class of mousedev->mutex as MOUSEDEV_MIX(== 31).
-> And if my understanding is correct,
-> this subclass doesn't have to be MOUSEDEV_MIX,
-> so I modified this value to SINGLE_DEPTH_NESTING.
-> 
-> v2: Based on Peter Zijlstra's advice, I removed the
-> checking of the subclass value from __lock_acquire().
-> Because this is already a redundant thing.
-> 
-> # If you need devided version for mousedev.c and lockdep.c,
-> # feel free to tell me.
+Hi Vitaly,
 
-I've taken the patch without the mousedev hunk, as Dmitry said he'd take
-that.
+On Wed, Oct 13, 2010 at 9:54 AM, Vitaly Wool <vitalywool@gmail.com> wrote:
+> what about moving this logic to sdio bus_ops as this seems to be
+> completely specific to sdio right now?
 
-Thanks!
+I actually prefer not to have any SDIO-specific logic of that kind at
+all, and instead, to use the logic we already have in mmc_pm_notify
+for all types of MMC buses.
+
+I resent this patch in the hope of stimulating this discussion, since
+it seemed to have stalled since the last message:
+
+http://lkml.org/lkml/2010/10/11/70
+
+It seems to work ;)
+
+Thanks,
+Ohad.
