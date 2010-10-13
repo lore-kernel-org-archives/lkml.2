@@ -1,122 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752454Ab0JMSDM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 14:03:12 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:39275 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750944Ab0JMSDJ (ORCPT
+	id S1752434Ab0JMSKQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 14:10:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:57147 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab0JMSKN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 14:03:09 -0400
-Date: Wed, 13 Oct 2010 11:02:34 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH] futex: fix kernel-doc notation & typos
-Message-Id: <20101013110234.89b06043.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Oct 2010 14:10:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Y8zDyRGZY35wl5BVuWS2IVazSJXEtbMa8kuxczBBL4ozW6hnwQczAGdJlENFGuhP9j
+         QHRd2eBYXNbCp31O4hRPHpW1EAbsyUCf47SEoCT5cKbHJGxkeuZPmu9bkmOtQBkeJN3W
+         LDyiaSPjZqnNqoxQ7P7AJNxNaG66dp9w2wo9s=
+MIME-Version: 1.0
+In-Reply-To: <B7132A25476D334D9130FE7532F2A56314B5929629@SC1EXMB-MBCL.global.atheros.com>
+References: <20101008170258.GJ10149@tux> <4CAF5488.3030706@Atheros.com>
+ <20101008181508.GM10149@tux> <20101012211726.GE2678@broadcom.com>
+ <1286964370.3316.6.camel@aeonflux> <AANLkTimAeoS2Vi7GhKSTrghqaOQ=XKSzjcou15dn+YDR@mail.gmail.com>
+ <B7132A25476D334D9130FE7532F2A56314B5929629@SC1EXMB-MBCL.global.atheros.com>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 13 Oct 2010 11:09:51 -0700
+Message-ID: <AANLkTik9oYwspVG4KFbMMq63SpBp++iZe=vxOSQhxRki@mail.gmail.com>
+Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or replace
+ ath3k-1.fw ?
+To: Kevin Hayes <kevin@atheros.com>
+Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Henry Ptasinski <henryp@broadcom.com>,
+        Suraj Sumangala <Suraj.Sumangala@atheros.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-wireless <linux-wireless@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, Oct 13, 2010 at 10:54 AM, Kevin Hayes <kevin@atheros.com> wrote:
+> Hi Luis,
+>
+>
+>> -----Original Message-----
+>> From: linux-bluetooth-owner@vger.kernel.org [mailto:linux-bluetooth-
+>> owner@vger.kernel.org] On Behalf Of Luis R. Rodriguez
+>> Sent: Wednesday, October 13, 2010 10:43 AM
+>> To: Marcel Holtmann
+>> Cc: Henry Ptasinski; Suraj Sumangala; Luis Rodriguez; David Woodhouse;
+>> linux-bluetooth; linux-kernel@vger.kernel.org; linux-wireless
+>> Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or
+>> replace ath3k-1.fw ?
+>>
+>> On Wed, Oct 13, 2010 at 3:06 AM, Marcel Holtmann <marcel@holtmann.org>
+>> wrote:
+>> > Hi Henry,
+>> >
+>> >> > > Marcel had answered me before. It makes sense to have same file
+>> name.
+>> >> > > Other ways we end up changing the driver whenever there is a
+>> firmware
+>> >> > > change.
+>> >> >
+>> >> > > > I last tried to document a thread we had over this here:
+>> >> > > >
+>> >> > > >
+>> http://wireless.kernel.org/en/developers/Documentation/firmware-
+>> versioning
+>> >> > > >
+>> >> >
+>> >> > Thanks, I've updated that link above to document bug fixing does
+>> not require
+>> >> > a filename change.
+>> >>
+>> >> I don't really understand why you would not want to change the code
+>> revision
+>> >> part of the filename.
+>> >>
+>> >> I totally agree that you don't want to change the driver every time
+>> the
+>> >> firmware gets a bug fix, but wasn't that the whole point of
+>> splitting the name
+>> >> into API and code revisions portions, and symlinking the file to one
+>> that just
+>> >> has the API version?
+>> >>
+>> >> What's the issue with using the process as originally documented?
+>> >
+>> > as I stated before, for Bluetooth this makes no sense. You don't need
+>> > API version numbers since the API is a STANDARD. It is called HCI. So
+>> > please don't use API version numbers in the firmware files.
+>> >
+>> > I will reject firmware file versions for upstream drivers.
+>>
+>> Does the HCI standard ever get improved upon? If so, how do devices
+>> never get firmware updates that would allow them to use some newer HCI
+>> APIs?
+>>
+>> I've updated the documentation above for 802.11 and Bluetooth with the
+>> above, please feel free to further extend it as you see fit.
+>>
+>>   Luis
+>
+> HCI is always backward compatible.  Newer commands are properly discoverable by both sides of the HCI link.
+> As long as the procedure to download firmware does not depend on new HCI commands (it does not), then the firmware itself can teach an old controller to learn new tricks.
 
-Convert futex_requeue() function parameters to use @name kernel-doc
-notation and add @fshared & @cmpval to prevent kernel-doc warnings.
+Does HCI support uploading firmware? Can't we resolve this blacklist
+crap issue if devices just used HCI to upload firmware?
 
-Add @list to struct futex_q.
-
-Fix a few typos.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/futex.c |   25 ++++++++++++++-----------
- 1 file changed, 14 insertions(+), 11 deletions(-)
-
-Comments/changes/suggestions for @cmpval or @list ?
-
-todo: add to docbook (kernel-locking ?)
-
---- lnx-2636-rc7.orig/kernel/futex.c
-+++ lnx-2636-rc7/kernel/futex.c
-@@ -91,6 +91,7 @@ struct futex_pi_state {
- 
- /**
-  * struct futex_q - The hashed futex queue entry, one per waiting task
-+ * @list:		priority-sorted list of tasks waiting on this futex
-  * @task:		the task waiting on the futex
-  * @lock_ptr:		the hash bucket lock
-  * @key:		the key the futex is hashed on
-@@ -104,7 +105,7 @@ struct futex_pi_state {
-  *
-  * A futex_q has a woken state, just like tasks have TASK_RUNNING.
-  * It is considered woken when plist_node_empty(&q->list) || q->lock_ptr == 0.
-- * The order of wakup is always to make the first condition true, then
-+ * The order of wakeup is always to make the first condition true, then
-  * the second.
-  *
-  * PI futexes are typically woken before they are removed from the hash list via
-@@ -295,7 +296,7 @@ void put_futex_key(int fshared, union fu
-  * Slow path to fixup the fault we just took in the atomic write
-  * access to @uaddr.
-  *
-- * We have no generic implementation of a non destructive write to the
-+ * We have no generic implementation of a non-destructive write to the
-  * user address. We know that we faulted in the atomic pagefault
-  * disabled section so we can as well avoid the #PF overhead by
-  * calling get_user_pages() right away.
-@@ -515,7 +516,7 @@ lookup_pi_state(u32 uval, struct futex_h
- 			 */
- 			pi_state = this->pi_state;
- 			/*
--			 * Userspace might have messed up non PI and PI futexes
-+			 * Userspace might have messed up non-PI and PI futexes
- 			 */
- 			if (unlikely(!pi_state))
- 				return -EINVAL;
-@@ -736,8 +737,8 @@ static void wake_futex(struct futex_q *q
- 
- 	/*
- 	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
--	 * a non futex wake up happens on another CPU then the task
--	 * might exit and p would dereference a non existing task
-+	 * a non-futex wake up happens on another CPU then the task
-+	 * might exit and p would dereference a non-existing task
- 	 * struct. Prevent this by holding a reference on p across the
- 	 * wake up.
- 	 */
-@@ -1131,11 +1132,13 @@ static int futex_proxy_trylock_atomic(u3
- 
- /**
-  * futex_requeue() - Requeue waiters from uaddr1 to uaddr2
-- * uaddr1:	source futex user address
-- * uaddr2:	target futex user address
-- * nr_wake:	number of waiters to wake (must be 1 for requeue_pi)
-- * nr_requeue:	number of waiters to requeue (0-INT_MAX)
-- * requeue_pi:	if we are attempting to requeue from a non-pi futex to a
-+ * @uaddr1:	source futex user address
-+ * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
-+ * @uaddr2:	target futex user address
-+ * @nr_wake:	number of waiters to wake (must be 1 for requeue_pi)
-+ * @nr_requeue:	number of waiters to requeue (0-INT_MAX)
-+ * @cmpval:	@uaddr1 expected value (or %NULL)
-+ * @requeue_pi:	if we are attempting to requeue from a non-pi futex to a
-  * 		pi futex (pi to pi requeue is not supported)
-  *
-  * Requeue waiters on uaddr1 to uaddr2. In the requeue_pi case, try to acquire
-@@ -2647,7 +2650,7 @@ static int __init futex_init(void)
- 	 * of the complex code paths. Also we want to prevent
- 	 * registration of robust lists in that case. NULL is
- 	 * guaranteed to fault and we get -EFAULT on functional
--	 * implementation, the non functional ones will return
-+	 * implementation, the non-functional ones will return
- 	 * -ENOSYS.
- 	 */
- 	curval = cmpxchg_futex_value_locked(NULL, 0, 0);
+  Luis
