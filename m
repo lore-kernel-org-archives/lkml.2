@@ -1,106 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab0JMKme (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 06:42:34 -0400
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:10139 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751078Ab0JMKmd (ORCPT
+	id S1753257Ab0JMKmp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 06:42:45 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47683 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985Ab0JMKmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 06:42:33 -0400
-From: Ian Campbell <ijc@hellion.org.uk>
-To: xen-devel@lists.xensource.com
-Cc: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        torvalds@linux-foundation.org
-In-Reply-To: <1286553657-22110-1-git-send-email-ian.campbell@citrix.com>
-References: <1286553657-22110-1-git-send-email-ian.campbell@citrix.com>
+	Wed, 13 Oct 2010 06:42:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sFWfZQxAqhPnMqiv9hd1z8of8wrfRhEHjJEu7IBwHQVWH9JfNdVResYMmHLzrC4ipq
+         s1SZFs+dQfLXw6nqo3bk6AWyRnxGE97eaQ71xTwmpPFwc508eWz9l4Ob+Wi9Nm8ihCSn
+         tbq0nXn4xg5MH6Gwg4/V03G74AYqxUV8A+rPE=
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20101013072058.GA3121@amd>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+	 <1286515292-15882-18-git-send-email-david@fromorbit.com>
+	 <20101013072058.GA3121@amd>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 11:29:52 +0100
-Message-ID: <1286965792.2003.3270.camel@zakaz.uk.xensource.com>
+Date: Wed, 13 Oct 2010 12:42:36 +0200
+Message-ID: <1286966556.3876.261.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 62.200.22.2
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [PATCH] xen: ensure that all event channels start off bound to
- VCPU 0
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
-X-Cloudmark-Analysis: v=1.1 cv=4QByPj+6Iq2k/6L54d+eVKTdgQxdscpRskJJReCfdXo= c=1 sm=0 a=9u17sUOTbNgA:10 a=IkcTkHD0fZMA:10 a=mLnsDVdbAAAA:8 a=tHz9FfFoAAAA:8 a=ZfRw4ET0AAAA:8 a=VwQbUJbxAAAA:8 a=9Ma9n7p-Y1fz5pow1_wA:9 a=a8UwzF-SguYX_kuJMc8A:7 a=b1H3_-aW9z9_KwV-0kJNh9SylgUA:4 a=QEXdDO2ut3YA:10 a=6O0IECtVFhoA:10 a=KciULlu47koA:10 a=LI9Vle30uBYA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeremy,
+Le mercredi 13 octobre 2010 à 18:20 +1100, Nick Piggin a écrit :
 
-I think its a bit late for 2.6.36 for this fix. Even though the fix is
-pretty obvious and the issue is quite serious if you are unlucky enough
-to hit it there seems to have been no reports of anyone seeing it in a
-guest domain so I don't think we need to push it in at the last minute.
-
-I plan to send the following to Linus for the 2.6.37 merge window and
-request that the fix goes into the various stable trees. Sound good to
-you?
-
-The following changes since commit cb655d0f3d57c23db51b981648e452988c0223f9:
-  Linus Torvalds (1):
-        Linux 2.6.36-rc7
-
-are available in the git repository at:
-
-  git://xenbits.xen.org/people/ianc/linux-2.6.git for-linus/bugfixes
-
-Ian Campbell (1):
-      xen: ensure that all event channels start off bound to VCPU 0
-
- drivers/xen/events.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-Thanks,
-Ian.
-
-I fleshed out the description a bit since the original post:
-
-On Fri, 2010-10-08 at 17:00 +0100, Ian Campbell wrote:
-
-xen: ensure that all event channels start off bound to VCPU 0
-
-All event channels startbound to VCPU 0 so ensure that cpu_evtchn_mask
-is initialised to reflect this. Otherwise there is a race after registering an
-event channel but before the affinity is explicitly set where the event channel
-can be delivered. If this happens then the event channel remains pending in the
-L1 (evtchn_pending) array but is cleared in L2 (evtchn_pending_sel), this means
-the event channel cannot be reraised until another event channel happens to
-trigger the same L2 entry on that VCPU.
-    
-sizeof(cpu_evtchn_mask(0))==sizeof(unsigned long*) which is not correct, and
-causes only the first 32 or 64 event channels (depending on architecture) to be
-initially bound to VCPU0. Use sizeof(struct cpu_evtchn_s) instead.
-
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-> Cc: stable@kernel.org
-> ---
->  drivers/xen/events.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> I don't think the patchset has suddenly become vastly more urgent
+> in the past month, so I think my approach of having it get a lot
+> of testing and go in Al's vfs tree for a while is best.
 > 
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index 075e709..175e931 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -290,7 +290,7 @@ static void init_evtchn_cpu_bindings(void)
->  	}
->  #endif
->  
-> -	memset(cpu_evtchn_mask(0), ~0, sizeof(cpu_evtchn_mask(0)));
-> +	memset(cpu_evtchn_mask(0), ~0, sizeof(struct cpu_evtchn_s));
->  }
->  
->  static inline void clear_evtchn(int port)
 
--- 
-Ian Campbell
-Current Noise: Sabbat - I For An Eye
+Hi Nick 
 
-The New England Journal of Medicine reports that 9 out of 10 doctors agree
-that 1 out of 10 doctors is an idiot.
+Not vastly urgent, but highly wanted on many workloads, even ones not
+really related to 'fs'...
+
+In current tree, a "close(socket())" needs 31 us on a 2x4x2 machine,
+instead of 1.45 us if single thread.
+
+But yes, I agree a lot of testing is needed :)
+
+--------------------------------------------------------------------------------------------
+   PerfTop:   16584 irqs/sec  kernel:99.8%  exact:  0.0% [1000Hz cycles],  (all, 16 CPUs)
+--------------------------------------------------------------------------------------------
+
+             samples  pcnt function                 DSO
+             _______ _____ ________________________ _______
+
+           101217.00 87.8% _raw_spin_lock           vmlinux
+             1365.00  1.2% kmem_cache_alloc         vmlinux
+             1220.00  1.1% d_alloc                  vmlinux
+             1159.00  1.0% sock_alloc_file          vmlinux
+              881.00  0.8% __d_instantiate          vmlinux
+              657.00  0.6% memset                   vmlinux
+              516.00  0.4% dput                     vmlinux
+              423.00  0.4% new_inode                vmlinux
+              401.00  0.3% _atomic_dec_and_lock     vmlinux
+              397.00  0.3% iput                     vmlinux
+              358.00  0.3% dentry_iput              vmlinux
+              320.00  0.3% kmem_cache_free          vmlinux
+              309.00  0.3% __slab_free              vmlinux
+              297.00  0.3% __sk_free                vmlinux
+              264.00  0.2% kmem_cache_alloc_notrace vmlinux
+              263.00  0.2% __call_rcu               vmlinux
+
+Thanks
+
 
