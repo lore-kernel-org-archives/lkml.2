@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab0JMRn5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 13:43:57 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:42675 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752527Ab0JMRn4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 13:43:56 -0400
-Subject: Re: [PATCH 3/6] hid: egalax: Correct for device resolution report
- error
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1286978302-30034-4-git-send-email-rydberg@euromail.se>
-References: <1286978302-30034-1-git-send-email-rydberg@euromail.se>
-	 <1286978302-30034-4-git-send-email-rydberg@euromail.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 13:43:50 -0400
-Message-ID: <1286991830.31864.196.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1752531Ab0JMRwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 13:52:09 -0400
+Received: from c-67-162-90-113.hsd1.in.comcast.net ([67.162.90.113]:48261 "HELO
+	kosh.dhis.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752434Ab0JMRwI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 13:52:08 -0400
+Message-ID: <20101013175205.21187.qmail@kosh.dhis.org>
+From: pacman@kosh.dhis.org
+Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
+To: mel@csn.ul.ie (Mel Gorman)
+Date: Wed, 13 Oct 2010 12:52:05 -0500 (GMT+5)
+Cc: akpm@linux-foundation.org (Andrew Morton), linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
+In-Reply-To: <20101013144044.GS30667@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 15:58 +0200, Henrik Rydberg wrote:
-> The firmware of both supported devices report a X/Y maximum of 4096,
-> whereas in reality, it is eight times larger. Fixed with this patch.
+Mel Gorman writes:
 > 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/hid/hid-egalax.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+> On Mon, Oct 11, 2010 at 02:00:39PM -0700, Andrew Morton wrote:
+> > 
+> > It's corruption of user memory, which is unusual.  I'd be wondering if
+> > there was a pre-existing bug which 6dda9d55bf545013597 has exposed -
+> > previously the corruption was hitting something harmless.  Something
+> > like a missed CPU cache writeback or invalidate operation.
+> > 
 > 
-> diff --git a/drivers/hid/hid-egalax.c b/drivers/hid/hid-egalax.c
-> index 23f832b..3b490a3 100644
-> --- a/drivers/hid/hid-egalax.c
-> +++ b/drivers/hid/hid-egalax.c
-> @@ -56,6 +56,7 @@ static int egalax_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  	case HID_UP_GENDESK:
->  		switch (usage->hid) {
->  		case HID_GD_X:
-> +			field->logical_maximum <<= 3;
->  			hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_X);
->  			set_abs(input, ABS_MT_POSITION_X, field, 0);
-> @@ -63,6 +64,7 @@ static int egalax_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  			set_abs(input, ABS_X, field, 0);
->  			return 1;
->  		case HID_GD_Y:
-> +			field->logical_maximum <<= 3;
->  			hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_Y);
->  			set_abs(input, ABS_MT_POSITION_Y, field, 0);
+> This seems somewhat plausible although it's hard to tell for sure. But
+> lets say we had the following situation in memory
+> 
+> [<----MAX_ORDER_NR_PAGES---->][<----MAX_ORDER_NR_PAGES---->]
+> INITRD                        memmap array
 
-Seems obvious.
+I don't use initrd, so this isn't exactly what happened here. But it could be
+close. Let me throw out some more information and see if it triggers any
+ideas.
 
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
+First, I tried a new test after seeing the corruption happen:
+# md5sum /sbin/e2fsck ; echo 1 > /proc/sys/vm/drop_caches ; md5sum /sbin/e2fsck
+And got 2 different answers. The second answer was the correct one.
 
+Since applying the suggested patch which changed MAX_ORDER-1 to MAX_ORDER-2,
+I've been trying to isolate exactly when the corruption happens. Since I
+don't know much about kernel code, my main method is stuffing the area full
+of printk's.
+
+First I duplicated the affected function __free_one_page, since it's inlined
+at 2 different places, so I could apply the patch to just one of them. This
+proved that the problem is happening when called from free_one_page.
+
+The patch which fixes (or at least covers up) the bug will only matter when
+order==MAX_ORDER-2, otherwise everything is the same. So I added a lot of
+printk's to show what's happening when order==MAX_ORDER-2. I found that, very
+repeatably, 126 such instances occur during boot, and 61 of them pass the
+page_is_buddy(higher_page, higher_buddy, order + 1) test, causing them to
+call list_add_tail.
+
+Next, since the bug appears when this code decides to call list_add_tail,
+I made my own wrapper for list_add_tail, which allowed me to force some of
+the calls to do list_add instead. Eventually I found that of the 61 calls,
+the last one makes the difference. Allowing the first 60 calls to go through
+to list_add_tail, and switching the last one to list_add, the symptom goes
+away.
+
+dump_stack() for that last call gave me a backtrace like this:
+[c0303e80] [c0008124] show_stack+0x4c/0x144 (unreliable)
+[c0303ec0] [c0068a84] free_one_page+0x28c/0x5b0
+[c0303f20] [c0069588] __free_pages_ok+0xf8/0x120
+[c0303f40] [c02d28c8] free_all_bootmem_core+0xf0/0x1f8
+[c0303f70] [c02d29fc] free_all_bootmem+0x2c/0x6c
+[c0303f90] [c02cc7dc] mem_init+0x70/0x2ac
+[c0303fc0] [c02c66a4] start_kernel+0x150/0x27c
+[c0303ff0] [00003438] 0x3438
+
+And this might be interesting: the PFN of the page being added in that
+critical 61st call is 130048, which exactly matches the number of available
+pages:
+
+  free_area_init_node: node 0, pgdat c02fee6c, node_mem_map c0330000
+    DMA zone: 1024 pages used for memmap
+    DMA zone: 0 pages reserved
+    DMA zone: 130048 pages, LIFO batch:31
+  Built 1 zonelists in Zone order, mobility grouping on.  Total pages: 130048
+
+Suspicious?
+
+If 130048 is added to the head of the order==MAX_ORDER-2 free list, there's
+no symptom. Add it to the tail, and the corruption appears.
+
+That's all I know so far.
+
+-- 
+Alan Curry
