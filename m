@@ -1,79 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab0JMKmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 06:42:45 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47683 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752985Ab0JMKmn (ORCPT
+	id S1752809Ab0JMK4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 06:56:11 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:42432 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab0JMK4J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 06:42:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sFWfZQxAqhPnMqiv9hd1z8of8wrfRhEHjJEu7IBwHQVWH9JfNdVResYMmHLzrC4ipq
-         s1SZFs+dQfLXw6nqo3bk6AWyRnxGE97eaQ71xTwmpPFwc508eWz9l4Ob+Wi9Nm8ihCSn
-         tbq0nXn4xg5MH6Gwg4/V03G74AYqxUV8A+rPE=
-Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Dave Chinner <david@fromorbit.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20101013072058.GA3121@amd>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
-	 <1286515292-15882-18-git-send-email-david@fromorbit.com>
-	 <20101013072058.GA3121@amd>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 12:42:36 +0200
-Message-ID: <1286966556.3876.261.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 13 Oct 2010 06:56:09 -0400
+From: "Varadarajan, Charulatha" <charu@ti.com>
+To: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>,
+        "tony@atomide.com" <tony@atomide.com>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "Balbi, Felipe" <balbi@ti.com>,
+        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
+        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "tero.kristo@nokia.com" <tero.kristo@nokia.com>
+Date: Wed, 13 Oct 2010 16:25:08 +0530
+Subject: RE: [PATCHv2 1/1] omap: Ptr "isr_reg" tracked as NULL was
+ dereferenced
+Thread-Topic: [PATCHv2 1/1] omap: Ptr "isr_reg" tracked as NULL was
+ dereferenced
+Thread-Index: Actqvq9qrgwB1wrKSFO45k3ZlFCZPgAAdlRw
+Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB030D099AFD@dbde02.ent.ti.com>
+References: <cover.1286961160.git.EXT-Eugeny.Kuznetsov@nokia.com>
+ <7bb69801f49283c3bde78aa008c15308ac8a5fbf.1286961160.git.EXT-Eugeny.Kuznetsov@nokia.com>
+In-Reply-To: <7bb69801f49283c3bde78aa008c15308ac8a5fbf.1286961160.git.EXT-Eugeny.Kuznetsov@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 13 octobre 2010 à 18:20 +1100, Nick Piggin a écrit :
 
-> I don't think the patchset has suddenly become vastly more urgent
-> in the past month, so I think my approach of having it get a lot
-> of testing and go in Al's vfs tree for a while is best.
+
+> -----Original Message-----
+> From: Evgeny Kuznetsov [mailto:EXT-Eugeny.Kuznetsov@nokia.com]
+> Sent: Wednesday, October 13, 2010 3:35 PM
+> To: tony@atomide.com
+> Cc: linux-omap@vger.kernel.org; linux-kernel@vger.kernel.org; linux-arm-
+> kernel@lists.infradead.org; Balbi, Felipe; linux@arm.linux.org.uk;
+> khilman@deeprootsystems.com; akpm@linux-foundation.org; Varadarajan,
+> Charulatha; tero.kristo@nokia.com; ext-eugeny.kuznetsov@nokia.com
+> Subject: [PATCHv2 1/1] omap: Ptr "isr_reg" tracked as NULL was
+> dereferenced
 > 
+> From: Evgeny Kuznetsov <ext-eugeny.kuznetsov@nokia.com>
+> 
+> Value of "isr_reg" pointer is depend on configuration and GPIO method.
+> Potentially it may have NULL value and it is dereferenced later
+> in code. If pointer is NULL there is some kernel issue.
 
-Hi Nick 
+Can you elaborate?
 
-Not vastly urgent, but highly wanted on many workloads, even ones not
-really related to 'fs'...
+> Warning and exit from function are added in this case.
+> Also compilation check is added for correct architecture
+> configuration.
+> 
+> Signed-off-by: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
+> ---
+>  arch/arm/plat-omap/gpio.c |   18 ++++++++++++++++++
+>  1 files changed, 18 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
+> index c05c653..d04913c 100644
+> --- a/arch/arm/plat-omap/gpio.c
+> +++ b/arch/arm/plat-omap/gpio.c
+> @@ -1318,6 +1318,23 @@ static void gpio_irq_handler(unsigned int irq,
+> struct irq_desc *desc)
+>  	if (bank->method == METHOD_GPIO_44XX)
+>  		isr_reg = bank->base + OMAP4_GPIO_IRQSTATUS0;
+>  #endif
+> +
+> +#if !defined(CONFIG_ARCH_OMAP1) &&		\
+> +		!defined(CONFIG_ARCH_OMAP15XX) &&	\
+> +		!defined(CONFIG_ARCH_OMAP16XX) &&	\
+> +		!defined(CONFIG_ARCH_OMAP730) &&	\
+> +		!defined(CONFIG_ARCH_OMAP850) &&	\
+> +		!defined(CONFIG_ARCH_OMAP2) &&	\
+> +		!defined(CONFIG_ARCH_OMAP3) &&	\
+> +		!defined(CONFIG_ARCH_OMAP4)
+> +
+> +#error "Incorrect arch configuration"
 
-In current tree, a "close(socket())" needs 31 us on a 2x4x2 machine,
-instead of 1.45 us if single thread.
+This is not required. If the architecture is not one of the above
+mentioned, gpio_irq_handler() will not be used/called at all.
 
-But yes, I agree a lot of testing is needed :)
+Also all the possible gpio methods for a given OMAP architecture are
+already considered with "#ifdef"s and (bank->method) checks in
+gpio_irq_handler().
 
---------------------------------------------------------------------------------------------
-   PerfTop:   16584 irqs/sec  kernel:99.8%  exact:  0.0% [1000Hz cycles],  (all, 16 CPUs)
---------------------------------------------------------------------------------------------
+> +
+> +#endif
+> +
+> +	if (WARN_ON(!isr_reg))
+> +		goto exit;
 
-             samples  pcnt function                 DSO
-             _______ _____ ________________________ _______
+For the above mentioned reason, this isr_reg would be non-NULL. Have
+you observed this error anytime?
 
-           101217.00 87.8% _raw_spin_lock           vmlinux
-             1365.00  1.2% kmem_cache_alloc         vmlinux
-             1220.00  1.1% d_alloc                  vmlinux
-             1159.00  1.0% sock_alloc_file          vmlinux
-              881.00  0.8% __d_instantiate          vmlinux
-              657.00  0.6% memset                   vmlinux
-              516.00  0.4% dput                     vmlinux
-              423.00  0.4% new_inode                vmlinux
-              401.00  0.3% _atomic_dec_and_lock     vmlinux
-              397.00  0.3% iput                     vmlinux
-              358.00  0.3% dentry_iput              vmlinux
-              320.00  0.3% kmem_cache_free          vmlinux
-              309.00  0.3% __slab_free              vmlinux
-              297.00  0.3% __sk_free                vmlinux
-              264.00  0.2% kmem_cache_alloc_notrace vmlinux
-              263.00  0.2% __call_rcu               vmlinux
+Also, the omap-gpio code has similar code spread all over and has to be
+anyway cleaned-up. Is there any reason why gpio_irq_handler() alone is
+addressed in this patch?
 
-Thanks
-
+> +
+>  	while(1) {
+>  		u32 isr_saved, level_mask = 0;
+>  		u32 enabled;
+> @@ -1377,6 +1394,7 @@ static void gpio_irq_handler(unsigned int irq,
+> struct irq_desc *desc)
+>  	configured, we must unmask the bank interrupt only after
+>  	handler(s) are executed in order to avoid spurious bank
+>  	interrupt */
+> +exit:
+>  	if (!unmasked)
+>  		desc->chip->unmask(irq);
+> 
+> --
+> 1.6.3.3
 
