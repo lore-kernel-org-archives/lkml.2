@@ -1,197 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754019Ab0JMMFo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 08:05:44 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:29790 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753992Ab0JMMFn (ORCPT
+	id S1753979Ab0JMMHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 08:07:12 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:5728 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752412Ab0JMMHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 08:05:43 -0400
-Message-ID: <000801cb6ace$f4e3d410$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Wolfgang Grandegger" <wg@grandegger.com>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        "Wolfram Sang" <w.sang@pengutronix.de>,
-        "Christian Pellegrin" <chripell@fsfe.org>,
-        "Barry Song" <21cnbao@gmail.com>,
-        "Samuel Ortiz" <sameo@linux.intel.com>,
-        <socketcan-core@lists.berlios.de>, <netdev@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <andrew.chih.howe.khor@intel.com>,
-        <qi.wang@intel.com>, <margie.foster@intel.com>,
-        <yong.y.wang@intel.com>, <kok.howg.ewe@intel.com>,
-        "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>,
-        <joel.clark@intel.com>
-References: <4C9C7C6F.1000003@dsn.okisemi.com> <4CA4541F.5040804@grandegger.com> <004a01cb6abe$c41a9cc0$66f8800a@maildom.okisemi.com> <4CB5931E.8030103@grandegger.com>
-Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
-Date: Wed, 13 Oct 2010 21:05:33 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 3
+	Wed, 13 Oct 2010 08:07:11 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAOI7tUx5Lc/f/2dsb2JhbAChS3K6b4VIBI9A
+Date: Wed, 13 Oct 2010 23:07:06 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101013120706.GB5883@amd>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-18-git-send-email-david@fromorbit.com>
+ <20101013072058.GA3121@amd>
+ <1286966556.3876.261.camel@edumazet-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1286966556.3876.261.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang,
+On Wed, Oct 13, 2010 at 12:42:36PM +0200, Eric Dumazet wrote:
+> Le mercredi 13 octobre 2010 à 18:20 +1100, Nick Piggin a écrit :
+> 
+> > I don't think the patchset has suddenly become vastly more urgent
+> > in the past month, so I think my approach of having it get a lot
+> > of testing and go in Al's vfs tree for a while is best.
+> > 
+> 
+> Hi Nick 
+> 
+> Not vastly urgent, but highly wanted on many workloads, even ones not
+> really related to 'fs'...
+> 
+> In current tree, a "close(socket())" needs 31 us on a 2x4x2 machine,
+> instead of 1.45 us if single thread.
+> 
+> But yes, I agree a lot of testing is needed :)
 
-On Wednesday, October 13, 2010 8:08 PM, Wolfgang Grandegger wrote:
-> I disagree.
+Hi Eric,
 
-> I think it can be avoided easily.
-> I disagree.
-I will modify like you are saying.
+Yes of course I know you know about this :) And google knows about it
+too -- they of course posted the batched iput/dput patches a couple of
+years back when they noticed it on their socket workloads. I've
+extensively tested the socket paths during development of the patches,
+and on a POWER7 system with many hundreds of threads, it scales
+completely linearly!
 
-> I don't understand! The Last Error Code (LEC) can have values from 0 to
-> 7. A "switch" statement is therefore the right choice. Or have I missed
-> something.
-Yes, you are right.
-I miss-understood.
+I acknowledge that the vfs scale work is actually quite urgent, and
+probably at least a year overdue (2.6.32 would have been nice target
+for distros). I just mean that it hasn't suddenly gone from less to
+much more important to push this in now before I review it or before
+it has had a chance in vfs tree.
 
-Thanks, Ohtake(OKISemi)
-
------ Original Message ----- 
-From: "Wolfgang Grandegger" <wg@grandegger.com>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: <joel.clark@intel.com>; "Tomoya MORINAGA" <morinaga526@dsn.okisemi.com>; <kok.howg.ewe@intel.com>;
-<yong.y.wang@intel.com>; <margie.foster@intel.com>; <qi.wang@intel.com>; <andrew.chih.howe.khor@intel.com>;
-<linux-kernel@vger.kernel.org>; <netdev@vger.kernel.org>; <socketcan-core@lists.berlios.de>; "Samuel Ortiz"
-<sameo@linux.intel.com>; "Barry Song" <21cnbao@gmail.com>; "Christian Pellegrin" <chripell@fsfe.org>; "Wolfram Sang"
-<w.sang@pengutronix.de>; "David S. Miller" <davem@davemloft.net>
-Sent: Wednesday, October 13, 2010 8:08 PM
-Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
-
-
-> On 10/13/2010 12:09 PM, Masayuki Ohtake wrote:
-> > On Thursday, September 30, 2010 6:10 PM, Wolfgang Grandegger wrote:
-> >
-> >>
-> >> + iowrite32(num, &(priv->regs)->if2_creq);
-> >> + while (counter) {
-> >>> + if2_creq = (ioread32(&(priv->regs)->if2_creq)) &
-> >>> +      CAN_IF_CREQ_BUSY;
-> >>> + if (!if2_creq)
-> >>> + break;
-> >>> + counter--;
-> >>> + }
-> >>> + if (!counter)
-> >>> + dev_err(&priv->ndev->dev, "IF2 BUSY Flag is set forever.\n");
-> >>> +}
-> >>
-> >> Duplicated code!
-> >
-> > No.
-> > These are not the same.
->
-> Of course they are not the same. The only difference is the register
-> offset (of if1 or if2). A common function with a pointer to the if
-> register as argument makes sense.
->
-> > Though it is possible to integrate to one function by adding parameter,
-> > I think, current two function method is more easily to read.
->
-> I disagree.
->
-> >>
-> >>
-> >>
-> >>> + if (status & PCH_STUF_ERR)
-> >>> + cf->data[2] |= CAN_ERR_PROT_STUFF;
-> >>> +
-> >>> + if (status & PCH_FORM_ERR)
-> >>> + cf->data[2] |= CAN_ERR_PROT_FORM;
-> >> +
-> >> + if (status & PCH_ACK_ERR)
-> >> + cf->data[2] |= CAN_ERR_PROT_LOC_ACK | CAN_ERR_PROT_LOC_ACK_DEL;
-> >> +
-> >> + if ((status & PCH_BIT1_ERR) || (status & PCH_BIT0_ERR))
-> >> + cf->data[2] |= CAN_ERR_PROT_BIT;
-> >> +
-> >> + if (status & PCH_CRC_ERR)
-> >> + cf->data[2] |= CAN_ERR_PROT_LOC_CRC_SEQ |
-> >> + CAN_ERR_PROT_LOC_CRC_DEL;
-> >> +
-> >> + if (status & PCH_LEC_ALL)
-> >> + iowrite32(status | PCH_LEC_ALL,
-> >> +   &(priv->regs)->stat);
->
-> Well, if status==7 (PCH_LEC_ALL), all of the above conditions are true
-> as well... convinced now?
->
-> >> A bit-wise test of the above values is wrong, I believe. Please use the
-> >> switch statement instead.
-> >
-> > The above conditions are not only one time.
-> > I think "switch" is not suitable for the above.
-> > Thus, current "if" processing is better.
->
-> I don't understand! The Last Error Code (LEC) can have values from 0 to
-> 7. A "switch" statement is therefore the right choice. Or have I missed
-> something.
->
-> >>
-> >>
-> >> + u32 brp;
-> >> +
-> >> + pch_can_get_run_mode(priv, &curr_mode);
-> >> + if (curr_mode == PCH_CAN_RUN)
-> >> + pch_can_set_run_mode(priv, PCH_CAN_STOP);
-> >>
-> >> The device is stopped when this function is called. Please remove.
-> >
-> > No.
-> > The above is necessary.
->
-> Yes, because you started the device *too early* in pch_can_open() called
-> by pch_open(). See my other related comments of my previous mail.
->
-> > Because this is our HW specification.
-> > Before setting bitrate, run-mode must be "STOP".
->
-> I think it can be avoided easily.
->
-> >>
-> >>
-> >> +static netdev_tx_t pch_xmit(struct sk_buff *skb, struct net_device *ndev)
-> >> +{
-> >> + canid_t id;
-> >> + u32 id1 = 0;
-> >> + u32 id2 = 0;
-> >>
-> >> Need these values to be preset?
-> >
-> > These values are not essential.
-> > But these help a engineer to read this code.
->
-> I disagree.
->
-> >> + /* Enable CAN Interrupts */
-> >> + pch_can_set_int_custom(priv);
-> >> +
-> >> + /* Restore Run Mode */
-> >> + pch_can_set_run_mode(priv, PCH_CAN_RUN);
-> >> +
-> >> + return retval;
-> >> +}
-> >>
-> >> Are the suspend and resume functions tested?
-> >>
-> > Yes, we tested before.
-> >
-> > =========================================
-> >
-> > Except the above, we are modifying for your indications.
-> >
-> > I will resubmit soon.
->
-> Thanks,
->
-> Wolfgang.
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
-
+Thanks,
+Nick
 
