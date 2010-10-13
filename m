@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751070Ab0JMPm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 11:42:28 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61136 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750791Ab0JMPm1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 11:42:27 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Valdis.Kletnieks@vt.edu
-Subject: Re: Stupid lockdep question...
-Date: Wed, 13 Oct 2010 17:43:00 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-16-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <38780.1286984249@localhost>
-In-Reply-To: <38780.1286984249@localhost>
+	id S1751319Ab0JMPtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 11:49:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35280 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750941Ab0JMPtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 11:49:07 -0400
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, systemtap@sources.redhat.com,
+        ltt-dev@lists.casi.polymtl.ca, Steven Rostedt <rostedt@goodmis.org>,
+        mingo@elte.hu, Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Elena Zannoni <elena.zannoni@oracle.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Aaron Spear <aaron_spear@mentor.com>,
+        Tasneem Brutch - SISA <t.brutch@sisa.samsung.com>,
+        Tim Bird <tim.bird@am.sony.com>, dominique.toupin@ericsson.com,
+        Andi Kleen <andi@firstfloor.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Philippe Maisonneuve <Philippe.Maisonneuve@windriver.com>,
+        Felix Burton <Felix.Burton@windriver.com>,
+        Andrew McDermott <Andrew.McDermott@windriver.com>,
+        Stefan Hajnoczi <stefanha@gmail.com>
+Subject: Re: [RFC] Common Trace Format Proposal for Linux (v1)
+References: <20101005193712.GB25605@Krystal>
+From: fche@redhat.com (Frank Ch. Eigler)
+Date: Wed, 13 Oct 2010 11:48:09 -0400
+In-Reply-To: <20101005193712.GB25605@Krystal> (Mathieu Desnoyers's message of "Tue, 5 Oct 2010 15:37:12 -0400")
+Message-ID: <y0miq166qme.fsf@fche.csb>
+User-Agent: Gnus/5.1008 (Gnus v5.10.8) Emacs/21.4 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010131743.00275.arnd@arndb.de>
-X-Provags-ID: V02:K0:Thp6+v52M1Tejb4dbUkBYVEszSQzol3yHSaU/1teRWk
- 20LnQkRsrxOj07/ewQISFSZRezuFsueK6v2fAdIlricqwcEUN9
- xfhKr/lOQbP/YU8FdRIKShtgfiP58cUYAMuwmQ9QCxpeiHiW/J
- AMwkF5RfkGNSSKXRXNW1gW6yrDu3qc3mGqhwvDnKuv6PBUp5ZG
- c2B6b7c/OM0KlRXR2DISA==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 13 October 2010, Valdis.Kletnieks@vt.edu wrote:
->   I have a 3rd-party module, that throws this whinge:
-> 
-> [   65.831296] INFO: trying to register non-static key.
-> [   65.831301] the code is fine but needs lockdep annotation.
-> [   65.831303] turning off the locking correctness validator.
-> 
-> I've identified that it's a call to down(*foo) where foo points to a kmalloc'ed
-> block of memory that's memset() to all-zeros. What's the initializer/annotation
-> I need to add to my code?
-> 
 
-It would be easier if you posted a link to the source, but the best
-answer is problably:
+Hi -
 
-- replace the semaphore with a regular mutex,
-- use mutex_init to initialize it after the allocation.
+mathieu wrote:
 
-	Arnd
+> [...]
+> Metadata attribute representation:
+>   align = value;                                /* value in bits */
+> [...]
+>   byte_order = native OR network OR be OR le;	/* network and be are aliases */
+> [...]
+
+Is there some reason to invent a new textual syntax for describing
+how to pack structs?  There is DWARF, ASN.1, C, ....
+
+- FChE
