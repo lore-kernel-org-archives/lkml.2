@@ -1,52 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab0JMNmo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 09:42:44 -0400
-Received: from kroah.org ([198.145.64.141]:53284 "EHLO coco.kroah.org"
+	id S1753378Ab0JMNpN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 09:45:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55857 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750937Ab0JMNmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 09:42:42 -0400
-Date: Wed, 13 Oct 2010 06:36:07 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hans de Goede <hdegoede@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>
-Subject: Re: linux-next: build failure after merge of the usb tree with the
-	scsi tree
-Message-ID: <20101013133607.GA8975@kroah.com>
-References: <20101013142558.c46a6311.sfr@canb.auug.org.au>
+	id S1752064Ab0JMNpL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 09:45:11 -0400
+Date: Wed, 13 Oct 2010 15:45:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Joerg Roedel <joerg.roedel@amd.com>
+Cc: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL] AMD IOMMU updates for 2.6.37
+Message-ID: <20101013134501.GA2258@elte.hu>
+References: <1286973364-17077-1-git-send-email-joerg.roedel@amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101013142558.c46a6311.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1286973364-17077-1-git-send-email-joerg.roedel@amd.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 02:25:58PM +1100, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the usb tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> drivers/scsi/sd.c: In function 'read_capacity_10':
-> drivers/scsi/sd.c:1637: error: 'struct scsi_disk' has no member named 'hw_sector_size'
-> 
-> Caused by commit a488ec87ee2e79911d10425cb0c0264290905b38 ("scsi/sd: add
-> a no_read_capacity_16 scsi_device flag") interacting with commit
-> 526f7c7950bbf1271e59177d70d74438c2ef96de ("[SCSI] sd: Fix overflow with
-> big physical blocks") from the scsi tree.
-> 
-> I have applied the following patch for today and will carry it as a merge
-> fix as necessary.
 
-Thanks for carrying the fix, I'll make sure to keep it in mind if I end
-up merging after James does with Linus.
+* Joerg Roedel <joerg.roedel@amd.com> wrote:
 
-thanks,
+> Hi Ingo,
+> 
+> The following changes since commit 899611ee7d373e5eeda08e9a8632684e1ebbbf00:
+>   Linus Torvalds (1):
+>         Linux 2.6.36-rc6
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/joro/linux-2.6-iommu.git amd-iommu/2.6.37
+> 
+> Joerg Roedel (1):
+>       x86/amd-iommu: Update copyright headers
+> 
+> Matthew Garrett (1):
+>       x86/amd-iommu: Reenable AMD IOMMU if it's mysteriously vanished over suspend
+> 
+>  arch/x86/include/asm/amd_iommu.h       |    2 +-
+>  arch/x86/include/asm/amd_iommu_proto.h |    2 +-
+>  arch/x86/include/asm/amd_iommu_types.h |   23 ++++--
+>  arch/x86/kernel/amd_iommu.c            |    2 +-
+>  arch/x86/kernel/amd_iommu_init.c       |  124 ++++++++++++++++++++++++++++----
+>  5 files changed, 128 insertions(+), 25 deletions(-)
+> 
+> This update is mostly about a workaround for BIOS problems with AMD 
+> IOMMU when resuming from S3. The BIOS on an AMD IOMMU capable machine 
+> might be buggy so that the IOMMU device is not re-enabled on resume. 
+> The patch from Matthew implement a workaround for this problem by 
+> manually re-enabling an re-programming the IOMMU device on resume. 
+> Please pull.
 
-greg k-h
+Pulled, thanks a lot Joerg!
+
+	Ingo
