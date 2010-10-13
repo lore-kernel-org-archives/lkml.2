@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab0JMG3o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 02:29:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59092 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751175Ab0JMG3n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 02:29:43 -0400
-Date: Tue, 12 Oct 2010 23:26:05 -0700
-From: Greg KH <gregkh@suse.de>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-kernel@vger.kernel.org, myungjoo.ham@gmail.com,
-        kyungmin.park@samsung.com, Alan Cox <alan@linux.intel.com>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Andr Goddard Rosa <andre.goddard@gmail.com>,
-        Stanislav Brabec <sbrabec@suse.cz>
-Subject: Re: [PATCH] Serial: BUGFIX: uart_resume_port has an omitted
-	condition.
-Message-ID: <20101013062605.GB4393@suse.de>
-References: <1286949486-2446-1-git-send-email-myungjoo.ham@samsung.com>
+	id S1752911Ab0JMGbR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 02:31:17 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:54454 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752045Ab0JMGbN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 02:31:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=EkhrfykzcvJl6r+nF1jw8zDr5S0bPO5+jDvPHhbfchWGUY2xLJiPZexKccvDLL/2zf
+         sb7C3WNmx4cCkKkmD+6w==
+Date: Tue, 12 Oct 2010 23:31:07 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@kernel.org>
+cc: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Michael Chan <mchan@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH net-next] net:  allocate skbs on local node
+In-Reply-To: <4CB54EE8.4020707@kernel.org>
+Message-ID: <alpine.DEB.2.00.1010122330090.13748@chino.kir.corp.google.com>
+References: <1286838210.30423.128.camel@edumazet-laptop> <1286839363.30423.130.camel@edumazet-laptop> <1286859925.30423.184.camel@edumazet-laptop> <20101011230322.f0f6dd47.akpm@linux-foundation.org> <1286866699.30423.234.camel@edumazet-laptop>
+ <20101012002435.f51f2c0e.akpm@linux-foundation.org> <1286869793.2732.24.camel@edumazet-laptop> <20101012005856.994bea6d.akpm@linux-foundation.org> <4CB441CB.2000708@cs.helsinki.fi> <alpine.DEB.2.00.1010120745360.31832@router.home>
+ <alpine.DEB.2.00.1010121234380.10165@chino.kir.corp.google.com> <4CB54EE8.4020707@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286949486-2446-1-git-send-email-myungjoo.ham@samsung.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 02:58:06PM +0900, MyungJoo Ham wrote:
-> When console_suspend_enabled == 0, console_stop() was not called at
-> suspend; thus, it does not need to call console_start() when resume.
-> Besides, calling console_start() without calling console_stop() before
-> had been incurring kernel hang with console_suspend_enabled == 0 in a
-> machine with drivers/serial/samsung.c and s5pc210.
+On Wed, 13 Oct 2010, Pekka Enberg wrote:
 
-Is this a regression?  If so, from what working kernel?  Or has this
-always been this way?
+> I think Christoph is saying that we'd remove SLAB and make the unified
+> allocator the new SLAB while keeping SLUB in place.
 
-thanks,
-
-greg k-h
+Right, so his unification patches would be against slab instead of slub 
+which is a pretty major change from the current state of the patchset, 
+although it might actually be smaller?
