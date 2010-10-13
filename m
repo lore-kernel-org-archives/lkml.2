@@ -1,85 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754089Ab0JMNmT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 09:42:19 -0400
-Received: from canuck.infradead.org ([134.117.69.58]:33158 "EHLO
-	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752648Ab0JMNmR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 09:42:17 -0400
-Date: Wed, 13 Oct 2010 09:42:17 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 15/18] fs: icache remove inode_lock
-Message-ID: <20101013134217.GD5263@infradead.org>
-References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
- <1286928961-15157-16-git-send-email-david@fromorbit.com>
+	id S1754172Ab0JMNmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 09:42:44 -0400
+Received: from kroah.org ([198.145.64.141]:53284 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750937Ab0JMNmm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 09:42:42 -0400
+Date: Wed, 13 Oct 2010 06:36:07 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hans de Goede <hdegoede@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: Re: linux-next: build failure after merge of the usb tree with the
+	scsi tree
+Message-ID: <20101013133607.GA8975@kroah.com>
+References: <20101013142558.c46a6311.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286928961-15157-16-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20101013142558.c46a6311.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> +[mandatory]
-> +	inode_lock is gone, replaced by fine grained locks. See fs/inode.c
-> +for details of what locks to replace inode_lock with in order to protect
-> +particular things. Most of the time, a filesystem only needs ->i_lock, which
-> +protects *all* the inode state and its membership on lists that was
-> +previously protected with inode_lock.
+On Wed, Oct 13, 2010 at 02:25:58PM +1100, Stephen Rothwell wrote:
+> Hi Greg,
+> 
+> After merging the usb tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/scsi/sd.c: In function 'read_capacity_10':
+> drivers/scsi/sd.c:1637: error: 'struct scsi_disk' has no member named 'hw_sector_size'
+> 
+> Caused by commit a488ec87ee2e79911d10425cb0c0264290905b38 ("scsi/sd: add
+> a no_read_capacity_16 scsi_device flag") interacting with commit
+> 526f7c7950bbf1271e59177d70d74438c2ef96de ("[SCSI] sd: Fix overflow with
+> big physical blocks") from the scsi tree.
+> 
+> I have applied the following patch for today and will carry it as a merge
+> fix as necessary.
 
+Thanks for carrying the fix, I'll make sure to keep it in mind if I end
+up merging after James does with Linus.
 
-Actually in general filesystem don't need to know anything of the inode
-locking, I suspect we could just drop this blurb.  inode_lock wasn't
-exported so the only thing that changed for filesystems is that the
-atomic i_count counter was replaced by i_ref.
+thanks,
 
-Maybe replace the above with:
-
-[mandatory]
-	The i_count field in the inode is replaced with i_ref, which is
-	a regular integer instead of an atomic_t.  Filesystems should
-	not manipulate it directly but use helpers like iref, igrab
-	and iput.
-
-And btw, Documentation/filesystems/vfs.txt and include/linux/fs.h
-still mention i_count, and arch/powerpc/platforms/cell/spufs/file.c
-still has a reference to it in code.
-
-> @@ -1261,9 +1234,7 @@ int sync_inode(struct inode *inode, struct writeback_control *wbc)
->  {
->  	int ret;
->  
-> -	spin_lock(&inode_lock);
->  	ret = writeback_single_inode(inode, wbc);
-> -	spin_unlock(&inode_lock);
->  	return ret;
->  }
->  EXPORT_SYMBOL(sync_inode);
-
-At this point writeback_single_inode and sync_inode are the same.
-I'd just rename writeback_single_inode to sync_inode and kill the
-wrapper.
-
->   * Lock orders
-> - * inode_lock
->   *   inode hash bucket lock
->   *     inode->i_lock
->   *
-> - * inode_lock
->   *   sb inode lock
->   *     inode_lru_lock
->   *       wb->b_lock
-
-reindent?
-
-
-Otherwise looks good,
-
-
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+greg k-h
