@@ -1,74 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753224Ab0JMIKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 04:10:24 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:57319 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752943Ab0JMIKV (ORCPT
+	id S1753278Ab0JMIPK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 04:15:10 -0400
+Received: from ns.dcl.info.waseda.ac.jp ([133.9.216.194]:61921 "EHLO
+	ns.dcl.info.waseda.ac.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753078Ab0JMIPI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 04:10:21 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 13 Oct 2010 17:04:57 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: mitov@issp.bas.bg, linux-kernel@vger.kernel.org,
-        linux-media@vger.kernel.org, g.liakhovetski@gmx.de
-Subject: Re: [RFC][PATCH] add
- dma_reserve_coherent_memory()/dma_free_reserved_memory() API
-Message-Id: <20101013170457.c5c5d2e1.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20101010230323B.fujita.tomonori@lab.ntt.co.jp>
-References: <201008201113.46036.mitov@issp.bas.bg>
-	<20100820173349E.fujita.tomonori@lab.ntt.co.jp>
-	<201008201450.12585.mitov@issp.bas.bg>
-	<20101010230323B.fujita.tomonori@lab.ntt.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 13 Oct 2010 04:15:08 -0400
+Message-ID: <4CB56A43.9040706@dcl.info.waseda.ac.jp>
+Date: Wed, 13 Oct 2010 17:13:55 +0900
+From: Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091211 Shredder/3.0
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        h.mitake@gmail.com, Dmitry Torokhov <dtor@mail.ru>,
+        Vojtech Pavlik <vojtech@ucw.cz>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/2] lockdep: check the depth of subclass
+References: <1286269311-28336-1-git-send-email-mitake@dcl.info.waseda.ac.jp>	 <1286879221.29097.39.camel@twins>  <4CB518CD.1010607@dcl.info.waseda.ac.jp> <1286955233.29097.68.camel@twins>
+In-Reply-To: <1286955233.29097.68.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 10 Oct 2010 23:08:22 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+On 10/13/10 16:33, Peter Zijlstra wrote:
+ > On Wed, 2010-10-13 at 11:26 +0900, Hitoshi Mitake wrote:
+ >>   >>  @@ -639,6 +639,21 @@ look_up_lock_class(struct lockdep_map 
+*lock, unsigned int subclass)
+ >>   >>      }
+ >>   >>    #endif
+ >>   >>
+ >>   >>  +   if (unlikely(subclass>= MAX_LOCKDEP_SUBCLASSES)) {
+ >>   >>  +           /*
+ >>   >>  +            * This check should be done not only in 
+__lock_acquire()
+ >>   >>  +            * but also here. Because register_lock_class() is 
+also called
+ >>   >>  +            * by lock_set_class(). Callers of 
+lock_set_class() can
+ >>   >>  +            * pass invalid value as subclass.
+ >>   >>  +            */
+ >>   >>  +
+ >>   >>  +           debug_locks_off();
+ >>   >>  +           printk(KERN_ERR "BUG: looking up invalid subclass: 
+%u\n", subclass);
+ >>   >>  +           printk(KERN_ERR "turning off the locking 
+correctness validator.\n");
+ >>   >>  +           dump_stack();
+ >>   >>  +           return NULL;
+ >>   >>  +   }
+ >>   >
+ >>   >  Would we catch all cases if we moved this check from 
+__lock_acquire()
+ >>   >  into register_lock_class()? It would result in only a single 
+instance of
+ >>   >  this logic.
+ >>   >
+ >>
+ >> I think that __lock_acquire() should also check the value of subclass.
+ >> Because it access to the lock->class_cache as array
+ >> before calling look_up_lock_class() after applying this patch.
+ >>
+ >> So if the check isn't done in __lock_acquire(),
+ >> the invalid addresses might be interpreted as the addresses of
+ >> struct lock_class.
+ >
+ >
+ > But __lock_acquire() does:
+ >
+ >    if (subclass<  NR_LOCKDEP_CACHING_CLASSES)
+ >      class = lock->class_cache[subclass];
+ >
+ >    if (!class)
+ >      class = register_lock_class();
+ >
+ > So by moving the: subclass>= MAX_LOCKDEP_SUBCLASSES, check into
+ > register_lock_class() it would still trigger for __lock_acquire().
+ > Because NR_LOCKDEP_CACHING_CLASSES<= MAX_LOCKDEP_SUBCLASSES, and thus
+ > for subclass>= MAX_LOCKDEP_SUBCLASSES we'll always call into
+ > register_lock_class() and trigger the failure there, no?
+ >
+ >
+ >
 
-> On Fri, 20 Aug 2010 14:50:12 +0300
-> Marin Mitov <mitov@issp.bas.bg> wrote:
-> 
-> > On Friday, August 20, 2010 11:35:06 am FUJITA Tomonori wrote:
-> > > On Fri, 20 Aug 2010 11:13:45 +0300
-> > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > 
-> > > > > > This tric is already used in drivers/staging/dt3155v4l.c
-> > > > > > dt3155_alloc_coherent()/dt3155_free_coherent()
-> > > > > > 
-> > > > > > Here proposed for general use by popular demand from video4linux folks.
-> > > > > > Helps for videobuf-dma-contig framework.
-> > > > > 
-> > > > > What you guys exactly want to do? If you just want to pre-allocate
-> > > > > coherent memory for latter usage,
-> > > > 
-> > > > Yes, just to preallocate not coherent, but rather contiguous memory for latter usage.
-> > > > We use coherent memory because it turns out to be contiguous.
-> > > 
-> > > Hmm, you don't care about coherency? You just need contiguous memory?
-> > 
-> > Yes. We just need contiguous memory. Coherency is important as far as when dma
-> > transfer finishes user land is able to see the new data. Could be done by something like
-> > dma_{,un}map_single()
-> 
-> Anyone is working on this?
-> 
-> KAMEZAWA posted a patch to improve the generic page allocator to
-> allocate physically contiguous memory. He said that he can push it
-> into mainline.
-> 
-I said I do make an effort ;)
-New one here.
+Ahh, sorry, you are right.
+So current checking subclass >= MAX_LOCKDEP_SUBCLASSES is redundant,
+I'll remove this checking and resend second version later.
 
-http://lkml.org/lkml/2010/10/12/421
-
-Thanks,
--Kame
-
+Thanks for your advice!
