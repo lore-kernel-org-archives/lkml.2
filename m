@@ -1,72 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753000Ab0JMGkU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 02:40:20 -0400
-Received: from kroah.org ([198.145.64.141]:36319 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982Ab0JMGkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 02:40:19 -0400
-Date: Tue, 12 Oct 2010 23:40:05 -0700
-From: Greg KH <greg@kroah.com>
-To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Alasdair G Kergon <agk@redhat.com>, Milan Broz <mbroz@redhat.com>
-Subject: Re: [stable] dm-crypt: plain64 IV support for -stable?
-Message-ID: <20101013064005.GA4715@kroah.com>
-References: <20101012132511.GA24455@khazad-dum.debian.net> <20101012141143.GA12143@kroah.com> <20101012190438.GB16717@khazad-dum.debian.net>
+	id S1752994Ab0JMGpH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 02:45:07 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:59779 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750782Ab0JMGpE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 02:45:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=kKINbIGR760wZsWIGWCZyYVLCuHpCaW8MR7j91gBD7rgp0EkB6acTvw/uxbgzS8buF
+         yn7s3OQIAiXqfpBf2d8w==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101012190438.GB16717@khazad-dum.debian.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20101013153421.b38a5c6f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20101012074910.GA9893@in.ibm.com> <20101012075202.GD9893@in.ibm.com>
+ <20101013153421.b38a5c6f.kamezawa.hiroyu@jp.fujitsu.com>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 12 Oct 2010 23:44:29 -0700
+Message-ID: <AANLkTinSDt9U5py_PMVuNSgmqR0_PtCBxaCksuq8QR3F@mail.gmail.com>
+Subject: Re: [PATCH v3 3/7] sched: throttle cfs_rq entities which exceed their
+ local quota
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: bharata@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Nikhil Rao <ncrao@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 04:04:38PM -0300, Henrique de Moraes Holschuh wrote:
-> On Tue, 12 Oct 2010, Greg KH wrote:
-> > Which -stable tree?  .27, .32, .35, or any/all of them?  Please be more
-> > specific when asking for this in the future.
-> 
-> Just 2.6.32.  It is already in 2.6.35, and 2.6.27 is too old for it to
-> matter.
+On Tue, Oct 12, 2010 at 11:34 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Tue, 12 Oct 2010 13:22:02 +0530
+> Bharata B Rao <bharata@linux.vnet.ibm.com> wrote:
+>
+>> sched: throttle cfs_rq entities which exceed their local quota
+>>
+>> From: Paul Turner <pjt@google.com>
+>>
+>> In account_cfs_rq_quota() (via update_curr()) we track consumption versus a
+>> cfs_rq's local quota and whether there is global quota available to continue
+>> enabling it in the event we run out.
+>>
+>> This patch adds the required support for the latter case, throttling entities
+>> until quota is available to run.  Throttling dequeues the entity in question
+>> and sends a reschedule to the owning cpu so that it can be evicted.
+>>
+>> The following restrictions apply to a throttled cfs_rq:
+>> - It is dequeued from sched_entity hierarchy and restricted from being
+>>   re-enqueued.  This means that new/waking children of this entity will be
+>>   queued up to it, but not past it.
+>> - It does not contribute to weight calculations in tg_shares_up
+>> - In the case that the cfs_rq of the cpu we are trying to pull from is throttled
+>>   it is  is ignored by the loadbalancer in __load_balance_fair() and
+>>   move_one_task_fair().
+>>
+>> Signed-off-by: Paul Turner <pjt@google.com>
+>> Signed-off-by: Nikhil Rao <ncrao@google.com>
+>> Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
+>> ---
+>>  kernel/sched.c      |   12 ++++++++
+>>  kernel/sched_fair.c |   70 ++++++++++++++++++++++++++++++++++++++++++++++++----
+>>  2 files changed, 76 insertions(+), 6 deletions(-)
+>>
+>> --- a/kernel/sched.c
+>> +++ b/kernel/sched.c
+>> @@ -387,6 +387,7 @@ struct cfs_rq {
+>>  #endif
+>>  #ifdef CONFIG_CFS_BANDWIDTH
+>>       u64 quota_assigned, quota_used;
+>> +     int throttled;
+>>  #endif
+>>  #endif
+>>  };
+>> @@ -1668,6 +1669,8 @@ static void update_group_shares_cpu(stru
+>>       }
+>>  }
+>>
+>> +static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq);
+>> +
+>
+> I just curious that static-inline forward declaration is inlined ?
+>
 
-Ok.
+Hm.   This function is tiny, I should just move it up, thanks.
 
-> > > Without it, users of LTS kernels like 2.6.32 are missing important
-> > > functionality (as in: might not be able to mount some LUKS volumes
-> > > created on newer kernels).
-> > 
-> > Also note that this patch really looks like a "new feature", not a
-> > bugfix or anything that matches up with what
-> > Documentation/stable_kernel_rules.txt defines.  So I don't think that it
-> > really is something to add to a stable kernel.
-> 
-> Using "plain" for IVs on block devices with more than 2^32 blocks will cause
-> the same IV to be used twice due to roll-over.  This is not a good thing,
-> although it might be not bad enough to matter much (or it could be a
-> terrible problem.  Someone who groks crypto for real would have to answer
-> that).
-> 
-> One cannot fix "plain", or data after the roll-over point becomes unreadable
-> on any already-existing devices.  Thus, a new IV was added with the fix,
-> "plain64".
-> 
-> Distros will probably need to backport this, as userspace and docs are
-> already starting to tell users to use aes-xts-plain64 and not aes-xts-plain.
-> They will use them in their portable HDs, and then will not be able to read
-> them back in various stable distros.   Might as well do it upstream where it
-> will benefit everybody...
+>>  /*
+>>   * Re-compute the task group their per cpu shares over the given domain.
+>>   * This needs to be done in a bottom-up fashion because the rq weight of a
+>> @@ -1688,7 +1691,14 @@ static int tg_shares_up(struct task_grou
+>>       usd_rq_weight = per_cpu_ptr(update_shares_data, smp_processor_id());
+>>
+>>       for_each_cpu(i, sched_domain_span(sd)) {
+>> -             weight = tg->cfs_rq[i]->load.weight;
+>> +             /*
+>> +              * bandwidth throttled entities cannot contribute to load
+>> +              * balance
+>> +              */
+>> +             if (!cfs_rq_throttled(tg->cfs_rq[i]))
+>> +                     weight = tg->cfs_rq[i]->load.weight;
+>> +             else
+>> +                     weight = 0;
+>
+> cpu.share and bandwidth control can't be used simultaneously or...
+> is this fair ? I'm not familiar with scheduler but this allows boost this tg.
+> Could you add a brief documentaion of a spec/feature. in the next post ?
+>
 
-If they create them in a newer kernel, and then try to use an older
-kernel, how would they normally expect them to work?
+Bandwidth control is orthogonal to shares, shares continue controls
+distribution of bandwidth when within quota.  Bandwidth control only
+has 'perceivable' effect when you exceed your reservation within a
+quota period.
 
-Yes, I understand your point, but please note that this is a new feature
-being added, which is not what the stable tree is for at all.  If it's a
-real issue, let the distros know about it, but even then, I doubt they
-will care as they don't support such a "use on new, then on old" type
-model either.
+What the above is doing is removing any throttled entities from the
+load-balancer's weight calculations (based on contribution from
+throttled entities) since these entities are already dequeued and
+cannot be balanced.
 
-thanks,
+Or have I misunderstood your question?
 
-greg k-h
+> Thanks,
+> -Kame
+>
+>
