@@ -1,70 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab0JMVRZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 17:17:25 -0400
-Received: from tuxonice.net ([74.207.252.127]:34588 "EHLO mail.tuxonice.net"
+	id S1751868Ab0JMVWy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 17:22:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38292 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751021Ab0JMVRX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 17:17:23 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4CB621DF.9070109@tuxonice.net>
-Date: Thu, 14 Oct 2010 08:17:19 +1100
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.10pre) Gecko/20100903 Shredder/3.1.4pre
+	id S1751093Ab0JMVWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 17:22:53 -0400
+Date: Wed, 13 Oct 2010 21:22:34 GMT
+From: tip-bot for Daniel Drake <dsd@laptop.org>
+Cc: mjg@redhat.com, linux-kernel@vger.kernel.org, hpa@zytor.com,
+        mingo@redhat.com, dsd@laptop.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        mjg@redhat.com, dsd@laptop.org, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <20101013181042.90C8F9D401B@zog.reactivated.net>
+References: <20101013181042.90C8F9D401B@zog.reactivated.net>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/olpc] x86, olpc: Register XO-1 platform devices
+Message-ID: <tip-447b1d43ded08c11f4f3d344b4e07e6dcddbef95@git.kernel.org>
+Git-Commit-ID: 447b1d43ded08c11f4f3d344b4e07e6dcddbef95
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Pavel Machek <pavel@ucw.cz>,
-        Linux PM <linux-pm@lists.linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [PATCH 13/23] Hibernation: Partial page I/O support.
-References: <1285566238-10966-1-git-send-email-nigel@tuxonice.net> <1285566238-10966-14-git-send-email-nigel@tuxonice.net> <20101013071008.GA1610@ucw.cz> <201010132228.22604.rjw@sisk.pl>
-In-Reply-To: <201010132228.22604.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 13 Oct 2010 21:22:35 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Commit-ID:  447b1d43ded08c11f4f3d344b4e07e6dcddbef95
+Gitweb:     http://git.kernel.org/tip/447b1d43ded08c11f4f3d344b4e07e6dcddbef95
+Author:     Daniel Drake <dsd@laptop.org>
+AuthorDate: Wed, 13 Oct 2010 19:10:42 +0100
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 13 Oct 2010 11:51:25 -0700
 
-On 14/10/10 07:28, Rafael J. Wysocki wrote:
-> On Wednesday, October 13, 2010, Pavel Machek wrote:
->> Hi!
->>
->>> Add functions that can be used for coalescing and splitting buffers
->>> that are smaller than PAGE_SIZE. These functions provide no method
->>> of determining where the boundaries of the smaller buffers are to
->>> be found - that is the caller's problem.
->>
->> I don't get it; why do we need that support?
->
-> This is related to compression.  This way we can put data from two or more
-> compressed pages into one page frame.
+x86, olpc: Register XO-1 platform devices
 
-It also provides a simple way of putting information from multiple 
-sources into a larger-than-at-the-moment header:
+The upcoming XO-1 rfkill driver (for drivers/platform/x86) will register
+itself with the name "xo1-rfkill", and the already-merged XO-1 poweroff
+code uses name "olpc-xo1"
 
-- Which pfns are stored
-- What swap extents are used
-- What devices are used (dev_t, UUID, last mount time for each)
-- Whether compression is enabled and what algo is used (if made 
-configurable)
+Add the necessary mechanics so that these devices are properly
+initialized on XO-1 laptops.
 
-and so on.
+Signed-off-by: Daniel Drake <dsd@laptop.org>
+LKML-Reference: <20101013181042.90C8F9D401B@zog.reactivated.net>
+Cc: Matthew Garrett <mjg@redhat.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/olpc.c |   24 ++++++++++++++++++++++++
+ 1 files changed, 24 insertions(+), 0 deletions(-)
 
-I do see the logic to Pavel's question though - the last set of patches 
-I sent didn't switch the compression code over to using this support. 
-That change would make their usefulness a lot clearer.
-
-Regarding speed, I haven't measured the difference but would expect that 
-the cost of combining and splitting pages in this way would be less than 
-that of waiting on extra I/O. In addition, if we merge the pages in this 
-way, our image size will be much closer to the compression ratio and 
-will therefore make it more feasible for us to estimate how much storage 
-is needed, taking into account an expected compression ratio (which is 
-what TuxOnIce currently does).
-
-Regards,
-
-Nigel
+diff --git a/arch/x86/kernel/olpc.c b/arch/x86/kernel/olpc.c
+index 7472613..edaf3fe 100644
+--- a/arch/x86/kernel/olpc.c
++++ b/arch/x86/kernel/olpc.c
+@@ -17,6 +17,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/io.h>
+ #include <linux/string.h>
++#include <linux/platform_device.h>
+ 
+ #include <asm/geode.h>
+ #include <asm/setup.h>
+@@ -223,8 +224,25 @@ static bool __init platform_detect(void)
+ 	return true;
+ }
+ 
++static int __init add_xo1_platform_devices(void)
++{
++	struct platform_device *pdev;
++
++	pdev = platform_device_register_simple("xo1-rfkill", -1, NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	pdev = platform_device_register_simple("olpc-xo1", -1, NULL, 0);
++	if (IS_ERR(pdev))
++		return PTR_ERR(pdev);
++
++	return 0;
++}
++
+ static int __init olpc_init(void)
+ {
++	int r = 0;
++
+ 	if (!olpc_ofw_present() || !platform_detect())
+ 		return 0;
+ 
+@@ -251,6 +269,12 @@ static int __init olpc_init(void)
+ 			olpc_platform_info.boardrev >> 4,
+ 			olpc_platform_info.ecver);
+ 
++	if (olpc_platform_info.boardrev < olpc_board_pre(0xd0)) { /* XO-1 */
++		r = add_xo1_platform_devices();
++		if (r)
++			return r;
++	}
++
+ 	return 0;
+ }
+ 
