@@ -1,75 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753097Ab0JMUPZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 16:15:25 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:39539 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752730Ab0JMUPY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 16:15:24 -0400
-Message-ID: <4CB612F1.1080704@euromail.se>
-Date: Wed, 13 Oct 2010 22:13:37 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100922 Thunderbird/3.1.4
+	id S1753121Ab0JMUUK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 16:20:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42909 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752535Ab0JMUUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 16:20:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Meelis Roos <mroos@linux.ee>
+Subject: Re: [Bug #16971] qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
+Date: Wed, 13 Oct 2010 22:18:53 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <v0Rsc8XZnFC.A.-xF.oqfsMB@chimera> <xpndfyzv9iD.A.6DH.dsfsMB@chimera> <alpine.SOC.1.00.1010131637220.26743@math.ut.ee>
+In-Reply-To: <alpine.SOC.1.00.1010131637220.26743@math.ut.ee>
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Jiri Kosina <jkosina@suse.cz>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/6] hid: egalax: Correct for device resolution report
- error
-References: <1286978302-30034-1-git-send-email-rydberg@euromail.se> <1286978302-30034-4-git-send-email-rydberg@euromail.se>
-In-Reply-To: <1286978302-30034-4-git-send-email-rydberg@euromail.se>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1P67hj-00051Y-8l.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1P67hj-00051Y-8l 94656b0169e694860f39885b3f97f7d3
+Message-Id: <201010132218.54086.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2010 03:58 PM, Henrik Rydberg wrote:
-
-> The firmware of both supported devices report a X/Y maximum of 4096,
-> whereas in reality, it is eight times larger. Fixed with this patch.
+On Wednesday, October 13, 2010, Meelis Roos wrote:
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16971
+> > Subject		: qla4xxx compile failure on 32-bit PowerPC: missing readq and writeq
+> > Submitter	: Meelis Roos <mroos@linux.ee>
+> > Date		: 2010-08-19 21:03 (53 days old)
+> > Message-ID	: <alpine.SOC.1.00.1008192359310.19654@math.ut.ee>
+> > References	: http://marc.info/?l=linux-kernel&m=128225184900892&w=2
 > 
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
->  drivers/hid/hid-egalax.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-egalax.c b/drivers/hid/hid-egalax.c
-> index 23f832b..3b490a3 100644
-> --- a/drivers/hid/hid-egalax.c
-> +++ b/drivers/hid/hid-egalax.c
-> @@ -56,6 +56,7 @@ static int egalax_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  	case HID_UP_GENDESK:
->  		switch (usage->hid) {
->  		case HID_GD_X:
-> +			field->logical_maximum <<= 3;
+> Still present.
 
+Thanks for the update.
 
-This makes the logical maximum increase by a factor of eight every time the
-module is loaded.
-
->  			hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_X);
->  			set_abs(input, ABS_MT_POSITION_X, field, 0);
-> @@ -63,6 +64,7 @@ static int egalax_input_mapping(struct hid_device *hdev, struct hid_input *hi,
->  			set_abs(input, ABS_X, field, 0);
->  			return 1;
->  		case HID_GD_Y:
-> +			field->logical_maximum <<= 3;
-
-
-Same here.
-
->  			hid_map_usage(hi, usage, bit, max,
->  					EV_ABS, ABS_MT_POSITION_Y);
->  			set_abs(input, ABS_MT_POSITION_Y, field, 0);
-
-
-Will send new revisions of patches 3 and 5...
-
-Henrik
+Rafael
