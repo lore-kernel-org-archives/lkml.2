@@ -1,198 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752689Ab0JMFxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 01:53:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63250 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab0JMFxh (ORCPT
+	id S1752645Ab0JMF6K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 01:58:10 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:56997 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab0JMF6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 01:53:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=STdHavfDCL67tGdEYUG24iGl8/t9mNFF2J0NG+FJE2ZILooBa59rcRrDKV2i4fRj/r
-         eH6rrZaOxXEd2pSmwp7shCDJTskG8W2ByZ+FUM+Bf+JtJXCg8cWUloO9kIA7z2LFiMIz
-         R7WOueac5D8oOYPfAYX14I3SeJasikgwPE4Uc=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] jbd: Factor out replay_tag()
-Date: Wed, 13 Oct 2010 14:53:31 +0900
-Message-Id: <1286949211-4175-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Wed, 13 Oct 2010 01:58:08 -0400
+Date: Wed, 13 Oct 2010 14:58:06 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH] Serial: BUGFIX: uart_resume_port has an omitted condition.
+To: linux-kernel@vger.kernel.org
+Cc: myungjoo.ham@gmail.com, kyungmin.park@samsung.com,
+        Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Andr Goddard Rosa <andre.goddard@gmail.com>,
+        Stanislav Brabec <sbrabec@suse.cz>
+Message-id: <1286949486-2446-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.6.3.3
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 13 Oct 2010 05:58:06.0850 (UTC)
+ FILETIME=[9B51DE20:01CB6A9B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split replay_tag() out of do_one_pass() to make code more readable.
+When console_suspend_enabled == 0, console_stop() was not called at
+suspend; thus, it does not need to call console_start() when resume.
+Besides, calling console_start() without calling console_stop() before
+had been incurring kernel hang with console_suspend_enabled == 0 in a
+machine with drivers/serial/samsung.c and s5pc210.
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- fs/jbd/recovery.c |  131 +++++++++++++++++++++++++++--------------------------
- 1 files changed, 67 insertions(+), 64 deletions(-)
+ drivers/serial/serial_core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/jbd/recovery.c b/fs/jbd/recovery.c
-index 5b43e96..8ebdfc7 100644
---- a/fs/jbd/recovery.c
-+++ b/fs/jbd/recovery.c
-@@ -307,6 +307,66 @@ int journal_skip_recovery(journal_t *journal)
- 	return err;
- }
- 
-+/* Write given block in the log to disk */
-+static int replay_tag(journal_t *journal, journal_block_tag_t *tag,
-+		      unsigned int log_block, unsigned int commit_id,
-+		      struct recovery_info *info, int *success)
-+{
-+	int err;
-+	int flags;
-+	unsigned int blocknr;
-+	struct buffer_head *obh;
-+	struct buffer_head *nbh;
-+
-+	err = jread(&obh, journal, log_block);
-+	if (err) {
-+		/* Recover what we can, but report failure at the end. */
-+		*success = err;
-+		printk(KERN_ERR "JBD: IO error %d recovering block %u "
-+		       "in log\n", err, log_block);
-+		err = 0;
-+		goto out;
-+	}
-+
-+	J_ASSERT(obh != NULL);
-+	blocknr = be32_to_cpu(tag->t_blocknr);
-+
-+	/* If the block has been revoked, then we're all done here. */
-+	if (journal_test_revoke(journal, blocknr, commit_id)) {
-+		brelse(obh);
-+		++info->nr_revoke_hits;
-+		goto out;
-+	}
-+
-+	/* Find a buffer for the new data being restored */
-+	nbh = __getblk(journal->j_fs_dev, blocknr, journal->j_blocksize);
-+	if (nbh == NULL) {
-+		printk(KERN_ERR "JBD: Out of memory during recovery.\n");
-+		err = -ENOMEM;
-+		brelse(obh);
-+		goto out;
-+	}
-+
-+	flags = be32_to_cpu(tag->t_flags);
-+
-+	lock_buffer(nbh);
-+	memcpy(nbh->b_data, obh->b_data, journal->j_blocksize);
-+	if (flags & JFS_FLAG_ESCAPE)
-+		*((__be32 *)nbh->b_data) = cpu_to_be32(JFS_MAGIC_NUMBER);
-+
-+	BUFFER_TRACE(nbh, "marking dirty");
-+	set_buffer_uptodate(nbh);
-+	mark_buffer_dirty(nbh);
-+	BUFFER_TRACE(nbh, "marking uptodate");
-+	++info->nr_replays;
-+	/* ll_rw_block(WRITE, 1, &nbh); */
-+	unlock_buffer(nbh);
-+	brelse(obh);
-+	brelse(nbh);
-+out:
-+	return err;
-+}
-+
- static int do_one_pass(journal_t *journal,
- 			struct recovery_info *info, enum passtype pass)
- {
-@@ -346,8 +406,6 @@ static int do_one_pass(journal_t *journal,
- 		int			flags;
- 		char *			tagp;
- 		journal_block_tag_t *	tag;
--		struct buffer_head *	obh;
--		struct buffer_head *	nbh;
- 
- 		cond_resched();
- 
-@@ -421,74 +479,19 @@ static int do_one_pass(journal_t *journal,
- 			tagp = &bh->b_data[sizeof(journal_header_t)];
- 			while ((tagp - bh->b_data +sizeof(journal_block_tag_t))
- 			       <= journal->j_blocksize) {
--				unsigned int io_block;
--
- 				tag = (journal_block_tag_t *) tagp;
- 				flags = be32_to_cpu(tag->t_flags);
- 
--				io_block = next_log_block++;
--				wrap(journal, next_log_block);
--				err = jread(&obh, journal, io_block);
-+				err = replay_tag(journal, tag, next_log_block,
-+					      next_commit_ID, info, &success);
- 				if (err) {
--					/* Recover what we can, but
--					 * report failure at the end. */
--					success = err;
--					printk (KERN_ERR
--						"JBD: IO error %d recovering "
--						"block %u in log\n",
--						err, io_block);
--				} else {
--					unsigned int blocknr;
--
--					J_ASSERT(obh != NULL);
--					blocknr = be32_to_cpu(tag->t_blocknr);
--
--					/* If the block has been
--					 * revoked, then we're all done
--					 * here. */
--					if (journal_test_revoke
--					    (journal, blocknr,
--					     next_commit_ID)) {
--						brelse(obh);
--						++info->nr_revoke_hits;
--						goto skip_write;
--					}
--
--					/* Find a buffer for the new
--					 * data being restored */
--					nbh = __getblk(journal->j_fs_dev,
--							blocknr,
--							journal->j_blocksize);
--					if (nbh == NULL) {
--						printk(KERN_ERR
--						       "JBD: Out of memory "
--						       "during recovery.\n");
--						err = -ENOMEM;
--						brelse(bh);
--						brelse(obh);
--						goto failed;
--					}
--
--					lock_buffer(nbh);
--					memcpy(nbh->b_data, obh->b_data,
--							journal->j_blocksize);
--					if (flags & JFS_FLAG_ESCAPE) {
--						*((__be32 *)nbh->b_data) =
--						cpu_to_be32(JFS_MAGIC_NUMBER);
--					}
--
--					BUFFER_TRACE(nbh, "marking dirty");
--					set_buffer_uptodate(nbh);
--					mark_buffer_dirty(nbh);
--					BUFFER_TRACE(nbh, "marking uptodate");
--					++info->nr_replays;
--					/* ll_rw_block(WRITE, 1, &nbh); */
--					unlock_buffer(nbh);
--					brelse(obh);
--					brelse(nbh);
-+					brelse(bh);
-+					goto failed;
- 				}
- 
--			skip_write:
-+				next_log_block++;
-+				wrap(journal, next_log_block);
-+
- 				tagp += sizeof(journal_block_tag_t);
- 				if (!(flags & JFS_FLAG_SAME_UUID))
- 					tagp += 16;
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index cd85112..ff21200 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -2065,7 +2065,7 @@ int uart_resume_port(struct uart_driver *drv, struct uart_port *uport)
+ 	/*
+ 	 * Re-enable the console device after suspending.
+ 	 */
+-	if (uart_console(uport)) {
++	if (console_suspend_enabled && uart_console(uport)) {
+ 		uart_change_pm(state, 0);
+ 		uport->ops->set_termios(uport, &termios, NULL);
+ 		console_start(uport->cons);
 -- 
-1.7.0.4
+1.6.3.3
 
