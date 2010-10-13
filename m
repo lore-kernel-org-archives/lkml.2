@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752760Ab0JMSUJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 14:20:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47519 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752124Ab0JMSUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 14:20:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Fja0WTkertLX3K3gW002UmkJ6q+UbgEpt9oFWcodXnwCaCSiEZVsDe9vlgmulB524M
-         //Gj1P1cCadaLSCNczbyI4waUL84wbfxnStiu7kyyeymIYdaxVFLiqAxE3u/6lXpikhv
-         AMKKOnqwT5CPIL45f7yWOWrOulVC8SnZjKT4M=
+	id S1752774Ab0JMSVI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 14:21:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47512 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752042Ab0JMSVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 14:21:07 -0400
+Message-ID: <4CB5F86C.9030900@zytor.com>
+Date: Wed, 13 Oct 2010 11:20:28 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
 MIME-Version: 1.0
-Date: Wed, 13 Oct 2010 20:20:05 +0200
-Message-ID: <AANLkTi=V7CRseXu1LmAYG24ajpvo+e374rzSV=OqoTVe@mail.gmail.com>
-Subject: Swap over RAID1 hangs kernel
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Neil Brown <neilb@suse.de>, linux-raid@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4F11F.4090104@goop.org> <4CB54640.4000003@kernel.org> <4CB5DEE8.2020400@goop.org>
+In-Reply-To: <4CB5DEE8.2020400@goop.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 10/13/2010 09:31 AM, Jeremy Fitzhardinge wrote:
+>>
+>> use ARCH_FIND_MEMBLOCK_AREA to select from them.
+> 
+> Thanks, that fixes the problem.  I would ideally like to make the the
+> Xen code independent of the page allocation ordering, but it looks like
+> it will be very tricky since we effectively make use of the pagetable as
+> a way of storing one bit of information about each page before there's a
+> struct page in place.
+> 
+> So this patch looks good to me (but there's no need to make it a
+> separate config option).
+> 
 
-trying to find out, why my system hung after what should only have
-been a short swap storm, I was able to reduce the testcase to only
-involve the md raid1 code.
+There isn't per se, but I have repeatedly expressed unhappiness about
+x86 having a completely different allocation policy -- worse, bottom-up
+is the absolutely worst possible allocation policy since low-address
+memory is a precious resource for all kinds of odd requirements
+(trampoline pages, ZONE_DMA, ZONE_DMA32 and so on.)
 
-My testcase:
-3 SATA drives: 1 with an XFS filesystem as /, 2 each with a 10 GB
-partition that get assembled into a RAID1 as /dev/md2
-Hardware is a NUMA system with 2 nodes, each node as 2GB RAM and 2 CPU cores.
-After booting, I do a "swapon /dev/md2" and mount a tmpfs with size=6g
+Furthermore, I really, really disapprove of interfaces which carry
+hidden semantics, such as allocation order.
 
-After executing the following command, the system stalls.
-for ((i=0; $i<16; i=$i+1)) do (dd if=/dev/zero of=tmpfs-path/zero$i
-bs=4k &) ; done
+I have repeatedly asked that we do *not* do this on x86 if we're going
+to go to a memblock-everywhere configuration.
 
+Now, if Xen needs it, there are few options that I can see in the short
+term, neither of which makes me happy -- I would appreciate
 
-Because I was trying to find the cause of my earlier hangs, I have
-instrumented mm/mempool.c to yell, if an allocation dips into the pool
-and also, when an allocation gets stalled because of __GFP_WAIT
-(repeat_alloc-loop in mempool_alloc()).
-This instrumentation tells me, that the exhausted pool is the
-fs_bio_set from fs/bio.c
+a) Add an explicit interface to allocate bottoms-up, and have Xen use it
+because it needs it.  This is appropriate if (and only if) the
+allocations in Xen aren't underneath a bunch of extra layers.
 
-As written in http://marc.info/?l=linux-kernel&m=128671179817823&w=2 I
-believe the cause is, that the code in make_request() from
-drivers/md/raid1.c calls bio_clone() once for each drive, and only
-after allocation bios for all drives, the bios get submitted. This
-allocation pattern was introduced in commit
-191ea9b2c7cc3ebbe0678834ab710d7d95ad3f9a when adding the intent bitmap
-code, before that change to loop over all the drives included a direct
-call to generic_make_request().
+b) Add it as a config option and make Xen select it (or depend on it).
+Unfortunately this probably would mean using this option on any
+paravirtualized kernel too, which would effectively mean Xen is
+"infecting" the entire rest of the x86 architecture with a pessimal
+allocation policy, which is extremely unfortunate.
 
-I'm not sure, what the correct fix is. Should r1bio_pool be used, or
-should each bio submitted immediately?
+c) Just accept it for now with the intent of getting rid of it as soon
+as possible.  I'd be fine pushing this for 2.6.37, but I'd like to get a
+reasonably firm commitment try to come up with something better within
+the next kernel cycle.
 
-Torsten
+Opinions?
+
+	-hpa
