@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab0JMDW7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 12 Oct 2010 23:22:59 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:43731 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752511Ab0JMDW6 (ORCPT
+	id S1752693Ab0JMDXv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 12 Oct 2010 23:23:51 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45540 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752511Ab0JMDXt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 12 Oct 2010 23:22:58 -0400
+	Tue, 12 Oct 2010 23:23:49 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 13 Oct 2010 12:17:38 +0900
+Date: Wed, 13 Oct 2010 12:18:29 +0900
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
         "minchan.kim@gmail.com" <minchan.kim@gmail.com>
-Subject: [RFC][PATCH 2/3] find a contiguous range.
-Message-Id: <20101013121738.933ff002.kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [RFC][PATCH 3/3] alloc contig pages with migration.
+Message-Id: <20101013121829.c3320944.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20101013121527.8ec6a769.kamezawa.hiroyu@jp.fujitsu.com>
 References: <20101013121527.8ec6a769.kamezawa.hiroyu@jp.fujitsu.com>
 Organization: FUJITSU Co. LTD.
@@ -29,171 +29,251 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Unlike memory hotplug, at an allocation of contigous memory range, address
-may not be a problem. IOW, if a requester of memory wants to allocate 100M of
-of contigous memory, placement of allocated memory may not be a problem.
-So, "finding a range of memory which seems to be MOVABLE" is required.
+Add an function to allocate contigous memory larger than MAX_ORDER.
+The main difference between usual page allocater is that this uses
+memory offline techiqueue (Isoalte pages and migrate remaining pages.).
 
-This patch adds a functon to isolate a length of memory within [start, end).
-This function returns a pfn which is 1st page of isolated contigous chunk
-of given length within [start, end).
+I think this is not 100% solution because we can't avoid fragmentation,
+but we have kernelcore= boot option and can create MOVABLE zone. That
+helps us to allow allocate a contigous range on demand.
 
-If no_search=true is passed as argument, start address is always same to
-the specified "base" addresss.
+Maybe drivers can alloc contig pages by bootmem or hiding some memory
+from the kernel at boot. But if contig pages are necessary only in some
+situation, kernelcore= boot option and using page migration is a choice.
 
-After isolation, free memory within this area will never be allocated.
-But some pages will remain as "Used/LRU" pages. They should be dropped by
-page reclaim or migration.
+Anyway, to allocate a contiguous chunk larger than MAX_ORDER, we need to
+add an overlay allocator on buddy allocator. This can be a 1st step.
 
+Note:
+This function is heavy if there are tons of memory requesters. So, maybe
+not good for 1GB pages for x86's usual use. It will requires some other
+tricks than migration.
+
+TODO:
+ - allows the caller to specify the migration target pages.
+ - reduce the number of lru_add_drain_all()..etc...system wide heavy calls.
+ - Pass gfp_t for some purpose...
 
 Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 ---
- mm/page_isolation.c |  130 ++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 130 insertions(+)
+ include/linux/page-isolation.h |    8 ++
+ mm/page_alloc.c                |   29 ++++++++
+ mm/page_isolation.c            |  136 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 173 insertions(+)
 
 Index: mmotm-1008/mm/page_isolation.c
 ===================================================================
 --- mmotm-1008.orig/mm/page_isolation.c
 +++ mmotm-1008/mm/page_isolation.c
-@@ -9,6 +9,7 @@
+@@ -7,6 +7,7 @@
+ #include <linux/mm.h>
+ #include <linux/page-isolation.h>
  #include <linux/pageblock-flags.h>
++#include <linux/swap.h>
  #include <linux/memcontrol.h>
  #include <linux/migrate.h>
-+#include <linux/memory_hotplug.h>
- #include <linux/mm_inline.h>
- #include "internal.h"
+ #include <linux/memory_hotplug.h>
+@@ -384,3 +385,138 @@ retry:
+ 	}
+ 	return 0;
+ }
++
++/**
++ * alloc_contig_pages - allocate a contigous physical pages
++ * @hint:	the base address of searching free space(in pfn)
++ * @size:	size of requested area (in # of pages)
++ * @node:       the node from which memory is allocated. "-1" means anywhere.
++ * @no_search:	if true, "hint" is not a hint, requirement.
++ *
++ * Search an area of @size in the physical memory map and checks wheter
++ * we can create a contigous free space. If it seems possible, try to
++ * create contigous space with page migration. If no_search==true, we just try
++ * to allocate [hint, hint+size) range of pages as contigous block.
++ *
++ * Returns a page of the beginning of contiguous block. At failure, NULL
++ * is returned. Each page in the area is set to page_count() = 1. Because
++ * this function does page migration, this function is very heavy and
++ * sleeps some time. Caller must be aware that "NULL returned" is not a
++ * special case.
++ *
++ * Now, returned range is aligned to MAX_ORDER. (So "hint" must be aligned
++ * if no_search==true.)
++ */
++
++#define MIGRATION_RETRY	(5)
++struct page *alloc_contig_pages(unsigned long hint, unsigned long size,
++				int node, bool no_search)
++{
++	unsigned long base, found, end, pages, start;
++	struct page *ret = NULL;
++	int migration_failed;
++	struct zone *zone;
++
++	hint = MAX_ORDER_ALIGN(hint);
++	/*
++	 * request size should be aligned to pageblock_order..but use
++	 * MAX_ORDER here for avoiding messy checks.
++	 */
++	pages = MAX_ORDER_ALIGN(size);
++	found = 0;
++retry:
++	for_each_populated_zone(zone) {
++		unsigned long zone_end_pfn;
++
++		if (node >= 0 && node != zone_to_nid(zone))
++			continue;
++		if (zone->present_pages < pages)
++			continue;
++		base = MAX_ORDER_ALIGN(zone->zone_start_pfn);
++		base = max(base, hint);
++		zone_end_pfn = zone->zone_start_pfn + zone->spanned_pages;
++		if (base + pages > zone_end_pfn)
++			continue;
++		found = find_contig_block(base, zone_end_pfn, pages, no_search);
++		/* Next try will see the next block. */
++		hint = base + MAX_ORDER_NR_PAGES;
++		if (found)
++			break;
++	}
++
++	if (!found)
++		return NULL;
++
++	if (no_search && found != hint)
++		return NULL;
++
++	/*
++	 * Ok, here, we have contiguous pageblock marked as "isolated"
++	 * try migration.
++	 *
++	 * FIXME: permanent migration_failure detection logic is required.
++ 	 */
++	lru_add_drain_all();
++	flush_scheduled_work();
++	drain_all_pages();
++
++	end = found + pages;
++	/*
++	 * scan_lru_pages() finds the next PG_lru page in the range
++	 * scan_lru_pages() returns 0 when it reaches the end.
++	 */
++	for (start = scan_lru_pages(found, end), migration_failed = 0;
++	     start && start < end;
++	     start = scan_lru_pages(start, end)) {
++		if (do_migrate_range(start, end)) {
++			/* it's better to try another block ? */
++			if (++migration_failed >= MIGRATION_RETRY)
++				break;
++			/* take a rest and synchronize LRU etc. */
++			lru_add_drain_all();
++			flush_scheduled_work();
++			cond_resched();
++			drain_all_pages();
++		} else /* reset migration_failure counter */
++			migration_failed = 0;
++	}
++
++	lru_add_drain_all();
++	flush_scheduled_work();
++	drain_all_pages();
++	/* Check all pages are isolated */
++	if (test_pages_isolated(found, end)) {
++		undo_isolate_page_range(found, pages);
++		/*
++		 * We failed at [start...end) migration.
++		 * FIXME: there may be better restaring point.
++		 */
++		hint = MAX_ORDER_ALIGN(end + 1);
++		goto retry; /* goto next chunk */
++	}
++	/*
++	 * Ok, here, [found...found+pages) memory are isolated.
++	 * All pages in the range will be moved into the list with
++	 * page_count(page)=1.
++	 */
++	ret = pfn_to_page(found);
++	alloc_contig_freed_pages(found, found + pages);
++	/* unset ISOLATE */
++	undo_isolate_page_range(found, pages);
++	/* Free unnecessary pages in tail */
++	for (start = found + size; start < found + pages; start++)
++		__free_page(pfn_to_page(start));
++	return ret;
++
++}
++
++
++void free_contig_pages(struct page *page, int nr_pages)
++{
++	int i;
++	for (i = 0; i < nr_pages; i++)
++		__free_page(page + i);
++}
++
++EXPORT_SYMBOL_GPL(alloc_contig_pages);
++EXPORT_SYMBOL_GPL(free_contig_pages);
+Index: mmotm-1008/include/linux/page-isolation.h
+===================================================================
+--- mmotm-1008.orig/include/linux/page-isolation.h
++++ mmotm-1008/include/linux/page-isolation.h
+@@ -32,6 +32,7 @@ test_pages_isolated(unsigned long start_
+  */
+ extern int set_migratetype_isolate(struct page *page);
+ extern void unset_migratetype_isolate(struct page *page);
++extern void alloc_contig_freed_pages(unsigned long pfn, unsigned long pages);
  
-@@ -254,3 +255,132 @@ out:
- 	return ret;
+ /*
+  * For migration.
+@@ -41,4 +42,11 @@ int test_pages_in_a_zone(unsigned long s
+ int scan_lru_pages(unsigned long start, unsigned long end);
+ int do_migrate_range(unsigned long start_pfn, unsigned long end_pfn);
+ 
++/*
++ * For large alloc.
++ */
++struct page *alloc_contig_pages(unsigned long hint, unsigned long size,
++				int node, bool no_search);
++void free_contig_pages(struct page *page, int nr_pages);
++
+ #endif
+Index: mmotm-1008/mm/page_alloc.c
+===================================================================
+--- mmotm-1008.orig/mm/page_alloc.c
++++ mmotm-1008/mm/page_alloc.c
+@@ -5430,6 +5430,35 @@ out:
+ 	spin_unlock_irqrestore(&zone->lock, flags);
  }
  
-+/*
-+ * Functions for getting contiguous MOVABLE pages in a zone.
-+ */
-+struct page_range {
-+	unsigned long base; /* Base address of searching contigouous block */
-+	unsigned long end;
-+	unsigned long pages;/* Length of contiguous block */
-+};
 +
-+static inline unsigned long  MAX_ORDER_ALIGN(unsigned long x)
++void alloc_contig_freed_pages(unsigned long pfn,  unsigned long end)
 +{
-+	return ALIGN(x, MAX_ORDER_NR_PAGES);
-+}
-+
-+static inline unsigned long MAX_ORDER_BASE(unsigned long x)
-+{
-+	return x & ~(MAX_ORDER_NR_PAGES - 1);
-+}
-+
-+int __get_contig_block(unsigned long pfn, unsigned long nr_pages, void *arg)
-+{
-+	struct page_range *blockinfo = arg;
-+	unsigned long end;
-+
-+	end = pfn + nr_pages;
-+	pfn = MAX_ORDER_ALIGN(pfn);
-+	end = MAX_ORDER_BASE(end);
-+
-+	if (end < pfn)
-+		return 0;
-+	if (end - pfn >= blockinfo->pages) {
-+		blockinfo->base = pfn;
-+		blockinfo->end = end;
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+static void __trim_zone(struct page_range *range)
-+{
++	struct page *page;
 +	struct zone *zone;
-+	unsigned long pfn;
-+	/*
-+	 * In most case, each zone's [start_pfn, end_pfn) has no
-+	 * overlap between each other. But some arch allows it and
-+	 * we need to check it here.
-+	 */
-+	for (pfn = range->base, zone = page_zone(pfn_to_page(pfn));
-+	     pfn < range->end;
-+	     pfn += MAX_ORDER_NR_PAGES) {
++	int order;
++	unsigned long start = pfn;
 +
-+		if (zone != page_zone(pfn_to_page(pfn)))
-+			break;
++	zone = page_zone(pfn_to_page(pfn));
++	spin_lock_irq(&zone->lock);
++	while (pfn < end) {
++		VM_BUG_ON(!pfn_valid(pfn));
++		page = pfn_to_page(pfn);
++		VM_BUG_ON(page_count(page));
++		VM_BUG_ON(!PageBuddy(page));
++		list_del(&page->lru);
++		order = page_order(page);
++		zone->free_area[order].nr_free--;
++		rmv_page_order(page);
++		__mod_zone_page_state(zone, NR_FREE_PAGES, - (1UL << order));
++		pfn += 1 << order;
 +	}
-+	range->end = min(pfn, range->end);
-+	return;
++	spin_unlock_irq(&zone->lock);
++
++	/*After this, pages in the range can be freed one be one */
++	for (pfn = start; pfn < end; pfn++)
++		prep_new_page(pfn_to_page(pfn), 0, 0);
 +}
 +
-+/*
-+ * This function is for finding a contiguous memory block which has length
-+ * of pages and MOVABLE. If it finds, make the range of pages as ISOLATED
-+ * and return the first page's pfn.
-+ * If no_search==true, this function doesn't scan the range but tries to
-+ * isolate the range of memory.
-+ */
-+
-+static unsigned long find_contig_block(unsigned long base,
-+		unsigned long end, unsigned long pages, bool no_search)
-+{
-+	unsigned long pfn, pos;
-+	struct page_range blockinfo;
-+	int ret;
-+
-+	pages = MAX_ORDER_ALIGN(pages);
-+retry:
-+	blockinfo.base = base;
-+	blockinfo.end = end;
-+	blockinfo.pages = pages;
-+	/*
-+	 * At first, check physical page layout and skip memory holes.
-+	 */
-+	ret = walk_system_ram_range(base, end - base, &blockinfo,
-+		__get_contig_block);
-+	if (!ret)
-+		return 0;
-+	/* check contiguous pages in a zone */
-+	__trim_zone(&blockinfo);
-+
-+
-+	/* Ok, we found contiguous memory chunk of size. Isolate it.*/
-+	for (pfn = blockinfo.base; pfn + pages < blockinfo.end;
-+	     pfn += MAX_ORDER_NR_PAGES) {
-+		/* If no_search==true, base addess should be same to 'base' */
-+		if (no_search && pfn != base)
-+			break;
-+		/* Better code is necessary here.. */
-+		for (pos = pfn; pos < pfn + pages; pos++) {
-+			struct page *p;
-+
-+			if (!pfn_valid_within(pos))
-+				break;
-+			p = pfn_to_page(pos);
-+			if (PageReserved(p))
-+				break;
-+			/* This may hit a page on per-cpu queue. */
-+			if (page_count(p) && !PageLRU(p))
-+				break;
-+			/* Need to skip order of pages */
-+		}
-+		if (pos != pfn + pages) {
-+			pfn = MAX_ORDER_BASE(pos);
-+			continue;
-+		}
-+		/*
-+		 * Now, we know [base,end) of a contiguous chunk.
-+		 * Don't need to take care of memory holes.
-+		 */
-+		if (!start_isolate_page_range(pfn, pfn + pages))
-+			return pfn;
-+	}
-+
-+	/* failed */
-+	if (!no_search && blockinfo.end + pages < end) {
-+		/* Move base address and find the next block of RAM. */
-+		base = blockinfo.end;
-+		goto retry;
-+	}
-+	return 0;
-+}
+ #ifdef CONFIG_MEMORY_HOTREMOVE
+ /*
+  * All pages in the range must be isolated before calling this.
 
