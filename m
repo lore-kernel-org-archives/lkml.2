@@ -1,135 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752042Ab0JMQeY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 12:34:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:58509 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab0JMQeX (ORCPT
+	id S1751910Ab0JMQi5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 12:38:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:57514 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab0JMQi4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 12:34:23 -0400
-Message-ID: <4CB5DF50.7070906@oracle.com>
-Date: Wed, 13 Oct 2010 09:33:20 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Bruno Randolf <br1@einfach.org>
-CC: linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Add generic exponentially weighted moving average function
-References: <20101006093225.8739.14012.stgit@tt-desk> <20101012173352.0a458c24.randy.dunlap@oracle.com> <201010131110.21341.br1@einfach.org>
-In-Reply-To: <201010131110.21341.br1@einfach.org>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Oct 2010 12:38:56 -0400
+From: Bernhard Walle <walle@corscience.de>
+To: ddaney@caviumnetworks.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: octeon: Remove USB code
+Date: Wed, 13 Oct 2010 18:38:38 +0200
+Message-Id: <1286987918-16691-1-git-send-email-walle@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:uV6c6Ukrj3bFh6yfrYDZFcZZfYLe/S0LhZ7+7Eminkd
+ ThS4iEfGrJ9FggyaKcs/5/4xvJOSVGAaKfxOjxPw2Cd48i5viU
+ uNBPpljVxoXlmFu00NKfK6FYj/6Z0/Ow+bqHXx8SX6ac8LzwO2
+ 3R9Mon/Ujrmw//WHH61SvvSxB90dMeYk7q/30nImYfkVTn6Bh6
+ O008vdcZU37EzYYbhjivg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/12/10 19:10, Bruno Randolf wrote:
-> Hello Randy!
-> 
-> Thank you for taking the time to look at this!
-> 
-> On Wed October 13 2010 09:33:52 Randy Dunlap wrote:
->> On Wed, 06 Oct 2010 18:32:25 +0900 Bruno Randolf wrote:
->>> This adds a generic exponentially weighted moving average function. This
->>> implementation makes use of a structure which keeps a scaled up internal
->>> representation to reduce rounding errors.
->>>
->>> The idea for this implementation comes from the rt2x00 driver
->>> (rt2x00link.c) and i would like to use it in several places in the
->>> mac80211 and ath5k code.
->>>
->>> Signed-off-by: Bruno Randolf <br1@einfach.org>
->>
->> I guess I don't understand "exponentially weighted" or why that would
->> be desirable.  Please try to explain (briefly).
-> 
-> It just means, that more recent values are given a higher priority. The 
-> influence of older values decreases exponentially.
+Remove functions and definitions that refer to USB since the driver
+doesn't support USB and it's not planned to add USB support to that
+driver. So the code is just dead code which can be removed.
 
-Got it, thanks.
+Signed-off-by: Bernhard Walle <walle@corscience.de>
+---
+ drivers/staging/octeon/cvmx-helper-board.c |   19 ------------------
+ drivers/staging/octeon/cvmx-helper-board.h |   29 ----------------------------
+ 2 files changed, 0 insertions(+), 48 deletions(-)
 
-> This is desirable if we want to have an average, but we are more interested in 
-> the recent development. One example where that makes sense is the signal 
-> strength of a station in a wireless LAN. As the signal strength can vary 
-> significantly for every packet, just looking at one packet is misleading. 
-> We are not so much interested in a long term average, as a station might move 
-> - we are more interested in the average of the last X (say 8) packets, giving 
-> most priority to the last value.
-> 
-> http://en.wikipedia.org/wiki/Exponentially_weighted_moving_average#Exponential_moving_average
-> 
-> This is one example, but I found several places in the kernel code where 
-> something like this is used, usually open coded. That's why I tought a general 
-> function for this can make sense.
-> 
->> I'm attaching a test program that I did.  I don't especially like the
->> results of it.  Maybe it's due to the exponential weighting. (?)
->>
->> The test program tells me that the sum of 3 samples is 8 & average = 2:
->> i.e., not rounded up.
-> 
-> Oh, I see. I guess I should use DIV_ROUND_CLOSEST. I attach a new version of 
-> the test program.
-> 
->> And that the sum of 6 samples is 30 & average = 4. (!!)
->> And that the sum of 10 samples is 80 & average = 5. (!!)
->>
->> Am I just not understanding the function or am I misusing it?
-> 
-> You should keep 'samples' constant every time you call the function. It is the 
-> factor which defines how fast the influence of older values decreases. Higher 
-> values will take more older samples into account. E.g. use it like this:
-> 
-> moving_average(avg, val, 4);
-> 
-> I should have documented that better, I guess... And maybe rename it to 
-> 'factor'.
-
-OK, now I see how it's used.
-
-> Also a moving average makes more sense when you use it more often, depending 
-> on how high 'samples' is. E.g. here is the output of the test program with 
-> 'sampes' of 4 and 20 iterations. I also print 'savg' (simple average) which is 
-> sum/count:
-> 
-> count: 1, val: 1, sum: 1, savg: 1, avg: 1, internal: 1000
-> count: 2, val: 3, sum: 4, savg: 2, avg: 2, internal: 1500
-> count: 3, val: 4, sum: 8, savg: 2, avg: 2, internal: 2125
-> count: 4, val: 6, sum: 14, savg: 3, avg: 3, internal: 3093
-> count: 5, val: 7, sum: 21, savg: 4, avg: 4, internal: 4069
-> count: 6, val: 9, sum: 30, savg: 5, avg: 5, internal: 5301
-> count: 7, val: 10, sum: 40, savg: 5, avg: 6, internal: 6475
-> count: 8, val: 12, sum: 52, savg: 6, avg: 8, internal: 7856
-> count: 9, val: 13, sum: 65, savg: 7, avg: 9, internal: 9142
-> count: 10, val: 15, sum: 80, savg: 8, avg: 11, internal: 10606
-> count: 11, val: 16, sum: 96, savg: 8, avg: 12, internal: 11954
-> count: 12, val: 18, sum: 114, savg: 9, avg: 13, internal: 13465
-> count: 13, val: 19, sum: 133, savg: 10, avg: 15, internal: 14848
-> count: 14, val: 21, sum: 154, savg: 11, avg: 16, internal: 16386
-> count: 15, val: 22, sum: 176, savg: 11, avg: 18, internal: 17789
-> count: 16, val: 24, sum: 200, savg: 12, avg: 19, internal: 19341
-> count: 17, val: 25, sum: 225, savg: 13, avg: 21, internal: 20755
-> count: 18, val: 27, sum: 252, savg: 14, avg: 22, internal: 22316
-> count: 19, val: 28, sum: 280, savg: 14, avg: 24, internal: 23737
-> count: 20, val: 30, sum: 310, savg: 15, avg: 25, internal: 25302
-> 
-> Especially towards the end you can see how a moving average gives preference 
-> to the newer values.
-> 
->>> Is this the right place to add it? Who to CC:?
->>
->> Try Andrew. (added)
-> 
-> I attach a new version of the test program. If you can generally agree that 
-> this can be included in the kernel, I'll work on an improved version of my 
-> patch.
-
-Seems OK to me as long as there are multiple users of it.
-
-> Thank you for your feedback!
-
-
+diff --git a/drivers/staging/octeon/cvmx-helper-board.c b/drivers/staging/octeon/cvmx-helper-board.c
+index 00a555b..57d35dc 100644
+--- a/drivers/staging/octeon/cvmx-helper-board.c
++++ b/drivers/staging/octeon/cvmx-helper-board.c
+@@ -693,22 +693,3 @@ int __cvmx_helper_board_hardware_enable(int interface)
+ 	}
+ 	return 0;
+ }
+-
+-cvmx_helper_board_usb_clock_types_t __cvmx_helper_board_usb_get_clock_type(void)
+-{
+-	switch (cvmx_sysinfo_get()->board_type) {
+-	case CVMX_BOARD_TYPE_BBGW_REF:
+-		return USB_CLOCK_TYPE_CRYSTAL_12;
+-	}
+-	return USB_CLOCK_TYPE_REF_48;
+-}
+-
+-int __cvmx_helper_board_usb_get_num_ports(int supported_ports)
+-{
+-	switch (cvmx_sysinfo_get()->board_type) {
+-	case CVMX_BOARD_TYPE_NIC_XLE_4G:
+-		return 0;
+-	}
+-
+-	return supported_ports;
+-}
+diff --git a/drivers/staging/octeon/cvmx-helper-board.h b/drivers/staging/octeon/cvmx-helper-board.h
+index dc20b01..611a8e0 100644
+--- a/drivers/staging/octeon/cvmx-helper-board.h
++++ b/drivers/staging/octeon/cvmx-helper-board.h
+@@ -37,13 +37,6 @@
+ #include "cvmx-helper.h"
+ 
+ typedef enum {
+-	USB_CLOCK_TYPE_REF_12,
+-	USB_CLOCK_TYPE_REF_24,
+-	USB_CLOCK_TYPE_REF_48,
+-	USB_CLOCK_TYPE_CRYSTAL_12,
+-} cvmx_helper_board_usb_clock_types_t;
+-
+-typedef enum {
+ 	set_phy_link_flags_autoneg = 0x1,
+ 	set_phy_link_flags_flow_control_dont_touch = 0x0 << 1,
+ 	set_phy_link_flags_flow_control_enable = 0x1 << 1,
+@@ -155,26 +148,4 @@ extern int __cvmx_helper_board_interface_probe(int interface,
+  */
+ extern int __cvmx_helper_board_hardware_enable(int interface);
+ 
+-/**
+- * Gets the clock type used for the USB block based on board type.
+- * Used by the USB code for auto configuration of clock type.
+- *
+- * Returns USB clock type enumeration
+- */
+-cvmx_helper_board_usb_clock_types_t
+-__cvmx_helper_board_usb_get_clock_type(void);
+-
+-/**
+- * Adjusts the number of available USB ports on Octeon based on board
+- * specifics.
+- *
+- * @supported_ports: expected number of ports based on chip type;
+- *
+- *
+- * Returns number of available usb ports, based on board specifics.
+- *         Return value is supported_ports if function does not
+- *         override.
+- */
+-int __cvmx_helper_board_usb_get_num_ports(int supported_ports);
+-
+ #endif /* __CVMX_HELPER_BOARD_H__ */
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+1.7.1
+
