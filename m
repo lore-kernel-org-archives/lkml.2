@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab0JMUA6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 16:00:58 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:14614 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab0JMUA4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 16:00:56 -0400
-MIME-version: 1.0
-Content-type: multipart/mixed; boundary="Boundary_(ID_kD9Z/OuJ5rQCTcIQggTcaQ)"
-Date: Wed, 13 Oct 2010 16:00:55 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Vitaly Wool <vitalywool@gmail.com>
-Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-mmc@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Maxim Levitsky <maximlevitsky@gmail.com>,
-        libertas-dev@lists.infradead.org,
-        Sven Neumann <s.neumann@raumfeld.com>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
-        Colin Cross <ccross@android.com>, Chris Ball <cjb@laptop.org>,
-        stable@kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] sdio: fix suspend/resume regression
-In-reply-to: <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1010131559580.2764@xanadu.home>
-References: <1286788315.3101.11.camel@sven>
- <1286955116-22793-1-git-send-email-ohad@wizery.com>
- <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752933Ab0JMUDQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 16:03:16 -0400
+Received: from claw.goop.org ([74.207.240.146]:58649 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752863Ab0JMUDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 16:03:13 -0400
+Message-ID: <4CB6107F.4080908@goop.org>
+Date: Wed, 13 Oct 2010 13:03:11 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4F11F.4090104@goop.org> <4CB54640.4000003@kernel.org> <4CB5DEE8.2020400@goop.org> <4CB5F86C.9030900@zytor.com>
+In-Reply-To: <4CB5F86C.9030900@zytor.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+ On 10/13/2010 11:20 AM, H. Peter Anvin wrote:
+> On 10/13/2010 09:31 AM, Jeremy Fitzhardinge wrote:
+>>> use ARCH_FIND_MEMBLOCK_AREA to select from them.
+>> Thanks, that fixes the problem.  I would ideally like to make the the
+>> Xen code independent of the page allocation ordering, but it looks like
+>> it will be very tricky since we effectively make use of the pagetable as
+>> a way of storing one bit of information about each page before there's a
+>> struct page in place.
+>>
+>> So this patch looks good to me (but there's no need to make it a
+>> separate config option).
+>>
+> There isn't per se, but I have repeatedly expressed unhappiness about
+> x86 having a completely different allocation policy -- worse, bottom-up
+> is the absolutely worst possible allocation policy since low-address
+> memory is a precious resource for all kinds of odd requirements
+> (trampoline pages, ZONE_DMA, ZONE_DMA32 and so on.)
+>
+> Furthermore, I really, really disapprove of interfaces which carry
+> hidden semantics, such as allocation order.
 
---Boundary_(ID_kD9Z/OuJ5rQCTcIQggTcaQ)
-Content-type: TEXT/PLAIN; charset=ISO-8859-1
-Content-transfer-encoding: 8BIT
+Me too.  I'd like to fix the Xen code to handle any pages.
 
-On Wed, 13 Oct 2010, Vitaly Wool wrote:
+> I have repeatedly asked that we do *not* do this on x86 if we're going
+> to go to a memblock-everywhere configuration.
+>
+> Now, if Xen needs it, there are few options that I can see in the short
+> term, neither of which makes me happy -- I would appreciate
+>
+> a) Add an explicit interface to allocate bottoms-up, and have Xen use it
+> because it needs it.  This is appropriate if (and only if) the
+> allocations in Xen aren't underneath a bunch of extra layers.
 
-> Hi Ohad,
-> 
-> On Wed, Oct 13, 2010 at 9:31 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> 
-> > diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-> > index c94565d..515ff39 100644
-> > --- a/drivers/mmc/core/core.c
-> > +++ b/drivers/mmc/core/core.c
-> > @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
-> >        if (host->bus_ops && !host->bus_dead) {
-> >                if (host->bus_ops->suspend)
-> >                        err = host->bus_ops->suspend(host);
-> > +               if (err == -ENOSYS || !host->bus_ops->resume) {
-> > +                       /*
-> > +                        * We simply "remove" the card in this case.
-> > +                        * It will be redetected on resume.
-> > +                        */
-> > +                       if (host->bus_ops->remove)
-> > +                               host->bus_ops->remove(host);
-> > +                       mmc_claim_host(host);
-> > +                       mmc_detach_bus(host);
-> > +                       mmc_release_host(host);
-> > +                       host->pm_flags = 0;
-> > +                       err = 0;
-> > +               }
-> >        }
-> >        mmc_bus_put(host);
-> >
-> 
-> what about moving this logic to sdio bus_ops as this seems to be
-> completely specific to sdio right now?
+The allocation is done in find_early_table_space() in x86/mm/init.c, so
+the allocation call itself can't be easily replaced, but I suppose some
+of the parameters could be global and tweaked by Xen code, but that's
+pretty ugly.
 
-It doesn't have to.
+> c) Just accept it for now with the intent of getting rid of it as soon
+> as possible.  I'd be fine pushing this for 2.6.37, but I'd like to get a
+> reasonably firm commitment try to come up with something better within
+> the next kernel cycle.
+>
+> Opinions?
 
+I'm looking at ways of avoiding the dependency on bottom-up allocation
+at the moment.  It looks like it's OK if I can assume that the pagetable
+is being allocated out of pages in the range
+e820_table_start-e820_table_end (though one hopes those will get renamed
+to something a bit more meaningful).
 
-Nicolas
+I should know how its going to turn out later today.
 
---Boundary_(ID_kD9Z/OuJ5rQCTcIQggTcaQ)--
+    J
