@@ -1,83 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab0JMXX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 19:23:29 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:42907 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753717Ab0JMXX2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 19:23:28 -0400
-Date: Thu, 14 Oct 2010 10:23:19 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
-Message-ID: <20101013232319.GZ4681@dastard>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-18-git-send-email-david@fromorbit.com>
- <20101013072058.GA3121@amd>
- <20101013112552.GB16422@infradead.org>
- <20101013123008.GA6067@amd>
+	id S1753894Ab0JMXeU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 19:34:20 -0400
+Received: from claw.goop.org ([74.207.240.146]:52812 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753822Ab0JMXeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 19:34:19 -0400
+Message-ID: <4CB641F7.9040103@goop.org>
+Date: Wed, 13 Oct 2010 16:34:15 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101013123008.GA6067@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [PATCH 0/4] memblock related fixes for -tip
+References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4F11F.4090104@goop.org> <4CB54640.4000003@kernel.org> <4CB5DEE8.2020400@goop.org> <4CB5F86C.9030900@zytor.com> <4CB6107F.4080908@goop.org> <4CB62D54.7000400@kernel.org> <4CB63D63.5040500@goop.org> <4CB63E57.2000300@zytor.com>
+In-Reply-To: <4CB63E57.2000300@zytor.com>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 11:30:08PM +1100, Nick Piggin wrote:
-> On Wed, Oct 13, 2010 at 07:25:52AM -0400, Christoph Hellwig wrote:
-> > On Wed, Oct 13, 2010 at 06:20:58PM +1100, Nick Piggin wrote:
-> > > Unfortunate timing that everybody is suddenly interested in the
-> > > scalability work :)
-> > 
-> > People have been interested for a long time.  It's just that we finally
-> > made forward progress to get parts of it shape for merging, which should
-> > have been done long time ago.
-> 
-> It has been pretty close, IMO, it just needed some more reviewers, which
-> it only just got really.
+ On 10/13/2010 04:18 PM, H. Peter Anvin wrote:
+> On 10/13/2010 04:14 PM, Jeremy Fitzhardinge wrote:
+>> The Xen code is setting the max_pfn_mapped correctly, but it is just
+>> being overridden by:
+>>
+>> 	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+>>
+>> in setup_arch() - and KERNEL_IMAGE_SIZE is hard-coded to 512MB...
+>>
+>> How is this correct?  Does kernel/head_64.S map everything up to 512MB
+>> or something?
+>>
+> Yes:
+>         /*
+>          * 512 MB kernel mapping. We spend a full page on this pagetable
+>          * anyway.
+>          *
+>          * The kernel code+data+bss must not be bigger than that.
+>          *
+>          * (NOTE: at +512MB starts the module area, see MODULES_VADDR.
+>          *  If you want to increase this then increase MODULES_VADDR
+>          *  too.)
+>          */
+>         PMDS(0, __PAGE_KERNEL_LARGE_EXEC,
+>                 KERNEL_IMAGE_SIZE/PMD_SIZE)
+>
+> This is, however, wrong in the sense that it obviously shouldn't be
+> getting executed on the Xen codepath.
 
-Going back a couple of weeks, it seemed as far away from inclusion
-as when you first posted the series - there had been no substanital
-review and nobody wanting to review it in it's current form. Then
-I'd heard you were travelling indefinitely.....
+I see.  head_32.S sets max_pfn_mapped for itself, so head_64.S should
+probably do that too.  Patch below, but I haven't checked to see if it
+fixes the original problem (but I don't see why the pagetable memory
+allocation should be limited to the mapped region, especially if you
+want to put it as high as possible, especially since the mm/init_64.c
+code doesn't expect it to be mapped).
 
-There is stuff in the vfs-scale tree that is somewhat controversial
-and had not been discussed satisfactorily - the lock ordering
-(resulting in trylocks everywhere), the shrinker API change, the
-writeback LRU changes, the zone reclaim changes, etc - and some of
-them even have alternative proposals for fixing the algorithmic
-deficiencies.  Nobody was going to review or accept that as one big
-lump.
+    J
 
-There's been review now because I went and did what the potential
-reviewers were asking for - break the series into smaller, more
-easily reviewable and verifiable chunks. As a result, I think we're
-close to the end of the review cycle for the inode_lock breakup now.
-I think the code is now much cleaner and more maintainable than what I
-originally pulled from the vfs-scale tree, and it still provides the
-same gains and ability to be converted to RCU algorithms in the
-future.
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Date: Wed, 13 Oct 2010 16:31:11 -0700
+Subject: [PATCH] x86-64: don't force max_pfn_mapped to 512MB
 
-Hence, IMO, the current vfs-scale tree needs to be treated as a
-prototype, not as a finished product. It demonstrates the the path
-we need to follow to move forward, as well as the gains we will get
-as we move in that direction, but the code in that tree is not
-guaranteed a free pass into the mainline tree.
+head_64.S maps up to 512MB, but the Xen entry path doesn't necessarily
+map that high.  Set max_pfn_mapped in head_64.S accordingly.  (The Xen
+code already sets max_pfn_mapped correctly.)
 
-> etc. I had to really learn most of the code from scratch to get this far
-> and got quite little constructive review really until recently.
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-Which seems to be another good reason for treating the tree as prototype
-code.
+diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
+index 239046b..b75c6f4 100644
+--- a/arch/x86/kernel/head_64.S
++++ b/arch/x86/kernel/head_64.S
+@@ -141,6 +141,8 @@ ident_complete:
+ 	addq	%rbp, trampoline_level4_pgt + (511*8)(%rip)
+ #endif
+ 
++	movq    $KERNEL_IMAGE_SIZE / PAGE_SIZE, max_pfn_mapped(%rip)
++
+ 	/* Due to ENTRY(), sometimes the empty space gets filled with
+ 	 * zeros. Better take a jmp than relying on empty space being
+ 	 * filled with 0x90 (nop)
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index b11a238..c3cebfe 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -932,7 +932,6 @@ void __init setup_arch(char **cmdline_p)
+ 		max_low_pfn = max_pfn;
+ 
+ 	high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
+-	max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
+ #endif
+ 
+ 	/*
 
-Cheers,
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
