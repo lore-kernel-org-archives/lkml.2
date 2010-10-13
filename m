@@ -1,160 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0JMSlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 14:41:16 -0400
-Received: from mail.atheros.com ([12.19.149.2]:33853 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750952Ab0JMSlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 14:41:14 -0400
-From: Kevin Hayes <kevin@Atheros.com>
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-CC: Luis Rodriguez <Luis.Rodriguez@Atheros.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        Henry Ptasinski <henryp@broadcom.com>,
-        Suraj Sumangala <Suraj.Sumangala@Atheros.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Date: Wed, 13 Oct 2010 11:41:12 -0700
-Subject: RE: Firmware versioning best practices: ath3k-2.fw rename or
- replace ath3k-1.fw ?
-Thread-Topic: Firmware versioning best practices: ath3k-2.fw rename or
- replace ath3k-1.fw ?
-Thread-Index: ActrAeT8YQFvvwkKSHmKNVMSxlk5fQAA63lg
-Message-ID: <B7132A25476D334D9130FE7532F2A56314B5929686@SC1EXMB-MBCL.global.atheros.com>
-References: <20101008170258.GJ10149@tux> <4CAF5488.3030706@Atheros.com>
- <20101008181508.GM10149@tux> <20101012211726.GE2678@broadcom.com>
- <1286964370.3316.6.camel@aeonflux>
- <AANLkTimAeoS2Vi7GhKSTrghqaOQ=XKSzjcou15dn+YDR@mail.gmail.com>
- <B7132A25476D334D9130FE7532F2A56314B5929629@SC1EXMB-MBCL.global.atheros.com>
- <AANLkTik9oYwspVG4KFbMMq63SpBp++iZe=vxOSQhxRki@mail.gmail.com>
-In-Reply-To: <AANLkTik9oYwspVG4KFbMMq63SpBp++iZe=vxOSQhxRki@mail.gmail.com>
-Accept-Language: en-US
+	id S1752621Ab0JMTH1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 15:07:27 -0400
+Received: from nwd2mail10.analog.com ([137.71.25.55]:57296 "EHLO
+	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750976Ab0JMTHZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 15:07:25 -0400
+X-IronPort-AV: E=Sophos;i="4.57,326,1283745600"; 
+   d="scan'208";a="23313961"
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Drivers <Drivers@analog.com>
+Date: Wed, 13 Oct 2010 20:07:19 +0100
+Subject: RE: linux-next: Tree for October 13 (staging/iio)
+Thread-Topic: linux-next: Tree for October 13 (staging/iio)
+Thread-Index: Actq9afEHaL52ONOT8GT8lEkqYLVsAAEvqbw
+Message-ID: <544AC56F16B56944AEC3BD4E3D59177130943738AE@LIMKCMBX1.ad.analog.com>
+References: <20101013154522.7b087a20.sfr@canb.auug.org.au>
+ <20101013094117.530baa63.randy.dunlap@oracle.com>
+In-Reply-To: <20101013094117.530baa63.randy.dunlap@oracle.com>
+Accept-Language: de-DE, en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o9DIfWZg003089
 
-Hi Luis,
+Randy Dunlap wrote on 2010-10-13:
+> On Wed, 13 Oct 2010 15:45:22 +1100 Stephen Rothwell wrote:
+>
+>> Hi all,
+>>
+>> Changes since 20101012:
+>
+>
+> drivers/staging/iio/adc/ad7476.h:62: note: expected 'struct device *'
+> but argument is of type 'struct ad7476_state *'
+> drivers/staging/iio/adc/ad7476_core.c:48: error: too few arguments to
+> function 'ad7476_scan_from_ring'
 
-> -----Original Message-----
-> From: linux-bluetooth-owner@vger.kernel.org [mailto:linux-bluetooth-
-> owner@vger.kernel.org] On Behalf Of Luis R. Rodriguez
-> Sent: Wednesday, October 13, 2010 11:10 AM
-> To: Kevin Hayes
-> Cc: Luis Rodriguez; Marcel Holtmann; Henry Ptasinski; Suraj Sumangala;
-> David Woodhouse; linux-bluetooth; linux-kernel@vger.kernel.org; linux-
-> wireless
-> Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or
-> replace ath3k-1.fw ?
-> 
-> On Wed, Oct 13, 2010 at 10:54 AM, Kevin Hayes <kevin@atheros.com>
-> wrote:
-> > Hi Luis,
-> >
-> >
-> >> -----Original Message-----
-> >> From: linux-bluetooth-owner@vger.kernel.org [mailto:linux-bluetooth-
-> >> owner@vger.kernel.org] On Behalf Of Luis R. Rodriguez
-> >> Sent: Wednesday, October 13, 2010 10:43 AM
-> >> To: Marcel Holtmann
-> >> Cc: Henry Ptasinski; Suraj Sumangala; Luis Rodriguez; David
-> Woodhouse;
-> >> linux-bluetooth; linux-kernel@vger.kernel.org; linux-wireless
-> >> Subject: Re: Firmware versioning best practices: ath3k-2.fw rename
-> or
-> >> replace ath3k-1.fw ?
-> >>
-> >> On Wed, Oct 13, 2010 at 3:06 AM, Marcel Holtmann
-> <marcel@holtmann.org>
-> >> wrote:
-> >> > Hi Henry,
-> >> >
-> >> >> > > Marcel had answered me before. It makes sense to have same
-> file
-> >> name.
-> >> >> > > Other ways we end up changing the driver whenever there is a
-> >> firmware
-> >> >> > > change.
-> >> >> >
-> >> >> > > > I last tried to document a thread we had over this here:
-> >> >> > > >
-> >> >> > > >
-> >> http://wireless.kernel.org/en/developers/Documentation/firmware-
-> >> versioning
-> >> >> > > >
-> >> >> >
-> >> >> > Thanks, I've updated that link above to document bug fixing
-> does
-> >> not require
-> >> >> > a filename change.
-> >> >>
-> >> >> I don't really understand why you would not want to change the
-> code
-> >> revision
-> >> >> part of the filename.
-> >> >>
-> >> >> I totally agree that you don't want to change the driver every
-> time
-> >> the
-> >> >> firmware gets a bug fix, but wasn't that the whole point of
-> >> splitting the name
-> >> >> into API and code revisions portions, and symlinking the file to
-> one
-> >> that just
-> >> >> has the API version?
-> >> >>
-> >> >> What's the issue with using the process as originally documented?
-> >> >
-> >> > as I stated before, for Bluetooth this makes no sense. You don't
-> need
-> >> > API version numbers since the API is a STANDARD. It is called HCI.
-> So
-> >> > please don't use API version numbers in the firmware files.
-> >> >
-> >> > I will reject firmware file versions for upstream drivers.
-> >>
-> >> Does the HCI standard ever get improved upon? If so, how do devices
-> >> never get firmware updates that would allow them to use some newer
-> HCI
-> >> APIs?
-> >>
-> >> I've updated the documentation above for 802.11 and Bluetooth with
-> the
-> >> above, please feel free to further extend it as you see fit.
-> >>
-> >> Â  Luis
-> >
-> > HCI is always backward compatible. Â Newer commands are properly
-> discoverable by both sides of the HCI link.
-> > As long as the procedure to download firmware does not depend on new
-> HCI commands (it does not), then the firmware itself can teach an old
-> controller to learn new tricks.
-> 
-> Does HCI support uploading firmware? Can't we resolve this blacklist
-> crap issue if devices just used HCI to upload firmware?
-> 
->   Luis
-> --
+Thanks!
 
-Not really because there is not enough space in the sflash to do much of anything except report the PID.
-It must be some external code that picks the firmware to load and inject it into the controller.
-That external code is the DFU bit.  We must blacklist the device so that btusb does not claim it, so we can use the DFU.
+That's due to an old prototype active when CONFIG_IIO_RING_BUFFER is not set.
+I'll fix that.
 
-    K++
+> drivers/staging/iio/adc/ad7476_core.c: At top level:
+> drivers/staging/iio/adc/ad7476_core.c:102: error:
+> 'IIO_SCAN_EL_TYPE_UNSIGNED' undeclared here (not in a function)
 
-[Pardon the garbage that our mail server adds...]
+Jonathan,
+
+Do we really need to guard the entire ring_generic.h header with
+
+#ifdef CONFIG_IIO_RING_BUFFER
+...
+
+Some of these might be used, even when CONFIG_IIO_RING_BUFFER is not set.
+Or do we really need CONFIG_IIO_RING_BUFFER at all.
+Why not always provide it?
+
+>
+> config is attached.
+>
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your
+> code ***
+
+Greetings,
+Michael
+
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
 
 
-
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
