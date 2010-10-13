@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0JMOk7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 10:40:59 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:36097 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752099Ab0JMOk6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 10:40:58 -0400
-Date: Wed, 13 Oct 2010 15:40:44 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: pacman@kosh.dhis.org, linux-mm@kvack.org, Christoph Lameter <cl@linux.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yinghai Lu <yinghai@kernel.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: PROBLEM: memory corrupting bug, bisected to 6dda9d55
-Message-ID: <20101013144044.GS30667@csn.ul.ie>
-References: <20101009095718.1775.qmail@kosh.dhis.org> <20101011143022.GD30667@csn.ul.ie> <20101011140039.15a2c78d.akpm@linux-foundation.org>
+	id S1753548Ab0JMOmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 10:42:12 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:35768 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752099Ab0JMOmL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 10:42:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=j6BlG3Ro8lJi4q29gxLcLPwp5HdlUmgR/TNP9mfUhWmWc6WRb9ZOHoH/zrMSc/uwjg
+         DQDMeVBUJludDdqzMaMA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20101011140039.15a2c78d.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101013135902.GA4189@balbir.in.ibm.com>
+References: <20101012074910.GA9893@in.ibm.com> <20101012075109.GC9893@in.ibm.com>
+ <20101013133053.GD3914@balbir.in.ibm.com> <AANLkTiko2JryQWRmn2Df0-OyQwXgSZ6nyvrMm-o5WNvS@mail.gmail.com>
+ <20101013135902.GA4189@balbir.in.ibm.com>
+From: Nikhil Rao <ncrao@google.com>
+Date: Wed, 13 Oct 2010 07:41:46 -0700
+Message-ID: <AANLkTimV+xdsJ5Tz42bCq6wV6pTk0yMicQA=rgWH0FoP@mail.gmail.com>
+Subject: Re: [PATCH v3 2/7] sched: accumulate per-cfs_rq cpu usage
+To: balbir@linux.vnet.ibm.com
+Cc: Bharata B Rao <bharata@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 02:00:39PM -0700, Andrew Morton wrote:
-> (cc linuxppc-dev@lists.ozlabs.org)
-> 
-> On Mon, 11 Oct 2010 15:30:22 +0100
-> Mel Gorman <mel@csn.ul.ie> wrote:
-> 
-> > On Sat, Oct 09, 2010 at 04:57:18AM -0500, pacman@kosh.dhis.org wrote:
-> > > (What a big Cc: list... scripts/get_maintainer.pl made me do it.)
-> > > 
-> > > This will be a long story with a weak conclusion, sorry about that, but it's
-> > > been a long bug-hunt.
-> > > 
-> > > With recent kernels I've seen a bug that appears to corrupt random 4-byte
-> > > chunks of memory. It's not easy to reproduce. It seems to happen only once
-> > > per boot, pretty quickly after userspace has gotten started, and sometimes it
-> > > doesn't happen at all.
-> > > 
-> > 
-> > A corruption of 4 bytes could be consistent with a pointer value being
-> > written to an incorrect location.
-> 
-> It's corruption of user memory, which is unusual.  I'd be wondering if
-> there was a pre-existing bug which 6dda9d55bf545013597 has exposed -
-> previously the corruption was hitting something harmless.  Something
-> like a missed CPU cache writeback or invalidate operation.
-> 
+On Wed, Oct 13, 2010 at 6:59 AM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
+> * Nikhil Rao <ncrao@google.com> [2010-10-13 06:46:18]:
+>
+>> > Quick question for cfs_b->quota == RUNTIME_INF, won't cfs_b->runtime
+>> > be always > 0?
+>>
+>> Hi Balbir,
+>>
+>> cfs_b->runtime can be 0 if the task group exhausts its quota.
+>> cfs_b->runtime is a counter that is periodically refreshed to
+>> cfs_b->quota, and is decremented every time a cfs_rq requests a slice.
+>>
+>
+> Thanks, Nikhil
+>
+> I saw several checks for quota == RUNTIME_INF and saw updates not
+> happening. Do we track usage for cgroups with infinite quota? IOW, is
+> runtime updated? If so, why?
+>
 
-This seems somewhat plausible although it's hard to tell for sure. But
-lets say we had the following situation in memory
+We don't track usage or update runtime for cgroups with infinite
+quota. Most of these RUNTIME_INF checks are usually at the top of the
+functions and return immediately. The checks in the middle of
+functions are mostly to prevent races when cfs_b->quota is updated.
 
-[<----MAX_ORDER_NR_PAGES---->][<----MAX_ORDER_NR_PAGES---->]
-INITRD                        memmap array
+And ... I think I might have misunderstood your original question. Let
+me try answering that again. We check for quota == RUNTIME_INF (in
+addition to cfs_b->runtime > 0) because it is possible that the global
+pool is updated to RUNTIME_INF between the quota check in
+account_cfs_rq_quota() and when the actual quota is distributed in
+tg_request_cfs_quota(). I hope that answers your original question.
 
-initrd gets freed and someone else very early in boot gets allocated in
-there. Lets further guess that the struct pages in the memmap area are
-managing the page frame where the INITRD was because it makes the situation
-slightly easier to trigger. As pages get freed in the memmap array, we could
-reference memory where initrd used to be but the physical memory is mapped
-at two virtual addresses.
+-Thanks,
+Nikhil
 
-CPU A							CPU B
-							Reads kernelspace virtual (gets cache line)
-Writes userspace virtual (gets different cache line)
-							IO, writes buffer destined for userspace (via cache line)
-Cache line eviction, writeback to memory
-
-This is somewhat contrived but I can see how it might happen even on one
-CPU particularly if the L1 cache is virtual and is loose about checking
-physical tags.
-
-> How sensitive/vulnerable is PPC32 to such things?
-> 
-
-I can not tell you specifically but if the above scenario is in any way
-plausible, I believe it would depend on what sort of L1 cache the CPU
-has. Maybe this particular version has a virtual cache with no physical
-tagging and is depending on the OS not to make virtual aliasing mistakes.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> --
+>        Three Cheers,
+>        Balbir
+>
