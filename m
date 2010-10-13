@@ -1,125 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab0JMT6F (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 15:58:05 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55404 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752156Ab0JMT6E (ORCPT
+	id S1752657Ab0JMUA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 16:00:58 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:14614 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab0JMUA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 15:58:04 -0400
-Date: Wed, 13 Oct 2010 12:57:38 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, dri-devel@lists.freedesktop.org,
-        akpm <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>
-Subject: [PATCH -next] gpu/drm: fix build errors and kconfig dependency
- warnings
-Message-Id: <20101013125738.24a0bd95.randy.dunlap@oracle.com>
-In-Reply-To: <20101013154522.7b087a20.sfr@canb.auug.org.au>
-References: <20101013154522.7b087a20.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 13 Oct 2010 16:00:56 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_kD9Z/OuJ5rQCTcIQggTcaQ)"
+Date: Wed, 13 Oct 2010 16:00:55 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Vitaly Wool <vitalywool@gmail.com>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>, linux-mmc@vger.kernel.org,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        libertas-dev@lists.infradead.org,
+        Sven Neumann <s.neumann@raumfeld.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
+        Colin Cross <ccross@android.com>, Chris Ball <cjb@laptop.org>,
+        stable@kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+In-reply-to: <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
+Message-id: <alpine.LFD.2.00.1010131559580.2764@xanadu.home>
+References: <1286788315.3101.11.camel@sven>
+ <1286955116-22793-1-git-send-email-ohad@wizery.com>
+ <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010 15:45:22 +1100 Stephen Rothwell wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> Hi all,
+--Boundary_(ID_kD9Z/OuJ5rQCTcIQggTcaQ)
+Content-type: TEXT/PLAIN; charset=ISO-8859-1
+Content-transfer-encoding: 8BIT
+
+On Wed, 13 Oct 2010, Vitaly Wool wrote:
+
+> Hi Ohad,
 > 
-> Changes since 20101012:
+> On Wed, Oct 13, 2010 at 9:31 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
 > 
-> The drm tree gained a conflict against the kgdb tree.
+> > diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> > index c94565d..515ff39 100644
+> > --- a/drivers/mmc/core/core.c
+> > +++ b/drivers/mmc/core/core.c
+> > @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
+> >        if (host->bus_ops && !host->bus_dead) {
+> >                if (host->bus_ops->suspend)
+> >                        err = host->bus_ops->suspend(host);
+> > +               if (err == -ENOSYS || !host->bus_ops->resume) {
+> > +                       /*
+> > +                        * We simply "remove" the card in this case.
+> > +                        * It will be redetected on resume.
+> > +                        */
+> > +                       if (host->bus_ops->remove)
+> > +                               host->bus_ops->remove(host);
+> > +                       mmc_claim_host(host);
+> > +                       mmc_detach_bus(host);
+> > +                       mmc_release_host(host);
+> > +                       host->pm_flags = 0;
+> > +                       err = 0;
+> > +               }
+> >        }
+> >        mmc_bus_put(host);
+> >
+> 
+> what about moving this logic to sdio bus_ops as this seems to be
+> completely specific to sdio right now?
+
+It doesn't have to.
 
 
-ERROR: "hwmon_device_unregister" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
-ERROR: "hwmon_device_register" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
-ERROR: "video_output_unregister" [drivers/acpi/video.ko] undefined!
-ERROR: "video_output_register" [drivers/acpi/video.ko] undefined!
+Nicolas
 
-The latter 2 are simple to fix:
-in drivers/gpu/drm/nouveau/Kconfig, for config DRM_NOUVEAU:
-
-@@ -11,6 +11,7 @@ config DRM_NOUVEAU
- 	select FRAMEBUFFER_CONSOLE if !EMBEDDED
- 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
- 	select ACPI_VIDEO if ACPI
-+	select VIDEO_OUTPUT_CONTROL if ACPI
- 	help
- 	  Choose this option for open-source nVidia support.
-
-
-The first 2 are a problem.  I'd like to add "depends on HWMON" to DRM_NOUVEAU,
-but doing so gives:
-
-drivers/video/Kconfig:30:error: recursive dependency detected!
-drivers/video/Kconfig:30:	symbol FB is selected by DRM_KMS_HELPER
-drivers/gpu/drm/Kconfig:22:	symbol DRM_KMS_HELPER is selected by DRM_NOUVEAU
-drivers/gpu/drm/nouveau/Kconfig:1:	symbol DRM_NOUVEAU depends on HWMON
-drivers/hwmon/Kconfig:5:	symbol HWMON is selected by THINKPAD_ACPI
-drivers/platform/x86/Kconfig:232:	symbol THINKPAD_ACPI depends on INPUT
-drivers/input/Kconfig:8:	symbol INPUT is selected by VT
-drivers/char/Kconfig:7:	symbol VT is selected by FB_STI
-drivers/video/Kconfig:636:	symbol FB_STI depends on FB
-
-so that must not be the right thing to do.  Aha, that change along with
-changing all "select FB" (in drivers/gpu/drm/*) to "depends on FB"
-fixes the kconfig warnings.  But feel free to fix it some other way.
-
-My working patch is below.
-
----
-From: Randy Dunlap <randy.dunlap@oracle.com>
-
-Fix drm and drm/nouveau kconfigs so that build succeeds and
-kconfig warnings are eliminated.
-
-Fixes these build errors:
-ERROR: "hwmon_device_unregister" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
-ERROR: "hwmon_device_register" [drivers/gpu/drm/nouveau/nouveau.ko] undefined!
-ERROR: "video_output_unregister" [drivers/acpi/video.ko] undefined!
-ERROR: "video_output_register" [drivers/acpi/video.ko] undefined!
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/gpu/drm/Kconfig         |    2 +-
- drivers/gpu/drm/nouveau/Kconfig |    5 +++--
- 2 files changed, 4 insertions(+), 3 deletions(-)
-
---- linux-next-20101013.orig/drivers/gpu/drm/nouveau/Kconfig
-+++ linux-next-20101013/drivers/gpu/drm/nouveau/Kconfig
-@@ -1,16 +1,17 @@
- config DRM_NOUVEAU
- 	tristate "Nouveau (nVidia) cards"
--	depends on DRM && PCI
-+	depends on DRM && PCI && HWMON
-+	depends on FB
-         select FW_LOADER
- 	select DRM_KMS_HELPER
- 	select DRM_TTM
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
--	select FB
- 	select FRAMEBUFFER_CONSOLE if !EMBEDDED
- 	select FB_BACKLIGHT if DRM_NOUVEAU_BACKLIGHT
- 	select ACPI_VIDEO if ACPI
-+	select VIDEO_OUTPUT_CONTROL if ACPI
- 	help
- 	  Choose this option for open-source nVidia support.
- 
---- linux-next-20101013.orig/drivers/gpu/drm/Kconfig
-+++ linux-next-20101013/drivers/gpu/drm/Kconfig
-@@ -22,7 +22,7 @@ menuconfig DRM
- config DRM_KMS_HELPER
- 	tristate
- 	depends on DRM
--	select FB
-+	depends on FB
- 	select FRAMEBUFFER_CONSOLE if !EMBEDDED
- 	help
- 	  FB and CRTC helpers for KMS drivers.
+--Boundary_(ID_kD9Z/OuJ5rQCTcIQggTcaQ)--
