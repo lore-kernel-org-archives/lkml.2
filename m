@@ -1,88 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753297Ab0JMIUg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 04:20:36 -0400
-Received: from mga14.intel.com ([143.182.124.37]:14718 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753123Ab0JMIUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 04:20:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,324,1283756400"; 
-   d="scan'208";a="335501889"
-Date: Wed, 13 Oct 2010 10:20:06 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Mike Rapoport <mike@compulab.co.il>
-Cc: Andrew Chew <AChew@nvidia.com>, "axel.lin@gmail.com" <axel.lin@gmail.com>,
-        Gary King <GKing@nvidia.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "'Greg KH'" <greg@kroah.com>
-Subject: Re: [PATCH 1/1] mfd: Add TPS658621C device ID
-Message-ID: <20101013082005.GA4035@sortiz-mobl>
-References: <643E69AA4436674C8F39DCC2C05F763816BB82897A@HQMAIL03.nvidia.com>
- <4CB54BD0.8080701@compulab.co.il>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB54BD0.8080701@compulab.co.il>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753355Ab0JMIWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 04:22:37 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:64946 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753133Ab0JMIWf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 04:22:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=PAmPP4fexOb2+Tx+6nhSzZpUv0LkXW63yDyjXRYcyCeJUkAs3/pXEuVvjAcY2ELkD9
+         uH3EhQ1hi+b6ARODN+RVcLhnTgQcBgSY82SNIc25FIMmozh+ScqhTEPhvQxO9Q7Jvqz1
+         Pu+v9Ufm6WUG9+lzFkwPAMxYD5Ti9vPl0vNFI=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Chris Ball <cjb@laptop.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Subject: [PATCHv2] mmc: append a file to change host clock at run time
+Date: Wed, 13 Oct 2010 11:22:22 +0300
+Message-Id: <1286958142-22461-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <4CB568C0.9030906@nokia.com>
+References: <4CB568C0.9030906@nokia.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+For debugging power managment features there is quite convenient to have a
+possibility to change MMC host controller clock at run time. This patch adds
+'clock' file under MMC host root of debugfs.
 
-On Wed, Oct 13, 2010 at 08:04:00AM +0200, Mike Rapoport wrote:
-> Samuel,
-> 
-> Can you please queue this?
-Yes, I will.
+Usage as follows:
 
-Cheers,
-Samuel.
+	# cat /sys/kernel/debug/mmc0/clock
+	52000000
 
-> 
-> Andrew Chew wrote:
-> >Sending again.  Can someone review for commit?
-> >
-> >This is a really simple change that adds a new valid device ID for the existing tps6586x PMU driver.
-> >
-> >The interface for this device should be identical to that of the
-> >TPS658521A.
-> >
-> >Signed-off-by: Andrew Chew <achew@nvidia.com>
-> 
-> Acked-by: Mike Rapoport <mike@compulab.co.il>
-> 
-> >---
-> > drivers/mfd/tps6586x.c |    4 +++-
-> > 1 files changed, 3 insertions(+), 1 deletions(-)
-> >
-> >diff --git a/drivers/mfd/tps6586x.c b/drivers/mfd/tps6586x.c
-> >index 117eb7c..b4931ab 100644
-> >--- a/drivers/mfd/tps6586x.c
-> >+++ b/drivers/mfd/tps6586x.c
-> >@@ -47,6 +47,7 @@
-> > /* device id */
-> > #define TPS6586X_VERSIONCRC	0xcd
-> > #define TPS658621A_VERSIONCRC	0x15
-> >+#define TPS658621C_VERSIONCRC	0x2c
-> > struct tps6586x_irq_data {
-> > 	u8	mask_reg;
-> >@@ -497,7 +498,8 @@ static int __devinit tps6586x_i2c_probe(struct i2c_client *client,
-> > 		return -EIO;
-> > 	}
-> >-	if (ret != TPS658621A_VERSIONCRC) {
-> >+	if ((ret != TPS658621A_VERSIONCRC) &&
-> >+	    (ret != TPS658621C_VERSIONCRC)) {
-> > 		dev_err(&client->dev, "Unsupported chip ID: %x\n", ret);
-> > 		return -ENODEV;
-> > 	}
-> 
-> 
-> -- 
-> Sincerely yours,
-> Mike.
+	# echo "1000000000" > /sys/kernel/debug/mmc0/clock
+	# cat /sys/kernel/debug/mmc0/clock
+	52000000
 
+	# echo "48000000" > /sys/kernel/debug/mmc0/clock
+	# cat /sys/kernel/debug/mmc0/clock
+	48000000
+
+The second piece of example shows limits which are applied accordingly to used
+host driver.
+
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+---
+ drivers/mmc/core/debugfs.c |   35 +++++++++++++++++++++++++++++++++--
+ 1 files changed, 33 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+index 96d10f4..9b6ec07 100644
+--- a/drivers/mmc/core/debugfs.c
++++ b/drivers/mmc/core/debugfs.c
+@@ -133,6 +133,33 @@ static const struct file_operations mmc_ios_fops = {
+ 	.release	= single_release,
+ };
+ 
++static int mmc_clock_opt_get(void *data, u64 *val)
++{
++	struct mmc_host *host = data;
++
++	*val = host->ios.clock;
++
++	return 0;
++}
++
++static int mmc_clock_opt_set(void *data, u64 val)
++{
++	struct mmc_host *host = data;
++
++	/* We need this check due to input value is u64 */
++	if (val > host->f_max)
++		return -EINVAL;
++
++	mmc_claim_host(host);
++	mmc_set_clock(host, (unsigned int) val);
++	mmc_release_host(host);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(mmc_clock_fops, mmc_clock_opt_get, mmc_clock_opt_set,
++	"%llu\n");
++
+ void mmc_add_host_debugfs(struct mmc_host *host)
+ {
+ 	struct dentry *root;
+@@ -149,11 +176,15 @@ void mmc_add_host_debugfs(struct mmc_host *host)
+ 	host->debugfs_root = root;
+ 
+ 	if (!debugfs_create_file("ios", S_IRUSR, root, host, &mmc_ios_fops))
+-		goto err_ios;
++		goto err_node;
++
++	if (!debugfs_create_file("clock", S_IRUSR | S_IWUSR, root, host,
++			&mmc_clock_fops))
++		goto err_node;
+ 
+ 	return;
+ 
+-err_ios:
++err_node:
+ 	debugfs_remove_recursive(root);
+ 	host->debugfs_root = NULL;
+ err_root:
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+1.6.3.3
+
