@@ -1,51 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750976Ab0JMEIV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 00:08:21 -0400
-Received: from tundra.namei.org ([65.99.196.166]:44904 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750698Ab0JMEIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 00:08:20 -0400
-Date: Wed, 13 Oct 2010 15:07:40 +1100 (EST)
-From: James Morris <jmorris@namei.org>
-To: Eric Paris <eparis@redhat.com>
-cc: linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, paul.moore@hp.com, selinux@tycho.nsa.gov,
-        sds@tycho.nsa.gov, jengelh@medozas.de,
-        linux-security-module@vger.kernel.org, mr.dash.four@googlemail.com,
-        pablo@netfilter.org
-Subject: Re: [PATCH 1/5] secmark: do not return early if there was no error
-In-Reply-To: <1286927424.2614.15.camel@localhost.localdomain>
-Message-ID: <alpine.LRH.2.00.1010131507110.3834@tundra.namei.org>
-References: <20101012154008.26943.44399.stgit@paris.rdu.redhat.com>  <alpine.LRH.2.00.1010131038160.2949@tundra.namei.org> <1286927424.2614.15.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751083Ab0JMEX2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 00:23:28 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:11824 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750698Ab0JMEX0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 00:23:26 -0400
+Message-ID: <000701cb6a8e$60de6900$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Marc Kleine-Budde" <mkl@pengutronix.de>
+Cc: <qi.wang@intel.com>, <chripell@fsfe.org>, <kok.howg.ewe@intel.com>,
+        <morinaga526@dsn.okisemi.com>, <joel.clark@intel.com>,
+        <socketcan-core@lists.berlios.de>, <yong.y.wang@intel.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>,
+        <margie.foster@intel.com>, <sameo@linux.intel.com>,
+        <andrew.chih.howe.khor@intel.com>,
+        "David Miller" <davem@davemloft.net>,
+        "Wolfgang Grandegger" <wg@grandegger.com>
+References: <002e01cb6486$2ed72cc0$66f8800a@maildom.okisemi.com>	<20101005.114506.184852374.davem@davemloft.net>	<000b01cb6503$962bc7f0$66f8800a@maildom.okisemi.com>	<20101005.200904.71120150.davem@davemloft.net>	<4CAC3D94.9010408@grandegger.com> <000c01cb69dc$5d2aaab0$66f8800a@maildom.okisemi.com> <4CB414A2.8020202@pengutronix.de>
+Subject: Re: [MeeGo-Dev][PATCH v3] Topcliff: Update PCH_CAN driver to 2.6.35
+Date: Wed, 13 Oct 2010 13:23:19 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 12 Oct 2010, Eric Paris wrote:
+On Tuesday, October 12, 2010 4:56 PM, Marc Kleine-Budde wrote :
+> I just had a small peak at the datasheet. It seems you can implement the
+> same scheme for rx as on the at91, if you enough rx buffers. In the at91
+> driver I use 8+4 = 12 buffers for rx. Have a look at the driver, the rx
+> path is documented.
 
-> On Wed, 2010-10-13 at 10:38 +1100, James Morris wrote:
-> > On Tue, 12 Oct 2010, Eric Paris wrote:
-> > 
-> > > Commit 4a5a5c73 attempted to pass decent error messages back to userspace for
-> > > netfilter errors.  In xt_SECMARK.c however the patch screwed up and returned
-> > > on 0 (aka no error) early and didn't finish setting up secmark.  This results
-> > > in a kernel BUG if you use SECMARK.
-> > > 
-> > 
-> > Does this need to go into current Linus?
-> 
-> It's been broken since v2.6.35-rc1 so it's not exactly new, but yes,
-> it's broken and will bug like this in current Linus.
+Thank you for your suggestion.
+This is valuable for us.
+It seems the at91's Hw benabior similar to ours.
+Using this method, we will implement and test.
 
-Acked-by: James Morris <jmorris@namei.org>
-
-(Guessing this should go in via the networking tree).
+Thanks, Ohtake(OKISemi)
 
 
--- 
-James Morris
-<jmorris@namei.org>
