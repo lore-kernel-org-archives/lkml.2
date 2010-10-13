@@ -1,133 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab0JMHlx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 03:41:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14139 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753148Ab0JMHlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 03:41:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,324,1283756400"; 
-   d="scan'208";a="666934750"
-Subject: [patch]x86: spread tlb flush vector between nodes
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-        Andi Kleen <andi@firstfloor.org>, "Chen, Tim C" <tim.c.chen@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 15:41:38 +0800
-Message-ID: <1286955698.13317.5.camel@sli10-conroe.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753323Ab0JMHyb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 03:54:31 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62264 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753298Ab0JMHya convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 03:54:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UWUuwVlVCEgNtKO03q6epBAV2cF95pZWb9yDkTpw4pNtgYrSeciWYvn/K76Ox48+7D
+         jC8jS3atRvAr+3ic29SBikRBNGafZLFtUMp5Cb5YiZO/GZm6EURKcPiuT64bmJ+4z7kj
+         mLDyjf3EMEoyQvJPdH4qOPfQ41xbWJnuHy0pU=
+MIME-Version: 1.0
+In-Reply-To: <1286955116-22793-1-git-send-email-ohad@wizery.com>
+References: <1286788315.3101.11.camel@sven>
+	<1286955116-22793-1-git-send-email-ohad@wizery.com>
+Date: Wed, 13 Oct 2010 09:54:29 +0200
+Message-ID: <AANLkTiki_Sky6pry+vWAoTtJ5ctVUpawAH6iRYV6L-+z@mail.gmail.com>
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+From: Vitaly Wool <vitalywool@gmail.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: linux-mmc@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Maxim Levitsky <maximlevitsky@gmail.com>,
+        libertas-dev@lists.infradead.org, Nicolas Pitre <nico@fluxnic.net>,
+        Sven Neumann <s.neumann@raumfeld.com>, linux-kernel@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
+        Colin Cross <ccross@android.com>, Chris Ball <cjb@laptop.org>,
+        stable@kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently flush tlb vector allocation is based on below equation:
-	sender = smp_processor_id() % 8
-This isn't optimal, CPUs from different node can have the same vector, this
-causes a lot of lock contention. Instead, we can assign the same vectors to
-CPUs from the same node, while different node has different vectors. This has
-below advantages:
-a. if there is lock contention, the lock contention is between CPUs from one
-node. This should be much cheaper than the contention between nodes.
-b. completely avoid lock contention between nodes. This especially benefits
-kswapd, which is the biggest user of tlb flush, since kswapd sets its affinity
-to specific node.
+Hi Ohad,
 
-In my test, this could reduce > 20% CPU overhead in extreme case.
+On Wed, Oct 13, 2010 at 9:31 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
----
- arch/x86/mm/tlb.c |   47 ++++++++++++++++++++++++++++++++++++++++++++++-
- 1 file changed, 46 insertions(+), 1 deletion(-)
+> diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+> index c94565d..515ff39 100644
+> --- a/drivers/mmc/core/core.c
+> +++ b/drivers/mmc/core/core.c
+> @@ -1682,6 +1682,19 @@ int mmc_suspend_host(struct mmc_host *host)
+>        if (host->bus_ops && !host->bus_dead) {
+>                if (host->bus_ops->suspend)
+>                        err = host->bus_ops->suspend(host);
+> +               if (err == -ENOSYS || !host->bus_ops->resume) {
+> +                       /*
+> +                        * We simply "remove" the card in this case.
+> +                        * It will be redetected on resume.
+> +                        */
+> +                       if (host->bus_ops->remove)
+> +                               host->bus_ops->remove(host);
+> +                       mmc_claim_host(host);
+> +                       mmc_detach_bus(host);
+> +                       mmc_release_host(host);
+> +                       host->pm_flags = 0;
+> +                       err = 0;
+> +               }
+>        }
+>        mmc_bus_put(host);
+>
 
-Index: linux-2.6/arch/x86/mm/tlb.c
-===================================================================
---- linux-2.6.orig/arch/x86/mm/tlb.c	2010-10-13 20:40:19.000000000 +0800
-+++ linux-2.6/arch/x86/mm/tlb.c	2010-10-13 23:19:26.000000000 +0800
-@@ -5,6 +5,7 @@
- #include <linux/smp.h>
- #include <linux/interrupt.h>
- #include <linux/module.h>
-+#include <linux/cpu.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/mmu_context.h>
-@@ -52,6 +53,8 @@
-    want false sharing in the per cpu data segment. */
- static union smp_flush_state flush_state[NUM_INVALIDATE_TLB_VECTORS];
- 
-+static int tlb_vector_offset[NR_CPUS] __read_mostly;
-+
- /*
-  * We cannot call mmdrop() because we are in interrupt context,
-  * instead update mm->cpu_vm_mask.
-@@ -173,7 +176,7 @@
- 	union smp_flush_state *f;
- 
- 	/* Caller has disabled preemption */
--	sender = smp_processor_id() % NUM_INVALIDATE_TLB_VECTORS;
-+	sender = tlb_vector_offset[smp_processor_id()];
- 	f = &flush_state[sender];
- 
- 	/*
-@@ -218,6 +221,46 @@
- 	flush_tlb_others_ipi(cpumask, mm, va);
- }
- 
-+static void __cpuinit calculate_tlb_offset(void)
-+{
-+	int cpu, node, nr_node_vecs;
-+	/*
-+	 * we are changing tlb_vector_offset[] for each CPU in runtime, but this
-+	 * will not cause inconsistency, as the write is atomic under X86. we
-+	 * might see more lock contentions in a short time, but after all CPU's
-+	 * tlb_vector_offset[] are changed, everything should go normal
-+	 *
-+	 * Note: if NUM_INVALIDATE_TLB_VECTORS % nr_online_nodes !=0, we might
-+	 * waste some vectors.
-+	 **/
-+	if (nr_online_nodes > NUM_INVALIDATE_TLB_VECTORS)
-+		nr_node_vecs = 1;
-+	else
-+		nr_node_vecs = NUM_INVALIDATE_TLB_VECTORS/nr_online_nodes;
-+
-+	for_each_online_node(node) {
-+		int node_offset = (node % NUM_INVALIDATE_TLB_VECTORS) *
-+			nr_node_vecs;
-+		int cpu_offset = 0;
-+		for_each_cpu(cpu, cpumask_of_node(node)) {
-+			tlb_vector_offset[cpu] = node_offset + cpu_offset;
-+			cpu_offset++;
-+			cpu_offset = cpu_offset % nr_node_vecs;
-+		}
-+	}
-+}
-+
-+static int tlb_cpuhp_notify(struct notifier_block *n,
-+		unsigned long action, void *hcpu)
-+{
-+	switch (action & 0xf) {
-+	case CPU_ONLINE:
-+	case CPU_DEAD:
-+		calculate_tlb_offset();
-+	}
-+	return NOTIFY_OK;
-+}
-+
- static int __cpuinit init_smp_flush(void)
- {
- 	int i;
-@@ -225,6 +268,8 @@
- 	for (i = 0; i < ARRAY_SIZE(flush_state); i++)
- 		raw_spin_lock_init(&flush_state[i].tlbstate_lock);
- 
-+	calculate_tlb_offset();
-+	hotcpu_notifier(tlb_cpuhp_notify, 0);
- 	return 0;
- }
- core_initcall(init_smp_flush);
+what about moving this logic to sdio bus_ops as this seems to be
+completely specific to sdio right now?
 
-
+Thanks,
+   Vitaly
