@@ -1,140 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752837Ab0JMGGo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 02:06:44 -0400
-Received: from MAIL.13thfloor.at ([213.145.232.33]:57937 "EHLO
-	MAIL.13thfloor.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752432Ab0JMGGn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 02:06:43 -0400
-X-Greylist: delayed 1348 seconds by postgrey-1.27 at vger.kernel.org; Wed, 13 Oct 2010 02:06:43 EDT
-Date: Wed, 13 Oct 2010 07:44:12 +0200
-From: Herbert Poetzl <herbert@13thfloor.at>
-To: Bharata B Rao <bharata@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
-        Nikhil Rao <ncrao@google.com>
-Subject: Re: [PATCH v3 0/7] CFS Bandwidth Control
-Message-ID: <20101013054412.GL30810@MAIL.13thfloor.at>
-Mail-Followup-To: Bharata B Rao <bharata@linux.vnet.ibm.com>,
-	linux-kernel@vger.kernel.org, Dhaval Giani <dhaval.giani@gmail.com>,
-	Balbir Singh <balbir@linux.vnet.ibm.com>,
-	Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-	Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-	Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-	Ingo Molnar <mingo@elte.hu>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	Pavel Emelyanov <xemul@openvz.org>, Avi Kivity <avi@redhat.com>,
-	Chris Friesen <cfriesen@nortel.com>,
-	Paul Menage <menage@google.com>, Mike Waychison <mikew@google.com>,
-	Paul Turner <pjt@google.com>, Nikhil Rao <ncrao@google.com>
-References: <20101012074910.GA9893@in.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101012074910.GA9893@in.ibm.com>
-User-Agent: Mutt/1.5.11
+	id S1752869Ab0JMGRQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 02:17:16 -0400
+Received: from freeflow.nu ([178.79.134.28]:53821 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752830Ab0JMGRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 02:17:15 -0400
+Message-ID: <4CB54EE8.4020707@kernel.org>
+Date: Wed, 13 Oct 2010 09:17:12 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Michael Chan <mchan@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH net-next] net:  allocate skbs on local node
+References: <1286838210.30423.128.camel@edumazet-laptop> <1286839363.30423.130.camel@edumazet-laptop> <1286859925.30423.184.camel@edumazet-laptop> <20101011230322.f0f6dd47.akpm@linux-foundation.org> <1286866699.30423.234.camel@edumazet-laptop> <20101012002435.f51f2c0e.akpm@linux-foundation.org> <1286869793.2732.24.camel@edumazet-laptop> <20101012005856.994bea6d.akpm@linux-foundation.org> <4CB441CB.2000708@cs.helsinki.fi> <alpine.DEB.2.00.1010120745360.31832@router.home> <alpine.DEB.2.00.1010121234380.10165@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1010121234380.10165@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 01:19:10PM +0530, Bharata B Rao wrote:
-> Hi,
+On Tue, 12 Oct 2010, Christoph Lameter wrote:
+>> Hmmm. Given these effects I think we should be more cautious regarding the
+>> unification work. May be the "unified allocator" should replace SLAB
+>> instead and SLUB can stay unchanged?
 
-> Its been a while since we posted CPS hard limits (aka CFS bandwidth 
+On 10/12/10 10:43 PM, David Rientjes wrote:
+> Linus has said that he refuses to merge another allocator until one is
+> removed or replaced, so that would force the unificiation patches to go
+> into slab instead if you want to leave slub untouched.
 
-Indeed, will see that I can incorporate those in the
-next experimental Linux-VServer patch for testing ...
+Yes, and quite frankly, I'm not interested in introducing a new one either.
 
-btw, is it planned to allow for hard limits which
-are temporarily disabled when the machine/cpu would
-be otherwise idle (i.e. running the idle thread) or
-as we solved it, can we artificially advance the
-time (for the hard limits) when idle so that contexts
-which have work to do can work without sacrificing
-the priorization or the actual limits?
+On Tue, 12 Oct 2010, Christoph Lameter wrote:
+>> The unification patches go back to
+>> the one lock per node SLAB thing because the queue maintenance overhead is
+>> otherwise causing large regressions in hackbench because of lots of atomic
+>> ops. The per node lock seem to be causing problems here in the network
+>> stack,.
 
-best,
-Herbert
+On Tue, 12 Oct 2010, Christoph Lameter wrote:
+>> Take the unified as a SLAB cleanup instead? Then at least we have
+>> a large common code base and just differentiate through the locking
+>> mechanism?
 
-PS: from a quick glance I take it that using large
-values for period and quota, while keeping the ratio
-the same allows for 'burst loads'?
+On 10/12/10 10:43 PM, David Rientjes wrote:
+> Will you be adding the extensive slub debugging to slab then?  It would be
+> a shame to lose it because one allocator is chosen over another for
+> performance reasons and then we need to recompile to debug issues as they
+> arise.
 
-> control now) patches, hence a quick recap first:
+I think Christoph is saying that we'd remove SLAB and make the unified 
+allocator the new SLAB while keeping SLUB in place. In any case, yes, 
+the debugging support in SLUB is something that we want to keep.
 
-> - I have been working on CFS hard limits since last year and have posted
->   a few versions of the same (last post: http://lkml.org/lkml/2010/1/5/44)
-> - Paul Turner and Nikhil Rao meanwhile started working on CFS bandwidth
->   control and have posted a couple of versions.
->   (last post v2: http://lwn.net/Articles/385055/)
-> 
-> Paul's approach mainly changed the way the CPU hard limit was represented. After
-> his post, I decided to work with them and discontinue my patch series since
-> their global bandwidth specification for group appears more flexible than
-> the RT-type per-cpu bandwidth specification I had in my series.
-> 
-> Since Paul seems to be busy, I am taking the freedom of posting the next
-> version of his patches with a few enhancements to the slack time handling.
-> (more on this later)
-> 
-> Main changes in this post:
-> 
-> - Return the unused and remaining local quota at each CPU to the global
->   runtime pool.
-> - A few fixes:
-> 	- Explicitly wake up the idle cpu during unthrottle.
-> 	- Optimally handle throttling of current task within enqueue_task.
-> 	- Fix compilation break with CONFIG_PREEMPT on.
-> 	- Fix a compilation break at intermediate patch level.
-> - Applies on 2.6.36-rc7.
-> 
-> More about slack time issue
-> ---------------------------
-> Bandwidth available to a group is specified by two parameters: cpu.cfs_quota_us
-> and cpu.cfs_period_us. cpu.cfs_quota_us is the max CPU time a group can
-> consume within the time period of cpu.cfs_period_us. The quota available
-> to a group within a period is maintained in a per-group global pool. In each
-> CPU, the consumption happens by obtaining a slice of this global pool.
-> 
-> If the local quota (obtained as slices of global pool) isn't fully consumed
-> within a given period, a group can potentially get more CPU time than
-> its allowed for in the next interval. This is due to the slack time that may
-> be left over from the previous interval. More details about how this is fixed
-> is present in the description part of patch 7/7. Here I will only show the
-> benefit of handling the slack time correctly through this experiment:
-> 
-> On a 16 CPU system, two different kinds of tasks were run as part of a group
-> which had quota/bandwidth as 500000/500000 [=> 500ms/500ms], which means that
-> the group was capped at 1CPU worth of time every period.
-> 
-> Type A task: Complete CPU hog.
-> Type B task: Sleeps for 500ms and runs as CPU hog for next 500ms. And this cycle
-> 		repeats.
-> 
-> 1 task of type A and 15 tasks of type B were run for 20s, each bound to a
-> different CPU. At the end of 20s, the CPU time obtained by each of them
-> looked like this:
-> 
-> -----------------------------------------------------------------------
-> 			Without returning	Returning slack time
-> 			slack time to global	to global pool
-> 			pool			(with patch 7/7)
-> -----------------------------------------------------------------------
-> 1 type A task		7.96s			10.71s
-> 15 type B tasks		12.36s			9.79s
-> -----------------------------------------------------------------------
-> 
-> This shows the effects of slack time and the benefit of handling it correctly.
-> 
-> I request the scheduler maintainers and others for comments on these patches.
-> 
-> Regards,
-> Bharata.
+			Pekka
