@@ -1,149 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab0JMMNh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 08:13:37 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:31017 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751988Ab0JMMNf (ORCPT
+	id S1754048Ab0JMMUG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 08:20:06 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:35121 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab0JMMUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 08:13:35 -0400
-Subject: RE: [PATCHv2 1/1] omap: Ptr "isr_reg" tracked as NULL was
- dereferenced
-From: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-To: "ext Varadarajan, Charulatha" <charu@ti.com>
-Cc: "tony@atomide.com" <tony@atomide.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "linux@arm.linux.org.uk" <linux@arm.linux.org.uk>,
-        "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "tero.kristo@nokia.com" <tero.kristo@nokia.com>
-In-Reply-To: <EAF47CD23C76F840A9E7FCE10091EFAB030D099B87@dbde02.ent.ti.com>
-References: <cover.1286961160.git.EXT-Eugeny.Kuznetsov@nokia.com>
-	 <7bb69801f49283c3bde78aa008c15308ac8a5fbf.1286961160.git.EXT-Eugeny.Kuznetsov@nokia.com>
-	 <EAF47CD23C76F840A9E7FCE10091EFAB030D099AFD@dbde02.ent.ti.com>
-	 <1286970199.12782.28.camel@ekuznets-lx-nokia>
-	 <EAF47CD23C76F840A9E7FCE10091EFAB030D099B87@dbde02.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 13 Oct 2010 16:09:18 +0400
-Message-ID: <1286971758.12782.35.camel@ekuznets-lx-nokia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 13 Oct 2010 12:13:05.0553 (UTC) FILETIME=[FD978010:01CB6ACF]
-X-Nokia-AV: Unscannable
+	Wed, 13 Oct 2010 08:20:04 -0400
+Date: Wed, 13 Oct 2010 08:20:02 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101013122002.GA10831@infradead.org>
+References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
+ <1286515292-15882-18-git-send-email-david@fromorbit.com>
+ <20101013072058.GA3121@amd>
+ <20101013072701.GB3121@amd>
+ <20101013112827.GC16422@infradead.org>
+ <20101013120307.GA5883@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101013120307.GA5883@amd>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 17:20 +0530, ext Varadarajan, Charulatha wrote:
-> 
-> <<snip>>
-> 
-> > > >
-> > > > From: Evgeny Kuznetsov <ext-eugeny.kuznetsov@nokia.com>
-> > > >
-> > > > Value of "isr_reg" pointer is depend on configuration and GPIO method.
-> > > > Potentially it may have NULL value and it is dereferenced later
-> > > > in code. If pointer is NULL there is some kernel issue.
-> > >
-> > > Can you elaborate?
-> > "isr_reg" should not be NULL. But if it is NULL then there is kernel
-> > bug. And WARN_ON() used to show it.
-> > I did not see this bug, this is potentially may happen.
-> > >
-> > > > Warning and exit from function are added in this case.
-> > > > Also compilation check is added for correct architecture
-> > > > configuration.
-> > > >
-> > > > Signed-off-by: Evgeny Kuznetsov <EXT-Eugeny.Kuznetsov@nokia.com>
-> > > > ---
-> > > >  arch/arm/plat-omap/gpio.c |   18 ++++++++++++++++++
-> > > >  1 files changed, 18 insertions(+), 0 deletions(-)
-> > > >
-> > > > diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
-> > > > index c05c653..d04913c 100644
-> > > > --- a/arch/arm/plat-omap/gpio.c
-> > > > +++ b/arch/arm/plat-omap/gpio.c
-> > > > @@ -1318,6 +1318,23 @@ static void gpio_irq_handler(unsigned int irq,
-> > > > struct irq_desc *desc)
-> > > >  	if (bank->method == METHOD_GPIO_44XX)
-> > > >  		isr_reg = bank->base + OMAP4_GPIO_IRQSTATUS0;
-> > > >  #endif
-> > > > +
-> > > > +#if !defined(CONFIG_ARCH_OMAP1) &&		\
-> > > > +		!defined(CONFIG_ARCH_OMAP15XX) &&	\
-> > > > +		!defined(CONFIG_ARCH_OMAP16XX) &&	\
-> > > > +		!defined(CONFIG_ARCH_OMAP730) &&	\
-> > > > +		!defined(CONFIG_ARCH_OMAP850) &&	\
-> > > > +		!defined(CONFIG_ARCH_OMAP2) &&	\
-> > > > +		!defined(CONFIG_ARCH_OMAP3) &&	\
-> > > > +		!defined(CONFIG_ARCH_OMAP4)
-> > > > +
-> > > > +#error "Incorrect arch configuration"
-> > >
-> > > This is not required. If the architecture is not one of the above
-> > > mentioned, gpio_irq_handler() will not be used/called at all.
-> > This could be removed.
+On Wed, Oct 13, 2010 at 11:03:07PM +1100, Nick Piggin wrote:
+> On Wed, Oct 13, 2010 at 07:28:27AM -0400, Christoph Hellwig wrote:
+> > On Wed, Oct 13, 2010 at 06:27:01PM +1100, Nick Piggin wrote:
+> > > I'm happy to help to port the top of the patch set onto changes in
+> > > earlier parts of it, but I would like the chance to do this really. I'm
+> > > back in action now, so I can spend a lot of time catching up.
 > > 
-> > > Also all the possible gpio methods for a given OMAP architecture are
-> > > already considered with "#ifdef"s and (bank->method) checks in
-> > > gpio_irq_handler().
-> > It is not cover all cased, e.g. for OMAP4 arch:
-> > ....
-> > 	#if defined(CONFIG_ARCH_OMAP4)
-> > 		if (bank->method == METHOD_GPIO_44XX)
-> > 			isr_reg = bank->base + OMAP4_GPIO_IRQSTATUS0;
-> > 	#endif
-> > .....
-> > 
-> > If (bank->method != METHOD_GPIO_44XX) then isr_reg will be NULL.
-> > This should not happen, but potentially may have place.
+> > That's all good and fine, but it's really no reason for delaying getting
+> > the most important bits in.
 > 
-> When would it fail? If it is CONFIG_ARCH_OMAP4, the gpio method can
-> only be METHOD_GPIO_44XX. Else if it is for some other OMAP architecture,
-> the gpio_method is similarly taken care. So this cannot happen.
-This is similar check as e.g. in _enable_gpio_irqbank() there default
-case for bank->methos switch is WARN_ON(1).
-Just to warn in case.
-> 
-> > 
-> > >
-> > > > +
-> > > > +#endif
-> > > > +
-> > > > +	if (WARN_ON(!isr_reg))
-> > > > +		goto exit;
-> > >
-> > > For the above mentioned reason, this isr_reg would be non-NULL. Have
-> > > you observed this error anytime?
-> > I did not see this bug, this is potentially may happen.
-> > >
-> > > Also, the omap-gpio code has similar code spread all over and has to be
-> > > anyway cleaned-up. Is there any reason why gpio_irq_handler() alone is
-> > > addressed in this patch?
-> > Here "isr_reg" is used later in code and may cause oops if it is NULL.
-> > >
-> > > > +
-> > > >  	while(1) {
-> > > >  		u32 isr_saved, level_mask = 0;
-> > > >  		u32 enabled;
-> > > > @@ -1377,6 +1394,7 @@ static void gpio_irq_handler(unsigned int irq,
-> > > > struct irq_desc *desc)
-> > > >  	configured, we must unmask the bank interrupt only after
-> > > >  	handler(s) are executed in order to avoid spurious bank
-> > > >  	interrupt */
-> > > > +exit:
-> > > >  	if (!unmasked)
-> > > >  		desc->chip->unmask(irq);
-> > > >
-> > > > --
-> > > > 1.6.3.3
-> > >
-> > 
-> 
+> Really? I *really* think I can be given the chance to review what's
+> happened, catch up, and make sure it's foward compatible with the
+> rest of my tree.
 
+Please go and review it, the more eyes core code gets the better.  But
+don't assume you have carte blanche to delay things again just for the
+fun of it.  Other patches in your tree will need at least as many
+changes as the inode bits did, so they will need some major work anyway.
+Holding the splitup now for things that will take at least another half
+a year to hit the tree is rather pointless.
+
+> The most important bits are, in fact, mostly my
+> patches anyway unless there is a fundamentally different approach to
+> take. And so either way I don't think it is ready for 2.6.37 if it
+> hasn't been in vfs for testing and review by fs people -- that's what
+> we agreed I thought for the inode and dcache lock splitups.
+
+fs and vfs people have been reviewing the code for the last couple of
+weeks, and we're almost done.  Unless we'll find anoher issue it
+should go into the vfs tree.  Given that we don't even have a vfs
+tree for .37 yet there's no way we could have put it in earlier anyay..
 
