@@ -1,45 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751634Ab0JMQyL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 12:54:11 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45829
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750933Ab0JMQyK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 12:54:10 -0400
-Date: Wed, 13 Oct 2010 09:54:32 -0700 (PDT)
-Message-Id: <20101013.095432.71126747.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for October 13 (net/3c59x)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20101013093836.1ee6f2f9.randy.dunlap@oracle.com>
-References: <20101013154522.7b087a20.sfr@canb.auug.org.au>
-	<20101013093836.1ee6f2f9.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752019Ab0JMR3B (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 13:29:01 -0400
+Received: from mail.wdtv.com ([66.118.69.84]:60635 "EHLO mail.wdtv.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751585Ab0JMR3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 13:29:00 -0400
+From: Gene Heskett <gene.heskett@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: dkms dead in water
+Date: Wed, 13 Oct 2010 13:28:48 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35.7; KDE/4.5.2; i686; ; )
+Cc: gheskett@wdtv.com
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010131328.48973.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Wed, 13 Oct 2010 09:38:36 -0700
+I see that I have lost the ability to use dkms.  All module build scripts 
+are returning an error 5.  So I am stuck using the vesa graphics driver.
 
-> On Wed, 13 Oct 2010 15:45:22 +1100 Stephen Rothwell wrote:
-> 
->> Hi all,
->> 
->> Changes since 20101012:
-> 
-> 
-> when CONFIG_PCI is not enabled:
-> 
-> drivers/net/3c59x.c:3211: error:request for member 'current_state' in something not a structure or union
+Comments anyone?
 
-Like all the other PCI interfaces that NOP out into empty inlines when
-CONFIG_PCI is not enabled, it would be nice to have an interface that
-provides pci_dev->current_state in a similar fashion so we don't have
-to add a bunch of ifdefs here.
+Thanks.
+
+-- 
+Cheers, Gene
+"There are four boxes to be used in defense of liberty:
+ soap, ballot, jury, and ammo. Please use in that order."
+-Ed Howdershelt (Author)
+critic, n.:
+	A person who boasts himself hard to please because nobody tries
+	to please him.
+		-- Ambrose Bierce, "The Devil's Dictionary"
