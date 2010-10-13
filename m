@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752916Ab0JMTKQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 15:10:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:34294 "EHLO
+	id S1752974Ab0JMTKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 15:10:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:34372 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752878Ab0JMTKN (ORCPT
+	with ESMTP id S1752930Ab0JMTKU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 15:10:13 -0400
+	Wed, 13 Oct 2010 15:10:20 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=ktQUG28wAoxmvQ0qgckqqlo7cuw3X/xG7BMRif3dg8lrzd361hrImLz7f3S3Iev58
-	xfKU5A6jZ9Q+2hnYJKbQA==
+	b=cM4LJsj/zuhuR7Ec5MwzbtI3xrZF4HriABgNK39XIb7WdI/Ntl/Jx5QgZ7bizJ2j4
+	fZpuL62hf03n2DJUzRwUQ==
 From: Nikhil Rao <ncrao@google.com>
 To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
         Mike Galbraith <efault@gmx.de>,
         Suresh Siddha <suresh.b.siddha@intel.com>,
         Venkatesh Pallipadi <venki@google.com>
 Cc: linux-kernel@vger.kernel.org, Nikhil Rao <ncrao@google.com>
-Subject: [PATCH 1/4] sched: do not consider SCHED_IDLE tasks to be cache hot
-Date: Wed, 13 Oct 2010 12:09:35 -0700
-Message-Id: <1286996978-7007-2-git-send-email-ncrao@google.com>
+Subject: [PATCH 3/4] sched: drop group_capacity to 1 only if local group has extra capacity
+Date: Wed, 13 Oct 2010 12:09:37 -0700
+Message-Id: <1286996978-7007-4-git-send-email-ncrao@google.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1286996978-7007-1-git-send-email-ncrao@google.com>
 References: <1286996978-7007-1-git-send-email-ncrao@google.com>
@@ -27,30 +27,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a check in task_hot to return if the task has SCHED_IDLE
-policy. SCHED_IDLE tasks have very low weight, and when run with regular
-workloads, are typically scheduled many milliseconds apart. There is no
-need to consider these tasks hot for load balancing.
+When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
+only if the local group has extra capacity. For niced task balancing, we pull
+low weight tasks away from a sched group as long as there is capacity in other
+groups. When all other groups are saturated, we do not drop capacity of the
+niced group down to 1. This prevents active balance from kicking out the low
+weight threads and which hurts system utilization.
 
 Signed-off-by: Nikhil Rao <ncrao@google.com>
 ---
- kernel/sched.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ kernel/sched_fair.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index dc85ceb..6a9bdeb 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -2003,6 +2003,9 @@ task_hot(struct task_struct *p, u64 now, struct sched_domain *sd)
- 	if (p->sched_class != &fair_sched_class)
- 		return 0;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 0dd1021..2f38b8a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2030,6 +2030,7 @@ struct sd_lb_stats {
+ 	unsigned long this_load;
+ 	unsigned long this_load_per_task;
+ 	unsigned long this_nr_running;
++	unsigned long this_group_capacity;
  
-+	if (p->policy == SCHED_IDLE)
-+		return 0;
-+
- 	/*
- 	 * Buddy candidates are cache hot:
- 	 */
+ 	/* Statistics of the busiest group */
+ 	unsigned long max_load;
+@@ -2546,15 +2547,18 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+ 		/*
+ 		 * In case the child domain prefers tasks go to siblings
+ 		 * first, lower the sg capacity to one so that we'll try
+-		 * and move all the excess tasks away.
++		 * and move all the excess tasks away. We lower capacity only
++		 * if the local group can handle the extra capacity.
+ 		 */
+-		if (prefer_sibling)
++		if (prefer_sibling && !local_group &&
+++                   sds->this_nr_running < sds->this_group_capacity)
+ 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
+ 
+ 		if (local_group) {
+ 			sds->this_load = sgs.avg_load;
+ 			sds->this = sg;
+ 			sds->this_nr_running = sgs.sum_nr_running;
++			sds->this_group_capacity = sgs.group_capacity;
+ 			sds->this_load_per_task = sgs.sum_weighted_load;
+ 		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
+ 			sds->max_load = sgs.avg_load;
 -- 
 1.7.1
 
