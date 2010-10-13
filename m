@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752107Ab0JMQPT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 12:15:19 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:24499 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751878Ab0JMQPR (ORCPT
+	id S1752256Ab0JMQPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 12:15:31 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:10582 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752114Ab0JMQP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 12:15:17 -0400
-Subject: [PATCH v3 2/6] resources: allocate space within a region from the top
-	down
+	Wed, 13 Oct 2010 12:15:29 -0400
+Subject: [PATCH v3 4/6] x86/PCI: allocate space from the end of a region,
+	not the beginning
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
@@ -20,8 +20,8 @@ Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Ingo Molnar <mingo@elte.hu>
-Date: Wed, 13 Oct 2010 10:15:15 -0600
-Message-ID: <20101013161515.28476.99253.stgit@bob.kio>
+Date: Wed, 13 Oct 2010 10:15:26 -0600
+Message-ID: <20101013161526.28476.42395.stgit@bob.kio>
 In-Reply-To: <20101013161359.28476.6050.stgit@bob.kio>
 References: <20101013161359.28476.6050.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -33,123 +33,67 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Allocate space from the top of a region first, then work downward,
-if an architecture desires this.
+Allocate from the end of a region, not the beginning.
 
-I think it's too dangerous to do this across the board, because
-iomem_resource.end is initialized to -1, which is 0xffffffff_ffffffff
-on 64-bit architectures, and most machines can't address the entire
-64-bit physical address space.  So this patch is only effective if the
-architecture defines ARCH_HAS_TOP_DOWN_ALLOC.
+For example, if we need to allocate 0x800 bytes for a device on bus
+0000:00 given these resources:
 
-When we allocate space from a resource, we look for gaps between children
-of the resource.  Previously, we always looked at gaps from the bottom up.
-For example, given this:
-
-    [mem 0xbff00000-0xf7ffffff] PCI Bus 0000:00
+    [mem 0xbff00000-0xdfffffff] PCI Bus 0000:00
       [mem 0xc0000000-0xdfffffff] PCI Bus 0000:02
 
-we attempted to allocate from the [mem 0xbff00000-0xbfffffff] gap first,
-then the [mem 0xe0000000-0xf7ffffff] gap.
+the available space at [mem 0xbff00000-0xbfffffff] is passed to the
+alignment callback (pcibios_align_resource()).  Prior to this patch, we
+would put the new 0x800 byte resource at the beginning of that available
+space, i.e., at [mem 0xbff00000-0xbff007ff].
 
-With this patch, if the architecture defines ARCH_HAS_TOP_DOWN_ALLOC,
-we allocate from [mem 0xe0000000-0xf7ffffff] first.
+With this patch, we put it at the end, at [mem 0xbffff800-0xbfffffff].
 
+Reference: https://bugzilla.kernel.org/show_bug.cgi?id=16228#c41
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
- kernel/resource.c |   70 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 70 insertions(+), 0 deletions(-)
+ arch/x86/pci/i386.c |   18 ++++++++++++------
+ 1 files changed, 12 insertions(+), 6 deletions(-)
 
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index ace2269..9218e8e 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -357,8 +357,77 @@ int __weak page_is_ram(unsigned long pfn)
- 	return walk_system_ram_range(pfn, 1, NULL, __is_ram) == 1;
- }
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 5525309..fe866c8 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -37,6 +37,7 @@
+ #include <asm/pci_x86.h>
+ #include <asm/io_apic.h>
  
-+#ifdef ARCH_HAS_TOP_DOWN_ALLOC
-+/*
-+ * Find the resource before "child" in the sibling list of "root" children.
-+ */
-+static struct resource *find_sibling_prev(struct resource *root, struct resource *child)
-+{
-+	struct resource *this;
++#define ALIGN_DOWN(x, a)	((x) & ~(a - 1))
+ 
+ static int
+ skip_isa_ioresource_align(struct pci_dev *dev) {
+@@ -65,16 +66,21 @@ pcibios_align_resource(void *data, const struct resource *res,
+ 			resource_size_t size, resource_size_t align)
+ {
+ 	struct pci_dev *dev = data;
+-	resource_size_t start = res->start;
++	resource_size_t start = ALIGN_DOWN(res->end - size + 1, align);
+ 
+ 	if (res->flags & IORESOURCE_IO) {
+-		if (skip_isa_ioresource_align(dev))
+-			return start;
+-		if (start & 0x300)
+-			start = (start + 0x3ff) & ~0x3ff;
 +
-+	for (this = root->child; this; this = this->sibling)
-+		if (this->sibling == child)
-+			return this;
-+
-+	return NULL;
-+}
-+
- /*
-  * Find empty slot in the resource tree given range and alignment.
-+ * This version allocates from the end of the root resource first.
-+ */
-+static int find_resource(struct resource *root, struct resource *new,
-+			 resource_size_t size, resource_size_t min,
-+			 resource_size_t max, resource_size_t align,
-+			 resource_size_t (*alignf)(void *,
-+						   const struct resource *,
-+						   resource_size_t,
-+						   resource_size_t),
-+			 void *alignf_data)
-+{
-+	struct resource *this;
-+	struct resource tmp = *new;
-+	resource_size_t start;
-+
-+	tmp.start = root->end;
-+	tmp.end = root->end;
-+
-+	this = find_sibling_prev(root, NULL);
-+	for (;;) {
-+		if (this && this->end < root->end)
-+			tmp.start = this->end + 1;
-+		else
-+			tmp.start = root->start;
-+		if (tmp.start < min)
-+			tmp.start = min;
-+		if (tmp.end > max)
-+			tmp.end = max;
-+		tmp.start = ALIGN(tmp.start, align);
-+		if (alignf) {
-+			start = alignf(alignf_data, &tmp, size, align);
-+			if (tmp.start <= start && start <= tmp.end)
-+				tmp.start = start;
-+			else
-+				tmp.start = tmp.end;
-+		}
-+		if (tmp.start < tmp.end && tmp.end - tmp.start >= size - 1) {
-+			new->start = tmp.start;
-+			new->end = tmp.start + size - 1;
-+			return 0;
-+		}
-+		if (!this || this->start == root->start)
-+			break;
-+		tmp.end = this->start - 1;
-+		this = find_sibling_prev(root, this);
-+	}
-+	return -EBUSY;
-+}
-+
-+#else
-+
-+/*
-+ * Find empty slot in the resource tree given range and alignment.
-+ * This version allocates from the beginning of the root resource first.
-  */
- static int find_resource(struct resource *root, struct resource *new,
- 			 resource_size_t size, resource_size_t min,
-@@ -411,6 +480,7 @@ static int find_resource(struct resource *root, struct resource *new,
++		/*
++		 * If we're avoiding ISA aliases, the largest contiguous I/O
++		 * port space is 256 bytes.  Clearing bits 9 and 10 preserves
++		 * all 256-byte and smaller alignments, so the result will
++		 * still be correctly aligned.
++		 */
++		if (!skip_isa_ioresource_align(dev))
++			start &= ~0x300;
+ 	} else if (res->flags & IORESOURCE_MEM) {
+ 		if (start < BIOS_END)
+-			start = BIOS_END;
++			start = res->end;	/* fail; no space */
  	}
- 	return -EBUSY;
+ 	return start;
  }
-+#endif
- 
- /**
-  * allocate_resource - allocate empty slot in the resource tree given range & alignment
 
