@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab0JMPDA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 11:03:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57165 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751896Ab0JMPC7 (ORCPT
+	id S1754045Ab0JMPFt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 11:05:49 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:48302 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751896Ab0JMPFs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 11:02:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=mtPlgYSsZCm6R9TZSLSzqtjd7MeHc5y8rNdnB8oXz8ffLzQoQNRc3Wr03Cg0QUd+YX
-         ct9G5mngbNSt8K1DDGYQ0JpHB2kxDdglwKiVH/oJL4CllyeT/eWuCfAvkhEDFhxg7gAW
-         5nUSfVDKKCIzO/aLzwpH+ULZQ5QCphN3UqoXg=
-Date: Wed, 13 Oct 2010 17:02:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Stephane Eranian <eranian@google.com>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Robert Richter <robert.richter@amd.com>
-Subject: Re: [RFC PATCH 4/9] perf: Don't record frame pointer based user
-	stacktraces if we dump stack and regs
-Message-ID: <20101013150246.GF5335@nowhere>
-References: <1286946421-32202-1-git-send-regression-fweisbec@gmail.com> <1286946421-32202-5-git-send-regression-fweisbec@gmail.com> <1286954586.29097.60.camel@twins>
+	Wed, 13 Oct 2010 11:05:48 -0400
+Date: Wed, 13 Oct 2010 11:05:47 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/18] fs: Introduce per-bucket inode hash locks
+Message-ID: <20101013150547.GA12757@infradead.org>
+References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
+ <1286928961-15157-10-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1286954586.29097.60.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1286928961-15157-10-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 09:23:06AM +0200, Peter Zijlstra wrote:
-> On Wed, 2010-10-13 at 07:06 +0200, Frederic Weisbecker wrote:
-> > User and kernel stack might be selected for other uses than callchain
-> > in the future, this probably shouldn't mess with the regular callchain
-> > code. Instead we should probably have an exclude_callchain_user
-> > attribute, that could be also useful to filter out user callchains
-> > when people don't want them. 
-> 
-> Probably ;-)
+> +
+> +/**
+> + * hlist_bl_lock	- lock a hash list
+> + * @h:	hash list head to lock
+> + */
+> +static inline void hlist_bl_lock(struct hlist_bl_head *h)
+> +{
+> +	bit_spin_lock(0, (unsigned long *)h);
+> +}
+> +
+> +/**
+> + * hlist_bl_unlock	- unlock a hash list
+> + * @h:	hash list head to unlock
+> + */
+> +static inline void hlist_bl_unlock(struct hlist_bl_head *h)
+> +{
+> +	__bit_spin_unlock(0, (unsigned long *)h);
+> +}
 
-
-Will change that then :)
-
-Thanks.
-
+I think the locking helpers should come with the rest of the bl_list
+implementation in patch1.
