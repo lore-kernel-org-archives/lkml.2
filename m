@@ -1,82 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752933Ab0JMUDQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 16:03:16 -0400
-Received: from claw.goop.org ([74.207.240.146]:58649 "EHLO claw.goop.org"
+	id S1752970Ab0JMUGZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 16:06:25 -0400
+Received: from mail.perches.com ([173.55.12.10]:2905 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752863Ab0JMUDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 16:03:13 -0400
-Message-ID: <4CB6107F.4080908@goop.org>
-Date: Wed, 13 Oct 2010 13:03:11 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+	id S1752149Ab0JMUGY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 16:06:24 -0400
+Subject: Re: [RFC PATCH] sound/soc/codecs/wm8962.c: Use register index,
+ save 100kb text
+From: Joe Perches <joe@perches.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Peter Hsiang <Peter.Hsiang@maxim-ic.com>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Liam Girdwood <lrg@slimlogic.co.uk>,
+        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/4] memblock related fixes for -tip
-References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4F11F.4090104@goop.org> <4CB54640.4000003@kernel.org> <4CB5DEE8.2020400@goop.org> <4CB5F86C.9030900@zytor.com>
-In-Reply-To: <4CB5F86C.9030900@zytor.com>
-Content-Type: text/plain; charset=windows-1252
+        Jesse Marroquin <Jesse.Marroquin@maxim-ic.com>
+In-Reply-To: <20101013194017.GB17574@rakim.wolfsonmicro.main>
+References: <B2150E1E4418E1438554A300EA5040E40D469C124F@ITSVLEX06.it.maxim-ic.internal>
+	 <1286934472.1117.129.camel@Joe-Laptop>
+	 <20101013082414.GD6424@rakim.wolfsonmicro.main>
+	 <1286971846.1117.191.camel@Joe-Laptop>
+	 <20101013123301.GL6424@rakim.wolfsonmicro.main>
+	 <1286974549.1117.254.camel@Joe-Laptop>
+	 <20101013151117.GM6424@rakim.wolfsonmicro.main>
+	 <1286983667.1117.347.camel@Joe-Laptop>
+	 <20101013152916.GA20270@rakim.wolfsonmicro.main>
+	 <1286997031.1117.405.camel@Joe-Laptop>
+	 <20101013194017.GB17574@rakim.wolfsonmicro.main>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Oct 2010 13:06:22 -0700
+Message-ID: <1287000382.1117.416.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/13/2010 11:20 AM, H. Peter Anvin wrote:
-> On 10/13/2010 09:31 AM, Jeremy Fitzhardinge wrote:
->>> use ARCH_FIND_MEMBLOCK_AREA to select from them.
->> Thanks, that fixes the problem.  I would ideally like to make the the
->> Xen code independent of the page allocation ordering, but it looks like
->> it will be very tricky since we effectively make use of the pagetable as
->> a way of storing one bit of information about each page before there's a
->> struct page in place.
->>
->> So this patch looks good to me (but there's no need to make it a
->> separate config option).
->>
-> There isn't per se, but I have repeatedly expressed unhappiness about
-> x86 having a completely different allocation policy -- worse, bottom-up
-> is the absolutely worst possible allocation policy since low-address
-> memory is a precious resource for all kinds of odd requirements
-> (trampoline pages, ZONE_DMA, ZONE_DMA32 and so on.)
->
-> Furthermore, I really, really disapprove of interfaces which carry
-> hidden semantics, such as allocation order.
+On Wed, 2010-10-13 at 20:40 +0100, Mark Brown wrote:
+> The size impact of doing something
+> simple is a bit annoying but not usually a pressing issue on devices
+> that would want a CODEC with a noticably large register map.
 
-Me too.  I'd like to fix the Xen code to handle any pages.
+I think wasting 100+ KB is excessive if I
+were designing some cheap mp3 player.
 
-> I have repeatedly asked that we do *not* do this on x86 if we're going
-> to go to a memblock-everywhere configuration.
->
-> Now, if Xen needs it, there are few options that I can see in the short
-> term, neither of which makes me happy -- I would appreciate
->
-> a) Add an explicit interface to allocate bottoms-up, and have Xen use it
-> because it needs it.  This is appropriate if (and only if) the
-> allocations in Xen aren't underneath a bunch of extra layers.
+Up to you how/when it should be resolved/fixed,
+but I think it should be.
 
-The allocation is done in find_early_table_space() in x86/mm/init.c, so
-the allocation call itself can't be easily replaced, but I suppose some
-of the parameters could be global and tweaked by Xen code, but that's
-pretty ugly.
-
-> c) Just accept it for now with the intent of getting rid of it as soon
-> as possible.  I'd be fine pushing this for 2.6.37, but I'd like to get a
-> reasonably firm commitment try to come up with something better within
-> the next kernel cycle.
->
-> Opinions?
-
-I'm looking at ways of avoiding the dependency on bottom-up allocation
-at the moment.  It looks like it's OK if I can assume that the pagetable
-is being allocated out of pages in the range
-e820_table_start-e820_table_end (though one hopes those will get renamed
-to something a bit more meaningful).
-
-I should know how its going to turn out later today.
-
-    J
