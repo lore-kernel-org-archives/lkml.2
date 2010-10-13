@@ -1,70 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0JMNpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 09:45:40 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:35751 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754151Ab0JMNph (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 09:45:37 -0400
-From: Samu Onkalo <samu.p.onkalo@nokia.com>
-To: khali@linux-fr.org, tony@atomide.com
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] drivers: i2c-omap: Add support for shorten I2C timeout
-Date: Wed, 13 Oct 2010 16:45:10 +0300
-Message-Id: <1286977510-16702-3-git-send-email-samu.p.onkalo@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1286977510-16702-1-git-send-email-samu.p.onkalo@nokia.com>
-References: <1286977510-16702-1-git-send-email-samu.p.onkalo@nokia.com>
-X-OriginalArrivalTime: 13 Oct 2010 13:45:18.0258 (UTC) FILETIME=[DF574920:01CB6ADC]
-X-Nokia-AV: Clean
+	id S1754333Ab0JMNqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 09:46:05 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43061 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754310Ab0JMNqB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 09:46:01 -0400
+Subject: [GIT PULL] SCSI bug fixes for 2.6.36-rc7
+From: James Bottomley <James.Bottomley@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Oct 2010 09:45:51 -0400
+Message-ID: <1286977551.2969.22.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use short I2C timeout if requested by i2c-message flag.
-This is for cases where the it is known that target chip causes timeout.
+This patch set fixes a couple of longstanding bugs in SCSI.  The VPD
+patch fix a possible buffer overrun in the VPD code (only tripped if the
+device has a huge number of VPD pages).  The other is where the status
+return code on our BSG interface is wrongly right shifted one place.
 
-Signed-off-by: Samu Onkalo <samu.p.onkalo@nokia.com>
+The patch is available here:
+
+master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
+
+The short changelog is:
+
+FUJITA Tomonori (1):
+      bsg: fix incorrect device_status value
+
+Martin K. Petersen (1):
+      Fix VPD inquiry page wrapper
+
+
+The diffstat is:
+
+ block/bsg.c         |    2 +-
+ drivers/scsi/scsi.c |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+And the full diff is below.
+
+James
+
 ---
- drivers/i2c/busses/i2c-omap.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/i2c/busses/i2c-omap.c b/drivers/i2c/busses/i2c-omap.c
-index b33c785..d7ed7ca 100644
---- a/drivers/i2c/busses/i2c-omap.c
-+++ b/drivers/i2c/busses/i2c-omap.c
-@@ -50,6 +50,7 @@
- 
- /* timeout waiting for the controller to respond */
- #define OMAP_I2C_TIMEOUT (msecs_to_jiffies(1000))
-+#define OMAP_I2C_SHORT_TIMEOUT (msecs_to_jiffies(50))
- 
- /* For OMAP3 I2C_IV has changed to I2C_WE (wakeup enable) */
- enum {
-@@ -548,6 +549,7 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *adap,
- 			     struct i2c_msg *msg, int stop)
- {
- 	struct omap_i2c_dev *dev = i2c_get_adapdata(adap);
-+	unsigned long timeout;
- 	int r;
- 	u16 w;
- 
-@@ -618,8 +620,13 @@ static int omap_i2c_xfer_msg(struct i2c_adapter *adap,
+diff --git a/block/bsg.c b/block/bsg.c
+index 82d5882..5974682 100644
+--- a/block/bsg.c
++++ b/block/bsg.c
+@@ -426,7 +426,7 @@ static int blk_complete_sgv4_hdr_rq(struct request *rq, struct sg_io_v4 *hdr,
+ 	/*
+ 	 * fill in all the output members
  	 */
- 	if (dev->set_mpu_wkup_lat != NULL)
- 		dev->set_mpu_wkup_lat(dev->dev, dev->latency);
-+	if (unlikely((msg->flags & I2C_M_SHORT_TIMEOUT)))
-+		timeout = OMAP_I2C_SHORT_TIMEOUT;
-+	else
-+		timeout = OMAP_I2C_TIMEOUT;
-+
- 	r = wait_for_completion_timeout(&dev->cmd_complete,
--					OMAP_I2C_TIMEOUT);
-+					timeout);
- 	if (dev->set_mpu_wkup_lat != NULL)
- 		dev->set_mpu_wkup_lat(dev->dev, -1);
- 	dev->buf_len = 0;
--- 
-1.6.0.4
+-	hdr->device_status = status_byte(rq->errors);
++	hdr->device_status = rq->errors && 0xff;
+ 	hdr->transport_status = host_byte(rq->errors);
+ 	hdr->driver_status = driver_byte(rq->errors);
+ 	hdr->info = 0;
+diff --git a/drivers/scsi/scsi.c b/drivers/scsi/scsi.c
+index ad0ed21..348fba0 100644
+--- a/drivers/scsi/scsi.c
++++ b/drivers/scsi/scsi.c
+@@ -1046,13 +1046,13 @@ int scsi_get_vpd_page(struct scsi_device *sdev, u8 page, unsigned char *buf,
+ 
+ 	/* If the user actually wanted this page, we can skip the rest */
+ 	if (page == 0)
+-		return -EINVAL;
++		return 0;
+ 
+ 	for (i = 0; i < min((int)buf[3], buf_len - 4); i++)
+ 		if (buf[i + 4] == page)
+ 			goto found;
+ 
+-	if (i < buf[3] && i > buf_len)
++	if (i < buf[3] && i >= buf_len - 4)
+ 		/* ran off the end of the buffer, give us benefit of doubt */
+ 		goto found;
+ 	/* The device claims it doesn't support the requested page */
+
 
