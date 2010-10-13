@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752608Ab0JMN7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 09:59:11 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:35659 "EHLO e2.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752133Ab0JMN7K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 09:59:10 -0400
-Date: Wed, 13 Oct 2010 19:29:02 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Bharata B Rao <bharata@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v3 2/7] sched: accumulate per-cfs_rq cpu usage
-Message-ID: <20101013135902.GA4189@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101012074910.GA9893@in.ibm.com>
- <20101012075109.GC9893@in.ibm.com>
- <20101013133053.GD3914@balbir.in.ibm.com>
- <AANLkTiko2JryQWRmn2Df0-OyQwXgSZ6nyvrMm-o5WNvS@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <AANLkTiko2JryQWRmn2Df0-OyQwXgSZ6nyvrMm-o5WNvS@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752974Ab0JMN7a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 09:59:30 -0400
+Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:49289 "EHLO
+	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752648Ab0JMN72 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 09:59:28 -0400
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Philipp Merkel <mail@philmerk.de>, Stephane Chatty <chatty@enac.fr>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 0/6] hid: egalax: Rework to include joojoo support
+Date: Wed, 13 Oct 2010 15:58:16 +0200
+Message-Id: <1286978302-30034-1-git-send-email-rydberg@euromail.se>
+X-Mailer: git-send-email 1.7.1
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1P61qq-0001oc-Bf.
+X-Scan-Signature: ch-smtp03.sth.basefarm.net 1P61qq-0001oc-Bf fd24d422426ba46d028670ab21697d94
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nikhil Rao <ncrao@google.com> [2010-10-13 06:46:18]:
+Hi Jiri, Stephane,
 
-> > Quick question for cfs_b->quota == RUNTIME_INF, won't cfs_b->runtime
-> > be always > 0?
-> 
-> Hi Balbir,
-> 
-> cfs_b->runtime can be 0 if the task group exhausts its quota.
-> cfs_b->runtime is a counter that is periodically refreshed to
-> cfs_b->quota, and is decremented every time a cfs_rq requests a slice.
->
+This series adds support for the joojoo tablet. Based on the
+jikos/egalax branch, the first two patches prepare for the change to
+MT slots. The third patch fixes the bug that was also fixed by commit
+f516611, but in another (agreed) way. The fourth patch fixes another
+minor problem. The fifth patch adds event filtering based on observed
+signal quality, and the sixth patch does the heavy lifting of
+converting to MT slots and thereby solving the major problem for the
+joojoo.
 
-Thanks, Nikhil
+The patches have been tested on both supported devices. Thanks Philipp!
 
-I saw several checks for quota == RUNTIME_INF and saw updates not
-happening. Do we track usage for cgroups with infinite quota? IOW, is
-runtime updated? If so, why?
+Henrik
 
--- 
-	Three Cheers,
-	Balbir
+Henrik Rydberg (6):
+  hid: egalax: Use kzalloc
+  hid: egalax: Setup input device manually
+  hid: egalax: Correct for device resolution report error
+  hid: egalax: Report zero as minimum pressure
+  hid: egalax: Add event filtering
+  hid: egalax: Convert to MT slots
+
+ drivers/hid/hid-egalax.c |  177 +++++++++++++++++++++++++++-------------------
+ 1 files changed, 103 insertions(+), 74 deletions(-)
+
