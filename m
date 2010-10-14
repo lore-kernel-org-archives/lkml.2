@@ -1,69 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753966Ab0JNB0v (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 21:26:51 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38790 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752074Ab0JNB0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 21:26:50 -0400
-X-User-Agent: K-9 Mail for Android
-References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com> <4CB64D8F.9080800@zytor.com> <alpine.DEB.2.00.1010131739010.27124@chino.kir.corp.google.com> <4CB65262.3070507@zytor.com> <alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 13 Oct 2010 18:21:48 -0700
-To: David Rientjes <rientjes@google.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Message-ID: <cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
+	id S1754098Ab0JNBhC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 21:37:02 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59526 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753869Ab0JNBhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 21:37:01 -0400
+Subject: Re: [PATCH] use a stable clock reference in vdso vgetns
+From: john stultz <johnstul@us.ibm.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20101013140746.GM5590@mothafucka.localdomain>
+References: <1285938596-2186-1-git-send-email-glommer@redhat.com>
+	 <AANLkTimdukAnwtPooFJYTxtzoT+Scy9JwWoxkkj3g0zO@mail.gmail.com>
+	 <20101013140746.GM5590@mothafucka.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Oct 2010 18:36:55 -0700
+Message-ID: <1287020215.3467.27.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And the value of those additional options is what?  I'd consider adding this to the sewer pit called CONFIG_EMBEDDED (with a BUG_ON, not a warning... sheesh) but only if there is any demonstrable value other than a trivial amount of code (kilobytes?) in exchange for a bunch of crap #ifdef.
+On Wed, 2010-10-13 at 11:07 -0300, Glauber Costa wrote:
+> On Fri, Oct 01, 2010 at 10:49:53AM -0700, john stultz wrote:
+> > On Fri, Oct 1, 2010 at 6:09 AM, Glauber Costa <glommer@redhat.com> wrote:
+> > > When using vdso services for clock_gettime, we test for the ability
+> > > of a fine-grained measurement through the existance of a vread() function.
+> > >
+> > > However, from the time we test it, to the time we use it, vread() reference
+> > > may not be valid anymore. It happens, for example, when we change the current
+> > > clocksource from one that provides vread (say tsc) to one that lacks it
+> > > (say acpi_pm), in the middle of clock_gettime routine.
+> > >
+> > > seqlock does not really protect us, since readers here won't stop the writers
+> > > to change references. The proposed solution is to grab a copy of the clock
+> > > structure early, and use it as a stable reference onwards.
+> > 
+> > Ah. Good find! The fix looks reasonable to me. However, its likely the
+> > similar code in arch/x86/kernel/vsyscall_64.c will need a similar fix.
+> > 
+> > Awhile back there was some motivation to merge the two vdso/vsyscall
+> > implementations to avoid the duplication, but my memory is failing on
+> > why that didn't happen. I feel like it had to do with complication
+> > with the way the two implementations are mapped out to userland. Even
+> > so, it seems a shared forced inline method would resolve the issue, so
+> > maybe it just fell off the todo list?
+> News here?
 
-"David Rientjes" <rientjes@google.com> wrote:
+Errr.. Sorry, are you waiting for me to implement this? Or did you want
+a comment on your earlier mail? (Apologies, I've been a bit scattered
+here).
 
->On Wed, 13 Oct 2010, H. Peter Anvin wrote:
->
->> > You can already set the lowmem_reserve_ratio via 
->> > /proc/sys/vm/lowmem_reserve_ratio.
->> 
->> And why is it then so hard to put in a single line in /etc/sysctl.conf
->> for you?
->> 
->
->Because disabling CONFIG_ZONE_DMA allows for additional extensions: 
->disabling CONFIG_GENERIC_ISA_DMA and CONFIG_ISA_DMA_API.  We've also run 
->for a couple years without those.
->
->> > We've run without ZONE_DMA for a couple years because we don't have such 
->> > hardware limitations and would appreciate the ability to disable it with a 
->> > config option rather than hacking the kernel to get it to compile.  I'm 
->> > sure Casey would as well as you can see in the thread "A question about 
->> > ZONE_DMA".
->> > 
->> > I don't see the harm in being able to conveniently disable the zone if you 
->> > know what you're doing.
->> 
->> There are going to be a lot of very strange bug reports as a result.
->> 
->
->We have config options all over the kernel that change the behavior of 
->syscalls without worrying about bug reports popping up from users who 
->knowingly have disabled the option, I don't see this as being any 
->different.  If you're concerned about, we could add a
->
->#ifndef CONFIG_ZONE_DMA
->	WARN_ON_ONCE(gfp_mask & __GFP_DMA);
->#endif
->
->in the page allocator.
+I think trying to unify the two implementations would be nice if you're
+up to trying, but if not, go ahead and push your patch and that will fix
+the bug until I can get around to looking at the unification.
 
--- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+I don't think the unification would be *that* complicated, since its
+just a matter of grabbing the right reference to the mapped out data
+(either the __vsyscall_gtod_data or the vdso_vsyscall_gtod_data) and
+then just passing a pointer to the right reference to the common inlined
+functions). 
+
+
+thanks
+-john
+
+
