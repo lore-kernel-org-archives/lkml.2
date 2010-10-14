@@ -1,67 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753553Ab0JNGfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 02:35:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43188 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752458Ab0JNGfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 02:35:24 -0400
-Date: Thu, 14 Oct 2010 06:34:49 GMT
-From: tip-bot for Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
-        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        sfr@canb.auug.org.au, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-        sfr@canb.auug.org.au, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101014164925.4fa16b75.sfr@canb.auug.org.au>
-References: <20101014164925.4fa16b75.sfr@canb.auug.org.au>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, ARM: Fix sysfs bits removal build failure
-Message-ID: <tip-1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0@git.kernel.org>
-Git-Commit-ID: 1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Oct 2010 06:34:50 +0000 (UTC)
+	id S1753477Ab0JNGgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 02:36:10 -0400
+Received: from mailhost14.gawab.com ([66.220.20.14]:35201 "HELO
+	info88.gawab.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752400Ab0JNGgJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 02:36:09 -0400
+X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 14 Oct 2010 02:36:08 EDT
+Message-ID: <20101014062928.31661.qmail@info88.gawab.com>
+From: "Justin Madru" <jdm64@gawab.com>
+To: linux-kernel@vger.kernel.org, debian-kernel@lists.debian.org
+Subject: [2.6.32] dpkg blocked for more than 120 seconds when moving large files
+Date: Thu, 14 Oct 2010 06:29:28 GMT
+Content-Type: text/plain ; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [208.127.251.116]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0
-Gitweb:     http://git.kernel.org/tip/1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0
-Author:     Ingo Molnar <mingo@elte.hu>
-AuthorDate: Thu, 14 Oct 2010 08:09:42 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 14 Oct 2010 08:09:42 +0200
+Hi,
 
-perf, ARM: Fix sysfs bits removal build failure
+I was moving 26GB from one disk to another while dpkg was installing
+packages. While transferring, dpkg completely froze. I got the following
+kernel messages explaining that the process was blocked for more than 120
+seconds. Once the transfer finished dpkg resumed. I'm running 64bit kernel
+version 2.6.32 (debian 2.6.32-5-amd64 version 2.6.32-23).
 
-Fix this linux-next build failure that Stephen reported:
+Is this a bug? If not, why is the scheduler not being fair?
 
- arch/arm/kernel/perf_event.c: In function 'armpmu_event_init':
- arch/arm/kernel/perf_event.c:543: error: request for member 'num_events' in something not a structure or union
+[6859080.516111] INFO: task dpkg:3254 blocked for more than 120 seconds.
+[6859080.516141] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[6859080.516176] dpkg          D ffff88000180f9f0     0  3254   3085
+0x00000000
+[6859080.516187]  ffff8800792e0710 0000000000000086 ffff88003bb9fdb8
+ffff88003bb9fdb4
+[6859080.516197]  0000000000000000 0000000000000000 000000000000f8a0
+ffff88003bb9ffd8
+[6859080.516205]  0000000000015640 0000000000015640 ffff88003774d4c0
+ffff88003774d7b8
+[6859080.516214] Call Trace:
+[6859080.516234]  [<ffffffff810b3516>] ? find_get_pages_tag+0x46/0xdd
+[6859080.516246]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859080.516254]  [<ffffffff81107454>] ? bdi_sched_wait+0x9/0xe
+[6859080.516263]  [<ffffffff812f9a56>] ? __wait_on_bit+0x41/0x70
+[6859080.516271]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859080.516278]  [<ffffffff812f9af0>] ? out_of_line_wait_on_bit+0x6b/0x77
+[6859080.516287]  [<ffffffff81064b28>] ? wake_bit_function+0x0/0x23
+[6859080.516296]  [<ffffffff811074cc>] ? sync_inodes_sb+0x73/0x12a
+[6859080.516304]  [<ffffffff8110b051>] ? __sync_filesystem+0x4b/0x70
+[6859080.516311]  [<ffffffff8110b110>] ? sync_filesystems+0x9a/0xe3
+[6859080.516317]  [<ffffffff8110b19e>] ? sys_sync+0x1c/0x2e
+[6859080.516329]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
+[6859320.516161] INFO: task dpkg:3408 blocked for more than 120 seconds.
+[6859320.516192] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[6859320.516227] dpkg          D 0000000000000002     0  3408   3085
+0x00000000
+[6859320.516237]  ffffffff8145b1f0 0000000000000082 0000000771257db8
+ffff880071257e60
+[6859320.516247]  0000000000000000 0000000000000000 000000000000f8a0
+ffff880071257fd8
+[6859320.516255]  0000000000015640 0000000000015640 ffff8800792e1530
+ffff8800792e1828
+[6859320.516263] Call Trace:
+[6859320.516282]  [<ffffffff810b3516>] ? find_get_pages_tag+0x46/0xdd
+[6859320.516294]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859320.516302]  [<ffffffff81107454>] ? bdi_sched_wait+0x9/0xe
+[6859320.516311]  [<ffffffff812f9a56>] ? __wait_on_bit+0x41/0x70
+[6859320.516319]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859320.516326]  [<ffffffff812f9af0>] ? out_of_line_wait_on_bit+0x6b/0x77
+[6859320.516335]  [<ffffffff81064b28>] ? wake_bit_function+0x0/0x23
+[6859320.516343]  [<ffffffff811074cc>] ? sync_inodes_sb+0x73/0x12a
+[6859320.516352]  [<ffffffff8110b051>] ? __sync_filesystem+0x4b/0x70
+[6859320.516358]  [<ffffffff8110b110>] ? sync_filesystems+0x9a/0xe3
+[6859320.516365]  [<ffffffff8110b19e>] ? sys_sync+0x1c/0x2e
+[6859320.516376]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
+[6859440.516087] INFO: task dpkg:3408 blocked for more than 120 seconds.
+[6859440.516116] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[6859440.516151] dpkg          D 0000000000000002     0  3408   3085
+0x00000000
+[6859440.516161]  ffffffff8145b1f0 0000000000000082 0000000771257db8
+ffff880071257e60
+[6859440.516171]  0000000000000000 0000000000000000 000000000000f8a0
+ffff880071257fd8
+[6859440.516180]  0000000000015640 0000000000015640 ffff8800792e1530
+ffff8800792e1828
+[6859440.516188] Call Trace:
+[6859440.516207]  [<ffffffff810b3516>] ? find_get_pages_tag+0x46/0xdd
+[6859440.516218]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859440.516226]  [<ffffffff81107454>] ? bdi_sched_wait+0x9/0xe
+[6859440.516236]  [<ffffffff812f9a56>] ? __wait_on_bit+0x41/0x70
+[6859440.516244]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859440.516251]  [<ffffffff812f9af0>] ? out_of_line_wait_on_bit+0x6b/0x77
+[6859440.516260]  [<ffffffff81064b28>] ? wake_bit_function+0x0/0x23
+[6859440.516268]  [<ffffffff811074cc>] ? sync_inodes_sb+0x73/0x12a
+[6859440.516276]  [<ffffffff8110b051>] ? __sync_filesystem+0x4b/0x70
+[6859440.516283]  [<ffffffff8110b110>] ? sync_filesystems+0x9a/0xe3
+[6859440.516290]  [<ffffffff8110b19e>] ? sys_sync+0x1c/0x2e
+[6859440.516300]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
+[6859560.516078] INFO: task dpkg:3408 blocked for more than 120 seconds.
+[6859560.516108] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[6859560.516143] dpkg          D 0000000000000002     0  3408   3085
+0x00000000
+[6859560.516154]  ffffffff8145b1f0 0000000000000082 0000000771257db8
+ffff880071257e60
+[6859560.516164]  0000000000000000 0000000000000000 000000000000f8a0
+ffff880071257fd8
+[6859560.516172]  0000000000015640 0000000000015640 ffff8800792e1530
+ffff8800792e1828
+[6859560.516180] Call Trace:
+[6859560.516200]  [<ffffffff810b3516>] ? find_get_pages_tag+0x46/0xdd
+[6859560.516212]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859560.516220]  [<ffffffff81107454>] ? bdi_sched_wait+0x9/0xe
+[6859560.516230]  [<ffffffff812f9a56>] ? __wait_on_bit+0x41/0x70
+[6859560.516237]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859560.516245]  [<ffffffff812f9af0>] ? out_of_line_wait_on_bit+0x6b/0x77
+[6859560.516254]  [<ffffffff81064b28>] ? wake_bit_function+0x0/0x23
+[6859560.516262]  [<ffffffff811074cc>] ? sync_inodes_sb+0x73/0x12a
+[6859560.516270]  [<ffffffff8110b051>] ? __sync_filesystem+0x4b/0x70
+[6859560.516277]  [<ffffffff8110b110>] ? sync_filesystems+0x9a/0xe3
+[6859560.516284]  [<ffffffff8110b19e>] ? sys_sync+0x1c/0x2e
+[6859560.516295]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
+[6859680.520072] INFO: task dpkg:3408 blocked for more than 120 seconds.
+[6859680.520102] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs"
+disables this message.
+[6859680.520137] dpkg          D 0000000000000002     0  3408   3085
+0x00000000
+[6859680.520148]  ffffffff8145b1f0 0000000000000082 0000000771257db8
+ffff880071257e60
+[6859680.520158]  0000000000000000 0000000000000000 000000000000f8a0
+ffff880071257fd8
+[6859680.520166]  0000000000015640 0000000000015640 ffff8800792e1530
+ffff8800792e1828
+[6859680.520175] Call Trace:
+[6859680.520195]  [<ffffffff810b3516>] ? find_get_pages_tag+0x46/0xdd
+[6859680.520207]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859680.520215]  [<ffffffff81107454>] ? bdi_sched_wait+0x9/0xe
+[6859680.520225]  [<ffffffff812f9a56>] ? __wait_on_bit+0x41/0x70
+[6859680.520233]  [<ffffffff8110744b>] ? bdi_sched_wait+0x0/0xe
+[6859680.520240]  [<ffffffff812f9af0>] ? out_of_line_wait_on_bit+0x6b/0x77
+[6859680.520248]  [<ffffffff81064b28>] ? wake_bit_function+0x0/0x23
+[6859680.520257]  [<ffffffff811074cc>] ? sync_inodes_sb+0x73/0x12a
+[6859680.520265]  [<ffffffff8110b051>] ? __sync_filesystem+0x4b/0x70
+[6859680.520272]  [<ffffffff8110b110>] ? sync_filesystems+0x9a/0xe3
+[6859680.520279]  [<ffffffff8110b19e>] ? sys_sync+0x1c/0x2e
+[6859680.520291]  [<ffffffff81010b42>] ? system_call_fastpath+0x16/0x1b
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: paulus <paulus@samba.org>
-LKML-Reference: <20101014164925.4fa16b75.sfr@canb.auug.org.au>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/arm/kernel/perf_event.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Justin Madru
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index ad19c27..55addc8 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -534,7 +534,7 @@ static int armpmu_event_init(struct perf_event *event)
- 	event->destroy = hw_perf_event_destroy;
- 
- 	if (!atomic_inc_not_zero(&active_events)) {
--		if (atomic_read(&active_events) > armpmu.num_events) {
-+		if (atomic_read(&active_events) > armpmu->num_events) {
- 			atomic_dec(&active_events);
- 			return -ENOSPC;
- 		}
+-----------------------------------------------------------------------------------------------------------------------
+Send big files for free. Simple steps. No registration.
+Visit now http://www.nawelny.com
