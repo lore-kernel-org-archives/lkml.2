@@ -1,121 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754556Ab0JNEb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 00:31:57 -0400
-Received: from smtp104.sbc.mail.ac4.yahoo.com ([76.13.13.243]:27708 "HELO
-	smtp104.sbc.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752762Ab0JNEbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 00:31:55 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: QNrm.tsVM1n3yaArlV1cs0OW5Z449294Jg2YFF8t.aFMZwi
- _p4uC_0Q5Vnzc_yFvw6kxlyaHf2RbmoOFKHBf2jsg6uwYKElWMaM_hO4vgR7
- HjvU8klT_zG8RV22TvVtS4PRcVfyAiQkxiu._Gcs3XUffEbPvh2Gha3ZZ18H
- dDW4ZH95coytZaqQkdsci9cJtvqi1vRvPfC0IB04bzYu1BffKTOF.vVhYsCH
- GanjE7kRiLtYmwl5b7J3upWF1hHXMsjxbsCErtrFCWrUzAeLwj3xaWAcKLh_
- eehGV.iZPU_mDrZgTOx8t2lg-
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 4/5] tcm: Unify UNMAP and WRITE_SAME w/ UNMAP=1
-	subsystem plugin handling
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-In-Reply-To: <20101014000341.GA15583@lst.de>
-References: <1286959700-3489-1-git-send-email-nab@linux-iscsi.org>
-	 <20101013111920.GB26366@lst.de>
-	 <1287003368.7334.64.camel@haakon2.linux-iscsi.org>
-	 <20101014000341.GA15583@lst.de>
-Content-Type: text/plain
-Date: Wed, 13 Oct 2010 21:27:07 -0700
-Message-Id: <1287030428.9909.20.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1754560Ab0JNEf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 00:35:58 -0400
+Received: from void.printf.net ([89.145.121.20]:39802 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753082Ab0JNEf5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 00:35:57 -0400
+Date: Thu, 14 Oct 2010 05:35:51 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Alex Dubov <oakad@yahoo.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] tifm: fix kconfig dependencies
+Message-ID: <20101014043551.GA4760@void.printf.net>
+References: <20101013180729.766f2b3b.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101013180729.766f2b3b.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-14 at 02:03 +0200, Christoph Hellwig wrote:
-> On Wed, Oct 13, 2010 at 01:56:08PM -0700, Nicholas A. Bellinger wrote:
-> > > The parsing of the WRITE SAME and UNMAP CDBs is something the generic
-> > > CDB parsing code should do,
-> > 
-> > Ok, so you are thinking about a seperate transport_emulate_write_same()
-> > and transport_emulate_unmap() called from
-> > transport_emulate_control_cdb(), right..?
+Hi,
+
+On Wed, Oct 13, 2010 at 06:07:29PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> More or less yes.
+> Fix kconfig dependency warning to satisfy dependencies:
 > 
-
-Ok, then I shall convert transport_generic_[unmap,write_same]() which
-currently call blk_issue_discard() directly from IBLOCK code, and turn
-the ->do_discard() subsystem API op into the LBA+Range subsystem call
-with the underlying IBLOCK specific call to blk_issue_discard().
-
-> > >  and just give a range of lists of lba/len
-> > > pairs to the ->discard method in the backed.
-> > 
-> > Yes, these are already available from the passed struct
-> > se_task->task_lba and ->task_size values.
+> warning: (MMC_TIFM_SD && MMC && EXPERIMENTAL && PCI || MEMSTICK_TIFM_MS && MEMSTICK && EXPERIMENTAL && PCI) selects TIFM_CORE which has unmet direct dependencies (MISC_DEVICES && EXPERIMENTAL && PCI)
 > 
-> Not for UNMAP.  WRITE SAME in it's various incarnations uses the
-> standard LBA/LEN encoding and you seem to parse it nicely.  But for
-> UNMAP the lba/len pairs are in the command payload.  To support things
-> genericly you'd need a standard way to pass them.  If you want to
-> limit yourself to one lba/len pair for one the scheme could work,
-> though.
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> ---
+>  drivers/memstick/host/Kconfig |    1 +
+>  drivers/mmc/host/Kconfig      |    1 +
+>  2 files changed, 2 insertions(+)
 > 
+> --- linux-next-20101013.orig/drivers/memstick/host/Kconfig
+> +++ linux-next-20101013/drivers/memstick/host/Kconfig
+> @@ -7,6 +7,7 @@ comment "MemoryStick Host Controller Dri
+>  config MEMSTICK_TIFM_MS
+>  	tristate "TI Flash Media MemoryStick Interface support  (EXPERIMENTAL)"
+>  	depends on EXPERIMENTAL && PCI
+> +	select MISC_DEVICES
+>  	select TIFM_CORE
+>  	help
+>  	  Say Y here if you want to be able to access MemoryStick cards with
+> --- linux-next-20101013.orig/drivers/mmc/host/Kconfig
+> +++ linux-next-20101013/drivers/mmc/host/Kconfig
+> @@ -277,6 +277,7 @@ config MMC_MXC
+>  config MMC_TIFM_SD
+>  	tristate "TI Flash Media MMC/SD Interface support  (EXPERIMENTAL)"
+>  	depends on EXPERIMENTAL && PCI
+> +	select MISC_DEVICES
+>  	select TIFM_CORE
+>  	help
+>  	  Say Y here if you want to be able to access MMC/SD cards with
 
-Yes, this is what transport_generic_unmap() is currently doing when
-called from iblock_do_discard() an walks the received UNMAP payload.
+Acked-by: Chris Ball <cjb@laptop.org>
+for the mmc hunk.
 
-> > Yes, so the problem of trying to make this code generic (eg: outside of
-> > TCM subsystem plugins) is that blk_issue_discard() takes struct
-> > block_device, which means we the subsystem plugin has to locate struct
-> > block_device inside of non generic cide.
-> 
-> blk_issue_discard is in no way generic.  It's 100% iblock code and
-> really doesn't belong into any other backend.
+Andrew, perhaps you should take this to keep the mmc/memstick trees
+from modifying files outside of their namespace? (Or we could just
+ask Randy to split up the patch; whatever is preferred.)
 
-Agreed.
+Thanks,
 
-> And btw,
-> blk_issue_discard is rather suboptimal even in iblock - it's a
-> synchronous function that will stall progress of the thread handling it.
-> If you want better performance you'll need to opencode the content of
-> it to allow an asynchronous completion handler.  But given that discard
-> isn't really a critical feature at this point this could easily be
-> left for later with a comment.
-> 
-
-I have not gotten around to the async discard caller just yet, but this
-is straight-forward enough for the next round..
-
-> > So, then the main issue becomes FILEIO + block level discard and how to
-> > issue an blk_issue_discard() from struct fileio in the most sane way.
-> > If there is no sane way then I will just drop this bit, or just do the
-> > file level 'hole punch' that you are speaking about.
-> 
-> Right now there is no good way to do a block device discard or file
-> hole punch at the level where the file backend operates.
-> 
-
-Understood.  In that case I will go ahead and drop the FILEIO discard
-support all together for .37 code, and we can revist as necessary down
-the road.
-
-Best,
-
---nab
-
-
-
-
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
