@@ -1,122 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab0JNL1W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 07:27:22 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:50981 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab0JNL1U (ORCPT
+	id S1753323Ab0JNLaP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 07:30:15 -0400
+Received: from bohort.kerlabs.com ([90.80.97.101]:33756 "EHLO
+	bohort.kerlabs.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753109Ab0JNLaN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 07:27:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=wYyuds5Am9VFsMdeuLE6u0V4bQrwMD+rNXXyfLiR1YyZ7zdV1yVGShNxHzLDZtDMHB
-         JC29lEa27aVJ/HsO1NYv04w1oCWiJ6FKybJiiOXROlmo1alT8baCWScL50BU0q3EYtEV
-         EzstZvd54vvQGUbnYh/9SfqpnmSmbdJiLlmZg=
-Date: Thu, 14 Oct 2010 13:27:15 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, David Sharp <dhsharp@google.com>,
-        linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>
-Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
-Message-ID: <20101014112713.GB5336@nowhere>
-References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com> <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com> <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com> <1287013830.3673.224.camel@frodo> <20101014000027.GA15510@Krystal>
+	Thu, 14 Oct 2010 07:30:13 -0400
+From: Louis Rilling <louis.rilling@kerlabs.com>
+To: linux-kernel@vger.kernel.org
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        =?utf-8?q?Matthieu=20Fertr=C3=A9?= <matthieu.fertre@kerlabs.com>,
+        Louis Rilling <louis.rilling@kerlabs.com>
+Subject: [RESEND PATCH] futex: fix key reference counter in case of requeue.
+Date: Thu, 14 Oct 2010 13:30:05 +0200
+Message-Id: <1287055805-18233-1-git-send-email-louis.rilling@kerlabs.com>
+X-Mailer: git-send-email 1.5.6.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101014000027.GA15510@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 08:00:27PM -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Wed, 2010-10-13 at 16:19 -0700, David Sharp wrote:
-> > > Google uses kernel tracing aggressively in the its data centers. We
-> > 
-> > Thanks!
-> > 
-> > > wrote our own kernel tracer, ktrace. However ftrace, perf and LTTng
-> > > all have a better feature set than ktrace, so we are abandoning that
-> > > code.
-> > 
-> > Cool!
-> > 
-> > > 
-> > > We see several implementations of tracing aimed at the mainline kernel
-> > > and wanted a fair comparison of each of them to make sure they will
-> > > not significantly impact performance. A tracing toolkit that is too
-> > > expensive is not usable in our environment.
-> > > 
-> > 
-> > [ snip for now (I'm traveling) ]
-> > 
-> > > This first set of benchmark results compares ftrace to ktrace. The
-> > > numbers below are the "on" result minus the "off" result for each
-> > > configuration.
-> > > 
-> > > ktrace: 200ns  (tracepoint: kernel_getuid)
-> > > ftrace: 224ns   (tracepoint: timer:sys_getuid)
-> > > ftrace: 587ns   (tracepoint: syscalls:sys_enter_getuid)
-> > 
-> > 
-> > > The last result shows that the syscall tracing is about twice as
-> > > expensive as a normal tracepoint, which is interesting.
-> > 
-> > Argh, the syscall tracing has a lot of overhead. There is only one
-> > tracepoint that is hooked into the ptrace code, and will save all
-> > registers before calling the functions. It enables tracing on all
-> > syscalls and there's a table that decides whether or not to trace the
-> > syscall.
-> > 
-> > So I'm not surprised with the result that the syscall trace point is so
-> > slow (note, perf uses the same infrastructure).
-> 
-> Yes, the interesting result in this first set of benchmarks is that syscall
-> tracing is quite slow. We could do better though. I think a different scheme
-> for syscall tracing that would not rely of saving all registers is needed. We
-> could do this automatically by adding tracepoints in the actual syscall
-> functions by modifying the DEFINE_SYSCALL*() macros. I would leave the current
-> syscall tracing mode as the default though, especially until gcc 4.5 and asm
-> gotos are more broadly adopted.
-> 
-> So the modified DEFINE_SYSCALL*() macros would generate code that looks like:
-> (approximately)
-> 
-> static int _syscall_name(type1, name1);
-> 
-> int syscall_name(type1 name1)
-> {
->         int ret;
-> 
->         trace_syscall_entry_name(name1);
->         ret = _syscall_name(name1);
->         trace_syscall_exit_name(name1);
->         return ret;
-> }
-> 
-> static int _syscall_name(typ�1, name1)
-> 
-> 
-> So when we expand:
-> 
-> DEFINE_SYSCALL1(name, type1, name1)
-> {
->   .. actual body ...
-> }
-> 
-> We have the tracepoints automatically added.
-> 
-> Mathieu
+From: Matthieu Fertré <matthieu.fertre@kerlabs.com>
 
+This patch ensures that we are referring to the right key when dropping
+reference for the futex_wait operation.
 
+The following scenario explains a typical case where the bug was
+happening:
 
-Looks like that would be a good improvement, it would also
-simplify some tricky code parts I think.
+Process P calls futex_wait() on futex identified by 'key1'. 2 references
+are taken on this key: one for the struct futex_q itself, and one for the
+futex_wait operation.
+If now, process P is requeued on a futex identified by 'key2', its
+futex_q->key is updated from 'key1' to 'key2' and a reference is got
+to 'key2' and one is dropped to 'key1'.
+Later, another process calls futex_wake(): it gets a reference to
+'key2', wakes process P, and drops reference to 'key2'.
+Once process P is woken up, it should unqueue, drop reference to 'key2'
+(the one referring to the futex_q, this is done in unqueue_me())
+and to 'key1' (the one referring to futex_wait operation). Without this
+patch it drops reference to 'key2' instead of 'key1'.
+
+Signed-off-by: Matthieu Fertré <matthieu.fertre@kerlabs.com>
+Signed-off-by: Louis Rilling <louis.rilling@kerlabs.com>
+---
+ kernel/futex.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 6a3a5fa..bed6717 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -1791,6 +1791,7 @@ static int futex_wait(u32 __user *uaddr, int fshared,
+ 	struct restart_block *restart;
+ 	struct futex_hash_bucket *hb;
+ 	struct futex_q q;
++	union futex_key key;
+ 	int ret;
+ 
+ 	if (!bitset)
+@@ -1817,6 +1818,9 @@ retry:
+ 	if (ret)
+ 		goto out;
+ 
++	/* save the key in case of requeue. */
++	key = q.key;
++
+ 	/* queue_me and wait for wakeup, timeout, or a signal. */
+ 	futex_wait_queue_me(hb, &q, to);
+ 
+@@ -1833,7 +1837,7 @@ retry:
+ 	 * victim of a spurious wakeup as well.
+ 	 */
+ 	if (!signal_pending(current)) {
+-		put_futex_key(fshared, &q.key);
++		put_futex_key(fshared, &key);
+ 		goto retry;
+ 	}
+ 
+@@ -1857,7 +1861,7 @@ retry:
+ 	ret = -ERESTART_RESTARTBLOCK;
+ 
+ out_put_key:
+-	put_futex_key(fshared, &q.key);
++	put_futex_key(fshared, &key);
+ out:
+ 	if (to) {
+ 		hrtimer_cancel(&to->timer);
+-- 
+1.5.6.5
 
