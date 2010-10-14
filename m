@@ -1,93 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab0JNTs0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 15:48:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53188 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754945Ab0JNTsY (ORCPT
+	id S1755987Ab0JNTtq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 15:49:46 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:60211 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755082Ab0JNTtp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 15:48:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=aEle1ACgmBGuM36j5dkwIO8RnLSovqGZKWGLHJKTu0y3IBUZQLB4ee5I2iVArfwKmH
-         EXhLyN/dFLa6oQFYXMIRgDjYZMf+YwEunEZEwB4JHHZGSAhptSBD+MCz+8G/OwxiHSY6
-         bRY1j9A6101iM2IubXMaunNkOVkf6jToV8WiQ=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: [PATCH 2/2] x86: Barf when vmalloc and kmemcheck faults happen in NMI
-Date: Thu, 14 Oct 2010 21:42:51 +0200
-Message-Id: <1287085371-29177-3-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
-References: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
+	Thu, 14 Oct 2010 15:49:45 -0400
+Message-ID: <4CB75E81.7000208@vlnb.net>
+Date: Thu, 14 Oct 2010 23:48:17 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Greg KH <greg@kroah.com>
+CC: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        scst-devel <scst-devel@lists.sourceforge.net>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Vu Pham <vuhuong@mellanox.com>,
+        Bart Van Assche <bart.vanassche@gmail.com>,
+        James Smart <James.Smart@Emulex.Com>, Joe Eykholt <jeykholt@cisco.com>,
+        Andy Yan <ayan@marvell.com>, Chetan Loke <generationgnu@yahoo.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Hannes Reinecke <hare@suse.de>,
+        Richard Sharpe <realrichardsharpe@gmail.com>,
+        Daniel Henrique Debonzi <debonzi@linux.vnet.ibm.com>
+Subject: Re: [PATCH 8/19]: SCST SYSFS interface implementation
+References: <4CA653F0.1010008@vlnb.net> <4CA656AD.8020408@vlnb.net> <20101009212047.GB27180@kroah.com> <4CB36592.6060909@vlnb.net> <20101011213235.GA11489@kroah.com> <4CB4AEB9.30501@vlnb.net> <20101012190345.GA25737@kroah.com>
+In-Reply-To: <20101012190345.GA25737@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V02:K0:3fEM7GLJuobPt9nn1DyS2v68QctfMp7+nqG+fxXa0ge
+ 7Q08CcDhVdxo9DJQROWKBSNaI+UFRcTaFsg8lWt+PMVpQcZla1
+ P6ljW2+CYzcav94ecZDkJxok4lByedQ6NJuerWlZqJppqK/LP4
+ FQNqwUlgvlBFGQDd5aFDXd3xIL21SeusSopaBuHt7FbB+iiJPV
+ CNJsgG52H4fxaUTJVvTpA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In x86, faults exit by executing the iret instruction, which then
-reenables NMIs if we faulted in NMI context. Then if a fault
-happens in NMI, another NMI can nest after the fault exits.
+Greg KH, on 10/12/2010 11:03 PM wrote:
+> On Tue, Oct 12, 2010 at 10:53:45PM +0400, Vladislav Bolkhovitin 
+> wrote:
+>>> Seriously, you CAN NOT DO THIS!  If you embed a kobject in a 
+>>> different structure, then you have to rely on the kobject to 
+>>> handle the reference counting for that larger structure.  To do 
+>>> ANYTHING else is a bug and wrong.
+>>> 
+>>> Please read the kobject documentation and fix this code up
+>>> before submitting it again.
+>> 
+>> Sure, I have read it and we rely on the kobject to handle the 
+>> reference counting for the larger structure. It's only done not in
+>>  a straightforward way, because the way it is implemented is 
+>> simpler for us + for some other reasons.
+> 
+> Sorry, but I don't buy it.
+> 
+>> For instance, for structure scst_tgt it is done using 
+>> tgt_kobj_release_cmpl completion. When a target driver calls 
+>> scst_unregister_target(), scst_unregister_target() in the end
+>> calls scst_tgt_sysfs_del(), which calls kobject_put(&tgt->tgt_kobj)
+>> and wait for tgt_kobj_release_cmpl to complete.
+> 
+> Wait, why shouldn't the release then free the memory?
+> 
+>> At this point tgt_kobj can be taken only by the SYSFS. 
+>> Scst_tgt_sysfs_del() can wait as much as needed until the SYSFS 
+>> code released it. As far as I can see, it can't be forever, so it's
+>> OK.
+> 
+> I don't understand, why can't you just free the memory, what are you 
+> having to wait for?
+> 
+> You are only having one kobject for your structure, right?  If so, 
+> then free the memory in the release, to wait for something else to 
+> free the memory is wrong.
+> 
+>> Then, after scst_tgt_sysfs_del() returned,
+>> scst_unregister_target() will free scst_tgt together with embedded
+>> tgt_kobj.
+> 
+> As no other kernel code is like this, I don't think it's valid to be 
+> doing so, sorry.
+> 
+> Please fix this.
 
-But we don't yet support nested NMIs because we have only one NMI
-stack. To prevent from that, check that vmalloc and kmemcheck
-faults don't happen in this context. Most of the other kernel faults
-in NMIs can be more easily spotted by finding explicit
-copy_from,to_user() calls on review.
+I'm sorry, but after I started implementing it I'm confused..
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/x86/mm/fault.c               |    4 ++++
- arch/x86/mm/kmemcheck/kmemcheck.c |    2 ++
- 2 files changed, 6 insertions(+), 0 deletions(-)
+Originally I thought you are asking to make tgt_kobj be not embedded in
+struct scst_tgt, but a pointer in it, so scst_tgtt_release() will
+kfree() tgt_kobj. Hence, all the above I wrote about why we have
+tgt_kobj embedded.
 
-diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-index 4c4508e..a24c6cf 100644
---- a/arch/x86/mm/fault.c
-+++ b/arch/x86/mm/fault.c
-@@ -251,6 +251,8 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
- 	if (!(address >= VMALLOC_START && address < VMALLOC_END))
- 		return -1;
- 
-+	WARN_ON_ONCE(in_nmi());
-+
- 	/*
- 	 * Synchronize this task's top level page-table
- 	 * with the 'reference' page table.
-@@ -369,6 +371,8 @@ static noinline __kprobes int vmalloc_fault(unsigned long address)
- 	if (!(address >= VMALLOC_START && address < VMALLOC_END))
- 		return -1;
- 
-+	WARN_ON_ONCE(in_nmi());
-+
- 	/*
- 	 * Copy kernel mappings over when needed. This can also
- 	 * happen within a race in page table update. In the later
-diff --git a/arch/x86/mm/kmemcheck/kmemcheck.c b/arch/x86/mm/kmemcheck/kmemcheck.c
-index b3b531a..d87dd6d 100644
---- a/arch/x86/mm/kmemcheck/kmemcheck.c
-+++ b/arch/x86/mm/kmemcheck/kmemcheck.c
-@@ -631,6 +631,8 @@ bool kmemcheck_fault(struct pt_regs *regs, unsigned long address,
- 	if (!pte)
- 		return false;
- 
-+	WARN_ON_ONCE(in_nmi());
-+
- 	if (error_code & 2)
- 		kmemcheck_access(regs, address, KMEMCHECK_WRITE);
- 	else
--- 
-1.6.2.3
+But now I feel like you are asking that scst_tgtt_release() should
+kfree() tgt, not tgt_kobj.
 
+Is it correct?
+
+If yes, we did it this way to make errors processing uniform and
+straightforward. In the code (simplified) our current errors recovery
+looks like:
+
+void scst_tgt_sysfs_del(struct scst_tgt *tgt)
+{
+...
+	kobject_put(&tgt->tgt_kobj);
+	wait_for_completion(&tgt->tgt_kobj_release_cmpl);
+}
+
+int scst_tgt_sysfs_create(struct scst_tgt *tgt)
+{
+	init_completion(&tgt->tgt_kobj_release_cmpl);
+
+	res = kobject_init_and_add(&tgt->tgt_kobj, &tgt_ktype,
+			&tgt->tgtt->tgtt_kobj, tgt->tgt_name);
+	if (res != 0)
+		goto out;
+
+	res = sysfs_create_file(&tgt->tgt_kobj,
+			&tgt_enable_attr.attr);
+	if (res != 0)
+		goto out_err;
+...
+
+out:
+	return res;
+
+out_err:
+	scst_tgt_sysfs_del(tgt);
+	goto out;
+}
+
+struct scst_tgt *scst_register_target()
+{
+	struct scst_tgt *tgt;
+	int rc = 0;
+
+	TRACE_ENTRY();
+
+	rc = scst_alloc_tgt();
+	if (rc != 0)
+		goto out;
+...
+	tgt->tgt_name = kmalloc(strlen(target_name) + 1, GFP_KERNEL);
+	if (tgt->tgt_name == NULL)
+		goto out_free_tgt;
+...
+	mutex_lock();
+
+	rc = scst_tgt_sysfs_create(tgt);
+	if (rc < 0)
+		goto out_unlock;
+
+	tgt->default_acg = scst_alloc_add_acg();
+	if (tgt->default_acg == NULL)
+		goto out_sysfs_del;
+
+...
+
+out:
+	return tgt;
+
+out_sysfs_del:
+	mutex_unlock();
+	scst_tgt_sysfs_del(tgt)
+	goto out_free_tgt;
+
+out_unlock:
+	mutex_unlock();
+
+out_free_tgt:
+	scst_free_tgt(tgt);
+}
+
+We have a simple and straightforward errors recovery semantic: if
+scst_tgt_sysfs_create() failed, then tgt_kobj returned deinited as if
+scst_tgt_sysfs_create() has never been called. This is a regular
+practice in the kernel: don't return half-initialized objects.
+
+If we implement freeing tgt in scst_tgtt_release() as you requesting, we
+will need to add in the error recovery path additional recovery code to
+track and delete half-initialized tgt_kobj. Particularly, we will need
+to add additional flag to track that tgt_kobj initialized, hence needs
+deleting. Similar flag and code will be added in all similar to scst_tgt
+SCST objects.
+
+This code will be quite errors prone as you can see on the example of
+device_register() which on failure requires device_put() to be called
+(http://lkml.org/lkml/2010/9/19/93). (I'm not questioning
+device_register() implementation, there might be very good reasons to
+implement it this way (I don't know), I mean, it is too easy to forget
+to do the needed recovery of the half-created objects as this case
+demonstrating.)
+
+Could you confirm if I understand you correctly and need to implement
+freeing tgt in the kobject release() function, please?
+
+Thanks you very much,
+Vlad
