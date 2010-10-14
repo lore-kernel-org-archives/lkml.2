@@ -1,78 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab0JNHrJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 03:47:09 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:56102 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754640Ab0JNHrI (ORCPT
+	id S1754864Ab0JNHwv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 03:52:51 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:53341 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754794Ab0JNHwu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 03:47:08 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4CB6B570.6030509@s5r6.in-berlin.de>
-Date: Thu, 14 Oct 2010 09:46:56 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] ieee1394: remove the old IEEE 1394 driver stack
-References: <tkrat.a80c49c9cfb3380e@s5r6.in-berlin.de>	 <tkrat.3d7c94e2ecb3a995@s5r6.in-berlin.de> <1287014362.23588.1.camel@maxim-laptop>
-In-Reply-To: <1287014362.23588.1.camel@maxim-laptop>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Oct 2010 03:52:50 -0400
+Subject: Re: [PATCH v3 1/7] sched: introduce primitives to account for CFS
+ bandwidth tracking
+From: Peter Zijlstra <peterz@infradead.org>
+To: balbir@linux.vnet.ibm.com
+Cc: Bharata B Rao <bharata@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
+        Nikhil Rao <ncrao@google.com>
+In-Reply-To: <20101013130018.GC3914@balbir.in.ibm.com>
+References: <20101012074910.GA9893@in.ibm.com>
+	 <20101012075023.GB9893@in.ibm.com>
+	 <20101013130018.GC3914@balbir.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 14 Oct 2010 09:52:17 +0200
+Message-ID: <1287042737.29097.153.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maxim Levitsky wrote:
-> On Sun, 2010-10-10 at 00:12 +0200, Stefan Richter wrote:
->> The drivers
->>   - ohci1394 (controller driver)
->>   - ieee1394 (core)
->>   - dv1394, raw1394, video1394 (userspace ABI)
->>   - eth1394, sbp2 (protocol drivers)
->> are replaced by
->>   - firewire-ohci (controller driver)
->>   - firewire-core (core and userspace ABI)
->>   - firewire-net, firewire-sbp2 (protocol drivers)
->> which are more featureful, better performing, and more secure than the older
->> drivers; all with a smaller and more modern code base.
-> But new stack doesn't have working networking support...
+On Wed, 2010-10-13 at 18:30 +0530, Balbir Singh wrote:
 
-firewire-net did work for me to /some/ degree when I tested it last:  Transfer
-s via FTP or SCP command line clients was OK, even with huge files, but an
-attempt to use FTP via desktop file manager ended in kernel crash.
+> > -static void start_rt_bandwidth(struct rt_bandwidth *rt_b)
+> > +static void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
+> >  {
+> > -	ktime_t now;
+> > +	unsigned long delta;
+> > +	ktime_t soft, hard, now;
+> > +
+> > +	for (;;) {
+> > +		if (hrtimer_active(period_timer))
+> > +			break;
+> > 
+> > +		now = hrtimer_cb_get_time(period_timer);
+> > +		hrtimer_forward(period_timer, now, period);
+> > +
+> > +		soft = hrtimer_get_softexpires(period_timer);
+> > +		hard = hrtimer_get_expires(period_timer);
+> > +		delta = ktime_to_ns(ktime_sub(hard, soft));
+> > +		__hrtimer_start_range_ns(period_timer, soft, delta,
+> > +					 HRTIMER_MODE_ABS_PINNED, 0);
+> 
+> This code can be replaced with
+> 
+> hrtimer_start_expires(period_timer, HRTIMER_MODE_ABS_PINNED) if we
+> don't care about wakeup_softirq, is there a reason we prefer to keep
+> wakeup as 0?
 
-In contrast, eth1394 worked to /some/ other degree for me when I tested it
-last:  It never crashed, but it had irregular performance (due to DMA context
-program overflow, besides ieee1394's tlabel recycling in a wrong context) when
-paired with {Linux,Windows,OS X}/x86, whereas transfers from and to an OS
-X/PPC peer always failed due to data corruption.
+You cannot do wakeups while holding the rq->lock, can you? :-)
 
-That's what I meant with
->>   - The experimental firewire-net is reportedly less stable than its
->>     experimental cousin eth1394.
+> > +	}
+> > +}
 
-Maybe these words were too kind to firewire-net.
 
-eth1394 was never stabilized because there was nobody there to do so.  Will
-somebody be there to stabilize firewire-net?  A while ago I spent the time to
-fix an SMP bug in firewire-net.  Lately I looked a bit into the currently
-known crash bug but obviously did not resolve it yet.  At the moment I suspect
-a race between fw_card_driver.send_request and fw_card_driver.cancel_packet
-but did not find a hole in that code yet.
+> > +static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
+> > +{
+> > +	struct cfs_bandwidth *cfs_b =
+> > +		container_of(timer, struct cfs_bandwidth, period_timer);
+> > +	ktime_t now;
+> > +	int overrun;
+> > +	int idle = 0;
+> > +
+> > +	for (;;) {
+> > +		now = hrtimer_cb_get_time(timer);
+> > +		overrun = hrtimer_forward(timer, now, cfs_b->period);
+> > +
+> > +		if (!overrun)
+> > +			break;
+> 
+> What is the significance of overrun? overrun is set when delta >
+> interval. The logic seems to be that hrtimer is forwarded in steps of
+> cfs_b->period till we reach the desired time.
+> 
 
-Overall I am not convinced that this or any of the other open issues that I
-mentioned warrants to stretch out the coexistence of two 1394 kernel stacks
-further.  Many distributors still enable only the old, buggy, virtually
-unmaintained stack.  Some distributors enable both stacks but are not aware
-that they then should also provide a modprobe blacklist file, and their users
-end up running a random set of drivers.  Until 2.6.36-rc4 inclusive that
-usually seemed to be the old stack; from 2.6.36-rc5 onwards that randomness
-will probably be skewed towards the new stack.  There is only one way to fix
-that only seemingly trivial deployment issue.
--- 
-Stefan Richter
--=====-==-=- =-=- -===-
-http://arcgraph.de/sr/
+Overrun is the number of periods missed. The goal is to increment the
+quota for each period, if the timer is late 3 periods, we still need to
+increment it 3 times, that's what overrun does.
+
+> > +
+> > +		idle = do_sched_cfs_period_timer(cfs_b, overrun);
+> > +	}
+> > +
+> > +	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
+> > +}
+
+> > +static void start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
+> > +{
+> > +	if (cfs_b->quota == RUNTIME_INF)
+> > +		return;
+> > +
+> > +	if (hrtimer_active(&cfs_b->period_timer))
+> > +		return;
+> 
+> Why the double check, start_bandwidth_timer also checks this. Is it to
+> avoid doing the check under cfs_b->lock?
+
+Basically..
+
+> > +
+> > +	raw_spin_lock(&cfs_b->lock);
+> > +	start_bandwidth_timer(&cfs_b->period_timer, cfs_b->period);
+> > +	raw_spin_unlock(&cfs_b->lock);
+> > +}
+> > +
+
+> > +#ifdef CONFIG_CFS_BANDWIDTH
+> > +static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+> > +{
+> > +	int i;
+> > +	static DEFINE_MUTEX(mutex);
+> > +
+> > +	if (tg == &init_task_group)
+> > +		return -EINVAL;
+> > +
+> > +	if (!period)
+> > +		return -EINVAL;
+> > +
+> > +	/*
+> > +	 * Ensure we have at least one tick of bandwidth every period.  This is
+> > +	 * to prevent reaching a state of large arrears when throttled via
+> > +	 * entity_tick() resulting in prolonged exit starvation.
+> > +	 */
+> > +	if (NS_TO_JIFFIES(quota) < 1)
+> > +		return -EINVAL;
+> 
+> I hope we document this in the Documentation :)
+
+/me went and looked up arrears in a dictionary and wonders why 'debt'
+wasn't good enough.
+
+> > +
+> > +	mutex_lock(&mutex);
+> > +	raw_spin_lock_irq(&tg->cfs_bandwidth.lock);
+> > +	tg->cfs_bandwidth.period = ns_to_ktime(period);
+> > +	tg->cfs_bandwidth.runtime = tg->cfs_bandwidth.quota = quota;
+> > +	raw_spin_unlock_irq(&tg->cfs_bandwidth.lock);
+> > +
+> > +	for_each_possible_cpu(i) {
+> 
+> Why not for_each_online_cpu()?
+
+Probably could be cured with a hotplug handler, but then you need to
+track more state iirc.
+
+> > +		struct cfs_rq *cfs_rq = tg->cfs_rq[i];
+> > +		struct rq *rq = rq_of(cfs_rq);
+> > +
+> > +		raw_spin_lock_irq(&rq->lock);
+> > +		init_cfs_rq_quota(cfs_rq);
+> > +		raw_spin_unlock_irq(&rq->lock);
+> > +	}
+> > +	mutex_unlock(&mutex);
+> > +
+> > +	return 0;
+> > +}
+
