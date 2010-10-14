@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754449Ab0JNEXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 00:23:07 -0400
-Received: from mail.atheros.com ([12.19.149.2]:24456 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750893Ab0JNEXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 00:23:05 -0400
-Message-ID: <4CB685A4.8030301@Atheros.com>
-Date: Thu, 14 Oct 2010 09:53:00 +0530
-From: Suraj Sumangala <suraj@Atheros.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1754404Ab0JNEYG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 00:24:06 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:58808 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab0JNEYF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 00:24:05 -0400
+Date: Thu, 14 Oct 2010 06:24:09 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] edac/mce_amd: fix shift warning
+Message-ID: <20101014042409.GB29342@aftab>
+References: <20101013131057.88238be6.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-CC: Kevin Hayes <kevin@Atheros.com>,
-        Luis Rodriguez <Luis.Rodriguez@Atheros.com>,
-        Marcel Holtmann <marcel@holtmann.org>,
-        "Henry Ptasinski" <henryp@broadcom.com>,
-        Suraj Sumangala <Suraj.Sumangala@Atheros.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        linux-bluetooth <linux-bluetooth@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-wireless <linux-wireless@vger.kernel.org>
-Subject: Re: Firmware versioning best practices: ath3k-2.fw rename or replace
- ath3k-1.fw ?
-References: <20101008170258.GJ10149@tux> <4CAF5488.3030706@Atheros.com> <20101008181508.GM10149@tux> <20101012211726.GE2678@broadcom.com> <1286964370.3316.6.camel@aeonflux> <AANLkTimAeoS2Vi7GhKSTrghqaOQ=XKSzjcou15dn+YDR@mail.gmail.com> <B7132A25476D334D9130FE7532F2A56314B5929629@SC1EXMB-MBCL.global.atheros.com> <AANLkTik9oYwspVG4KFbMMq63SpBp++iZe=vxOSQhxRki@mail.gmail.com>
-In-Reply-To: <AANLkTik9oYwspVG4KFbMMq63SpBp++iZe=vxOSQhxRki@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101013131057.88238be6.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Wed, Oct 13, 2010 at 04:10:57PM -0400
 
-On 10/13/2010 11:39 PM, Luis R. Rodriguez wrote:
-> Does HCI support uploading firmware? Can't we resolve this blacklist
-> crap issue if devices just used HCI to upload firmware?
+> The BIT() macro works on unsigned longs, but this warning happens
+> on i386 (X86_32), where UL is 32 bits and this value needs to be
+> 64 bits, so use open-coded ULL.
+> 
+> drivers/edac/mce_amd.c:262: warning: left shift count >= width of type
 
-HCI does not support uploading firmware. But HCI does provide options 
-for vendor specific commands that can be used for uploading firmware as 
-long as your device has enough intelligence to understand the command 
-when it comes.
+Ok, so BIT() should be fixed to work with the largest type available,
+IMHO. Let me cook up something.
 
-This is what we do for AR300x serial devices. We do not download 
-firmware,  but we do download all configuration entries as VS HCI commands.
->
->    Luis
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Doug Thompson <dougthompson@xmission.com>
+> Cc: Borislav Petkov <borislav.petkov@amd.com>
 
-Regards
-Suraj
+In the meantime, I'll push your fix to Linus, thanks for testing this on
+32-bit :).
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
