@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754920Ab0JNXgF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 19:36:05 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36550 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab0JNXgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 19:36:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 15 Oct 2010 08:30:32 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Turner <pjt@google.com>, bharata@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Nikhil Rao <ncrao@google.com>
-Subject: Re: [PATCH v3 3/7] sched: throttle cfs_rq entities which exceed
- their local quota
-Message-Id: <20101015083032.c9a1b2aa.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1287052904.29097.191.camel@twins>
-References: <20101012074910.GA9893@in.ibm.com>
-	<20101012075202.GD9893@in.ibm.com>
-	<20101013153421.b38a5c6f.kamezawa.hiroyu@jp.fujitsu.com>
-	<1287047542.29097.169.camel@twins>
-	<20101014185002.6ecb2bf5.kamezawa.hiroyu@jp.fujitsu.com>
-	<1287050395.29097.176.camel@twins>
-	<20101014190828.f835c5e2.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTikFRLXrdY6_qV5PHeSgH1Dd24ApaHs8R-ixOed=@mail.gmail.com>
-	<1287052904.29097.191.camel@twins>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	id S1754610Ab0JNXmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 19:42:54 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12643 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753004Ab0JNXmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 19:42:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,333,1283756400"; 
+   d="scan'208";a="564048809"
+Subject: Re: [PATCH 3/4] sched: drop group_capacity to 1 only if local
+ group has extra capacity
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, Venkatesh Pallipadi <venki@google.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <1287035281-25579-1-git-send-email-ncrao@google.com>
+References: <1286996978-7007-4-git-send-email-ncrao@google.com>
+	 <1287035281-25579-1-git-send-email-ncrao@google.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 14 Oct 2010 16:42:38 -0700
+Message-Id: <1287099758.2692.10.camel@sbsiddha-MOBL3.sc.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Oct 2010 12:41:44 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, 2010-10-14 at 03:25 -0700, Paul Turner wrote:
-> > > "When vcpu holds spinlock in kernel, please don't sleep.." will be nice.
-> > > Is there patch already ? 
+On Wed, 2010-10-13 at 22:48 -0700, Nikhil Rao wrote:
+> Resending this patch since the original patch was munged. Thanks to Mike
+> Galbraith for pointing this out.
 > 
-> Oh you're talking about the guest spinlock crap?
+> When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
+> only if the local group has extra capacity. For niced task balancing, we pull
+> low weight tasks away from a sched group as long as there is capacity in other
+> groups. When all other groups are saturated, we do not drop capacity of the
+> niced group down to 1. This prevents active balance from kicking out the low
+> weight threads and which hurts system utilization.
+> 
+> Signed-off-by: Nikhil Rao <ncrao@google.com>
+> ---
+>  kernel/sched_fair.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 0dd1021..da0c688 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -2030,6 +2030,7 @@ struct sd_lb_stats {
+>  	unsigned long this_load;
+>  	unsigned long this_load_per_task;
+>  	unsigned long this_nr_running;
+> +	unsigned long this_group_capacity;
+>  
+>  	/* Statistics of the busiest group */
+>  	unsigned long max_load;
+> @@ -2546,15 +2547,18 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+>  		/*
+>  		 * In case the child domain prefers tasks go to siblings
+>  		 * first, lower the sg capacity to one so that we'll try
+> -		 * and move all the excess tasks away.
+> +		 * and move all the excess tasks away. We lower capacity only
+> +		 * if the local group can handle the extra capacity.
+>  		 */
+> -		if (prefer_sibling)
+> +		if (prefer_sibling && !local_group &&
+> +		    sds->this_nr_running < sds->this_group_capacity)
+>  			sgs.group_capacity = min(sgs.group_capacity, 1UL);
 
-yes ;)
+Yes Nikhil. This should solve my earlier concern of SMT/MC idle
+balancing case.
 
-> I don't particularly care about that.. that's a virt problem you see ;-)
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Hmm. AFAIK, all qemu's thread will be under a cgroup. So, I'll be happy if
-a vcpu is on a loop to wait for spinlock yields immediately...But I'm not
-famliar with this area, either. Thanks.
-
--Kame
+>  
+>  		if (local_group) {
+>  			sds->this_load = sgs.avg_load;
+>  			sds->this = sg;
+>  			sds->this_nr_running = sgs.sum_nr_running;
+> +			sds->this_group_capacity = sgs.group_capacity;
+>  			sds->this_load_per_task = sgs.sum_weighted_load;
+>  		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
+>  			sds->max_load = sgs.avg_load;
 
