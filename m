@@ -1,189 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab0JNMi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 08:38:58 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:46075 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753515Ab0JNMi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 08:38:57 -0400
-Date: Thu, 14 Oct 2010 18:08:34 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Bharata B Rao <bharata@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
-        Nikhil Rao <ncrao@google.com>
-Subject: Re: [PATCH v3 1/7] sched: introduce primitives to account for CFS
- bandwidth tracking
-Message-ID: <20101014123834.GB13048@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101012074910.GA9893@in.ibm.com>
- <20101012075023.GB9893@in.ibm.com>
- <20101013130018.GC3914@balbir.in.ibm.com>
- <1287042737.29097.153.camel@twins>
+	id S1754034Ab0JNMoj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 08:44:39 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:38720 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753736Ab0JNMoi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 08:44:38 -0400
+Message-ID: <4CB6FB30.1000502@kernel.dk>
+Date: Thu, 14 Oct 2010 14:44:32 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1287042737.29097.153.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] blk: fix a wrong accounting of hd_struct->in_flight
+References: <4CB40281.1020403@jp.fujitsu.com> <20101014150742.F9EC.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20101014150742.F9EC.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-10-14 09:52:17]:
+On 2010-10-14 08:07, KOSAKI Motohiro wrote:
+>> @@ -1268,7 +1270,17 @@ static int __make_request(struct request
+>>  		 * not touch req->buffer either...
+>>  		 */
+>>  		req->buffer = bio_data(bio);
+>> +		src_part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+>>  		req->__sector = bio->bi_sector;
+>> +		dst_part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
+> 
+> I think this is wrong. disk_map_sector_rcu() require
+> rcu read lock held (see function comment). all other call site take 
+> part_stat_lock() before disk_map_sector_rcu() call.
 
-> On Wed, 2010-10-13 at 18:30 +0530, Balbir Singh wrote:
-> 
-> > > -static void start_rt_bandwidth(struct rt_bandwidth *rt_b)
-> > > +static void start_bandwidth_timer(struct hrtimer *period_timer, ktime_t period)
-> > >  {
-> > > -	ktime_t now;
-> > > +	unsigned long delta;
-> > > +	ktime_t soft, hard, now;
-> > > +
-> > > +	for (;;) {
-> > > +		if (hrtimer_active(period_timer))
-> > > +			break;
-> > > 
-> > > +		now = hrtimer_cb_get_time(period_timer);
-> > > +		hrtimer_forward(period_timer, now, period);
-> > > +
-> > > +		soft = hrtimer_get_softexpires(period_timer);
-> > > +		hard = hrtimer_get_expires(period_timer);
-> > > +		delta = ktime_to_ns(ktime_sub(hard, soft));
-> > > +		__hrtimer_start_range_ns(period_timer, soft, delta,
-> > > +					 HRTIMER_MODE_ABS_PINNED, 0);
-> > 
-> > This code can be replaced with
-> > 
-> > hrtimer_start_expires(period_timer, HRTIMER_MODE_ABS_PINNED) if we
-> > don't care about wakeup_softirq, is there a reason we prefer to keep
-> > wakeup as 0?
-> 
-> You cannot do wakeups while holding the rq->lock, can you? :-)
->
-
-:-) Yes, given that we wakeup softirq only for the current CPU. There
-is scope for some code reuse anyway, I'll see if I can send a patch.
- 
-> > > +	}
-> > > +}
-> 
-> 
-> > > +static enum hrtimer_restart sched_cfs_period_timer(struct hrtimer *timer)
-> > > +{
-> > > +	struct cfs_bandwidth *cfs_b =
-> > > +		container_of(timer, struct cfs_bandwidth, period_timer);
-> > > +	ktime_t now;
-> > > +	int overrun;
-> > > +	int idle = 0;
-> > > +
-> > > +	for (;;) {
-> > > +		now = hrtimer_cb_get_time(timer);
-> > > +		overrun = hrtimer_forward(timer, now, cfs_b->period);
-> > > +
-> > > +		if (!overrun)
-> > > +			break;
-> > 
-> > What is the significance of overrun? overrun is set when delta >
-> > interval. The logic seems to be that hrtimer is forwarded in steps of
-> > cfs_b->period till we reach the desired time.
-> > 
-> 
-> Overrun is the number of periods missed. The goal is to increment the
-> quota for each period, if the timer is late 3 periods, we still need to
-> increment it 3 times, that's what overrun does.
-> 
-> > > +
-> > > +		idle = do_sched_cfs_period_timer(cfs_b, overrun);
-> > > +	}
-> > > +
-> > > +	return idle ? HRTIMER_NORESTART : HRTIMER_RESTART;
-> > > +}
-> 
-> > > +static void start_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
-> > > +{
-> > > +	if (cfs_b->quota == RUNTIME_INF)
-> > > +		return;
-> > > +
-> > > +	if (hrtimer_active(&cfs_b->period_timer))
-> > > +		return;
-> > 
-> > Why the double check, start_bandwidth_timer also checks this. Is it to
-> > avoid doing the check under cfs_b->lock?
-> 
-> Basically..
-> 
-> > > +
-> > > +	raw_spin_lock(&cfs_b->lock);
-> > > +	start_bandwidth_timer(&cfs_b->period_timer, cfs_b->period);
-> > > +	raw_spin_unlock(&cfs_b->lock);
-> > > +}
-> > > +
-> 
-> > > +#ifdef CONFIG_CFS_BANDWIDTH
-> > > +static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
-> > > +{
-> > > +	int i;
-> > > +	static DEFINE_MUTEX(mutex);
-> > > +
-> > > +	if (tg == &init_task_group)
-> > > +		return -EINVAL;
-> > > +
-> > > +	if (!period)
-> > > +		return -EINVAL;
-> > > +
-> > > +	/*
-> > > +	 * Ensure we have at least one tick of bandwidth every period.  This is
-> > > +	 * to prevent reaching a state of large arrears when throttled via
-> > > +	 * entity_tick() resulting in prolonged exit starvation.
-> > > +	 */
-> > > +	if (NS_TO_JIFFIES(quota) < 1)
-> > > +		return -EINVAL;
-> > 
-> > I hope we document this in the Documentation :)
-> 
-> /me went and looked up arrears in a dictionary and wonders why 'debt'
-> wasn't good enough.
->
-> > > +
-> > > +	mutex_lock(&mutex);
-> > > +	raw_spin_lock_irq(&tg->cfs_bandwidth.lock);
-> > > +	tg->cfs_bandwidth.period = ns_to_ktime(period);
-> > > +	tg->cfs_bandwidth.runtime = tg->cfs_bandwidth.quota = quota;
-> > > +	raw_spin_unlock_irq(&tg->cfs_bandwidth.lock);
-> > > +
-> > > +	for_each_possible_cpu(i) {
-> > 
-> > Why not for_each_online_cpu()?
-> 
-> Probably could be cured with a hotplug handler, but then you need to
-> track more state iirc.
->
-
-What more state? If a CPU is offline, we never get to it, do we? I
-think we need to do just an init and destroy - no?
- 
-> > > +		struct cfs_rq *cfs_rq = tg->cfs_rq[i];
-> > > +		struct rq *rq = rq_of(cfs_rq);
-> > > +
-> > > +		raw_spin_lock_irq(&rq->lock);
-> > > +		init_cfs_rq_quota(cfs_rq);
-> > > +		raw_spin_unlock_irq(&rq->lock);
-> > > +	}
-> > > +	mutex_unlock(&mutex);
-> > > +
-> > > +	return 0;
-> > > +}
-> 
+It's called under the queue lock with irqs disabled, which implies a
+rcu critical section.
 
 -- 
-	Three Cheers,
-	Balbir
+Jens Axboe
+
