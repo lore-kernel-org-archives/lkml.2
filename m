@@ -1,106 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab0JNQL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 12:11:59 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40857 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752038Ab0JNQL6 convert rfc822-to-8bit (ORCPT
+	id S1755403Ab0JNQPh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 12:15:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59623 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752038Ab0JNQPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 12:11:58 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-CC: "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Thu, 14 Oct 2010 11:11:50 -0500
-Subject: RE: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-Thread-Topic: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-Thread-Index: ActrhNi6US3VTKCURXmSApcH1fLDmQANZVOQ
-Message-ID: <496565EC904933469F292DDA3F1663E602F47B37F4@dlee06.ent.ti.com>
-References: <1287023257-30951-4-git-send-email-x0095840@ti.com>
-	<20101014.094525.71092814.Hiroshi.DOYU@nokia.com>
-	<496565EC904933469F292DDA3F1663E602F3E074FB@dlee06.ent.ti.com>
- <20101014.124710.71089824.Hiroshi.DOYU@nokia.com>
-In-Reply-To: <20101014.124710.71089824.Hiroshi.DOYU@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 14 Oct 2010 12:15:36 -0400
+Message-ID: <4CB72C62.1030204@oracle.com>
+Date: Thu, 14 Oct 2010 09:14:26 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        rpurdie@rpsys.net
+Subject: Re: mmotm 2010-10-13-17-13 uploaded (leds)
+References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>	 <20101013212902.2fec6413.randy.dunlap@oracle.com> <1287056312.4641.296.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1287056312.4641.296.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-
-> -----Original Message-----
-> From: Hiroshi DOYU [mailto:Hiroshi.DOYU@nokia.com] 
-> Sent: Thursday, October 14, 2010 4:47 AM
-> To: Guzman Lugo, Fernando
-> Cc: felipe.contreras@nokia.com; tony@atomide.com; 
-> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
-> linux-omap@vger.kernel.org
-> Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+On 10/14/10 04:38, Johannes Berg wrote:
+> On Thu, 2010-10-14 at 05:29 +0100, Randy Dunlap wrote:
 > 
-> From: "ext Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-> Subject: RE: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-> Date: Thu, 14 Oct 2010 10:18:30 +0200
+>> When # CONFIG_LEDS_CLASS is not set
+>> & CONFIG_LEDS_TRIGGERS=y:
+>>
+>> drivers/built-in.o: In function `led_trigger_set':
+>> (.text+0x4737b): undefined reference to `led_brightness_set'
 > 
-> > 
-> >> ________________________________________
-> >> From: Hiroshi DOYU [Hiroshi.DOYU@nokia.com]
-> >> Sent: Thursday, October 14, 2010 1:45 AM
-> >> To: Guzman Lugo, Fernando
-> >> Cc: felipe.contreras@nokia.com; tony@atomide.com;  
-> >> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
-> >> linux-omap@vger.kernel.org
-> >> Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-> >> 
-> >> Hi Fernando,
-> >> 
-> >> From: ext Fernando Guzman Lugo <x0095840@ti.com>
-> >> Subject: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-> >> Date: Thu, 14 Oct 2010 04:27:36 +0200
-> >> 
-> >> > Omap platform is omap_iounmap function.
-> >> >
-> >> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> >> > ---
-> >> >  arch/arm/plat-omap/iovmm.c |    2 +-
-> >> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >> >
-> >> > diff --git a/arch/arm/plat-omap/iovmm.c 
-> >> > b/arch/arm/plat-omap/iovmm.c index 93a34d9..5489ca9 100644
-> >> > --- a/arch/arm/plat-omap/iovmm.c
-> >> > +++ b/arch/arm/plat-omap/iovmm.c
-> >> > @@ -821,7 +821,7 @@ void iommu_kunmap(struct iommu *obj, u32 da)
-> >> >       struct sg_table *sgt;
-> >> >       typedef void (*func_t)(const void *);
-> >> >
-> >> > -     sgt = unmap_vm_area(obj, da, (func_t)__iounmap,
-> >> 
-> >> +       sgt = unmap_vm_area(obj, da, (func_t)iounmap,
-> >> 
-> >> Woundn't the above be enough?
-> >> 
-> >> Eventually this "iounmap()" calls "__arch_iounmap()" -> 
-> >> "omap_iounmap()". I don't see any special reason to call 
-> >> "omap_iounmap()" here for now.
-> > 
-> > iounmap and __arch_iounmap are macros they cannot not be 
-> used there. 
-> > If so, it gives a "undeclared" compile error.
+> Curious. Why is that even possible?
 > 
-> Ok. I'll add this explanation as a note on this commit.
+> config LEDS_CLASS
+> ...
+> if LEDS_CLASS
+> ...
+> config LEDS_TRIGGERS
+> ...
+> endif # LEDS_TRIGGERS
 > 
+> endif # LEDS_CLASS   
+> ...
+> 
+> Are there dependencies missing? I was under the impression that this
+> shouldn't be happening. And what's the point in having triggers, but
+> nothing to trigger...? How about the patch below?
 
-Sure, Thanks.
+It seems to be due to net/mac80211/Kconfig:
 
-Regards,
-Fernando.
+config MAC80211_LEDS
+	bool "Enable LED triggers"
+	depends on MAC80211
+	select NEW_LEDS
+	select LEDS_TRIGGERS
 
+
+
+> johannes
+> 
+> 
+> Subject: leds: fix up dependencies
+> From: Johannes Berg <johannes.berg@intel.com>
+> 
+> It's not useful to build LED triggers when
+> there's no LEDs that can be triggered by
+> them. Therefore, fix up the dependencies
+> so that this cannot happen, and fix a few
+> users that select triggers to depend on
+> LEDS_CLASS as well (there is also one user
+> that also selects LEDS_CLASS, which is OK).
+> 
+> As a result, we can now make everything a
+> module again if desired (including the LED
+> triggers, that previously could only be
+> built in) -- and add back the warning in
+> rt2x00's Kconfig I previously removed.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+
+The patch does not apply cleanly to mmotm, but it seems
+like a good plan...
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
