@@ -1,93 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932157Ab0JNVfV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 17:35:21 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:47093 "EHLO ogre.sisk.pl"
+	id S932196Ab0JNVfh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 17:35:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21087 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755691Ab0JNVfU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 17:35:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: stefano.stabellini@eu.citrix.com
-Subject: Re: [PATCH v4 5/7] xen: add xen hvm acpi_register_gsi variant
-Date: Thu, 14 Oct 2010 23:34:23 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        jeremy@goop.org, konrad.wilk@oracle.com,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-References: <alpine.DEB.2.00.1010121121160.2423@kaball-desktop> <1286901289-8156-5-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1286901289-8156-5-git-send-email-stefano.stabellini@eu.citrix.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+	id S1756086Ab0JNVff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 17:35:35 -0400
+Subject: Re: Process to push changes to include/linux/types.h
+From: Eric Paris <eparis@redhat.com>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, agruen@suse.de, davem@davemloft.net,
+        andi@firstfloor.org
+In-Reply-To: <alpine.LNX.2.01.1010142324400.31442@obet.zrqbmnf.qr>
+References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
+	 <20101014125458.9e51ac58.akpm@linux-foundation.org>
+	 <alpine.LNX.2.01.1010142324400.31442@obet.zrqbmnf.qr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Oct 2010 17:35:17 -0400
+Message-ID: <1287092117.3367.20.camel@dhcp231-212.rdu.redhat.com>
+Mime-Version: 1.0
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010142334.24177.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, October 12, 2010, stefano.stabellini@eu.citrix.com wrote:
-> From: Jeremy Fitzhardinge <jeremy@goop.org>
+On Thu, 2010-10-14 at 23:26 +0200, Jan Engelhardt wrote:
+> On Thursday 2010-10-14 21:54, Andrew Morton wrote:
+> >
+> >> A patch was posted a bit ago by agruen which made a change to
+> >> include/linux/types.h changing aligned_u64 to __aligned_u64 and exposing
+> >> this new type to userspace.
+> >> [...]
+> >> I'm a little stuck as to the right path forward.  I normally would have
+> >> had no qualms about adding __aligned_u64 to types.h in the notification
+> >> tree and pushing it to Linus next go-round and then the net tree could
+> >> convert and potentially drop the old aligned_u64 type (but again that
+> >> would be outside the net tree).  Since Dave isn't willing to add the
+> >> type and I don't want to get called too many bad names
+> >
+> >The usual approach here is someone sends it to me and I send it to
+> >Linus ;)
 > 
-> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> We tinkered on types.h before, with the change originating in the Netfilter
+> subtree, and nobody, not even Dave, complained. (See v2.6.24-6165-gc82a5cb)
 
-I'm not really familiar with Xen, but the patch looks reasonable.
+I'm doing the separation and will send part 1 to akpm in a bit.  Make it
+easy and make sure noone gets upset   :)
 
-Thanks,
-Rafael
-
-
-> ---
->  arch/x86/include/asm/acpi.h |    3 +++
->  arch/x86/kernel/acpi/boot.c |    3 ++-
->  arch/x86/pci/xen.c          |    6 ++++++
->  3 files changed, 11 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-> index 92091de..55d106b 100644
-> --- a/arch/x86/include/asm/acpi.h
-> +++ b/arch/x86/include/asm/acpi.h
-> @@ -93,6 +93,9 @@ extern u8 acpi_sci_flags;
->  extern int acpi_sci_override_gsi;
->  void acpi_pic_sci_set_trigger(unsigned int, u16);
->  
-> +extern int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
-> +				  int trigger, int polarity);
-> +
->  static inline void disable_acpi(void)
->  {
->  	acpi_disabled = 1;
-> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-> index 031f0c2..71232b9 100644
-> --- a/arch/x86/kernel/acpi/boot.c
-> +++ b/arch/x86/kernel/acpi/boot.c
-> @@ -537,7 +537,8 @@ static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
->  	return gsi;
->  }
->  
-> -static int (*__acpi_register_gsi)(struct device *dev, u32 gsi, int trigger, int polarity) = acpi_register_gsi_pic;
-> +int (*__acpi_register_gsi)(struct device *dev, u32 gsi,
-> +			   int trigger, int polarity) = acpi_register_gsi_pic;
->  
->  /*
->   * success: return IRQ number (>=0)
-> diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-> index e7f897b..ef9b8b2 100644
-> --- a/arch/x86/pci/xen.c
-> +++ b/arch/x86/pci/xen.c
-> @@ -53,6 +53,12 @@ static int xen_hvm_register_pirq(u32 gsi, int triggering)
->  
->  	return irq;
->  }
-> +
-> +static int acpi_register_gsi_xen_hvm(struct device *dev, u32 gsi,
-> +				 int trigger, int polarity)
-> +{
-> +	return xen_hvm_register_pirq(gsi, trigger);
-> +}
->  #endif
->  
->  #if defined(CONFIG_PCI_MSI)
-> 
+-Eric
 
