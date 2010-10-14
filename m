@@ -1,43 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab0JNKGg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 06:06:36 -0400
-Received: from verein.lst.de ([213.95.11.210]:47881 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755122Ab0JNKGf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 06:06:35 -0400
-Date: Thu, 14 Oct 2010 12:06:09 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@lst.de>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-Subject: Re: [PATCH 2/5] tcm: Unify INQUIRY subsystem plugin handling
-Message-ID: <20101014100609.GA29611@lst.de>
-References: <1286959681-3445-1-git-send-email-nab@linux-iscsi.org> <20101013110653.GA26366@lst.de> <1287001189.7334.47.camel@haakon2.linux-iscsi.org> <20101014000421.GB15583@lst.de> <1287030937.9909.30.camel@haakon2.linux-iscsi.org> <20101014092601.GB28446@lst.de> <1287050087.9909.79.camel@haakon2.linux-iscsi.org>
+	id S1755271Ab0JNKOv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 06:14:51 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44822 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754108Ab0JNKOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 06:14:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 14 Oct 2010 19:08:28 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: bharata@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
+        Nikhil Rao <ncrao@google.com>
+Subject: Re: [PATCH v3 3/7] sched: throttle cfs_rq entities which exceed
+ their local quota
+Message-Id: <20101014190828.f835c5e2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <1287050395.29097.176.camel@twins>
+References: <20101012074910.GA9893@in.ibm.com>
+	<20101012075202.GD9893@in.ibm.com>
+	<20101013153421.b38a5c6f.kamezawa.hiroyu@jp.fujitsu.com>
+	<1287047542.29097.169.camel@twins>
+	<20101014185002.6ecb2bf5.kamezawa.hiroyu@jp.fujitsu.com>
+	<1287050395.29097.176.camel@twins>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287050087.9909.79.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 02:54:47AM -0700, Nicholas A. Bellinger wrote:
-> It would make the most sense to just go ahead and set a pre-configured
-> struct queue_limits into transport_add_device_to_core_hba() from
-> subsystem specific ->create_virtdevice() code, and just drop whatever
-> unnecessary struct se_subsystem_api ops are duplicate of what is being
-> registered as defaults with struct queue_limits.
+On Thu, 14 Oct 2010 11:59:55 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
 
-That sounds good.  Note that by now it's not just queue_limits but
-also other paramters, so a rename of the structure might be a good idea.
+> On Thu, 2010-10-14 at 18:50 +0900, KAMEZAWA Hiroyuki wrote:
+> > On Thu, 14 Oct 2010 11:12:22 +0200
+> > Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > > On Wed, 2010-10-13 at 15:34 +0900, KAMEZAWA Hiroyuki wrote:
+> > > > cpu.share and bandwidth control can't be used simultaneously or...
+> > > > is this fair ? I'm not familiar with scheduler but this allows boost this tg.
+> > > > Could you add a brief documentaion of a spec/feature. in the next post ?
+> > > 
+> > > Like explained, shares control the proportional distribution of time
+> > > between groups, bandwidth puts a limit on how much time a group can
+> > > take. It can cause a group to receive less than its fair share, but
+> > > never more.
+> > > 
+> > > There is, however, a problem with all this, and that is that all this
+> > > explicit idling of tasks can lead to a form of priority inversion.
+> > > Regular preemptive scheduling already suffers from this, but explicitly
+> > > idling tasks exacerbates the situation.
+> > > 
+> > > You basically get to add the longest induced idle time to all your lock
+> > > hold times.
+> > > 
+> > 
+> > What is the user-visible difference of the problem between
+> >   1) limit share to be very small.
+> >   2) use throttole.
+> > 
+> > If share is used, lock-hodler's priority is boosted ?
+> 
+> No, both lead to the same problem, its just that this adds another
+> dimension to it.. and I'm fairly sure people won't realise this until it
+> bites them in the ass.
+> 
+Hmm, them, existing problem but this add a new pitfall.
+
+What's your recomendation to make progess on this work ?
+
+I think 1st step will be..
+- explain the problem of priority inversion in cgroup+cfs documenation with
+  !!CAUTION!!
+
+I'm sorry I'm not sure there have been trials for fixing priority inversion
+in the linux scheduler development.
+
+Explaining my motivation, a user of this feature on my customer is virtual machine
+rental service. So, some fuctionality as
+"When vcpu holds spinlock in kernel, please don't sleep.." will be nice.
+Is there patch already ?
+
+Thanks,
+-Kame
+
+
+
+
+
+
+
+
+
+
+ 
 
