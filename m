@@ -1,76 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755222Ab0JNJrn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 05:47:43 -0400
-Received: from smtp.nokia.com ([147.243.1.47]:38233 "EHLO mgw-sa01.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754828Ab0JNJrm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 05:47:42 -0400
-Date: Thu, 14 Oct 2010 12:47:10 +0300 (EEST)
-Message-Id: <20101014.124710.71089824.Hiroshi.DOYU@nokia.com>
-To: fernando.lugo@ti.com
-Cc: felipe.contreras@nokia.com, tony@atomide.com, linux-kernel@vger.kernel.org,
-        andy.shevchenko@gmail.com, linux-omap@vger.kernel.org
-Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-In-Reply-To: <496565EC904933469F292DDA3F1663E602F3E074FB@dlee06.ent.ti.com>
-References: <1287023257-30951-4-git-send-email-x0095840@ti.com>
-	<20101014.094525.71092814.Hiroshi.DOYU@nokia.com>
-	<496565EC904933469F292DDA3F1663E602F3E074FB@dlee06.ent.ti.com>
-X-Mailer: Mew version 7.0.50 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1755263Ab0JNJtf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 05:49:35 -0400
+Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:59386 "EHLO
+	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755090Ab0JNJte (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 05:49:34 -0400
+Subject: Re: [PATCH] [RFC] slub tracing: move trace calls out of always
+ inlined functions to reduce kernel code size
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Pekka Enberg <penberg@kernel.org>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <4CB6ACB7.8060006@kernel.org>
+References: <1286986178.1901.60.camel@castor.rsk>
+	 <4CB6ACB7.8060006@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Oct 2010 10:49:29 +0100
+Message-ID: <1287049769.1909.4.camel@castor.rsk>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "ext Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Subject: RE: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-Date: Thu, 14 Oct 2010 10:18:30 +0200
-
+On Thu, 2010-10-14 at 10:09 +0300, Pekka Enberg wrote:
+> On 10/13/10 7:09 PM, Richard Kennedy wrote:
+> > Having the trace calls defined in the always inlined kmalloc functions
+> > in include/linux/slub_def.h causes a lot of code duplication as the
+> > trace functions get instantiated for each kamalloc call site. This can
+> > simply be removed by pushing the trace calls down into the functions in
+> > slub.c.
+> >
+> > On my x86_64 built this patch shrinks the code size of the kernel by
+> > approx 29K and also shrinks the code size of many modules -- too many to
+> > list here ;)
+> >
+> > size vmlinux.o reports
+> >         text	   data	    bss	    dec	    hex	filename
+> >      4777011	 602052	 763072	6142135	 5db8b7	vmlinux.o
+> >      4747120	 602388	 763072	6112580	 5d4544	vmlinux.o.patch
 > 
->> ________________________________________
->> From: Hiroshi DOYU [Hiroshi.DOYU@nokia.com]
->> Sent: Thursday, October 14, 2010 1:45 AM
->> To: Guzman Lugo, Fernando
->> Cc: felipe.contreras@nokia.com; tony@atomide.com;
->>  linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux-omap@vger.kernel.org
->> Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
->> 
->> Hi Fernando,
->> 
->> From: ext Fernando Guzman Lugo <x0095840@ti.com>
->> Subject: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
->> Date: Thu, 14 Oct 2010 04:27:36 +0200
->> 
->> > Omap platform is omap_iounmap function.
->> >
->> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
->> > ---
->> >  arch/arm/plat-omap/iovmm.c |    2 +-
->> >  1 files changed, 1 insertions(+), 1 deletions(-)
->> >
->> > diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
->> > index 93a34d9..5489ca9 100644
->> > --- a/arch/arm/plat-omap/iovmm.c
->> > +++ b/arch/arm/plat-omap/iovmm.c
->> > @@ -821,7 +821,7 @@ void iommu_kunmap(struct iommu *obj, u32 da)
->> >       struct sg_table *sgt;
->> >       typedef void (*func_t)(const void *);
->> >
->> > -     sgt = unmap_vm_area(obj, da, (func_t)__iounmap,
->> 
->> +       sgt = unmap_vm_area(obj, da, (func_t)iounmap,
->> 
->> Woundn't the above be enough?
->> 
->> Eventually this "iounmap()" calls "__arch_iounmap()" ->
->> "omap_iounmap()". I don't see any special reason to call
->> "omap_iounmap()" here for now.
+> Impressive kernel text savings!
 > 
-> iounmap and __arch_iounmap are macros they cannot not
-> be used there. If so, it gives a "undeclared" compile error.
+> > index 13fffe1..32b89ee 100644
+> > --- a/mm/slub.c
+> > +++ b/mm/slub.c
+> > +void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+> > +{
+> > +	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
+> > +
+> > +	kmemleak_alloc(ret, size, 1, flags);
+> > +	trace_kmalloc(_RET_IP_, ret, size, PAGE_SIZE<<  order, flags);
+> > +
+> > +	return ret;
+> > +}
+> > +EXPORT_SYMBOL(kmalloc_order);
+> > +
+> This doesn't make sense to be out-of-line for the !CONFIG_TRACE case. 
+> I'd just wrap that with "#ifdef CONFIG_TRACE" and put an inline version 
+> in the header for !TRACE.
+> 
+>              Pekka
 
-Ok. I'll add this explanation as a note on this commit.
+Yes, OK I'll do that.
+regards
+Richard
+
