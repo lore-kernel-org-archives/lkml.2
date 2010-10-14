@@ -1,100 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab0JNW4h (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 18:56:37 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:51894 "EHLO bear.ext.ti.com"
+	id S1754532Ab0JNXFP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 19:05:15 -0400
+Received: from borg.medozas.de ([188.40.89.202]:39245 "EHLO borg.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab0JNW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 18:56:35 -0400
-Message-ID: <4CB78AA1.40909@ti.com>
-Date: Thu, 14 Oct 2010 17:56:33 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1751467Ab0JNXFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 19:05:13 -0400
+Date: Fri, 15 Oct 2010 01:05:09 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, agruen@suse.de, davem@davemloft.net,
+        andi@firstfloor.org
+Subject: Re: Process to push changes to include/linux/types.h
+In-Reply-To: <AANLkTik+NENndwKFSFQoVAr0qiBWg5HOsQdVPmtNaSjC@mail.gmail.com>
+Message-ID: <alpine.LNX.2.01.1010150048340.17853@obet.zrqbmnf.qr>
+References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com> <20101014125458.9e51ac58.akpm@linux-foundation.org> <alpine.LNX.2.01.1010142324400.31442@obet.zrqbmnf.qr> <20101014143723.ffea0d8c.akpm@linux-foundation.org> <alpine.LNX.2.01.1010142342400.31442@obet.zrqbmnf.qr>
+ <AANLkTik+NENndwKFSFQoVAr0qiBWg5HOsQdVPmtNaSjC@mail.gmail.com>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-To: Elvis Dowson <elvis.dowson@mac.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
-Subject: Re: Difference between twl4030_hsmmc_info and omap_mmc_platform_data
-References: <DB759C09-975B-4088-B334-79F9010573F8@mac.com>
-In-Reply-To: <DB759C09-975B-4088-B334-79F9010573F8@mac.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Elvis Dowson had written, on 10/14/2010 04:48 PM, the following:
-> Hi,
->  I'm trying to bring up a TI WL1271 wlan module connected to MMC2 controller of a TI OMAP 3530 processor. 
-> 
-> I am unclear about the difference between the use of twl4030_hsmmc_info and omap_mmc_platform_data, to set the attributes and constraints for the MMC1 (connected to microSD card) and MMC2 (connected to WLAN module). 
-could you please fix your mailer btw for line wraps?
 
-> 
-> The beagleboard uses twl4030_mmc_init, which has a wrapper for omap_mmc_platform_data defined in mmc-twl4030.h. 
-> 
-> The board-sholes-hsmmc.c doesn't use twl4030, but directly uses the omap_mmc_platform_data structure. 
-> 
-> Example: 
-> 
-> board-omap3beagle.c uses twl4030_mmc_init, which internally uses the following structure to define mmc properties. 
-> 
-> static struct twl4030_hsmmc_info mmc[] = {
-> 	{
-> 		.mmc            = 1,
-> 		.wires          = 8,
-> 		.gpio_wp        = -ENOSYS,
-> 		.gpio_cd        = -ENOSYS,
-> 		.name           = "MMC1 controller slot"
-> 	},
-> 	{
-> 		.mmc            = 2,
-> 		.wires          = 4,
-> 		.gpio_cd        = -EINVAL,
-> 		.gpio_wp        = -EINVAL,
-> //		.transceiver    = true,
-> 		.name           = "MMC2 controller slot",
-> 		.ocr_mask       = 0x00000080,
-> 	},
-> 	{}	/* Terminator */
-> };
-> 
-> For board-sholes-hsmmc.c, it uses a omap_mmc_platform_data
-> 
-> static struct omap_mmc_platform_data mmc1_data = {
-> 	.nr_slots			= 1,
-> 	.init				= hsmmc_late_init,
-> 	.cleanup			= hsmmc_cleanup,
-> #ifdef CONFIG_PM
-> 	.suspend			= hsmmc_suspend,
-> 	.resume				= hsmmc_resume,
-> #endif
-> 	.dma_mask			= 0xffffffff,
-> 	.slots[0] = {
-> 		.wires			= 8,
-> 		.set_power		= hsmmc_set_power,
-> 		.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34 |
-> 						MMC_VDD_165_195,
-> 		.name			= "first slot",
-> 		/* we get car_detect_irq later */
-> 		.card_detect_irq	= 0,
-> 		.card_detect            = hsmmc_card_detect,
-> 	},
-> };
+On Friday 2010-10-15 00:13, Linus Torvalds wrote:
+>
+>Extended background for non-git people: git _internally_ only uses the
+>160-bit SHA1 (which in its full ASCII form is 40 hex characters). But
+>because that is so human-unfriendly, there are various human-readable
+>ways to express it.
+>[...]
+>   I tend to use the 12-character short version in commit messages,
+>for example. The full 40-character SHA1 makes it hard to do any sane
+>line breaks with in the commit message.
 
-Dont have a board-sholes-hsmm.c in l-o[1]... :( so not sure which kernel 
-you are talking about here.
-mainline does it this way:
-board files report using omap2_hsmmc_info[2] to hsmmc.c using 
-omap2_hsmmc_init[3] - hsmmc.c converts them to required datastructures 
-that omap_hsmmc.c uses..
+I tend to use describe --tags (rev expr) output; unlike 12-char
+versions, they cannot become ambiguous at any time. If git also used
+the initial portion of regular describes ("v2.6.24-1234-"), it would
+be similarly strengthened. Yes, I'm just theoretically projecting
+what happens if \lim_{time,hackers -> \infty}...
 
-[1] 
-http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=tree;f=arch/arm/mach-omap2;h=abedb1903a0d81f33d7614480da0f7a0c78f8f2f;hb=HEAD
-[2] 
-http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=blob;f=arch/arm/mach-omap2/hsmmc.h;h=281e97287adf988493efd1ca94b19ab8588b7aaf;hb=HEAD#l11
-[3] 
-http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=blob;f=arch/arm/mach-omap2/board-omap3beagle.c;h=73689c082b26d0ef38233c0adefc1d0b9d14e8d0;hb=HEAD#l287
--- 
-Regards,
-Nishanth Menon
+>It's worth noting that the "v2.6.24-6165" - while human-readable and
+>thus useful - is technically meaningless. Since development isn't a
+>straight line, "6165 commits after 2.6.24" is really not a
+>well-defined point.
+
+It could be - in totally linear developments. (Postgresql, anyone?)
+
+>In contrast, the "v2.6.25-rc1~1089^2~98" expression is actually
+>well-defined. There is no ambiguity there, but it's also obviously not
+>really all that human-readable.
+
+I beg to differ. It tells you that the certain commit was included
+for v2.6.25-rc1. That's much more telling than v2.6.24-1234-gabcdef1.
+Especially when a branch has not been recently merged, it could be
+showing v2.6.22-9876-gxxx or anything further back in time.
+
+
+Jan
