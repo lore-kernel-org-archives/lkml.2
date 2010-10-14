@@ -1,26 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932215Ab0JNWCi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 18:02:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40190 "EHLO
+	id S932281Ab0JNWGb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 18:06:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38694 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755578Ab0JNWCh (ORCPT
+	by vger.kernel.org with ESMTP id S932206Ab0JNWGa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 18:02:37 -0400
-Date: Thu, 14 Oct 2010 15:01:44 -0700
+	Thu, 14 Oct 2010 18:06:30 -0400
+Date: Thu, 14 Oct 2010 15:05:41 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, agruen@suse.de, davem@davemloft.net,
-        andi@firstfloor.org
-Subject: Re: Process to push changes to include/linux/types.h
-Message-Id: <20101014150144.3d895940.akpm@linux-foundation.org>
-In-Reply-To: <alpine.LNX.2.01.1010142342400.31442@obet.zrqbmnf.qr>
-References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
-	<20101014125458.9e51ac58.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1010142324400.31442@obet.zrqbmnf.qr>
-	<20101014143723.ffea0d8c.akpm@linux-foundation.org>
-	<alpine.LNX.2.01.1010142342400.31442@obet.zrqbmnf.qr>
+To: Randy Dunlap <rdunlap@xenotime.net>
+Cc: Udo van den Heuvel <udovdh@xs4all.nl>, linux-kernel@vger.kernel.org,
+        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
+        Rodolfo Giometti <giometti@linux.it>
+Subject: Re: hardpps patch by Alexander Gordeev
+Message-Id: <20101014150541.bbbbd74d.akpm@linux-foundation.org>
+In-Reply-To: <20101014145751.5fc4adb6.rdunlap@xenotime.net>
+References: <4CB3488F.8030108@xs4all.nl>
+	<20101014145751.5fc4adb6.rdunlap@xenotime.net>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -29,31 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Oct 2010 23:50:34 +0200 (CEST)
-Jan Engelhardt <jengelh@medozas.de> wrote:
+On Thu, 14 Oct 2010 14:57:51 -0700
+Randy Dunlap <rdunlap@xenotime.net> wrote:
 
+> On Mon, 11 Oct 2010 19:25:35 +0200 Udo van den Heuvel wrote:
 > 
-> On Thursday 2010-10-14 23:37, Andrew Morton wrote:
-> >> >The usual approach here is someone sends it to me and I send it to
-> >> >Linus ;)
-> >> 
-> >> We tinkered on types.h before, with the change originating in the Netfilter
-> >> subtree, and nobody, not even Dave, complained.
-> >
-> >It doesn't matter much at all what tree a change goes through.  What
-> >matters more is that the appropriate people know about and see the
-> >change.
-> >
-> >For example, I never even knew that aligned_u64 and friends existed (it
-> >got secretly merged via the netfilter tree, apparently).
+> > Hello,
+> > 
+> > Can anybody here explain the status of Alexander Gordeev's harddpps patches?
+> > Are they on the list to be included in the kernel?
+> > Is work on the patches needed?
+> > 
+> > Thanks for your comment.
 > 
-> I would be interested in knowing whether you - in whichever subsystems
-> you happen to be active - would even need aligned_u64. Right now,
-> the only users seem to be PPP and scsi_tgt besides Netfilter.
-> 
+> It's in Andrew Morton's mmotm tree.
+> Where/when it goes from there to Linus's tree is a good question.
 
-Stranger things have happened.
+I didn't merge it into 2.6.36 and it's looking doubtful for 2.6.37. 
+There were a number of issues identified during review and afaik they
+remain up in the air.
 
-include/linux/net_dropmon.h:net_dm_config_entry can perhaps be
-converted btw.
+My notes-to-self from the series file:
 
+pps-trivial-fixes.patch
+pps-declare-variables-where-they-are-used-in-switch.patch
+#pps-fix-race-in-pps_fetch-handler.patch: Vitezslav Samel <vitezslav@samel.cz> q, TBU
+pps-fix-race-in-pps_fetch-handler.patch
+pps-unify-timestamp-gathering.patch
+#pps-access-pps-device-by-direct-pointer.patch: Rodolfo issues
+pps-access-pps-device-by-direct-pointer.patch
+pps-convert-printk-pr_-to-dev_.patch
+pps-move-idr-stuff-to-ppsc.patch
+pps-add-async-pps-event-handler.patch
+pps-add-async-pps-event-handler-fix.patch
+pps-dont-disable-interrupts-when-using-spin-locks.patch
+pps-use-bug_on-for-kernel-api-safety-checks.patch
+pps-simplify-conditions-a-bit.patch
+ntp-add-hardpps-implementation.patch
+#pps-capture-monotonic_raw-timestamps-as-well.patch: John had Q, TBU
+pps-capture-monotonic_raw-timestamps-as-well.patch
+pps-add-kernel-consumer-support.patch
+pps-add-parallel-port-pps-client.patch
+pps-add-parallel-port-pps-signal-generator.patch
+
+(where TBU = "to be updated").
+
+There may be other issues - one would need to go back and review the review
+thread.
