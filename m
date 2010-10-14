@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754749Ab0JNGJi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 02:09:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64190 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754680Ab0JNGJh (ORCPT
+	id S1754761Ab0JNGWi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 02:22:38 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:57315 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702Ab0JNGWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 02:09:37 -0400
-Message-ID: <4CB69E22.2010005@kernel.org>
-Date: Wed, 13 Oct 2010 23:07:30 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100914 SUSE/3.0.8 Thunderbird/3.0.8
+	Thu, 14 Oct 2010 02:22:37 -0400
+Message-ID: <4CB6A1AB.4030800@cs.helsinki.fi>
+Date: Thu, 14 Oct 2010 09:22:35 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: mingo@redhat.com, hpa@zytor.com, jeremy@goop.org,
-        linux-kernel@vger.kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-        jeremy.fitzhardinge@citrix.com, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:core/memblock] x86-64: Only set max_pfn_mapped to 512 MiB
- if we enter via head_64.S
-References: <4CB641F7.9040103@goop.org> <tip-859ee4f57fb4e91de8439496f62eb996f4a28ca8@git.kernel.org> <20101014055714.GA3329@elte.hu>
-In-Reply-To: <20101014055714.GA3329@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+To: David Rientjes <rientjes@google.com>
+CC: Christoph Lameter <cl@linux.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Eric Dumazet <eric.dumazet@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev <netdev@vger.kernel.org>,
+        Michael Chan <mchan@broadcom.com>,
+        Eilon Greenstein <eilong@broadcom.com>, Christoph Hellwig <hch@lst.de>,
+        LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@kernel.dk>
+Subject: Re: [PATCH net-next] net:  allocate skbs on local node
+References: <1286838210.30423.128.camel@edumazet-laptop> <1286839363.30423.130.camel@edumazet-laptop> <1286859925.30423.184.camel@edumazet-laptop> <20101011230322.f0f6dd47.akpm@linux-foundation.org> <1286866699.30423.234.camel@edumazet-laptop> <20101012002435.f51f2c0e.akpm@linux-foundation.org> <1286869793.2732.24.camel@edumazet-laptop> <20101012005856.994bea6d.akpm@linux-foundation.org> <4CB441CB.2000708@cs.helsinki.fi> <alpine.DEB.2.00.1010120745360.31832@router.home> <alpine.DEB.2.00.1010121234380.10165@chino.kir.corp.google.com> <alpine.DEB.2.00.1010131056180.29099@router.home> <alpine.DEB.2.00.1010131342310.15185@chino.kir.corp.google.com> <alpine.DEB.2.00.1010131642220.8351@router.home> <alpine.DEB.2.00.1010131539440.27839@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1010131539440.27839@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2010 10:57 PM, Ingo Molnar wrote:
-> 
-> * tip-bot for Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> 
->> Commit-ID:  859ee4f57fb4e91de8439496f62eb996f4a28ca8
->> Gitweb:     http://git.kernel.org/tip/859ee4f57fb4e91de8439496f62eb996f4a28ca8
->> Author:     Jeremy Fitzhardinge <jeremy@goop.org>
->> AuthorDate: Wed, 13 Oct 2010 16:34:15 -0700
->> Committer:  H. Peter Anvin <hpa@linux.intel.com>
->> CommitDate: Wed, 13 Oct 2010 17:09:59 -0700
+On Wed, 13 Oct 2010, Christoph Lameter wrote:
+>>> I was going to mention that as an idea, but I thought storing the metadata
+>>> for certain debugging features might differ from the two allocators so
+>>> substantially that it would be even more convoluted and difficult to
+>>> maintain?
 >>
->> x86-64: Only set max_pfn_mapped to 512 MiB if we enter via head_64.S
->>
->> head_64.S maps up to 512 MiB, but that is not necessarity true for
->> other entry paths, such as Xen.
-> 
-> These two commits are a boot crasher on x86 defconfig (64-bit):
-> 
-> [    0.000000] init_memory_mapping: 0000000000000000-000000003fff0000
-> [    0.000000]  0000000000 - 003fe00000 page 2M
-> [    0.000000]  003fe00000 - 003fff0000 page 4k
-> [    0.000000] Kernel panic - not syncing: Cannot find space for the kernel page tables
-> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.36-rc7-tip+ #49192
-> [    0.000000] Call Trace:
-> [    0.000000]  [<ffffffff8156c73f>] panic+0x8c/0x192
-> [    0.000000]  [<ffffffff8156c881>] ? printk+0x3c/0x3e
-> [    0.000000]  [<ffffffff8154ec40>] init_memory_mapping+0x372/0x506
-> [    0.000000]  [<ffffffff819053ed>] ? memblock_x86_reserve_range+0x7c/0x83
-> [    0.000000]  [<ffffffff818f2f3d>] setup_arch+0x5a3/0xa68
-> [    0.000000]  [<ffffffff8156c881>] ? printk+0x3c/0x3e
-> [    0.000000]  [<ffffffff81061135>] ? clockevents_register_notifier+0x3e/0x4a
-> [    0.000000]  [<ffffffff818ef9e1>] start_kernel+0x83/0x36e
-> [    0.000000]  [<ffffffff818ef2a8>] x86_64_start_reservations+0xb8/0xbc
-> [    0.000000]  [<ffffffff818ef393>] x86_64_start_kernel+0xe7/0xee
+>> We could have some callbacks to store allocator specific metadata?
 
-max_pfn_mapped is in .bss section. so it get cleared.
+On 10/14/10 1:41 AM, David Rientjes wrote:
+> It depends on whether we could share the same base for both slab (unified
+> allocator) and slub, which you snipped from your reply, that would make
+> this cleaner.
 
-will have a patch to move clear_bss from head64.c to head_64.S
+Argh. Why would we want to introduce something that's effectively a new 
+allocator based on SLUB? If there's something controversial in the 
+current patch series, lets just keep it out of mainline. A "rewrite" is 
+the reason we're in this mess so lets not repeat the same mistake again!
 
-Thanks
-
-Yinghai
+			Pekka
