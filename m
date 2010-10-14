@@ -1,109 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755271Ab0JNKOv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 06:14:51 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44822 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754108Ab0JNKOu (ORCPT
+	id S1755559Ab0JNKPd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 06:15:33 -0400
+Received: from ppsw-50.csi.cam.ac.uk ([131.111.8.150]:49061 "EHLO
+	ppsw-50.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755253Ab0JNKPc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 06:14:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 14 Oct 2010 19:08:28 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: bharata@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
-        Nikhil Rao <ncrao@google.com>
-Subject: Re: [PATCH v3 3/7] sched: throttle cfs_rq entities which exceed
- their local quota
-Message-Id: <20101014190828.f835c5e2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <1287050395.29097.176.camel@twins>
-References: <20101012074910.GA9893@in.ibm.com>
-	<20101012075202.GD9893@in.ibm.com>
-	<20101013153421.b38a5c6f.kamezawa.hiroyu@jp.fujitsu.com>
-	<1287047542.29097.169.camel@twins>
-	<20101014185002.6ecb2bf5.kamezawa.hiroyu@jp.fujitsu.com>
-	<1287050395.29097.176.camel@twins>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 14 Oct 2010 06:15:32 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4CB6D995.9020907@cam.ac.uk>
+Date: Thu, 14 Oct 2010 11:21:09 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100928 Lightning/1.0b3pre Thunderbird/3.1.4
+MIME-Version: 1.0
+To: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Drivers <Drivers@analog.com>
+Subject: Re: linux-next: Tree for October 13 (staging/iio)
+References: <20101013154522.7b087a20.sfr@canb.auug.org.au> <20101013094117.530baa63.randy.dunlap@oracle.com> <544AC56F16B56944AEC3BD4E3D59177130943738AE@LIMKCMBX1.ad.analog.com>
+In-Reply-To: <544AC56F16B56944AEC3BD4E3D59177130943738AE@LIMKCMBX1.ad.analog.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Oct 2010 11:59:55 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Thu, 2010-10-14 at 18:50 +0900, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 14 Oct 2010 11:12:22 +0200
-> > Peter Zijlstra <peterz@infradead.org> wrote:
-> > 
-> > > On Wed, 2010-10-13 at 15:34 +0900, KAMEZAWA Hiroyuki wrote:
-> > > > cpu.share and bandwidth control can't be used simultaneously or...
-> > > > is this fair ? I'm not familiar with scheduler but this allows boost this tg.
-> > > > Could you add a brief documentaion of a spec/feature. in the next post ?
-> > > 
-> > > Like explained, shares control the proportional distribution of time
-> > > between groups, bandwidth puts a limit on how much time a group can
-> > > take. It can cause a group to receive less than its fair share, but
-> > > never more.
-> > > 
-> > > There is, however, a problem with all this, and that is that all this
-> > > explicit idling of tasks can lead to a form of priority inversion.
-> > > Regular preemptive scheduling already suffers from this, but explicitly
-> > > idling tasks exacerbates the situation.
-> > > 
-> > > You basically get to add the longest induced idle time to all your lock
-> > > hold times.
-> > > 
-> > 
-> > What is the user-visible difference of the problem between
-> >   1) limit share to be very small.
-> >   2) use throttole.
-> > 
-> > If share is used, lock-hodler's priority is boosted ?
+On 10/13/10 20:07, Hennerich, Michael wrote:
+> Randy Dunlap wrote on 2010-10-13:
+>> On Wed, 13 Oct 2010 15:45:22 +1100 Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Changes since 20101012:
+>>
+>>
+>> drivers/staging/iio/adc/ad7476.h:62: note: expected 'struct device *'
+>> but argument is of type 'struct ad7476_state *'
+>> drivers/staging/iio/adc/ad7476_core.c:48: error: too few arguments to
+>> function 'ad7476_scan_from_ring'
 > 
-> No, both lead to the same problem, its just that this adds another
-> dimension to it.. and I'm fairly sure people won't realise this until it
-> bites them in the ass.
+> Thanks!
 > 
-Hmm, them, existing problem but this add a new pitfall.
+> That's due to an old prototype active when CONFIG_IIO_RING_BUFFER is not set.
+> I'll fix that.
+> 
+>> drivers/staging/iio/adc/ad7476_core.c: At top level:
+>> drivers/staging/iio/adc/ad7476_core.c:102: error:
+>> 'IIO_SCAN_EL_TYPE_UNSIGNED' undeclared here (not in a function)
+> 
+> Jonathan,
+> 
+> Do we really need to guard the entire ring_generic.h header with
+> 
+> #ifdef CONFIG_IIO_RING_BUFFER
+> ...
+> 
+> Some of these might be used, even when CONFIG_IIO_RING_BUFFER is not set.
+> Or do we really need CONFIG_IIO_RING_BUFFER at all.
+> Why not always provide it?
+It's a fairly big chunk of code and I suspect a fair few of our users
+(all the light sensors for starters) won't want it at all.  If anything
+I'm keen to do a bit of reorganization of other bits of the core to
+further cut down on the minimum present.
 
-What's your recomendation to make progess on this work ?
+Move relevant functions out as needed or put stubs in place.  Perhaps we
+can revisiting this question down the line, but I don't think we want to
+make buffer support obligatory at the moment.
 
-I think 1st step will be..
-- explain the problem of priority inversion in cgroup+cfs documenation with
-  !!CAUTION!!
-
-I'm sorry I'm not sure there have been trials for fixing priority inversion
-in the linux scheduler development.
-
-Explaining my motivation, a user of this feature on my customer is virtual machine
-rental service. So, some fuctionality as
-"When vcpu holds spinlock in kernel, please don't sleep.." will be nice.
-Is there patch already ?
-
-Thanks,
--Kame
-
-
-
-
-
-
-
-
-
-
- 
+Jonathan
+> 
+>>
+>> config is attached.
+>>
+>> ---
+>> ~Randy
+>> *** Remember to use Documentation/SubmitChecklist when testing your
+>> code ***
+> 
+> Greetings,
+> Michael
+> 
+> Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+> Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
+> 
+> 
+> 
 
