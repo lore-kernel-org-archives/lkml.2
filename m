@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754301Ab0JNGix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 02:38:53 -0400
-Received: from tama50.ecl.ntt.co.jp ([129.60.39.147]:34624 "EHLO
-	tama50.ecl.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753372Ab0JNGiw (ORCPT
+	id S1754676Ab0JNGq0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 02:46:26 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:48352 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754048Ab0JNGqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 02:38:52 -0400
-To: James.Bottomley@suse.de
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] SCSI bug fixes for 2.6.36-rc7
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1287016477.10264.418.camel@mulgrave.site>
-References: <AANLkTimUT37LfmnU8Rc0+K8r+owCp9e_VyriDHRyuuhr@mail.gmail.com>
-	<1287015899.10264.394.camel@mulgrave.site>
-	<1287016477.10264.418.camel@mulgrave.site>
+	Thu, 14 Oct 2010 02:46:25 -0400
+Date: Thu, 14 Oct 2010 09:45:25 +0300 (EEST)
+Message-Id: <20101014.094525.71092814.Hiroshi.DOYU@nokia.com>
+To: x0095840@ti.com
+Cc: felipe.contreras@nokia.com, tony@atomide.com, linux-kernel@vger.kernel.org,
+        andy.shevchenko@gmail.com, linux-omap@vger.kernel.org
+Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <1287023257-30951-4-git-send-email-x0095840@ti.com>
+References: <1287023257-30951-2-git-send-email-x0095840@ti.com>
+	<1287023257-30951-3-git-send-email-x0095840@ti.com>
+	<1287023257-30951-4-git-send-email-x0095840@ti.com>
+X-Mailer: Mew version 7.0.50 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <20101014153641E.fujita.tomonori@lab.ntt.co.jp>
-Date: Thu, 14 Oct 2010 15:36:41 +0900
+X-OriginalArrivalTime: 14 Oct 2010 06:45:32.0018 (UTC) FILETIME=[6595CD20:01CB6B6B]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010 20:34:37 -0400
-James Bottomley <James.Bottomley@suse.de> wrote:
+Hi Fernando,
 
-> On Wed, 2010-10-13 at 20:24 -0400, James Bottomley wrote:
-> > On Wed, 2010-10-13 at 16:49 -0700, Linus Torvalds wrote:
-> > > On Wed, Oct 13, 2010 at 6:45 AM, James Bottomley
-> > > <James.Bottomley@suse.de> wrote:
-> > > > This patch set fixes a couple of longstanding bugs in SCSI.  The VPD
-> > > > patch fix a possible buffer overrun in the VPD code (only tripped if the
-> > > > device has a huge number of VPD pages).  The other is where the status
-> > > > return code on our BSG interface is wrongly right shifted one place.
-> > > 
-> > > Umm. That other patch seems to be utter crap.
-> > > 
-> > > > -       hdr->device_status = status_byte(rq->errors);
-> > > > +       hdr->device_status = rq->errors && 0xff;
-> > > 
-> > > That's pure shit. Please look at it for one second, and don't send me
-> > > crap like this.
-> > 
-> > What's wrong with it? device_status() is an ancient SCSI-1 macro that
-> > dates from the time the status was left shifted by 1, which makes the
-> > value wrong according to the sg interface spec.  We should really remove
-> > it, but there's still a few ancient drivers using it.  the SG interface
-> > requires the full status byte, which is what the bottom most byte of
-> > req_errors is ... hence the change.
+From: ext Fernando Guzman Lugo <x0095840@ti.com>
+Subject: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+Date: Thu, 14 Oct 2010 04:27:36 +0200
+
+> Omap platform is omap_iounmap function.
 > 
-> OK, right ... several people pointed out in private email that it was &&
-> not & ... I'll fix it when I'm slightly less jet lagged.
+> Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> ---
+>  arch/arm/plat-omap/iovmm.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
+> index 93a34d9..5489ca9 100644
+> --- a/arch/arm/plat-omap/iovmm.c
+> +++ b/arch/arm/plat-omap/iovmm.c
+> @@ -821,7 +821,7 @@ void iommu_kunmap(struct iommu *obj, u32 da)
+>  	struct sg_table *sgt;
+>  	typedef void (*func_t)(const void *);
+>  
+> -	sgt = unmap_vm_area(obj, da, (func_t)__iounmap,
 
-Really sorry about that.
++	sgt = unmap_vm_area(obj, da, (func_t)iounmap,
 
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH] bsg: fix incorrect device_status value
+Woundn't the above be enough?
 
-bsg incorrectly returns sg's masked_status value for device_status.
-
-Reported-by: Douglas Gilbert <dgilbert@interlog.com>
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- block/bsg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/block/bsg.c b/block/bsg.c
-index 82d5882..0c00870 100644
---- a/block/bsg.c
-+++ b/block/bsg.c
-@@ -426,7 +426,7 @@ static int blk_complete_sgv4_hdr_rq(struct request *rq, struct sg_io_v4 *hdr,
- 	/*
- 	 * fill in all the output members
- 	 */
--	hdr->device_status = status_byte(rq->errors);
-+	hdr->device_status = rq->errors & 0xff;
- 	hdr->transport_status = host_byte(rq->errors);
- 	hdr->driver_status = driver_byte(rq->errors);
- 	hdr->info = 0;
--- 
-1.7.1
+Eventually this "iounmap()" calls "__arch_iounmap()" ->
+"omap_iounmap()". I don't see any special reason to call
+"omap_iounmap()" here for now.
 
 
+> +	sgt = unmap_vm_area(obj, da, (func_t)omap_iounmap,
+>  			    IOVMF_LINEAR | IOVMF_MMIO);
+>  	if (!sgt)
+>  		dev_dbg(obj->dev, "%s: No sgt\n", __func__);
+> -- 
+> 1.6.3.3
+> 
