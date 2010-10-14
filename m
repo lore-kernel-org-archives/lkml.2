@@ -1,169 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754974Ab0JNNvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 09:51:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39903 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754736Ab0JNNvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 09:51:48 -0400
-Date: Thu, 14 Oct 2010 15:47:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Michael Holzheu <holzheu@linux.vnet.ibm.com>
-Cc: Roland McGrath <roland@redhat.com>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Shailabh Nagar <nagar1234@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Venkatesh Pallipadi <venki@google.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        John stultz <johnstul@us.ibm.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 09/10] taskstats: Fix exit CPU time accounting
-Message-ID: <20101014134716.GA5187@redhat.com>
-References: <20100927154257.7910cda3@mschwide.boeblingen.de.ibm.com> <20100927165133.GA23535@redhat.com> <20100929191916.21E1840038@magilla.sf.frob.com> <1285854460.1856.14.camel@holzheu-laptop> <20101005085751.4490A401B2@magilla.sf.frob.com> <1286357350.1888.25.camel@holzheu-laptop> <20101006152609.GA21169@redhat.com> <1286464017.1849.120.camel@holzheu-laptop> <20101011123704.GA3519@redhat.com> <1286889057.1932.77.camel@holzheu-laptop>
+	id S1754952Ab0JNOTB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 10:19:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49985 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753806Ab0JNOTA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 10:19:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IEwVIwyiOZbeeHudergFTRl94A71qffiOlBp56wM1XbMvZreYeLzL2Qfb83ckayX3I
+         oeA0vTKIowPBDJ2W+/z8KMro8dpFVVzlTi5bYIsxq6zxh0+w1LKpBOF+o8oJjoUBbhHa
+         XeY5R1IXQ/r0kbwayZJZq8QVBZav0Gffphiag=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1286889057.1932.77.camel@holzheu-laptop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <496565EC904933469F292DDA3F1663E602F47B3002@dlee06.ent.ti.com>
+References: <1286310944-25035-1-git-send-email-x0095840@ti.com>
+	<AANLkTimoTmhAw11jJihiuyByzKZ9KTFHvx6iw8oeLCGg@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F47B2BB1@dlee06.ent.ti.com>
+	<AANLkTim6XRgnefA0vmRNeW=TONhxz68WYAjuA96LqWOj@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F47B3002@dlee06.ent.ti.com>
+Date: Thu, 14 Oct 2010 15:27:13 +0300
+Message-ID: <AANLkTik3hhWy+tRxThtrbwNXTssV7nf9+_LGn5Ct3iet@mail.gmail.com>
+Subject: Re: [PATCHv3 00/11] staging tidspbridge: iommu migration
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+Cc: "gregkh@suse.de" <gregkh@suse.de>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael, sorry for delay...
-
-On 10/12, Michael Holzheu wrote:
+On Tue, Oct 12, 2010 at 5:39 PM, Guzman Lugo, Fernando
+<fernando.lugo@ti.com> wrote:
+>> On Mon, Oct 11, 2010 at 6:03 PM, Guzman Lugo, Fernando
+>> <fernando.lugo@ti.com> wrote:
+>> >> On Tue, Oct 5, 2010 at 11:35 PM, Fernando Guzman Lugo
+>> >> <x0095840@ti.com> wrote:
+>> >> > This set of patches remove the dspbridge custom mmu
+>> >> implementation and
+>> >> > use iommu module instead.
+>> >>
+>> >> I have tried this, it works for simple tests, but not real
+>> use-cases.
+>> >> I applied all your iommu patches. How did you test this?
+>> >
+>> > Have you applied:
+>> >
+>> > - "scatterlist: define SG chain for arm architecture"
+>> > - "iovmm: replace __iounmap with omap_iounmap"
+>> > - "iovmm: add superpages support to fixed da address"
+>> > - "iovmm: IVA2 MMU range is from 0x11000000 to 0xFFFFFFFF"
+>> > - "iovmm: no gap checking for fixed address"
+>>
+>> Yes.
+>>
+>> > Also make sure your baseline have this patch:
+>> >
+>> > - "omap:iommu-load cam register before flushing the entry"
+>>
+>> Huh? That's not even in v2.6.36-rc7, in which baseline is
+>> this supposed to be in? Anyway, I'll try adding that.
 >
-> On Mon, 2010-10-11 at 14:37 +0200, Oleg Nesterov wrote:
-> >
-> > > > Also, the logic behind ->exit_accounting_done looks wrong (and unneeded)
-> > > > but I am not sure...
-> > >
-> > > I think the logic is correct,
-> >
-> > OK, I misread the patch as if we always account the exited task in
-> > parent's cdata_acct,
-> >
-> > 	+       struct cdata cdata_wait; /* parents have done sys_wait() */
-> > 	+       struct cdata cdata_acct; /* complete cumulative data from acct tree */
-> >
-> > while in fact the "complete" data is cdata_wait + cdata_acct.
+> That's is in latest Hiroshi's tree and it is really needed, Otherwise
+> You will have wrong traslations which can cause unexpected behavior.
+
+Now I applied that, still fails.
+
+>> > What kind of error are you getting?
+>>
+>> Node allocation failing IIRC.
 >
-> No. The complete data is in cdata_acct. It contains both, the task times
-> where sys_wait() has been done and the task times, where the tasks have
-> reaped themselves.
-
-Hmm. This means my first understanding was correct. But now I am
-confused again, see below.
-
-> > Hmm. Let's return to your example above,
-> >
-> > 	> Snapshot 1: P1 -> P2 -> P3
-> > 	> Snapshot 2: P1
-> > 	> ...
-> > 	> P1 got all the CPU time of P2 and P3
-> >
-> > Suppose that P2 dies before P3. Then P3 dies, /sbin/init does wait and
-> > accounts this task. This means it is not accounted in P1->signal->cdata_acct,
-> > no?
+> Is it falling to map the Heap??
+> I mean you see this trace?
 >
-> No. __account_to_parent() with wait=1 is called when init waits for P3.
-> Then both sets are updated cdata_acct and cdata_wait:
+>        if (status)
+>                pr_err("%s: Failed to map memory for Heap: 0x%x\n",
+>                       __func__, status);
 >
-> +static void __account_to_parent(struct task_struct *p, int wait)
-> +{
-> +       if (wait)
-> +               __account_ctime(p, &p->real_parent->signal->cdata_wait,
-> +                               &p->signal->cdata_wait);
-> +       __account_ctime(p, &p->acct_parent->signal->cdata_acct,
-> +                       &p->signal->cdata_acct);
-> +       p->exit_accounting_done = 1;
+> Otherwise, I don't see how that fail is related with iommu changes.
+
+Nope.
+
+>> > I don't have a complete framework to test MM testcases at
+>> this moment
+>>
+>> See:
+>> http://felipec.wordpress.com/2010/10/08/my-arm-development-notes/
+>>
+>> I even prepared a tarball so you just need to extract it on
+>> your device. It's not difficult to test this with GStreamer,
+>> and I don't see how you can be confident that they indeed
+>> work without testing some real use-cases. Anyway, I'll try
+>> that missing patch.
 >
-> If a tasks reaps itself, only cdata_acct is updated.
+> Most of time real use-cases are not so stressing like testcases
+> We can make to test under real stress in order to find out corner cases.
+> However when I test it was pretty stable and just few erros because staging
+> Does not have latest mailbox patches. Also I test in a .35 version of staging.
+> So now I am using a branch with all new patches and I will recheck and test
+> Again any possible issue. Also I will look at your gstreamer fail too.
 
-Yes. But __account_to_parent() always sets p->exit_accounting_done = 1.
-And __exit_signal() calls __account_to_parent() only if it is not set.
+Well, in my experience it's the other way around, the stress
+test-cases don't catch the errors that happen on real use-case
+scenarios, no matter how extensive they are. This is a good example.
 
-This means that we update either cdata_wait (if the child was reaped
-by parent) or cdata_acct (the process auto-reaps itself).
+Cheers.
 
-That is why I thought that ->exit_accounting_done should die, and
-__exit_signal() should always call __account_to_parent() to update
-cdata_acct.
-
-Or I missed something? Confused ;)
-
- > > Sorry for my ignorance. Probably I have not understood what happens, if
-> > > a thread group leader dies. My assumption was that then the whole thread
-> > > group dies.
-> >
-> > No. A thread group dies when the last thread dies. If a leader exits
-> > it becomes a zombie until all other sub-threads exit.
->
-> That brought me to another question: Does this mean that the thread
-> group leader never changes and is always alive (at least as zombie) as
-> long as the thread group lives?
-
-Yes. Except de_thread() can change the leader. The new leader is the
-thread which calls exec.
-
-> > > Also I assumed that a parent can only be a thread group
-> > > leader.
-> >
-> > No. If a thread T does fork(), the child's ->real_parent is T, not
-> > T->group_leader. If T exits, we do not reparent its children to init
-> > (unless it is the last thread, of course), we pick another live
-> > thread in this thread group for reparenting.
->
-> Ok, I hope that I understand now. So either we could set the acct_parent
-> to the thread group leader in fork(), or we use the new parent in the
-> thread group if there are live threads left, when a thread exits.
->
-> Something like the following:
->
->  static void forget_original_parent(struct task_struct *father)
->  {
-> +       struct pid_namespace *pid_ns = task_active_pid_ns(father);
->         struct task_struct *p, *n, *reaper;
->         LIST_HEAD(dead_children);
->
->         exit_ptrace(father);
->
->         reaper = find_new_reaper(father);
->
-> +       list_for_each_entry_safe(p, n, &father->children_acct, sibling_acct) {
-> +               struct task_struct *t = p;
-> +               do {
-> +                       if (pid_ns->child_reaper == reaper)
-> +                               t->acct_parent = t->acct_parent->acct_parent;
-> +                       else
-> +                               t->acct_parent = reaper;
-> +               } while_each_thread(p, t);
-> +               list_move_tail(&p->sibling_acct,
-> +                              &p->acct_parent->children_acct);
-> +       }
-> +
-
-I think you can simplify this, but  I am not sure right now.
-
-First of all, ->acct_parent should be moved from task_struct to
-signal_struct. No need to initialize t->acct_parent unless t is
-the group leader (this means we can avoid do/while_each_thread
-loop during re-parenting, but de_thread needs another trivial
-change).
-
-
-No need to change forget_original_parent() at all, instead we
-can the single line
-
-	p->signal->acct_parent = father->signal->acct_parent;
-
-to reparent_leader(), after the "if (same_thread_group())" check.
-
-What do you think?
-
-Oleg.
-
+-- 
+Felipe Contreras
