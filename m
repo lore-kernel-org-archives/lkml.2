@@ -1,103 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab0JNWh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 18:37:57 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54450 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754026Ab0JNWh4 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 18:37:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=IvW58xHgvlFcZRBsVxb1LARO4mC7SIXALMNMdosGy8cyPIBdpQJPieeyM0UMH+080e
-         lIrw9NftKY0qUpc0zQOjfkJqHqAqpigjuWFbFfc+j/wgI7tp52lVDhBOcEIDSC8ikKEV
-         yEmaAW06dK+pJcMe+hkAa592/3pLrGTeMEqYE=
+	id S1754458Ab0JNW4h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 18:56:37 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:51894 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061Ab0JNW4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 18:56:35 -0400
+Message-ID: <4CB78AA1.40909@ti.com>
+Date: Thu, 14 Oct 2010 17:56:33 -0500
+From: Nishanth Menon <nm@ti.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Date: Thu, 14 Oct 2010 18:37:53 -0400
-Message-ID: <AANLkTi=CNW1pu-YdvmViqHxfw-_TDzvLkj15Ai_aANWo@mail.gmail.com>
-Subject: [PATCH] fix oops in l2cap_connect_req
-From: Nathan Holstein <nathan.holstein@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-bluetooth@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Elvis Dowson <elvis.dowson@mac.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Subject: Re: Difference between twl4030_hsmmc_info and omap_mmc_platform_data
+References: <DB759C09-975B-4088-B334-79F9010573F8@mac.com>
+In-Reply-To: <DB759C09-975B-4088-B334-79F9010573F8@mac.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Please keep me in the CC list, I'm not subscribed to lkml)
+Elvis Dowson had written, on 10/14/2010 04:48 PM, the following:
+> Hi,
+>  I'm trying to bring up a TI WL1271 wlan module connected to MMC2 controller of a TI OMAP 3530 processor. 
+> 
+> I am unclear about the difference between the use of twl4030_hsmmc_info and omap_mmc_platform_data, to set the attributes and constraints for the MMC1 (connected to microSD card) and MMC2 (connected to WLAN module). 
+could you please fix your mailer btw for line wraps?
 
-[1] L2CAP module dereferences an uninitialized pointer within l2cap_connect_req.
+> 
+> The beagleboard uses twl4030_mmc_init, which has a wrapper for omap_mmc_platform_data defined in mmc-twl4030.h. 
+> 
+> The board-sholes-hsmmc.c doesn't use twl4030, but directly uses the omap_mmc_platform_data structure. 
+> 
+> Example: 
+> 
+> board-omap3beagle.c uses twl4030_mmc_init, which internally uses the following structure to define mmc properties. 
+> 
+> static struct twl4030_hsmmc_info mmc[] = {
+> 	{
+> 		.mmc            = 1,
+> 		.wires          = 8,
+> 		.gpio_wp        = -ENOSYS,
+> 		.gpio_cd        = -ENOSYS,
+> 		.name           = "MMC1 controller slot"
+> 	},
+> 	{
+> 		.mmc            = 2,
+> 		.wires          = 4,
+> 		.gpio_cd        = -EINVAL,
+> 		.gpio_wp        = -EINVAL,
+> //		.transceiver    = true,
+> 		.name           = "MMC2 controller slot",
+> 		.ocr_mask       = 0x00000080,
+> 	},
+> 	{}	/* Terminator */
+> };
+> 
+> For board-sholes-hsmmc.c, it uses a omap_mmc_platform_data
+> 
+> static struct omap_mmc_platform_data mmc1_data = {
+> 	.nr_slots			= 1,
+> 	.init				= hsmmc_late_init,
+> 	.cleanup			= hsmmc_cleanup,
+> #ifdef CONFIG_PM
+> 	.suspend			= hsmmc_suspend,
+> 	.resume				= hsmmc_resume,
+> #endif
+> 	.dma_mask			= 0xffffffff,
+> 	.slots[0] = {
+> 		.wires			= 8,
+> 		.set_power		= hsmmc_set_power,
+> 		.ocr_mask		= MMC_VDD_32_33 | MMC_VDD_33_34 |
+> 						MMC_VDD_165_195,
+> 		.name			= "first slot",
+> 		/* we get car_detect_irq later */
+> 		.card_detect_irq	= 0,
+> 		.card_detect            = hsmmc_card_detect,
+> 	},
+> };
 
-[2] I'm currently testing a 2.6.35 kernel on a Nexus One with backported
-patches from bluetooth-2.6.  When testing against certain BT devices, I'm seeing
-a null-pointer deref.  The crash is caused by this portion of commit e9aeb2dd:
+Dont have a board-sholes-hsmm.c in l-o[1]... :( so not sure which kernel 
+you are talking about here.
+mainline does it this way:
+board files report using omap2_hsmmc_info[2] to hsmmc.c using 
+omap2_hsmmc_init[3] - hsmmc.c converts them to required datastructures 
+that omap_hsmmc.c uses..
 
-@@ -2966,6 +2991,15 @@ sendresp:
-                                        L2CAP_INFO_REQ, sizeof(info), &info);
-        }
-
-+       if (!(l2cap_pi(sk)->conf_state & L2CAP_CONF_REQ_SENT) &&
-+                               result == L2CAP_CR_SUCCESS) {
-+               u8 buf[128];
-+               l2cap_pi(sk)->conf_state |= L2CAP_CONF_REQ_SENT;
-+               l2cap_send_cmd(conn, l2cap_get_ident(conn), L2CAP_CONF_REQ,
-+                                       l2cap_build_conf_req(sk, buf), buf);
-+               l2cap_pi(sk)->num_conf_req++;
-+       }
-+
-        return 0;
- }
-
-Multiple error cases jump to the response & sendresp labels prior to
-initializing
-the "sk" variable.  In the case I'm currently seeing, the remote BT
-device fails to
-properly secure the ACL, making this crash 100% reproducible.
-
-[3] Bluetooth, L2CAP
-
-[4] This bug appears to be in the mainline 2.6.36-rc? kernel, in addition to
- multiple Bluetooth development trees
-
-The following patch fixes the crash.
-
-
-   --nathan
-
----
-In error cases when the ACL is insecure or we fail to allocate a new
-struct sock, we jump to the "response" label.  If so, "sk" will be
-uninitialized and the kernel crashes.
-
-Signed-off-by: Nathan Holstein <nathan.holstein@gmail.com>
----
- net/bluetooth/l2cap.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/net/bluetooth/l2cap.c b/net/bluetooth/l2cap.c
-index d527b10..10ae0af 100644
---- a/net/bluetooth/l2cap.c
-+++ b/net/bluetooth/l2cap.c
-@@ -2911,7 +2911,7 @@ static inline int l2cap_connect_req(struct
-l2cap_conn *conn, struct l2cap_cmd_hd
- 	struct l2cap_chan_list *list = &conn->chan_list;
- 	struct l2cap_conn_req *req = (struct l2cap_conn_req *) data;
- 	struct l2cap_conn_rsp rsp;
--	struct sock *parent, *uninitialized_var(sk);
-+	struct sock *parent, *sk = 0;
- 	int result, status = L2CAP_CS_NO_INFO;
-
- 	u16 dcid = 0, scid = __le16_to_cpu(req->scid);
-@@ -3020,7 +3020,7 @@ sendresp:
- 					L2CAP_INFO_REQ, sizeof(info), &info);
- 	}
-
--	if (!(l2cap_pi(sk)->conf_state & L2CAP_CONF_REQ_SENT) &&
-+	if (sk && !(l2cap_pi(sk)->conf_state & L2CAP_CONF_REQ_SENT) &&
- 				result == L2CAP_CR_SUCCESS) {
- 		u8 buf[128];
- 		l2cap_pi(sk)->conf_state |= L2CAP_CONF_REQ_SENT;
+[1] 
+http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=tree;f=arch/arm/mach-omap2;h=abedb1903a0d81f33d7614480da0f7a0c78f8f2f;hb=HEAD
+[2] 
+http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=blob;f=arch/arm/mach-omap2/hsmmc.h;h=281e97287adf988493efd1ca94b19ab8588b7aaf;hb=HEAD#l11
+[3] 
+http://git.kernel.org/?p=linux/kernel/git/tmlind/linux-omap-2.6.git;a=blob;f=arch/arm/mach-omap2/board-omap3beagle.c;h=73689c082b26d0ef38233c0adefc1d0b9d14e8d0;hb=HEAD#l287
 -- 
-1.7.2.3
+Regards,
+Nishanth Menon
