@@ -1,120 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755851Ab0JNSFv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 14:05:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21829 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755828Ab0JNSFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 14:05:50 -0400
-Date: Thu, 14 Oct 2010 14:04:40 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>, dhsharp@google.com
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
-Message-ID: <20101014180440.GA2891@redhat.com>
-References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com> <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com> <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com> <1287013830.3673.224.camel@frodo> <20101014000027.GA15510@Krystal>
+	id S1755860Ab0JNSHM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 14:07:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40227 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab0JNSHK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 14:07:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=rqkosvB3fWha/7aZS9qh4PhZZxFJhrtgXw9WutQ75VGZ0wD4WLa/jshr4qrfdHKnMR
+         R2RW2aP02iKamugf10vNd/6q6l3N3fYYArnRx1jTpb12m/agSBxwcuDLo/NX4xNuIMad
+         lO1EevEtCS6BasEedYMO3nRYX94WGsJpElC/M=
+Message-ID: <4CB745FC.5090504@gmail.com>
+Date: Thu, 14 Oct 2010 20:03:40 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20101014000027.GA15510@Krystal>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: richard -rw- weinberger <richard.weinberger@gmail.com>
+CC: Chris Frey <cdfrey@foursquare.net>, Jens Axboe <jaxboe@fusionio.com>,
+        Richard Weinberger <richard@nod.at>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jdike@addtoit.com" <jdike@addtoit.com>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        "user-mode-linux-user@lists.sourceforge.net" 
+	<user-mode-linux-user@lists.sourceforge.net>,
+        "janjaap@bos.nl" <janjaap@bos.nl>,
+        "geert@linux-m68k.org" <geert@linux-m68k.org>,
+        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
+        "adobriyan@gmail.com" <adobriyan@gmail.com>,
+        "syzop@vulnscan.org" <syzop@vulnscan.org>
+Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
+References: <20100928225202.GA30352@foursquare.net> <4CA275CE.6060401@fusionio.com> <20100929012945.GA3324@foursquare.net> <4CA2CCC3.8010307@fusionio.com> <20100929063452.GA13290@foursquare.net> <4CAA02D0.7040901@gmail.com> <20101004195152.GA31583@foursquare.net> <4CAAE077.9010500@gmail.com> <20101005203137.GA594@foursquare.net> <4CAD7D98.7080808@fusionio.com> <20101007202339.GA8338@foursquare.net> <4CB70234.3030308@gmail.com> <AANLkTi=ni-zEfCMXLR8BJyPQcwzEKAUKYs4uH7ur12Fk@mail.gmail.com>
+In-Reply-To: <AANLkTi=ni-zEfCMXLR8BJyPQcwzEKAUKYs4uH7ur12Fk@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 08:00:27PM -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Wed, 2010-10-13 at 16:19 -0700, David Sharp wrote:
-> > > Google uses kernel tracing aggressively in the its data centers. We
-> > 
-> > Thanks!
-> > 
-> > > wrote our own kernel tracer, ktrace. However ftrace, perf and LTTng
-> > > all have a better feature set than ktrace, so we are abandoning that
-> > > code.
-> > 
-> > Cool!
-> > 
-> > > 
-> > > We see several implementations of tracing aimed at the mainline kernel
-> > > and wanted a fair comparison of each of them to make sure they will
-> > > not significantly impact performance. A tracing toolkit that is too
-> > > expensive is not usable in our environment.
-> > > 
-> > 
-> > [ snip for now (I'm traveling) ]
-> > 
-> > > This first set of benchmark results compares ftrace to ktrace. The
-> > > numbers below are the "on" result minus the "off" result for each
-> > > configuration.
-> > > 
-> > > ktrace: 200ns  (tracepoint: kernel_getuid)
-> > > ftrace: 224ns   (tracepoint: timer:sys_getuid)
-> > > ftrace: 587ns   (tracepoint: syscalls:sys_enter_getuid)
-> > 
-> > 
-> > > The last result shows that the syscall tracing is about twice as
-> > > expensive as a normal tracepoint, which is interesting.
-> > 
-> > Argh, the syscall tracing has a lot of overhead. There is only one
-> > tracepoint that is hooked into the ptrace code, and will save all
-> > registers before calling the functions. It enables tracing on all
-> > syscalls and there's a table that decides whether or not to trace the
-> > syscall.
-> > 
-> > So I'm not surprised with the result that the syscall trace point is so
-> > slow (note, perf uses the same infrastructure).
-> 
-> Yes, the interesting result in this first set of benchmarks is that syscall
-> tracing is quite slow. We could do better though. I think a different scheme
-> for syscall tracing that would not rely of saving all registers is needed. We
-> could do this automatically by adding tracepoints in the actual syscall
-> functions by modifying the DEFINE_SYSCALL*() macros. I would leave the current
-> syscall tracing mode as the default though, especially until gcc 4.5 and asm
-> gotos are more broadly adopted.
-> 
-> So the modified DEFINE_SYSCALL*() macros would generate code that looks like:
-> (approximately)
-> 
-> static int _syscall_name(type1, name1);
-> 
-> int syscall_name(type1 name1)
-> {
->         int ret;
-> 
->         trace_syscall_entry_name(name1);
->         ret = _syscall_name(name1);
->         trace_syscall_exit_name(name1);
->         return ret;
-> }
-> 
-> static int _syscall_name(typê1, name1)
-> 
-> 
-> So when we expand:
-> 
-> DEFINE_SYSCALL1(name, type1, name1)
-> {
->   .. actual body ...
-> }
-> 
-> We have the tracepoints automatically added.
-> 
-> Mathieu
-> 
+Hello,
 
-right, the current syscall tracepoint code, is optimized for the 'off'
-case, not the 'on' case. That is, when off, we add no additional
-overhead to the syscall path. If we add 2 tracepoints per syscall we
-are adding some cost even when disabled - to every syscall.
+On 10/14/2010 04:20 PM, richard -rw- weinberger wrote:
+> It does not work for me.
+> But the error is a different one. :-)
+> Without your patch I've never got this kernel trace.
+> 
+> [   59.850000] kworker/0:1: page allocation failure. order:0, mode:0x20
 
-However, with the addition of the asm goto code, those concerns will
-hopefully go away as Mathieu points out.
+Hmm... you're seeing out of memory condition.  If the code screws up
+filesystem access, I suppose it could make that happen too but can you
+please check the configuration just in case (especially the memory
+size)?  Also, if you can reliably reproduce the filesystem corruption
+w/o the patch, can you please tell me how to do it?
 
-thanks,
+Thanks.
 
--Jason
+-- 
+tejun
