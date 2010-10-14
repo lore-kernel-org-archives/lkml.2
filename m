@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753200Ab0JNES0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 00:18:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41134 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751467Ab0JNESZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 00:18:25 -0400
-Date: Wed, 13 Oct 2010 21:17:54 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, driverdevel <devel@driverdev.osuosl.org>,
-        gregkh@suse.de
-Subject: Re: mmotm 2010-10-13-17-13 uploaded (staging/bcm)
-Message-Id: <20101013211754.ba0d84f5.randy.dunlap@oracle.com>
-In-Reply-To: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>
-References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754092Ab0JNETN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 00:19:13 -0400
+Received: from void.printf.net ([89.145.121.20]:36516 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751755Ab0JNETL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 00:19:11 -0400
+Date: Thu, 14 Oct 2010 05:19:04 +0100
+From: Chris Ball <cjb@laptop.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
+        MM <mirq-linux@rere.qmqm.pl>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH -next] mmc: fix cb710 kconfig dependency warning
+Message-ID: <20101014041904.GF3553@void.printf.net>
+References: <20101013181519.6ff00e10.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101013181519.6ff00e10.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010 17:13:25 -0700 akpm@linux-foundation.org wrote:
+Hi Randy,
 
-> The mm-of-the-moment snapshot 2010-10-13-17-13 has been uploaded to
+On Wed, Oct 13, 2010 at 06:15:19PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
->    http://userweb.kernel.org/~akpm/mmotm/
+> Fix kconfig dependency warning to satisfy dependencies:
 > 
-> and will soon be available at
+> warning: (MMC_CB710 && MMC && PCI) selects CB710_CORE which has unmet direct dependencies (MISC_DEVICES && PCI)
 > 
->    git://zen-kernel.org/kernel/mmotm.git
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: <mirq-linux@rere.qmqm.pl>
+> ---
+>  drivers/mmc/host/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
 > 
-> It contains the following patches against 2.6.36-rc7:
+> --- linux-next-20101013.orig/drivers/mmc/host/Kconfig
+> +++ linux-next-20101013/drivers/mmc/host/Kconfig
+> @@ -394,7 +394,7 @@ config MMC_TMIO
+>  
+>  config MMC_CB710
+>  	tristate "ENE CB710 MMC/SD Interface support"
+> -	depends on PCI
+> +	depends on PCI && MISC_DEVICES
+>  	select CB710_CORE
+>  	help
+>  	  This option enables support for MMC/SD part of ENE CB710/720 Flash
 
+Thanks very much, pushed to mmc-next.
 
-drivers/staging/bcm/Bcmnet.c:24: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:24: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:24: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:26: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:31: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:31: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:31: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:33: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:34: error: 'struct net_device' has no member named 'refcnt'
-drivers/staging/bcm/Bcmnet.c:35: error: 'struct net_device' has no member named 'refcnt'
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
