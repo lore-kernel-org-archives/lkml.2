@@ -1,55 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753929Ab0JNAK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 20:10:29 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:40854 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750937Ab0JNAK1 convert rfc822-to-8bit (ORCPT
+	id S1751918Ab0JNAPN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 20:15:13 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:15559 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab0JNAPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 20:10:27 -0400
+	Wed, 13 Oct 2010 20:15:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=EmtOpn4da+yRy8ZW03pzJFXnCM+tZsUHl/0ROjlgOA7aWlvqXcvQeZpKvdadhTx5br
-         M7lOvfgQ6UqlZJ7AIm/NH1P4wyDvkc3AfmVLq59RlCSAjp7XxnO6cTl9YTpPwlZse2XC
-         QMPx3WiEIUDTF7xpTcKTkaAEQ7jOwBHrbuM/o=
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:message-id:user-agent
+         :mime-version:content-type;
+        b=NJqu4WkhV7fWNeA1IfxGqD/HM2cI2vSN3yrBmhDSTzXrAaenVFC21Xla4TZqpNr8nj
+         VKg2ofIhEvQ+p9rNSkJw==
+Date: Wed, 13 Oct 2010 17:15:04 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+cc: Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [patch] x86: allow ZONE_DMA to be configurable
+Message-ID: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20101011094416.GA3771@redhat.com>
-References: <20101011094416.GA3771@redhat.com>
-Date: Wed, 13 Oct 2010 17:10:25 -0700
-X-Google-Sender-Auth: yuEEXB8P1br_LHuXJGQm7BDnjUM
-Message-ID: <AANLkTimi4vo_trVGxO9eeaYsfnRkjweG0irCGek=75Yu@mail.gmail.com>
-Subject: Re: [PATCH] dma: fix error handling on out of memory
-From: Dan Williams <dan.j.williams@intel.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-        Maciej Sosnowski <maciej.sosnowski@intel.com>,
-        "David S. Miller" <davem@davemloft.net>, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 2:44 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> get_user_pages might return less pages than requested. If this happens
-> for the first iovec in dma_pin_iovec_pages, then nr_iovecs is 0 and so
-> dma_unpin_iovec_pages will not unpin any pages, leaking pinned memory.
-> A similar off by one would trigger for any of the following entries.
->
-> Fix by updating nr_iovecs and nr_pages in this case.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->
-> Error handling in dma_pin_iovec_pages still looks wrong to me.  Am I
-> missing something?
+ZONE_DMA is unnecessary for a large number of machines that do not
+require addressing in the lower 16MB of memory because they do not use
+ISA devices with 16-bit address registers (plus one page byte register).
 
-Still looks wrong it what way?  You make sure that nr_iovecs is
-incremented so that the partial page list is freed, and we only walk
-the initialized entries in pinned_list.
+This patch allows users to disable ZONE_DMA for x86 if they know they
+will not be using such devices with their kernel.
 
---
-Dan
+This prevents the VM from unnecessarily reserving a ratio of memory
+(defaulting to 1/256th of system capacity) with lowmem_reserve_ratio
+for such allocations when it will never be used.
+
+Signed-off-by: David Rientjes <rientjes@google.com>
+---
+ arch/x86/Kconfig      |    7 ++++++-
+ arch/x86/mm/init_32.c |    2 ++
+ arch/x86/mm/init_64.c |    2 ++
+ 3 files changed, 10 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -99,7 +99,12 @@ config MMU
+ 	def_bool y
+ 
+ config ZONE_DMA
+-	def_bool y
++	bool "DMA memory allocation support"
++	default y
++	help
++	  DMA memory allocation support allows old ISA devices with 16-bit
++	  address registers to allocate memory within the first 16MB of
++	  address space.  Disable if no such devices will be used.
+ 
+ config SBUS
+ 	bool
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -740,8 +740,10 @@ static void __init zone_sizes_init(void)
+ {
+ 	unsigned long max_zone_pfns[MAX_NR_ZONES];
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
++#ifdef CONFIG_ZONE_DMA
+ 	max_zone_pfns[ZONE_DMA] =
+ 		virt_to_phys((char *)MAX_DMA_ADDRESS) >> PAGE_SHIFT;
++#endif
+ 	max_zone_pfns[ZONE_NORMAL] = max_low_pfn;
+ #ifdef CONFIG_HIGHMEM
+ 	max_zone_pfns[ZONE_HIGHMEM] = highend_pfn;
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -598,7 +598,9 @@ void __init paging_init(void)
+ 	unsigned long max_zone_pfns[MAX_NR_ZONES];
+ 
+ 	memset(max_zone_pfns, 0, sizeof(max_zone_pfns));
++#ifdef CONFIG_ZONE_DMA
+ 	max_zone_pfns[ZONE_DMA] = MAX_DMA_PFN;
++#endif
+ 	max_zone_pfns[ZONE_DMA32] = MAX_DMA32_PFN;
+ 	max_zone_pfns[ZONE_NORMAL] = max_pfn;
+ 
