@@ -1,102 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab0JNOye (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 10:54:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33956 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969Ab0JNOyd (ORCPT
+	id S1755096Ab0JNO6i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 10:58:38 -0400
+Received: from mailhost-r5-p2.mangoosta.org ([195.5.209.65]:58858 "EHLO
+	smtp-delay1.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754185Ab0JNO6h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 10:54:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Qast6FIAIsuYLsOqeLz2dHAU5OyQekSSD8Ol9KA+L7Fvq0DKZI5fiw7iK2VTcPIBF4
-         aNEEPgtMl0Qi8yKUxPgO19gZZbgZz9NK2xAN2ertVHBv0O3XmtWzm3IM2WxzzqCj1v+P
-         VNh2zYcMrQQZVHAkESoIvKt5zB7SP6OZeYg5Q=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marek Belisko <marek.belisko@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-        Vasiliy Kulikov <segooon@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH] staging:ft1000:Get rid of using atoi.
-Date: Thu, 14 Oct 2010 14:14:33 +0200
-Message-Id: <1287058473-15285-1-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 14 Oct 2010 10:58:37 -0400
+Date: Thu, 14 Oct 2010 16:58:13 +0200
+From: Damien Wyart <damien.wyart@free.fr>
+To: Peter Zijlstra <peterz@infradead.org>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>, tmhikaru@gmail.com,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: High CPU load when machine is idle (related to PROBLEM:
+ Unusually high load average when idle in 2.6.35, 2.6.35.1 and later)
+Message-ID: <20101014145813.GA2185@brouette>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100929070153.GA2200@brouette>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c |   36 +++++++++----------------
- 1 files changed, 13 insertions(+), 23 deletions(-)
+Hello,
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 507a248..8498538 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -55,28 +55,10 @@ static const struct net_device_ops ft1000net_ops = {
- //Jim
- 
- static u8 tempbuffer[1600];
--static int gCardIndex;
-+static unsigned long gCardIndex;
- 
- #define MAX_RCV_LOOP   100
- 
--
--static int atoi(const char *s)
--{
--        int k = 0;
--    int cnt;
--
--        k = 0;
--    cnt = 0;
--        while (*s != '\0' && *s >= '0' && *s <= '9') {
--                k = 10 * k + (*s - '0');
--                s++;
--        // Let's put a limit on this while loop to avoid deadlock scenario
--        if (cnt > 100)
--           break;
--        cnt++;
--        }
--        return k;
--}
- /****************************************************************
-  *     ft1000_control_complete
-  ****************************************************************/
-@@ -966,8 +948,9 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
-     struct net_device *netdev;
-     FT1000_INFO *pInfo = NULL;
-     PDPRAM_BLK pdpram_blk;
--    int i;
-+	int i, ret_val;
- 	struct list_head *cur, *tmp;
-+	char card_nr[2];
- 
- 	gCardIndex=0; //mbelian
- 
-@@ -995,9 +978,16 @@ u16 init_ft1000_netdev(struct ft1000_device *ft1000dev)
-     {
-         DEBUG("init_ft1000_netdev: network device name is %s\n", netdev->name);
- 
--        if ( strncmp(netdev->name,"eth", 3) == 0) {
--            //pInfo->CardNumber = atoi(&netdev->name[3]);
--            gCardIndex = atoi(&netdev->name[3]);
-+	if ( strncmp(netdev->name,"eth", 3) == 0) {
-+		card_nr[0] = netdev->name[3];
-+		card_nr[1] = '\0';
-+		ret_val = strict_strtoul(card_nr, 10, &gCardIndex);
-+		if (ret_val) {
-+			printk(KERN_ERR "Can't parse netdev\n");
-+			free_netdev(netdev);
-+			return STATUS_FAILURE;
-+		}
-+
-             pInfo->CardNumber = gCardIndex;
-             DEBUG("card number = %d\n", pInfo->CardNumber);
-         }
+> With 2.6.36-rc6, I'm seeing a load of around 0.60 when the machine is
+> completely idle. This is similar to what someone reported for the latest
+> 2.6.35.x stables. This is on a core i7 machine, but I've no time to
+> bisect or test earlier versions right now, but I guess this is easy to
+> reproduce on the same plateform.
+
+After further investigation and cross-checking with the thread "PROBLEM:
+Unusually high load average when idle in 2.6.35, 2.6.35.1 and later",
+I came to the following results:
+
+- the commit 74f5187ac873042f502227701ed1727e7c5fbfa9 isolated by Tim
+  seems to be the culprit;
+- reverting it solves the problem with 2.6.36-rc7 in NOHZ mode: the load
+  when idle goes down to 0.00 (which it never does with the patch
+  applied)
+- using nohz=no with the commit reverted still gives correct behaviour
+  (tested just in case)
+
+- vanilla 2.6.36-rc7 with this commit applied has the problem (load is
+  around 0.60 when machine idle, sometimes less after several hours
+  of uptime, but never 0.00), and rebooting with nohz=no makes the
+  problem disappear: load goes down to 0.00 quickly after boot process
+  has finished.
+
+I hope this answers the questions raised in the Tim's thread.
+
+Could someone with knowledge of the commit take a look at the problem?
+It would be a bit annoying to have this problem in 2.6.36, since Tim's
+initial report dates back to 2 weeks ago...
+
+I can help for further testing if needed.
+
+
+Thanks in advance,
 -- 
-1.7.1
-
+Damien
