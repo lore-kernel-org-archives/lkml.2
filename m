@@ -1,49 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab0JNSbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 14:31:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20421 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab0JNSbr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 14:31:47 -0400
-Message-ID: <4CB74C5F.4000905@oracle.com>
-Date: Thu, 14 Oct 2010 11:30:55 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1755934Ab0JNSfQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 14:35:16 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54681 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754807Ab0JNSfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 14:35:14 -0400
+Date: Thu, 14 Oct 2010 20:34:48 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Pekka Enberg <penberg@kernel.org>, David Rientjes <rientjes@google.com>,
+        Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
+Message-ID: <20101014183448.GA3187@elte.hu>
+References: <alpine.DEB.2.00.1010131739010.27124@chino.kir.corp.google.com>
+ <4CB65262.3070507@zytor.com>
+ <alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
+ <cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
+ <alpine.DEB.2.00.1010131832400.794@chino.kir.corp.google.com>
+ <4CB688F4.9040706@zytor.com>
+ <alpine.DEB.2.00.1010132140550.20995@chino.kir.corp.google.com>
+ <4CB7240E.9000905@zytor.com>
+ <AANLkTin-VOKXe6wcwt_r3bLcS6=WYJ4EAPPUZWLbEGQF@mail.gmail.com>
+ <4CB7418C.7010505@zytor.com>
 MIME-Version: 1.0
-To: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
-CC: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
-        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
-Subject: [PATCH -next v2] mmc: fix cb710 kconfig dependency warning
-References: <20101013181519.6ff00e10.randy.dunlap@oracle.com> <20101014090442.GA14454@rere.qmqm.pl>
-In-Reply-To: <20101014090442.GA14454@rere.qmqm.pl>
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB7418C.7010505@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix kconfig dependency warning to satisfy dependencies:
+* H. Peter Anvin <hpa@zytor.com> wrote:
 
-warning: (MMC_CB710 && MMC && PCI) selects CB710_CORE which has unmet direct dependencies (MISC_DEVICES && PCI)
+> On 10/14/2010 09:00 AM, Pekka Enberg wrote:
+>
+> >> CONFIG_EMBEDDED *is* "I am a user who (think I) know what I'm 
+> >> doing". That is *what it is* and *all it is*.
+> > 
+> > Yup. The naming is quite unfortunate, though. Can we change it to 
+> > something else?
+> 
+> Funny, this seems to come up repeatedly ;)
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: <mirq-linux@rere.qmqm.pl>
----
- drivers/mmc/host/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+I'd suggest to rename CONFIG_EMBEDDED=y to CONFIG_EXPERT=y, but i'd also 
+suggest to rename all sub-config-options that depend on CONFIG_EXPERT to 
+have a CONFIG_EXPERT_ prefix.
 
---- linux-next-20101013.orig/drivers/mmc/host/Kconfig
-+++ linux-next-20101013/drivers/mmc/host/Kconfig
-@@ -395,6 +395,7 @@ config MMC_TMIO
- config MMC_CB710
- 	tristate "ENE CB710 MMC/SD Interface support"
- 	depends on PCI
-+	select MISC_DEVICES
- 	select CB710_CORE
- 	help
- 	  This option enables support for MMC/SD part of ENE CB710/720 Flash
+So we'd have:
+
+  CONFIG_EXPERT_CPU_SUP_INTEL=y
+  CONFIG_EXPERT_MMAP_ALLOW_UNINITIALIZED=y
+
+etc.
+
+That way all the enabled 'expert options' become easily visible in the 
+.config file and they advertise themselves properly - it's also easily 
+greppable. In the source code it also becomes self-documenting, it's 
+obvious when a dependency is 'rare' or 'special' - it has a 
+CONFIG_EXPERT_ prefix.
+
+Something for the KS i guess.
+
+Thanks,
+
+	Ingo
