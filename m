@@ -1,111 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab0JNXoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 19:44:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:54430 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab0JNXoI convert rfc822-to-8bit (ORCPT
+	id S1755303Ab0JOALX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 20:11:23 -0400
+Received: from mail-pz0-f66.google.com ([209.85.210.66]:41122 "EHLO
+	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab0JOALV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 19:44:08 -0400
+	Thu, 14 Oct 2010 20:11:21 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GkVZl15x6Cd7F5Bvbbckwsi8006Z3BRnDf54Tc7U00jjgSmS7AoiCmYb2Xixkggu25
-         fP8GCPZ9l8ssOZDlukqqAo7QwfiZT7doHl/TK5f2Qb0pWLhW5zWQ+gMk0y0WLn5n7JFW
-         TTfIVyrJqEXy3xoyMivkbcWJr30GPu06VOB6k=
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=vGu/MSiFJG6EaUytyh1G5Oysd8DQ5ggfo4N0Mp3cp2GmuzyPI2WSD8K29gGMjK+DbG
+         9mudQvE1qmE2n9aFduzB4x4aISVSwaduq5UPXFFQOO1mjGHoP9oxyLtXPkZs1lVle7Iq
+         VhzhiSoW9sd4SG15cr71/tq1sKCy6YMtDotuc=
 MIME-Version: 1.0
-In-Reply-To: <4CB75F05.9070505@linux.intel.com>
-References: <AANLkTinNxzktyttzEjWSUPBiOUwh+4DUL0tmP7p1UiT5@mail.gmail.com>
-	<4CB75F05.9070505@linux.intel.com>
-Date: Fri, 15 Oct 2010 01:44:08 +0200
-Message-ID: <AANLkTik5_TCXeGzTWBZzE8F0Cb2bQq-D228xDXk87rhP@mail.gmail.com>
-Subject: Re: [REGRESSION] um: rcu_sched_state detected stall on CPU 0
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: penberg@cs.helsinki.fi, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
+Date: Thu, 14 Oct 2010 16:58:51 -0700
+Message-ID: <AANLkTi=29x3ng4uhUAMewe5Gr25ayDknJS9iGS4c51Yw@mail.gmail.com>
+Subject: kernel won't boot if kernel image passes 0xffffffff82000000
+From: Rong Xu <rong.xu3@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 9:50 PM, Arjan van de Ven <arjan@linux.intel.com> wrote:
->  On 10/14/2010 11:27 AM, richard -rw- weinberger wrote:
->>
->> Hi Arjan!
->>
->> This commit causes some problems on UML.
->>
-> that is extremely weird.
->>
->> The kernel freezes after a few seconds until it gets some input.
->> e.g: When I run top it stops refreshing the process list until i press a
->> button.
->
-> a slab timer change (to not be as critical) causing global timer issues....
-> that's very obviously not a problem with this patch.
-> has this been seem anywhere except UML ?
+I found that if the kernel image passes 0xffffffff82000000, the kernel won't
+boot. It dies in very early stage of booting, right after the kernel image
+is loaded.
 
-A small update:
-It seems that CONFIG_NO_HZ is broken on UML. :-(
+More details:
+This is 2.6.26 kernel on x86-64 platform, using the default x86_64 config.
+I'm not booting with any option. Kernel image starts from
+0xffffffff80000000. kernel_text starts from 0xffffffff80200000. From the
+comments in head64.S, I suppose we can use 512M for kernel image, to
+0xffffffffa000000 where the module starts. But my experiments shows the
+maximum kernel image size is from 0xffffffff80200000 to 0xffffffff82000000
+(30MB).
 
-CONFIG_NO_HZ + CONFIG_SLAB: works
-CONFIG_NO_HZ + CONFIG_SLAB + your patch: broken
-CONFIG_NO_HZ + CONFIG_SLUB: broken
+Here are some of the experiments I did:
+(1) increase the bss size to let it pass 0xffffffff82000000, then kernel
+    won't boot.
+(2) change the linker-script to move the bss section of a good kernel,
+     making part of the section pass 0xffffffff82000000, then the kernel
+     becomes not bootable.
+(3) change the linker-script to move the bss section of a good kernel, not
+     letting it pass 0xffffffff82000000. the result kernel can boot.
+(4) keep all sections intact and move PHYSICAL_START to make the end of
+     kernel image pass 0xffffffff82000000. Kernel won't boot
+(5) keep all sections intact and move PHYSICAL_START, not letting the kernel
+     image pass 0xffffffff82000000. the result kernel can boot.
 
-CONFIG_SLAB + your patch: works
-CONFIG_SLAB: works
-CONFIG_SLUB: works
+So it looks this not related to the kernel size, but to the address
+0xffffffff82000000. what is special for this address? I could not find any
+documentation (or source reference) to this address.
+In the head_64.S, we actually initialized the PMD entries for all the
+possible 512MB space. I think we should be able to use it. In a booted
+kernel, the PMD entries for 0xffffffff82000000 is zeroed out (when I dump
+the kernel page table). so I guess this address is not used by other part of
+kernel.
 
->> Messages like this appear:
->> INFO: rcu_sched_state detected stall on CPU 0 (t=7348 jiffies)
->>
->> After reverting UML works fine again.
->>
->> commit 78b435368fcd615e695a06012cd963a556284e00
->> Author: Arjan van de Ven<arjan@linux.intel.com>
->> Date:   Mon Jul 19 10:59:42 2010 -0700
->>
->>     slab: use deferable timers for its periodic housekeeping
->>
->>     slab has a "once every 2 second" timer for its housekeeping.
->>     As the number of logical processors is growing, its more and more
->>     common that this 2 second timer becomes the primary wakeup source.
->>
->>     This patch turns this housekeeping timer into a deferable timer,
->>     which means that the timer does not interrupt idle, but just runs
->>     at the next event that wakes the cpu up.
->>
->>     The impact is that the timer likely runs a bit later, but during the
->>     delay no code is running so there's not all that much reason for
->>     a difference in housekeeping to occur because of this delay.
->>
->>     Signed-off-by: Arjan van de Ven<arjan@linux.intel.com>
->>     Signed-off-by: Pekka Enberg<penberg@cs.helsinki.fi>
->>
->> diff --git a/mm/slab.c b/mm/slab.c
->> index e49f8f4..29aad44 100644
->> --- a/mm/slab.c
->> +++ b/mm/slab.c
->> @@ -861,7 +861,7 @@ static void __cpuinit start_cpu_timer(int cpu)
->>          */
->>         if (keventd_up()&&  reap_work->work.func == NULL) {
->>                 init_reap_node(cpu);
->> -               INIT_DELAYED_WORK(reap_work, cache_reap);
->> +               INIT_DELAYED_WORK_DEFERRABLE(reap_work, cache_reap);
->>                 schedule_delayed_work_on(cpu, reap_work,
->>                                         __round_jiffies_relative(HZ,
->> cpu));
->>         }
->>
->>
->
->
+I tried kernel 2.6.27 and it seems to have the same issue.
 
+Any comment?
 
-
--- 
-Thanks,
-//richard
+-Rong
