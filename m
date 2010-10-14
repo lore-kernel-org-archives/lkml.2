@@ -1,77 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab0JNJ7T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 05:59:19 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:25716 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755267Ab0JNJ7S (ORCPT
+	id S1755359Ab0JNJ7e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 05:59:34 -0400
+Received: from smtp101.sbc.mail.re3.yahoo.com ([66.196.96.84]:23813 "HELO
+	smtp101.sbc.mail.re3.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755106Ab0JNJ7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 05:59:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=cmKIZZSIAZZbchKXVkLh9DaHzs1qsgInZStnGGMgF42bHLKBrE9jczef2T8P4AFTBm
-         DHEyPu92XVKZfA/Tm27g==
-MIME-Version: 1.0
-In-Reply-To: <1287047542.29097.169.camel@twins>
-References: <20101012074910.GA9893@in.ibm.com> <20101012075202.GD9893@in.ibm.com>
- <20101013153421.b38a5c6f.kamezawa.hiroyu@jp.fujitsu.com> <1287047542.29097.169.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Thu, 14 Oct 2010 02:58:33 -0700
-Message-ID: <AANLkTikkoC+45AnpwosszanrLBjg-OPnV8Bjynq47E9s@mail.gmail.com>
-Subject: Re: [PATCH v3 3/7] sched: throttle cfs_rq entities which exceed their
- local quota
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        bharata@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Nikhil Rao <ncrao@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Thu, 14 Oct 2010 05:59:32 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: STk1SeEVM1loclaRM.8Un6LMvElHyDkaAvEGtye9Lb5g9J4
+ JJGZyX05y0JCmp6rWsalrveTVL6Dadu5ob8QkzX6KoDqRoJT71FP1vj7aH1o
+ nD8rqQCrvoyyJM00sDMy_sjqeGRdLa2BfYC6gVWaAz3NVVkCkzOlJLFsiEoY
+ p6fudcWZzbidJcsCCuQ8Wo1KirTzUP9SYK9GC7civpOTe1KNIRf64iN2BE73
+ Xa66ndLSuOw--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 2/5] tcm: Unify INQUIRY subsystem plugin handling
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: Christoph Hellwig <hch@lst.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+In-Reply-To: <20101014092601.GB28446@lst.de>
+References: <1286959681-3445-1-git-send-email-nab@linux-iscsi.org>
+	 <20101013110653.GA26366@lst.de>
+	 <1287001189.7334.47.camel@haakon2.linux-iscsi.org>
+	 <20101014000421.GB15583@lst.de>
+	 <1287030937.9909.30.camel@haakon2.linux-iscsi.org>
+	 <20101014092601.GB28446@lst.de>
+Content-Type: text/plain
+Date: Thu, 14 Oct 2010 02:54:47 -0700
+Message-Id: <1287050087.9909.79.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 2:12 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-10-13 at 15:34 +0900, KAMEZAWA Hiroyuki wrote:
->> cpu.share and bandwidth control can't be used simultaneously or...
->> is this fair ? I'm not familiar with scheduler but this allows boost this tg.
->> Could you add a brief documentaion of a spec/feature. in the next post ?
->
-> Like explained, shares control the proportional distribution of time
-> between groups, bandwidth puts a limit on how much time a group can
-> take. It can cause a group to receive less than its fair share, but
-> never more.
->
-> There is, however, a problem with all this, and that is that all this
-> explicit idling of tasks can lead to a form of priority inversion.
-> Regular preemptive scheduling already suffers from this, but explicitly
-> idling tasks exacerbates the situation.
->
-> You basically get to add the longest induced idle time to all your lock
-> hold times.
->
+On Thu, 2010-10-14 at 11:26 +0200, Christoph Hellwig wrote:
+> On Wed, Oct 13, 2010 at 09:35:37PM -0700, Nicholas A. Bellinger wrote:
+> > So you would rather have struct se_device attributes set in TCM
+> > subsystem specific ->create_virtdevice() code directly after
+> > transport_add_device_to_core_hba() -> se_dev_set_default_attribs(),
+> > right..?
+> 
+> Actually you would want to set them before
+> transport_add_device_to_core_hba.  Always make sure an object is fully
+> set up before making it accessible.
+> 
 
-This is a concern (especially for exit starvation, since the task
-needs to be scheduled for reaping); the way throttling is enacted
-should help to mitigate the risk / starvation here.  When a group
-exceeds its bandwidth we don't actively force it off the cpu, we only
-set TIF_RESCHED; this the "enforcement" of throttling until we drop
-back down through put_prev_task().
+Hmmmm, very good point.
 
-This should mean we won't extend a semaphore wait time unless someone
-explicitly issues something a cond_resched() within it [at which point
-they are choosing a potentially arbitrary latency delay anyway,
-although this does expand it relative to the target
-sched_latency_period].
+It would make the most sense to just go ahead and set a pre-configured
+struct queue_limits into transport_add_device_to_core_hba() from
+subsystem specific ->create_virtdevice() code, and just drop whatever
+unnecessary struct se_subsystem_api ops are duplicate of what is being
+registered as defaults with struct queue_limits.
 
->
->
+
+
