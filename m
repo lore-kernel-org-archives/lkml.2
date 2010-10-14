@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755796Ab0JNTfk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 15:35:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754875Ab0JNTfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 15:35:39 -0400
-Subject: Process to push changes to include/linux/types.h
-From: Eric Paris <eparis@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, torvalds@linux-foundation.org, agruen@suse.de,
-        jengelh@medozas.de, davem@davemloft.net, andi@firstfloor.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Oct 2010 15:34:52 -0400
-Message-ID: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
+	id S1755970Ab0JNTg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 15:36:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37965 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755000Ab0JNTg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 15:36:27 -0400
+Date: Thu, 14 Oct 2010 12:35:11 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Pekka Enberg <penberg@kernel.org>,
+        David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
+Message-Id: <20101014123511.d628f873.akpm@linux-foundation.org>
+In-Reply-To: <20101014183448.GA3187@elte.hu>
+References: <alpine.DEB.2.00.1010131739010.27124@chino.kir.corp.google.com>
+	<4CB65262.3070507@zytor.com>
+	<alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
+	<cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
+	<alpine.DEB.2.00.1010131832400.794@chino.kir.corp.google.com>
+	<4CB688F4.9040706@zytor.com>
+	<alpine.DEB.2.00.1010132140550.20995@chino.kir.corp.google.com>
+	<4CB7240E.9000905@zytor.com>
+	<AANLkTin-VOKXe6wcwt_r3bLcS6=WYJ4EAPPUZWLbEGQF@mail.gmail.com>
+	<4CB7418C.7010505@zytor.com>
+	<20101014183448.GA3187@elte.hu>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A patch was posted a bit ago by agruen which made a change to
-include/linux/types.h changing aligned_u64 to __aligned_u64 and exposing
-this new type to userspace.
+On Thu, 14 Oct 2010 20:34:48 +0200
+Ingo Molnar <mingo@elte.hu> wrote:
 
-http://marc.info/?l=linux-kernel&m=128316627912457&w=2
+> 
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+> 
+> > On 10/14/2010 09:00 AM, Pekka Enberg wrote:
+> >
+> > >> CONFIG_EMBEDDED *is* "I am a user who (think I) know what I'm 
+> > >> doing". That is *what it is* and *all it is*.
+> > > 
+> > > Yup. The naming is quite unfortunate, though. Can we change it to 
+> > > something else?
+> > 
+> > Funny, this seems to come up repeatedly ;)
+> 
+> I'd suggest to rename CONFIG_EMBEDDED=y to CONFIG_EXPERT=y, but i'd also 
+> suggest to rename all sub-config-options that depend on CONFIG_EXPERT to 
+> have a CONFIG_EXPERT_ prefix.
+> 
+> So we'd have:
+> 
+>   CONFIG_EXPERT_CPU_SUP_INTEL=y
+>   CONFIG_EXPERT_MMAP_ALLOW_UNINITIALIZED=y
+> 
+> etc.
 
-Everyone seemed to agree the patch was a good idea and was correct.  At
-the moment this change only really affects network code, but I would
-very much like to make use of this change in the notification tree.
-Dave Miller did not apply the patch because "Someone has to first add
-the types to linux/types.h, and that doesn't go through my tree."
+yup.  CONFIG_EMBEDDED didn't make a lot of sense even when we first did it. 
+I suppose CONFIG_EXPERT is OK, although everyone will select it because
+they think they're experts ;)  CONFIG_PROPELLORHEAD!
 
-http://marc.info/?l=linux-kernel&m=128634544524035&w=2
+> That way all the enabled 'expert options' become easily visible in the 
+> .config file and they advertise themselves properly - it's also easily 
+> greppable. In the source code it also becomes self-documenting, it's 
+> obvious when a dependency is 'rare' or 'special' - it has a 
+> CONFIG_EXPERT_ prefix.
+> 
+> Something for the KS i guess.
 
-I'm a little stuck as to the right path forward.  I normally would have
-had no qualms about adding __aligned_u64 to types.h in the notification
-tree and pushing it to Linus next go-round and then the net tree could
-convert and potentially drop the old aligned_u64 type (but again that
-would be outside the net tree).  Since Dave isn't willing to add the
-type and I don't want to get called too many bad names, I figured I
-should try to find if there is some better way, maintainer, or tree who
-should be adding this new type.
-
-Who needs to sign off on a new type in types.h?  Who should add it?
-Should I just ram it on in there myself, take any flames that come
-along, and then let net finish their cleanups after I've been charred?
-Any suggestions on the best course of action would be appreciated.
-
--Eric
-
+nah, just do it.
