@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab0JNAEm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 20:04:42 -0400
-Received: from verein.lst.de ([213.95.11.210]:45827 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753730Ab0JNAEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 20:04:40 -0400
-Date: Thu, 14 Oct 2010 02:04:21 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@lst.de>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-Subject: Re: [PATCH 2/5] tcm: Unify INQUIRY subsystem plugin handling
-Message-ID: <20101014000421.GB15583@lst.de>
-References: <1286959681-3445-1-git-send-email-nab@linux-iscsi.org> <20101013110653.GA26366@lst.de> <1287001189.7334.47.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
+	id S1753883Ab0JNAGf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 20:06:35 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:52479 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751292Ab0JNAGe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 20:06:34 -0400
+Date: Wed, 13 Oct 2010 20:06:34 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk
+Subject: Re: fs: Inode cache scalability V3
+Message-ID: <20101014000634.GA21905@infradead.org>
+References: <1286928961-15157-1-git-send-email-david@fromorbit.com>
+ <20101013145102.GA12155@infradead.org>
+ <20101013155845.GB22447@infradead.org>
+ <20101013214609.GA24695@infradead.org>
+ <20101013233647.GA18691@infradead.org>
+ <20101013235552.GA4681@dastard>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1287001189.7334.47.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <20101013235552.GA4681@dastard>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 01:19:49PM -0700, Nicholas A. Bellinger wrote:
-> I should point out that the majority of values mentioned here (other
-> than the two INQUIRY strings) are already present in struct
-> se_dev_attrib and which appear as configfs attributes under
-> under /sys/kernel/config/target/core/$HBA/$DEV/attrib/.  This means that
-> the struct se_subsystem_api calls only really used by during init
-> target_core_device.c:se_dev_set_default_attribs() and
-> DEV_ATTRIB(dev)->block_size, etc are used in TCM Core code.
+On Thu, Oct 14, 2010 at 10:55:52AM +1100, Dave Chinner wrote:
+> > I wonder what's a good workaround for that.  Just flushing out all
+> > dirty state of a block device inode on last close would fix, but we'd
+> > still have all the dragons hidden underneath until we finally sort
+> > out the bdi reference mess.
 > 
-> I am happy to include the two INQUIRY strings needed for emulation into
-> struct se_subsystem_api directly, but I would still prefer to keep the
-> function pointers for extracting values from subsystem specific code for
-> the initial device attribute setup.
+> Perhaps for the moment make __blkdev_put() move the inode onto the
+> dirty lists for the default bdi when it switches them???in the
+> mapping? e.g. add a "inode_switch_bdi" helper that is only called in
+> this case?
 
-What's the point?  It's a lot of boilerplate code that does nothing
-but obsfucating what's actually going on there.
+I really hate to sprinkle special cases all over, but given that Linus
+decreed he's not going to take larger writeback changes which would be
+required to fix this for .37 it'll be hard to avoid this.
+
+Note that it would really be a bdev_inode_switch_bdi - since the move
+to using ->s_bdi for all other inodes these hacks aren't required
+anymore, it's just the block devices that continue using the bdi
+from the mapping that are causing problems.
 
