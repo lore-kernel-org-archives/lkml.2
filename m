@@ -1,63 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755219Ab0JNPJg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 11:09:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49545 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754920Ab0JNPJe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 11:09:34 -0400
-MIME-Version: 1.0
-In-Reply-To: <20101014105855.GB31247@aftab>
-References: <20101013131057.88238be6.randy.dunlap@oracle.com>
- <20101014042409.GB29342@aftab> <20101014105855.GB31247@aftab>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 14 Oct 2010 08:03:17 -0700
-Message-ID: <AANLkTi=ZjR3bWtZ2x9wRzpzBb1K8Wst3Xg_K4mGX-b6o@mail.gmail.com>
-Subject: Re: [PATCH] bitops.h: Widen BIT macro to support 64-bit types
-To: Borislav Petkov <bp@amd64.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>,
-        akpm <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755257Ab0JNPKO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 11:10:14 -0400
+Received: from sh.osrg.net ([192.16.179.4]:45351 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754947Ab0JNPKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 11:10:12 -0400
+Date: Fri, 15 Oct 2010 00:09:47 +0900
+To: andi@firstfloor.org
+Cc: fujita.tomonori@lab.ntt.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        minchan.kim@gmail.com
+Subject: Re: [RFC][PATCH 1/3] contigous big page allocator
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20101014125519.GB13414@basil.fritz.box>
+References: <20101014072421.GA13414@basil.fritz.box>
+	<20101014173103U.fujita.tomonori@lab.ntt.co.jp>
+	<20101014125519.GB13414@basil.fritz.box>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20101015000416N.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 15 Oct 2010 00:09:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 3:58 AM, Borislav Petkov <bp@amd64.org> wrote:
->>
->> Ok, so BIT() should be fixed to work with the largest type available,
->> IMHO. Let me cook up something.
->
-> Maybe something like the following. Build-tested with the crosstool
-> (http://www.kernel.org/pub/tools/crosstool) on the following arches:
-> alpha blackfin cris hppa64 ia64 mips64 sparc.
->
-> Any objections?
+On Thu, 14 Oct 2010 14:55:19 +0200
+Andi Kleen <andi@firstfloor.org> wrote:
 
-Yeah. I object. I have no idea what this will change for everything
-else that expects bitops to work on unsigned long values.
+> > I think that at least one mainline driver in arm uses such trick but I
+> > can't recall the name. Better to ask on the arm mainling list. Also I
+> > heard that the are some out-of-tree patches about this.
+> 
+> I'm sure there are out of tree patches for lots of things,
+> but at least in terms of merging mainline functionality
+> use cases merged in the mainline tree are required.
 
-I really think that the bug is not in the BIT() definition, but in the
-use. If somebody wants a non-unsigned-long bit field, they had better
-not use bitops.h.
+I think that we already have drivers that need such feature in
+mainline. They keep out-of-tree patches that give continuous memory to
+these drivers reliably.
 
-And no, just changing the BIT() macro to return a 64-bit value is
-_not_ trivially safe. Due to C type rules, now all arithmetic using
-BIT() will suddenly be 64-bit, which is often *much* slower, and can
-introduce real bugs.
-
-On many architectures, a 64-bit non-constant shift will even end up
-being a function call. And if the thing is used in a varargs function,
-the argument layout will be totally different. We've also had several
-issues with 64-bit types and switch() statements, for example. And a
-quick grep for '\<BIT(' shows that non-constant cases are not unheard
-of, and there's a lot of random use where it is not at all obvious
-that it's safe (because it's used for defining other defines).
-
-So no. I do not think BIT() should be 64-bit. It's "unsigned long".
-Look at all the other things around it, and look at all the historical
-uses.
-
-                                    Linus
+Anyway, Felipe pointed out one user. I also think that
+drivers/media/video/videobuf-dma-contig.c also was already mentioned,
+needs such feature.
