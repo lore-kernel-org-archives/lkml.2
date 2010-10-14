@@ -1,43 +1,201 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755549Ab0JNJ02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 05:26:28 -0400
-Received: from verein.lst.de ([213.95.11.210]:37561 "EHLO verein.lst.de"
+	id S1755512Ab0JNJ0M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 05:26:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21038 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab0JNJ0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 05:26:25 -0400
-Date: Thu, 14 Oct 2010 11:26:01 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: Christoph Hellwig <hch@lst.de>, linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
-        James Bottomley <James.Bottomley@suse.de>,
-        Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
-        "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Douglas Gilbert <dgilbert@interlog.com>,
-        Richard Sharpe <realrichardsharpe@gmail.com>
-Subject: Re: [PATCH 2/5] tcm: Unify INQUIRY subsystem plugin handling
-Message-ID: <20101014092601.GB28446@lst.de>
-References: <1286959681-3445-1-git-send-email-nab@linux-iscsi.org> <20101013110653.GA26366@lst.de> <1287001189.7334.47.camel@haakon2.linux-iscsi.org> <20101014000421.GB15583@lst.de> <1287030937.9909.30.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287030937.9909.30.camel@haakon2.linux-iscsi.org>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S1755017Ab0JNJX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 05:23:28 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: [PATCH v7 07/12] Add async PF initialization to PV guest.
+Date: Thu, 14 Oct 2010 11:22:51 +0200
+Message-Id: <1287048176-2563-8-git-send-email-gleb@redhat.com>
+In-Reply-To: <1287048176-2563-1-git-send-email-gleb@redhat.com>
+References: <1287048176-2563-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 09:35:37PM -0700, Nicholas A. Bellinger wrote:
-> So you would rather have struct se_device attributes set in TCM
-> subsystem specific ->create_virtdevice() code directly after
-> transport_add_device_to_core_hba() -> se_dev_set_default_attribs(),
-> right..?
+Enable async PF in a guest if async PF capability is discovered.
 
-Actually you would want to set them before
-transport_add_device_to_core_hba.  Always make sure an object is fully
-set up before making it accessible.
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+ Documentation/kernel-parameters.txt |    3 +
+ arch/x86/include/asm/kvm_para.h     |    6 ++
+ arch/x86/kernel/kvm.c               |   92 +++++++++++++++++++++++++++++++++++
+ 3 files changed, 101 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 8dc2548..0bd2203 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -1699,6 +1699,9 @@ and is between 256 and 4096 characters. It is defined in the file
+ 
+ 	no-kvmclock	[X86,KVM] Disable paravirtualized KVM clock driver
+ 
++	no-kvmapf	[X86,KVM] Disable paravirtualized asynchronous page
++			fault handling.
++
+ 	nolapic		[X86-32,APIC] Do not enable or use the local APIC.
+ 
+ 	nolapic_timer	[X86-32,APIC] Do not use the local APIC timer.
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 8662ae0..2315398 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -65,6 +65,12 @@ struct kvm_mmu_op_release_pt {
+ 	__u64 pt_phys;
+ };
+ 
++struct kvm_vcpu_pv_apf_data {
++	__u32 reason;
++	__u8 pad[60];
++	__u32 enabled;
++};
++
+ #ifdef __KERNEL__
+ #include <asm/processor.h>
+ 
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index e6db179..032d03b 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -27,16 +27,30 @@
+ #include <linux/mm.h>
+ #include <linux/highmem.h>
+ #include <linux/hardirq.h>
++#include <linux/notifier.h>
++#include <linux/reboot.h>
+ #include <asm/timer.h>
++#include <asm/cpu.h>
+ 
+ #define MMU_QUEUE_SIZE 1024
+ 
++static int kvmapf = 1;
++
++static int parse_no_kvmapf(char *arg)
++{
++        kvmapf = 0;
++        return 0;
++}
++
++early_param("no-kvmapf", parse_no_kvmapf);
++
+ struct kvm_para_state {
+ 	u8 mmu_queue[MMU_QUEUE_SIZE];
+ 	int mmu_queue_len;
+ };
+ 
+ static DEFINE_PER_CPU(struct kvm_para_state, para_state);
++static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
+ 
+ static struct kvm_para_state *kvm_para_state(void)
+ {
+@@ -231,12 +245,86 @@ static void __init paravirt_ops_setup(void)
+ #endif
+ }
+ 
++void __cpuinit kvm_guest_cpu_init(void)
++{
++	if (!kvm_para_available())
++		return;
++
++	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
++		u64 pa = __pa(&__get_cpu_var(apf_reason));
++
++		wrmsrl(MSR_KVM_ASYNC_PF_EN, pa | KVM_ASYNC_PF_ENABLED);
++		__get_cpu_var(apf_reason).enabled = 1;
++		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
++		       smp_processor_id());
++	}
++}
++
++static void kvm_pv_disable_apf(void *unused)
++{
++	if (!__get_cpu_var(apf_reason).enabled)
++		return;
++
++	wrmsrl(MSR_KVM_ASYNC_PF_EN, 0);
++	__get_cpu_var(apf_reason).enabled = 0;
++
++	printk(KERN_INFO"Unregister pv shared memory for cpu %d\n",
++	       smp_processor_id());
++}
++
++static int kvm_pv_reboot_notify(struct notifier_block *nb,
++				unsigned long code, void *unused)
++{
++	if (code == SYS_RESTART)
++		on_each_cpu(kvm_pv_disable_apf, NULL, 1);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_reboot_nb = {
++	.notifier_call = kvm_pv_reboot_notify,
++};
++
+ #ifdef CONFIG_SMP
+ static void __init kvm_smp_prepare_boot_cpu(void)
+ {
+ 	WARN_ON(kvm_register_clock("primary cpu clock"));
++	kvm_guest_cpu_init();
+ 	native_smp_prepare_boot_cpu();
+ }
++
++static void kvm_guest_cpu_online(void *dummy)
++{
++	kvm_guest_cpu_init();
++}
++
++static void kvm_guest_cpu_offline(void *dummy)
++{
++	kvm_pv_disable_apf(NULL);
++}
++
++static int __cpuinit kvm_cpu_notify(struct notifier_block *self,
++				    unsigned long action, void *hcpu)
++{
++	int cpu = (unsigned long)hcpu;
++	switch (action) {
++	case CPU_ONLINE:
++	case CPU_DOWN_FAILED:
++	case CPU_ONLINE_FROZEN:
++		smp_call_function_single(cpu, kvm_guest_cpu_online, NULL, 0);
++		break;
++	case CPU_DOWN_PREPARE:
++	case CPU_DOWN_PREPARE_FROZEN:
++		smp_call_function_single(cpu, kvm_guest_cpu_offline, NULL, 1);
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __cpuinitdata kvm_cpu_notifier = {
++        .notifier_call  = kvm_cpu_notify,
++};
+ #endif
+ 
+ void __init kvm_guest_init(void)
+@@ -245,7 +333,11 @@ void __init kvm_guest_init(void)
+ 		return;
+ 
+ 	paravirt_ops_setup();
++	register_reboot_notifier(&kvm_pv_reboot_nb);
+ #ifdef CONFIG_SMP
+ 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
++	register_cpu_notifier(&kvm_cpu_notifier);
++#else
++	kvm_guest_cpu_init();
+ #endif
+ }
+-- 
+1.7.1
 
