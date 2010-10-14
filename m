@@ -1,102 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab0JNROP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 13:14:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:50380
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753129Ab0JNROO (ORCPT
+	id S1755660Ab0JNROk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 13:14:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46278 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755566Ab0JNROi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 13:14:14 -0400
-Date: Thu, 14 Oct 2010 10:14:36 -0700 (PDT)
-Message-Id: <20101014.101436.193725247.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 14 Oct 2010 13:14:38 -0400
+Date: Thu, 14 Oct 2010 10:13:13 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Daniel Drake <dsd@laptop.org>,
+        akpm <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        x86@kernel.org
+Subject: [PATCH -next] x86: olpc-xo1 uses/depends on PCI
+Message-Id: <20101014101313.adf7eb2a.randy.dunlap@oracle.com>
+In-Reply-To: <20101014152642.ef280a33.sfr@canb.auug.org.au>
+References: <20101014152642.ef280a33.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-One last push before heading off to Spain for the netfilter workshop:
+olpc-xo1 uses pci_*() interfaces so it should depend on PCI.
 
-1) r8169 does 16K allocations using GFP_ATOMIC during resume,
-   which makes resume fail frequently.  Use dma_*() interfaces
-   and GFP_KERNEL where possible.
+arch/x86/kernel/olpc-xo1.c:65: error: implicit declaration of function 'pci_enable_device_io'
+arch/x86/kernel/olpc-xo1.c:71: error: implicit declaration of function 'pci_request_region'
+arch/x86/kernel/olpc-xo1.c:80: error: implicit declaration of function 'pci_release_region'
 
-   From Stanislaw Gruszka.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Daniel Drake <dsd@laptop.org>
+---
+ arch/x86/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-2) b44 and fec driver mis-manage initial carrier state, breaking NFS
-   root mounts and similar, from Paul Fertser and Oskar Schirmer.
-
-3) Kernel heap leak to userspace in privileged ethtool ops, fix from
-   Kees Cook.
-
-4) Several use-after free fixes in ATM and wimax from Jiri Slaby.
-
-5) Fixed PHY support regressed upon conversion to phylib in FEC
-   driver, fix from Greg Ungerer.
-
-6) ehea sets CHECKSUM_UNNECESSARY erroneously on non-TCP/UDP packets,
-   fix from Breno Leitao.
-
-7) TG3 rx_dropped accounting regressed unintentionally, fix from Eric
-   Dumazet.
-
-Please pull, thanks a lot!
-
-The following changes since commit 53eeb64e808971207350386121f4bab12fa2f45f:
-  Linus Torvalds (1):
-        Merge branch 'fixes' of git://git.kernel.org/.../djbw/async_tx
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Breno Leitao (1):
-      ehea: Fix a checksum issue on the receive path
-
-Eric Dumazet (1):
-      tg3: restore rx_dropped accounting
-
-Greg Ungerer (1):
-      net: allow FEC driver to use fixed PHY support
-
-Jiri Slaby (4):
-      ATM: solos-pci, remove use after free
-      ATM: mpc, fix use after free
-      ATM: iphase, remove sleep-inside-atomic
-      NET: wimax, fix use after free
-
-Kees Cook (1):
-      net: clear heap allocations for privileged ethtool actions
-
-Oskar Schirmer (1):
-      net/fec: carrier off initially to avoid root mount failure
-
-Paul Fertser (1):
-      b44: fix carrier detection on bind
-
-Stanislaw Gruszka (2):
-      r8169: allocate with GFP_KERNEL flag when able to sleep
-      r8169: use device model DMA API
-
- drivers/atm/iphase.c          |    6 ----
- drivers/atm/iphase.h          |    2 +-
- drivers/atm/solos-pci.c       |    8 +++--
- drivers/net/b44.c             |    4 +-
- drivers/net/ehea/ehea_main.c  |    9 +++++-
- drivers/net/ehea/ehea_qmr.h   |    1 +
- drivers/net/fec.c             |   44 +++++++++++++++++++---------
- drivers/net/r8169.c           |   65 ++++++++++++++++++++++-------------------
- drivers/net/tg3.c             |    6 ++-
- drivers/net/tg3.h             |    2 +-
- drivers/net/wimax/i2400m/rx.c |   26 ++++++++--------
- net/atm/mpc.c                 |    2 +-
- net/core/ethtool.c            |    6 ++--
- 13 files changed, 104 insertions(+), 77 deletions(-)
+--- linux-next-20101014.orig/arch/x86/Kconfig
++++ linux-next-20101014/arch/x86/Kconfig
+@@ -2018,7 +2018,7 @@ config OLPC
+ 
+ config OLPC_XO1
+ 	tristate "OLPC XO-1 support"
+-	depends on OLPC
++	depends on OLPC && PCI
+ 	---help---
+ 	  Add support for non-essential features of the OLPC XO-1 laptop.
+ 
