@@ -1,115 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754794Ab0JNNm7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 09:42:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57822 "EHLO
+	id S1754822Ab0JNNsF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 09:48:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:57797 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab0JNNm5 (ORCPT
+	with ESMTP id S1753466Ab0JNNsD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 09:42:57 -0400
+	Thu, 14 Oct 2010 09:48:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=M0cG3qzwk7HvkYS9oEpmW1Exzei5sbW6RGnSfB+b8XLAuTrHTmtriTRNsGscIJtoVP
-         sTkTscyw9k2qVFQqb0opTzAkiL6P2JKp4Pr6s+KwRU/7W1YKlCY4rAmdyRhkoqSzpNq7
-         5vLQJ6MYM7Hk+LQPAgx/gdUIkdXXIsd2uSj0Y=
-Message-ID: <4CB70234.3030308@gmail.com>
-Date: Thu, 14 Oct 2010 15:14:28 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=skIkziXMlaORoXTUd+MONn+l9Fw3pXcWL0SO5JmYBW190zmo3vJ467ToTWzYJdrC2e
+         65j6BjHpiWJdnkGaqT8l+VAYCg4Obi9ulMyIxRuaz0v7TlBMVTc0ryAf/r4AnPWTHNci
+         /dY2T4AFOHYHptbJMZ3cpR2ZM1MGtmE9VntIw=
 MIME-Version: 1.0
-To: Chris Frey <cdfrey@foursquare.net>
-CC: Jens Axboe <jaxboe@fusionio.com>, Richard Weinberger <richard@nod.at>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jdike@addtoit.com" <jdike@addtoit.com>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        "user-mode-linux-user@lists.sourceforge.net" 
-	<user-mode-linux-user@lists.sourceforge.net>,
-        "janjaap@bos.nl" <janjaap@bos.nl>,
-        "geert@linux-m68k.org" <geert@linux-m68k.org>,
-        "martin.petersen@oracle.com" <martin.petersen@oracle.com>,
-        "adobriyan@gmail.com" <adobriyan@gmail.com>,
-        "syzop@vulnscan.org" <syzop@vulnscan.org>
-Subject: Re: [PATCH 1/1] um: ubd: Fix data corruption
-References: <20100928225202.GA30352@foursquare.net> <4CA275CE.6060401@fusionio.com> <20100929012945.GA3324@foursquare.net> <4CA2CCC3.8010307@fusionio.com> <20100929063452.GA13290@foursquare.net> <4CAA02D0.7040901@gmail.com> <20101004195152.GA31583@foursquare.net> <4CAAE077.9010500@gmail.com> <20101005203137.GA594@foursquare.net> <4CAD7D98.7080808@fusionio.com> <20101007202339.GA8338@foursquare.net>
-In-Reply-To: <20101007202339.GA8338@foursquare.net>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <13B9B4C6EF24D648824FF11BE896716203D760F19C@dlee02.ent.ti.com>
+References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
+	<20101007192245.GC26435@n2100.arm.linux.org.uk>
+	<AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
+	<20101008175308.GA10975@n2100.arm.linux.org.uk>
+	<20101008231926.GA28235@kroah.com>
+	<alpine.LFD.2.00.1010082242390.3107@xanadu.home>
+	<AANLkTi=BvXROFEnzYykoUQNbU05Q=mWoV3t7qKDk7+vL@mail.gmail.com>
+	<13B9B4C6EF24D648824FF11BE896716203D760F19C@dlee02.ent.ti.com>
+Date: Thu, 14 Oct 2010 16:48:00 +0300
+Message-ID: <AANLkTinu3wL536szc2mxe3HTAz9yduDHnOU+oP_wOHT-@mail.gmail.com>
+Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: "Woodruff, Richard" <r-woodruff2@ti.com>
+Cc: Nicolas Pitre <nico@fluxnic.net>, Arnd Hannemann <arnd@arndnet.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        "Pedanekar, Hemant" <hemantp@ti.com>, Greg KH <greg@kroah.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Han Jonghun <jonghun79.han@gmail.com>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Oct 13, 2010 at 7:17 PM, Woodruff, Richard <r-woodruff2@ti.com> wrote:
+>> From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-kernel-
+>> bounces@lists.infradead.org] On Behalf Of Felipe Contreras
+>> Sent: Saturday, October 09, 2010 5:01 AM
+>
+>> That's not true, drivers on ARMv6 and above do work. I still wonder
+>> how exactly to trigger the issue, and how often does this happen,
+>> because I've never seen it.
+>
+> On a Cortex-A8 if you enable auxcr.asa speculative accesses will be allowed to happen more broadly (cross outside of L2).  There are few failures which have been seen in testing which go away with its disable. Most Linux kernels have this feature off.  They still prefetch but with reduced scope.
 
-Can you please try this one then?  It seems to work here but I can't
-reproduce the original problem reliably so I'm not really sure.
+I see, do you have some pointers as how to enable this to try it out?
 
-Thanks.
+> On Cortex-A9 to get performance there are prefetches at both A9 level and PL310 (L2 controller) level. Enabling them for some things gives a very good boost. It will increase your chances of hitting issues as it activates D-Side prefetch along with increasing the amount I side prefetch.  An A9 doesn't have auxcr to limit its prefetch to L2 like A8.  If there is a MMU table with a valid TLB its free game to speculate against and bring data in (for non device memory maps).
+>
+> I'm told A15 gets much more aggressive here. It has dedicated hardware resources (fill buffers ++) for speculation and not just competing against the current instruction stream for these resources.
+>
+> Having incoherent views and/or copies of data is not what you want. SMP should amplify the badness by doubling speculation sources and adding extra l1 caches. Killing the alias from ioremap is a good thing and something people should want for production.
 
-diff --git a/arch/um/drivers/ubd_kern.c b/arch/um/drivers/ubd_kern.c
-index 1bcd208..9734994 100644
---- a/arch/um/drivers/ubd_kern.c
-+++ b/arch/um/drivers/ubd_kern.c
-@@ -163,6 +163,7 @@ struct ubd {
- 	struct scatterlist sg[MAX_SG];
- 	struct request *request;
- 	int start_sg, end_sg;
-+	sector_t rq_pos;
- };
+Thanks for clarifying the situation.
 
- #define DEFAULT_COW { \
-@@ -187,6 +188,7 @@ struct ubd {
- 	.request =		NULL, \
- 	.start_sg =		0, \
- 	.end_sg =		0, \
-+	.rq_pos =		0, \
- }
+However, nobody is proposing to not kill the ioremap() double alias,
+only to make it a warning for now. One argument against this is that
+would cause corruption on other parts of the system which doesn't seem
+to be the case.
 
- /* Protected by ubd_lock */
-@@ -1228,7 +1230,6 @@ static void do_ubd_request(struct request_queue *q)
- {
- 	struct io_thread_req *io_req;
- 	struct request *req;
--	sector_t sector;
- 	int n;
+I take it you don't have a problem with making this a warning on .36,
+and disable completely on .37 (or later). Right?
 
- 	while(1){
-@@ -1239,12 +1240,12 @@ static void do_ubd_request(struct request_queue *q)
- 				return;
+The real issue is the drivers relying on this behavior, which need to
+be fixed regardless of this decision to warn, or disable.
 
- 			dev->request = req;
-+			dev->rq_pos = blk_rq_pos(req);
- 			dev->start_sg = 0;
- 			dev->end_sg = blk_rq_map_sg(q, req, dev->sg);
- 		}
-
- 		req = dev->request;
--		sector = blk_rq_pos(req);
- 		while(dev->start_sg < dev->end_sg){
- 			struct scatterlist *sg = &dev->sg[dev->start_sg];
-
-@@ -1256,10 +1257,9 @@ static void do_ubd_request(struct request_queue *q)
- 				return;
- 			}
- 			prepare_request(req, io_req,
--					(unsigned long long)sector << 9,
-+					(unsigned long long)dev->rq_pos << 9,
- 					sg->offset, sg->length, sg_page(sg));
-
--			sector += sg->length >> 9;
- 			n = os_write_file(thread_fd, &io_req,
- 					  sizeof(struct io_thread_req *));
- 			if(n != sizeof(struct io_thread_req *)){
-@@ -1272,6 +1272,7 @@ static void do_ubd_request(struct request_queue *q)
- 				return;
- 			}
-
-+			dev->rq_pos += sg->length >> 9;
- 			dev->start_sg++;
- 		}
- 		dev->end_sg = 0;
+-- 
+Felipe Contreras
