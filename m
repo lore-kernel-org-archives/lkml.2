@@ -1,59 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab0JNCOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 22:14:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:53226 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752974Ab0JNCOW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 22:14:22 -0400
-From: Fernando Guzman Lugo <x0095840@ti.com>
-To: <Hiroshi.DOYU@nokia.com>
-Cc: <felipe.contreras@nokia.com>, <tony@atomide.com>,
-        <linux-kernel@vger.kernel.org>, <andy.shevchenko@gmail.com>,
-        <linux-omap@vger.kernel.org>, Fernando Guzman Lugo <x0095840@ti.com>
-Subject: [PATCH 1/4] iovmm: no gap checking for fixed address
-Date: Wed, 13 Oct 2010 21:27:34 -0500
-Message-Id: <1287023257-30951-2-git-send-email-x0095840@ti.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1287023257-30951-1-git-send-email-x0095840@ti.com>
-References: <1287023257-30951-1-git-send-email-x0095840@ti.com>
+	id S1754213Ab0JNCUB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 22:20:01 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58108 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754157Ab0JNCUA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 22:20:00 -0400
+Date: Thu, 14 Oct 2010 13:19:53 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: linux-next: manual merge of the tip tree with the sh tree
+Message-Id: <20101014131953.cc24b95d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If some fixed da address is wanted to be mapped and the page
-is freed but it is used as gap, the mapping will fail.
-This patch is fixing that and olny keeps the gap for
-not fixed address.
+Hi all,
 
-Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
----
- arch/arm/plat-omap/iovmm.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Today's linux-next merge of the tip tree got a conflict in
+arch/sh/kernel/perf_event.c between commit
+51c6c9bb34fcd112d4ab8b8f5c1d1b6a10a00e71 ("sh: perf: Set up
+perf_max_events") from the sh tree and commit
+a4eaf7f14675cb512d69f0c928055e73d0c6d252 ("perf: Rework the PMU methods")
+from the tip tree.
 
-diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-index 24ca9c4..34f0012 100644
---- a/arch/arm/plat-omap/iovmm.c
-+++ b/arch/arm/plat-omap/iovmm.c
-@@ -289,7 +289,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
- 	prev_end = 0;
- 	list_for_each_entry(tmp, &obj->mmap, list) {
- 
--		if (prev_end >= start)
-+		if (prev_end > start)
- 			break;
- 
- 		if (start + bytes <= tmp->da_start)
-@@ -301,7 +301,7 @@ static struct iovm_struct *alloc_iovm_area(struct iommu *obj, u32 da,
- 		prev_end = tmp->da_end;
- 	}
- 
--	if ((start > prev_end) && (ULONG_MAX - start >= bytes))
-+	if ((start >= prev_end) && (ULONG_MAX - start + 1 >= bytes))
- 		goto found;
- 
- 	dev_dbg(obj->dev, "%s: no space to fit %08x(%x) flags: %08x\n",
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-1.6.3.3
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc arch/sh/kernel/perf_event.c
+index ecef1fe,036f7a9..0000000
+--- a/arch/sh/kernel/perf_event.c
++++ b/arch/sh/kernel/perf_event.c
+@@@ -319,13 -365,13 +365,14 @@@ int __cpuinit register_sh_pmu(struct sh
+  {
+  	if (sh_pmu)
+  		return -EBUSY;
+- 	sh_pmu = pmu;
++ 	sh_pmu = _pmu;
+  
+- 	pr_info("Performance Events: %s support registered\n", pmu->name);
++ 	pr_info("Performance Events: %s support registered\n", _pmu->name);
+  
+- 	WARN_ON(pmu->num_events > MAX_HWEVENTS);
+- 	perf_max_events = pmu->num_events;
++ 	WARN_ON(_pmu->num_events > MAX_HWEVENTS);
+++	perf_max_events = _pmu->num_events;
+  
++ 	perf_pmu_register(&pmu);
+  	perf_cpu_notifier(sh_pmu_notifier);
+  	return 0;
+  }
