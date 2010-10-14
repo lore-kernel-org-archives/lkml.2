@@ -1,92 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754953Ab0JNISl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 04:18:41 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:35343 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754722Ab0JNISj convert rfc822-to-8bit (ORCPT
+	id S1754964Ab0JNIa2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 04:30:28 -0400
+Received: from mtagate2.de.ibm.com ([195.212.17.162]:60228 "EHLO
+	mtagate2.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754888Ab0JNIa1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 04:18:39 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-CC: "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "tony@atomide.com" <tony@atomide.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Thu, 14 Oct 2010 03:18:30 -0500
-Subject: RE: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-Thread-Topic: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-Thread-Index: Actra4VX5MarTWmXTyOHbKvwa93C2AADB7Tl
-Message-ID: <496565EC904933469F292DDA3F1663E602F3E074FB@dlee06.ent.ti.com>
-References: <1287023257-30951-2-git-send-email-x0095840@ti.com>
-	<1287023257-30951-3-git-send-email-x0095840@ti.com>
-	<1287023257-30951-4-git-send-email-x0095840@ti.com>,<20101014.094525.71092814.Hiroshi.DOYU@nokia.com>
-In-Reply-To: <20101014.094525.71092814.Hiroshi.DOYU@nokia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 14 Oct 2010 04:30:27 -0400
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: Eric Paris <eparis@redhat.com>, Andreas Gruenbacher <agruen@suse.de>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: [PATCH] fanotify: Fix FAN_CLOSE comments
+Date: Thu, 14 Oct 2010 09:30:11 +0100
+Message-Id: <1287045011-3134-1-git-send-email-stefanha@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The comments for FAN_CLOSE_WRITE and FAN_CLOSE_NOWRITE do not match
+FS_CLOSE_WRITE and FS_CLOSE_NOWRITE, respectively.  WRITE is for
+writable files while NOWRITE is for non-writable files.
 
-> ________________________________________
-> From: Hiroshi DOYU [Hiroshi.DOYU@nokia.com]
-> Sent: Thursday, October 14, 2010 1:45 AM
-> To: Guzman Lugo, Fernando
-> Cc: felipe.contreras@nokia.com; tony@atomide.com;
->  linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; linux-omap@vger.kernel.org
-> Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-> 
-> Hi Fernando,
-> 
-> From: ext Fernando Guzman Lugo <x0095840@ti.com>
-> Subject: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
-> Date: Thu, 14 Oct 2010 04:27:36 +0200
-> 
-> > Omap platform is omap_iounmap function.
-> >
-> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
-> > ---
-> >  arch/arm/plat-omap/iovmm.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> >
-> > diff --git a/arch/arm/plat-omap/iovmm.c b/arch/arm/plat-omap/iovmm.c
-> > index 93a34d9..5489ca9 100644
-> > --- a/arch/arm/plat-omap/iovmm.c
-> > +++ b/arch/arm/plat-omap/iovmm.c
-> > @@ -821,7 +821,7 @@ void iommu_kunmap(struct iommu *obj, u32 da)
-> >       struct sg_table *sgt;
-> >       typedef void (*func_t)(const void *);
-> >
-> > -     sgt = unmap_vm_area(obj, da, (func_t)__iounmap,
-> 
-> +       sgt = unmap_vm_area(obj, da, (func_t)iounmap,
-> 
-> Woundn't the above be enough?
-> 
-> Eventually this "iounmap()" calls "__arch_iounmap()" ->
-> "omap_iounmap()". I don't see any special reason to call
-> "omap_iounmap()" here for now.
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+---
+ include/linux/fanotify.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-iounmap and __arch_iounmap are macros they cannot not
-be used there. If so, it gives a "undeclared" compile error.
+diff --git a/include/linux/fanotify.h b/include/linux/fanotify.h
+index 63531a6..7f4db08 100644
+--- a/include/linux/fanotify.h
++++ b/include/linux/fanotify.h
+@@ -6,8 +6,8 @@
+ /* the following events that user-space can register for */
+ #define FAN_ACCESS		0x00000001	/* File was accessed */
+ #define FAN_MODIFY		0x00000002	/* File was modified */
+-#define FAN_CLOSE_WRITE		0x00000008	/* Unwrittable file closed */
+-#define FAN_CLOSE_NOWRITE	0x00000010	/* Writtable file closed */
++#define FAN_CLOSE_WRITE		0x00000008	/* Writtable file closed */
++#define FAN_CLOSE_NOWRITE	0x00000010	/* Unwrittable file closed */
+ #define FAN_OPEN		0x00000020	/* File was opened */
+ 
+ #define FAN_EVENT_ON_CHILD	0x08000000	/* interested in child events */
+-- 
+1.7.1
 
-Regards,
-Fernando.
-
-> 
-> 
-> > +     sgt = unmap_vm_area(obj, da, (func_t)omap_iounmap,
-> >                           IOVMF_LINEAR | IOVMF_MMIO);
-> >       if (!sgt)
-> >               dev_dbg(obj->dev, "%s: No sgt\n", __func__);
-> > --
-> > 1.6.3.3
-> >
