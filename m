@@ -1,119 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753955Ab0JNAAc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 20:00:32 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:42000 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753515Ab0JNAAb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 20:00:31 -0400
-Date: Wed, 13 Oct 2010 20:00:27 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: David Sharp <dhsharp@google.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Michael Rubin <mrubin@google.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Benchmarks of kernel tracing options (ftrace and ktrace)
-Message-ID: <20101014000027.GA15510@Krystal>
-References: <AANLkTikfYy-kYb1=KbsYwHd0_vcf20d2nPSfFynugz8z@mail.gmail.com> <AANLkTikKwx6okpX4pxVzTvrVNm=KhUvLQGs0_ziwo6fX@mail.gmail.com> <AANLkTimnjun98phJ_KmwFG_ce3YGpmVGf5rufqPStWR-@mail.gmail.com> <1287013830.3673.224.camel@frodo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1753967Ab0JNAEK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 20:04:10 -0400
+Received: from verein.lst.de ([213.95.11.210]:45809 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750888Ab0JNAEI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 20:04:08 -0400
+Date: Thu, 14 Oct 2010 02:03:41 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+Cc: Christoph Hellwig <hch@lst.de>, linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Mike Christie <michaelc@cs.wisc.edu>, Hannes Reinecke <hare@suse.de>,
+        James Bottomley <James.Bottomley@suse.de>,
+        Boaz Harrosh <bharrosh@panasas.com>, Jens Axboe <axboe@kernel.dk>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Douglas Gilbert <dgilbert@interlog.com>,
+        Richard Sharpe <realrichardsharpe@gmail.com>
+Subject: Re: [PATCH 4/5] tcm: Unify UNMAP and WRITE_SAME w/ UNMAP=1 subsystem plugin handling
+Message-ID: <20101014000341.GA15583@lst.de>
+References: <1286959700-3489-1-git-send-email-nab@linux-iscsi.org> <20101013111920.GB26366@lst.de> <1287003368.7334.64.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-In-Reply-To: <1287013830.3673.224.camel@frodo>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 19:52:22 up 21 days,  3:54,  4 users,  load average: 0.03, 0.06,
-	0.07
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1287003368.7334.64.camel@haakon2.linux-iscsi.org>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0.001 () BAYES_50
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2010-10-13 at 16:19 -0700, David Sharp wrote:
-> > Google uses kernel tracing aggressively in the its data centers. We
+On Wed, Oct 13, 2010 at 01:56:08PM -0700, Nicholas A. Bellinger wrote:
+> > The parsing of the WRITE SAME and UNMAP CDBs is something the generic
+> > CDB parsing code should do,
 > 
-> Thanks!
+> Ok, so you are thinking about a seperate transport_emulate_write_same()
+> and transport_emulate_unmap() called from
+> transport_emulate_control_cdb(), right..?
+
+More or less yes.
+
+> >  and just give a range of lists of lba/len
+> > pairs to the ->discard method in the backed.
 > 
-> > wrote our own kernel tracer, ktrace. However ftrace, perf and LTTng
-> > all have a better feature set than ktrace, so we are abandoning that
-> > code.
-> 
-> Cool!
-> 
-> > 
-> > We see several implementations of tracing aimed at the mainline kernel
-> > and wanted a fair comparison of each of them to make sure they will
-> > not significantly impact performance. A tracing toolkit that is too
-> > expensive is not usable in our environment.
-> > 
-> 
-> [ snip for now (I'm traveling) ]
-> 
-> > This first set of benchmark results compares ftrace to ktrace. The
-> > numbers below are the "on" result minus the "off" result for each
-> > configuration.
-> > 
-> > ktrace: 200ns  (tracepoint: kernel_getuid)
-> > ftrace: 224ns   (tracepoint: timer:sys_getuid)
-> > ftrace: 587ns   (tracepoint: syscalls:sys_enter_getuid)
-> 
-> 
-> > The last result shows that the syscall tracing is about twice as
-> > expensive as a normal tracepoint, which is interesting.
-> 
-> Argh, the syscall tracing has a lot of overhead. There is only one
-> tracepoint that is hooked into the ptrace code, and will save all
-> registers before calling the functions. It enables tracing on all
-> syscalls and there's a table that decides whether or not to trace the
-> syscall.
-> 
-> So I'm not surprised with the result that the syscall trace point is so
-> slow (note, perf uses the same infrastructure).
+> Yes, these are already available from the passed struct
+> se_task->task_lba and ->task_size values.
 
-Yes, the interesting result in this first set of benchmarks is that syscall
-tracing is quite slow. We could do better though. I think a different scheme
-for syscall tracing that would not rely of saving all registers is needed. We
-could do this automatically by adding tracepoints in the actual syscall
-functions by modifying the DEFINE_SYSCALL*() macros. I would leave the current
-syscall tracing mode as the default though, especially until gcc 4.5 and asm
-gotos are more broadly adopted.
+Not for UNMAP.  WRITE SAME in it's various incarnations uses the
+standard LBA/LEN encoding and you seem to parse it nicely.  But for
+UNMAP the lba/len pairs are in the command payload.  To support things
+genericly you'd need a standard way to pass them.  If you want to
+limit yourself to one lba/len pair for one the scheme could work,
+though.
 
-So the modified DEFINE_SYSCALL*() macros would generate code that looks like:
-(approximately)
+> Yes, so the problem of trying to make this code generic (eg: outside of
+> TCM subsystem plugins) is that blk_issue_discard() takes struct
+> block_device, which means we the subsystem plugin has to locate struct
+> block_device inside of non generic cide.
 
-static int _syscall_name(type1, name1);
+blk_issue_discard is in no way generic.  It's 100% iblock code and
+really doesn't belong into any other backend.  And btw,
+blk_issue_discard is rather suboptimal even in iblock - it's a
+synchronous function that will stall progress of the thread handling it.
+If you want better performance you'll need to opencode the content of
+it to allow an asynchronous completion handler.  But given that discard
+isn't really a critical feature at this point this could easily be
+left for later with a comment.
 
-int syscall_name(type1 name1)
-{
-        int ret;
+> So, then the main issue becomes FILEIO + block level discard and how to
+> issue an blk_issue_discard() from struct fileio in the most sane way.
+> If there is no sane way then I will just drop this bit, or just do the
+> file level 'hole punch' that you are speaking about.
 
-        trace_syscall_entry_name(name1);
-        ret = _syscall_name(name1);
-        trace_syscall_exit_name(name1);
-        return ret;
-}
+Right now there is no good way to do a block device discard or file
+hole punch at the level where the file backend operates.
 
-static int _syscall_name(typê1, name1)
-
-
-So when we expand:
-
-DEFINE_SYSCALL1(name, type1, name1)
-{
-  .. actual body ...
-}
-
-We have the tracepoints automatically added.
-
-Mathieu
-
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
