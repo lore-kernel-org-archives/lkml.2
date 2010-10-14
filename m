@@ -1,201 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab0JNJ0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 05:26:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21038 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755017Ab0JNJX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 05:23:28 -0400
-From: Gleb Natapov <gleb@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
-        mtosatti@redhat.com
-Subject: [PATCH v7 07/12] Add async PF initialization to PV guest.
-Date: Thu, 14 Oct 2010 11:22:51 +0200
-Message-Id: <1287048176-2563-8-git-send-email-gleb@redhat.com>
-In-Reply-To: <1287048176-2563-1-git-send-email-gleb@redhat.com>
-References: <1287048176-2563-1-git-send-email-gleb@redhat.com>
+	id S1755289Ab0JNJ1k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 05:27:40 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:12212 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755018Ab0JNJ1j convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 05:27:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=NgQVp0b3+qn/2c7E/ExiyD2Gbno/C3XyrE1pVaFufP+UlUJQGB6Rnkf9rTNm6QzQ4g
+         2zrFhtAG0XUUTut3n5Ug==
+MIME-Version: 1.0
+In-Reply-To: <1287047996.29097.173.camel@twins>
+References: <20101012074910.GA9893@in.ibm.com> <20101012075109.GC9893@in.ibm.com>
+ <1287047996.29097.173.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 14 Oct 2010 02:27:02 -0700
+Message-ID: <AANLkTinJ_YyzPKZXwALoFyWTzipwd0MAYhJ1c0CBjQcS@mail.gmail.com>
+Subject: Re: [PATCH v3 2/7] sched: accumulate per-cfs_rq cpu usage
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: bharata@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Nikhil Rao <ncrao@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable async PF in a guest if async PF capability is discovered.
+On Thu, Oct 14, 2010 at 2:19 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-10-12 at 13:21 +0530, Bharata B Rao wrote:
+>> +#ifdef CONFIG_CFS_BANDWIDTH
+>> +       {
+>> +               .procname       = "sched_cfs_bandwidth_slice_us",
+>> +               .data           = &sysctl_sched_cfs_bandwidth_slice,
+>> +               .maxlen         = sizeof(unsigned int),
+>> +               .mode           = 0644,
+>> +               .proc_handler   = proc_dointvec_minmax,
+>> +               .extra1         = &one,
+>> +       },
+>> +#endif
+>
+> So this is basically your scalability knob.. the larger this value less
+> less frequent we have to access global state, but the less parallelism
+> is possible due to fewer CPUs depleting the total quota, leaving nothing
+> for the others.
+>
 
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
----
- Documentation/kernel-parameters.txt |    3 +
- arch/x86/include/asm/kvm_para.h     |    6 ++
- arch/x86/kernel/kvm.c               |   92 +++++++++++++++++++++++++++++++++++
- 3 files changed, 101 insertions(+), 0 deletions(-)
+Exactly
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 8dc2548..0bd2203 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -1699,6 +1699,9 @@ and is between 256 and 4096 characters. It is defined in the file
- 
- 	no-kvmclock	[X86,KVM] Disable paravirtualized KVM clock driver
- 
-+	no-kvmapf	[X86,KVM] Disable paravirtualized asynchronous page
-+			fault handling.
-+
- 	nolapic		[X86-32,APIC] Do not enable or use the local APIC.
- 
- 	nolapic_timer	[X86-32,APIC] Do not use the local APIC timer.
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 8662ae0..2315398 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -65,6 +65,12 @@ struct kvm_mmu_op_release_pt {
- 	__u64 pt_phys;
- };
- 
-+struct kvm_vcpu_pv_apf_data {
-+	__u32 reason;
-+	__u8 pad[60];
-+	__u32 enabled;
-+};
-+
- #ifdef __KERNEL__
- #include <asm/processor.h>
- 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index e6db179..032d03b 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -27,16 +27,30 @@
- #include <linux/mm.h>
- #include <linux/highmem.h>
- #include <linux/hardirq.h>
-+#include <linux/notifier.h>
-+#include <linux/reboot.h>
- #include <asm/timer.h>
-+#include <asm/cpu.h>
- 
- #define MMU_QUEUE_SIZE 1024
- 
-+static int kvmapf = 1;
-+
-+static int parse_no_kvmapf(char *arg)
-+{
-+        kvmapf = 0;
-+        return 0;
-+}
-+
-+early_param("no-kvmapf", parse_no_kvmapf);
-+
- struct kvm_para_state {
- 	u8 mmu_queue[MMU_QUEUE_SIZE];
- 	int mmu_queue_len;
- };
- 
- static DEFINE_PER_CPU(struct kvm_para_state, para_state);
-+static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
- 
- static struct kvm_para_state *kvm_para_state(void)
- {
-@@ -231,12 +245,86 @@ static void __init paravirt_ops_setup(void)
- #endif
- }
- 
-+void __cpuinit kvm_guest_cpu_init(void)
-+{
-+	if (!kvm_para_available())
-+		return;
-+
-+	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF) && kvmapf) {
-+		u64 pa = __pa(&__get_cpu_var(apf_reason));
-+
-+		wrmsrl(MSR_KVM_ASYNC_PF_EN, pa | KVM_ASYNC_PF_ENABLED);
-+		__get_cpu_var(apf_reason).enabled = 1;
-+		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
-+		       smp_processor_id());
-+	}
-+}
-+
-+static void kvm_pv_disable_apf(void *unused)
-+{
-+	if (!__get_cpu_var(apf_reason).enabled)
-+		return;
-+
-+	wrmsrl(MSR_KVM_ASYNC_PF_EN, 0);
-+	__get_cpu_var(apf_reason).enabled = 0;
-+
-+	printk(KERN_INFO"Unregister pv shared memory for cpu %d\n",
-+	       smp_processor_id());
-+}
-+
-+static int kvm_pv_reboot_notify(struct notifier_block *nb,
-+				unsigned long code, void *unused)
-+{
-+	if (code == SYS_RESTART)
-+		on_each_cpu(kvm_pv_disable_apf, NULL, 1);
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block kvm_pv_reboot_nb = {
-+	.notifier_call = kvm_pv_reboot_notify,
-+};
-+
- #ifdef CONFIG_SMP
- static void __init kvm_smp_prepare_boot_cpu(void)
- {
- 	WARN_ON(kvm_register_clock("primary cpu clock"));
-+	kvm_guest_cpu_init();
- 	native_smp_prepare_boot_cpu();
- }
-+
-+static void kvm_guest_cpu_online(void *dummy)
-+{
-+	kvm_guest_cpu_init();
-+}
-+
-+static void kvm_guest_cpu_offline(void *dummy)
-+{
-+	kvm_pv_disable_apf(NULL);
-+}
-+
-+static int __cpuinit kvm_cpu_notify(struct notifier_block *self,
-+				    unsigned long action, void *hcpu)
-+{
-+	int cpu = (unsigned long)hcpu;
-+	switch (action) {
-+	case CPU_ONLINE:
-+	case CPU_DOWN_FAILED:
-+	case CPU_ONLINE_FROZEN:
-+		smp_call_function_single(cpu, kvm_guest_cpu_online, NULL, 0);
-+		break;
-+	case CPU_DOWN_PREPARE:
-+	case CPU_DOWN_PREPARE_FROZEN:
-+		smp_call_function_single(cpu, kvm_guest_cpu_offline, NULL, 1);
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block __cpuinitdata kvm_cpu_notifier = {
-+        .notifier_call  = kvm_cpu_notify,
-+};
- #endif
- 
- void __init kvm_guest_init(void)
-@@ -245,7 +333,11 @@ void __init kvm_guest_init(void)
- 		return;
- 
- 	paravirt_ops_setup();
-+	register_reboot_notifier(&kvm_pv_reboot_nb);
- #ifdef CONFIG_SMP
- 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
-+	register_cpu_notifier(&kvm_cpu_notifier);
-+#else
-+	kvm_guest_cpu_init();
- #endif
- }
--- 
-1.7.1
+> I guess one could go try and play load-balancer games to try and
+> mitigate this by pulling this group's tasks to the CPU(s) that have move
+> bandwidth for that group, but balancing that against the regular
+> load-balancer goal of well balancing load, will undoubtedly be
+> 'interesting'...
+>
 
+I considered this approach as an alternative previously, but I don't
+think it can be enacted effectively:
+
+Since quota will likely expire in a staggered fashion you're going to
+get a funnel-herd effect as everything is crowded onto the cpus with
+remaining quota.
+
+It's much more easily avoided by keeping the slice small enough
+(relative to the bandwidth period) that we're not potentially
+stranding a significant percentage of our quota.  The potential for
+abuse could be eliminated/reduced here by making the slice size a
+constant ratio relative to the period length.  This would also make
+possible parallelism more deterministic.
+
+I also think versioning the quota so that it can be potentially
+returned and redistributed on sleep is more effective/efficient in
+avoiding stranded quota.
+
+>
+>
