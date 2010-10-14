@@ -1,88 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752901Ab0JNK6y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 06:58:54 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:38709 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751512Ab0JNK6x (ORCPT
+	id S1752903Ab0JNLGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 07:06:40 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4285 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752664Ab0JNLGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 06:58:53 -0400
-Date: Thu, 14 Oct 2010 12:58:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        Doug Thompson <dougthompson@xmission.com>,
-        akpm <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Subject: [PATCH] bitops.h: Widen BIT macro to support 64-bit types
-Message-ID: <20101014105855.GB31247@aftab>
-References: <20101013131057.88238be6.randy.dunlap@oracle.com>
- <20101014042409.GB29342@aftab>
+	Thu, 14 Oct 2010 07:06:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=mIzT4wIl1fYZM/pmXJ5yaZWOoPL5Z9jk1fquniW747fImVb07O6+V72bCFtryJDB1B
+         JoK3mw6pS4W9696p5Rqw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101014042409.GB29342@aftab>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1286954453.29097.58.camel@twins>
+References: <1286946421-32202-1-git-send-regression-fweisbec@gmail.com>
+	<1286946421-32202-3-git-send-regression-fweisbec@gmail.com>
+	<1286954453.29097.58.camel@twins>
+Date: Thu, 14 Oct 2010 13:06:30 +0200
+Message-ID: <AANLkTinhGrdGyLaOGtXPktQM2uQ_0M9XQ1GjtBAYf+LY@mail.gmail.com>
+Subject: Re: [RFC PATCH 2/9] perf: Add ability to dump user regs
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Cyrill Gorcunov <gorcunov@openvz.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        Masami Hiramatsu <mhiramat@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Robert Richter <robert.richter@amd.com>,
+        David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> Date: Wed, Oct 13, 2010 at 04:10:57PM -0400
-> 
-> > The BIT() macro works on unsigned longs, but this warning happens
-> > on i386 (X86_32), where UL is 32 bits and this value needs to be
-> > 64 bits, so use open-coded ULL.
-> > 
-> > drivers/edac/mce_amd.c:262: warning: left shift count >= width of type
-> 
-> Ok, so BIT() should be fixed to work with the largest type available,
-> IMHO. Let me cook up something.
+Hi,
 
-Maybe something like the following. Build-tested with the crosstool
-(http://www.kernel.org/pub/tools/crosstool) on the following arches:
-alpha blackfin cris hppa64 ia64 mips64 sparc.
 
-Any objections?
 
---
-From: Borislav Petkov <Borislav.Petkov@amd.com>
-Date: Thu, 14 Oct 2010 12:00:17 +0200
-Subject: [PATCH] bitops.h: Widen BIT macro to support 64-bit types
+On Wed, Oct 13, 2010 at 9:20 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-10-13 at 07:06 +0200, Frederic Weisbecker wrote:
+>> Add new PERF_SAMPLE_UREGS to perf sample type. This will dump the
+>> user space context as it was before the user entered the kernel for
+>> whatever reason.
+>>
+>> This is going to be useful to bring Dwarf CFI based stack unwinding
+>> on top of samples.
+>
+> This doesn't address any of the issues that were raised previously.
+>
+> There's a reason we don't have PERF_SAMPLE_*REGS like things.
+>
+We definitively need to find a solution to this problem. It is important
+to export this kind of information to users when using PEBS, for instance
 
-Nowadays, every arch defines an unsigned 64-bit type using either one
-of the include/asm-generic/int-l{,l}64.h headers. Thus, make the BIT()
-macro return that 64-bit type by default. This makes sense on x86 when
-manipulating MSR values and prevents overflow errors on 32-bit arches,
-for example.
+What is exported depends on what is monitored and not just the ABI
+of the kernel. On a 64-bit kernel, you may capture samples from
+i386 or x86_64. Somehow the record needs to be self describing.
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- include/linux/bitops.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/bitops.h b/include/linux/bitops.h
-index fc68053..7b9170b 100644
---- a/include/linux/bitops.h
-+++ b/include/linux/bitops.h
-@@ -3,7 +3,7 @@
- #include <asm/types.h>
- 
- #ifdef	__KERNEL__
--#define BIT(nr)			(1UL << (nr))
-+#define BIT(nr)			(U64_C(1) << (nr))
- #define BIT_MASK(nr)		(1UL << ((nr) % BITS_PER_LONG))
- #define BIT_WORD(nr)		((nr) / BITS_PER_LONG)
- #define BITS_PER_BYTE		8
--- 
-1.7.3.1.50.g1e633
-
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+What about something like:
+struct  {
+      int type; /* 32-bit, 64-bit */
+      int nr;    /* number of regs */
+      struct {
+          int reg_name; /* taken from an enum with all possible regs */
+          u64 reg_value;
+      } [0]
+};
