@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab0JNHIc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 03:08:32 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:58862 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753082Ab0JNHIb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 03:08:31 -0400
-Date: Thu, 14 Oct 2010 16:09:13 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] CFS: comment update: default latency and granularity
-Message-Id: <20101014160913.eb24fef4.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754798Ab0JNHJr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 03:09:47 -0400
+Received: from freeflow.nu ([178.79.134.28]:45023 "EHLO freeflow.nu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752262Ab0JNHJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 03:09:46 -0400
+Message-ID: <4CB6ACB7.8060006@kernel.org>
+Date: Thu, 14 Oct 2010 10:09:43 +0300
+From: Pekka Enberg <penberg@kernel.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+CC: Christoph Lameter <cl@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] [RFC] slub tracing: move trace calls out of always inlined
+ functions to reduce kernel code size
+References: <1286986178.1901.60.camel@castor.rsk>
+In-Reply-To: <1286986178.1901.60.camel@castor.rsk>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Ingo
+  On 10/13/10 7:09 PM, Richard Kennedy wrote:
+> Having the trace calls defined in the always inlined kmalloc functions
+> in include/linux/slub_def.h causes a lot of code duplication as the
+> trace functions get instantiated for each kamalloc call site. This can
+> simply be removed by pushing the trace calls down into the functions in
+> slub.c.
+>
+> On my x86_64 built this patch shrinks the code size of the kernel by
+> approx 29K and also shrinks the code size of many modules -- too many to
+> list here ;)
+>
+> size vmlinux.o reports
+>         text	   data	    bss	    dec	    hex	filename
+>      4777011	 602052	 763072	6142135	 5db8b7	vmlinux.o
+>      4747120	 602388	 763072	6112580	 5d4544	vmlinux.o.patch
 
-Please update the comments about default values of CFS parameters.
+Impressive kernel text savings!
 
-Thanks,
-  Takuya
+> index 13fffe1..32b89ee 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> +void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+> +{
+> +	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
+> +
+> +	kmemleak_alloc(ret, size, 1, flags);
+> +	trace_kmalloc(_RET_IP_, ret, size, PAGE_SIZE<<  order, flags);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL(kmalloc_order);
+> +
+This doesn't make sense to be out-of-line for the !CONFIG_TRACE case. 
+I'd just wrap that with "#ifdef CONFIG_TRACE" and put an inline version 
+in the header for !TRACE.
 
-===
-Targeted preemption latency and minimal preemption granularity for CPU-bound
-tasks have already changed.
-
-This patch updates the comments about these values.
-
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
----
- kernel/sched_fair.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index db3f674..4183f41 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -25,7 +25,7 @@
- 
- /*
-  * Targeted preemption latency for CPU-bound tasks:
-- * (default: 5ms * (1 + ilog(ncpus)), units: nanoseconds)
-+ * (default: 6ms * (1 + ilog(ncpus)), units: nanoseconds)
-  *
-  * NOTE: this latency value is not the same as the concept of
-  * 'timeslice length' - timeslices in CFS are of variable length
-@@ -52,7 +52,7 @@ enum sched_tunable_scaling sysctl_sched_tunable_scaling
- 
- /*
-  * Minimal preemption granularity for CPU-bound tasks:
-- * (default: 2 msec * (1 + ilog(ncpus)), units: nanoseconds)
-+ * (default: 0.75 msec * (1 + ilog(ncpus)), units: nanoseconds)
-  */
- unsigned int sysctl_sched_min_granularity = 750000ULL;
- unsigned int normalized_sysctl_sched_min_granularity = 750000ULL;
--- 
-1.7.0.4
-
+             Pekka
