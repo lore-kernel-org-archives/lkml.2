@@ -1,448 +1,1856 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab0JNApB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 20:45:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56914 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754019Ab0JNAo7 (ORCPT
+	id S1754015Ab0JNAqV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 20:46:21 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53303 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752074Ab0JNAqU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 20:44:59 -0400
-Message-Id: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org>
-Subject: mmotm 2010-10-13-17-13 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Wed, 13 Oct 2010 17:13:25 -0700
+	Wed, 13 Oct 2010 20:46:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=nLgldNBr8zjIQMSxRWgp0MMHqy/RHfaG4BvMAEGp4oo9KSGweXU7+4nEScF29IQYDM
+         yO7WlXd4158rCsnIcwGfTRCZJ7wlSrxbNr5efVvTg5aBoqJMrlTpv3btMeF98lxkWrot
+         GcYf+0KieJtgcAT/ogsuZK9EGrsyeZo+rSXao=
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alex Dubov <oakad@yahoo.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Maxim Levitsky <maximlevitsky@gmail.com>
+Subject: [PATCH 6/6] memstick: stop passing useless pointer to card->current_mrq + refactoring
+Date: Thu, 14 Oct 2010 02:40:05 +0200
+Message-Id: <1287016805-5175-7-git-send-email-maximlevitsky@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1287016805-5175-1-git-send-email-maximlevitsky@gmail.com>
+References: <1287016805-5175-1-git-send-email-maximlevitsky@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2010-10-13-17-13 has been uploaded to
+Now that both card drivers use new support code that can be safely done.
+In addition to that few handlers in memstick.c are converted to new style.
+register window is now completely dynamic, and nobody but register read/write
+functions send the MS_TPC_SET_RW_REG_ADRS.
 
-   http://userweb.kernel.org/~akpm/mmotm/
+In addition to that, I did more cosmetic refactoring, and few fixes
+there and there.
 
-and will soon be available at
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+---
+ drivers/memstick/core/memstick.c    |  609 +++++++++++++++++------------------
+ drivers/memstick/core/ms_block.c    |  166 +++++-----
+ drivers/memstick/core/mspro_block.c |  188 +++++------
+ drivers/memstick/core/mspro_block.h |    2 +-
+ include/linux/memstick.h            |   53 ++--
+ 5 files changed, 480 insertions(+), 538 deletions(-)
 
-   git://zen-kernel.org/kernel/mmotm.git
+diff --git a/drivers/memstick/core/memstick.c b/drivers/memstick/core/memstick.c
+index 4c457ae..2c7b9f5 100644
+--- a/drivers/memstick/core/memstick.c
++++ b/drivers/memstick/core/memstick.c
+@@ -202,61 +202,207 @@ static int memstick_dummy_check(struct memstick_dev *card)
+ 	return 0;
+ }
+ 
+-/**
+- * memstick_detect_change - schedule media detection on memstick host
+- * @host - host to use
++/*
++ * Functions prefixed with "h_" are protocol callbacks. They can be called from
++ * interrupt context. Return value of 0 means that request processing is still
++ * ongoing, while special error value of -EAGAIN means that current request is
++ * finished (and request processor should come back some time later).
+  */
+-void memstick_detect_change(struct memstick_host *host)
++
++static int h_memstick_read_dev_id(struct memstick_dev *card)
+ {
+-	queue_work(workqueue, &host->media_checker);
++	struct ms_id_register id_reg;
++	struct memstick_request *mrq = &card->current_mrq;
++
++	if (mrq->error)
++		return memstick_state_machine_exit(card, -EIO);
++
++	switch (card->state) {
++	case 0:
++		if (!memstick_read_regs(card,
++			offsetof(struct ms_register, id),
++			sizeof(struct ms_id_register)))
++			return 0;
++		break;
++	case 1:
++		memcpy(&id_reg, mrq->data, sizeof(id_reg));
++		card->id.match_flags = MEMSTICK_MATCH_ALL;
++		card->id.type = id_reg.type;
++		card->id.category = id_reg.category;
++		card->id.class = id_reg.class;
++		dev_dbg(&card->dev, "if_mode = %02x\n", id_reg.if_mode);
++		return memstick_state_machine_exit(card, 0);
++	}
++
++	card->state++;
++	return 0;
+ }
+-EXPORT_SYMBOL(memstick_detect_change);
+ 
+-/**
+- * memstick_next_req - called by host driver to obtain next request to process
+- * @host - host to use
+- * @mrq - pointer to stick the request to
+- *
+- * Host calls this function from idle state (*mrq == NULL) or after finishing
+- * previous request (*mrq should point to it). If previous request was
+- * unsuccessful, it is retried for predetermined number of times. Return value
+- * of 0 means that new request was assigned to the host.
+- */
+-int memstick_next_req(struct memstick_host *host, struct memstick_request **mrq)
++static int h_memstick_default_bad(struct memstick_dev *card)
+ {
+-	int rc = -ENXIO;
++	return -ENXIO;
++}
+ 
+-	if ((*mrq) && (*mrq)->error && host->retries) {
+-		(*mrq)->error = rc;
+-		host->retries--;
+-		return 0;
++static void memstick_invalidate_reg_window(struct memstick_dev *card)
++{
++	memset(&card->reg_addr, 0, sizeof(card->reg_addr));
++}
++
++static struct memstick_dev *memstick_alloc_card(struct memstick_host *host)
++{
++	struct memstick_dev *card = kzalloc(sizeof(struct memstick_dev),
++					    GFP_KERNEL);
++	struct memstick_dev *old_card = host->card;
++
++	if (card) {
++		card->host = host;
++		dev_set_name(&card->dev, "%s", dev_name(&host->dev));
++		card->dev.parent = &host->dev;
++		card->dev.bus = &memstick_bus_type;
++		card->dev.release = memstick_free_card;
++		card->check = memstick_dummy_check;
++		card->next_request = h_memstick_default_bad;
++		init_completion(&card->mrq_complete);
++		host->card = card;
++
++		if (memstick_run_state_machine(card,
++						h_memstick_read_dev_id, true))
++			goto err_out;
+ 	}
++	host->card = old_card;
++	return card;
++err_out:
++	host->card = old_card;
++	kfree(card);
++	return NULL;
++}
+ 
+-	if (host->card && host->card->next_request)
+-		rc = host->card->next_request(host->card, mrq);
++static int memstick_power_on(struct memstick_host *host)
++{
++	int rc = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
+ 
+ 	if (!rc)
+-		host->retries = cmd_retries > 1 ? cmd_retries - 1 : 1;
+-	else
+-		*mrq = NULL;
++		rc = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
+ 
+ 	return rc;
+ }
+-EXPORT_SYMBOL(memstick_next_req);
++
++static void memstick_check(struct work_struct *work)
++{
++	struct memstick_host *host = container_of(work, struct memstick_host,
++						  media_checker);
++	struct memstick_dev *card;
++
++	dev_dbg(&host->dev, "memstick_check started\n");
++	mutex_lock(&host->lock);
++	if (!host->card) {
++		if (memstick_power_on(host))
++			goto out_power_off;
++	} else if (host->card->stop) {
++		host->card->stop(host->card);
++		memstick_invalidate_reg_window(host->card);
++	}
++
++	card = memstick_alloc_card(host);
++
++	if (!card) {
++		if (host->card) {
++			device_unregister(&host->card->dev);
++			host->card = NULL;
++		}
++	} else {
++		dev_dbg(&host->dev, "new card %02x, %02x, %02x\n",
++			card->id.type, card->id.category, card->id.class);
++		if (host->card) {
++			if (!memstick_dev_match(host->card, &card->id)
++			    || !(host->card->check(host->card))) {
++				device_unregister(&host->card->dev);
++				host->card = NULL;
++			} else if (host->card->start)
++				host->card->start(host->card);
++		}
++
++		if (!host->card) {
++			host->card = card;
++			if (device_register(&card->dev)) {
++				kfree(host->card);
++				host->card = NULL;
++			}
++		} else
++			kfree(card);
++	}
++
++out_power_off:
++	if (!host->card)
++		host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
++
++	mutex_unlock(&host->lock);
++	dev_dbg(&host->dev, "memstick_check finished\n");
++}
++
++
++/*** card driver interface ***/
+ 
+ /**
+- * memstick_new_req - notify the host that some requests are pending
+- * @host - host to use
++ * memstick_register_driver - register new card driver
++ * @drv - the driver info structure
+  */
+-void memstick_new_req(struct memstick_host *host)
++int memstick_register_driver(struct memstick_driver *drv)
+ {
+-	if (host->card) {
+-		host->retries = cmd_retries;
+-		INIT_COMPLETION(host->card->mrq_complete);
+-		host->request(host);
+-	}
++	drv->driver.bus = &memstick_bus_type;
++
++	return driver_register(&drv->driver);
++}
++EXPORT_SYMBOL(memstick_register_driver);
++
++/**
++ * memstick_unregister_driver - unregister a card driver
++ * usually called on card driver unload
++ * @drv - the driver info structure
++ */
++void memstick_unregister_driver(struct memstick_driver *drv)
++{
++	driver_unregister(&drv->driver);
++}
++EXPORT_SYMBOL(memstick_unregister_driver);
++
++/**
++ * memstick_run_state_machine - runs IO state machine
++ * DON'T call from state machine code!
++ * Usefull for blocking IO in the card drivers.
++ * @card - card to use
++ * @state_func - the state machine
++ * @sync - if true, will wait till state machine exits using
++ * memstick_state_machine_exit
++ */
++int memstick_run_state_machine(struct memstick_dev *card,
++	int   (*state_func)(struct memstick_dev *card), bool sync)
++{
++
++	memset(&card->current_mrq, sizeof(card->current_mrq), 0);
++	card->int_polling = false;
++	card->state = 0;
++
++	WARN_ON(card->state_machine_running);
++	WARN_ON(card->next_request != h_memstick_default_bad);
++
++	card->next_request = state_func;
++	card->state_machine_running = true;
++
++	card->host->retries = cmd_retries;
++	INIT_COMPLETION(card->mrq_complete);
++	card->host->request(card->host);
++
++	if (!sync)
++		return 0;
++
++	wait_for_completion(&card->mrq_complete);
++	return card->current_mrq.error;
+ }
+-EXPORT_SYMBOL(memstick_new_req);
++EXPORT_SYMBOL(memstick_run_state_machine);
++
++
++/*** functions to be called by state machines ***/
+ 
+ /**
+  * memstick_init_req_sg - set request fields needed for bulk data transfer
+@@ -264,9 +410,12 @@ EXPORT_SYMBOL(memstick_new_req);
+  * @tpc - memstick Transport Protocol Command
+  * @sg - TPC argument
+  */
+-void memstick_init_req_sg(struct memstick_request *mrq, unsigned char tpc,
++void memstick_init_req_sg(struct memstick_dev *card, unsigned char tpc,
+ 			  const struct scatterlist *sg)
+ {
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
++
+ 	mrq->tpc = tpc;
+ 	if (tpc & 8)
+ 		mrq->data_dir = WRITE;
+@@ -280,6 +429,9 @@ void memstick_init_req_sg(struct memstick_request *mrq, unsigned char tpc,
+ 		mrq->need_card_int = 1;
+ 	else
+ 		mrq->need_card_int = 0;
++
++	if (tpc != MS_TPC_GET_INT)
++		card->int_polling = false;
+ }
+ EXPORT_SYMBOL(memstick_init_req_sg);
+ 
+@@ -294,9 +446,12 @@ EXPORT_SYMBOL(memstick_init_req_sg);
+  * in size) allows us to just copy the value between request structure and
+  * user supplied buffer.
+  */
+-void memstick_init_req(struct memstick_request *mrq, unsigned char tpc,
++void memstick_init_req(struct memstick_dev *card, unsigned char tpc,
+ 		       const void *buf, size_t length)
+ {
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
++
+ 	mrq->tpc = tpc;
+ 	if (tpc & 8)
+ 		mrq->data_dir = WRITE;
+@@ -316,152 +471,39 @@ void memstick_init_req(struct memstick_request *mrq, unsigned char tpc,
+ }
+ EXPORT_SYMBOL(memstick_init_req);
+ 
+-/*
+- * Functions prefixed with "h_" are protocol callbacks. They can be called from
+- * interrupt context. Return value of 0 means that request processing is still
+- * ongoing, while special error value of -EAGAIN means that current request is
+- * finished (and request processor should come back some time later).
+- */
+-
+-static int h_memstick_read_dev_id(struct memstick_dev *card,
+-				  struct memstick_request **mrq)
+-{
+-	struct ms_id_register id_reg;
+-
+-	if (!(*mrq)) {
+-		memstick_init_req(&card->current_mrq, MS_TPC_READ_REG, NULL,
+-				  sizeof(struct ms_id_register));
+-		*mrq = &card->current_mrq;
+-		return 0;
+-	} else {
+-		if (!(*mrq)->error) {
+-			memcpy(&id_reg, (*mrq)->data, sizeof(id_reg));
+-			card->id.match_flags = MEMSTICK_MATCH_ALL;
+-			card->id.type = id_reg.type;
+-			card->id.category = id_reg.category;
+-			card->id.class = id_reg.class;
+-			dev_dbg(&card->dev, "if_mode = %02x\n", id_reg.if_mode);
+-		}
+-		complete(&card->mrq_complete);
+-		return -EAGAIN;
+-	}
+-}
+-
+-static int h_memstick_set_rw_addr(struct memstick_dev *card,
+-				  struct memstick_request **mrq)
+-{
+-	if (!(*mrq)) {
+-		memstick_init_req(&card->current_mrq, MS_TPC_SET_RW_REG_ADRS,
+-				  (char *)&card->reg_addr,
+-				  sizeof(card->reg_addr));
+-		*mrq = &card->current_mrq;
+-		return 0;
+-	} else {
+-		complete(&card->mrq_complete);
+-		return -EAGAIN;
+-	}
+-}
+-
+-
+-static int h_memstick_default_bad(struct memstick_dev *card,
+-				     struct memstick_request **mrq)
+-{
+-	return -ENXIO;
+-}
+-
+-/**
+- * memstick_set_rw_addr - issue SET_RW_REG_ADDR request and wait for it to
+- *                        complete
+- * @card - media device to use
+- */
+-int memstick_set_rw_addr(struct memstick_dev *card)
+-{
+-	card->next_request = h_memstick_set_rw_addr;
+-	memstick_new_req(card->host);
+-	wait_for_completion(&card->mrq_complete);
+-
+-	return card->current_mrq.error;
+-}
+-EXPORT_SYMBOL(memstick_set_rw_addr);
+-
+-
+-/**
+- * memstick_allocate_request - create new request for use in request handler
+- * @card - card to use
+- * @mrq - request to initialize
+- */
+-void memstick_allocate_request(struct memstick_dev *card,
+-					struct memstick_request **mrq)
+-{
+-	if (*mrq == NULL) {
+-		*mrq = &card->current_mrq;
+-		(*mrq)->error = 0;
+-		(*mrq)->need_card_int = 0;
+-		card->int_polling = false;
+-		card->state = 0;
+-	}
+-}
+-EXPORT_SYMBOL(memstick_allocate_request);
+-
+-/**
+- * memstick_complete_req - signal that request is completed
+- * @card - card to use
+- * @mrq - request to use
+- * @error - result of the request
+- *
+- * Card drivers can use that function to signal end of request
+- */
+-int memstick_complete_request(struct memstick_dev *card,
+-			struct memstick_request *req, int error)
+-{
+-	if (error)
+-		req->error = error;
+-
+-	card->state = -1;
+-	card->int_polling = false;
+-	card->next_request = h_memstick_default_bad;
+-
+-	/* Invalidate reg window on errors */
+-	if (req->error)
+-		memstick_invalidate_reg_window(card);
+-
+-	complete(&card->mrq_complete);
+-	return -EAGAIN;
+-}
+-EXPORT_SYMBOL(memstick_complete_request);
+-
+ /**
+  * memstick_read_int_reg - read INT status from the card
+  * if last request already contains the int flags, will return 0
+  * returns 1 if new request was initialized
+- * Will artifictially return MEMSTICK_INT_CMDNAK if this function was
+- * called more that once in 300 msecs without memstick_finish_int_request
+- * in between
++ * Will artifictially return MEMSTICK_INT_CMDNAK if more that 'timeout' msecs
++ * passed after last MS_TPC_GET_INT request (and no requests in between)
++ * if timeout == -1, then it is set to default value of 300 msec
+  * @card - card to use
+- * @req - request to use
++ * @timeout - the timeout. if -1, then uses default
+  */
+ 
+-int memstick_read_int_reg(struct memstick_dev *card,
+-				struct memstick_request *req, long timeout)
++int memstick_read_int_reg(struct memstick_dev *card, long timeout)
+ {
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
+ 
+ 	if (!card->int_polling) {
+ 		card->int_timeout = jiffies +
+ 			msecs_to_jiffies(timeout == -1 ? 300 : timeout);
+ 		card->int_polling = true;
+ 	} else if (time_after(jiffies, card->int_timeout)) {
+-		req->data[0] = MEMSTICK_INT_CMDNAK;
++		mrq->data[0] = MEMSTICK_INT_CMDNAK;
+ 		return 0;
+ 	}
+ 
+ 	if (((card->caps | card->host->caps) & MEMSTICK_CAP_AUTO_GET_INT) &&
+-							req->need_card_int) {
+-		BUG_ON(req->error);
+-		req->data[0] = req->int_reg;
+-		req->need_card_int = 0;
++							mrq->need_card_int) {
++		BUG_ON(mrq->error);
++		mrq->data[0] = mrq->int_reg;
++		mrq->need_card_int = false;
+ 		return 0;
+ 	} else {
+-		memstick_init_req(req, MS_TPC_GET_INT, NULL, 1);
++		memstick_init_req(card, MS_TPC_GET_INT, NULL, 1);
+ 		return 1;
+ 	}
+ }
+@@ -469,19 +511,6 @@ EXPORT_SYMBOL(memstick_read_int_reg);
+ 
+ 
+ /**
+- * memstick_read_int_reg_cleanup - cleanup after series of calls to
+- * memstick_read_int_reg. Used to cancel timeout.
+- * Use this if you use memstick_read_int_reg
+- * @card - card to use
+- */
+-void memstick_read_int_reg_cleanup(struct memstick_dev *card)
+-{
+-	card->int_polling = false;
+-}
+-EXPORT_SYMBOL(memstick_read_int_reg_cleanup);
+-
+-
+-/**
+  * memstick_read_regs - read the ms registers
+  * If there is need to change the R/W window,
+  * it will create the MS_TPC_SET_RW_REG_ADRS request and return 0,
+@@ -492,9 +521,10 @@ EXPORT_SYMBOL(memstick_read_int_reg_cleanup);
+  * @req - request to use
+  */
+ 
+-int memstick_read_regs(struct memstick_dev *card, int offset, int len,
+-	struct memstick_request *req)
++int memstick_read_regs(struct memstick_dev *card, int offset, int len)
+ {
++	WARN_ON(!card->state_machine_running);
++
+ 	if (card->reg_addr.r_offset != offset ||
+ 					card->reg_addr.r_length != len) {
+ 		card->reg_addr.r_offset = offset;
+@@ -508,12 +538,12 @@ int memstick_read_regs(struct memstick_dev *card, int offset, int len,
+ 			card->reg_addr.w_length = sizeof(struct ms_id_register);
+ 		}
+ 
+-		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
++		memstick_init_req(card, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
+ 			sizeof(card->reg_addr));
+ 		return 0;
+ 	}
+ 
+-	memstick_init_req(req, MS_TPC_READ_REG, NULL, len);
++	memstick_init_req(card, MS_TPC_READ_REG, NULL, len);
+ 	return 1;
+ }
+ EXPORT_SYMBOL(memstick_read_regs);
+@@ -527,11 +557,12 @@ EXPORT_SYMBOL(memstick_read_regs);
+  * @offset - offset of first register to read
+  * @len - number of bytes to read
+  * @buf - the register data to write
+- * @req - request to use
+  */
+-int memstick_write_regs(struct memstick_dev *card, int offset, int len,
+-	char *buf, struct memstick_request *req)
++int memstick_write_regs(struct memstick_dev *card,
++					int offset, int len, void *buf)
+ {
++	WARN_ON(!card->state_machine_running);
++
+ 	if (card->reg_addr.w_offset != offset ||
+ 					card->reg_addr.w_length != len) {
+ 		card->reg_addr.w_offset = offset;
+@@ -546,35 +577,44 @@ int memstick_write_regs(struct memstick_dev *card, int offset, int len,
+ 			card->reg_addr.r_length = sizeof(struct ms_id_register);
+ 		}
+ 
+-		memstick_init_req(req, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
++		memstick_init_req(card, MS_TPC_SET_RW_REG_ADRS, &card->reg_addr,
+ 			sizeof(card->reg_addr));
+ 		return 0;
+ 	}
+ 
+-	memstick_init_req(req, MS_TPC_WRITE_REG, buf, len);
++	memstick_init_req(card, MS_TPC_WRITE_REG, buf, len);
+ 	return 1;
+ }
+ EXPORT_SYMBOL(memstick_write_regs);
+ 
+ 
+ /**
+- * memstick_run_state_machine - runs state machine untill it calls
+- * memstick_complete_request.
+- * Usefull for blocking IO in the card drivers.
++ * memstick_state_machine_exit - signal that request is completed
+  * @card - card to use
+- * state_func - the state machine
++ * @mrq - request to use
++ * @error - result of the request
++ *
++ * State machines call this to signal quit
+  */
+-int memstick_run_state_machine(struct memstick_dev *card,
+-	int   (*state_func)(struct memstick_dev *card,
+-					struct memstick_request **mrq))
++int memstick_state_machine_exit(struct memstick_dev *card, int error)
+ {
+-	card->next_request = state_func;
+-	memstick_new_req(card->host);
+-	wait_for_completion(&card->mrq_complete);
+-	return card->current_mrq.error;
+-}
+-EXPORT_SYMBOL(memstick_run_state_machine);
++	struct memstick_request *mrq = &card->current_mrq;
++	WARN_ON(!card->state_machine_running);
++
++	/* Invalidate reg window on errors */
++
++	if (error)
++		memstick_invalidate_reg_window(card);
+ 
++	mrq->error = error;
++	card->state = -1;
++	card->int_polling = false;
++	card->next_request = h_memstick_default_bad;
++	card->state_machine_running = false;
++	complete(&card->mrq_complete);
++	return -ENXIO;
++}
++EXPORT_SYMBOL(memstick_state_machine_exit);
+ 
+ static const char *tpc_names[] = {
+ 	"MS_TPC_READ_MG_STATUS",
+@@ -605,120 +645,35 @@ EXPORT_SYMBOL(memstick_debug_get_tpc_name);
+ 
+ 
+ /**
+- * memstick_invalidate_reg_window - invalidate the card register
+- * read/write window (start, len)
+- * Use when not certain if card still remembers it
++ * memstick_reset_card - power cycles the card
++ * @card - card to use
+  */
+-void memstick_invalidate_reg_window(struct memstick_dev *card)
++int memstick_reset_card(struct memstick_dev *card)
+ {
+-	memset(&card->reg_addr, 0, sizeof(card->reg_addr));
+-}
+-EXPORT_SYMBOL(memstick_invalidate_reg_window);
++	int error;
++	struct memstick_host *host = card->host;
+ 
++	memstick_invalidate_reg_window(card);
+ 
++	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
++	if (error)
++		return error;
+ 
+-static struct memstick_dev *memstick_alloc_card(struct memstick_host *host)
+-{
+-	struct memstick_dev *card = kzalloc(sizeof(struct memstick_dev),
+-					    GFP_KERNEL);
+-	struct memstick_dev *old_card = host->card;
+-	struct ms_id_register id_reg;
+-
+-	if (card) {
+-		card->host = host;
+-		dev_set_name(&card->dev, "%s", dev_name(&host->dev));
+-		card->dev.parent = &host->dev;
+-		card->dev.bus = &memstick_bus_type;
+-		card->dev.release = memstick_free_card;
+-		card->check = memstick_dummy_check;
+-
+-		card->reg_addr.r_offset = offsetof(struct ms_register, id);
+-		card->reg_addr.r_length = sizeof(id_reg);
+-		card->reg_addr.w_offset = offsetof(struct ms_register, id);
+-		card->reg_addr.w_length = sizeof(id_reg);
+-
+-		init_completion(&card->mrq_complete);
+-
+-		host->card = card;
+-		if (memstick_set_rw_addr(card))
+-			goto err_out;
+-
+-		card->next_request = h_memstick_read_dev_id;
+-		memstick_new_req(host);
+-		wait_for_completion(&card->mrq_complete);
+-
+-		if (card->current_mrq.error)
+-			goto err_out;
+-	}
+-	host->card = old_card;
+-	return card;
+-err_out:
+-	host->card = old_card;
+-	kfree(card);
+-	return NULL;
+-}
++	msleep(50);
+ 
+-static int memstick_power_on(struct memstick_host *host)
+-{
+-	int rc = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
++	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
++	if (error)
++		return error;
+ 
+-	if (!rc)
+-		rc = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
++	error = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
++	if (error)
++		return error;
+ 
+-	return rc;
++	return 0;
+ }
++EXPORT_SYMBOL(memstick_reset_card);
+ 
+-static void memstick_check(struct work_struct *work)
+-{
+-	struct memstick_host *host = container_of(work, struct memstick_host,
+-						  media_checker);
+-	struct memstick_dev *card;
+-
+-	dev_dbg(&host->dev, "memstick_check started\n");
+-	mutex_lock(&host->lock);
+-	if (!host->card) {
+-		if (memstick_power_on(host))
+-			goto out_power_off;
+-	} else if (host->card->stop)
+-		host->card->stop(host->card);
+-
+-	card = memstick_alloc_card(host);
+-
+-	if (!card) {
+-		if (host->card) {
+-			device_unregister(&host->card->dev);
+-			host->card = NULL;
+-		}
+-	} else {
+-		dev_dbg(&host->dev, "new card %02x, %02x, %02x\n",
+-			card->id.type, card->id.category, card->id.class);
+-		if (host->card) {
+-			if (memstick_set_rw_addr(host->card)
+-			    || !memstick_dev_match(host->card, &card->id)
+-			    || !(host->card->check(host->card))) {
+-				device_unregister(&host->card->dev);
+-				host->card = NULL;
+-			} else if (host->card->start)
+-				host->card->start(host->card);
+-		}
+-
+-		if (!host->card) {
+-			host->card = card;
+-			if (device_register(&card->dev)) {
+-				kfree(host->card);
+-				host->card = NULL;
+-			}
+-		} else
+-			kfree(card);
+-	}
+-
+-out_power_off:
+-	if (!host->card)
+-		host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
+-
+-	mutex_unlock(&host->lock);
+-	dev_dbg(&host->dev, "memstick_check finished\n");
+-}
++/*** host driver interface ***/
+ 
+ /**
+  * memstick_alloc_host - allocate a memstick_host structure
+@@ -837,20 +792,48 @@ void memstick_resume_host(struct memstick_host *host)
+ }
+ EXPORT_SYMBOL(memstick_resume_host);
+ 
+-int memstick_register_driver(struct memstick_driver *drv)
++/**
++ * memstick_detect_change - schedule media detection on memstick host
++ * @host - host to use
++ */
++void memstick_detect_change(struct memstick_host *host)
+ {
+-	drv->driver.bus = &memstick_bus_type;
+-
+-	return driver_register(&drv->driver);
++	queue_work(workqueue, &host->media_checker);
+ }
+-EXPORT_SYMBOL(memstick_register_driver);
++EXPORT_SYMBOL(memstick_detect_change);
+ 
+-void memstick_unregister_driver(struct memstick_driver *drv)
++/**
++ * memstick_next_req - called by host driver to obtain next request to process
++ * @host - host to use
++ * @mrq - pointer to stick the request to
++ *
++ * Host calls this function from idle state (*mrq == NULL) or after finishing
++ * previous request (*mrq should point to it). If previous request was
++ * unsuccessful, it is retried for predetermined number of times. Return value
++ * of 0 means that new request was assigned to the host.
++ */
++int memstick_next_req(struct memstick_host *host, struct memstick_request **mrq)
+ {
+-	driver_unregister(&drv->driver);
+-}
+-EXPORT_SYMBOL(memstick_unregister_driver);
++	int rc = -ENXIO;
++
++	if ((*mrq) && (*mrq)->error && host->retries) {
++		(*mrq)->error = rc;
++		host->retries--;
++		return 0;
++	}
++
++	if (host->card && host->card->next_request)
++		rc = host->card->next_request(host->card);
+ 
++	if (!rc) {
++		*mrq = &host->card->current_mrq;
++		host->retries = cmd_retries > 1 ? cmd_retries - 1 : 1;
++	} else
++		*mrq = NULL;
++
++	return rc;
++}
++EXPORT_SYMBOL(memstick_next_req);
+ 
+ static int __init memstick_init(void)
+ {
+diff --git a/drivers/memstick/core/ms_block.c b/drivers/memstick/core/ms_block.c
+index 75ec529..9a9aa3a 100644
+--- a/drivers/memstick/core/ms_block.c
++++ b/drivers/memstick/core/ms_block.c
+@@ -241,17 +241,17 @@ static int msb_advance_sg(struct msb_data *msb)
+  * Writes output to msb->current_sg, takes sector address from msb->reg.param
+  * Can also be used to read extra data only. Set params accordintly.
+  */
+-static int h_msb_read_page(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_read_page(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	struct scatterlist sg;
+ 	u8 command, intreg;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
++	if (mrq->error) {
+ 		dbg("read_page, unknown error");
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, mrq->error);
+ 	}
+ again:
+ 	switch (card->state) {
+@@ -259,35 +259,32 @@ again:
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct ms_register, param),
+ 			sizeof(struct ms_param_register),
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* Execute the read command*/
+ 		command = MS_CMD_BLOCK_READ;
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
+ 		break;
+ 
+ 	case 2: /* send INT request */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 3: /* get result of the INT request*/
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 		msb->regs.status.interrupt = intreg;
+ 
+ 		if (intreg & MEMSTICK_INT_CMDNAK)
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 
+ 		if (!(intreg & MEMSTICK_INT_CED)) {
+ 			card->state--;
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+-
+ 		if (intreg & MEMSTICK_INT_ERR)
+ 			card->state++;
+ 		else
+@@ -298,26 +295,24 @@ again:
+ 	case 4: /* read the status register to understand source of the INT_ERR */
+ 		if (!memstick_read_regs(card,
+ 			offsetof(struct ms_register, status),
+-			sizeof(struct ms_status_register),
+-			*mrq))
++			sizeof(struct ms_status_register)))
+ 			return 0;
+ 		break;
+ 
+ 	case 5: /* get results of status check */
+-		msb->regs.status = *(struct ms_status_register *)(*mrq)->data;
++		msb->regs.status = *(struct ms_status_register *)mrq->data;
+ 		card->state++;
+ 
+ 	case 6: /* Send extra data read request */
+ 		if (!memstick_read_regs(card,
+ 			offsetof(struct ms_register, extra_data),
+-			sizeof(struct ms_extra_data_register),
+-			*mrq))
++			sizeof(struct ms_extra_data_register)))
+ 			return 0;
+ 		break;
+ 
+ 	case 7: /* Save result of extra data request */
+ 		msb->regs.extra_data =
+-			*(struct ms_extra_data_register *) (*mrq)->data;
++			*(struct ms_extra_data_register *) mrq->data;
+ 		card->state++;
+ 
+ 	case 8: /* Send the  MS_TPC_READ_LONG_DATA to read IO buffer */
+@@ -329,25 +324,25 @@ again:
+ 		}
+ 
+ 		msb_set_sg(msb, &sg);
+-		memstick_init_req_sg(*mrq, MS_TPC_READ_LONG_DATA, &sg);
++		memstick_init_req_sg(card, MS_TPC_READ_LONG_DATA, &sg);
+ 		break;
+ 
+ 	case 9: /* check validity of data buffer & done */
+ 
+ 		if (!(msb->regs.status.interrupt & MEMSTICK_INT_ERR))
+-			return memstick_complete_request(card, *mrq, 0);
++			return memstick_state_machine_exit(card, 0);
+ 
+ 		if (msb->regs.status.status1 & MEMSTICK_UNCORR_ERROR) {
+ 			dbg("read_page: uncorrectable error");
+-			return memstick_complete_request(card, *mrq, -EBADMSG);
++			return memstick_state_machine_exit(card, -EBADMSG);
+ 		}
+ 
+ 		if (msb->regs.status.status1 & MEMSTICK_CORR_ERROR) {
+ 			dbg("read_page: correctable error");
+-			return memstick_complete_request(card, *mrq, -EUCLEAN);
++			return memstick_state_machine_exit(card, -EUCLEAN);
+ 		} else {
+ 			dbg("read_page: INT error, but no status error bits");
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 		}
+ 	default:
+ 		BUG();
+@@ -363,16 +358,16 @@ again:
+  * Returns -EBADMSG if write fails due to uncorrectable error, or -EIO if
+  * device refuses to take the command or something else
+  */
+-static int h_msb_write_block(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_write_block(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	struct scatterlist sg;
+ 	u8 intreg, command;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error)
+-		return memstick_complete_request(card, *mrq, 0);
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ again:
+ 	switch (card->state) {
+@@ -387,37 +382,36 @@ again:
+ 			offsetof(struct ms_register, param),
+ 			sizeof(struct ms_param_register) +
+ 			sizeof(struct ms_extra_data_register) + 2,
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* execute the write command*/
+ 		command = MS_CMD_BLOCK_WRITE;
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
+ 		break;
+ 
+ 	case 2: /* send INT request */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 3: /* read INT response */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 		msb->regs.status.interrupt = intreg;
+ 
+ 		/* errors mean out of here, and fast... */
+ 		if (intreg & (MEMSTICK_INT_CMDNAK))
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 
+ 		if (intreg & MEMSTICK_INT_ERR)
+-			return memstick_complete_request(card, *mrq, -EBADMSG);
++			return memstick_state_machine_exit(card, -EBADMSG);
+ 
+ 
+ 		/* for last page we need to poll CED */
+ 		if (msb->current_page == msb->pages_in_block) {
+ 			if (intreg & MEMSTICK_INT_CED)
+-				return memstick_complete_request(card, *mrq, 0);
++				return memstick_state_machine_exit(card, 0);
+ 			card->state--;
+ 			goto again;
+ 
+@@ -429,13 +423,12 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+ 		card->state++;
+ 
+ 	case 4: /* send the MS_TPC_WRITE_LONG_DATA to perform the write*/
+ 		msb_set_sg(msb, &sg);
+-		memstick_init_req_sg(*mrq, MS_TPC_WRITE_LONG_DATA, &sg);
+-		(*mrq)->need_card_int = 1;
++		memstick_init_req_sg(card, MS_TPC_WRITE_LONG_DATA, &sg);
++		mrq->need_card_int = 1;
+ 		break;
+ 
+ 	case 5: /* Switch to next page + go back to int polling */
+@@ -445,8 +438,8 @@ again:
+ 			if (msb_advance_sg(msb)) {
+ 				ms_printk(
+ 				"BUG: out of data while writing block!");
+-				return memstick_complete_request(card,
+-								*mrq, -EFAULT);
++				return memstick_state_machine_exit(
++								card, -EFAULT);
+ 			}
+ 		}
+ 		card->state = 2;
+@@ -462,17 +455,17 @@ again:
+  * This function is used to send simple IO requests to device that consist
+  * of register write + command
+  */
+-static int h_msb_send_command(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_send_command(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	u8 intreg;
+ 	int len;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
++	if (mrq->error) {
+ 		dbg("send_command: unknown error");
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, mrq->error);
+ 	}
+ 
+ again:
+@@ -486,27 +479,26 @@ again:
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct ms_register, param),
+ 			len,
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* execute the command*/
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &msb->command_value, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &msb->command_value, 1);
+ 		break;
+ 
+ 	case 2: /* send INT request */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 3: /* poll for int bits */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 
+ 		if (intreg & MEMSTICK_INT_CMDNAK)
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 		if (intreg & MEMSTICK_INT_ERR)
+-			return memstick_complete_request(card, *mrq, -EBADMSG);
++			return memstick_state_machine_exit(card, -EBADMSG);
+ 
+ 
+ 		if (!(intreg & MEMSTICK_INT_CED)) {
+@@ -514,47 +506,45 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 	card->state++;
+ 	return 0;
+ }
+ 
+ /* Small handler for card reset */
+-static int h_msb_reset(struct memstick_dev *card,
+-				 struct memstick_request **mrq)
++static int h_msb_reset(struct memstick_dev *card)
+ {
+ 	u8 command = MS_CMD_RESET;
++	struct memstick_request *mrq = &card->current_mrq;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error)
+-		return memstick_complete_request(card, *mrq, 0);
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ 	switch (card->state) {
+ 	case 0:
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
+-		(*mrq)->need_card_int = 0;
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
++		mrq->need_card_int = 0;
+ 		break;
+ 	case 1:
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 	card->state++;
+ 	return 0;
+ }
+ 
+ /* This handler is used to do serial->parallel switch */
+-static int h_msb_parallel_switch(struct memstick_dev *card,
+-					struct memstick_request **mrq)
++static int h_msb_parallel_switch(struct memstick_dev *card)
+ {
+ 	struct msb_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	struct memstick_host *host = card->host;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
++	if (mrq->error) {
+ 		dbg("parallel_switch: error");
+ 		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, mrq->error);
+ 	}
+ 
+ 	switch (card->state) {
+@@ -565,19 +555,18 @@ static int h_msb_parallel_switch(struct memstick_dev *card,
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct ms_register, param),
+ 			1,
+-			(unsigned char *)&msb->regs.param,
+-			*mrq))
++			(unsigned char *)&msb->regs.param))
+ 			return 0;
+ 		break;
+ 
+ 	case 1: /* Set parallel interface on our side + send a dummy request
+ 			to see if card responds */
+ 		host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_PAR4);
+-		memstick_init_req(&card->current_mrq, MS_TPC_GET_INT, NULL, 1);
++		memstick_init_req(card, MS_TPC_GET_INT, NULL, 1);
+ 		break;
+ 
+ 	case 2:
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 	card->state++;
+ 	return 0;
+@@ -590,21 +579,15 @@ static int msb_reset(struct msb_data *msb)
+ {
+ 	bool was_parallel = msb->regs.param.system & MEMSTICK_SYS_PAM;
+ 	struct memstick_dev *card = msb->card;
+-	struct memstick_host *host = card->host;
+ 	int error;
+ 
+-	memstick_invalidate_reg_window(card);
+-
+-	/* Reset the controller */
+-	host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
+-	msleep(100);
+-	host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
+-	host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
+-
+-
+ 	/* Reset the card */
+ 	msb->regs.param.system = MEMSTICK_SYS_BAMD;
+-	error = memstick_run_state_machine(card, h_msb_reset);
++	error = memstick_reset_card(card);
++
++	if (!error)
++		error = memstick_run_state_machine(card, h_msb_reset, true);
++
+ 	if (error) {
+ 		dbg("Failed to reset the card");
+ 		msb->read_only = true;
+@@ -622,7 +605,8 @@ static int msb_switch_to_parallel(struct msb_data *msb)
+ {
+ 	int error;
+ 
+-	error = memstick_run_state_machine(msb->card, h_msb_parallel_switch);
++	error = memstick_run_state_machine(msb->card,
++						h_msb_parallel_switch, true);
+ 	if (error) {
+ 		ms_printk("Switch to parallel failed");
+ 		msb->regs.param.system &= ~MEMSTICK_SYS_PAM;
+@@ -650,7 +634,7 @@ static int msb_set_overwrite_flag(struct msb_data *msb,
+ 
+ 	dbg_verbose("changing overwrite flag to %02x for sector %d, page %d",
+ 							flag, pba, page);
+-	return memstick_run_state_machine(msb->card, h_msb_send_command);
++	return memstick_run_state_machine(msb->card, h_msb_send_command, true);
+ }
+ 
+ static int msb_mark_bad(struct msb_data *msb, int pba)
+@@ -687,7 +671,7 @@ static int msb_erase_block(struct msb_data *msb, u16 pba)
+ 
+ 
+ 		error = memstick_run_state_machine(msb->card,
+-							h_msb_send_command);
++						h_msb_send_command, true);
+ 		if (!error || msb_reset(msb))
+ 			break;
+ 	}
+@@ -747,7 +731,8 @@ static int msb_read_page(struct msb_data *msb,
+ 
+ 		msb->current_sg = sg;
+ 		msb->sg_offset = 0;
+-		error = memstick_run_state_machine(msb->card, h_msb_read_page);
++		error = memstick_run_state_machine(msb->card,
++						h_msb_read_page, true);
+ 
+ 
+ 		if (error == -EUCLEAN) {
+@@ -798,7 +783,7 @@ static int msb_read_oob(struct msb_data *msb, u16 pba, u16 page,
+ 		return -EINVAL;
+ 	}
+ 
+-	error = memstick_run_state_machine(msb->card, h_msb_read_page);
++	error = memstick_run_state_machine(msb->card, h_msb_read_page, true);
+ 	*extra = msb->regs.extra_data;
+ 
+ 	if (error == -EUCLEAN) {
+@@ -889,7 +874,7 @@ static int msb_write_block(struct msb_data *msb,
+ 		msb->sg_offset = 0;
+ 
+ 		error = memstick_run_state_machine(msb->card,
+-							h_msb_write_block);
++						h_msb_write_block, true);
+ 
+ 		/* Sector we just wrote to is assumed erased since its pba
+ 			was erased. If it wasn't erased, write will succeed
+@@ -2108,6 +2093,7 @@ static int msb_resume(struct memstick_dev *card)
+ 
+ 	new_msb->card = card;
+ 	memstick_set_drvdata(card, new_msb);
++	spin_lock_init(&new_msb->q_lock);
+ 
+ 	if (msb_init_card(card))
+ 		goto out;
+diff --git a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
+index c589d26..0f28828 100644
+--- a/drivers/memstick/core/mspro_block.c
++++ b/drivers/memstick/core/mspro_block.c
+@@ -372,40 +372,38 @@ static sysfs_show_t mspro_block_attr_show(unsigned char tag)
+  * finished (and request processor should come back some time later).
+  */
+ 
+-static int h_mspro_block_reset(struct memstick_dev *card,
+-					struct memstick_request **mrq)
++static int h_mspro_block_reset(struct memstick_dev *card)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	struct ms_status_register *status;
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	u8 intreg;
+ 
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error) {
+-		dbg(card, "Error here");
+-		return memstick_complete_request(card, *mrq, 0);
+-	}
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ again:
+ 	switch (card->state) {
+ 
+ 	case 0: /* send request for INT reg */
+-		if (memstick_read_int_reg(card, *mrq, 10000))
++		if (memstick_read_int_reg(card, 10000))
+ 			break;
+ 		card->state++;
+ 
+ 	case 1: /* process the INT reg and loop if nessesary */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 
+ 		if (intreg & MEMSTICK_INT_ERR) {
+ 			if ((intreg & MEMSTICK_INT_CMDNAK)) {
+ 				msb->read_only = true;
+-				return memstick_complete_request(card, *mrq, 0);
++				return memstick_state_machine_exit(card, 0);
+ 			}
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 		}
+ 
+ 		if (intreg & MEMSTICK_INT_CMDNAK)
+-			return memstick_complete_request(card, *mrq, -EIO);
++			return memstick_state_machine_exit(card, -EIO);
+ 
+ 
+ 		if (!(intreg & MEMSTICK_INT_CED)) {
+@@ -413,22 +411,20 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+ 		card->state++;
+ 
+ 	case 2: /* read the R/O status */
+ 
+ 		if (!memstick_read_regs(card,
+ 			offsetof(struct mspro_register, status),
+-			sizeof(struct ms_status_register),
+-			*mrq))
++			sizeof(struct ms_status_register)))
+ 			return 0;
+ 		break;
+ 
+ 	case 3: /* process the result & done */
+-		status = (struct ms_status_register *)(*mrq)->data;
++		status = (struct ms_status_register *)mrq->data;
+ 		msb->read_only = status->status0 & MEMSTICK_STATUS0_WP;
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 	}
+ 
+ 	card->state++;
+@@ -436,14 +432,14 @@ again:
+ 
+ }
+ 
+-static int h_mspro_block_switch_interface(struct memstick_dev *card,
+-					struct memstick_request **mrq)
++static int h_mspro_block_switch_interface(struct memstick_dev *card)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	int error;
+-	memstick_allocate_request(card, mrq);
+-	if ((*mrq)->error)
+-		return memstick_complete_request(card, *mrq, 0);
++	if (mrq->error)
++		return memstick_state_machine_exit(card, mrq->error);
+ 
+ 	switch (card->state) {
+ 
+@@ -451,8 +447,7 @@ static int h_mspro_block_switch_interface(struct memstick_dev *card,
+ 		if (!memstick_write_regs(card,
+ 			offsetof(struct mspro_register, param),
+ 			1,
+-			&msb->system,
+-			*mrq))
++			&msb->system))
+ 			return 0;
+ 		break;
+ 
+@@ -461,13 +456,13 @@ static int h_mspro_block_switch_interface(struct memstick_dev *card,
+ 		error = card->host->set_param(card->host,
+ 				MEMSTICK_INTERFACE, msb->target_interface);
+ 		if (error)
+-			return memstick_complete_request(card, *mrq, -EFAULT);
++			return memstick_state_machine_exit(card, -EFAULT);
+ 
+-		memstick_init_req(*mrq, MS_TPC_GET_INT, NULL, 1);
++		memstick_init_req(card, MS_TPC_GET_INT, NULL, 1);
+ 		break;
+ 
+ 	case 2: /* done */
+-		return memstick_complete_request(card, *mrq, 0);
++		return memstick_state_machine_exit(card, 0);
+ 
+ 	}
+ 
+@@ -476,21 +471,20 @@ static int h_mspro_block_switch_interface(struct memstick_dev *card,
+ }
+ 
+ /* State machine that handles the IO. Heart of the driver */
+-static int h_mspro_block_transfer_data(struct memstick_dev *card,
+-				       struct memstick_request **mrq)
++static int h_mspro_block_transfer_data(struct memstick_dev *card)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
++	struct memstick_request *mrq = &card->current_mrq;
++
+ 	unsigned char intreg = 0, command;
+ 	struct scatterlist t_sg = { 0 };
+ 	unsigned long flags;
+ 	int error;
+ 	size_t t_offset;
+ 
+-	memstick_allocate_request(card, mrq);
+-
+-	if ((*mrq)->error) {
+-		dbg(card, "IO: error (%d) executing %s", (*mrq)->error,
+-			memstick_debug_get_tpc_name((*mrq)->tpc));
++	if (mrq->error) {
++		dbg(card, "IO: error (%d) executing %s", mrq->error,
++			memstick_debug_get_tpc_name(mrq->tpc));
+ 		msb->io_error = true;
+ 		card->state = 5;
+ 	}
+@@ -498,17 +492,17 @@ again:
+ 	switch (card->state) {
+ 
+ 	case 0: /* send read/write command + args */
+-		memstick_init_req(*mrq, MS_TPC_EX_SET_CMD,
++		memstick_init_req(card, MS_TPC_EX_SET_CMD,
+ 					&msb->arg, sizeof(msb->arg));
+ 		break;
+ 
+ 	case 1: /* read the INT register */
+-		if (memstick_read_int_reg(card, *mrq, -1))
++		if (memstick_read_int_reg(card, -1))
+ 			break;
+ 		card->state++;
+ 
+ 	case 2: /* process the int register */
+-		intreg = (*mrq)->data[0];
++		intreg = mrq->data[0];
+ 
+ 		if (intreg & (MEMSTICK_INT_CMDNAK | MEMSTICK_INT_ERR)) {
+ 			dbg(card, "IO: card I/O error");
+@@ -524,7 +518,6 @@ again:
+ 				goto again;
+ 			}
+ 
+-			memstick_read_int_reg_cleanup(card);
+ 			card->state = 6;
+ 			goto again;
+ 		}
+@@ -535,7 +528,6 @@ again:
+ 			goto again;
+ 		}
+ 
+-		memstick_read_int_reg_cleanup(card);
+ 		card->state++;
+ 
+ 	case 3: /* init transfer of the data */
+@@ -549,11 +541,11 @@ again:
+ 			msb->page_size,
+ 			offset_in_page(t_offset));
+ 
+-		memstick_init_req_sg(*mrq, msb->data_dir == READ
++		memstick_init_req_sg(card, msb->data_dir == READ
+ 					   ? MS_TPC_READ_LONG_DATA
+ 					   : MS_TPC_WRITE_LONG_DATA,
+ 				     &t_sg);
+-		(*mrq)->need_card_int = 1;
++		mrq->need_card_int = 1;
+ 		break;
+ 
+ 	case 4: /* switch to next page */
+@@ -570,34 +562,36 @@ again:
+ 
+ 	case 5: /* after a error send STOP command */
+ 		command = MSPRO_CMD_STOP;
+-		memstick_init_req(*mrq, MS_TPC_SET_CMD, &command, 1);
++		memstick_init_req(card, MS_TPC_SET_CMD, &command, 1);
+ 		break;
+ 
+ 	case 6: /* request complete - get next one*/
+ 		spin_lock_irqsave(&msb->q_lock, flags);
+ 
+ 		if (msb->io_error)
+-			(*mrq)->error = -EIO;
++			mrq->error = -EIO;
+ 
+ 		if (msb->block_req) {
+-			mspro_block_complete_req(card, (*mrq)->error);
+-			error = mspro_block_issue_req(card);
++			mspro_block_complete_req(card, mrq->error);
++			error = mspro_block_issue_req(card, false);
++
++			if (error) {
++				WARN_ON(msb->block_req);
+ 
+-			if (!msb->block_req) {
+ 				dbg_v(card, "IO: out of requests");
+-				memstick_complete_request(card, *mrq, 0);
++				error = memstick_state_machine_exit(card, 0);
+ 				spin_unlock_irqrestore(&msb->q_lock, flags);
+-				return -EAGAIN;
++				return error;
+ 			}
+ 
+ 			spin_unlock_irqrestore(&msb->q_lock, flags);
+-			(*mrq)->error = 0;
++			mrq->error = 0;
+ 			card->state = 0;
+ 			goto again;
+ 
+ 		} else {
+ 			spin_unlock_irqrestore(&msb->q_lock, flags);
+-			return memstick_complete_request(card, *mrq, 0);
++			return memstick_state_machine_exit(card, 0);
+ 		}
+ 	default:
+ 		BUG();
+@@ -629,7 +623,7 @@ static int mspro_block_setup_io(struct memstick_dev *card, int direction,
+  * Start execution of next block request,
+  * or continue execution of the current one
+  */
+-static int mspro_block_issue_req(struct memstick_dev *card)
++static int mspro_block_issue_req(struct memstick_dev *card, bool first)
+ {
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	sector_t sec;
+@@ -642,10 +636,17 @@ again:
+ 		msb->block_req = blk_fetch_request(msb->queue);
+ 		if (!msb->block_req) {
+ 			dbg(card, "IO: failed, because queue is empty");
+-			return -EAGAIN;
++			return -ENXIO;
+ 		}
+ 	}
+ 
++	if (msb->eject) {
++		dbg(card, "IO: Refusing request, because card is removed");
++		__blk_end_request_all(msb->block_req, -ENODEV);
++		msb->block_req = NULL;
++		goto again;
++	}
++
+ 	sec = blk_rq_pos(msb->block_req) << 9;
+ 	sector_div(sec, msb->page_size);
+ 	pages = blk_rq_bytes(msb->block_req) / msb->page_size;
+@@ -665,15 +666,14 @@ again:
+ 	dbg(card, "IO: %s: lba %x, pages %x", is_read ? "read" : "write",
+ 					(unsigned int)sec, pages);
+ 
+-	/* can't use memstick_run_state_machine because we don't block */
+-	card->next_request = h_mspro_block_transfer_data;
++	if (first)
++		memstick_run_state_machine(card,
++					h_mspro_block_transfer_data, false);
+ 	return 0;
+ }
+ 
+ /*
+- * Completes execution of current block request.
+- *  After execution of this function, the msb->block_req might or might not
+- *  be NULL. If it is, it means we don't have any more requests to process
++ * Completes execution of current block request
+  */
+ static void mspro_block_complete_req(struct memstick_dev *card, int error)
+ {
+@@ -705,7 +705,8 @@ static int mspro_block_read_attribute(struct memstick_dev *card,
+ 	sg_init_one(&msb->req_sg[0], buffer, len);
+ 	mspro_block_setup_io(card, READ, offset / msb->page_size,
+ 				len / msb->page_size, MSPRO_CMD_READ_ATRB);
+-	return memstick_run_state_machine(card, h_mspro_block_transfer_data);
++	return memstick_run_state_machine(card,
++					h_mspro_block_transfer_data, true);
+ }
+ 
+ /* Memory allocated for attributes by this function should be freed by
+@@ -724,7 +725,7 @@ static int mspro_block_read_attributes(struct memstick_dev *card)
+ 
+ 	int cnt, error, attr_count;
+ 
+-	/* Allocate initial buffer */
++	/* Allocate cache buffer */
+ 	buffer_size = msb->page_size;
+ 	buffer_address = 0;
+ 	buffer = kmalloc(buffer_size, GFP_KERNEL);
+@@ -898,61 +899,39 @@ static void mspro_block_submit_req(struct request_queue *q)
+ {
+ 	struct memstick_dev *card = q->queuedata;
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+-	struct request *req = NULL;
+-
+-	dbg(card, "IO: block layer submits us new request");
++	int error;
+ 
+ 	if (msb->block_req) {
+-		dbg(card, "IO: Already have an request");
++		dbg_v(card,
++			"IO: block layer submits request, while we have one");
+ 		return;
+ 	}
+ 
+-	if (msb->eject) {
+-		dbg(card, "IO: Refusing requests on removed card");
+-		while ((req = blk_fetch_request(q)) != NULL)
+-			__blk_end_request_all(req, -ENODEV);
+-		return;
+-	}
++	dbg(card, "IO: block layer wakes us up for request processing");
+ 
+-	if (mspro_block_issue_req(card)) {
+-		dbg(card, "IO: Falure to issue request");
+-		msb->block_req = NULL;
+-	} else
+-		memstick_new_req(card->host);
++	error = mspro_block_issue_req(card, true);
++	WARN_ON(error && msb->block_req != NULL);
+ }
+ 
+ /* Reset the card */
+-static int mspro_block_reset(struct memstick_dev *card, bool full)
++static int mspro_block_reset(struct memstick_dev *card)
+ {
+-	struct memstick_host *host = card->host;
+ 	struct mspro_block_data *msb = memstick_get_drvdata(card);
+ 	int error;
+ 
+ 	dbg(card, "resetting the card");
+ 
+ 	msb->system = MEMSTICK_SYS_SERIAL;
++	error = memstick_reset_card(card);
+ 
+-	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_OFF);
+-	if (error)
+-		return error;
+-	msleep(50);
+-
+-	error = host->set_param(host, MEMSTICK_POWER, MEMSTICK_POWER_ON);
+-	if (error)
+-		return error;
+-
+-	error = host->set_param(host, MEMSTICK_INTERFACE, MEMSTICK_SERIAL);
+-	if (error)
+-		return error;
+-
+-	msleep(150);
+-
+-	/* Invalidate the register window */
+-	memstick_invalidate_reg_window(card);
++	if (!error) {
++		msleep(150);
++		error = memstick_run_state_machine(card,
++					h_mspro_block_reset, true);
++	}
+ 
+-	error = memstick_run_state_machine(card, h_mspro_block_reset);
+ 	if (error) {
+-		dbg(card, "card reset failure");
++		dbg(card, "card reset failed");
+ 		return error;
+ 	}
+ 
+@@ -974,11 +953,11 @@ static int mspro_block_switch_interface(struct memstick_dev *card)
+ 	msb->system = MEMSTICK_SYS_PAR4;
+ 	msb->target_interface = MEMSTICK_PAR4;
+ 	error = memstick_run_state_machine(card,
+-						h_mspro_block_switch_interface);
++					h_mspro_block_switch_interface, true);
+ 	if (error) {
+ 		dbg(card, "failure to switch to parallel 4 bit inteface");
+ 		card->caps &= ~MEMSTICK_CAP_PAR4;
+-		return mspro_block_reset(card, true);
++		return mspro_block_reset(card);
+ 	}
+ 
+ 	if (!(card->caps & host->caps & MEMSTICK_CAP_PAR8))
+@@ -988,11 +967,11 @@ static int mspro_block_switch_interface(struct memstick_dev *card)
+ 	msb->target_interface = MEMSTICK_PAR8;
+ 	dbg(card, "trying to switch to parallel 8 bit inteface");
+ 	error = memstick_run_state_machine(card,
+-					h_mspro_block_switch_interface);
++				h_mspro_block_switch_interface, true);
+ 	if (error) {
+ 		dbg(card, "failure to switch to parallel 8 bit inteface");
+ 		card->caps &= ~MEMSTICK_CAP_PAR8;
+-		return mspro_block_reset(card, true);
++		return mspro_block_reset(card);
+ 	}
+ 
+ 	return error;
+@@ -1006,7 +985,7 @@ static int mspro_block_init_card(struct memstick_dev *card)
+ 	/* TODO: can't we know what card supports from attributes? */
+ 	card->caps = MEMSTICK_CAP_PAR4 | MEMSTICK_CAP_PAR8;
+ 
+-	rc = mspro_block_reset(card, false);
++	rc = mspro_block_reset(card);
+ 	if (rc)
+ 		return rc;
+ 
+@@ -1058,10 +1037,13 @@ static int mspro_block_init_disk(struct memstick_dev *card)
+ 
+ 	msb->page_size = be16_to_cpu(sys_info->unit_size);
+ 
+-	if (!idr_pre_get(&mspro_block_disk_idr, GFP_KERNEL))
++	mutex_lock(&mspro_block_disk_lock);
++
++	if (!idr_pre_get(&mspro_block_disk_idr, GFP_KERNEL)) {
++		mutex_unlock(&mspro_block_disk_lock);
+ 		return -ENOMEM;
++	}
+ 
+-	mutex_lock(&mspro_block_disk_lock);
+ 	rc = idr_get_new(&mspro_block_disk_idr, card, &disk_id);
+ 	mutex_unlock(&mspro_block_disk_lock);
+ 
+@@ -1250,6 +1232,8 @@ static int mspro_block_resume(struct memstick_dev *card)
+ 
+ 	new_msb->card = card;
+ 	memstick_set_drvdata(card, new_msb);
++	spin_lock_init(&new_msb->q_lock);
++
+ 	if (mspro_block_init_card(card))
+ 		goto out_free;
+ 
+diff --git a/drivers/memstick/core/mspro_block.h b/drivers/memstick/core/mspro_block.h
+index 86a340d..120f306 100644
+--- a/drivers/memstick/core/mspro_block.h
++++ b/drivers/memstick/core/mspro_block.h
+@@ -160,7 +160,7 @@ struct mspro_block_data {
+ 
+ static void mspro_block_complete_req(struct memstick_dev *card, int error);
+ static int mspro_block_switch_interface(struct memstick_dev *card);
+-static int mspro_block_issue_req(struct memstick_dev *card);
++static int mspro_block_issue_req(struct memstick_dev *card, bool first);
+ 
+ #define __dbg(card, level, format, ...) \
+ 	do { \
+diff --git a/include/linux/memstick.h b/include/linux/memstick.h
+index e7bc236..8e1802d 100644
+--- a/include/linux/memstick.h
++++ b/include/linux/memstick.h
+@@ -256,11 +256,11 @@ struct memstick_device_id {
+  * and besides waiting, the host driver must read the INT register
+  * (via data lines)
+  *
+- * In addition to that if hardware is 'smart', it could be able to read
+- * the INT register even in parallel mode by sending MS_TPC_GET_INT
+- * by itself. This capablility is indicated by host via
+- * MEMSTICK_CAP_AUTO_GET_INT.
+- * Then serial mode behavier must be the same as parallel
++ * In addition to that if hardware is 'smart', and is able to read
++ * the INT register even in serial mode by sending MS_TPC_GET_INT
++ * by itself (This capablility is indicated by host via
++ * MEMSTICK_CAP_AUTO_GET_INT),
++ * then the serial mode behavier must be the same as the parallel.
+  */
+ struct memstick_request {
+ 	unsigned char tpc;
+@@ -288,8 +288,7 @@ struct memstick_dev {
+ 	/* Check that media driver is still willing to operate the device. */
+ 	int                      (*check)(struct memstick_dev *card);
+ 	/* Get next request from the media driver.                         */
+-	int                      (*next_request)(struct memstick_dev *card,
+-						 struct memstick_request **mrq);
++	int                      (*next_request)(struct memstick_dev *card);
+ 	/* Tell the media driver to stop doing things                      */
+ 	void                     (*stop)(struct memstick_dev *card);
+ 	/* Allow the media driver to continue                              */
+@@ -302,6 +301,7 @@ struct memstick_dev {
+ 	unsigned long		 int_timeout;
+ 	int			 state;
+ 	int			 caps;
++	bool			 state_machine_running;
+ };
+ 
+ struct memstick_host {
+@@ -338,9 +338,6 @@ struct memstick_driver {
+ 	struct device_driver      driver;
+ };
+ 
+-int memstick_register_driver(struct memstick_driver *drv);
+-void memstick_unregister_driver(struct memstick_driver *drv);
+-
+ struct memstick_host *memstick_alloc_host(unsigned int extra,
+ 					  struct device *dev);
+ 
+@@ -350,40 +347,32 @@ void memstick_free_host(struct memstick_host *host);
+ void memstick_detect_change(struct memstick_host *host);
+ void memstick_suspend_host(struct memstick_host *host);
+ void memstick_resume_host(struct memstick_host *host);
+-
+-void memstick_init_req_sg(struct memstick_request *mrq, unsigned char tpc,
+-			  const struct scatterlist *sg);
+-void memstick_init_req(struct memstick_request *mrq, unsigned char tpc,
+-		       const void *buf, size_t length);
+ int memstick_next_req(struct memstick_host *host,
+ 		      struct memstick_request **mrq);
+-void memstick_new_req(struct memstick_host *host);
+-
+-int memstick_set_rw_addr(struct memstick_dev *card);
+ 
+ /* Helpers for high level drivers */
+-void memstick_allocate_request(struct memstick_dev *card,
+-					struct memstick_request **mrq);
+ 
+-int memstick_complete_request(struct memstick_dev *card,
+-			struct memstick_request *req, int error);
++int memstick_register_driver(struct memstick_driver *drv);
++void memstick_unregister_driver(struct memstick_driver *drv);
+ 
+-int memstick_read_int_reg(struct memstick_dev *card,
+-				struct memstick_request *req, long timeout);
++int memstick_run_state_machine(struct memstick_dev *card,
++	int   (*next_request)(struct memstick_dev *card), bool async);
+ 
+-void memstick_read_int_reg_cleanup(struct memstick_dev *card);
++void memstick_init_req_sg(struct memstick_dev *card, unsigned char tpc,
++			  const struct scatterlist *sg);
++void memstick_init_req(struct memstick_dev *card, unsigned char tpc,
++		       const void *buf, size_t length);
++
++int memstick_read_int_reg(struct memstick_dev *card, long timeout);
+ 
+-int memstick_read_regs(struct memstick_dev *card, int offset, int len,
+-	struct memstick_request *req);
++int memstick_read_regs(struct memstick_dev *card, int offset, int len);
+ 
+ int memstick_write_regs(struct memstick_dev *card, int offset, int len,
+-	char *buf, struct memstick_request *req);
++	void *buf);
+ 
+-void memstick_invalidate_reg_window(struct memstick_dev *card);
++int memstick_state_machine_exit(struct memstick_dev *card, int error);
+ 
+-int memstick_run_state_machine(struct memstick_dev *card,
+-	int   (*next_request)(struct memstick_dev *card,
+-				struct memstick_request **mrq));
++int memstick_reset_card(struct memstick_dev *card);
+ 
+ const char *memstick_debug_get_tpc_name(int tpc);
+ 
+-- 
+1.7.1
 
-It contains the following patches against 2.6.36-rc7:
-
-origin.patch
-sysctl-min-max-bounds-are-optional.patch
-linux-next.patch
-next-remove-localversion.patch
-fs-inodec-work-around-bug.patch
-arch-x86-kernel-entry_64s-fix-build-with-gas-2161.patch
-arch-x86-kernel-entry_32s-i386-too.patch
-i-need-old-gcc.patch
-arch-alpha-kernel-systblss-remove-debug-check.patch
-mm-vmap-area-cache.patch
-arch-arm-plat-omap-iovmmc-fix-end-address-of-vm-area-comparation-in-alloc_iovm_area.patch
-audit-call-tty_audit_push_task-outside-preempt-disabled.patch
-audit-do-not-send-uninitialized-data-for-audit_tty_get.patch
-audit-use-rcu-for-task-lookup-protection.patch
-backlight-fix-88pm860x_bl-macro-collision.patch
-cciss-fix-botched-tag-masking-for-scsi-tape-commands.patch
-arch-mips-include-asm-fcntlh-needs-typesh.patch
-time-compensate-for-rounding-on-odd-frequency-clocksources.patch
-hrtimers-fix-a-complex-race.patch
-hrtimers-fix-a-complex-race-update.patch
-x86-enable-arch_dma_addr_t_64bit-with-x86_64-highmem64g.patch
-x86-fake-numa-assign-cpus-to-nodes-in-round-robin-manner.patch
-drivers-char-agp-parisc-agpc-eliminate-memory-leak.patch
-audit-add-support-to-match-lsm-labels-on-user-audit-messages.patch
-fs-btrfs-use-memdup_user.patch
-fs-btrfs-use-err_cast.patch
-gcc-46-btrfs-clean-up-unused-variables-bugs.patch
-gcc-46-btrfs-clean-up-unused-variables-nonbugs.patch
-btrfs-only-bug_on-when-the-errno-is-not-enoent.patch
-fs-btrfs-inodec-eliminate-memory-leak.patch
-btrfs-dont-dereference-extent_mapping-if-null.patch
-powerpc-enable-arch_dma_addr_t_64bit-with-arch_phys_addr_t_64bit.patch
-drivers-gpu-drm-radeon-atomc-fix-warning.patch
-drivers-media-ir-ene_irc-fix-null-dereference.patch
-drivers-media-video-cx23885-cx23885-corec-fix-cx23885_dev_checkrevision.patch
-fs-notify-fanotify-fanotify_userc-fix-warnings.patch
-fsnotify-remove-alignment-padding-from-fsnotify_mark-on-64-bit-builds.patch
-drivers-i2c-busses-i2c-pasemic-fix-unsigned-return-type.patch
-softirq-improve-preempt-count-error-message.patch
-softirq-cleanup-preempt-check.patch
-tile-enable-arch_dma_addr_t_64bit.patch
-timer_list-remove-alignment-padding-on-64-bit-when-config_timer_stats.patch
-timer-initialize-the-field-slack-of-timer_list.patch
-kernel-time-use-array_size-macro-in-timecomparec.patch
-timer-make-try_to_del_timer_sync-safe-on-both-hardirq-context-and-up.patch
-timer-del_timer_sync-can-be-used-in-softirq-context.patch
-timer-warn-when-del_timer_sync-used-in-hardirq-context.patch
-timer-permit-statically-declared-work-with-deferrable-timers.patch
-posix-timers-annotate-lock_timer.patch
-readme-cite-nconfig.patch
-leds-route-kbd-leds-through-the-generic-leds-layer.patch
-led-class-always-implement-blinking.patch
-leds-driver-for-national-semiconductor-lp5521-chip.patch
-leds-driver-for-national-semiconductors-lp5523-chip.patch
-leds-update-lp552x-support-kconfig-and-makefile.patch
-documentation-led-drivers-lp5521-and-lp5523.patch
-mips-enable-arch_dma_addr_t_64bit-with-highmem-64bit_phys_addr-64bit.patch
-mtdpart-memory-accessor-interface-for-mtd-layer.patch
-jffs2-use-cond_resched-instead-of-yield.patch
-net-avoid-limits-overflow.patch
-drivers-video-backlight-s6e63m0c-set-permissions-on-gamma_table-file-to-0444.patch
-backlight-fix-blanking-for-lms283gf05-lcd.patch
-backlight-fix-blanking-for-l4f00242t03-lcd.patch
-backlight-s6e63m0-unregister-backlight-device-and-remove-sysfs-attribute-file-in-s6e63m0_remove.patch
-backlight-s6e63m0-fix-section-mismatch.patch
-backlight-add-low-threshold-to-pwm-backlight.patch
-btusb-patch-add_apple_macbookpro62.patch
-serial8250-ratelimit-too-much-work-error.patch
-serial8250-ratelimit-too-much-work-error-fix.patch
-serial8250-ratelimit-too-much-work-error-fix-fix.patch
-s390-enable-arch_dma_addr_t_64bit-with-64bit.patch
-sched-make-sched_param-argument-static-variables-in-some-sched_setscheduler-caller.patch
-percpu-fix-list_head-init-bug-in-__percpu_counter_init.patch
-drivers-message-fusion-mptsasc-fix-warning.patch
-block-m68k-z2ram-correct-printing-of-sector_t.patch
-drivers-block-aoe-aoeblkc-ratelimit-a-warning-printk.patch
-lirc-make-struct-file_operations-pointer-const.patch
-drivers-usb-gadget-amd5536udcc-fix-error-path.patch
-vfs-introduce-fmode_neg_offset-for-allowing-negative-f_pos.patch
-vfs-remove-a-warning-on-open_fmode.patch
-vfs-add-__fmode_exec.patch
-vfs-fix-infinite-loop-caused-by-clone_mnt-race.patch
-vfs-ignore-error-on-forced-remount.patch
-vfs-fix-per-mount-read-write.patch
-vfs-add-sb_force_remount_readonly-helper.patch
-vfs-allow-mnt_want_write-to-sleep.patch
-vfs-allow-mnt_want_write-to-sleep-fix.patch
-vfs-keep-list-of-mounts-for-each-superblock.patch
-vfs-protect-remounting-superblock-read-only.patch
-vfs-fs_may_remount_ro-turn-unnecessary-check-into-a-warn_on.patch
-vfs-mark-mounts-read-only-on-forced-remount.patch
-mm.patch
-vmcore-it-is-not-experimental-any-more.patch
-documentation-filesystems-proctxt-improve-smaps-field-documentation.patch
-mm-smaps-export-mlock-information.patch
-oom-add-per-mm-oom-disable-count.patch
-oom-add-per-mm-oom-disable-count-protect-oom_disable_count-with-task_lock-in-fork.patch
-oom-add-per-mm-oom-disable-count-use-old_mm-for-oom_disable_count-in-exec.patch
-oom-avoid-killing-a-task-if-a-thread-sharing-its-mm-cannot-be-killed.patch
-oom-kill-all-threads-sharing-oom-killed-tasks-mm.patch
-oom-kill-all-threads-sharing-oom-killed-tasks-mm-fix.patch
-oom-kill-all-threads-sharing-oom-killed-tasks-mm-fix-fix.patch
-oom-rewrite-error-handling-for-oom_adj-and-oom_score_adj-tunables.patch
-oom-fix-locking-for-oom_adj-and-oom_score_adj.patch
-writeback-remove-nonblocking-encountered_congestion-references.patch
-include-linux-pageblock-flagsh-fix-set_pageblock_flags-macro-definiton.patch
-mm-only-build-per-node-scan_unevictable-functions-when-numa-is-enabled.patch
-mm-only-build-per-node-scan_unevictable-functions-when-numa-is-enabled-cleanup.patch
-mm-compaction-fix-compactpagefailed-counting.patch
-memory-hotplug-fix-notifiers-return-value-check.patch
-memory-hotplug-unify-is_removable-and-offline-detection-code.patch
-memory-hotplug-unify-is_removable-and-offline-detection-code-checkpatch-fixes.patch
-vmscan-prevent-background-aging-of-anon-page-in-no-swap-system.patch
-mm-mempolicy-check-return-code-of-check_range.patch
-mm-add-account_page_writeback.patch
-writeback-add-nr_dirtied-and-nr_written-to-proc-vmstat.patch
-writeback-add-nr_dirtied-and-nr_written-to-proc-vmstat-update.patch
-writeback-add-sys-devices-system-node-node-vmstat.patch
-writeback-add-sys-devices-system-node-node-vmstat-update.patch
-writeback-report-dirty-thresholds-in-proc-vmstat.patch
-mm-fix-typo-in-mmh-when-node_not_in_page_flags.patch
-vmscan-delete-dead-code.patch
-tracing-vmscan-add-trace-events-for-lru-list-shrinking.patch
-writeback-account-for-time-spent-congestion_waited.patch
-vmscan-synchronous-lumpy-reclaim-should-not-call-congestion_wait.patch
-vmscan-narrow-the-scenarios-lumpy-reclaim-uses-synchrounous-reclaim.patch
-vmscan-remove-dead-code-in-shrink_inactive_list.patch
-vmscan-isolated_lru_pages-stop-neighbour-search-if-neighbour-cannot-be-isolated.patch
-writeback-do-not-sleep-on-the-congestion-queue-if-there-are-no-congested-bdis.patch
-writeback-do-not-sleep-on-the-congestion-queue-if-there-are-no-congested-bdis-or-if-significant-congestion-is-not-being-encountered-in-the-current-zone.patch
-writeback-do-not-sleep-on-the-congestion-queue-if-there-are-no-congested-bdis-or-if-significant-congestion-is-not-being-encounted-in-the-current-zone-fix.patch
-writeback-remove-the-internal-5%-low-bound-on-dirty_ratio.patch
-vmscantmpfs-treat-used-once-pages-on-tmpfs-as-used-once.patch
-mm-strictly-nested-kmap_atomic.patch
-mm-stack-based-kmap_atomic.patch
-mm-stack-based-kmap_atomic-checkpatch-fixes.patch
-mm-stack-based-kmap_atomic-fix.patch
-mm-remove-pte_map_nested.patch
-perf-x86-fix-up-kmap_atomic-type.patch
-mm-highmem-documentation.patch
-mm-add-a-might_sleep_if-in-dma_pool_alloc.patch
-mm-remove-alignment-padding-from-anon_vma-on-some-64-bit-builds.patch
-mm-filemap_fault-unique-path-for-locking-page.patch
-mm-retry-page-fault-when-blocking-on-disk-transfer.patch
-mm-retry-page-fault-when-blocking-on-disk-transfer-update.patch
-mm-retry-page-fault-when-blocking-on-disk-transfer-update-fix.patch
-x86-access_error-api-cleanup.patch
-mm-remove-temporary-variable-on-generic_file_direct_write.patch
-mm-add-casts-to-from-gfp_t-in-gfp_to_alloc_flags.patch
-mm-wrap-get_locked_pte-using-__cond_lock.patch
-mm-add-lock-release-annotation-on-do_wp_page.patch
-mm-wrap-follow_pte-using-__cond_lock.patch
-rmap-annotate-lock-context-change-on-page_lock_anon_vma.patch
-rmap-wrap-page_check_address-using-__cond_lock.patch
-rmap-make-anon_vma_free-static.patch
-rmap-make-anon_vma_free-static-fix.patch
-vmalloc-rename-temporary-variable-in-__insert_vmap_area.patch
-vmalloc-annotate-lock-context-change-on-s_start-stop.patch
-mm-declare-some-external-symbols.patch
-vmstat-include-compactionh-when-config_compaction.patch
-vmstat-include-compactionh-when-config_compaction-fix.patch
-mm-fix-sparse-warnings-on-gfp_zone_table-bad.patch
-fs-fs-writebackc-restore-lost-comment.patch
-define-madv_hugepage.patch
-frv-duplicate-output_buffer-of-e03.patch
-frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
-hpet-unmap-unused-i-o-space.patch
-hpet-fix-unwanted-interrupt-due-to-stale-irq-status-bit.patch
-hpet-fix-style-problems.patch
-documentation-timers-hpet_examplec-add-supporting-info-for-hpet_example.patch
-hpet-factor-timer-allocate-from-open.patch
-hpet-factor-timer-allocate-from-open-fix.patch
-alpha-enable-arch_dma_addr_t_64bit.patch
-alpha-use-single-hae-window-on-t2-core-logic-gamma-sable.patch
-uml-define-config_no_dma.patch
-uml-fix-config_static_link=y-build-failure-with-newer-glibc.patch
-um-migrate-from-__do_irq-to-generic_handle_irq.patch
-kernelh-add-minmax3-macros.patch
-kernelh-add-minmax3-macros-fix.patch
-replace-nested-max-min-macros-with-maxmin3-macro.patch
-m68knommu-blackfin-remove-old-assembler-only-flags-bit-definitions.patch
-include-linux-kernelh-add-__must_check-to-strict_strto.patch
-add-the-common-dma_addr_t-typedef-to-include-linux-typesh.patch
-modules-no-need-to-align-modinfo-strings.patch
-use-clear_page-copy_page-in-favor-of-memset-memcpy-on-whole-pages.patch
-fuse-use-clear_highpage-and-km_user0-instead-of-km_user1.patch
-ihex-add-support-for-cs-ip-eip-records.patch
-drivers-misc-phantomc-add-missing-warning-messages-in-phantom_probe.patch
-init-mark-__user-address-space-on-string-literals.patch
-kernel-userc-add-lock-release-annotation-on-free_user.patch
-fs-allow-for-more-than-231-files.patch
-stop_machine-convert-cpu-notifier-to-return-encapsulate-errno-value.patch
-kernel-remove-pf_flusher.patch
-misc-devices-do-not-enable-by-default.patch
-printk-fixup-declaration-of-kmsg_reasons.patch
-printk-add-lock-context-annotation.patch
-printk-change-type-of-boot_delay-to-int.patch
-printk-declare-printk_ratelimit_state-in-ratelimith.patch
-printk-declare-printk_ratelimit_state-in-ratelimith-fix.patch
-vsprintfc-use-default-pointer-field-size-for-null-strings.patch
-vsprintfc-use-default-pointer-field-size-for-null-strings-fix.patch
-lib-fix-scnprintf-if-size-is-==-0.patch
-scripts-get_maintainerpl-add-git-blame-rolestats-authored-lines-information.patch
-scripts-get_maintainerpl-use-correct-indentation.patch
-scripts-get_maintainerpl-dont-search-maintainers-for-keywords-or-emails.patch
-scripts-get_maintainerpl-add-default-git-fallback-remove-default-git.patch
-scripts-get_maintainerpl-use-get_maintainerconf-from-then-home-then-scripts.patch
-scripts-get_maintainerpl-add-interactive-mode.patch
-scripts-get_maintainerpl-improve-interactive-ui.patch
-scripts-get_maintainerpl-update-interactive-ui-improve-hg-runtime.patch
-scripts-get_maintainerpl-use-case-insensitive-name-de-duplication.patch
-scripts-get_maintainerpl-fix-mailmap-handling.patch
-scripts-get_maintainerpl-correct-indentation-in-a-few-places.patch
-scripts-get_maintainerpl-use-mailmap-in-name-deduplication-and-other-updates.patch
-scripts-get_maintainerpl-dont-deduplicate-unnamed-addresses-ie-mailing-lists.patch
-maintainers-fix-colibri-pxa270-file-pattern.patch
-maintainers-merge-imote2-and-stargate.patch
-maintainers-merge-s3c-244x-sections.patch
-maintainers-merge-s3c6400-and-6410-to-64xx.patch
-maintainers-remove-usb-ov511-driver.patch
-maintainers-remove-usb-zc0301-driver.patch
-maintainers-use-t-git-and-whitespace-trivia.patch
-lib-bitmapc-use-hex_to_bin.patch
-idr-fix-idr_pre_get-locking-description.patch
-idr-fix-idr_pre_get-locking-description-fix.patch
-lib-div64c-document-that-div64_u64-is-not-precise-on-32bit-platforms.patch
-percpu_counter-add-debugobj-support.patch
-lib-kconfigdebug-add-list_sort-debugging-switch.patch
-lib-list_sort-test-use-more-reasonable-printk-levels.patch
-lib-list_sort-test-use-generic-random32.patch
-lib-list_sort-test-improve-errors-handling.patch
-lib-list_sort-test-unify-test-messages.patch
-lib-list_sort-test-check-element-addresses.patch
-percpu_counter-use-this_cpu_ptr-instead-of-per_cpu_ptr.patch
-lib-parser-cleanup-match_number.patch
-drivers-mmc-host-omapc-use-resource_size.patch
-drivers-mmc-host-omap_hsmmcc-use-resource_size.patch
-checkpatch-fix-regressions-in-fix-handling-of-leading-spaces.patch
-checkpatch-types-may-sit-on-a-line-on-their-own.patch
-checkpatch-suggest-cleanpatch-and-cleanfile-when-appropriate.patch
-checkpatch-ensure-we-do-not-collapse-bracketed-sections-into-constants.patch
-checkpatch-handle-casts-better-fixing-false-categorisation-of-as-binary.patch
-checkpatch-returning-errno-typically-should-be-negative.patch
-checkpatch-add-check-for-space-after-struct-union-and-enum.patch
-checkpatch-simplify-and-consolidate-missing-space-after-checks.patch
-checkpatch-ensure-kconfig-help-checks-only-apply-when-we-are-adding-help.patch
-checkpatch-check-for-incorrect-permissions.patch
-checkpatch-add-additional-attribute-defines.patch
-checkpatch-update-copyright-dates.patch
-checkpatch-clean-up-structure-definition-macro-handline.patch
-checkpatch-handle-export_symbol-for-device_attr-and-similar.patch
-checkpatch-statement-block-context-analyser-should-look-at-sanitised-lines.patch
-checkpatch-version-031.patch
-scripts-checkpatchpl-add-warnings-for-static-char-that-could-be-static-const-char.patch
-select-rename-estimate_accuracy-to-select_estimate_accuracy.patch
-epoll-make-epoll_wait-use-the-hrtimer-range-feature.patch
-dmi-log-board-system-and-bios-information-v2.patch
-drivers-char-vt_ioctlc-fix-vt_openqry-error-value.patch
-vcs-add-poll-fasync-support-fix-fix.patch
-rtc-rtc-lpc32xx-introduce-rtc-driver-for-the-lpc32xx-soc-v4.patch
-rtc-bfin-shrink-optimize-interrupt-handler-a-bit.patch
-rtc-bfin-add-debug-markers-to-suspend-resume-paths.patch
-drivers-rtc-classc-fix-device_register-error-handling.patch
-rtc-omap-let-device-wakeup-capability-be-configured-from-chip-init-logic.patch
-rtc-rtc-s3c-fix-access-unit-from-byte-to-word-on-rtccon.patch
-rtc-rtc-s3c-fix-access-unit-from-byte-to-word-on-rtccon-checkpatch-fixes.patch
-rtc-rtc-s3c-fix-setting-missing-field-of-getalarm.patch
-rtc-rtc-s3c-fix-on-support-rtc-alarm.patch
-rtc-rtc-s3c-fix-debug-message-format-on-rtc.patch
-rtc-rtc-s3c-fix-rtc-initialization-method.patch
-rtc-rtc-s3c-add-rtc_valid_tm-in-s3c_rtc_gettime.patch
-gpio-add-driver-for-basic-memory-mapped-gpio-controllers.patch
-gpio-add-driver-for-basic-memory-mapped-gpio-controllers-fix.patch
-gpiolib-fix-have_gpio_lib-leftovers-in-asm-generic-gpioh.patch
-gpio-timbgpio-use-a-copy-of-the-ier-register-to-avoid-it-being-trashed.patch
-drivers-video-matrox-matroxfb_dac1064c-remove-undead-ifdef-config_fb_matrox_g.patch
-savagefb-fix-ddc-for-savage-4.patch
-drivers-video-matrox-matroxfb_mavenc-fix-unsigned-return-type.patch
-fbmem-ix-whitespace.patch
-cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-fbmem-fix-fb_read-fb_write-unaligned-accesses.patch
-drivers-video-gbefbc-eliminate-memory-leak.patch
-jbd-remove-dependency-on-__gfp_nofail.patch
-isofs-work-around-for-rock-ridgejoliet-cds-with-empty-iso-root-directory.patch
-isofs-fix-isofs_get_blocks-for-8tb-files.patch
-hfsplus-identify-journal-info-block-in-volume-header.patch
-hfsplus-fix-journal-detection.patch
-doc-clarify-the-behaviour-of-dirty_ratio-dirty_bytes.patch
-cgroup_freezer-unnecessary-test-in-cgroup_freezing_or_frozen.patch
-cgroup_freezer-fix-can_attach-to-prohibit-moving-from-to-freezing-frozen-cgroups.patch
-cgroup_freezer-update_freezer_state-does-incorrect-state-transitions.patch
-cgroup_freezer-update_freezer_state-does-incorrect-state-transitions-checkpatch-fixes.patch
-cgroup-add-clone_children-control-file.patch
-cgroup-make-the-mount-options-parsing-more-accurate.patch
-cgroups-add-check-for-strcpy-destination-string-overflow.patch
-cgroup-notify-ns_cgroup-deprecated.patch
-memcg-fix-race-in-file_mapped-accouting-flag-management.patch
-memcg-avoid-lock-in-updating-file_mapped-was-fix-race-in-file_mapped-accouting-flag-management.patch
-memcg-use-for_each_mem_cgroup.patch
-memcg-cpu-hotplug-aware-percpu-count-updates.patch
-memcg-cpu-hotplug-aware-percpu-count-updates-fix.patch
-memcg-cpu-hotplug-aware-quick-acount_move-detection.patch
-memcg-cpu-hotplug-aware-quick-acount_move-detection-checkpatch-fixes.patch
-memcg-generic-filestat-update-interface.patch
-memcg-reduce-lock-hold-time-during-charge-moving.patch
-ptrace-annotate-lock-context-change-on-exit_ptrace.patch
-ptrace-change-signature-of-sys_ptrace-and-friends.patch
-ptrace-cleanup-ptrace_request.patch
-ptrace-change-signature-of-arch_ptrace.patch
-ptrace-cleanup-arch_ptrace-on-x86.patch
-ptrace-cleanup-arch_ptrace-on-arm.patch
-ptrace-cleanup-arch_ptrace-on-avr32.patch
-ptrace-cleanup-arch_ptrace-and-friends-on-blackfin.patch
-ptrace-cleanup-arch_ptrace-on-cris.patch
-ptrace-cleanup-arch_ptrace-on-frv.patch
-ptrace-cleanup-arch_ptrace-on-h8300.patch
-ptrace-cleanup-arch_ptrace-on-m32r.patch
-ptrace-cleanup-arch_ptrace-on-m68k.patch
-ptrace-cleanup-arch_ptrace-on-m68knommu.patch
-ptrace-cleanup-arch_ptrace-on-microblaze.patch
-ptrace-cleanup-arch_ptrace-on-mips.patch
-ptrace-cleanup-arch_ptrace-on-mn10300.patch
-ptrace-cleanup-arch_ptrace-on-parisc.patch
-ptrace-cleanup-arch_ptrace-on-powerpc.patch
-ptrace-cleanup-arch_ptrace-on-score.patch
-ptrace-cleanup-arch_ptrace-on-sh.patch
-ptrace-cleanup-arch_ptrace-on-sparc.patch
-ptrace-cleanup-arch_ptrace-on-tile.patch
-ptrace-cleanup-arch_ptrace-on-um.patch
-ptrace-cleanup-arch_ptrace-on-xtensa.patch
-signals-annotate-lock_task_sighand.patch
-signals-annotate-lock-context-change-on-ptrace_stop.patch
-core_pattern-fix-long-parameters-was-truncated-by-core_pattern-handler.patch
-core_pattern-fix-long-parameters-was-truncated-by-core_pattern-handler-update.patch
-core_pattern-fix-long-parameters-was-truncated-by-core_pattern-handler-update-2.patch
-core_pattern-fix-long-parameters-was-truncated-by-core_pattern-handler-update-2-checkpatch-fixes.patch
-default-config_core_dump_default_elf_headers=y.patch
-exit-add-lock-context-annotation-on-find_new_reaper.patch
-proc-pid-smaps-export-amount-of-anonymous-memory-in-a-mapping.patch
-proc-pid-smaps-export-amount-of-anonymous-memory-in-a-mapping-doc.patch
-proc-pid-pagemap-document-in-documentation-filesystems-proctxt.patch
-procfs-fix-proc-softirqs-formatting.patch
-ipc-shmc-add-rss-and-swap-size-information-to-proc-sysvipc-shm.patch
-ipc-shmc-add-rss-and-swap-size-information-to-proc-sysvipc-shm-v2.patch
-ipc-initialize-structure-memory-to-zero-for-compat-functions.patch
-ipmi-fix-__init-and-__exit-attribute-locations.patch
-rocket-release_region-or-error-path.patch
-drivers-char-hvc_consolec-remove-unneeded-__set_current_statetask_running.patch
-sgi-altix-ia64-mmtimer-eliminate-long-interval-timer-holdoffs.patch
-sgi-altix-ia64-mmtimer-eliminate-long-interval-timer-holdoffs-update.patch
-hvc_console-fix-dropping-of-characters-when-output-byte-channel-is-full.patch
-rapidio-fix-rapidio-sysfs-hierarchy.patch
-rapidio-powerpc-85xx-modify-rio-port-write-interrupt-handler.patch
-rapidio-use-stored-ingress-port-number-instead-of-register-read.patch
-rapidio-add-relation-links-between-rio-device-structures.patch
-rapidio-add-default-handler-for-error-stopped-state.patch
-rapidio-modify-sysfs-initialization-for-switches.patch
-rapidio-add-handling-of-orphan-port-write-message.patch
-rapidio-add-device-access-check-into-the-enumeration.patch
-rapidio-add-support-for-idt-cps-gen2-switches.patch
-rapidio-add-handling-of-redundant-routes.patch
-rapidio-fix-idle2-bits-corruption.patch
-namespaces-remove-pid_ns-and-net_ns-experimental-status.patch
-namespaces-default-all-the-namespaces-to-yes-when-config_namespaces-is-selected.patch
-fs-execc-provide-the-correct-process-pid-to-the-pipe-helper.patch
-delay-accounting-re-implement-c-for-getdelaysc-to-report-information-on-a-target-command.patch
-delay-accounting-re-implement-c-for-getdelaysc-to-report-information-on-a-target-command-checkpatch-fixes.patch
-delayacct-align-to-8-byte-boundary-on-64-bit-systems.patch
-taskstats-separate-taskstats-commands.patch
-taskstats-split-fill_pid-function.patch
-taskstats-use-real-microsecond-granularity-for-cpu-times.patch
-fuse-use-release_pages.patch
-sparc-remove-dma64_addr_t-usage.patch
-mips-remove-dma64_addr_t-usage.patch
-alpha-remove-dma64_addr_t-usage.patch
-remove-dma64_addr_t.patch
-affs-testing-the-wrong-variable.patch
-pps-trivial-fixes.patch
-pps-declare-variables-where-they-are-used-in-switch.patch
-pps-fix-race-in-pps_fetch-handler.patch
-pps-unify-timestamp-gathering.patch
-pps-access-pps-device-by-direct-pointer.patch
-pps-convert-printk-pr_-to-dev_.patch
-pps-move-idr-stuff-to-ppsc.patch
-pps-add-async-pps-event-handler.patch
-pps-add-async-pps-event-handler-fix.patch
-pps-dont-disable-interrupts-when-using-spin-locks.patch
-pps-use-bug_on-for-kernel-api-safety-checks.patch
-pps-simplify-conditions-a-bit.patch
-ntp-add-hardpps-implementation.patch
-pps-capture-monotonic_raw-timestamps-as-well.patch
-pps-add-kernel-consumer-support.patch
-pps-add-parallel-port-pps-client.patch
-pps-add-parallel-port-pps-signal-generator.patch
-memstick-a-few-changes-to-core.patch
-memstick-add-support-for-legacy-memorysticks.patch
-memstick-add-driver-for-ricoh-r5c592-card-reader.patch
-memstick-add-driver-for-ricoh-r5c592-card-reader-fix.patch
-memstick-core-fix-device_register-error-handling.patch
-w1-dont-allow-arbitrary-users-to-remove-w1-devices.patch
-aio-bump-i_count-instead-of-using-igrab.patch
-kernel-resourcec-handle-reinsertion-of-an-already-inserted-resource.patch
-ramoops-use-the-platform-data-structure-instead-of-module-params.patch
-ramoops-use-the-platform-data-structure-instead-of-module-params-fix.patch
-make-sure-nobodys-leaking-resources.patch
-journal_add_journal_head-debug.patch
-releasing-resources-with-children.patch
-make-frame_pointer-default=y.patch
-mutex-subsystem-synchro-test-module.patch
-mutex-subsystem-synchro-test-module-add-missing-header-file.patch
-slab-leaks3-default-y.patch
-put_bh-debug.patch
-add-debugging-aid-for-memory-initialisation-problems.patch
-workaround-for-a-pci-restoring-bug.patch
-prio_tree-debugging-patch.patch
-single_open-seq_release-leak-diagnostics.patch
-add-a-refcount-check-in-dput.patch
-getblk-handle-2tb-devices.patch
-memblock-add-input-size-checking-to-memblock_find_region.patch
-memblock-add-input-size-checking-to-memblock_find_region-fix.patch
