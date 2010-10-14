@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754132Ab0JNB7N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 21:59:13 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36774 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753325Ab0JNB7M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 21:59:12 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC][PATCH 1/3] contigous big page allocator
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm\@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "minchan.kim\@gmail.com" <minchan.kim@gmail.com>,
-        fujita.tomonori@lab.ntt.co.jp
-In-Reply-To: <87ocay1obe.fsf@basil.nowhere.org>
-References: <20101013161206.c29df8ea.kamezawa.hiroyu@jp.fujitsu.com> <87ocay1obe.fsf@basil.nowhere.org>
-Message-Id: <20101014105521.8B80.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 14 Oct 2010 10:59:06 +0900 (JST)
+	id S1754148Ab0JNB77 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 21:59:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53384 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753325Ab0JNB76 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 21:59:58 -0400
+Date: Thu, 14 Oct 2010 12:59:52 +1100
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Subject: linux-next: build warning after merge of the spi tree
+Message-Id: <20101014125952.e4be4c9b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__14_Oct_2010_12_59_52_+1100_m++b43DNiD2f+VjB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> 
-> >> >   My intention is not for allocating HUGEPAGE(> MAX_ORDER).
-> >> 
-> >> I still believe using this for 1GB pages would be one of the more
-> >> interesting use cases.
-> >> 
-> >
-> > I'm successfully allocating 1GB of continous pages at test. But I'm not sure
-> > requirements and users. How quick this allocation should be ?
-> 
-> This will always be slow. Huge pages are always pre allocated
-> even today through a sysctl. The use case would be have
-> 
-> echo XXX > /proc/sys/vm/nr_hugepages 
-> 
-> at runtime working for 1GB too, instead of requiring a reboot
-> for this. 
-> 
-> I think it's ok if that is somewhat slow, as long as it is not
-> incredible slow. Ideally it shouldn't cause a swap storm either 
+--Signature=_Thu__14_Oct_2010_12_59_52_+1100_m++b43DNiD2f+VjB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-offtopic: When I tried to increase nr_hugepages on ia64
-which has 256MB hugepage architecture, sometimes I needed to wait
->10 miniture if the system is under memory pressure. So, slow allocation
-is NOT only this contigous allocator issue. we already accept it and
-we should. (I doubt it can be avoidable)
+Hi Grant,
 
+After merging the rcu tree, today's linux-next build (x86_64 allmodconfig)
+produced this warning:
 
+drivers/spi/spi_topcliff_pch.c: In function 'pch_spi_process_messages':
+drivers/spi/spi_topcliff_pch.c:752: warning: 'data' is used uninitialized i=
+n this function
 
-> 
-> (maybe we need some way to indicate how hard the freeing code should
-> try?)
-> 
-> I guess it would only really work well if you predefine
-> movable zones at boot time.
-> 
-> -Andi
+and, indeed it is ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__14_Oct_2010_12_59_52_+1100_m++b43DNiD2f+VjB
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMtmQYAAoJEDMEi1NhKgbst04IAIqxA++ki6e9MFRdmNOJTkqH
+56GoR/nxkK3MiEnIZiUU9y2DE4xp6uks37HDoU5UvzBk794P7iNomFv1YZGHyjXh
+TLic55zHQ58CgrOuDr6Gcbz/I8XHkzQi5ZoZeqaEVt8Gc8AmCw9/ujymm/Ql0bYf
+JIkh52GGfy7EdKIZqIsN+4iV5L9LecXSgyx4MQpffc9vljfBsbItkk7D4C21fXO3
+bm/zrW0hgFVXmPiVRLR31Qc3/qdM2CaghIXWfNjoSAHRzI8tmfGfuXiKu4chHbi2
+w6RMXqS2jHajMWeibxn5wzdiXpAZcO+pxRiJpXDTh+/wcqGyGZ9sYnSRxhtptXk=
+=It02
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__14_Oct_2010_12_59_52_+1100_m++b43DNiD2f+VjB--
