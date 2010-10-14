@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab0JNNMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 09:12:49 -0400
-Received: from mga14.intel.com ([143.182.124.37]:42576 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754104Ab0JNNMs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 09:12:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,330,1283756400"; 
-   d="scan'208";a="336062727"
-Date: Thu, 14 Oct 2010 21:12:42 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, Dave Chinner <david@fromorbit.com>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Chris Mason <chris.mason@oracle.com>, Christoph Hellwig <hch@lst.de>,
-        "Li, Shaohua" <shaohua.li@intel.com>
-Subject: Re: [PATCH 00/17] [RFC] soft and dynamic dirty throttling limits
-Message-ID: <20101014131242.GA6145@localhost>
-References: <20100912154945.758129106@intel.com>
- <20101012141716.GA26702@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101012141716.GA26702@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754605Ab0JNNXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 09:23:20 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:33086 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754435Ab0JNNXT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 09:23:19 -0400
+Subject: Re: [tip:timers/urgent] hrtimer: Preserve timer state in
+ remove_hrtimer()
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        sqazi@google.com, tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-f13d4f979c518119bba5439dd2364d76d31dcd3f@git.kernel.org>
+References: <20101012142351.8485.21823.stgit@dungbeetle.mtv.corp.google.com>
+	 <tip-f13d4f979c518119bba5439dd2364d76d31dcd3f@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 14 Oct 2010 15:23:03 +0200
+Message-ID: <1287062583.29097.194.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph,
+On Thu, 2010-10-14 at 11:34 +0000, tip-bot for Salman Qazi wrote:
+> The bug was introduced with commit ca109491f (hrtimer: removing all ur
+> callback modes) in 2.6.29 
 
-On Tue, Oct 12, 2010 at 10:17:16PM +0800, Christoph Hellwig wrote:
-> Wu, what's the state of this series?  It looks like we'll need it
-> rather sooner than later - try to get at least the preparations in
-> ASAP would be really helpful.
+Not actually sure about that,. afaict its due to unlocking the base lock
+over the callback, which comes from 2d44ae4d7 (hrtimer: clean up
+cpu->base locking tricks), and existed before that in the special case
+of the scheduler tick (for which this problem is very unlikely to have
+ever triggered because we simply don't call start on it when its
+running).
 
-Sorry I was doing some audio work in the last month and will be attending
-the China Linux Storage and Filesystem workshop and kernel developers
-conference these days. I'll be able to pick up this series on 10.18.
+Anyway, the patch does look good, so
 
-Sorry for the delay!
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-Thanks,
-Fengguang
