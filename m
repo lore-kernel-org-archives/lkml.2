@@ -1,83 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932088Ab0JNTuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 15:50:32 -0400
-Received: from mga01.intel.com ([192.55.52.88]:58995 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932073Ab0JNTua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 15:50:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,332,1283756400"; 
-   d="scan'208";a="847207898"
-Message-ID: <4CB75F05.9070505@linux.intel.com>
-Date: Thu, 14 Oct 2010 12:50:29 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: richard -rw- weinberger <richard.weinberger@gmail.com>
-CC: penberg@cs.helsinki.fi, LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net
-Subject: Re: [REGRESSION] um: rcu_sched_state detected stall on CPU 0
-References: <AANLkTinNxzktyttzEjWSUPBiOUwh+4DUL0tmP7p1UiT5@mail.gmail.com>
-In-Reply-To: <AANLkTinNxzktyttzEjWSUPBiOUwh+4DUL0tmP7p1UiT5@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755941Ab0JNTzb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 15:55:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54559 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755249Ab0JNTza (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 15:55:30 -0400
+Date: Thu, 14 Oct 2010 12:54:58 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        agruen@suse.de, jengelh@medozas.de, davem@davemloft.net,
+        andi@firstfloor.org
+Subject: Re: Process to push changes to include/linux/types.h
+Message-Id: <20101014125458.9e51ac58.akpm@linux-foundation.org>
+In-Reply-To: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
+References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/14/2010 11:27 AM, richard -rw- weinberger wrote:
-> Hi Arjan!
->
-> This commit causes some problems on UML.
->
-that is extremely weird.
-> The kernel freezes after a few seconds until it gets some input.
-> e.g: When I run top it stops refreshing the process list until i press a button.
+On Thu, 14 Oct 2010 15:34:52 -0400
+Eric Paris <eparis@redhat.com> wrote:
 
-a slab timer change (to not be as critical) causing global timer 
-issues.... that's very obviously not a problem with this patch.
-has this been seem anywhere except UML ?
+> A patch was posted a bit ago by agruen which made a change to
+> include/linux/types.h changing aligned_u64 to __aligned_u64 and exposing
+> this new type to userspace.
+> 
+> http://marc.info/?l=linux-kernel&m=128316627912457&w=2
+> 
+> Everyone seemed to agree the patch was a good idea and was correct.  At
+> the moment this change only really affects network code, but I would
+> very much like to make use of this change in the notification tree.
+> Dave Miller did not apply the patch because "Someone has to first add
+> the types to linux/types.h, and that doesn't go through my tree."
+> 
+> http://marc.info/?l=linux-kernel&m=128634544524035&w=2
+> 
+> I'm a little stuck as to the right path forward.  I normally would have
+> had no qualms about adding __aligned_u64 to types.h in the notification
+> tree and pushing it to Linus next go-round and then the net tree could
+> convert and potentially drop the old aligned_u64 type (but again that
+> would be outside the net tree).  Since Dave isn't willing to add the
+> type and I don't want to get called too many bad names, I figured I
+> should try to find if there is some better way, maintainer, or tree who
+> should be adding this new type.
+> 
+> Who needs to sign off on a new type in types.h?  Who should add it?
+> Should I just ram it on in there myself, take any flames that come
+> along, and then let net finish their cleanups after I've been charred?
+> Any suggestions on the best course of action would be appreciated.
+> 
 
-> Messages like this appear:
-> INFO: rcu_sched_state detected stall on CPU 0 (t=7348 jiffies)
->
-> After reverting UML works fine again.
->
-> commit 78b435368fcd615e695a06012cd963a556284e00
-> Author: Arjan van de Ven<arjan@linux.intel.com>
-> Date:   Mon Jul 19 10:59:42 2010 -0700
->
->      slab: use deferable timers for its periodic housekeeping
->
->      slab has a "once every 2 second" timer for its housekeeping.
->      As the number of logical processors is growing, its more and more
->      common that this 2 second timer becomes the primary wakeup source.
->
->      This patch turns this housekeeping timer into a deferable timer,
->      which means that the timer does not interrupt idle, but just runs
->      at the next event that wakes the cpu up.
->
->      The impact is that the timer likely runs a bit later, but during the
->      delay no code is running so there's not all that much reason for
->      a difference in housekeeping to occur because of this delay.
->
->      Signed-off-by: Arjan van de Ven<arjan@linux.intel.com>
->      Signed-off-by: Pekka Enberg<penberg@cs.helsinki.fi>
->
-> diff --git a/mm/slab.c b/mm/slab.c
-> index e49f8f4..29aad44 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -861,7 +861,7 @@ static void __cpuinit start_cpu_timer(int cpu)
->           */
->          if (keventd_up()&&  reap_work->work.func == NULL) {
->                  init_reap_node(cpu);
-> -               INIT_DELAYED_WORK(reap_work, cache_reap);
-> +               INIT_DELAYED_WORK_DEFERRABLE(reap_work, cache_reap);
->                  schedule_delayed_work_on(cpu, reap_work,
->                                          __round_jiffies_relative(HZ, cpu));
->          }
->
->
+The usual approach here is someone sends it to me and I send it to
+Linus ;)
+
+If the change is simple, obviously safe and is needed in two or more
+subsystem trees then I'll usually sneak it into mainline late in -rc,
+simply to make everyone's life easier.  Of course, you could both agree
+to merge the same patch into local trees and I assume that git will
+sort it all out.
+
+For this particular patch I'd suggest it be split into two: one adds
+the new __aligned_u64 and friends.  The second patch kills off
+aligned_u64 and friends.  I'd say the first four-liner would then be
+safe for immediate merge and the cleanup patch can go in any old time.
+
+
+
+Regarding the patch itself: it uses open-coded
+__attribute__((aligned(...))), however we have the __aligned(...)
+helpers in compiler.h.
+
+I'm always a bit ambivalent about those helpers (__packed, etc). 
+They're not a very kernely thing to do, but the gcc __attribute__
+syntax really is a mouthful.
+
+And adding a compiler.h dependency to the shared-with-userspace types.h
+may not be practical or safe, dunno.
+
+
+So if this works, I'd suggest preparing the simple four-liner with the
+intention of an immediate merge.
 
