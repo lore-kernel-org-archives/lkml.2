@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755913Ab0JNT1X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 15:27:23 -0400
-Received: from void.printf.net ([89.145.121.20]:35764 "EHLO void.printf.net"
+	id S1755942Ab0JNTav (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 15:30:51 -0400
+Received: from mail.perches.com ([173.55.12.10]:2967 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754528Ab0JNT1W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 15:27:22 -0400
-Date: Thu, 14 Oct 2010 20:27:17 +0100
-From: Chris Ball <cjb@laptop.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-        lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
-        linux-mmc@vger.kernel.org
-Subject: Re: [PATCH -next v2] mmc: fix cb710 kconfig dependency warning
-Message-ID: <20101014192717.GA19966@void.printf.net>
-References: <20101013181519.6ff00e10.randy.dunlap@oracle.com> <20101014090442.GA14454@rere.qmqm.pl> <4CB74C5F.4000905@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB74C5F.4000905@oracle.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755019Ab0JNTat (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 15:30:49 -0400
+Subject: Re: [RFC PATCH net-next] drivers/net Documentation/networking:
+ Create directory intel_wired_lan
+From: Joe Perches <joe@perches.com>
+To: jeffrey.t.kirsher@intel.com, Michal Marek <mmarek@suse.cz>,
+        Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org
+Cc: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>,
+        "Wyborny, Carolyn" <carolyn.wyborny@intel.com>,
+        "Skidmore, Donald C" <donald.c.skidmore@intel.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Waskiewicz Jr, Peter P" <peter.p.waskiewicz.jr@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        "Ronciak, John" <john.ronciak@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        e1000-devel <e1000-devel@lists.sourceforge.net>
+In-Reply-To: <1287048849.3319.20.camel@jtkirshe-MOBL1>
+References: <1286743352.11039.165.camel@Joe-Laptop>
+	 <AANLkTikVKufQRuMGd=cdig7ff4k2aw9Q1FWwMz3pgon-@mail.gmail.com>
+	 <1286841648.26045.17.camel@Joe-Laptop>
+	 <1287008906.1117.428.camel@Joe-Laptop>
+	 <1287032255.4113.14.camel@jtkirshe-MOBL1>
+	 <1287035857.1117.528.camel@Joe-Laptop>
+	 <1287048849.3319.20.camel@jtkirshe-MOBL1>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 14 Oct 2010 12:30:43 -0700
+Message-ID: <1287084643.1117.602.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 2010-10-14 at 02:34 -0700, Jeff Kirsher wrote:
+> On Wed, 2010-10-13 at 22:57 -0700, Joe Perches wrote:
+> > On Wed, 2010-10-13 at 21:57 -0700, Jeff Kirsher wrote:
+> > > On Wed, 2010-10-13 at 15:28 -0700, Joe Perches wrote:
+> > > Sorry I am not ignoring you, I was taking a closer look at your patch.
+> > > > What regression testing would actually be done?
+> > > The Makefile and Kconfig needs more work.  I applied your patch and none
+> > > of the Intel Wired drivers build.
+> > Care to describe the Makefile/Kconfig issues you have seen?
+> > I built it allyesconfig, defconfig, allmodconfig and allnoconfig.
+> Yeah, I found all of those built without errors, but if you build the
+> Intel Wired LAN drivers as modules, you will not find the *.ko files
+> after the build.  The Kconfig files look fine, the problem was with the
+> Makefiles.  Instead of creating a drivers/net/intel_wired_lan/Makefile,
+> I simply changed the path in drivers/net/Makefile to the updated path
+> and that resolved the issue.
 
-On Thu, Oct 14, 2010 at 11:30:55AM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix kconfig dependency warning to satisfy dependencies:
-> 
-> warning: (MMC_CB710 && MMC && PCI) selects CB710_CORE which has unmet direct dependencies (MISC_DEVICES && PCI)
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: <mirq-linux@rere.qmqm.pl>
-> ---
->  drivers/mmc/host/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20101013.orig/drivers/mmc/host/Kconfig
-> +++ linux-next-20101013/drivers/mmc/host/Kconfig
-> @@ -395,6 +395,7 @@ config MMC_TMIO
->  config MMC_CB710
->  	tristate "ENE CB710 MMC/SD Interface support"
->  	depends on PCI
-> +	select MISC_DEVICES
->  	select CB710_CORE
->  	help
->  	  This option enables support for MMC/SD part of ENE CB710/720 Flash
-> --
+(adding a few cc's and a link for history)
 
-Thanks, carrying this version in mmc-next now.
+http://lkml.org/lkml/2010/10/10/207
 
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+That's the way I had done it originally as well, but I found
+you couldn't build the directory with:
+
+	make drivers/net/intel_wired_lan/
+
+so I created a Makefile in the new directory below with
+the elements necessary.
+
+Perhaps there's some missing functionality in the build system
+when the Kconfig file resides in a higher directory and the
+directory being built doesn't have a Kconfig file?
+
+I think it'd wrong to duplicate the makefile components in
+2 places to allow "make subdir/" and I wonder if there's a
+good solution for this.
+
+> As far as the sub-directory name "intel_wired_lan", what about "intel"
+> or "intel_wired"?  Just a thought...
+
+Using "intel" seemed too sweeping because of the wireless drivers.
+I think intel_wired_lan isn't overly long, but your choice...
+
+Should the new (OKI?/intel) pch_gbe directory be moved as well?
+It's using a PCI_VENDOR_ID_INTEL.
+
+
