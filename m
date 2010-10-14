@@ -1,66 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab0JOE5l (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 00:57:41 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53919 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab0JOE5k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 00:57:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=LjSF7RQ30fXRKvURpaZ8mRz6kqHqg36jwG1H0Fsc3LiV9Zx3q26eHvMY4RGy2JSIkO
-         qrezK8ou5mQ6HLbwMV0XZ90DkvCb+Et8cAaT4DGKlj11lV606q5lnvuT8fuo0MwOaR5M
-         WMjKejs7mkVtUIxMWuT2t31KLPKjGEha2cxt8=
-Message-ID: <4CB7DF52.7060403@gmail.com>
-Date: Thu, 14 Oct 2010 21:57:54 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:2.0b5pre) Gecko/20100827 Thunderbird/3.2a1pre
-MIME-Version: 1.0
-To: Finn Thain <fthain@telegraphics.com.au>
-CC: trivial@kernel.org, linux-kernel@vger.kernel.org,
-        Jiri Kosina <jkosina@suse.cz>
-Subject: Re: [RFC v5]Update broken web addresses in arch directory.
-References: <1286225296-10070-1-git-send-email-justinmattock@gmail.com> <alpine.OSX.2.00.1010051146260.289@localhost> <4CB7AD50.2010103@gmail.com> <alpine.OSX.2.00.1010151328510.283@localhost> <4CB7C3F1.8020506@gmail.com> <alpine.OSX.2.00.1010151524290.426@localhost>
-In-Reply-To: <alpine.OSX.2.00.1010151524290.426@localhost>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754765Ab0JOFH5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 01:07:57 -0400
+Received: from mga11.intel.com ([192.55.52.93]:27528 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751144Ab0JOFHz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 01:07:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,334,1283756400"; 
+   d="asc'?scan'208";a="616947920"
+Subject: Re: linux-next: build failure after merge of the net tree
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Reply-To: jeffrey.t.kirsher@intel.com
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Harvey Harrison <harvey.harrison@gmail.com>
+Cc: David Miller <davem@davemloft.net>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+In-Reply-To: <20101015113854.ae080284.sfr@canb.auug.org.au>
+References: <20101015113854.ae080284.sfr@canb.auug.org.au>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-cjIwwdzThmyfIp30ji47"
+Organization: Intel Corporation
+Date: Thu, 14 Oct 2010 15:07:33 -0700
+Message-ID: <1287094053.5247.1.camel@jtkirshe-MOBL1>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/2010 09:26 PM, Finn Thain wrote:
->
-> On Thu, 14 Oct 2010, Justin P. Mattock wrote:
->
->> On 10/14/2010 07:38 PM, Finn Thain wrote:
->>>
->>> On Thu, 14 Oct 2010, Justin P. Mattock wrote:
->>>
->>>> hey jiri, whats the status of this? do you want to take this?
->>>> if so should I rebase the two patches to the current?
->>>
->>> The other patch needs to be resubmitted. Please see:
->>>
->>> http://groups.google.com.au/group/linux.kernel/msg/ce349d502567ebc4
->>>
->>> Finn
->>>
->>
->> ahh.. good catch... I'll resubmit that, but before I do is there any more?
->
-> Why do you ask? Perhaps your email is broken and you are concerned that
-> you did not receive some response that was already sent?
->
-> Finn
->
 
+--=-cjIwwdzThmyfIp30ji47
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-well the web client is broken over here due to .gtkrc making it vary 
-laggy, so missing something might have happened over here..
-as for asking, seems reasonable since theirs lots of traffic here and 
-there, and things fall through the cracks..(but could be wrong).
+On Thu, 2010-10-14 at 17:38 -0700, Stephen Rothwell wrote:
+> Hi all,
+>=20
+> After merging the net tree, today's linux-next build (x86_64 allmodconfig=
+)
+> failed like this:
+>=20
+> drivers/net/ixgbe/ixgbe_main.c: In function 'ixgbe_configure_dcb':
+> drivers/net/ixgbe/ixgbe_main.c:3377: error: implicit declaration of funct=
+ion 'ixgbe_dcb_check_config'
+>=20
+> Caused by commit f32f837b75233588cd4f8542214a30915ab7847b ("ixgbe: remove
+> unused functions").
+>=20
+> Grep is your friend :-)
+>=20
+> I have used the net tree from next-20101014 for today.
 
-Justin P. Mattock
+I apologize, this is my fault.  I have a patch coming to resolved the
+issue.
+
+--=-cjIwwdzThmyfIp30ji47
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAABAgAGBQJMt38dAAoJECTsCADr/EWUaAAH/A+X2zA4OdKtgb3Y4Ocyyl4/
+yQyDcebF2hQOtgCRIuZ9Qyxne6tDqjwjO6Us7RBO4EO4DB7ctgYWHivWAVCQI4DY
+0VN9XpobwI0pD9vo0tRZgNzck2cqZdqYeQg7AjPq2ZFizHE9bDCOZA/JsHk5Iakk
+btK2po6YbetKWvP86JdiBa8K0OPhCA+0OWAN7k/ApXkYhzZNMb1RZyk3n0SYrexi
+uh7mSdCj8RMyrqthuScLIVzmykrPc/HqhqyUq+qN6nE0FDAvnK60QGzens3SAwoo
+/OmS7nrrUlrsiZd7hCV3DOe44SocpuCJ/MLCXAmPpRNb9eifti4IoXNspJl4UKY=
+=exus
+-----END PGP SIGNATURE-----
+
+--=-cjIwwdzThmyfIp30ji47--
+
