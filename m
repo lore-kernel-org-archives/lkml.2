@@ -1,45 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755214Ab0JNPYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 11:24:21 -0400
-Received: from sh.osrg.net ([192.16.179.4]:53693 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754969Ab0JNPYU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 11:24:20 -0400
-Date: Fri, 15 Oct 2010 00:24:05 +0900
-To: felipe.contreras@gmail.com
-Cc: fujita.tomonori@lab.ntt.co.jp, andi@firstfloor.org,
-        kamezawa.hiroyu@jp.fujitsu.com, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, minchan.kim@gmail.com
-Subject: Re: [RFC][PATCH 1/3] contigous big page allocator
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <AANLkTin-8mjL_B8g9cPoviQU0FUaEyb_v5_Fm4kbSweA@mail.gmail.com>
-References: <87sk0a1sq0.fsf@basil.nowhere.org>
-	<20101014160217N.fujita.tomonori@lab.ntt.co.jp>
-	<AANLkTin-8mjL_B8g9cPoviQU0FUaEyb_v5_Fm4kbSweA@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20101015001904I.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 15 Oct 2010 00:24:06 +0900 (JST)
+	id S1755225Ab0JNP2j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 11:28:39 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:51856 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab0JNP2i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 11:28:38 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1010131602590.2764@xanadu.home>
+References: <1286788315.3101.11.camel@sven> <1286955116-22793-1-git-send-email-ohad@wizery.com>
+ <alpine.LFD.2.00.1010131602590.2764@xanadu.home>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 14 Oct 2010 17:28:12 +0200
+X-Google-Sender-Auth: eXfSD1zXl0DPDt-tXJ6118xBeus
+Message-ID: <AANLkTikex9BvozcfY8EDJ0EHepKR+gSOEyYyppZVCLx_@mail.gmail.com>
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: linux-mmc@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>,
+        Chris Ball <cjb@laptop.org>, libertas-dev@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
+        Colin Cross <ccross@android.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxim Levitsky <maximlevitsky@gmail.com>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Oct 2010 15:09:13 +0300
-Felipe Contreras <felipe.contreras@gmail.com> wrote:
+On Wed, Oct 13, 2010 at 10:08 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> It could, but then there has to be extra code in the resume handler to
+> cope with the fact that the card was powered off.
 
-> > As already pointed out, some embeded drivers need physcailly
-> > contignous memory. Currenlty, they use hacky tricks (e.g. playing with
-> > the boot memory allocators). There are several proposals for this like
-> > adding a new kernel memory allocator (from samsung).
-> >
-> > It's ideal if the memory allocator can handle this, I think.
-> 
-> Not only contiguous, but sometimes also coherent.
+Good point.
 
-Can you give the list of such drivers?
+It's much better the way it is now.
 
-Anyway, in general cases, the page allocator needs to allocate large
-contignous memory if we want dma_alloc_coherent to return large
-contignous coherent memory.
+Thanks,
+Ohad.
