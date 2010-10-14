@@ -1,79 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754681Ab0JNFj4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 01:39:56 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:37673 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754578Ab0JNFjz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 01:39:55 -0400
-Date: Thu, 14 Oct 2010 11:09:47 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Bharata B Rao <bharata@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Pavel Emelyanov <xemul@openvz.org>,
-        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
-        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
-        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>
-Subject: Re: [PATCH v3 2/7] sched: accumulate per-cfs_rq cpu usage
-Message-ID: <20101014053947.GB4378@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20101012074910.GA9893@in.ibm.com>
- <20101012075109.GC9893@in.ibm.com>
- <20101013133053.GD3914@balbir.in.ibm.com>
- <AANLkTiko2JryQWRmn2Df0-OyQwXgSZ6nyvrMm-o5WNvS@mail.gmail.com>
- <20101013135902.GA4189@balbir.in.ibm.com>
- <AANLkTimV+xdsJ5Tz42bCq6wV6pTk0yMicQA=rgWH0FoP@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <AANLkTimV+xdsJ5Tz42bCq6wV6pTk0yMicQA=rgWH0FoP@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754677Ab0JNFsj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 01:48:39 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:47653 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754605Ab0JNFsi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 01:48:38 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+	b=A1KgPT3wEHKyh6RUplJtvM/4cKItDgDRZPuVfqmDsd0rBUGBukC7sgxO9W7JSIAdM
+	RlD1YVlp5uHOKCX+ALnMQ==
+From: Nikhil Rao <ncrao@google.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Venkatesh Pallipadi <venki@google.com>
+Cc: linux-kernel@vger.kernel.org, Nikhil Rao <ncrao@google.com>
+Subject: [PATCH 3/4] sched: drop group_capacity to 1 only if local group has extra capacity
+Date: Wed, 13 Oct 2010 22:48:01 -0700
+Message-Id: <1287035281-25579-1-git-send-email-ncrao@google.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1286996978-7007-4-git-send-email-ncrao@google.com>
+References: <1286996978-7007-4-git-send-email-ncrao@google.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Nikhil Rao <ncrao@google.com> [2010-10-13 07:41:46]:
+Resending this patch since the original patch was munged. Thanks to Mike
+Galbraith for pointing this out.
 
-> On Wed, Oct 13, 2010 at 6:59 AM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> > * Nikhil Rao <ncrao@google.com> [2010-10-13 06:46:18]:
-> >
-> >> > Quick question for cfs_b->quota == RUNTIME_INF, won't cfs_b->runtime
-> >> > be always > 0?
-> >>
-> >> Hi Balbir,
-> >>
-> >> cfs_b->runtime can be 0 if the task group exhausts its quota.
-> >> cfs_b->runtime is a counter that is periodically refreshed to
-> >> cfs_b->quota, and is decremented every time a cfs_rq requests a slice.
-> >>
-> >
-> > Thanks, Nikhil
-> >
-> > I saw several checks for quota == RUNTIME_INF and saw updates not
-> > happening. Do we track usage for cgroups with infinite quota? IOW, is
-> > runtime updated? If so, why?
-> >
-> 
-> We don't track usage or update runtime for cgroups with infinite
-> quota. Most of these RUNTIME_INF checks are usually at the top of the
-> functions and return immediately. The checks in the middle of
-> functions are mostly to prevent races when cfs_b->quota is updated.
-> 
-> And ... I think I might have misunderstood your original question. Let
-> me try answering that again. We check for quota == RUNTIME_INF (in
-> addition to cfs_b->runtime > 0) because it is possible that the global
-> pool is updated to RUNTIME_INF between the quota check in
-> account_cfs_rq_quota() and when the actual quota is distributed in
-> tg_request_cfs_quota(). I hope that answers your original question.
->
+When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
+only if the local group has extra capacity. For niced task balancing, we pull
+low weight tasks away from a sched group as long as there is capacity in other
+groups. When all other groups are saturated, we do not drop capacity of the
+niced group down to 1. This prevents active balance from kicking out the low
+weight threads and which hurts system utilization.
 
-Yes, it does, thanks! 
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+---
+ kernel/sched_fair.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 0dd1021..da0c688 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -2030,6 +2030,7 @@ struct sd_lb_stats {
+ 	unsigned long this_load;
+ 	unsigned long this_load_per_task;
+ 	unsigned long this_nr_running;
++	unsigned long this_group_capacity;
+ 
+ 	/* Statistics of the busiest group */
+ 	unsigned long max_load;
+@@ -2546,15 +2547,18 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+ 		/*
+ 		 * In case the child domain prefers tasks go to siblings
+ 		 * first, lower the sg capacity to one so that we'll try
+-		 * and move all the excess tasks away.
++		 * and move all the excess tasks away. We lower capacity only
++		 * if the local group can handle the extra capacity.
+ 		 */
+-		if (prefer_sibling)
++		if (prefer_sibling && !local_group &&
++		    sds->this_nr_running < sds->this_group_capacity)
+ 			sgs.group_capacity = min(sgs.group_capacity, 1UL);
+ 
+ 		if (local_group) {
+ 			sds->this_load = sgs.avg_load;
+ 			sds->this = sg;
+ 			sds->this_nr_running = sgs.sum_nr_running;
++			sds->this_group_capacity = sgs.group_capacity;
+ 			sds->this_load_per_task = sgs.sum_weighted_load;
+ 		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
+ 			sds->max_load = sgs.avg_load;
 -- 
-	Three Cheers,
-	Balbir
+1.7.1
+
