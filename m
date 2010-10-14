@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755213Ab0JNXSb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 19:18:31 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:4964 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753506Ab0JNXS2 (ORCPT
+	id S1755868Ab0JNXSv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 19:18:51 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:34095 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755745Ab0JNXSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 19:18:28 -0400
-Subject: [PATCH v4 1/6] resources: ensure alignment callback doesn't allocate
-	below available start
+	Thu, 14 Oct 2010 19:18:48 -0400
+Subject: [PATCH v4 5/6] x86: update iomem_resource end based on CPU physical
+	address capabilities
 To: Jesse Barnes <jbarnes@virtuousgeek.org>
 From: Bjorn Helgaas <bjorn.helgaas@hp.com>
 Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
@@ -21,8 +21,8 @@ Cc: Bob Picco <bpicco@redhat.com>, Brian Bloniarz <phunge0@hotmail.com>,
         Leann Ogasawara <leann.ogasawara@canonical.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, 14 Oct 2010 17:18:26 -0600
-Message-ID: <20101014231826.536.51757.stgit@bob.kio>
+Date: Thu, 14 Oct 2010 17:18:47 -0600
+Message-ID: <20101014231847.536.8000.stgit@bob.kio>
 In-Reply-To: <20101014231804.536.62138.stgit@bob.kio>
 References: <20101014231804.536.62138.stgit@bob.kio>
 User-Agent: StGit/0.15
@@ -34,48 +34,31 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-The alignment callback returns a proposed location, which may have been
-adjusted to avoid ISA aliases or for other architecture-specific reasons.
-We already had a check ("tmp.start < tmp.end") to make sure the callback
-doesn't return a location above the available area.
+The iomem_resource map reflects the available physical address space.
+We statically initialize the end to -1, i.e., 0xffffffff_ffffffff, but
+of course we can only use as much as the CPU can address.
 
-This patch adds a check to make sure the callback doesn't return something
-*below* the available area, as may happen if the callback tries to allocate
-top-down.
+This patch updates the end based on the CPU capabilities, so we don't
+mistakenly allocate space that isn't usable, as we're likely to do when
+allocating from the top-down.
 
 Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
 ---
 
- kernel/resource.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+ arch/x86/kernel/setup.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
 
-diff --git a/kernel/resource.c b/kernel/resource.c
-index 7b36976..ace2269 100644
---- a/kernel/resource.c
-+++ b/kernel/resource.c
-@@ -371,6 +371,7 @@ static int find_resource(struct resource *root, struct resource *new,
- {
- 	struct resource *this = root->child;
- 	struct resource tmp = *new;
-+	resource_size_t start;
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index c3a4fbb..922b5a1 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -788,6 +788,7 @@ void __init setup_arch(char **cmdline_p)
  
- 	tmp.start = root->start;
- 	/*
-@@ -391,8 +392,13 @@ static int find_resource(struct resource *root, struct resource *new,
- 		if (tmp.end > max)
- 			tmp.end = max;
- 		tmp.start = ALIGN(tmp.start, align);
--		if (alignf)
--			tmp.start = alignf(alignf_data, &tmp, size, align);
-+		if (alignf) {
-+			start = alignf(alignf_data, &tmp, size, align);
-+			if (tmp.start <= start && start <= tmp.end)
-+				tmp.start = start;
-+			else
-+				tmp.start = tmp.end;
-+		}
- 		if (tmp.start < tmp.end && tmp.end - tmp.start >= size - 1) {
- 			new->start = tmp.start;
- 			new->end = tmp.start + size - 1;
+ 	x86_init.oem.arch_setup();
+ 
++	iomem_resource.end = (1ULL << boot_cpu_data.x86_phys_bits) - 1;
+ 	setup_memory_map();
+ 	parse_setup_data();
+ 	/* update the e820_saved too */
 
