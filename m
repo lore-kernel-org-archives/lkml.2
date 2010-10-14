@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755930Ab0JNTXs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 15:23:48 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:53043 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754698Ab0JNTXr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 15:23:47 -0400
-Message-ID: <4CB758C1.8090906@web.de>
-Date: Thu, 14 Oct 2010 21:23:45 +0200
-From: Jan Kiszka <jan.kiszka@web.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); de; rv:1.8.1.12) Gecko/20080226 SUSE/2.0.0.12-1.1 Thunderbird/2.0.0.12 Mnenhy/0.7.5.666
+	id S1755661Ab0JNT0n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 15:26:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40296 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752380Ab0JNT0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 15:26:42 -0400
+Message-ID: <4CB7595C.4000801@redhat.com>
+Date: Thu, 14 Oct 2010 21:26:20 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100914 Thunderbird/3.1.3
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-trace-users@vger.kernel.org
-Subject: [PATCH] trace-view: Handle unknown events more gracefully
+To: Andi Kleen <ak@linux.intel.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+        Mike Snitzer <snitzer@redhat.com>, linux-kernel@vger.kernel.org,
+        Andi Kleen <andi@firstfloor.org>, pedrib@gmail.com,
+        Alasdair G Kergon <agk@redhat.com>
+Subject: Re: [dm-devel] [PATCH] Fix double free and use generic private pointer
+ in per-cpu struct
+References: <20101010115941.GA8539@basil.fritz.box>	<4CB1B3B9.4030205@redhat.com>	<20101010130842.GE8256@basil.fritz.box>	<4CB1DD1A.5080906@redhat.com> <20101010162257.GA1272@redhat.com>	<4CB1ECCA.8040801@redhat.com> <20101010170750.GA1475@redhat.com> <4CB20C72.3030504@redhat.com>
+In-Reply-To: <4CB20C72.3030504@redhat.com>
 X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-15
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX19gGiBjyyNya/R4XJc7kxWV1XLMxp1OMBwCcwpf
-	T7EfXZVEyONKwraYb7s4LlXxSlD/7Ef6mMzv323/uqtsWIW80t
-	Z+TpzuYhQ=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel 2.6.35.7 generates invalid trace files due to
-/sys/kernel/debug/tracing/events/scsi/scsi_dispatch_cmd_timeout/format
-returning "FORMAT TOO BIG" (seems to be fixed in 2.6.36). This makes
-pevent_data_event_from_type return NULL, and dereferencing of event
-crashes the viewer.
+On 10/10/2010 08:56 PM, Milan Broz wrote:
+> On 10/10/2010 07:07 PM, Mike Snitzer wrote:
+> 
+>> I'll send patch on top of Andi's v3 if it helps something. (When back to my devel machine).
+>> That'll be helpful (I'm sure Andi is interested).
+> ok here are my changes on top of v3 - one bugfix and generic IV pointer.
+> If you merge it to v4 and it appears in git as one patch I have no problem with that.
+> 
+> Thanks,
+> Milan
+> 
+> 
+> [PATCH] Use generic private pointer in per-cpu struct
 
-Catch and report the error properly.
+Hi Andi,
 
-Signed-off-by: Jan Kiszka <jan.kiszka@web.de>
----
- trace-view-store.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+any progress here?
+I would like to achieve some consensus and merge some version
+of patch to dm tree...
+Maybe with known problems if there is no better solution for now.
 
-diff --git a/trace-view-store.c b/trace-view-store.c
-index 0834df7..34f8155 100644
---- a/trace-view-store.c
-+++ b/trace-view-store.c
-@@ -507,12 +507,17 @@ trace_view_store_get_value (GtkTreeModel *tree_model,
- 		case TRACE_VIEW_STORE_COL_INFO:
- 			val = pevent_data_type(pevent, data);
- 			event = pevent_data_event_from_type(pevent, val);
-+			if (!event) {
-+				if (column == TRACE_VIEW_STORE_COL_EVENT)
-+					g_value_set_string(value, "[UNKNOWN EVENT]");
-+				break;
-+			}
-+
- 			if (column == TRACE_VIEW_STORE_COL_EVENT) {
- 				g_value_set_string(value, event->name);
- 				break;
- 			}
- 
--			
- 			trace_seq_init(&s);
- 			pevent_event_info(&s, event, data);
- 			g_value_set_string(value, s.buffer);
--- 
-1.7.1
+Thanks,
+Milan
