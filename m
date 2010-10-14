@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab0JNEsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 00:48:37 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:50418 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752762Ab0JNEsg (ORCPT
+	id S1754620Ab0JNEts (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 00:49:48 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64658 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab0JNEtr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 00:48:36 -0400
-Date: Thu, 14 Oct 2010 15:48:08 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: xfs-masters@oss.sgi.com, lkml <linux-kernel@vger.kernel.org>,
-        Alex Elder <aelder@sgi.com>, akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH -next] xfs: eliminate kconfig dependency warning
-Message-ID: <20101014044808.GB4681@dastard>
-References: <20101013210142.9d524535.randy.dunlap@oracle.com>
+	Thu, 14 Oct 2010 00:49:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101013210142.9d524535.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Originating-IP: [109.186.69.160]
+In-Reply-To: <20101014022440.GD3553@void.printf.net>
+References: <1286788315.3101.11.camel@sven> <1286955116-22793-1-git-send-email-ohad@wizery.com>
+ <20101014022440.GD3553@void.printf.net>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Thu, 14 Oct 2010 06:49:26 +0200
+Message-ID: <AANLkTiki-Xdw+mWfv2WhMFMrNP-E-nPXbp8LM0FaAfw+@mail.gmail.com>
+Subject: Re: [PATCH] sdio: fix suspend/resume regression
+To: Chris Ball <cjb@laptop.org>
+Cc: linux-mmc@vger.kernel.org, Sven Neumann <s.neumann@raumfeld.com>,
+        Nicolas Pitre <nico@fluxnic.net>, libertas-dev@lists.infradead.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Daniel Mack <daniel@caiaq.de>,
+        Colin Cross <ccross@android.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Maxim Levitsky <maximlevitsky@gmail.com>, stable@kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 13, 2010 at 09:01:42PM -0700, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix kconfig dependency warning to satisfy dependencies:
-> 
-> warning: (XFS_FS && BLOCK || NFSD && NETWORK_FILESYSTEMS && INET && FILE_LOCKING && BKL) selects EXPORTFS which has unmet direct dependencies (NETWORK_FILESYSTEMS)
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  fs/xfs/Kconfig |    2 +-
->  1 file changed, 1 insertion(+), 1 deletion(-)
-> 
-> --- linux-next-20101013.orig/fs/xfs/Kconfig
-> +++ linux-next-20101013/fs/xfs/Kconfig
-> @@ -1,6 +1,6 @@
->  config XFS_FS
->  	tristate "XFS filesystem support"
-> -	depends on BLOCK
-> +	depends on BLOCK && NETWORK_FILESYSTEMS
->  	select EXPORTFS
->  	help
->  	  XFS is a high performance journaling filesystem which originated
+Hi Chris,
 
-This looks wrong to me.  IIUC, this means if you turn of network
-filesystem support (e.g no NFS, CIFS, etc), you can't select XFS
-even though it is a local filesystem.
+On Thu, Oct 14, 2010 at 4:24 AM, Chris Ball <cjb@laptop.org> wrote:
+> On Wed, Oct 13, 2010 at 09:31:56AM +0200, Ohad Ben-Cohen wrote:
+>> Fix SDIO suspend/resume regression introduced by
+>> 4c2ef25fe0b847d2ae818f74758ddb0be1c27d8e "mmc: fix all hangs related to
+>> mmc/sd card insert/removal during suspend/resume":
 
-EXPORTFS functionality actually has use for local filesystems - the
-open-by-handle interfaces in XFS are what uses it, and there are patches
-about that make this generic for most filesystems. Hence it seems to
-me that the correct thing to do is separate EXPORTFS from
-NETWORK_FILESYSTEMS, not make local filesystems depend on a user
-selecting network filesystem support....
+> Thanks very much, I've applied this to mmc-next with Nicolas' ACK.
 
-Cheers,
+Thanks a lot, Chris.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Btw, you might want to consider this as a 2.6.36 material, since it
+fixes a regression introduced in this cycle.
+
+Thanks,
+Ohad.
