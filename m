@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756049Ab0JNUL3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 16:11:29 -0400
-Received: from kroah.org ([198.145.64.141]:35328 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755845Ab0JNULS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 16:11:18 -0400
-Date: Thu, 14 Oct 2010 13:05:26 -0700
-From: Greg KH <greg@kroah.com>
-To: Stanislav Brabec <sbrabec@suse.cz>
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
-        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
-        Andr Goddard Rosa <andre.goddard@gmail.com>,
-        Jason Wang <jason77.wang@gmail.com>, linux-serial@vger.kernel.org
-Subject: Re: [PATCH] Serial: BUGFIX: uart_resume_port has an omitted
- condition.
-Message-ID: <20101014200526.GB30831@kroah.com>
-References: <1286949486-2446-1-git-send-email-myungjoo.ham@samsung.com>
- <20101013062605.GB4393@suse.de>
- <AANLkTimc-ETu4zrny=kmVRq8jnh2CDiVSqE-EXde4ioS@mail.gmail.com>
- <1286969205.6082.700.camel@hammer.site>
- <20101014184511.GA17096@kroah.com>
- <1287085557.10610.18.camel@utx.lan>
+	id S1756056Ab0JNUMD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 16:12:03 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33707 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755208Ab0JNUMB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 16:12:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references:mime-version:content-type
+         :content-transfer-encoding;
+        b=H4k/2js9x+dJyvzKGavRSEXUc8hqFf9IXL1OzrUZvUXmi5nBud5Du7NbB3iuYfqqdv
+         euZdMrjkhtB+YffYRyhaoweZNNu/ksXgmD6PTZZTY9mwGpV4wmnrJJsb1GADcqWcqwBb
+         8qLDP9I6HGEItsXRcCOn4gfLWMh+pbOq1uGxA=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Borislav Petkov <bp@alien8.de>,
+        Chase Douglas <chase.douglas@canonical.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 1/2] tracing: Fix function-graph build warning on 32-bit
+Date: Thu, 14 Oct 2010 21:42:50 +0200
+Message-Id: <1287085371-29177-2-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
+References: <1287085371-29177-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287085557.10610.18.camel@utx.lan>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 09:45:57PM +0200, Stanislav Brabec wrote:
-> Greg KH wrote: 
-> > > This disparity appeared deliberately in 4547be78. If you need
-> > > no_console_suspend and the hardware lets the device in an undefined
-> > > state after resume (i. e. PXA270), you need to call subset of the
-> > > resume, even if the suspend counterpart was not called. Yes, I can
-> > > imagine that it may be a source of problems.
->  
-> > > It seems that support for no_console_suspend for all devices is becoming
-> > > more complicated. I guess that a new driver calls (maybe "save_state"
-> > > and "resume_state") or support for no_console_suspend directly in
-> > > drivers may be useful.
-> > 
-> > Ok, so I'm guessing that this patch is not to be applied then, correct?
-> 
-> I just compared it with Jason Wang's patches. MyungJoo Ham's patch is
-> exactly equal to the PATCH 1/2. So it already has my ACK and it is
-> pending as:
-> 
-> serial-core: skip call set_termios/console_start when no_console_suspend
+From: Borislav Petkov <bp@alien8.de>
 
-Ah, ok, thanks for confirming this, no need for me to do anything else
-then, I like it :)
+Fix
 
-thanks,
+kernel/trace/trace_functions_graph.c: In function ‘trace_print_graph_duration’:
+kernel/trace/trace_functions_graph.c:652: warning: comparison of distinct pointer types lacks a cast
 
-greg k-h
+when building 36-rc6 on a 32-bit due to the strict type check failing
+in the min() macro.
+
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+Cc: Chase Douglas <chase.douglas@canonical.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+LKML-Reference: <20100929080823.GA13595@liondog.tnic>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/trace/trace_functions_graph.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 02c708a..ef49e93 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -665,8 +665,9 @@ trace_print_graph_duration(unsigned long long duration, struct trace_seq *s)
+ 
+ 	/* Print nsecs (we don't want to exceed 7 numbers) */
+ 	if (len < 7) {
+-		snprintf(nsecs_str, min(sizeof(nsecs_str), 8UL - len), "%03lu",
+-			 nsecs_rem);
++		size_t slen = min_t(size_t, sizeof(nsecs_str), 8UL - len);
++
++		snprintf(nsecs_str, slen, "%03lu", nsecs_rem);
+ 		ret = trace_seq_printf(s, ".%s", nsecs_str);
+ 		if (!ret)
+ 			return TRACE_TYPE_PARTIAL_LINE;
+-- 
+1.6.2.3
+
