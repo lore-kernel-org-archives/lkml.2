@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab0JNErr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 00:47:47 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49091 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754502Ab0JNErq (ORCPT
+	id S1754613Ab0JNEsh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 00:48:37 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:50418 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752762Ab0JNEsg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 00:47:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=IvEvMH390zH2s/RZQXUdOBWuyY8Jcgrfwr6zqdrlUWUSKYbj9PHY8UgIhxQjA8jxms
-         Aui6lgogTvhle5HHIkUDl65jbajM1643tY6anAMYRP7TS3ifBfxEs/WHaB3gwQivO2ta
-         AI7Ydal1BJqlmfjBfR/qBHBpUB6k8yMo81UCc=
-From: =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <zenczykowski@gmail.com>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: =?UTF-8?q?Maciej=20=C5=BBenczykowski?= <zenczykowski@gmail.com>
-Subject: [PATCH] pcmcia: fix unused function compile warning
-Date: Wed, 13 Oct 2010 21:47:14 -0700
-Message-Id: <1287031634-25284-1-git-send-email-zenczykowski@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Thu, 14 Oct 2010 00:48:36 -0400
+Date: Thu, 14 Oct 2010 15:48:08 +1100
+From: Dave Chinner <david@fromorbit.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: xfs-masters@oss.sgi.com, lkml <linux-kernel@vger.kernel.org>,
+        Alex Elder <aelder@sgi.com>, akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH -next] xfs: eliminate kconfig dependency warning
+Message-ID: <20101014044808.GB4681@dastard>
+References: <20101013210142.9d524535.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101013210142.9d524535.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-pcmcia_socket_dev_resume() is only referenced from macro
-SET_SYSTEM_SLEEP_PM_OPS(NULL, pcmcia_socket_dev_resume)
-which based on CONFIG_PM_SLEEP may or may not actually
-use its second parameter.
+On Wed, Oct 13, 2010 at 09:01:42PM -0700, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Fix kconfig dependency warning to satisfy dependencies:
+> 
+> warning: (XFS_FS && BLOCK || NFSD && NETWORK_FILESYSTEMS && INET && FILE_LOCKING && BKL) selects EXPORTFS which has unmet direct dependencies (NETWORK_FILESYSTEMS)
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> ---
+>  fs/xfs/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-next-20101013.orig/fs/xfs/Kconfig
+> +++ linux-next-20101013/fs/xfs/Kconfig
+> @@ -1,6 +1,6 @@
+>  config XFS_FS
+>  	tristate "XFS filesystem support"
+> -	depends on BLOCK
+> +	depends on BLOCK && NETWORK_FILESYSTEMS
+>  	select EXPORTFS
+>  	help
+>  	  XFS is a high performance journaling filesystem which originated
 
-Signed-off-by: Maciej Żenczykowski <zenczykowski@gmail.com>
----
- drivers/pcmcia/cs.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+This looks wrong to me.  IIUC, this means if you turn of network
+filesystem support (e.g no NFS, CIFS, etc), you can't select XFS
+even though it is a local filesystem.
 
-diff --git a/drivers/pcmcia/cs.c b/drivers/pcmcia/cs.c
-index 2ec8ac9..1aaa4a9 100644
---- a/drivers/pcmcia/cs.c
-+++ b/drivers/pcmcia/cs.c
-@@ -845,7 +845,7 @@ static int pcmcia_socket_dev_resume_noirq(struct device *dev)
- 	return __pcmcia_pm_op(dev, socket_early_resume);
- }
- 
--static int pcmcia_socket_dev_resume(struct device *dev)
-+static int __used pcmcia_socket_dev_resume(struct device *dev)
- {
- 	return __pcmcia_pm_op(dev, socket_late_resume);
- }
+EXPORTFS functionality actually has use for local filesystems - the
+open-by-handle interfaces in XFS are what uses it, and there are patches
+about that make this generic for most filesystems. Hence it seems to
+me that the correct thing to do is separate EXPORTFS from
+NETWORK_FILESYSTEMS, not make local filesystems depend on a user
+selecting network filesystem support....
+
+Cheers,
+
+Dave.
 -- 
-1.7.1
-
+Dave Chinner
+david@fromorbit.com
