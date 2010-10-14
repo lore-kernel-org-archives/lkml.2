@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab0JNHJr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 03:09:47 -0400
-Received: from freeflow.nu ([178.79.134.28]:45023 "EHLO freeflow.nu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752262Ab0JNHJq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 03:09:46 -0400
-Message-ID: <4CB6ACB7.8060006@kernel.org>
-Date: Thu, 14 Oct 2010 10:09:43 +0300
-From: Pekka Enberg <penberg@kernel.org>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.9) Gecko/20100915 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Richard Kennedy <richard@rsk.demon.co.uk>
-CC: Christoph Lameter <cl@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] [RFC] slub tracing: move trace calls out of always inlined
- functions to reduce kernel code size
-References: <1286986178.1901.60.camel@castor.rsk>
-In-Reply-To: <1286986178.1901.60.camel@castor.rsk>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754809Ab0JNHPL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 03:15:11 -0400
+Received: from vpn.id2.novell.com ([195.33.99.129]:42602 "EHLO
+	vpn.id2.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754565Ab0JNHPK convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:7:1>);
+	Thu, 14 Oct 2010 03:15:10 -0400
+Message-Id: <4CB6CA1A020000780001D161@vpn.id2.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 14 Oct 2010 08:15:06 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: "Konrad Rzeszutek Wilk" <konrad@kernel.org>,
+        "Konrad Rzeszutek Wilk" <konrad.wilk@oracle.com>
+Cc: "Ryan Wilson" <hap9@darnok.org>,
+        "Stefano Stabellini" <stefano.stabellini@eu.citrix.com>,
+        "Jeremy Fitzhardinge" <jeremy@goop.org>,
+        <xen-devel@lists.xensource.com>, <linux-kernel@vger.kernel.org>
+Subject: [Xen-devel] Re: [PATCH 20/23] xen-pcifront: Xen PCI frontend
+	 driver.
+References: <1286898271-32018-1-git-send-email-konrad.wilk@oracle.com>
+ <1286898271-32018-21-git-send-email-konrad.wilk@oracle.com>
+ <4CB599DB020000780001CC60@vpn.id2.novell.com>
+ <201010130953.45283.konrad@darnok.org>
+ <20101013161636.GA19872@dumpdata.com>
+In-Reply-To: <20101013161636.GA19872@dumpdata.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  On 10/13/10 7:09 PM, Richard Kennedy wrote:
-> Having the trace calls defined in the always inlined kmalloc functions
-> in include/linux/slub_def.h causes a lot of code duplication as the
-> trace functions get instantiated for each kamalloc call site. This can
-> simply be removed by pushing the trace calls down into the functions in
-> slub.c.
->
-> On my x86_64 built this patch shrinks the code size of the kernel by
-> approx 29K and also shrinks the code size of many modules -- too many to
-> list here ;)
->
-> size vmlinux.o reports
->         text	   data	    bss	    dec	    hex	filename
->      4777011	 602052	 763072	6142135	 5db8b7	vmlinux.o
->      4747120	 602388	 763072	6112580	 5d4544	vmlinux.o.patch
+>>> On 13.10.10 at 18:16, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+> On Wed, Oct 13, 2010 at 09:53:44AM -0400, Konrad Rzeszutek Wilk wrote:
+>> Hey Jan,
+>> 
+>> Thank you for taking your time to look at this patch. Will fix up, test it, 
+>> and if there are no issues, have it ready tomorrow.
+> 
+> Attached (and inline) is the updated version of this patch. If I missed 
+> anything
+> please do point it out to me!
 
-Impressive kernel text savings!
+There's one more missing "static", and one incorrect change to
+free_pdev() you did.
 
-> index 13fffe1..32b89ee 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> +void *kmalloc_order(size_t size, gfp_t flags, unsigned int order)
+Also, any word on the pdev_lock you dropped from the original
+implementation?
+
+> If this is to your satisfaction, can I put a Reviewed-by tag on the patch?
+
+Feel free to do so.
+
+> --- /dev/null
+> +++ b/drivers/pci/xen-pcifront.c
+>...
+> +int __devinit pcifront_scan_bus(struct pcifront_device *pdev,
+
+static?
+
+>...
+> +static void free_pdev(struct pcifront_device *pdev)
 > +{
-> +	void *ret = (void *) __get_free_pages(flags | __GFP_COMP, order);
+> +	dev_dbg(&pdev->xdev->dev, "freeing pdev @ 0x%p\n", pdev);
 > +
-> +	kmemleak_alloc(ret, size, 1, flags);
-> +	trace_kmalloc(_RET_IP_, ret, size, PAGE_SIZE<<  order, flags);
+> +	pcifront_free_roots(pdev);
 > +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL(kmalloc_order);
+> +	/*For PCIE_AER error handling job*/
+> +	flush_scheduled_work();
 > +
-This doesn't make sense to be out-of-line for the !CONFIG_TRACE case. 
-I'd just wrap that with "#ifdef CONFIG_TRACE" and put an inline version 
-in the header for !TRACE.
+> +	if (pdev->irq)
 
-             Pekka
+	if (pdev->irq > 0)
+
+It gets initialized to -1 in alloc_pdev(). It may be debatable whether
+it should be >= 0 - I'm not sure if the pv-ops code allows IRQ 0 to
+be used. If it doesn't, initializing to 0 in alloc_pdev() would be an
+alternative.
+
+> +		unbind_from_irqhandler(pdev->irq, pdev);
+> +
+> +	if (pdev->evtchn != INVALID_EVTCHN)
+> +		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
+> +
+> +	if (pdev->gnt_ref != INVALID_GRANT_REF)
+> +		gnttab_end_foreign_access(pdev->gnt_ref, 0 /* r/w page */,
+> +					  (unsigned long)pdev->sh_info);
+> +	else
+> +		free_page((unsigned long)pdev->sh_info);
+> +
+> +	dev_set_drvdata(&pdev->xdev->dev, NULL);
+> +
+> +	kfree(pdev);
+> +}
+> +
+> +static int pcifront_publish_info(struct pcifront_device *pdev)
+> +{
+> +	int err = 0;
+> +	struct xenbus_transaction trans;
+> +
+> +	err = xenbus_grant_ring(pdev->xdev, virt_to_mfn(pdev->sh_info));
+> +	if (err < 0)
+> +		goto out;
+> +
+> +	pdev->gnt_ref = err;
+> +
+> +	err = xenbus_alloc_evtchn(pdev->xdev, &pdev->evtchn);
+> +	if (err)
+> +		goto out;
+> +
+> +	err = bind_evtchn_to_irqhandler(pdev->evtchn, pcifront_handler_aer,
+> +		0, "pcifront", pdev);
+> +	if (err < 0) {
+> +		/*
+> +		xenbus_free_evtchn(pdev->xdev, pdev->evtchn);
+> +		xenbus_dev_fatal(pdev->xdev, err, "Failed to bind evtchn to "
+> +				 "irqhandler.\n");
+> +		*/
+
+Why are you commenting it out rather than removing it?
+
+Jan
+
