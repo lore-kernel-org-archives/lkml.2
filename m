@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab0JNGey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 02:34:54 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55795 "EHLO hera.kernel.org"
+	id S1753553Ab0JNGfZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 02:35:25 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43188 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752935Ab0JNGex (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 02:34:53 -0400
-Date: Thu, 14 Oct 2010 06:34:23 GMT
-From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        kiran@scalex86.org, tglx@linutronix.de, randy.dunlap@oracle.com,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        kiran@scalex86.org, tglx@linutronix.de, randy.dunlap@oracle.com,
-        mingo@elte.hu
-In-Reply-To: <20101013210023.9a033222.randy.dunlap@oracle.com>
-References: <20101013210023.9a033222.randy.dunlap@oracle.com>
+	id S1752458Ab0JNGfY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 02:35:24 -0400
+Date: Thu, 14 Oct 2010 06:34:49 GMT
+From: tip-bot for Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        sfr@canb.auug.org.au, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        sfr@canb.auug.org.au, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20101014164925.4fa16b75.sfr@canb.auug.org.au>
+References: <20101014164925.4fa16b75.sfr@canb.auug.org.au>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86/vsmp: Eliminate kconfig dependency warning
-Message-ID: <tip-03f1a17cd5c69deccd3cfe1b954b9426d7a686e3@git.kernel.org>
-Git-Commit-ID: 03f1a17cd5c69deccd3cfe1b954b9426d7a686e3
+Subject: [tip:perf/core] perf, ARM: Fix sysfs bits removal build failure
+Message-ID: <tip-1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0@git.kernel.org>
+Git-Commit-ID: 1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Oct 2010 06:34:25 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Oct 2010 06:34:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  03f1a17cd5c69deccd3cfe1b954b9426d7a686e3
-Gitweb:     http://git.kernel.org/tip/03f1a17cd5c69deccd3cfe1b954b9426d7a686e3
-Author:     Randy Dunlap <randy.dunlap@oracle.com>
-AuthorDate: Wed, 13 Oct 2010 21:00:23 -0700
+Commit-ID:  1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0
+Gitweb:     http://git.kernel.org/tip/1efeb08d7dd32c0fbd4b784ea9303b53d345bfd0
+Author:     Ingo Molnar <mingo@elte.hu>
+AuthorDate: Thu, 14 Oct 2010 08:09:42 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 14 Oct 2010 07:04:30 +0200
+CommitDate: Thu, 14 Oct 2010 08:09:42 +0200
 
-x86/vsmp: Eliminate kconfig dependency warning
+perf, ARM: Fix sysfs bits removal build failure
 
-Fix kconfig dependency warning to satisfy dependencies:
+Fix this linux-next build failure that Stephen reported:
 
-warning: (X86_VSMP && X86_64 && PCI && X86_EXTENDED_PLATFORM ||
-XEN && PARAVIRT_GUEST && (X86_64 || X86_32 && X86_PAE && !X86_VISWS) && X86_CMPXCHG && X86_TSC || KVM_CLOCK && PARAVIRT_GUEST || KVM_GUEST && PARAVIRT_GUEST || LGUEST_GUEST && PARAVIRT_GUEST && X86_32) selects PARAVIRT which has unmet direct dependencies (PARAVIRT_GUEST)
+ arch/arm/kernel/perf_event.c: In function 'armpmu_event_init':
+ arch/arm/kernel/perf_event.c:543: error: request for member 'num_events' in something not a structure or union
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Ravikiran Thirumalai <kiran@scalex86.org>
-LKML-Reference: <20101013210023.9a033222.randy.dunlap@oracle.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: paulus <paulus@samba.org>
+LKML-Reference: <20101014164925.4fa16b75.sfr@canb.auug.org.au>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ arch/arm/kernel/perf_event.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index cea0cd9..64e817e 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -372,6 +372,7 @@ endif
+diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+index ad19c27..55addc8 100644
+--- a/arch/arm/kernel/perf_event.c
++++ b/arch/arm/kernel/perf_event.c
+@@ -534,7 +534,7 @@ static int armpmu_event_init(struct perf_event *event)
+ 	event->destroy = hw_perf_event_destroy;
  
- config X86_VSMP
- 	bool "ScaleMP vSMP"
-+	select PARAVIRT_GUEST
- 	select PARAVIRT
- 	depends on X86_64 && PCI
- 	depends on X86_EXTENDED_PLATFORM
+ 	if (!atomic_inc_not_zero(&active_events)) {
+-		if (atomic_read(&active_events) > armpmu.num_events) {
++		if (atomic_read(&active_events) > armpmu->num_events) {
+ 			atomic_dec(&active_events);
+ 			return -ENOSPC;
+ 		}
