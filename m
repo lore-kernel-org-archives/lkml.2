@@ -1,160 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab0JNPCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 11:02:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43966 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754181Ab0JNPCc (ORCPT
+	id S1755246Ab0JNPCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 11:02:44 -0400
+Received: from g4t0016.houston.hp.com ([15.201.24.19]:35401 "EHLO
+	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab0JNPCm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 11:02:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=xOfM0kgUbzwGJEZ861+X3omhPFkL9rHV2ibATUB0qD4X6azT60LhzGRd1vs0G9aY8q
-         PjR10S7xIlQt0C7gi2gd2gbTcHS21lzAvfjkOopZkt18da3bcCUaNQMryNxhHIrXg3aJ
-         vGSzqc/dwfQZBiFSiecO9vrRbuehxHWUFxvow=
+	Thu, 14 Oct 2010 11:02:42 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v3 2/6] resources: allocate space within a region from the top down
+Date: Thu, 14 Oct 2010 09:01:30 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
+Cc: Charles Butterfield <charles.butterfield@nextcentury.com>,
+        Stefan Becker <chemobejk@gmail.com>,
+        "Horst H. von Brand" <vonbrand@inf.utfsm.cl>,
+        linux-pci@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Denys Vlasenko <dvlasenk@redhat.com>, Bob Picco <bpicco@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Brian Bloniarz <phunge0@hotmail.com>
+References: <20101013161359.28476.6050.stgit@bob.kio> <20101013161515.28476.99253.stgit@bob.kio> <AANLkTinJqohDTjDLkBn84e9zn80opZss7kX_MPnoX4vd@mail.gmail.com>
+In-Reply-To: <AANLkTinJqohDTjDLkBn84e9zn80opZss7kX_MPnoX4vd@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1286800232.19739.96.camel@e102109-lin.cambridge.arm.com>
-References: <1286444662-16843-1-git-send-email-felipe.contreras@gmail.com>
-	<20101007192245.GC26435@n2100.arm.linux.org.uk>
-	<AANLkTikQKY7pOobD+==uT5Cy0poT=O5wDMKtbVyJVNbO@mail.gmail.com>
-	<20101008175308.GA10975@n2100.arm.linux.org.uk>
-	<AANLkTi=ERZjVDS=Q7aw1zA23KF68irUP3vvKLZw5meBU@mail.gmail.com>
-	<20101008230451.GB10975@n2100.arm.linux.org.uk>
-	<20101008232539.GA28697@kroah.com>
-	<20101008234448.GD10975@n2100.arm.linux.org.uk>
-	<20101009000046.GA30616@kroah.com>
-	<20101009002546.GB14675@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.00.1010082210150.3107@xanadu.home>
-	<1286791544.19739.31.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTinMuKDpbL9ka61QhUFJfze_HWWHxjUbAqbz2_vi@mail.gmail.com>
-	<1286796187.19739.52.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTinHZ-w6=0RvVp39MnvpRC7RW1CYNSbzi2f1OvaQ@mail.gmail.com>
-	<1286800232.19739.96.camel@e102109-lin.cambridge.arm.com>
-Date: Thu, 14 Oct 2010 18:02:30 +0300
-Message-ID: <AANLkTinsQVvoxeNGO6ToyKnFTdA=GfjdoY2yEQ3adHVA@mail.gmail.com>
-Subject: Re: [PATCH] ARM: allow, but warn, when issuing ioremap() on RAM
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Nicolas Pitre <nico@fluxnic.net>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Arnd Hannemann <arnd@arndnet.de>, Hemant Pedanekar <hemantp@ti.com>,
-        Greg KH <greg@kroah.com>, linux-main <linux-kernel@vger.kernel.org>,
-        =?UTF-8?Q?Uwe_Kleine=2DK=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Han Jonghun <jonghun79.han@gmail.com>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010140901.31402.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Oct 11, 2010 at 3:30 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Mon, 2010-10-11 at 13:03 +0100, Felipe Contreras wrote:
->> On Mon, Oct 11, 2010 at 2:23 PM, Catalin Marinas
->> <catalin.marinas@arm.com> wrote:
->> > On Mon, 2010-10-11 at 11:39 +0100, Felipe Contreras wrote:
->> >> I will try that, but from what I can see this might still break some
->> >> drivers, right?
->> >
->> > Probably, it depends on how drivers use the memory returned by ioremap
->> > and the assumptions they make about the memory type (strict ordering,
->> > write buffers, speculation). I think such memory should be used via the
->> > I/O accessors and not directly, so you get the benefit of explicit
->> > memory barriers. If not, you have to cope with the loss of attributes
->> > because of the WC mapping.
->> >
->> > But as it has been said (and it's my opinion as well), the drivers are
->> > broken and are misusing the ioremap API.
->>
->> Indeed, that is understood by everyone.
->>
->> But what I think should happen on .36 is that the warning is on, and
->> the behavior doesn't change compared to .35. Your patch is changing
->> the behavior as you say in hacky way, which might have unintended
->> consequences in the affected drivers, I don't think that's ideal,
->> although it's better than breaking them completely.
->
-> Well, even if you allow Device memory via ioremap in Linux and the
-> hardware behaviour is not "unpredictable", it is not guaranteed to act
-> as a Device memory. You get speculative accesses via the Normal alias
-> and you may also get dirty cache lines evicted at random from the Normal
-> mapping (unless you invalidated the cache before). The dirty eviction is
-> valid even for pre-ARMv6 processors.
+On Wednesday, October 13, 2010 04:19:42 pm Linus Torvalds wrote:
+> Hmmm.. Instead of that top-down #define, how about making the allocation
+> pattern be a flag in the resource (possibly just the root, but perhaps
+> per-resource? )
+> 
+> That sounds much more flexible, and less ugly than that #ifdef. Perhaps more
+> importantly, it would allow us to do the whole allocation order dynamically,
+> which would be really good if it turns out to not work on all setups. That
+> way we could at least have a kernel command line option that we can ask
+> people to test, rather than have them have to recompile the whole kernel.
 
-I'm not familiar with device memory, but anyway, IIUC you are saying
-the normal mapping (original) might not work as expected... That's ok,
-because the only alias that uses after the ioremap() is the second
-one.
+I like the backout switch idea a lot.  I'm not sure it's worth burning a
+bit in the resource flags because I hope we can choose bottom-up vs.
+top-down choice once per boot, not per-resource, and treat cases where
+we need bottom-up as bugs to be fixed.
 
->> >> Anyway, I'm reading the TRM and I can't find any mention of this.
->> >> Catalin, can you point out where is this mentioned, and also, can you
->> >> confirm if this would affect only the memory that has the double
->> >> mapping, or it can corrupt other memory as well?
->> >
->> > That's in the ARM ARM (Architecture Reference Manual), not a TRM.
->> >
->> > You never know what "unpredictable" means and this is specific to the
->> > processor implementation, not the ARM ARM. You should not mix different
->> > memory types for the same page.
->>
->> Certainly, but saying corruption _will_ happen elsewhere is not
->> correct, there is no empirical evidence for that, although
->> theoretically it might happen.
->
-> It may be just theoretical but architecture licensees implement the
-> hardware according to the ARM ARM. If it says "unpredictable", they
-> don't need to care much about this scenario as it is not allowed in
-> software and the hardware can be further optimised (well, I think
-> "unpredictable" doesn't allow hardware deadlocking or security
-> implications, so the memory corruption cannot be that random, possibly
-> just restricted to that memory range). It is probably ok on current
-> hardware but I cannot guarantee, you would have to check on a
-> case-by-case basis (CPU implementation).
+Anyway, I'll rework this and you can see what you think.
 
-Exactly, so it's not the end of the world if this is still allowed one
-more release.
+Bjorn
 
->> > Back in 2006 there was a discussion for a set of palliative measures in
->> > hardware (initially until the OSes are fixed) and these allow the same
->> > memory type but with different cacheability attributes (e.g. Normal
->> > Non-cacheable vs Normal Cacheable) given that care is taken in software
->> > wrt stale cache lines and speculation (but at least you don't get random
->> > corruption somewhere else). They would need to have the same
->> > shareability attributes though.
->> >
->> > With the hack above, MT_DEVICE_WC is actually Normal Non-cacheable
->> > memory. It needs cache flushing but it's not worse than the original
->> > ioremap allowing this. The driver may not work as expected though.
->>
->> I see, but are you saying that if the shareability is not the same,
->> then corruption elsewhere might actually happen? Or it would happen
->> most likely on the affected region? If it's the former, then I agree
->> that your patch should be used instead.
->
-> Pretty much same answer as above. But why do you need different
-> shareability attributes?
-
-Well, I'm not familiar with the shareability attributes, but from what
-I could grep from the code, the tidspbridge driver is doing
-readl/writel on this memory, so I think device memory is supposed to
-be used for that. Granted, this is probably a very bad usage from the
-driver, but this was allowed on 2.6.35, so I think the same should
-happen on 2.6.36, but with a warning.
-
-However, as I said, I'm concerned about other drivers that have not
-yet been detected that would be broken by 309caa9 once .36 is
-released, I think your patch should be enough to detect them and at
-the same time do something relatively sane. If they get broken by the
-shareability change, they probably were in too bad shape anyway.
-
-So, +1 to your patch.
-
-FWIW, your patch seems to work with tidspbridge
-
-Cheers.
-
--- 
-Felipe Contreras
+> On Oct 13, 2010 9:16 AM, "Bjorn Helgaas" <bjorn.helgaas@hp.com> wrote:
+> >
+> > Allocate space from the top of a region first, then work downward,
+> > if an architecture desires this.
+> >
+> > I think it's too dangerous to do this across the board, because
+> > iomem_resource.end is initialized to -1, which is 0xffffffff_ffffffff
+> > on 64-bit architectures, and most machines can't address the entire
+> > 64-bit physical address space. So this patch is only effective if the
+> > architecture defines ARCH_HAS_TOP_DOWN_ALLOC.
+> >
+> > When we allocate space from a resource, we look for gaps between children
+> > of the resource. Previously, we always looked at gaps from the bottom up.
+> > For example, given this:
+> >
+> > [mem 0xbff00000-0xf7ffffff] PCI Bus 0000:00
+> > [mem 0xc0000000-0xdfffffff] PCI Bus 0000:02
+> >
+> > we attempted to allocate from the [mem 0xbff00000-0xbfffffff] gap first,
+> > then the [mem 0xe0000000-0xf7ffffff] gap.
+> >
+> > With this patch, if the architecture defines ARCH_HAS_TOP_DOWN_ALLOC,
+> > we allocate from [mem 0xe0000000-0xf7ffffff] first.
+> >
+> > Signed-off-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > ---
+> >
+> > kernel/resource.c | 70
+> +++++++++++++++++++++++++++++++++++++++++++++++++++++
+> > 1 files changed, 70 insertions(+), 0 deletions(-)
+> >
+> >
+> > diff --git a/kernel/resource.c b/kernel/resource.c
+> > index ace2269..9218e8e 100644
+> > --- a/kernel/resource.c
+> > +++ b/kernel/resource.c
+> > @@ -357,8 +357,77 @@ int __weak page_is_ram(unsigned long pfn)
+> > return walk_system_ram_range(pfn, 1, NULL, __is_ram) == 1;
+> > }
+> >
+> > +#ifdef ARCH_HAS_TOP_DOWN_ALLOC
+> > +/*
+> > + * Find the resource before "child" in the sibling list of "root"
+> children.
+> > + */
+> > +static struct resource *find_sibling_prev(struct resource *root, struct
+> resource *child)
+> > +{
+> > + struct resource *this;
+> > +
+> > + for (this = root->child; this; this = this->sibling)
+> > + if (this->sibling == child)
+> > + return this;
+> > +
+> > + return NULL;
+> > +}
+> > +
+> > /*
+> > * Find empty slot in the resource tree given range and alignment.
+> > + * This version allocates from the end of the root resource first.
+> > + */
+> > +static int find_resource(struct resource *root, struct resource *new,
+> > + resource_size_t size, resource_size_t min,
+> > + resource_size_t max, resource_size_t align,
+> > + resource_size_t (*alignf)(void *,
+> > + const struct resource *,
+> > + resource_size_t,
+> > + resource_size_t),
+> > + void *alignf_data)
+> > +{
+> > + struct resource *this;
+> > + struct resource tmp = *new;
+> > + resource_size_t start;
+> > +
+> > + tmp.start = root->end;
+> > + tmp.end = root->end;
+> > +
+> > + this = find_sibling_prev(root, NULL);
+> > + for (;;) {
+> > + if (this && this->end < root->end)
+> > + tmp.start = this->end + 1;
+> > + else
+> > + tmp.start = root->start;
+> > + if (tmp.start < min)
+> > + tmp.start = min;
+> > + if (tmp.end > max)
+> > + tmp.end = max;
+> > + tmp.start = ALIGN(tmp.start, align);
+> > + if (alignf) {
+> > + start = alignf(alignf_data, &tmp, size, align);
+> > + if (tmp.start <= start && start <= tmp.end)
+> > + tmp.start = start;
+> > + else
+> > + tmp.start = tmp.end;
+> > + }
+> > + if (tmp.start < tmp.end && tmp.end - tmp.start >= size - 1) {
+> > + new->start = tmp.start;
+> > + new->end = tmp.start + size - 1;
+> > + return 0;
+> > + }
+> > + if (!this || this->start == root->start)
+> > + break;
+> > + tmp.end = this->start - 1;
+> > + this = find_sibling_prev(root, this);
+> > + }
+> > + return -EBUSY;
+> > +}
+> > +
+> > +#else
+> > +
+> > +/*
+> > + * Find empty slot in the resource tree given range and alignment.
+> > + * This version allocates from the beginning of the root resource first.
+> > */
+> > static int find_resource(struct resource *root, struct resource *new,
+> > resource_size_t size, resource_size_t min,
+> > @@ -411,6 +480,7 @@ static int find_resource(struct resource *root, struct
+> resource *new,
+> > }
+> > return -EBUSY;
+> > }
+> > +#endif
+> >
+> > /**
+> > * allocate_resource - allocate empty slot in the resource tree given range
+> & alignment
+> >
+> 
