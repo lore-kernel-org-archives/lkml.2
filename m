@@ -1,79 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab0JNHmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 03:42:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37711 "EHLO hera.kernel.org"
+	id S1754893Ab0JNHma (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 03:42:30 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37725 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191Ab0JNHmK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 03:42:10 -0400
-Date: Thu, 14 Oct 2010 07:41:28 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+	id S1754191Ab0JNHm3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 03:42:29 -0400
+Date: Thu, 14 Oct 2010 07:41:51 GMT
+From: tip-bot for Randy Dunlap <randy.dunlap@oracle.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        mathieu.desnoyers@efficios.com, rusty@rustcorp.com.au,
-        ananth@in.ibm.com, masami.hiramatsu.pt@hitachi.com, tglx@linutronix.de,
+        rusty@rustcorp.com.au, tglx@linutronix.de, randy.dunlap@oracle.com,
         mingo@elte.hu
-Reply-To: ananth@in.ibm.com, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, masami.hiramatsu.pt@hitachi.com,
-        mathieu.desnoyers@efficios.com, rusty@rustcorp.com.au,
-        tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20101014031042.4100.90877.stgit@ltc236.sdl.hitachi.co.jp>
-References: <20101014031042.4100.90877.stgit@ltc236.sdl.hitachi.co.jp>
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        rusty@rustcorp.com.au, tglx@linutronix.de, randy.dunlap@oracle.com,
+        mingo@elte.hu
+In-Reply-To: <20101013110234.89b06043.randy.dunlap@oracle.com>
+References: <20101013110234.89b06043.randy.dunlap@oracle.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] kconfig/x86: Add HAVE_TEXT_POKE_SMP config for stop_machine dependency
-Message-ID: <tip-3cba11d32bb4b24c3ba257043595772df4b9c7b5@git.kernel.org>
-Git-Commit-ID: 3cba11d32bb4b24c3ba257043595772df4b9c7b5
+Subject: [tip:core/futexes] futex: Fix kernel-doc notation & typos
+Message-ID: <tip-fb62db2ba943b1683f1d7181bb2988fce4c60870@git.kernel.org>
+Git-Commit-ID: fb62db2ba943b1683f1d7181bb2988fce4c60870
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Oct 2010 07:41:29 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Oct 2010 07:41:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3cba11d32bb4b24c3ba257043595772df4b9c7b5
-Gitweb:     http://git.kernel.org/tip/3cba11d32bb4b24c3ba257043595772df4b9c7b5
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Thu, 14 Oct 2010 12:10:42 +0900
+Commit-ID:  fb62db2ba943b1683f1d7181bb2988fce4c60870
+Gitweb:     http://git.kernel.org/tip/fb62db2ba943b1683f1d7181bb2988fce4c60870
+Author:     Randy Dunlap <randy.dunlap@oracle.com>
+AuthorDate: Wed, 13 Oct 2010 11:02:34 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 14 Oct 2010 08:55:29 +0200
+CommitDate: Thu, 14 Oct 2010 08:57:35 +0200
 
-kconfig/x86: Add HAVE_TEXT_POKE_SMP config for stop_machine dependency
+futex: Fix kernel-doc notation & typos
 
-Since the text_poke_smp() definately depends on actual
-stop_machine() on smp, add that dependency to Kconfig.
+Convert futex_requeue() function parameters to use @name
+kernel-doc notation and add @fshared & @cmpval to prevent
+kernel-doc warnings.
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: 2nddept-manager@sdl.hitachi.co.jp
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-LKML-Reference: <20101014031042.4100.90877.stgit@ltc236.sdl.hitachi.co.jp>
+Add @list to struct futex_q.
+
+Fix a few typos.
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Acked-by: Rusty Russell <rusty@rustcorp.com.au>
+LKML-Reference: <20101013110234.89b06043.randy.dunlap@oracle.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/Kconfig |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ kernel/futex.c |   25 ++++++++++++++-----------
+ 1 files changed, 14 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index b431a08..c14d8b4 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -60,6 +60,7 @@ config X86
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
- 	select HAVE_ARCH_JUMP_LABEL
-+	select HAVE_TEXT_POKE_SMP
+diff --git a/kernel/futex.c b/kernel/futex.c
+index 92a31d4..9b9fda7 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -91,6 +91,7 @@ struct futex_pi_state {
  
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-@@ -2126,6 +2127,10 @@ config HAVE_ATOMIC_IOMAP
- 	def_bool y
- 	depends on X86_32
+ /**
+  * struct futex_q - The hashed futex queue entry, one per waiting task
++ * @list:		priority-sorted list of tasks waiting on this futex
+  * @task:		the task waiting on the futex
+  * @lock_ptr:		the hash bucket lock
+  * @key:		the key the futex is hashed on
+@@ -104,7 +105,7 @@ struct futex_pi_state {
+  *
+  * A futex_q has a woken state, just like tasks have TASK_RUNNING.
+  * It is considered woken when plist_node_empty(&q->list) || q->lock_ptr == 0.
+- * The order of wakup is always to make the first condition true, then
++ * The order of wakeup is always to make the first condition true, then
+  * the second.
+  *
+  * PI futexes are typically woken before they are removed from the hash list via
+@@ -295,7 +296,7 @@ void put_futex_key(int fshared, union futex_key *key)
+  * Slow path to fixup the fault we just took in the atomic write
+  * access to @uaddr.
+  *
+- * We have no generic implementation of a non destructive write to the
++ * We have no generic implementation of a non-destructive write to the
+  * user address. We know that we faulted in the atomic pagefault
+  * disabled section so we can as well avoid the #PF overhead by
+  * calling get_user_pages() right away.
+@@ -515,7 +516,7 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+ 			 */
+ 			pi_state = this->pi_state;
+ 			/*
+-			 * Userspace might have messed up non PI and PI futexes
++			 * Userspace might have messed up non-PI and PI futexes
+ 			 */
+ 			if (unlikely(!pi_state))
+ 				return -EINVAL;
+@@ -736,8 +737,8 @@ static void wake_futex(struct futex_q *q)
  
-+config HAVE_TEXT_POKE_SMP
-+	bool
-+	select STOP_MACHINE if SMP
-+
- source "net/Kconfig"
+ 	/*
+ 	 * We set q->lock_ptr = NULL _before_ we wake up the task. If
+-	 * a non futex wake up happens on another CPU then the task
+-	 * might exit and p would dereference a non existing task
++	 * a non-futex wake up happens on another CPU then the task
++	 * might exit and p would dereference a non-existing task
+ 	 * struct. Prevent this by holding a reference on p across the
+ 	 * wake up.
+ 	 */
+@@ -1131,11 +1132,13 @@ static int futex_proxy_trylock_atomic(u32 __user *pifutex,
  
- source "drivers/Kconfig"
+ /**
+  * futex_requeue() - Requeue waiters from uaddr1 to uaddr2
+- * uaddr1:	source futex user address
+- * uaddr2:	target futex user address
+- * nr_wake:	number of waiters to wake (must be 1 for requeue_pi)
+- * nr_requeue:	number of waiters to requeue (0-INT_MAX)
+- * requeue_pi:	if we are attempting to requeue from a non-pi futex to a
++ * @uaddr1:	source futex user address
++ * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
++ * @uaddr2:	target futex user address
++ * @nr_wake:	number of waiters to wake (must be 1 for requeue_pi)
++ * @nr_requeue:	number of waiters to requeue (0-INT_MAX)
++ * @cmpval:	@uaddr1 expected value (or %NULL)
++ * @requeue_pi:	if we are attempting to requeue from a non-pi futex to a
+  * 		pi futex (pi to pi requeue is not supported)
+  *
+  * Requeue waiters on uaddr1 to uaddr2. In the requeue_pi case, try to acquire
+@@ -2651,7 +2654,7 @@ static int __init futex_init(void)
+ 	 * of the complex code paths. Also we want to prevent
+ 	 * registration of robust lists in that case. NULL is
+ 	 * guaranteed to fault and we get -EFAULT on functional
+-	 * implementation, the non functional ones will return
++	 * implementation, the non-functional ones will return
+ 	 * -ENOSYS.
+ 	 */
+ 	curval = cmpxchg_futex_value_locked(NULL, 0, 0);
