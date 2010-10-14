@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab0JNIKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 04:10:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58726 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754633Ab0JNIKD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 04:10:03 -0400
-Date: Thu, 14 Oct 2010 01:10:56 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
-Message-Id: <20101014011056.a58bac55.akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754938Ab0JNISA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 04:18:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50609 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754662Ab0JNIR6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 04:17:58 -0400
+Date: Thu, 14 Oct 2010 10:11:34 +0200
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+        Maciej Sosnowski <maciej.sosnowski@intel.com>,
+        "David S. Miller" <davem@davemloft.net>, stable@kernel.org
+Subject: Re: [PATCH] dma: fix error handling on out of memory
+Message-ID: <20101014081132.GA11095@redhat.com>
+References: <20101011094416.GA3771@redhat.com>
+ <AANLkTimi4vo_trVGxO9eeaYsfnRkjweG0irCGek=75Yu@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimi4vo_trVGxO9eeaYsfnRkjweG0irCGek=75Yu@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010 17:15:04 -0700 (PDT) David Rientjes <rientjes@google.com> wrote:
-
-> ZONE_DMA is unnecessary for a large number of machines that do not
-> require addressing in the lower 16MB of memory because they do not use
-> ISA devices with 16-bit address registers (plus one page byte register).
+On Wed, Oct 13, 2010 at 05:10:25PM -0700, Dan Williams wrote:
+> On Mon, Oct 11, 2010 at 2:44 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > get_user_pages might return less pages than requested. If this happens
+> > for the first iovec in dma_pin_iovec_pages, then nr_iovecs is 0 and so
+> > dma_unpin_iovec_pages will not unpin any pages, leaking pinned memory.
+> > A similar off by one would trigger for any of the following entries.
+> >
+> > Fix by updating nr_iovecs and nr_pages in this case.
+> >
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> >
+> > Error handling in dma_pin_iovec_pages still looks wrong to me.  Am I
+> > missing something?
 > 
-> This patch allows users to disable ZONE_DMA for x86 if they know they
-> will not be using such devices with their kernel.
-> 
-> This prevents the VM from unnecessarily reserving a ratio of memory
-> (defaulting to 1/256th of system capacity) with lowmem_reserve_ratio
-> for such allocations when it will never be used.
-> 
+> Still looks wrong it what way?  You make sure that nr_iovecs is
+> incremented so that the partial page list is freed, and we only walk
+> the initialized entries in pinned_list.
 
-I wonder how hard it would be to do this at runtime, probably with a
-boot parameter.
+In that before the patch, if get_user_pages returns less pages than
+requested, we would leak pinned memory. Right?
 
-I'd be a little concerned at the effects of this on page reclaim and
-the page allocator - it might expose weird pre-existing bugs or
-inefficiencies.  But we can cross that bridge when we fall off it, I
-guess.
-
+> --
+> Dan
