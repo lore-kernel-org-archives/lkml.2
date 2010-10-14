@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755837Ab0JNTC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 15:02:27 -0400
-Received: from kroah.org ([198.145.64.141]:51165 "EHLO coco.kroah.org"
+	id S1755714Ab0JNTCZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 15:02:25 -0400
+Received: from kroah.org ([198.145.64.141]:51151 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755369Ab0JNTC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 15:02:26 -0400
-Date: Thu, 14 Oct 2010 12:01:33 -0700
+	id S1755032Ab0JNTCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 15:02:23 -0400
+Date: Thu, 14 Oct 2010 11:45:11 -0700
 From: Greg KH <greg@kroah.com>
-To: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-Cc: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH resend] Add sc16is7x2 driver
-Message-ID: <20101014190133.GB1009@kroah.com>
-References: <4CAD818B.2070603@iis.fraunhofer.de>
+To: Stanislav Brabec <sbrabec@suse.cz>
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com,
+        Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+        Andr Goddard Rosa <andre.goddard@gmail.com>,
+        Jason Wang <jason77.wang@gmail.com>, linux-serial@vger.kernel.org
+Subject: Re: [PATCH] Serial: BUGFIX: uart_resume_port has an omitted
+ condition.
+Message-ID: <20101014184511.GA17096@kroah.com>
+References: <1286949486-2446-1-git-send-email-myungjoo.ham@samsung.com>
+ <20101013062605.GB4393@suse.de>
+ <AANLkTimc-ETu4zrny=kmVRq8jnh2CDiVSqE-EXde4ioS@mail.gmail.com>
+ <1286969205.6082.700.camel@hammer.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4CAD818B.2070603@iis.fraunhofer.de>
+In-Reply-To: <1286969205.6082.700.camel@hammer.site>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 07, 2010 at 10:15:07AM +0200, Manuel Stahl wrote:
-> --- /dev/null
-> +++ b/include/linux/spi/sc16is7x2.h
-> @@ -0,0 +1,17 @@
-> +#ifndef LINUX_SPI_SC16IS752_H
-> +#define LINUX_SPI_SC16IS752_H
-> +
-> +#define SC16IS7X2_NR_GPIOS 8
-> +
-> +struct sc16is7x2_platform_data {
-> +	unsigned int	uartclk;
-> +	/* uart line number of the first channel */
-> +	unsigned	uart_base;
-> +	/* number assigned to the first GPIO */
-> +	unsigned	gpio_base;
-> +	char		*label;
-> +	/* list of GPIO names (array length = SC16IS7X2_NR_GPIOS) */
-> +	const char	*const *names;
-> +};
-> +
-> +#endif
+On Wed, Oct 13, 2010 at 01:26:45PM +0200, Stanislav Brabec wrote:
+> On Wed, 13 Oct 2010 15:38:13 +0900, MyungJoo Ham wrote:
+> > On Wed, Oct 13, 2010 at 3:26 PM, Greg KH <gregkh@suse.de> wrote:
+> > > On Wed, Oct 13, 2010 at 02:58:06PM +0900, MyungJoo Ham wrote:
+> 
+> > > Is this a regression?  If so, from what working kernel?  Or has this
+> > > always been this way?
+> > 
+> > I don't think this is a regression to the previous version. Logically,
+> > it's matching the console_stop()-console_start() pair.
+> 
+> This disparity appeared deliberately in 4547be78. If you need
+> no_console_suspend and the hardware lets the device in an undefined
+> state after resume (i. e. PXA270), you need to call subset of the
+> resume, even if the suspend counterpart was not called. Yes, I can
+> imagine that it may be a source of problems.
+> 
+> Did you try the latest patches from Jason Wang from linux-serial list?
+> 
+> > Such hang in serial and its mitigation is observed in 2.6.36 at
+> > arch/arm/mach-s5pv310 machines. In these machines, it hanged with
+> > console_suspend_enabled == 0 every time.
+> 
+> It seems that support for no_console_suspend for all devices is becoming
+> more complicated. I guess that a new driver calls (maybe "save_state"
+> and "resume_state") or support for no_console_suspend directly in
+> drivers may be useful.
 
-Why is this needed in a .h file?  What other .c file uses this define
-and structure?
+Ok, so I'm guessing that this patch is not to be applied then, correct?
 
 thanks,
 
