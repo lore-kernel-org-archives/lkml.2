@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754663Ab0JNFAi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 01:00:38 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43078 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754259Ab0JNFAh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 01:00:37 -0400
-Date: Wed, 13 Oct 2010 23:00:33 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Subject: Re: linux-next: build warning after merge of the spi tree
-Message-ID: <20101014050033.GL15286@angua.secretlab.ca>
-References: <20101014125952.e4be4c9b.sfr@canb.auug.org.au>
+	id S1754671Ab0JNFBW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 01:01:22 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56971 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754259Ab0JNFBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 01:01:21 -0400
+Message-ID: <4CB68E8A.9000008@kernel.org>
+Date: Thu, 14 Oct 2010 07:00:58 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101014125952.e4be4c9b.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+CC: Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        linux-kernel@vger.kernel.org, 2nddept-manager@sdl.hitachi.co.jp,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH -tip  3/5] Define __stop_machine when CONFIG_STOP_MACHINE=n
+References: <20101014031011.4100.32343.stgit@ltc236.sdl.hitachi.co.jp> <20101014031030.4100.34156.stgit@ltc236.sdl.hitachi.co.jp>
+In-Reply-To: <20101014031030.4100.34156.stgit@ltc236.sdl.hitachi.co.jp>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 14 Oct 2010 05:01:03 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 12:59:52PM +1100, Stephen Rothwell wrote:
-> Hi Grant,
+On 10/14/2010 05:10 AM, Masami Hiramatsu wrote:
+> Define dummy __stop_machine() function even when CONFIG_STOP_MACHINE=n.
+> This getcpu-required version of stop_machine() will be used from
+> poke_text_smp().
 > 
-> After merging the rcu tree, today's linux-next build (x86_64 allmodconfig)
-> produced this warning:
-> 
-> drivers/spi/spi_topcliff_pch.c: In function 'pch_spi_process_messages':
-> drivers/spi/spi_topcliff_pch.c:752: warning: 'data' is used uninitialized in this function
-> 
-> and, indeed it is ...
+> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Rusty Russell <rusty@rustcorp.com.au>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: linux-kernel@vger.kernel.org
 
-Oops, so it is.  I messed that up in the refactoring patch.
-Fortunately this is a new driver so it is not a regression.  I'll push
-out the fix this evening.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-g.
+Thanks.
 
-
+-- 
+tejun
