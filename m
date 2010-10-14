@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab0JNBsb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 21:48:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59592 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752277Ab0JNBsa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 21:48:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=jiJ84cBoeqrKD7mzo/RTMT+IVlq+5hfPydER5ukKmkB64GBePuYB1U5HASSL6qQLkY
-         R14iGj+0PArivm/BhYRA==
-Date: Wed, 13 Oct 2010 18:48:21 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: "H. Peter Anvin" <hpa@zytor.com>
-cc: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
-In-Reply-To: <cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
-Message-ID: <alpine.DEB.2.00.1010131832400.794@chino.kir.corp.google.com>
-References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com> <4CB64D8F.9080800@zytor.com> <alpine.DEB.2.00.1010131739010.27124@chino.kir.corp.google.com> <4CB65262.3070507@zytor.com> <alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
- <cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754031Ab0JNBui (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 21:50:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:10050 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277Ab0JNBug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 21:50:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,328,1283756400"; 
+   d="scan'208";a="616528133"
+Date: Thu, 14 Oct 2010 17:41:44 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, "Ingo Molnar" <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: linux-next: Tree for October 13
+Message-ID: <20101014174144.324a0f6b@feng-vmt>
+In-Reply-To: <20101013174740.f48e4ec2.akpm@linux-foundation.org>
+References: <20101013154522.7b087a20.sfr@canb.auug.org.au>
+	<20101013173826.f4b911b4.akpm@linux-foundation.org>
+	<4CB651A4.60205@zytor.com>
+	<20101013174740.f48e4ec2.akpm@linux-foundation.org>
+Organization: intel
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 13 Oct 2010, H. Peter Anvin wrote:
+Hi Andrew,
 
-> And the value of those additional options is what?  I'd consider adding 
-> this to the sewer pit called CONFIG_EMBEDDED (with a BUG_ON, not a 
-> warning... sheesh)
+On Thu, 14 Oct 2010 08:47:40 +0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-BUG_ON() could panic the machine which would be rather unfortunate if we 
-simply tried to load a driver that the kernel no longer supports because 
-it doesn't have DMA.  A WARN_ON() seems much more appropriate to identify 
-what the problem was.  It's not a fatal condition.
-
-> but only if there is any demonstrable value other 
-> than a trivial amount of code (kilobytes?) in exchange for a bunch of 
-> crap #ifdef.
+> On Wed, 13 Oct 2010 17:41:08 -0700
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
 > 
+> > On 10/13/2010 05:38 PM, Andrew Morton wrote:
+> > > On Wed, 13 Oct 2010 15:45:22 +1100
+> > > Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > 
+> > >> I have created today's linux-next tree at
+> > >> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> > > 
+> > > In an i386 allmodconfig build, compilation of
+> > > arch/x86/kernel/early_printk_mrst.c is emitting a call to
+> > > __this_fixmap_does_not_exist().  
+> > 
+> > Will look at it.  Do you happen to have toolchain versions?
+> > 
+> 
+> gcc-4.1.0.  Which is actually an officially banned compiler version:
+> 
+>  # if __GNUC_MINOR__ == 1 && __GNUC_PATCHLEVEL__ <= 1
+>  #  error Your version of gcc miscompiles the __weak directive
+> 
+> lazyass here needs to find a new cross-compiler.
 
-The data savings is about 1% and the text savings is about 0.1% with all 
-three options disabled:
+I just compiled with allmodconfig on X86_32 with gcc 4.4.3 (ubuntu 4.4.3-4ubuntu5)
+and X86_64 with gcc 4.4.4 (Debian 4.4.4-1), haven't see the error yet.
 
-7922297	1245500	 989600	10157397	 9afd55	vmlinux.before
-7914674	1232700	 989472	10136846	 9aad0e	vmlinux.after
 
-This is the only #ifdef necessary to make CONFIG_ZONE_DMA=n compile and 
-CONFIG_GENERIC_ISA_DMA=n would require two additional #ifdefs 
-(CONFIG_ISA_DMA_API=n would require none).  We carry this patch 
-internally, so it would be trivial to send follow-up patches that do that 
-if this patch is merged.
+Thanks,
+Feng
