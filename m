@@ -1,170 +1,750 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932225Ab0JNVRV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 17:17:21 -0400
+	id S932199Ab0JNVRg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 17:17:36 -0400
 Received: from king.tilera.com ([72.1.168.226]:52863 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932108Ab0JNVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 17:16:23 -0400
-Message-Id: <b5eba4c3f90dac04855d5ab21d81b495d3241621.1287090288.git.cmetcalf@tilera.com>
+	id S1756183Ab0JNVQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 17:16:19 -0400
+Message-Id: <c3390897f51704625ca4f69674361400d257e1c3.1287090286.git.cmetcalf@tilera.com>
 In-Reply-To: <cover.1287090280.git.cmetcalf@tilera.com>
 References: <cover.1287090280.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 14 Oct 2010 16:32:41 -0400
-Subject: [PATCH 10/14] arch/tile: enable single-step support for TILE-Gx
+Date: Thu, 14 Oct 2010 16:00:11 -0400
+Subject: [PATCH 08/14] arch/tile: add Tilera's <arch/sim.h> header as an open-source header
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Arnd Bergmann <arnd@arndb.de>
-X-OriginalArrivalTime: 14 Oct 2010 21:16:20.0418 (UTC) FILETIME=[0C0EF220:01CB6BE5]
+X-OriginalArrivalTime: 14 Oct 2010 21:16:17.0996 (UTC) FILETIME=[0A9D60C0:01CB6BE5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is not quite the complete support, since we're not yet shipping
-intvec_64.S, but it is the support relevant to the set of files we are
-currently shipping, and makes it easier to track changes between
-our internal sources and our public GIT repository.
+This change adds one of the Tilera standard <arch> headers to the set
+of headers shipped with Linux.  The <arch/sim.h> header provides
+methods for programmatically interacting with the Tilera simulator.
+
+The current <arch/sim.h> provides inline assembly for the _sim_syscall
+function, so the declaration and definition previously provided
+manually in Linux are no longer needed.  We now use the standard
+sim_validate_lines_evicted() method from <arch/sim.h> rather than
+rolling our own direct call to sim_syscall().
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/include/asm/traps.h  |    4 ++
- arch/tile/kernel/intvec_32.S   |    7 +++-
- arch/tile/kernel/single_step.c |   73 +++++++++++++++++++++++++++++++++++++++-
- arch/tile/kernel/traps.c       |    2 +-
- 4 files changed, 83 insertions(+), 3 deletions(-)
+ arch/tile/include/arch/sim.h   |  614 ++++++++++++++++++++++++++++++++++++++++
+ arch/tile/include/asm/system.h |    7 -
+ arch/tile/kernel/entry.S       |   22 --
+ arch/tile/mm/homecache.c       |   11 +-
+ 4 files changed, 617 insertions(+), 37 deletions(-)
+ create mode 100644 arch/tile/include/arch/sim.h
 
-diff --git a/arch/tile/include/asm/traps.h b/arch/tile/include/asm/traps.h
-index 432a9c1..d06e35f 100644
---- a/arch/tile/include/asm/traps.h
-+++ b/arch/tile/include/asm/traps.h
-@@ -59,4 +59,8 @@ void do_hardwall_trap(struct pt_regs *, int fault_num);
- void do_breakpoint(struct pt_regs *, int fault_num);
- 
- 
-+#ifdef __tilegx__
-+void gx_singlestep_handle(struct pt_regs *, int fault_num);
-+#endif
+diff --git a/arch/tile/include/arch/sim.h b/arch/tile/include/arch/sim.h
+new file mode 100644
+index 0000000..a2e1594
+--- /dev/null
++++ b/arch/tile/include/arch/sim.h
+@@ -0,0 +1,614 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
 +
- #endif /* _ASM_TILE_SYSCALLS_H */
-diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
-index 206dc7e..f582162 100644
---- a/arch/tile/kernel/intvec_32.S
-+++ b/arch/tile/kernel/intvec_32.S
-@@ -1472,7 +1472,12 @@ handle_ill:
- 	lw      r26, r24
- 	sw      r28, r26
- 
--	/* Clear TIF_SINGLESTEP */
-+	/*
-+	 * Clear TIF_SINGLESTEP to prevent recursion if we execute an ill.
-+	 * The normal non-arch flow redundantly clears TIF_SINGLESTEP, but we
-+	 * need to clear it here and can't really impose on all other arches.
-+	 * So what's another write between friends?
-+	 */
- 	GET_THREAD_INFO(r0)
- 
- 	addi    r1, r0, THREAD_INFO_FLAGS_OFFSET
-diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
-index 5ec4b9c..1eb3b39 100644
---- a/arch/tile/kernel/single_step.c
-+++ b/arch/tile/kernel/single_step.c
-@@ -15,7 +15,7 @@
-  * Derived from iLib's single-stepping code.
-  */
- 
--#ifndef __tilegx__   /* No support for single-step yet. */
-+#ifndef __tilegx__   /* Hardware support for single step unavailable. */
- 
- /* These functions are only used on the TILE platform */
- #include <linux/slab.h>
-@@ -660,4 +660,75 @@ void single_step_once(struct pt_regs *regs)
- 		regs->pc += 8;
- }
- 
-+#else
-+#include <linux/smp.h>
-+#include <linux/ptrace.h>
++/**
++ * @file
++ *
++ * Provides an API for controlling the simulator at runtime.
++ */
++
++/**
++ * @addtogroup arch_sim
++ * @{
++ *
++ * An API for controlling the simulator at runtime.
++ *
++ * The simulator's behavior can be modified while it is running.
++ * For example, human-readable trace output can be enabled and disabled
++ * around code of interest.
++ *
++ * There are two ways to modify simulator behavior:
++ * programmatically, by calling various sim_* functions, and
++ * interactively, by entering commands like "sim set functional true"
++ * at the tile-monitor prompt.  Typing "sim help" at that prompt provides
++ * a list of interactive commands.
++ *
++ * All interactive commands can also be executed programmatically by
++ * passing a string to the sim_command function.
++ */
++
++#ifndef __ARCH_SIM_H__
++#define __ARCH_SIM_H__
++
++#include <arch/sim_def.h>
++#include <arch/abi.h>
++
++#ifndef __ASSEMBLER__
++
 +#include <arch/spr_def.h>
 +
-+static DEFINE_PER_CPU(unsigned long, ss_saved_pc);
 +
-+
-+/*
-+ * Called directly on the occasion of an interrupt.
-+ *
-+ * If the process doesn't have single step set, then we use this as an
-+ * opportunity to turn single step off.
-+ *
-+ * It has been mentioned that we could conditionally turn off single stepping
-+ * on each entry into the kernel and rely on single_step_once to turn it
-+ * on for the processes that matter (as we already do), but this
-+ * implementation is somewhat more efficient in that we muck with registers
-+ * once on a bum interrupt rather than on every entry into the kernel.
-+ *
-+ * If SINGLE_STEP_CONTROL_K has CANCELED set, then an interrupt occurred,
-+ * so we have to run through this process again before we can say that an
-+ * instruction has executed.
-+ *
-+ * swint will set CANCELED, but it's a legitimate instruction.  Fortunately
-+ * it changes the PC.  If it hasn't changed, then we know that the interrupt
-+ * wasn't generated by swint and we'll need to run this process again before
-+ * we can say an instruction has executed.
-+ *
-+ * If either CANCELED == 0 or the PC's changed, we send out SIGTRAPs and get
-+ * on with our lives.
++/**
++ * Return true if the current program is running under a simulator,
++ * rather than on real hardware.  If running on hardware, other "sim_xxx()"
++ * calls have no useful effect.
 + */
-+
-+void gx_singlestep_handle(struct pt_regs *regs, int fault_num)
++static inline int
++sim_is_simulator(void)
 +{
-+	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	struct thread_info *info = (void *)current_thread_info();
-+	int is_single_step = test_ti_thread_flag(info, TIF_SINGLESTEP);
-+	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
-+
-+	if (is_single_step == 0) {
-+		__insn_mtspr(SPR_SINGLE_STEP_EN_K_K, 0);
-+
-+	} else if ((*ss_pc != regs->pc) ||
-+		   (!(control & SPR_SINGLE_STEP_CONTROL_1__CANCELED_MASK))) {
-+
-+		ptrace_notify(SIGTRAP);
-+		control |= SPR_SINGLE_STEP_CONTROL_1__CANCELED_MASK;
-+		control |= SPR_SINGLE_STEP_CONTROL_1__INHIBIT_MASK;
-+		__insn_mtspr(SPR_SINGLE_STEP_CONTROL_K, control);
-+	}
++  return __insn_mfspr(SPR_SIM_CONTROL) != 0;
 +}
 +
 +
-+/*
-+ * Called from need_singlestep.  Set up the control registers and the enable
-+ * register, then return back.
++/**
++ * Checkpoint the simulator state to a checkpoint file.
++ *
++ * The checkpoint file name is either the default or the name specified
++ * on the command line with "--checkpoint-file".
 + */
-+
-+void single_step_once(struct pt_regs *regs)
++static __inline void
++sim_checkpoint(void)
 +{
-+	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
-+	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
-+
-+	*ss_pc = regs->pc;
-+	control |= SPR_SINGLE_STEP_CONTROL_1__CANCELED_MASK;
-+	control |= SPR_SINGLE_STEP_CONTROL_1__INHIBIT_MASK;
-+	__insn_mtspr(SPR_SINGLE_STEP_CONTROL_K, control);
-+	__insn_mtspr(SPR_SINGLE_STEP_EN_K_K, 1 << USER_PL);
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_CHECKPOINT);
 +}
 +
- #endif /* !__tilegx__ */
-diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
-index 7826a8b..5474fc2 100644
---- a/arch/tile/kernel/traps.c
-+++ b/arch/tile/kernel/traps.c
-@@ -260,7 +260,7 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
- 		address = regs->pc;
- 		break;
- 	case INT_UNALIGN_DATA:
--#ifndef __tilegx__  /* FIXME: GX: no single-step yet */
-+#ifndef __tilegx__  /* Emulated support for single step debugging */
- 		if (unaligned_fixup >= 0) {
- 			struct single_step_state *state =
- 				current_thread_info()->step_state;
++
++/**
++ * Report whether or not various kinds of simulator tracing are enabled.
++ *
++ * @return The bitwise OR of these values:
++ *
++ * SIM_TRACE_CYCLES (--trace-cycles),
++ * SIM_TRACE_ROUTER (--trace-router),
++ * SIM_TRACE_REGISTER_WRITES (--trace-register-writes),
++ * SIM_TRACE_DISASM (--trace-disasm),
++ * SIM_TRACE_STALL_INFO (--trace-stall-info)
++ * SIM_TRACE_MEMORY_CONTROLLER (--trace-memory-controller)
++ * SIM_TRACE_L2_CACHE (--trace-l2)
++ * SIM_TRACE_LINES (--trace-lines)
++ */
++static __inline unsigned int
++sim_get_tracing(void)
++{
++  return __insn_mfspr(SPR_SIM_CONTROL) & SIM_TRACE_FLAG_MASK;
++}
++
++
++/**
++ * Turn on or off different kinds of simulator tracing.
++ *
++ * @param mask Either one of these special values:
++ *
++ * SIM_TRACE_NONE (turns off tracing),
++ * SIM_TRACE_ALL (turns on all possible tracing).
++ *
++ * or the bitwise OR of these values:
++ *
++ * SIM_TRACE_CYCLES (--trace-cycles),
++ * SIM_TRACE_ROUTER (--trace-router),
++ * SIM_TRACE_REGISTER_WRITES (--trace-register-writes),
++ * SIM_TRACE_DISASM (--trace-disasm),
++ * SIM_TRACE_STALL_INFO (--trace-stall-info)
++ * SIM_TRACE_MEMORY_CONTROLLER (--trace-memory-controller)
++ * SIM_TRACE_L2_CACHE (--trace-l2)
++ * SIM_TRACE_LINES (--trace-lines)
++ */
++static __inline void
++sim_set_tracing(unsigned int mask)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_TRACE_SPR_ARG(mask));
++}
++
++
++/**
++ * Request dumping of different kinds of simulator state.
++ *
++ * @param mask Either this special value:
++ *
++ * SIM_DUMP_ALL (dump all known state)
++ *
++ * or the bitwise OR of these values:
++ *
++ * SIM_DUMP_REGS (the register file),
++ * SIM_DUMP_SPRS (the SPRs),
++ * SIM_DUMP_ITLB (the iTLB),
++ * SIM_DUMP_DTLB (the dTLB),
++ * SIM_DUMP_L1I (the L1 I-cache),
++ * SIM_DUMP_L1D (the L1 D-cache),
++ * SIM_DUMP_L2 (the L2 cache),
++ * SIM_DUMP_SNREGS (the switch register file),
++ * SIM_DUMP_SNITLB (the switch iTLB),
++ * SIM_DUMP_SNL1I (the switch L1 I-cache),
++ * SIM_DUMP_BACKTRACE (the current backtrace)
++ */
++static __inline void
++sim_dump(unsigned int mask)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_DUMP_SPR_ARG(mask));
++}
++
++
++/**
++ * Print a string to the simulator stdout.
++ *
++ * @param str The string to be written; a newline is automatically added.
++ */
++static __inline void
++sim_print_string(const char* str)
++{
++  int i;
++  for (i = 0; str[i] != 0; i++)
++  {
++    __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_PUTC |
++                 (str[i] << _SIM_CONTROL_OPERATOR_BITS));
++  }
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_PUTC |
++               (SIM_PUTC_FLUSH_STRING << _SIM_CONTROL_OPERATOR_BITS));
++}
++
++
++/**
++ * Execute a simulator command string.
++ *
++ * Type 'sim help' at the tile-monitor prompt to learn what commands
++ * are available.  Note the use of the tile-monitor "sim" command to
++ * pass commands to the simulator.
++ *
++ * The argument to sim_command() does not include the leading "sim"
++ * prefix used at the tile-monitor prompt; for example, you might call
++ * sim_command("trace disasm").
++ */
++static __inline void
++sim_command(const char* str)
++{
++  int c;
++  do
++  {
++    c = *str++;
++    __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_COMMAND |
++                 (c << _SIM_CONTROL_OPERATOR_BITS));
++  }
++  while (c);
++}
++
++
++
++#ifndef __DOXYGEN__
++
++/**
++ * The underlying implementation of "_sim_syscall()".
++ *
++ * We use extra "and" instructions to ensure that all the values
++ * we are passing to the simulator are actually valid in the registers
++ * (i.e. returned from memory) prior to the SIM_CONTROL spr.
++ */
++static __inline int _sim_syscall0(int val)
++{
++  long result;
++  __asm__ __volatile__ ("mtspr SIM_CONTROL, r0"
++                        : "=R00" (result) : "R00" (val));
++  return result;
++}
++
++static __inline int _sim_syscall1(int val, long arg1)
++{
++  long result;
++  __asm__ __volatile__ ("{ and zero, r1, r1; mtspr SIM_CONTROL, r0 }"
++                        : "=R00" (result) : "R00" (val), "R01" (arg1));
++  return result;
++}
++
++static __inline int _sim_syscall2(int val, long arg1, long arg2)
++{
++  long result;
++  __asm__ __volatile__ ("{ and zero, r1, r2; mtspr SIM_CONTROL, r0 }"
++                        : "=R00" (result)
++                        : "R00" (val), "R01" (arg1), "R02" (arg2));
++  return result;
++}
++
++/* Note that _sim_syscall3() and higher are technically at risk of
++   receiving an interrupt right before the mtspr bundle, in which case
++   the register values for arguments 3 and up may still be in flight
++   to the core from a stack frame reload. */
++
++static __inline int _sim_syscall3(int val, long arg1, long arg2, long arg3)
++{
++  long result;
++  __asm__ __volatile__ ("{ and zero, r3, r3 };"
++                        "{ and zero, r1, r2; mtspr SIM_CONTROL, r0 }"
++                        : "=R00" (result)
++                        : "R00" (val), "R01" (arg1), "R02" (arg2),
++                          "R03" (arg3));
++  return result;
++}
++
++static __inline int _sim_syscall4(int val, long arg1, long arg2, long arg3,
++                                  long arg4)
++{
++  long result;
++  __asm__ __volatile__ ("{ and zero, r3, r4 };"
++                        "{ and zero, r1, r2; mtspr SIM_CONTROL, r0 }"
++                        : "=R00" (result)
++                        : "R00" (val), "R01" (arg1), "R02" (arg2),
++                          "R03" (arg3), "R04" (arg4));
++  return result;
++}
++
++static __inline int _sim_syscall5(int val, long arg1, long arg2, long arg3,
++                                  long arg4, long arg5)
++{
++  long result;
++  __asm__ __volatile__ ("{ and zero, r3, r4; and zero, r5, r5 };"
++                        "{ and zero, r1, r2; mtspr SIM_CONTROL, r0 }"
++                        : "=R00" (result)
++                        : "R00" (val), "R01" (arg1), "R02" (arg2),
++                          "R03" (arg3), "R04" (arg4), "R05" (arg5));
++  return result;
++}
++
++
++/**
++ * Make a special syscall to the simulator itself, if running under
++ * simulation. This is used as the implementation of other functions
++ * and should not be used outside this file.
++ *
++ * @param syscall_num The simulator syscall number.
++ * @param nr The number of additional arguments provided.
++ *
++ * @return Varies by syscall.
++ */
++#define _sim_syscall(syscall_num, nr, args...) \
++  _sim_syscall##nr( \
++    ((syscall_num) << _SIM_CONTROL_OPERATOR_BITS) | SIM_CONTROL_SYSCALL, args)
++
++
++/* Values for the "access_mask" parameters below. */
++#define SIM_WATCHPOINT_READ    1
++#define SIM_WATCHPOINT_WRITE   2
++#define SIM_WATCHPOINT_EXECUTE 4
++
++
++static __inline int
++sim_add_watchpoint(unsigned int process_id,
++                   unsigned long address,
++                   unsigned long size,
++                   unsigned int access_mask,
++                   unsigned long user_data)
++{
++  return _sim_syscall(SIM_SYSCALL_ADD_WATCHPOINT, 5, process_id,
++                     address, size, access_mask, user_data);
++}
++
++
++static __inline int
++sim_remove_watchpoint(unsigned int process_id,
++                      unsigned long address,
++                      unsigned long size,
++                      unsigned int access_mask,
++                      unsigned long user_data)
++{
++  return _sim_syscall(SIM_SYSCALL_REMOVE_WATCHPOINT, 5, process_id,
++                     address, size, access_mask, user_data);
++}
++
++
++/**
++ * Return value from sim_query_watchpoint.
++ */
++struct SimQueryWatchpointStatus
++{
++  /**
++   * 0 if a watchpoint fired, 1 if no watchpoint fired, or -1 for
++   * error (meaning a bad process_id).
++   */
++  int syscall_status;
++
++  /**
++   * The address of the watchpoint that fired (this is the address
++   * passed to sim_add_watchpoint, not an address within that range
++   * that actually triggered the watchpoint).
++   */
++  unsigned long address;
++
++  /** The arbitrary user_data installed by sim_add_watchpoint. */
++  unsigned long user_data;
++};
++
++
++static __inline struct SimQueryWatchpointStatus
++sim_query_watchpoint(unsigned int process_id)
++{
++  struct SimQueryWatchpointStatus status;
++  long val = SIM_CONTROL_SYSCALL |
++    (SIM_SYSCALL_QUERY_WATCHPOINT << _SIM_CONTROL_OPERATOR_BITS);
++  __asm__ __volatile__ ("{ and zero, r1, r1; mtspr SIM_CONTROL, r0 }"
++                        : "=R00" (status.syscall_status),
++                          "=R01" (status.address),
++                          "=R02" (status.user_data)
++                        : "R00" (val), "R01" (process_id));
++  return status;
++}
++
++
++/* On the simulator, confirm lines have been evicted everywhere. */
++static __inline void
++sim_validate_lines_evicted(unsigned long long pa, unsigned long length)
++{
++#ifdef __LP64__
++  _sim_syscall(SIM_SYSCALL_VALIDATE_LINES_EVICTED, 2, pa, length);
++#else
++  _sim_syscall(SIM_SYSCALL_VALIDATE_LINES_EVICTED, 4,
++               0 /* dummy */, (long)(pa), (long)(pa >> 32), length);
++#endif
++}
++
++
++#endif /* !__DOXYGEN__ */
++
++
++
++
++/**
++ * Modify the shaping parameters of a shim.
++ *
++ * @param shim The shim to modify. One of:
++ *   SIM_CONTROL_SHAPING_GBE_0
++ *   SIM_CONTROL_SHAPING_GBE_1
++ *   SIM_CONTROL_SHAPING_GBE_2
++ *   SIM_CONTROL_SHAPING_GBE_3
++ *   SIM_CONTROL_SHAPING_XGBE_0
++ *   SIM_CONTROL_SHAPING_XGBE_1
++ *
++ * @param type The type of shaping. This should be the same type of
++ * shaping that is already in place on the shim. One of:
++ *   SIM_CONTROL_SHAPING_MULTIPLIER
++ *   SIM_CONTROL_SHAPING_PPS
++ *   SIM_CONTROL_SHAPING_BPS
++ *
++ * @param units The magnitude of the rate. One of:
++ *   SIM_CONTROL_SHAPING_UNITS_SINGLE
++ *   SIM_CONTROL_SHAPING_UNITS_KILO
++ *   SIM_CONTROL_SHAPING_UNITS_MEGA
++ *   SIM_CONTROL_SHAPING_UNITS_GIGA
++ *
++ * @param rate The rate to which to change it. This must fit in
++ * SIM_CONTROL_SHAPING_RATE_BITS bits or a warning is issued and
++ * the shaping is not changed.
++ *
++ * @return 0 if no problems were detected in the arguments to sim_set_shaping
++ * or 1 if problems were detected (for example, rate does not fit in 17 bits).
++ */
++static __inline int
++sim_set_shaping(unsigned shim,
++                unsigned type,
++                unsigned units,
++                unsigned rate)
++{
++  if ((rate & ~((1 << SIM_CONTROL_SHAPING_RATE_BITS) - 1)) != 0)
++    return 1;
++
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_SHAPING_SPR_ARG(shim, type, units, rate));
++  return 0;
++}
++
++#ifdef __tilegx__
++
++/** Enable a set of mPIPE links.  Pass a -1 link_mask to enable all links. */
++static __inline void
++sim_enable_mpipe_links(unsigned mpipe, unsigned long link_mask)
++{
++  __insn_mtspr(SPR_SIM_CONTROL,
++               (SIM_CONTROL_ENABLE_MPIPE_LINK_MAGIC_BYTE |
++                (mpipe << 8) | (1 << 16) | ((uint_reg_t)link_mask << 32)));
++}
++
++/** Disable a set of mPIPE links.  Pass a -1 link_mask to disable all links. */
++static __inline void
++sim_disable_mpipe_links(unsigned mpipe, unsigned long link_mask)
++{
++  __insn_mtspr(SPR_SIM_CONTROL,
++               (SIM_CONTROL_ENABLE_MPIPE_LINK_MAGIC_BYTE |
++                (mpipe << 8) | (0 << 16) | ((uint_reg_t)link_mask << 32)));
++}
++
++#endif /* __tilegx__ */
++
++
++/* == An API for changing "functional" mode. */
++
++#ifndef __DOXYGEN__
++
++#define sim_enable_functional() \
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_ENABLE_FUNCTIONAL)
++
++#define sim_disable_functional() \
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_DISABLE_FUNCTIONAL)
++
++#endif /* __DOXYGEN__ */
++
++
++/* == Profiler support. */
++
++
++/**
++ * Turn profiling on for the current task.
++ *
++ * Note that this has no effect if run in an environment without
++ * profiling support (thus, the proper flags to the simulator must
++ * be supplied).
++ */
++static __inline void
++sim_profiler_enable(void)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_PROFILER_ENABLE);
++}
++
++
++/** Turn profiling off for the current task. */
++static __inline void
++sim_profiler_disable(void)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_PROFILER_DISABLE);
++}
++
++
++/**
++ * Turn profiling on or off for the current task.
++ *
++ * @param enabled If true, turns on profiling. If false, turns it off.
++ *
++ * Note that this has no effect if run in an environment without
++ * profiling support (thus, the proper flags to the simulator must
++ * be supplied).
++ */
++static __inline void
++sim_profiler_set_enabled(int enabled)
++{
++  int val =
++    enabled ? SIM_CONTROL_PROFILER_ENABLE : SIM_CONTROL_PROFILER_DISABLE;
++  __insn_mtspr(SPR_SIM_CONTROL, val);
++}
++
++
++/**
++ * Return true if and only if profiling is currently enabled
++ * for the current task.
++ *
++ * This returns false even if sim_profiler_enable() was called
++ * if the current execution environment does not support profiling.
++ */
++static __inline int
++sim_profiler_is_enabled(void)
++{
++  return ((__insn_mfspr(SPR_SIM_CONTROL) & SIM_PROFILER_ENABLED_MASK) != 0);
++}
++
++
++/**
++ * Reset profiling counters to zero for the current task.
++ *
++ * Resetting can be done while profiling is enabled.  It does not affect
++ * the chip-wide profiling counters.
++ */
++static __inline void
++sim_profiler_clear(void)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_CONTROL_PROFILER_CLEAR);
++}
++
++
++/**
++ * Enable specified chip-level profiling counters.
++ *
++ * Does not affect the per-task profiling counters.
++ *
++ * @param mask Either this special value:
++ *
++ * SIM_CHIP_ALL (enables all chip-level components).
++ *
++ * or the bitwise OR of these values:
++ *
++ * SIM_CHIP_MEMCTL (enable all memory controllers)
++ * SIM_CHIP_XAUI (enable all XAUI controllers)
++ * SIM_CHIP_MPIPE (enable all MPIPE controllers)
++ */
++static __inline void
++sim_profiler_chip_enable(unsigned int mask)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_PROFILER_CHIP_ENABLE_SPR_ARG(mask));
++}
++
++
++/**
++ * Disable specified chip-level profiling counters.
++ *
++ * Does not affect the per-task profiling counters.
++ *
++ * @param mask Either this special value:
++ *
++ * SIM_CHIP_ALL (disables all chip-level components).
++ *
++ * or the bitwise OR of these values:
++ *
++ * SIM_CHIP_MEMCTL (disable all memory controllers)
++ * SIM_CHIP_XAUI (disable all XAUI controllers)
++ * SIM_CHIP_MPIPE (disable all MPIPE controllers)
++ */
++static __inline void
++sim_profiler_chip_disable(unsigned int mask)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_PROFILER_CHIP_DISABLE_SPR_ARG(mask));
++}
++
++
++/**
++ * Reset specified chip-level profiling counters to zero.
++ *
++ * Does not affect the per-task profiling counters.
++ *
++ * @param mask Either this special value:
++ *
++ * SIM_CHIP_ALL (clears all chip-level components).
++ *
++ * or the bitwise OR of these values:
++ *
++ * SIM_CHIP_MEMCTL (clear all memory controllers)
++ * SIM_CHIP_XAUI (clear all XAUI controllers)
++ * SIM_CHIP_MPIPE (clear all MPIPE controllers)
++ */
++static __inline void
++sim_profiler_chip_clear(unsigned int mask)
++{
++  __insn_mtspr(SPR_SIM_CONTROL, SIM_PROFILER_CHIP_CLEAR_SPR_ARG(mask));
++}
++
++
++/* == Event support. */
++
++#ifndef __DOXYGEN__
++
++static __inline void
++sim_event_begin(unsigned int x)
++{
++#if defined(__tile__) && !defined(__NO_EVENT_SPR__)
++  __insn_mtspr(SPR_EVENT_BEGIN, x);
++#endif
++}
++
++static __inline void
++sim_event_end(unsigned int x)
++{
++#if defined(__tile__) && !defined(__NO_EVENT_SPR__)
++  __insn_mtspr(SPR_EVENT_END, x);
++#endif
++}
++
++#endif /* !__DOXYGEN__ */
++
++#endif /* !__ASSEMBLER__ */
++
++#endif /* !__ARCH_SIM_H__ */
++
++/** @} */
+diff --git a/arch/tile/include/asm/system.h b/arch/tile/include/asm/system.h
+index 96779c8..fb7ff95 100644
+--- a/arch/tile/include/asm/system.h
++++ b/arch/tile/include/asm/system.h
+@@ -217,13 +217,6 @@ int hardwall_deactivate(struct task_struct *task);
+ } while (0)
+ #endif
+ 
+-/* Invoke the simulator "syscall" mechanism (see arch/tile/kernel/entry.S). */
+-extern int _sim_syscall(int syscall_num, ...);
+-#define sim_syscall(syscall_num, ...) \
+-	_sim_syscall(SIM_CONTROL_SYSCALL + \
+-		((syscall_num) << _SIM_CONTROL_OPERATOR_BITS), \
+-		## __VA_ARGS__)
+-
+ /*
+  * Kernel threads can check to see if they need to migrate their
+  * stack whenever they return from a context switch; for user
+diff --git a/arch/tile/kernel/entry.S b/arch/tile/kernel/entry.S
+index 3d01383..80d13f0 100644
+--- a/arch/tile/kernel/entry.S
++++ b/arch/tile/kernel/entry.S
+@@ -25,28 +25,6 @@ STD_ENTRY(current_text_addr)
+ 	{ move r0, lr; jrp lr }
+ 	STD_ENDPROC(current_text_addr)
+ 
+-STD_ENTRY(_sim_syscall)
+-	/*
+-	 * Wait for r0-r9 to be ready (and lr on the off chance we
+-	 * want the syscall to locate its caller), then make a magic
+-	 * simulator syscall.
+-	 *
+-	 * We carefully stall until the registers are readable in case they
+-	 * are the target of a slow load, etc. so that tile-sim will
+-	 * definitely be able to read all of them inside the magic syscall.
+-	 *
+-	 * Technically this is wrong for r3-r9 and lr, since an interrupt
+-	 * could come in and restore the registers with a slow load right
+-	 * before executing the mtspr. We may need to modify tile-sim to
+-	 * explicitly stall for this case, but we do not yet have
+-	 * a way to implement such a stall.
+-	 */
+-	{ and zero, lr, r9 ; and zero, r8, r7 }
+-	{ and zero, r6, r5 ; and zero, r4, r3 }
+-	{ and zero, r2, r1 ; mtspr SIM_CONTROL, r0 }
+-	{ jrp lr }
+-	STD_ENDPROC(_sim_syscall)
+-
+ /*
+  * Implement execve().  The i386 code has a note that forking from kernel
+  * space results in no copy on write until the execve, so we should be
+diff --git a/arch/tile/mm/homecache.c b/arch/tile/mm/homecache.c
+index fb3b4a5..d78df3a 100644
+--- a/arch/tile/mm/homecache.c
++++ b/arch/tile/mm/homecache.c
+@@ -37,6 +37,8 @@
+ #include <asm/pgalloc.h>
+ #include <asm/homecache.h>
+ 
++#include <arch/sim.h>
++
+ #include "migrate.h"
+ 
+ 
+@@ -217,13 +219,6 @@ static unsigned long cache_flush_length(unsigned long length)
+ 	return (length >= CHIP_L2_CACHE_SIZE()) ? HV_FLUSH_EVICT_L2 : length;
+ }
+ 
+-/* On the simulator, confirm lines have been evicted everywhere. */
+-static void validate_lines_evicted(unsigned long pfn, size_t length)
+-{
+-	sim_syscall(SIM_SYSCALL_VALIDATE_LINES_EVICTED,
+-		    (HV_PhysAddr)pfn << PAGE_SHIFT, length);
+-}
+-
+ /* Flush a page out of whatever cache(s) it is in. */
+ void homecache_flush_cache(struct page *page, int order)
+ {
+@@ -234,7 +229,7 @@ void homecache_flush_cache(struct page *page, int order)
+ 
+ 	homecache_mask(page, pages, &home_mask);
+ 	flush_remote(pfn, length, &home_mask, 0, 0, 0, NULL, NULL, 0);
+-	validate_lines_evicted(pfn, pages * PAGE_SIZE);
++	sim_validate_lines_evicted(PFN_PHYS(pfn), pages * PAGE_SIZE);
+ }
+ 
+ 
 -- 
 1.6.5.2
 
