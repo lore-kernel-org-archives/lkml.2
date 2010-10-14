@@ -1,44 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932188Ab0JNVQe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 17:16:34 -0400
+	id S932225Ab0JNVRV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 17:17:21 -0400
 Received: from king.tilera.com ([72.1.168.226]:52863 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932176Ab0JNVQ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 17:16:28 -0400
-Message-Id: <228de98c863487232c8226656f4b8f3e799a4a7a.1287090291.git.cmetcalf@tilera.com>
+	id S932108Ab0JNVQX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 17:16:23 -0400
+Message-Id: <b5eba4c3f90dac04855d5ab21d81b495d3241621.1287090288.git.cmetcalf@tilera.com>
 In-Reply-To: <cover.1287090280.git.cmetcalf@tilera.com>
 References: <cover.1287090280.git.cmetcalf@tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 14 Oct 2010 16:50:26 -0400
-Subject: [PATCH 14/14] arch/tile: convert a BUG_ON to BUILD_BUG_ON
+Date: Thu, 14 Oct 2010 16:32:41 -0400
+Subject: [PATCH 10/14] arch/tile: enable single-step support for TILE-Gx
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Arnd Bergmann <arnd@arndb.de>
-X-OriginalArrivalTime: 14 Oct 2010 21:16:25.0387 (UTC) FILETIME=[0F0527B0:01CB6BE5]
+X-OriginalArrivalTime: 14 Oct 2010 21:16:20.0418 (UTC) FILETIME=[0C0EF220:01CB6BE5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Inspired by Akinobu Mita's cleanup work.
+This is not quite the complete support, since we're not yet shipping
+intvec_64.S, but it is the support relevant to the set of files we are
+currently shipping, and makes it easier to track changes between
+our internal sources and our public GIT repository.
 
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/kernel/setup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/tile/include/asm/traps.h  |    4 ++
+ arch/tile/kernel/intvec_32.S   |    7 +++-
+ arch/tile/kernel/single_step.c |   73 +++++++++++++++++++++++++++++++++++++++-
+ arch/tile/kernel/traps.c       |    2 +-
+ 4 files changed, 83 insertions(+), 3 deletions(-)
 
-diff --git a/arch/tile/kernel/setup.c b/arch/tile/kernel/setup.c
-index 6444a2b..f3a50e7 100644
---- a/arch/tile/kernel/setup.c
-+++ b/arch/tile/kernel/setup.c
-@@ -311,7 +311,7 @@ static void __init setup_memory(void)
- #endif
+diff --git a/arch/tile/include/asm/traps.h b/arch/tile/include/asm/traps.h
+index 432a9c1..d06e35f 100644
+--- a/arch/tile/include/asm/traps.h
++++ b/arch/tile/include/asm/traps.h
+@@ -59,4 +59,8 @@ void do_hardwall_trap(struct pt_regs *, int fault_num);
+ void do_breakpoint(struct pt_regs *, int fault_num);
  
- 	/* We are using a char to hold the cpu_2_node[] mapping */
--	BUG_ON(MAX_NUMNODES > 127);
-+	BUILD_BUG_ON(MAX_NUMNODES > 127);
  
- 	/* Discover the ranges of memory available to us */
- 	for (i = 0; ; ++i) {
++#ifdef __tilegx__
++void gx_singlestep_handle(struct pt_regs *, int fault_num);
++#endif
++
+ #endif /* _ASM_TILE_SYSCALLS_H */
+diff --git a/arch/tile/kernel/intvec_32.S b/arch/tile/kernel/intvec_32.S
+index 206dc7e..f582162 100644
+--- a/arch/tile/kernel/intvec_32.S
++++ b/arch/tile/kernel/intvec_32.S
+@@ -1472,7 +1472,12 @@ handle_ill:
+ 	lw      r26, r24
+ 	sw      r28, r26
+ 
+-	/* Clear TIF_SINGLESTEP */
++	/*
++	 * Clear TIF_SINGLESTEP to prevent recursion if we execute an ill.
++	 * The normal non-arch flow redundantly clears TIF_SINGLESTEP, but we
++	 * need to clear it here and can't really impose on all other arches.
++	 * So what's another write between friends?
++	 */
+ 	GET_THREAD_INFO(r0)
+ 
+ 	addi    r1, r0, THREAD_INFO_FLAGS_OFFSET
+diff --git a/arch/tile/kernel/single_step.c b/arch/tile/kernel/single_step.c
+index 5ec4b9c..1eb3b39 100644
+--- a/arch/tile/kernel/single_step.c
++++ b/arch/tile/kernel/single_step.c
+@@ -15,7 +15,7 @@
+  * Derived from iLib's single-stepping code.
+  */
+ 
+-#ifndef __tilegx__   /* No support for single-step yet. */
++#ifndef __tilegx__   /* Hardware support for single step unavailable. */
+ 
+ /* These functions are only used on the TILE platform */
+ #include <linux/slab.h>
+@@ -660,4 +660,75 @@ void single_step_once(struct pt_regs *regs)
+ 		regs->pc += 8;
+ }
+ 
++#else
++#include <linux/smp.h>
++#include <linux/ptrace.h>
++#include <arch/spr_def.h>
++
++static DEFINE_PER_CPU(unsigned long, ss_saved_pc);
++
++
++/*
++ * Called directly on the occasion of an interrupt.
++ *
++ * If the process doesn't have single step set, then we use this as an
++ * opportunity to turn single step off.
++ *
++ * It has been mentioned that we could conditionally turn off single stepping
++ * on each entry into the kernel and rely on single_step_once to turn it
++ * on for the processes that matter (as we already do), but this
++ * implementation is somewhat more efficient in that we muck with registers
++ * once on a bum interrupt rather than on every entry into the kernel.
++ *
++ * If SINGLE_STEP_CONTROL_K has CANCELED set, then an interrupt occurred,
++ * so we have to run through this process again before we can say that an
++ * instruction has executed.
++ *
++ * swint will set CANCELED, but it's a legitimate instruction.  Fortunately
++ * it changes the PC.  If it hasn't changed, then we know that the interrupt
++ * wasn't generated by swint and we'll need to run this process again before
++ * we can say an instruction has executed.
++ *
++ * If either CANCELED == 0 or the PC's changed, we send out SIGTRAPs and get
++ * on with our lives.
++ */
++
++void gx_singlestep_handle(struct pt_regs *regs, int fault_num)
++{
++	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
++	struct thread_info *info = (void *)current_thread_info();
++	int is_single_step = test_ti_thread_flag(info, TIF_SINGLESTEP);
++	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
++
++	if (is_single_step == 0) {
++		__insn_mtspr(SPR_SINGLE_STEP_EN_K_K, 0);
++
++	} else if ((*ss_pc != regs->pc) ||
++		   (!(control & SPR_SINGLE_STEP_CONTROL_1__CANCELED_MASK))) {
++
++		ptrace_notify(SIGTRAP);
++		control |= SPR_SINGLE_STEP_CONTROL_1__CANCELED_MASK;
++		control |= SPR_SINGLE_STEP_CONTROL_1__INHIBIT_MASK;
++		__insn_mtspr(SPR_SINGLE_STEP_CONTROL_K, control);
++	}
++}
++
++
++/*
++ * Called from need_singlestep.  Set up the control registers and the enable
++ * register, then return back.
++ */
++
++void single_step_once(struct pt_regs *regs)
++{
++	unsigned long *ss_pc = &__get_cpu_var(ss_saved_pc);
++	unsigned long control = __insn_mfspr(SPR_SINGLE_STEP_CONTROL_K);
++
++	*ss_pc = regs->pc;
++	control |= SPR_SINGLE_STEP_CONTROL_1__CANCELED_MASK;
++	control |= SPR_SINGLE_STEP_CONTROL_1__INHIBIT_MASK;
++	__insn_mtspr(SPR_SINGLE_STEP_CONTROL_K, control);
++	__insn_mtspr(SPR_SINGLE_STEP_EN_K_K, 1 << USER_PL);
++}
++
+ #endif /* !__tilegx__ */
+diff --git a/arch/tile/kernel/traps.c b/arch/tile/kernel/traps.c
+index 7826a8b..5474fc2 100644
+--- a/arch/tile/kernel/traps.c
++++ b/arch/tile/kernel/traps.c
+@@ -260,7 +260,7 @@ void __kprobes do_trap(struct pt_regs *regs, int fault_num,
+ 		address = regs->pc;
+ 		break;
+ 	case INT_UNALIGN_DATA:
+-#ifndef __tilegx__  /* FIXME: GX: no single-step yet */
++#ifndef __tilegx__  /* Emulated support for single step debugging */
+ 		if (unaligned_fixup >= 0) {
+ 			struct single_step_state *state =
+ 				current_thread_info()->step_state;
 -- 
 1.6.5.2
 
