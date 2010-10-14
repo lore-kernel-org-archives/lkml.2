@@ -1,61 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0JNQAE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 12:00:04 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:59887 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755430Ab0JNQAB convert rfc822-to-8bit (ORCPT
+	id S1755430Ab0JNQL7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 12:11:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:40857 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752038Ab0JNQL6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 12:00:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Cp+R2tXqmGVYFiZnKG/8toHfhJI5vu7RF+FQOtZOuUcsiEDx+HvaRX7tZZkn9Y6oQN
-         YgCMjt9eRJ5AZ6/0eAAFeCStkEClJ4qzHiiW95vLbdcjjU4UAZJShWAHqNG167lqFOs5
-         PUiDajVEgI3qlYfNY0RfAxvoMWted4eWWPhXI=
-MIME-Version: 1.0
-In-Reply-To: <4CB7240E.9000905@zytor.com>
-References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com>
-	<4CB64D8F.9080800@zytor.com>
-	<alpine.DEB.2.00.1010131739010.27124@chino.kir.corp.google.com>
-	<4CB65262.3070507@zytor.com>
-	<alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
-	<cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
-	<alpine.DEB.2.00.1010131832400.794@chino.kir.corp.google.com>
-	<4CB688F4.9040706@zytor.com>
-	<alpine.DEB.2.00.1010132140550.20995@chino.kir.corp.google.com>
-	<4CB7240E.9000905@zytor.com>
-Date: Thu, 14 Oct 2010 19:00:00 +0300
-X-Google-Sender-Auth: nVDeVE5ncd1Nd-TkgVW9amDMCmc
-Message-ID: <AANLkTin-VOKXe6wcwt_r3bLcS6=WYJ4EAPPUZWLbEGQF@mail.gmail.com>
-Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
-From: Pekka Enberg <penberg@kernel.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 14 Oct 2010 12:11:58 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+CC: "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "tony@atomide.com" <tony@atomide.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Thu, 14 Oct 2010 11:11:50 -0500
+Subject: RE: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+Thread-Topic: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+Thread-Index: ActrhNi6US3VTKCURXmSApcH1fLDmQANZVOQ
+Message-ID: <496565EC904933469F292DDA3F1663E602F47B37F4@dlee06.ent.ti.com>
+References: <1287023257-30951-4-git-send-email-x0095840@ti.com>
+	<20101014.094525.71092814.Hiroshi.DOYU@nokia.com>
+	<496565EC904933469F292DDA3F1663E602F3E074FB@dlee06.ent.ti.com>
+ <20101014.124710.71089824.Hiroshi.DOYU@nokia.com>
+In-Reply-To: <20101014.124710.71089824.Hiroshi.DOYU@nokia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/13/2010 09:46 PM, David Rientjes wrote:
->> I'm not running a CONFIG_EMBEDDED kernel and I'm pretty sure Casey isn't
->> either, so we'd still need to carry our own patches to change the Kconfig
->> bool line anyway.
->>
->> I'm suprised that we can't allow users who definitively know that they
->> have no hardware limitations the ability to disable ZONE_DMA.  Would a
->> strong caution in the Kconfig "help" text suffice or will you not be
->> convinced?
+ 
 
-On Thu, Oct 14, 2010 at 6:38 PM, H. Peter Anvin <hpa@zytor.com> wrote:
-> CONFIG_EMBEDDED *is* "I am a user who (think I) know what I'm doing".
-> That is *what it is* and *all it is*.
+> -----Original Message-----
+> From: Hiroshi DOYU [mailto:Hiroshi.DOYU@nokia.com] 
+> Sent: Thursday, October 14, 2010 4:47 AM
+> To: Guzman Lugo, Fernando
+> Cc: felipe.contreras@nokia.com; tony@atomide.com; 
+> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
+> linux-omap@vger.kernel.org
+> Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+> 
+> From: "ext Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+> Subject: RE: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+> Date: Thu, 14 Oct 2010 10:18:30 +0200
+> 
+> > 
+> >> ________________________________________
+> >> From: Hiroshi DOYU [Hiroshi.DOYU@nokia.com]
+> >> Sent: Thursday, October 14, 2010 1:45 AM
+> >> To: Guzman Lugo, Fernando
+> >> Cc: felipe.contreras@nokia.com; tony@atomide.com;  
+> >> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
+> >> linux-omap@vger.kernel.org
+> >> Subject: Re: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+> >> 
+> >> Hi Fernando,
+> >> 
+> >> From: ext Fernando Guzman Lugo <x0095840@ti.com>
+> >> Subject: [PATCH 3/4] iovmm: replace __iounmap with omap_iounmap
+> >> Date: Thu, 14 Oct 2010 04:27:36 +0200
+> >> 
+> >> > Omap platform is omap_iounmap function.
+> >> >
+> >> > Signed-off-by: Fernando Guzman Lugo <x0095840@ti.com>
+> >> > ---
+> >> >  arch/arm/plat-omap/iovmm.c |    2 +-
+> >> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >> >
+> >> > diff --git a/arch/arm/plat-omap/iovmm.c 
+> >> > b/arch/arm/plat-omap/iovmm.c index 93a34d9..5489ca9 100644
+> >> > --- a/arch/arm/plat-omap/iovmm.c
+> >> > +++ b/arch/arm/plat-omap/iovmm.c
+> >> > @@ -821,7 +821,7 @@ void iommu_kunmap(struct iommu *obj, u32 da)
+> >> >       struct sg_table *sgt;
+> >> >       typedef void (*func_t)(const void *);
+> >> >
+> >> > -     sgt = unmap_vm_area(obj, da, (func_t)__iounmap,
+> >> 
+> >> +       sgt = unmap_vm_area(obj, da, (func_t)iounmap,
+> >> 
+> >> Woundn't the above be enough?
+> >> 
+> >> Eventually this "iounmap()" calls "__arch_iounmap()" -> 
+> >> "omap_iounmap()". I don't see any special reason to call 
+> >> "omap_iounmap()" here for now.
+> > 
+> > iounmap and __arch_iounmap are macros they cannot not be 
+> used there. 
+> > If so, it gives a "undeclared" compile error.
+> 
+> Ok. I'll add this explanation as a note on this commit.
+> 
 
-Yup. The naming is quite unfortunate, though. Can we change it to
-something else?
+Sure, Thanks.
+
+Regards,
+Fernando.
+
