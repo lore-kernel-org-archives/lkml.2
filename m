@@ -1,110 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755196Ab0JNJGt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 05:06:49 -0400
-Received: from nwd2mail10.analog.com ([137.71.25.55]:57094 "EHLO
-	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755120Ab0JNJGb (ORCPT
+	id S1755170Ab0JNJIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 05:08:19 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:8290 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754125Ab0JNJIR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 05:06:31 -0400
-Cc: linux-kernel@vger.kernel.org, ddbua@analog.com, drivers@analog.com,
-        mike.frysinger@analog.com, chrisv@cyberswitching.com,
-        Michael Hennerich <michael.hennerich@analog.com>
-X-IronPort-AV: E=Sophos;i="4.57,329,1283745600"; 
-   d="scan'208";a="23340937"
-From: <michael.hennerich@analog.com>
-To: akpm@linux-foundation.org
-Subject: [PATCH 2/3] drivers: misc: ad525x_dpot: Fix part name typos in defines
-Date: Thu, 14 Oct 2010 10:59:47 +0200
-Message-ID: <1287046788-25122-2-git-send-email-michael.hennerich@analog.com>
-X-Mailer: git-send-email 1.6.0.2
-In-Reply-To: <1287046788-25122-1-git-send-email-michael.hennerich@analog.com>
-References: <1287046788-25122-1-git-send-email-michael.hennerich@analog.com>
+	Thu, 14 Oct 2010 05:08:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=SGmb1G2qf5ymJw1QedGjGJNfPV3Ub+21i9EeewLg6qpugc9fTZimTgUeF4xrcgjpFo
+         cAwxI8QgUxLMwxvCDOjg==
 MIME-Version: 1.0
-Content-Type: text/plain
+In-Reply-To: <1287046650.29097.159.camel@twins>
+References: <20101012074910.GA9893@in.ibm.com> <20101012075109.GC9893@in.ibm.com>
+ <1287046650.29097.159.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 14 Oct 2010 02:07:44 -0700
+Message-ID: <AANLkTin5uZdurFzJzzcHiEc6jGAt8bn9v1B0rvkUV1SB@mail.gmail.com>
+Subject: Re: [PATCH v3 2/7] sched: accumulate per-cfs_rq cpu usage
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: bharata@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Nikhil Rao <ncrao@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michael Hennerich <michael.hennerich@analog.com>
+On Thu, Oct 14, 2010 at 1:57 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-10-12 at 13:21 +0530, Bharata B Rao wrote:
+>> +static u64 tg_request_cfs_quota(struct task_group *tg)
+>> +{
+>> +       struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+>> +       u64 delta = 0;
+>> +
+>> +       if (cfs_b->runtime > 0 || cfs_b->quota == RUNTIME_INF) {
+>> +               raw_spin_lock(&cfs_b->lock);
+>> +               /*
+>> +                * it's possible a bandwidth update has changed the global
+>> +                * pool.
+>> +                */
+>> +               if (cfs_b->quota == RUNTIME_INF)
+>> +                       delta = sched_cfs_bandwidth_slice();
+>> +               else {
+>> +                       delta = min(cfs_b->runtime,
+>> +                                       sched_cfs_bandwidth_slice());
+>> +                       cfs_b->runtime -= delta;
+>> +               }
+>> +               raw_spin_unlock(&cfs_b->lock);
+>> +       }
+>> +       return delta;
+>> +}
+>
+> Since you check cfs_b->quote outside of cfs_b->lock anyway, you might as
+> well avoid taking the lock in that case and directly return slice.
+>
 
+Do you mean in the RUNTIME_INF case?
 
-Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
----
- drivers/misc/ad525x_dpot.c |   10 +++++-----
- drivers/misc/ad525x_dpot.h |   10 +++++-----
- 2 files changed, 10 insertions(+), 10 deletions(-)
+I suppose we could just avoid taking the lock there (theoretically it
+would be possible to slightly over-commit on a RUNTIME_INF =>
+constrained transition, but this should be the supremely uncommon case
+and hey, it's transitioning from unlimited bandwidth anyway).
 
-diff --git a/drivers/misc/ad525x_dpot.c b/drivers/misc/ad525x_dpot.c
-index 5e6fa84..9698c75 100644
---- a/drivers/misc/ad525x_dpot.c
-+++ b/drivers/misc/ad525x_dpot.c
-@@ -166,7 +166,7 @@ static s32 dpot_read_i2c(struct dpot_data *dpot, u8 reg)
- 	case DPOT_UID(AD5280_ID):
- 	case DPOT_UID(AD5282_ID):
- 		ctrl = ((reg & DPOT_RDAC_MASK) == DPOT_RDAC0) ?
--			0 : DPOT_AD5291_RDAC_AB;
-+			0 : DPOT_AD5282_RDAC_AB;
- 		return dpot_read_r8d8(dpot, ctrl);
- 	case DPOT_UID(AD5170_ID):
- 	case DPOT_UID(AD5171_ID):
-@@ -175,7 +175,7 @@ static s32 dpot_read_i2c(struct dpot_data *dpot, u8 reg)
- 	case DPOT_UID(AD5172_ID):
- 	case DPOT_UID(AD5173_ID):
- 		ctrl = ((reg & DPOT_RDAC_MASK) == DPOT_RDAC0) ?
--			0 : DPOT_AD5272_3_A0;
-+			0 : DPOT_AD5172_3_A0;
- 		return dpot_read_r8d8(dpot, ctrl);
- 	default:
- 		if ((reg & DPOT_REG_TOL) || (dpot->max_pos > 256))
-@@ -273,7 +273,7 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 	case DPOT_UID(AD5280_ID):
- 	case DPOT_UID(AD5282_ID):
- 		ctrl = ((reg & DPOT_RDAC_MASK) == DPOT_RDAC0) ?
--			0 : DPOT_AD5291_RDAC_AB;
-+			0 : DPOT_AD5282_RDAC_AB;
- 		return dpot_write_r8d8(dpot, ctrl, value);
- 		break;
- 	case DPOT_UID(AD5171_ID):
-@@ -289,12 +289,12 @@ static s32 dpot_write_i2c(struct dpot_data *dpot, u8 reg, u16 value)
- 	case DPOT_UID(AD5172_ID):
- 	case DPOT_UID(AD5173_ID):
- 		ctrl = ((reg & DPOT_RDAC_MASK) == DPOT_RDAC0) ?
--			0 : DPOT_AD5272_3_A0;
-+			0 : DPOT_AD5172_3_A0;
- 		if (reg & DPOT_ADDR_OTP) {
- 			tmp = dpot_read_r8d16(dpot, ctrl);
- 			if (tmp >> 14) /* Ready to Program? */
- 				return -EFAULT;
--			ctrl |= DPOT_AD5270_2_3_FUSE;
-+			ctrl |= DPOT_AD5170_2_3_FUSE;
- 		}
- 		return dpot_write_r8d8(dpot, ctrl, value);
- 		break;
-diff --git a/drivers/misc/ad525x_dpot.h b/drivers/misc/ad525x_dpot.h
-index 78b89fd..7609d49 100644
---- a/drivers/misc/ad525x_dpot.h
-+++ b/drivers/misc/ad525x_dpot.h
-@@ -166,14 +166,14 @@ enum dpot_devid {
- #define DPOT_AD5291_RDAC	0x01
- #define DPOT_AD5291_READ_RDAC	0x02
- 
--/* AD524x use special commands */
- #define DPOT_AD5291_RDAC_AB	0x80
- 
-+#define DPOT_AD5282_RDAC_AB	0x80
- #define DPOT_AD5273_FUSE	0x80
--#define DPOT_AD5270_2_3_FUSE	0x20
--#define DPOT_AD5270_2_3_OW	0x08
--#define DPOT_AD5272_3_A0	0x08
--#define DPOT_AD5270_2FUSE	0x80
-+#define DPOT_AD5170_2_3_FUSE	0x20
-+#define DPOT_AD5170_2_3_OW	0x08
-+#define DPOT_AD5172_3_A0	0x08
-+#define DPOT_AD5170_2FUSE	0x80
- 
- struct dpot_data;
- 
--- 
-1.6.0.2
+> Also, you possibly evaluate sched_cfs_bandwidth_slice() twice.
+>
 
+Separate branch no?  Should only be one evaluation.  (fwiw the min
+macro looks to cache the evaluation)
