@@ -1,89 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab0JNXmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 19:42:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12643 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753004Ab0JNXmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 19:42:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,333,1283756400"; 
-   d="scan'208";a="564048809"
-Subject: Re: [PATCH 3/4] sched: drop group_capacity to 1 only if local
- group has extra capacity
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Nikhil Rao <ncrao@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        Mike Galbraith <efault@gmx.de>, Venkatesh Pallipadi <venki@google.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <1287035281-25579-1-git-send-email-ncrao@google.com>
-References: <1286996978-7007-4-git-send-email-ncrao@google.com>
-	 <1287035281-25579-1-git-send-email-ncrao@google.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Thu, 14 Oct 2010 16:42:38 -0700
-Message-Id: <1287099758.2692.10.camel@sbsiddha-MOBL3.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1754813Ab0JNXoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 19:44:10 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:54430 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753139Ab0JNXoI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 19:44:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GkVZl15x6Cd7F5Bvbbckwsi8006Z3BRnDf54Tc7U00jjgSmS7AoiCmYb2Xixkggu25
+         fP8GCPZ9l8ssOZDlukqqAo7QwfiZT7doHl/TK5f2Qb0pWLhW5zWQ+gMk0y0WLn5n7JFW
+         TTfIVyrJqEXy3xoyMivkbcWJr30GPu06VOB6k=
+MIME-Version: 1.0
+In-Reply-To: <4CB75F05.9070505@linux.intel.com>
+References: <AANLkTinNxzktyttzEjWSUPBiOUwh+4DUL0tmP7p1UiT5@mail.gmail.com>
+	<4CB75F05.9070505@linux.intel.com>
+Date: Fri, 15 Oct 2010 01:44:08 +0200
+Message-ID: <AANLkTik5_TCXeGzTWBZzE8F0Cb2bQq-D228xDXk87rhP@mail.gmail.com>
+Subject: Re: [REGRESSION] um: rcu_sched_state detected stall on CPU 0
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: Arjan van de Ven <arjan@linux.intel.com>
+Cc: penberg@cs.helsinki.fi, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-10-13 at 22:48 -0700, Nikhil Rao wrote:
-> Resending this patch since the original patch was munged. Thanks to Mike
-> Galbraith for pointing this out.
-> 
-> When SD_PREFER_SIBLING is set on a sched domain, drop group_capacity to 1
-> only if the local group has extra capacity. For niced task balancing, we pull
-> low weight tasks away from a sched group as long as there is capacity in other
-> groups. When all other groups are saturated, we do not drop capacity of the
-> niced group down to 1. This prevents active balance from kicking out the low
-> weight threads and which hurts system utilization.
-> 
-> Signed-off-by: Nikhil Rao <ncrao@google.com>
-> ---
->  kernel/sched_fair.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 0dd1021..da0c688 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -2030,6 +2030,7 @@ struct sd_lb_stats {
->  	unsigned long this_load;
->  	unsigned long this_load_per_task;
->  	unsigned long this_nr_running;
-> +	unsigned long this_group_capacity;
->  
->  	/* Statistics of the busiest group */
->  	unsigned long max_load;
-> @@ -2546,15 +2547,18 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
->  		/*
->  		 * In case the child domain prefers tasks go to siblings
->  		 * first, lower the sg capacity to one so that we'll try
-> -		 * and move all the excess tasks away.
-> +		 * and move all the excess tasks away. We lower capacity only
-> +		 * if the local group can handle the extra capacity.
->  		 */
-> -		if (prefer_sibling)
-> +		if (prefer_sibling && !local_group &&
-> +		    sds->this_nr_running < sds->this_group_capacity)
->  			sgs.group_capacity = min(sgs.group_capacity, 1UL);
+On Thu, Oct 14, 2010 at 9:50 PM, Arjan van de Ven <arjan@linux.intel.com> wrote:
+>  On 10/14/2010 11:27 AM, richard -rw- weinberger wrote:
+>>
+>> Hi Arjan!
+>>
+>> This commit causes some problems on UML.
+>>
+> that is extremely weird.
+>>
+>> The kernel freezes after a few seconds until it gets some input.
+>> e.g: When I run top it stops refreshing the process list until i press a
+>> button.
+>
+> a slab timer change (to not be as critical) causing global timer issues....
+> that's very obviously not a problem with this patch.
+> has this been seem anywhere except UML ?
 
-Yes Nikhil. This should solve my earlier concern of SMT/MC idle
-balancing case.
+A small update:
+It seems that CONFIG_NO_HZ is broken on UML. :-(
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+CONFIG_NO_HZ + CONFIG_SLAB: works
+CONFIG_NO_HZ + CONFIG_SLAB + your patch: broken
+CONFIG_NO_HZ + CONFIG_SLUB: broken
 
->  
->  		if (local_group) {
->  			sds->this_load = sgs.avg_load;
->  			sds->this = sg;
->  			sds->this_nr_running = sgs.sum_nr_running;
-> +			sds->this_group_capacity = sgs.group_capacity;
->  			sds->this_load_per_task = sgs.sum_weighted_load;
->  		} else if (update_sd_pick_busiest(sd, sds, sg, &sgs, this_cpu)) {
->  			sds->max_load = sgs.avg_load;
+CONFIG_SLAB + your patch: works
+CONFIG_SLAB: works
+CONFIG_SLUB: works
 
+>> Messages like this appear:
+>> INFO: rcu_sched_state detected stall on CPU 0 (t=7348 jiffies)
+>>
+>> After reverting UML works fine again.
+>>
+>> commit 78b435368fcd615e695a06012cd963a556284e00
+>> Author: Arjan van de Ven<arjan@linux.intel.com>
+>> Date:   Mon Jul 19 10:59:42 2010 -0700
+>>
+>>     slab: use deferable timers for its periodic housekeeping
+>>
+>>     slab has a "once every 2 second" timer for its housekeeping.
+>>     As the number of logical processors is growing, its more and more
+>>     common that this 2 second timer becomes the primary wakeup source.
+>>
+>>     This patch turns this housekeeping timer into a deferable timer,
+>>     which means that the timer does not interrupt idle, but just runs
+>>     at the next event that wakes the cpu up.
+>>
+>>     The impact is that the timer likely runs a bit later, but during the
+>>     delay no code is running so there's not all that much reason for
+>>     a difference in housekeeping to occur because of this delay.
+>>
+>>     Signed-off-by: Arjan van de Ven<arjan@linux.intel.com>
+>>     Signed-off-by: Pekka Enberg<penberg@cs.helsinki.fi>
+>>
+>> diff --git a/mm/slab.c b/mm/slab.c
+>> index e49f8f4..29aad44 100644
+>> --- a/mm/slab.c
+>> +++ b/mm/slab.c
+>> @@ -861,7 +861,7 @@ static void __cpuinit start_cpu_timer(int cpu)
+>>          */
+>>         if (keventd_up()&&  reap_work->work.func == NULL) {
+>>                 init_reap_node(cpu);
+>> -               INIT_DELAYED_WORK(reap_work, cache_reap);
+>> +               INIT_DELAYED_WORK_DEFERRABLE(reap_work, cache_reap);
+>>                 schedule_delayed_work_on(cpu, reap_work,
+>>                                         __round_jiffies_relative(HZ,
+>> cpu));
+>>         }
+>>
+>>
+>
+>
+
+
+
+-- 
+Thanks,
+//richard
