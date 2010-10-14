@@ -1,113 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab0JNAYm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 20:24:42 -0400
-Received: from claw.goop.org ([74.207.240.146]:48918 "EHLO claw.goop.org"
+	id S1753699Ab0JNAZM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 20:25:12 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33107 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751589Ab0JNAYl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 20:24:41 -0400
-Message-ID: <4CB64DC4.6070303@goop.org>
-Date: Wed, 13 Oct 2010 17:24:36 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.4
-MIME-Version: 1.0
-To: Yinghai <yinghai@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/4] memblock related fixes for -tip
-References: <4CAA4DC1.6000104@kernel.org> <4CB4ABE2.3010300@goop.org> <4CB4CF4D.5020706@kernel.org> <4CB4F11F.4090104@goop.org> <4CB54640.4000003@kernel.org> <4CB5DEE8.2020400@goop.org> <4CB5F86C.9030900@zytor.com> <4CB6107F.4080908@goop.org> <4CB62D54.7000400@kernel.org> <4CB63D63.5040500@goop.org> <4CB63E57.2000300@zytor.com> <4CB641F7.9040103@goop.org> <3149FE7E-AE5A-496D-8D54-03224C105015@kernel.org>
-In-Reply-To: <3149FE7E-AE5A-496D-8D54-03224C105015@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752545Ab0JNAZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 20:25:11 -0400
+Subject: Re: [GIT PULL] SCSI bug fixes for 2.6.36-rc7
+From: James Bottomley <James.Bottomley@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTimUT37LfmnU8Rc0+K8r+owCp9e_VyriDHRyuuhr@mail.gmail.com>
+References: <1286977551.2969.22.camel@mulgrave.site>
+	 <AANLkTimUT37LfmnU8Rc0+K8r+owCp9e_VyriDHRyuuhr@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 13 Oct 2010 20:24:59 -0400
+Message-ID: <1287015899.10264.394.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- On 10/13/2010 05:08 PM, Yinghai wrote:
->
-> On Oct 13, 2010, at 4:34 PM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
->
->> On 10/13/2010 04:18 PM, H. Peter Anvin wrote:
->>> On 10/13/2010 04:14 PM, Jeremy Fitzhardinge wrote:
->>>> The Xen code is setting the max_pfn_mapped correctly, but it is just
->>>> being overridden by:
->>>>
->>>>    max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
->>>>
->>>> in setup_arch() - and KERNEL_IMAGE_SIZE is hard-coded to 512MB...
->>>>
->>>> How is this correct?  Does kernel/head_64.S map everything up to 512MB
->>>> or something?
->>>>
->>> Yes:
->>>        /*
->>>         * 512 MB kernel mapping. We spend a full page on this pagetable
->>>         * anyway.
->>>         *
->>>         * The kernel code+data+bss must not be bigger than that.
->>>         *
->>>         * (NOTE: at +512MB starts the module area, see MODULES_VADDR.
->>>         *  If you want to increase this then increase MODULES_VADDR
->>>         *  too.)
->>>         */
->>>        PMDS(0, __PAGE_KERNEL_LARGE_EXEC,
->>>                KERNEL_IMAGE_SIZE/PMD_SIZE)
->>>
->>> This is, however, wrong in the sense that it obviously shouldn't be
->>> getting executed on the Xen codepath.
->> I see.  head_32.S sets max_pfn_mapped for itself, so head_64.S should
->> probably do that too.  Patch below, but I haven't checked to see if it
->> fixes the original problem (but I don't see why the pagetable memory
->> allocation should be limited to the mapped region, especially if you
->> want to put it as high as possible, especially since the mm/init_64.c
->> code doesn't expect it to be mapped).
->>
->>    J
->>
->> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->> Date: Wed, 13 Oct 2010 16:31:11 -0700
->> Subject: [PATCH] x86-64: don't force max_pfn_mapped to 512MB
->>
->> head_64.S maps up to 512MB, but the Xen entry path doesn't necessarily
->> map that high.  Set max_pfn_mapped in head_64.S accordingly.  (The Xen
->> code already sets max_pfn_mapped correctly.)
->>
->> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>
->> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
->> index 239046b..b75c6f4 100644
->> --- a/arch/x86/kernel/head_64.S
->> +++ b/arch/x86/kernel/head_64.S
->> @@ -141,6 +141,8 @@ ident_complete:
->>    addq    %rbp, trampoline_level4_pgt + (511*8)(%rip)
->> #endif
->>
->> +    movq    $KERNEL_IMAGE_SIZE / PAGE_SIZE, max_pfn_mapped(%rip)
->> +
->>    /* Due to ENTRY(), sometimes the empty space gets filled with
->>     * zeros. Better take a jmp than relying on empty space being
->>     * filled with 0x90 (nop)
->> diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
->> index b11a238..c3cebfe 100644
->> --- a/arch/x86/kernel/setup.c
->> +++ b/arch/x86/kernel/setup.c
->> @@ -932,7 +932,6 @@ void __init setup_arch(char **cmdline_p)
->>        max_low_pfn = max_pfn;
->>
->>    high_memory = (void *)__va(max_pfn * PAGE_SIZE - 1) + 1;
->> -    max_pfn_mapped = KERNEL_IMAGE_SIZE >> PAGE_SHIFT;
->> #endif
->>
->>    /*
->>
-> I like this one, can you check if only this one is needed ?
+On Wed, 2010-10-13 at 16:49 -0700, Linus Torvalds wrote:
+> On Wed, Oct 13, 2010 at 6:45 AM, James Bottomley
+> <James.Bottomley@suse.de> wrote:
+> > This patch set fixes a couple of longstanding bugs in SCSI.  The VPD
+> > patch fix a possible buffer overrun in the VPD code (only tripped if the
+> > device has a huge number of VPD pages).  The other is where the status
+> > return code on our BSG interface is wrongly right shifted one place.
+> 
+> Umm. That other patch seems to be utter crap.
+> 
+> > -       hdr->device_status = status_byte(rq->errors);
+> > +       hdr->device_status = rq->errors && 0xff;
+> 
+> That's pure shit. Please look at it for one second, and don't send me
+> crap like this.
 
-It is sufficient, but I'd prefer to have both.  I don't think limiting
-the pagetable allocation to mapped memory is necessarily correct, and
-there's no harm in making the Xen code more robust (plus it cleans up a
-couple of #ifdefs).
+What's wrong with it? device_status() is an ancient SCSI-1 macro that
+dates from the time the status was left shifted by 1, which makes the
+value wrong according to the sg interface spec.  We should really remove
+it, but there's still a few ancient drivers using it.  the SG interface
+requires the full status byte, which is what the bottom most byte of
+req_errors is ... hence the change.
 
-    J
+James
+
+
