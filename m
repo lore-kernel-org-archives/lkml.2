@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab0JNTzy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 15:55:54 -0400
-Received: from mail.perches.com ([173.55.12.10]:2970 "EHLO mail.perches.com"
+	id S1755780Ab0JNUCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 16:02:10 -0400
+Received: from mail.digium.com ([216.207.245.2]:37810 "EHLO mail.digium.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755925Ab0JNTzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 15:55:52 -0400
-Subject: [PATCH net-next] drivers/net/pch_gbe: Use DEFINE_PCI_DEVICE_TABLE
-From: Joe Perches <joe@perches.com>
-To: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
-Cc: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Oct 2010 12:55:50 -0700
-Message-ID: <1287086150.1117.608.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754185Ab0JNUCJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 16:02:09 -0400
+Message-ID: <4CB76166.5050504@digium.com>
+Date: Thu, 14 Oct 2010 15:00:38 -0500
+From: Shaun Ruffell <sruffell@digium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: Venkatesh Pallipadi <venki@google.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Proper kernel irq time accounting -v4
+References: <1286237003-12406-1-git-send-email-venki@google.com>	<4CB72BF3.4030601@digium.com> <AANLkTimSZDTjA-fsMzYb_5ogEYNkZArgWMJ5Q7LPbUb-@mail.gmail.com>
+In-Reply-To: <AANLkTimSZDTjA-fsMzYb_5ogEYNkZArgWMJ5Q7LPbUb-@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use the standard macro to put this table in __devinitconst.
+On 10/14/2010 01:19 PM, Venkatesh Pallipadi wrote:
+> So, with this patchset you should see task CPU% showing only the exec
+> runtime of the task and not si time. With the upcoming change the CPU
+> times would get fixed as well. I am planning to send out the
+> "exporting through /proc/stat patchset" as incremental change once
+> this patchset gets into tip/next....
 
-Compiled, untested.
+That is what I was looking for.  I didn't know if you were thinking
+about using /proc/stat or some other mechanism.  I'll look forward to
+seeing/testing that patch.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/pch_gbe/pch_gbe_main.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/pch_gbe/pch_gbe_main.c b/drivers/net/pch_gbe/pch_gbe_main.c
-index e44644f..cf4b49d 100644
---- a/drivers/net/pch_gbe/pch_gbe_main.c
-+++ b/drivers/net/pch_gbe/pch_gbe_main.c
-@@ -2394,7 +2394,7 @@ err_disable_device:
- 	return ret;
- }
- 
--static const struct pci_device_id pch_gbe_pcidev_id[] = {
-+static DEFINE_PCI_DEVICE_TABLE(pch_gbe_pcidev_id) = {
- 	{.vendor = PCI_VENDOR_ID_INTEL,
- 	 .device = PCI_DEVICE_ID_INTEL_IOH1_GBE,
- 	 .subvendor = PCI_ANY_ID,
-
+Thanks again,
+Shaun
 
