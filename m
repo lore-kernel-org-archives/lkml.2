@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab0JNIgp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 04:36:45 -0400
-Received: from sh.osrg.net ([192.16.179.4]:46943 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754947Ab0JNIgo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 04:36:44 -0400
-Date: Thu, 14 Oct 2010 17:36:28 +0900
-To: andi@firstfloor.org
-Cc: fujita.tomonori@lab.ntt.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        minchan.kim@gmail.com
-Subject: Re: [RFC][PATCH 1/3] contigous big page allocator
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20101014072421.GA13414@basil.fritz.box>
-References: <87sk0a1sq0.fsf@basil.nowhere.org>
-	<20101014160217N.fujita.tomonori@lab.ntt.co.jp>
-	<20101014072421.GA13414@basil.fritz.box>
+	id S1755064Ab0JNI6m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 04:58:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36762 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752400Ab0JNI6l convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 04:58:41 -0400
+Subject: Re: [PATCH v3 2/7] sched: accumulate per-cfs_rq cpu usage
+From: Peter Zijlstra <peterz@infradead.org>
+To: bharata@linux.vnet.ibm.com
+Cc: linux-kernel@vger.kernel.org, Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Herbert Poetzl <herbert@13thfloor.at>, Avi Kivity <avi@redhat.com>,
+        Chris Friesen <cfriesen@nortel.com>, Paul Menage <menage@google.com>,
+        Mike Waychison <mikew@google.com>, Paul Turner <pjt@google.com>,
+        Nikhil Rao <ncrao@google.com>
+In-Reply-To: <20101012075109.GC9893@in.ibm.com>
+References: <20101012074910.GA9893@in.ibm.com>
+	 <20101012075109.GC9893@in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 14 Oct 2010 10:57:30 +0200
+Message-ID: <1287046650.29097.159.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20101014173103U.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 14 Oct 2010 17:36:29 +0900 (JST)
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 14 Oct 2010 09:24:21 +0200
-Andi Kleen <andi@firstfloor.org> wrote:
+On Tue, 2010-10-12 at 13:21 +0530, Bharata B Rao wrote:
+> +static u64 tg_request_cfs_quota(struct task_group *tg)
+> +{
+> +       struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+> +       u64 delta = 0;
+> +
+> +       if (cfs_b->runtime > 0 || cfs_b->quota == RUNTIME_INF) {
+> +               raw_spin_lock(&cfs_b->lock);
+> +               /*
+> +                * it's possible a bandwidth update has changed the global
+> +                * pool.
+> +                */
+> +               if (cfs_b->quota == RUNTIME_INF)
+> +                       delta = sched_cfs_bandwidth_slice();
+> +               else {
+> +                       delta = min(cfs_b->runtime,
+> +                                       sched_cfs_bandwidth_slice());
+> +                       cfs_b->runtime -= delta;
+> +               }
+> +               raw_spin_unlock(&cfs_b->lock);
+> +       }
+> +       return delta;
+> +} 
 
-> On Thu, Oct 14, 2010 at 04:07:12PM +0900, FUJITA Tomonori wrote:
-> > On Wed, 13 Oct 2010 09:01:43 +0200
-> > Andi Kleen <andi@firstfloor.org> wrote:
-> > 
-> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> writes:
-> > > >
-> > > > What this wants to do: 
-> > > >   allocates a contiguous chunk of pages larger than MAX_ORDER.
-> > > >   for device drivers (camera? etc..)
-> > > 
-> > > I think to really move forward you need a concrete use case
-> > > actually implemented in tree.
-> > 
-> > As already pointed out, some embeded drivers need physcailly
-> > contignous memory. Currenlty, they use hacky tricks (e.g. playing with
-> > the boot memory allocators). There are several proposals for this like
-> 
-> Are any of those in mainline? 
+Since you check cfs_b->quote outside of cfs_b->lock anyway, you might as
+well avoid taking the lock in that case and directly return slice.
 
-The tricks or the proposals?
-
-I think that at least one mainline driver in arm uses such trick but I
-can't recall the name. Better to ask on the arm mainling list. Also I
-heard that the are some out-of-tree patches about this.
-
-
-I think that any such proposal hasn't merged yet. If you are looking
-for such examples, here's one:
-
-http://lwn.net/Articles/401107/
+Also, you possibly evaluate sched_cfs_bandwidth_slice() twice.
