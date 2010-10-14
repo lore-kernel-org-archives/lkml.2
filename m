@@ -1,68 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab0JNVSA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 17:18:00 -0400
-Received: from king.tilera.com ([72.1.168.226]:52857 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756149Ab0JNVQP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 17:16:15 -0400
-Message-Id: <45123f7e74e004848da765f3182cd401a38d354d.1287090286.git.cmetcalf@tilera.com>
-In-Reply-To: <cover.1287090280.git.cmetcalf@tilera.com>
-References: <cover.1287090280.git.cmetcalf@tilera.com>
-From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Thu, 14 Oct 2010 15:16:59 -0400
-Subject: [PATCH 05/14] arch/tile: various top-level Makefile cleanups
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Arnd Bergmann <arnd@arndb.de>
-X-OriginalArrivalTime: 14 Oct 2010 21:16:14.0293 (UTC) FILETIME=[08685850:01CB6BE5]
+	id S1756213Ab0JNVSM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 17:18:12 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62155 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755567Ab0JNVSJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 17:18:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=N9zC4UFZnXMqogw8SmI8jFiF1QTjl41LVbXDLh6cOiqkYgrl+msJdF8QClJExvimOD
+         xIUhk+yu8aL6T2+54YIdwK5BlgSBsEE/LgqYTNs3J9NnFfIiugp1qR7fXgHjYyU53/OV
+         OtfD6lpwzeZtb6FmVKCelp+HXHF5BGHQLSZxE=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimKtTo=Lh6CzEHhZPLUNgU87uvw+mX+zKmxzJAB@mail.gmail.com>
+References: <AANLkTim2_St6Z9dLHaFxfcufM7gf=B_9ouYZWCb5M9KL@mail.gmail.com>
+	<AANLkTimKtTo=Lh6CzEHhZPLUNgU87uvw+mX+zKmxzJAB@mail.gmail.com>
+Date: Thu, 14 Oct 2010 14:18:08 -0700
+Message-ID: <AANLkTimm1R7JP-8QbYr1L+MMLeAWKs01wreWqtPBa_g7@mail.gmail.com>
+Subject: Re: commit 0eead9ab breaks ia64 build
+From: Tony Luck <tony.luck@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Avoid a compile failure if CONFIG_DEBUG_EXTRA_FLAGS is empty ("");
-provide an "install" hook as well as a matching archhelp target;
-and some minor whitespace cleanup.
+On Thu, Oct 14, 2010 at 2:09 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> IOW, like the attached. Does that work for you?
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- arch/tile/Makefile |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
+Yes. That works for me.
 
-diff --git a/arch/tile/Makefile b/arch/tile/Makefile
-index fd8f6bb..a700f7f 100644
---- a/arch/tile/Makefile
-+++ b/arch/tile/Makefile
-@@ -26,8 +26,9 @@ $(error Set TILERA_ROOT or CROSS_COMPILE when building $(ARCH) on $(HOST_ARCH))
-   endif
- endif
- 
--
-+ifneq ($(CONFIG_DEBUG_EXTRA_FLAGS),"")
- KBUILD_CFLAGS   += $(CONFIG_DEBUG_EXTRA_FLAGS)
-+endif
- 
- LIBGCC_PATH     := $(shell $(CC) $(KBUILD_CFLAGS) -print-libgcc-file-name)
- 
-@@ -49,6 +50,18 @@ head-y		:= arch/tile/kernel/head_$(BITS).o
- libs-y		+= arch/tile/lib/
- libs-y		+= $(LIBGCC_PATH)
- 
--
- # See arch/tile/Kbuild for content of core part of the kernel
- core-y		+= arch/tile/
-+
-+ifdef TILERA_ROOT
-+INSTALL_PATH ?= $(TILERA_ROOT)/tile/boot
-+endif
-+
-+install:
-+	install -D -m 755 vmlinux $(INSTALL_PATH)/vmlinux-$(KERNELRELEASE)
-+	install -D -m 644 .config $(INSTALL_PATH)/config-$(KERNELRELEASE)
-+	install -D -m 644 System.map $(INSTALL_PATH)/System.map-$(KERNELRELEASE)
-+
-+define archhelp
-+	echo '  install         - install kernel into $(INSTALL_PATH)'
-+endef
--- 
-1.6.5.2
+Thanks
 
+-Tony
