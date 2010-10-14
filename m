@@ -1,105 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753869Ab0JNBTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 13 Oct 2010 21:19:16 -0400
-Received: from mail30s.wh2.ocn.ne.jp ([125.206.180.198]:45222 "HELO
-	mail30s.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753205Ab0JNBTP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 13 Oct 2010 21:19:15 -0400
-From: Bruno Randolf <br1@einfach.org>
-To: kevin granade <kevin.granade@gmail.com>
-Subject: Re: [PATCH] Add generic exponentially weighted moving average function
-Date: Thu, 14 Oct 2010 10:19:23 +0900
-User-Agent: KMail/1.13.2 (Linux/2.6.32-25-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-        akpm <akpm@linux-foundation.org>
-References: <20101006093225.8739.14012.stgit@tt-desk> <AANLkTikzq-d4s83kx-RWv5_D2TN4bEDHKUqyaLo8z=5+@mail.gmail.com>
-In-Reply-To: <AANLkTikzq-d4s83kx-RWv5_D2TN4bEDHKUqyaLo8z=5+@mail.gmail.com>
+	id S1753966Ab0JNB0v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 13 Oct 2010 21:26:51 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38790 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752074Ab0JNB0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 13 Oct 2010 21:26:50 -0400
+X-User-Agent: K-9 Mail for Android
+References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com> <4CB64D8F.9080800@zytor.com> <alpine.DEB.2.00.1010131739010.27124@chino.kir.corp.google.com> <4CB65262.3070507@zytor.com> <alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010141019.23547.br1@einfach.org>
-X-SF-Loop: 1
+Content-Type: text/plain;
+ charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
+From: "H. Peter Anvin" <hpa@zytor.com>
+Date: Wed, 13 Oct 2010 18:21:48 -0700
+To: David Rientjes <rientjes@google.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Message-ID: <cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed October 13 2010 23:01:16 kevin granade wrote:
-> On Wed, Oct 6, 2010 at 4:32 AM, Bruno Randolf <br1@einfach.org> wrote:
-> > This adds a generic exponentially weighted moving average function. This
-> > implementation makes use of a structure which keeps a scaled up internal
-> > representation to reduce rounding errors.
-> > 
-> > The idea for this implementation comes from the rt2x00 driver
-> > (rt2x00link.c) and i would like to use it in several places in the
-> > mac80211 and ath5k code.
-> > 
-> > Signed-off-by: Bruno Randolf <br1@einfach.org>
-> > 
-> > --
-> > Is this the right place to add it? Who to CC:?
-> > ---
-> >  include/linux/average.h |   32 ++++++++++++++++++++++++++++++++
-> >  1 files changed, 32 insertions(+), 0 deletions(-)
-> >  create mode 100644 include/linux/average.h
-> > 
-> > diff --git a/include/linux/average.h b/include/linux/average.h
-> > new file mode 100644
-> > index 0000000..2a00d3d
-> > --- /dev/null
-> > +++ b/include/linux/average.h
-> > @@ -0,0 +1,32 @@
-> > +#ifndef _LINUX_AVERAGE_H
-> > +#define _LINUX_AVERAGE_H
-> > +
-> > +#define AVG_FACTOR     1000
-> 
-> If this is going to be general use, wouldn't it be a good feature to
-> make AVG_FACTOR adjustable?
+And the value of those additional options is what?  I'd consider adding this to the sewer pit called CONFIG_EMBEDDED (with a BUG_ON, not a warning... sheesh) but only if there is any demonstrable value other than a trivial amount of code (kilobytes?) in exchange for a bunch of crap #ifdef.
 
-Yes, could be, but how? Another argument to the function call?
-Actually AVG_FACTOR and 'samples' should stay constant for each struct, so we 
-could also store them in the struct, but that would require an inititalization 
-of the struct before we can use it.
+"David Rientjes" <rientjes@google.com> wrote:
 
-> > +
-> > +struct avg_val {
-> > +       int value;
-> > +       int internal;
-> > +};
-> 
-> This has a scaled up copy of the moving average, which reduces the
-> available range for the average to MAX_INT/(AVG_FACTOR*num_samples)
-> instead of +/- MAX_INT, is that acceptable?  Even if it is, shouldn't
-> it be documented?  For example, with num_samples = 10, it will roll
-> over to a negative value if the average exceeds 214,748.  This seems
-> like a potentially surprising outcome.
+>On Wed, 13 Oct 2010, H. Peter Anvin wrote:
+>
+>> > You can already set the lowmem_reserve_ratio via 
+>> > /proc/sys/vm/lowmem_reserve_ratio.
+>> 
+>> And why is it then so hard to put in a single line in /etc/sysctl.conf
+>> for you?
+>> 
+>
+>Because disabling CONFIG_ZONE_DMA allows for additional extensions: 
+>disabling CONFIG_GENERIC_ISA_DMA and CONFIG_ISA_DMA_API.  We've also run 
+>for a couple years without those.
+>
+>> > We've run without ZONE_DMA for a couple years because we don't have such 
+>> > hardware limitations and would appreciate the ability to disable it with a 
+>> > config option rather than hacking the kernel to get it to compile.  I'm 
+>> > sure Casey would as well as you can see in the thread "A question about 
+>> > ZONE_DMA".
+>> > 
+>> > I don't see the harm in being able to conveniently disable the zone if you 
+>> > know what you're doing.
+>> 
+>> There are going to be a lot of very strange bug reports as a result.
+>> 
+>
+>We have config options all over the kernel that change the behavior of 
+>syscalls without worrying about bug reports popping up from users who 
+>knowingly have disabled the option, I don't see this as being any 
+>different.  If you're concerned about, we could add a
+>
+>#ifndef CONFIG_ZONE_DMA
+>	WARN_ON_ONCE(gfp_mask & __GFP_DMA);
+>#endif
+>
+>in the page allocator.
 
-Yes. I'll document this in the next version of the patch. Or should I use 
-64bit for the internal representation?
-
-> > +/**
-> > + * moving_average -  Exponentially weighted moving average
-> > + * @avg: average structure
-> > + * @val: current value
-> > + * @samples: number of samples
-> > + *
-> > + * This implementation make use of a struct avg_val to prevent rounding
-> > + * errors.
-> > + */
-> > +static inline struct avg_val
-> > +moving_average(const struct avg_val avg, const int val, const int
-> > samples) +{
-> > +       struct avg_val ret;
-> > +       ret.internal = avg.internal  ?
-> > +               (((avg.internal * (samples - 1)) +
-> 
-> > +                       (val * AVG_FACTOR)) / samples) :
-> I'm not sure what the kernel standard is on this, but is it ok to have
-> this potential div/0 in a general purpose function?
-
-Samples should never be 0. But I can add a WARN_ON...
-
-bruno
+-- 
+Sent from my mobile phone.  Please pardon any lack of formatting.
