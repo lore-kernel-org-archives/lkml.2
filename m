@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab0JNQUG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 12:20:06 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57608 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755447Ab0JNQUC (ORCPT
+	id S1755662Ab0JNQUL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 12:20:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51432 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755447Ab0JNQUH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 12:20:02 -0400
-Subject: [RFC PATCH 1/3] spi/xilinx: Eliminate pdata references from common
-	code.
+	Thu, 14 Oct 2010 12:20:07 -0400
+Subject: [RFC PATCH 2/3] spi/xilinx: fold platform_driver support into main
+	body
 To: spi-devel-general@lists.sourceforge.net, richard.rojfors@mocean-labs.com,
         john.linn@xilinx.com, monstr@monstr.eu
 From: Grant Likely <grant.likely@secretlab.ca>
 Cc: linux-kernel@vger.kernel.org
-Date: Thu, 14 Oct 2010 10:19:59 -0600
-Message-ID: <20101014161959.18966.88876.stgit@localhost6.localdomain6>
+Date: Thu, 14 Oct 2010 10:20:04 -0600
+Message-ID: <20101014162004.18966.25016.stgit@localhost6.localdomain6>
 In-Reply-To: <20101014161724.18966.42340.stgit@localhost6.localdomain6>
 References: <20101014161724.18966.42340.stgit@localhost6.localdomain6>
 User-Agent: StGit/0.15
@@ -25,147 +25,262 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The current code has the OF binding modifying the platform_data
-pointer which it must not do, and the common code doesn't really need
-to use a pdata pointer.  This patch eliminates the platform_data
-references from the common part of the driver in preparation for
-merging the OF and non-OF versions.
+This patch merges the platform driver support into the main body of
+xilinx_spi.c in preparation for merging the OF and non-OF support
+code.
 
 Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/spi/xilinx_spi.c       |   14 ++++----------
- drivers/spi/xilinx_spi.h       |    2 +-
- drivers/spi/xilinx_spi_of.c    |   17 ++++-------------
- drivers/spi/xilinx_spi_pltfm.c |    4 +++-
- 4 files changed, 12 insertions(+), 25 deletions(-)
+ drivers/spi/Kconfig            |    7 ---
+ drivers/spi/Makefile           |    1 
+ drivers/spi/xilinx_spi.c       |   79 ++++++++++++++++++++++++++++--
+ drivers/spi/xilinx_spi_pltfm.c |  104 ----------------------------------------
+ 4 files changed, 73 insertions(+), 118 deletions(-)
+ delete mode 100644 drivers/spi/xilinx_spi_pltfm.c
 
+diff --git a/drivers/spi/Kconfig b/drivers/spi/Kconfig
+index 9949c25..cebe425 100644
+--- a/drivers/spi/Kconfig
++++ b/drivers/spi/Kconfig
+@@ -345,13 +345,6 @@ config SPI_XILINX_OF
+ 	help
+ 	  This is the OF driver for the SPI controller IP from the Xilinx EDK.
+ 
+-config SPI_XILINX_PLTFM
+-	tristate "Xilinx SPI controller platform device"
+-	depends on SPI_XILINX
+-	help
+-	  This is the platform driver for the SPI controller IP
+-	  from the Xilinx EDK.
+-
+ config SPI_NUC900
+ 	tristate "Nuvoton NUC900 series SPI"
+ 	depends on ARCH_W90X900 && EXPERIMENTAL
+diff --git a/drivers/spi/Makefile b/drivers/spi/Makefile
+index 557aaad..90e0e6a 100644
+--- a/drivers/spi/Makefile
++++ b/drivers/spi/Makefile
+@@ -43,7 +43,6 @@ obj-$(CONFIG_SPI_TOPCLIFF_PCH)		+= spi_topcliff_pch.o
+ obj-$(CONFIG_SPI_TXX9)			+= spi_txx9.o
+ obj-$(CONFIG_SPI_XILINX)		+= xilinx_spi.o
+ obj-$(CONFIG_SPI_XILINX_OF)		+= xilinx_spi_of.o
+-obj-$(CONFIG_SPI_XILINX_PLTFM)		+= xilinx_spi_pltfm.o
+ obj-$(CONFIG_SPI_SH_SCI)		+= spi_sh_sci.o
+ obj-$(CONFIG_SPI_SH_MSIOF)		+= spi_sh_msiof.o
+ obj-$(CONFIG_SPI_STMP3XXX)		+= spi_stmp.o
 diff --git a/drivers/spi/xilinx_spi.c b/drivers/spi/xilinx_spi.c
-index 80f2db5..efb28ba 100644
+index efb28ba..bb3b520 100644
 --- a/drivers/spi/xilinx_spi.c
 +++ b/drivers/spi/xilinx_spi.c
-@@ -351,18 +351,12 @@ static irqreturn_t xilinx_spi_irq(int irq, void *dev_id)
- }
+@@ -1,20 +1,22 @@
+ /*
+- * xilinx_spi.c
+- *
+  * Xilinx SPI controller driver (master mode only)
+  *
+  * Author: MontaVista Software, Inc.
+  *	source@mvista.com
+  *
+- * 2002-2007 (c) MontaVista Software, Inc.  This file is licensed under the
+- * terms of the GNU General Public License version 2.  This program is licensed
+- * "as is" without any warranty of any kind, whether express or implied.
++ * Copyright (c) 2010 Secret Lab Technologies, Ltd.
++ * Copyright (c) 2009 Intel Corporation
++ * 2002-2007 (c) MontaVista Software, Inc.
++
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
+  */
  
- struct spi_master *xilinx_spi_init(struct device *dev, struct resource *mem,
--	u32 irq, s16 bus_num)
-+	u32 irq, s16 bus_num, int num_cs, int little_endian, int bits_per_word)
- {
- 	struct spi_master *master;
- 	struct xilinx_spi *xspi;
--	struct xspi_platform_data *pdata = dev->platform_data;
- 	int ret;
- 
--	if (!pdata) {
--		dev_err(dev, "No platform data attached\n");
--		return NULL;
--	}
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
 -
- 	master = spi_alloc_master(dev, sizeof(struct xilinx_spi));
- 	if (!master)
- 		return NULL;
-@@ -389,21 +383,21 @@ struct spi_master *xilinx_spi_init(struct device *dev, struct resource *mem,
- 	}
- 
- 	master->bus_num = bus_num;
--	master->num_chipselect = pdata->num_chipselect;
-+	master->num_chipselect = num_cs;
- #ifdef CONFIG_OF
- 	master->dev.of_node = dev->of_node;
- #endif
- 
- 	xspi->mem = *mem;
- 	xspi->irq = irq;
--	if (pdata->little_endian) {
-+	if (little_endian) {
- 		xspi->read_fn = xspi_read32;
- 		xspi->write_fn = xspi_write32;
- 	} else {
- 		xspi->read_fn = xspi_read32_be;
- 		xspi->write_fn = xspi_write32_be;
- 	}
--	xspi->bits_per_word = pdata->bits_per_word;
-+	xspi->bits_per_word = bits_per_word;
- 	if (xspi->bits_per_word == 8) {
- 		xspi->tx_fn = xspi_tx8;
- 		xspi->rx_fn = xspi_rx8;
-diff --git a/drivers/spi/xilinx_spi.h b/drivers/spi/xilinx_spi.h
-index d211acc..d710a33 100644
---- a/drivers/spi/xilinx_spi.h
-+++ b/drivers/spi/xilinx_spi.h
-@@ -26,7 +26,7 @@
- #define XILINX_SPI_NAME "xilinx_spi"
- 
- struct spi_master *xilinx_spi_init(struct device *dev, struct resource *mem,
--	u32 irq, s16 bus_num);
-+	u32 irq, s16 bus_num, int num_cs, int little_endian, int bits_per_word);
- 
- void xilinx_spi_deinit(struct spi_master *master);
- #endif
-diff --git a/drivers/spi/xilinx_spi_of.c b/drivers/spi/xilinx_spi_of.c
-index b66c2db..c2d8ade 100644
---- a/drivers/spi/xilinx_spi_of.c
-+++ b/drivers/spi/xilinx_spi_of.c
-@@ -42,12 +42,11 @@ static int __devinit xilinx_spi_of_probe(struct platform_device *ofdev,
- 	const struct of_device_id *match)
- {
- 	struct spi_master *master;
--	struct xspi_platform_data *pdata;
- 	struct resource r_mem;
- 	struct resource r_irq;
- 	int rc = 0;
- 	const u32 *prop;
--	int len;
-+	int len, num_cs;
- 
- 	rc = of_address_to_resource(ofdev->dev.of_node, 0, &r_mem);
- 	if (rc) {
-@@ -61,21 +60,15 @@ static int __devinit xilinx_spi_of_probe(struct platform_device *ofdev,
- 		return -ENODEV;
- 	}
- 
--	ofdev->dev.platform_data =
--		kzalloc(sizeof(struct xspi_platform_data), GFP_KERNEL);
--	pdata = ofdev->dev.platform_data;
--	if (!pdata)
--		return -ENOMEM;
--
- 	/* number of slave select bits is required */
- 	prop = of_get_property(ofdev->dev.of_node, "xlnx,num-ss-bits", &len);
- 	if (!prop || len < sizeof(*prop)) {
- 		dev_warn(&ofdev->dev, "no 'xlnx,num-ss-bits' property\n");
- 		return -EINVAL;
- 	}
--	pdata->num_chipselect = *prop;
--	pdata->bits_per_word = 8;
--	master = xilinx_spi_init(&ofdev->dev, &r_mem, r_irq.start, -1);
-+	num_cs = __be32_to_cpup(prop);
-+	master = xilinx_spi_init(&ofdev->dev, &r_mem, r_irq.start, -1,
-+				 num_cs, 0, 8);
- 	if (!master)
- 		return -ENODEV;
- 
-@@ -88,8 +81,6 @@ static int __devexit xilinx_spi_remove(struct platform_device *ofdev)
- {
- 	xilinx_spi_deinit(dev_get_drvdata(&ofdev->dev));
- 	dev_set_drvdata(&ofdev->dev, 0);
--	kfree(ofdev->dev.platform_data);
--	ofdev->dev.platform_data = NULL;
- 	return 0;
++#include <linux/platform_device.h>
+ #include <linux/spi/spi.h>
+ #include <linux/spi/spi_bitbang.h>
+ #include <linux/io.h>
+@@ -456,6 +458,71 @@ void xilinx_spi_deinit(struct spi_master *master)
  }
+ EXPORT_SYMBOL(xilinx_spi_deinit);
  
-diff --git a/drivers/spi/xilinx_spi_pltfm.c b/drivers/spi/xilinx_spi_pltfm.c
-index 24debac..a16722a 100644
---- a/drivers/spi/xilinx_spi_pltfm.c
-+++ b/drivers/spi/xilinx_spi_pltfm.c
-@@ -54,7 +54,9 @@ static int __devinit xilinx_spi_probe(struct platform_device *dev)
- 	if (irq < 0)
- 		return -ENXIO;
- 
--	master = xilinx_spi_init(&dev->dev, r, irq, dev->id);
++static int __devinit xilinx_spi_probe(struct platform_device *dev)
++{
++	struct xspi_platform_data *pdata;
++	struct resource *r;
++	int irq;
++	struct spi_master *master;
++	u8 i;
++
++	pdata = dev->dev.platform_data;
++	if (!pdata)
++		return -ENODEV;
++
++	r = platform_get_resource(dev, IORESOURCE_MEM, 0);
++	if (!r)
++		return -ENODEV;
++
++	irq = platform_get_irq(dev, 0);
++	if (irq < 0)
++		return -ENXIO;
++
 +	master = xilinx_spi_init(&dev->dev, r, irq, dev->id,
 +				 pdata->num_chipselect, pdata->little_endian,
 +				 pdata->bits_per_word);
- 	if (!master)
- 		return -ENODEV;
- 
++	if (!master)
++		return -ENODEV;
++
++	for (i = 0; i < pdata->num_devices; i++)
++		spi_new_device(master, pdata->devices + i);
++
++	platform_set_drvdata(dev, master);
++	return 0;
++}
++
++static int __devexit xilinx_spi_remove(struct platform_device *dev)
++{
++	xilinx_spi_deinit(platform_get_drvdata(dev));
++	platform_set_drvdata(dev, 0);
++
++	return 0;
++}
++
++/* work with hotplug and coldplug */
++MODULE_ALIAS("platform:" XILINX_SPI_NAME);
++
++static struct platform_driver xilinx_spi_driver = {
++	.probe = xilinx_spi_probe,
++	.remove = __devexit_p(xilinx_spi_remove),
++	.driver = {
++		.name = XILINX_SPI_NAME,
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init xilinx_spi_pltfm_init(void)
++{
++	return platform_driver_register(&xilinx_spi_driver);
++}
++module_init(xilinx_spi_pltfm_init);
++
++static void __exit xilinx_spi_pltfm_exit(void)
++{
++	platform_driver_unregister(&xilinx_spi_driver);
++}
++module_exit(xilinx_spi_pltfm_exit);
++
+ MODULE_AUTHOR("MontaVista Software, Inc. <source@mvista.com>");
+ MODULE_DESCRIPTION("Xilinx SPI driver");
+ MODULE_LICENSE("GPL");
+diff --git a/drivers/spi/xilinx_spi_pltfm.c b/drivers/spi/xilinx_spi_pltfm.c
+deleted file mode 100644
+index a16722a..0000000
+--- a/drivers/spi/xilinx_spi_pltfm.c
++++ /dev/null
+@@ -1,104 +0,0 @@
+-/*
+- * Support for Xilinx SPI platform devices
+- * Copyright (c) 2009 Intel Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify
+- * it under the terms of the GNU General Public License version 2 as
+- * published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope that it will be useful,
+- * but WITHOUT ANY WARRANTY; without even the implied warranty of
+- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+- * GNU General Public License for more details.
+- *
+- * You should have received a copy of the GNU General Public License
+- * along with this program; if not, write to the Free Software
+- * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+- */
+-
+-/* Supports:
+- * Xilinx SPI devices as platform devices
+- *
+- * Inspired by xilinx_spi.c, 2002-2007 (c) MontaVista Software, Inc.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/init.h>
+-#include <linux/interrupt.h>
+-#include <linux/io.h>
+-#include <linux/platform_device.h>
+-
+-#include <linux/spi/spi.h>
+-#include <linux/spi/spi_bitbang.h>
+-#include <linux/spi/xilinx_spi.h>
+-
+-#include "xilinx_spi.h"
+-
+-static int __devinit xilinx_spi_probe(struct platform_device *dev)
+-{
+-	struct xspi_platform_data *pdata;
+-	struct resource *r;
+-	int irq;
+-	struct spi_master *master;
+-	u8 i;
+-
+-	pdata = dev->dev.platform_data;
+-	if (!pdata)
+-		return -ENODEV;
+-
+-	r = platform_get_resource(dev, IORESOURCE_MEM, 0);
+-	if (!r)
+-		return -ENODEV;
+-
+-	irq = platform_get_irq(dev, 0);
+-	if (irq < 0)
+-		return -ENXIO;
+-
+-	master = xilinx_spi_init(&dev->dev, r, irq, dev->id,
+-				 pdata->num_chipselect, pdata->little_endian,
+-				 pdata->bits_per_word);
+-	if (!master)
+-		return -ENODEV;
+-
+-	for (i = 0; i < pdata->num_devices; i++)
+-		spi_new_device(master, pdata->devices + i);
+-
+-	platform_set_drvdata(dev, master);
+-	return 0;
+-}
+-
+-static int __devexit xilinx_spi_remove(struct platform_device *dev)
+-{
+-	xilinx_spi_deinit(platform_get_drvdata(dev));
+-	platform_set_drvdata(dev, 0);
+-
+-	return 0;
+-}
+-
+-/* work with hotplug and coldplug */
+-MODULE_ALIAS("platform:" XILINX_SPI_NAME);
+-
+-static struct platform_driver xilinx_spi_driver = {
+-	.probe	= xilinx_spi_probe,
+-	.remove	= __devexit_p(xilinx_spi_remove),
+-	.driver = {
+-		.name = XILINX_SPI_NAME,
+-		.owner = THIS_MODULE,
+-	},
+-};
+-
+-static int __init xilinx_spi_pltfm_init(void)
+-{
+-	return platform_driver_register(&xilinx_spi_driver);
+-}
+-module_init(xilinx_spi_pltfm_init);
+-
+-static void __exit xilinx_spi_pltfm_exit(void)
+-{
+-	platform_driver_unregister(&xilinx_spi_driver);
+-}
+-module_exit(xilinx_spi_pltfm_exit);
+-
+-MODULE_AUTHOR("Mocean Laboratories <info@mocean-labs.com>");
+-MODULE_DESCRIPTION("Xilinx SPI platform driver");
+-MODULE_LICENSE("GPL v2");
 
