@@ -1,53 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755660Ab0JNROk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 13:14:40 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46278 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755566Ab0JNROi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 13:14:38 -0400
-Date: Thu, 14 Oct 2010 10:13:13 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Daniel Drake <dsd@laptop.org>,
-        akpm <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        x86@kernel.org
-Subject: [PATCH -next] x86: olpc-xo1 uses/depends on PCI
-Message-Id: <20101014101313.adf7eb2a.randy.dunlap@oracle.com>
-In-Reply-To: <20101014152642.ef280a33.sfr@canb.auug.org.au>
-References: <20101014152642.ef280a33.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755707Ab0JNRPM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 13:15:12 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:48463 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753129Ab0JNRPK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 13:15:10 -0400
+Date: Thu, 14 Oct 2010 12:15:04 -0500
+From: Robin Holt <holt@sgi.com>
+To: Davide Libenzi <davidel@xmailserver.org>
+Cc: Robin Holt <holt@sgi.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch] Convert max_user_watches to long.
+Message-ID: <20101014171504.GA14068@sgi.com>
+References: <20101001200143.GR14064@sgi.com>
+ <alpine.DEB.2.00.1010011335400.2305@ubuntu>
+ <m1vd5ll2hl.fsf@fess.ebiederm.org>
+ <alpine.DEB.2.00.1010020701320.1564@davide-laptop>
+ <20101004194411.GT14068@sgi.com>
+ <alpine.DEB.2.00.1010051841050.1941@ubuntu>
+ <20101009075002.GW14068@sgi.com>
+ <alpine.DEB.2.00.1010102148430.4151@davide-laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1010102148430.4151@davide-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Sun, Oct 10, 2010 at 09:49:58PM -0700, Davide Libenzi wrote:
+> On Sat, 9 Oct 2010, Robin Holt wrote:
+> 
+> > @@ -900,11 +902,12 @@ static int ep_insert(struct eventpoll *e
+> >  {
+> >  	int error, revents, pwake = 0;
+> >  	unsigned long flags;
+> > +	long user_watches;
+> >  	struct epitem *epi;
+> >  	struct ep_pqueue epq;
+> >  
+> > -	if (unlikely(atomic_read(&ep->user->epoll_watches) >=
+> > -		     max_user_watches))
+> > +	user_watches = atomic_long_read(&ep->user->epoll_watches);
+> > +	if (user_watches >= max_user_watches)
+> >  		return -ENOSPC;
+> 
+> Is there a particular reason for adding an extra, otherwise unused, 
+> user_watches variable?
 
-olpc-xo1 uses pci_*() interfaces so it should depend on PCI.
+Keeps the line length and readability complaints down.  No other
+reason.
 
-arch/x86/kernel/olpc-xo1.c:65: error: implicit declaration of function 'pci_enable_device_io'
-arch/x86/kernel/olpc-xo1.c:71: error: implicit declaration of function 'pci_request_region'
-arch/x86/kernel/olpc-xo1.c:80: error: implicit declaration of function 'pci_release_region'
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Daniel Drake <dsd@laptop.org>
----
- arch/x86/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20101014.orig/arch/x86/Kconfig
-+++ linux-next-20101014/arch/x86/Kconfig
-@@ -2018,7 +2018,7 @@ config OLPC
- 
- config OLPC_XO1
- 	tristate "OLPC XO-1 support"
--	depends on OLPC
-+	depends on OLPC && PCI
- 	---help---
- 	  Add support for non-essential features of the OLPC XO-1 laptop.
- 
+Robin
