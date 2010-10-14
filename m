@@ -1,89 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab0JNVcD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 17:32:03 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48564 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab0JNVcB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 17:32:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=x90f1FC3tIVGUlrh1aqOjkChXsT9mUCyArN2lJQGzkqHeRHf/EPxlvLsw83roFqKix
-         MUm7bST8ZgflhM1hTlTKy8SSwThM9d0SWtoTswdDtu51iPbTaPzahZHyZ+UqgjmDpgb8
-         mszgYOqV4CMjql88Dyjdx8DtytQ9X+96QcT3E=
-Subject: Re: Results of my work on memorystick subsystem
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <8497.77981.qm@web37601.mail.mud.yahoo.com>
-References: <8497.77981.qm@web37601.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Oct 2010 23:01:12 +0200
-Message-ID: <1287090073.4301.20.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S932162Ab0JNVdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 17:33:31 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:47076 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932081Ab0JNVda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 17:33:30 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: stefano.stabellini@eu.citrix.com
+Subject: Re: [PATCH v4 4/7] acpi: use indirect call to register gsi in different modes
+Date: Thu, 14 Oct 2010 23:32:35 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        jeremy@goop.org, konrad.wilk@oracle.com,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+References: <alpine.DEB.2.00.1010121121160.2423@kaball-desktop> <1286901289-8156-4-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1286901289-8156-4-git-send-email-stefano.stabellini@eu.citrix.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201010142332.35224.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-14 at 01:00 -0700, Alex Dubov wrote:
-> > From: Maxim Levitsky <maximlevitsky@gmail.com>
-> > 
-> > and patch #6 contines adds even more cleanups, and makes
-> > whole
-> > memctick subsystem look nice and clean.
-> > Many non obivous functions were removen.
+On Tuesday, October 12, 2010, stefano.stabellini@eu.citrix.com wrote:
+> From: Jeremy Fitzhardinge <jeremy@goop.org>
 > 
-> Replacing functional state handlers with nasty 3-page long switches on
-> undiscriminated integer state variables does not count either "cleaner"
-> nor "more obvious" in my notebook.
-Yes it is.
-In the original state machines, the switch value was a TPC that was
-already sent, and therefore it usually wasn't related to code inside
-switch block.
-In addition to that if one tries to send same TPC and treat it
-differently he is for a big surprise.
-With my scheme the states are clearly marked.
-
-'nasty 3-page long switches' - what are you taking about?
-h_mspro_block_transfer_data - 89 lines before
-h_mspro_block_transfer_data - 129 lines after
-
-Sure the new handler is a bit longer, but I moved there a chunk of
-request processing code, so that mspro_block_issue_req and
-mspro_block_complete_req
-do now one thing only and used only for block requests.
-
+> Rather than using a tree of conditionals, use function pointer
+> for acpi_register_gsi.
 > 
-> This is a matter of personal preference, I suppose.
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+
+Looks good to me.
+
+Thanks,
+Rafael
+
+
+> ---
+>  arch/x86/kernel/acpi/boot.c |   59 ++++++++++++++++++++++++++++++------------
+>  1 files changed, 42 insertions(+), 17 deletions(-)
 > 
-> Yet, at the very least, you should define an appropriate enum and give
-> your states readable names.
-I didn't use a enum on purpose.
-This allows me to go to previous/next state by doing card->state++ or
-card->state--;
-enum will hide the numeric values and thus make this dangerous.
-I explicitly jump to a state very rarely, and it is obvious from code
-when I do so.
-Also states are private to each state machine, so it is easy to locate a
-state within it.
-
-Since I introduced the helpers to read/write the regs which make code
-simpler and safer (less assumptions about what current window is)
-and function to read the INT register which removes a chunk of redundant
-code (and a goto), and most importantly guard against infinite INT poll
-(which can happen with old code), I can't really use a TPC switch
-anyway.
-
-
-And what I had to go through to understand the
-mspro_block_read_attributes....
-
-Best regards,
-	Maxim Levitsky
+> diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
+> index c05872a..031f0c2 100644
+> --- a/arch/x86/kernel/acpi/boot.c
+> +++ b/arch/x86/kernel/acpi/boot.c
+> @@ -513,35 +513,61 @@ int acpi_isa_irq_to_gsi(unsigned isa_irq, u32 *gsi)
+>  	return 0;
+>  }
+>  
+> -/*
+> - * success: return IRQ number (>=0)
+> - * failure: return < 0
+> - */
+> -int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+> +static int acpi_register_gsi_pic(struct device *dev, u32 gsi,
+> +				 int trigger, int polarity)
+>  {
+> -	unsigned int irq;
+> -	unsigned int plat_gsi = gsi;
+> -
+>  #ifdef CONFIG_PCI
+>  	/*
+>  	 * Make sure all (legacy) PCI IRQs are set as level-triggered.
+>  	 */
+> -	if (acpi_irq_model == ACPI_IRQ_MODEL_PIC) {
+> -		if (trigger == ACPI_LEVEL_SENSITIVE)
+> -			eisa_set_level_irq(gsi);
+> -	}
+> +	if (trigger == ACPI_LEVEL_SENSITIVE)
+> +		eisa_set_level_irq(gsi);
+>  #endif
+>  
+> +	return gsi;
+> +}
+> +
+> +static int acpi_register_gsi_ioapic(struct device *dev, u32 gsi,
+> +				    int trigger, int polarity)
+> +{
+>  #ifdef CONFIG_X86_IO_APIC
+> -	if (acpi_irq_model == ACPI_IRQ_MODEL_IOAPIC) {
+> -		plat_gsi = mp_register_gsi(dev, gsi, trigger, polarity);
+> -	}
+> +	gsi = mp_register_gsi(dev, gsi, trigger, polarity);
+>  #endif
+> +
+> +	return gsi;
+> +}
+> +
+> +static int (*__acpi_register_gsi)(struct device *dev, u32 gsi, int trigger, int polarity) = acpi_register_gsi_pic;
+> +
+> +/*
+> + * success: return IRQ number (>=0)
+> + * failure: return < 0
+> + */
+> +int acpi_register_gsi(struct device *dev, u32 gsi, int trigger, int polarity)
+> +{
+> +	unsigned int irq;
+> +	unsigned int plat_gsi = gsi;
+> +
+> +	plat_gsi = (*__acpi_register_gsi)(dev, gsi, trigger, polarity);
+>  	irq = gsi_to_irq(plat_gsi);
+>  
+>  	return irq;
+>  }
+>  
+> +void __init acpi_set_irq_model_pic(void)
+> +{
+> +	acpi_irq_model = ACPI_IRQ_MODEL_PIC;
+> +	__acpi_register_gsi = acpi_register_gsi_pic;
+> +	acpi_ioapic = 0;
+> +}
+> +
+> +void __init acpi_set_irq_model_ioapic(void)
+> +{
+> +	acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+> +	__acpi_register_gsi = acpi_register_gsi_ioapic;
+> +	acpi_ioapic = 1;
+> +}
+> +
+>  /*
+>   *  ACPI based hotplug support for CPU
+>   */
+> @@ -1259,8 +1285,7 @@ static void __init acpi_process_madt(void)
+>  			 */
+>  			error = acpi_parse_madt_ioapic_entries();
+>  			if (!error) {
+> -				acpi_irq_model = ACPI_IRQ_MODEL_IOAPIC;
+> -				acpi_ioapic = 1;
+> +				acpi_set_irq_model_ioapic();
+>  
+>  				smp_found_config = 1;
+>  			}
+> 
 
