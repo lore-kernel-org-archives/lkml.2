@@ -1,117 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755776Ab0JNRkb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 13:40:31 -0400
-Received: from mtagate6.de.ibm.com ([195.212.17.166]:49197 "EHLO
-	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab0JNRka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 13:40:30 -0400
-Subject: [PATCH] mutex: Introduce mutex_cpu_relax()
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Reply-To: gerald.schaefer@de.ibm.com
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        linux-s390 <linux-s390@vger.kernel.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-In-Reply-To: <1287077465.8344.47.camel@thinkpad>
-References: <1287070392.8344.15.camel@thinkpad>
-	 <1287071960.29097.284.camel@twins>  <1287077465.8344.47.camel@thinkpad>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 14 Oct 2010 19:40:25 +0200
-Message-ID: <1287078025.8344.56.camel@thinkpad>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755792Ab0JNRpI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 13:45:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58024 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754010Ab0JNRpH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 13:45:07 -0400
+Message-ID: <4CB7418C.7010505@zytor.com>
+Date: Thu, 14 Oct 2010 10:44:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.9) Gecko/20100921 Fedora/3.1.4-1.fc13 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: Pekka Enberg <penberg@kernel.org>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Casey Dahlin <cdahlin@redhat.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch] x86: allow ZONE_DMA to be configurable
+References: <alpine.DEB.2.00.1010131713160.24646@chino.kir.corp.google.com>	<4CB64D8F.9080800@zytor.com>	<alpine.DEB.2.00.1010131739010.27124@chino.kir.corp.google.com>	<4CB65262.3070507@zytor.com>	<alpine.DEB.2.00.1010131744540.27124@chino.kir.corp.google.com>	<cbd8b37e-a1a3-4275-8acb-a76476211366@email.android.com>	<alpine.DEB.2.00.1010131832400.794@chino.kir.corp.google.com>	<4CB688F4.9040706@zytor.com>	<alpine.DEB.2.00.1010132140550.20995@chino.kir.corp.google.com>	<4CB7240E.9000905@zytor.com> <AANLkTin-VOKXe6wcwt_r3bLcS6=WYJ4EAPPUZWLbEGQF@mail.gmail.com>
+In-Reply-To: <AANLkTin-VOKXe6wcwt_r3bLcS6=WYJ4EAPPUZWLbEGQF@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+On 10/14/2010 09:00 AM, Pekka Enberg wrote:
+> On 10/13/2010 09:46 PM, David Rientjes wrote:
+>>> I'm not running a CONFIG_EMBEDDED kernel and I'm pretty sure Casey isn't
+>>> either, so we'd still need to carry our own patches to change the Kconfig
+>>> bool line anyway.
+>>>
+>>> I'm suprised that we can't allow users who definitively know that they
+>>> have no hardware limitations the ability to disable ZONE_DMA.  Would a
+>>> strong caution in the Kconfig "help" text suffice or will you not be
+>>> convinced?
+> 
+> On Thu, Oct 14, 2010 at 6:38 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>> CONFIG_EMBEDDED *is* "I am a user who (think I) know what I'm doing".
+>> That is *what it is* and *all it is*.
+> 
+> Yup. The naming is quite unfortunate, though. Can we change it to
+> something else?
+> 
 
-The spinning mutex implementation uses cpu_relax() in busy loops as a
-compiler barrier. Depending on the architecture, cpu_relax() may do more
-than needed in this specific mutex spin loops. On System z we also give
-up the time slice of the virtual cpu in cpu_relax(), which prevents
-effective spinning on the mutex.
+Funny, this seems to come up repeatedly ;)
 
-This patch replaces cpu_relax() in the spinning mutex code with a new
-function mutex_cpu_relax(), which can be defined by each architecture
-that selects HAVE_MUTEX_CPU_RELAX. The default is still cpu_relax(), so
-this patch should not affect other architectures than System z for now.
+	-hpa
 
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
----
- arch/Kconfig                  |    3 +++
- arch/s390/Kconfig             |    1 +
- arch/s390/include/asm/mutex.h |    2 ++
- include/linux/mutex.h         |    4 ++++
- kernel/mutex.c                |    2 +-
- kernel/sched.c                |    2 +-
- 6 files changed, 12 insertions(+), 2 deletions(-)
-
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -158,4 +158,7 @@ config HAVE_PERF_EVENTS_NMI
- 	  subsystem.  Also has support for calculating CPU cycle events
- 	  to determine how many clock cycles in a given period.
- 
-+config HAVE_MUTEX_CPU_RELAX
-+	bool
-+
- source "kernel/gcov/Kconfig"
---- a/arch/s390/Kconfig
-+++ b/arch/s390/Kconfig
-@@ -100,6 +100,7 @@ config S390
- 	select HAVE_KERNEL_BZIP2
- 	select HAVE_KERNEL_LZMA
- 	select HAVE_KERNEL_LZO
-+	select HAVE_MUTEX_CPU_RELAX
- 	select ARCH_INLINE_SPIN_TRYLOCK
- 	select ARCH_INLINE_SPIN_TRYLOCK_BH
- 	select ARCH_INLINE_SPIN_LOCK
---- a/arch/s390/include/asm/mutex.h
-+++ b/arch/s390/include/asm/mutex.h
-@@ -7,3 +7,5 @@
-  */
- 
- #include <asm-generic/mutex-dec.h>
-+
-+#define mutex_cpu_relax()	barrier()
---- a/include/linux/mutex.h
-+++ b/include/linux/mutex.h
-@@ -160,4 +160,8 @@ extern int mutex_trylock(struct mutex *l
- extern void mutex_unlock(struct mutex *lock);
- extern int atomic_dec_and_mutex_lock(atomic_t *cnt, struct mutex *lock);
- 
-+#ifndef CONFIG_HAVE_MUTEX_CPU_RELAX
-+#define mutex_cpu_relax()	cpu_relax()
-+#endif
-+
- #endif
---- a/kernel/mutex.c
-+++ b/kernel/mutex.c
-@@ -199,7 +199,7 @@ __mutex_lock_common(struct mutex *lock,
- 		 * memory barriers as we'll eventually observe the right
- 		 * values at the cost of a few extra spins.
- 		 */
--		cpu_relax();
-+		mutex_cpu_relax();
- 	}
- #endif
- 	spin_lock_mutex(&lock->wait_lock, flags);
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3888,7 +3888,7 @@ int mutex_spin_on_owner(struct mutex *lo
- 		if (task_thread_info(rq->curr) != owner || need_resched())
- 			return 0;
- 
--		cpu_relax();
-+		mutex_cpu_relax();
- 	}
- 
- 	return 1;
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
