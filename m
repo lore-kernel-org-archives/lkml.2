@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab0JOTSI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 15:18:08 -0400
-Received: from kroah.org ([198.145.64.141]:47450 "EHLO coco.kroah.org"
+	id S932398Ab0JOTSn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 15:18:43 -0400
+Received: from www.tglx.de ([62.245.132.106]:35319 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932377Ab0JOTSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 15:18:02 -0400
-Date: Fri, 15 Oct 2010 12:10:05 -0700
-From: Greg KH <greg@kroah.com>
-To: Eric =?iso-8859-1?Q?B=E9nard?= <eric@eukrea.com>
-Cc: linux-usb@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        s.hauer@pengutronix.de, Dinh.Nguyen@freescale.com, leoli@freescale.com,
-        dbrownell@users.sourceforge.net, gregkh@suse.de,
-        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mxc_udc: add workaround for ENGcm09152 for i.MX35
-Message-ID: <20101015191005.GB8098@kroah.com>
-References: <1287145858-10239-1-git-send-email-eric@eukrea.com>
+	id S932077Ab0JOTSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 15:18:40 -0400
+Date: Fri, 15 Oct 2010 21:18:19 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Darren Hart <dvhart@linux.intel.com>
+cc: Louis Rilling <louis.rilling@kerlabs.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        =?ISO-8859-15?Q?Matthieu_Fertr=E9?= <matthieu.fertre@kerlabs.com>
+Subject: Re: [RESEND PATCH] futex: fix key reference counter in case of
+ requeue.
+In-Reply-To: <4CB8A7EB.6050303@linux.intel.com>
+Message-ID: <alpine.LFD.2.00.1010152117340.2496@localhost6.localdomain6>
+References: <1287055805-18233-1-git-send-email-louis.rilling@kerlabs.com> <4CB8A7EB.6050303@linux.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287145858-10239-1-git-send-email-eric@eukrea.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463795968-2076146326-1287170301=:2496"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 02:30:58PM +0200, Eric BÈnard wrote:
-> this patch gives the possibility to workaround bug ENGcm09152
-> on i.MX35 when the hardware workaround is also implemented on
-> the board.
-> It covers the workaround described on page 25 of the following Errata :
-> http://cache.freescale.com/files/dsp/doc/errata/IMX35CE.pdf 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+---1463795968-2076146326-1287170301=:2496
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+
+On Fri, 15 Oct 2010, Darren Hart wrote:
+> On 10/14/2010 04:30 AM, Louis Rilling wrote:
+> > Signed-off-by: Matthieu Fertr√©<matthieu.fertre@kerlabs.com>
+> > Signed-off-by: Louis Rilling<louis.rilling@kerlabs.com>
+> > ---
+> >   kernel/futex.c |    8 ++++++--
+> >   1 files changed, 6 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/kernel/futex.c b/kernel/futex.c
+> > index 6a3a5fa..bed6717 100644
+> > --- a/kernel/futex.c
+> > +++ b/kernel/futex.c
+> > @@ -1791,6 +1791,7 @@ static int futex_wait(u32 __user *uaddr, int fshared,
+> >   	struct restart_block *restart;
+> >   	struct futex_hash_bucket *hb;
+> >   	struct futex_q q;
+> > +	union futex_key key;
 > 
-> Signed-off-by: Eric BÈnard <eric@eukrea.com>
-> ---
->  arch/arm/mach-mx3/mach-cpuimx35.c |    1 +
->  drivers/usb/gadget/fsl_mxc_udc.c  |   15 +++++++++++++++
->  include/linux/fsl_devices.h       |    3 +++
->  3 files changed, 19 insertions(+), 0 deletions(-)
+> We should be able to do this properly without requiring an additional key
+> variable. I think tglx has proposed a suitable fix - but it needs testing to
+> avoid any subtle regressions.
 
-Do you want me to take this through my usb tree, or will it go through
-some other developer's tree?
+Well, that still needs a look into wait_requeue_pi() :)
 
-Either is fine with me.
+Thanks,
 
-thanks,
-
-greg k-h
+	tglx
+---1463795968-2076146326-1287170301=:2496--
