@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755303Ab0JOALX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 20:11:23 -0400
-Received: from mail-pz0-f66.google.com ([209.85.210.66]:41122 "EHLO
-	mail-pz0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753139Ab0JOALV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 20:11:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=vGu/MSiFJG6EaUytyh1G5Oysd8DQ5ggfo4N0Mp3cp2GmuzyPI2WSD8K29gGMjK+DbG
-         9mudQvE1qmE2n9aFduzB4x4aISVSwaduq5UPXFFQOO1mjGHoP9oxyLtXPkZs1lVle7Iq
-         VhzhiSoW9sd4SG15cr71/tq1sKCy6YMtDotuc=
-MIME-Version: 1.0
-Date: Thu, 14 Oct 2010 16:58:51 -0700
-Message-ID: <AANLkTi=29x3ng4uhUAMewe5Gr25ayDknJS9iGS4c51Yw@mail.gmail.com>
-Subject: kernel won't boot if kernel image passes 0xffffffff82000000
-From: Rong Xu <rong.xu3@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755378Ab0JOAO0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 20:14:26 -0400
+Received: from ozlabs.org ([203.10.76.45]:59923 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751073Ab0JOAOZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 20:14:25 -0400
+Subject: Re: [RFC PATCH] ppc: don't override CONFIG_PPC_PSERIES_DEBUG
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: Michael Neuling <mikey@neuling.org>, Frans Pop <elendil@planet.nl>,
+        linux-kernel@vger.kernel.org, Paul Mackerras <paulus@samba.org>,
+        Anton Blanchard <anton@samba.org>,
+        Linas Vepstas <linasvepstas@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1287078495-11722-1-git-send-email-nacc@us.ibm.com>
+References: <1287078495-11722-1-git-send-email-nacc@us.ibm.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-c9/6FOcWQNQAeEXitdHD"
+Date: Fri, 15 Oct 2010 11:14:23 +1100
+Message-ID: <1287101663.4194.5.camel@concordia>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I found that if the kernel image passes 0xffffffff82000000, the kernel won't
-boot. It dies in very early stage of booting, right after the kernel image
-is loaded.
 
-More details:
-This is 2.6.26 kernel on x86-64 platform, using the default x86_64 config.
-I'm not booting with any option. Kernel image starts from
-0xffffffff80000000. kernel_text starts from 0xffffffff80200000. From the
-comments in head64.S, I suppose we can use 512M for kernel image, to
-0xffffffffa000000 where the module starts. But my experiments shows the
-maximum kernel image size is from 0xffffffff80200000 to 0xffffffff82000000
-(30MB).
+--=-c9/6FOcWQNQAeEXitdHD
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Here are some of the experiments I did:
-(1) increase the bss size to let it pass 0xffffffff82000000, then kernel
-    won't boot.
-(2) change the linker-script to move the bss section of a good kernel,
-     making part of the section pass 0xffffffff82000000, then the kernel
-     becomes not bootable.
-(3) change the linker-script to move the bss section of a good kernel, not
-     letting it pass 0xffffffff82000000. the result kernel can boot.
-(4) keep all sections intact and move PHYSICAL_START to make the end of
-     kernel image pass 0xffffffff82000000. Kernel won't boot
-(5) keep all sections intact and move PHYSICAL_START, not letting the kernel
-     image pass 0xffffffff82000000. the result kernel can boot.
+On Thu, 2010-10-14 at 10:48 -0700, Nishanth Aravamudan wrote:
+> These files undef DEBUG, but I think they were added before the ability
+> to control this from Kconfig.=20
 
-So it looks this not related to the kernel size, but to the address
-0xffffffff82000000. what is special for this address? I could not find any
-documentation (or source reference) to this address.
-In the head_64.S, we actually initialized the PMD entries for all the
-possible 512MB space. I think we should be able to use it. In a booted
-kernel, the PMD entries for 0xffffffff82000000 is zeroed out (when I dump
-the kernel page table). so I guess this address is not used by other part of
-kernel.
+Perhaps. Some people, *cough*, have a tendency to merge those back in
+again from time to time :)
 
-I tried kernel 2.6.27 and it seems to have the same issue.
+> It's really annoying to only get some of the debug messages!
 
-Any comment?
+True, but ..
 
--Rong
+> Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+>=20
+> ---
+> Because the lpar and pci_dlpar code is pretty low-level & verbose,
+> perhaps it makes sense to add another Kconfig variable for really
+> low-level stuff? But it's annoying to have DEBUG *somewhat* effective,
+> especially in the EEH area when doing PCI stuff.
+
+I really don't think you want to enable the lpar debug by default. Have
+you tried it? It can make for a pretty unusable system, just because of
+the console spam.
+
+Also these days there is CONFIG_DYNAMIC_DEBUG which is much smarter than
+all this, but requires setup at runtime.
+
+cheers
+
+
+--=-c9/6FOcWQNQAeEXitdHD
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAky3nNwACgkQdSjSd0sB4dLpcgCgyIHkaqdl+HA3iyvu+1EQ7qkk
+bNwAn3gAE1UJk1EmtgirjzaDTcUNJkRt
+=mpvj
+-----END PGP SIGNATURE-----
+
+--=-c9/6FOcWQNQAeEXitdHD--
+
