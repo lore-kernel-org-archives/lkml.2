@@ -1,112 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754308Ab0JOIqL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 04:46:11 -0400
-Received: from smtp-vbr5.xs4all.nl ([194.109.24.25]:4616 "EHLO
-	smtp-vbr5.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab0JOIqJ (ORCPT
+	id S1754117Ab0JOIuR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 04:50:17 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:47362 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab0JOIuP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 04:46:09 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Valdis.Kletnieks@vt.edu
-Subject: Re: mmotm 2010-10-13 - GSPCA SPCA561 webcam driver broken
-Date: Fri, 15 Oct 2010 10:45:45 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-tschai; KDE/4.4.5; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org> <5158.1287086789@localhost>
-In-Reply-To: <5158.1287086789@localhost>
+	Fri, 15 Oct 2010 04:50:15 -0400
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, fengguang.wu@intel.com,
+        akpm@linux-foundation.org
+Subject: Re: RFC: Implement hwpoison on free for soft offlining
+References: <1286402951-1881-1-git-send-email-andi@firstfloor.org>
+Date: Fri, 15 Oct 2010 10:50:13 +0200
+In-Reply-To: <1286402951-1881-1-git-send-email-andi@firstfloor.org> (Andi
+	Kleen's message of "Thu, 7 Oct 2010 00:09:10 +0200")
+Message-ID: <874ocnc01m.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010151045.45630.hverkuil@xs4all.nl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, October 14, 2010 22:06:29 Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 13 Oct 2010 17:13:25 PDT, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2010-10-13-17-13 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
-> 
-> This broke my webcam.  I bisected it down to this commit, and things
-> work again after reverting the 2 code lines of change.
-> 
-> commit 9e4d79a98ebd857ec729f5fa8f432f35def4d0da
-> Author: Hans Verkuil <hverkuil@xs4all.nl>
-> Date:   Sun Sep 26 08:16:56 2010 -0300
-> 
->     V4L/DVB: v4l2-dev: after a disconnect any ioctl call will be blocked
->     
->     Until now all fops except release and (unlocked_)ioctl returned an error
->     after the device node was unregistered. Extend this as well to the ioctl
->     fops. There is nothing useful that an application can do here and it
->     complicates the driver code unnecessarily.
->     
->     Signed-off-by: Hans Verkuil <hverkuil@xs4all.nl>
->     Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> 
-> diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
-> index d4a3532..f069c61 100644
-> --- a/drivers/media/video/v4l2-dev.c
-> +++ b/drivers/media/video/v4l2-dev.c
-> @@ -221,8 +221,8 @@ static long v4l2_ioctl(struct file *filp, unsigned int cmd, 
->         struct video_device *vdev = video_devdata(filp);
->         int ret;
->  
-> -       /* Allow ioctl to continue even if the device was unregistered.
-> -          Things like dequeueing buffers might still be useful. */
-> +       if (!vdev->fops->ioctl)
-> +               return -ENOTTY;
->         if (vdev->fops->unlocked_ioctl) {
->                 ret = vdev->fops->unlocked_ioctl(filp, cmd, arg);
->         } else if (vdev->fops->ioctl) {
-> 
-> I suspect this doesn't do what's intended if a driver is using ->unlocked_ioctl
-> rather than ->ioctl, and it should be reverted - it only saves at most one
-> if statement.
-> 
-> 
+Andi Kleen <andi@firstfloor.org> writes:
 
-I'm not sure what is going on here. It looks like this patch is mangled in your
-tree since the same patch in the v4l-dvb repository looks like this:
+> Here's a somewhat experimental patch to improve soft offlining
+> in hwpoison, but allowing hwpoison on free for not directly
+> freeable page types. It should work for nearly all
+> left over page types that get eventually freed, so this makes
+> soft offlining nearly universal. The only non handleable page
+> types are now pages that never get freed.
+>
+> Drawback: It needs an additional page flag. Cannot set hwpoison
+> directly because that would not be "soft" and cause errors.
+>
+> Since the flags are scarce on 32bit I only enabled it on 64bit.
+>
+> Comments?
 
-diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c                                                         
-index 32575a6..26d39c4 100644                                                                                                        
---- a/drivers/media/video/v4l2-dev.c                                                                                                 
-+++ b/drivers/media/video/v4l2-dev.c                                                                                                 
-@@ -222,8 +222,8 @@ static int v4l2_ioctl(struct inode *inode, struct file *filp,                                                    
-                                                                                                                                     
-        if (!vdev->fops->ioctl)                                                                                                      
-                return -ENOTTY;                                                                                                      
--       /* Allow ioctl to continue even if the device was unregistered.                                                              
--          Things like dequeueing buffers might still be useful. */
-+       if (!video_is_registered(vdev))
-+               return -ENODEV;
-        return vdev->fops->ioctl(filp, cmd, arg);
- }
- 
-@@ -234,8 +234,8 @@ static long v4l2_unlocked_ioctl(struct file *filp,
- 
-        if (!vdev->fops->unlocked_ioctl)
-                return -ENOTTY;
--       /* Allow ioctl to continue even if the device was unregistered.
--          Things like dequeueing buffers might still be useful. */
-+       if (!video_is_registered(vdev))
-+               return -ENODEV;
-        return vdev->fops->unlocked_ioctl(filp, cmd, arg);
- }
+I got a couple of positive comments and reviews and no negative comments.
 
-In your diff there is a mismatch between ioctl and unlocked_ioctl which no doubt
-is causing all the problems for you.
+So I assume noone has a problem with using up a 64bit page flag
+for this. I plan to push this into linux-next after some delay
+and then prepare it for merge later.
 
-Regards,
+If there are any objections please speak up now.
 
-	Hans
+Thanks,
+-Andi
 
 -- 
-Hans Verkuil - video4linux developer - sponsored by TANDBERG, part of Cisco
+ak@linux.intel.com -- Speaking for myself only.
