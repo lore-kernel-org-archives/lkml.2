@@ -1,88 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756318Ab0JOPUK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 11:20:10 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53997 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756153Ab0JOPUI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 11:20:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=H67UC6inEDewS91j1fO14e3kBYh8V0NGqD6d7Al9UbV4saW0c32gTVKrpWWfqVMLLf
-         ao3jZnvud247k2MXm7bcnExQq6lhgIuqVmx55Wwbk3//icYDy7tEu5QO4f1iAr4uy/tI
-         D/6A38f3e/Jo18GVUDOstq0c5g4Ys8mTQ9XCg=
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
+	id S1756302Ab0JOPYr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 11:24:47 -0400
+Received: from borg.medozas.de ([188.40.89.202]:39903 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756025Ab0JOPYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 11:24:46 -0400
+Date: Fri, 15 Oct 2010 17:24:44 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Andreas Gruenbacher <agruen@suse.de>
+cc: Andi Kleen <andi@firstfloor.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Richard Woodruff <r-woodruff2@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>
-Subject: [PATCH .36-rc8] arm: mm: allow, but warn, when issuing ioremap() on RAM
-Date: Fri, 15 Oct 2010 17:15:20 +0300
-Message-Id: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com>
-X-Mailer: git-send-email 1.7.3.1.2.g7fe2b
+        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, davem@davemloft.net
+Subject: Re: Process to push changes to include/linux/types.h
+In-Reply-To: <201010151644.21794.agruen@suse.de>
+Message-ID: <alpine.LNX.2.01.1010151713060.30823@obet.zrqbmnf.qr>
+References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com> <201010151215.49392.agruen@suse.de> <20101015142617.GB25620@basil.fritz.box> <201010151644.21794.agruen@suse.de>
+User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Catalin Marinas <catalin.marinas@arm.com>
 
-Drivers have been relying on this behavior, but done so wrongly.
-However, rather than breaking drivers from .35 to .36, we should warn on
-.36 and only break on .37. This way we give a chance for contributors to
-fix the issues.
+On Friday 2010-10-15 16:44, Andreas Gruenbacher wrote:
+>On Friday 15 October 2010 16:26:17 Andi Kleen wrote:
+>> > 64-bit values align to 4-byte boundaries on some 32-bit architectures like
+>> > x86 
+>> AFAIK it's only on x86, no other architecture made this mistake in their
+>> 32bit ABI. But of course x86 is kind of important ...
+>
+>I don't know of any other examples; all the architectures I tried "got it 
+>right" except x86.
 
-According to ARM, the behavior of having multiple mappings is
-unspecified from ARMv6+. This causes real issues specially on modern
-hardware, and specially with speculative prefetching. So drivers need to
-be fixed.
+I don't think x86 has done anything wrong. It processes stuff in
+32-bit chunks, so why should one waste space for aligning a 64-bit
+entity to 8? On sparcv9, a long double also has an alignment
+smaller than its size.
 
-Also, since current hardware has palliative meassures to deal with
-multiple mappings with the same memory type but diferent cacheability
-attributes, ensure that such restriction is taking place.
-
-Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Richard Woodruff <r-woodruff2@ti.com>
-Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
----
- arch/arm/mm/ioremap.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
-index ab50627..7dfd6dd 100644
---- a/arch/arm/mm/ioremap.c
-+++ b/arch/arm/mm/ioremap.c
-@@ -202,10 +202,14 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
- 		return NULL;
- 
- 	/*
--	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
-+	 * This causes problems with ARMv6+. Will be disallowed soon.
-+	 * Also avoid a second mapping with different shareability, which is
-+	 * not supposed to work anyway.
- 	 */
- 	if (WARN_ON(pfn_valid(pfn)))
--		return NULL;
-+		if (__LINUX_ARM_ARCH__ >= 6 &&
-+		    (mtype != MT_DEVICE_CACHED && mtype != MT_DEVICE_WC))
-+			mtype = MT_DEVICE_WC;
- 
- 	type = get_mem_type(mtype);
- 	if (!type)
--- 
-1.7.3.1.2.g7fe2b
-
+If you don't like that, you can always patch up gcc, because
+alignment is after all a decision made by the compiler. In that
+regard, it might be worth checking out the gcc machine description
+files and find out why people specified an alignment of 8 for
+uint64_t anything but i?86.
