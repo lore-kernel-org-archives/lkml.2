@@ -1,62 +1,203 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab0JOTzu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 15:55:50 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:57086 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab0JOTzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 15:55:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=xQxJBe5mX98qzEK7AXW5vuCOolr7GoOYiMs2vBOch+aEo6FYzdOaRirNoMt3h80aIk
-         fC++PrSc+scGITrGfz+oNHaUtA7tG5AbcWW26ZFyZ8N4Ln4zJHBTZG/WnPqHeJe41jeh
-         jaPBtWhCMNkk6Fq5c1hu6sowhwv9i2m28OqMI=
-From: Andrea Gelmini <andrea.gelmini@gelma.net>
-To: linux-kernel@vger.kernel.org
-Cc: Andrea Gelmini <andrea.gelmini@gelma.net>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH] kernel: trace: trace_kprobe.c: removed duplicated #include
-Date: Fri, 15 Oct 2010 21:27:21 +0200
-Message-Id: <1287170842-20279-1-git-send-email-andrea.gelmini@gelma.net>
-X-Mailer: git-send-email 1.7.3.1.181.g784b8
+	id S1756770Ab0JOT56 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 15:57:58 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:46861 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756188Ab0JOT55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 15:57:57 -0400
+Date: Fri, 15 Oct 2010 21:57:54 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: walter harms <wharms@bfs.de>
+Cc: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/7] drivers/staging: Return -ENOMEM on memory allocation
+ failure
+In-Reply-To: <4CB86431.5000305@bfs.de>
+Message-ID: <Pine.LNX.4.64.1010152157440.29421@ask.diku.dk>
+References: <1287147610-8041-2-git-send-email-julia@diku.dk> <4CB86431.5000305@bfs.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removed linux/uaccess.h
+On Fri, 15 Oct 2010, walter harms wrote:
 
-Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
----
- kernel/trace/trace_kprobe.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+> This looks like a case for kasprintf().
 
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index 544301d..c5fb747 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -18,7 +18,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/uaccess.h>
- #include <linux/kprobes.h>
- #include <linux/seq_file.h>
- #include <linux/slab.h>
-@@ -479,7 +478,7 @@ struct probe_arg {
- struct trace_probe {
- 	struct list_head	list;
- 	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
--	unsigned long 		nhit;
-+	unsigned long		nhit;
- 	unsigned int		flags;	/* For TP_FLAG_* */
- 	const char		*symbol;	/* symbol name */
- 	struct ftrace_event_class	class;
--- 
-1.7.3.1.181.g784b8
+OK, I will take a look at it.
 
+julia
+
+> re
+>  wh
+> 
+> Julia Lawall schrieb:
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > Each of these functions defines a variable err and a variable retval.  err
+> > is always 0 and is returned in the error case.  At one point near the end
+> > of the function, retval is initialized to an error code.  For each
+> > function, the patch drops err, stores -ENOMEM in retval in two cases where
+> > memory allocation fails, and changes the return value in the error case
+> > from err to retval.
+> > 
+> > A simplified version of the semantic match that finds this problem is as
+> > follows: (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @@
+> > expression ret;
+> > expression x,e1,e2,e3;
+> > @@
+> > 
+> > ret = 0
+> > ... when != ret = e1
+> > *x = \(kmalloc\|kcalloc\|kzalloc\)(...)
+> > ... when != ret = e2
+> > if (x == NULL) { ... when != ret = e3
+> >   return ret;
+> > }
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> >  drivers/staging/cx25821/cx25821-audio-upstream.c     |   11 +++++++----
+> >  drivers/staging/cx25821/cx25821-video-upstream-ch2.c |   11 +++++++----
+> >  drivers/staging/cx25821/cx25821-video-upstream.c     |   11 +++++++----
+> >  3 files changed, 21 insertions(+), 12 deletions(-)
+> > 
+> > diff -u -p a/drivers/staging/cx25821/cx25821-audio-upstream.c b/drivers/staging/cx25821/cx25821-audio-upstream.c
+> > --- a/drivers/staging/cx25821/cx25821-audio-upstream.c
+> > +++ b/drivers/staging/cx25821/cx25821-audio-upstream.c
+> > @@ -723,7 +723,6 @@ int cx25821_audio_upstream_init(struct c
+> >  {
+> >  	struct sram_channel *sram_ch;
+> >  	int retval = 0;
+> > -	int err = 0;
+> >  	int str_length = 0;
+> >  
+> >  	if (dev->_audio_is_running) {
+> > @@ -756,8 +755,10 @@ int cx25821_audio_upstream_init(struct c
+> >  		str_length = strlen(dev->input_audiofilename);
+> >  		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+> >  
+> > -		if (!dev->_audiofilename)
+> > +		if (!dev->_audiofilename) {
+> > +			retval = -ENOMEM;
+> >  			goto error;
+> > +		}
+> >  
+> >  		memcpy(dev->_audiofilename, dev->input_audiofilename,
+> >  		       str_length + 1);
+> > @@ -770,8 +771,10 @@ int cx25821_audio_upstream_init(struct c
+> >  		str_length = strlen(_defaultAudioName);
+> >  		dev->_audiofilename = kmalloc(str_length + 1, GFP_KERNEL);
+> >  
+> > -		if (!dev->_audiofilename)
+> > +		if (!dev->_audiofilename) {
+> > +			retval = -ENOMEM;
+> >  			goto error;
+> > +		}
+> >  
+> >  		memcpy(dev->_audiofilename, _defaultAudioName, str_length + 1);
+> >  	}
+> > @@ -802,5 +805,5 @@ int cx25821_audio_upstream_init(struct c
+> >  error:
+> >  	cx25821_dev_unregister(dev);
+> >  
+> > -	return err;
+> > +	return retval;
+> >  }
+> > diff -u -p a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+> > --- a/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+> > +++ b/drivers/staging/cx25821/cx25821-video-upstream-ch2.c
+> > @@ -747,7 +747,6 @@ int cx25821_vidupstream_init_ch2(struct 
+> >  	struct sram_channel *sram_ch;
+> >  	u32 tmp;
+> >  	int retval = 0;
+> > -	int err = 0;
+> >  	int data_frame_size = 0;
+> >  	int risc_buffer_size = 0;
+> >  	int str_length = 0;
+> > @@ -792,8 +791,10 @@ int cx25821_vidupstream_init_ch2(struct 
+> >  		str_length = strlen(dev->input_filename_ch2);
+> >  		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+> >  
+> > -		if (!dev->_filename_ch2)
+> > +		if (!dev->_filename_ch2) {
+> > +			retval = -ENOMEM;
+> >  			goto error;
+> > +		}
+> >  
+> >  		memcpy(dev->_filename_ch2, dev->input_filename_ch2,
+> >  		       str_length + 1);
+> > @@ -801,8 +802,10 @@ int cx25821_vidupstream_init_ch2(struct 
+> >  		str_length = strlen(dev->_defaultname_ch2);
+> >  		dev->_filename_ch2 = kmalloc(str_length + 1, GFP_KERNEL);
+> >  
+> > -		if (!dev->_filename_ch2)
+> > +		if (!dev->_filename_ch2) {
+> > +			retval = -ENOMEM;
+> >  			goto error;
+> > +		}
+> >  
+> >  		memcpy(dev->_filename_ch2, dev->_defaultname_ch2,
+> >  		       str_length + 1);
+> > @@ -851,5 +854,5 @@ int cx25821_vidupstream_init_ch2(struct 
+> >        error:
+> >  	cx25821_dev_unregister(dev);
+> >  
+> > -	return err;
+> > +	return retval;
+> >  }
+> > diff -u -p a/drivers/staging/cx25821/cx25821-video-upstream.c b/drivers/staging/cx25821/cx25821-video-upstream.c
+> > --- a/drivers/staging/cx25821/cx25821-video-upstream.c
+> > +++ b/drivers/staging/cx25821/cx25821-video-upstream.c
+> > @@ -800,7 +800,6 @@ int cx25821_vidupstream_init_ch1(struct 
+> >  	struct sram_channel *sram_ch;
+> >  	u32 tmp;
+> >  	int retval = 0;
+> > -	int err = 0;
+> >  	int data_frame_size = 0;
+> >  	int risc_buffer_size = 0;
+> >  	int str_length = 0;
+> > @@ -844,16 +843,20 @@ int cx25821_vidupstream_init_ch1(struct 
+> >  		str_length = strlen(dev->input_filename);
+> >  		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+> >  
+> > -		if (!dev->_filename)
+> > +		if (!dev->_filename) {
+> > +			retval = -ENOMEM;
+> >  			goto error;
+> > +		}
+> >  
+> >  		memcpy(dev->_filename, dev->input_filename, str_length + 1);
+> >  	} else {
+> >  		str_length = strlen(dev->_defaultname);
+> >  		dev->_filename = kmalloc(str_length + 1, GFP_KERNEL);
+> >  
+> > -		if (!dev->_filename)
+> > +		if (!dev->_filename) {
+> > +			retval = -ENOMEM;
+> >  			goto error;
+> > +		}
+> >  
+> >  		memcpy(dev->_filename, dev->_defaultname, str_length + 1);
+> >  	}
+> > @@ -908,5 +911,5 @@ int cx25821_vidupstream_init_ch1(struct 
+> >  error:
+> >  	cx25821_dev_unregister(dev);
+> >  
+> > -	return err;
+> > +	return retval;
+> >  }
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > 
+> > 
+> 
