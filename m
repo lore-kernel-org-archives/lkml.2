@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0JOPOA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 11:14:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36534 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755703Ab0JOPN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 11:13:59 -0400
-Message-ID: <4CB86F94.7080702@kernel.org>
-Date: Fri, 15 Oct 2010 17:13:24 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
-MIME-Version: 1.0
-To: lkml <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: [PATCH v2.6.36-rc7] init: don't call flush_scheduled_work() from
- do_initcalls()
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Oct 2010 15:13:25 +0000 (UTC)
+	id S1756271Ab0JOPOn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 11:14:43 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54214 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755703Ab0JOPOm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 11:14:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=h0TuSqoiX2h1N4qWoVqAQVfRv6zLHcshHkELMSnraY/jWo+OpIjEKAxWF/knjOq1sy
+         MODMhnrXW1OujZqLOfkmf8PUboNEL5BNz6UDN1DRvwNy+JH0FKNcCn3PT0qovoC8P5Bg
+         02Me26Kpqno6GGBszRHw5JzkTRbBHk0oSoJLk=
+From: Andrea Gelmini <andrea.gelmini@gelma.net>
+To: linux-kernel@vger.kernel.org
+Cc: Andrea Gelmini <andrea.gelmini@gelma.net>, David Airlie <airlied@linux.ie>,
+        Eric Anholt <eric@anholt.net>, Zhenyu Wang <zhenyuw@linux.intel.com>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
+Subject: [PATCH 04/13] drivers: gpu: drm: i915: Fix a typo.
+Date: Fri, 15 Oct 2010 17:14:33 +0200
+Message-Id: <1287155673-11418-1-git-send-email-andrea.gelmini@gelma.net>
+X-Mailer: git-send-email 1.7.3.1.181.g784b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It's unclear what flush_scheduled_work() in do_initcalls() tries to
-achieve.  The call doesn't make much sense - there already are
-multiple system workqueues which aren't affected by
-flush_scheduled_wokr() and subsystems are free to create and use their
-own.  Ordering requirements are and should be expressed explicitly.
+"userpace" -> "userspace"
 
-Drop the call to prepare for deprecation and removal of
-flush_scheduled_work().
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
 ---
-If no one objects, I'll route this through wq tree.
+ drivers/gpu/drm/i915/i915_irq.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thank you.
+diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
+index 85785a8..5c688b7 100644
+--- a/drivers/gpu/drm/i915/i915_irq.c
++++ b/drivers/gpu/drm/i915/i915_irq.c
+@@ -620,7 +620,7 @@ static void i915_capture_error_state(struct drm_device *dev)
+ 	}
+ 
+ 	/* We need to copy these to an anonymous buffer as the simplest
+-	 * method to avoid being overwritten by userpace.
++	 * method to avoid being overwritten by userspace.
+ 	 */
+ 	error->batchbuffer[0] = i915_error_object_create(dev, batchbuffer[0]);
+ 	error->batchbuffer[1] = i915_error_object_create(dev, batchbuffer[1]);
+-- 
+1.7.2.1.85.g2d089
 
- init/main.c |    3 ---
- 1 file changed, 3 deletions(-)
-
-Index: work/init/main.c
-===================================================================
---- work.orig/init/main.c
-+++ work/init/main.c
-@@ -778,9 +778,6 @@ static void __init do_initcalls(void)
-
- 	for (fn = __early_initcall_end; fn < __initcall_end; fn++)
- 		do_one_initcall(*fn);
--
--	/* Make sure there is no pending stuff from the initcall sequence */
--	flush_scheduled_work();
- }
-
- /*
