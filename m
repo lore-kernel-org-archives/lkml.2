@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755298Ab0JOKE5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 06:04:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40709 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754404Ab0JOKEz (ORCPT
+	id S1755003Ab0JOKHw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 06:07:52 -0400
+Received: from smtp-out-cinco.uned.es ([62.204.192.119]:45025 "EHLO
+	smtp-out-cinco.uned.es" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750889Ab0JOKHv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 06:04:55 -0400
-Date: Fri, 15 Oct 2010 11:04:52 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Timur Tabi <timur@freescale.com>,
-        Kumar Gala <galak@kernel.crashing.org>
-Subject: Re: linux-next: manual merge of the sound-asoc tree with Linus'
- tree
-Message-ID: <20101015100452.GB14782@rakim.wolfsonmicro.main>
-References: <20101015115251.015b08d5.sfr@canb.auug.org.au>
+	Fri, 15 Oct 2010 06:07:51 -0400
+X-IronPort-AV: E=Sophos;i="4.57,335,1283724000"; 
+   d="scan'208";a="15673416"
+Message-ID: <718bb55eca8029508f450e4c2cef4a30.squirrel@correo.uned.es>
+Date: Fri, 15 Oct 2010 12:07:50 +0200
+Subject: 
+From: "WESTERN UNION TRANSFER" <coie@madrid.uned.es>
+Reply-To: western-union.transfer02@w.cn
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101015115251.015b08d5.sfr@canb.auug.org.au>
-X-Cookie: Don't get even -- get odd!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 11:52:51AM +1100, Stephen Rothwell wrote:
-> Hi all,
-> 
-> Today's linux-next merge of the sound-asoc tree got a conflict in
-> arch/powerpc/platforms/85xx/p1022_ds.c between commit
-> dc1c41f450a5f201f1d8c19aef32319f3b84c273 ("powerpc/85xx: Fix compile
-> issue with p1022_ds due to lmb rename to memblock") from Linus' tree and
-> commit 2c184cd393d1410bb43ac656a6480849fe886b1d ("powerpc/85xx: add DIU
-> support to the Freecale P1022DS reference board") from the sound-asoc
-> tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
 
-I had to apply the reverse of that to to apply on ASoC so this looks to
-be the best fix :)
+
+
+-- 
+My working partner has helped me to send your
+first payment of US$7,500 to you as
+instructed by Mr. David Cameron and will
+keep sending you US$7,500 twice a week until
+the payment of (US$360,000) is completed
+within six months and here is the information
+below:
+
+MONEY TRANSFER CONTROL NUMBER (MTCN):
+291-371-8010
+
+SENDER'S NAME:Solomon Daniel
+AMOUNT: US$7,500
+
+To track your funds forward Western Union
+Money Transfer agent your Full Names and
+Mobile Number via Email to:
+
+Mr Gary Moore
+E-mail:western-union.transfer02@w.cn
+D/L: +447024044997
+
+Please direct all enquiring to:
+western-union.transfer02@w.cn
+
+Best Regards,
+Mr Gary Moore.
+
+
+
+
