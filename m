@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab0JOQzw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:55:52 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42977 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755941Ab0JOQzu (ORCPT
+	id S932170Ab0JOQ6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:58:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49555 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932103Ab0JOQ6J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:55:50 -0400
+	Fri, 15 Oct 2010 12:58:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=w4VqU6KuFWwltlxYhYXyYj6Jlt2nmB83a+ByhXR5ksnlBQ5lJdH7LN9nvFjhROYLXF
-         w2JZLTACZv0qMrIQu7UcitX0GfQwO/9ZXzZ/iUJJ4Uyt6xoreF3lQNoFFGxD7P3/+xxA
-         eDPAYhv2nZ4pWKHHvRYAZib+rBSFIk7piAlZk=
-Date: Fri, 15 Oct 2010 09:55:42 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=vZDa5/6jBwBn09Wv2roBDd9iJ6CPOqub4/lXAHfP+yLNwgEVvTq0wO7Vw8FO0eyYEj
+         +wa/rzdfPa/QStevxre14AJG1cXStswSVlI6uiV4TpFPujBoG6+BjR5YcGP4mmrXdaNU
+         Qdon8pBCQguOYzYty7D2OSzT4N7yeqSf0oroM=
+From: Christian Lamparter <chunkeey@googlemail.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: Linux Input <linux-input@vger.kernel.org>,
-        Jiri Slaby <jirislaby@gmail.com>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2.6.36-rc7] input: cancel_delayed_work_sync() in
- hp680_ts_input
-Message-ID: <20101015165542.GA19112@core.coreip.homeip.net>
-References: <4CB84609.4080809@kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7] mac80211: cancel restart_work explicitly instead of depending on flush_scheduled_work()
+Date: Fri, 15 Oct 2010 18:58:44 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-wl+; KDE/4.4.5; x86_64; ; )
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "John W. Linville" <linville@tuxdriver.com>
+References: <4CB874C0.8090003@kernel.org> <1287159715.1870.11.camel@Nokia-N900-51-1> <4CB883C9.6050104@kernel.org>
+In-Reply-To: <4CB883C9.6050104@kernel.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB84609.4080809@kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010151858.45000.chunkeey@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 02:16:09PM +0200, Tejun Heo wrote:
-> Make hp680_ts_init/exit() call cancel_delayed_work_sync() instead of
-> calling cancel_delayed_work() followed by flush_scheduled_work().
-> 
-> This is to prepare for the deprecation and removal of
-> flush_scheduled_work().
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
+On Friday 15 October 2010 18:39:37 Tejun Heo wrote:
+> Hello,
 
-Applied, thanks Tejun.
+> >> -    /*
+> >> -     * For key todo, it'll be empty by now but the work
+> >> -     * might still be scheduled.
+> >> -     */
+> >> -    flush_scheduled_work();
+> > 
+> > oops, todo work no longer exists...
+> > 
+> > Anyway, ACK.
+> 
+> Are you going to route this through wireless tree?  Shall I repost
+> with update patch description?
 
-> ---
->  drivers/input/touchscreen/hp680_ts_input.c |    6 ++----
->  1 file changed, 2 insertions(+), 4 deletions(-)
-> 
-> Index: work/drivers/input/touchscreen/hp680_ts_input.c
-> ===================================================================
-> --- work.orig/drivers/input/touchscreen/hp680_ts_input.c
-> +++ work/drivers/input/touchscreen/hp680_ts_input.c
-> @@ -107,8 +107,7 @@ static int __init hp680_ts_init(void)
->  	return 0;
-> 
->   fail2:	free_irq(HP680_TS_IRQ, NULL);
-> -	cancel_delayed_work(&work);
-> -	flush_scheduled_work();
-> +	cancel_delayed_work_sync(&work);
->   fail1:	input_free_device(hp680_ts_dev);
->  	return err;
->  }
-> @@ -116,8 +115,7 @@ static int __init hp680_ts_init(void)
->  static void __exit hp680_ts_exit(void)
->  {
->  	free_irq(HP680_TS_IRQ, NULL);
-> -	cancel_delayed_work(&work);
-> -	flush_scheduled_work();
-> +	cancel_delayed_work_sync(&work);
->  	input_unregister_device(hp680_ts_dev);
->  }
-> 
+wireless-testing/wireless-next has already such a patch:
+"mac80211: cancel restart_work in ieee80211_unregister_hw" (2010-08-25)
 
--- 
-Dmitry
+<http://git.kernel.org/?p=linux/kernel/git/linville/wireless-next-2.6.git;a=commit;h=258086a48b766d12a500f98834654ffa927ca475>
+
+John, can you please push to 2.6.36-rc8?
+(I know, I am _late_, but I didn't know about any potential problem
+in the mainline?)
+
+Best regards,
+	Chr
