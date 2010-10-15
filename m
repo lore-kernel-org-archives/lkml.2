@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756150Ab0JOHaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 03:30:11 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46076 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754603Ab0JOHaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 03:30:09 -0400
-Message-ID: <4CB802FE.2040801@kernel.dk>
-Date: Fri, 15 Oct 2010 09:30:06 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1754045Ab0JOHbM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 03:31:12 -0400
+Received: from nwd2mail10.analog.com ([137.71.25.55]:64293 "EHLO
+	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750780Ab0JOHbL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 03:31:11 -0400
+X-IronPort-AV: E=Sophos;i="4.57,334,1283745600"; 
+   d="scan'208";a="23396657"
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "device-drivers-devel@blackfin.uclinux.org" 
+	<device-drivers-devel@blackfin.uclinux.org>,
+        Drivers <Drivers@analog.com>,
+        "Frysinger, Michael" <Michael.Frysinger@analog.com>,
+        "chrisv@cyberswitching.com" <chrisv@cyberswitching.com>
+Date: Fri, 15 Oct 2010 08:31:04 +0100
+Subject: RE: [PATCH 1/3] drivers: misc: ad525x_dpot: Fix typo in spi write16
+ and write24 transfer counts
+Thread-Topic: [PATCH 1/3] drivers: misc: ad525x_dpot: Fix typo in spi
+ write16 and write24 transfer counts
+Thread-Index: Actr7hEtcr5s+Ax9RtaBqiU4gnoQNAAS/TfA
+Message-ID: <544AC56F16B56944AEC3BD4E3D5917713094373C8C@LIMKCMBX1.ad.analog.com>
+References: <1287046788-25122-1-git-send-email-michael.hennerich@analog.com>
+ <20101014152049.9471e1e6.akpm@linux-foundation.org>
+In-Reply-To: <20101014152049.9471e1e6.akpm@linux-foundation.org>
+Accept-Language: de-DE, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: de-DE, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk: fix a wrong accounting of hd_struct->in_flight
-References: <4CB40281.1020403@jp.fujitsu.com> <20101014150742.F9EC.A69D9226@jp.fujitsu.com> <4CB6FB30.1000502@kernel.dk> <20101014233041.GJ2447@linux.vnet.ibm.com>
-In-Reply-To: <20101014233041.GJ2447@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-10-15 01:30, Paul E. McKenney wrote:
-> On Thu, Oct 14, 2010 at 02:44:32PM +0200, Jens Axboe wrote:
->> On 2010-10-14 08:07, KOSAKI Motohiro wrote:
->>>> @@ -1268,7 +1270,17 @@ static int __make_request(struct request
->>>>  		 * not touch req->buffer either...
->>>>  		 */
->>>>  		req->buffer = bio_data(bio);
->>>> +		src_part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
->>>>  		req->__sector = bio->bi_sector;
->>>> +		dst_part = disk_map_sector_rcu(req->rq_disk, blk_rq_pos(req));
->>>
->>> I think this is wrong. disk_map_sector_rcu() require
->>> rcu read lock held (see function comment). all other call site take 
->>> part_stat_lock() before disk_map_sector_rcu() call.
+Andrew Morton wrote on 2010-10-15:
+> On Thu, 14 Oct 2010 10:59:46 +0200
+> <michael.hennerich@analog.com> wrote:
+>
+>> From: Michael Hennerich <michael.hennerich@analog.com>
 >>
->> It's called under the queue lock with irqs disabled, which implies a
->> rcu critical section.
-> 
-> Having irqs disabled does imply an rcu_read_lock_sched() or an
-> rcu_read_lock_bh(), but not an rcu_read_lock(), especially if
-> CONFIG_PREEMPT_RCU.
-> 
-> So an explicit rcu_read_lock() does seem to be needed here.
+>>
+>> Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
+>> ---
+>>  drivers/misc/ad525x_dpot-spi.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>> diff --git a/drivers/misc/ad525x_dpot-spi.c
+>> b/drivers/misc/ad525x_dpot-spi.c index b8c6df9..6cfcb63 100644
+>> --- a/drivers/misc/ad525x_dpot-spi.c
+>> +++ b/drivers/misc/ad525x_dpot-spi.c
+>> @@ -53,13 +53,13 @@ static int write8(void *client, u8 val)  static
+>> int write16(void *client, u8 reg, u8 val)  {
+>>      u8 data[2] = {reg, val};
+>> -    return spi_write(client, data, 1);
+>> +    return spi_write(client, data, 2);
+>>  }
+>>
+>>  static int write24(void *client, u8 reg, u16 val)  {
+>>      u8 data[3] = {reg, val >> 8, val};
+>> -    return spi_write(client, data, 1);
+>> +    return spi_write(client, data, 3);
+>>  }
+>>
+>>  static int read8(void *client)
+>
+> What are the runtime effects of this change?
 
-Thanks Paul, I stand corrected. The final patch will be vastly
-different, but it's surely worth keeping in mind.
+Hi Andrew,
 
+This is a bug fix. Some SPI connected devices using
+16/24 bit accesses, previously failed, now work.
 
--- 
-Jens Axboe
+This typo slipped in after testing, during some restructuring.
+
+Greetings,
+Michael
+
+Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
+Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
 
