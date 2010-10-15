@@ -1,76 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab0JOO52 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:57:28 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58600 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756079Ab0JOO52 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:57:28 -0400
-Subject: Re: [RFC][PATCH 7/7] perf: Optimize sw events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Jason Baron <jbaron@redhat.com>,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Mike Galbraith <efault@gmx.de>, Steven Rostedt <rostedt@goodmis.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-In-Reply-To: <1287134043.29097.1331.camel@twins>
-References: <20101014203404.222133139@chello.nl>
-	 <20101014203625.609332490@chello.nl>  <1287134043.29097.1331.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Oct 2010 16:57:07 +0200
-Message-ID: <1287154627.29097.1524.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756346Ab0JOO6b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:58:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55062 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754334Ab0JOO6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 10:58:30 -0400
+Message-ID: <4CB86C0D.60603@kernel.org>
+Date: Fri, 15 Oct 2010 16:58:21 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+MIME-Version: 1.0
+To: linux-pcmcia@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
+        Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: [PATCH v2.6.36-rc7] pcmcia: don't call flush_scheduled_work() spuriously
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Oct 2010 14:58:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-15 at 11:16 +0200, Peter Zijlstra wrote:
-> On Thu, 2010-10-14 at 22:34 +0200, Peter Zijlstra wrote:
-> 
-> > Index: linux-2.6/include/linux/perf_event.h
-> > ===================================================================
-> > --- linux-2.6.orig/include/linux/perf_event.h
-> > +++ linux-2.6/include/linux/perf_event.h
-> > @@ -1013,15 +1013,17 @@ static inline void perf_fetch_caller_reg
-> >  static inline void
-> >  perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
-> >  {
-> > -	if (atomic_read(&perf_swevent_enabled[event_id])) {
-> > -		struct pt_regs hot_regs;
-> > +	struct pt_regs hot_regs;
-> >  
-> > -		if (!regs) {
-> > -			perf_fetch_caller_regs(&hot_regs);
-> > -			regs = &hot_regs;
-> > -		}
-> > -		__perf_sw_event(event_id, nr, nmi, regs, addr);
-> > +	JUMP_LABEL(&perf_swevent_enabled[event_id], have_event);
-> > +	return;
-> > +
-> > +have_event:
-> > +	if (!regs) {
-> > +		perf_fetch_caller_regs(&hot_regs);
-> > +		regs = &hot_regs;
-> >  	}
-> > +	__perf_sw_event(event_id, nr, nmi, regs, addr);
-> >  }
-> >  
-> 
-> OK, so it appears I only compile tested this bit without jump_label
-> support, with that bit added back this horribly fails to compile like:
-> 
-> In file included from /usr/src/linux-2.6/arch/x86/mm/fault.c:13:
-> /usr/src/linux-2.6/include/linux/perf_event.h: In function ‘perf_sw_event.clone.0’:
-> /usr/src/linux-2.6/include/linux/perf_event.h:1018: warning: asm operand 0 probably doesn’t match constraints
-> /usr/src/linux-2.6/include/linux/perf_event.h:1018: error: impossible constraint in ‘asm’
-> 
+au100_generic and soc_common call flush_scheduled_work() spuriously.
+Remove them.
 
-Ah, figured it out, it needs __attribute__((always_inline)), otherwise
-we end up with multiple keys for one label, which will clealy not work.
+This is to prepare for the deprecation and removal of
+flush_scheduled_work().
 
-I thought we had a __force_inline macro but I can't seem to find that.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+Am I missing something?  The only pcmcia driver which uses the system
+workqueue is vrc4173 which doesn't seem to depend on any of the above
+and doesn't seem to implement removal properly anyway.
+
+Thank you.
+
+ drivers/pcmcia/au1000_generic.c |    3 ---
+ drivers/pcmcia/soc_common.c     |    4 ----
+ 2 files changed, 7 deletions(-)
+
+Index: work/drivers/pcmcia/au1000_generic.c
+===================================================================
+--- work.orig/drivers/pcmcia/au1000_generic.c
++++ work/drivers/pcmcia/au1000_generic.c
+@@ -441,14 +441,12 @@ int au1x00_pcmcia_socket_probe(struct de
 
 
+ out_err:
+-	flush_scheduled_work();
+ 	ops->hw_shutdown(skt);
+ 	while (i-- > 0) {
+ 		skt = PCMCIA_SOCKET(i);
+
+ 		del_timer_sync(&skt->poll_timer);
+ 		pcmcia_unregister_socket(&skt->socket);
+-		flush_scheduled_work();
+ 		if (i == 0) {
+ 			iounmap(skt->virt_io + (u32)mips_io_port_base);
+ 			skt->virt_io = NULL;
+@@ -480,7 +478,6 @@ int au1x00_drv_pcmcia_remove(struct plat
+
+ 		del_timer_sync(&skt->poll_timer);
+ 		pcmcia_unregister_socket(&skt->socket);
+-		flush_scheduled_work();
+ 		skt->ops->hw_shutdown(skt);
+ 		au1x00_pcmcia_config_skt(skt, &dead_socket);
+ 		iounmap(skt->virt_io + (u32)mips_io_port_base);
+Index: work/drivers/pcmcia/soc_common.c
+===================================================================
+--- work.orig/drivers/pcmcia/soc_common.c
++++ work/drivers/pcmcia/soc_common.c
+@@ -627,8 +627,6 @@ void soc_pcmcia_remove_one(struct soc_pc
+
+ 	pcmcia_unregister_socket(&skt->socket);
+
+-	flush_scheduled_work();
+-
+ 	skt->ops->hw_shutdown(skt);
+
+ 	soc_common_pcmcia_config_skt(skt, &dead_socket);
+@@ -720,8 +718,6 @@ int soc_pcmcia_add_one(struct soc_pcmcia
+ 	pcmcia_unregister_socket(&skt->socket);
+
+  out_err_7:
+-	flush_scheduled_work();
+-
+ 	skt->ops->hw_shutdown(skt);
+  out_err_6:
+ 	list_del(&skt->node);
