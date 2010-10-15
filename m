@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755447Ab0JOMyM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 08:54:12 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56472 "EHLO mgw2.diku.dk"
+	id S1755782Ab0JOMyg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 08:54:36 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:56490 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754331Ab0JOMyJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 08:54:09 -0400
+	id S1755330Ab0JOMyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 08:54:11 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Samuel Ortiz <samuel@sortiz.org>
-Cc: kernel-janitors@vger.kernel.org, netdev@vger.kernel.org,
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: kernel-janitors@vger.kernel.org, linux-scsi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/7] drivers/net/irda/irtty-sir.c: Return -ENOMEM on memory allocation failure
-Date: Fri, 15 Oct 2010 15:00:04 +0200
-Message-Id: <1287147610-8041-1-git-send-email-julia@diku.dk>
+Subject: [PATCH 5/7] drivers/scsi/libsas/sas_ata.c: Return -ENOMEM on memory allocation failure
+Date: Fri, 15 Oct 2010 15:00:08 +0200
+Message-Id: <1287147610-8041-5-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,9 +23,7 @@ From: Julia Lawall <julia@diku.dk>
 In this code, 0 is returned on memory allocation failure, even though other
 failures return -ENOMEM or other similar values.
 
-The initial value of ret as 0 is never used, so drop the initialization.
-
-A simplified version of the semantic match that finds the first problem is as
+A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
 
 // <smpl>
@@ -46,31 +44,22 @@ if (x == NULL) { ... when != ret = e3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/irda/irtty-sir.c |    6 ++++--
- 1 file changed, 4 insertions(+), 2 deletions(-)
+ drivers/scsi/libsas/sas_ata.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
-diff -u -p a/drivers/net/irda/irtty-sir.c b/drivers/net/irda/irtty-sir.c
---- a/drivers/net/irda/irtty-sir.c
-+++ b/drivers/net/irda/irtty-sir.c
-@@ -426,7 +426,7 @@ static int irtty_open(struct tty_struct 
- {
- 	struct sir_dev *dev;
- 	struct sirtty_cb *priv;
--	int ret = 0;
-+	int ret;
+diff -u -p a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
+--- a/drivers/scsi/libsas/sas_ata.c
++++ b/drivers/scsi/libsas/sas_ata.c
+@@ -464,8 +464,10 @@ static int sas_execute_task(struct sas_t
  
- 	/* Module stuff handled via irda_ldisc.owner - Jean II */
+ 	if (dma_dir != DMA_NONE) {
+ 		scatter = kzalloc(sizeof(*scatter), GFP_KERNEL);
+-		if (!scatter)
++		if (!scatter) {
++			res = -ENOMEM;
+ 			goto out;
++		}
  
-@@ -459,8 +459,10 @@ static int irtty_open(struct tty_struct 
- 
- 	/* allocate private device info block */
- 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
--	if (!priv)
-+	if (!priv) {
-+		ret = -ENOMEM;
- 		goto out_put;
-+	}
- 
- 	priv->magic = IRTTY_MAGIC;
- 	priv->tty = tty;
+ 		sg_init_one(scatter, buffer, size);
+ 		num_scatter = 1;
 
