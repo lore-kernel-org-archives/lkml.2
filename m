@@ -1,83 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab0JOMfk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 08:35:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58863 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755263Ab0JOMfi (ORCPT
+	id S1755298Ab0JOMhm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 08:37:42 -0400
+Received: from 68.mail-out.ovh.net ([91.121.185.69]:54487 "HELO
+	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753672Ab0JOMhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 08:35:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=I46dhHn/+NYUNv3GpWkxpBzf8bc0vaH6C33XV3yRN2GfL1xMok9ZFJ0awD3KDT+WFP
-         XACjXWgfJgt+vMACt2gAeuhBMBtjdtZRHL0wBKxdbuU7trn3H2Y3wsBiSXXVflBah4FL
-         g3pU8KFSASzq/93JTQHun+GVQmSlF4bt2zR7Y=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH 3/7] staging:ft1000: Remove APP_INFO_BLOCK typedef usage.
-Date: Fri, 15 Oct 2010 14:13:00 +0200
-Message-Id: <1287144784-3359-3-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287144784-3359-1-git-send-email-marek.belisko@gmail.com>
-References: <1287144784-3359-1-git-send-email-marek.belisko@gmail.com>
+	Fri, 15 Oct 2010 08:37:41 -0400
+From: =?UTF-8?q?Eric=20B=C3=A9nard?= <eric@eukrea.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, s.hauer@pengutronix.de,
+        Dinh.Nguyen@freescale.com, leoli@freescale.com,
+        dbrownell@users.sourceforge.net, gregkh@suse.de,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] mxc_udc: add workaround for ENGcm09152 for i.MX35
+Date: Fri, 15 Oct 2010 14:30:58 +0200
+Message-Id: <1287145858-10239-1-git-send-email-eric@eukrea.com>
+X-Mailer: git-send-email 1.7.0.4
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 5296796113033407841
+X-Ovh-Remote: 82.240.38.71 (pac33-2-82-240-38-71.fbx.proxad.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |   27 +++++++++++------------
- 1 files changed, 13 insertions(+), 14 deletions(-)
+this patch gives the possibility to workaround bug ENGcm09152
+on i.MX35 when the hardware workaround is also implemented on
+the board.
+It covers the workaround described on page 25 of the following Errata :
+http://cache.freescale.com/files/dsp/doc/errata/IMX35CE.pdf 
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index 200f3c0..3fce7f6 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -77,19 +77,18 @@ struct dsp_init_msg {
- } __attribute__ ((packed));
+Signed-off-by: Eric Bénard <eric@eukrea.com>
+---
+ arch/arm/mach-mx3/mach-cpuimx35.c |    1 +
+ drivers/usb/gadget/fsl_mxc_udc.c  |   15 +++++++++++++++
+ include/linux/fsl_devices.h       |    3 +++
+ 3 files changed, 19 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/mach-mx3/mach-cpuimx35.c b/arch/arm/mach-mx3/mach-cpuimx35.c
+index 6024bb9..a95ff79 100644
+--- a/arch/arm/mach-mx3/mach-cpuimx35.c
++++ b/arch/arm/mach-mx3/mach-cpuimx35.c
+@@ -132,6 +132,7 @@ static struct mxc_usbh_platform_data __maybe_unused usbh1_pdata = {
+ static struct fsl_usb2_platform_data otg_device_pdata = {
+ 	.operating_mode	= FSL_USB2_DR_DEVICE,
+ 	.phy_mode	= FSL_USB2_PHY_UTMI,
++	.workaround	= FLS_USB2_WORKAROUND_ENGCM09152,
+ };
  
+ static int otg_mode_host;
+diff --git a/drivers/usb/gadget/fsl_mxc_udc.c b/drivers/usb/gadget/fsl_mxc_udc.c
+index eafa6d2..5bdbfe6 100644
+--- a/drivers/usb/gadget/fsl_mxc_udc.c
++++ b/drivers/usb/gadget/fsl_mxc_udc.c
+@@ -22,6 +22,10 @@
+ static struct clk *mxc_ahb_clk;
+ static struct clk *mxc_usb_clk;
  
--typedef struct _APP_INFO_BLOCK
--{
--    u32 nTxMsg;                    // DPRAM msg sent to DSP with app_id
--    u32 nRxMsg;                    // DPRAM msg rcv from dsp with app_id
--    u32 nTxMsgReject;              // DPRAM msg rejected due to DSP doorbell set
--    u32 nRxMsgMiss;                // DPRAM msg dropped due to overflow
--    struct fown_struct *fileobject;// Application's file object
--    u16 app_id;                    // Application id
--    int DspBCMsgFlag;
--    int NumOfMsg;                   // number of messages queued up
--    wait_queue_head_t	wait_dpram_msg;
--    struct list_head app_sqlist;   // link list of msgs for applicaton on slow queue
--} APP_INFO_BLOCK, *PAPP_INFO_BLOCK;
-+struct app_info_block {
-+	u32 nTxMsg;                    // DPRAM msg sent to DSP with app_id
-+	u32 nRxMsg;                    // DPRAM msg rcv from dsp with app_id
-+	u32 nTxMsgReject;              // DPRAM msg rejected due to DSP doorbell set
-+	u32 nRxMsgMiss;                // DPRAM msg dropped due to overflow
-+	struct fown_struct *fileobject;// Application's file object
-+	u16 app_id;                    // Application id
-+	int DspBCMsgFlag;
-+	int NumOfMsg;                   // number of messages queued up
-+	wait_queue_head_t wait_dpram_msg;
-+	struct list_head app_sqlist;   // link list of msgs for applicaton on slow queue
-+} __attribute__((packed));
++/* workaround ENGcm09152 for i.MX35 */
++#define USBPHYCTRL_OTGBASE_OFFSET	0x608
++#define USBPHYCTRL_EVDO			(1 << 23)
++
+ int fsl_udc_clk_init(struct platform_device *pdev)
+ {
+ 	struct fsl_usb2_platform_data *pdata;
+@@ -84,6 +88,17 @@ eenahb:
+ void fsl_udc_clk_finalize(struct platform_device *pdev)
+ {
+ 	struct fsl_usb2_platform_data *pdata = pdev->dev.platform_data;
++#if defined(CONFIG_ARCH_MX35)
++	unsigned int v;
++
++	/* workaround ENGcm09152 for i.MX35 */
++	if (pdata->workaround & FLS_USB2_WORKAROUND_ENGCM09152) {
++		v = readl(MX35_IO_ADDRESS(MX35_OTG_BASE_ADDR +
++				USBPHYCTRL_OTGBASE_OFFSET));
++		writel(v | USBPHYCTRL_EVDO, MX35_IO_ADDRESS(MX35_OTG_BASE_ADDR +
++				USBPHYCTRL_OTGBASE_OFFSET));
++	}
++#endif
  
- typedef struct _PROV_RECORD {
-     struct list_head list;
-@@ -582,7 +581,7 @@ typedef struct _FT1000_INFO {
-     u16 ProgConStat;
-     struct list_head prov_list;
-     int appcnt;
--    APP_INFO_BLOCK app_info[MAX_NUM_APP]; //Added by Jim
-+	struct app_info_block app_info[MAX_NUM_APP];
-     u16 DSPInfoBlklen;
-     u16 DrvMsgPend;
-     int (*ft1000_reset)(struct net_device *dev);
+ 	/* ULPI transceivers don't need usbpll */
+ 	if (pdata->phy_mode == FSL_USB2_PHY_ULPI) {
+diff --git a/include/linux/fsl_devices.h b/include/linux/fsl_devices.h
+index 28e33fe..01a23fa 100644
+--- a/include/linux/fsl_devices.h
++++ b/include/linux/fsl_devices.h
+@@ -63,12 +63,15 @@ struct fsl_usb2_platform_data {
+ 	enum fsl_usb2_operating_modes	operating_mode;
+ 	enum fsl_usb2_phy_modes		phy_mode;
+ 	unsigned int			port_enables;
++	unsigned int			workaround;
+ };
+ 
+ /* Flags in fsl_usb2_mph_platform_data */
+ #define FSL_USB2_PORT0_ENABLED	0x00000001
+ #define FSL_USB2_PORT1_ENABLED	0x00000002
+ 
++#define FLS_USB2_WORKAROUND_ENGCM09152	(1 << 0)
++
+ struct spi_device;
+ 
+ struct fsl_spi_platform_data {
 -- 
-1.7.1
+1.7.0.4
 
