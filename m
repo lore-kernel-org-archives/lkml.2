@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab0JOOJN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:09:13 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:54278 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755590Ab0JOOJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:09:11 -0400
-Date: Fri, 15 Oct 2010 15:08:19 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: Pat Gefre <pfg@sgi.com>, kernel-janitors@vger.kernel.org,
-        linux-ia64@vger.kernel.org, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/7] drivers/serial/ioc3_serial.c: Return -ENOMEM on
- memory allocation failure
-Message-ID: <20101015140819.GA3163@linux-mips.org>
-References: <1287147610-8041-6-git-send-email-julia@diku.dk>
+	id S1755751Ab0JOOL1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:11:27 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:8316 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754702Ab0JOOL0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 10:11:26 -0400
+X-IronPort-AV: E=Sophos;i="4.57,336,1283731200"; 
+   d="scan'208";a="2364718"
+Date: Fri, 15 Oct 2010 15:11:14 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+        "jeremy@goop.org" <jeremy@goop.org>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        Jeremy Fitzhardinge <Jeremy.Fitzhardinge@citrix.com>
+Subject: Re: [PATCH v4 4/7] acpi: use indirect call to register gsi in
+ different modes
+In-Reply-To: <201010142332.35224.rjw@sisk.pl>
+Message-ID: <alpine.DEB.2.00.1010151510260.2423@kaball-desktop>
+References: <alpine.DEB.2.00.1010121121160.2423@kaball-desktop> <1286901289-8156-4-git-send-email-stefano.stabellini@eu.citrix.com> <201010142332.35224.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287147610-8041-6-git-send-email-julia@diku.dk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 03:00:09PM +0200, Julia Lawall wrote:
-
-> From: Julia Lawall <julia@diku.dk>
+On Thu, 14 Oct 2010, Rafael J. Wysocki wrote:
+> On Tuesday, October 12, 2010, stefano.stabellini@eu.citrix.com wrote:
+> > From: Jeremy Fitzhardinge <jeremy@goop.org>
+> > 
+> > Rather than using a tree of conditionals, use function pointer
+> > for acpi_register_gsi.
+> > 
+> > Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> > Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 > 
-> In this code, 0 is returned on memory allocation failure, even though other
-> failures return -ENOMEM or other similar values.
+> Looks good to me.
 > 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
 
-Dunno why linux-mips rsp. myself keep receiving patches for the ioc3 serial
-driver - it's only being used on SGI IA64 machines.
+Thank you very much for taking the time to read these two patches!
 
-Either way, I'm willing to funnel this patch upstream - I'm building a
-pull rq for tonight anyway.
-
-  Ralf
