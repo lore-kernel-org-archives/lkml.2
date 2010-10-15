@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755275Ab0JOMSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 08:18:07 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51339 "EHLO
+	id S1755359Ab0JOMSL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 08:18:11 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59096 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754292Ab0JOMSF (ORCPT
+	with ESMTP id S1754492Ab0JOMSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 08:18:05 -0400
+	Fri, 15 Oct 2010 08:18:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=vaRCb9FCOnaO9IdiAxkBVhkviY5mDzJypufD+n8LG45gIYHith+fHa1mTykJihcVWL
-         guhyHzmg6UphQi0MgfKDob0lVgmu94T/KHlKaVdPsnuboxQjy9u++eGgIqT9cBsgtmkR
-         XYoId26fksmbfvBEIZGLGK/50TRwBOIRbK7vU=
+        b=nlvSzO6EllJLrCeQhP1hIPtbSDxM5pRpd17vlZsmKeO5smJ+0grCIAo71NMDxAQuBO
+         8ELr8+n4BUhXBsiMMRRln98mRA16QkSdOknuIqb0i9Qh45abHihPuMosItNruEFnNCeR
+         yjSKiE/+gSMg0B1JihryJL7vYxy0sRxHmglkk=
 From: Marek Belisko <marek.belisko@gmail.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>,
         Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
 Cc: Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH 4/7] staging:ft1000: Remove PROV_RECORD typedef usage.
-Date: Fri, 15 Oct 2010 14:13:01 +0200
-Message-Id: <1287144784-3359-4-git-send-email-marek.belisko@gmail.com>
+Subject: [PATCH 2/7] staging:ft1000: Remove DSPINITMSG typedef usage.
+Date: Fri, 15 Oct 2010 14:12:59 +0200
+Message-Id: <1287144784-3359-2-git-send-email-marek.belisko@gmail.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1287144784-3359-1-git-send-email-marek.belisko@gmail.com>
 References: <1287144784-3359-1-git-send-email-marek.belisko@gmail.com>
@@ -30,100 +30,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
 ---
- .../staging/ft1000/ft1000-usb/ft1000_download.c    |    5 ++---
- drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |    8 ++++----
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |    8 ++++----
- 3 files changed, 10 insertions(+), 11 deletions(-)
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c  |    6 +++---
+ drivers/staging/ft1000/ft1000-usb/ft1000_usb.h |   24 ++++++++++++------------
+ 2 files changed, 15 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-index 4e506aa..b950634 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_download.c
-@@ -777,7 +777,6 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
-    USHORT                  handshake;
-    PPSEUDO_HDR             pHdr;
-    USHORT                  usHdrLength;
--   //PPROV_RECORD            pProvRecord;
-    long                    word_length;
-    USHORT                  request;
-    USHORT                  temp;
-@@ -801,7 +800,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
- 
-    USHORT                  dpram = 0;
-    PUCHAR                  pbuffer;
--   PPROV_RECORD            pprov_record;
-+	struct prov_record *pprov_record;
-    FT1000_INFO *pft1000info = netdev_priv(ft1000dev->net);
- 
-    DEBUG("Entered   scram_dnldr...\n");
-@@ -1184,7 +1183,7 @@ u16 scram_dnldr(struct ft1000_device *ft1000dev, void *pFileStart, ULONG  FileLe
-             if (pbuffer) {
-                 memcpy(pbuffer, (void *)pUcFile, (UINT)(usHdrLength + sizeof(PSEUDO_HDR)));
-                 // link provisioning data
--                pprov_record = kmalloc( sizeof(PROV_RECORD), GFP_ATOMIC );
-+		pprov_record = kmalloc(sizeof(struct prov_record), GFP_ATOMIC);
-                 if (pprov_record) {
-                     pprov_record->pprov_data = pbuffer;
-                     list_add_tail (&pprov_record->list, &pft1000info->prov_list);
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-index 519f578..4a7e007 100644
+index f88dcf0..519f578 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
-@@ -722,7 +722,7 @@ static int ft1000_reset_card (struct net_device *dev)
-     FT1000_INFO *info = netdev_priv(dev);
-     struct ft1000_device *ft1000dev = info->pFt1000Dev;
+@@ -1837,7 +1837,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
+     u16 msgtype;
      u16 tempword;
--    PPROV_RECORD ptr;
-+	struct prov_record *ptr;
- 
-     DEBUG("ft1000_hw:ft1000_reset_card called.....\n");
- 
-@@ -733,7 +733,7 @@ static int ft1000_reset_card (struct net_device *dev)
-     // Make sure we free any memory reserve for provisioning
-     while (list_empty(&info->prov_list) == 0) {
-         DEBUG("ft1000_hw:ft1000_reset_card:deleting provisioning record\n");
--        ptr = list_entry(info->prov_list.next, PROV_RECORD, list);
-+	ptr = list_entry(info->prov_list.next, struct prov_record, list);
-         list_del(&ptr->list);
-         kfree(ptr->pprov_data);
-         kfree(ptr);
-@@ -1754,7 +1754,7 @@ static int ft1000_dsp_prov(void *arg)
-     u16 tempword;
-     u16 len;
-     u16 i=0;
--    PPROV_RECORD ptr;
-+	struct prov_record *ptr;
+ 	struct media_msg *pmediamsg;
+-    PDSPINITMSG pdspinitmsg;
++	struct dsp_init_msg *pdspinitmsg;
+     PDRVMSG pdrvmsg;
+     u16 i;
      PPSEUDO_HDR ppseudo_hdr;
-     PUSHORT pmsg;
-     u16 status;
-@@ -1789,7 +1789,7 @@ static int ft1000_dsp_prov(void *arg)
-             DEBUG("*** Provision Data Sent to DSP\n");
+@@ -1924,7 +1924,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
+             case DSP_INIT_MSG: {
+                 DEBUG("ft1000_proc_drvmsg:Command message type = DSP_INIT_MSG");
  
-             // Send provisioning data
--            ptr = list_entry(info->prov_list.next, PROV_RECORD, list);
-+		ptr = list_entry(info->prov_list.next, struct prov_record, list);
-             len = *(u16 *)ptr->pprov_data;
-             len = htons(len);
-             len += PSEUDOSZ;
+-                pdspinitmsg = (PDSPINITMSG)&cmdbuffer[2];
++		pdspinitmsg = (struct dsp_init_msg *)&cmdbuffer[2];
+                 memcpy(info->DspVer, pdspinitmsg->DspVer, DSPVERSZ);
+                 DEBUG("DSPVER = 0x%2x 0x%2x 0x%2x 0x%2x\n", info->DspVer[0], info->DspVer[1], info->DspVer[2], info->DspVer[3]);
+                 memcpy(info->HwSerNum, pdspinitmsg->HwSerNum, HWSERNUMSZ);
+@@ -1938,7 +1938,7 @@ static int ft1000_proc_drvmsg (struct ft1000_device *dev, u16 size) {
+                 dev->net->dev_addr[4] = info->eui64[6];
+                 dev->net->dev_addr[5] = info->eui64[7];
+ 
+-                if (ntohs(pdspinitmsg->length) == (sizeof(DSPINITMSG) - 20) ) {
++		if (ntohs(pdspinitmsg->length) == (sizeof(struct dsp_init_msg) - 20)) {
+                     memcpy(info->ProductMode, pdspinitmsg->ProductMode, MODESZ);
+                     memcpy(info->RfCalVer, pdspinitmsg->RfCalVer, CALVERSZ);
+                     memcpy(info->RfCalDate, pdspinitmsg->RfCalDate, CALDATESZ);
 diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-index 3fce7f6..673a245 100644
+index bfd43fd..200f3c0 100644
 --- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
 +++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.h
-@@ -90,10 +90,10 @@ struct app_info_block {
- 	struct list_head app_sqlist;   // link list of msgs for applicaton on slow queue
- } __attribute__((packed));
+@@ -63,18 +63,18 @@ struct media_msg {
+ 	u32 dns_2;
+ } __attribute__ ((packed));
  
--typedef struct _PROV_RECORD {
--    struct list_head list;
--    u8 *pprov_data;
--} PROV_RECORD, *PPROV_RECORD;
-+struct prov_record {
-+	struct list_head list;
-+	u8 *pprov_data;
-+};
+-typedef struct _DSPINITMSG {
+-    PSEUDO_HDR pseudo;
+-    u16 type;
+-    u16 length;
+-    u8 DspVer[DSPVERSZ];        // DSP version number
+-    u8 HwSerNum[HWSERNUMSZ];    // Hardware Serial Number
+-    u8 Sku[SKUSZ];              // SKU
+-    u8 eui64[EUISZ];            // EUI64
+-    u8 ProductMode[MODESZ];     // Product Mode (Market/Production)
+-    u8 RfCalVer[CALVERSZ];      // Rf Calibration version
+-    u8 RfCalDate[CALDATESZ];    // Rf Calibration date
+-} __attribute__ ((packed)) DSPINITMSG, *PDSPINITMSG;
++struct dsp_init_msg {
++	PSEUDO_HDR pseudo;
++	u16 type;
++	u16 length;
++	u8 DspVer[DSPVERSZ];        // DSP version number
++	u8 HwSerNum[HWSERNUMSZ];    // Hardware Serial Number
++	u8 Sku[SKUSZ];              // SKU
++	u8 eui64[EUISZ];            // EUI64
++	u8 ProductMode[MODESZ];     // Product Mode (Market/Production)
++	u8 RfCalVer[CALVERSZ];      // Rf Calibration version
++	u8 RfCalDate[CALDATESZ];    // Rf Calibration date
++} __attribute__ ((packed));
  
- /*end of Jim*/
- #define DEBUG(args...) printk(KERN_INFO args)
+ 
+ typedef struct _APP_INFO_BLOCK
 -- 
 1.7.1
 
