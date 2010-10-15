@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756524Ab0JOSPE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 14:15:04 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53209 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970Ab0JOSPC (ORCPT
+	id S932274Ab0JOSPP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 14:15:15 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:30786 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756647Ab0JOSPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 14:15:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TK5X/eiwmBFbN+z1vwcdYhQAgB03BXAGgejy+Uw9LuAQKOkMxYXBGbynvG2PQA+mQp
-         GCNTCVOvvGfF+9WNTlMiwIQ6ZZhjFlgbKv/T9545Sbz7CSw0KIPFvi9tRIffHcXWO3iP
-         sU4qEzKCQ0XP2dkvuX/anp7DIQEWfxjrOZ8Ns=
-Date: Fri, 15 Oct 2010 20:14:52 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Mike Galbraith <efault@gmx.de>, Matt Helsley <matthltc@us.ibm.com>
-Subject: Re: [RFC][PATCH 1/7] perf: Fix task refcount issues
-Message-ID: <20101015181448.GA5351@nowhere>
-References: <20101014203404.222133139@chello.nl> <20101014203625.278436085@chello.nl>
+	Fri, 15 Oct 2010 14:15:09 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAHs3uEx5Ld+3/2dsb2JhbAChJXLAHYVJBI9K
+Date: Sat, 16 Oct 2010 05:14:59 +1100
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101015181459.GA11273@amd>
+References: <20101015031343.GG4681@dastard>
+ <20101015033017.GA6750@amd>
+ <20101015034451.GA6827@amd>
+ <20101015064150.GB7511@amd>
+ <20101015105943.GE32255@dastard>
+ <20101015130259.GA3207@amd>
+ <20101015132938.GA3936@amd>
+ <20101015173345.GA10731@amd>
+ <20101015175247.GA6737@infradead.org>
+ <20101015180219.GA11110@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101014203625.278436085@chello.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20101015180219.GA11110@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Oct 14, 2010 at 10:34:05PM +0200, Peter Zijlstra wrote:
-> Currently it looks like find_lively_task_by_vpid() takes a task ref
-> and relies on find_get_context() to drop it.
+On Sat, Oct 16, 2010 at 05:02:19AM +1100, Nick Piggin wrote:
+> For those lookups where you are taking the i_lock anyway, they
+> will look the same, except the i_lock lock width reduction
+> loses the ability to lock all icache state of the inode (like
+> we can practically do today with inode_lock).
 > 
-> The problem is that perf_event_create_kernel_counter() shouldn't be
-> dropping task refs.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Matt Helsley <matthltc@us.ibm.com>
+> This was a key consideration for maintainability for me.
 
+Maybe you've overlooked this point. It is, in fact, very important
+in my opinion. With my locking approach, everywhere where today
+we have:
 
-Looks good.
+spin_lock(&inode_lock);
+do_something(inode);
+spin_unlock(&inode_lock);
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+it can be replaced with
 
+spin_lock(&inode->i_lock);
+do_something(inode);
+spin_unlock(&inode->i_lock);
 
+Without worrying about the lock coverage. In fact, it is a tiny bit
+stronger because you also get to hold the refcount at the same time
+(doesn't really matter outside core icache though).
 
-> ---
->  kernel/perf_event.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
-> 
-> Index: linux-2.6/kernel/perf_event.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/perf_event.c
-> +++ linux-2.6/kernel/perf_event.c
-> @@ -2124,11 +2124,9 @@ find_get_context(struct pmu *pmu, struct
->  		}
->  	}
->  
-> -	put_task_struct(task);
->  	return ctx;
->  
->  errout:
-> -	put_task_struct(task);
->  	return ERR_PTR(err);
->  }
->  
-> @@ -5536,7 +5534,7 @@ SYSCALL_DEFINE5(perf_event_open,
->  	ctx = find_get_context(pmu, task, cpu);
->  	if (IS_ERR(ctx)) {
->  		err = PTR_ERR(ctx);
-> -		goto err_group_fd;
-> +		goto err_task;
->  	}
->  
->  	/*
-> @@ -5632,6 +5630,9 @@ SYSCALL_DEFINE5(perf_event_open,
->  
->  err_context:
->  	put_ctx(ctx);
-> +err_task:
-> +	if (task)
-> +		put_task_struct(task);
->  err_group_fd:
->  	fput_light(group_file, fput_needed);
->  	free_event(event);
-> 
-> 
+Ditto for my dcache_lock appraoch (it's far more important there, being
+much more visible to filesystems IMO, but icache is still important).
+
+I never totally objected to reductions in i_lock lock width if they
+really are required for that last bit of performance, but I have always
+maintained that I want these kinds of locking irregularities merged on
+their own, on top of the base code. Especially with RCU inodes, I'm not
+sure if they'll be needed, however.
+
+Most of the slowpaths where that happens, the i_lock needs to be taken
+somewhere anyway, so you probably don't really save anything.
 
