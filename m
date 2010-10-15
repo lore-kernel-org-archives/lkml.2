@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab0JOOoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:44:25 -0400
-Received: from cantor.suse.de ([195.135.220.2]:32917 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754844Ab0JOOoY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:44:24 -0400
-From: Andreas Gruenbacher <agruen@suse.de>
-Organization: SUSE Labs
-To: Andi Kleen <andi@firstfloor.org>
-Subject: Re: Process to push changes to include/linux/types.h
-Date: Fri, 15 Oct 2010 16:44:21 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.36-rc7+; KDE/4.3.5; i686; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jan Engelhardt <jengelh@medozas.de>, Eric Paris <eparis@redhat.com>,
-        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        davem@davemloft.net
-References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com> <201010151215.49392.agruen@suse.de> <20101015142617.GB25620@basil.fritz.box>
-In-Reply-To: <20101015142617.GB25620@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010151644.21794.agruen@suse.de>
+	id S1755894Ab0JOOqj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:46:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52672 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754334Ab0JOOqi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 10:46:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Tx4IOu2opzH61+c6b8/hOilCobuXFNAetf/nxroLzW4t8kZSoA89nxbJpVotiLqL6r
+         JaR9mnX57jRZAlcJitXfnb/w1ll1Ac65rYmkjjQbUU1fV80WJVuXvvTOWOTJQ/ge4NdZ
+         BV6yQYgtWFkMyc4d+0grorNKzzGZH+rH+vXBo=
+Subject: Re: [PATCH 3/8] Add a PF flag for ksoftirqd identification
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>
+In-Reply-To: <1286237003-12406-4-git-send-email-venki@google.com>
+References: <1286237003-12406-1-git-send-email-venki@google.com>
+	 <1286237003-12406-4-git-send-email-venki@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 15 Oct 2010 16:46:28 +0200
+Message-ID: <1287153988.2647.68.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 October 2010 16:26:17 Andi Kleen wrote:
-> > 64-bit values align to 4-byte boundaries on some 32-bit architectures like
-> > x86 
-> AFAIK it's only on x86, no other architecture made this mistake in their
-> 32bit ABI. But of course x86 is kind of important ...
+Le lundi 04 octobre 2010 à 17:03 -0700, Venkatesh Pallipadi a écrit :
+> To account softirq time cleanly in scheduler, we need to identify whether
+> softirq is invoked in ksoftirqd context or softirq at hardirq tail context.
+> Add PF_KSOFTIRQD for that purpose.
+> 
+> As all PF flag bits are currently taken, create space by moving one of the
+> infrequently used bits (PF_THREAD_BOUND) down in task_struct to be along
+> with some other state fields.
+> 
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 
-I don't know of any other examples; all the architectures I tried "got it 
-right" except x86.
+Instead of using one bit per task (and fight to find a free bit) why not
+using existing :
 
-Andreas
+DEFINE_PER_CPU(struct task_struct *, ksoftirqd);
+
+And check if current is ksoftirqd ?
+
+if (__get_cpu_var(ksoftirqd) == current) ...
+
+
