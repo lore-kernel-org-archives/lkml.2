@@ -1,64 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751421Ab0JOXjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 19:39:07 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:51816 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750987Ab0JOXjF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 19:39:05 -0400
-Date: Fri, 15 Oct 2010 16:39:04 -0700
-From: "Darrick J. Wong" <djwong@us.ibm.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Ric Wheeler <rwheeler@redhat.com>,
-        Andreas Dilger <adilger.kernel@dilger.ca>, "Ted Ts'o" <tytso@mit.edu>,
-        Mingming Cao <cmm@us.ibm.com>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Keith Mannthey <kmannth@us.ibm.com>, Mingming Cao <mcao@us.ibm.com>,
-        Tejun Heo <tj@kernel.org>, Josef Bacik <josef@redhat.com>,
-        Mike Snitzer <snitzer@redhat.com>
-Subject: Re: Performance testing of various barrier reduction patches [was:
-	Re: [RFC v4] ext4: Coordinate fsync requests]
-Message-ID: <20101015233904.GG25624@tux1.beaverton.ibm.com>
-Reply-To: djwong@us.ibm.com
-References: <20100809233805.GH2109@tux1.beaverton.ibm.com> <20100819021441.GM2109@tux1.beaverton.ibm.com> <20100823183119.GA28105@tux1.beaverton.ibm.com> <20100923232527.GB25624@tux1.beaverton.ibm.com> <B0A8EB94-E2F7-4268-AE99-C4A7402E880D@dilger.ca> <20100927230111.GV25555@tux1.beaverton.ibm.com> <20101008212606.GE25624@tux1.beaverton.ibm.com> <4CAF937C.4020500@redhat.com> <20101011202020.GF25624@tux1.beaverton.ibm.com> <20101012141455.GA27572@lst.de>
-MIME-Version: 1.0
+	id S1751555Ab0JOXjl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 19:39:41 -0400
+Received: from verein.lst.de ([213.95.11.210]:56583 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751220Ab0JOXjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 19:39:40 -0400
+Date: Sat, 16 Oct 2010 01:39:22 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, akpm <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@lst.de>,
+        Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com
+Subject: Re: [PATCH] fs: move exportfs since it is not a networking filesystem
+Message-ID: <20101015233922.GA1035@lst.de>
+References: <20101015163227.3edf2f42.randy.dunlap@oracle.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101012141455.GA27572@lst.de>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20101015163227.3edf2f42.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: -0.001 () BAYES_40
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Oct 12, 2010 at 04:14:55PM +0200, Christoph Hellwig wrote:
-> I still think adding code to every filesystem to optimize for a rather
-> stupid use case is not a good idea.  I dropped out a bit from the
-> thread in the middle, but what was the real use case for lots of
-> concurrent fsyncs on the same inode again?
+Looks good, thanks!
 
-The use case I'm looking at is concurrent fsyncs on /different/ inodes,
-actually.  We have _n_ different processes, each writing (and fsyncing) its own
-separate file on the same filesystem.
 
-iirc, ext4_sync_file is called with the inode mutex held, which prevents
-concurrent fsyncs on the same inode.
+Reviewed-by: Christoph Hellwig <hch@lst.de>
 
-> And what is the amount of performance you need?  If we go back to the
-> direct submission of REQ_FLUSH request from the earlier flush+fua
-> setups that were faster or high end storage, would that be enough for
-> you?
-> 
-> Below is a patch brining the optimization back.
-> 
-> 	WARNING: completely untested!
-
-So I hacked up a patch to the block layer that collects measurements of the
-time delay between blk_start_request and blk_finish_request when a flush
-command is encountered, and what I noticed was that there's a rather large
-discrepancy between the delay as observed by the block layer and the delay as
-observed by ext4.  In general, the discrepancy is a nearly 2x increase between
-what the block layer sees and what ext4 sees, so I'll give Christoph's
-direct-flush patch (below) a try over the weekend.
-
---D
