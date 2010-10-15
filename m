@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756271Ab0JOPOn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 11:14:43 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54214 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755703Ab0JOPOm (ORCPT
+	id S1756244Ab0JOPSZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 11:18:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:44224 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756095Ab0JOPSY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 11:14:42 -0400
+	Fri, 15 Oct 2010 11:18:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=h0TuSqoiX2h1N4qWoVqAQVfRv6zLHcshHkELMSnraY/jWo+OpIjEKAxWF/knjOq1sy
-         MODMhnrXW1OujZqLOfkmf8PUboNEL5BNz6UDN1DRvwNy+JH0FKNcCn3PT0qovoC8P5Bg
-         02Me26Kpqno6GGBszRHw5JzkTRbBHk0oSoJLk=
+        b=f7yz2So88rcbcbZMY03QAephUsKbm+kIusQSXCXrXO6dqAi5iptuxqmp7ZPk32/mZY
+         M89HkCicaUdqC7ibVW+4D9FPtlrLyxttTqAzsuSoSnm6OKXWajBSFOcIyzTXuYcEJh9k
+         Hg/vU0gx1JOknEmzT009VwQH0zYpOBPRAkLEo=
 From: Andrea Gelmini <andrea.gelmini@gelma.net>
 To: linux-kernel@vger.kernel.org
-Cc: Andrea Gelmini <andrea.gelmini@gelma.net>, David Airlie <airlied@linux.ie>,
-        Eric Anholt <eric@anholt.net>, Zhenyu Wang <zhenyuw@linux.intel.com>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 04/13] drivers: gpu: drm: i915: Fix a typo.
-Date: Fri, 15 Oct 2010 17:14:33 +0200
-Message-Id: <1287155673-11418-1-git-send-email-andrea.gelmini@gelma.net>
+Cc: Andrea Gelmini <andrea.gelmini@gelma.net>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Yinghai Lu <yinghai@kernel.org>, Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH 02/13] arch: x86: mm: init_64.c: Removed duplicated #include
+Date: Fri, 15 Oct 2010 17:18:14 +0200
+Message-Id: <1287155896-11616-1-git-send-email-andrea.gelmini@gelma.net>
 X-Mailer: git-send-email 1.7.3.1.181.g784b8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"userpace" -> "userspace"
-
 Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
 ---
- drivers/gpu/drm/i915/i915_irq.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/mm/init_64.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_irq.c b/drivers/gpu/drm/i915/i915_irq.c
-index 85785a8..5c688b7 100644
---- a/drivers/gpu/drm/i915/i915_irq.c
-+++ b/drivers/gpu/drm/i915/i915_irq.c
-@@ -620,7 +620,7 @@ static void i915_capture_error_state(struct drm_device *dev)
- 	}
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 9a66746..612f353 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -50,7 +50,6 @@
+ #include <asm/numa.h>
+ #include <asm/cacheflush.h>
+ #include <asm/init.h>
+-#include <linux/bootmem.h>
  
- 	/* We need to copy these to an anonymous buffer as the simplest
--	 * method to avoid being overwritten by userpace.
-+	 * method to avoid being overwritten by userspace.
- 	 */
- 	error->batchbuffer[0] = i915_error_object_create(dev, batchbuffer[0]);
- 	error->batchbuffer[1] = i915_error_object_create(dev, batchbuffer[1]);
+ static unsigned long dma_reserve __initdata;
+ 
 -- 
 1.7.2.1.85.g2d089
 
