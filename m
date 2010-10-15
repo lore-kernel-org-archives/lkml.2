@@ -1,120 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755862Ab0JONrW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 09:47:22 -0400
-Received: from tx2ehsobe005.messaging.microsoft.com ([65.55.88.15]:21364 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754678Ab0JONrV (ORCPT
+	id S1755934Ab0JONrY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 09:47:24 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:50942 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754678Ab0JONrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 09:47:21 -0400
-X-SpamScore: 0
-X-BigFish: VPS0(zz4015L2f55kzz1202hzz8275dhz32i2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-SS: 0,
-X-WSS-ID: 0LAC3MK-02-GPK-02
-X-M-MSG: 
-Date: Fri, 15 Oct 2010 15:47:10 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "oprofile-list@lists.sourceforge.net" 
-	<oprofile-list@lists.sourceforge.net>
-Subject: [GIT PULL] oprofile updates for v2.6.37
-Message-ID: <20101015134710.GF5969@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Fri, 15 Oct 2010 09:47:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=message-id:from:date:to:reply-to:cc:subject;
+        b=QmG1yr1/O908smivFmyaX1w9/DjX/xwszaXcgZPggu1kMbwQd+Er4m4uTgyMFyABuu
+         pN6EYXSJFPLmgkbavPnA==
+Message-ID: <4cb85478.41e9d80a.44e2.3f00@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Fri, 15 Oct 2010 15:15:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+        fweisbec@gmail.com, perfmon2-devel@lists.sf.net, eranian@gmail.com,
+        eranian@google.com, robert.richter@amd.com
+Subject: [PATCH] perf_events: fix bogus AMD64 generic TLB events
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo,
+PERF_COUNT_HW_CACHE_DTLB:READ:MISS had a bogus umask value of 0 which
+counts nothing. Needed to be 0x7 (to count all possibilities).
 
-please pull for tip/perf/core:
+PERF_COUNT_HW_CACHE_ITLB:READ:MISS had a bogus umask value of 0 which
+counts nothing. Needed to be 0x3 (to count all possibilities).
 
- git://git.kernel.org/pub/scm/linux/kernel/git/rric/oprofile.git core
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
-The main part here is the generalization of the perf event backend
-(currently arm and sh archs). Patches are for v2.6.37.
+---
 
-I did already a merge with tip/perf/core, so it should merge without
-conflicts.
-
-There are still my oprofile x86 updates pending (mainly AMD IBS) that
-require my APIC patches to be applied to tip. As soon as they are in
-tip I will update the oprofile tree and send a further pull request.
-
-Thanks,
-
--Robert
-
-The following changes since commit 0fdf13606b67f830559abdaad15980c7f4f05ec4:
-
-Anand Gadiyar (2):
-      oprofile: include platform_device.h to fix build break
-      oprofile: fix linker errors
-
-Jiri Olsa (2):
-      oprofile, x86: Using struct stack_frame for 64bit processes dump
-      oprofile, x86: Adding backtrace dump for 32bit process in compat mode
-
-Matt Fleming (7):
-      perf: Add helper function to return number of counters
-      perf: New helper function for pmu name
-      oprofile: Make op_name_from_perf_id() global
-      ARM: oprofile: Rename op_arm to oprofile_perf
-      ARM: oprofile: Move non-ARM code into separate init/exit
-      oprofile: Abstract the perf-events backend
-      sh: oprofile: Use perf-events oprofile backend
-
-Robert Richter (17):
-      oprofile, arm: initialize perf_event pointers with NULL
-      Merge branch 'oprofile/urgent' into oprofile/core
-      oprofile, x86: Simplify init/exit functions
-      oprofile, ARM: Use oprofile_arch_exit() to cleanup on failure
-      oprofile, ARM: Rework op_create_counter()
-      oprofile, ARM: Remove some goto statements
-      oprofile: Remove duplicate code around __oprofilefs_create_file()
-      Merge branch 'oprofile/urgent' (early part) into oprofile/perf
-      oprofile, ARM: Release resources on failure
-      Merge branch 'oprofile/core' (early part) into oprofile/perf
-      oprofile, ARM: Remove some goto statements
-      oprofile, ARM: Rework op_create_counter()
-      oprofile, ARM: Use oprofile_arch_exit() to cleanup on failure
-      Merge branch 'oprofile/perf' into oprofile/core
-      oprofile: disable write access to oprofilefs while profiler is running
-      Merge remote branch 'tip/perf/core' into oprofile/core
-      oprofile: make !CONFIG_PM function stubs static inline
-
-Will Deacon (2):
-      oprofile: don't call arch exit code from init code on failure
-      ARM: oprofile: fix and simplify init/exit functions
-
- arch/arm/kernel/perf_event.c      |    6 +
- arch/arm/oprofile/Makefile        |    4 +
- arch/arm/oprofile/common.c        |  311 +----------------------------------
- arch/sh/Kconfig                   |   13 ++
- arch/sh/kernel/perf_event.c       |   18 ++
- arch/sh/oprofile/Makefile         |    4 +
- arch/sh/oprofile/common.c         |  115 +++-----------
- arch/sh/oprofile/op_impl.h        |   33 ----
- arch/x86/oprofile/backtrace.c     |   70 +++++++--
- arch/x86/oprofile/nmi_int.c       |    9 +-
- drivers/oprofile/oprof.c          |   32 +---
- drivers/oprofile/oprof.h          |    2 +-
- drivers/oprofile/oprofile_files.c |    7 +-
- drivers/oprofile/oprofile_perf.c  |  328 +++++++++++++++++++++++++++++++++++++
- drivers/oprofile/oprofilefs.c     |   54 +++----
- include/linux/oprofile.h          |    7 +
- include/linux/perf_event.h        |    2 +
- kernel/perf_event.c               |    5 +
- 18 files changed, 510 insertions(+), 510 deletions(-)
- delete mode 100644 arch/sh/oprofile/op_impl.h
- create mode 100644 drivers/oprofile/oprofile_perf.c
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+index c2897b7..46d5844 100644
+--- a/arch/x86/kernel/cpu/perf_event_amd.c
++++ b/arch/x86/kernel/cpu/perf_event_amd.c
+@@ -52,7 +52,7 @@ static __initconst const u64 amd_hw_cache_event_ids
+  [ C(DTLB) ] = {
+ 	[ C(OP_READ) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0x0040, /* Data Cache Accesses        */
+-		[ C(RESULT_MISS)   ] = 0x0046, /* L1 DTLB and L2 DLTB Miss   */
++		[ C(RESULT_MISS)   ] = 0x0746, /* L1_DTLB_AND_L2_DLTB_MISS.ALL */
+ 	},
+ 	[ C(OP_WRITE) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0,
+@@ -66,7 +66,7 @@ static __initconst const u64 amd_hw_cache_event_ids
+  [ C(ITLB) ] = {
+ 	[ C(OP_READ) ] = {
+ 		[ C(RESULT_ACCESS) ] = 0x0080, /* Instruction fecthes        */
+-		[ C(RESULT_MISS)   ] = 0x0085, /* Instr. fetch ITLB misses   */
++		[ C(RESULT_MISS)   ] = 0x0385, /* L1_ITLB_AND_L2_ITLB_MISS.ALL */
+ 	},
+ 	[ C(OP_WRITE) ] = {
+ 		[ C(RESULT_ACCESS) ] = -1,
