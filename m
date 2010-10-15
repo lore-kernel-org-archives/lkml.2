@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab0JOQON (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:14:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:44151 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756360Ab0JOQOK (ORCPT
+	id S1756517Ab0JOQOh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:14:37 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:17811 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756502Ab0JOQOf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:14:10 -0400
-X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=ad5hsr9vf7MA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=SyI_GHdlAAAA:8 a=meVymXHHAAAA:8 a=n3LdQAqYse_Y-hFgDxMA:9 a=L6vnP2lrd3kWSMAb_tMA:7 a=p7td2IlV2MAk_3AhkFbole4G0OMA:4 a=jEp0ucaQiEUA:10 a=UQxMgyrMzRwA:10 a=jeBq3FmKZ4MA:10 a=QXhR5TPjOZk691r-:21 a=JzadWNcq-ks-54Q4:21 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Message-Id: <20101015161408.997523259@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Fri, 15 Oct 2010 12:13:35 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
+	Fri, 15 Oct 2010 12:14:35 -0400
+From: dann frazier <dannf@hp.com>
 To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        John Reiser <jreiser@bitwagon.com>
-Subject: [PATCH 1/2] ftrace: Do not process kernel/trace/ftrace.o with C recordmcount program
-References: <20101015161334.766423984@goodmis.org>
-Content-Disposition: inline; filename=0001-ftrace-Do-not-process-kernel-trace-ftrace.o-with-C-r.patch
+Cc: david.altobelli@hp.com, gregkh@suse.de, dann frazier <dannf@hp.com>
+Subject: [PATCH] hpilo: Despecificate driver from iLO generation
+Date: Fri, 15 Oct 2010 10:14:34 -0600
+Message-Id: <1287159274-19139-1-git-send-email-dannf@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+This driver supports iLO, iLO2 and iLO3. However, comments and Kconfig
+reference only iLO and iLO2. Let's just call it "iLO" to avoid having to
+update strings for each iLO generation. This is similar to the change made
+to hpwdt in commit 36e3ff44cebd7e46756dec88f30c982bebefdab7.
 
-The file kernel/trace/ftrace.c references the mcount() call to
-convert the mcount() callers to nops. But because it references
-mcount(), the mcount() address is placed in the relocation table.
-
-The C version of recordmcount reads the relocation table of all
-object files, and it will add all references to mcount to the
-__mcount_loc table that is used to find the places that call mcount()
-and change the call to a nop. When recordmcount finds the mcount reference
-in kernel/trace/ftrace.o, it saves that location even though the code
-is not a call, but references mcount as data.
-
-On boot up, when all calls are converted to nops, the code has a safety
-check to determine what op code it is actually replacing before it
-replaces it. If that op code at the address does not match, then
-a warning is printed and the function tracer is disabled.
-
-The reference to mcount in ftrace.c, causes this warning to trigger,
-since the reference is not a call to mcount(). The ftrace.c file is
-not compiled with the -pg flag, so no calls to mcount() should be
-expected.
-
-This patch simply makes recordmcount.c skip the kernel/trace/ftrace.c
-file. This was the same solution used by the perl version of
-recordmcount.
-
-Reported-by: Ingo Molnar <mingo@elte.hu>
-Cc: John Reiser <jreiser@bitwagon.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: dann frazier <dannf@hp.com>
 ---
- scripts/recordmcount.c |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+ drivers/misc/Kconfig |   10 +++++-----
+ drivers/misc/hpilo.c |    2 +-
+ 2 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/scripts/recordmcount.c b/scripts/recordmcount.c
-index 7f7f718..26e1271 100644
---- a/scripts/recordmcount.c
-+++ b/scripts/recordmcount.c
-@@ -313,12 +313,30 @@ do_file(char const *const fname)
- int
- main(int argc, char const *argv[])
- {
-+	const char ftrace[] = "kernel/trace/ftrace.o";
-+	int ftrace_size = sizeof(ftrace) - 1;
- 	int n_error = 0;  /* gcc-4.3.0 false positive complaint */
--	if (argc <= 1)
-+
-+	if (argc <= 1) {
- 		fprintf(stderr, "usage: recordmcount file.o...\n");
--	else  /* Process each file in turn, allowing deep failure. */
-+		return 0;
-+	}
-+
-+	/* Process each file in turn, allowing deep failure. */
- 	for (--argc, ++argv; 0 < argc; --argc, ++argv) {
- 		int const sjval = setjmp(jmpenv);
-+		int len;
-+
-+		/*
-+		 * The file kernel/trace/ftrace.o references the mcount
-+		 * function but does not call it. Since ftrace.o should
-+		 * not be traced anyway, we just skip it.
-+		 */
-+		len = strlen(argv[0]);
-+		if (len >= ftrace_size &&
-+		    strcmp(argv[0] + (len - ftrace_size), ftrace) == 0)
-+			continue;
-+
- 		switch (sjval) {
- 		default: {
- 			fprintf(stderr, "internal error: %s\n", argv[0]);
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index b743312..11341ce 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -248,15 +248,15 @@ config CS5535_CLOCK_EVENT_SRC
+ 	  generic PIT, and are suitable for use as high-res timers.
+ 
+ config HP_ILO
+-	tristate "Channel interface driver for HP iLO/iLO2 processor"
++	tristate "Channel interface driver for the HP iLO processor"
+ 	depends on PCI
+ 	default n
+ 	help
+ 	  The channel interface driver allows applications to communicate
+-	  with iLO/iLO2 management processors present on HP ProLiant
+-	  servers.  Upon loading, the driver creates /dev/hpilo/dXccbN files,
+-	  which can be used to gather data from the management processor,
+-	  via read and write system calls.
++	  with iLO management processors present on HP ProLiant servers.
++	  Upon loading, the driver creates /dev/hpilo/dXccbN files, which
++	  can be used to gather data from the management processor, via
++	  read and write system calls.
+ 
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called hpilo.
+diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
+index 557a8c2..d4158ec 100644
+--- a/drivers/misc/hpilo.c
++++ b/drivers/misc/hpilo.c
+@@ -1,5 +1,5 @@
+ /*
+- * Driver for HP iLO/iLO2 management processor.
++ * Driver for the HP iLO management processor.
+  *
+  * Copyright (C) 2008 Hewlett-Packard Development Company, L.P.
+  *	David Altobelli <david.altobelli@hp.com>
 -- 
 1.7.1
-
 
