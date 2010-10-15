@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932237Ab0JORwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 13:52:07 -0400
-Received: from mta8.brinkster.com ([65.182.109.77]:51977 "EHLO
-	mta8.brinkster.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756519Ab0JORwF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 13:52:05 -0400
-X-Greylist: delayed 435 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Oct 2010 13:52:05 EDT
-Date: Fri, 15 Oct 2010 10:44:45 -0700 (MST)
-From: Kevin Brown <feedback@isketchfz.com>
-Reply-To: Kevin Brown <brownmr.kevin55@yahoo.com>
-Message-ID: <17243729.116006.1287164685426.JavaMail.root@mail4a.brinkster.com>
-Subject: Z: pan Kevin Brown
+	id S932286Ab0JORwR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:52:17 -0400
+Received: from mga09.intel.com ([134.134.136.24]:65239 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932260Ab0JORwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 13:52:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,337,1283756400"; 
+   d="scan'208";a="564294154"
+Date: Fri, 15 Oct 2010 10:52:11 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Greg KH <greg@kroah.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lud <linux-usb@vger.kernel.org>
+Subject: Re: linux-next: Tree for October 15 (usb/xhci)
+Message-ID: <20101015175211.GA13313@xanatos>
+References: <20101015165002.0b6e418f.sfr@canb.auug.org.au>
+ <20101015084420.6624796d.randy.dunlap@oracle.com>
+ <20101015164830.GA21576@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: [60.51.106.61]
-X-Mailer: Zimbra 6.0.6_GA_2332.RHEL4 (zclient/6.0.6_GA_2332.RHEL4)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101015164830.GA21576@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-………………………………………………………
+On Fri, Oct 15, 2010 at 09:48:30AM -0700, Greg KH wrote:
+> On Fri, Oct 15, 2010 at 08:44:20AM -0700, Randy Dunlap wrote:
+> > On Fri, 15 Oct 2010 16:50:02 +1100 Stephen Rothwell wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > Changes since 20101014:
+> > 
+> > 
+> > When CONFIG_PM is not enabled:
+> > 
+> > drivers/usb/host/xhci.c:675: error: implicit declaration of function 'usb_root_hub_lost_power'
+> > 
+> > Also, can xhci.c:xhci_suspend() and xhci_resume() be inside
+> > #ifdef CONFIG_PM / #endif ?
+> 
+> Sarah, care to send me a follow-on patch fixing this up?
 
-Dobrý den, příteli, 
-Já jsem pan Kevin Brown manažer Účetnictví / Audit ministerstva NatWest banky Harlsden, North West London, Anglie. Kontaktoval jsem si, co se týká podnikání návrh, který bude mít obrovský přínos pro nás oba a méně privilegované ty. Být manažerem účetního / auditu Greater London Krajský úřad jsem zjistil, součet £ 15,000,000.00 GBP (patnáct milionů britských liber šterlinků) na účtu, které patří k jednomu z našich zahraničních zákazníků Pozdní Pan Moises Saba Masrího. On byl židovský obchodní magnát z Mexika, který zemřel v zřícení vrtulníku na začátku letošního roku. 
+Sure.  Do you want me to rework the last patch (patch 8), or just send a
+bug fix?
 
-Pan Saba byl 47-roky-starý, když obě jeho manželky, jeho jediný syn Avraham (Albert) a jeho dcera-v-právo zemřel v zřícení vrtulníku. 
-
-Můžete získat více informací, pokud jde o pád a smrt našeho pozdě zákazníka pana Mojžíše Saba na adresu webových stránkách níže: 
-
-http://www.ynetnews.com/articles/0,7340,L-3832556,00.html 
-
-Volba Vás kontaktovat vzbudil z geografické povahy, kde žijete, zejména vzhledem k citlivosti na transakce a důvěrnost zde. Nyní náš bankovní bylo čekání na některý z příbuzných přijde-až k tvrzení, dědictví fondu, ale bohužel veškeré úsilí má být neplatné. Já osobně jsem byl neúspěšný při rozmisťování příbuzným ani nejbližším příbuzným pana Saba. Na tomto jde, mám usilovat o váš souhlas k vám jako další příbuzný / bude příjemce na zemřelého tak, že výtěžek z tohoto účtu oceněn na ₤ 15 milionů britských librách být vyplacena na vás. 
-
-To bude vyplacena, nebo sdílená v těchto procent 60% pro mě a 40% na vás. Mám zajištěné veškeré nezbytné právní dokumenty, které mohou být použity k zálohování toto tvrzení se chystáme dělat. Vše, co potřebujete, je nahrát vaše jména na dokumenty a legalizovat u britského Nejvyššího soudu za účelem prokázání vás oprávněný příjemce. Všechny Žádám nyní je vaše upřímná Co-operace, důvěrnosti a důvěry k tomu, aby nás vidět tuto transakci prostřednictvím. Já vám zaručit 100% úspěšnost a že tato obchodní transakce budou provedeny v rámci působnosti práva a také chránit vás z jakéhokoli porušení smlouvy. 
-
-Uveďte, prosím, mi následující, jak jsme 7 pracovních dní spustíme ji projít: 
-1. Vaše celé jméno 
-2. Telefonní číslo 
-3. Kontaktní adresa 
-4. Věk 
-5. Pohlaví 
-6. Povolání 
-
-S prošla metodický vyhledávání, rozhodl jsem se Vás kontaktovat doufat, že vás najdou tento návrh zajímavý. Prosím o Vaše potvrzení této zprávy a naznačuje váš zájem budu vám poskytne bližší informace je. 
-Váš souhlas s tímto e-mailu a obchodní návrh bude vysoce ocenil. 
-S pozdravem, 
-
-
-Pan Kevin Brown 
-... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... ... 
+Sarah Sharp
