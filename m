@@ -1,63 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755724Ab0JOBy0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 21:54:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:60683 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753291Ab0JOByY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 21:54:24 -0400
-Date: Fri, 15 Oct 2010 12:54:20 +1100
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Dave Airlie <airlied@linux.ie>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jerome Glisse <jglisse@redhat.com>,
-        Alex Deucher <alexdeucher@gmail.com>
-Subject: linux-next: manual merge of the drm tree with Linus' tree
-Message-Id: <20101015125420.11500d62.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755893Ab0JOBzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 21:55:08 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41179 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab0JOBzH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 14 Oct 2010 21:55:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=o5Ukoda2sP36HMb9G3Gizews4sP2u5TKZdHBU3OuCjx85FmLmp7GMBEXukHiB7JqUu
+         0K/U9CRn1Q3sbp9NZGfXQ07s3WBlmAboQ19wgOJyrOcchqABXW0E22Jdiu+Wl9xVgyvf
+         +/IvyW4bh1+WJW8dpzAzFIFA+HIb0n4pMsOM4=
+MIME-Version: 1.0
+Reply-To: linasvepstas@gmail.com
+In-Reply-To: <1287103733-7121-1-git-send-email-nacc@us.ibm.com>
+References: <1287103733-7121-1-git-send-email-nacc@us.ibm.com>
+From: Linas Vepstas <linasvepstas@gmail.com>
+Date: Thu, 14 Oct 2010 20:54:46 -0500
+Message-ID: <AANLkTinEzRpREFzDVhPS5ynqjYydHOs9iW5NM6W9Tf9A@mail.gmail.com>
+Subject: Re: [PATCH v2] pseries: don't override CONFIG_PPC_PSERIES_DEBUG
+To: Nishanth Aravamudan <nacc@us.ibm.com>
+Cc: michael@ellerman.id.au, Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Brian King <brking@linux.vnet.ibm.com>,
+        Anton Blanchard <anton@samba.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Frans Pop <elendil@planet.nl>,
+        linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dave,
+On 14 October 2010 19:48, Nishanth Aravamudan <nacc@us.ibm.com> wrote:
+> eeh and pci_dlpar #undef DEBUG, but I think they were added before the
+> ability to control this from Kconfig. It's really annoying to only get
+> some of the debug messages from these files. Leave the lpar.c #undef
+> alone as it produces so much output as to make the kernel unusable.
+> Update the Kconfig text to indicate this particular quirk :)
+>
+> Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
 
-Today's linux-next merge of the drm tree got a conflict in
-drivers/gpu/drm/radeon/r600_blit_kms.c between commit
-c919b371cb734f42b1130e706ecee262f8d9261d ("drm/radeon/kms: avoid corner
-case issue with unmappable vram V2") from Linus' tree and commit
-b70d6bb3f67b2e2964abafb0117f1733f062cba5 ("drm/radeon/kms: clean up
-r6xx/r7xx blit init (v2)") from the drm tree.
+OK, ignore my last email.
 
-Just context.  I fixed it up (see below) and can carry the fix as
-necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Acked by: Linas Vepstas <linasvepstas@gmail.com>
 
-diff --cc drivers/gpu/drm/radeon/r600_blit_kms.c
-index 3473c007,2a4747d..0000000
---- a/drivers/gpu/drm/radeon/r600_blit_kms.c
-+++ b/drivers/gpu/drm/radeon/r600_blit_kms.c
-@@@ -532,7 -533,18 +533,19 @@@ int r600_blit_init(struct radeon_devic
-  	memcpy(ptr + rdev->r600_blit.ps_offset, r6xx_ps, r6xx_ps_size * 4);
-  	radeon_bo_kunmap(rdev->r600_blit.shader_obj);
-  	radeon_bo_unreserve(rdev->r600_blit.shader_obj);
- +	rdev->mc.active_vram_size = rdev->mc.real_vram_size;
-+ 
-+ done:
-+ 	r = radeon_bo_reserve(rdev->r600_blit.shader_obj, false);
-+ 	if (unlikely(r != 0))
-+ 		return r;
-+ 	r = radeon_bo_pin(rdev->r600_blit.shader_obj, RADEON_GEM_DOMAIN_VRAM,
-+ 			  &rdev->r600_blit.shader_gpu_addr);
-+ 	radeon_bo_unreserve(rdev->r600_blit.shader_obj);
-+ 	if (r) {
-+ 		dev_err(rdev->dev, "(%d) pin blit object failed\n", r);
-+ 		return r;
-+ 	}
-  	return 0;
-  }
-  
+
+> --- a/arch/powerpc/platforms/pseries/Kconfig
+> +++ b/arch/powerpc/platforms/pseries/Kconfig
+> @@ -47,6 +47,12 @@ config LPARCFG
+>  config PPC_PSERIES_DEBUG
+>        depends on PPC_PSERIES && PPC_EARLY_DEBUG
+>        bool "Enable extra debug logging in platforms/pseries"
+> +        help
+> +         Say Y here if you want the pseries core to produce a bunch of
+> +         debug messages to the system log. Select this if you are having a
+> +         problem with the pseries core and want to see more of what is
+> +         going on. This does not enable debugging in lpar.c, which must
+> +         be manually done due to its verbosity.
+>        default y
+
+Umm, I see "default y" and you are not changing this but ... default y
+?? Really?
+
+Also, I am guessing that the lpar spam is due only to a handful of printk's,
+while most of the rest will be infrequent.  Just knock out the
+high-frequency ones...
+
+--linas
