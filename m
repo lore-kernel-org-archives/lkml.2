@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932523Ab0JOUPK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 16:15:10 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51946 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932276Ab0JOUPH (ORCPT
+	id S932571Ab0JOUPm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:15:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62955 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756546Ab0JOUPk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 16:15:07 -0400
-Date: Fri, 15 Oct 2010 21:14:53 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>,
-        linux-main <linux-kernel@vger.kernel.org>,
-        linux-arm <linux-arm-kernel@lists.infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Richard Woodruff <r-woodruff2@ti.com>
-Subject: Re: [PATCH .36-rc8] arm: mm: allow, but warn, when issuing
-	ioremap() on RAM
-Message-ID: <20101015201453.GB12981@n2100.arm.linux.org.uk>
-References: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com> <1287153021.27165.6.camel@e102109-lin.cambridge.arm.com> <20101015194255.GA12981@n2100.arm.linux.org.uk> <AANLkTinmAy13niqRKrray1Gk4hkr19tA2gWwYbfnFoh7@mail.gmail.com>
+	Fri, 15 Oct 2010 16:15:40 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH 22/22] bitops: remove minix bitops from asm/bitops.h
+Date: Fri, 15 Oct 2010 22:15:20 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com> <201010151253.15653.arnd@arndb.de> <AANLkTimK__Z_KrZ+fEUQuu51cdrYviTAmXSfQ0jD_EvP@mail.gmail.com>
+In-Reply-To: <AANLkTimK__Z_KrZ+fEUQuu51cdrYviTAmXSfQ0jD_EvP@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinmAy13niqRKrray1Gk4hkr19tA2gWwYbfnFoh7@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201010152215.20400.arnd@arndb.de>
+X-Provags-ID: V02:K0:N3+iSeQTHjF2ZwduXrwdpg+UErGRjLS/JCXl8xP1g3i
+ Y7ybi1a2YqteW23IN7R+CF0MCm7AmbAV3dMkM2TN2P1GmJLvQd
+ OLl+LkviLUQDWi4wS4TkE9gRYnLsWH5Ymd37vKa6nUMDVd4lnT
+ JN4TOJrjTv1KGBGFlLLn7IAGp0qaGqqcCuZiujIluEJe2ITWgi
+ Cz+HSfbeUfkfY3atTMywQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 11:00:40PM +0300, Felipe Contreras wrote:
-> On Fri, Oct 15, 2010 at 10:42 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
-> > As soon as the first ARM merge hits during the merge window, I'll be
-> > restoring the 'always fail' behaviour.
+On Friday 15 October 2010 20:53:16 Mike Frysinger wrote:
+> > You have defined these as "native endian":
+> >
+> > always LE:
+> >        alpha, blackfin, ia64, score, tile, x86
+> >
+> > always BE:
+> >        h8300, microblaze, s390, sparc
+> >
+> > configurable:
+> >        m32r, mips, sh, xtensa
+> >
+> > The only ones among these that possibly ever cared about mounting minix
+> > file systems on a big-endian kernel are really old sparc and mips systems,
+> > everyone else probably never noticed their mistake.
+> >
+> > I'd say let's define the minix bitops as always LE and be done with it.
 > 
-> Ok, are you going to merge also your patch to use memblock for the
-> initialization? Many drivers could certainly use that to fix the
-> issue.
+> or at least make it so that this is the default, and you only have to
+> update Kconfig if you need to deviate from the default.  i dont like
+> having to add this minix option to every single arch Kconfig.
 
-There's a lot of work going on with memblock in x86-land which impacts
-ARM and means major conflicts for that patch - I think first we'll have
-to deal with the fallout from that (iow, finding out what's been broken
-by this activity and fix that), and then I'll have to re-do my patch from
-the beginning.
+Yes, that would also work if we find a compelling reason to keep it that
+way. You can actually keep it private to fs/minix/Kconfig by writing it
+as
 
-Technically, following the rules, that means it has to miss this merge
-window - so it looks like it's going to take another six months to solve
-this issue (three months to get the memblock patch in, and another three
-months for driver fixes to find their way through.)
+config MINIX_FS_NATIVE_ENDIAN
+	def_bool y
+	depends on H8300 || M32R || MICROBLAZE || MIPS || S390 || SUPERH || SPARC || XTENSA
 
-I find these timescales (12 months) rather unacceptable to fix a problem
-such as this.  Makes me wonder why I even bother trying.
+We normally use select for arch specific options, but in this case I think
+I would prefer the single option since we know we don't want new architectures
+to do it too.
+
+	Arnd
