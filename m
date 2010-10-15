@@ -1,54 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750855Ab0JOVic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 17:38:32 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:11096 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab0JOVib (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 17:38:31 -0400
-Message-ID: <4CB8C9D1.1050106@caviumnetworks.com>
-Date: Fri, 15 Oct 2010 14:38:25 -0700
-From: David Daney <ddaney@caviumnetworks.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+	id S1751179Ab0JOV7T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 17:59:19 -0400
+Received: from mga01.intel.com ([192.55.52.88]:9744 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750983Ab0JOV7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 17:59:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,338,1283756400"; 
+   d="scan'208";a="617209035"
+Date: Fri, 15 Oct 2010 14:59:15 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lud <linux-usb@vger.kernel.org>,
+        Andiry Xu <andiry.xu@amd.com>, Dong Nguyen <dong.nguyen@amd.com>,
+        Libin Yang <libin.yang@amd.com>
+Subject: [PATCH] usb: Fix linker errors with CONFIG_PM=n
+Message-ID: <20101015215915.GA25942@xanatos>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>, David Miller <davem@davemloft.net>
-Subject: Re: [PATCH 8/9] jump label: Make arch_jump_label_text_poke_early()
- optional
-References: <20101015200949.134732894@goodmis.org>	 <20101015201037.703989993@goodmis.org>  <1287176815.1998.117.camel@laptop>	 <1287176910.16971.2.camel@gandalf.stny.rr.com>	 <4CB8C61A.2050008@caviumnetworks.com> <1287178546.16971.4.camel@gandalf.stny.rr.com>
-In-Reply-To: <1287178546.16971.4.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Oct 2010 21:38:46.0761 (UTC) FILETIME=[58F45590:01CB6CB1]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101015205756.GA1757@xanatos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/15/2010 02:35 PM, Steven Rostedt wrote:
-> On Fri, 2010-10-15 at 14:22 -0700, David Daney wrote:
->
->> Really the SPARC code (and any architectures added in the future with a
->> well defined optimal NOP) should be doing nothing here as well.
->>
->> So I could turn the question around and ask:  How many empty definitions
->> of this thing do you want in the tree?
->>
->> I will defer to Steven.  If he wants to push the empty stubs into all
->> the architectures, I will update the MIPS patch and he can remove/revert
->> the 'jump label: Make arch_jump_label_text_poke_early() optional' patch.
->>
->> Let me know which option you would prefer.
->
-> On IRC, Thomas Gleixner mentioned a better solution (something I've done
-> with ftrace). Just add a "weak" stub function. No need to get Kconfig
-> involved.
->
+Fix these linker errors when CONFIG_PM=n:
 
-Do you want to write that patch, or shall I?
+ERROR: "xhci_bus_resume" [drivers/usb/host/xhci-hcd.ko] undefined!
+ERROR: "xhci_bus_suspend" [drivers/usb/host/xhci-hcd.ko] undefined!
 
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+---
 
-David Daney
+Randy, this should fix your linker errors.  Without the patch, I get the
+same errors, and with the patch I don't.
+
+Greg, this applies on top of the previous patch.
+
+ drivers/usb/host/xhci-hub.c |    7 +------
+ drivers/usb/host/xhci.c     |    6 ------
+ drivers/usb/host/xhci.h     |   14 ++++++++++++++
+ 3 files changed, 15 insertions(+), 12 deletions(-)
+
+diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+index 7f2f63c..fef5a1f 100644
+--- a/drivers/usb/host/xhci-hub.c
++++ b/drivers/usb/host/xhci-hub.c
+@@ -742,9 +742,4 @@ int xhci_bus_resume(struct usb_hcd *hcd)
+ 	return 0;
+ }
+ 
+-#else
+-
+-#define	xhci_bus_suspend	NULL
+-#define	xhci_bus_resume		NULL
+-
+-#endif
++#endif	/* CONFIG_PM */
+diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+index 9dc5be5..5d7d4e9 100644
+--- a/drivers/usb/host/xhci.c
++++ b/drivers/usb/host/xhci.c
+@@ -761,12 +761,6 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+ 	spin_unlock_irq(&xhci->lock);
+ 	return 0;
+ }
+-
+-#else
+-
+-#define	xhci_suspend	NULL
+-#define	xhci_resume	NULL
+-
+ #endif	/* CONFIG_PM */
+ 
+ /*-------------------------------------------------------------------------*/
+diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+index c08928a..93d3bf4 100644
+--- a/drivers/usb/host/xhci.h
++++ b/drivers/usb/host/xhci.h
+@@ -1405,8 +1405,15 @@ int xhci_init(struct usb_hcd *hcd);
+ int xhci_run(struct usb_hcd *hcd);
+ void xhci_stop(struct usb_hcd *hcd);
+ void xhci_shutdown(struct usb_hcd *hcd);
++
++#ifdef	CONFIG_PM
+ int xhci_suspend(struct xhci_hcd *xhci);
+ int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
++#else
++#define	xhci_suspend	NULL
++#define	xhci_resume	NULL
++#endif
++
+ int xhci_get_frame(struct usb_hcd *hcd);
+ irqreturn_t xhci_irq(struct usb_hcd *hcd);
+ irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd);
+@@ -1481,8 +1488,15 @@ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+ int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue, u16 wIndex,
+ 		char *buf, u16 wLength);
+ int xhci_hub_status_data(struct usb_hcd *hcd, char *buf);
++
++#ifdef CONFIG_PM
+ int xhci_bus_suspend(struct usb_hcd *hcd);
+ int xhci_bus_resume(struct usb_hcd *hcd);
++#else
++#define	xhci_bus_suspend	NULL
++#define	xhci_bus_resume		NULL
++#endif	/* CONFIG_PM */
++
+ u32 xhci_port_state_to_neutral(u32 state);
+ int xhci_find_slot_id_by_port(struct xhci_hcd *xhci, u16 port);
+ void xhci_ring_device(struct xhci_hcd *xhci, int slot_id);
+-- 
+1.6.3.3
+
