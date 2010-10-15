@@ -1,91 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754458Ab0JOJYM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 05:24:12 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:59495 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750905Ab0JOJYK convert rfc822-to-8bit (ORCPT
+	id S1751608Ab0JOJdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 05:33:43 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:41566 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S1751323Ab0JOJdm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 05:24:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=a9xqEge5jGbnruFaaprTaegydecWvryoDH74H0eRgLu8RHYIthGn0COUkDdylo9jLe
-         S8IaiDUuV1nM6esbnJoMJgYgOi3VXerqceOSkFv2hUAQLbFfc86IatEc7TKaemWihsBb
-         ElW6blF2AINf3X52nb88/pAD2wwtR22e7IwuI=
+	Fri, 15 Oct 2010 05:33:42 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/NBqxtY+/Nts5QB41oi6fw4kPGEYdnQSF5kl4h/E
+	k+v30VHLKKo2rt
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: user-mode-linux-devel@lists.sourceforge.net,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: Fwd: Re: UML kernel crash of v2.6.36-rcX kernel
+Date: Fri, 15 Oct 2010 11:33:37 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35.6; KDE/4.4.5; i686; ; )
+References: <201010131328.06465.toralf.foerster@gmx.de>
+In-Reply-To: <201010131328.06465.toralf.foerster@gmx.de>
+Cc: linux-kernel@vger.kernel.org, Richard Weinberger <richard@nod.at>
 MIME-Version: 1.0
-In-Reply-To: <1287128928.29097.1235.camel@twins>
-References: <AANLkTinNxzktyttzEjWSUPBiOUwh+4DUL0tmP7p1UiT5@mail.gmail.com>
-	<4CB75F05.9070505@linux.intel.com>
-	<AANLkTik5_TCXeGzTWBZzE8F0Cb2bQq-D228xDXk87rhP@mail.gmail.com>
-	<AANLkTi=vYFv+S=D6O06Nys4cjU7KHWv11d_VdLGmLyf6@mail.gmail.com>
-	<1287128928.29097.1235.camel@twins>
-Date: Fri, 15 Oct 2010 11:24:09 +0200
-Message-ID: <AANLkTikmfpbTXz3-H_UQUqvSULifPyyib3xwsv=RafvX@mail.gmail.com>
-Subject: Re: [REGRESSION] um: rcu_sched_state detected stall on CPU 0
-From: richard -rw- weinberger <richard.weinberger@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Pekka Enberg <penberg@kernel.org>,
-        Arjan van de Ven <arjan@linux.intel.com>, penberg@cs.helsinki.fi,
-        LKML <linux-kernel@vger.kernel.org>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Jeff Dike <jdike@addtoit.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201010151133.38170.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 9:48 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-10-15 at 10:02 +0300, Pekka Enberg wrote:
->> On Fri, Oct 15, 2010 at 2:44 AM, richard -rw- weinberger
->> <richard.weinberger@gmail.com> wrote:
->> > On Thu, Oct 14, 2010 at 9:50 PM, Arjan van de Ven
->> <arjan@linux.intel.com> wrote:
->> >>  On 10/14/2010 11:27 AM, richard -rw- weinberger wrote:
->> >>>
->> >>> Hi Arjan!
->> >>>
->> >>> This commit causes some problems on UML.
->> >>>
->> >> that is extremely weird.
->> >>>
->> >>> The kernel freezes after a few seconds until it gets some input.
->> >>> e.g: When I run top it stops refreshing the process list until i
->> press a
->> >>> button.
->> >>
->> >> a slab timer change (to not be as critical) causing global timer
->> issues....
->> >> that's very obviously not a problem with this patch.
->> >> has this been seem anywhere except UML ?
->> >
->> > A small update:
->> > It seems that CONFIG_NO_HZ is broken on UML. :-(
->> >
->> > CONFIG_NO_HZ + CONFIG_SLAB: works
->> > CONFIG_NO_HZ + CONFIG_SLAB + your patch: broken
->> > CONFIG_NO_HZ + CONFIG_SLUB: broken
->> >
->> > CONFIG_SLAB + your patch: works
->> > CONFIG_SLAB: works
->> > CONFIG_SLUB: works
->>
->> Thanks for testing! Thomas, Ingo, Peter, I'm not sure who maintains
->> CONFIG_NO_HZ so I CC'd you. The problem here is that Arjan's
->> deferrable timers patch in SLAB triggered something that looks like a
->> latent bug with UML and NOHZ.
->
-> Thomas does mostly, but if its UML specific, I guess its Jeff Dike
-> you'll be wanting to talk to, since he's the arch maintainer.
->
+Hello,
 
-Jeff is the UML maintainer only in theory.
-He seems to be very busy and hasn't touched UML since 2008.
-Very sad...
+git bisect gave :
+
+tfoerste@n22 ~/devel/linux-2.6 $ git bisect bad
+365b18189789bfa1acd9939e6312b8a4b4577b28 is the first bad commit                                                        
+commit 365b18189789bfa1acd9939e6312b8a4b4577b28                                                                         
+Author: Christoph Hellwig <hch@lst.de>                                                                                  
+Date:   Wed Jul 7 18:53:25 2010 +0200                                                                                   
+                                                                                                                        
+    add f_flags to struct statfs(64)                                                                                    
+                                                                                                                        
+    Add a flags field to help glibc implementing statvfs(3) efficiently.                                                
+                                                                                                                        
+    We copy the flag values from glibc, and add a new ST_VALID flag to                                                  
+    denote that f_flags is implemented.                                                                                 
+                                                                                                                        
+    Signed-off-by: Christoph Hellwig <hch@lst.de>                                                                       
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>                                                                    
+                                                                                                                        
+:040000 040000 92f04bf96f0c6bb2df3ddea83a4a27c35985bdcc 
+e702d8dd95a3897e085bf3fe4919e2dd30a57b47 M      arch            
+:040000 040000 5705bba0e9a2a61112281f7bb1a1030ef9eb337e 
+34fc3ea912581ae7923a15246291387bfc354e47 M      fs              
+:040000 040000 578a5bb0743aa85adfec7a25f82d440b2ea4db27 
+7e96f95b6f1d6ccc9e004b560670638db66b8a93 M      include         
+
+
+BTW is UML dead ?
+(I'm asking b/c there're so many different issues - compile errors or the UML 
+kernel crashes during start or during shutdown, independent of the result of 
+the wget issue I was investigating - there are 120 skip'ed commits within the 
+git bisect log beside 46 good and 15 bad commits and I didn't saw any chance 
+to fully automate the bisect)
 
 -- 
-Thanks,
-//richard
+MfG/Kind regards
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
