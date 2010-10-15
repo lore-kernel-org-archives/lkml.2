@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932570Ab0JOUNo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 16:13:44 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51012 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932413Ab0JOUMt (ORCPT
+	id S932523Ab0JOUPK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:15:10 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51946 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932276Ab0JOUPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 16:12:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=tIZkHW3Zw2e7JXGqzYHFPTc+IdVVMeREzshVJ/t7CQCCg0X8MAhWvew2xCI6FtFJIN
-         MmQUUNC0qW2sO0z8VWuekeqVmYsgtfjR74QI1qTL5apUe+IWtqBPzsL+by4f+Mk1S7Ng
-         MemQLhkuLSlGgBJRqwfrRYiRCZBsMILRbMeMo=
-From: Christian Lamparter <chunkeey@googlemail.com>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH v2.6.36-rc7] mac80211: cancel restart_work explicitly instead of depending on flush_scheduled_work()
-Date: Fri, 15 Oct 2010 22:07:31 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.36-rc7-wl+; KDE/4.4.5; x86_64; ; )
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <4CB874C0.8090003@kernel.org> <20101015192645.GA2438@tuxdriver.com> <4CB8AC80.7090802@kernel.org>
-In-Reply-To: <4CB8AC80.7090802@kernel.org>
+	Fri, 15 Oct 2010 16:15:07 -0400
+Date: Fri, 15 Oct 2010 21:14:53 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Woodruff <r-woodruff2@ti.com>
+Subject: Re: [PATCH .36-rc8] arm: mm: allow, but warn, when issuing
+	ioremap() on RAM
+Message-ID: <20101015201453.GB12981@n2100.arm.linux.org.uk>
+References: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com> <1287153021.27165.6.camel@e102109-lin.cambridge.arm.com> <20101015194255.GA12981@n2100.arm.linux.org.uk> <AANLkTinmAy13niqRKrray1Gk4hkr19tA2gWwYbfnFoh7@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201010152207.31553.chunkeey@googlemail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinmAy13niqRKrray1Gk4hkr19tA2gWwYbfnFoh7@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 October 2010 21:33:20 Tejun Heo wrote:
-> Hello,
+On Fri, Oct 15, 2010 at 11:00:40PM +0300, Felipe Contreras wrote:
+> On Fri, Oct 15, 2010 at 10:42 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+> > As soon as the first ARM merge hits during the merge window, I'll be
+> > restoring the 'always fail' behaviour.
 > 
-> On 10/15/2010 09:26 PM, John W. Linville wrote:
-> >> wireless-testing/wireless-next has already such a patch:
-> >> "mac80211: cancel restart_work in ieee80211_unregister_hw" (2010-08-25)
-> >>
-> >> <http://git.kernel.org/?p=linux/kernel/git/linville/wireless-next-2.6.git;a=commit;h=258086a48b766d12a500f98834654ffa927ca475>
-> >>
-> >> John, can you please push to 2.6.36-rc8?
-> >> (I know, I am _late_, but I didn't know about any potential problem
-> >> in the mainline?)
-> > 
-> > I don't see how either patch would merit inclusion in 2.6.36 at this point.
-> 
-> My patch definitely was aimed for 2.6.37-rc1 or later.
-Oh, so the "[PATCH v2.6.36-rc7]" in the patch subject was just "misleading" me.
-no-one could have known that there would be a 2.6.36-rc8 release.
+> Ok, are you going to merge also your patch to use memblock for the
+> initialization? Many drivers could certainly use that to fix the
+> issue.
 
-John, please ignore my previous request of pushing the patch into 2.6.36 ;).
- 
-Regards,
-	Chr
+There's a lot of work going on with memblock in x86-land which impacts
+ARM and means major conflicts for that patch - I think first we'll have
+to deal with the fallout from that (iow, finding out what's been broken
+by this activity and fix that), and then I'll have to re-do my patch from
+the beginning.
+
+Technically, following the rules, that means it has to miss this merge
+window - so it looks like it's going to take another six months to solve
+this issue (three months to get the memblock patch in, and another three
+months for driver fixes to find their way through.)
+
+I find these timescales (12 months) rather unacceptable to fix a problem
+such as this.  Makes me wonder why I even bother trying.
