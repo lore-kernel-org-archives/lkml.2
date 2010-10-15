@@ -1,195 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932710Ab0JOVUA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 17:20:00 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:23204 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932336Ab0JOVT6 (ORCPT
+	id S932699Ab0JOVWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 17:22:36 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:10782 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932650Ab0JOVWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 17:19:58 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=J70JVZpfR6DL+Ckhc5vGBzYTb/xylUkh0Y0sgNCkZQGL4JUUXKgNCzq5kYITojI0R
-	LV1wyx/K9C0+7CkvQ00nw==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
-Subject: [PATCH v2 11/11] memcg: check memcg dirty limits in page writeback
-Date: Fri, 15 Oct 2010 14:14:39 -0700
-Message-Id: <1287177279-30876-12-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287177279-30876-1-git-send-email-gthelen@google.com>
-References: <1287177279-30876-1-git-send-email-gthelen@google.com>
+	Fri, 15 Oct 2010 17:22:35 -0400
+Message-ID: <4CB8C61A.2050008@caviumnetworks.com>
+Date: Fri, 15 Oct 2010 14:22:34 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.12) Gecko/20100907 Fedora/3.0.7-1.fc12 Thunderbird/3.0.7
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>, David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 8/9] jump label: Make arch_jump_label_text_poke_early()
+ optional
+References: <20101015200949.134732894@goodmis.org>	 <20101015201037.703989993@goodmis.org>  <1287176815.1998.117.camel@laptop> <1287176910.16971.2.camel@gandalf.stny.rr.com>
+In-Reply-To: <1287176910.16971.2.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Oct 2010 21:22:50.0935 (UTC) FILETIME=[1F3CDC70:01CB6CAF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the current process is in a non-root memcg, then
-global_dirty_limits() will consider the memcg dirty limit.
-This allows different cgroups to have distinct dirty limits
-which trigger direct and background writeback at different
-levels.
+On 10/15/2010 02:08 PM, Steven Rostedt wrote:
+> On Fri, 2010-10-15 at 23:06 +0200, Peter Zijlstra wrote:
+>> On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
+>>> +
+>>> +#ifdef HAVE_ARCH_JUMP_LABEL_TEXT_POKE_EARLY
+>>>   extern void arch_jump_label_text_poke_early(jump_label_t addr);
+>>> +#else
+>>> +static inline void arch_jump_label_text_poke_early(jump_label_t addr) {}
+>>> +#endif
+>>> +
+>>
+>> How often is this called, do we really need to avoid that call? It looks
+>> like init code.
+>
+> Yeah, that's a good point.
+>
+> What's the harm in doing a stub in the mips code here?
+>
 
-Signed-off-by: Andrea Righi <arighi@develer.com>
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- mm/page-writeback.c |   89 +++++++++++++++++++++++++++++++++++++++++---------
- 1 files changed, 73 insertions(+), 16 deletions(-)
+Really the SPARC code (and any architectures added in the future with a 
+well defined optimal NOP) should be doing nothing here as well.
 
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index a0bb3e2..9b34f01 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -180,7 +180,7 @@ static unsigned long highmem_dirtyable_memory(unsigned long total)
-  * Returns the numebr of pages that can currently be freed and used
-  * by the kernel for direct mappings.
-  */
--static unsigned long determine_dirtyable_memory(void)
-+static unsigned long global_dirtyable_memory(void)
- {
- 	unsigned long x;
- 
-@@ -192,6 +192,58 @@ static unsigned long determine_dirtyable_memory(void)
- 	return x + 1;	/* Ensure that we never return 0 */
- }
- 
-+static unsigned long dirtyable_memory(void)
-+{
-+	unsigned long memory;
-+	s64 memcg_memory;
-+
-+	memory = global_dirtyable_memory();
-+	if (!mem_cgroup_has_dirty_limit())
-+		return memory;
-+	memcg_memory = mem_cgroup_page_stat(MEMCG_NR_DIRTYABLE_PAGES);
-+	BUG_ON(memcg_memory < 0);
-+
-+	return min((unsigned long)memcg_memory, memory);
-+}
-+
-+static long reclaimable_pages(void)
-+{
-+	s64 ret;
-+
-+	if (!mem_cgroup_has_dirty_limit())
-+		return global_page_state(NR_FILE_DIRTY) +
-+			global_page_state(NR_UNSTABLE_NFS);
-+	ret = mem_cgroup_page_stat(MEMCG_NR_RECLAIM_PAGES);
-+	BUG_ON(ret < 0);
-+
-+	return ret;
-+}
-+
-+static long writeback_pages(void)
-+{
-+	s64 ret;
-+
-+	if (!mem_cgroup_has_dirty_limit())
-+		return global_page_state(NR_WRITEBACK);
-+	ret = mem_cgroup_page_stat(MEMCG_NR_WRITEBACK);
-+	BUG_ON(ret < 0);
-+
-+	return ret;
-+}
-+
-+static unsigned long dirty_writeback_pages(void)
-+{
-+	s64 ret;
-+
-+	if (!mem_cgroup_has_dirty_limit())
-+		return global_page_state(NR_UNSTABLE_NFS) +
-+			global_page_state(NR_WRITEBACK);
-+	ret = mem_cgroup_page_stat(MEMCG_NR_DIRTY_WRITEBACK_PAGES);
-+	BUG_ON(ret < 0);
-+
-+	return ret;
-+}
-+
- /*
-  * couple the period to the dirty_ratio:
-  *
-@@ -204,8 +256,8 @@ static int calc_period_shift(void)
- 	if (vm_dirty_bytes)
- 		dirty_total = vm_dirty_bytes / PAGE_SIZE;
- 	else
--		dirty_total = (vm_dirty_ratio * determine_dirtyable_memory()) /
--				100;
-+		dirty_total = (vm_dirty_ratio * global_dirtyable_memory()) /
-+			100;
- 	return 2 + ilog2(dirty_total - 1);
- }
- 
-@@ -410,18 +462,23 @@ void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
- {
- 	unsigned long background;
- 	unsigned long dirty;
--	unsigned long available_memory = determine_dirtyable_memory();
-+	unsigned long available_memory = dirtyable_memory();
- 	struct task_struct *tsk;
-+	struct vm_dirty_param dirty_param;
- 
--	if (vm_dirty_bytes)
--		dirty = DIV_ROUND_UP(vm_dirty_bytes, PAGE_SIZE);
-+	vm_dirty_param(&dirty_param);
-+
-+	if (dirty_param.dirty_bytes)
-+		dirty = DIV_ROUND_UP(dirty_param.dirty_bytes, PAGE_SIZE);
- 	else
--		dirty = (vm_dirty_ratio * available_memory) / 100;
-+		dirty = (dirty_param.dirty_ratio * available_memory) / 100;
- 
--	if (dirty_background_bytes)
--		background = DIV_ROUND_UP(dirty_background_bytes, PAGE_SIZE);
-+	if (dirty_param.dirty_background_bytes)
-+		background = DIV_ROUND_UP(dirty_param.dirty_background_bytes,
-+					  PAGE_SIZE);
- 	else
--		background = (dirty_background_ratio * available_memory) / 100;
-+		background = (dirty_param.dirty_background_ratio *
-+			      available_memory) / 100;
- 
- 	if (background >= dirty)
- 		background = dirty / 2;
-@@ -493,9 +550,8 @@ static void balance_dirty_pages(struct address_space *mapping,
- 			.range_cyclic	= 1,
- 		};
- 
--		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
--					global_page_state(NR_UNSTABLE_NFS);
--		nr_writeback = global_page_state(NR_WRITEBACK);
-+		nr_reclaimable = reclaimable_pages();
-+		nr_writeback = writeback_pages();
- 
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
- 
-@@ -652,6 +708,7 @@ void throttle_vm_writeout(gfp_t gfp_mask)
- {
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
-+	unsigned long dirty;
- 
-         for ( ; ; ) {
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
-@@ -662,9 +719,9 @@ void throttle_vm_writeout(gfp_t gfp_mask)
-                  */
-                 dirty_thresh += dirty_thresh / 10;      /* wheeee... */
- 
--                if (global_page_state(NR_UNSTABLE_NFS) +
--			global_page_state(NR_WRITEBACK) <= dirty_thresh)
--                        	break;
-+		dirty = dirty_writeback_pages();
-+		if (dirty <= dirty_thresh)
-+			break;
-                 congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 		/*
--- 
-1.7.1
+So I could turn the question around and ask:  How many empty definitions 
+of this thing do you want in the tree?
+
+I will defer to Steven.  If he wants to push the empty stubs into all 
+the architectures, I will update the MIPS patch and he can remove/revert 
+the 'jump label: Make arch_jump_label_text_poke_early() optional' patch.
+
+Let me know which option you would prefer.
+
+David Daney
 
