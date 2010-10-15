@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756479Ab0JOQjo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:39:44 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37959 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755941Ab0JOQjm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:39:42 -0400
-Message-ID: <4CB883C9.6050104@kernel.org>
-Date: Fri, 15 Oct 2010 18:39:37 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1756526Ab0JOQoe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:44:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56173 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab0JOQod (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 12:44:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=K6TsP6uQEHaFPB9rA7lY1IR20nRT+ICuHwu32XEd9kVYzcBAEDUtmVZ5suCG1eGl8S
+         JNVoqUgPy+bmwo0woVSIuSq9klU6Rze/xIZhj/v1kbmCfhyFF3CHWOm4pawPcMy9sMxe
+         VMNbN6OWiR0rEB+rNsuhGC75AxTPk4euaQAIo=
+Date: Fri, 15 Oct 2010 15:47:02 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
+        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [RFC][PATCH 3/7] perf, hw_breakpoint: Fix crash in
+	hw_breakpoint creation
+Message-ID: <20101015134659.GA5334@nowhere>
+References: <20101014203404.222133139@chello.nl> <20101014203625.391543667@chello.nl>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Linux Wireless List <linux-wireless@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2.6.36-rc7] mac80211: cancel restart_work explicitly
- instead of depending on flush_scheduled_work()
-References: <4CB874C0.8090003@kernel.org> <1287159715.1870.11.camel@Nokia-N900-51-1>
-In-Reply-To: <1287159715.1870.11.camel@Nokia-N900-51-1>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Oct 2010 16:39:39 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101014203625.391543667@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On 10/15/2010 06:21 PM, Johannes Berg wrote:
->> -        create_singlethread_workqueue(wiphy_name(local->hw.wiphy));
->> +        alloc_ordered_workqueue(wiphy_name(local->hw.wiphy), 0);
+On Thu, Oct 14, 2010 at 10:34:07PM +0200, Peter Zijlstra wrote:
+> hw_breakpoint creation needs to account stuff per-task to ensure there
+> is always sufficient hardware resources to back these things due to
+> ptrace.
 > 
-> no description for this change?
-
-Oops, right.  create_*workqueue() interfaces are being replaced by
-alloc_*workqueue().  It's part of the workqueue interface update.
-
->> -    /*
->> -     * For key todo, it'll be empty by now but the work
->> -     * might still be scheduled.
->> -     */
->> -    flush_scheduled_work();
+> With the perf per pmu context changes the event initialization no
+> longer has access to the event context, for the simple reason that we
+> need to first find the pmu (result of initialization) before we can
+> find the context.
 > 
-> oops, todo work no longer exists...
+> This makes hw_breakpoints unhappy, because it can no longer do per
+> task accounting, cure this by frobbing a task pointer in the event::hw
+> bits for now...
 > 
-> Anyway, ACK.
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> ---
+>  include/linux/perf_event.h |    7 +++++++
+>  kernel/hw_breakpoint.c     |    8 ++++----
+>  kernel/perf_event.c        |   21 ++++++++++++++++-----
+>  3 files changed, 27 insertions(+), 9 deletions(-)
+> 
+> Index: linux-2.6/include/linux/perf_event.h
+> ===================================================================
+> --- linux-2.6.orig/include/linux/perf_event.h
+> +++ linux-2.6/include/linux/perf_event.h
+> @@ -536,6 +536,12 @@ struct hw_perf_event {
+>  		struct { /* breakpoint */
+>  			struct arch_hw_breakpoint	info;
+>  			struct list_head		bp_list;
+> +			/*
+> +			 * Crufty hack to avoid the chicken and egg
+> +			 * problem hw_breakpoint has with context
+> +			 * creation and event initalization.
+> +			 */
+> +			struct task_struct		*bp_target;
+>  		};
+>  #endif
+>  	};
+> @@ -693,6 +699,7 @@ struct swevent_hlist {
+>  
+>  #define PERF_ATTACH_CONTEXT	0x01
+>  #define PERF_ATTACH_GROUP	0x02
+> +#define PERF_ATTACH_TASK	0x04
 
-Are you going to route this through wireless tree?  Shall I repost
-with update patch description?
 
-Thank you.
 
--- 
-tejun
+Thanks, the patch looks good.
+
+I'm just not sure about the point of this flag...
+
