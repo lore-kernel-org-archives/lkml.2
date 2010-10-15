@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756726Ab0JOTaQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 15:30:16 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42806 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756579Ab0JOTaP (ORCPT
+	id S1756730Ab0JOTcw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 15:32:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38766 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756597Ab0JOTcv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 15:30:15 -0400
-Date: Fri, 15 Oct 2010 15:26:46 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Christian Lamparter <chunkeey@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, Johannes Berg <johannes@sipsolutions.net>,
-        Linux Wireless List <linux-wireless@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2.6.36-rc7] mac80211: cancel restart_work explicitly
- instead of depending on flush_scheduled_work()
-Message-ID: <20101015192645.GA2438@tuxdriver.com>
-References: <4CB874C0.8090003@kernel.org>
- <1287159715.1870.11.camel@Nokia-N900-51-1>
- <4CB883C9.6050104@kernel.org>
- <201010151858.45000.chunkeey@googlemail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201010151858.45000.chunkeey@googlemail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Fri, 15 Oct 2010 15:32:51 -0400
+X-Authority-Analysis: v=1.1 cv=vbQZhf6WRU4XF+4tPWNJEMYU0N1CowIjcRZ/qR/IBDs= c=1 sm=0 a=lH-zrpptVswA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=9eRoCuG2rompOlRCxmcA:9 a=VTl-lY980-bxp5r2iqBQOCquKtgA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC][PATCH 7/7] perf: Optimize sw events
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        David Miller <davem@davemloft.net>, Mike Galbraith <efault@gmx.de>,
+        "H. Peter Anvin" <hpa@zytor.com>
+In-Reply-To: <1287154627.29097.1524.camel@twins>
+References: <20101014203404.222133139@chello.nl>
+	 <20101014203625.609332490@chello.nl>  <1287134043.29097.1331.camel@twins>
+	 <1287154627.29097.1524.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 15 Oct 2010 15:32:48 -0400
+Message-ID: <1287171168.23682.76.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 06:58:44PM +0200, Christian Lamparter wrote:
-> On Friday 15 October 2010 18:39:37 Tejun Heo wrote:
-> > Hello,
-> 
-> > >> -    /*
-> > >> -     * For key todo, it'll be empty by now but the work
-> > >> -     * might still be scheduled.
-> > >> -     */
-> > >> -    flush_scheduled_work();
-> > > 
-> > > oops, todo work no longer exists...
-> > > 
-> > > Anyway, ACK.
-> > 
-> > Are you going to route this through wireless tree?  Shall I repost
-> > with update patch description?
-> 
-> wireless-testing/wireless-next has already such a patch:
-> "mac80211: cancel restart_work in ieee80211_unregister_hw" (2010-08-25)
-> 
-> <http://git.kernel.org/?p=linux/kernel/git/linville/wireless-next-2.6.git;a=commit;h=258086a48b766d12a500f98834654ffa927ca475>
-> 
-> John, can you please push to 2.6.36-rc8?
-> (I know, I am _late_, but I didn't know about any potential problem
-> in the mainline?)
+On Fri, 2010-10-15 at 16:57 +0200, Peter Zijlstra wrote:
 
-I don't see how either patch would merit inclusion in 2.6.36 at this point.
+> Ah, figured it out, it needs __attribute__((always_inline)), otherwise
+> we end up with multiple keys for one label, which will clealy not work.
+> 
+> I thought we had a __force_inline macro but I can't seem to find that.
 
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Do you mean __always_inline?
+
+	See include/linux/compiler-gcc4.h
+
+-- Steve
+
+
+
