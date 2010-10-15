@@ -1,59 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab0JOVNt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 17:13:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:52433 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755970Ab0JOVNt convert rfc822-to-8bit (ORCPT
+	id S932633Ab0JOVP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 17:15:27 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:13006 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756345Ab0JOVP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 17:13:49 -0400
-Subject: Re: [PATCH 5/9] jump label: Add
- register_jump_label_key/unregister_jump_label_key
-From: Peter Zijlstra <peterz@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Jason Baron <jbaron@redhat.com>
-In-Reply-To: <1287176974.16971.3.camel@gandalf.stny.rr.com>
-References: <20101015200949.134732894@goodmis.org>
-	 <20101015201036.923619508@goodmis.org>  <1287176595.1998.116.camel@laptop>
-	 <1287176974.16971.3.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 15 Oct 2010 23:13:35 +0200
-Message-ID: <1287177215.1998.121.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 15 Oct 2010 17:15:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=k8o+JKsTNxj+O96DxNf8n63zTL6rk3lohPMPJmDeXssSbAbz49ZqcA/SPEHI0SkH0
+	DuR5pKwMmpxEJ2+MWDgrg==
+From: Greg Thelen <gthelen@google.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
+        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
+Subject: [PATCH v2 00/11] memcg: per cgroup dirty page accounting
+Date: Fri, 15 Oct 2010 14:14:28 -0700
+Message-Id: <1287177279-30876-1-git-send-email-gthelen@google.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-15 at 17:09 -0400, Steven Rostedt wrote:
-> On Fri, 2010-10-15 at 23:03 +0200, Peter Zijlstra wrote:
-> 
-> > Urgh, this sucks.. :-(
-> > 
-> > So now we have to actually track all JUMP_LABEL() sites and call
-> > register muck on them.. even though we already track them through the
-> > special data section.
-> > 
-> > Is there really no way around this?
-> 
-> I'll take a look to see if we can monkey with magic and automate it.
+Changes since V1:
+- Renamed "nfs"/"total_nfs" to "nfs_unstable"/"total_nfs_unstable" in per cgroup
+  memory.stat to match /proc/meminfo.
 
-So the problem is something like:
+- Avoid lockdep warnings by using rcu_read_[un]lock() in
+  mem_cgroup_has_dirty_limit().
 
-core kernel:
+- Fixed lockdep issue in mem_cgroup_read_stat() which is exposed by these
+  patches.
 
- jump_label_enable()
+- Remove redundant comments.
 
-module:
+- Rename (for clarity):
+  - mem_cgroup_write_page_stat_item -> mem_cgroup_page_stat_item
+  - mem_cgroup_read_page_stat_item -> mem_cgroup_nr_pages_item
 
- JUMP_LABEL()
+- Renamed newly created proc files:
+  - memory.dirty_bytes -> memory.dirty_limit_in_bytes
+  - memory.dirty_background_bytes -> memory.dirty_background_limit_in_bytes
 
-And then because we don't have a proper __jump_table section, the
-jump_label_enable() won't properly work?
+- Removed unnecessary get_ prefix from get_xxx() functions.
 
-Why not let jump_label_enable() add a dummy entry with the enabled bit
-and once you load the module merge the real entry into it.
+- Allow [kKmMgG] suffixes for newly created dirty limit value cgroupfs files.
+
+- Disable softirq rather than hardirq in lock_page_cgroup()
+
+- Made mem_cgroup_move_account_page_stat() inline.
+
+- Ported patches to mmotm-2010-10-13-17-13.
+
+
+This patch set provides the ability for each cgroup to have independent dirty
+page limits.
+
+Limiting dirty memory is like fixing the max amount of dirty (hard to reclaim)
+page cache used by a cgroup.  So, in case of multiple cgroup writers, they will
+not be able to consume more than their designated share of dirty pages and will
+be forced to perform write-out if they cross that limit.
+
+The patches are based on a series proposed by Andrea Righi in Mar 2010.
+
+
+Overview:
+- Add page_cgroup flags to record when pages are dirty, in writeback, or nfs
+  unstable.
+
+- Extend mem_cgroup to record the total number of pages in each of the 
+  interesting dirty states (dirty, writeback, unstable_nfs).  
+
+- Add dirty parameters similar to the system-wide  /proc/sys/vm/dirty_*
+  limits to mem_cgroup.  The mem_cgroup dirty parameters are accessible
+  via cgroupfs control files.
+
+- Consider both system and per-memcg dirty limits in page writeback when
+  deciding to queue background writeback or block for foreground writeback.
+
+
+Known shortcomings:
+- When a cgroup dirty limit is exceeded, then bdi writeback is employed to
+  writeback dirty inodes.  Bdi writeback considers inodes from any cgroup, not
+  just inodes contributing dirty pages to the cgroup exceeding its limit.  
+
+
+Performance data:
+- A page fault microbenchmark workload was used to measure performance, which
+  can be called in read or write mode:
+        f = open(foo. $cpu)
+        truncate(f, 4096)
+        alarm(60)
+        while (1) {
+                p = mmap(f, 4096)
+                if (write)
+			*p = 1
+		else
+			x = *p
+                munmap(p)
+        }
+
+- The workload was called for several points in the patch series in different
+  modes:
+  - s_read is a single threaded reader
+  - s_write is a single threaded writer
+  - p_read is a 16 thread reader, each operating on a different file
+  - p_write is a 16 thread writer, each operating on a different file
+
+- Measurements were collected on a 16 core non-numa system using "perf stat
+  --repeat 3".  The -a option was used for parallel (p_*) runs.
+
+- All numbers are page fault rate (M/sec).  Higher is better.
+
+- Patch 04/11 disables softirq in lock_page_cgroup().  There has been some
+  discussion about the performance of this change.  To compare the cost of
+  disabling softirq in patch 04/11, compare the patch 03 and patch 04 rows.
+
+- To compare the performance of a kernel without non-memcg compare the first and
+  last rows, neither has memcg configured.  The first row does not include any
+  of these memcg patches.
+
+- To compare the performance of using memcg dirty limits, compare the baseline
+  (2nd row titled "w/ memcg") with the the code and memcg enabled (2nd to last
+  row titled "all patches").
+
+                           root_cgroup                     child_cgroup
+                 s_read s_write p_read p_write    s_read s_write p_read p_write
+mmotm w/o memcg   0.424  0.399   0.421  0.395
+w/ memcg          0.418  0.389   0.398  0.369      0.414  0.389  0.395  0.369
+patch 03/11       0.429  0.394   0.405  0.378      0.427  0.393  0.405  0.379
+ create extensible routines
+patch 04/11       0.424  0.394   0.400  0.373      0.421  0.389  0.398  0.366
+  disable softirq
+all patches       0.419  0.379   0.392  0.365      0.416  0.379  0.391  0.362
+all patches       0.428  0.395   0.421  0.391
+  w/o memcg
+
+
+Balbir Singh (1):
+  memcg: CPU hotplug lockdep warning fix
+
+Greg Thelen (10):
+  memcg: add page_cgroup flags for dirty page tracking
+  memcg: document cgroup dirty memory interfaces
+  memcg: create extensible page stat update routines
+  memcg: disable softirq in lock_page_cgroup()
+  memcg: add dirty page accounting infrastructure
+  memcg: add kernel calls for memcg dirty page stats
+  memcg: add dirty limits to mem_cgroup
+  memcg: add cgroupfs interface to memcg dirty limits
+  writeback: make determine_dirtyable_memory() static.
+  memcg: check memcg dirty limits in page writeback
+
+ Documentation/cgroups/memory.txt |   60 ++++++
+ fs/nfs/write.c                   |    4 +
+ include/linux/memcontrol.h       |   78 +++++++-
+ include/linux/page_cgroup.h      |   29 +++
+ include/linux/writeback.h        |    2 -
+ mm/filemap.c                     |    1 +
+ mm/memcontrol.c                  |  408 ++++++++++++++++++++++++++++++++++++--
+ mm/page-writeback.c              |  213 +++++++++++++-------
+ mm/rmap.c                        |    4 +-
+ mm/truncate.c                    |    1 +
+ 10 files changed, 697 insertions(+), 103 deletions(-)
