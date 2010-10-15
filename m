@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756302Ab0JOPYr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 11:24:47 -0400
-Received: from borg.medozas.de ([188.40.89.202]:39903 "EHLO borg.medozas.de"
+	id S1756323Ab0JOP0V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 11:26:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39919 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756025Ab0JOPYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 11:24:46 -0400
-Date: Fri, 15 Oct 2010 17:24:44 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Andreas Gruenbacher <agruen@suse.de>
-cc: Andi Kleen <andi@firstfloor.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, davem@davemloft.net
-Subject: Re: Process to push changes to include/linux/types.h
-In-Reply-To: <201010151644.21794.agruen@suse.de>
-Message-ID: <alpine.LNX.2.01.1010151713060.30823@obet.zrqbmnf.qr>
-References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com> <201010151215.49392.agruen@suse.de> <20101015142617.GB25620@basil.fritz.box> <201010151644.21794.agruen@suse.de>
-User-Agent: Alpine 2.01 (LNX 1266 2009-07-14)
+	id S1755857Ab0JOP0U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 11:26:20 -0400
+Message-ID: <4CB8725B.9010200@kernel.org>
+Date: Fri, 15 Oct 2010 17:25:15 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: lkml <linux-kernel@vger.kernel.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Wu Fengguang <fengguang.wu@intel.com>, Michal Hocko <mhocko@suse.cz>
+Subject: [PATCH v2.6.36-rc7] memory_hotplug: drop spurious calls to flush_scheduled_work()
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Oct 2010 15:25:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+lru_add_drain_all() uses schedule_on_each_cpu() which is synchronous.
+There is no reason to call flush_scheduled_work() after
+lru_add_drain_all().  Drop the spurious calls.
 
-On Friday 2010-10-15 16:44, Andreas Gruenbacher wrote:
->On Friday 15 October 2010 16:26:17 Andi Kleen wrote:
->> > 64-bit values align to 4-byte boundaries on some 32-bit architectures like
->> > x86 
->> AFAIK it's only on x86, no other architecture made this mistake in their
->> 32bit ABI. But of course x86 is kind of important ...
->
->I don't know of any other examples; all the architectures I tried "got it 
->right" except x86.
+This is to prepare for the deprecation and removal of
+flush_scheduled_work().
 
-I don't think x86 has done anything wrong. It processes stuff in
-32-bit chunks, so why should one waste space for aligning a 64-bit
-entity to 8? On sparcv9, a long double also has an alignment
-smaller than its size.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+---
+ mm/memory_hotplug.c |    2 --
+ 1 file changed, 2 deletions(-)
 
-If you don't like that, you can always patch up gcc, because
-alignment is after all a decision made by the compiler. In that
-regard, it might be worth checking out the gcc machine description
-files and find out why people specified an alignment of 8 for
-uint64_t anything but i?86.
+Index: work/mm/memory_hotplug.c
+===================================================================
+--- work.orig/mm/memory_hotplug.c
++++ work/mm/memory_hotplug.c
+@@ -840,7 +840,6 @@ repeat:
+ 	ret = 0;
+ 	if (drain) {
+ 		lru_add_drain_all();
+-		flush_scheduled_work();
+ 		cond_resched();
+ 		drain_all_pages();
+ 	}
+@@ -862,7 +861,6 @@ repeat:
+ 	}
+ 	/* drain all zone's lru pagevec, this is asyncronous... */
+ 	lru_add_drain_all();
+-	flush_scheduled_work();
+ 	yield();
+ 	/* drain pcp pages , this is synchrouns. */
+ 	drain_all_pages();
