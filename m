@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756517Ab0JOQOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:14:37 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:17811 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756502Ab0JOQOf (ORCPT
+	id S1756465Ab0JOQOP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:14:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:33440 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756382Ab0JOQOL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:14:35 -0400
-From: dann frazier <dannf@hp.com>
+	Fri, 15 Oct 2010 12:14:11 -0400
+X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=X4Jpp518rpoA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=VwQbUJbxAAAA:8 a=meVymXHHAAAA:8 a=0bIBIenkJExowfLqrbsA:9 a=Je-kq4JMU9lsAuwowx6rxlHZxoUA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20101015161409.316533201@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 15 Oct 2010 12:13:36 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
-Cc: david.altobelli@hp.com, gregkh@suse.de, dann frazier <dannf@hp.com>
-Subject: [PATCH] hpilo: Despecificate driver from iLO generation
-Date: Fri, 15 Oct 2010 10:14:34 -0600
-Message-Id: <1287159274-19139-1-git-send-email-dannf@hp.com>
-X-Mailer: git-send-email 1.7.1
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org
+Subject: [PATCH 2/2] ftrace: Use objtree for C version of recordmcount
+References: <20101015161334.766423984@goodmis.org>
+Content-Disposition: inline; filename=0002-ftrace-Use-objtree-for-C-version-of-recordmcount.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver supports iLO, iLO2 and iLO3. However, comments and Kconfig
-reference only iLO and iLO2. Let's just call it "iLO" to avoid having to
-update strings for each iLO generation. This is similar to the change made
-to hpwdt in commit 36e3ff44cebd7e46756dec88f30c982bebefdab7.
+From: Steven Rostedt <srostedt@redhat.com>
 
-Signed-off-by: dann frazier <dannf@hp.com>
+The C version of recordmcount is compiled to a binary, which will
+end up located in the objtree. If the kernel is built with O=path,
+the srctree will not include the binary recordmcount caller.
+
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: linux-kbuild@vger.kernel.org
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- drivers/misc/Kconfig |   10 +++++-----
- drivers/misc/hpilo.c |    2 +-
- 2 files changed, 6 insertions(+), 6 deletions(-)
+ scripts/Makefile.build |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index b743312..11341ce 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -248,15 +248,15 @@ config CS5535_CLOCK_EVENT_SRC
- 	  generic PIT, and are suitable for use as high-res timers.
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index 4d03a7e..4db60b2 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -210,7 +210,7 @@ endif
  
- config HP_ILO
--	tristate "Channel interface driver for HP iLO/iLO2 processor"
-+	tristate "Channel interface driver for the HP iLO processor"
- 	depends on PCI
- 	default n
- 	help
- 	  The channel interface driver allows applications to communicate
--	  with iLO/iLO2 management processors present on HP ProLiant
--	  servers.  Upon loading, the driver creates /dev/hpilo/dXccbN files,
--	  which can be used to gather data from the management processor,
--	  via read and write system calls.
-+	  with iLO management processors present on HP ProLiant servers.
-+	  Upon loading, the driver creates /dev/hpilo/dXccbN files, which
-+	  can be used to gather data from the management processor, via
-+	  read and write system calls.
- 
- 	  To compile this driver as a module, choose M here: the
- 	  module will be called hpilo.
-diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
-index 557a8c2..d4158ec 100644
---- a/drivers/misc/hpilo.c
-+++ b/drivers/misc/hpilo.c
-@@ -1,5 +1,5 @@
- /*
-- * Driver for HP iLO/iLO2 management processor.
-+ * Driver for the HP iLO management processor.
-  *
-  * Copyright (C) 2008 Hewlett-Packard Development Company, L.P.
-  *	David Altobelli <david.altobelli@hp.com>
+ ifdef CONFIG_FTRACE_MCOUNT_RECORD
+ ifdef BUILD_C_RECORDMCOUNT
+-cmd_record_mcount = $(srctree)/scripts/recordmcount "$(@)";
++cmd_record_mcount = $(objtree)/scripts/recordmcount "$(@)";
+ else
+ cmd_record_mcount = set -e ; perl $(srctree)/scripts/recordmcount.pl "$(ARCH)" \
+ 	"$(if $(CONFIG_CPU_BIG_ENDIAN),big,little)" \
 -- 
 1.7.1
+
 
