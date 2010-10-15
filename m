@@ -1,91 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756346Ab0JOO6b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:58:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55062 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754334Ab0JOO6a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:58:30 -0400
-Message-ID: <4CB86C0D.60603@kernel.org>
-Date: Fri, 15 Oct 2010 16:58:21 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.9) Gecko/20100915 Lightning/1.0b2 Thunderbird/3.1.4
+	id S1756347Ab0JOPAv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 11:00:51 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:46903 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756148Ab0JOPAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 11:00:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=rErNNUuwzrM8ZlbT/MTSwiJtg+nQT41+UuWK1FUSaqQ/LZNLI1ONFB3eaObXBV6RKg
+         ZKwgZ8jTXPB1E1GHZpEirxh3ldWVFGYZNF+yU0SlIWrVPqLoiYG0JIO9pnjGX7xrR7/o
+         z9hw7G8CrbtV5fuP7KyUqhmgYkdKVIoz/zEY8=
+Message-ID: <4CB86C87.5010207@gmail.com>
+Date: Fri, 15 Oct 2010 23:00:23 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-To: linux-pcmcia@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: [PATCH v2.6.36-rc7] pcmcia: don't call flush_scheduled_work() spuriously
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: netdev@vger.kernel.org, yachen@nuvoton.com,
+        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: [PATCH] net/nuc900: change dev_warn to dev_dbg when link down occurs
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 15 Oct 2010 14:58:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-au100_generic and soc_common call flush_scheduled_work() spuriously.
-Remove them.
+Hi David,
 
-This is to prepare for the deprecation and removal of
-flush_scheduled_work().
+When I didnot connect the net cable, the warning infos are always showed,
+so I change the dev_warn to dev_dbg.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+
 ---
-Am I missing something?  The only pcmcia driver which uses the system
-workqueue is vrc4173 which doesn't seem to depend on any of the above
-and doesn't seem to implement removal properly anyway.
+  drivers/net/arm/w90p910_ether.c |    2 +-
+  1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thank you.
+diff --git a/drivers/net/arm/w90p910_ether.c b/drivers/net/arm/w90p910_ether.c
+index 4545d5a..98f8ada 100644
+--- a/drivers/net/arm/w90p910_ether.c
++++ b/drivers/net/arm/w90p910_ether.c
+@@ -213,7 +213,7 @@ static void update_linkspeed(struct net_device *dev)
+  	if (!mii_link_ok(&ether->mii)) {
+  		ether->linkflag = 0x0;
+  		netif_carrier_off(dev);
+-		dev_warn(&pdev->dev, "%s: Link down.\n", dev->name);
++		dev_dbg(&pdev->dev, "%s: Link down.\n", dev->name);
+  		return;
+  	}
 
- drivers/pcmcia/au1000_generic.c |    3 ---
- drivers/pcmcia/soc_common.c     |    4 ----
- 2 files changed, 7 deletions(-)
-
-Index: work/drivers/pcmcia/au1000_generic.c
-===================================================================
---- work.orig/drivers/pcmcia/au1000_generic.c
-+++ work/drivers/pcmcia/au1000_generic.c
-@@ -441,14 +441,12 @@ int au1x00_pcmcia_socket_probe(struct de
-
-
- out_err:
--	flush_scheduled_work();
- 	ops->hw_shutdown(skt);
- 	while (i-- > 0) {
- 		skt = PCMCIA_SOCKET(i);
-
- 		del_timer_sync(&skt->poll_timer);
- 		pcmcia_unregister_socket(&skt->socket);
--		flush_scheduled_work();
- 		if (i == 0) {
- 			iounmap(skt->virt_io + (u32)mips_io_port_base);
- 			skt->virt_io = NULL;
-@@ -480,7 +478,6 @@ int au1x00_drv_pcmcia_remove(struct plat
-
- 		del_timer_sync(&skt->poll_timer);
- 		pcmcia_unregister_socket(&skt->socket);
--		flush_scheduled_work();
- 		skt->ops->hw_shutdown(skt);
- 		au1x00_pcmcia_config_skt(skt, &dead_socket);
- 		iounmap(skt->virt_io + (u32)mips_io_port_base);
-Index: work/drivers/pcmcia/soc_common.c
-===================================================================
---- work.orig/drivers/pcmcia/soc_common.c
-+++ work/drivers/pcmcia/soc_common.c
-@@ -627,8 +627,6 @@ void soc_pcmcia_remove_one(struct soc_pc
-
- 	pcmcia_unregister_socket(&skt->socket);
-
--	flush_scheduled_work();
--
- 	skt->ops->hw_shutdown(skt);
-
- 	soc_common_pcmcia_config_skt(skt, &dead_socket);
-@@ -720,8 +718,6 @@ int soc_pcmcia_add_one(struct soc_pcmcia
- 	pcmcia_unregister_socket(&skt->socket);
-
-  out_err_7:
--	flush_scheduled_work();
--
- 	skt->ops->hw_shutdown(skt);
-  out_err_6:
- 	list_del(&skt->node);
+-- 
+1.6.3.3
