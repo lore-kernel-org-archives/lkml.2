@@ -1,74 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab0JOMfR (ORCPT <rfc822;w@1wt.eu>);
+	id S1755485Ab0JOMfU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 08:35:20 -0400
+Received: from 63.mail-out.ovh.net ([91.121.185.56]:52597 "HELO
+	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755270Ab0JOMfR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 15 Oct 2010 08:35:17 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:60734 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754756Ab0JOMfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 08:35:15 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18EmR8fFJEEHbRqyfePbYAMoH+RIujXicS4WS+kAw
-	3nTmFPauPLB6gn
-Subject: Re: [PATCH 4/4] sched: force balancing on newidle balance if local
- group has capacity
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Nikhil Rao <ncrao@google.com>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <1287145214.29097.1464.camel@twins>
-References: <1286996978-7007-1-git-send-email-ncrao@google.com>
-	 <1286996978-7007-5-git-send-email-ncrao@google.com>
-	 <1287144395.29097.1462.camel@twins>
-	 <1287145129.9200.32.camel@marge.simson.net>
-	 <1287145214.29097.1464.camel@twins>
-Content-Type: text/plain
-Date: Fri, 15 Oct 2010 14:35:10 +0200
-Message-Id: <1287146110.9200.43.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Date: Fri, 15 Oct 2010 14:32:59 +0200
+From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+To: Sergio Tanzilli <tanzilli@acmesystems.it>
+Cc: linux@arm.linux.org.uk, linux@maxim.org.za, nicolas.ferre@atmel.com,
+        costa.antonior@gmail.com, eschwab@online.de,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Acme Systems FOX Board G20 board files
+Message-ID: <20101015123259.GH11127@game.jcrosoft.org>
+References: <1287014786-25543-1-git-send-email-tanzilli@acmesystems.it>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1287014786-25543-1-git-send-email-tanzilli@acmesystems.it>
+X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
+X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Ovh-Tracer-Id: 5369135181744614145
+X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-15 at 14:20 +0200, Peter Zijlstra wrote:
-> On Fri, 2010-10-15 at 14:18 +0200, Mike Galbraith wrote:
-> > On Fri, 2010-10-15 at 14:06 +0200, Peter Zijlstra wrote:
-> > > On Wed, 2010-10-13 at 12:09 -0700, Nikhil Rao wrote:
-> > > > +bool check_utilization(struct sd_lb_stats *sds)
-> > > > +{
-> > > > +       if (!sds->this_has_capacity || sds->busiest_has_capacity)
-> > > > +               return false;
-> > > > +
-> > > > +       return true;
-> > > > +}
-> > > > +
-> > > >  /******* find_busiest_group() helpers end here *********************/
-> > > >  
-> > > >  /**
-> > > > @@ -2824,6 +2845,10 @@ find_busiest_group(struct sched_domain *sd, int this_cpu,
-> > > >         if (!sds.busiest || sds.busiest_nr_running == 0)
-> > > >                 goto out_balanced;
-> > > >  
-> > > > +       /*  SD_BALANCE_NEWIDLE trumps SMP nice when underutilized */
-> > > > +       if (idle == CPU_NEWLY_IDLE && check_utilization(&sds))
-> > > > +               goto force_balance; 
-> > > 
-> > > 
-> > > Is that really worth an extra function?
-> > 
-> > (I did that)
-> > 
-> > No, just it made it look prettier to me.  I figured the compiler will
-> > nuke it at zero cost.
-> 
-> Sure.. but it does raise the whole naming/confusion angle ;-)
+> @@ -0,0 +1,279 @@
+> +/*
+> + *  Copyright (C) 2005 SAN People
+> + *  Copyright (C) 2008 Atmel
+> + *  Copyright (C) 2010 Lee McLoughlin - lee@lmmrtech.com
+> + *  Copyright (C) 2010 Sergio Tanzilli - tanzilli@acmesystems.it
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + *
+> + * You should have received a copy of the GNU General Public License
+> + * along with this program; if not, write to the Free Software
+> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+> + */
+> +
+> +#include <linux/types.h>
+> +#include <linux/init.h>
+> +#include <linux/mm.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/spi/spi.h>
+> +#include <linux/spi/at73c213.h>
+> +#include <linux/gpio_keys.h>
+> +#include <linux/input.h>
+> +#include <linux/clk.h>
+> +#include <linux/w1-gpio.h>
+> +
+> +#include <mach/hardware.h>
+> +#include <asm/setup.h>
+> +#include <asm/mach-types.h>
+> +#include <asm/irq.h>
+> +
+> +#include <asm/mach/arch.h>
+> +#include <asm/mach/map.h>
+> +#include <asm/mach/irq.h>
+> +
+> +#include <mach/board.h>
+> +#include <mach/gpio.h>
+please replace by linux/gpio.h
+> +#include <mach/at91sam9_smc.h>
+> +
+> +#include "sam9_smc.h"
+> +#include "generic.h"
+> +
+> +/*
+> + * The FOX Board G20 hardware comes as the "Netus G20" board with
+> + * just the cpu, ram, dataflash and two header connectors.
+> + * This is plugged into the FOX Board which provides the ethernet,
+> + * usb, rtc, leds, switch, ...
+> + *
+> + * For more info visit: http://www.acmesystems.it/foxg20
+> + */
+> +
+> +
+> +	.is_rmii	= 1,
+> +};
+please not 4 blank line
+> +
+> +
+> +
+> +
+> +/*
+> + * MCI (SD/MMC)
+> + * det_pin, wp_pin and vcc_pin are not connected
+> + */
+> +static struct at91_mmc_data __initdata foxg20_mmc_data = {
+> +	.slot_b		= 1,
+> +	.wire4		= 1,
+> +};
+> +
+> +
+> +/*
+> + * LEDs
+> + */
+> +static struct gpio_led foxg20_leds[] = {
+> +	{	/* user led, red */
+> +		.name			= "user_led",
+> +		.gpio			= AT91_PIN_PC7,
+> +		.active_low		= 0,
+> +		.default_trigger	= "heartbeat",
+> +	},
+> +};
+> +
+> +
 
-is_under_utilized() works for me.
+please also fix some white spaces
 
-(as does && this && that or cpu_should_get_off_lazy_butt():)
+use checkpatch.pl
 
-	-Mike
 
+Best Regards,
+J.
