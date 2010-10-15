@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755111Ab0JOIyY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 04:54:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47692 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab0JOIxF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 04:53:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=feJwujleSfQCO6qSipX2VTgItxdEO2QOa3kmugDtM39eLcMDpuqtl5mMqy1fTZOo+p
-         JjwZPHuHiumyznw/Uy2EoVBLcY3ynPnEJxsjzMLzuGrnVu36k1+Iya9Z6B4TdXeOI/76
-         h26wWiuvuf0lAIjRDmx6AkOPaQyH0xF7uzEao=
-From: Marek Belisko <marek.belisko@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marek Belisko <marek.belisko@gmail.com>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Cc: Marek Belisko <marek.belisko@gmail.com>
-Subject: [PATCH 1/2] staging:ft1000: Check return value when init net device.
-Date: Fri, 15 Oct 2010 08:57:24 +0200
-Message-Id: <1287125845-12825-1-git-send-email-marek.belisko@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	id S1755270Ab0JOIyz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 04:54:55 -0400
+Received: from mga01.intel.com ([192.55.52.88]:60392 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754659Ab0JOIxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 04:53:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.57,335,1283756400"; 
+   d="scan'208";a="616995432"
+From: xiaohui.xin@intel.com
+To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
+        herbert@gondor.hengli.com.au, jdike@linux.intel.com
+Cc: Xin Xiaohui <xiaohui.xin@intel.com>
+Subject: [PATCH v13 10/16] Add a hook to intercept external buffers from NIC driver.
+Date: Fri, 15 Oct 2010 17:12:11 +0800
+Message-Id: <33f51c5eddec843260451eccbfa3c5fdea13b479.1287132437.git.xiaohui.xin@intel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <1287133937-5538-1-git-send-email-xiaohui.xin@intel.com>
+References: <1287133937-5538-1-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1287132437.git.xiaohui.xin@intel.com>
+References: <fc6e95d63a2c62aaf77f8ded22fc43ccefcdbbff.1287132437.git.xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
----
- drivers/staging/ft1000/ft1000-usb/ft1000_usb.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-index 44c475b..a2c415e 100644
---- a/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-+++ b/drivers/staging/ft1000/ft1000-usb/ft1000_usb.c
-@@ -159,7 +159,11 @@ static int ft1000_probe(struct usb_interface *interface,
- 	release_firmware(dsp_fw);
+The hook is called in __netif_receive_skb().
+
+Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
+Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
+Reviewed-by: Jeff Dike <jdike@linux.intel.com>
+---
+ net/core/dev.c |   37 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 37 insertions(+), 0 deletions(-)
+
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e48639d..235eaab 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -2814,6 +2814,37 @@ int __skb_bond_should_drop(struct sk_buff *skb, struct net_device *master)
+ }
+ EXPORT_SYMBOL(__skb_bond_should_drop);
  
- 	DEBUG("ft1000_probe: start downloading dsp image...\n");
--	init_ft1000_netdev(ft1000dev);
++#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
++/* Add a hook to intercept mediate passthru(zero-copy) packets,
++ * and insert it to the socket queue owned by mp_port specially.
++ */
++static inline struct sk_buff *handle_mpassthru(struct sk_buff *skb,
++					       struct packet_type **pt_prev,
++					       int *ret,
++					       struct net_device *orig_dev)
++{
++	struct mp_port *mp_port = NULL;
++	struct sock *sk = NULL;
 +
-+	ret = init_ft1000_netdev(ft1000dev);
-+	if (ret)
-+		goto err_load;
++	if (!dev_is_mpassthru(skb->dev))
++		return skb;
++	mp_port = skb->dev->mp_port;
 +
- 	pft1000info = (FT1000_INFO *) netdev_priv(ft1000dev->net);
++	if (*pt_prev) {
++		*ret = deliver_skb(skb, *pt_prev, orig_dev);
++		*pt_prev = NULL;
++	}
++
++	sk = mp_port->sock->sk;
++	skb_queue_tail(&sk->sk_receive_queue, skb);
++	sk->sk_state_change(sk);
++
++	return NULL;
++}
++#else
++#define handle_mpassthru(skb, pt_prev, ret, orig_dev)     (skb)
++#endif
++
+ static int __netif_receive_skb(struct sk_buff *skb)
+ {
+ 	struct packet_type *ptype, *pt_prev;
+@@ -2891,6 +2922,11 @@ static int __netif_receive_skb(struct sk_buff *skb)
+ ncls:
+ #endif
  
- 	DEBUG("In probe: pft1000info=%p\n", pft1000info);
++	/* To intercept mediate passthru(zero-copy) packets here */
++	skb = handle_mpassthru(skb, &pt_prev, &ret, orig_dev);
++	if (!skb)
++		goto out;
++
+ 	/* Handle special case of bridge or macvlan */
+ 	rx_handler = rcu_dereference(skb->dev->rx_handler);
+ 	if (rx_handler) {
+@@ -2991,6 +3027,7 @@ err:
+ EXPORT_SYMBOL(netdev_mp_port_prep);
+ #endif
+ 
++
+ /**
+  *	netif_receive_skb - process receive buffer from network
+  *	@skb: buffer to process
 -- 
-1.7.1
+1.7.3
 
