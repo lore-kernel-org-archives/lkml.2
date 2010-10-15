@@ -1,38 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932465Ab0JOTsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 15:48:42 -0400
-Received: from kroah.org ([198.145.64.141]:44026 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932415Ab0JOTsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 15:48:33 -0400
-Date: Fri, 15 Oct 2010 12:43:16 -0700
-From: Greg KH <greg@kroah.com>
-To: Marek Belisko <marek.belisko@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging:ft1000: Get rid of using typedef.
-Message-ID: <20101015194316.GA32598@kroah.com>
-References: <1287127279-14209-1-git-send-email-marek.belisko@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1287127279-14209-1-git-send-email-marek.belisko@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932445Ab0JOTxR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 15:53:17 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:38120 "HELO
+	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756711Ab0JOTxP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 15:53:15 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=bp3UNbJHVZzDkwwM4nKrT6izNOqn4ee/3E8ie5X8X+OwmNVdAhzX+Nf3u1fiqmmgbWu8RD/FH/4fHDuKBN+0PabNbn+vSpMsQZ2m1R/Tj//sFUgeZg6TB670YWTLJEZk;
+Date: Fri, 15 Oct 2010 12:52:57 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-pci@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Subject: Re: [PATCH v2.6.36-rc7 2/2] shpchp: update workqueue usage
+Message-ID: <20101015125257.73e8d8df@jbarnes-desktop>
+In-Reply-To: <4CB8698A.8030202@kernel.org>
+References: <4CB86966.5020606@kernel.org>
+	<4CB8698A.8030202@kernel.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.174.193.198 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 09:21:19AM +0200, Marek Belisko wrote:
-> Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
-> ---
->  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c |   26 +++++++++++-----------
->  drivers/staging/ft1000/ft1000-usb/ft1000_hw.c    |    8 +++---
->  drivers/staging/ft1000/ft1000-usb/ft1000_usb.h   |    8 +++---
->  3 files changed, 21 insertions(+), 21 deletions(-)
+On Fri, 15 Oct 2010 16:47:38 +0200
+Tejun Heo <tj@kernel.org> wrote:
 
-This one also did not apply.
+> * Rename shpchp_wq to shpchp_ordered_wq and add non-ordered shpchp_wq
+>   which is used instead of the system workqueue.  This is to remove
+>   the use of flush_scheduled_work() which is deprecated and scheduled
+>   for removal.
+> 
+> * With cmwq in place, there's no point in creating workqueues lazily.
+>   Create both shpchp_wq and shpchp_ordered_wq upfront.
+> 
+> * Include workqueue.h from shpchp.h.
 
-thanks,
+Applied these two, thanks.  I think Kenji-san will probably let me know
+if pciehp suddenly breaks as a result. :)
 
-greg k-h
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
