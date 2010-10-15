@@ -1,109 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab0JOOke (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:40:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49250 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485Ab0JOOkc (ORCPT
+	id S1756219Ab0JOOmC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:42:02 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19212 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755857Ab0JOOmA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:40:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=SWGl6ptT6L9h1gr+yEQ0ycT+8i94RFYt2A/9zE6ifg7Xe4L+w49U9wqwhQ2gXhDzra
-         suSKNf9rflHpRrnYkzeQNalyPj8sts+MpOoOYeJJvEBrkVPliMs1CbV3fW10IuUOZ8zZ
-         o3v7QbfYnNgZ7uI+d/8P9086v9iAnQi0obFcY=
-Subject: Re: Results of my work on memorystick subsystem
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Alex Dubov <oakad@yahoo.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <463093.9879.qm@web37607.mail.mud.yahoo.com>
-References: <463093.9879.qm@web37607.mail.mud.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 15 Oct 2010 15:34:32 +0200
-Message-ID: <1287149672.3473.28.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 15 Oct 2010 10:42:00 -0400
+Message-ID: <4CB86804.7090600@oracle.com>
+Date: Fri, 15 Oct 2010 07:41:08 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Ben Pfaff <blp@cs.stanford.edu>
+CC: Bruno Randolf <br1@einfach.org>, linux-kernel@vger.kernel.org,
+        akpm <akpm@linux-foundation.org>
+Subject: Re: [PATCH] Add generic exponentially weighted moving average function
+References: <20101006093225.8739.14012.stgit@tt-desk>	<20101012173352.0a458c24.randy.dunlap@oracle.com> <87y6a0unrr.fsf@benpfaff.org>
+In-Reply-To: <87y6a0unrr.fsf@benpfaff.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-10-14 at 23:45 -0700, Alex Dubov wrote:
-> > 
-> > 
-> > And what I had to go through to understand the
-> > mspro_block_read_attributes....
-> > 
+On 10/14/10 20:40, Ben Pfaff wrote:
+> Randy Dunlap <randy.dunlap@oracle.com> writes:
 > 
-> Ellipsis to the rescue! :-)
-> This is just one straightforward function which parses the header block
-> in an originally intended fashion. You can simplify it by making it "less
-> correct", windows driver style, but otherwise I fail to see what could be
-> so difficult about it.
+>> On Wed, 06 Oct 2010 18:32:25 +0900 Bruno Randolf wrote:
+>>
+>>> This adds a generic exponentially weighted moving average function. This
+>>> implementation makes use of a structure which keeps a scaled up internal
+>>> representation to reduce rounding errors.
+>>>
+>>> The idea for this implementation comes from the rt2x00 driver (rt2x00link.c)
+>>> and i would like to use it in several places in the mac80211 and ath5k code.
+>>
+>> I guess I don't understand "exponentially weighted" or why that would
+>> be desirable.  Please try to explain (briefly).
+> 
+> I wrote up a fairly non-brief explanation of exponentially
+> weighted moving averages a few years ago:
+>         http://www.stanford.edu/class/cs140/projects/pintos/pintos_7.html#SEC134
 
-Alex, it is now straight forward.
+Thanks, nice writeup.
 
-Lets see what gems I found in old version:
-
-* It does obscure math with sizes, offsets.
-multiplies, divides offsets, sizes, uses data stored in 'param' register
-to 'recover' the data.
-
-* It overloads the 'rc' variable to store attribute size.
-That is outright nasty as you would say.
-
-* It has not a single comment, especially about its caching.
-
-Alex, don't get me wrong.
-
-Let me explain why did I refactor the mspro_blk.c
-
-I have created the ms_block.c, and I just had to create a set of common
-helpers to reduce code duplication because I hate it.
-It works well, very well now.
-
-Now I had put quite a lot of changes to common code, including few state
-variables in the 'card' structure.
-
-I really had to do that. I added common INT polling feature to reduce
-code duplication. I also added a timeout for INT polling. It saved me
-from restart for a lot of times (while I debugged the code).
-And I really can't put a piece of code that can enter an endless loop
-if conditions are right.
-
-If I were to inline the INT read function, it would create a huge code
-duplication.
-
-I added a register read/write functions.
-These made it possible to be free of constant fear of sending TPC of
-wrong size because register window isn't updated.
-It allowed me to read/write just the right registers everywhere without
-additional effor, and most importantly reduce the >8 bytes TPC which
-improve performance significantly on Jmicron.
-
-It also helped me a lot to debug and workaround that damn Jmicon reader.
-
-The way I handle card states not only allowed me to have several states
-that handle a same TPC, but allowed me to have states that don't handle
-any.
-
-Now on the other hand, the mspro_blk.c did't use these changes, and
-therefore was in constant danger of beeing broken.
-I had to think carefully how to add changes, while keeping the old way
-working.
-
-So I bit the bullet, and made the mspro_blk.c use new support code.
-Among the way I tried to make it simpler.
-I understand that you might not like that I 'made your code better',
-That is very subjective, and besides,
-I'll say maybe I didn't. Yet at least it is consistent with ms_block.c
-
-Alex, maybe I shouldn’t say that new code is nice and clean.
-Don't hate me because of that.
-
-
-
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
