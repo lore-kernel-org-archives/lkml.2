@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932320Ab0JOSYT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 14:24:19 -0400
-Received: from mga09.intel.com ([134.134.136.24]:11842 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756502Ab0JOSYS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 14:24:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,337,1283756400"; 
-   d="scan'208";a="667862406"
-Date: Fri, 15 Oct 2010 11:24:14 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, lud <linux-usb@vger.kernel.org>,
-        Andiry Xu <andiry.xu@amd.com>, Dong Nguyen <dong.nguyen@amd.com>,
-        Libin Yang <libin.yang@amd.com>
-Subject: [PATCH] xhci: Fix compile error when CONFIG_PM=n
-Message-ID: <20101015182414.GA12349@xanatos>
+	id S1756697Ab0JOSxj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 14:53:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37986 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756529Ab0JOSxi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 14:53:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=h1J4DpCXQmiCS4o0K6I3jU7A72URyDqFZtvmRVcdAzLCoLymx/wYbwloQrWi1PCirq
+         nnbXnF1jrksfmb8WLaAayu0iFoGzWW1exL9CSEJ4hujBvLYSetP4IFQX/PoA8H0XBP5e
+         PQYq31W+Z82lGI6GGSQIKB4PN7Utbwhk++Yj0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101015181656.GA6473@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201010151253.15653.arnd@arndb.de>
+References: <1287135981-17604-1-git-send-email-akinobu.mita@gmail.com>
+ <1287135981-17604-23-git-send-email-akinobu.mita@gmail.com> <201010151253.15653.arnd@arndb.de>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 15 Oct 2010 14:53:16 -0400
+Message-ID: <AANLkTimK__Z_KrZ+fEUQuu51cdrYviTAmXSfQ0jD_EvP@mail.gmail.com>
+Subject: Re: [PATCH 22/22] bitops: remove minix bitops from asm/bitops.h
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix this error when CONFIG_PM is not enabled:
+On Fri, Oct 15, 2010 at 06:53, Arnd Bergmann wrote:
+> On Friday 15 October 2010, Akinobu Mita wrote:
+>> minix bit operations are only used by minix filesystem and useless
+>> by other modules.
+>
+> Right.
+>
+>> This provides new config option CONFIG_MINIX_FS_LITTLE_ENDIAN and
+>> CONFIG_MINIX_FS_NATIVE_ENDIAN that each architecture selects one of which.
+>> Then we can remove minix bit operations from asm/bitops.h from all
+>> architectures by making them minix filesystem local macros.
+>
+> I would say that any architecture that defines minix bitops as
+> little-endian is broken and we should not even need the #define.
+>
+> You have defined these as "native endian":
+>
+> always LE:
+>        alpha, blackfin, ia64, score, tile, x86
+>
+> always BE:
+>        h8300, microblaze, s390, sparc
+>
+> configurable:
+>        m32r, mips, sh, xtensa
+>
+> The only ones among these that possibly ever cared about mounting minix
+> file systems on a big-endian kernel are really old sparc and mips systems,
+> everyone else probably never noticed their mistake.
+>
+> I'd say let's define the minix bitops as always LE and be done with it.
 
-drivers/usb/host/xhci.c:675: error: implicit declaration of function 'usb_root_hub_lost_power'
-
-Wrap xhci_suspend() and xhci_resume() into an ifdef CONFIG_PM, along with
-the functions that only they call -- xhci_save_registers() and
-xhci_restore_registers().
-
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
----
- drivers/usb/host/xhci.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
-index 33d0034..9dc5be5 100644
---- a/drivers/usb/host/xhci.c
-+++ b/drivers/usb/host/xhci.c
-@@ -551,6 +551,7 @@ void xhci_shutdown(struct usb_hcd *hcd)
- 		    xhci_readl(xhci, &xhci->op_regs->status));
- }
- 
-+#ifdef CONFIG_PM
- static void xhci_save_registers(struct xhci_hcd *xhci)
- {
- 	xhci->s3.command = xhci_readl(xhci, &xhci->op_regs->command);
-@@ -761,6 +762,13 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
- 	return 0;
- }
- 
-+#else
-+
-+#define	xhci_suspend	NULL
-+#define	xhci_resume	NULL
-+
-+#endif	/* CONFIG_PM */
-+
- /*-------------------------------------------------------------------------*/
- 
- /**
--- 
-1.6.3.3
-
+or at least make it so that this is the default, and you only have to
+update Kconfig if you need to deviate from the default.  i dont like
+having to add this minix option to every single arch Kconfig.
+-mike
