@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab0JOQti (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:49:38 -0400
-Received: from kroah.org ([198.145.64.141]:45036 "EHLO coco.kroah.org"
+	id S932152Ab0JOQx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:53:29 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56996 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932107Ab0JOQtf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:49:35 -0400
-Date: Fri, 15 Oct 2010 09:49:22 -0700
-From: Greg KH <greg@kroah.com>
-To: Manuel Stahl <manuel.stahl@iis.fraunhofer.de>
-Cc: linux-serial@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH resend] Add sc16is7x2 driver
-Message-ID: <20101015164922.GB21576@kroah.com>
-References: <4CAD818B.2070603@iis.fraunhofer.de> <20101014190133.GB1009@kroah.com> <4CB801B2.808@iis.fraunhofer.de> <20101015142709.GA18905@kroah.com> <4CB86E8F.3060907@iis.fraunhofer.de>
+	id S1755111Ab0JOQx2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 12:53:28 -0400
+From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "Menon, Nishanth" <nm@ti.com>,
+        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Date: Fri, 15 Oct 2010 11:53:17 -0500
+Subject: RE: [PATCHv3 00/11] staging tidspbridge: iommu migration
+Thread-Topic: [PATCHv3 00/11] staging tidspbridge: iommu migration
+Thread-Index: ActshqHleLu2GKK3RACSNdfeGrKQlgAAp8Mg
+Message-ID: <496565EC904933469F292DDA3F1663E602F4881816@dlee06.ent.ti.com>
+References: <1286310944-25035-1-git-send-email-x0095840@ti.com>
+	<AANLkTimoTmhAw11jJihiuyByzKZ9KTFHvx6iw8oeLCGg@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F47B2BB1@dlee06.ent.ti.com>
+	<AANLkTim6XRgnefA0vmRNeW=TONhxz68WYAjuA96LqWOj@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F47B3002@dlee06.ent.ti.com>
+	<AANLkTik3hhWy+tRxThtrbwNXTssV7nf9+_LGn5Ct3iet@mail.gmail.com>
+	<496565EC904933469F292DDA3F1663E602F48817EF@dlee06.ent.ti.com>
+ <AANLkTi=juk+824k1R8mJrDostKhRz+nRNqj9E-rNYWrv@mail.gmail.com>
+In-Reply-To: <AANLkTi=juk+824k1R8mJrDostKhRz+nRNqj9E-rNYWrv@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4CB86E8F.3060907@iis.fraunhofer.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 05:09:03PM +0200, Manuel Stahl wrote:
-> On 15.10.2010 16:27, Greg KH wrote:
->> On Fri, Oct 15, 2010 at 09:24:34AM +0200, Manuel Stahl wrote:
->>> On 14.10.2010 21:01, Greg KH wrote:
->>>> On Thu, Oct 07, 2010 at 10:15:07AM +0200, Manuel Stahl wrote:
->>>>> --- /dev/null
->>>>> +++ b/include/linux/spi/sc16is7x2.h
->>>>> @@ -0,0 +1,17 @@
->>>>> +#ifndef LINUX_SPI_SC16IS752_H
->>>>> +#define LINUX_SPI_SC16IS752_H
->>>>> +
->>>>> +#define SC16IS7X2_NR_GPIOS 8
->>>>> +
->>>>> +struct sc16is7x2_platform_data {
->>>>> +	unsigned int	uartclk;
->>>>> +	/* uart line number of the first channel */
->>>>> +	unsigned	uart_base;
->>>>> +	/* number assigned to the first GPIO */
->>>>> +	unsigned	gpio_base;
->>>>> +	char		*label;
->>>>> +	/* list of GPIO names (array length = SC16IS7X2_NR_GPIOS) */
->>>>> +	const char	*const *names;
->>>>> +};
->>>>> +
->>>>> +#endif
->>>>
->>>> Why is this needed in a .h file?  What other .c file uses this define
->>>> and structure?
->>>>
->>>> thanks,
->>>>
->>>> greg k-h
->>>
->>> The board setup code can pass information about the uart and gpio
->>> enumeration.
->>
->> What "board setup code"?  I don't see that here in the patch anywhere.
->
-> SPI devices are generally set up for a specific hardware board. I.e. for 
-> some ARM boards there is setup code in 
-> linux/arch/arm/mach-at91/board-<xyz>.c
->
-> I use the sc16is7x2 for a board that is not yet in vanilla, so the board 
-> setup code is not included in the patch.
+ 
 
-Then why not add this header (or move it to the header file) when your
-board setup code is merged?  No need to have it there now, right?
+> -----Original Message-----
+> From: Felipe Contreras [mailto:felipe.contreras@gmail.com] 
+> Sent: Friday, October 15, 2010 11:28 AM
+> To: Guzman Lugo, Fernando
+> Cc: gregkh@suse.de; felipe.contreras@nokia.com; 
+> ameya.palande@nokia.com; Menon, Nishanth; 
+> Hiroshi.DOYU@nokia.com; ohad@wizery.com; 
+> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
+> linux-omap@vger.kernel.org
+> Subject: Re: [PATCHv3 00/11] staging tidspbridge: iommu migration
+> 
+> On Fri, Oct 15, 2010 at 7:21 PM, Guzman Lugo, Fernando 
+> <fernando.lugo@ti.com> wrote:
+> >> Well, in my experience it's the other way around, the stress 
+> >> test-cases don't catch the errors that happen on real use-case 
+> >> scenarios, no matter how extensive they are. This is a 
+> good example.
+> >
+> > I am facing some unstability with the latest bridge merge. 
+> I am looing 
+> > into That once it is stable I wil check you testcase too to confirm 
+> > everything is Working fine.
+> 
+> If you want I can provide my working branch on top of .36-rc8 
+> with next-staging merged. If I revert your patches, it works fine.
 
-Care to resend this driver changed that way?
+That could be interested. Can you send me the link?
 
-thanks,
+Regards,
+Fernando.
 
-greg k-h
+> 
+> --
+> Felipe Contreras
+> 
