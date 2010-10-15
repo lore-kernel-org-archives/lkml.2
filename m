@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab0JOQx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:53:29 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56996 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755111Ab0JOQx2 convert rfc822-to-8bit (ORCPT
+	id S932139Ab0JOQzw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 12:55:52 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42977 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755941Ab0JOQzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:53:28 -0400
-From: "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "felipe.contreras@nokia.com" <felipe.contreras@nokia.com>,
-        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
-        "Menon, Nishanth" <nm@ti.com>,
-        "Hiroshi.DOYU@nokia.com" <Hiroshi.DOYU@nokia.com>,
-        "ohad@wizery.com" <ohad@wizery.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "andy.shevchenko@gmail.com" <andy.shevchenko@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Date: Fri, 15 Oct 2010 11:53:17 -0500
-Subject: RE: [PATCHv3 00/11] staging tidspbridge: iommu migration
-Thread-Topic: [PATCHv3 00/11] staging tidspbridge: iommu migration
-Thread-Index: ActshqHleLu2GKK3RACSNdfeGrKQlgAAp8Mg
-Message-ID: <496565EC904933469F292DDA3F1663E602F4881816@dlee06.ent.ti.com>
-References: <1286310944-25035-1-git-send-email-x0095840@ti.com>
-	<AANLkTimoTmhAw11jJihiuyByzKZ9KTFHvx6iw8oeLCGg@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F47B2BB1@dlee06.ent.ti.com>
-	<AANLkTim6XRgnefA0vmRNeW=TONhxz68WYAjuA96LqWOj@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F47B3002@dlee06.ent.ti.com>
-	<AANLkTik3hhWy+tRxThtrbwNXTssV7nf9+_LGn5Ct3iet@mail.gmail.com>
-	<496565EC904933469F292DDA3F1663E602F48817EF@dlee06.ent.ti.com>
- <AANLkTi=juk+824k1R8mJrDostKhRz+nRNqj9E-rNYWrv@mail.gmail.com>
-In-Reply-To: <AANLkTi=juk+824k1R8mJrDostKhRz+nRNqj9E-rNYWrv@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Oct 2010 12:55:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=w4VqU6KuFWwltlxYhYXyYj6Jlt2nmB83a+ByhXR5ksnlBQ5lJdH7LN9nvFjhROYLXF
+         w2JZLTACZv0qMrIQu7UcitX0GfQwO/9ZXzZ/iUJJ4Uyt6xoreF3lQNoFFGxD7P3/+xxA
+         eDPAYhv2nZ4pWKHHvRYAZib+rBSFIk7piAlZk=
+Date: Fri, 15 Oct 2010 09:55:42 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linux Input <linux-input@vger.kernel.org>,
+        Jiri Slaby <jirislaby@gmail.com>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7] input: cancel_delayed_work_sync() in
+ hp680_ts_input
+Message-ID: <20101015165542.GA19112@core.coreip.homeip.net>
+References: <4CB84609.4080809@kernel.org>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4CB84609.4080809@kernel.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-
-> -----Original Message-----
-> From: Felipe Contreras [mailto:felipe.contreras@gmail.com] 
-> Sent: Friday, October 15, 2010 11:28 AM
-> To: Guzman Lugo, Fernando
-> Cc: gregkh@suse.de; felipe.contreras@nokia.com; 
-> ameya.palande@nokia.com; Menon, Nishanth; 
-> Hiroshi.DOYU@nokia.com; ohad@wizery.com; 
-> linux-kernel@vger.kernel.org; andy.shevchenko@gmail.com; 
-> linux-omap@vger.kernel.org
-> Subject: Re: [PATCHv3 00/11] staging tidspbridge: iommu migration
+On Fri, Oct 15, 2010 at 02:16:09PM +0200, Tejun Heo wrote:
+> Make hp680_ts_init/exit() call cancel_delayed_work_sync() instead of
+> calling cancel_delayed_work() followed by flush_scheduled_work().
 > 
-> On Fri, Oct 15, 2010 at 7:21 PM, Guzman Lugo, Fernando 
-> <fernando.lugo@ti.com> wrote:
-> >> Well, in my experience it's the other way around, the stress 
-> >> test-cases don't catch the errors that happen on real use-case 
-> >> scenarios, no matter how extensive they are. This is a 
-> good example.
-> >
-> > I am facing some unstability with the latest bridge merge. 
-> I am looing 
-> > into That once it is stable I wil check you testcase too to confirm 
-> > everything is Working fine.
+> This is to prepare for the deprecation and removal of
+> flush_scheduled_work().
 > 
-> If you want I can provide my working branch on top of .36-rc8 
-> with next-staging merged. If I revert your patches, it works fine.
+> Signed-off-by: Tejun Heo <tj@kernel.org>
 
-That could be interested. Can you send me the link?
+Applied, thanks Tejun.
 
-Regards,
-Fernando.
-
+> ---
+>  drivers/input/touchscreen/hp680_ts_input.c |    6 ++----
+>  1 file changed, 2 insertions(+), 4 deletions(-)
 > 
-> --
-> Felipe Contreras
+> Index: work/drivers/input/touchscreen/hp680_ts_input.c
+> ===================================================================
+> --- work.orig/drivers/input/touchscreen/hp680_ts_input.c
+> +++ work/drivers/input/touchscreen/hp680_ts_input.c
+> @@ -107,8 +107,7 @@ static int __init hp680_ts_init(void)
+>  	return 0;
 > 
+>   fail2:	free_irq(HP680_TS_IRQ, NULL);
+> -	cancel_delayed_work(&work);
+> -	flush_scheduled_work();
+> +	cancel_delayed_work_sync(&work);
+>   fail1:	input_free_device(hp680_ts_dev);
+>  	return err;
+>  }
+> @@ -116,8 +115,7 @@ static int __init hp680_ts_init(void)
+>  static void __exit hp680_ts_exit(void)
+>  {
+>  	free_irq(HP680_TS_IRQ, NULL);
+> -	cancel_delayed_work(&work);
+> -	flush_scheduled_work();
+> +	cancel_delayed_work_sync(&work);
+>  	input_unregister_device(hp680_ts_dev);
+>  }
+> 
+
+-- 
+Dmitry
