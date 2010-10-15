@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756219Ab0JOOmC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:42:02 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19212 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab0JOOmA (ORCPT
+	id S1756048Ab0JOOoB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:44:01 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:29617 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755298Ab0JOOoA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:42:00 -0400
-Message-ID: <4CB86804.7090600@oracle.com>
-Date: Fri, 15 Oct 2010 07:41:08 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Fri, 15 Oct 2010 10:44:00 -0400
+Message-ID: <4CB868B2.60407@vmware.com>
+Date: Fri, 15 Oct 2010 16:44:02 +0200
+From: Thomas Hellstrom <thellstrom@vmware.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100624 Mandriva/3.0.5-0.1mdv2009.1 (2009.1) Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Ben Pfaff <blp@cs.stanford.edu>
-CC: Bruno Randolf <br1@einfach.org>, linux-kernel@vger.kernel.org,
-        akpm <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Add generic exponentially weighted moving average function
-References: <20101006093225.8739.14012.stgit@tt-desk>	<20101012173352.0a458c24.randy.dunlap@oracle.com> <87y6a0unrr.fsf@benpfaff.org>
-In-Reply-To: <87y6a0unrr.fsf@benpfaff.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Tejun Heo <tj@kernel.org>
+CC: Dave Airlie <airlied@redhat.com>, Jerome Glisse <jglisse@redhat.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2.6.36-rc7] drm/ttm: use cancel_delayed_work_sync() in
+ ttm_bo
+References: <4CB84532.5020809@kernel.org>
+In-Reply-To: <4CB84532.5020809@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10/14/10 20:40, Ben Pfaff wrote:
-> Randy Dunlap <randy.dunlap@oracle.com> writes:
-> 
->> On Wed, 06 Oct 2010 18:32:25 +0900 Bruno Randolf wrote:
->>
->>> This adds a generic exponentially weighted moving average function. This
->>> implementation makes use of a structure which keeps a scaled up internal
->>> representation to reduce rounding errors.
->>>
->>> The idea for this implementation comes from the rt2x00 driver (rt2x00link.c)
->>> and i would like to use it in several places in the mac80211 and ath5k code.
->>
->> I guess I don't understand "exponentially weighted" or why that would
->> be desirable.  Please try to explain (briefly).
-> 
-> I wrote up a fairly non-brief explanation of exponentially
-> weighted moving averages a few years ago:
->         http://www.stanford.edu/class/cs140/projects/pintos/pintos_7.html#SEC134
+On 10/15/2010 02:12 PM, Tejun Heo wrote:
+> Make ttm_bo::ttm_bo_device_release call cancel_delayed_work_sync()
+> instead of calling cancel_delayed_work() followed by
+> flush_scheduled_work().
+>
+> This is to prepare for the deprecation and removal of
+> flush_scheduled_work().
+>
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+>    
+Acked-by: Thomas Hellstrom <thellstrom@vmware.com>
 
-Thanks, nice writeup.
+Thanks,
+Thomas
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+
+> ---
+>   drivers/gpu/drm/ttm/ttm_bo.c |    3 +--
+>   1 file changed, 1 insertion(+), 2 deletions(-)
+>
+> Index: work/drivers/gpu/drm/ttm/ttm_bo.c
+> ===================================================================
+> --- work.orig/drivers/gpu/drm/ttm/ttm_bo.c
+> +++ work/drivers/gpu/drm/ttm/ttm_bo.c
+> @@ -1480,8 +1480,7 @@ int ttm_bo_device_release(struct ttm_bo_
+>   	list_del(&bdev->device_list);
+>   	mutex_unlock(&glob->device_list_mutex);
+>
+> -	if (!cancel_delayed_work(&bdev->wq))
+> -		flush_scheduled_work();
+> +	cancel_delayed_work_sync(&bdev->wq);
+>
+>   	while (ttm_bo_delayed_delete(bdev, true))
+>   		;
+>    
+
