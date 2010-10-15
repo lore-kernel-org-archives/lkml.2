@@ -1,86 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab0JODOO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 23:14:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:37296 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755523Ab0JODOM (ORCPT
+	id S1756144Ab0JODPp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 23:15:45 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:43371 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754603Ab0JODPn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 23:14:12 -0400
-X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=9WCZY-WHpdEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=i7uaMaKEbLa_j9SYAS4A:9 a=JgOD3o2aaOuy3W9NFz7XJsGca04A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 2/3] ftrace/x86: Add support for C version of
- recordmcount
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>, linux-arch@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
-        John Reiser <jreiser@bitwagon.com>
-In-Reply-To: <20101015025047.GA9640@elte.hu>
-References: <20101014210014.895157788@goodmis.org>
-	 <20101014210136.230687571@goodmis.org>  <20101015025047.GA9640@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 14 Oct 2010 23:14:09 -0400
-Message-ID: <1287112449.23682.27.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 14 Oct 2010 23:15:43 -0400
+MIME-Version: 1.0
+In-Reply-To: <20101015132534.f95d5a42.sfr@canb.auug.org.au>
+References: <20101015132534.f95d5a42.sfr@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 14 Oct 2010 21:15:22 -0600
+X-Google-Sender-Auth: Odedha62Zz-KBHdplA9uq7dNalQ
+Message-ID: <AANLkTi=UUdTixPq63U8UZ9r2M9ez4E8_3hFMnC95_B4X@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the spi tree with the tegra tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
+        Olof Johansson <olof@lixom.net>,
+        Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-15 at 04:50 +0200, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
-> 
-> > From: Steven Rostedt <srostedt@redhat.com>
-> > 
-> > This patch adds the support for the C version of recordmcount and
-> > compile times show ~ 12% improvement.
-> 
-> I reported this recordmcount performance problem 2 years ago. Better 
-> later than never i guess.
+On Thu, Oct 14, 2010 at 8:25 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> Today's linux-next merge of the spi tree got a conflict in
+> drivers/spi/Kconfig drivers/spi/Makefile between commit
+> f4fe02ee997ac4dca9d0888d1d1b8ceb29aae7d6 ("spi: add spi_tegra driver")
+> from the tegra tree and commit e8b17b5b3f30252b5470dbbf54bc251ddc7fac17
+> ("spi/topcliff: Add topcliff platform controller hub (PCH) spi bus
+> driver") from the spi tree.
+>
+> Just overlapping additions.  I fixed it up (see below) and can carry the
+> fix as necessary.
 
-And I also remember saying after I posted this code that it would have a
-compile time performance hit. Heck, it's a perl script running on every
-object file. It was obvious what was at issue here. But it's better to
-slow down the kernel build than to brick network cards. Also, perl was
-much easier to do.
+Thanks Stephen.  Yes, please carry the fix for the time being.
 
-That said, the embarrassing thing is not that I knew (or you reported
-it) about this performance problem. I'm actually quite embarrassed that
-I had this code sitting in my inbox for over a year. I just kept having
-other things that were more important coming up than lowering the
-compile time of the kernel. Although, I did work to get streamline
-config to offset this performance hit.
+g.
 
-Finally, while at the End Users Summit, I decided to take a look at
-John's code, and I was quite impressed.
+> --
+> Cheers,
+> Stephen Rothwell                    sfr@canb.auug.org.au
+>
+> diff --cc drivers/spi/Kconfig
+> index b806078,9949c25..0000000
+> --- a/drivers/spi/Kconfig
+> +++ b/drivers/spi/Kconfig
+> @@@ -314,13 -313,13 +329,20 @@@ config SPI_STMP3XX
+>        help
+>          SPI driver for Freescale STMP37xx/378x SoC SSP interface
+>
+>  +config SPI_TEGRA
+>  +      tristate "Nvidia Tegra SPI controller"
+>  +      depends on ARCH_TEGRA
+>  +      select TEGRA_SYSTEM_DMA
+>  +      help
+>  +        SPI driver for NVidia Tegra SoCs
+>  +
+> + config SPI_TOPCLIFF_PCH
+> +       tristate "Topcliff PCH SPI Controller"
+> +       depends on PCI
+> +       help
+> +         SPI driver for the Topcliff PCH (Platform Controller Hub) SPI bus
+> +         used in some x86 embedded processors.
+> +
+>  config SPI_TXX9
+>        tristate "Toshiba TXx9 SPI controller"
+>        depends on GENERIC_GPIO && CPU_TX49XX
+> diff --cc drivers/spi/Makefile
+> index b6573d8,557aaad..0000000
+> --- a/drivers/spi/Makefile
+> +++ b/drivers/spi/Makefile
+> @@@ -39,7 -39,7 +39,8 @@@ obj-$(CONFIG_SPI_PPC4xx)              += spi_ppc4xx
+>  obj-$(CONFIG_SPI_S3C24XX_GPIO)                += spi_s3c24xx_gpio.o
+>  obj-$(CONFIG_SPI_S3C24XX)             += spi_s3c24xx_hw.o
+>  obj-$(CONFIG_SPI_S3C64XX)             += spi_s3c64xx.o
+>  +obj-$(CONFIG_SPI_TEGRA)                       += spi_tegra.o
+> + obj-$(CONFIG_SPI_TOPCLIFF_PCH)                += spi_topcliff_pch.o
+>  obj-$(CONFIG_SPI_TXX9)                        += spi_txx9.o
+>  obj-$(CONFIG_SPI_XILINX)              += xilinx_spi.o
+>  obj-$(CONFIG_SPI_XILINX_OF)           += xilinx_spi_of.o
+>
 
-But as you said, better late than never.
 
 
-> 
-> > +ifdef CONFIG_DYNAMIC_FTRACE
-> > +	ifdef CONFIG_HAVE_C_MCOUNT_RECORD
-> > +		BUILD_C_RECORDMCOUNT := y
-> > +		export BUILD_C_RECORDMCOUNT
-> 
-> > --- a/arch/x86/Kconfig
-> > +++ b/arch/x86/Kconfig
-> > @@ -33,6 +33,7 @@ config X86
-> >  	select HAVE_KRETPROBES
-> >  	select HAVE_OPTPROBES
-> >  	select HAVE_FTRACE_MCOUNT_RECORD
-> > +	select HAVE_C_MCOUNT_RECORD
-> 
-> The naming is inconsistent here - it should be HAVE_C_RECORDMCOUNT, like 
-> the build variable has, and like the utility is called. If we are going 
-> to add this flag to most architectures we should name it consistently.
-
-Sure, want me to rebase it or just write a patch on top of it?
-
--- Steve
-
-
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
