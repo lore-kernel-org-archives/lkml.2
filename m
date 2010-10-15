@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab0JOWai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 18:30:38 -0400
-Received: from smtp.ee.ethz.ch ([129.132.2.219]:55239 "EHLO smtp.ee.ethz.ch"
+	id S1751461Ab0JOWfJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 18:35:09 -0400
+Received: from kroah.org ([198.145.64.141]:48802 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751071Ab0JOWah convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 18:30:37 -0400
-X-Greylist: delayed 480 seconds by postgrey-1.27 at vger.kernel.org; Fri, 15 Oct 2010 18:30:37 EDT
-Message-ID: <20101016002234.22141i04rksdpesq@email.ee.ethz.ch>
-Date: Sat, 16 Oct 2010 00:22:34 +0200
-From: "Dr. Paul Blair" <info@paul.net>
-Reply-to: pau1957@gncn.net
-To: undisclosed-recipients:;
-Subject: Message From Dr. Paul Blair
+	id S1751255Ab0JOWfH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 18:35:07 -0400
+Date: Fri, 15 Oct 2010 15:35:01 -0700
+From: Greg KH <greg@kroah.com>
+To: Erik Gilling <konkers@google.com>
+Cc: achew@nvidia.com, jmayo@nvidia.com, a.zummo@towertech.it, olof@lixom.net,
+        mcuos.com@gmail.com, linux-kernel@vger.kernel.org,
+        linux-tegra@vger.kernel.org, rtc-linux@googlegroups.com
+Subject: Re: [PATCH 1/1 V2] rtc: Add real-time clock driver for Tegra.
+Message-ID: <20101015223501.GA18609@kroah.com>
+References: <1287089791-25673-1-git-send-email-achew@nvidia.com>
+ <AANLkTim1LQ5xE9fxT9JgKb4a7AKsnRF+3daHcSGBKK4O@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.2)
+In-Reply-To: <AANLkTim1LQ5xE9fxT9JgKb4a7AKsnRF+3daHcSGBKK4O@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
--- 
-Greetings,
+On Fri, Oct 15, 2010 at 03:12:47PM -0700, Erik Gilling wrote:
+> > --- /dev/null
+> > +++ b/drivers/rtc/rtc-tegra.c
+> > @@ -0,0 +1,509 @@
+> > +/*
+> > + * An RTC driver for the NVIDIA Tegra 200 series internal RTC.
+> > + *
+> > + * Copyright (c) 2010, NVIDIA Corporation.
+> > + * Copyright (c) 2010 Jon Mayo <jmayo@nvidia.com>
+> 
+> This is kinda odd.  Usually when doing work on behalf of the company
+> you work for, the code is (c) the company.  Consider changing Jon's
+> line to "Author: Jon Mayo <jmayo@nvidia.com>"
 
-This message may come to you as a surprise, because we have never met  
-before now.
+Woah, are you sure?  Some companies, and countries, allow/require dual
+copyright.  The only one who can change this for sure is Jon, not anyone
+else.
 
-I am Dr. Paul Blair, I am a Senior Director with the Royal Bank of  
-Scotland. There is the sum of $20,600,000.00 in my Bank {Royal Bank of  
-Scotland} United Kingdom, But, there were no beneficiaries stated  
-concerning these funds which means no one would ever come forward to  
-claim it.
+thanks,
 
-This is why i am requesting for your Partnership, so we can have this  
-sum transfered out of my Royal Bank of Scotland into your Bank Account  
-or any other account of your choice.I will be pleased to see if you  
-can help me and also be a good and Trusted person. Once the funds have  
-been transferred to your Nominated Bank Account we shall then share in  
-the ratio of 60% for me, 40% for you.
-
-Send me an email to my private email address: pau1957@gncn.net if you  
-are interested in assisting me, so i can give you more details.
-
-This is a great Life time opportunity for both of us. IT IS 100% RISK FREE.
-
-Regards
-Dr. Paul Blair
-
-
+greg 'I work for such a company' k-h
