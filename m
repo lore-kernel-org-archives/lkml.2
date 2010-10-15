@@ -1,97 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756177Ab0JODNt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 14 Oct 2010 23:13:49 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:35291 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755523Ab0JODNr (ORCPT
+	id S1756161Ab0JODOO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 14 Oct 2010 23:14:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:37296 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755523Ab0JODOM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 14 Oct 2010 23:13:47 -0400
-Date: Fri, 15 Oct 2010 14:13:43 +1100
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@kernel.dk>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
-Message-ID: <20101015031343.GG4681@dastard>
-References: <1286515292-15882-1-git-send-email-david@fromorbit.com>
- <1286515292-15882-18-git-send-email-david@fromorbit.com>
- <20101013072058.GA3121@amd>
- <20101013112552.GB16422@infradead.org>
- <20101013123008.GA6067@amd>
- <20101013232319.GZ4681@dastard>
- <20101014090609.GB3144@amd>
- <20101014144159.GA11972@infradead.org>
- <20101015001443.GA3146@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20101015001443.GA3146@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 14 Oct 2010 23:14:12 -0400
+X-Authority-Analysis: v=1.1 cv=QISHQ+x4xS+apxgDHgAvNvlUjyrXCzYsHvuXcbPYiKg= c=1 sm=0 a=9WCZY-WHpdEA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=i7uaMaKEbLa_j9SYAS4A:9 a=JgOD3o2aaOuy3W9NFz7XJsGca04A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/3] ftrace/x86: Add support for C version of
+ recordmcount
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-arch@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>, linux-kbuild@vger.kernel.org,
+        John Reiser <jreiser@bitwagon.com>
+In-Reply-To: <20101015025047.GA9640@elte.hu>
+References: <20101014210014.895157788@goodmis.org>
+	 <20101014210136.230687571@goodmis.org>  <20101015025047.GA9640@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 14 Oct 2010 23:14:09 -0400
+Message-ID: <1287112449.23682.27.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 11:14:43AM +1100, Nick Piggin wrote:
-> On Thu, Oct 14, 2010 at 10:41:59AM -0400, Christoph Hellwig wrote:
-> > On Thu, Oct 14, 2010 at 08:06:09PM +1100, Nick Piggin wrote:
-> > > Shrinker and zone reclaim is definitely needed. It is needed for NUMA
-> > > scalability and locality of reclaim, and also for container and directed
-> > > dentry/inode reclaim. Google have a very similar patch and they've said
-> > > this is needed (and I already know it is needed for scalability on
-> > > large NUMA -- SGI were complaining about this nearly 5 years ago IIRC).
-> > > So that is _definitely_ going to be needed.
-> > 
-> > I'm sitll not sold on the per-zone shrinkers.  For one per-zone is
-> > a really weird concept.  per-node might make a lot more sense, but
-> > what we really need for doing things usefully is per-sb.  If that's
-> > not scalable we might have to for sb x zone.
+On Fri, 2010-10-15 at 04:50 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> Well I don't know what it means that you're "not sold" on them, and
-> then come up with ridiculous things like per-node might make a lot
-> more sense, or per-sb; and that per-zone is a really weird concept.
->
-> Per-zone is the right way to drive reclaim, and it will allow locality
-> to work properly, as well as zone reclaim and zone targetted shortages
-> and policies, and it will also give good scalability. People need it for
-> all these reasons.
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > This patch adds the support for the C version of recordmcount and
+> > compile times show ~ 12% improvement.
+> 
+> I reported this recordmcount performance problem 2 years ago. Better 
+> later than never i guess.
 
-I don't have enough information to be able to say what is the
-correct way to improve the shrinkers, but I do have plenty of
-information on how the current unbound reclaim parallelism is an
-utter PITA to handle. Indeed, it was partially responsible for the
-recent kernel.org outage. Hence I really don't like anything that
-potentially increases reclaim parallelism until there's been
-discussion and work towards fixing these problems first.
+And I also remember saying after I posted this code that it would have a
+compile time performance hit. Heck, it's a perl script running on every
+object file. It was obvious what was at issue here. But it's better to
+slow down the kernel build than to brick network cards. Also, perl was
+much easier to do.
 
-Beisdes, IMO, we don't need to rework shrinkers, add zone-based
-reclaim, use per-cpu inode lists, etc. to enable store-free path
-walking.  You've shown it can be done, and that's great - it shows
-us the impact of making those changes, but they need to be analysed
-separately and treated on own their merits, not lumped with core
-locking changes necessary for store-free path walking.
+That said, the embarrassing thing is not that I knew (or you reported
+it) about this performance problem. I'm actually quite embarrassed that
+I had this code sitting in my inbox for over a year. I just kept having
+other things that were more important coming up than lowering the
+compile time of the kernel. Although, I did work to get streamline
+config to offset this performance hit.
 
-We know what you think, but you have to let everyone else form their
-own opinions and then be convinced by code or discussion that your
-way is the right way to do it. This requires your tree to be broken
-down into it's component pieces so that us mere mortals can
-understand and test the impact of each separate set of changes has
-on the system.  It makes it easier to review, identify regressions,
-etc but it should not prevent us from reaching the end goal.
+Finally, while at the End Users Summit, I decided to take a look at
+John's code, and I was quite impressed.
 
-> But you missed my point about that. My point is that we _know_ that
-> store free path walks are going to be merged, it is one of the more
-> desirable pieces of the series. So we _know_ RCU inodes are needed, so
-> we can happily use RCU work earlier in the series to make locking
-> better in the icache.
+But as you said, better late than never.
 
-We've still got to do all the lock splitting work so we can update
-everything without contention. It doesn't matter if that is done
-before or after adding RCU - the end result _should_ be the same.
 
-Cheers,
+> 
+> > +ifdef CONFIG_DYNAMIC_FTRACE
+> > +	ifdef CONFIG_HAVE_C_MCOUNT_RECORD
+> > +		BUILD_C_RECORDMCOUNT := y
+> > +		export BUILD_C_RECORDMCOUNT
+> 
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -33,6 +33,7 @@ config X86
+> >  	select HAVE_KRETPROBES
+> >  	select HAVE_OPTPROBES
+> >  	select HAVE_FTRACE_MCOUNT_RECORD
+> > +	select HAVE_C_MCOUNT_RECORD
+> 
+> The naming is inconsistent here - it should be HAVE_C_RECORDMCOUNT, like 
+> the build variable has, and like the utility is called. If we are going 
+> to add this flag to most architectures we should name it consistently.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Sure, want me to rebase it or just write a patch on top of it?
+
+-- Steve
+
+
