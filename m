@@ -1,63 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab0JOMYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 08:24:42 -0400
-Received: from smtp-vbr12.xs4all.nl ([194.109.24.32]:2155 "EHLO
-	smtp-vbr12.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754244Ab0JOMYl (ORCPT
+	id S1755350Ab0JOMbG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 08:31:06 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:40128 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753672Ab0JOMbD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 08:24:41 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: mmotm 2010-10-13 - GSPCA SPCA561 webcam driver broken
-Date: Fri, 15 Oct 2010 14:23:52 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-tschai; KDE/4.4.5; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, Valdis.Kletnieks@vt.edu,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org> <201010151202.31629.hverkuil@xs4all.nl> <4CB84393.3020205@redhat.com>
-In-Reply-To: <4CB84393.3020205@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 15 Oct 2010 08:31:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:subject:from:reply-to:to:cc:in-reply-to:references
+         :content-type:date:message-id:mime-version:x-mailer
+         :content-transfer-encoding;
+        b=pAZT0uWSijInAKGasMyIgnvg73RFYDcZEdRxUY/cWp1cwxstRdjWtsgJuUaYGE0bGQ
+         VekcqVK0XAS6V6guUPimyi+wREboAUxe/rB9hedK45SlvYXjLhapGe7EsoAZswpWSROe
+         hGjp3jrD6Hm4VLckA9Vf+2FAUv4Aii1WAgt5g=
+Subject: netns patches WAS( Re: [PATCH 8/8] net: Implement socketat.
+From: jamal <hadi@cyberus.ca>
+Reply-To: hadi@cyberus.ca
+To: Daniel Lezcano <daniel.lezcano@free.fr>,
+        "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Pavel Emelyanov <xemul@parallels.com>, linux-kernel@vger.kernel.org,
+        Linux Containers <containers@lists.osdl.org>, netdev@vger.kernel.org,
+        netfilter-devel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Michael Kerrisk <mtk.manpages@gmail.com>,
+        Ulrich Drepper <drepper@gmail.com>, Al Viro <viro@ZenIV.linux.org.uk>,
+        David Miller <davem@davemloft.net>,
+        "Serge E. Hallyn" <serge@hallyn.com>,
+        Pavel Emelyanov <xemul@openvz.org>,
+        Ben Greear <greearb@candelatech.com>,
+        Matt Helsley <matthltc@us.ibm.com>, Jonathan Corbet <corbet@lwn.net>,
+        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
+        Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>
+In-Reply-To: <1286113441.3812.229.camel@bigi>
+References: <m1ocborgq7.fsf@fess.ebiederm.org>
+	 <m1bp7oq1u8.fsf@fess.ebiederm.org>  <4C9B162E.7040201@parallels.com>
+	 <1285240797.5036.5.camel@bigi>  <4C9B3B06.900@parallels.com>
+	 <1285242055.5036.9.camel@bigi> <4C9B3F9C.8080506@parallels.com>
+	 <4CA7A07C.5030504@free.fr>  <1286113441.3812.229.camel@bigi>
+Content-Type: text/plain
+Date: Fri, 15 Oct 2010 08:30:55 -0400
+Message-Id: <1287145855.3642.30.camel@bigi>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010151423.52318.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 15, 2010 14:05:39 Mauro Carvalho Chehab wrote:
-> Em 15-10-2010 07:02, Hans Verkuil escreveu:
-> > On Friday, October 15, 2010 11:05:26 Andrew Morton wrote:
-> >> On Fri, 15 Oct 2010 10:45:45 +0200 Hans Verkuil <hverkuil@xs4all.nl> wrote:
-> >>
-> >>> On Thursday, October 14, 2010 22:06:29 Valdis.Kletnieks@vt.edu wrote:
-> >>>> On Wed, 13 Oct 2010 17:13:25 PDT, akpm@linux-foundation.org said:
-> >>>>> The mm-of-the-moment snapshot 2010-10-13-17-13 has been uploaded to
-> > 
-> > Mauro, is this something for you to fix?
-> 
-> I have a patch fixing this conflict already:
-> 
-> http://git.linuxtv.org/mchehab/sbtvd.git?a=commit;h=88164fbe701a0a16e9044b74443dddb6188b54cc
-> 
-> The patch is currently on a separate tree, that I'm using to test some experimental
-> drivers for Brazilian Digital TV system (SBTVD). I'm planning to merge this patch, among
-> with other patches I received for .37 during this weekend.
+Eric et al,
 
-No, this patch isn't sufficient. It backs out the wrong code but doesn't put
-in the 'video_is_registered()' if statements that were in my original patch.
+Did these patches make it in? I was looking at
+two Davem net trees and i dont see them.
 
-Those are really needed.
+cheers,
+jamal
 
-Regards,
-
-	Hans
- 
-> The problem were due to a conflict between a BKL patch and your patch.
-> 
-> Cheers,
-> Mauro.
-> 
-
--- 
-Hans Verkuil - video4linux developer - sponsored by TANDBERG, part of Cisco
