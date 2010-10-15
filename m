@@ -1,81 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab0JOURZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 16:17:25 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:32921 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756546Ab0JOURX (ORCPT
+	id S1756978Ab0JOURc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:17:32 -0400
+Received: from db3ehsobe005.messaging.microsoft.com ([213.199.154.143]:36492
+	"EHLO DB3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756962Ab0JOUR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 16:17:23 -0400
-X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=PDCcCwAOpv8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=6wJHxvniHZISyS_QRLIA:9 a=8nv3U3jE9n8ixI5PzlwA:7 a=vypKHyxGh5sRswfsqYHLQck7fTkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 0/9] [GIT PULL] jump label: various updates
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <20101015200949.134732894@goodmis.org>
-References: <20101015200949.134732894@goodmis.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 15 Oct 2010 16:17:22 -0400
-Message-ID: <1287173842.16971.0.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 15 Oct 2010 16:17:27 -0400
+X-SpamScore: 0
+X-BigFish: VS0(zzzz1202hzz8275bhz2dh2a8h61h)
+X-Spam-TCS-SCL: 0:0
+From: <Dinh.Nguyen@freescale.com>
+To: <linux-kernel@vger.kernel.org>
+CC: <linux-arm-kernel@lists.infradead.org>, <linux@arm.linux.org.uk>,
+        <s.hauer@pengutronix.de>, <u.kleine-koenig@pengutronix.de>,
+        <valentin.longchamp@epfl.ch>, <daniel@caiaq.de>,
+        <grant.likely@secretlab.ca>, <amit.kucheria@canonical.com>,
+        <xiao-lizhang@freescale.com>, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCH 1/2] ARM: imx: Add wake functionality to GPIO
+Date: Fri, 15 Oct 2010 15:18:27 -0500
+Message-ID: <1287173908-25758-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
+MIME-Version: 1.0
+Content-Type: text/plain
+X-Reverse-DNS: de01egw02.freescale.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
-> Ingo,
-> 
-> Please pull the latest tip/perf/jump-label tree, which can be found at:
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Hold on, I forgot to add Jason Baron's fix for compiling against < 4.5.
+Add function definition for irq_chip.set_wake to enable GPIO to
+wake-up the system.
 
-I'll add that and push it out as jump-label-2
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/plat-mxc/gpio.c              |   35 +++++++++++++++++++++++++++++++++
+ arch/arm/plat-mxc/include/mach/gpio.h |    3 ++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
--- Steve
-
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/jump-label
-> 
-> 
-> David Daney (2):
->       jump label: Make arch_jump_label_text_poke_early() optional
->       jump label: Add MIPS support.
-> 
-> Jason Baron (6):
->       jump label/x86: Move arch_init_ideal_nop5 later
->       jump label: Fix module __init section race
->       jump label: Fix deadlock b/w jump_label_mutex vs. text_mutex
->       jump label: Add register_jump_label_key/unregister_jump_label_key
->       jump label: Move jump table to r/w section
->       jump label: Add docs
-> 
-> Steven Rostedt (1):
->       tracing/x86: No need to disable interrupts when calling arch_init_ideal_nop5
-> 
-> ----
->  Documentation/jump-label.txt        |  142 ++++++++++++++++++++++
->  arch/mips/Kconfig                   |    1 +
->  arch/mips/include/asm/jump_label.h  |   48 ++++++++
->  arch/mips/kernel/Makefile           |    3 +-
->  arch/mips/kernel/jump_label.c       |   50 ++++++++
->  arch/mips/kernel/module.c           |    5 +
->  arch/sparc/include/asm/jump_label.h |    1 +
->  arch/x86/include/asm/jump_label.h   |    1 +
->  arch/x86/kernel/alternative.c       |    5 +
->  arch/x86/kernel/setup.c             |    6 -
->  include/asm-generic/vmlinux.lds.h   |   14 +--
->  include/linux/jump_label.h          |   15 +++
->  kernel/jump_label.c                 |  222 ++++++++++++++++++++++++++++++-----
->  kernel/kprobes.c                    |    6 +
->  kernel/trace/ftrace.c               |    4 +-
->  kernel/tracepoint.c                 |   34 ++++++
->  lib/dynamic_debug.c                 |   20 +++
->  17 files changed, 526 insertions(+), 51 deletions(-)
+diff --git a/arch/arm/plat-mxc/gpio.c b/arch/arm/plat-mxc/gpio.c
+index 57ec4a8..7647ba3 100644
+--- a/arch/arm/plat-mxc/gpio.c
++++ b/arch/arm/plat-mxc/gpio.c
+@@ -20,9 +20,11 @@
+  */
+ 
+ #include <linux/init.h>
++#include <linux/interrupt.h>
+ #include <linux/io.h>
+ #include <linux/irq.h>
+ #include <linux/gpio.h>
++#include <mach/gpio.h>
+ #include <mach/hardware.h>
+ #include <asm-generic/bug.h>
+ 
+@@ -201,11 +203,44 @@ static void mx2_gpio_irq_handler(u32 irq, struct irq_desc *desc)
+ 	}
+ }
+ 
++/*
++ * Set interrupt number "irq" in the GPIO as a wake-up source.
++ * While system is running, all registered GPIO interrupts need to have
++ * wake-up enabled. When system is suspended, only selected GPIO interrupts
++ * need to have wake-up enabled.
++ * @param  irq          interrupt source number
++ * @param  enable       enable as wake-up if equal to non-zero
++ * @return       This function returns 0 on success.
++ */
++static int gpio_set_wake_irq(u32 irq, u32 enable)
++{
++	u32 gpio = irq_to_gpio(irq);
++	u32 gpio_idx = gpio & 0x1F;
++	struct mxc_gpio_port *port = &mxc_gpio_ports[gpio / 32];
++
++	if (enable) {
++		port->suspend_wakeup |= (1 << gpio_idx);
++		if (port->irq_high && (gpio_idx >= 16))
++			enable_irq_wake(port->irq_high);
++		else
++			enable_irq_wake(port->irq);
++	} else {
++		port->suspend_wakeup &= ~(1 << gpio_idx);
++		if (port->irq_high && (gpio_idx >= 16))
++			disable_irq_wake(port->irq_high);
++		else
++			disable_irq_wake(port->irq);
++	}
++
++	return 0;
++}
++
+ static struct irq_chip gpio_irq_chip = {
+ 	.ack = gpio_ack_irq,
+ 	.mask = gpio_mask_irq,
+ 	.unmask = gpio_unmask_irq,
+ 	.set_type = gpio_set_irq_type,
++	.set_wake = gpio_set_wake_irq,
+ };
+ 
+ static void _set_gpio_direction(struct gpio_chip *chip, unsigned offset,
+diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
+index af33b74..dba3768 100644
+--- a/arch/arm/plat-mxc/include/mach/gpio.h
++++ b/arch/arm/plat-mxc/include/mach/gpio.h
+@@ -39,6 +39,9 @@ struct mxc_gpio_port {
+ 	struct gpio_chip chip;
+ 	u32 both_edges;
+ 	spinlock_t lock;
++	u32 suspend_wakeup;
++	u32 saved_wakeup;
++
+ };
+ 
+ int mxc_gpio_init(struct mxc_gpio_port*, int);
+-- 
+1.6.0.4
 
 
