@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab0JORwR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 13:52:17 -0400
-Received: from mga09.intel.com ([134.134.136.24]:65239 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932260Ab0JORwP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 13:52:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,337,1283756400"; 
-   d="scan'208";a="564294154"
-Date: Fri, 15 Oct 2010 10:52:11 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Greg KH <greg@kroah.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, lud <linux-usb@vger.kernel.org>
-Subject: Re: linux-next: Tree for October 15 (usb/xhci)
-Message-ID: <20101015175211.GA13313@xanatos>
-References: <20101015165002.0b6e418f.sfr@canb.auug.org.au>
- <20101015084420.6624796d.randy.dunlap@oracle.com>
- <20101015164830.GA21576@kroah.com>
+	id S932299Ab0JORw6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:52:58 -0400
+Received: from canuck.infradead.org ([134.117.69.58]:48891 "EHLO
+	canuck.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755648Ab0JORw5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 13:52:57 -0400
+Date: Fri, 15 Oct 2010 13:52:47 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Nick Piggin <npiggin@kernel.dk>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 17/18] fs: icache remove inode_lock
+Message-ID: <20101015175247.GA6737@infradead.org>
+References: <20101014144159.GA11972@infradead.org>
+ <20101015001443.GA3146@amd>
+ <20101015031343.GG4681@dastard>
+ <20101015033017.GA6750@amd>
+ <20101015034451.GA6827@amd>
+ <20101015064150.GB7511@amd>
+ <20101015105943.GE32255@dastard>
+ <20101015130259.GA3207@amd>
+ <20101015132938.GA3936@amd>
+ <20101015173345.GA10731@amd>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20101015164830.GA21576@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20101015173345.GA10731@amd>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by canuck.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 09:48:30AM -0700, Greg KH wrote:
-> On Fri, Oct 15, 2010 at 08:44:20AM -0700, Randy Dunlap wrote:
-> > On Fri, 15 Oct 2010 16:50:02 +1100 Stephen Rothwell wrote:
-> > 
-> > > Hi all,
-> > > 
-> > > Changes since 20101014:
-> > 
-> > 
-> > When CONFIG_PM is not enabled:
-> > 
-> > drivers/usb/host/xhci.c:675: error: implicit declaration of function 'usb_root_hub_lost_power'
-> > 
-> > Also, can xhci.c:xhci_suspend() and xhci_resume() be inside
-> > #ifdef CONFIG_PM / #endif ?
-> 
-> Sarah, care to send me a follow-on patch fixing this up?
+Thanks for trying to get back to a technical discussion.  Maybe we
+can just move the technical comments to direct replies to the patches
+and leave this not very helpful subthread behind?
 
-Sure.  Do you want me to rework the last patch (patch 8), or just send a
-bug fix?
+> rcu_read_lock();
+> list_for_each_entry(inode, list) {
+>     if (inode->blah ...) {
+>       spin_lock(&list_lock);
+>       if (unlikely(list_empty(&inode->i_list)))
+>         continue;
+>       do_something(inode);
+>    }
+> }
 
-Sarah Sharp
+But that't not what we do for icache.  For the validity checking during
+lookup we check the I_FREEING bit, which is modified under i_lock
+and can be read without any locking.  So everything is just fine
+when moving on to RCU locking.
+
