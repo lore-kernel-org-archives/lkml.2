@@ -1,280 +1,591 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab0JOUb1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 16:31:27 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:58181 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756202Ab0JOUbZ (ORCPT
+	id S932282Ab0JOUhf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:37:35 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:2915 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756375Ab0JOUhe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 16:31:25 -0400
-Subject: Re: Staging: zram: work around oops due to startup ordering snafu
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: Nitin Gupta <ngupta@vflare.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary="=-A06Atq1rmSVCpZYkfjM4"
-Date: Fri, 15 Oct 2010 13:31:20 -0700
-Message-ID: <1287174680.10966.6686.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 15 Oct 2010 16:37:34 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp02.nvidia.com on Fri, 15 Oct 2010 13:37:32 -0700
+From: achew@nvidia.com
+To: jmayo@nvidia.com, a.zummo@towertech.it, olof@lixom.net, greg@kroah.com,
+        mcuos.com@gmail.com
+Cc: linux-kernel@vger.kernel.org, linux-tegra@vger.kernel.org,
+        rtc-linux@googlegroups.com, Andrew Chew <achew@nvidia.com>
+Subject: [PATCH 1/1 V3] rtc: Add real-time clock driver for Tegra.
+Date: Fri, 15 Oct 2010 13:37:30 -0700
+Message-Id: <1287175050-20460-1-git-send-email-achew@nvidia.com>
+X-Mailer: git-send-email 1.7.0.4
+X-OriginalArrivalTime: 15 Oct 2010 20:37:30.0254 (UTC) FILETIME=[C995E2E0:01CB6CA8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Andrew Chew <achew@nvidia.com>
 
---=-A06Atq1rmSVCpZYkfjM4
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Content-Transfer-Encoding: 7bit
+This is a platform driver that supports the built-in real-time clock on
+Tegra SOCs.
 
-After I pulled Linus's latest git, I can no longer initialize my zram
-devices.  Looks like it is caused by this commit:
-
-commit 7e24cce38a99f373450db67bf576fe73e8168d66
-Author: Anton Blanchard <anton@samba.org>
-Date:   Fri Oct 1 14:19:55 2010 -0700
-
->     I'm getting an oops when running mkfs on zram:
->     
->     NIP [d0000000030e0340] .zram_inc_stat+0x58/0x84 [zram]
->     [c00000006d58f720] [d0000000030e091c] .zram_make_request+0xa8/0x6a0 [zram]
->     [c00000006d58f840] [c00000000035795c] .generic_make_request+0x390/0x434
->     [c00000006d58f950] [c000000000357b14] .submit_bio+0x114/0x140
->     [c00000006d58fa20] [c000000000361778] .blkdev_issue_discard+0x1ac/0x250
->     [c00000006d58fb10] [c000000000361f68] .blkdev_ioctl+0x358/0x7fc
->     [c00000006d58fbd0] [c0000000001c1c1c] .block_ioctl+0x6c/0x90
->     [c00000006d58fc70] [c0000000001984c4] .do_vfs_ioctl+0x660/0x6d4
->     [c00000006d58fd70] [c0000000001985a0] .SyS_ioctl+0x68/0xb0
->     
->     Since disksize no longer starts as 0 it looks like we can call
->     zram_make_request before the device has been initialised. The patch below
->     fixes the immediate problem but this would go away if we move the
->     initialisation function elsewhere (as suggested in another thread).
->     
->     Signed-off-by: Anton Blanchard <anton@samba.org>
->     Cc: Nitin Gupta <ngupta@vflare.org>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> diff --git a/drivers/staging/zram/zram_drv.c b/drivers/staging/zram/zram_drv.c
-> index c5f84ee..72f1b9c 100644
-> --- a/drivers/staging/zram/zram_drv.c
-> +++ b/drivers/staging/zram/zram_drv.c
-> @@ -435,6 +435,12 @@ static int zram_make_request(struct request_queue *queue, struct bio *bio)
->         int ret = 0;
->         struct zram *zram = queue->queuedata;
->  
-> +       if (unlikely(!zram->init_done)) {
-> +               set_bit(BIO_UPTODATE, &bio->bi_flags);
-> +               bio_endio(bio, 0);
-> +               return 0;
-> +       }
-> +
-
-The issue appears because:
-
-1. zram_init_device() is the only code to set zram->init_done=1
-2. zram_write() is the only caller of zram_init_device()
-3. zram_make_request() checks for zram->init_done==0 and will never
-   call zram_write() if zram->init_done==0
-
-I'm not sure how this code ever worked.  Maybe if you pass the disk size
-as a module parameter.  I suspect that Anton's patch was against a
-different version anyway.
-
-I have the feeling that we just need to do something like the attached
-patch (which is just for commenting at this point).  Instead of needing
-multiple file writes, if someone writes to one of the config variables,
-we just reset the disk then and there.
-
-Another option might be to move the configuration to configfs.  Don't
-allow zram devices to be modified once they are created.  If you want to
-change one, you remove the existing device and create a new one.  That
-would remove any confusion about initialization.  If there's a device
-there, it's initialized, period.
-
--- Dave
-
---=-A06Atq1rmSVCpZYkfjM4
-Content-Disposition: attachment; filename="dont-depend-on-rw-for-init.patch"
-Content-Type: text/x-patch; name="dont-depend-on-rw-for-init.patch"; charset="ANSI_X3.4-1968"
-Content-Transfer-Encoding: 7bit
-
-
-
+Signed-off-by: Andrew Chew <achew@nvidia.com>
+Acked-by: Alessandro Zummo <a.zummo@towertech.it>
 ---
+Applied Wan ZongShun's corrections.
+Applied Alessandro Zummo's corrections.
 
- linux-2.6.git-dave/drivers/staging/zram/zram_drv.c   |   29 -------------
- linux-2.6.git-dave/drivers/staging/zram/zram_sysfs.c |   41 +++----------------
- 2 files changed, 9 insertions(+), 61 deletions(-)
+ drivers/rtc/Kconfig     |   10 +
+ drivers/rtc/Makefile    |    1 +
+ drivers/rtc/rtc-tegra.c |  509 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 520 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-tegra.c
 
-diff -puN drivers/staging/zram/zram_drv.c~dont-depend-on-rw-for-init drivers/staging/zram/zram_drv.c
---- linux-2.6.git/drivers/staging/zram/zram_drv.c~dont-depend-on-rw-for-init	2010-10-15 10:48:14.000000000 -0700
-+++ linux-2.6.git-dave/drivers/staging/zram/zram_drv.c	2010-10-15 11:10:41.000000000 -0700
-@@ -207,12 +207,6 @@ static int zram_read(struct zram *zram, 
- 	u32 index;
- 	struct bio_vec *bvec;
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 2432541..ca0da79 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -963,4 +963,14 @@ config RTC_DRV_JZ4740
+ 	  This driver can also be buillt as a module. If so, the module
+ 	  will be called rtc-jz4740.
  
--	if (unlikely(!zram->init_done)) {
--		set_bit(BIO_UPTODATE, &bio->bi_flags);
--		bio_endio(bio, 0);
--		return 0;
--	}
--
- 	zram_stat64_inc(zram, &zram->stats.num_reads);
- 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
- 
-@@ -285,12 +279,6 @@ static int zram_write(struct zram *zram,
- 	u32 index;
- 	struct bio_vec *bvec;
- 
--	if (unlikely(!zram->init_done)) {
--		ret = zram_init_device(zram);
--		if (ret)
--			goto out;
--	}
--
- 	zram_stat64_inc(zram, &zram->stats.num_writes);
- 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
- 
-@@ -435,12 +423,6 @@ static int zram_make_request(struct requ
- 	int ret = 0;
- 	struct zram *zram = queue->queuedata;
- 
--	if (unlikely(!zram->init_done)) {
--		set_bit(BIO_UPTODATE, &bio->bi_flags);
--		bio_endio(bio, 0);
--		return 0;
--	}
--
- 	if (!valid_io_request(zram, bio)) {
- 		zram_stat64_inc(zram, &zram->stats.invalid_io);
- 		bio_io_error(bio);
-@@ -465,7 +447,6 @@ void zram_reset_device(struct zram *zram
- 	size_t index;
- 
- 	mutex_lock(&zram->init_lock);
--	zram->init_done = 0;
- 
- 	/* Free various per-device buffers */
- 	kfree(zram->compress_workmem);
-@@ -511,10 +492,7 @@ int zram_init_device(struct zram *zram)
- 
- 	mutex_lock(&zram->init_lock);
- 
--	if (zram->init_done) {
--		mutex_unlock(&zram->init_lock);
--		return 0;
--	}
-+	BUG_ON(zram->init_done);
- 
- 	zram_set_disksize(zram, totalram_pages << PAGE_SHIFT);
- 
-@@ -642,8 +620,6 @@ static int create_device(struct zram *zr
- 	}
- #endif
- 
--	zram->init_done = 0;
--
- out:
- 	return ret;
- }
-@@ -721,8 +697,7 @@ static void __exit zram_exit(void)
- 		zram = &devices[i];
- 
- 		destroy_device(zram);
--		if (zram->init_done)
--			zram_reset_device(zram);
-+		zram_reset_device(zram);
- 	}
- 
- 	unregister_blkdev(zram_major, "zram");
-diff -puN drivers/staging/zram/zram_drv.h~dont-depend-on-rw-for-init drivers/staging/zram/zram_drv.h
-diff -puN drivers/staging/zram/zram_sysfs.c~dont-depend-on-rw-for-init drivers/staging/zram/zram_sysfs.c
---- linux-2.6.git/drivers/staging/zram/zram_sysfs.c~dont-depend-on-rw-for-init	2010-10-15 10:48:14.000000000 -0700
-+++ linux-2.6.git-dave/drivers/staging/zram/zram_sysfs.c	2010-10-15 11:15:27.000000000 -0700
-@@ -57,6 +57,7 @@ static ssize_t disksize_store(struct dev
- {
- 	int ret;
- 	struct zram *zram = dev_to_zram(dev);
-+	struct block_device *bdev;
- 
- 	if (zram->init_done) {
- 		pr_info("Cannot change disksize for initialized device\n");
-@@ -67,8 +68,14 @@ static ssize_t disksize_store(struct dev
- 	if (ret)
- 		return ret;
- 
-+	bdev = bdget_disk(zram->disk, 0);
-+	/* Do not reset an active device! */
-+	if (bdev->bd_holders)
-+		return -EBUSY;
++config RTC_DRV_TEGRA
++	tristate "NVIDIA Tegra Internal RTC driver"
++	depends on RTC_CLASS && ARCH_TEGRA
++	help
++	  If you say yes here you get support for the
++	  Tegra 200 series internal RTC module.
 +
- 	zram->disksize &= PAGE_MASK;
- 	set_capacity(zram->disk, zram->disksize >> SECTOR_SHIFT);
-+	zram_init_device(zram);
- 
- 	return len;
- }
-@@ -81,38 +88,6 @@ static ssize_t initstate_show(struct dev
- 	return sprintf(buf, "%u\n", zram->init_done);
- }
- 
--static ssize_t reset_store(struct device *dev,
--		struct device_attribute *attr, const char *buf, size_t len)
--{
--	int ret;
--	unsigned long do_reset;
--	struct zram *zram;
--	struct block_device *bdev;
--
--	zram = dev_to_zram(dev);
--	bdev = bdget_disk(zram->disk, 0);
--
--	/* Do not reset an active device! */
--	if (bdev->bd_holders)
--		return -EBUSY;
--
--	ret = strict_strtoul(buf, 10, &do_reset);
--	if (ret)
--		return ret;
--
--	if (!do_reset)
--		return -EINVAL;
--
--	/* Make sure all pending I/O is finished */
--	if (bdev)
--		fsync_bdev(bdev);
--
--	if (zram->init_done)
--		zram_reset_device(zram);
--
--	return len;
--}
--
- static ssize_t num_reads_show(struct device *dev,
- 		struct device_attribute *attr, char *buf)
- {
-@@ -192,7 +167,6 @@ static ssize_t mem_used_total_show(struc
- static DEVICE_ATTR(disksize, S_IRUGO | S_IWUGO,
- 		disksize_show, disksize_store);
- static DEVICE_ATTR(initstate, S_IRUGO, initstate_show, NULL);
--static DEVICE_ATTR(reset, S_IWUGO, NULL, reset_store);
- static DEVICE_ATTR(num_reads, S_IRUGO, num_reads_show, NULL);
- static DEVICE_ATTR(num_writes, S_IRUGO, num_writes_show, NULL);
- static DEVICE_ATTR(invalid_io, S_IRUGO, invalid_io_show, NULL);
-@@ -205,7 +179,6 @@ static DEVICE_ATTR(mem_used_total, S_IRU
- static struct attribute *zram_disk_attrs[] = {
- 	&dev_attr_disksize.attr,
- 	&dev_attr_initstate.attr,
--	&dev_attr_reset.attr,
- 	&dev_attr_num_reads.attr,
- 	&dev_attr_num_writes.attr,
- 	&dev_attr_invalid_io.attr,
-diff -puN drivers/staging/zram/zram_drv.c~dont-depend-on-rw-for-init~dont-depend-on-rw-for-init drivers/staging/zram/zram_drv.c~dont-depend-on-rw-for-init
-diff -puN drivers/staging/zram/zram_drv.h~dont-depend-on-rw-for-init~dont-depend-on-rw-for-init drivers/staging/zram/zram_drv.h~dont-depend-on-rw-for-init
-diff -puN drivers/staging/zram/zram_sysfs.c~dont-depend-on-rw-for-init~dont-depend-on-rw-for-init drivers/staging/zram/zram_sysfs.c~dont-depend-on-rw-for-init
-_
-
---=-A06Atq1rmSVCpZYkfjM4--
++	  This drive can also be built as a module. If so, the module
++	  will be called rtc-tegra.
++
+ endif # RTC_CLASS
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 4ff4b88..a7f3617 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -91,6 +91,7 @@ obj-$(CONFIG_RTC_DRV_STARFIRE)	+= rtc-starfire.o
+ obj-$(CONFIG_RTC_DRV_STK17TA8)	+= rtc-stk17ta8.o
+ obj-$(CONFIG_RTC_DRV_STMP)	+= rtc-stmp3xxx.o
+ obj-$(CONFIG_RTC_DRV_SUN4V)	+= rtc-sun4v.o
++obj-$(CONFIG_RTC_DRV_TEGRA)	+= rtc-tegra.o
+ obj-$(CONFIG_RTC_DRV_TEST)	+= rtc-test.o
+ obj-$(CONFIG_RTC_DRV_TWL4030)	+= rtc-twl.o
+ obj-$(CONFIG_RTC_DRV_TX4939)	+= rtc-tx4939.o
+diff --git a/drivers/rtc/rtc-tegra.c b/drivers/rtc/rtc-tegra.c
+new file mode 100644
+index 0000000..6c4b2ed
+--- /dev/null
++++ b/drivers/rtc/rtc-tegra.c
+@@ -0,0 +1,509 @@
++/*
++ * An RTC driver for the NVIDIA Tegra 200 series internal RTC.
++ *
++ * Copyright (c) 2010, NVIDIA Corporation.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
++ */
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/irq.h>
++#include <linux/io.h>
++#include <linux/delay.h>
++#include <linux/rtc.h>
++#include <linux/platform_device.h>
++
++/* how many attempts to wait in tegra_rtc_wait_while_busy(). */
++#define RTC_TEGRA_RETRIES 15
++
++/* STATUS: This bit is set when a write is initiated on the APB side. It is
++ * cleared once the write completes in RTC 32KHz clock domain which could be
++ * several thousands of APB clocks. This must be IDLE before a write is
++ * initiated. Note that this bit is only for writes.
++ * 0 = IDLE
++ * 1 = BUSY
++ */
++#define RTC_TEGRA_REG_BUSY			0x004
++#define RTC_TEGRA_REG_SECONDS			0x008
++#define RTC_TEGRA_REG_SHADOW_SECONDS		0x00c
++#define RTC_TEGRA_REG_MILLI_SECONDS		0x010
++#define RTC_TEGRA_REG_SECONDS_ALARM0		0x014
++#define RTC_TEGRA_REG_SECONDS_ALARM1		0x018
++#define RTC_TEGRA_REG_MILLI_SECONDS_ALARM0	0x01c
++#define RTC_TEGRA_REG_INTR_MASK			0x028
++/* a write to this register performs a clear. reg=reg&(~x) */
++#define RTC_TEGRA_REG_INTR_STATUS		0x02c
++
++/* bits in INTR_MASK */
++#define RTC_TEGRA_INTR_MASK_MSEC_CDN_ALARM	(1<<4)
++#define RTC_TEGRA_INTR_MASK_SEC_CDN_ALARM	(1<<3)
++#define RTC_TEGRA_INTR_MASK_MSEC_ALARM		(1<<2)
++#define RTC_TEGRA_INTR_MASK_SEC_ALARM1		(1<<1)
++#define RTC_TEGRA_INTR_MASK_SEC_ALARM0		(1<<0)
++
++/* bits in INTR_STATUS */
++#define RTC_TEGRA_INTR_STATUS_MSEC_CDN_ALARM	(1<<4)
++#define RTC_TEGRA_INTR_STATUS_SEC_CDN_ALARM	(1<<3)
++#define RTC_TEGRA_INTR_STATUS_MSEC_ALARM	(1<<2)
++#define RTC_TEGRA_INTR_STATUS_SEC_ALARM1	(1<<1)
++#define RTC_TEGRA_INTR_STATUS_SEC_ALARM0	(1<<0)
++
++struct tegra_rtc_info {
++	struct platform_device	*pdev;
++	struct rtc_device	*rtc_dev;
++	void __iomem		*rtc_base; /* NULL if not initialized. */
++	int			tegra_rtc_irq; /* alarm and periodic irq */
++	spinlock_t		tegra_rtc_lock;
++};
++
++/* check is hardware is accessing APB. */
++static inline u32 tegra_rtc_check_busy(struct tegra_rtc_info *info)
++{
++	return readl(info->rtc_base + RTC_TEGRA_REG_BUSY);
++}
++
++/* wait for hardware to be ready for writing.
++ * do not call this inside the spin lock because it sleeps.
++ */
++static int tegra_rtc_wait_while_busy(struct device *dev)
++{
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++
++	/* TODO: wait for busy then not busy to catch a leading edge. */
++	int retries = RTC_TEGRA_RETRIES;
++
++	while (tegra_rtc_check_busy(info)) {
++		if (!retries--) {
++			dev_err(dev, "write failed:retry count exceeded.\n");
++			return -ETIMEDOUT;
++		}
++		msleep(1);
++	}
++
++	return 0;
++}
++
++/* waits for the RTC to not be busy accessing APB, then write a single value. */
++static int tegra_rtc_write_not_busy(struct device *dev, unsigned ofs, u32 value)
++{
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++	unsigned long sl_irq_flags;
++	int ret;
++
++	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
++
++	if (tegra_rtc_check_busy(info)) {
++		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
++		ret = tegra_rtc_wait_while_busy(dev);
++		if (ret)
++			return ret;
++		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
++	}
++
++	writel(value, info->rtc_base + ofs);
++
++	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
++
++	return 0;
++}
++
++
++static int tegra_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++	unsigned long sec, msec;
++	unsigned long sl_irq_flags;
++
++	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
++
++	msec = readl(info->rtc_base + RTC_TEGRA_REG_MILLI_SECONDS);
++	sec = readl(info->rtc_base + RTC_TEGRA_REG_SHADOW_SECONDS);
++
++	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
++
++	rtc_time_to_tm(sec, tm);
++
++	dev_vdbg(dev, "time read as %lu. %d/%d/%d %d:%02u:%02u\n",
++		sec,
++		tm->tm_mon + 1,
++		tm->tm_mday,
++		tm->tm_year + 1900,
++		tm->tm_hour,
++		tm->tm_min,
++		tm->tm_sec
++	);
++
++	return 0;
++}
++
++static int tegra_rtc_set_time(struct device *dev, struct rtc_time *tm)
++{
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++	unsigned long sec;
++	int ret;
++
++	/* convert tm to seconds. */
++	ret = rtc_valid_tm(tm);
++	if (ret < 0)
++		return ret;
++
++	rtc_tm_to_time(tm, &sec);
++
++	dev_vdbg(dev, "time set to %lu. %d/%d/%d %d:%02u:%02u\n",
++		sec,
++		tm->tm_mon+1,
++		tm->tm_mday,
++		tm->tm_year+1900,
++		tm->tm_hour,
++		tm->tm_min,
++		tm->tm_sec
++	);
++
++	/* seconds only written if wait succeeded. */
++	ret = tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_SECONDS, sec);
++
++	dev_vdbg(dev, "time read back as %d\n",
++		readl(info->rtc_base + RTC_TEGRA_REG_SECONDS));
++
++	return ret;
++}
++
++static int tegra_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++	unsigned long sec;
++	unsigned long sl_irq_flags;
++	unsigned tmp;
++
++	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
++
++	sec = readl(info->rtc_base + RTC_TEGRA_REG_SECONDS_ALARM0);
++
++	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
++
++	if (sec == 0) {
++		/* alarm is disabled. */
++		alarm->enabled = 0;
++		alarm->time.tm_mon = -1;
++		alarm->time.tm_mday = -1;
++		alarm->time.tm_year = -1;
++		alarm->time.tm_hour = -1;
++		alarm->time.tm_min = -1;
++		alarm->time.tm_sec = -1;
++	} else {
++		/* alarm is enabled. */
++		alarm->enabled = 1;
++		rtc_time_to_tm(sec, &alarm->time);
++	}
++
++	tmp = readl(info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
++	alarm->pending = (tmp & RTC_TEGRA_INTR_STATUS_SEC_ALARM0) != 0;
++
++	return 0;
++}
++
++static int tegra_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
++{
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++	unsigned status;
++	unsigned long sl_irq_flags;
++	int ret;
++
++	spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
++
++	if (tegra_rtc_check_busy(info)) { /* wait for the busy bit to clear. */
++		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
++		ret = tegra_rtc_wait_while_busy(dev);
++		if (ret)
++			return ret;
++		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
++	}
++
++	/* read the original value, and OR in the flag. */
++	status = readl(info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
++	if (enabled)
++		status |= RTC_TEGRA_INTR_MASK_SEC_ALARM0; /* set it */
++	else
++		status &= ~RTC_TEGRA_INTR_MASK_SEC_ALARM0; /* clear it */
++
++	writel(status, info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
++
++	spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
++
++	return 0;
++}
++
++static int tegra_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++	int ret;
++	unsigned long sec;
++
++	if (alarm->enabled)
++		rtc_tm_to_time(&alarm->time, &sec);
++	else
++		sec = 0;
++
++	ret = tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_SECONDS_ALARM0, sec);
++	dev_vdbg(dev, "alarm read back as %d\n",
++		readl(info->rtc_base + RTC_TEGRA_REG_SECONDS_ALARM0));
++
++	/* if successfully written and alarm is enabled ... */
++	if ((ret == 0) && sec) {
++		tegra_rtc_alarm_irq_enable(dev, 1);
++
++		dev_vdbg(dev, "alarm set as %lu. %d/%d/%d %d:%02u:%02u\n",
++			sec,
++			alarm->time.tm_mon+1,
++			alarm->time.tm_mday,
++			alarm->time.tm_year+1900,
++			alarm->time.tm_hour,
++			alarm->time.tm_min,
++			alarm->time.tm_sec);
++	} else {
++		/* disable alarm if 0 or write error. */
++		dev_vdbg(dev, "alarm disabled\n");
++		tegra_rtc_alarm_irq_enable(dev, 0);
++	}
++
++	return ret;
++}
++
++/* additional proc lines. */
++static int tegra_rtc_proc(struct device *dev, struct seq_file *seq)
++{
++	if (!dev || !dev->driver)
++		return 0;
++
++	return seq_printf(seq, "name\t\t: %s\n", dev_name(dev));
++}
++
++static irqreturn_t tegra_rtc_irq_handler(int irq, void *data)
++{
++	struct device *dev = data;
++	struct tegra_rtc_info *info = dev_get_drvdata(dev);
++	unsigned long events = 0;
++	unsigned status;
++	unsigned long sl_irq_flags;
++
++	status = readl(info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
++	if (status) {
++		/* clear the interrupt masks and status on any irq. */
++		spin_lock_irqsave(&info->tegra_rtc_lock, sl_irq_flags);
++		writel(0, info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
++		writel(0xffffffff, info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
++		spin_unlock_irqrestore(&info->tegra_rtc_lock, sl_irq_flags);
++	}
++
++	/* check if Alarm */
++	if ((status & RTC_TEGRA_INTR_STATUS_SEC_ALARM0))
++		events |= RTC_IRQF | RTC_AF;
++
++	/* check if Periodic */
++	if ((status & RTC_TEGRA_INTR_STATUS_SEC_CDN_ALARM))
++		events |= RTC_IRQF | RTC_PF;
++
++	rtc_update_irq(info->rtc_dev, 1, events);
++
++	return IRQ_HANDLED;
++}
++
++static struct rtc_class_ops tegra_rtc_ops = {
++	.read_time	= tegra_rtc_read_time,
++	.set_time	= tegra_rtc_set_time,
++	.read_alarm	= tegra_rtc_read_alarm,
++	.set_alarm	= tegra_rtc_set_alarm,
++	.proc		= tegra_rtc_proc,
++	.alarm_irq_enable = tegra_rtc_alarm_irq_enable,
++};
++
++static int __devinit tegra_rtc_probe(struct platform_device *pdev)
++{
++	struct tegra_rtc_info *info;
++	struct resource *res;
++	int ret;
++
++	info = kzalloc(sizeof(struct tegra_rtc_info), GFP_KERNEL);
++	if (!info)
++		return -ENOMEM;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res) {
++		dev_err(&pdev->dev,
++			"Unable to allocate resources for device.\n");
++		ret = -EBUSY;
++		goto err_free_info;
++	}
++
++	info->tegra_rtc_irq = platform_get_irq(pdev, 0);
++	if (info->tegra_rtc_irq <= 0) {
++		ret = -EBUSY;
++		goto err_free_info;
++	}
++
++	info->rtc_base = ioremap(res->start, resource_size(res));
++	if (!info->rtc_base) {
++		dev_err(&pdev->dev, "Unable to grab IOs for device.\n");
++		ret = -EBUSY;
++		goto err_free_info;
++	}
++
++	/* set context info. */
++	info->pdev = pdev;
++	info->tegra_rtc_lock = __SPIN_LOCK_UNLOCKED(info->tegra_rtc_lock);
++
++	platform_set_drvdata(pdev, info);
++
++	/* clear out the hardware. */
++	tegra_rtc_write_not_busy(&pdev->dev, RTC_TEGRA_REG_SECONDS_ALARM0, 0);
++	tegra_rtc_write_not_busy(&pdev->dev, RTC_TEGRA_REG_INTR_STATUS,
++				 0xffffffff);
++	tegra_rtc_write_not_busy(&pdev->dev, RTC_TEGRA_REG_INTR_MASK, 0);
++
++	device_init_wakeup(&pdev->dev, 1);
++
++	info->rtc_dev = rtc_device_register(
++		pdev->name, &pdev->dev, &tegra_rtc_ops, THIS_MODULE);
++	if (IS_ERR(info->rtc_dev)) {
++		ret = PTR_ERR(info->rtc_dev);
++		info->rtc_dev = NULL;
++		dev_err(&pdev->dev,
++			"Unable to register device (err=%d).\n",
++			ret);
++		goto err_iounmap;
++	}
++
++	ret = request_irq(info->tegra_rtc_irq, tegra_rtc_irq_handler,
++		IRQF_TRIGGER_HIGH, "rtc alarm", &pdev->dev);
++	if (ret) {
++		dev_err(&pdev->dev,
++			"Unable to request interrupt for device (err=%d).\n",
++			ret);
++		goto err_dev_unreg;
++	}
++
++	dev_notice(&pdev->dev, "Tegra internal Real Time Clock\n");
++
++	return 0;
++
++err_dev_unreg:
++	rtc_device_unregister(info->rtc_dev);
++err_iounmap:
++	iounmap(info->rtc_base);
++err_free_info:
++	kfree(info);
++
++	return ret;
++}
++
++static int __devexit tegra_rtc_remove(struct platform_device *pdev)
++{
++	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
++
++	free_irq(info->tegra_rtc_irq, &pdev->dev);
++	rtc_device_unregister(info->rtc_dev);
++	iounmap(info->rtc_base);
++	kfree(info);
++
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++#ifdef CONFIG_PM
++static int tegra_rtc_suspend(struct platform_device *pdev, pm_message_t state)
++{
++	struct device *dev = &pdev->dev;
++	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
++
++	/* only use ALARM0 as a wake source. */
++	writel(0xffffffff, info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
++	writel(RTC_TEGRA_INTR_STATUS_SEC_ALARM0,
++		info->rtc_base + RTC_TEGRA_REG_INTR_MASK);
++
++	dev_vdbg(dev, "alarm sec = %d\n",
++		readl(info->rtc_base + RTC_TEGRA_REG_SECONDS_ALARM0));
++
++	dev_vdbg(dev, "Suspend (device_may_wakeup=%d) irq:%d\n",
++		device_may_wakeup(dev), info->tegra_rtc_irq);
++
++	/* leave the alarms on as a wake source. */
++	if (device_may_wakeup(dev))
++		enable_irq_wake(info->tegra_rtc_irq);
++
++	return 0;
++}
++
++static int tegra_rtc_resume(struct platform_device *pdev)
++{
++	struct device *dev = &pdev->dev;
++	struct tegra_rtc_info *info = platform_get_drvdata(pdev);
++	unsigned int intr_status;
++
++	/* clear */
++	intr_status = readl(info->rtc_base + RTC_TEGRA_REG_INTR_STATUS);
++	if (intr_status & RTC_TEGRA_INTR_STATUS_SEC_ALARM0) {
++		tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_INTR_MASK, 0);
++		tegra_rtc_write_not_busy(dev, RTC_TEGRA_REG_INTR_STATUS,
++					 0xffffffff);
++	}
++
++	dev_vdbg(dev, "Resume (device_may_wakeup=%d)\n",
++		device_may_wakeup(dev));
++	/* alarms were left on as a wake source, turn them off. */
++	if (device_may_wakeup(dev))
++		disable_irq_wake(info->tegra_rtc_irq);
++
++	return 0;
++}
++#endif
++
++static void tegra_rtc_shutdown(struct platform_device *pdev)
++{
++	dev_vdbg(&pdev->dev, "disabling interrupts.\n");
++	tegra_rtc_alarm_irq_enable(&pdev->dev, 0);
++}
++
++MODULE_ALIAS("platform:tegra_rtc");
++static struct platform_driver tegra_rtc_driver = {
++	.remove		= __devexit_p(tegra_rtc_remove),
++	.shutdown	= tegra_rtc_shutdown,
++	.driver		= {
++		.name	= "tegra_rtc",
++		.owner	= THIS_MODULE,
++	},
++#ifdef CONFIG_PM
++	.suspend	= tegra_rtc_suspend,
++	.resume		= tegra_rtc_resume,
++#endif
++};
++
++static int __init tegra_rtc_init(void)
++{
++	return platform_driver_probe(&tegra_rtc_driver, tegra_rtc_probe);
++}
++module_init(tegra_rtc_init);
++
++static void __exit tegra_rtc_exit(void)
++{
++	platform_driver_unregister(&tegra_rtc_driver);
++}
++module_exit(tegra_rtc_exit);
++
++MODULE_AUTHOR("Jon Mayo <jmayo@nvidia.com>");
++MODULE_DESCRIPTION("driver for Tegra internal RTC");
++MODULE_LICENSE("GPL");
+-- 
+1.7.0.4
 
