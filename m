@@ -1,38 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751281Ab0JOWMH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 18:12:07 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:42911 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751133Ab0JOWMF (ORCPT
+	id S1751370Ab0JOWXl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 18:23:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48907 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab0JOWXj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 18:12:05 -0400
+	Fri, 15 Oct 2010 18:23:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=IMB8gheD+Gpxr7YB3DwlEi/5YEt5ygliAGfI8DKCCHXLd3lRZMje+v9f7JOX5KywvD
-         qSPjwk6QW5RS2P7vOYQA==
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=sEfQbd8yZUHNPY9qtBl5cHdgfXNtgIYCJAMdil5l3MVZDTSWOGrrE8r3voLwWxLi8n
+         bb9G2NEsT5RE6aTH3HjyObHUafFLiuhza1hxnOnArENB9wQ3fi4/mz6oCmp37Cv4+2QX
+         JhXA9EjNtc59X8jAlJ0aVasv06Kpa/L239buc=
+Date: Sat, 16 Oct 2010 00:23:01 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg KH <gregkh@suse.de>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, lud <linux-usb@vger.kernel.org>,
+        Andiry Xu <andiry.xu@amd.com>, Dong Nguyen <dong.nguyen@amd.com>,
+        Libin Yang <libin.yang@amd.com>
+Subject: Re: [PATCH] usb: Fix linker errors with CONFIG_PM=n
+Message-ID: <20101015222301.GA4080@joi.lan>
+References: <20101015205756.GA1757@xanatos>
+ <20101015215915.GA25942@xanatos>
 MIME-Version: 1.0
-Date: Fri, 15 Oct 2010 15:12:02 -0700
-Message-ID: <AANLkTikjo16KzXyTLxn_OTp-B4woDHf-mHYAw_zjxNcr@mail.gmail.com>
-Subject: 2.6.36-rc8
-From: Michel Lespinasse <walken@google.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101015215915.GA25942@xanatos>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, Oct 15, 2010 at 02:59:15PM -0700, Sarah Sharp wrote:
+> Fix these linker errors when CONFIG_PM=n:
+> 
+> ERROR: "xhci_bus_resume" [drivers/usb/host/xhci-hcd.ko] undefined!
+> ERROR: "xhci_bus_suspend" [drivers/usb/host/xhci-hcd.ko] undefined!
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> ---
+> 
+> Randy, this should fix your linker errors.  Without the patch, I get the
+> same errors, and with the patch I don't.
+> 
+> Greg, this applies on top of the previous patch.
+> 
+>  drivers/usb/host/xhci-hub.c |    7 +------
+>  drivers/usb/host/xhci.c     |    6 ------
+>  drivers/usb/host/xhci.h     |   14 ++++++++++++++
+>  3 files changed, 15 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/usb/host/xhci-hub.c b/drivers/usb/host/xhci-hub.c
+> index 7f2f63c..fef5a1f 100644
+> --- a/drivers/usb/host/xhci-hub.c
+> +++ b/drivers/usb/host/xhci-hub.c
+> @@ -742,9 +742,4 @@ int xhci_bus_resume(struct usb_hcd *hcd)
+>  	return 0;
+>  }
+>  
+> -#else
+> -
+> -#define	xhci_bus_suspend	NULL
+> -#define	xhci_bus_resume		NULL
+> -
+> -#endif
+> +#endif	/* CONFIG_PM */
+> diff --git a/drivers/usb/host/xhci.c b/drivers/usb/host/xhci.c
+> index 9dc5be5..5d7d4e9 100644
+> --- a/drivers/usb/host/xhci.c
+> +++ b/drivers/usb/host/xhci.c
+> @@ -761,12 +761,6 @@ int xhci_resume(struct xhci_hcd *xhci, bool hibernated)
+>  	spin_unlock_irq(&xhci->lock);
+>  	return 0;
+>  }
+> -
+> -#else
+> -
+> -#define	xhci_suspend	NULL
+> -#define	xhci_resume	NULL
+> -
+>  #endif	/* CONFIG_PM */
+>  
+>  /*-------------------------------------------------------------------------*/
+> diff --git a/drivers/usb/host/xhci.h b/drivers/usb/host/xhci.h
+> index c08928a..93d3bf4 100644
+> --- a/drivers/usb/host/xhci.h
+> +++ b/drivers/usb/host/xhci.h
+> @@ -1405,8 +1405,15 @@ int xhci_init(struct usb_hcd *hcd);
+>  int xhci_run(struct usb_hcd *hcd);
+>  void xhci_stop(struct usb_hcd *hcd);
+>  void xhci_shutdown(struct usb_hcd *hcd);
+> +
+> +#ifdef	CONFIG_PM
+>  int xhci_suspend(struct xhci_hcd *xhci);
+>  int xhci_resume(struct xhci_hcd *xhci, bool hibernated);
+> +#else
+> +#define	xhci_suspend	NULL
+> +#define	xhci_resume	NULL
+> +#endif
+> +
 
-It's somewhat unusual that you post an RC without an announcement.
-Could you let us know your thoughts about 2.6.36 status/timeframe at
-this point ?
+"static inline int xhci_suspend(struct xhci_hcd *) {}"
+has the same effect but saves types
 
-LWN has been wondering too: http://lwn.net/Articles/410129/
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+>  int xhci_get_frame(struct usb_hcd *hcd);
+>  irqreturn_t xhci_irq(struct usb_hcd *hcd);
+>  irqreturn_t xhci_msi_irq(int irq, struct usb_hcd *hcd);
+> @@ -1481,8 +1488,15 @@ void xhci_ring_ep_doorbell(struct xhci_hcd *xhci, unsigned int slot_id,
+>  int xhci_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue, u16 wIndex,
+>  		char *buf, u16 wLength);
+>  int xhci_hub_status_data(struct usb_hcd *hcd, char *buf);
+> +
+> +#ifdef CONFIG_PM
+>  int xhci_bus_suspend(struct usb_hcd *hcd);
+>  int xhci_bus_resume(struct usb_hcd *hcd);
+> +#else
+> +#define	xhci_bus_suspend	NULL
+> +#define	xhci_bus_resume		NULL
+> +#endif	/* CONFIG_PM */
+> +
+>  u32 xhci_port_state_to_neutral(u32 state);
+>  int xhci_find_slot_id_by_port(struct xhci_hcd *xhci, u16 port);
+>  void xhci_ring_device(struct xhci_hcd *xhci, int slot_id);
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
