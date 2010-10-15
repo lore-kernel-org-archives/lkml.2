@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab0JOUQK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 16:16:10 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48599 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756183Ab0JOUQI convert rfc822-to-8bit (ORCPT
+	id S1756894Ab0JOURZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 16:17:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:32921 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756546Ab0JOURX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 16:16:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Qo7qQ/nm75L/1piy0Xy00PzeyYeQ1GFC6SJU86CAO1x4zv64Fi8nkdj1lPT2ABHPCd
-         AeekSTD40u+Km0C0dpTq9dtcznVxfb4Qpu21Mtixfme9Y1W4dLdGOK6lWEU5UDps+mdu
-         3tL5OWiVQNL+R/70Ecw/kxn+7UYjzZylhFh2I=
-MIME-Version: 1.0
-In-Reply-To: <20101015194040.GA20880@kroah.com>
-References: <1287144784-3359-1-git-send-email-marek.belisko@gmail.com>
-	<1287144784-3359-7-git-send-email-marek.belisko@gmail.com>
-	<20101015194040.GA20880@kroah.com>
-Date: Fri, 15 Oct 2010 22:16:06 +0200
-Message-ID: <AANLkTinWzONzzAd-nSzX1QeiVDS-c91sn44Biz2gtt_i@mail.gmail.com>
-Subject: Re: [PATCH 7/7] staging: ft1000: Remove FT1000_INFO typedef usage.
-From: Belisko Marek <marek.belisko@gmail.com>
-To: Greg KH <greg@kroah.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 15 Oct 2010 16:17:23 -0400
+X-Authority-Analysis: v=1.1 cv=iGF3DqghDyT/uy4mV2LvOKNXCATMSjL+tOl9cucoGVk= c=1 sm=0 a=PDCcCwAOpv8A:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=VwQbUJbxAAAA:8 a=6wJHxvniHZISyS_QRLIA:9 a=8nv3U3jE9n8ixI5PzlwA:7 a=vypKHyxGh5sRswfsqYHLQck7fTkA:4 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 0/9] [GIT PULL] jump label: various updates
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <20101015200949.134732894@goodmis.org>
+References: <20101015200949.134732894@goodmis.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 15 Oct 2010 16:17:22 -0400
+Message-ID: <1287173842.16971.0.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 9:40 PM, Greg KH <greg@kroah.com> wrote:
-> On Fri, Oct 15, 2010 at 02:13:04PM +0200, Marek Belisko wrote:
->> Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
->> ---
->>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c   |   28 +++++++-------
->>  .../staging/ft1000/ft1000-usb/ft1000_download.c    |   16 ++++----
->>  drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |   42 ++++++++++----------
->>  drivers/staging/ft1000/ft1000-usb/ft1000_proc.c    |   14 +++---
->>  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |    8 ++--
->>  drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |    6 +-
->>  6 files changed, 57 insertions(+), 57 deletions(-)
->
-> Something's wrong with this patch.  There was also something wrong with
-> one of the previous ones as well, but I fixed it up by hand.  It seems
-> that you forgot to send one of the patches in this series, which caused
-> this one to throw a lot of rejects.
->
-> Care to resync on my tree to see what I haven't applied from you and
-> resend this one, and anything else I've missed?
-I forgot to send 1 patch if I check my git logs. I already send it
-([PATCH] staging:ft1000: Remove dead code from ft1000_hw.c).
+On Fri, 2010-10-15 at 16:09 -0400, Steven Rostedt wrote:
+> Ingo,
+> 
+> Please pull the latest tip/perf/jump-label tree, which can be found at:
 
-Hopefully it resolved all problems with patch applying.
+Hold on, I forgot to add Jason Baron's fix for compiling against < 4.5.
 
-Sorry.
->
-> thanks,
->
-> greg k-h
->
+I'll add that and push it out as jump-label-2
 
-marek
+-- Steve
 
--- 
-as simple and primitive as possible
--------------------------------------------------
-Marek Belisko - OPEN-NANDRA
-Freelance Developer
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> tip/perf/jump-label
+> 
+> 
+> David Daney (2):
+>       jump label: Make arch_jump_label_text_poke_early() optional
+>       jump label: Add MIPS support.
+> 
+> Jason Baron (6):
+>       jump label/x86: Move arch_init_ideal_nop5 later
+>       jump label: Fix module __init section race
+>       jump label: Fix deadlock b/w jump_label_mutex vs. text_mutex
+>       jump label: Add register_jump_label_key/unregister_jump_label_key
+>       jump label: Move jump table to r/w section
+>       jump label: Add docs
+> 
+> Steven Rostedt (1):
+>       tracing/x86: No need to disable interrupts when calling arch_init_ideal_nop5
+> 
+> ----
+>  Documentation/jump-label.txt        |  142 ++++++++++++++++++++++
+>  arch/mips/Kconfig                   |    1 +
+>  arch/mips/include/asm/jump_label.h  |   48 ++++++++
+>  arch/mips/kernel/Makefile           |    3 +-
+>  arch/mips/kernel/jump_label.c       |   50 ++++++++
+>  arch/mips/kernel/module.c           |    5 +
+>  arch/sparc/include/asm/jump_label.h |    1 +
+>  arch/x86/include/asm/jump_label.h   |    1 +
+>  arch/x86/kernel/alternative.c       |    5 +
+>  arch/x86/kernel/setup.c             |    6 -
+>  include/asm-generic/vmlinux.lds.h   |   14 +--
+>  include/linux/jump_label.h          |   15 +++
+>  kernel/jump_label.c                 |  222 ++++++++++++++++++++++++++++++-----
+>  kernel/kprobes.c                    |    6 +
+>  kernel/trace/ftrace.c               |    4 +-
+>  kernel/tracepoint.c                 |   34 ++++++
+>  lib/dynamic_debug.c                 |   20 +++
+>  17 files changed, 526 insertions(+), 51 deletions(-)
 
-Ruska Nova Ves 219 | Presov, 08005 Slovak Republic
-Tel: +421 915 052 184
-skype: marekwhite
-icq: 290551086
-web: http://open-nandra.com
+
