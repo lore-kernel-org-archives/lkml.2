@@ -1,120 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab0JOOSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 10:18:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29615 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754678Ab0JOOSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 10:18:54 -0400
-Date: Fri, 15 Oct 2010 10:18:16 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>,
-        Mike Galbraith <efault@gmx.de>, Steven Rostedt <rostedt@goodmis.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [RFC][PATCH 7/7] perf: Optimize sw events
-Message-ID: <20101015141816.GA2822@redhat.com>
-References: <20101014203404.222133139@chello.nl> <20101014203625.609332490@chello.nl> <1287134043.29097.1331.camel@twins>
+	id S1756025Ab0JOOXP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 10:23:15 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:47943 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755083Ab0JOOXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 10:23:13 -0400
+Date: Fri, 15 Oct 2010 16:23:10 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: linux-main <linux-kernel@vger.kernel.org>,
+        linux-arm <linux-arm-kernel@lists.infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Richard Woodruff <r-woodruff2@ti.com>
+Subject: Re: [PATCH .36-rc8] arm: mm: allow, but warn, when issuing
+	ioremap() on RAM
+Message-ID: <20101015142310.GD16893@pengutronix.de>
+References: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1287134043.29097.1331.camel@twins>
+In-Reply-To: <1287152120-7201-1-git-send-email-felipe.contreras@gmail.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Oct 15, 2010 at 11:14:03AM +0200, Peter Zijlstra wrote:
-> > Index: linux-2.6/include/linux/perf_event.h
-> > ===================================================================
-> > --- linux-2.6.orig/include/linux/perf_event.h
-> > +++ linux-2.6/include/linux/perf_event.h
-> > @@ -1013,15 +1013,17 @@ static inline void perf_fetch_caller_reg
-> >  static inline void
-> >  perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
-> >  {
-> > -	if (atomic_read(&perf_swevent_enabled[event_id])) {
-> > -		struct pt_regs hot_regs;
-> > +	struct pt_regs hot_regs;
-> >  
-> > -		if (!regs) {
-> > -			perf_fetch_caller_regs(&hot_regs);
-> > -			regs = &hot_regs;
-> > -		}
-> > -		__perf_sw_event(event_id, nr, nmi, regs, addr);
-> > +	JUMP_LABEL(&perf_swevent_enabled[event_id], have_event);
-> > +	return;
-> > +
-> > +have_event:
-> > +	if (!regs) {
-> > +		perf_fetch_caller_regs(&hot_regs);
-> > +		regs = &hot_regs;
-> >  	}
-> > +	__perf_sw_event(event_id, nr, nmi, regs, addr);
-> >  }
-> >  
+On Fri, Oct 15, 2010 at 05:15:20PM +0300, Felipe Contreras wrote:
+> From: Catalin Marinas <catalin.marinas@arm.com>
 > 
-> OK, so it appears I only compile tested this bit without jump_label
-> support, with that bit added back this horribly fails to compile like:
+> Drivers have been relying on this behavior, but done so wrongly.
+> However, rather than breaking drivers from .35 to .36, we should warn on
+> .36 and only break on .37. This way we give a chance for contributors to
+> fix the issues.
 > 
-> In file included from /usr/src/linux-2.6/arch/x86/mm/fault.c:13:
-> /usr/src/linux-2.6/include/linux/perf_event.h: In function ‘perf_sw_event.clone.0’:
-> /usr/src/linux-2.6/include/linux/perf_event.h:1018: warning: asm operand 0 probably doesn’t match constraints
-> /usr/src/linux-2.6/include/linux/perf_event.h:1018: error: impossible constraint in ‘asm’
+> According to ARM, the behavior of having multiple mappings is
+> unspecified from ARMv6+. This causes real issues specially on modern
+> hardware, and specially with speculative prefetching. So drivers need to
+> be fixed.
 > 
+> Also, since current hardware has palliative meassures to deal with
+> multiple mappings with the same memory type but diferent cacheability
+> attributes, ensure that such restriction is taking place.
 > 
-> The relevant snippet from the .i file reads:
+> Cc: Uwe Kleine-K�nig <u.kleine-koenig@pengutronix.de>
+> Cc: Russell King <linux@arm.linux.org.uk>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Richard Woodruff <r-woodruff2@ti.com>
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Signed-off-by: Felipe Contreras <felipe.contreras@gmail.com>
+> ---
+>  arch/arm/mm/ioremap.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
 > 
-> static inline void
-> perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
-> {
->  struct pt_regs hot_regs;
-> 
->  do { asm goto("1:" ".byte 0xe9 \n\t .long 0\n\t" ".pushsection __jump_table,  \"a\" \n\t" " " ".quad" " " "1b, %l[" "have_event" "], %c0 \n\t" ".popsection \n\t" : : "i" (&perf_swevent_enabled[event_id]) : : have_event); } while (0);
->  return;
-> 
-> have_event:
->  if (!regs) {
->   perf_fetch_caller_regs(&hot_regs);
->   regs = &hot_regs;
->  }
->  __perf_sw_event(event_id, nr, nmi, regs, addr);
-> }
+> diff --git a/arch/arm/mm/ioremap.c b/arch/arm/mm/ioremap.c
+> index ab50627..7dfd6dd 100644
+> --- a/arch/arm/mm/ioremap.c
+> +++ b/arch/arm/mm/ioremap.c
+> @@ -202,10 +202,14 @@ void __iomem * __arm_ioremap_pfn_caller(unsigned long pfn,
+>  		return NULL;
+>  
+>  	/*
+> -	 * Don't allow RAM to be mapped - this causes problems with ARMv6+
+> +	 * This causes problems with ARMv6+. Will be disallowed soon.
+s/soon/for 2.6.37/ ?
+
+> +	 * Also avoid a second mapping with different shareability, which is
+> +	 * not supposed to work anyway.
+>  	 */
+>  	if (WARN_ON(pfn_valid(pfn)))
+> -		return NULL;
+> +		if (__LINUX_ARM_ARCH__ >= 6 &&
+> +		    (mtype != MT_DEVICE_CACHED && mtype != MT_DEVICE_WC))
+> +			mtype = MT_DEVICE_WC;
+>  
+>  	type = get_mem_type(mtype);
+>  	if (!type)
+> -- 
+> 1.7.3.1.2.g7fe2b
 > 
 > 
-> Anybody got any clue as to why this goes splat?
-> 
 
-Couple issues here. The key value: "&perf_swevent_enabled[event_id]"
-is determined at run-time, so we can't associated the jump label with
-keys that are run-time dependent. The second thing is that there is
-array indexing, so essentially the jump label code would need to be
-smart enough to associated the correct index with each instance of
-'perf_sw_event' - unfortunately its not that smart :(
-
-So, two possible suggestions:
-
-1)
-
-I see that PERF_COUNT_SW_MAX is 9. So, we could explicitly split out the
-9 cases into 9 separate inline functions where the keys would be:
-
-&perf_swevent_enabled[PERF_COUNT_SW_CPU_CLOCK]
-&perf_swevent_enabled[PERF_COUNT_SW_TASK_CLOCK]
-
-this probably wouldn't look to ugly if there was a macro that took each
-software id, and spit out the appropriate inline. I see there aren't
-that many 'perf_sw_event()' calls either to update.
-
-2)
-
-If you could define a single global variable that was set if any of the
-indexes of the perf_swevent_enabled[] array were set. This potentially
-woulnd't be as efficient as #1 as it would create false positives.
-
-thanks,
-
--Jason
-
+-- 
+Pengutronix e.K.                           | Uwe Kleine-K�nig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
