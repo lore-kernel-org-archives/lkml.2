@@ -1,203 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab0JOVQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 17:16:59 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21473 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932336Ab0JOVQ6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 17:16:58 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=yp3M2npkMzFWjUlGdjgxsZyyPoEQV6dGCN+XmSNGMROGBfeHkOEmc5I59NvIOqNke
-	rRbLkw9GumcOJEkBSw76Q==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        containers@lists.osdl.org, Andrea Righi <arighi@develer.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ciju Rajan K <ciju@linux.vnet.ibm.com>,
-        David Rientjes <rientjes@google.com>, Greg Thelen <gthelen@google.com>
-Subject: [PATCH v2 05/11] memcg: add dirty page accounting infrastructure
-Date: Fri, 15 Oct 2010 14:14:33 -0700
-Message-Id: <1287177279-30876-6-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1287177279-30876-1-git-send-email-gthelen@google.com>
-References: <1287177279-30876-1-git-send-email-gthelen@google.com>
+	id S1756971Ab0JOVRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 17:17:53 -0400
+Received: from kroah.org ([198.145.64.141]:48114 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756613Ab0JOVRw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 17:17:52 -0400
+Date: Fri, 15 Oct 2010 14:12:53 -0700
+From: Greg KH <greg@kroah.com>
+To: Belisko Marek <marek.belisko@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 7/7] staging: ft1000: Remove FT1000_INFO typedef usage.
+Message-ID: <20101015211253.GA17875@kroah.com>
+References: <1287144784-3359-1-git-send-email-marek.belisko@gmail.com>
+ <1287144784-3359-7-git-send-email-marek.belisko@gmail.com>
+ <20101015194040.GA20880@kroah.com>
+ <AANLkTinWzONzzAd-nSzX1QeiVDS-c91sn44Biz2gtt_i@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinWzONzzAd-nSzX1QeiVDS-c91sn44Biz2gtt_i@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add memcg routines to track dirty, writeback, and unstable_NFS pages.
-These routines are not yet used by the kernel to count such pages.
-A later change adds kernel calls to these new routines.
+On Fri, Oct 15, 2010 at 10:16:06PM +0200, Belisko Marek wrote:
+> On Fri, Oct 15, 2010 at 9:40 PM, Greg KH <greg@kroah.com> wrote:
+> > On Fri, Oct 15, 2010 at 02:13:04PM +0200, Marek Belisko wrote:
+> >> Signed-off-by: Marek Belisko <marek.belisko@gmail.com>
+> >> ---
+> >>  drivers/staging/ft1000/ft1000-usb/ft1000_chdev.c   |   28 +++++++-------
+> >>  .../staging/ft1000/ft1000-usb/ft1000_download.c    |   16 ++++----
+> >>  drivers/staging/ft1000/ft1000-usb/ft1000_hw.c      |   42 ++++++++++----------
+> >>  drivers/staging/ft1000/ft1000-usb/ft1000_proc.c    |   14 +++---
+> >>  drivers/staging/ft1000/ft1000-usb/ft1000_usb.c     |    8 ++--
+> >>  drivers/staging/ft1000/ft1000-usb/ft1000_usb.h     |    6 +-
+> >>  6 files changed, 57 insertions(+), 57 deletions(-)
+> >
+> > Something's wrong with this patch.  There was also something wrong with
+> > one of the previous ones as well, but I fixed it up by hand.  It seems
+> > that you forgot to send one of the patches in this series, which caused
+> > this one to throw a lot of rejects.
+> >
+> > Care to resync on my tree to see what I haven't applied from you and
+> > resend this one, and anything else I've missed?
+> I forgot to send 1 patch if I check my git logs. I already send it
+> ([PATCH] staging:ft1000: Remove dead code from ft1000_hw.c).
+> 
+> Hopefully it resolved all problems with patch applying.
 
-Signed-off-by: Greg Thelen <gthelen@google.com>
-Signed-off-by: Andrea Righi <arighi@develer.com>
----
- include/linux/memcontrol.h |    3 ++
- mm/memcontrol.c            |   86 +++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 81 insertions(+), 8 deletions(-)
+No, that one doesn't apply either :(
 
-diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-index 067115c..ef2eec7 100644
---- a/include/linux/memcontrol.h
-+++ b/include/linux/memcontrol.h
-@@ -28,6 +28,9 @@ struct mm_struct;
- /* Stats that can be updated by kernel. */
- enum mem_cgroup_page_stat_item {
- 	MEMCG_NR_FILE_MAPPED, /* # of pages charged as file rss */
-+	MEMCG_NR_FILE_DIRTY, /* # of dirty pages in page cache */
-+	MEMCG_NR_FILE_WRITEBACK, /* # of pages under writeback */
-+	MEMCG_NR_FILE_UNSTABLE_NFS, /* # of NFS unstable pages */
- };
- 
- extern unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 369879a..3884a85 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -85,10 +85,13 @@ enum mem_cgroup_stat_index {
- 	 */
- 	MEM_CGROUP_STAT_CACHE, 	   /* # of pages charged as cache */
- 	MEM_CGROUP_STAT_RSS,	   /* # of pages charged as anon rss */
--	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
- 	MEM_CGROUP_STAT_PGPGIN_COUNT,	/* # of pages paged in */
- 	MEM_CGROUP_STAT_PGPGOUT_COUNT,	/* # of pages paged out */
- 	MEM_CGROUP_STAT_SWAPOUT, /* # of pages, swapped out */
-+	MEM_CGROUP_STAT_FILE_MAPPED,  /* # of pages charged as file rss */
-+	MEM_CGROUP_STAT_FILE_DIRTY,	/* # of dirty pages in page cache */
-+	MEM_CGROUP_STAT_FILE_WRITEBACK,		/* # of pages under writeback */
-+	MEM_CGROUP_STAT_FILE_UNSTABLE_NFS,	/* # of NFS unstable pages */
- 	MEM_CGROUP_STAT_DATA, /* end of data requires synchronization */
- 	/* incremented at every  pagein/pageout */
- 	MEM_CGROUP_EVENTS = MEM_CGROUP_STAT_DATA,
-@@ -1641,6 +1644,44 @@ void mem_cgroup_update_page_stat(struct page *page,
- 			ClearPageCgroupFileMapped(pc);
- 		idx = MEM_CGROUP_STAT_FILE_MAPPED;
- 		break;
-+
-+	case MEMCG_NR_FILE_DIRTY:
-+		/* Use Test{Set,Clear} to only un/charge the memcg once. */
-+		if (val > 0) {
-+			if (TestSetPageCgroupFileDirty(pc))
-+				val = 0;
-+		} else {
-+			if (!TestClearPageCgroupFileDirty(pc))
-+				val = 0;
-+		}
-+		idx = MEM_CGROUP_STAT_FILE_DIRTY;
-+		break;
-+
-+	case MEMCG_NR_FILE_WRITEBACK:
-+		/*
-+		 * This counter is adjusted while holding the mapping's
-+		 * tree_lock.  Therefore there is no race between settings and
-+		 * clearing of this flag.
-+		 */
-+		if (val > 0)
-+			SetPageCgroupFileWriteback(pc);
-+		else
-+			ClearPageCgroupFileWriteback(pc);
-+		idx = MEM_CGROUP_STAT_FILE_WRITEBACK;
-+		break;
-+
-+	case MEMCG_NR_FILE_UNSTABLE_NFS:
-+		/* Use Test{Set,Clear} to only un/charge the memcg once. */
-+		if (val > 0) {
-+			if (TestSetPageCgroupFileUnstableNFS(pc))
-+				val = 0;
-+		} else {
-+			if (!TestClearPageCgroupFileUnstableNFS(pc))
-+				val = 0;
-+		}
-+		idx = MEM_CGROUP_STAT_FILE_UNSTABLE_NFS;
-+		break;
-+
- 	default:
- 		BUG();
- 	}
-@@ -2145,6 +2186,17 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
- 	memcg_check_events(mem, pc->page);
- }
- 
-+static inline
-+void mem_cgroup_move_account_page_stat(struct mem_cgroup *from,
-+				       struct mem_cgroup *to,
-+				       enum mem_cgroup_stat_index idx)
-+{
-+	preempt_disable();
-+	__this_cpu_dec(from->stat->count[idx]);
-+	__this_cpu_inc(to->stat->count[idx]);
-+	preempt_enable();
-+}
-+
- /**
-  * __mem_cgroup_move_account - move account of the page
-  * @pc:	page_cgroup of the page.
-@@ -2171,13 +2223,18 @@ static void __mem_cgroup_move_account(struct page_cgroup *pc,
- 	VM_BUG_ON(!PageCgroupUsed(pc));
- 	VM_BUG_ON(pc->mem_cgroup != from);
- 
--	if (PageCgroupFileMapped(pc)) {
--		/* Update mapped_file data for mem_cgroup */
--		preempt_disable();
--		__this_cpu_dec(from->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		__this_cpu_inc(to->stat->count[MEM_CGROUP_STAT_FILE_MAPPED]);
--		preempt_enable();
--	}
-+	if (PageCgroupFileMapped(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_MAPPED);
-+	if (PageCgroupFileDirty(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_DIRTY);
-+	if (PageCgroupFileWriteback(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_WRITEBACK);
-+	if (PageCgroupFileUnstableNFS(pc))
-+		mem_cgroup_move_account_page_stat(from, to,
-+					MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
- 	mem_cgroup_charge_statistics(from, pc, false);
- 	if (uncharge)
- 		/* This is not "cancel", but cancel_charge does all we need. */
-@@ -3552,6 +3609,9 @@ enum {
- 	MCS_PGPGIN,
- 	MCS_PGPGOUT,
- 	MCS_SWAP,
-+	MCS_FILE_DIRTY,
-+	MCS_WRITEBACK,
-+	MCS_UNSTABLE_NFS,
- 	MCS_INACTIVE_ANON,
- 	MCS_ACTIVE_ANON,
- 	MCS_INACTIVE_FILE,
-@@ -3574,6 +3634,9 @@ struct {
- 	{"pgpgin", "total_pgpgin"},
- 	{"pgpgout", "total_pgpgout"},
- 	{"swap", "total_swap"},
-+	{"dirty", "total_dirty"},
-+	{"writeback", "total_writeback"},
-+	{"nfs_unstable", "total_nfs_unstable"},
- 	{"inactive_anon", "total_inactive_anon"},
- 	{"active_anon", "total_active_anon"},
- 	{"inactive_file", "total_inactive_file"},
-@@ -3603,6 +3666,13 @@ mem_cgroup_get_local_stat(struct mem_cgroup *mem, struct mcs_total_stat *s)
- 		s->stat[MCS_SWAP] += val * PAGE_SIZE;
- 	}
- 
-+	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_DIRTY);
-+	s->stat[MCS_FILE_DIRTY] += val * PAGE_SIZE;
-+	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_WRITEBACK);
-+	s->stat[MCS_WRITEBACK] += val * PAGE_SIZE;
-+	val = mem_cgroup_read_stat(mem, MEM_CGROUP_STAT_FILE_UNSTABLE_NFS);
-+	s->stat[MCS_UNSTABLE_NFS] += val * PAGE_SIZE;
-+
- 	/* per zone stat */
- 	val = mem_cgroup_get_local_zonestat(mem, LRU_INACTIVE_ANON);
- 	s->stat[MCS_INACTIVE_ANON] += val * PAGE_SIZE;
--- 
-1.7.1
+Care to retry?
 
+thanks,
+
+greg k-h
