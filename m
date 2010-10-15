@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754968Ab0JOJAE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 05:00:04 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:58999 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753791Ab0JOJAC (ORCPT
+	id S1755206Ab0JOJBJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 05:01:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60002 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754437Ab0JOJBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 05:00:02 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: Re: Question: how to copy to user space from a tasklet
-Date: Fri, 15 Oct 2010 10:59:40 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.31-19-generic; KDE/4.5.1; x86_64; ; )
-Cc: Tom Brown <sa212+emis@cyconix.com>, LKML <linux-kernel@vger.kernel.org>,
-        Yong Zhang <yong.zhang@windriver.com>
-References: <4CB6DEC4.4040408@cyconix.com> <4CB7ED67.2000407@s5r6.in-berlin.de>
-In-Reply-To: <4CB7ED67.2000407@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Fri, 15 Oct 2010 05:01:07 -0400
+Date: Fri, 15 Oct 2010 02:01:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Jan Engelhardt <jengelh@medozas.de>, Eric Paris <eparis@redhat.com>,
+        linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        agruen@suse.de, davem@davemloft.net
+Subject: Re: Process to push changes to include/linux/types.h
+Message-Id: <20101015020134.e552d081.akpm@linux-foundation.org>
+In-Reply-To: <878w1zc1ba.fsf@basil.nowhere.org>
+References: <1287084892.3367.18.camel@dhcp231-212.rdu.redhat.com>
+	<20101014125458.9e51ac58.akpm@linux-foundation.org>
+	<alpine.LNX.2.01.1010142324400.31442@obet.zrqbmnf.qr>
+	<20101014143723.ffea0d8c.akpm@linux-foundation.org>
+	<alpine.LNX.2.01.1010142342400.31442@obet.zrqbmnf.qr>
+	<878w1zc1ba.fsf@basil.nowhere.org>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010151059.40757.arnd@arndb.de>
-X-Provags-ID: V02:K0:Yfta58kLMA+wpsEVDv6BAxef9UlQkt+I4lpaqasIjjh
- PXk/Nuu2DPg2m7lJm5bEJSzEALAI6JlgWfHjAFsBFsTVsxy5Fq
- gTCjCD3I2jk6qW98RrpIH17mXQ14iSf2RKRJODmHU4EMrwStR0
- dDaY8J5c8xsSLK2AuWbo2dBr3uoz4E33WlZlYQ8AtSKnnedMWV
- D2VDendxqf/Gobv7E3xQQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 15 October 2010 07:57:59 Stefan Richter wrote:
-> Tom Brown wrote:
-> > [Sorry to have to ask this here - I can't find any driver-specific
-> > newsgroup or mailing lists - are there any??]
-> 
-> linux-newbie perhaps.
-> 
-> > I have a driver which needs to copy device data direct to user space
-> > from a tasklet.
-> 
-> One way would be to use mmap() to allocate the DMA buffer and insert it into
-> the user address space before DMA commences.  An additional poll/read/write
-> based protocol or so can be used for buffer management during DMA.
+On Fri, 15 Oct 2010 10:22:49 +0200 Andi Kleen <andi@firstfloor.org> wrote:
 
-Agreed, that would be best, it's a lot easier than the way Tom describes
-the driver to work today.
+> Jan Engelhardt <jengelh@medozas.de> writes:
+> 
+> > I would be interested in knowing whether you - in whichever subsystems
+> > you happen to be active - would even need aligned_u64. Right now,
+> > the only users seem to be PPP and scsi_tgt besides Netfilter.
+> 
+> Using aligned_u64 is good practice to avoid problems with the 
+> 32bit/64bit compat layer. I would recommend it to anyone 
+> adding a new user space interface passing a 64bit value.
+> 
 
-Just for completeness: doing DMA to random user address would require the
-process to register the area using some home grown interface, so that the
-driver can do get_user_pages/kmap on all of them and subsequently pass
-around an array of pages, while keeping track of ulimits and coherency
-with the existing kernel mappings. Don't do that.
-
-	Arnd
+What "problems" does it prevent when used for this?
