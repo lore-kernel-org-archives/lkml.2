@@ -1,184 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754603Ab0JOKDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 06:03:33 -0400
-Received: from smtp-vbr7.xs4all.nl ([194.109.24.27]:3981 "EHLO
-	smtp-vbr7.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752203Ab0JOKDc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 06:03:32 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: mmotm 2010-10-13 - GSPCA SPCA561 webcam driver broken
-Date: Fri, 15 Oct 2010 12:02:31 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-tschai; KDE/4.4.5; x86_64; ; )
-Cc: Valdis.Kletnieks@vt.edu, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-References: <201010140044.o9E0iuR3029069@imap1.linux-foundation.org> <201010151045.45630.hverkuil@xs4all.nl> <20101015020526.1819545f.akpm@linux-foundation.org>
-In-Reply-To: <20101015020526.1819545f.akpm@linux-foundation.org>
+	id S1754901Ab0JOKER (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 06:04:17 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:42540 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754421Ab0JOKEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 06:04:15 -0400
+Message-ID: <4CB82720.8040708@kernel.dk>
+Date: Fri, 15 Oct 2010 12:04:16 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Yasuaki Ishimatsu <isimatu.yasuaki@jp.fujitsu.com>
+CC: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] blk: fix a wrong accounting of hd_struct->in_flight
+References: <4CB40281.1020403@jp.fujitsu.com> <4CB41A27.5080001@kernel.dk> <4CB6FC1C.3050801@jp.fujitsu.com> <4CB6FDB7.5010501@kernel.dk> <4CB8135E.1030100@jp.fujitsu.com>
+In-Reply-To: <4CB8135E.1030100@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201010151202.31629.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, October 15, 2010 11:05:26 Andrew Morton wrote:
-> On Fri, 15 Oct 2010 10:45:45 +0200 Hans Verkuil <hverkuil@xs4all.nl> wrote:
+On 2010-10-15 10:39, Yasuaki Ishimatsu wrote:
+> Hi Jens,
 > 
-> > On Thursday, October 14, 2010 22:06:29 Valdis.Kletnieks@vt.edu wrote:
-> > > On Wed, 13 Oct 2010 17:13:25 PDT, akpm@linux-foundation.org said:
-> > > > The mm-of-the-moment snapshot 2010-10-13-17-13 has been uploaded to
-> > > > 
-> > > >    http://userweb.kernel.org/~akpm/mmotm/
-> > > 
-> > > This broke my webcam.  I bisected it down to this commit, and things
-> > > work again after reverting the 2 code lines of change.
-> > > 
-> > > commit 9e4d79a98ebd857ec729f5fa8f432f35def4d0da
-> > > Author: Hans Verkuil <hverkuil@xs4all.nl>
-> > > Date:   Sun Sep 26 08:16:56 2010 -0300
-> > > 
-> > >     V4L/DVB: v4l2-dev: after a disconnect any ioctl call will be blocked
-> > >     
-> > >     Until now all fops except release and (unlocked_)ioctl returned an error
-> > >     after the device node was unregistered. Extend this as well to the ioctl
-> > >     fops. There is nothing useful that an application can do here and it
-> > >     complicates the driver code unnecessarily.
-> > >     
-> > >     Signed-off-by: Hans Verkuil <hverkuil@xs4all.nl>
-> > >     Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> > > 
-> > > 
-> > > diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c
-> > > index d4a3532..f069c61 100644
-> > > --- a/drivers/media/video/v4l2-dev.c
-> > > +++ b/drivers/media/video/v4l2-dev.c
-> > > @@ -221,8 +221,8 @@ static long v4l2_ioctl(struct file *filp, unsigned int cmd, 
-> > >         struct video_device *vdev = video_devdata(filp);
-> > >         int ret;
-> > >  
-> > > -       /* Allow ioctl to continue even if the device was unregistered.
-> > > -          Things like dequeueing buffers might still be useful. */
-> > > +       if (!vdev->fops->ioctl)
-> > > +               return -ENOTTY;
-> > >         if (vdev->fops->unlocked_ioctl) {
-> > >                 ret = vdev->fops->unlocked_ioctl(filp, cmd, arg);
-> > >         } else if (vdev->fops->ioctl) {
-> > > 
-> > > I suspect this doesn't do what's intended if a driver is using ->unlocked_ioctl
-> > > rather than ->ioctl, and it should be reverted - it only saves at most one
-> > > if statement.
-> > > 
-> > > 
-> > 
-> > I'm not sure what is going on here. It looks like this patch is mangled in your
-> > tree since the same patch in the v4l-dvb repository looks like this:
-> > 
-> > diff --git a/drivers/media/video/v4l2-dev.c b/drivers/media/video/v4l2-dev.c                                                         
-> > index 32575a6..26d39c4 100644                                                                                                        
-> > --- a/drivers/media/video/v4l2-dev.c                                                                                                 
-> > +++ b/drivers/media/video/v4l2-dev.c                                                                                                 
-> > @@ -222,8 +222,8 @@ static int v4l2_ioctl(struct inode *inode, struct file *filp,                                                    
-> >                                                                                                                                      
-> >         if (!vdev->fops->ioctl)                                                                                                      
-> >                 return -ENOTTY;                                                                                                      
-> > -       /* Allow ioctl to continue even if the device was unregistered.                                                              
-> > -          Things like dequeueing buffers might still be useful. */
-> > +       if (!video_is_registered(vdev))
-> > +               return -ENODEV;
-> >         return vdev->fops->ioctl(filp, cmd, arg);
-> >  }
-> >  
-> > @@ -234,8 +234,8 @@ static long v4l2_unlocked_ioctl(struct file *filp,
-> >  
-> >         if (!vdev->fops->unlocked_ioctl)
-> >                 return -ENOTTY;
-> > -       /* Allow ioctl to continue even if the device was unregistered.
-> > -          Things like dequeueing buffers might still be useful. */
-> > +       if (!video_is_registered(vdev))
-> > +               return -ENODEV;
-> >         return vdev->fops->unlocked_ioctl(filp, cmd, arg);
-> >  }
-> > 
-> > In your diff there is a mismatch between ioctl and unlocked_ioctl which no doubt
-> > is causing all the problems for you.
+> Jens Axboe wrote:
+>> On 2010-10-14 14:48, Yasuaki Ishimatsu wrote:
+>>> Index: linux-2.6.36-rc7/block/blk-core.c
+>>> ===================================================================
+>>> --- linux-2.6.36-rc7.orig/block/blk-core.c	2010-10-07 05:39:52.000000000 +0900
+>>> +++ linux-2.6.36-rc7/block/blk-core.c	2010-10-14 17:25:43.000000000 +0900
+>>> @@ -66,9 +66,15 @@ static void drive_stat_acct(struct reque
+>>>  	cpu = part_stat_lock();
+>>>  	part = disk_map_sector_rcu(rq->rq_disk, blk_rq_pos(rq));
+>>>
+>>> -	if (!new_io)
+>>> +	if (!new_io) {
+>>> +		if (unlikely(rq->part != part)) {
+>>> +			part_dec_in_flight(rq->part, rw);
+>>> +			part_inc_in_flight(part, rw);
+>>> +			rq->part = part;
+>>> +		}
+>>>  		part_stat_inc(cpu, part, merges[rw]);
+>>> -	else {
+>>> +	} else {
+>>> +		rq->part = part;
+>>>  		part_round_stats(cpu, part);
+>>>  		part_inc_in_flight(part, rw);
+>>>  	}
+>>
+>> I was thinking that we'd do away with the lookup always if ->part was
+>> already set. It will probably require a quiscing of IO on partition
+>> table reload, though.
 > 
-> The patch which Valdis quoted is what is in linux-next.  I'm not
-> at which stage the mangling happened?
-> 
+> O.K.
+> I removed extra part lookups. Following patch also fixed a wrong accounting of
+> hd_struct->in_flight. But I could not invent how to stop IOs when
+> reloading partition table. Do you have some idea?
 
-OK, I see what happened. My original patch:
+This looks good! To quiesce the queue, something like the below.
+Completely untested.
 
-http://git.linuxtv.org/media_tree.git?a=commitdiff;h=30de1fa062e42a74c54e94c8977d7dcef9a5049f;hp=f39385558f50f0b5b2bc9b47c187b81a8188fb10
-
-clashed with Arnd Bergmann's patch:
-
-http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=commit;h=86a5ef7d777cdd61dfe82379d559dbea069aea3d
-
-Someone tried to resolve the conflict but made a mistake.
-
-The result is this:
-
-static long v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-{
-	struct video_device *vdev = video_devdata(filp);
-	int ret;
-
-	if (!vdev->fops->ioctl)
-		return -ENOTTY;
-	if (vdev->fops->unlocked_ioctl) {
-		if (vdev->lock)
-			mutex_lock(vdev->lock);
-		ret = vdev->fops->unlocked_ioctl(filp, cmd, arg);
-		if (vdev->lock)
-			mutex_unlock(vdev->lock);
-	} else if (vdev->fops->ioctl) {
-		/* TODO: convert all drivers to unlocked_ioctl */
-		lock_kernel();
-		ret = vdev->fops->ioctl(filp, cmd, arg);
-		unlock_kernel();
-	} else
-		ret = -ENOTTY;
-
-	return ret;
-}
-
-But this is wrong.
-
-What it should be is this:
-
-static long v4l2_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
-{
-	struct video_device *vdev = video_devdata(filp);
-	int ret = -ENODEV;
-
-	if (vdev->fops->unlocked_ioctl) {
-		if (vdev->lock)
-			mutex_lock(vdev->lock);
-		if (video_is_registered(vdev))
-			ret = vdev->fops->unlocked_ioctl(filp, cmd, arg);
-		if (vdev->lock)
-			mutex_unlock(vdev->lock);
-	} else if (vdev->fops->ioctl) {
-		/* TODO: convert all drivers to unlocked_ioctl */
-		lock_kernel();
-		if (video_is_registered(vdev))
-			ret = vdev->fops->ioctl(filp, cmd, arg);
-		unlock_kernel();
-	} else
-		ret = -ENOTTY;
-
-	return ret;
-}
-
-Mauro, is this something for you to fix?
-
-Regards,
-
-	Hans
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 32a1c12..dce2f68 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -796,11 +796,16 @@ static struct request *get_request(struct request_queue *q, int rw_flags,
+ 	rl->starved[is_sync] = 0;
+ 
+ 	priv = !test_bit(QUEUE_FLAG_ELVSWITCH, &q->queue_flags);
+-	if (priv)
++	if (priv) {
+ 		rl->elvpriv++;
+ 
+-	if (blk_queue_io_stat(q))
+-		rw_flags |= REQ_IO_STAT;
++		/*
++		 * Don't do stats for non-priv requests
++		 */
++		if (blk_queue_io_stat(q))
++			rw_flags |= REQ_IO_STAT;
++	}
++
+ 	spin_unlock_irq(q->queue_lock);
+ 
+ 	rq = blk_alloc_request(q, rw_flags, priv, gfp_mask);
+diff --git a/block/genhd.c b/block/genhd.c
+index 59a2db6..2ecbe7d 100644
+--- a/block/genhd.c
++++ b/block/genhd.c
+@@ -925,8 +925,10 @@ static void disk_free_ptbl_rcu_cb(struct rcu_head *head)
+ {
+ 	struct disk_part_tbl *ptbl =
+ 		container_of(head, struct disk_part_tbl, rcu_head);
++	struct gendisk *disk = ptbl->disk;
+ 
+ 	kfree(ptbl);
++	elv_quiesce_end(disk->queue);
+ }
+ 
+ /**
+@@ -949,6 +951,7 @@ static void disk_replace_part_tbl(struct gendisk *disk,
+ 
+ 	if (old_ptbl) {
+ 		rcu_assign_pointer(old_ptbl->last_lookup, NULL);
++		elv_quiesce_start(disk->queue);
+ 		call_rcu(&old_ptbl->rcu_head, disk_free_ptbl_rcu_cb);
+ 	}
+ }
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 5f2f4c4..69b21bb 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -130,6 +130,7 @@ struct disk_part_tbl {
+ 	struct rcu_head rcu_head;
+ 	int len;
+ 	struct hd_struct *last_lookup;
++	struct gendisk *disk;
+ 	struct hd_struct *part[];
+ };
+ 
 
 -- 
-Hans Verkuil - video4linux developer - sponsored by TANDBERG, part of Cisco
+Jens Axboe
+
