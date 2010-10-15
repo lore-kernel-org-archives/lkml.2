@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab0JOQ6v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 15 Oct 2010 12:58:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14822 "EHLO mga02.intel.com"
+	id S1756547Ab0JORFe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 15 Oct 2010 13:05:34 -0400
+Received: from void.printf.net ([89.145.121.20]:59521 "EHLO void.printf.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932103Ab0JOQ6u convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 15 Oct 2010 12:58:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.57,336,1283756400"; 
-   d="scan'208";a="564278936"
-From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-To: Nikola Ciprich <extmaillist@linuxbox.cz>,
-        Linux kernel list <linux-kernel@vger.kernel.org>,
-        linux-net maillist <linux-net@vger.kernel.org>,
-        e1000-devel list <e1000-devel@lists.sourceforge.net>
-CC: "nikola.ciprich@linuxbox.cz" <nikola.ciprich@linuxbox.cz>
-Date: Fri, 15 Oct 2010 10:58:15 -0600
-Subject: RE: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
-Thread-Topic: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
-Thread-Index: ActrZbzEOLfxOuSFSX2i25WHdSB1jQAWuUfg
-Message-ID: <EA929A9653AAE14F841771FB1DE5A1366027CEFF1C@rrsmsx501.amr.corp.intel.com>
-References: <20101014052242.GA8998@pcnci.linuxbox.cz>
-In-Reply-To: <20101014052242.GA8998@pcnci.linuxbox.cz>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755512Ab0JORFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 15 Oct 2010 13:05:32 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
+        Sven Neumann <s.neumann@raumfeld.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+Subject: [GIT PULL] MMC fix for 2.6.36
+Date: Fri, 15 Oct 2010 13:10:49 -0400
+Message-ID: <m3zkuf4c12.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Nikola Ciprich [mailto:extmaillist@linuxbox.cz]
->Sent: Wednesday, October 13, 2010 10:23 PM
->To: Linux kernel list; linux-net maillist; e1000-devel list
->Cc: nikola.ciprich@linuxbox.cz
->Subject: [E1000-devel] 2.6.36-rc7-git2 - panic/GPF: e1000e/vlans?
->
->Hi,
->when I try to boot 2.6.36-rc7-git2 on one of my machines, it crashes while
->setting up the network.
+Linus,
 
-Thanks for letting us know!
+Please pull from:
 
->The setup is quite complex, with bonding, lots of vlans and 3 intel
->adapters (system is quad x86_64)
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-Could you provide more details about the exact setup and the sequence of 
-commands that lead to the crash? If you can narrow it down to the actual 
-command that caused the crash that would be very helpful.
+to fix an SDIO suspend/resume regression introduced in -rc1.  Thanks.
 
-Also - are you testing from Linus or net-next tree? If you are not using 
-net-next, could you give it a try and see if you can reproduce it there?
+The following changes since commit 8fd01d6cfbf75465d84a4e533ed70c5f57b3ff51:
+  Linus Torvalds (1):
+        Export dump_{write,seek} to binary loader modules
 
->
->snip of lspci:
->06:00.0 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
->Controller (Copper) (rev 01)
->06:00.1 Ethernet controller: Intel Corporation 80003ES2LAN Gigabit Ethernet
->Controller (Copper) (rev 01)
->09:00.0 Ethernet controller: Intel Corporation 82574L Gigabit Network
->Connection
+are available in the git repository at:
 
-Could you provide the output of lspci -vvv and a kernel config?
+  git://git.kernel.org/pub/scm/linux/kernel/git/cjb/mmc.git for-linus
 
-Thanks,
-Emil
+Ohad Ben-Cohen (1):
+      mmc: sdio: fix SDIO suspend/resume regression
+
+ drivers/mmc/core/core.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 13 Oct 2010 09:31:56 +0200
+Subject: [PATCH] mmc: sdio: fix SDIO suspend/resume regression
+
+Fix SDIO suspend/resume regression introduced by 4c2ef25fe0b "mmc: fix
+all hangs related to mmc/sd card insert/removal during suspend/resume":
+
+  PM: Syncing filesystems ... done.
+  Freezing user space processes ... (elapsed 0.01 seconds) done.
+  Freezing remaining freezable tasks ... (elapsed 0.01 seconds) done.
+  Suspending console(s) (use no_console_suspend to debug)
+  pm_op(): platform_pm_suspend+0x0/0x5c returns -38
+  PM: Device pxa2xx-mci.0 failed to suspend: error -38
+  PM: Some devices failed to suspend
+
+4c2ef25fe0b moved the card removal/insertion mechanism out of MMC's
+suspend/resume path and into pm notifiers (mmc_pm_notify), and that
+broke SDIO's expectation that mmc_suspend_host() will remove the card,
+and squash the error, in case -ENOSYS is returned from the bus suspend
+handler (mmc_sdio_suspend() in this case).
+
+mmc_sdio_suspend() is using this whenever at least one of the card's SDIO
+function drivers does not have suspend/resume handlers - in that case
+it is agreed to force removal of the entire card.
+
+This patch fixes this regression by trivially bringing back that part of
+mmc_suspend_host(), which was removed by 4c2ef25fe0b.
+
+Reported-and-tested-by: Sven Neumann <s.neumann@raumfeld.com>
+Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: <stable@kernel.org>
+Acked-by: Nicolas Pitre <nico@fluxnic.net>
+Signed-off-by: Chris Ball <cjb@laptop.org>
+---
+ drivers/mmc/core/core.c |   13 +++++++++++++
+ 1 files changed, 13 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index 5db49b1..09eee6d 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -1631,6 +1631,19 @@ int mmc_suspend_host(struct mmc_host *host)
+ 	if (host->bus_ops && !host->bus_dead) {
+ 		if (host->bus_ops->suspend)
+ 			err = host->bus_ops->suspend(host);
++		if (err == -ENOSYS || !host->bus_ops->resume) {
++			/*
++			 * We simply "remove" the card in this case.
++			 * It will be redetected on resume.
++			 */
++			if (host->bus_ops->remove)
++				host->bus_ops->remove(host);
++			mmc_claim_host(host);
++			mmc_detach_bus(host);
++			mmc_release_host(host);
++			host->pm_flags = 0;
++			err = 0;
++		}
+ 	}
+ 	mmc_bus_put(host);
+ 
+-- 
+Chris Ball   <cjb@laptop.org>
+One Laptop Per Child
